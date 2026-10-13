@@ -119,6 +119,23 @@ export const FIDELITY_CHECKPOINTS: readonly IncomeCheckpoint[] = [
   { age: 67, multiple: 10 },
 ];
 
+/** The income-multiple table the household follows — the two disagree
+ *  after 40 and measure different money, so only one is shown. */
+export const CHECKPOINT_SOURCES = {
+  moneyGuy: {
+    label: "Money Guy",
+    milestoneId: "moneyGuyCheckpoints",
+    measures: "liquid investments",
+  },
+  fidelity: {
+    label: "Fidelity",
+    milestoneId: "fidelityCheckpoints",
+    measures: "retirement savings",
+  },
+} as const;
+export type CheckpointSource = keyof typeof CHECKPOINT_SOURCES;
+export const DEFAULT_CHECKPOINT_SOURCE: CheckpointSource = "moneyGuy";
+
 /** Money Guy's hyperaccumulation savings rate (of gross pay). */
 export const MONEY_GUY_SAVINGS_RATE = 0.25;
 
@@ -305,9 +322,9 @@ export const MILESTONES = [
     group: "foo",
     source: "moneyGuy",
     title: "6 · Max out retirement",
-    rule: "Fill the 401k/403b to its IRS limit — or, below a high income, reach a 25% investing rate first.",
+    rule: "Fill the IRS limit of every account in the Retirement category (401k/403b, IRA, HSA) with your own contributions — or, below a high income, reach a 25% investing rate first.",
     adaptedNote:
-      "Money Guy: if you don't have a high income and hit 25% before maxing out your employer accounts, move on. High earners max the plans and keep going (Ledgr uses your high-income threshold).",
+      "Money Guy's step 6 is the employer plans; Ledgr counts every account you've put in the Retirement category, so step 5's IRA and HSA are part of it. Employer match isn't counted — the IRS limit is for your own deferrals (an HSA's limit includes employer money). Below a high income, Money Guy says hitting 25% before maxing out is enough to move on; Ledgr uses your high-income threshold.",
     href: "/paycheck",
   },
   {

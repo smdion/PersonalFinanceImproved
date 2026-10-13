@@ -8,6 +8,7 @@ import { buildYearEndHistory } from "@/server/helpers";
 import { wealthFormulaIncome } from "@/lib/calculators/net-worth";
 import {
   SK_MILESTONE_CHECKLIST,
+  SK_MILESTONE_CHECKPOINT_SOURCE,
   SK_MILESTONE_CUSTOM_GOALS,
 } from "@/lib/constants/settings-keys";
 import {
@@ -35,6 +36,7 @@ export const milestonesRouter = createTRPCRouter({
             inArray(schema.appSettings.key, [
               SK_MILESTONE_CUSTOM_GOALS,
               SK_MILESTONE_CHECKLIST,
+              SK_MILESTONE_CHECKPOINT_SOURCE,
             ]),
           ),
       ]);
@@ -54,6 +56,7 @@ export const milestonesRouter = createTRPCRouter({
         ...parseMilestoneSettings({
           customGoals: setting(SK_MILESTONE_CUSTOM_GOALS),
           checklist: setting(SK_MILESTONE_CHECKLIST),
+          checkpointSource: setting(SK_MILESTONE_CHECKPOINT_SOURCE),
         }),
       };
     }),

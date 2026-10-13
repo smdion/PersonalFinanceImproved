@@ -10,8 +10,17 @@ import {
   formatPercent,
 } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
-import { FIDELITY_CHECKPOINTS } from "@/lib/config/milestones";
-import { incomeMultipleTarget } from "@/lib/pure/milestones";
+import {
+  CHECKPOINT_SOURCES,
+  FIDELITY_CHECKPOINTS,
+  MONEY_GUY_CHECKPOINTS,
+  type CheckpointSource,
+} from "@/lib/config/milestones";
+import {
+  checkpointBalance,
+  incomeMultipleTarget,
+  type MilestoneYear,
+} from "@/lib/pure/milestones";
 
 /** A projection with its settings (not the no-people stub). */
 type Projection = Extract<
@@ -25,46 +34,74 @@ const stop = (e: React.SyntheticEvent) => {
 };
 
 /**
- * Retirement savings vs Fidelity's salary-multiple targets, now or at a
+ * Savings vs the household's chosen income-multiple targets (Money Guy or
+ * Fidelity — Milestones page), now or at a
  * projected age (from the same projection the Retirement card shows).
  */
+/** The household's chosen income-multiple table and today's figures for it
+ *  (the Milestones engine's current year), plus every account's projection
+ *  for Money Guy's liquid-investments measure. */
+export type ReadinessCheckpoint = {
+  source: CheckpointSource;
+  now: MilestoneYear | null;
+  allAccountsByYear: { age: number; endBalance: number }[];
+};
+
 function Readiness({
   data,
   currentAge,
   retirementSavings,
+  checkpoint,
 }: {
   data: Projection;
   currentAge: number;
   retirementSavings: number;
+  checkpoint: ReadinessCheckpoint;
 }) {
   const [projectedAge, setProjectedAge] = useState<number | null>(null);
   const { combinedSalary, settings, result } = data;
+  const { source, now } = checkpoint;
+  const table =
+    source === "moneyGuy" ? MONEY_GUY_CHECKPOINTS : FIDELITY_CHECKPOINTS;
   const currentYear = new Date().getFullYear();
   const viewAge = projectedAge ?? currentAge;
-  const yearData =
-    projectedAge !== null && projectedAge > currentAge
-      ? result?.projectionByYear.find((y) => y.age === projectedAge)
-      : undefined;
-  const portfolio = yearData?.endBalance ?? retirementSavings;
+  const projecting = projectedAge !== null && projectedAge > currentAge;
+  const yearData = projecting
+    ? result?.projectionByYear.find((y) => y.age === projectedAge)
+    : undefined;
+  // Money Guy counts every account plus cash (held flat); Fidelity only the
+  // Retirement accounts this card already projects.
+  const projectedBalance =
+    source === "moneyGuy"
+      ? (checkpoint.allAccountsByYear.find((y) => y.age === projectedAge)
+          ?.endBalance ?? 0) + (now?.cash ?? 0)
+      : yearData?.endBalance;
+  const portfolio = projecting
+    ? (projectedBalance ?? 0)
+    : now
+      ? checkpointBalance(source, now)
+      : retirementSavings;
   const salary =
     yearData?.phase === "accumulation"
       ? yearData.projectedSalary
-      : combinedSalary;
+      : !projecting && now
+        ? now.grossIncome
+        : combinedSalary;
   const actual = safeDivide(portfolio, salary, 0);
-  const targetMultiple = incomeMultipleTarget(FIDELITY_CHECKPOINTS, viewAge);
+  const targetMultiple = incomeMultipleTarget(table, viewAge);
   const gap = portfolio - salary * targetMultiple;
   const onTrack = gap >= 0;
-  const maxAge = Math.max(
-    settings.retirementAge,
-    FIDELITY_CHECKPOINTS[FIDELITY_CHECKPOINTS.length - 1]!.age,
-  );
+  const maxAge = Math.max(settings.retirementAge, table[table.length - 1]!.age);
+  const { label, measures } = CHECKPOINT_SOURCES[source];
 
   return (
     <div>
       <div className="flex items-center justify-between gap-2">
         <span className="text-muted text-sm">
           Readiness
-          <HelpTip text="Retirement savings as a multiple of salary, against Fidelity's age targets: 1× by 30, 3× by 40, 6× by 50, 10× by 67. Pick a future age to see your projected standing." />
+          <HelpTip
+            text={`${measures[0]!.toUpperCase()}${measures.slice(1)} as a multiple of gross pay, against ${label}'s age targets (${table.map((t) => `${t.multiple}× by ${t.age}`).join(", ")}). Change the table on the Milestones page. Pick a future age to see your projected standing.`}
+          />
         </span>
         <select
           className="bg-surface-primary text-secondary rounded border px-1.5 py-0.5 text-xs"
@@ -95,7 +132,7 @@ function Readiness({
         </span>
         <span className="text-muted text-xs">
           {projectedAge !== null ? "projected " : ""}of {formatCurrency(salary)}{" "}
-          salary
+          pay · {label}
         </span>
       </div>
       <ProgressBar
@@ -104,7 +141,7 @@ function Readiness({
         variant={onTrack ? "success" : "warning"}
       />
       <div className="mt-2 flex flex-wrap gap-1">
-        {FIDELITY_CHECKPOINTS.map((t) => (
+        {table.map((t) => (
           <span
             key={t.age}
             className={`text-caption rounded px-1.5 py-0.5 ${
@@ -189,6 +226,7 @@ export function RetirementBenchmarks(props: {
   data: Projection;
   currentAge: number;
   retirementSavings: number;
+  checkpoint: ReadinessCheckpoint;
 }) {
   return (
     <div className="space-y-4">

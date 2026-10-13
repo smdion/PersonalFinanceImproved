@@ -19,6 +19,7 @@ import { FooLadder } from "@/components/milestones/foo-ladder";
 import { MilestonesHero } from "@/components/milestones/milestones-hero";
 import {
   AddCustomGoal,
+  CheckpointSourcePicker,
   MilestoneChecklistEditor,
   useCustomGoalActions,
 } from "@/components/milestones/milestone-settings";
@@ -130,7 +131,19 @@ export function MilestonesContent() {
             isGoals && canEdit && (source === null || source === "custom");
           if (rows.length === 0 && !canAddGoal) return null;
           return (
-            <Card key={g.key} title={g.title} subtitle={g.blurb}>
+            <Card
+              key={g.key}
+              title={g.title}
+              subtitle={g.blurb}
+              headerRight={
+                g.key === "wealth" ? (
+                  <CheckpointSourcePicker
+                    source={input.checkpointSource}
+                    canEdit={canEdit}
+                  />
+                ) : undefined
+              }
+            >
               {rows.map((r) => (
                 <MilestoneRow
                   key={r.id}

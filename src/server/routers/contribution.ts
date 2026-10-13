@@ -1187,6 +1187,12 @@ export const contributionRouter = createTRPCRouter({
         (c) => c.ownership === "joint",
       );
       const jointAccountTypes: AccountTypeSnapshot[] = [];
+      // A joint account's IRS limit (a family HSA) through the same resolver
+      // as each person's, at the oldest member's age for any catch-up.
+      const householdAge = Math.max(
+        0,
+        ...people.map((p) => getAgeFromDob(p.dateOfBirth, asOfDate)),
+      );
       for (const c of jointContribs) {
         const val = toNumber(String(c.contributionValue));
         const periodsPerYear =
@@ -1273,7 +1279,12 @@ export const contributionRouter = createTRPCRouter({
           accountType: displayCat,
           categoryKey: jColorKey,
           parentCategory: c.parentCategory,
-          limit: 0,
+          limit: resolveIrsLimit(
+            c.accountType,
+            householdAge,
+            c.hsaCoverageType ?? null,
+            limitsRecord,
+          ),
           employeeContrib: roundToCents(annual),
           employerMatch: roundToCents(matchAnnual),
           employerMatchAvailable: roundToCents(matchAnnual),

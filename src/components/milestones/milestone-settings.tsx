@@ -5,7 +5,9 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import {
+  CHECKPOINT_SOURCES,
   CUSTOM_GOAL_METRICS,
+  type CheckpointSource,
   MAX_CUSTOM_GOALS,
   MILESTONE_CHECKLIST_ITEMS,
   type CustomGoalMetric,
@@ -13,6 +15,7 @@ import {
 } from "@/lib/config/milestones";
 import {
   SK_MILESTONE_CHECKLIST,
+  SK_MILESTONE_CHECKPOINT_SOURCE,
   SK_MILESTONE_CUSTOM_GOALS,
 } from "@/lib/constants/settings-keys";
 import type { CustomGoal, MilestoneChecklist } from "@/lib/pure/milestones";
@@ -185,5 +188,45 @@ export function AddCustomGoal({
         Cancel
       </button>
     </form>
+  );
+}
+
+/** Which income-multiple checkpoints the household follows — Money Guy and
+ *  Fidelity disagree after 40 and measure different money, so one is used
+ *  everywhere (here and the Retirement card's Readiness). */
+export function CheckpointSourcePicker({
+  source,
+  canEdit,
+}: {
+  source: CheckpointSource;
+  canEdit: boolean;
+}) {
+  const save = useSaveMilestoneSetting();
+  return (
+    <label className="text-caption text-muted flex items-center gap-1">
+      Checkpoints
+      <select
+        className="bg-surface-primary text-secondary rounded border px-1.5 py-0.5"
+        value={source}
+        disabled={!canEdit || save.isPending}
+        onChange={(e) =>
+          save.mutate({
+            key: SK_MILESTONE_CHECKPOINT_SOURCE,
+            value: e.target.value,
+          })
+        }
+      >
+        {(
+          Object.entries(CHECKPOINT_SOURCES) as [
+            CheckpointSource,
+            (typeof CHECKPOINT_SOURCES)[CheckpointSource],
+          ][]
+        ).map(([key, s]) => (
+          <option key={key} value={key}>
+            {s.label} ({s.measures})
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

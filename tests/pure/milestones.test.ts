@@ -8,6 +8,7 @@ import {
   inflateTarget,
   milestoneHoldings,
   milestoneLimits,
+  retirementUnlimitedContributions,
   milestoneProjectionYears,
   milestoneTimeline,
   milestoneYearFromHistory,
@@ -263,8 +264,20 @@ describe("income-multiple checkpoints", () => {
     expect(r.expectedYear).toBe(2031);
   });
 
+  it("shows only the household's chosen table", () => {
+    const ids = run().map((r) => r.id);
+    expect(ids).toContain("moneyGuyCheckpoints");
+    expect(ids).not.toContain("fidelityCheckpoints");
+    const fidelityIds = run({ checkpointSource: "fidelity" }).map((r) => r.id);
+    expect(fidelityIds).toContain("fidelityCheckpoints");
+    expect(fidelityIds).not.toContain("moneyGuyCheckpoints");
+  });
+
   it("Fidelity counts retirement accounts only", () => {
-    const r = byId(run(), "fidelityCheckpoints");
+    const r = byId(
+      run({ checkpointSource: "fidelity" }),
+      "fidelityCheckpoints",
+    );
     // 220k / 150k = 1.47 at 35 vs 2.0
     expect(r.status).toBe("behind");
     expect(r.achievements.map((a) => a.label)).toEqual([
@@ -291,6 +304,26 @@ describe("Financial Order of Operations", () => {
       expectedYear: 2045,
     });
     expect(currentFooStep(results)).toBe(6);
+  });
+
+  it("step 6 covers every Retirement-category limit, not just the 401k", () => {
+    const r = byId(run(), "foo6");
+    // IRA 7,000 + HSA 8,550 + 401k 15,000 of 7,000 + 8,550 + 23,500
+    expect(r.headline).toBe("$30,550.00 of $39,050.00 a year");
+    expect(r.nextStep).toBe("Pat 401k: $8,500.00 of room");
+    const portfolioIra = run({
+      limits: makeInput().limits!.map((l) =>
+        l.label === "IRA" ? { ...l, retirement: false, contributed: 0 } : l,
+      ),
+    });
+    // An IRA kept in Portfolio is step 5's business, not step 6's.
+    expect(byId(portfolioIra, "foo6").nextStep).toBe(
+      "Pat 401k: $8,500.00 of room",
+    );
+    expect(byId(portfolioIra, "foo5").status).toBe("behind");
+    expect(byId(run({ retirementUnlimited: 3_000 }), "foo6").note).toBe(
+      "Plus $3,000.00 a year into retirement accounts without an IRS limit",
+    );
   });
 
   it("step 6: a 25% investing rate before maxing out completes it below a high income", () => {
@@ -567,18 +600,34 @@ describe("custom goals", () => {
     ).toEqual({
       customGoals: [goal],
       checklist: { will: true },
+      checkpointSource: "moneyGuy",
     });
+    expect(
+      parseMilestoneSettings({
+        customGoals: [],
+        checklist: {},
+        checkpointSource: "fidelity",
+      }).checkpointSource,
+    ).toBe("fidelity");
+    expect(
+      parseMilestoneSettings({
+        customGoals: [],
+        checklist: {},
+        checkpointSource: "vanguard",
+      }).checkpointSource,
+    ).toBe("moneyGuy");
     expect(
       parseMilestoneSettings({
         customGoals: [{ ...goal, target: -1 }],
         checklist: { nope: true },
       }),
-    ).toEqual({ customGoals: [], checklist: {} });
+    ).toEqual({ customGoals: [], checklist: {}, checkpointSource: "moneyGuy" });
     expect(
       parseMilestoneSettings({ customGoals: null, checklist: null }),
     ).toEqual({
       customGoals: [],
       checklist: {},
+      checkpointSource: "moneyGuy",
     });
     expect(
       parseMilestoneSettings({ customGoals: [goal, goal], checklist: {} })
@@ -700,50 +749,123 @@ describe("input builders", () => {
       employeeContrib: number,
       limit: number,
       totalContrib = employeeContrib,
+      parentCategory = "Retirement",
     ) => ({
       categoryKey,
       accountType: categoryKey,
+      parentCategory,
       limit,
       employeeContrib,
       totalContrib,
     });
-    const rows = milestoneLimits(
-      [
-        {
-          name: "Pat",
-          accountTypes: [
-            acct("401k", 10_000, 23_500),
-            acct("403b", 5_000, 23_500),
-            acct("hsa", 4_000, 8_550, 5_000),
-          ],
-        },
-        {
-          name: "Sam",
-          accountTypes: [
-            acct("ira", 7_000, 7_000),
-            acct("brokerage", 9_000, 0),
-          ],
-        },
-      ],
-      [],
-    );
-    expect(rows).toEqual([
+    const people = [
       {
-        step: 6,
+        name: "Pat",
+        accountTypes: [
+          acct("401k", 10_000, 23_500),
+          acct("403b", 5_000, 23_500),
+          // HSA: the IRS limit counts employer money.
+          acct("hsa", 4_000, 8_550, 5_000),
+        ],
+      },
+      {
+        name: "Sam",
+        accountTypes: [
+          // An IRA the household keeps in Portfolio.
+          acct("ira", 7_000, 7_000, 7_000, "Portfolio"),
+          acct("brokerage", 9_000, 0, 9_000, "Portfolio"),
+          acct("brokerage", 3_000, 0, 3_000, "Retirement"),
+        ],
+      },
+    ];
+    expect(milestoneLimits(people, [])).toEqual([
+      {
+        fooStep5: false,
+        retirement: true,
         owner: "Pat",
         label: "401k",
         contributed: 15_000,
         limit: 23_500,
       },
       {
-        step: 5,
+        fooStep5: true,
+        retirement: true,
         owner: "Household",
         label: "HSA",
         contributed: 5_000,
         limit: 8_550,
       },
-      { step: 5, owner: "Sam", label: "IRA", contributed: 7_000, limit: 7_000 },
+      {
+        fooStep5: true,
+        retirement: false,
+        owner: "Sam",
+        label: "IRA",
+        contributed: 7_000,
+        limit: 7_000,
+      },
     ]);
+    // Retirement money with no IRS limit (a retirement brokerage account).
+    expect(
+      retirementUnlimitedContributions(people.flatMap((p) => p.accountTypes)),
+    ).toBe(3_000);
+  });
+
+  it("a joint family HSA joins the household HSA limit", () => {
+    const acct = (
+      categoryKey: string,
+      employeeContrib: number,
+      limit: number,
+      totalContrib = employeeContrib,
+    ) => ({
+      categoryKey,
+      accountType: categoryKey,
+      parentCategory: "Retirement",
+      limit,
+      employeeContrib,
+      totalContrib,
+    });
+    expect(milestoneLimits([], [acct("hsa", 8_000, 8_750, 8_500)])).toEqual([
+      {
+        fooStep5: true,
+        retirement: true,
+        owner: "Household",
+        label: "HSA",
+        contributed: 8_500,
+        limit: 8_750,
+      },
+    ]);
+    // With a per-person HSA alongside, they share the one household limit.
+    expect(
+      milestoneLimits(
+        [{ name: "Pat", accountTypes: [acct("hsa", 1_000, 8_750)] }],
+        [acct("hsa", 7_000, 8_750)],
+      ),
+    ).toMatchObject([{ owner: "Household", contributed: 8_000, limit: 8_750 }]);
+  });
+
+  it("a limited account with no limit entered is not enough data, not dropped", () => {
+    const rows = milestoneLimits(
+      [
+        {
+          name: "Pat",
+          accountTypes: [
+            {
+              categoryKey: "401k",
+              accountType: "401k",
+              parentCategory: "Retirement",
+              limit: 0,
+              employeeContrib: 20_000,
+              totalContrib: 20_000,
+            },
+          ],
+        },
+      ],
+      [],
+    );
+    expect(rows).toHaveLength(1);
+    expect(
+      byId(evaluateMilestones(makeInput({ limits: rows })), "foo6").status,
+    ).toBe("unknown");
   });
 
   it("holdings shares are of the money whose mix is known", () => {

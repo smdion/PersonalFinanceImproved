@@ -71,11 +71,10 @@ export type AccountTypeConfig = {
   matchCountsTowardLimit: boolean;
   /** Whether this limit is per-household (counted once) vs per-person. */
   isHouseholdLimit: boolean;
-  /** The Money Guy Financial Order of Operations step that fills this
-   *  account type to its IRS limit: 5 = Roth IRA & HSA, 6 = max-out
-   *  retirement (401k/403b). null = not an FOO limit step (brokerage is
-   *  hyperaccumulation, judged by the savings rate instead). */
-  fooStep: 5 | 6 | null;
+  /** 5 when this account type is part of Money Guy's FOO step 5 (Roth IRA
+   *  & HSA), else null. Step 6 (max out retirement) isn't a type property:
+   *  it covers every account in the Retirement parent category. */
+  fooStep: 5 | null;
   /** Age at which catchup contributions begin (null = no catchup). */
   catchupAge: number | null;
   /** Age range for super-catchup (SECURE 2.0), e.g. [60, 63]. null = no super-catchup. */

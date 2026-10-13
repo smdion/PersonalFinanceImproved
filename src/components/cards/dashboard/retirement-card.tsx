@@ -4,6 +4,8 @@ import { memo } from "react";
 
 import { trpc } from "@/lib/trpc";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
+import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
+import { DEFAULT_CHECKPOINT_SOURCE } from "@/lib/config/milestones";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
@@ -32,6 +34,11 @@ import { isHighIncomeHousehold } from "@/lib/pure/contributions";
 
 function RetirementCardImpl() {
   const { engineInput, data, isLoading, error } = useDashboardProjection();
+  // The household's checkpoint table and today's figures for Readiness —
+  // the same query (and input) the Milestones engine reads.
+  const milestoneInputs = trpc.milestones.computeInputs.useQuery(
+    useYearEndTargetingInput(),
+  );
   const [highIncomeThreshold] = usePersistedSetting<number>(
     SK_HIGH_INCOME_THRESHOLD,
     DEFAULT_HIGH_INCOME_THRESHOLD,
@@ -360,6 +367,13 @@ function RetirementCardImpl() {
             data={{ ...data, result }}
             currentAge={currentAge}
             retirementSavings={portfolioTotal}
+            checkpoint={{
+              source:
+                milestoneInputs.data?.checkpointSource ??
+                DEFAULT_CHECKPOINT_SOURCE,
+              now: milestoneInputs.data?.years.at(-1) ?? null,
+              allAccountsByYear: data.result.projectionByYear,
+            }}
           />
         </div>
       </div>

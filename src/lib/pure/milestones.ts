@@ -39,7 +39,10 @@ import {
   PAID_OFF_HOME_BY_AGE,
   PROTECTION_CHECKLIST_AGE,
   REBALANCE_BANDS,
+  CHECKPOINT_SOURCES,
+  DEFAULT_CHECKPOINT_SOURCE,
   type BuiltInMilestoneId,
+  type CheckpointSource,
   type CustomGoalMetric,
   type IncomeCheckpoint,
   type MilestoneChecklistItem,
@@ -105,7 +108,10 @@ export type MilestoneProjectionYear = {
 };
 
 export type MilestoneLimit = {
-  step: 5 | 6;
+  /** An IRA/HSA limit — FOO step 5 (config `fooStep`). */
+  fooStep5: boolean;
+  /** In the Retirement parent category — counts toward FOO step 6. */
+  retirement: boolean;
   /** Who it's for ("Household" for a household-wide limit). */
   owner: string;
   /** The account-type label, e.g. "IRA". */
@@ -153,19 +159,40 @@ export const milestoneChecklistSchema = z
   )
   .strict();
 
+export const checkpointSourceSchema = z.enum(
+  Object.keys(CHECKPOINT_SOURCES) as [CheckpointSource, ...CheckpointSource[]],
+);
+
 /** Stored settings → validated values. Anything unreadable reads as empty
  *  (writes are validated with the same schemas, so this only guards old or
  *  hand-edited data). */
 export function parseMilestoneSettings(raw: {
   customGoals: unknown;
   checklist: unknown;
-}): { customGoals: CustomGoal[]; checklist: MilestoneChecklist } {
+  checkpointSource?: unknown;
+}): {
+  customGoals: CustomGoal[];
+  checklist: MilestoneChecklist;
+  checkpointSource: CheckpointSource;
+} {
   const goals = customGoalsSchema.safeParse(raw.customGoals);
   const checklist = milestoneChecklistSchema.safeParse(raw.checklist);
+  const source = checkpointSourceSchema.safeParse(raw.checkpointSource);
   return {
     customGoals: goals.success ? goals.data : [],
     checklist: checklist.success ? checklist.data : {},
+    checkpointSource: source.success ? source.data : DEFAULT_CHECKPOINT_SOURCE,
   };
+}
+
+/** The money a checkpoint table measures: Money Guy counts liquid
+ *  investments (retirement + brokerage + HSA + cash), Fidelity retirement
+ *  savings only. */
+export function checkpointBalance(
+  source: CheckpointSource,
+  y: Pick<MilestoneYear, "liquid" | "retirement">,
+): number {
+  return source === "moneyGuy" ? y.liquid : y.retirement;
 }
 
 export type MilestoneInput = {
@@ -194,6 +221,9 @@ export type MilestoneInput = {
   } | null;
   match: { captured: number; available: number } | null;
   limits: MilestoneLimit[] | null;
+  /** A year's employee contributions to Retirement accounts that have no
+   *  IRS limit (shown next to step 6, never part of its limit test). */
+  retirementUnlimited: number | null;
   efundMonths: number | null;
   mortgage: {
     active: boolean;
@@ -210,6 +240,8 @@ export type MilestoneInput = {
   } | null;
   checklist: MilestoneChecklist;
   customGoals: CustomGoal[];
+  /** Which income-multiple checkpoints the household follows. */
+  checkpointSource: CheckpointSource;
 };
 
 export type MilestoneStatus = "reached" | "onTrack" | "behind" | "unknown";
@@ -883,7 +915,19 @@ function limitStep(
       headline: "Needs a paycheck set up",
     });
   }
-  const rows = input.limits.filter((l) => l.step === step && l.limit > 0);
+  // Step 5: the IRA and HSA. Step 6: every limit in the Retirement parent
+  // category, employee money only (employer money only where the IRS
+  // limit itself counts it, e.g. HSA).
+  const rows = input.limits.filter((l) =>
+    step === 5 ? l.fooStep5 : l.retirement,
+  );
+  if (rows.some((l) => l.limit <= 0)) {
+    return result(id, {
+      status: "unknown",
+      headline: "This year's IRS limits aren't entered",
+      nextStep: "Add them under Settings → IRS Limits",
+    });
+  }
   if (rows.length === 0) {
     // Money Guy: skip step 5 without an HSA-eligible plan or a way into a
     // Roth IRA — Ledgr can't see eligibility, so it can't call this behind.
@@ -894,7 +938,10 @@ function limitStep(
           nextStep:
             "Open a Roth IRA if you can (a backdoor Roth works above the income limit); the HSA needs a high-deductible health plan",
         })
-      : result(id, { status: "unknown", headline: "No workplace plan set up" });
+      : result(id, {
+          status: "unknown",
+          headline: "No retirement accounts with an IRS limit",
+        });
   }
   const contributed = rows.reduce(
     (s, r) => s + Math.min(r.contributed, r.limit),
@@ -906,6 +953,10 @@ function limitStep(
   );
   // Money Guy's step 6: below a high income, reaching a 25% investing rate
   // before the employer plans are maxed also completes the step.
+  const unlimitedNote =
+    step === 6 && (input.retirementUnlimited ?? 0) > 0
+      ? `Plus ${formatCurrency(input.retirementUnlimited!)} a year into retirement accounts without an IRS limit`
+      : null;
   const s = input.savings;
   const twentyFiveFirst =
     step === 6 &&
@@ -920,7 +971,12 @@ function limitStep(
       target: { kind: "currency", amount: limit },
       progress: 1,
       headline: `Investing ${formatPercent(s.rate, 1)} before maxing out`,
-      note: `${formatCurrency(contributed)} of ${formatCurrency(limit)} a year in employer plans`,
+      note: [
+        `${formatCurrency(contributed)} of ${formatCurrency(limit)} a year of IRS limits`,
+        unlimitedNote,
+      ]
+        .filter(Boolean)
+        .join(" · "),
     });
   }
   return result(id, {
@@ -929,6 +985,7 @@ function limitStep(
     target: { kind: "currency", amount: limit },
     progress: Math.min(1, safeDivide(contributed, limit, 0)),
     headline: `${formatCurrency(contributed)} of ${formatCurrency(limit)} a year`,
+    note: unlimitedNote,
     nextStep: open.length
       ? open
           .map(
@@ -1354,20 +1411,21 @@ export function evaluateMilestones(input: MilestoneInput): MilestoneResult[] {
     ...input.customGoals.map((g) => customGoal(g, input, now)),
     ...foo(input, now, savings, efund),
     wealthFormula(input, now),
-    checkpoints(
-      "moneyGuyCheckpoints",
-      MONEY_GUY_CHECKPOINTS,
-      input,
-      now,
-      (y) => y.liquid,
-    ),
-    checkpoints(
-      "fidelityCheckpoints",
-      FIDELITY_CHECKPOINTS,
-      input,
-      now,
-      (y) => y.retirement,
-    ),
+    input.checkpointSource === "moneyGuy"
+      ? checkpoints(
+          "moneyGuyCheckpoints",
+          MONEY_GUY_CHECKPOINTS,
+          input,
+          now,
+          (y) => checkpointBalance("moneyGuy", y),
+        )
+      : checkpoints(
+          "fidelityCheckpoints",
+          FIDELITY_CHECKPOINTS,
+          input,
+          now,
+          (y) => checkpointBalance("fidelity", y),
+        ),
     savings,
     efund,
     protection(input, now),
@@ -1529,15 +1587,19 @@ export function milestoneProjectionYears(
 type LimitAccount = {
   categoryKey: string;
   accountType: string;
+  /** The account's own parent category (Retirement / Portfolio). */
+  parentCategory: string;
   limit: number;
   employeeContrib: number;
   totalContrib: number;
 };
 
 /**
- * Contributions vs IRS limits for the FOO's limit steps, one row per person
- * per limit group (401k and 403b share one limit), household-wide groups
- * (family HSA) counted once.
+ * Contributions vs IRS limits, one row per person per limit group (401k and
+ * 403b share one limit), household-wide groups (family HSA) counted once.
+ * Employee money only, unless the IRS limit itself counts employer money
+ * (config `matchCountsTowardLimit`, e.g. HSA). A row is "retirement" when
+ * any of its accounts sits in the Retirement parent category.
  */
 export function milestoneLimits(
   people: readonly { name: string; accountTypes: readonly LimitAccount[] }[],
@@ -1546,19 +1608,25 @@ export function milestoneLimits(
   const rows = new Map<string, MilestoneLimit>();
   const add = (owner: string, a: LimitAccount) => {
     const config = configOf(a.categoryKey);
-    if (!config || config.fooStep === null || !config.irsLimitGroup) return;
+    // A limited account with no limit found (the year's IRS limits not
+    // entered yet) stays in as limit 0 — judged "not enough data", never
+    // silently dropped.
+    if (!config || !config.irsLimitGroup) return;
     const who = config.isHouseholdLimit ? "Household" : owner;
     const key = `${who}|${config.irsLimitGroup}`;
     const contributed = config.matchCountsTowardLimit
       ? a.totalContrib
       : a.employeeContrib;
+    const retirement = isRetirementParent(a.parentCategory);
     const existing = rows.get(key);
     if (existing) {
       existing.contributed += contributed;
       existing.limit = Math.max(existing.limit, a.limit);
+      existing.retirement ||= retirement;
     } else {
       rows.set(key, {
-        step: config.fooStep,
+        fooStep5: config.fooStep === 5,
+        retirement,
         owner: who,
         label: config.displayLabel,
         contributed,
@@ -1569,6 +1637,20 @@ export function milestoneLimits(
   for (const p of people) for (const a of p.accountTypes) add(p.name, a);
   for (const a of joint) add("Household", a);
   return [...rows.values()];
+}
+
+/** A year's employee contributions to Retirement-category accounts with no
+ *  IRS limit (e.g. a brokerage account set aside for retirement). */
+export function retirementUnlimitedContributions(
+  accounts: readonly LimitAccount[],
+): number {
+  return accounts
+    .filter((a) => {
+      if (!isRetirementParent(a.parentCategory)) return false;
+      const config = configOf(a.categoryKey);
+      return !config?.irsLimitGroup;
+    })
+    .reduce((sum, a) => sum + a.employeeContrib, 0);
 }
 
 /** Bogleheads view of the linked holdings: class shares of the money whose
@@ -1614,6 +1696,7 @@ export function buildMilestoneInput(raw: {
     fiTarget: number;
     customGoals: CustomGoal[];
     checklist: MilestoneChecklist;
+    checkpointSource: CheckpointSource;
   };
   contributions: {
     people: (Omit<SavingsRatePerson, "accountTypes"> & {
@@ -1651,6 +1734,7 @@ export function buildMilestoneInput(raw: {
   let savings: MilestoneInput["savings"] = null;
   let match: MilestoneInput["match"] = null;
   let limits: MilestoneInput["limits"] = null;
+  let retirementUnlimited: MilestoneInput["retirementUnlimited"] = null;
   const c = raw.contributions;
   const people = c?.people.filter((p) => p.accountTypes.length > 0) ?? [];
   if (c && people.length > 0) {
@@ -1693,6 +1777,7 @@ export function buildMilestoneInput(raw: {
         0,
       ),
     };
+    retirementUnlimited = retirementUnlimitedContributions(accounts);
     limits = milestoneLimits(
       people.map((p) => ({
         name: p.person.name,
@@ -1746,10 +1831,12 @@ export function buildMilestoneInput(raw: {
     savings,
     match,
     limits,
+    retirementUnlimited,
     efundMonths: raw.efundMonths,
     mortgage,
     holdings: raw.holdings ? milestoneHoldings(raw.holdings) : null,
     checklist: inputs.checklist,
     customGoals: inputs.customGoals,
+    checkpointSource: inputs.checkpointSource,
   };
 }

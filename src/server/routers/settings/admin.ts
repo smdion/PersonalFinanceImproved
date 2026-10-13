@@ -11,9 +11,11 @@ import * as schema from "@/lib/db/schema";
 import {
   SK_HOUSEHOLD_TIMEZONE,
   SK_MILESTONE_CHECKLIST,
+  SK_MILESTONE_CHECKPOINT_SOURCE,
   SK_MILESTONE_CUSTOM_GOALS,
 } from "@/lib/constants/settings-keys";
 import {
+  checkpointSourceSchema,
   customGoalsSchema,
   milestoneChecklistSchema,
 } from "@/lib/pure/milestones";
@@ -46,6 +48,7 @@ const appSettingInput = z.object({
 const STRUCTURED_SETTINGS: Record<string, z.ZodType> = {
   [SK_MILESTONE_CUSTOM_GOALS]: customGoalsSchema,
   [SK_MILESTONE_CHECKLIST]: milestoneChecklistSchema,
+  [SK_MILESTONE_CHECKPOINT_SOURCE]: checkpointSourceSchema,
 };
 
 // --- Procedures ---
