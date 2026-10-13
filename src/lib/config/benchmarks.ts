@@ -126,3 +126,20 @@ export function resolveBenchmark(
     description: b.description,
   };
 }
+
+/**
+ * Vanguard Target Retirement's published glide path — the stock share by
+ * years until retirement (negative = years after), linear between points:
+ * 90% until 25 years out, down to 50% at retirement, to 30% seven years
+ * after, then flat. Shown next to the household's own glide path, shifted to
+ * the household's retirement age.
+ */
+export const VANGUARD_TDF_STOCK_SHARE: readonly {
+  yearsToRetirement: number;
+  stockShare: number;
+}[] = [
+  { yearsToRetirement: 45, stockShare: 0.9 },
+  { yearsToRetirement: 25, stockShare: 0.9 },
+  { yearsToRetirement: 0, stockShare: 0.5 },
+  { yearsToRetirement: -7, stockShare: 0.3 },
+];

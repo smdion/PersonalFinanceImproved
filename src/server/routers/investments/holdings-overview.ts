@@ -35,6 +35,8 @@ async function targetByAssetClass(db: Db): Promise<{
   age: number | null;
   target: Record<number, number>;
   source: "current" | "retirement";
+  /** The glide path the target comes from (for charting). */
+  glidePath: { age: number; allocations: Record<number, number> }[];
   currentGlidePath:
     { age: number; allocations: Record<number, number> }[] | null;
 }> {
@@ -53,28 +55,24 @@ async function targetByAssetClass(db: Db): Promise<{
   ]);
   const currentGlidePath = parseCurrentGlidePath(currentRow?.value ?? null);
   const source = currentGlidePath ? "current" : "retirement";
-  if (!person) return { age: null, target: {}, source, currentGlidePath };
-  const age = getAge(new Date(`${person.dob}T00:00:00`), new Date());
-  if (currentGlidePath)
-    return {
-      age,
-      target: interpolateAllocations(currentGlidePath, age),
-      source,
-      currentGlidePath,
-    };
   const byAge = new Map<number, Record<number, number>>();
   for (const r of rows) {
     const a = byAge.get(r.age) ?? {};
     a[r.assetClassId] = Number(r.allocation);
     byAge.set(r.age, a);
   }
-  const glidePath = [...byAge.entries()]
+  const retirementPath = [...byAge.entries()]
     .sort(([a], [b]) => a - b)
     .map(([gpAge, allocations]) => ({ age: gpAge, allocations }));
+  const glidePath = currentGlidePath ?? retirementPath;
+  if (!person)
+    return { age: null, target: {}, source, glidePath, currentGlidePath };
+  const age = getAge(new Date(`${person.dob}T00:00:00`), new Date());
   return {
     age,
     target: interpolateAllocations(glidePath, age),
     source,
+    glidePath,
     currentGlidePath,
   };
 }
@@ -197,6 +195,7 @@ export async function loadHoldingsOverview(db: Db) {
     /** Where the targets come from: the household's current glide path, or
      *  (unset) the retirement simulation's. */
     targetSource: target.source,
+    glidePath: target.glidePath,
     currentGlidePath: target.currentGlidePath,
     /** SimpleFIN accounts with holdings that aren't linked to a Ledgr
      *  account — left out of everything below. */
