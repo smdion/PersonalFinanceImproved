@@ -8,6 +8,32 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.7] - 2026-10-13
+
+This release is about making Ledgr's many numbers easier to act on. No database schema change; on start Ledgr adds the IRS total-additions limit (2025 and 2026) to its reference data.
+
+### Added
+
+- **Milestones** (Insights → Milestones) — The Money Guy Show's and the Bogleheads' rules in one place, plus your own goals. Money Guy's seven wealth milestones (first $100k, Two Comma Club, liquid millionaire, financial independence…), the Financial Order of Operations ladder, the wealth formula, income-multiple checkpoints, 3/5/25 housing, a paid-off home by 60, 5/25 rebalancing bands and low cost. Each shows when you reached it (from your yearly history), when you're on pace to, and the next step. A timeline of what you've reached, "next up", and "since last year" sit at the top.
+- **Your own goals and a checklist** on Milestones — any net-worth, liquid, retirement or brokerage target (optionally in today's dollars), and the things Ledgr can't see (deductibles covered, saving ahead, wills, term life, health-care directives).
+- **Pick the rule where sources disagree:** Money Guy's or Fidelity's income-multiple checkpoints (the Retirement card's readiness row follows your pick), and Money Guy's 25% or r/personalfinance's 15% savings rule.
+- **r/personalfinance rules:** mega backdoor Roth room (what's left of the IRS total-additions limit, if your plan allows after-tax contributions), near-term brokerage goals that belong out of stocks, and fund-by-fund expense ratios.
+- **Recommendations** (Insights → Recommendations) — what to do next, ranked: anything urgent first, then by dollars a year. Grouped by your paycheck, moving money, safety, home, investing and keeping data current. Admins can snooze or dismiss one with a note on why; dismissed ones are listed at the bottom and come back if they become urgent. The dashboard Financial Checkup links to it with the count.
+- **Keep data current** — stale snapshots, performance, basis and failed syncs now appear as recommendations too.
+- **Quick search** — press Cmd/Ctrl-K to jump to any page by name or by what's on it ("HSA limit", "FI").
+- **A plain-words summary** at the top of the Contributions page: your savings rate, the dollars behind it, and the next step.
+
+### Changed
+
+- **Sidebar:** a new **Insights** group (Recommendations, Milestones, Benchmarks, Contributions); Analysis is now **Planning** (Retirement, Tax Buckets, Tax Optimization, Relocation, Budget Scenarios).
+- **Wealth score tiers** follow The Millionaire Next Door: Under Accumulator at half the expected net worth or less (it was anything under 1×), Average in between, Prodigious at 2×. The formula now uses gross pay rather than AGI, so heavy savers aren't flattered. Past years' scores and tiers update too.
+- **Financial Checkup:** Employer Match is green only when you get the full match; the debt row now judges high-interest debt (paying the mortgage ahead is a later step); FI Progress shows your pace from the retirement projection.
+- **Projected FI year** grows your FI number with inflation and counts cash, so it's no longer early; the Net Worth page reads it straight from the projection.
+- **Savings rates** are shown and judged to whole percents — 24.9% shows (and counts) as 25%.
+- **A joint family HSA** now shows its IRS limit on the Contributions page and card.
+
+---
+
 ## [0.8.6] - 2026-10-13
 
 Includes a database update that runs automatically on start; Ledgr saves a backup of your data first. Restoring a backup from an older version still works (pending-rollover rows from older backups are left out — that feature no longer exists).
