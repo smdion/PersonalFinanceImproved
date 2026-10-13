@@ -440,4 +440,51 @@ describe("computeGroupedEmployerMatch", () => {
       /resolved to different salaries/,
     );
   });
+
+  it("reports the full match available at the plan's cap", () => {
+    // 4% of 120k contributed, 100% match up to 6%: captured 4,800 of 7,200.
+    const rows = [
+      makeRow({
+        id: 1,
+        annual: 4800,
+        employerMatchType: "percent_of_contribution",
+        employerMatchValue: 100,
+        employerMaxMatchPct: 0.06,
+      }),
+    ];
+    const result = computeGroupedEmployerMatch(rows).get(1)!;
+    expect(result.matchAnnual).toBeCloseTo(4800);
+    expect(result.matchAvailableAnnual).toBeCloseTo(7200);
+  });
+
+  it("full match equals the captured match once contributions pass the cap", () => {
+    const rows = [
+      makeRow({
+        id: 1,
+        annual: 12000,
+        employerMatchType: "percent_of_contribution",
+        employerMatchValue: 50,
+        employerMaxMatchPct: 0.06,
+      }),
+    ];
+    const result = computeGroupedEmployerMatch(rows).get(1)!;
+    expect(result.matchAvailableAnnual).toBeCloseTo(result.matchAnnual);
+    expect(result.matchAvailableAnnual).toBeCloseTo(3600);
+  });
+
+  it("splits the full match across Roth/Traditional siblings like the match", () => {
+    const rows = [
+      makeRow({
+        id: 1,
+        annual: 2400,
+        employerMatchType: "percent_of_contribution",
+        employerMatchValue: 100,
+        employerMaxMatchPct: 0.06,
+      }),
+      makeRow({ id: 2, annual: 2400 }),
+    ];
+    const result = computeGroupedEmployerMatch(rows);
+    expect(result.get(1)!.matchAvailableAnnual).toBeCloseTo(3600);
+    expect(result.get(2)!.matchAvailableAnnual).toBeCloseTo(3600);
+  });
 });

@@ -35,19 +35,19 @@ describe("wealthScoreTier", () => {
     expect(result.tier).toBe("paw");
   });
 
-  it("returns AAW for score >= 1.0 and < 2.0", () => {
+  it("returns AAW between the UAW and PAW bands", () => {
     const result = wealthScoreTier(1.5);
     expect(result.tier).toBe("aaw");
     expect(result.label).toContain("AAW");
     expect(result.shortLabel).toContain("AAW");
   });
 
-  it("returns AAW at the 1.0 boundary", () => {
-    const result = wealthScoreTier(1.0);
-    expect(result.tier).toBe("aaw");
+  it("returns AAW just above one half", () => {
+    expect(wealthScoreTier(0.51).tier).toBe("aaw");
+    expect(wealthScoreTier(0.9).tier).toBe("aaw");
   });
 
-  it("returns UAW for score < 1.0", () => {
+  it("returns UAW at one half or less", () => {
     const result = wealthScoreTier(0.5);
     expect(result.tier).toBe("uaw");
     expect(result.label).toContain("UAW");

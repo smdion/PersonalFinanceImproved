@@ -116,6 +116,36 @@ describe("settings.appSettings", () => {
       }
     });
 
+    it("validates milestone goals and checklist on write", async () => {
+      await expect(
+        caller.settings.appSettings.upsert({
+          key: "milestone_custom_goals",
+          value: [{ id: "a", label: "", metric: "liquid", target: 5 }],
+        }),
+      ).rejects.toThrow(/Invalid milestone_custom_goals/);
+      await expect(
+        caller.settings.appSettings.upsert({
+          key: "milestone_checklist",
+          value: { notAnItem: true },
+        }),
+      ).rejects.toThrow(/Invalid milestone_checklist/);
+      const goals = [
+        {
+          id: "a",
+          label: "Liquid millionaire, our way",
+          metric: "liquid",
+          target: 1_000_000,
+          todaysDollars: true,
+          setYear: 2026,
+        },
+      ];
+      const saved = await caller.settings.appSettings.upsert({
+        key: "milestone_custom_goals",
+        value: goals,
+      });
+      expect(saved?.value).toEqual(goals);
+    });
+
     it("inserts a new setting", async () => {
       const result = await caller.settings.appSettings.upsert({
         key: "test_setting",

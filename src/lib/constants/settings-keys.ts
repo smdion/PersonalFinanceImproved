@@ -69,6 +69,12 @@ export const SK_SAVINGS_RATE_MATCH = "savings_rate_match";
 export const SK_SAVINGS_RATE_INCLUDE_PORTFOLIO =
   "savings_rate_include_portfolio";
 
+// ── Milestones ──────────────────────────────────────────────────────
+/** The household's own milestone goals (validated: customGoalsSchema). */
+export const SK_MILESTONE_CUSTOM_GOALS = "milestone_custom_goals";
+/** Ticked milestone checklist items (validated: milestoneChecklistSchema). */
+export const SK_MILESTONE_CHECKLIST = "milestone_checklist";
+
 // ── Settings Page ───────────────────────────────────────────────────
 export const SK_SETTINGS_ACTIVE_TAB = "settings_active_tab";
 export const SK_SETTINGS_TAX_DATA_SECTION = "settings_tax_data_section";

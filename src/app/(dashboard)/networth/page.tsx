@@ -58,7 +58,6 @@ const TaxLocationPie = dynamic(
 );
 import { SpreadsheetView } from "@/components/networth/spreadsheet";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
-import { useFICache } from "@/lib/hooks/use-fi-cache";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
@@ -170,8 +169,6 @@ export default function NetWorthPage() {
     () => displayHistory?.map((h) => h.year),
     [displayHistory],
   );
-
-  const [fiCache] = useFICache();
 
   const handleExpenseColumnChange = useCallback(
     (idx: number) => {
@@ -457,7 +454,6 @@ export default function NetWorthPage() {
               budgetColumnLabels={budgetData?.columnLabels}
               currentExpenseColumn={currentExpenseColumn}
               onExpenseColumnChange={handleExpenseColumnChange}
-              fiCache={fiCache}
             />
           </CardBoundary>
         </>

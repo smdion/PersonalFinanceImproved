@@ -838,5 +838,22 @@ export const dualIncomeFamilyProfile: DemoProfile = {
   appSettings: [
     { key: "budget_active_column", value: 1 },
     { key: "efund_budget_column", value: 0 },
+    {
+      key: "milestone_custom_goals",
+      value: [
+        {
+          id: "demo-half-million",
+          label: "Half a million invested",
+          metric: "liquid",
+          target: 500000,
+          todaysDollars: false,
+          setYear: 2025,
+        },
+      ],
+    },
+    {
+      key: "milestone_checklist",
+      value: { deductibles: true, will: true },
+    },
   ],
 };

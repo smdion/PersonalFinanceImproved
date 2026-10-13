@@ -31,6 +31,16 @@ vi.mock("recharts", () => ({
 
 import { AssetsLiabilitiesCards } from "@/components/networth/assets-liabilities-cards";
 import { FinancialIndependenceCard } from "@/components/networth/financial-independence-card";
+
+let projectedFi: {
+  isLoading: boolean;
+  hasProjection: boolean;
+  isScenario: boolean;
+  fi: { year: number; age: number } | null;
+} = { isLoading: false, hasProjection: false, isScenario: false, fi: null };
+vi.mock("@/lib/hooks/use-dashboard-projection", () => ({
+  useProjectedFiYear: () => projectedFi,
+}));
 import { NetWorthComposition } from "@/components/networth/net-worth-composition";
 import { JourneyToAbundanceChart } from "@/components/networth/journey-to-abundance-chart";
 import type { HistoryRow } from "@/components/networth/types";
@@ -108,49 +118,57 @@ describe("FinancialIndependenceCard smoke", () => {
     onExpenseColumnChange: vi.fn(),
   };
 
-  it("renders 'Run projection' link when fiCache is null (empty state)", () => {
-    render(<FinancialIndependenceCard {...baseProps} fiCache={null} />);
+  it("asks for a retirement setup when there's no projection yet", () => {
+    projectedFi = {
+      isLoading: false,
+      hasProjection: false,
+      isScenario: false,
+      fi: null,
+    };
+    render(<FinancialIndependenceCard {...baseProps} />);
+    expect(screen.getByText("Set up retirement")).toBeInTheDocument();
+  });
+
+  it("says when the projection never reaches FI", () => {
+    projectedFi = {
+      isLoading: false,
+      hasProjection: true,
+      isScenario: false,
+      fi: null,
+    };
+    render(<FinancialIndependenceCard {...baseProps} />);
     expect(
-      screen.getByRole("link", { name: /Run projection/i }),
+      screen.getByText("Not reached in the projection"),
     ).toBeInTheDocument();
   });
 
-  it("renders 'Unreachable' when fiCache.fiYear is null", () => {
-    render(
-      <FinancialIndependenceCard
-        {...baseProps}
-        fiCache={{
-          fiYear: null,
-          fiAge: null,
-          inputKey: "x",
-          computedAt: "2026-01-01",
-        }}
-      />,
-    );
-    expect(screen.getByText("Unreachable")).toBeInTheDocument();
-  });
-
-  it("renders projected FI year + age when fiCache is populated", () => {
-    render(
-      <FinancialIndependenceCard
-        {...baseProps}
-        fiCache={{
-          fiYear: 2045,
-          fiAge: 55,
-          inputKey: "x",
-          computedAt: "2026-01-01",
-        }}
-      />,
-    );
+  it("renders the projected FI year + age from the live projection", () => {
+    projectedFi = {
+      isLoading: false,
+      hasProjection: true,
+      isScenario: false,
+      fi: { year: 2045, age: 55 },
+    };
+    render(<FinancialIndependenceCard {...baseProps} />);
     expect(screen.getByText("2045 (age 55)")).toBeInTheDocument();
     expect(screen.getByText("Based on retirement plan")).toBeInTheDocument();
+  });
+
+  it("shows Reached once FI progress is complete", () => {
+    projectedFi = {
+      isLoading: false,
+      hasProjection: true,
+      isScenario: false,
+      fi: null,
+    };
+    render(<FinancialIndependenceCard {...baseProps} fiProgress={1.1} />);
+    expect(screen.getByText("Reached")).toBeInTheDocument();
   });
 
   it("renders budget scenario toggle buttons when budgetColumnLabels has >1 entry", () => {
     render(
       <FinancialIndependenceCard
         {...baseProps}
-        fiCache={null}
         budgetColumnLabels={["Lean", "Fat"]}
       />,
     );

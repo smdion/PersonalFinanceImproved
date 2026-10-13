@@ -1,11 +1,16 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
+import {
+  evaluateMilestones,
+  type MilestoneInput,
+  type MilestoneResult,
+} from "@/lib/pure/milestones";
+import { makeInput } from "../fixtures/milestones";
 
 // Direct smoke test for
-// src/components/cards/dashboard/financial-checkup-card.tsx. Aggregates 4
-// separate tRPC queries (savings, contributions, mortgage, net worth) into
-// a checklist of health indicators — no direct test coverage before this
-// (tests/components/dashboard.test.tsx mocks the whole card out).
+// src/components/cards/dashboard/financial-checkup-card.tsx: milestone rows
+// come from the Milestones engine (run for real on a synthetic input), the
+// savings-rate row from the contribution summary and the shared switches.
 
 vi.mock("@/components/ui/help-tip", () => ({
   HelpTip: () => null,
@@ -27,50 +32,36 @@ vi.mock("@/lib/hooks/use-persisted-setting", () => ({
     return [defaultValue, vi.fn()];
   },
 }));
-vi.mock("@/lib/hooks/use-fi-cache", () => ({
-  useFICache: () => [null, vi.fn()],
-}));
 vi.mock("@/lib/hooks/use-year-end-targeting", () => ({
   useYearEndTargetingInput: () => ({}),
 }));
 
-let savingsQuery: { data: unknown; isLoading: boolean; error: unknown };
 let contribsQuery: { data: unknown; isLoading: boolean; error: unknown };
-let mortgageQuery: { data: unknown; isLoading: boolean; error: unknown };
-let networthQuery: { data: unknown; isLoading: boolean; error: unknown };
+let milestonesState: {
+  isLoading: boolean;
+  projectionLoading: boolean;
+  error: boolean;
+  input: MilestoneInput | null;
+  results: MilestoneResult[];
+};
+vi.mock("@/lib/hooks/use-milestones", () => ({
+  useContributionSummaryInput: () => ({}),
+  useMilestones: () => milestonesState,
+}));
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     useUtils: () => ({
       settings: { appSettings: { list: { invalidate: vi.fn() } } },
     }),
-    savings: { computeSummary: { useQuery: () => savingsQuery } },
     contribution: { computeSummary: { useQuery: () => contribsQuery } },
-    mortgage: { computeActiveSummary: { useQuery: () => mortgageQuery } },
-    networth: { computeSummary: { useQuery: () => networthQuery } },
-    // Reached via useEffectiveSalaryProfileId → useActiveSalaryProfile, and
-    // useEffectiveContribProfileId → useActiveContribProfile. An empty list
-    // is the "nothing to resolve" case: the hook leaves the active id alone
-    // rather than re-pointing it.
-    salaryProfile: {
-      list: { useQuery: () => ({ data: [] }) },
-      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
-    },
-    contributionProfile: {
-      list: { useQuery: () => ({ data: [] }) },
-      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
-    },
   },
 }));
 
 import { FinancialCheckupCard } from "@/components/cards/dashboard/financial-checkup-card";
 
-const loading = { data: undefined, isLoading: true, error: null };
 const withData = (data: unknown) => ({ data, isLoading: false, error: null });
 
-const baseSavings = {
-  efund: { monthsCovered: 4.5, monthsCoveredWithRepay: null },
-};
 const baseContribs = {
   people: [
     {
@@ -102,99 +93,97 @@ const baseContribs = {
     },
   ],
 };
-const baseMortgage = {
-  result: {
-    loans: [{ remainingMonths: 120, monthsAheadOfSchedule: 6 }],
-    totalMonthsSaved: 20,
-  },
-};
-const baseNetworth = {
-  result: { aawScoreMarket: 1.5, fiProgress: 0.5, fiTarget: 1000000 },
-};
+
+function withMilestones(input: MilestoneInput) {
+  milestonesState = {
+    isLoading: false,
+    projectionLoading: false,
+    error: false,
+    input,
+    results: evaluateMilestones(input),
+  };
+}
 
 describe("FinancialCheckupCard smoke", () => {
-  it("renders a loading card while any query is pending", () => {
-    savingsQuery = loading;
-    contribsQuery = loading;
-    mortgageQuery = loading;
-    networthQuery = loading;
+  it("renders a loading card while the milestones are pending", () => {
+    milestonesState = {
+      isLoading: true,
+      error: false,
+      input: null,
+      results: [],
+    };
+    contribsQuery = withData(baseContribs);
     render(<FinancialCheckupCard />);
     expect(screen.getByText("Financial Checkup")).toBeInTheDocument();
   });
 
-  it("renders an error card when any query errors", () => {
-    savingsQuery = { data: undefined, isLoading: false, error: new Error("x") };
+  it("renders an error card when a query errors", () => {
+    milestonesState = {
+      isLoading: false,
+      error: true,
+      input: null,
+      results: [],
+    };
     contribsQuery = withData(baseContribs);
-    mortgageQuery = withData(baseMortgage);
-    networthQuery = withData(baseNetworth);
     render(<FinancialCheckupCard />);
     expect(screen.getByText("Failed to load")).toBeInTheDocument();
   });
 
-  it("renders green Emergency Fund status when months covered >= 3", () => {
-    savingsQuery = withData(baseSavings);
+  it("shows the emergency fund months from the engine", () => {
+    withMilestones(makeInput({ efundMonths: 4.5 }));
     contribsQuery = withData(baseContribs);
-    mortgageQuery = withData(baseMortgage);
-    networthQuery = withData(baseNetworth);
     render(<FinancialCheckupCard />);
     expect(screen.getByText("Emergency Fund")).toBeInTheDocument();
     expect(screen.getByText("4.5 mo covered")).toBeInTheDocument();
   });
 
-  it("shows Employer Match captured amount when match exists", () => {
-    savingsQuery = withData(baseSavings);
+  it("shows the full match as captured", () => {
+    withMilestones(makeInput({ match: { captured: 3000, available: 3000 } }));
     contribsQuery = withData(baseContribs);
-    mortgageQuery = withData(baseMortgage);
-    networthQuery = withData(baseNetworth);
     render(<FinancialCheckupCard />);
     expect(screen.getByText("Employer Match")).toBeInTheDocument();
     expect(screen.getByText("$3,000.00/yr captured")).toBeInTheDocument();
   });
 
-  it("shows 'Mortgage paid off' Debt Payoff status when no active loans remain", () => {
-    savingsQuery = withData(baseSavings);
+  it("flags match left on the table", () => {
+    withMilestones(makeInput({ match: { captured: 2000, available: 3000 } }));
     contribsQuery = withData(baseContribs);
-    mortgageQuery = withData({ result: { loans: [] } });
-    networthQuery = withData(baseNetworth);
     render(<FinancialCheckupCard />);
-    expect(screen.getByText("Mortgage paid off")).toBeInTheDocument();
+    expect(screen.getByText("$1,000.00/yr missed")).toBeInTheDocument();
   });
 
-  it("counts Debt Payoff ahead against the original loan, refinancing included", () => {
-    savingsQuery = withData(baseSavings);
+  it("judges high-interest debt, not mortgage prepayment", () => {
+    withMilestones(makeInput());
     contribsQuery = withData(baseContribs);
-    mortgageQuery = withData(baseMortgage);
-    networthQuery = withData(baseNetworth);
     render(<FinancialCheckupCard />);
-    expect(screen.getByText("1 yr 8 mo ahead")).toBeInTheDocument();
+    expect(screen.getByText("High-Interest Debt")).toBeInTheDocument();
+    expect(
+      screen.getByText("No debt besides the mortgage"),
+    ).toBeInTheDocument();
   });
 
-  it("shows 'Run retirement projection' FI status when fiCache is null and target unset", () => {
-    savingsQuery = withData(baseSavings);
+  it("shows the FI pace from the projection", () => {
+    withMilestones(makeInput());
     contribsQuery = withData(baseContribs);
-    mortgageQuery = withData(baseMortgage);
-    networthQuery = withData({
-      result: { aawScoreMarket: 1.5, fiProgress: 0, fiTarget: 1500000 },
-    });
     render(<FinancialCheckupCard />);
     expect(screen.getByText("FI Progress")).toBeInTheDocument();
-    expect(screen.getByText("Run retirement projection")).toBeInTheDocument();
+    expect(screen.getByText(/On pace for age \d+/)).toBeInTheDocument();
   });
 
-  it("shows an on-track green/total count subtitle summarizing steps", () => {
-    savingsQuery = withData(baseSavings);
+  it("links to the Milestones page and counts what's on track", () => {
+    withMilestones(makeInput());
     contribsQuery = withData(baseContribs);
-    mortgageQuery = withData(baseMortgage);
-    networthQuery = withData(baseNetworth);
     render(<FinancialCheckupCard />);
     expect(screen.getByText(/\/\d+ on track/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Milestones/ })).toHaveAttribute(
+      "href",
+      "/milestones",
+    );
   });
 
   it("expands the Savings Rate row into what it's made of", () => {
-    savingsQuery = withData(baseSavings);
+    withMilestones(makeInput());
     contribsQuery = withData(baseContribs);
-    mortgageQuery = withData(baseMortgage);
-    networthQuery = withData(baseNetworth);
     render(<FinancialCheckupCard />);
     // Below the high-income threshold: the match counts by default.
     expect(screen.getByText("22.0%")).toBeInTheDocument();

@@ -92,6 +92,9 @@ type AccountTypeSnapshot = {
   limit: number;
   employeeContrib: number;
   employerMatch: number;
+  /** The full match at the plan's cap — employerMatch when nothing is left
+   *  on the table (FOO step 2). */
+  employerMatchAvailable: number;
   totalContrib: number; // employee + employer (toward limit where applicable)
   views: Record<ViewMode, AccountViewMetrics>;
   ytdDataStale: boolean; // true when YTD actual < expected — performance data may be behind
@@ -695,6 +698,7 @@ export const contributionRouter = createTRPCRouter({
             {
               employee: number;
               match: number;
+              matchAvailable: number;
               trad: number;
               taxFree: number;
               afterTax: number;
@@ -779,6 +783,7 @@ export const contributionRouter = createTRPCRouter({
             const entry = categoryMap.get(cat) ?? {
               employee: 0,
               match: 0,
+              matchAvailable: 0,
               trad: 0,
               taxFree: 0,
               afterTax: 0,
@@ -904,6 +909,8 @@ export const contributionRouter = createTRPCRouter({
             entry.priorYearContribs.push({ id: rawContrib.id, amount: pyAmt });
             entry.employee += acct.annualContribution;
             entry.match += acct.employerMatch;
+            entry.matchAvailable +=
+              acct.employerMatchAvailable ?? acct.employerMatch;
             // Four-way tax-treatment split — after_tax and hsa must NOT be
             // folded into "trad" (that used to silently mislabel taxable
             // brokerage and HSA dollars as Traditional/pre-tax).
@@ -1008,6 +1015,10 @@ export const contributionRouter = createTRPCRouter({
               limit,
               employeeContrib: totalEmployee,
               employerMatch,
+              employerMatchAvailable: Math.max(
+                employerMatch,
+                roundToCents(data.matchAvailable),
+              ),
               totalContrib: totalEmployee + employerMatch,
               views,
               ytdDataStale: data.ytdDataStale,
@@ -1265,6 +1276,7 @@ export const contributionRouter = createTRPCRouter({
           limit: 0,
           employeeContrib: roundToCents(annual),
           employerMatch: roundToCents(matchAnnual),
+          employerMatchAvailable: roundToCents(matchAnnual),
           totalContrib: roundToCents(annual + matchAnnual),
           views: jointActual
             ? {

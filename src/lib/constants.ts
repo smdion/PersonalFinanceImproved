@@ -78,6 +78,13 @@ export const WEALTH_FORMULA_BASE_DENOMINATOR = 10;
 /** Multiplier applied to the wealth target formula. */
 export const WEALTH_FORMULA_MULTIPLIER = 2;
 
+/** Wealth score at or above which a household is a Prodigious Accumulator (PAW). */
+export const WEALTH_TIER_PAW_MIN = WEALTH_FORMULA_MULTIPLIER;
+
+/** Wealth score at or below which a household is an Under Accumulator (UAW) —
+ *  half the expected amount, per The Millionaire Next Door. */
+export const WEALTH_TIER_UAW_MAX = 0.5;
+
 // ---------------------------------------------------------------------------
 // Financial Independence
 // ---------------------------------------------------------------------------

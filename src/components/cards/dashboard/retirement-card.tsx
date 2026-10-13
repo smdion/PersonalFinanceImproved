@@ -1,14 +1,9 @@
 "use client";
 
-import { memo, useRef, useEffect } from "react";
+import { memo } from "react";
 
 import { trpc } from "@/lib/trpc";
-import {
-  useFICache,
-  deriveFI,
-  isLivePlanInput,
-} from "@/lib/hooks/use-fi-cache";
-import { useScenario } from "@/lib/context/scenario-context";
+import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
@@ -19,13 +14,9 @@ import {
 import { sumBy } from "@/lib/utils/math";
 import { STATUS_COLORS } from "@/lib/utils/colors";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
-import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import {
   categoriesWithIrsLimit,
   getLimitGroup,
-  defaultDecumulationConfig,
 } from "@/lib/config/account-types";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
@@ -40,77 +31,7 @@ import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
 import { isHighIncomeHousehold } from "@/lib/pure/contributions";
 
 function RetirementCardImpl() {
-  const salaryActiveFields = useActiveSalaries();
-  // Contribution/Salary Profile axes — every other dashboard card resolves
-  // these before querying (this card
-  // used to omit both, which the engine treats as "no profile" = $0
-  // contributions, not "the active profile" — silently zeroing out
-  // Contributions/Coast FIRE/nest egg on this card alone). Each also Plan
-  // pin-aware (Plan pin -> globally-active setting), not just the raw
-  // global setting, or a Plan pinning a different profile wouldn't move
-  // this card.
-  const { queryInput: contribProfileInput } = useEffectiveContribProfileId();
-  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const [accBudgetProfileId] = usePersistedSetting<number | null>(
-    "retirement_acc_budget_profile_id",
-    null,
-  );
-  const [accBudgetCol] = usePersistedSetting<number | null>(
-    "retirement_accumulation_budget_column",
-    null,
-  );
-  const [decBudgetProfileId] = usePersistedSetting<number | null>(
-    "retirement_dec_budget_profile_id",
-    null,
-  );
-  const [decBudgetCol] = usePersistedSetting<number | null>(
-    "retirement_decumulation_budget_column",
-    null,
-  );
-  const [accExpenseOverride] = usePersistedSetting<string | null>(
-    "retirement_acc_expense_override",
-    null,
-  );
-  const [decExpenseOverride] = usePersistedSetting<string | null>(
-    "retirement_dec_expense_override",
-    null,
-  );
-  // Must exactly match the Retirement page's own default (un-customized)
-  // decumulation form state (use-projection-form-state.ts) — the
-  // deterministic computeProjection query below doesn't care
-  // (buildDecumulationDefaults always uses settings.withdrawalRate
-  // regardless of client input), but the persistent projection cache
-  // hashes the FULL built engine input, so a mismatch here would silently
-  // guarantee the peek queries below always miss the page's real cached
-  // run, even on default settings. Shared via defaultDecumulationConfig()
-  // (account-types.ts) so the two call sites can't independently drift.
-  const decumulationDefaults = defaultDecumulationConfig();
-  const engineInput = {
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
-    ...contribProfileInput,
-    ...salaryProfileInput,
-    decumulationDefaults,
-    ...(accBudgetProfileId != null
-      ? { accumulationBudgetProfileId: accBudgetProfileId }
-      : {}),
-    ...(accBudgetCol != null ? { accumulationBudgetColumn: accBudgetCol } : {}),
-    ...(decBudgetProfileId != null
-      ? { decumulationBudgetProfileId: decBudgetProfileId }
-      : {}),
-    ...(decBudgetCol != null ? { decumulationBudgetColumn: decBudgetCol } : {}),
-    ...(accExpenseOverride
-      ? { accumulationExpenseOverride: parseFloat(accExpenseOverride) }
-      : {}),
-    ...(decExpenseOverride
-      ? { decumulationExpenseOverride: parseFloat(decExpenseOverride) }
-      : {}),
-  };
-  const [, writeFICache] = useFICache();
-  const { isInScenario } = useScenario();
-  const lastCacheKey = useRef<string | null>(null);
-
-  const { data, isLoading, isFetching, error } =
-    trpc.projection.computeProjection.useQuery(engineInput);
+  const { engineInput, data, isLoading, error } = useDashboardProjection();
   const [highIncomeThreshold] = usePersistedSetting<number>(
     SK_HIGH_INCOME_THRESHOLD,
     DEFAULT_HIGH_INCOME_THRESHOLD,
@@ -122,31 +43,6 @@ function RetirementCardImpl() {
       highIncomeThreshold,
     ),
   );
-
-  useEffect(() => {
-    if (!data?.result || isLoading || isFetching) return;
-    // This card never sets snapshot/category-filter/override params (see
-    // engineInput above) — only the scenario axis can make this non-live.
-    // contributionProfileId/salaryProfileId are always the resolved active
-    // profile here, not a preview — see isLivePlanInput's docstring.
-    if (!isLivePlanInput({ isInScenario })) return;
-    const withdrawalRate = Number(data.settings?.withdrawalRate ?? 0.04);
-    const expenses = data.annualExpenses ?? 0;
-    if (withdrawalRate <= 0 || expenses <= 0) return;
-    const derived = deriveFI(
-      data.result.projectionByYear,
-      expenses,
-      withdrawalRate,
-    );
-    if (lastCacheKey.current === derived.inputKey) return;
-    lastCacheKey.current = derived.inputKey;
-    writeFICache({
-      fiYear: derived.fiYear,
-      fiAge: derived.fiAge,
-      inputKey: derived.inputKey,
-      computedAt: new Date().toISOString(),
-    });
-  }, [data, isLoading, isFetching, writeFICache, isInScenario]);
   const { data: coastFireData } = trpc.projection.computeCoastFire.useQuery(
     engineInput,
     {

@@ -55,6 +55,9 @@ export type ContributionAccountInput = {
   employerMatch: number;
   /** Of employerMatch, the part that matches what the bonus check takes. */
   employerMatchOnBonus?: number;
+  /** The match this account would get at the plan's cap — the full match.
+   *  Equals employerMatch when uncapped or a flat amount. */
+  employerMatchAvailable?: number;
   employerMatchTaxTreatment: TaxTreatmentType;
 };
 

@@ -99,6 +99,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     },
     matchCountsTowardLimit: false,
     isHouseholdLimit: false,
+    fooStep: 6,
     catchupAge: 50,
     superCatchupAgeRange: [60, 63],
     isOverflowTarget: false,
@@ -146,6 +147,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     },
     matchCountsTowardLimit: false,
     isHouseholdLimit: false,
+    fooStep: 6,
     catchupAge: 50,
     superCatchupAgeRange: [60, 63],
     isOverflowTarget: false,
@@ -192,6 +194,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     },
     matchCountsTowardLimit: false,
     isHouseholdLimit: false,
+    fooStep: 5,
     catchupAge: 50,
     superCatchupAgeRange: null,
     isOverflowTarget: false,
@@ -238,6 +241,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     },
     matchCountsTowardLimit: true,
     isHouseholdLimit: true,
+    fooStep: 5,
     catchupAge: 55,
     superCatchupAgeRange: null,
     isOverflowTarget: false,
@@ -287,6 +291,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     irsLimitKeys: null,
     matchCountsTowardLimit: false,
     isHouseholdLimit: false,
+    fooStep: null,
     catchupAge: null,
     superCatchupAgeRange: null,
     isOverflowTarget: true,
@@ -859,7 +864,7 @@ export function getDefaultDecumulationOrder(): AccountCategory[] {
  * a candidate for touched-gating), so it would keep SENDING the config
  * default — silently overruling any household's saved
  * waterfall/percentage/custom-order choice for the dashboard tile's FI year
- * / Coast FIRE age / useFICache write, while the Retirement page (which
+ * / Coast FIRE age, while the Retirement page (which
  * omits these fields until the user touches its Configure editors) resolved
  * the real setting. Two different answers to the same question from what's
  * supposed to be one shared default. */

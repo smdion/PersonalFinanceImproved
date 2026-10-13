@@ -44,6 +44,7 @@ import {
   Unlock,
   Calculator,
   ExternalLink,
+  Award,
   type LucideIcon,
 } from "lucide-react";
 import { BRAND_COLORS } from "@/lib/utils/colors";
@@ -104,6 +105,7 @@ const navStructure: NavEntry[] = [
     label: "Analysis",
     Icon: Search,
     items: [
+      { href: "/milestones", label: "Milestones", Icon: Award },
       { href: "/retirement", label: "Retirement", Icon: Palmtree },
       { href: "/contributions", label: "Contributions", Icon: Layers },
       { href: "/tax-buckets", label: "Tax Buckets", Icon: Unlock },

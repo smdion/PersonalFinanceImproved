@@ -2,6 +2,7 @@
 // Components import from here — never define local label maps.
 
 import type { ContribResolutionStatus } from "@/lib/pure/profiles";
+import { WEALTH_TIER_PAW_MIN, WEALTH_TIER_UAW_MAX } from "@/lib/constants";
 import type {
   CompositionBucket,
   InvestmentTransactionKind,
@@ -244,33 +245,48 @@ export function displayLabel(map: Record<string, string>, key: string): string {
 
 export type WealthTier = "paw" | "aaw" | "uaw";
 
-/** Derive the wealth tier and display label from an AAW score (Money Guy multiplier).
- *  >= 2.0 = PAW, >= 1.0 = AAW, < 1.0 = UAW. */
+/** Derive the wealth tier and display label from a wealth-formula score
+ *  (net worth ÷ expected net worth). PAW at 2× or more, UAW at ½ or less,
+ *  AAW in between — The Millionaire Next Door's bands. */
 export function wealthScoreTier(aawScore: number): {
   tier: WealthTier;
   label: string;
   shortLabel: string;
 } {
-  if (aawScore >= 2.0) {
+  if (aawScore >= WEALTH_TIER_PAW_MIN) {
     return {
       tier: "paw",
       label: "PAW — Prodigious Accumulator",
-      shortLabel: "PAW — Excellent",
+      shortLabel: "PAW — Prodigious",
     };
   }
-  if (aawScore >= 1.0) {
+  if (aawScore > WEALTH_TIER_UAW_MAX) {
     return {
       tier: "aaw",
       label: "AAW — Average Accumulator",
-      shortLabel: "AAW — On Track",
+      shortLabel: "AAW — Average",
     };
   }
   return {
     tier: "uaw",
     label: "UAW — Under Accumulator",
-    shortLabel: "UAW — Behind",
+    shortLabel: "UAW — Under",
   };
 }
+
+// ---------------------------------------------------------------------------
+// Milestone statuses (Milestones page)
+// ---------------------------------------------------------------------------
+
+export const MILESTONE_STATUS_LABELS: Record<
+  "reached" | "onTrack" | "behind" | "unknown",
+  string
+> = {
+  reached: "Reached",
+  onTrack: "On track",
+  behind: "Behind",
+  unknown: "Not enough data",
+};
 
 /** Investment transaction kinds, as shown in Settings → SimpleFIN. */
 export const INVESTMENT_TRANSACTION_KIND_LABELS: Record<

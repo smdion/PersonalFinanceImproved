@@ -8,7 +8,15 @@ import {
   scenarioProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { SK_HOUSEHOLD_TIMEZONE } from "@/lib/constants/settings-keys";
+import {
+  SK_HOUSEHOLD_TIMEZONE,
+  SK_MILESTONE_CHECKLIST,
+  SK_MILESTONE_CUSTOM_GOALS,
+} from "@/lib/constants/settings-keys";
+import {
+  customGoalsSchema,
+  milestoneChecklistSchema,
+} from "@/lib/pure/milestones";
 import {
   applyHouseholdTimeZone,
   isValidTimeZone,
@@ -32,6 +40,13 @@ const appSettingInput = z.object({
   key: z.string().min(1),
   value: settingValue,
 });
+
+/** Settings whose value has a shape: checked on every write, so a bad save
+ *  is refused instead of read back later as empty. */
+const STRUCTURED_SETTINGS: Record<string, z.ZodType> = {
+  [SK_MILESTONE_CUSTOM_GOALS]: customGoalsSchema,
+  [SK_MILESTONE_CHECKLIST]: milestoneChecklistSchema,
+};
 
 // --- Procedures ---
 
@@ -131,6 +146,15 @@ export const adminProcedures = {
             code: "BAD_REQUEST",
             message: "Not a recognized time zone",
           });
+        const shape = STRUCTURED_SETTINGS[input.key];
+        if (shape && input.value != null) {
+          const parsed = shape.safeParse(input.value);
+          if (!parsed.success)
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Invalid ${input.key}: ${parsed.error.issues[0]?.message ?? "bad value"}`,
+            });
+        }
         // value column is NOT NULL — when null, delete the row so the default applies
         if (input.value === null || input.value === undefined) {
           await ctx.db

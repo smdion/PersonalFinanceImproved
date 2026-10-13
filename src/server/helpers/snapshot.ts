@@ -36,7 +36,10 @@ import {
   type BudgetTargeting,
 } from "./budget";
 import { computeMortgageBalance, getActiveMortgageLoan } from "./mortgage";
-import { calculateNetWorth } from "@/lib/calculators/net-worth";
+import {
+  calculateNetWorth,
+  wealthFormulaIncome,
+} from "@/lib/calculators/net-worth";
 import { countPeriodsElapsed } from "@/lib/calculators/paycheck";
 import type { NetWorthInput } from "@/lib/calculators/types";
 import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
@@ -278,9 +281,9 @@ export type YearEndRow = {
   // Inputs used for computed metrics (for display / debugging)
   /** Average age across all household members for this year. */
   averageAge: number;
-  /** CombinedAGI (or grossIncome fallback), optionally 3yr averaged. */
+  /** Gross pretax income (AGI where gross wasn't recorded), optionally 3yr averaged. */
   effectiveIncome: number;
-  /** Cumulative AGI through this year. */
+  /** Cumulative gross income (AGI where gross wasn't recorded) through this year. */
   lifetimeEarnings: number;
   /** Annual expenses from budget. */
   annualExpenses: number;
@@ -1109,24 +1112,21 @@ export async function buildYearEndHistory(
           birthYears.length
         : 0;
 
-    // Effective income: combinedAgi with grossIncome fallback for current year
-    const yearIncome = row.combinedAgi > 0 ? row.combinedAgi : row.grossIncome;
+    // One income definition for both the wealth formula and lifetime
+    // earnings: gross pretax income (AGI only where gross wasn't recorded).
+    const yearIncome = wealthFormulaIncome(row);
 
     // Optionally average over 3 most recent years
     let effectiveIncome = yearIncome;
     if (useSalaryAverage) {
       const recent = history
-        .filter(
-          (h) => h.year <= row.year && (h.combinedAgi > 0 || h.grossIncome > 0),
-        )
+        .filter((h) => h.year <= row.year && wealthFormulaIncome(h) > 0)
         .sort((a, b) => b.year - a.year)
         .slice(0, 3);
       if (recent.length > 0) {
         effectiveIncome =
-          recent.reduce(
-            (s, h) => s + (h.combinedAgi > 0 ? h.combinedAgi : h.grossIncome),
-            0,
-          ) / recent.length;
+          recent.reduce((s, h) => s + wealthFormulaIncome(h), 0) /
+          recent.length;
       }
     }
 
