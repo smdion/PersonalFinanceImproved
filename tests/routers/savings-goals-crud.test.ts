@@ -211,6 +211,31 @@ describe("savings.savingsGoals", () => {
       const after = await caller.savings.savingsGoals.list();
       expect(after.length).toBe(countBefore);
     });
+
+    it("keeps a deleted goal's sub-goals, as top-level goals", async () => {
+      const parent = await caller.savings.savingsGoals.create({
+        name: "Parent Goal",
+        monthlyContribution: "0",
+        priority: 101,
+        isActive: true,
+      });
+      const child = await caller.savings.savingsGoals.create({
+        name: "Child Goal",
+        monthlyContribution: "0",
+        priority: 102,
+        isActive: true,
+        parentGoalId: parent!.id,
+      });
+
+      await caller.savings.savingsGoals.delete({ id: parent!.id });
+
+      const rows = await caller.savings.savingsGoals.list();
+      const kept = rows.find((r: { id: number }) => r.id === child!.id) as
+        { parentGoalId: number | null } | undefined;
+      expect(kept).toBeDefined();
+      expect(kept!.parentGoalId).toBeNull();
+      await caller.savings.savingsGoals.delete({ id: child!.id });
+    });
   });
 });
 

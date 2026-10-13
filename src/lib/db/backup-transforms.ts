@@ -72,6 +72,7 @@ const V08_SCHEMA_TAGS = [
   "0011_lumpy_maximus", // PG: asset_class_buckets (several buckets per asset class), copied from asset_class_params.composition_bucket
   "0011_peaceful_rictor", // SQLite counterpart of 0011
   "0004_v085_investments", // PG + SQLite: v0.8.5 as released — investments, SEC fund facts, asset_class_buckets
+  "0005_v086_schema_cleanup", // PG + SQLite: savings_goals parent key (PG) + index, old roth_basis names, filing_status type — no data shape change
 ] as const;
 
 /** First tags whose backups carry asset_class_buckets (PG, SQLite). */

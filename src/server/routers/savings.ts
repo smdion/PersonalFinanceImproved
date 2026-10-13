@@ -506,6 +506,22 @@ async function computeLiveMaxMonthlyFunding(
 type DbType =
   Context["db"] | Parameters<Parameters<Context["db"]["transaction"]>[0]>[0];
 
+/**
+ * Delete a savings goal, detaching its sub-goals first (they become
+ * top-level). The database can't be relied on for this: installs since
+ * v0.8.0 have no foreign key on parent_goal_id (SQLite can't add one in
+ * place), and an orphaned sub-goal disappears from the Savings page.
+ */
+async function deleteSavingsGoal(db: Context["db"], id: number) {
+  await db.transaction(async (tx) => {
+    await tx
+      .update(schema.savingsGoals)
+      .set({ parentGoalId: null })
+      .where(eq(schema.savingsGoals.parentGoalId, id));
+    await tx.delete(schema.savingsGoals).where(eq(schema.savingsGoals.id, id));
+  });
+}
+
 /** A transfer's two legs must settle/unsettle together — otherwise money
  *  silently vanishes from (or reappears in) the combined projection. */
 async function resolvePairedPlannedTxIds(
@@ -1685,10 +1701,9 @@ export const savingsRouter = createTRPCRouter({
         }
       }
 
-      // Delete the savings goal (cascades to savings_monthly, planned transactions, overrides)
-      await ctx.db
-        .delete(schema.savingsGoals)
-        .where(eq(schema.savingsGoals.id, input.goalId));
+      // Delete the savings goal (cascades to savings_monthly, planned
+      // transactions, overrides; sub-goals become top-level)
+      await deleteSavingsGoal(ctx.db, input.goalId);
 
       return item;
     }),
@@ -2729,10 +2744,6 @@ export const savingsRouter = createTRPCRouter({
       ),
     delete: savingsProcedure
       .input(z.object({ id: z.number().int() }))
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .delete(schema.savingsGoals)
-          .where(eq(schema.savingsGoals.id, input.id)),
-      ),
+      .mutation(({ ctx, input }) => deleteSavingsGoal(ctx.db, input.id)),
   }),
 });

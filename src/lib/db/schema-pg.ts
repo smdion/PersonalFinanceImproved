@@ -443,9 +443,14 @@ export const savingsGoals = pgTable(
   {
     id: serial("id").primaryKey(),
     name: text("name").notNull().unique(),
-    parentGoalId: integer("parent_goal_id"),
-    // Self-referential FK enforced via migration 0001_add_parent_goal_fk.sql
-    // (ALTER TABLE ADD CONSTRAINT) — Drizzle cannot self-reference inline.
+    // Lost in the v0.8 squash and restored by 0005_v086_schema_cleanup.
+    // Upgraded SQLite installs lack it (SQLite can't add one in place), so
+    // deleting a goal also detaches its sub-goals in app code
+    // (savings router, deleteSavingsGoal).
+    parentGoalId: integer("parent_goal_id").references(
+      (): AnyPgColumn => savingsGoals.id,
+      { onDelete: "set null" },
+    ),
     targetAmount: decimal("target_amount", { precision: 14, scale: 2 }),
     targetMonths: integer("target_months"),
     targetDate: date("target_date"),
@@ -458,7 +463,10 @@ export const savingsGoals = pgTable(
     reimbursementApiCategoryId: text("reimbursement_api_category_id"),
     targetMode: text("target_mode").notNull().default("fixed"), // 'fixed' | 'ongoing' | 'bucket' — validated by Zod (app-layer, no DB constraint)
   },
-  (table) => [index("savings_goals_is_active_idx").on(table.isActive)],
+  (table) => [
+    index("savings_goals_is_active_idx").on(table.isActive),
+    index("savings_goals_parent_goal_id_idx").on(table.parentGoalId),
+  ],
 );
 
 // One row per (savings goal, service, role) — replaces the old single-slot
