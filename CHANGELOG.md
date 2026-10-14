@@ -38,11 +38,11 @@ This release is about making Ledgr's many numbers easier to act on. No database 
 - **Small asset classes** (a 1–2% cash target) are no longer flagged for being a fraction of a point off.
 - **TIPS are purple and international bonds rose** in mixes and charts (were lime and teal), so neither is mistaken for US bonds or cash — including by colorblind readers.
 
----
-
 ### Fixed
 
 - **Coast FIRE no longer says "unreachable" for a plan that's on track** when no retirement budget is set — a one-cent rounding difference failed every age it tried.
+
+---
 
 ## [0.8.6] - 2026-10-13
 
