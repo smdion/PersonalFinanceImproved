@@ -87,7 +87,10 @@ export default defineConfig({
         extends: true,
         test: {
           name: "jsdom",
-          environment: "jsdom",
+          // happy-dom, not jsdom: same DOM APIs for what these tests use, a
+          // fraction of jsdom's per-file setup cost (the project keeps its
+          // name so --project=jsdom scripts still work).
+          environment: "happy-dom",
           setupFiles: ["tests/setup-component.ts"],
           include: [
             "tests/components/**/*.test.ts",

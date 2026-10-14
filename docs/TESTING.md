@@ -528,7 +528,7 @@ Renders key UI components and runs axe-core checks for ARIA violations.
 - Card (plain, linked, collapsible), Metric, ProgressBar
 - EmptyState, FormError, FormErrorBlock, PageHeader
 - Toggle (with and without label)
-- Color-contrast checks disabled (jsdom limitation)
+- Color-contrast checks disabled (no layout or computed styles in the test DOM)
 
 ---
 
