@@ -34,5 +34,12 @@ export function useRecommendations(): ReturnType<typeof useMilestones> & {
     ),
   ]);
   const { shown, dismissed } = applyDismissals(ranked, dismissals, today);
-  return { ...milestones, recommendations: shown, dismissed };
+  return {
+    ...milestones,
+    // Wait for the data-source checks too, or "Nothing to do" flashes
+    // before the "Keep data current" items arrive.
+    isLoading: milestones.isLoading || !data.loaded,
+    recommendations: shown,
+    dismissed,
+  };
 }

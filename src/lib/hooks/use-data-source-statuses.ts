@@ -12,8 +12,17 @@ import {
   type DataSourceStatus,
 } from "@/lib/pure/data-freshness";
 
+/** A sync time as ISO text — tRPC sends Dates as strings at runtime even
+ *  where the type says Date, and Date#toString() isn't ISO. */
+function toIso(value: Date | string | null | undefined): string | null {
+  if (value == null) return null;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
 export function useDataSourceStatuses() {
-  const { data } = trpc.settings.getDataFreshness.useQuery();
+  const freshness = trpc.settings.getDataFreshness.useQuery();
+  const { data } = freshness;
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const { data: simplefinStatus } = trpc.simplefin.getStatus.useQuery();
   const { data: secStatus } = trpc.sec.getStatus.useQuery();
@@ -37,11 +46,11 @@ export function useDataSourceStatuses() {
           : undefined,
         basis: data.basisDate ? { lastUpdated: data.basisDate } : undefined,
         budgetApi: budgetApiCanSync
-          ? { lastUpdated: syncStatus?.lastSynced?.toString() ?? null }
+          ? { lastUpdated: toIso(syncStatus?.lastSynced) }
           : undefined,
         simplefin: simplefinCanSync
           ? {
-              lastUpdated: simplefinStatus?.lastSyncedAt?.toString() ?? null,
+              lastUpdated: toIso(simplefinStatus?.lastSyncedAt),
               error: simplefinStatus?.lastError ?? null,
               warnings: investmentHealth?.issues.map((i) => i.message),
             }
@@ -52,7 +61,9 @@ export function useDataSourceStatuses() {
       })
     : [];
   return {
-    loaded: Boolean(data),
+    // Settled (loaded or failed) — a failing check must not hold a page
+    // in its loading state.
+    loaded: !freshness.isLoading,
     statuses,
     syncStatus,
     simplefinStatus,

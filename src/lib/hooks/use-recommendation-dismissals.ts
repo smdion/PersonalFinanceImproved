@@ -4,6 +4,7 @@
  * Dismissed / snoozed recommendations: read by everyone (household-wide),
  * changed by admins only (the settings write is admin-gated).
  */
+import { useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { SK_RECOMMENDATION_DISMISSALS } from "@/lib/constants/settings-keys";
@@ -35,11 +36,33 @@ export function useRecommendationDismissals() {
     onSuccess: () => void utils.settings.appSettings.list.invalidate(),
     onError: (e) => toast.error(e.message),
   });
-  const write = (id: string, value: Dismissals[string] | null) =>
-    save.mutate({
-      key: SK_RECOMMENDATION_DISMISSALS,
-      value: nextDismissals(dismissals, today, { id, value }),
-    });
+  // The whole map is rewritten on each change, so writes run one at a time
+  // and each starts from the freshly-read saved map — a second dismiss
+  // clicked before the first's refetch lands can't resurrect the first.
+  const queue = useRef<Promise<unknown>>(Promise.resolve());
+  const write = (id: string, value: Dismissals[string] | null) => {
+    queue.current = queue.current
+      .then(async () => {
+        const latest = await utils.settings.appSettings.list
+          .fetch(undefined, { staleTime: 0 })
+          .catch((e: unknown) => {
+            toast.error(
+              e instanceof Error ? e.message : "Couldn't load dismissals",
+            );
+            throw e;
+          });
+        const saved = parseDismissals(
+          latest.find((s) => s.key === SK_RECOMMENDATION_DISMISSALS)?.value,
+        );
+        await save.mutateAsync({
+          key: SK_RECOMMENDATION_DISMISSALS,
+          value: nextDismissals(saved, today, { id, value }),
+        });
+      })
+      .catch(() => {
+        // Surfaced by the mutation's onError; keep the queue going.
+      });
+  };
   return {
     dismissals,
     today,
