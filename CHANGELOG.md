@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.8.7] - 2026-10-13
 
-This release is about making Ledgr's many numbers easier to act on. No database schema change; on start Ledgr adds the IRS total-additions limit (2025 and 2026) to its reference data.
+This release is about making Ledgr's many numbers easier to act on. No database schema change; on start Ledgr adds the IRS total-additions limit (2025 and 2026) to its reference data and corrects the 2025 standard deduction if it still has the pre-OBBBA figure (an amount you changed yourself in Settings is left alone).
 
 ### Added
 
