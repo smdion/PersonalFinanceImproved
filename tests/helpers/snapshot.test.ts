@@ -224,6 +224,32 @@ describe("buildYearEndHistory", () => {
     ctx.db.delete(ctx.schema.netWorthAnnual).run();
   });
 
+  it("never shares an entry between database handles (demo vs real)", async () => {
+    const other = await createTestDb();
+    try {
+      other.db
+        .insert(other.schema.netWorthAnnual)
+        .values({
+          yearEndDate: "2019-12-31",
+          portfolioTotal: "1000",
+          cash: "0",
+          houseValue: "0",
+          otherAssets: "0",
+          mortgageBalance: "0",
+          otherLiabilities: "0",
+          portfolioByTaxLocation: { retirement: {}, portfolio: {} },
+        })
+        .run();
+      const fromOther = await buildYearEndHistory(other.rawDb);
+      expect(fromOther.some((r) => r.year === 2019)).toBe(true);
+      // Same arguments on a different handle → its own build, not the other's.
+      const fromCtx = await buildYearEndHistory(ctx.rawDb);
+      expect(fromCtx.some((r) => r.year === 2019)).toBe(false);
+    } finally {
+      other.cleanup();
+    }
+  });
+
   it("caches targeted calls per targeting, never across different targeting", async () => {
     const profileA = { budgetProfileId: 1, budgetColumn: 0 };
     const before = await buildYearEndHistory(ctx.rawDb, undefined, profileA);

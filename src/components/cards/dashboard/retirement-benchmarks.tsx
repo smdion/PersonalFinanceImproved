@@ -33,11 +33,6 @@ const stop = (e: React.SyntheticEvent) => {
   e.stopPropagation();
 };
 
-/**
- * Savings vs the household's chosen income-multiple targets (Money Guy or
- * Fidelity — Milestones page), now or at a
- * projected age (from the same projection the Retirement card shows).
- */
 /** The household's chosen income-multiple table and today's figures for it
  *  (the Milestones engine's current year), plus every account's projection
  *  for Money Guy's liquid-investments measure. */
@@ -47,6 +42,11 @@ export type ReadinessCheckpoint = {
   allAccountsByYear: { age: number; endBalance: number }[];
 };
 
+/**
+ * Savings vs the household's chosen income-multiple targets (Money Guy or
+ * Fidelity — Milestones page), now or at a projected age (from the same
+ * projection the Retirement card shows).
+ */
 function Readiness({
   data,
   currentAge,

@@ -319,11 +319,16 @@ export type YearEndHistoryTargeting = BudgetTargeting & {
 // Short-lived (5s) cache keyed by the targeting, so a page that asks for
 // the same targeted history from several procedures in one load (the
 // dashboard: net worth + milestones) builds it once.
+//
+// Scoped per database handle: real requests share the app's `db`, while a
+// demo request runs on its own handle bound to its demo schema
+// (trpc.ts demoSchemaMiddleware) — so demo and real data never share an
+// entry. `generation` drops a build that started before an invalidation, so
+// a read racing a write can't re-cache pre-write data.
 const YEAR_END_CACHE_TTL_MS = 5_000;
-const _yearEndCache = new Map<
-  string,
-  { data: YearEndRow[]; expiresAt: number }
->();
+type YearEndCacheEntry = { data: YearEndRow[]; expiresAt: number };
+let _yearEndCache = new WeakMap<object, Map<string, YearEndCacheEntry>>();
+let _yearEndCacheGeneration = 0;
 
 function yearEndCacheKey(
   asOfDate: Date,
@@ -346,7 +351,8 @@ export async function buildYearEndHistory(
   targeting?: YearEndHistoryTargeting,
 ): Promise<YearEndRow[]> {
   const cacheKey = yearEndCacheKey(asOfDate, targeting);
-  const cached = _yearEndCache.get(cacheKey);
+  const generation = _yearEndCacheGeneration;
+  const cached = _yearEndCache.get(db)?.get(cacheKey);
   if (cached && Date.now() < cached.expiresAt) {
     return cached.data;
   }
@@ -1194,20 +1200,28 @@ export async function buildYearEndHistory(
     row.withdrawalRateIsDefault = !primaryRetSettings;
   }
 
-  const now = Date.now();
-  for (const [key, entry] of _yearEndCache) {
-    if (entry.expiresAt <= now) _yearEndCache.delete(key);
+  if (generation === _yearEndCacheGeneration) {
+    const now = Date.now();
+    let entries = _yearEndCache.get(db);
+    if (!entries) {
+      entries = new Map();
+      _yearEndCache.set(db, entries);
+    }
+    for (const [key, entry] of entries) {
+      if (entry.expiresAt <= now) entries.delete(key);
+    }
+    entries.set(cacheKey, {
+      data: history,
+      expiresAt: now + YEAR_END_CACHE_TTL_MS,
+    });
   }
-  _yearEndCache.set(cacheKey, {
-    data: history,
-    expiresAt: now + YEAR_END_CACHE_TTL_MS,
-  });
   return history;
 }
 
 /** Invalidate the buildYearEndHistory cache (call after mutations that affect its data). */
 export function invalidateYearEndCache(): void {
-  _yearEndCache.clear();
+  _yearEndCache = new WeakMap();
+  _yearEndCacheGeneration++;
 }
 // Any successful write may change what the history is built from.
 onMutationSucceeded(invalidateYearEndCache);
