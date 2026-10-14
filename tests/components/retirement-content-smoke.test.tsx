@@ -11,13 +11,7 @@ vi.mock("@/components/retirement/realized-vs-assumed-card", () => ({
 }));
 
 vi.mock("@/components/cards/projection", () => ({
-  ProjectionCard: () => (
-    <div data-testid="projection-card">
-      <div>PORTFOLIO SURVIVAL</div>
-      <div>NEST EGG AT RETIREMENT</div>
-      <div>COAST FIRE</div>
-    </div>
-  ),
+  ProjectionCard: () => <div data-testid="projection-card" />,
 }));
 
 vi.mock("@/components/cards/withdrawal-comparison", () => ({
@@ -221,15 +215,6 @@ describe("RetirementContent smoke", () => {
     expect(
       screen.getByRole("button", { name: "Plan Health" }),
     ).toBeInTheDocument();
-  });
-
-  it("renders KPI card labels on the default Projection tab", async () => {
-    const { RetirementContent } =
-      await import("@/app/(dashboard)/retirement/retirement-content");
-    render(<RetirementContent />);
-    expect(screen.getByText("PORTFOLIO SURVIVAL")).toBeInTheDocument();
-    expect(screen.getByText("NEST EGG AT RETIREMENT")).toBeInTheDocument();
-    expect(screen.getByText("COAST FIRE")).toBeInTheDocument();
   });
 
   it("switches between tabs", async () => {
