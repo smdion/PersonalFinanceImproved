@@ -9,7 +9,7 @@
  * server would have recomputed fresh on its NEXT request; the bug was
  * that the client never made one.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { McResultsSection } from "@/components/cards/projection/projection-mc-results";
 import type { ProjectionState } from "@/components/cards/projection/projection-table-types";
@@ -64,12 +64,19 @@ function baseState(overrides: Partial<ProjectionState> = {}): ProjectionState {
 }
 
 describe("McResultsSection — Clear Cache client-invalidation", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   beforeEach(() => {
     mockInvalidate.mockClear();
   });
 
   it("invalidates the client-side projection query cache once the server-side clear succeeds", () => {
-    vi.spyOn(window, "confirm").mockReturnValue(true);
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => true),
+    );
     const state = baseState();
     render(<McResultsSection state={state} />);
 
@@ -88,7 +95,10 @@ describe("McResultsSection — Clear Cache client-invalidation", () => {
   });
 
   it("doesn't clear anything (or invalidate) when the user cancels the confirm dialog", () => {
-    vi.spyOn(window, "confirm").mockReturnValue(false);
+    vi.stubGlobal(
+      "confirm",
+      vi.fn(() => false),
+    );
     const state = baseState();
     render(<McResultsSection state={state} />);
 

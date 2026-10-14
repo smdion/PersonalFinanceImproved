@@ -43,6 +43,32 @@ function formatViolations(violations: axe.Result[]) {
 // Tests
 // ---------------------------------------------------------------------------
 
+// Positive control: every test below asserts "no violations", which an axe
+// run that silently checked nothing (a DOM environment it can't inspect)
+// would also satisfy.
+describe("axe positive control", () => {
+  it("reports known violations in a deliberately broken fragment", async () => {
+    const { container } = render(
+      <div>
+        {/* eslint-disable-next-line @next/next/no-img-element, jsx-a11y/alt-text -- deliberately inaccessible fixture for axe to flag */}
+        <img src="/x.png" />
+        <button />
+        <input type="text" />
+        <div role="not-a-role">x</div>
+      </div>,
+    );
+    const ids = (await getViolations(container)).map((v) => v.id);
+    expect(ids).toEqual(
+      expect.arrayContaining([
+        "image-alt",
+        "button-name",
+        "label",
+        "aria-roles",
+      ]),
+    );
+  });
+});
+
 describe("Accessibility — axe-core", () => {
   it("Card renders without violations", async () => {
     const { container } = render(
