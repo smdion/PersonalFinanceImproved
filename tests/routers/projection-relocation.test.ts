@@ -224,7 +224,21 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
       for (const row of rows) {
         expect(row.phase).toBe(row.year < nextYear ? "current" : "relocation");
       }
-      expect(result!.blendedBalanceAtRetirement).toBeGreaterThan(0);
+      // Both scenarios save the same (same contribution profile, salary-
+      // based contributions), so moving partway must land on the same nest
+      // egg. Re-anchoring a second run at the move year used to drop that
+      // year's contributions and restart salary growth, landing well short.
+      expect(result!.blendedBalanceAtRetirement).toBeCloseTo(
+        result!.relocationBalanceAtRetirement,
+        0,
+      );
+      const moveRow = rows.find((r) => r.year === nextYear)!;
+      const before = rows.find((r) => r.year === nextYear - 1)!;
+      expect(moveRow.contribution).toBeGreaterThan(before.contribution);
+      // Relocation expenses ($1,500/mo) carry the same inflation as the
+      // engine's own years: lower than the year before the move ($2,000/mo).
+      expect(moveRow.expenses).toBeLessThan(before.expenses);
+      expect(moveRow.expenses).toBeGreaterThan(1500 * 12);
     } finally {
       cleanup();
     }

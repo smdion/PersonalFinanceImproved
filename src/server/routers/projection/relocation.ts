@@ -291,8 +291,14 @@ export const relocationProjectionRouter = createTRPCRouter({
       );
       const currentAge = currentPayload.age;
       const retirementAge = relocPayload.baseEngineInput.retirementAge;
+      // Expense schedules are keyed to the ENGINE's year 0 (the snapshot's
+      // year, which can trail the calendar), so year N carries N years of
+      // inflation exactly like the engine's own un-overridden expenses.
+      const engineBaseYear =
+        relocPayload.baseEngineInput.asOfDate.getFullYear();
       const retirementYear =
-        currentYear + Math.max(0, retirementAge - currentAge);
+        engineBaseYear +
+        Math.max(0, retirementAge - relocPayload.baseEngineInput.currentAge);
 
       const affectedYears = [
         ...input.yearAdjustments.map((a) => a.year),
@@ -306,11 +312,69 @@ export const relocationProjectionRouter = createTRPCRouter({
         for (let y = firstAffectedYear; y <= retirementYear; y++) {
           const base = adjustmentByYear.has(y)
             ? adjustmentByYear.get(y)!
-            : baseMonthly * Math.pow(1 + inflationRate, y - currentYear);
+            : baseMonthly * Math.pow(1 + inflationRate, y - engineBaseYear);
           const purchaseAddl = purchaseMonthlyForYear(y, purchasePrecomp);
           relocBudgetOverrides.push({ year: y, value: base + purchaseAddl });
         }
       }
+
+      // Moving partway through: ONE run from today on the current scenario
+      // that switches to the relocation's expenses and contribution profile
+      // at moveYear. (A second run re-anchored at moveYear restarted the
+      // engine's year count there — salary growth, expense inflation and
+      // the year-0 "actual paycheck" contributions all reset to today's
+      // figures, understating every year after the move.)
+      const relocExpensesFrom = (moveYear: number) => {
+        const explicit = new Map(
+          relocBudgetOverrides.map((o) => [o.year, o.value]),
+        );
+        const schedule: { year: number; value: number }[] = [];
+        for (let y = moveYear; y <= retirementYear; y++) {
+          schedule.push({
+            year: y,
+            value:
+              explicit.get(y) ??
+              baseMonthly * Math.pow(1 + inflationRate, y - engineBaseYear) +
+                purchaseMonthlyForYear(y, purchasePrecomp),
+          });
+        }
+        return schedule;
+      };
+      const currentBase = currentPayload.baseEngineInput;
+      const relocBase = relocPayload.baseEngineInput;
+      const runMovingIn = (moveYear: number) =>
+        calculateProjection({
+          ...currentBase,
+          budgetOverrides: [
+            ...currentBase.budgetOverrides.filter((o) => o.year < moveYear),
+            ...relocExpensesFrom(moveYear),
+          ],
+          profileSwitches: [
+            ...(currentBase.profileSwitches ?? []).filter(
+              (ps) => ps.year < moveYear,
+            ),
+            {
+              year: moveYear,
+              contributionSpecs: relocBase.contributionSpecs ?? [],
+              employerMatchRateByCategory:
+                relocBase.employerMatchRateByCategory,
+              baseYearContributions:
+                relocBase.baseYearContributions ??
+                currentBase.baseYearContributions!,
+              baseYearEmployerMatch:
+                relocBase.baseYearEmployerMatch ??
+                currentBase.baseYearEmployerMatch!,
+              employerMatchByParentCat: relocBase.employerMatchByParentCat,
+              contributionRate: relocBase.accumulationDefaults.contributionRate,
+            },
+            ...(relocBase.profileSwitches ?? []).filter(
+              (ps) => ps.year > moveYear,
+            ),
+          ],
+          decumulationDefaults: relocDecumulationDefaults,
+          accumulationOverrides: dbAccumulationOverrides,
+          decumulationOverrides: dbDecumulationOverrides,
+        });
 
       // --- Run full projections ---
       // Current scenario: let baseEngineInput.budgetOverrides pass through unchanged.
@@ -411,16 +475,7 @@ export const relocationProjectionRouter = createTRPCRouter({
 
       // --- Binary search for earliest safe relocation year ---
       const probeViable = (rowIdx: number): boolean => {
-        const probeRow = currentAccRows[rowIdx]!;
-        const probeResult = calculateProjection({
-          ...relocPayload.baseEngineInput,
-          startingBalances: probeRow.balanceByTaxType,
-          currentAge: probeRow.age,
-          budgetOverrides: relocBudgetOverrides,
-          decumulationDefaults: relocDecumulationDefaults,
-          accumulationOverrides: dbAccumulationOverrides,
-          decumulationOverrides: dbDecumulationOverrides,
-        });
+        const probeResult = runMovingIn(currentAccRows[rowIdx]!.year);
         const probeLast =
           probeResult?.projectionByYear[
             probeResult.projectionByYear.length - 1
@@ -457,11 +512,8 @@ export const relocationProjectionRouter = createTRPCRouter({
       }
 
       // --- Blended projection (when moveYear is provided) ---
-      // Phase 1: current path from today through moveYear - 1.
-      // Phase 2: relocation path from moveYear to retirement, starting with
-      //          Phase 1's ending balance. Uses asOfDate = Jan 1 of moveYear so
-      //          engine year/age labels are correct, and trimmed budget overrides
-      //          (years < moveYear are never visited in Phase 2).
+      // Current scenario until moveYear, relocation from moveYear on, in one
+      // engine run (runMovingIn above).
       let blendedRows:
         | {
             year: number;
@@ -493,62 +545,27 @@ export const relocationProjectionRouter = createTRPCRouter({
           }));
           blendedBalanceAtRetirement = relocationBalanceAtRetirement;
         } else {
-          // Future move — current path until moveYear - 1, then relocation.
-          const phase1Rows = currentAccRows.filter((r) => r.year < moveYear);
-          const phase1HandoffRow = currentAccRows.find(
-            (r) => r.year === moveYear - 1,
-          );
-
-          if (phase1HandoffRow) {
-            const ageAtMoveYear = Math.floor(phase1HandoffRow.age) + 1;
-            // Trim overrides: Phase 2 starts at moveYear; past-year entries are unused
-            // but trimming keeps the override set clean.
-            const phase2BudgetOverrides = relocBudgetOverrides.filter(
-              (o) => o.year >= moveYear,
+          const blended = runMovingIn(moveYear);
+          if (blended) {
+            const accRows = blended.projectionByYear.filter(
+              (r) => r.phase === "accumulation",
             );
-
-            const phase2Result = calculateProjection({
-              ...relocPayload.baseEngineInput,
-              startingBalances: phase1HandoffRow.balanceByTaxType,
-              currentAge: ageAtMoveYear,
-              asOfDate: new Date(moveYear, 0, 1),
-              budgetOverrides: phase2BudgetOverrides,
-              decumulationDefaults: relocDecumulationDefaults,
-              accumulationOverrides: dbAccumulationOverrides,
-              decumulationOverrides: dbDecumulationOverrides,
+            blendedBalanceAtRetirement = accRows.at(-1)?.endBalance ?? 0;
+            blendedRows = accRows.map((row) => {
+              const moved = row.year >= moveYear;
+              return {
+                year: row.year,
+                age: Math.floor(row.age),
+                balance: row.endBalance,
+                contribution: row.totalEmployee + row.totalEmployer,
+                expenses: row.projectedExpenses,
+                phase: moved ? ("relocation" as const) : ("current" as const),
+                hasAdjustment: moved && adjustmentYears.has(row.year),
+                largePurchaseImpact: moved
+                  ? (largePurchaseImpactByYear.get(row.year) ?? 0)
+                  : 0,
+              };
             });
-
-            if (phase2Result) {
-              const phase2AccRows = phase2Result.projectionByYear.filter(
-                (r) => r.phase === "accumulation",
-              );
-              const phase2LastAcc = phase2AccRows[phase2AccRows.length - 1];
-              blendedBalanceAtRetirement = phase2LastAcc?.endBalance ?? 0;
-
-              blendedRows = [
-                ...phase1Rows.map((row) => ({
-                  year: row.year,
-                  age: Math.floor(row.age),
-                  balance: row.endBalance,
-                  contribution: row.totalEmployee + row.totalEmployer,
-                  expenses: row.projectedExpenses,
-                  phase: "current" as const,
-                  hasAdjustment: false,
-                  largePurchaseImpact: 0,
-                })),
-                ...phase2AccRows.map((row) => ({
-                  year: row.year,
-                  age: Math.floor(row.age),
-                  balance: row.endBalance,
-                  contribution: row.totalEmployee + row.totalEmployer,
-                  expenses: row.projectedExpenses,
-                  phase: "relocation" as const,
-                  hasAdjustment: adjustmentYears.has(row.year),
-                  largePurchaseImpact:
-                    largePurchaseImpactByYear.get(row.year) ?? 0,
-                })),
-              ];
-            }
           }
         }
       }
