@@ -95,7 +95,6 @@ export function useProjectionQueries(
       salaryActiveFields:
         salaryActiveFields.length > 0 ? salaryActiveFields : undefined,
       decumulationDefaults: {
-        withdrawalRate: withdrawalRate / 100,
         // Omitted (not just left at its display default) until the user
         // actually touches the matching Configure editor — see
         // use-projection-form-state.ts's docblock on the *Touched flags for
@@ -136,7 +135,6 @@ export function useProjectionQueries(
     }),
     [
       salaryActiveFields,
-      withdrawalRate,
       withdrawalRoutingMode,
       withdrawalRoutingModeTouched,
       withdrawalOrder,

@@ -222,7 +222,6 @@ export const emptyAccumForm: AccumOverrideForm = {
 export type DecumOverrideForm = {
   year: string;
   personName: string; // '' = household-wide
-  withdrawalRate: string;
   withdrawalRoutingMode: "waterfall" | "percentage" | "";
   withdrawalOrder: AccountCategory[];
   withdrawalSplits: Record<AccountCategory, string>;
@@ -238,7 +237,6 @@ export type DecumOverrideForm = {
 export const emptyDecumForm: DecumOverrideForm = {
   year: String(new Date().getFullYear() + 1),
   personName: "",
-  withdrawalRate: "",
   withdrawalRoutingMode: "",
   withdrawalOrder: getDefaultDecumulationOrder(),
   withdrawalSplits: buildCategoryRecord(() => "") as Record<
@@ -289,7 +287,6 @@ export type AccumOverride = {
 export type DecumOverride = {
   year: number;
   personName?: string; // when set, override applies to this person only
-  withdrawalRate?: number;
   withdrawalRoutingMode?: "waterfall" | "percentage";
   withdrawalOrder?: AccountCategory[];
   withdrawalSplits?: Record<AccountCategory, number>;
@@ -377,8 +374,6 @@ export function decumOverrideToForm(o: DecumOverride): DecumOverrideForm {
   return {
     year: String(o.year),
     personName: o.personName ?? "",
-    withdrawalRate:
-      o.withdrawalRate != null ? String(o.withdrawalRate * 100) : "",
     withdrawalRoutingMode: o.withdrawalRoutingMode ?? "",
     withdrawalOrder: o.withdrawalOrder ?? getDefaultDecumulationOrder(),
     withdrawalSplits: (o.withdrawalSplits

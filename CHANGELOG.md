@@ -37,6 +37,7 @@ This release is about making Ledgr's many numbers easier to act on. No database 
 - **Your mix, costs and rebalancing count only SimpleFIN accounts linked to a Ledgr account**, so a duplicate or old connection no longer counts the same money twice; unlinked ones are listed as not counted.
 - **Small asset classes** (a 1–2% cash target) are no longer flagged for being a fraction of a point off.
 - **TIPS are purple and international bonds rose** in mixes and charts (were lime and teal), so neither is mistaken for US bonds or cash — including by colorblind readers.
+- **Removed the year-by-year withdrawal-rate override** (it was already hidden from the override picker). No withdrawal strategy reads it, so it never changed the plan. Your initial withdrawal rate in the retirement settings is unchanged and still sets first-year spending for rate-based plans.
 
 ### Fixed
 

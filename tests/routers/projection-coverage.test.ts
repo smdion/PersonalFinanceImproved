@@ -283,15 +283,11 @@ describe("projection router — computeProjection edge cases (continued)", () =>
       seedFullProjectionData(db);
 
       const rows = await projectionRows(caller, {
-        decumulationDefaults: {
-          withdrawalRate: 0.035,
-          withdrawalRoutingMode: "waterfall",
-        },
+        decumulationDefaults: { withdrawalRoutingMode: "waterfall" },
       });
 
       // The client's routing mode wins over the household setting; the
-      // withdrawal rate always comes from retirement_settings (4%) —
-      // buildDecumulationDefaults ignores a client-sent rate.
+      // withdrawal rate always comes from retirement_settings (4%).
       const retired = rows.filter((r) => r.phase === "decumulation");
       expect(retired.length).toBeGreaterThan(0);
       for (const r of retired) {
@@ -403,16 +399,19 @@ describe("projection router — computeProjection edge cases (continued)", () =>
         decumulationOverrides: [
           {
             year: 2060,
-            withdrawalRate: 0.05,
-            notes: "Increased withdrawal",
+            withdrawalRoutingMode: "waterfall",
+            notes: "Switch routing",
           },
         ],
       });
 
-      // Sticky-forward from 2060: the year before keeps the 4% setting.
-      expect(decumulationConfig(rows, 2059).withdrawalRate).toBe(0.04);
-      expect(decumulationConfig(rows, 2060).withdrawalRate).toBe(0.05);
-      expect(decumulationConfig(rows, 2070).withdrawalRate).toBe(0.05);
+      // Sticky-forward from 2060; the year before keeps the household's
+      // default (bracket filling).
+      const mode = (year: number) =>
+        decumulationConfig(rows, year).withdrawalRoutingMode;
+      expect(mode(2059)).not.toBe("waterfall");
+      expect(mode(2060)).toBe("waterfall");
+      expect(mode(2070)).toBe("waterfall");
     } finally {
       cleanup();
     }
@@ -761,7 +760,9 @@ describe("projection router — computeMonteCarloProjection", () => {
         accumulationOverrides: [
           { year: 2030, contributionRate: 0.2, notes: "Boost savings" },
         ],
-        decumulationOverrides: [{ year: 2060, withdrawalRate: 0.05 }],
+        decumulationOverrides: [
+          { year: 2060, withdrawalRoutingMode: "waterfall" },
+        ],
       });
 
       expect(response.result).not.toBeNull();
@@ -1768,14 +1769,14 @@ describe("projection router — computeCoastFire", () => {
     }
   });
 
-  it("accepts decumulationDefaults override without throwing", async () => {
+  it("accepts a client decumulation routing override", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
       seedAssetClasses(db);
 
       const response = await caller.projection.computeCoastFire({
-        decumulationDefaults: { withdrawalRate: 0.035 },
+        decumulationDefaults: { withdrawalRoutingMode: "waterfall" },
       });
       expect(response.result).not.toBeNull();
     } finally {
@@ -1862,7 +1863,7 @@ describe("projection router — computeCoastFireMC", () => {
         .run();
 
       const response = await caller.projection.computeCoastFireMC({
-        decumulationDefaults: { withdrawalRate: 0.035 },
+        decumulationDefaults: { withdrawalRoutingMode: "waterfall" },
       });
       expect(response.result).not.toBeNull();
       expect(typeof response.result?.successRate).toBe("number");
