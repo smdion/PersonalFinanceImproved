@@ -17,8 +17,8 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
+import { buildMilestoneInput } from "@/lib/pure/milestone-input";
 import {
-  buildMilestoneInput,
   evaluateMilestones,
   type MilestoneInput,
   type MilestoneResult,

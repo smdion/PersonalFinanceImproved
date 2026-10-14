@@ -12,10 +12,8 @@ import {
   SK_MILESTONE_CUSTOM_GOALS,
   SK_MILESTONE_SAVINGS_TARGET_SOURCE,
 } from "@/lib/constants/settings-keys";
-import {
-  milestoneYearFromHistory,
-  parseMilestoneSettings,
-} from "@/lib/pure/milestones";
+import { parseMilestoneSettings } from "@/lib/pure/milestones";
+import { milestoneYearFromHistory } from "@/lib/pure/milestone-input";
 import { zYearEndTargeting, toSalaryActiveMap } from "./_shared";
 
 export const milestonesRouter = createTRPCRouter({

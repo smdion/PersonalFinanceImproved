@@ -441,7 +441,7 @@ Keep the field-by-field contract in the file header comment of
 
 ## Milestones
 
-One judging path for financial rules: `evaluateMilestones(input)` (`lib/pure/milestones.ts`) reads a `MilestoneInput` built by `buildMilestoneInput()` from what the app already computes, and returns one `MilestoneResult` per milestone (status `reached` / `onTrack` / `behind` / `unknown`, headline, reached year, expected year, next step). Consumers never judge a rule themselves:
+One judging path for financial rules: `evaluateMilestones(input)` (`lib/pure/milestones.ts`) reads a `MilestoneInput` built by `buildMilestoneInput()` (`lib/pure/milestone-input.ts`) from what the app already computes, and returns one `MilestoneResult` per milestone (status `reached` / `onTrack` / `behind` / `unknown`, headline, reached year, expected year, next step). Consumers never judge a rule themselves:
 
 - **Milestones page** (`/milestones`) — everything, by group, plus the FOO ladder, the timeline and "next up".
 - **Financial Checkup** (dashboard) — the `CHECKUP_MILESTONES` subset as traffic lights (its savings-rate row is the household's switchable display rate).

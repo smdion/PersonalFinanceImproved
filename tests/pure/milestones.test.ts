@@ -1,20 +1,13 @@
 import { describe, it, expect } from "vitest";
 import {
-  buildMilestoneInput,
   currentFooStep,
   evaluateMilestones,
   firstReachedYear,
   incomeMultipleTarget,
   inflateTarget,
-  milestoneHoldings,
-  megaBackdoorRoom,
   meetsMoneyGuyRate,
   meetsRateTarget,
-  milestoneLimits,
-  retirementUnlimitedContributions,
-  milestoneProjectionYears,
   milestoneTimeline,
-  milestoneYearFromHistory,
   nextUpMilestones,
   parseMilestoneSettings,
   projectedFiYear,
@@ -22,6 +15,15 @@ import {
   type MilestoneInput,
   type MilestoneResult,
 } from "@/lib/pure/milestones";
+import {
+  buildMilestoneInput,
+  milestoneHoldings,
+  megaBackdoorRoom,
+  milestoneLimits,
+  retirementUnlimitedContributions,
+  milestoneProjectionYears,
+  milestoneYearFromHistory,
+} from "@/lib/pure/milestone-input";
 import {
   FIDELITY_CHECKPOINTS,
   MONEY_GUY_CHECKPOINTS,

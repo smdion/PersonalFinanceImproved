@@ -13,10 +13,8 @@ import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { defaultDecumulationConfig } from "@/lib/config/account-types";
-import {
-  milestoneProjectionYears,
-  projectedFiYear,
-} from "@/lib/pure/milestones";
+import { projectedFiYear } from "@/lib/pure/milestones";
+import { milestoneProjectionYears } from "@/lib/pure/milestone-input";
 
 export function useDashboardEngineInput() {
   const salaryActiveFields = useActiveSalaries();
