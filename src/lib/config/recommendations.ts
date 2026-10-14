@@ -50,8 +50,9 @@ export const MILESTONE_RECOMMENDATIONS: readonly {
   { id: "foo5", area: "paycheck" },
   { id: "savingsRate", area: "paycheck" },
   { id: "pfRetirementRate", area: "paycheck" },
-  // foo3 (high-interest debt) returns once the debts list gives it rates —
-  // until then it can only be reached or unknown, never a to-do.
+  // FOO step 3 (high-interest debt): only reached/unknown until the debts
+  // list gives it rates, so it can't surface yet — kept so it does then.
+  { id: "foo3", area: "moneyMoves" },
   { id: "goalHorizon", area: "moneyMoves" },
   { id: "moneyGuyCheckpoints", area: "moneyMoves" },
   { id: "fidelityCheckpoints", area: "moneyMoves" },
