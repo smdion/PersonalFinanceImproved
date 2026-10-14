@@ -158,13 +158,13 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
         moveYear: null,
       });
 
-      expect(result).not.toBeNull();
-      expect(result).toHaveProperty("currentBalanceAtRetirement");
-      expect(result).toHaveProperty("relocationBalanceAtRetirement");
-      expect(result).toHaveProperty("projectionRows");
-      expect(result).toHaveProperty("inflationRate");
-      expect(result).toHaveProperty("baseYear");
-      expect(Array.isArray(result!.projectionRows)).toBe(true);
+      // FI target = annual budget ÷ 4% withdrawal rate: $2,000 vs $1,500 rent.
+      expect(result!.currentFiTarget).toBeCloseTo((2000 * 12) / 0.04);
+      expect(result!.relocationFiTarget).toBeCloseTo((1500 * 12) / 0.04);
+      expect(result!.relocationBalanceAtRetirement).toBeGreaterThan(0);
+      expect(result!.projectionRows.length).toBeGreaterThan(0);
+      expect(result!.blendedRows).toBeNull();
+      expect(result!.blendedBalanceAtRetirement).toBeNull();
     } finally {
       cleanup();
     }
@@ -190,7 +190,9 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
         moveYear: null,
       });
 
-      expect(result).not.toBeNull();
+      // Overrides replace the budget totals ($2,000 / $1,500).
+      expect(result!.currentFiTarget).toBeCloseTo((3000 * 12) / 0.04);
+      expect(result!.relocationFiTarget).toBeCloseTo((2500 * 12) / 0.04);
     } finally {
       cleanup();
     }
@@ -217,9 +219,12 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
         moveYear: nextYear,
       });
 
-      expect(result).not.toBeNull();
-      expect(result).toHaveProperty("blendedRows");
-      expect(Array.isArray(result!.blendedRows)).toBe(true);
+      const rows = result!.blendedRows!;
+      expect(rows.length).toBeGreaterThan(0);
+      for (const row of rows) {
+        expect(row.phase).toBe(row.year < nextYear ? "current" : "relocation");
+      }
+      expect(result!.blendedBalanceAtRetirement).toBeGreaterThan(0);
     } finally {
       cleanup();
     }
@@ -246,7 +251,9 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
         moveYear: null,
       });
 
-      expect(result).not.toBeNull();
+      const adjusted = result!.projectionRows.filter((r) => r.hasAdjustment);
+      expect(adjusted.map((r) => r.year)).toEqual([nextYear]);
+      expect(adjusted[0]!.relocationExpenses).toBe(1800 * 12);
     } finally {
       cleanup();
     }
@@ -283,7 +290,11 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
         moveYear: null,
       });
 
-      expect(result).not.toBeNull();
+      // The down payment hits the purchase year; the loan payment and
+      // upkeep raise what the relocation has to fund forever.
+      const hit = result!.projectionRows.find((r) => r.year === nextYear)!;
+      expect(hit.largePurchaseImpact).toBeLessThan(0);
+      expect(result!.relocationFiTarget).toBeGreaterThan((1500 * 12) / 0.04);
     } finally {
       cleanup();
     }

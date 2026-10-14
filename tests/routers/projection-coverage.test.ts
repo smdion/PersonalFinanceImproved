@@ -98,7 +98,7 @@ function seedGlidePath(db: BetterSQLite3Database<typeof sqliteSchema>) {
 function seedFullProjectionData(
   db: BetterSQLite3Database<typeof sqliteSchema>,
 ) {
-  const { personId, jobId, perfAcctId } = seedStandardDataset(db);
+  const { personId, jobId, perfAcctId, snapId } = seedStandardDataset(db);
 
   // Retirement settings (required by buildEnginePayload)
   db.insert(schema.retirementSettings)
@@ -148,7 +148,42 @@ function seedFullProjectionData(
     })
     .run();
 
-  return { personId, jobId, perfAcctId };
+  return { personId, jobId, perfAcctId, snapId };
+}
+
+type Caller = Awaited<ReturnType<typeof createTestCaller>>["caller"];
+type ProjectionInput = Parameters<Caller["projection"]["computeProjection"]>[0];
+const NO_OVERRIDES = { accumulationOverrides: [], decumulationOverrides: [] };
+
+/** Year rows of a deterministic projection; fails if it didn't run. */
+async function projectionRows(
+  caller: Caller,
+  input: Partial<ProjectionInput> = {},
+) {
+  const response = await caller.projection.computeProjection({
+    ...NO_OVERRIDES,
+    ...input,
+  });
+  expect(response.result).not.toBeNull();
+  return response.result!.projectionByYear;
+}
+
+/** Year-end balances of a deterministic projection. */
+async function balances(caller: Caller, input: Partial<ProjectionInput> = {}) {
+  return (await projectionRows(caller, input)).map((y) => y.endBalance);
+}
+
+/** The resolved decumulation config the engine used in `year`. */
+function decumulationConfig(
+  rows: Awaited<ReturnType<typeof projectionRows>>,
+  year: number,
+) {
+  const row = rows.find((r) => r.year === year)!;
+  expect(row.phase).toBe("decumulation");
+  return row.config as {
+    withdrawalRate: number;
+    withdrawalRoutingMode: string;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -166,23 +201,12 @@ describe("projection router — computeProjection full result path", () => {
         decumulationOverrides: [],
       });
 
-      // Should have a non-null result with projection data
-      expect(response).toHaveProperty("result");
-      expect(response).toHaveProperty("combinedSalary");
-      expect(response).toHaveProperty("portfolioByTaxType");
-      expect(response).toHaveProperty("settings");
-      expect(response).toHaveProperty("people");
-      expect(response).toHaveProperty("contributionSpecs");
-      expect(response).toHaveProperty("realDefaults");
-      expect(response).toHaveProperty("returnRateSummary");
-      expect(response).toHaveProperty("annualExpenses");
-      expect(response).toHaveProperty("primaryPersonId");
-
-      if (response.result !== null) {
-        expect(response.result).toHaveProperty("projectionByYear");
-        expect(response.result).toHaveProperty("warnings");
-        expect(Array.isArray(response.result.projectionByYear)).toBe(true);
-      }
+      expect(response.result).not.toBeNull();
+      expect(response.result!.projectionByYear.length).toBeGreaterThan(0);
+      expect(response.combinedSalary).toBe(120000);
+      expect(response.people).toHaveLength(1);
+      expect(response.primaryPersonId).toBe(response.people[0]!.id);
+      expect(response.annualExpenses).toBeGreaterThan(0);
     } finally {
       cleanup();
     }
@@ -200,10 +224,9 @@ describe("projection router — computeProjection full result path", () => {
       });
 
       expect(response.result).toBeNull();
-      // Metadata fields still present
-      expect(response).toHaveProperty("settings");
-      expect(response).toHaveProperty("people");
-      expect(response).toHaveProperty("combinedSalary");
+      // Metadata is still filled in without running the engine.
+      expect(response.combinedSalary).toBe(120000);
+      expect(response.people).toHaveLength(1);
     } finally {
       cleanup();
     }
@@ -220,11 +243,8 @@ describe("projection router — computeProjection full result path", () => {
         decumulationOverrides: [],
       });
 
-      expect(response).toHaveProperty("combinedSalary");
-      // With an override, salary should reflect the override
-      if (response.result !== null) {
-        expect(response.combinedSalary).toBeGreaterThan(0);
-      }
+      expect(response.result).not.toBeNull();
+      expect(response.combinedSalary).toBe(200000);
     } finally {
       cleanup();
     }
@@ -322,21 +342,29 @@ describe("projection router — computeProjection cache", () => {
 });
 
 describe("projection router — computeProjection edge cases (continued)", () => {
-  it("applies decumulation defaults (custom routing mode)", async () => {
+  it("client decumulation defaults set the routing mode, not the rate", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
 
-      const response = await caller.projection.computeProjection({
+      const rows = await projectionRows(caller, {
         decumulationDefaults: {
           withdrawalRate: 0.035,
           withdrawalRoutingMode: "waterfall",
         },
-        accumulationOverrides: [],
-        decumulationOverrides: [],
       });
 
-      expect(response).toHaveProperty("result");
+      // The client's routing mode wins over the household setting; the
+      // withdrawal rate always comes from retirement_settings (4%) —
+      // buildDecumulationDefaults ignores a client-sent rate.
+      const retired = rows.filter((r) => r.phase === "decumulation");
+      expect(retired.length).toBeGreaterThan(0);
+      for (const r of retired) {
+        expect(decumulationConfig(rows, r.year)).toMatchObject({
+          withdrawalRate: 0.04,
+          withdrawalRoutingMode: "waterfall",
+        });
+      }
     } finally {
       cleanup();
     }
@@ -395,32 +423,37 @@ describe("projection router — computeProjection edge cases (continued)", () =>
       });
 
       // Should have warnings about zero portfolio and no contribution accounts
-      if (response.result !== null) {
-        expect(response.result.warnings.length).toBeGreaterThan(0);
-      }
+      expect(response.result).not.toBeNull();
+      expect(response.result!.warnings.length).toBeGreaterThan(0);
     } finally {
       cleanup();
     }
   });
 
-  it("applies accumulation overrides", async () => {
+  it("an accumulation contribution rate caps savings from its year on", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
 
-      const response = await caller.projection.computeProjection({
+      const base = await projectionRows(caller);
+      const capped = await projectionRows(caller, {
         accumulationOverrides: [
           {
             year: 2030,
             contributionRate: 0.15,
             routingMode: "waterfall",
-            notes: "Increased contribution",
+            notes: "Cap savings",
           },
         ],
-        decumulationOverrides: [],
       });
 
-      expect(response).toHaveProperty("result");
+      // The fixture saves ~25% of pay (401k + savings goal); contributionRate
+      // is the total-savings ceiling, so 15% from 2030 saves less — and
+      // leaves earlier years alone.
+      const at = (rows: typeof base, year: number) =>
+        rows.find((r) => r.year === year)!.endBalance;
+      expect(at(capped, 2029)).toBe(at(base, 2029));
+      expect(at(capped, 2030)).toBeLessThan(at(base, 2030));
     } finally {
       cleanup();
     }
@@ -431,8 +464,7 @@ describe("projection router — computeProjection edge cases (continued)", () =>
     try {
       seedFullProjectionData(db);
 
-      const response = await caller.projection.computeProjection({
-        accumulationOverrides: [],
+      const rows = await projectionRows(caller, {
         decumulationOverrides: [
           {
             year: 2060,
@@ -442,7 +474,10 @@ describe("projection router — computeProjection edge cases (continued)", () =>
         ],
       });
 
-      expect(response).toHaveProperty("result");
+      // Sticky-forward from 2060: the year before keeps the 4% setting.
+      expect(decumulationConfig(rows, 2059).withdrawalRate).toBe(0.04);
+      expect(decumulationConfig(rows, 2060).withdrawalRate).toBe(0.05);
+      expect(decumulationConfig(rows, 2070).withdrawalRate).toBe(0.05);
     } finally {
       cleanup();
     }
@@ -453,15 +488,17 @@ describe("projection router — computeProjection edge cases (continued)", () =>
     try {
       seedFullProjectionData(db);
 
+      const base = await balances(caller);
       const response = await caller.projection.computeProjection({
+        ...NO_OVERRIDES,
         accumulationExpenseOverride: 50000,
         decumulationExpenseOverride: 40000,
-        accumulationOverrides: [],
-        decumulationOverrides: [],
       });
 
-      expect(response).toHaveProperty("result");
-      expect(response).toHaveProperty("annualExpenses");
+      expect(response.result).not.toBeNull();
+      expect(
+        response.result!.projectionByYear.map((y) => y.endBalance),
+      ).not.toEqual(base);
     } finally {
       cleanup();
     }
@@ -470,10 +507,10 @@ describe("projection router — computeProjection edge cases (continued)", () =>
   it("uses snapshotId parameter", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
-      const { perfAcctId } = seedFullProjectionData(db);
+      const { perfAcctId, snapId } = seedFullProjectionData(db);
 
-      // Create a second snapshot
-      const snapId2 = seedSnapshot(db, "2025-06-01", [
+      // A newer, richer snapshot becomes the default...
+      seedSnapshot(db, "2025-06-01", [
         {
           performanceAccountId: perfAcctId,
           amount: "200000",
@@ -481,13 +518,11 @@ describe("projection router — computeProjection edge cases (continued)", () =>
         },
       ]);
 
-      const response = await caller.projection.computeProjection({
-        snapshotId: snapId2,
-        accumulationOverrides: [],
-        decumulationOverrides: [],
-      });
+      const latest = await balances(caller);
+      // ...and snapshotId picks the original $100k one instead.
+      const older = await balances(caller, { snapshotId: snapId });
 
-      expect(response).toHaveProperty("result");
+      expect(older[0]!).toBeLessThan(latest[0]!);
     } finally {
       cleanup();
     }
@@ -506,7 +541,6 @@ describe("projection router — computeMonteCarloProjection", () => {
         numTrials: 100,
       });
       expect(response.result).toBeNull();
-      expect(response).toHaveProperty("savedOverrides");
     } finally {
       cleanup();
     }
@@ -527,21 +561,16 @@ describe("projection router — computeMonteCarloProjection", () => {
         seed: 42,
       });
 
-      expect(response).toHaveProperty("result");
-      expect(response).toHaveProperty("simulationInputs");
-      expect(response).toHaveProperty("savedOverrides");
-
-      if (response.result !== null) {
-        expect(response.result).toHaveProperty("successRate");
-        expect(response.result).toHaveProperty("percentileBands");
-        expect(response.simulationInputs).toHaveProperty("currentAge");
-        expect(response.simulationInputs).toHaveProperty("retirementAge");
-        expect(response.simulationInputs).toHaveProperty("assetClasses");
-        expect(response.simulationInputs).toHaveProperty("glidePath");
-        expect(response.simulationInputs.preset).toBe("custom");
-        expect(response.simulationInputs.presetLabel).toBe("Custom");
-        expect(response.simulationInputs.taxMode).toBe("simple");
-      }
+      expect(response.result).not.toBeNull();
+      expect(response.result!.successRate).toBeGreaterThanOrEqual(0);
+      expect(response.result!.successRate).toBeLessThanOrEqual(1);
+      expect(response.simulationInputs.retirementAge).toBe(65);
+      expect(response.simulationInputs.assetClasses.map((a) => a.name)).toEqual(
+        ["Stocks", "Bonds"],
+      );
+      expect(response.simulationInputs.preset).toBe("custom");
+      expect(response.simulationInputs.presetLabel).toBe("Custom");
+      expect(response.simulationInputs.taxMode).toBe("simple");
     } finally {
       cleanup();
     }
@@ -562,16 +591,14 @@ describe("projection router — computeMonteCarloProjection", () => {
         seed: 42,
       });
 
-      expect(response).toHaveProperty("result");
-      if (response.result !== null) {
-        expect(response.simulationInputs.taxMode).toBe("advanced");
-      }
+      expect(response.result).not.toBeNull();
+      expect(response.simulationInputs.taxMode).toBe("advanced");
     } finally {
       cleanup();
     }
   });
 
-  it("exercises named preset code path (default) — may fail on raw SQL in SQLite", async () => {
+  it("runs a named preset from mc_presets", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
@@ -596,19 +623,13 @@ describe("projection router — computeMonteCarloProjection", () => {
         })
         .run();
 
-      try {
-        const response = await caller.projection.computeMonteCarloProjection({
-          numTrials: 100,
-          preset: "default",
-          seed: 42,
-        });
-        // If it succeeds, verify shape
-        expect(response).toHaveProperty("result");
-      } catch (e: unknown) {
-        // db.execute() is not available in SQLite — expected in test harness
-        const msg = e instanceof Error ? e.message : String(e);
-        expect(msg).toMatch(/execute/i);
-      }
+      const response = await caller.projection.computeMonteCarloProjection({
+        numTrials: 100,
+        preset: "default",
+        seed: 42,
+      });
+      expect(response.result).not.toBeNull();
+      expect(response.simulationInputs.preset).toBe("default");
     } finally {
       cleanup();
     }
@@ -629,16 +650,13 @@ describe("projection router — computeMonteCarloProjection", () => {
         assetClassOverrides: [{ id: 1, meanReturn: 0.12, stdDev: 0.2 }],
       });
 
-      expect(response).toHaveProperty("result");
-      if (response.result !== null) {
-        expect(response.simulationInputs.hasAssetClassOverrides).toBe(true);
-        // Verify the override was applied
-        const stockClass = response.simulationInputs.assetClasses.find(
-          (ac: { id: number }) => ac.id === 1,
-        );
-        expect(stockClass?.meanReturn).toBeCloseTo(0.12);
-        expect(stockClass?.stdDev).toBeCloseTo(0.2);
-      }
+      expect(response.result).not.toBeNull();
+      expect(response.simulationInputs.hasAssetClassOverrides).toBe(true);
+      const stockClass = response.simulationInputs.assetClasses.find(
+        (ac: { id: number }) => ac.id === 1,
+      );
+      expect(stockClass?.meanReturn).toBeCloseTo(0.12);
+      expect(stockClass?.stdDev).toBeCloseTo(0.2);
     } finally {
       cleanup();
     }
@@ -693,11 +711,16 @@ describe("projection router — computeMonteCarloProjection", () => {
         seed: 42,
       });
 
-      expect(response).toHaveProperty("savedOverrides");
-      if (response.result !== null) {
-        expect(response.savedOverrides.assetClassOverrides).toHaveLength(1);
-        expect(response.savedOverrides.inflationOverrides).toBeTruthy();
-      }
+      expect(response.result).not.toBeNull();
+      expect(response.savedOverrides.assetClassOverrides).toHaveLength(1);
+      // Saved overrides are applied to the run, not just echoed back.
+      const stocks = response.simulationInputs.assetClasses.find(
+        (ac: { id: number }) => ac.id === 1,
+      );
+      expect(stocks?.meanReturn).toBeCloseTo(0.11);
+      expect(response.simulationInputs.inflationRisk.meanRate).toBeCloseTo(
+        0.035,
+      );
     } finally {
       cleanup();
     }
@@ -726,16 +749,12 @@ describe("projection router — computeMonteCarloProjection", () => {
         inflationRisk: { meanRate: 0.02, stdDev: 0.008 },
       });
 
-      expect(response).toHaveProperty("result");
-      if (response.result !== null) {
-        // The explicit inflationRisk should take priority
-        expect(response.simulationInputs.inflationRisk.meanRate).toBeCloseTo(
-          0.02,
-        );
-        expect(response.simulationInputs.inflationRisk.stdDev).toBeCloseTo(
-          0.008,
-        );
-      }
+      expect(response.result).not.toBeNull();
+      // The explicit inflationRisk should take priority
+      expect(response.simulationInputs.inflationRisk.meanRate).toBeCloseTo(
+        0.02,
+      );
+      expect(response.simulationInputs.inflationRisk.stdDev).toBeCloseTo(0.008);
     } finally {
       cleanup();
     }
@@ -756,10 +775,8 @@ describe("projection router — computeMonteCarloProjection", () => {
         salaryActiveFields: [{ personId, salary: 200000 }],
       });
 
-      expect(response).toHaveProperty("result");
-      if (response.result !== null) {
-        expect(response.simulationInputs.hasSalaryActiveFields).toBe(true);
-      }
+      expect(response.result).not.toBeNull();
+      expect(response.simulationInputs.hasSalaryActiveFields).toBe(true);
     } finally {
       cleanup();
     }
@@ -781,15 +798,9 @@ describe("projection router — computeMonteCarloProjection", () => {
         decumulationExpenseOverride: 40000,
       });
 
-      expect(response).toHaveProperty("result");
-      if (response.result !== null) {
-        expect(response.simulationInputs.accumulationExpenseOverride).toBe(
-          50000,
-        );
-        expect(response.simulationInputs.decumulationExpenseOverride).toBe(
-          40000,
-        );
-      }
+      expect(response.result).not.toBeNull();
+      expect(response.simulationInputs.accumulationExpenseOverride).toBe(50000);
+      expect(response.simulationInputs.decumulationExpenseOverride).toBe(40000);
     } finally {
       cleanup();
     }
@@ -803,17 +814,26 @@ describe("projection router — computeMonteCarloProjection", () => {
       seedCorrelations(db);
       seedGlidePath(db);
 
-      const response = await caller.projection.computeMonteCarloProjection({
-        numTrials: 100,
-        preset: "custom",
-        seed: 42,
+      const run = (extra: object) =>
+        caller.projection.computeMonteCarloProjection({
+          numTrials: 100,
+          preset: "custom",
+          seed: 42,
+          ...extra,
+        });
+      const base = await run({});
+      const response = await run({
         accumulationOverrides: [
           { year: 2030, contributionRate: 0.2, notes: "Boost savings" },
         ],
         decumulationOverrides: [{ year: 2060, withdrawalRate: 0.05 }],
       });
 
-      expect(response).toHaveProperty("result");
+      expect(response.result).not.toBeNull();
+      // Same seed, different plan → the simulated bands move.
+      expect(response.result!.percentileBands).not.toEqual(
+        base.result!.percentileBands,
+      );
     } finally {
       cleanup();
     }
@@ -981,6 +1001,12 @@ describe("projection router — computeMonteCarloProjection cache", () => {
 // ---------------------------------------------------------------------------
 
 describe("projection router — computeStrategyComparison", () => {
+  type Comparison = Awaited<
+    ReturnType<Caller["projection"]["computeStrategyComparison"]>
+  >;
+  const fixedOf = (c: Comparison) =>
+    c.strategies.find((st) => st.strategy === "fixed")!;
+
   it("returns empty strategies when no retirement data exists", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
@@ -1001,24 +1027,18 @@ describe("projection router — computeStrategyComparison", () => {
 
       expect(response.strategies.length).toBeGreaterThan(0);
       expect(response.activeStrategy).toBe("fixed");
-      expect(response).toHaveProperty("retirementAge");
+      expect(response.retirementAge).toBe(65);
 
-      // Each strategy should have the expected shape
       for (const strat of response.strategies) {
-        expect(strat).toHaveProperty("strategy");
-        expect(strat).toHaveProperty("label");
-        expect(strat).toHaveProperty("shortLabel");
-        expect(strat).toHaveProperty("portfolioDepletionAge");
+        expect(strat.label).not.toBe("");
         expect(strat).not.toHaveProperty("sustainableWithdrawal");
-        expect(strat).toHaveProperty("year1Withdrawal");
-        expect(strat).toHaveProperty("avgAnnualWithdrawal");
-        expect(strat).toHaveProperty("minAnnualWithdrawal");
-        expect(strat).toHaveProperty("maxAnnualWithdrawal");
-        expect(strat).toHaveProperty("endBalance");
-        expect(strat).toHaveProperty("legacyAmount");
-        expect(strat).toHaveProperty("successRate");
-        expect(strat).toHaveProperty("budgetStabilityRate");
-        expect(strat).toHaveProperty("yearByYear");
+        expect(strat.minAnnualWithdrawal).toBeLessThanOrEqual(
+          strat.avgAnnualWithdrawal,
+        );
+        expect(strat.avgAnnualWithdrawal).toBeLessThanOrEqual(
+          strat.maxAnnualWithdrawal,
+        );
+        expect(strat.yearByYear.length).toBeGreaterThan(0);
         // Without MC data, successRate should be null
         expect(strat.successRate).toBeNull();
       }
@@ -1053,11 +1073,14 @@ describe("projection router — computeStrategyComparison", () => {
     try {
       const { personId } = seedFullProjectionData(db);
 
-      const response = await caller.projection.computeStrategyComparison({
+      const base = await caller.projection.computeStrategyComparison();
+      const raised = await caller.projection.computeStrategyComparison({
         salaryActiveFields: [{ personId, salary: 200000 }],
       });
 
-      expect(response.strategies.length).toBeGreaterThan(0);
+      expect(fixedOf(raised).endBalance).toBeGreaterThan(
+        fixedOf(base).endBalance,
+      );
     } finally {
       cleanup();
     }
@@ -1068,12 +1091,15 @@ describe("projection router — computeStrategyComparison", () => {
     try {
       seedFullProjectionData(db);
 
+      const base = await caller.projection.computeStrategyComparison();
       const response = await caller.projection.computeStrategyComparison({
         accumulationExpenseOverride: 60000,
         decumulationExpenseOverride: 45000,
       });
 
-      expect(response.strategies.length).toBeGreaterThan(0);
+      expect(fixedOf(response).year1Withdrawal).not.toBe(
+        fixedOf(base).year1Withdrawal,
+      );
     } finally {
       cleanup();
     }
@@ -1082,10 +1108,10 @@ describe("projection router — computeStrategyComparison", () => {
   it("strategy comparison with snapshot override", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
-      const { perfAcctId } = seedFullProjectionData(db);
+      const { perfAcctId, snapId } = seedFullProjectionData(db);
 
-      // Seed a second snapshot
-      const snapId = seedSnapshot(db, "2025-06-01", [
+      // A newer $300k snapshot is the default; snapshotId picks the $100k one.
+      seedSnapshot(db, "2025-06-01", [
         {
           performanceAccountId: perfAcctId,
           amount: "300000",
@@ -1093,11 +1119,14 @@ describe("projection router — computeStrategyComparison", () => {
         },
       ]);
 
-      const response = await caller.projection.computeStrategyComparison({
+      const latest = await caller.projection.computeStrategyComparison();
+      const older = await caller.projection.computeStrategyComparison({
         snapshotId: snapId,
       });
 
-      expect(response.strategies.length).toBeGreaterThan(0);
+      expect(fixedOf(older).endBalance).toBeLessThan(
+        fixedOf(latest).endBalance,
+      );
     } finally {
       cleanup();
     }
