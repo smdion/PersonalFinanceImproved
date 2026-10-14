@@ -75,11 +75,13 @@ function withholdingStandardDeduction(
 
 /** Build TaxBracketInput from DB bracket row + limits. `yearBrackets`
  *  (the same year's rows) lets the W-4 adjustment follow the withholding
- *  tables' own standard deduction — see withholdingStandardDeduction. */
+ *  tables' own standard deduction — see withholdingStandardDeduction.
+ *  Required on purpose: without it the adjustment falls back to the
+ *  tax-return deduction, which is wrong for 2025 withholding. */
 export function buildBracketInput(
   bracketRow: typeof schema.taxBrackets.$inferSelect,
   limits: Map<string, number>,
-  yearBrackets: readonly (typeof schema.taxBrackets.$inferSelect)[] = [],
+  yearBrackets: readonly (typeof schema.taxBrackets.$inferSelect)[],
 ): TaxBracketInput {
   const brackets = bracketRow.brackets.map((b, i, arr) => ({
     min: b.threshold,
@@ -143,7 +145,8 @@ export function buildLiabilityBracketInput(
         "This calculation needs standard W-4 tax brackets (not the multiple-jobs checkbox).",
     });
   }
-  const base = buildBracketInput(bracketRow, limits);
+  // No yearBrackets: the liability path never reads w4Adjustment.
+  const base = buildBracketInput(bracketRow, limits, []);
   return { ...base, brackets: toTaxableIncomeBrackets(base.brackets) };
 }
 

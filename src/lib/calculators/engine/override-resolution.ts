@@ -222,8 +222,6 @@ export function resolveDecumulationConfig(
       continue;
     }
 
-    if (o.withdrawalRate !== undefined)
-      config.withdrawalRate = o.withdrawalRate;
     if (o.withdrawalRoutingMode !== undefined)
       config.withdrawalRoutingMode = o.withdrawalRoutingMode;
     if (o.withdrawalOrder !== undefined)

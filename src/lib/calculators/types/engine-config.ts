@@ -597,9 +597,8 @@ export type DecumulationDefaults = {
  *
  * EXAMPLES:
  *
- * Reduce withdrawal rate at age 75 (year 2062):
- *   { year: 2062, withdrawalRate: 0.035 }
- *   → Drop to 3.5% withdrawal from 2062 onward.
+ * No per-year withdrawal rate: no spending strategy reads one (the
+ * household's rate lives in DecumulationDefaults, set from settings).
  *
  * Switch to drawing Roth first from 401k at age 80:
  *   { year: 2067, withdrawalTaxPreference: { '401k': 'roth' } }
@@ -611,9 +610,6 @@ export type DecumulationDefaults = {
  */
 export type DecumulationOverride = {
   year: number;
-
-  /** Withdrawal rate as decimal. See DecumulationDefaults.withdrawalRate. */
-  withdrawalRate?: number;
 
   /** Withdrawal routing mode. See DecumulationDefaults.withdrawalRoutingMode. */
   withdrawalRoutingMode?: RoutingMode;
