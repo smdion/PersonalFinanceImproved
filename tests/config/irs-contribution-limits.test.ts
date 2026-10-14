@@ -133,11 +133,11 @@ const IRS_LIMITS: Record<
     },
     hsa_family_limit: {
       value: 8750,
-      source: "IRS Revenue Procedure 2025-XX",
+      source: "IRS Revenue Procedure 2025-19",
     },
     hsa_individual_limit: {
       value: 4400,
-      source: "IRS Revenue Procedure 2025-XX",
+      source: "IRS Revenue Procedure 2025-19",
     },
     hsa_catchup_limit: {
       value: 1000,

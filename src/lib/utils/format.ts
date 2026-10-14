@@ -139,13 +139,13 @@ export function maskAmountsInText(text: string): string {
  * Format a number as USD currency. Returns maskedAmount() in privacy mode
  * (sign included — a "-" next to the mask would still leak information).
  */
-export function formatCurrency(value: number): string {
-  if (privacyMode) return maskedAmount(value.toFixed(2));
+export function formatCurrency(value: number, decimals: 0 | 2 = 2): string {
+  if (privacyMode) return maskedAmount(value.toFixed(decimals));
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
   }).format(value);
 }
 

@@ -150,9 +150,7 @@ describe("ContribCard", () => {
       />,
     );
     expect(
-      screen.getByText(
-        "Set to 5% of salary ($5,000.00/yr toward $23,000.00 limit)",
-      ),
+      screen.getByText("Set to 5% of salary ($5,000/yr toward $23,000 limit)"),
     ).toBeInTheDocument();
   });
 

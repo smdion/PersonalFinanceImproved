@@ -131,6 +131,9 @@ export default defineConfig({
         "src/server/**",
       ],
       exclude: [
+        // Docs living next to the code (engine/ARCHITECTURE.md) — the
+        // directory globs above would otherwise try to parse them.
+        "**/*.md",
         // Pure type definitions — no runtime code to test
         "src/lib/calculators/types/**",
         "src/lib/types/**",
@@ -171,7 +174,8 @@ export default defineConfig({
         "src/lib/db/schema-sqlite.ts",
         "src/lib/db/schema.ts",
         // DB runtime — requires live database for transactions/queries
-        "src/lib/db/version-logic.ts",
+        // (version-logic.ts is not here: tests/integration/backup-roundtrip
+        // runs it against the test SQLite database.)
         "src/lib/db/backfill-local-ids.ts",
         "src/lib/db/backfill-perf-ids.ts",
       ],
