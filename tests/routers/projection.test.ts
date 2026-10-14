@@ -508,6 +508,8 @@ describe("projection router — computeProjection", () => {
     expect(response.result).not.toBeNull();
     expect(response.combinedSalary).toBe(120000);
     expect(response.people).toHaveLength(1);
+    expect(response.primaryPersonId).toBe(response.people[0]!.id);
+    expect(response.annualExpenses).toBeGreaterThan(0);
     expect(response.result!.projectionByYear.length).toBeGreaterThan(0);
   });
 

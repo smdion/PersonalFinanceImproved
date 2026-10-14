@@ -190,66 +190,7 @@ function decumulationConfig(
 // computeProjection — full result path
 // ---------------------------------------------------------------------------
 
-describe("projection router — computeProjection full result path", () => {
-  it("returns full result shape with seeded data (non-metadataOnly)", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
-    try {
-      seedFullProjectionData(db);
-
-      const response = await caller.projection.computeProjection({
-        accumulationOverrides: [],
-        decumulationOverrides: [],
-      });
-
-      expect(response.result).not.toBeNull();
-      expect(response.result!.projectionByYear.length).toBeGreaterThan(0);
-      expect(response.combinedSalary).toBe(120000);
-      expect(response.people).toHaveLength(1);
-      expect(response.primaryPersonId).toBe(response.people[0]!.id);
-      expect(response.annualExpenses).toBeGreaterThan(0);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("returns metadata-only when metadataOnly=true", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
-    try {
-      seedFullProjectionData(db);
-
-      const response = await caller.projection.computeProjection({
-        metadataOnly: true,
-        accumulationOverrides: [],
-        decumulationOverrides: [],
-      });
-
-      expect(response.result).toBeNull();
-      // Metadata is still filled in without running the engine.
-      expect(response.combinedSalary).toBe(120000);
-      expect(response.people).toHaveLength(1);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("applies salary overrides to the projection", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
-    try {
-      const { personId } = seedFullProjectionData(db);
-
-      const response = await caller.projection.computeProjection({
-        salaryActiveFields: [{ personId, salary: 200000 }],
-        accumulationOverrides: [],
-        decumulationOverrides: [],
-      });
-
-      expect(response.result).not.toBeNull();
-      expect(response.combinedSalary).toBe(200000);
-    } finally {
-      cleanup();
-    }
-  });
-});
+describe("projection router — computeProjection full result path", () => {});
 
 // ---------------------------------------------------------------------------
 // computeProjection — persistent projection cache
