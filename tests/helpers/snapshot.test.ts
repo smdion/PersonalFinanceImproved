@@ -224,6 +224,40 @@ describe("buildYearEndHistory", () => {
     ctx.db.delete(ctx.schema.netWorthAnnual).run();
   });
 
+  it("caches targeted calls per targeting, never across different targeting", async () => {
+    const profileA = { budgetProfileId: 1, budgetColumn: 0 };
+    const before = await buildYearEndHistory(ctx.rawDb, undefined, profileA);
+    expect(before.some((r) => r.year === 2019)).toBe(false);
+
+    ctx.db
+      .insert(ctx.schema.netWorthAnnual)
+      .values({
+        yearEndDate: "2019-12-31",
+        portfolioTotal: "1000",
+        cash: "0",
+        houseValue: "0",
+        otherAssets: "0",
+        mortgageBalance: "0",
+        otherLiabilities: "0",
+        portfolioByTaxLocation: { retirement: {}, portfolio: {} },
+      })
+      .run();
+
+    // Same targeting → the cached build (a page's second caller).
+    const again = await buildYearEndHistory(ctx.rawDb, undefined, {
+      ...profileA,
+    });
+    expect(again.some((r) => r.year === 2019)).toBe(false);
+    // Different targeting → its own fresh build.
+    const other = await buildYearEndHistory(ctx.rawDb, undefined, {
+      ...profileA,
+      budgetColumn: 1,
+    });
+    expect(other.some((r) => r.year === 2019)).toBe(true);
+
+    ctx.db.delete(ctx.schema.netWorthAnnual).run();
+  });
+
   it("returns historical rows from net_worth_annual", async () => {
     // Seed a historical year
     ctx.db
