@@ -28,17 +28,19 @@ function getDialect(): "postgresql" | "sqlite" {
 /**
  * Reference-data reconcile (R43).
  *
- * `seed-reference-data.sql` is `INSERT … ON CONFLICT DO NOTHING` only — no
- * DDL, no UPDATE/DELETE. It is safe to re-run on every migrate, and doing so
+ * `seed-reference-data.sql` is `INSERT … ON CONFLICT DO NOTHING`, plus a
+ * trailing corrections section of `UPDATE … WHERE value = <old>` statements
+ * — no DDL, no DELETE. It is safe to re-run on every migrate, and doing so
  * is the only way a new tax year added to the seed reaches an existing
  * install. Previously the seed ran only when `contribution_limits` was empty,
  * so annual figure updates never propagated to a populated DB (R43 audit,
  * systemic problem #3).
  *
- * Additive only: `ON CONFLICT DO NOTHING` never overwrites an admin's
- * Settings edit and never corrects an already-seeded wrong value — a
- * seed-value *correction* still has to go through the UI or a manual
- * statement (documented in TAX-PARAMETER-RUNBOOK.md).
+ * `ON CONFLICT DO NOTHING` never overwrites an admin's Settings edit. A
+ * seed-value *correction* goes in the seed's corrections section as an
+ * UPDATE guarded by the exact old value (CAST so it compares numerically
+ * in SQLite too), so it only ever replaces a row
+ * still holding the wrong figure (never an admin's edit).
  *
  * Every table the seed writes MUST be a year-keyed reference table with a
  * `tax_year`-scoped unique constraint. Without one, `ON CONFLICT DO NOTHING`

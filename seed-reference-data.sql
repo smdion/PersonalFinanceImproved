@@ -132,3 +132,20 @@ INSERT INTO tax_params (tax_year, version, source, notes) VALUES
   (2025, 1, 'IRS Notice 2024-80; IRS Rev. Proc. 2024-40; Pub 15-T (2025)', 'R43 backfill of the pre-existing 2025 reference data'),
   (2026, 1, 'IRS Notice 2025-67; IRS Rev. Proc. 2025-32; Pub 15-T (2026); CMS 2026; HHS 2025', 'R43 backfill of the pre-existing 2026 reference data')
 ON CONFLICT DO NOTHING;
+
+-- ---------------------------------------------------------------------------
+-- Corrections to figures an earlier seed got wrong. The INSERTs above never
+-- overwrite an existing row, so a fix to an already-seeded value reaches
+-- existing installs only through here. Each UPDATE matches the exact old
+-- value, so it is a no-op on fresh installs, on re-runs, and on any row an
+-- admin has since changed in Settings.
+-- ---------------------------------------------------------------------------
+
+-- 2025 standard deduction: OBBBA §70102 raised it after the pre-law figures
+-- were seeded (v0.8.7).
+UPDATE contribution_limits SET value = 31500.000000, notes = 'OBBBA §70102 (supersedes Rev. Proc. 2024-40)'
+  WHERE tax_year = 2025 AND limit_type = 'standard_deduction_mfj' AND CAST(value AS NUMERIC) = 30000;
+UPDATE contribution_limits SET value = 15750.000000, notes = 'OBBBA §70102 (supersedes Rev. Proc. 2024-40)'
+  WHERE tax_year = 2025 AND limit_type = 'standard_deduction_single' AND CAST(value AS NUMERIC) = 15000;
+UPDATE contribution_limits SET value = 23625.000000, notes = 'OBBBA §70102 (supersedes Rev. Proc. 2024-40)'
+  WHERE tax_year = 2025 AND limit_type = 'standard_deduction_hoh' AND CAST(value AS NUMERIC) = 22500;
