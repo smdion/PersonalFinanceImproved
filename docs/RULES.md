@@ -243,6 +243,7 @@ Portfolio Snapshots + Performance Data + Settings
 | Account type config                | `getAccountTypeConfig()`             | All account-type behavior (from `ACCOUNT_TYPE_CONFIG`)                                                                                                                                                                                                      |
 | Parent category map                | `getParentCategory()`                | Account type → goal category (Retirement/Portfolio) via config                                                                                                                                                                                              |
 | Mortgage balance                   | `computeMortgageBalance()`           | Amortization from loans + extra payments                                                                                                                                                                                                                    |
+| Financial rules & milestones       | `evaluateMilestones()`               | `lib/pure/milestones.ts` — Checkup, Milestones page and Retirement readiness all read its results; thresholds in `lib/config/milestones.ts`                                                                                                                 |
 
 ### Rules
 

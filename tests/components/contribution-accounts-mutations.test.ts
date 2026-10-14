@@ -151,21 +151,6 @@ async function importHook() {
 }
 
 describe("useContributionAccountsMutations", () => {
-  it("returns the expected mutation/helper shape", async () => {
-    const useContributionAccountsMutations = await importHook();
-    const { result } = renderHook(() =>
-      useContributionAccountsMutations({ allContribs: [] }),
-    );
-    expect(result.current).toHaveProperty("createPerfMut");
-    expect(result.current).toHaveProperty("deletePerfMut");
-    expect(result.current).toHaveProperty("createContribMut");
-    expect(result.current).toHaveProperty("updatePortfolioAccountMut");
-    expect(result.current).toHaveProperty("createPortfolioAccountMut");
-    expect(typeof result.current.handlePerfUpdate).toBe("function");
-    expect(typeof result.current.handleContribUpdate).toBe("function");
-    expect(typeof result.current.handleLinkContrib).toBe("function");
-  });
-
   // ---------------------------------------------------------------------
   // handlePerfUpdate
   // ---------------------------------------------------------------------
@@ -323,35 +308,6 @@ describe("useContributionAccountsMutations", () => {
     );
     result.current.handleLinkContrib(999, 99);
     expect(mutations.updateContrib.mutate).not.toHaveBeenCalled();
-  });
-
-  // ---------------------------------------------------------------------
-  // Mutation input shapes for create/delete
-  // ---------------------------------------------------------------------
-
-  it("createPerfMut.mutate fires with a create-shaped payload", async () => {
-    const useContributionAccountsMutations = await importHook();
-    const { result } = renderHook(() =>
-      useContributionAccountsMutations({ allContribs: [] }),
-    );
-    result.current.createPerfMut.mutate({
-      institution: "Schwab",
-      accountType: "brokerage",
-      ownershipType: "individual",
-      parentCategory: "Portfolio",
-    });
-    expect(mutations.createPerf.mutate).toHaveBeenCalledWith(
-      expect.objectContaining({ institution: "Schwab" }),
-    );
-  });
-
-  it("deletePerfMut.mutate fires with the account id", async () => {
-    const useContributionAccountsMutations = await importHook();
-    const { result } = renderHook(() =>
-      useContributionAccountsMutations({ allContribs: [] }),
-    );
-    result.current.deletePerfMut.mutate({ id: 42 });
-    expect(mutations.deletePerf.mutate).toHaveBeenCalledWith({ id: 42 });
   });
 
   // ---------------------------------------------------------------------

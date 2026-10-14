@@ -225,8 +225,6 @@ export function useProjectionState(props: UseProjectionStateProps) {
     if (form.decumForm.reset) {
       o.reset = true;
     } else {
-      if (form.decumForm.withdrawalRate !== "")
-        o.withdrawalRate = parseFloat(form.decumForm.withdrawalRate) / 100;
       if (form.decumForm.withdrawalRoutingMode !== "")
         o.withdrawalRoutingMode = form.decumForm.withdrawalRoutingMode;
       const defaultOrder = getDefaultDecumulationOrder();

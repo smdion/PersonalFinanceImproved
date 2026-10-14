@@ -5,28 +5,22 @@ import { memo, useState, type ReactNode } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { formatSavingsRate } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
-import { useFICache } from "@/lib/hooks/use-fi-cache";
-import {
-  FI_COMPLETE_THRESHOLD,
-  DEFAULT_HIGH_INCOME_THRESHOLD,
-} from "@/lib/constants";
-import { wealthScoreTier } from "@/lib/config/display-labels";
+import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
+import { CHECKUP_MILESTONES } from "@/lib/config/milestones";
+import { meetsRateTarget, type MilestoneResult } from "@/lib/pure/milestones";
 import {
   householdSavings,
   householdTotalCompensation,
   isHighIncomeHousehold,
 } from "@/lib/pure/contributions";
 import { useScenario } from "@/lib/context/scenario-context";
-import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
+import { useContributionSummaryInput } from "@/lib/hooks/use-milestones";
+import { useRecommendations } from "@/lib/hooks/use-recommendations";
 import { LoadingCard, ErrorCard } from "./utils";
 import { SavingsRateBreakdown } from "./savings-rate-breakdown";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
-import { formatMonths } from "./mortgage-payoff";
-import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 
 type CheckupStep = {
   label: string;
@@ -160,21 +154,17 @@ function CheckupRow({ step }: { step: CheckupStep }) {
   );
 }
 
+/** A milestone's status as the Checkup's traffic light. */
+function checkupStatus(r: MilestoneResult): CheckupStep["status"] {
+  if (r.alert) return "red";
+  if (r.status === "reached" || r.status === "onTrack") return "green";
+  if (r.status === "behind") return "yellow";
+  return "gray";
+}
+
 function FinancialCheckupCardImpl() {
   const { viewMode } = useScenario();
-  const salaryActiveFields = useActiveSalaries();
-  // Independent Salary Profile axis (Plan pin -> globally-active setting).
-  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const { queryInput: contribProfileInput } = useEffectiveContribProfileId();
-  const contribInput = {
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
-    ...contribProfileInput,
-    ...salaryProfileInput,
-  } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
-  const [efundBudgetColumn] = usePersistedSetting<number>(
-    "efund_budget_column",
-    -1,
-  );
+  const contribInput = useContributionSummaryInput();
   const [highIncomeThreshold] = usePersistedSetting<number>(
     "high_income_threshold",
     DEFAULT_HIGH_INCOME_THRESHOLD,
@@ -183,16 +173,8 @@ function FinancialCheckupCardImpl() {
     "savings_rate_thresholds",
     "[0.25, 0.15]",
   );
-  const efundTierInput =
-    efundBudgetColumn >= 0
-      ? { budgetTierOverride: efundBudgetColumn }
-      : undefined;
-  const [fiCache] = useFICache();
-  const savings = trpc.savings.computeSummary.useQuery(efundTierInput);
+  const milestones = useRecommendations();
   const contribs = trpc.contribution.computeSummary.useQuery(contribInput);
-  const mortgage = trpc.mortgage.computeActiveSummary.useQuery();
-  const yearEndTargeting = useYearEndTargetingInput();
-  const networth = trpc.networth.computeSummary.useQuery(yearEndTargeting);
 
   const contribPeople = contribs.data?.people?.filter((d) => d.result) ?? [];
   const highIncome = isHighIncomeHousehold(
@@ -202,82 +184,40 @@ function FinancialCheckupCardImpl() {
   const { excludeMatch, includePortfolio, toggleMatch, togglePortfolio } =
     useSavingsRateOptions(highIncome);
 
-  const isLoading =
-    savings.isLoading ||
-    contribs.isLoading ||
-    mortgage.isLoading ||
-    networth.isLoading;
-  const hasError =
-    savings.error || contribs.error || mortgage.error || networth.error;
-
-  if (isLoading) return <LoadingCard title="Financial Checkup" />;
-  if (hasError)
+  if (milestones.isLoading || contribs.isLoading)
+    return <LoadingCard title="Financial Checkup" />;
+  if (milestones.error || contribs.error)
     return <ErrorCard title="Financial Checkup" message="Failed to load" />;
 
-  const steps: CheckupStep[] = [];
-
-  // 1. Emergency Fund
-  const efund = savings.data?.efund;
-  if (efund && efund.monthsCovered !== null) {
-    const months = efund.monthsCoveredWithRepay ?? efund.monthsCovered;
-    steps.push({
-      label: "Emergency Fund",
-      helpTip:
-        "Months of essential expenses covered by liquid savings. Target is 3-6 months.",
-      status: months >= 3 ? "green" : months >= 1 ? "yellow" : "red",
-      text: `${months.toFixed(1)} mo covered`,
-      href: "/savings",
-    });
-  }
-
-  // 2. Employer Match
-  const people =
-    contribs.data?.people?.filter((d) => d.accountTypes.length > 0) ?? [];
-  const totalMatch = people.reduce(
-    (s, p) => s + p.accountTypes.reduce((ls, a) => ls + a.employerMatch, 0),
-    0,
+  const byId = new Map(milestones.results.map((r) => [r.id, r]));
+  const milestoneStep = (id: string, label: string): CheckupStep[] => {
+    const r = byId.get(id);
+    if (!r) return [];
+    // The FI row's pace comes from the projection — wait for it rather than
+    // flash "unknown" first.
+    if (id === "fi" && milestones.projectionLoading && r.status !== "reached")
+      return [
+        { label, helpTip: r.rule, status: "gray", text: "…", href: r.href },
+      ];
+    return [
+      {
+        label,
+        helpTip: r.rule,
+        status: checkupStatus(r),
+        text: r.short,
+        subText: r.note ?? undefined,
+        href: r.href,
+      },
+    ];
+  };
+  const [efundRow, matchRow, debtRow, ...laterRows] = CHECKUP_MILESTONES.map(
+    (m) => milestoneStep(m.id, m.label),
   );
-  if (totalMatch > 0) {
-    steps.push({
-      label: "Employer Match",
-      status: "green",
-      text: `${formatCurrency(totalMatch)}/yr captured`,
-      href: "/paycheck",
-    });
-  } else if (people.length > 0) {
-    steps.push({
-      label: "Employer Match",
-      status: "gray",
-      text: "No match data",
-      href: "/paycheck",
-    });
-  }
-
-  // 3. Debt Payoff (Mortgage)
-  const activeLoans =
-    mortgage.data?.result.loans.filter((l) => l.remainingMonths > 0) ?? [];
-  if (activeLoans.length === 0) {
-    steps.push({
-      label: "Debt Payoff",
-      status: "green",
-      text: "Mortgage paid off",
-      href: "/mortgage",
-    });
-  } else {
-    const primary = activeLoans[0]!;
-    // Ahead of the original loan (refinancing + extra payments) — the same
-    // figure Net Worth's payoff line shows.
-    const monthsAhead = mortgage.data?.result.totalMonthsSaved ?? 0;
-    steps.push({
-      label: "Debt Payoff",
-      status: monthsAhead > 0 ? "green" : "yellow",
-      text:
-        monthsAhead > 0
-          ? `${formatMonths(monthsAhead)} ahead`
-          : `${Math.ceil(primary.remainingMonths / 12)} yr remaining`,
-      href: "/mortgage",
-    });
-  }
+  const steps: CheckupStep[] = [
+    ...(efundRow ?? []),
+    ...(matchRow ?? []),
+    ...(debtRow ?? []),
+  ];
 
   // 4. Savings Rate — expands into what it's made of.
   const savingsBreakdown = householdSavings(
@@ -306,13 +246,12 @@ function FinancialCheckupCardImpl() {
 
   steps.push({
     label: "Savings Rate",
-    status:
-      savingsRate >= greenThreshold
-        ? "green"
-        : savingsRate >= yellowThreshold
-          ? "yellow"
-          : "red",
-    text: formatPercent(savingsRate, 1),
+    status: meetsRateTarget(savingsRate, greenThreshold)
+      ? "green"
+      : meetsRateTarget(savingsRate, yellowThreshold)
+        ? "yellow"
+        : "red",
+    text: formatSavingsRate(savingsRate),
     subText:
       [
         excludeMatch ? null : "incl. match",
@@ -336,61 +275,7 @@ function FinancialCheckupCardImpl() {
     ),
   });
 
-  // 5. Wealth Score (uses AAW score — Money Guy formula — for PAW/AAW/UAW tier)
-  const aawScore = networth.data?.result.aawScoreMarket ?? 0;
-  const wealthTier = wealthScoreTier(aawScore);
-  steps.push({
-    label: "Wealth Score",
-    helpTip:
-      "Money Guy Wealth Accumulator. PAW (2x+) = Prodigious, AAW (1x) = Average, UAW (<0.5x) = Under Accumulator.",
-    status: wealthTier.tier === "uaw" ? "red" : "green",
-    text: wealthTier.shortLabel,
-    href: "/networth",
-  });
-
-  // 6. FI Progress
-  const fiProgress = networth.data?.result.fiProgress ?? 0;
-  const fiTarget = networth.data?.result.fiTarget ?? 0;
-  const currentYear = new Date().getFullYear();
-  if (fiTarget > 0) {
-    let fiStatus: CheckupStep["status"];
-    let fiText: string;
-    let fiSubText: string | undefined;
-
-    const fiAchieved =
-      fiProgress >= FI_COMPLETE_THRESHOLD ||
-      (fiCache !== null &&
-        fiCache.fiYear !== null &&
-        fiCache.fiYear <= currentYear);
-
-    if (fiAchieved) {
-      fiStatus = "green";
-      fiText = "FI Achieved!";
-    } else if (fiCache === null) {
-      fiStatus = "gray";
-      fiText = "Run retirement projection";
-    } else if (fiCache.fiYear === null) {
-      fiStatus = "red";
-      fiText = "FI target unreachable";
-    } else {
-      fiStatus = "yellow";
-      fiText =
-        fiCache.fiAge !== null
-          ? `On pace for age ${fiCache.fiAge}`
-          : "On pace for FI";
-      fiSubText = `${fiCache.fiYear} · based on retirement plan`;
-    }
-
-    steps.push({
-      label: "FI Progress",
-      helpTip:
-        "Financial Independence target: annual expenses / withdrawal rate (set in Retirement settings). Portfolio value vs. FI number.",
-      status: fiStatus,
-      text: fiText,
-      subText: fiSubText,
-      href: "/networth",
-    });
-  }
+  steps.push(...laterRows.flat());
 
   const greenCount = steps.filter((s) => s.status === "green").length;
 
@@ -403,6 +288,16 @@ function FinancialCheckupCardImpl() {
         </>
       }
       subtitle={`${greenCount}/${steps.length} on track`}
+      headerRight={
+        <a
+          href="/recommendations"
+          className="text-caption text-blue-600 hover:underline"
+        >
+          {milestones.recommendations.length > 0
+            ? `${milestones.recommendations.length} recommendation${milestones.recommendations.length === 1 ? "" : "s"} →`
+            : "Recommendations →"}
+        </a>
+      }
     >
       <div className="divide-y">
         {steps.map((step) => (

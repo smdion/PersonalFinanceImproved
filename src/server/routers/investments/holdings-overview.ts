@@ -21,31 +21,85 @@ import { getLatestMarketClose } from "@/server/helpers/market-prices";
 import { getSecConnection } from "@/lib/sec/connection";
 import { loadBucketLinks, toFactRows } from "@/server/helpers/fund-facts";
 import { loadAccounts, loadLatestHoldings } from "./_shared";
+import { SK_CURRENT_GLIDE_PATH } from "@/lib/constants/settings-keys";
+import {
+  parseCurrentGlidePath,
+  unknownAssetClassIds,
+} from "@/lib/pure/current-glide-path";
 
 type Db = typeof import("@/lib/db").db;
 
-/** Target allocation by asset class for the primary person's age (the engine's own interpolation). */
-async function targetByAssetClass(
-  db: Db,
-): Promise<{ age: number | null; target: Record<number, number> }> {
-  const [person] = await db
-    .select({ dob: schema.people.dateOfBirth })
-    .from(schema.people)
-    .where(eq(schema.people.isPrimaryUser, true))
-    .limit(1);
-  if (!person) return { age: null, target: {} };
-  const age = getAge(new Date(`${person.dob}T00:00:00`), new Date());
-  const rows = await db.select().from(schema.glidePathAllocations);
+/**
+ * Target allocation by asset class for the primary person's age: the
+ * household's current glide path when it has set one, otherwise the
+ * retirement simulation's glide path (the engine's own interpolation).
+ */
+async function targetByAssetClass(db: Db): Promise<{
+  age: number | null;
+  target: Record<number, number>;
+  source: "current" | "retirement";
+  /** The glide path the target comes from (for charting). */
+  glidePath: { age: number; allocations: Record<number, number> }[];
+  currentGlidePath:
+    { age: number; allocations: Record<number, number> }[] | null;
+  /** The saved current glide path names an asset class that no longer
+   *  exists, so the target falls back to the retirement glide path. */
+  currentGlidePathStale: boolean;
+}> {
+  const [[person], rows, [currentRow], activeClasses] = await Promise.all([
+    db
+      .select({ dob: schema.people.dateOfBirth })
+      .from(schema.people)
+      .where(eq(schema.people.isPrimaryUser, true))
+      .limit(1),
+    db.select().from(schema.glidePathAllocations),
+    db
+      .select({ value: schema.appSettings.value })
+      .from(schema.appSettings)
+      .where(eq(schema.appSettings.key, SK_CURRENT_GLIDE_PATH))
+      .limit(1),
+    db
+      .select({ id: schema.assetClassParams.id })
+      .from(schema.assetClassParams)
+      .where(eq(schema.assetClassParams.isActive, true)),
+  ]);
+  const currentGlidePath = parseCurrentGlidePath(currentRow?.value ?? null);
+  const currentGlidePathStale =
+    currentGlidePath !== null &&
+    unknownAssetClassIds(
+      currentGlidePath,
+      new Set(activeClasses.map((c) => c.id)),
+    ).length > 0;
+  const usable = currentGlidePathStale ? null : currentGlidePath;
+  const source = usable ? "current" : "retirement";
   const byAge = new Map<number, Record<number, number>>();
   for (const r of rows) {
     const a = byAge.get(r.age) ?? {};
     a[r.assetClassId] = Number(r.allocation);
     byAge.set(r.age, a);
   }
-  const glidePath = [...byAge.entries()]
+  const retirementPath = [...byAge.entries()]
     .sort(([a], [b]) => a - b)
     .map(([gpAge, allocations]) => ({ age: gpAge, allocations }));
-  return { age, target: interpolateAllocations(glidePath, age) };
+  const glidePath = usable ?? retirementPath;
+  if (!person)
+    return {
+      age: null,
+      target: {},
+      source,
+      glidePath,
+      currentGlidePath,
+      currentGlidePathStale,
+    };
+  const age = getAge(new Date(`${person.dob}T00:00:00`), new Date());
+  return {
+    age,
+    target: interpolateAllocations(glidePath, age),
+    source,
+    glidePath,
+    currentGlidePath,
+    currentGlidePathStale,
+  };
 }
 
 /**
@@ -132,10 +186,24 @@ export async function loadHoldingsOverview(db: Db) {
       .orderBy(schema.assetClassParams.sortOrder),
     targetByAssetClass(db),
   ]);
-  const [valued, links] = await Promise.all([
+  const [allValued, links] = await Promise.all([
     valueHoldings(db, holdings),
     loadBucketLinks(db),
   ]);
+  // Only SimpleFIN accounts linked to a Ledgr account count — an unlinked
+  // feed (a duplicate connection, an old replay, an account Ledgr doesn't
+  // track) would otherwise count the same money twice. Their dollars are
+  // reported so the page can say what's left out.
+  const isLinked = (simplefinAccountId: number) =>
+    accounts.get(simplefinAccountId)?.performanceAccountId != null;
+  const valued = allValued.filter((v) => isLinked(v.simplefinAccountId));
+  const unlinkedTotals = new Map<number, number>();
+  for (const v of allValued)
+    if (!isLinked(v.simplefinAccountId))
+      unlinkedTotals.set(
+        v.simplefinAccountId,
+        (unlinkedTotals.get(v.simplefinAccountId) ?? 0) + v.value,
+      );
 
   const { buckets, unknown, total } = portfolioBuckets(valued);
   const { byClass, unlinked } = valueByClass(buckets, links);
@@ -149,6 +217,22 @@ export async function loadHoldingsOverview(db: Db) {
   return {
     secConnected: sec !== null,
     age: target.age,
+    /** Where the targets come from: the household's current glide path, or
+     *  (unset) the retirement simulation's. */
+    targetSource: target.source,
+    glidePath: target.glidePath,
+    currentGlidePath: target.currentGlidePath,
+    currentGlidePathStale: target.currentGlidePathStale,
+    /** SimpleFIN accounts with holdings that aren't linked to a Ledgr
+     *  account — left out of everything below. */
+    unlinkedAccounts: [...unlinkedTotals.entries()]
+      .map(([id, total]) => ({
+        simplefinAccountId: id,
+        label: accounts.get(id)?.label ?? "",
+        total,
+      }))
+      .filter((a) => a.total > 0)
+      .sort((x, y) => y.total - x.total),
     accounts: [...byAccount.entries()]
       .map(([id, rows]) => {
         const a = accounts.get(id);

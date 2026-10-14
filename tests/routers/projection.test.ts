@@ -477,17 +477,12 @@ describe("projection router — computeProjection", () => {
 
   it("returns result: null when metadataOnly is true (no engine run)", async () => {
     seedProjectionData();
-    try {
-      const response = await caller.projection.computeProjection({
-        metadataOnly: true,
-        accumulationOverrides: [],
-        decumulationOverrides: [],
-      });
-      expect(response.result).toBeNull();
-    } catch {
-      // Missing tax brackets or other reference data — engine returned early
-      // The router did not crash, which is the coverage goal
-    }
+    const response = await caller.projection.computeProjection({
+      metadataOnly: true,
+      accumulationOverrides: [],
+      decumulationOverrides: [],
+    });
+    expect(response.result).toBeNull();
   });
 
   it("returns null result when no retirement settings exist (empty DB)", async () => {
@@ -505,38 +500,29 @@ describe("projection router — computeProjection", () => {
     }
   });
 
-  it("exercises engine code path with minimal seeded data", async () => {
-    try {
-      const response = await caller.projection.computeProjection({
-        accumulationOverrides: [],
-        decumulationOverrides: [],
-      });
-      // Either a projection ran or no data was available — shape must be present
-      expect(response).toHaveProperty("result");
-      // If non-null, verify top-level shape
-      if (response.result !== null) {
-        expect(response).toHaveProperty("combinedSalary");
-        expect(response).toHaveProperty("portfolioByTaxType");
-        expect(response).toHaveProperty("settings");
-        expect(response).toHaveProperty("people");
-        expect(Array.isArray(response.people)).toBe(true);
-      }
-    } catch {
-      // Engine may throw on missing reference data (tax brackets, contribution limits).
-      // The test goal is exercising the code path — a structured error is acceptable.
-    }
+  it("runs the engine on the seeded household", async () => {
+    const response = await caller.projection.computeProjection({
+      accumulationOverrides: [],
+      decumulationOverrides: [],
+    });
+    expect(response.result).not.toBeNull();
+    expect(response.combinedSalary).toBe(120000);
+    expect(response.people).toHaveLength(1);
+    expect(response.primaryPersonId).toBe(response.people[0]!.id);
+    expect(response.annualExpenses).toBeGreaterThan(0);
+    expect(response.result!.projectionByYear.length).toBeGreaterThan(0);
   });
 
-  it("computeProjection with an active salary exercises that path", async () => {
-    try {
-      const response = await caller.projection.computeProjection({
-        salaryActiveFields: [{ personId: 1, salary: 150000 }],
-        accumulationOverrides: [],
-        decumulationOverrides: [],
-      });
-      expect(response).toHaveProperty("result");
-    } catch {
-      // Acceptable — missing reference data
-    }
+  it("an active salary replaces the job salary and grows the nest egg", async () => {
+    const input = { accumulationOverrides: [], decumulationOverrides: [] };
+    const base = await caller.projection.computeProjection(input);
+    const raised = await caller.projection.computeProjection({
+      ...input,
+      salaryActiveFields: [{ personId: 1, salary: 150000 }],
+    });
+    expect(raised.combinedSalary).toBe(150000);
+    const peak = (r: typeof base) =>
+      Math.max(...r.result!.projectionByYear.map((y) => y.endBalance));
+    expect(peak(raised)).toBeGreaterThan(peak(base));
   });
 });

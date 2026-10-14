@@ -50,10 +50,38 @@ import { computeHouseholdTax } from "@/lib/pure/tax";
 import { findActiveJob } from "@/lib/pure/profiles";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 
-/** Build TaxBracketInput from DB bracket row + limits. */
+/**
+ * The standard deduction Pub 15-T's withholding tables were built on, read
+ * off the tables themselves: the Step 2(c) checkbox table's first taxed
+ * threshold is half of it. Usually the same as the tax-return figure in
+ * contribution_limits, but not always — OBBBA raised the 2025 return
+ * deduction to $31,500 MFJ after the 2025 withholding tables (built on
+ * $30,000) were published, and payroll kept withholding on those tables.
+ * Null when the year has no checkbox table for this filing status.
+ */
+function withholdingStandardDeduction(
+  bracketRow: typeof schema.taxBrackets.$inferSelect,
+  yearBrackets: readonly (typeof schema.taxBrackets.$inferSelect)[],
+): number | null {
+  const checkbox = yearBrackets.find(
+    (b) =>
+      b.taxYear === bracketRow.taxYear &&
+      b.filingStatus === bracketRow.filingStatus &&
+      b.w4Checkbox,
+  );
+  const threshold = checkbox?.brackets[1]?.threshold;
+  return threshold === undefined ? null : threshold * 2;
+}
+
+/** Build TaxBracketInput from DB bracket row + limits. `yearBrackets`
+ *  (the same year's rows) lets the W-4 adjustment follow the withholding
+ *  tables' own standard deduction — see withholdingStandardDeduction.
+ *  Required on purpose: without it the adjustment falls back to the
+ *  tax-return deduction, which is wrong for 2025 withholding. */
 export function buildBracketInput(
   bracketRow: typeof schema.taxBrackets.$inferSelect,
   limits: Map<string, number>,
+  yearBrackets: readonly (typeof schema.taxBrackets.$inferSelect)[],
 ): TaxBracketInput {
   const brackets = bracketRow.brackets.map((b, i, arr) => ({
     min: b.threshold,
@@ -65,8 +93,8 @@ export function buildBracketInput(
     limits,
     `standard_deduction_${bracketRow.filingStatus.toLowerCase()}`,
   );
-  // Pub 15-T Worksheet 1A line 1g: standardDeduction minus the standard
-  // table's own first non-zero threshold — the threshold alone is only
+  // Pub 15-T Worksheet 1A line 1g: the tables' standard deduction minus
+  // the standard table's own first non-zero threshold — the threshold alone is only
   // ONE term of the real offset, not the whole thing. This previously
   // used `brackets[1].threshold`
   // alone as the full adjustment, e.g. $19,300 MFJ for 2026 instead of the
@@ -75,9 +103,11 @@ export function buildBracketInput(
   // Mirrors tax-estimation.ts's toOrdinaryBracketIncome, which computes
   // this same residual correctly — see that function's docblock. 0 for
   // w4Checkbox=true rows (2(c) tables assume no worksheet adjustment).
+  const tableDeduction =
+    withholdingStandardDeduction(bracketRow, yearBrackets) ?? standardDeduction;
   const w4Adjustment = bracketRow.w4Checkbox
     ? 0
-    : Math.max(0, standardDeduction - (bracketRow.brackets[1]?.threshold ?? 0));
+    : Math.max(0, tableDeduction - (bracketRow.brackets[1]?.threshold ?? 0));
 
   return {
     filingStatus: bracketRow.filingStatus,
@@ -115,7 +145,8 @@ export function buildLiabilityBracketInput(
         "This calculation needs standard W-4 tax brackets (not the multiple-jobs checkbox).",
     });
   }
-  const base = buildBracketInput(bracketRow, limits);
+  // No yearBrackets: the liability path never reads w4Adjustment.
+  const base = buildBracketInput(bracketRow, limits, []);
   return { ...base, brackets: toTaxableIncomeBrackets(base.brackets) };
 }
 
@@ -333,7 +364,11 @@ export const paycheckRouter = createTRPCRouter({
             effectiveSalaryMap,
           );
           const periodsPerYear = getPeriodsPerYear(activeJob.payPeriod!);
-          const taxBracketInput = buildBracketInput(bracketRow, limitsMap);
+          const taxBracketInput = buildBracketInput(
+            bracketRow,
+            limitsMap,
+            allBrackets,
+          );
 
           // profileResult.deductions is already profile-resolved (live
           // default, patched by any active-field value the profile sets) —

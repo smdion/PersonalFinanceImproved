@@ -8,6 +8,45 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.7] - 2026-10-13
+
+This release is about making Ledgr's many numbers easier to act on. No database schema change; on start Ledgr adds the IRS total-additions limit (2025 and 2026) to its reference data and corrects the 2025 standard deduction if it still has the pre-OBBBA figure (an amount you changed yourself in Settings is left alone).
+
+### Added
+
+- **Milestones** (Insights → Milestones) — The Money Guy Show's and the Bogleheads' rules in one place, plus your own goals. Money Guy's seven wealth milestones (first $100k, Two Comma Club, liquid millionaire, financial independence…), the Financial Order of Operations ladder, the wealth formula, income-multiple checkpoints, 3/5/25 housing, a paid-off home by 60, 5/25 rebalancing bands and low cost. Each shows when you reached it (from your yearly history), when you're on pace to, and the next step. A timeline of what you've reached, "next up", and "since last year" sit at the top.
+- **Your own goals and a checklist** on Milestones — any net-worth, liquid, retirement or brokerage target (optionally in today's dollars), and the things Ledgr can't see (deductibles covered, saving ahead, wills, term life, health-care directives).
+- **Pick the rule where sources disagree:** Money Guy's or Fidelity's income-multiple checkpoints (the Retirement card's readiness row follows your pick), and Money Guy's 25% or r/personalfinance's 15% savings rule.
+- **r/personalfinance rules:** mega backdoor Roth room (what's left of the IRS total-additions limit, if your plan allows after-tax contributions), near-term brokerage goals that belong out of stocks, and fund-by-fund expense ratios.
+- **Recommendations** (Insights → Recommendations) — what to do next, ranked: anything urgent first, then by dollars a year. Grouped by your paycheck, moving money, safety, home, investing and keeping data current. Admins can snooze or dismiss one with a note on why; dismissed ones are listed at the bottom and come back if they become urgent. The dashboard Financial Checkup links to it with the count.
+- **Keep data current** — stale snapshots, performance, basis and failed syncs now appear as recommendations too.
+- **Quick search** — press Cmd/Ctrl-K to jump to any page by name or by what's on it ("HSA limit", "FI").
+- **A plain-words summary** at the top of the Contributions page: your savings rate, the dollars behind it, and the next step.
+- **Current glide path** (Benchmarks → Your mix vs your target) — your own target mix by age for what you hold today, separate from the retirement simulation's glide path, so the real portfolio can be held more conservatively on purpose. Your mix, rebalancing and recommendations compare against it once set.
+- **Glide path chart** on Benchmarks: your target mix by age, with Vanguard's target-date stock share (shifted to your retirement age) to compare against.
+- **Rebalancing says what to move**, in dollars: "Move about $X out of US Equities — $Y into US Bonds, $Z into TIPS", bringing every asset class back to target once any is outside its band.
+
+### Changed
+
+- **Sidebar:** a new **Insights** group (Recommendations, Milestones, Benchmarks, Contributions); Analysis is now **Planning** (Retirement, Tax Buckets, Tax Optimization, Relocation, Budget Scenarios).
+- **Wealth score tiers** follow The Millionaire Next Door: Under Accumulator at half the expected net worth or less (it was anything under 1×), Average in between, Prodigious at 2×. The formula now uses gross pay rather than AGI, so heavy savers aren't flattered. Past years' scores and tiers update too.
+- **Financial Checkup:** Employer Match is green only when you get the full match; the debt row now judges high-interest debt (paying the mortgage ahead is a later step); FI Progress shows your pace from the retirement projection.
+- **Projected FI year** grows your FI number with inflation and counts cash, so it's no longer early; the Net Worth page reads it straight from the projection.
+- **Savings rates** are shown and judged to whole percents — 24.9% shows (and counts) as 25%.
+- **A joint family HSA** now shows its IRS limit on the Contributions page and card.
+- **Your mix, costs and rebalancing count only SimpleFIN accounts linked to a Ledgr account**, so a duplicate or old connection no longer counts the same money twice; unlinked ones are listed as not counted.
+- **Small asset classes** (a 1–2% cash target) are no longer flagged for being a fraction of a point off.
+- **TIPS are purple and international bonds rose** in mixes and charts (were lime and teal), so neither is mistaken for US bonds or cash — including by colorblind readers.
+- **Removed the year-by-year withdrawal-rate override** (it was already hidden from the override picker). No withdrawal strategy reads it, so it never changed the plan. Your initial withdrawal rate in the retirement settings is unchanged and still sets first-year spending for rate-based plans.
+
+### Fixed
+
+- **Coast FIRE no longer says "unreachable" for a plan that's on track** when no retirement budget is set — a one-cent rounding difference failed every age it tried.
+- **2025 standard deduction** is now OBBBA's $31,500 married / $15,750 single / $23,625 head of household (was the pre-law $30,000 / $15,000 / $22,500) for 2025 tax figures. 2025 paycheck withholding still follows the IRS 2025 withholding tables, which were never updated.
+- **Relocation with a move year** no longer understates the nest egg. The years after the move restarted at today's salary and today's prices, and the move year itself saved nothing; the move is now part of one projection from today. "Earliest you could move" uses the same calculation (and the portfolio it says you need is the balance going into that year, not the end of it), relocation expenses carry the same inflation as the rest of the projection, and they no longer replace your retirement budget in the first retirement year.
+
+---
+
 ## [0.8.6] - 2026-10-13
 
 Includes a database update that runs automatically on start; Ledgr saves a backup of your data first. Restoring a backup from an older version still works (pending-rollover rows from older backups are left out — that feature no longer exists).

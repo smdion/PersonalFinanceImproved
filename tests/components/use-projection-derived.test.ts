@@ -7,7 +7,7 @@
  * fixtures rather than the full calculator fixtures, since only a subset of
  * fields is read by this hook.
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { renderHook } from "@testing-library/react";
 import type {
   EngineYearProjection,
@@ -18,29 +18,6 @@ import { accountBalancesFromTaxBuckets } from "@/lib/calculators/engine/balance-
 import type { UseProjectionStateProps } from "@/components/cards/projection/use-projection-state";
 import type { ProjectionFormState } from "@/components/cards/projection/use-projection-form-state";
 import type { ProjectionQueries } from "@/components/cards/projection/use-projection-queries";
-
-let isInScenario = false;
-vi.mock("@/lib/context/scenario-context", () => ({
-  useScenario: () => ({ isInScenario }),
-}));
-
-const writeFICache = vi.fn();
-let isLivePlanInputResult = true;
-vi.mock("@/lib/hooks/use-fi-cache", () => ({
-  useFICache: () => [null, writeFICache],
-  deriveFI: vi.fn(() => ({
-    fiYear: 2050,
-    fiAge: 65,
-    inputKey: "test-key",
-  })),
-  isLivePlanInput: () => isLivePlanInputResult,
-}));
-
-beforeEach(() => {
-  isInScenario = false;
-  isLivePlanInputResult = true;
-  writeFICache.mockClear();
-});
 
 async function importHook() {
   const mod =
@@ -592,69 +569,5 @@ describe("useProjectionDerived", () => {
         ownerName: "Alice",
       },
     ]);
-  });
-
-  it("writes to the FI cache when the projection represents a live, no-override plan", async () => {
-    const useProjectionDerived = await importHook();
-    const years = [makeAccumYear()];
-    const engineData = makeEngineData(years);
-    isLivePlanInputResult = true;
-    renderHook(() =>
-      useProjectionDerived(
-        makeForm(),
-        makeQueries({
-          engineQuery: {
-            data: engineData,
-            isLoading: false,
-            isFetching: false,
-          },
-        }),
-        makeProps(),
-      ),
-    );
-    expect(writeFICache).toHaveBeenCalledWith(
-      expect.objectContaining({
-        fiYear: 2050,
-        fiAge: 65,
-        inputKey: "test-key",
-      }),
-    );
-  });
-
-  it("does not write to the FI cache when the plan is not a live, no-override plan (e.g. in a scenario)", async () => {
-    const useProjectionDerived = await importHook();
-    const years = [makeAccumYear()];
-    const engineData = makeEngineData(years);
-    isLivePlanInputResult = false;
-    renderHook(() =>
-      useProjectionDerived(
-        makeForm(),
-        makeQueries({
-          engineQuery: {
-            data: engineData,
-            isLoading: false,
-            isFetching: false,
-          },
-        }),
-        makeProps(),
-      ),
-    );
-    expect(writeFICache).not.toHaveBeenCalled();
-  });
-
-  it("does not write to the FI cache while the engine query is still loading", async () => {
-    const useProjectionDerived = await importHook();
-    const years = [makeAccumYear()];
-    const engineData = makeEngineData(years);
-    renderHook(() =>
-      useProjectionDerived(
-        makeForm(),
-        makeQueries({
-          engineQuery: { data: engineData, isLoading: true, isFetching: false },
-        }),
-        makeProps(),
-      ),
-    );
-    expect(writeFICache).not.toHaveBeenCalled();
   });
 });

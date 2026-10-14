@@ -4,26 +4,21 @@ import { useEffect, useRef } from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import { RefreshCw } from "lucide-react";
 import { trpc } from "@/lib/trpc";
-import { useUser, hasPermission } from "@/lib/context/user-context";
 import { budgetApiServiceLabel, formatDate } from "@/lib/utils/format";
-import {
-  evaluateDataSources,
-  type DataSourceStatus,
-} from "@/lib/pure/data-freshness";
+import type { DataSourceStatus } from "@/lib/pure/data-freshness";
+import { useDataSourceStatuses } from "@/lib/hooks/use-data-source-statuses";
 
 export function DataFreshness({ compact }: { compact?: boolean }) {
   const utils = trpc.useUtils();
-  const { data } = trpc.settings.getDataFreshness.useQuery();
-  const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
-  const { data: simplefinStatus } = trpc.simplefin.getStatus.useQuery();
-  const { data: secStatus } = trpc.sec.getStatus.useQuery();
-  const user = useUser();
-  const { data: investmentHealth } = trpc.investments.getHealth.useQuery(
-    undefined,
-    {
-      enabled: !!simplefinStatus?.connected && hasPermission(user, "portfolio"),
-    },
-  );
+  const {
+    loaded,
+    statuses,
+    syncStatus,
+    simplefinStatus,
+    investmentHealth,
+    budgetApiCanSync,
+    simplefinCanSync,
+  } = useDataSourceStatuses();
   const hasFiredAutoSync = useRef(false);
 
   const syncAllMut = trpc.sync.syncAll.useMutation({
@@ -67,10 +62,8 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
     }
   }, [syncStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (!data) return null;
+  if (!loaded) return null;
 
-  const budgetApiCanSync = !!(syncStatus?.service && syncStatus.connected);
-  const simplefinCanSync = !!simplefinStatus?.connected;
   const canSync = budgetApiCanSync || simplefinCanSync;
   const isSyncing = syncAllMut.isPending || simplefinSyncMut.isPending;
 
@@ -86,26 +79,6 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
     }
   };
 
-  const statuses = evaluateDataSources({
-    balance: data.balanceDate ? { lastUpdated: data.balanceDate } : undefined,
-    performance: data.performanceDate
-      ? { lastUpdated: data.performanceDate }
-      : undefined,
-    basis: data.basisDate ? { lastUpdated: data.basisDate } : undefined,
-    budgetApi: budgetApiCanSync
-      ? { lastUpdated: syncStatus?.lastSynced?.toString() ?? null }
-      : undefined,
-    simplefin: simplefinCanSync
-      ? {
-          lastUpdated: simplefinStatus?.lastSyncedAt?.toString() ?? null,
-          error: simplefinStatus?.lastError ?? null,
-          warnings: investmentHealth?.issues.map((i) => i.message),
-        }
-      : undefined,
-    secFacts: secStatus?.connected
-      ? { lastUpdated: secStatus.lastRun, error: secStatus.lastError }
-      : undefined,
-  });
   const attention = statuses.filter((s) => s.needsAttention);
   const labelFor = (s: DataSourceStatus) =>
     s.source.key === "budgetApi"

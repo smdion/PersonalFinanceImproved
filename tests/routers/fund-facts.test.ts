@@ -33,6 +33,7 @@ vi.mock("@/lib/sec/facts-sync", () => ({
 import { createTestCaller, createViewerSessionWithPermissions } from "./setup";
 
 describe("fund facts", () => {
+  let linkedPerf: number;
   let ctx: Awaited<ReturnType<typeof createTestCaller>>;
   const id: Record<string, number> = {};
 
@@ -76,6 +77,19 @@ describe("fund facts", () => {
         { age: 50, assetClassId: id.bonds, allocation: "0.3" },
       ])
       .run();
+    // Allocation counts only SimpleFIN accounts linked to a Ledgr account.
+    linkedPerf = db
+      .insert(sqliteSchema.performanceAccounts)
+      .values({
+        institution: "Example Bank",
+        accountType: "ira",
+        accountLabel: "Example Person IRA (Example Bank)",
+        displayName: "Example Retirement Account",
+        ownershipType: "individual",
+        parentCategory: "Retirement",
+      })
+      .returning()
+      .get().id;
     const account = db
       .insert(sqliteSchema.simplefinAccounts)
       .values({
@@ -83,6 +97,7 @@ describe("fund facts", () => {
         orgName: "Example Bank",
         accountName: "Example IRA",
         lastBalance: "0",
+        linkedPerformanceAccountId: linkedPerf,
       })
       .returning()
       .get().id;
@@ -141,31 +156,87 @@ describe("fund facts", () => {
   });
   afterAll(() => ctx.cleanup());
 
-  it("names an account the way the rest of the app does once it's linked", async () => {
-    const before = await ctx.caller.investments.getHoldingsOverview();
-    // Not linked to a tracked account: the institution's own name.
-    expect(before.accounts[0]!.label).toBe("Example Bank Example IRA");
-    const perf = ctx.db
-      .insert(sqliteSchema.performanceAccounts)
-      .values({
-        institution: "Example Bank",
-        accountType: "ira",
-        accountLabel: "Example Person IRA (Example Bank)",
-        displayName: "Example Retirement Account",
-        ownershipType: "individual",
-        parentCategory: "Retirement",
-      })
-      .returning()
-      .get().id;
-    ctx.db
-      .update(sqliteSchema.simplefinAccounts)
-      .set({ linkedPerformanceAccountId: perf })
-      .run();
-    const after = await ctx.caller.investments.getHoldingsOverview();
-    expect(after.accounts[0]!.label).toBe("Example Retirement Account");
+  it("counts linked accounts only, naming them the way the rest of the app does", async () => {
+    const linked = await ctx.caller.investments.getHoldingsOverview();
+    expect(linked.accounts[0]!.label).toBe("Example Retirement Account");
+    expect(linked.unlinkedAccounts).toEqual([]);
+    // Unlinked: left out of the mix and costs, listed with its feed name.
     ctx.db
       .update(sqliteSchema.simplefinAccounts)
       .set({ linkedPerformanceAccountId: null })
+      .run();
+    const unlinked = await ctx.caller.investments.getHoldingsOverview();
+    expect(unlinked.accounts).toEqual([]);
+    expect(unlinked.allocation.total).toBe(0);
+    expect(unlinked.unlinkedAccounts).toEqual([
+      expect.objectContaining({ label: "Example Bank Example IRA" }),
+    ]);
+    ctx.db
+      .update(sqliteSchema.simplefinAccounts)
+      .set({ linkedPerformanceAccountId: linkedPerf })
+      .run();
+  });
+
+  it("compares with the household's current glide path when one is set", async () => {
+    const before = await ctx.caller.investments.getHoldingsOverview();
+    expect(before.targetSource).toBe("retirement");
+    // A deliberately conservative mix, flat across ages.
+    ctx.db
+      .insert(sqliteSchema.appSettings)
+      .values({
+        key: "current_glide_path",
+        value: [
+          {
+            age: 30,
+            allocations: { [String(id.stocks)]: 0.6, [String(id.bonds)]: 0.4 },
+          },
+        ],
+      })
+      .run();
+    const after = await ctx.caller.investments.getHoldingsOverview();
+    expect(after.targetSource).toBe("current");
+    const target = (assetClassId: number) =>
+      after.allocation.rows.find((r) => r.assetClassId === assetClassId)!
+        .targetPct;
+    expect(target(id.stocks!)).toBeCloseTo(0.6);
+    expect(target(id.bonds!)).toBeCloseTo(0.4);
+    ctx.db
+      .delete(sqliteSchema.appSettings)
+      .where(eq(sqliteSchema.appSettings.key, "current_glide_path"))
+      .run();
+  });
+
+  it("falls back to the retirement glide path when the current one names a removed asset class", async () => {
+    ctx.db
+      .insert(sqliteSchema.appSettings)
+      .values({
+        key: "current_glide_path",
+        value: [
+          {
+            age: 30,
+            allocations: { [String(id.stocks)]: 0.6, "999999": 0.4 },
+          },
+        ],
+      })
+      .run();
+    const o = await ctx.caller.investments.getHoldingsOverview();
+    expect(o.currentGlidePathStale).toBe(true);
+    expect(o.targetSource).toBe("retirement");
+    // Saving one like it is refused outright.
+    await expect(
+      ctx.caller.settings.appSettings.upsert({
+        key: "current_glide_path",
+        value: [
+          {
+            age: 30,
+            allocations: { [String(id.stocks)]: 0.6, "999999": 0.4 },
+          },
+        ],
+      }),
+    ).rejects.toThrow(/asset class that doesn't exist/);
+    ctx.db
+      .delete(sqliteSchema.appSettings)
+      .where(eq(sqliteSchema.appSettings.key, "current_glide_path"))
       .run();
   });
 

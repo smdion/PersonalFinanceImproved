@@ -1,4 +1,8 @@
 import { z } from "zod/v4";
+import {
+  parseCurrentGlidePath,
+  unknownAssetClassIds,
+} from "@/lib/pure/current-glide-path";
 import { TRPCError } from "@trpc/server";
 import { eq, asc, desc } from "drizzle-orm";
 import {
@@ -8,7 +12,23 @@ import {
   scenarioProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { SK_HOUSEHOLD_TIMEZONE } from "@/lib/constants/settings-keys";
+import {
+  SK_HOUSEHOLD_TIMEZONE,
+  SK_MILESTONE_CHECKLIST,
+  SK_MILESTONE_CHECKPOINT_SOURCE,
+  SK_MILESTONE_CUSTOM_GOALS,
+  SK_MILESTONE_SAVINGS_TARGET_SOURCE,
+  SK_RECOMMENDATION_DISMISSALS,
+  SK_CURRENT_GLIDE_PATH,
+} from "@/lib/constants/settings-keys";
+import { currentGlidePathSchema } from "@/lib/pure/current-glide-path";
+import { dismissalsSchema } from "@/lib/pure/recommendation-dismissals";
+import {
+  checkpointSourceSchema,
+  customGoalsSchema,
+  milestoneChecklistSchema,
+  savingsTargetSourceSchema,
+} from "@/lib/pure/milestones";
 import {
   applyHouseholdTimeZone,
   isValidTimeZone,
@@ -32,6 +52,17 @@ const appSettingInput = z.object({
   key: z.string().min(1),
   value: settingValue,
 });
+
+/** Settings whose value has a shape: checked on every write, so a bad save
+ *  is refused instead of read back later as empty. */
+const STRUCTURED_SETTINGS: Record<string, z.ZodType> = {
+  [SK_MILESTONE_CUSTOM_GOALS]: customGoalsSchema,
+  [SK_MILESTONE_CHECKLIST]: milestoneChecklistSchema,
+  [SK_MILESTONE_CHECKPOINT_SOURCE]: checkpointSourceSchema,
+  [SK_MILESTONE_SAVINGS_TARGET_SOURCE]: savingsTargetSourceSchema,
+  [SK_RECOMMENDATION_DISMISSALS]: dismissalsSchema,
+  [SK_CURRENT_GLIDE_PATH]: currentGlidePathSchema,
+};
 
 // --- Procedures ---
 
@@ -131,6 +162,32 @@ export const adminProcedures = {
             code: "BAD_REQUEST",
             message: "Not a recognized time zone",
           });
+        const shape = STRUCTURED_SETTINGS[input.key];
+        if (shape && input.value != null) {
+          const parsed = shape.safeParse(input.value);
+          if (!parsed.success)
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Invalid ${input.key}: ${parsed.error.issues[0]?.message ?? "bad value"}`,
+            });
+        }
+        if (input.key === SK_CURRENT_GLIDE_PATH && input.value != null) {
+          const active = await ctx.db
+            .select({ id: schema.assetClassParams.id })
+            .from(schema.assetClassParams)
+            .where(eq(schema.assetClassParams.isActive, true));
+          const path = parseCurrentGlidePath(input.value);
+          if (
+            path &&
+            unknownAssetClassIds(path, new Set(active.map((c) => c.id)))
+              .length > 0
+          )
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "The glide path uses an asset class that doesn't exist (or is turned off)",
+            });
+        }
         // value column is NOT NULL — when null, delete the row so the default applies
         if (input.value === null || input.value === undefined) {
           await ctx.db

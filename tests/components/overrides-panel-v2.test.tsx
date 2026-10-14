@@ -202,41 +202,6 @@ describe("OverridesPanelV2", () => {
   // with a pre-existing saved override of this type can still edit or
   // delete it, so that path stays covered via the edit flow instead of the
   // picker.
-  it("edits a pre-existing withdrawal_rate override and calls setDecumOverrides", () => {
-    const setDecumOverrides = vi.fn();
-    const s = baseMockState({
-      decumOverrides: [{ year: RET_YEAR + 5, withdrawalRate: 0.035 }],
-      setDecumOverrides,
-    });
-    render(<OverridesPanelV2 state={s} />);
-    fireEvent.click(screen.getByLabelText("Edit"));
-
-    const rateInput = screen.getByPlaceholderText("3.5") as HTMLInputElement;
-    expect(Number(rateInput.value)).toBeCloseTo(3.5);
-    fireEvent.change(rateInput, { target: { value: "4" } });
-    fireEvent.click(screen.getByText("Save"));
-
-    expect(setDecumOverrides).toHaveBeenCalledTimes(1);
-    const result = setDecumOverrides.mock.calls[0]![0]([]);
-    expect(result).toEqual([{ year: RET_YEAR + 5, withdrawalRate: 0.04 }]);
-  });
-
-  it("shows the legacy/no-effect note when editing a pre-existing withdrawal_rate override", () => {
-    const s = baseMockState({
-      decumOverrides: [{ year: RET_YEAR + 5, withdrawalRate: 0.035 }],
-      engineSettings: {
-        retirementAge: RETIREMENT_AGE,
-        withdrawalStrategy: "guyton_klinger",
-      },
-    });
-    render(<OverridesPanelV2 state={s} />);
-    fireEvent.click(screen.getByLabelText("Edit"));
-    expect(screen.getByText(/doesn.t change your plan/)).toBeInTheDocument();
-    expect(
-      screen.getByPlaceholderText("3.5").closest("label"),
-    ).toHaveTextContent("legacy, has no effect");
-  });
-
   it("completes the lump_sum flow for a pre-retirement year via setAccumOverrides", () => {
     const setAccumOverrides = vi.fn();
     const s = baseMockState({ setAccumOverrides });

@@ -13,6 +13,7 @@ import { isPostgres } from "@/lib/db/dialect";
 import { rateLimit } from "@/lib/rate-limit";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
+import { notifyMutationSucceeded } from "./mutation-events";
 
 export type AuthLevel = "public" | "protected" | "admin" | Permission;
 
@@ -440,9 +441,17 @@ const errorLoggingMiddleware = t.middleware(async ({ next, path, type }) => {
   return result;
 });
 
+// Lets server-side caches drop anything built before a successful write.
+const mutationEventsMiddleware = t.middleware(async ({ next, type }) => {
+  const result = await next();
+  if (type === "mutation" && result.ok) notifyMutationSucceeded();
+  return result;
+});
+
 // Base procedure with error logging, demo schema support + demo-only guard
 const baseProcedure = t.procedure
   .use(errorLoggingMiddleware)
+  .use(mutationEventsMiddleware)
   .use(demoOnlyGuard)
   .use(demoSchemaMiddleware);
 

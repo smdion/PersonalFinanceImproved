@@ -12,8 +12,10 @@ import {
   seedStandardDataset,
   seedBudgetProfile,
   seedBudgetItem,
+  seedContributionProfile,
   adminSession,
 } from "./setup";
+import * as engine from "@/lib/calculators/engine";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
@@ -158,13 +160,13 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
         moveYear: null,
       });
 
-      expect(result).not.toBeNull();
-      expect(result).toHaveProperty("currentBalanceAtRetirement");
-      expect(result).toHaveProperty("relocationBalanceAtRetirement");
-      expect(result).toHaveProperty("projectionRows");
-      expect(result).toHaveProperty("inflationRate");
-      expect(result).toHaveProperty("baseYear");
-      expect(Array.isArray(result!.projectionRows)).toBe(true);
+      // FI target = annual budget ÷ 4% withdrawal rate: $2,000 vs $1,500 rent.
+      expect(result!.currentFiTarget).toBeCloseTo((2000 * 12) / 0.04);
+      expect(result!.relocationFiTarget).toBeCloseTo((1500 * 12) / 0.04);
+      expect(result!.relocationBalanceAtRetirement).toBeGreaterThan(0);
+      expect(result!.projectionRows.length).toBeGreaterThan(0);
+      expect(result!.blendedRows).toBeNull();
+      expect(result!.blendedBalanceAtRetirement).toBeNull();
     } finally {
       cleanup();
     }
@@ -190,7 +192,9 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
         moveYear: null,
       });
 
-      expect(result).not.toBeNull();
+      // Overrides replace the budget totals ($2,000 / $1,500).
+      expect(result!.currentFiTarget).toBeCloseTo((3000 * 12) / 0.04);
+      expect(result!.relocationFiTarget).toBeCloseTo((2500 * 12) / 0.04);
     } finally {
       cleanup();
     }
@@ -217,9 +221,26 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
         moveYear: nextYear,
       });
 
-      expect(result).not.toBeNull();
-      expect(result).toHaveProperty("blendedRows");
-      expect(Array.isArray(result!.blendedRows)).toBe(true);
+      const rows = result!.blendedRows!;
+      expect(rows.length).toBeGreaterThan(0);
+      for (const row of rows) {
+        expect(row.phase).toBe(row.year < nextYear ? "current" : "relocation");
+      }
+      // Both scenarios save the same (same contribution profile, salary-
+      // based contributions), so moving partway must land on the same nest
+      // egg. Re-anchoring a second run at the move year used to drop that
+      // year's contributions and restart salary growth, landing well short.
+      expect(result!.blendedBalanceAtRetirement).toBeCloseTo(
+        result!.relocationBalanceAtRetirement,
+        0,
+      );
+      const moveRow = rows.find((r) => r.year === nextYear)!;
+      const before = rows.find((r) => r.year === nextYear - 1)!;
+      expect(moveRow.contribution).toBeGreaterThan(before.contribution);
+      // Relocation expenses ($1,500/mo) carry the same inflation as the
+      // engine's own years: lower than the year before the move ($2,000/mo).
+      expect(moveRow.expenses).toBeLessThan(before.expenses);
+      expect(moveRow.expenses).toBeGreaterThan(1500 * 12);
     } finally {
       cleanup();
     }
@@ -246,7 +267,9 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
         moveYear: null,
       });
 
-      expect(result).not.toBeNull();
+      const adjusted = result!.projectionRows.filter((r) => r.hasAdjustment);
+      expect(adjusted.map((r) => r.year)).toEqual([nextYear]);
+      expect(adjusted[0]!.relocationExpenses).toBe(1800 * 12);
     } finally {
       cleanup();
     }
@@ -283,7 +306,11 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
         moveYear: null,
       });
 
-      expect(result).not.toBeNull();
+      // The down payment hits the purchase year; the loan payment and
+      // upkeep raise what the relocation has to fund forever.
+      const hit = result!.projectionRows.find((r) => r.year === nextYear)!;
+      expect(hit.largePurchaseImpact).toBeLessThan(0);
+      expect(result!.relocationFiTarget).toBeGreaterThan((1500 * 12) / 0.04);
     } finally {
       cleanup();
     }
@@ -486,6 +513,81 @@ describe("projection.relocationScenarios additional", () => {
       expect(result!.name).toBe("Rich Relocation");
     } finally {
       ctx.cleanup();
+    }
+  });
+});
+
+describe("projection.relocation — move-year handoff", () => {
+  const baseInput = {
+    currentBudgetColumn: 0,
+    currentExpenseOverride: null,
+    relocationBudgetColumn: 0,
+    relocationExpenseOverride: null,
+    yearAdjustments: [],
+    largePurchases: [],
+  };
+
+  it("expense schedules stop before retirement (the retirement budget stays)", async () => {
+    const spy = vi.spyOn(engine, "calculateProjection");
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const { currentProfileId, relocProfileId } =
+        await seedRelocationDataset(db);
+      spy.mockClear();
+      await caller.projection.computeRelocationFiProjection({
+        ...baseInput,
+        currentProfileId,
+        currentContributionProfileId: null,
+        relocationProfileId: relocProfileId,
+        relocationContributionProfileId: null,
+        moveYear: new Date().getFullYear() + 2,
+      });
+      for (const [input] of spy.mock.calls) {
+        const retirementYear =
+          input.asOfDate.getFullYear() +
+          (input.retirementAge - input.currentAge);
+        for (const o of input.budgetOverrides) {
+          expect(o.year).toBeLessThan(retirementYear);
+        }
+      }
+    } finally {
+      spy.mockRestore();
+      cleanup();
+    }
+  });
+
+  it("a different relocation contribution profile carries its routing from the move year", async () => {
+    const spy = vi.spyOn(engine, "calculateProjection");
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const { currentProfileId, relocProfileId } =
+        await seedRelocationDataset(db);
+      const otherProfile = seedContributionProfile(db, {
+        name: "Relocation",
+        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+      });
+      const moveYear = new Date().getFullYear() + 2;
+      spy.mockClear();
+      await caller.projection.computeRelocationFiProjection({
+        ...baseInput,
+        currentProfileId,
+        currentContributionProfileId: null,
+        relocationProfileId: relocProfileId,
+        relocationContributionProfileId: otherProfile,
+        moveYear,
+      });
+      const blended = spy.mock.calls
+        .map(([input]) => input)
+        .find((input) =>
+          (input.profileSwitches ?? []).some((ps) => ps.year === moveYear),
+        );
+      expect(blended).toBeDefined();
+      expect(
+        blended!.accumulationOverrides.find((o) => o.year === moveYear),
+      ).toMatchObject({ routingMode: expect.any(String) });
+    } finally {
+      spy.mockRestore();
+      cleanup();
     }
   });
 });

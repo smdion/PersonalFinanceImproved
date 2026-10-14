@@ -40,6 +40,11 @@ export default defineConfig({
     // regardless of 10s vs 15s; this just adds headroom for load
     // variance rather than masking anything.
     testTimeout: 15000,
+    // Every core: vitest's default leaves one idle, and the router tests
+    // spend part of their time waiting on SQLite I/O, so a fourth worker on
+    // a 4-core box measured ~12% faster on them.
+    maxWorkers: "100%",
+    globalSetup: ["tests/global-setup.ts"],
     execArgv,
     // Most of the suite (server/routers/calculators/db/pure/helpers/etc.) is
     // pure Node logic that never touches the DOM. Only the files that
@@ -82,7 +87,10 @@ export default defineConfig({
         extends: true,
         test: {
           name: "jsdom",
-          environment: "jsdom",
+          // happy-dom, not jsdom: same DOM APIs for what these tests use, a
+          // fraction of jsdom's per-file setup cost (the project keeps its
+          // name so --project=jsdom scripts still work).
+          environment: "happy-dom",
           setupFiles: ["tests/setup-component.ts"],
           include: [
             "tests/components/**/*.test.ts",
@@ -123,6 +131,9 @@ export default defineConfig({
         "src/server/**",
       ],
       exclude: [
+        // Docs living next to the code (engine/ARCHITECTURE.md) — the
+        // directory globs above would otherwise try to parse them.
+        "**/*.md",
         // Pure type definitions — no runtime code to test
         "src/lib/calculators/types/**",
         "src/lib/types/**",
@@ -163,7 +174,8 @@ export default defineConfig({
         "src/lib/db/schema-sqlite.ts",
         "src/lib/db/schema.ts",
         // DB runtime — requires live database for transactions/queries
-        "src/lib/db/version-logic.ts",
+        // (version-logic.ts is not here: tests/integration/backup-roundtrip
+        // runs it against the test SQLite database.)
         "src/lib/db/backfill-local-ids.ts",
         "src/lib/db/backfill-perf-ids.ts",
       ],

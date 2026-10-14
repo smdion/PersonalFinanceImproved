@@ -74,8 +74,12 @@
 import { describe, it, expect } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import * as os from "node:os";
 
-const SRC_DIR = path.resolve(__dirname, "../../src");
+// `let`, not `const`: the positive controls at the bottom point every
+// scanner at a temporary tree with planted violations (withRepoRoot).
+let REPO_ROOT = path.resolve(__dirname, "../..");
+let SRC_DIR = path.join(REPO_ROOT, "src");
 // Rules 25/26's citation checks also scan these two — a citation rots
 // exactly the same way in a test comment or a script comment as it does
 // in src/ (RULES.md's "comments explain the code, not its history" isn't
@@ -83,8 +87,8 @@ const SRC_DIR = path.resolve(__dirname, "../../src");
 // src/-only on purpose: they check data-driven-architecture violations
 // (hardcoded category strings, etc.) that legitimately look different —
 // or don't apply at all — in test fixtures and one-off scripts.
-const TESTS_DIR = path.resolve(__dirname, "../../tests");
-const SCRIPTS_DIR = path.resolve(__dirname, "../../scripts");
+let TESTS_DIR = path.join(REPO_ROOT, "tests");
+let SCRIPTS_DIR = path.join(REPO_ROOT, "scripts");
 // This file's own rule-definition docblocks and comments necessarily
 // name the exact patterns/examples these two rules detect ("(H10)",
 // "advisor review", bare "R43") — those are illustrations, not
@@ -128,6 +132,7 @@ const CANONICAL_PERF_CATEGORIES = [
 // ── File walker ─────────────────────────────────────────────────────
 
 function* walkTsFiles(dir: string): Generator<string> {
+  if (!fs.existsSync(dir)) return;
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const e of entries) {
     const full = path.join(dir, e.name);
@@ -141,7 +146,7 @@ function* walkTsFiles(dir: string): Generator<string> {
 }
 
 function relPath(abs: string): string {
-  return path.relative(path.resolve(__dirname, "../.."), abs);
+  return path.relative(REPO_ROOT, abs);
 }
 
 function isExempt(rel: string): boolean {
@@ -506,7 +511,7 @@ function findLegacyZodImportViolations(): Violation[] {
 // so a field that already has `.min(...)` doesn't false-positive.
 function findUnboundedYearFieldViolations(): Violation[] {
   return findPatternViolations(
-    /\b(?:taxYear|projectionYear)\s*:\s*z\.number\(\)\.int\(\)\s*[,)]/,
+    /\b(?:taxYear|projectionYear)\s*:\s*z\.number\(\)\.int\(\)\s*[,)}]/,
     "no-unbounded-year-field",
   );
 }
@@ -756,14 +761,10 @@ function findFilingStatusObjectLiteralViolations(): Violation[] {
 // version of this check is left for a human pass, not a lint gate.
 const CONFIG_EXPORT_DIRS = ["src/lib/constants.ts", "src/lib/config"];
 const RESERVED_NAME_PATTERN = /^[A-Z][A-Z0-9_]{3,}$/;
-const REDECLARATION_EXEMPT = new Set([
-  // The config modules themselves are the canonical declaration site.
-  ...walkConfigFiles(),
-]);
 function walkConfigFiles(): string[] {
   const files: string[] = [];
   for (const dir of CONFIG_EXPORT_DIRS) {
-    const abs = path.resolve(__dirname, "../..", dir);
+    const abs = path.join(REPO_ROOT, dir);
     if (!fs.existsSync(abs)) continue;
     if (fs.statSync(abs).isFile()) {
       files.push(dir);
@@ -778,7 +779,7 @@ function collectConfigExportNames(): Set<string> {
   const exportRe =
     /export\s+(?:const|function|class)\s+([A-Za-z0-9_]+)|export\s+type\s+([A-Za-z0-9_]+)/g;
   for (const rel of walkConfigFiles()) {
-    const abs = path.resolve(__dirname, "../..", rel);
+    const abs = path.join(REPO_ROOT, rel);
     const content = fs.readFileSync(abs, "utf8");
     let m: RegExpExecArray | null;
     while ((m = exportRe.exec(content)) !== null) {
@@ -791,12 +792,14 @@ function collectConfigExportNames(): Set<string> {
 function findRedeclaredConfigExportViolations(): Violation[] {
   const violations: Violation[] = [];
   const reserved = collectConfigExportNames();
+  // The config modules themselves are the canonical declaration site.
+  const redeclarationExempt = new Set(walkConfigFiles());
   const declRe =
     /^\s*(?:export\s+)?(?:const|function|class|interface|enum)\s+([A-Za-z0-9_]+)\b/;
   const typeDeclRe = /^\s*(?:export\s+)?type\s+([A-Za-z0-9_]+)\s*=/;
   for (const file of walkTsFiles(SRC_DIR)) {
     const rel = relPath(file);
-    if (REDECLARATION_EXEMPT.has(rel)) continue;
+    if (redeclarationExempt.has(rel)) continue;
     if (isExempt(rel)) continue;
     const lines = readFileLines(file);
     for (let i = 0; i < lines.length; i++) {
@@ -1358,5 +1361,224 @@ describe("RULES.md violations sweep", () => {
           formatViolations("Violations", violations),
       );
     }
+  });
+});
+
+// ── Positive controls ───────────────────────────────────────────────
+// A scanner whose pattern silently stopped matching would still report
+// "no violations" above. Each control plants one violation in a throwaway
+// tree laid out like the repo and requires the rule to flag that file.
+
+function withRepoRoot<T>(root: string, fn: () => T): T {
+  const saved = { REPO_ROOT, SRC_DIR, TESTS_DIR, SCRIPTS_DIR };
+  REPO_ROOT = root;
+  SRC_DIR = path.join(root, "src");
+  TESTS_DIR = path.join(root, "tests");
+  SCRIPTS_DIR = path.join(root, "scripts");
+  try {
+    return fn();
+  } finally {
+    ({ REPO_ROOT, SRC_DIR, TESTS_DIR, SCRIPTS_DIR } = saved);
+  }
+}
+
+function scanPlanted(
+  finder: () => Violation[],
+  files: Record<string, string>,
+): string[] {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "lint-control-"));
+  try {
+    for (const [rel, content] of Object.entries(files)) {
+      const abs = path.join(root, rel);
+      fs.mkdirSync(path.dirname(abs), { recursive: true });
+      fs.writeFileSync(abs, content);
+    }
+    return withRepoRoot(root, () => finder().map((v) => v.file));
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
+const POSITIVE_CONTROLS: [string, () => Violation[], Record<string, string>][] =
+  [
+    [
+      "category equality",
+      findCategoryEqualityViolations,
+      { "src/a.ts": 'if (t === "401k") run();\n' },
+    ],
+    [
+      "category array",
+      findHardcodedCategoryArrayViolations,
+      { "src/a.ts": 'const c = ["401k", "403b", "ira"];\n' },
+    ],
+    [
+      "parentCategory equality",
+      findParentCategoryStringEqualityViolations,
+      { "src/a.ts": 'if (a.parentCategory === "Retirement") run();\n' },
+    ],
+    [
+      "taxType equality",
+      findTaxTypeStringEqualityViolations,
+      { "src/a.ts": 'if (b.taxType === "roth") run();\n' },
+    ],
+    [
+      "displayName ?? accountLabel",
+      findDisplayNameAccountLabelFallbackViolations,
+      { "src/a.ts": "const n = a.displayName ?? a.accountLabel;\n" },
+    ],
+    [
+      ".accountLabel in .tsx",
+      findDirectAccountLabelReadViolations,
+      { "src/a.tsx": "const n = a.accountLabel;\n" },
+    ],
+    [
+      "perf category literal",
+      findHardcodedPerfCategoryViolations,
+      { "src/a.ts": 'const v = totals?.["HSA"];\n' },
+    ],
+    [
+      "useState account type",
+      findHardcodedAccountTypeStateViolations,
+      { "src/a.tsx": 'const [t] = useState("401k");\n' },
+    ],
+    [
+      "inline percent",
+      findInlinePercentFormatViolations,
+      { "src/a.ts": 'const s = r.toFixed(1) + "%";\n' },
+    ],
+    [
+      "z.string() enum field",
+      findStringEnumFieldViolations,
+      { "src/a.ts": "const s = z.object({ accountType: z.string() });\n" },
+    ],
+    [
+      "engine internal import",
+      findEngineInternalImportViolations,
+      {
+        "src/a.ts":
+          'import { x } from "@/lib/calculators/engine/projection";\n',
+      },
+    ],
+    [
+      "hand-rolled Dietz",
+      findHandRolledDietzDenominatorViolations,
+      {
+        "src/a.ts":
+          "const d = beginBal + (contributions - distributions - fees) / 2;\n",
+      },
+    ],
+    [
+      "raw division in formatPercent",
+      findRawDivisionInFormatPercentViolations,
+      { "src/a.ts": "const s = formatPercent(gain / basis);\n" },
+    ],
+    [
+      "color helper as inline style",
+      findColorHelperAsInlineStyleViolations,
+      { "src/a.tsx": "const st = { backgroundColor: accountColor(t) };\n" },
+    ],
+    [
+      'import from "zod"',
+      findLegacyZodImportViolations,
+      { "src/a.ts": 'import { z } from "zod";\n' },
+    ],
+    [
+      "unbounded year field",
+      findUnboundedYearFieldViolations,
+      { "src/a.ts": "const s = z.object({ taxYear: z.number().int() });\n" },
+    ],
+    [
+      "accountLabel template fallback",
+      findAccountLabelTemplateFallbackViolations,
+      { "src/a.ts": "const o = { accountLabel: `${a.accountType}` };\n" },
+    ],
+    [
+      'hook without "use client"',
+      findMissingUseClientOnHookViolations,
+      {
+        "src/lib/hooks/use-thing.ts":
+          'import { useState } from "react";\nexport const useThing = () => useState(0);\n',
+      },
+    ],
+    [
+      "local ReturnType alias",
+      findLocalReturnTypeAliasViolations,
+      { "src/a.ts": "type S = ReturnType<typeof useThing>;\n" },
+    ],
+    [
+      '"Monte Carlo" in UI text',
+      findMonteCarloUserFacingTextViolations,
+      { "src/a.tsx": "export const L = () => <p>Monte Carlo odds</p>;\n" },
+    ],
+    [
+      "direct CRON_SECRET read",
+      findDirectCronSecretReadViolations,
+      { "src/a.ts": "const s = process.env.CRON_SECRET;\n" },
+    ],
+    [
+      "API route without DEMO_ONLY",
+      findMissingDemoOnlyGuardViolations,
+      { "src/app/api/thing/route.ts": "export async function POST() {}\n" },
+    ],
+    [
+      "filing-status literal outside config",
+      findFilingStatusObjectLiteralViolations,
+      { "src/a.ts": "const T = { MFJ: 1, Single: 2, HOH: 3 };\n" },
+    ],
+    [
+      "redeclared config export",
+      findRedeclaredConfigExportViolations,
+      {
+        "src/lib/config/limits.ts": "export const FIXTURE_LIMIT = 1;\n",
+        "src/a.ts": "const FIXTURE_LIMIT = 2;\n",
+      },
+    ],
+    [
+      "review citation",
+      findReviewCitationViolations,
+      { "src/a.ts": "// guards the empty case (H10)\nexport {};\n" },
+    ],
+    [
+      "broad citation",
+      findBroadCitationViolations,
+      { "src/a.ts": "// advisor-caught: guards the empty case\nexport {};\n" },
+    ],
+    [
+      "timezone-unsafe date",
+      findTzUnsafeDateViolations,
+      { "src/a.ts": "const d = new Date().toISOString().slice(0, 10);\n" },
+    ],
+  ];
+
+describe("RULES.md violations sweep — positive controls", () => {
+  it.each(POSITIVE_CONTROLS)(
+    "%s: flags a planted violation",
+    (_, finder, files) => {
+      const planted = Object.keys(files).filter(
+        (f) => !f.startsWith("src/lib/config/"),
+      );
+      expect(scanPlanted(finder, files)).toEqual(planted);
+    },
+  );
+
+  it("honors the lint-violation-ok escape hatch", () => {
+    expect(
+      scanPlanted(findCategoryEqualityViolations, {
+        "src/a.ts": 'if (t === "401k") run(); // lint-violation-ok: fixture\n',
+      }),
+    ).toEqual([]);
+  });
+
+  it("covers every finder in this file", () => {
+    const src = fs.readFileSync(__filename, "utf8");
+    const finders = [...src.matchAll(/^function (find\w+Violations)\(/gm)].map(
+      (m) => m[1],
+    );
+    const controlled = new Set(POSITIVE_CONTROLS.map(([, f]) => f.name));
+    expect(
+      finders.filter(
+        (f) => f !== "findPatternViolations" && !controlled.has(f!),
+      ),
+    ).toEqual([]);
   });
 });

@@ -158,14 +158,14 @@ describe("projection router — computeWithdrawalBracketOptimizer", () => {
     }
   });
 
-  it("accepts decumulationDefaults override without throwing", async () => {
+  it("accepts a client decumulation routing override", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
 
       const response =
         await caller.projection.computeWithdrawalBracketOptimizer({
-          decumulationDefaults: { withdrawalRate: 0.035 },
+          decumulationDefaults: { withdrawalRoutingMode: "waterfall" },
         });
       expect(response.result).not.toBeNull();
     } finally {

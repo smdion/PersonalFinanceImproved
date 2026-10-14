@@ -2,6 +2,7 @@
 
 import { ScenarioProvider } from "@/lib/context/scenario-context";
 import { ScenarioBar } from "@/components/layout/scenario-bar";
+import { QuickSearch } from "@/components/layout/quick-search";
 import { usePrivacy } from "@/lib/context/privacy-context";
 import { useHouseholdTimeZoneDefault } from "@/lib/hooks/use-household-timezone-default";
 
@@ -17,6 +18,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         className="flex h-full flex-col"
       >
         <ScenarioBar />
+        <QuickSearch />
         {/* print:p-0 print:overflow-visible — pl-12/overflow-auto exist to
             clear the mobile hamburger button and give the page its own
             scroll region on screen; neither belongs in print (found live,

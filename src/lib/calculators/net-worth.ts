@@ -18,8 +18,8 @@
  * 2. **AAW Score** (Money Guy Show "Wealth Accumulator" formula):
  *    Expected Net Worth = (Average Age × Effective Income) / (10 + max(0, 40 - Age))
  *    - Uses average age across all household members
- *    - Uses combinedAgi (optionally 3-year averaged) as income
- *    - >= 2.0 = PAW (Prodigious), 1.0 = AAW (Average), <= 0.5 = UAW (Under)
+ *    - Uses gross pretax income (optionally 3-year averaged) — see wealthFormulaIncome
+ *    - >= 2.0 = PAW (Prodigious), <= 0.5 = UAW (Under), AAW (Average) between
  *
  * 3. **FI Progress** (Financial Independence progress):
  *    FI Target = Annual Expenses ÷ Withdrawal Rate
@@ -38,12 +38,22 @@ import {
 /**
  * FI Target = Annual Expenses ÷ Withdrawal Rate — the accumulation-phase
  * "how big does my portfolio need to be" figure.
- * Single computation path: this is the only place the formula is written;
- * `deriveFI` (lib/hooks/use-fi-cache.ts, client-side) calls this instead of
- * reimplementing raw division with no divide-by-zero guard — the two used
- * to independently compute the same thing and could show different numbers
- * on the same Net Worth page render.
+ * Single computation path: this is the only place the formula is written.
  */
+/**
+ * The income the wealth formula (and lifetime earnings) counts for a year:
+ * gross pretax income, as The Millionaire Next Door and The Money Guy Show
+ * define it. AGI is used only where gross income wasn't recorded — AGI is
+ * net of pre-tax 401k/HSA deferrals, so using it would shrink the expected
+ * net worth for exactly the households that save the most.
+ */
+export function wealthFormulaIncome(row: {
+  grossIncome: number;
+  combinedAgi: number;
+}): number {
+  return row.grossIncome > 0 ? row.grossIncome : Math.max(0, row.combinedAgi);
+}
+
 export function computeFiTarget(
   annualExpenses: number,
   withdrawalRate: number,

@@ -22,7 +22,6 @@ export type OverridesPanelV2Props = {
 
 type OverrideType =
   | "contribution_rate"
-  | "withdrawal_rate"
   | "lump_sum"
   | "salary_change"
   | "budget_change"
@@ -44,14 +43,6 @@ const OVERRIDE_OPTIONS: {
     icon: "📈",
     phase: "pre",
   },
-  // "withdrawal_rate" removed from the picker:
-  // config.withdrawalRate is never read by any of the 8 strategies' real
-  // spending math (Finding 0), and after Step 2's fix to
-  // ProjectionResult.sustainableWithdrawal, it no longer even feeds that
-  // reference figure — a year-specific override here now changes nothing
-  // about the plan for any strategy. The "withdrawal_rate" case below and
-  // the edit path for pre-existing saved overrides are kept so a household
-  // with an old override can still view/edit/delete it.
   {
     key: "lump_sum",
     label: "Lump Sum",
@@ -206,8 +197,6 @@ export function OverridesPanelV2({
     for (let i = 0; i < state.decumOverrides.length; i++) {
       const o = state.decumOverrides[i]!;
       const parts: string[] = [];
-      if (o.withdrawalRate != null)
-        parts.push(`Rate: ${formatPercent(o.withdrawalRate, 1)}`);
       if (o.rothConversionTarget != null)
         parts.push(
           `Roth Conv: ${o.rothConversionTarget === 0 ? "Off" : formatPercent(o.rothConversionTarget, 0)}`,
@@ -228,13 +217,7 @@ export function OverridesPanelV2({
         id: `decum-${o.year}-${i}`,
         year: o.year,
         phase: "post",
-        type: o.reset
-          ? "Reset"
-          : o.lumpSums?.length
-            ? "Lump Sum"
-            : o.withdrawalRate != null
-              ? "Withdrawal"
-              : "Override",
+        type: o.reset ? "Reset" : o.lumpSums?.length ? "Lump Sum" : "Override",
         summary: parts.join(" · ") || "Override",
         color: "amber",
         onDelete: () =>
@@ -246,13 +229,9 @@ export function OverridesPanelV2({
               ? "reset"
               : o.lumpSums?.length
                 ? "lump_sum"
-                : o.withdrawalRate != null
-                  ? "withdrawal_rate"
-                  : o.rothConversionTarget != null
-                    ? "roth_conversion"
-                    : o.withdrawalRoutingMode
-                      ? "routing"
-                      : "withdrawal_rate",
+                : o.rothConversionTarget != null
+                  ? "roth_conversion"
+                  : "routing",
           );
           setEditingOverride({
             phase: "post",
@@ -262,11 +241,9 @@ export function OverridesPanelV2({
                 prev.filter((_, j) => j !== idx),
               ),
             initialValue:
-              o.withdrawalRate != null
-                ? String(o.withdrawalRate * 100)
-                : o.rothConversionTarget != null
-                  ? String(o.rothConversionTarget * 100)
-                  : undefined,
+              o.rothConversionTarget != null
+                ? String(o.rothConversionTarget * 100)
+                : undefined,
           });
           setWizardStep("fields");
           setShowWizard(true);
@@ -346,46 +323,6 @@ export function OverridesPanelV2({
             }}
           />
         );
-
-      case "withdrawal_rate": {
-        // Legacy edit-only path — no longer
-        // reachable from the type picker. Kept so a household with a
-        // pre-existing saved override can still view/edit/delete it. None
-        // of the 8 strategies' real spending reads this value for any
-        // year, and it no longer feeds any reported figure either.
-        return (
-          <div className="space-y-2">
-            <p className="rounded bg-amber-50 px-2 py-1.5 text-xs text-amber-600">
-              This override type doesn&apos;t change your plan — no
-              strategy&apos;s withdrawal math reads it, and it no longer feeds
-              any figure shown on this page. Kept here only so you can edit or
-              remove this pre-existing override.
-            </p>
-            <SimpleNumberForm
-              label="Withdrawal Rate (%) — legacy, has no effect"
-              placeholder="3.5"
-              step={0.1}
-              initialValue={editingOverride?.initialValue}
-              onSubmit={(val, notes) => {
-                const o: DecumOverride = {
-                  year,
-                  withdrawalRate: val / 100,
-                  ...(notes ? { notes } : {}),
-                };
-                state.setDecumOverrides((prev) =>
-                  [
-                    ...prev.filter(
-                      (x) => x.year !== year || x.withdrawalRate == null,
-                    ),
-                    o,
-                  ].sort((a, b) => a.year - b.year),
-                );
-                resetWizard();
-              }}
-            />
-          </div>
-        );
-      }
 
       case "lump_sum":
         return (

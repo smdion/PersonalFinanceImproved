@@ -1,6 +1,7 @@
 /**
  * Portfolio snapshot and year-end history helpers.
  */
+import { onMutationSucceeded } from "@/server/mutation-events";
 import { eq, desc, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AccountCategory } from "@/lib/calculators/types";
@@ -36,7 +37,10 @@ import {
   type BudgetTargeting,
 } from "./budget";
 import { computeMortgageBalance, getActiveMortgageLoan } from "./mortgage";
-import { calculateNetWorth } from "@/lib/calculators/net-worth";
+import {
+  calculateNetWorth,
+  wealthFormulaIncome,
+} from "@/lib/calculators/net-worth";
 import { countPeriodsElapsed } from "@/lib/calculators/paycheck";
 import type { NetWorthInput } from "@/lib/calculators/types";
 import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
@@ -278,9 +282,9 @@ export type YearEndRow = {
   // Inputs used for computed metrics (for display / debugging)
   /** Average age across all household members for this year. */
   averageAge: number;
-  /** CombinedAGI (or grossIncome fallback), optionally 3yr averaged. */
+  /** Gross pretax income (AGI where gross wasn't recorded), optionally 3yr averaged. */
   effectiveIncome: number;
-  /** Cumulative AGI through this year. */
+  /** Cumulative gross income (AGI where gross wasn't recorded) through this year. */
   lifetimeEarnings: number;
   /** Annual expenses from budget. */
   annualExpenses: number;
@@ -303,25 +307,42 @@ export type YearEndRow = {
  *
  * Results are cached for 5 seconds to deduplicate concurrent calls (e.g. NetWorth
  * page fires getSummary + getHistory in parallel, both of which call this function).
- * The cache is untargeted (no key) and only ever holds the default, no-`targeting`
- * result — any call that passes `targeting` bypasses it entirely on both read and
- * write, so a Plan-pinned or profile-scoped call can never read another call's
- * differently-targeted result, and never pollutes the shared default cache.
+ * The cache is keyed by the as-of day and the full targeting (budget profile,
+ * column, session salaries), so a Plan-pinned or profile-scoped call only ever
+ * reads a result built with exactly the same inputs.
  */
 export type YearEndHistoryTargeting = BudgetTargeting & {
   /** personId -> active salary, merged in place of the raw current salary for the live current-year row. */
   salaryActiveFields?: SalaryActiveMap;
 };
 
-let _yearEndCache: { data: YearEndRow[]; expiresAt: number } | null = null;
+// Short-lived (5s) cache keyed by the targeting, so a page that asks for
+// the same targeted history from several procedures in one load (the
+// dashboard: net worth + milestones) builds it once.
+//
+// Scoped per database handle: real requests share the app's `db`, while a
+// demo request runs on its own handle bound to its demo schema
+// (trpc.ts demoSchemaMiddleware) — so demo and real data never share an
+// entry. `generation` drops a build that started before an invalidation, so
+// a read racing a write can't re-cache pre-write data.
+const YEAR_END_CACHE_TTL_MS = 5_000;
+type YearEndCacheEntry = { data: YearEndRow[]; expiresAt: number };
+let _yearEndCache = new WeakMap<object, Map<string, YearEndCacheEntry>>();
+let _yearEndCacheGeneration = 0;
 
-function hasTargeting(targeting: YearEndHistoryTargeting | undefined) {
-  return !!(
-    targeting &&
-    (targeting.budgetProfileId != null ||
-      targeting.budgetColumn != null ||
-      (targeting.salaryActiveFields && targeting.salaryActiveFields.size > 0))
-  );
+function yearEndCacheKey(
+  asOfDate: Date,
+  targeting: YearEndHistoryTargeting | undefined,
+) {
+  const salary = [...(targeting?.salaryActiveFields ?? new Map()).entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([personId, entry]) => [personId, entry]);
+  return JSON.stringify([
+    localDateStr(asOfDate),
+    targeting?.budgetProfileId ?? null,
+    targeting?.budgetColumn ?? null,
+    salary,
+  ]);
 }
 
 export async function buildYearEndHistory(
@@ -329,9 +350,11 @@ export async function buildYearEndHistory(
   asOfDate: Date = new Date(),
   targeting?: YearEndHistoryTargeting,
 ): Promise<YearEndRow[]> {
-  const targeted = hasTargeting(targeting);
-  if (!targeted && _yearEndCache && Date.now() < _yearEndCache.expiresAt) {
-    return _yearEndCache.data;
+  const cacheKey = yearEndCacheKey(asOfDate, targeting);
+  const generation = _yearEndCacheGeneration;
+  const cached = _yearEndCache.get(db)?.get(cacheKey);
+  if (cached && Date.now() < cached.expiresAt) {
+    return cached.data;
   }
   const [
     nwRows,
@@ -1109,24 +1132,21 @@ export async function buildYearEndHistory(
           birthYears.length
         : 0;
 
-    // Effective income: combinedAgi with grossIncome fallback for current year
-    const yearIncome = row.combinedAgi > 0 ? row.combinedAgi : row.grossIncome;
+    // One income definition for both the wealth formula and lifetime
+    // earnings: gross pretax income (AGI only where gross wasn't recorded).
+    const yearIncome = wealthFormulaIncome(row);
 
     // Optionally average over 3 most recent years
     let effectiveIncome = yearIncome;
     if (useSalaryAverage) {
       const recent = history
-        .filter(
-          (h) => h.year <= row.year && (h.combinedAgi > 0 || h.grossIncome > 0),
-        )
+        .filter((h) => h.year <= row.year && wealthFormulaIncome(h) > 0)
         .sort((a, b) => b.year - a.year)
         .slice(0, 3);
       if (recent.length > 0) {
         effectiveIncome =
-          recent.reduce(
-            (s, h) => s + (h.combinedAgi > 0 ? h.combinedAgi : h.grossIncome),
-            0,
-          ) / recent.length;
+          recent.reduce((s, h) => s + wealthFormulaIncome(h), 0) /
+          recent.length;
       }
     }
 
@@ -1180,13 +1200,28 @@ export async function buildYearEndHistory(
     row.withdrawalRateIsDefault = !primaryRetSettings;
   }
 
-  if (!targeted) {
-    _yearEndCache = { data: history, expiresAt: Date.now() + 5_000 };
+  if (generation === _yearEndCacheGeneration) {
+    const now = Date.now();
+    let entries = _yearEndCache.get(db);
+    if (!entries) {
+      entries = new Map();
+      _yearEndCache.set(db, entries);
+    }
+    for (const [key, entry] of entries) {
+      if (entry.expiresAt <= now) entries.delete(key);
+    }
+    entries.set(cacheKey, {
+      data: history,
+      expiresAt: now + YEAR_END_CACHE_TTL_MS,
+    });
   }
   return history;
 }
 
 /** Invalidate the buildYearEndHistory cache (call after mutations that affect its data). */
 export function invalidateYearEndCache(): void {
-  _yearEndCache = null;
+  _yearEndCache = new WeakMap();
+  _yearEndCacheGeneration++;
 }
+// Any successful write may change what the history is built from.
+onMutationSucceeded(invalidateYearEndCache);

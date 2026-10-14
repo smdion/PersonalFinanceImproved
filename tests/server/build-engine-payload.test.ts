@@ -464,8 +464,8 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
     const data = await fetchRetirementData(db, {});
     const payload = await buildEnginePayload(db, data, {});
     expect(payload!.distributionTaxRates.taxDataYear).toBe(2025);
-    // 2025 MFJ standard deduction is 30000 (seed); 2026 is 32200.
-    expect(payload!.distributionTaxRates.standardDeduction).toBe(30000);
+    // 2025 MFJ standard deduction is 31500 (OBBBA); 2026 is 32200.
+    expect(payload!.distributionTaxRates.standardDeduction).toBe(31500);
   });
 
   // resolveTaxParams's candidateYears() is

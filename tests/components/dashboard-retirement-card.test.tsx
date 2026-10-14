@@ -56,11 +56,19 @@ const engineData = {
   returnRateSummary: { avgAccumulation: 0.07 },
 };
 
+vi.mock("@/lib/hooks/use-year-end-targeting", () => ({
+  useYearEndTargetingInput: () => ({}),
+}));
+
+let milestoneInputs: unknown = undefined;
 let mcPeekData: unknown = { result: null };
 let coastFireMcPeekData: unknown = { result: null };
 
 vi.mock("@/lib/trpc", () => ({
   trpc: {
+    milestones: {
+      computeInputs: { useQuery: () => ({ data: milestoneInputs }) },
+    },
     projection: {
       computeProjection: {
         useQuery: () => ({
@@ -191,5 +199,42 @@ describe("RetirementCard scope", () => {
     expect(screen.getByText("(+ $5,000.00 match)")).toBeInTheDocument();
     engineData.result.projectionByYear = saved;
     (engineData as Record<string, unknown>).contributionSpecs = savedSpecs;
+  });
+});
+
+describe("RetirementCard readiness follows the household's checkpoint table", () => {
+  const now = {
+    year: 2026,
+    isCurrent: true,
+    age: 40,
+    netWorth: 900000,
+    liquid: 600000,
+    cash: 20000,
+    retirement: 450000,
+    brokerage: 130000,
+    grossIncome: 200000,
+    contributions: null,
+    wealthScore: 1.5,
+    fiProgress: 0.3,
+    mortgageBalance: 0,
+    otherLiabilities: 0,
+  };
+
+  it("uses Money Guy's liquid investments by default", () => {
+    mcPeekData = { result: null };
+    coastFireMcPeekData = { result: null };
+    milestoneInputs = { checkpointSource: "moneyGuy", years: [now] };
+    render(<RetirementCard />);
+    // 600k / 200k = 3.0×
+    expect(screen.getByText("3.0x")).toBeInTheDocument();
+    expect(screen.getByText(/pay · Money Guy/)).toBeInTheDocument();
+  });
+
+  it("uses Fidelity's retirement savings when chosen", () => {
+    milestoneInputs = { checkpointSource: "fidelity", years: [now] };
+    render(<RetirementCard />);
+    // 450k / 200k = 2.25×
+    expect(screen.getByText("2.3x")).toBeInTheDocument();
+    expect(screen.getByText(/pay · Fidelity/)).toBeInTheDocument();
   });
 });

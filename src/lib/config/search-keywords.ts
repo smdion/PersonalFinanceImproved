@@ -1,0 +1,56 @@
+/**
+ * Extra words Quick search (Cmd/Ctrl-K) matches per page, on top of the
+ * page's sidebar label and group. Pages come from the sidebar's
+ * navStructure — this only adds the things people search for by name.
+ */
+export const SEARCH_KEYWORDS: Record<string, readonly string[]> = {
+  "/": ["home", "overview", "checkup"],
+  "/recommendations": ["to do", "next steps", "advice", "what should i do"],
+  "/milestones": [
+    "foo",
+    "financial order of operations",
+    "paw",
+    "wealth score",
+    "checkpoints",
+    "goals",
+    "fi",
+    "money guy",
+    "bogleheads",
+  ],
+  "/benchmarks": ["allocation", "expense ratio", "index", "fees", "drift"],
+  "/contributions": ["savings rate", "401k", "ira", "hsa", "match", "limits"],
+  "/paycheck": ["salary", "bonus", "deductions", "withholding", "w-4", "taxes"],
+  "/budget": ["expenses", "spending", "categories"],
+  "/savings": ["emergency fund", "sinking funds", "goals"],
+  "/expenses": ["spending", "transactions"],
+  "/portfolio": ["balances", "snapshot", "holdings", "accounts"],
+  "/performance": ["returns", "gains", "contributions by year"],
+  "/brokerage": ["brokerage goals", "taxable"],
+  "/house": ["home", "mortgage", "property"],
+  "/assets": ["cash", "cars", "other assets"],
+  "/liabilities": ["debt", "credit cards", "loans"],
+  "/networth": ["net worth", "trends", "fi progress", "wealth"],
+  "/historical": ["year end", "history", "finalize"],
+  "/retirement": [
+    "projection",
+    "monte carlo",
+    "simulation",
+    "withdrawal",
+    "social security",
+    "coast fire",
+  ],
+  "/tax-buckets": ["roth", "traditional", "basis", "tax location"],
+  "/tax-optimization": ["roth conversion", "irmaa", "brackets", "aca"],
+  "/tools": ["relocation", "move", "cost of living"],
+  "/settings": [
+    "irs limits",
+    "tax brackets",
+    "people",
+    "integrations",
+    "simplefin",
+    "ynab",
+    "time zone",
+  ],
+  "/versions": ["backup", "restore", "snapshot"],
+  "/data-browser": ["raw data", "tables"],
+};

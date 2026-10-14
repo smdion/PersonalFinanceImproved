@@ -58,16 +58,6 @@ vi.mock("@/lib/trpc", () => ({
 }));
 
 describe("DashboardPage", () => {
-  it("renders without crashing", async () => {
-    // Dynamic import after mocks are set up
-    const { default: DashboardPage } =
-      await import("@/app/(dashboard)/dashboard-content").then((m) => ({
-        default: m.DashboardContent,
-      }));
-    render(<DashboardPage />);
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
-  });
-
   it("renders all dashboard cards", async () => {
     const { default: DashboardPage } =
       await import("@/app/(dashboard)/dashboard-content").then((m) => ({

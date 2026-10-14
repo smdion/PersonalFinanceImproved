@@ -30,6 +30,8 @@ const ROUTES = [
   "/networth",
   "/historical",
   "/upkeep/utilities",
+  "/recommendations",
+  "/milestones",
   "/retirement",
   "/contributions",
   "/analytics",

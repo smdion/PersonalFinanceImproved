@@ -19,11 +19,12 @@ vi.mock("@/lib/budget-api", () => ({
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("settings.contributionLimits", () => {
-  it("list returns an array", async () => {
+  it("list returns the seeded reference rows", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.contributionLimits.list();
-      expect(Array.isArray(rows)).toBe(true);
+      // The test DB carries seed-reference-data.sql (2025 + 2026).
+      expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
     }
@@ -157,11 +158,12 @@ const SAMPLE_BRACKETS = [
 ];
 
 describe("settings.taxBrackets", () => {
-  it("list returns an array", async () => {
+  it("list returns the seeded reference rows", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.taxBrackets.list();
-      expect(Array.isArray(rows)).toBe(true);
+      // The test DB carries seed-reference-data.sql (2025 + 2026).
+      expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
     }
@@ -258,11 +260,12 @@ const SAMPLE_LTCG = [
 ];
 
 describe("settings.ltcgBrackets", () => {
-  it("list returns an array", async () => {
+  it("list returns the seeded reference rows", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.ltcgBrackets.list();
-      expect(Array.isArray(rows)).toBe(true);
+      // The test DB carries seed-reference-data.sql (2025 + 2026).
+      expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
     }
@@ -339,11 +342,12 @@ const SAMPLE_IRMAA = [
 ];
 
 describe("settings.irmaaBrackets", () => {
-  it("list returns an array", async () => {
+  it("list returns the seeded reference rows", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.irmaaBrackets.list();
-      expect(Array.isArray(rows)).toBe(true);
+      // The test DB carries seed-reference-data.sql (2025 + 2026).
+      expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
     }
@@ -437,11 +441,12 @@ const SAMPLE_FPL = {
 };
 
 describe("settings.fplByHousehold", () => {
-  it("list returns an array", async () => {
+  it("list returns the seeded reference rows", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.fplByHousehold.list();
-      expect(Array.isArray(rows)).toBe(true);
+      // The test DB carries seed-reference-data.sql (2025 + 2026).
+      expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
     }

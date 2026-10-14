@@ -6,6 +6,7 @@ INSERT INTO contribution_limits (tax_year, limit_type, value, notes) VALUES
   (2025, '401k_employee_limit', 23500.000000, 'IRS Notice 2024-80'),
   (2025, '401k_catchup_limit', 7500.000000, 'IRS Notice 2024-80'),
   (2025, '401k_super_catchup_limit', 11250.000000, 'SECURE 2.0 enhanced catch-up ages 60-63'),
+  (2025, '401k_total_additions_limit', 70000.000000, 'IRC 415(c) employee + employer + after-tax, catch-up excluded (IRS Notice 2024-80)'),
   (2025, 'ira_limit', 7000.000000, 'IRS Notice 2024-80'),
   (2025, 'ira_catchup_limit', 1000.000000, 'Additional if age 50+'),
   (2025, 'hsa_family_limit', 8550.000000, 'IRS Rev. Proc. 2024-25'),
@@ -17,9 +18,9 @@ INSERT INTO contribution_limits (tax_year, limit_type, value, notes) VALUES
   (2025, 'fica_medicare_surtax_rate', 0.009000, 'Additional Medicare above threshold'),
   (2025, 'fica_medicare_surtax_threshold', 200000.000000, 'Surtax threshold'),
   (2025, 'supplemental_tax_rate', 0.220000, 'Federal flat rate on bonuses'),
-  (2025, 'standard_deduction_mfj', 30000.000000, 'MFJ standard deduction'),
-  (2025, 'standard_deduction_single', 15000.000000, 'Single standard deduction'),
-  (2025, 'standard_deduction_hoh', 22500.000000, 'HoH standard deduction'),
+  (2025, 'standard_deduction_mfj', 31500.000000, 'OBBBA §70102 (supersedes Rev. Proc. 2024-40)'),
+  (2025, 'standard_deduction_single', 15750.000000, 'OBBBA §70102 (supersedes Rev. Proc. 2024-40)'),
+  (2025, 'standard_deduction_hoh', 23625.000000, 'OBBBA §70102 (supersedes Rev. Proc. 2024-40)'),
   (2025, 'additional_std_deduction_65_married', 1600.000000, 'IRC 63(f) age-65+ additional standard deduction, per spouse, MFJ/MFS/QSS (Rev. Proc. 2024-40)'),
   (2025, 'additional_std_deduction_65_unmarried', 2000.000000, 'IRC 63(f) age-65+ additional standard deduction, Single/HoH (Rev. Proc. 2024-40)'),
   (2025, 'obbba_senior_deduction_per_person', 6000.000000, 'OBBBA temporary senior deduction, 2025-2028, per qualifying person 65+ (not CPI-indexed)'),
@@ -30,6 +31,7 @@ INSERT INTO contribution_limits (tax_year, limit_type, value, notes) VALUES
   (2026, '401k_employee_limit', 24500.000000, 'IRS Notice 2025-67'),
   (2026, '401k_catchup_limit', 8000.000000, 'Age 50+ catch-up (2026)'),
   (2026, '401k_super_catchup_limit', 11250.000000, 'SECURE 2.0 ages 60-63'),
+  (2026, '401k_total_additions_limit', 72000.000000, 'IRC 415(c) employee + employer + after-tax, catch-up excluded (IRS Notice 2025-67)'),
   (2026, 'ira_limit', 7500.000000, 'IRS Notice 2025-67'),
   (2026, 'ira_catchup_limit', 1100.000000, 'Age 50+ catch-up (2026)'),
   (2026, 'hsa_family_limit', 8750.000000, 'Family HDHP coverage'),
@@ -41,9 +43,9 @@ INSERT INTO contribution_limits (tax_year, limit_type, value, notes) VALUES
   (2026, 'fica_medicare_surtax_rate', 0.009000, '0.9% Additional Medicare Tax'),
   (2026, 'fica_medicare_surtax_threshold', 200000.000000, 'Single/HoH; MFJ is 250k'),
   (2026, 'supplemental_tax_rate', 0.220000, 'Flat supplemental rate'),
-  (2026, 'standard_deduction_mfj', 32200.000000, 'IRS Rev. Proc. 2025-XX'),
-  (2026, 'standard_deduction_single', 16100.000000, 'IRS Rev. Proc. 2025-XX'),
-  (2026, 'standard_deduction_hoh', 24150.000000, 'IRS Rev. Proc. 2025-XX'),
+  (2026, 'standard_deduction_mfj', 32200.000000, 'IRS Rev. Proc. 2025-32'),
+  (2026, 'standard_deduction_single', 16100.000000, 'IRS Rev. Proc. 2025-32'),
+  (2026, 'standard_deduction_hoh', 24150.000000, 'IRS Rev. Proc. 2025-32'),
   (2026, 'additional_std_deduction_65_married', 1650.000000, 'IRC 63(f) age-65+ additional standard deduction, per spouse, MFJ/MFS/QSS (Rev. Proc. 2025-32)'),
   (2026, 'additional_std_deduction_65_unmarried', 2050.000000, 'IRC 63(f) age-65+ additional standard deduction, Single/HoH (Rev. Proc. 2025-32)'),
   (2026, 'obbba_senior_deduction_per_person', 6000.000000, 'OBBBA temporary senior deduction, 2025-2028, per qualifying person 65+ (not CPI-indexed)'),
@@ -130,3 +132,20 @@ INSERT INTO tax_params (tax_year, version, source, notes) VALUES
   (2025, 1, 'IRS Notice 2024-80; IRS Rev. Proc. 2024-40; Pub 15-T (2025)', 'R43 backfill of the pre-existing 2025 reference data'),
   (2026, 1, 'IRS Notice 2025-67; IRS Rev. Proc. 2025-32; Pub 15-T (2026); CMS 2026; HHS 2025', 'R43 backfill of the pre-existing 2026 reference data')
 ON CONFLICT DO NOTHING;
+
+-- ---------------------------------------------------------------------------
+-- Corrections to figures an earlier seed got wrong. The INSERTs above never
+-- overwrite an existing row, so a fix to an already-seeded value reaches
+-- existing installs only through here. Each UPDATE matches the exact old
+-- value, so it is a no-op on fresh installs, on re-runs, and on any row an
+-- admin has since changed in Settings.
+-- ---------------------------------------------------------------------------
+
+-- 2025 standard deduction: OBBBA §70102 raised it after the pre-law figures
+-- were seeded (v0.8.7).
+UPDATE contribution_limits SET value = 31500.000000, notes = 'OBBBA §70102 (supersedes Rev. Proc. 2024-40)'
+  WHERE tax_year = 2025 AND limit_type = 'standard_deduction_mfj' AND CAST(value AS NUMERIC) = 30000;
+UPDATE contribution_limits SET value = 15750.000000, notes = 'OBBBA §70102 (supersedes Rev. Proc. 2024-40)'
+  WHERE tax_year = 2025 AND limit_type = 'standard_deduction_single' AND CAST(value AS NUMERIC) = 15000;
+UPDATE contribution_limits SET value = 23625.000000, notes = 'OBBBA §70102 (supersedes Rev. Proc. 2024-40)'
+  WHERE tax_year = 2025 AND limit_type = 'standard_deduction_hoh' AND CAST(value AS NUMERIC) = 22500;

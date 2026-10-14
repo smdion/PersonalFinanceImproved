@@ -3,7 +3,7 @@
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import type { FICache } from "@/lib/hooks/use-fi-cache";
+import { useProjectedFiYear } from "@/lib/hooks/use-dashboard-projection";
 
 export function FinancialIndependenceCard({
   fiTarget,
@@ -15,7 +15,6 @@ export function FinancialIndependenceCard({
   budgetColumnLabels,
   currentExpenseColumn,
   onExpenseColumnChange,
-  fiCache,
 }: {
   fiTarget: number;
   fiProgress: number;
@@ -26,8 +25,8 @@ export function FinancialIndependenceCard({
   budgetColumnLabels?: string[];
   currentExpenseColumn: number;
   onExpenseColumnChange: (index: number) => void;
-  fiCache: FICache;
 }) {
+  const projected = useProjectedFiYear(fiTarget, cash);
   return (
     <Card
       title={
@@ -107,23 +106,25 @@ export function FinancialIndependenceCard({
           <div className="flex justify-between">
             <span>
               Projected FI Year{" "}
-              <HelpTip text="Projected year your portfolio reaches your FI target, based on your retirement plan. Visit the Retirement page to run a projection." />
+              <HelpTip text="The year your investments plus cash reach the FI target in your retirement plan's projection. The target grows with inflation, since the projection is in future dollars." />
             </span>
             <span className="text-primary font-medium">
-              {fiCache === null ? (
-                <a href="/retirement" className="text-blue-600 hover:underline">
-                  Run projection →
-                </a>
-              ) : fiCache.fiYear === null ? (
-                "Unreachable"
-              ) : (
-                `${fiCache.fiYear}${fiCache.fiAge !== null ? ` (age ${fiCache.fiAge})` : ""}`
-              )}
+              {fiProgress >= 1
+                ? "Reached"
+                : projected.isLoading
+                  ? "…"
+                  : !projected.hasProjection
+                    ? "Set up retirement"
+                    : projected.fi === null
+                      ? "Not reached in the projection"
+                      : `${projected.fi.year} (age ${Math.round(projected.fi.age)})`}
             </span>
           </div>
-          {fiCache !== null && fiCache.fiYear !== null && (
+          {projected.fi !== null && fiProgress < 1 && (
             <div className="text-caption text-faint mt-0.5 text-right">
-              Based on retirement plan
+              {projected.isScenario
+                ? "Based on the scenario's plan"
+                : "Based on retirement plan"}
             </div>
           )}
         </div>

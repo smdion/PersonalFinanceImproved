@@ -139,11 +139,19 @@ export function HelpContent() {
       <Section title="Navigation & Layout">
         <p>
           The app is organized into a <strong>sidebar</strong> on the left with
-          six groups: <em>Cash Flow</em>, <em>Wealth</em>, <em>Net Worth</em>,{" "}
-          <em>Upkeep</em>, <em>Analysis</em>, and <em>System</em>, plus the
-          Dashboard at the top and Help at the bottom.
+          seven groups: <em>Cash Flow</em>, <em>Investments</em>,{" "}
+          <em>Net Worth</em>, <em>Upkeep</em>, <em>Planning</em> (what-ifs and
+          long-range plans), <em>Insights</em> (how you&rsquo;re doing and what
+          to do next), and <em>System</em>, plus the Dashboard at the top and
+          Help at the bottom.
         </p>
         <ul className="ml-2 list-inside list-disc space-y-1">
+          <li>
+            <strong>Quick search</strong> &mdash; Press <kbd>Cmd</kbd>+
+            <kbd>K</kbd> (<kbd>Ctrl</kbd>+<kbd>K</kbd> on Windows) and type a
+            page or what&rsquo;s on it &mdash; &ldquo;HSA limit&rdquo;,
+            &ldquo;FI&rdquo;, &ldquo;savings rate&rdquo;.
+          </li>
           <li>
             <strong>Collapse the sidebar</strong> &mdash; Click the{" "}
             <Kbd>Collapse</Kbd> button at the bottom of the sidebar to switch to
@@ -718,9 +726,9 @@ export function HelpContent() {
         </ul>
       </Section>
 
-      {/* ━━ ANALYSIS ━━ */}
+      {/* ━━ PLANNING ━━ */}
       <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
-        Analysis
+        Planning
       </h3>
 
       {/* ── Retirement ── */}

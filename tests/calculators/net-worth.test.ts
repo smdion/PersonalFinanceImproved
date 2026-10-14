@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { calculateNetWorth } from "@/lib/calculators/net-worth";
+import {
+  calculateNetWorth,
+  wealthFormulaIncome,
+} from "@/lib/calculators/net-worth";
 import type { NetWorthInput } from "@/lib/calculators/types";
 import { AS_OF_DATE } from "./fixtures";
 
@@ -86,5 +89,20 @@ describe("calculateNetWorth", () => {
       const result = calculateNetWorth({ ...input, withdrawalRate: 0 });
       expect(result.fiTarget).toBe(0);
     });
+  });
+});
+
+describe("wealthFormulaIncome", () => {
+  it("uses gross pretax income, not AGI", () => {
+    expect(
+      wealthFormulaIncome({ grossIncome: 200000, combinedAgi: 160000 }),
+    ).toBe(200000);
+  });
+
+  it("falls back to AGI only where gross wasn't recorded", () => {
+    expect(wealthFormulaIncome({ grossIncome: 0, combinedAgi: 160000 })).toBe(
+      160000,
+    );
+    expect(wealthFormulaIncome({ grossIncome: 0, combinedAgi: 0 })).toBe(0);
   });
 });

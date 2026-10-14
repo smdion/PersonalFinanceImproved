@@ -8,7 +8,11 @@ import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile"
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  formatSavingsRate,
+} from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { categoryChartHex, gainLossTextColor } from "@/lib/utils/colors";
 import { useUser, hasPermission } from "@/lib/context/user-context";
@@ -16,6 +20,9 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
+import { useRecommendations } from "@/lib/hooks/use-recommendations";
+import { contributionsSummaryLine } from "@/lib/pure/plain-summary";
+import { PlainSummary } from "@/components/ui/plain-summary";
 import {
   householdSavings,
   type HouseholdSavings,
@@ -96,6 +103,11 @@ export function ContributionsContent() {
         .reduce((s, p) => s + (p.totalCompensation ?? p.salary), 0) >=
         highIncomeThreshold,
     );
+
+  // The top paycheck to-do, for the plain-words line.
+  const { recommendations } = useRecommendations();
+  const nextPaycheckAction =
+    recommendations.find((r) => r.area === "paycheck")?.action ?? null;
 
   const { data: profileData } = trpc.contribution.computeSummary.useQuery(
     { contributionProfileId: selectedProfileId },
@@ -282,6 +294,21 @@ export function ContributionsContent() {
           const primary = excludeMatch ? "without" : "with";
           return (
             <>
+              {viewMode === "projected" && (
+                <div className="md:col-span-3">
+                  <PlainSummary
+                    text={contributionsSummaryLine({
+                      rate: primary === "without" ? hhRateWithout : hhRateWith,
+                      annualAmount: counted(
+                        excludeMatch ? savingsWithout : savingsWith,
+                      ),
+                      matchIncluded: !excludeMatch,
+                      includePortfolio,
+                      nextAction: nextPaycheckAction,
+                    })}
+                  />
+                </div>
+              )}
               <SummaryCard
                 label={`${isBlended ? "Total Savings (Est.)" : "Total Savings"}${includePortfolio ? "" : " — retirement only"}`}
                 rate={primary === "without" ? hhRateWithout : hhRateWith}
@@ -683,12 +710,11 @@ export function ContributionsContent() {
                   {combinedSalary > 0 && (
                     <>
                       Savings rate:{" "}
-                      {formatPercent(
+                      {formatSavingsRate(
                         householdSavings([person], [], viewMode, {
                           excludeMatch,
                           includePortfolio,
                         }).rate,
-                        1,
                       )}{" "}
                       ({excludeMatch ? "w/o match" : "w/ match"})
                     </>
@@ -898,13 +924,13 @@ function SummaryCard({
         <span className="text-muted text-xs tracking-wide uppercase">
           {label}
         </span>
-        <div className="text-3xl font-bold">{formatPercent(rate, 1)}</div>
+        <div className="text-3xl font-bold">{formatSavingsRate(rate)}</div>
         <div className="text-muted text-sm">
           {formatCurrency(amount)}
           {pl}
           {rate !== rateAlt && (
             <span className="ml-2 text-xs">
-              ({formatPercent(rateAlt, 1)} {altLabel})
+              ({formatSavingsRate(rateAlt)} {altLabel})
             </span>
           )}
         </div>

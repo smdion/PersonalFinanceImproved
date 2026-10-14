@@ -254,7 +254,7 @@ export async function computeJobNetPayPerCheck(
   const currentSalary = comp.salary;
   const bonusTerms = comp.terms;
   const periodsPerYear = getPeriodsPerYear(salaryEntry.payPeriod);
-  const taxBrackets = buildBracketInput(bracketRow, limitsMap);
+  const taxBrackets = buildBracketInput(bracketRow, limitsMap, allBrackets);
 
   const deductions: DeductionLine[] = jobDeductions.map((d) => ({
     name: d.deductionName,

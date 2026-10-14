@@ -234,8 +234,12 @@ export const CHART_COLORS = {
   mixUsEquity: "#4f46e5", // indigo-600
   mixIntlEquity: "#0ea5e9", // sky-500
   mixUsBond: "#10b981", // emerald-500
-  mixIntlBond: "#14b8a6", // teal-500
-  mixTips: "#84cc16", // lime-500
+  // rose-600 — teal was nearly indistinguishable from US bonds, which it
+  // sits next to in stacked mixes and the glide path chart.
+  mixIntlBond: "#e11d48", // rose-600
+  // purple-500 — lime was too close to US bonds and cash for colorblind
+  // readers (they sit next to each other in stacked mixes).
+  mixTips: "#a855f7", // purple-500
   mixCash: "#f59e0b", // amber-500
   mixOther: "#9ca3af", // gray-400
   // Linked balance sparkline (SimpleFIN)

@@ -1,5 +1,5 @@
 /** Memoized derived data from engine query results — person filtering, visible column detection, deflation, contribution rate schedules, tooltip rendering, and milestone-based year filtering. */
-import { useMemo, useCallback, useEffect, useRef } from "react";
+import { useMemo, useCallback, useEffect } from "react";
 import type {
   EngineYearProjection,
   EngineAccumulationYear,
@@ -30,12 +30,6 @@ import {
   _singleBucketCategories,
   filterYearByParentCategory,
 } from "./utils";
-import {
-  useFICache,
-  deriveFI,
-  isLivePlanInput,
-} from "@/lib/hooks/use-fi-cache";
-import { useScenario } from "@/lib/context/scenario-context";
 
 export function useProjectionDerived(
   form: ProjectionFormState,
@@ -59,15 +53,7 @@ export function useProjectionDerived(
     activeAltMcResult,
   } = queries;
 
-  const {
-    parentCategoryFilter,
-    people,
-    onContributionRates,
-    contributionProfileId,
-    salaryProfileId,
-    snapshotId,
-  } = props;
-  const { isInScenario } = useScenario();
+  const { parentCategoryFilter, people, onContributionRates } = props;
 
   // --- Engine data narrowing ---
   // In Coast FIRE scenario, swap the deterministic projection source from
@@ -175,64 +161,6 @@ export function useProjectionDerived(
     engineData && engineData.result ? engineData.perPersonSettings : undefined;
   const annualExpenses =
     engineData && engineData.result ? engineData.annualExpenses : 0;
-
-  const [, writeFICache] = useFICache();
-  const lastProjCacheKey = useRef<string | null>(null);
-  useEffect(() => {
-    if (!engineData?.result || engineQuery.isLoading || engineQuery.isFetching)
-      return;
-    // Only the live, no-override retirement plan may populate the
-    // dashboard-wide FI cache — a scenario, historical snapshot, per-category,
-    // or per-person filtered view is a DIFFERENT projection than what the
-    // rest of the dashboard shows. Note: dragging the
-    // withdrawal-rate/order/split controls away from their stored defaults
-    // isn't caught here yet.
-    // contributionProfileId/salaryProfileId aren't checked — they're always
-    // the resolved active profile absent a Plan pin, which isInScenario
-    // already excludes (see isLivePlanInput's docstring).
-    if (
-      !isLivePlanInput({
-        isInScenario,
-        snapshotId,
-        accumulationOverrides: accumOverrides,
-        decumulationOverrides: decumOverrides,
-        parentCategoryFilter,
-        isPersonFiltered,
-      })
-    )
-      return;
-    const withdrawalRate = Number(engineSettings?.withdrawalRate ?? 0.04);
-    const expenses = annualExpenses as number;
-    if (withdrawalRate <= 0 || expenses <= 0) return;
-    const derived = deriveFI(
-      engineData.result.projectionByYear,
-      expenses,
-      withdrawalRate,
-    );
-    if (lastProjCacheKey.current === derived.inputKey) return;
-    lastProjCacheKey.current = derived.inputKey;
-    writeFICache({
-      fiYear: derived.fiYear,
-      fiAge: derived.fiAge,
-      inputKey: derived.inputKey,
-      computedAt: new Date().toISOString(),
-    });
-  }, [
-    engineData,
-    engineQuery.isLoading,
-    engineQuery.isFetching,
-    engineSettings,
-    annualExpenses,
-    writeFICache,
-    isInScenario,
-    snapshotId,
-    accumOverrides,
-    decumOverrides,
-    contributionProfileId,
-    salaryProfileId,
-    parentCategoryFilter,
-    isPersonFiltered,
-  ]);
 
   const decumulationExpenses =
     engineData && engineData.result

@@ -28,7 +28,7 @@ export function MetricsRow({
         title={
           <>
             Wealth Metrics{" "}
-            <HelpTip text="Wealth Score = net worth as % of lifetime earnings. AAW Score = Money Guy Wealth Accumulator (2.0+ = PAW, 1.0 = AAW, <0.5 = UAW)." />
+            <HelpTip text="Wealth Score = net worth as % of lifetime earnings. AAW Score = net worth ÷ the Money Guy wealth formula (age × gross income ÷ (10 + years until 40)): 2.0+ = PAW, 0.5 or less = UAW, average in between." />
           </>
         }
       >
@@ -48,7 +48,13 @@ export function MetricsRow({
           <ProgressBar
             value={Math.min(aawScore, 4) / 4}
             label={tier.label}
-            variant={tier.tier === "uaw" ? "danger" : "success"}
+            variant={
+              tier.tier === "uaw"
+                ? "danger"
+                : tier.tier === "paw" || aawScore >= 1
+                  ? "success"
+                  : "warning"
+            }
           />
         </div>
       </Card>

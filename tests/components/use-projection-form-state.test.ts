@@ -110,18 +110,20 @@ describe("useProjectionFormState", () => {
 
   it("setDecumOverrides independently touches only the decum override state", async () => {
     accumQueryData = [{ year: 2030, contributionRate: 0.2 }];
-    decumQueryData = [{ year: 2060, withdrawalRate: 0.04 }];
+    decumQueryData = [{ year: 2060, withdrawalRoutingMode: "waterfall" }];
     const useProjectionFormState = await importHook();
     const { result, rerender } = renderHook(() => useProjectionFormState());
 
     act(() => {
-      result.current.setDecumOverrides([{ year: 2061, withdrawalRate: 0.05 }]);
+      result.current.setDecumOverrides([
+        { year: 2061, withdrawalRoutingMode: "percentage" },
+      ]);
     });
     rerender();
 
     // Decum touched -> local wins
     expect(result.current.decumOverrides).toEqual([
-      { year: 2061, withdrawalRate: 0.05 },
+      { year: 2061, withdrawalRoutingMode: "percentage" },
     ]);
     // Accum untouched -> still reflects DB data
     expect(result.current.accumOverrides).toEqual([

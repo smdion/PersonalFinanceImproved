@@ -10,6 +10,17 @@ import {
   formatPercent,
 } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
+import {
+  CHECKPOINT_SOURCES,
+  FIDELITY_CHECKPOINTS,
+  MONEY_GUY_CHECKPOINTS,
+  type CheckpointSource,
+} from "@/lib/config/milestones";
+import {
+  checkpointBalance,
+  incomeMultipleTarget,
+  type MilestoneYear,
+} from "@/lib/pure/milestones";
 
 /** A projection with its settings (not the no-people stub). */
 type Projection = Extract<
@@ -17,99 +28,80 @@ type Projection = Extract<
   { settings: unknown }
 >;
 
-/**
- * Fidelity's age-based retirement savings targets.
- * At each age, you should have X times your salary saved.
- */
-const FIDELITY_TARGETS: { age: number; multiplier: number }[] = [
-  { age: 30, multiplier: 1 },
-  { age: 35, multiplier: 2 },
-  { age: 40, multiplier: 3 },
-  { age: 45, multiplier: 4 },
-  { age: 50, multiplier: 6 },
-  { age: 55, multiplier: 7 },
-  { age: 60, multiplier: 8 },
-  { age: 67, multiplier: 10 },
-];
-
-function getFidelityTarget(age: number): {
-  multiplier: number;
-  nextAge?: number;
-  nextMultiplier?: number;
-} {
-  // Find the bracket the current age falls into
-  let current = FIDELITY_TARGETS[0]!;
-  let next: (typeof FIDELITY_TARGETS)[number] | undefined;
-  for (let i = 0; i < FIDELITY_TARGETS.length; i++) {
-    if (age >= FIDELITY_TARGETS[i]!.age) {
-      current = FIDELITY_TARGETS[i]!;
-      next = FIDELITY_TARGETS[i + 1];
-    }
-  }
-  // Interpolate between brackets for a smooth target
-  if (next && age < next.age) {
-    const progress = (age - current.age) / (next.age - current.age);
-    const interpolated =
-      current.multiplier + progress * (next.multiplier - current.multiplier);
-    return {
-      multiplier: interpolated,
-      nextAge: next.age,
-      nextMultiplier: next.multiplier,
-    };
-  }
-  return {
-    multiplier: current.multiplier,
-    nextAge: next?.age,
-    nextMultiplier: next?.multiplier,
-  };
-}
-
 const stop = (e: React.SyntheticEvent) => {
   e.preventDefault();
   e.stopPropagation();
 };
 
+/** The household's chosen income-multiple table and today's figures for it
+ *  (the Milestones engine's current year), plus every account's projection
+ *  for Money Guy's liquid-investments measure. */
+export type ReadinessCheckpoint = {
+  source: CheckpointSource;
+  now: MilestoneYear | null;
+  allAccountsByYear: { age: number; endBalance: number }[];
+};
+
 /**
- * Retirement savings vs Fidelity's salary-multiple targets, now or at a
- * projected age (from the same projection the Retirement card shows).
+ * Savings vs the household's chosen income-multiple targets (Money Guy or
+ * Fidelity — Milestones page), now or at a projected age (from the same
+ * projection the Retirement card shows).
  */
 function Readiness({
   data,
   currentAge,
   retirementSavings,
+  checkpoint,
 }: {
   data: Projection;
   currentAge: number;
   retirementSavings: number;
+  checkpoint: ReadinessCheckpoint;
 }) {
   const [projectedAge, setProjectedAge] = useState<number | null>(null);
   const { combinedSalary, settings, result } = data;
+  const { source, now } = checkpoint;
+  const table =
+    source === "moneyGuy" ? MONEY_GUY_CHECKPOINTS : FIDELITY_CHECKPOINTS;
   const currentYear = new Date().getFullYear();
   const viewAge = projectedAge ?? currentAge;
-  const yearData =
-    projectedAge !== null && projectedAge > currentAge
-      ? result?.projectionByYear.find((y) => y.age === projectedAge)
-      : undefined;
-  const portfolio = yearData?.endBalance ?? retirementSavings;
+  const projecting = projectedAge !== null && projectedAge > currentAge;
+  const yearData = projecting
+    ? result?.projectionByYear.find((y) => y.age === projectedAge)
+    : undefined;
+  // Money Guy counts every account plus cash (held flat); Fidelity only the
+  // Retirement accounts this card already projects.
+  const projectedBalance =
+    source === "moneyGuy"
+      ? (checkpoint.allAccountsByYear.find((y) => y.age === projectedAge)
+          ?.endBalance ?? 0) + (now?.cash ?? 0)
+      : yearData?.endBalance;
+  const portfolio = projecting
+    ? (projectedBalance ?? 0)
+    : now
+      ? checkpointBalance(source, now)
+      : retirementSavings;
   const salary =
     yearData?.phase === "accumulation"
       ? yearData.projectedSalary
-      : combinedSalary;
+      : !projecting && now
+        ? now.grossIncome
+        : combinedSalary;
   const actual = safeDivide(portfolio, salary, 0);
-  const target = getFidelityTarget(viewAge);
-  const gap = portfolio - salary * target.multiplier;
+  const targetMultiple = incomeMultipleTarget(table, viewAge);
+  const gap = portfolio - salary * targetMultiple;
   const onTrack = gap >= 0;
-  const maxAge = Math.max(
-    settings.retirementAge,
-    FIDELITY_TARGETS[FIDELITY_TARGETS.length - 1]!.age,
-  );
+  const maxAge = Math.max(settings.retirementAge, table[table.length - 1]!.age);
+  const { label, measures } = CHECKPOINT_SOURCES[source];
 
   return (
     <div>
       <div className="flex items-center justify-between gap-2">
         <span className="text-muted text-sm">
           Readiness
-          <HelpTip text="Retirement savings as a multiple of salary, against Fidelity's age targets: 1× by 30, 3× by 40, 6× by 50, 10× by 67. Pick a future age to see your projected standing." />
+          <HelpTip
+            text={`${measures[0]!.toUpperCase()}${measures.slice(1)} as a multiple of gross pay, against ${label}'s age targets (${table.map((t) => `${t.multiple}× by ${t.age}`).join(", ")}). Change the table on the Milestones page. Pick a future age to see your projected standing.`}
+          />
         </span>
         <select
           className="bg-surface-primary text-secondary rounded border px-1.5 py-0.5 text-xs"
@@ -140,27 +132,27 @@ function Readiness({
         </span>
         <span className="text-muted text-xs">
           {projectedAge !== null ? "projected " : ""}of {formatCurrency(salary)}{" "}
-          salary
+          pay · {label}
         </span>
       </div>
       <ProgressBar
-        value={Math.min(safeDivide(actual, target.multiplier, 0), 1)}
-        label={`Target ${formatNumber(target.multiplier, 1)}x at age ${viewAge} · ${onTrack ? "ahead by" : "gap"} ${formatCurrency(Math.abs(gap))}`}
+        value={Math.min(safeDivide(actual, targetMultiple, 0), 1)}
+        label={`Target ${formatNumber(targetMultiple, 1)}x at age ${viewAge} · ${onTrack ? "ahead by" : "gap"} ${formatCurrency(Math.abs(gap))}`}
         variant={onTrack ? "success" : "warning"}
       />
       <div className="mt-2 flex flex-wrap gap-1">
-        {FIDELITY_TARGETS.map((t) => (
+        {table.map((t) => (
           <span
             key={t.age}
             className={`text-caption rounded px-1.5 py-0.5 ${
-              viewAge >= t.age && actual >= t.multiplier
+              viewAge >= t.age && actual >= t.multiple
                 ? "bg-green-100 text-green-700"
                 : viewAge >= t.age
                   ? "bg-amber-100 text-amber-700"
                   : "bg-surface-elevated text-faint"
             }`}
           >
-            {t.age}: {t.multiplier}x
+            {t.age}: {t.multiple}x
           </span>
         ))}
       </div>
@@ -234,6 +226,7 @@ export function RetirementBenchmarks(props: {
   data: Projection;
   currentAge: number;
   retirementSavings: number;
+  checkpoint: ReadinessCheckpoint;
 }) {
   return (
     <div className="space-y-4">

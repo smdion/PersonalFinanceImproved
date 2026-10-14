@@ -6,9 +6,9 @@
  * module loader), and does the queue/progress/crash-handling plumbing
  * around it work.
  *
- * Requires `pnpm build:mc-worker` to have produced `monte-carlo-worker.js`
- * at the repo root first (same artifact the Docker build produces) — this
- * mirrors how `db-migrate.js` is only testable after its own compile step.
+ * Runs against `monte-carlo-worker.js` at the repo root (same artifact the
+ * Docker build produces), which tests/global-setup.ts rebuilds before every
+ * run so it always matches the current engine code.
  */
 import { describe, it, expect, beforeAll } from "vitest";
 import { existsSync } from "node:fs";
@@ -28,7 +28,7 @@ describe("monte-carlo-worker-client", () => {
   beforeAll(() => {
     if (!existsSync(WORKER_BUNDLE)) {
       throw new Error(
-        `${WORKER_BUNDLE} is missing — run \`pnpm build:mc-worker\` before running this test (same artifact the Docker build produces).`,
+        `${WORKER_BUNDLE} is missing — tests/global-setup.ts should have built it (pnpm build:mc-worker).`,
       );
     }
   });

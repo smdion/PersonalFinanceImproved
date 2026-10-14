@@ -42,6 +42,11 @@ export const DEFAULT_INFLATION_RATE = 0.03;
 /** High income threshold for savings rate display (show employee-only rate as headline). */
 export const DEFAULT_HIGH_INCOME_THRESHOLD = 200_000;
 
+/** Savings rates are shown, and judged against their targets, to this many
+ *  decimal places of a percent — whole percents, so 24.9% shows (and
+ *  counts) as 25%. formatSavingsRate() and meetsRateTarget() both read it. */
+export const SAVINGS_RATE_DECIMALS = 0;
+
 // Default withdrawal splits are defined in src/lib/config/account-types.ts
 // (derived from each account type's defaultWithdrawalSplit config property)
 
@@ -77,6 +82,13 @@ export const WEALTH_FORMULA_BASE_DENOMINATOR = 10;
 
 /** Multiplier applied to the wealth target formula. */
 export const WEALTH_FORMULA_MULTIPLIER = 2;
+
+/** Wealth score at or above which a household is a Prodigious Accumulator (PAW). */
+export const WEALTH_TIER_PAW_MIN = WEALTH_FORMULA_MULTIPLIER;
+
+/** Wealth score at or below which a household is an Under Accumulator (UAW) —
+ *  half the expected amount, per The Millionaire Next Door. */
+export const WEALTH_TIER_UAW_MAX = 0.5;
 
 // ---------------------------------------------------------------------------
 // Financial Independence

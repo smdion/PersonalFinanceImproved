@@ -376,8 +376,8 @@ describe("roth-basis.ts — PG string mode", () => {
     const seeded = seededValues[0]!;
     expect(seeded.contributionBasis).toBe("42000.00");
     expect(seeded.conversionBasis).toBe("15000.00");
-    // A string input would have thrown on `.toFixed` before reaching here.
-    expect(() => finalizeRothBasisForYear).not.toThrow();
+    // (A string input would have thrown on `.toFixed` before the await
+    // above resolved, so reaching these assertions is the no-throw check.)
   });
 });
 

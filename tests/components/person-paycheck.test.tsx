@@ -150,18 +150,10 @@ describe("PersonPaycheck", () => {
     expect(screen.getByText("$120,000")).toBeInTheDocument();
   });
 
-  it("renders pay stub component", () => {
+  it("composes the pay stub, annual summary and contributions sections", () => {
     render(<PersonPaycheck {...defaultProps} />);
     expect(screen.getByTestId("pay-stub")).toBeInTheDocument();
-  });
-
-  it("renders annual summary component", () => {
-    render(<PersonPaycheck {...defaultProps} />);
     expect(screen.getByTestId("annual-summary")).toBeInTheDocument();
-  });
-
-  it("renders contributions section", () => {
-    render(<PersonPaycheck {...defaultProps} />);
     expect(screen.getByTestId("contributions-section")).toBeInTheDocument();
   });
 

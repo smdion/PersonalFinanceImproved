@@ -12,7 +12,6 @@ import { toNumber } from "@/server/helpers";
 import * as schema from "@/lib/db/schema";
 import type { db as _db } from "@/lib/db";
 import {
-  DEFAULT_WITHDRAWAL_RATE,
   DEFAULT_MC_INFLATION_RISK,
   DEFAULT_ENDOWMENT_ROLLING_YEARS,
 } from "@/lib/constants";
@@ -106,9 +105,12 @@ export const accumulationOverrideSchema = z
  * settings a client can send to override DB defaults. Was byte-identical
  * across scenarios.ts, monte-carlo.ts, and coast-fire.ts (x2).
  */
+//
+// No `withdrawalRate`: buildDecumulationDefaults always takes the rate from
+// retirement_settings (it seeds rate-based first-year spending), so a
+// client-sent rate was accepted and silently ignored.
 export const decumulationDefaultsInputSchema = z
   .object({
-    withdrawalRate: z.number().min(0).max(1).default(DEFAULT_WITHDRAWAL_RATE),
     // Deliberately `.optional()`, NOT `.default("bracket_filling")` — a
     // default here would make "the caller omitted this" indistinguishable
     // from "the caller explicitly chose bracket_filling," which would
@@ -143,15 +145,15 @@ export const decumulationDefaultsInputSchema = z
   // DB fallback in `buildDecumulationDefaults`, not get the config default
   // baked in here a second way.
   .default({
-    withdrawalRate: DEFAULT_WITHDRAWAL_RATE,
     withdrawalTaxPreference: {},
   });
 
 export const decumulationOverrideSchema = z
   .array(
+    // No per-year `withdrawalRate`: none of the spending strategies reads
+    // it, so an override could only ever change nothing.
     z.object({
       year: z.number().int(),
-      withdrawalRate: z.number().min(0).max(1).optional(),
       withdrawalRoutingMode: z
         .enum(["bracket_filling", "waterfall", "percentage"])
         .optional(),

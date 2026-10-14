@@ -97,6 +97,18 @@ const IRS_LIMITS: Record<
       value: 2000,
       source: "IRC §63(f) / IRS Rev. Proc. 2024-40 — filer 65+, Single/HoH",
     },
+    standard_deduction_mfj: {
+      value: 31500,
+      source: "OBBBA §70102 (supersedes Rev. Proc. 2024-40)",
+    },
+    standard_deduction_single: {
+      value: 15750,
+      source: "OBBBA §70102 (supersedes Rev. Proc. 2024-40)",
+    },
+    standard_deduction_hoh: {
+      value: 23625,
+      source: "OBBBA §70102 (supersedes Rev. Proc. 2024-40)",
+    },
   },
   2026: {
     "401k_employee_limit": {
@@ -121,11 +133,11 @@ const IRS_LIMITS: Record<
     },
     hsa_family_limit: {
       value: 8750,
-      source: "IRS Revenue Procedure 2025-XX",
+      source: "IRS Revenue Procedure 2025-19",
     },
     hsa_individual_limit: {
       value: 4400,
-      source: "IRS Revenue Procedure 2025-XX",
+      source: "IRS Revenue Procedure 2025-19",
     },
     hsa_catchup_limit: {
       value: 1000,
@@ -142,6 +154,26 @@ const IRS_LIMITS: Record<
     additional_std_deduction_65_unmarried: {
       value: 2050,
       source: "IRC §63(f) / IRS Rev. Proc. 2025-32 — filer 65+, Single/HoH",
+    },
+    standard_deduction_mfj: {
+      value: 32200,
+      source: "IRS Rev. Proc. 2025-32 (as amended by OBBBA)",
+    },
+    standard_deduction_single: {
+      value: 16100,
+      source: "IRS Rev. Proc. 2025-32 (as amended by OBBBA)",
+    },
+    standard_deduction_hoh: {
+      value: 24150,
+      source: "IRS Rev. Proc. 2025-32 (as amended by OBBBA)",
+    },
+    fica_ss_rate: {
+      value: 0.062,
+      source: "IRC §3101(a) — employee share, unchanged since 1990",
+    },
+    fica_medicare_surtax_threshold: {
+      value: 200000,
+      source: "IRC §3101(b)(2) — statutory, not indexed (Single/HoH)",
     },
   },
 };

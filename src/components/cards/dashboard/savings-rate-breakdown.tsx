@@ -1,7 +1,11 @@
 "use client";
 
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  formatSavingsRate,
+} from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
 import type { ViewMode } from "@/lib/calculators/types";
 import type {
@@ -37,6 +41,8 @@ const VIEW_SUFFIX: Record<ViewMode, string> = {
  * What the household savings rate is made of — the Financial Checkup's
  * Savings Rate row, expanded: dollars over compensation, by goal group
  * (Retirement / Portfolio) and tax treatment, with the employer-match switch.
+ * Without the toggle handlers it's read-only (the Milestones page shows
+ * Money Guy's fixed definition this way).
  */
 export function SavingsRateBreakdown({
   savings,
@@ -52,12 +58,12 @@ export function SavingsRateBreakdown({
   savings: HouseholdSavings;
   viewMode: ViewMode;
   excludeMatch: boolean;
-  onToggleMatch: () => void;
+  onToggleMatch?: () => void;
   includePortfolio: boolean;
-  onTogglePortfolio: () => void;
+  onTogglePortfolio?: () => void;
   highIncome: boolean;
   highIncomeThreshold: number;
-  targets: { good: number; great: number };
+  targets?: { good: number; great: number };
 }) {
   return (
     <div className="mt-1 mb-1 ml-6 space-y-2 text-xs">
@@ -67,22 +73,24 @@ export function SavingsRateBreakdown({
           {VIEW_SUFFIX[viewMode]} of {formatCurrency(savings.compensation)}{" "}
           {viewMode === "ytd" ? "earned" : "total comp"}
         </p>
-        <span className="flex gap-1">
-          <button
-            type="button"
-            onClick={onToggleMatch}
-            className="bg-surface-elevated hover:bg-surface-strong text-muted rounded-full px-2 py-0.5 whitespace-nowrap transition-colors"
-          >
-            {excludeMatch ? "Incl. match" : "Excl. match"}
-          </button>
-          <button
-            type="button"
-            onClick={onTogglePortfolio}
-            className="bg-surface-elevated hover:bg-surface-strong text-muted rounded-full px-2 py-0.5 whitespace-nowrap transition-colors"
-          >
-            {includePortfolio ? "Excl. portfolio" : "Incl. portfolio"}
-          </button>
-        </span>
+        {onToggleMatch && onTogglePortfolio && (
+          <span className="flex gap-1">
+            <button
+              type="button"
+              onClick={onToggleMatch}
+              className="bg-surface-elevated hover:bg-surface-strong text-muted rounded-full px-2 py-0.5 whitespace-nowrap transition-colors"
+            >
+              {excludeMatch ? "Incl. match" : "Excl. match"}
+            </button>
+            <button
+              type="button"
+              onClick={onTogglePortfolio}
+              className="bg-surface-elevated hover:bg-surface-strong text-muted rounded-full px-2 py-0.5 whitespace-nowrap transition-colors"
+            >
+              {includePortfolio ? "Excl. portfolio" : "Incl. portfolio"}
+            </button>
+          </span>
+        )}
       </div>
       {excludeMatch && highIncome && (
         <p className="text-amber-600">
@@ -100,7 +108,7 @@ export function SavingsRateBreakdown({
         <div key={g.group}>
           <div className="flex justify-between text-sm">
             <span className="text-muted capitalize">{g.group}</span>
-            <span className="text-primary">{formatPercent(g.share, 1)}</span>
+            <span className="text-primary">{formatSavingsRate(g.share)}</span>
           </div>
           {g.lines.length > 0 && (
             <div className="mt-0.5 ml-3 space-y-0.5">
@@ -111,7 +119,7 @@ export function SavingsRateBreakdown({
                     <HelpTip text={LINE_HELP[l.key]} />
                   </span>
                   <span className="text-secondary font-medium">
-                    {formatPercent(l.share, 1)}
+                    {formatSavingsRate(l.share)}
                   </span>
                 </div>
               ))}
@@ -119,10 +127,12 @@ export function SavingsRateBreakdown({
           )}
         </div>
       ))}
-      <p className="text-faint">
-        {formatPercent(targets.good)} is good, {formatPercent(targets.great)}+
-        is great · share of total compensation (salary + bonus)
-      </p>
+      {targets && (
+        <p className="text-faint">
+          {formatPercent(targets.good)} is good, {formatPercent(targets.great)}+
+          is great · share of total compensation (salary + bonus)
+        </p>
+      )}
     </div>
   );
 }

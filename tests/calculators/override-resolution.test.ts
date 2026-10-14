@@ -133,12 +133,28 @@ describe("resolveDecumulationConfig", () => {
     expect(config.withdrawalRoutingMode).toBe("bracket_filling");
   });
 
-  it("applies sticky-forward withdrawalRate", () => {
+  it("applies sticky-forward withdrawalRoutingMode", () => {
     const overrides: DecumulationOverride[] = [
-      { year: 2050, withdrawalRate: 0.035 },
+      { year: 2050, withdrawalRoutingMode: "waterfall" },
     ];
-    const config = resolveDecumulationConfig(2055, defaults, overrides);
-    expect(config.withdrawalRate).toBe(0.035);
+    expect(
+      resolveDecumulationConfig(2049, defaults, overrides)
+        .withdrawalRoutingMode,
+    ).toBe("bracket_filling");
+    expect(
+      resolveDecumulationConfig(2055, defaults, overrides)
+        .withdrawalRoutingMode,
+    ).toBe("waterfall");
+  });
+
+  it("ignores a legacy per-year withdrawalRate (the rate comes from settings)", () => {
+    // Saved before v0.8.7 or restored from an old backup.
+    const legacy = [
+      { year: 2050, withdrawalRate: 0.05 },
+    ] as unknown as DecumulationOverride[];
+    expect(
+      resolveDecumulationConfig(2055, defaults, legacy).withdrawalRate,
+    ).toBe(defaults.withdrawalRate);
   });
 
   it("applies sticky-forward rothConversionTarget", () => {
@@ -169,14 +185,21 @@ describe("resolveDecumulationConfig", () => {
 
   it("reset reverts all decumulation fields", () => {
     const overrides: DecumulationOverride[] = [
-      { year: 2050, withdrawalRate: 0.05, rothConversionTarget: 0.22 },
+      {
+        year: 2050,
+        withdrawalRoutingMode: "waterfall",
+        rothConversionTarget: 0.22,
+      },
       { year: 2055, reset: true },
     ];
     const config2053 = resolveDecumulationConfig(2053, defaults, overrides);
-    expect(config2053.withdrawalRate).toBe(0.05);
+    expect(config2053.withdrawalRoutingMode).toBe("waterfall");
+    expect(config2053.rothConversionTarget).toBe(0.22);
 
     const config2056 = resolveDecumulationConfig(2056, defaults, overrides);
-    expect(config2056.withdrawalRate).toBe(defaults.withdrawalRate);
+    expect(config2056.withdrawalRoutingMode).toBe(
+      defaults.withdrawalRoutingMode,
+    );
   });
 
   it("lump sums are exact-year only", () => {

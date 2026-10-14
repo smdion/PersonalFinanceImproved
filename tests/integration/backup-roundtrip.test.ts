@@ -1,359 +1,141 @@
 /**
  * Backup Round-Trip Test
  *
- * Validates that data survives the full export → import cycle without loss.
- * Uses an in-memory SQLite database seeded from seed-reference-data.sql,
- * exports a backup, imports it into a fresh DB, and diffs the results.
+ * Drives the real backup code in src/lib/db/version-logic.ts — the same
+ * functions behind /api/versions/export, /api/versions/import and the
+ * version router's create/restore — against the migrated + seeded test
+ * SQLite database, and checks that data survives each path unchanged.
  *
  * This catches:
  *   - Tables missing from VERSION_TABLE_NAMES (data silently dropped)
- *   - Column type mismatches between export JSON and import INSERT
- *   - Transform regressions (backup-transforms.ts breaking on current schema)
- *   - Row count or value drift through the pipeline
+ *   - Column/JSON encoding drift between export and import
+ *   - Restore leaving rows behind (truncate) or renumbering ids (sequences)
  */
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import Database from "better-sqlite3";
-import * as fs from "fs";
-import * as path from "path";
-import { VERSION_TABLE_NAMES } from "../../src/lib/db/version-tables";
+import "../routers/setup-mocks";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { sql } from "drizzle-orm";
+import {
+  createTestCaller,
+  seedStandardDataset,
+  seedPerson,
+} from "../routers/setup";
+import * as sqliteSchema from "@/lib/db/schema-sqlite";
+import { VERSION_TABLE_NAMES } from "@/lib/db/version-tables";
+import {
+  createVersion,
+  exportBackup,
+  importBackup,
+  restoreVersion,
+  type BackupData,
+} from "@/lib/db/version-logic";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+type TestCtx = Awaited<ReturnType<typeof createTestCaller>>;
 
-const ROOT = path.resolve(__dirname, "../..");
-const SQLITE_MIGRATIONS_DIR = path.join(ROOT, "drizzle-sqlite");
-const SEED_FILE = path.join(ROOT, "seed-reference-data.sql");
-
-function readSchemaVersion(): string {
-  const journalPath = path.join(SQLITE_MIGRATIONS_DIR, "meta", "_journal.json");
-  const journal = JSON.parse(fs.readFileSync(journalPath, "utf-8"));
-  const entries = journal.entries;
-  return entries?.[entries.length - 1]?.tag ?? "unknown";
+/** Every versioned table's rows, ordered by id where there is one. */
+async function snapshotTables(db: TestCtx["rawDb"]) {
+  const { tables } = await exportBackup(db);
+  const byId = (a: unknown, b: unknown) =>
+    Number((a as { id?: number }).id ?? 0) -
+    Number((b as { id?: number }).id ?? 0);
+  return Object.fromEntries(
+    Object.entries(tables).map(([t, rows]) => [t, [...rows].sort(byId)]),
+  );
 }
 
-/** Apply all SQLite migrations to an in-memory database. */
-function applyMigrations(db: InstanceType<typeof Database>): void {
-  const journalPath = path.join(SQLITE_MIGRATIONS_DIR, "meta", "_journal.json");
-  const journal = JSON.parse(fs.readFileSync(journalPath, "utf-8"));
-  const entries: { tag: string }[] = journal.entries ?? [];
+async function seedHousehold(db: TestCtx["db"]) {
+  seedStandardDataset(db);
+  await seedPerson(db, "Second Person", "1992-03-01");
+  // A structured JSON setting exercises jsonb encoding on the way through.
+  db.insert(sqliteSchema.appSettings)
+    .values({
+      key: "milestone_custom_goals",
+      value: [{ id: "g1", label: "Fixture goal", amount: 100000 }],
+    })
+    .run();
+}
 
-  // Create drizzle migration tracking table
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS __drizzle_migrations (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      hash TEXT NOT NULL,
-      created_at NUMERIC
+describe("Backup Round-Trip (real version-logic)", () => {
+  let a: TestCtx;
+  let b: TestCtx;
+
+  beforeEach(async () => {
+    a = await createTestCaller();
+    b = await createTestCaller();
+    await seedHousehold(a.db);
+  });
+
+  afterEach(() => {
+    a.cleanup();
+    b.cleanup();
+  });
+
+  it("export covers every versioned table", async () => {
+    const backup = await exportBackup(a.rawDb);
+    expect(Object.keys(backup.tables).sort()).toEqual(
+      [...VERSION_TABLE_NAMES].sort(),
     );
-  `);
-
-  for (const entry of entries) {
-    const sqlPath = path.join(SQLITE_MIGRATIONS_DIR, `${entry.tag}.sql`);
-    if (!fs.existsSync(sqlPath)) continue;
-
-    let sql = fs.readFileSync(sqlPath, "utf-8");
-
-    // SQLite compatibility: strip PG-only syntax
-    sql = sql.replace(/CONCURRENTLY\s+/gi, "");
-    // Skip PL/pgSQL blocks
-    sql = sql.replace(/DO\s+\$\$[\s\S]*?\$\$;/g, "");
-    // Skip enum operations
-    sql = sql.replace(/CREATE TYPE[\s\S]*?;/g, "");
-    sql = sql.replace(/ALTER TYPE[\s\S]*?;/g, "");
-
-    const statements = sql
-      .split("--> statement-breakpoint")
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
-
-    for (const stmt of statements) {
-      try {
-        db.exec(stmt);
-      } catch {
-        // Some PG-only statements will fail in SQLite — skip silently
-      }
-    }
-  }
-}
-
-/** Seed reference data (contribution_limits, tax_brackets, etc.). */
-function applySeed(db: InstanceType<typeof Database>): void {
-  if (!fs.existsSync(SEED_FILE)) return;
-
-  const raw = fs.readFileSync(SEED_FILE, "utf-8");
-
-  // Strip comments
-  const noComments = raw.replace(/--.*$/gm, "");
-
-  // Split on "ON CONFLICT DO NOTHING;" which terminates each INSERT block
-  const blocks = noComments.split(/ON CONFLICT DO NOTHING\s*;/i);
-
-  for (const block of blocks) {
-    const trimmed = block.trim();
-    if (!trimmed.startsWith("INSERT")) continue;
-
-    try {
-      // Convert PG "INSERT INTO ... VALUES ..." to SQLite "INSERT OR IGNORE INTO ..."
-      const sqliteStmt = trimmed.replace(
-        /^INSERT INTO/i,
-        "INSERT OR IGNORE INTO",
-      );
-      db.exec(sqliteStmt + ";");
-    } catch {
-      // Some PG-specific syntax may fail — skip
-    }
-  }
-}
-
-/** Export all versioned tables from a SQLite database. */
-function exportAll(
-  db: InstanceType<typeof Database>,
-): Record<string, unknown[]> {
-  const tables: Record<string, unknown[]> = {};
-  for (const name of VERSION_TABLE_NAMES) {
-    try {
-      tables[name] = db.prepare(`SELECT * FROM "${name}"`).all();
-    } catch {
-      tables[name] = [];
-    }
-  }
-  return tables;
-}
-
-/** Import backup data into a fresh SQLite database (tier-ordered). */
-function importAll(
-  db: InstanceType<typeof Database>,
-  tables: Record<string, unknown[]>,
-): void {
-  // Disable FK checks during bulk import (same as version-logic.ts)
-  db.pragma("foreign_keys = OFF");
-
-  // Truncate all tables first
-  for (const name of VERSION_TABLE_NAMES) {
-    try {
-      db.exec(`DELETE FROM "${name}"`);
-    } catch {
-      // Table might not exist
-    }
-  }
-
-  // Insert in tier order (VERSION_TABLE_NAMES is already ordered)
-  for (const name of VERSION_TABLE_NAMES) {
-    const rows = tables[name];
-    if (!rows || rows.length === 0) continue;
-
-    for (const row of rows) {
-      const record = row as Record<string, unknown>;
-      const columns = Object.keys(record);
-      if (columns.length === 0) continue;
-
-      const placeholders = columns.map(() => "?").join(", ");
-      const quotedCols = columns.map((c) => `"${c}"`).join(", ");
-      const values = columns.map((c) => {
-        const v = record[c];
-        // SQLite: serialize objects/arrays as JSON strings
-        if (v !== null && typeof v === "object") return JSON.stringify(v);
-        return v;
-      });
-
-      try {
-        db.prepare(
-          `INSERT OR REPLACE INTO "${name}" (${quotedCols}) VALUES (${placeholders})`,
-        ).run(...values);
-      } catch {
-        // Some rows may violate constraints in isolation — log but don't fail
-        // (e.g., FK references to user data we didn't seed)
-      }
-    }
-  }
-
-  db.pragma("foreign_keys = ON");
-}
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
-describe("Backup Round-Trip", () => {
-  let sourceDb: InstanceType<typeof Database>;
-  let originalExport: Record<string, unknown[]>;
-  let schemaVersion: string;
-
-  beforeAll(() => {
-    schemaVersion = readSchemaVersion();
-
-    // Create source database with migrations + seed
-    sourceDb = new Database(":memory:");
-    sourceDb.pragma("journal_mode = WAL");
-    sourceDb.pragma("foreign_keys = ON");
-    applyMigrations(sourceDb);
-    applySeed(sourceDb);
-
-    // Export
-    originalExport = exportAll(sourceDb);
+    expect(backup.sourceDialect).toBe("sqlite");
+    expect(backup.tables.people).toHaveLength(2);
   });
 
-  it("exports at least the 4 tax parameter tables with data", () => {
-    const taxTables = [
-      "contribution_limits",
-      "tax_brackets",
-      "ltcg_brackets",
-      "irmaa_brackets",
-    ];
+  it("export → JSON → import into an empty database reproduces every table", async () => {
+    const before = await snapshotTables(a.rawDb);
+    const backup = JSON.parse(
+      JSON.stringify(await exportBackup(a.rawDb)),
+    ) as BackupData;
 
-    for (const table of taxTables) {
-      expect(
-        originalExport[table]?.length,
-        `${table} should have seeded rows`,
-      ).toBeGreaterThan(0);
-    }
+    const result = await importBackup(b.rawDb, backup);
+    const nonEmpty = Object.values(before).filter((r) => r.length > 0);
+    expect(result.restoredRows).toBe(
+      nonEmpty.reduce((n, rows) => n + rows.length, 0),
+    );
+    expect(await snapshotTables(b.rawDb)).toEqual(before);
   });
 
-  it("round-trips all tables without row count loss", () => {
-    // Create target database
-    const targetDb = new Database(":memory:");
-    targetDb.pragma("journal_mode = WAL");
-    targetDb.pragma("foreign_keys = ON");
-    applyMigrations(targetDb);
-
-    // Import the exported data
-    importAll(targetDb, originalExport);
-
-    // Re-export from target
-    const reimported = exportAll(targetDb);
-
-    // Compare row counts for every versioned table
-    for (const name of VERSION_TABLE_NAMES) {
-      const originalRows = originalExport[name] ?? [];
-      const reimportedRows = reimported[name] ?? [];
-
-      expect(
-        reimportedRows.length,
-        `${name}: row count should survive round-trip (original: ${originalRows.length})`,
-      ).toBe(originalRows.length);
-    }
-
-    targetDb.close();
+  it("import replaces existing data rather than merging into it", async () => {
+    await seedPerson(b.db, "Stale Person", "1980-01-01");
+    const backup = await exportBackup(a.rawDb);
+    await importBackup(b.rawDb, backup);
+    const people = await snapshotTables(b.rawDb).then((t) => t.people!);
+    expect(people.map((p) => (p as { name: string }).name).sort()).toEqual([
+      "Second Person",
+      "Test Person",
+    ]);
   });
 
-  it("round-trips tax parameter values exactly", () => {
-    const targetDb = new Database(":memory:");
-    targetDb.pragma("journal_mode = WAL");
-    targetDb.pragma("foreign_keys = ON");
-    applyMigrations(targetDb);
-    importAll(targetDb, originalExport);
-
-    const reimported = exportAll(targetDb);
-
-    // Deep-compare the 4 tax tables (these are the most important for correctness)
-    const taxTables = [
-      "contribution_limits",
-      "tax_brackets",
-      "ltcg_brackets",
-      "irmaa_brackets",
-    ];
-
-    for (const table of taxTables) {
-      const original = originalExport[table] ?? [];
-      const restored = reimported[table] ?? [];
-
-      // Sort both by a stable key for comparison
-      const sortKey = (row: Record<string, unknown>) =>
-        `${row.tax_year}-${row.filing_status ?? ""}-${row.limit_type ?? ""}-${row.w4_checkbox ?? ""}`;
-
-      const sortedOriginal = [...original]
-        .map((r) => r as Record<string, unknown>)
-        .sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
-      const sortedRestored = [...restored]
-        .map((r) => r as Record<string, unknown>)
-        .sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
-
-      expect(sortedOriginal.length).toBe(sortedRestored.length);
-      for (let i = 0; i < sortedOriginal.length; i++) {
-        const orig = sortedOriginal[i] as Record<string, unknown>;
-        const rest = sortedRestored[i] as Record<string, unknown>;
-
-        // Compare all non-id columns (id may differ due to autoincrement)
-        for (const col of Object.keys(orig)) {
-          if (col === "id") continue;
-
-          const origVal =
-            typeof orig[col] === "object"
-              ? JSON.stringify(orig[col])
-              : String(orig[col]);
-          const restVal =
-            typeof rest[col] === "object"
-              ? JSON.stringify(rest[col])
-              : String(rest[col]);
-
-          expect(
-            restVal,
-            `${table} row ${i} column "${col}" should match after round-trip`,
-          ).toBe(origVal);
-        }
-      }
-    }
-
-    targetDb.close();
-  });
-
-  it("backup JSON structure matches expected format", () => {
-    const backup = {
-      schemaVersion,
-      exportedAt: new Date().toISOString(),
-      tables: originalExport,
-    };
-
-    // Validate structure
-    expect(backup.schemaVersion).toBeTruthy();
-    expect(backup.exportedAt).toBeTruthy();
-    expect(typeof backup.tables).toBe("object");
-
-    // All VERSION_TABLE_NAMES should be present as keys
-    for (const name of VERSION_TABLE_NAMES) {
-      expect(name in backup.tables, `${name} should be in backup.tables`).toBe(
-        true,
-      );
-      expect(Array.isArray(backup.tables[name])).toBe(true);
-    }
-  });
-
-  it("JSON serialization round-trip preserves data", () => {
-    // Simulate the full pipeline: export → JSON.stringify → JSON.parse → import
-    const backup = {
-      schemaVersion,
-      exportedAt: new Date().toISOString(),
-      tables: originalExport,
-    };
-
-    const json = JSON.stringify(backup);
-    const parsed = JSON.parse(json) as typeof backup;
-
-    const targetDb = new Database(":memory:");
-    targetDb.pragma("journal_mode = WAL");
-    targetDb.pragma("foreign_keys = ON");
-    applyMigrations(targetDb);
-    importAll(targetDb, parsed.tables);
-
-    const reimported = exportAll(targetDb);
-
-    // Verify non-empty tables survived the full JSON round-trip
-    const nonEmptyOriginal = Object.entries(originalExport).filter(
-      ([, rows]) => rows.length > 0,
+  it("create version → change data → restore brings the snapshot back", async () => {
+    const before = await snapshotTables(a.rawDb);
+    const version = await createVersion(a.rawDb, {
+      name: "before edit",
+      type: "manual",
+      createdBy: "test",
+    });
+    expect(version.totalRows).toBe(
+      Object.values(before).reduce((n, rows) => n + rows.length, 0),
     );
 
-    for (const [name, originalRows] of nonEmptyOriginal) {
-      expect(
-        reimported[name]?.length,
-        `${name}: ${originalRows.length} rows should survive JSON round-trip`,
-      ).toBe(originalRows.length);
-    }
+    const d = a.db;
+    d.run(sql`DELETE FROM jobs`);
+    d.run(sql`UPDATE people SET name = 'Renamed'`);
+    await seedPerson(d, "Added After", "2000-01-01");
 
-    targetDb.close();
+    await restoreVersion(a.rawDb, version.id);
+    expect(await snapshotTables(a.rawDb)).toEqual(before);
   });
 
-  // Cleanup
-  afterAll(() => {
-    sourceDb?.close();
+  it("restore keeps id sequences ahead of restored rows", async () => {
+    const version = await createVersion(a.rawDb, {
+      name: "v",
+      type: "manual",
+      createdBy: "test",
+    });
+    await restoreVersion(a.rawDb, version.id);
+    const maxId = Math.max(
+      ...(await snapshotTables(a.rawDb)).people!.map(
+        (p) => (p as { id: number }).id,
+      ),
+    );
+    const newId = await seedPerson(a.db, "After Restore", "1995-01-01");
+    expect(newId).toBeGreaterThan(maxId);
   });
 });

@@ -15,6 +15,10 @@ import {
   type Overview,
 } from "./fund-holding-row";
 import { TickerLink } from "./ticker-link";
+import { CurrentGlidePathEditor } from "./current-glide-path-editor";
+import { GlidePathChart, type GlidePathClass } from "./glide-path-chart";
+import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
+import { useUser, isAdmin } from "@/lib/context/user-context";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import {
@@ -28,6 +32,7 @@ import { CHART_COLORS } from "@/lib/utils/colors";
 import { COMPOSITION_BUCKET_LABELS } from "@/lib/config/display-labels";
 import {
   COMPOSITION_BUCKET_VALUES,
+  isStockBucket,
   type CompositionBucket,
 } from "@/lib/config/enum-values";
 
@@ -254,18 +259,54 @@ function AllocationCard({ data }: { data: Overview }) {
   );
   const noCategory = rows.filter((r) => r.buckets.length === 0);
   const [open, setOpen] = useState<CompositionBucket | null>(null);
+  const [editingPath, setEditingPath] = useState(false);
+  const canEditPath = isAdmin(useUser());
   const funds = combineHoldings(data.accounts);
   return (
     <Card title="Your mix vs your target">
       <p className="text-caption text-faint mb-3">
         What your funds hold, added up across accounts
         {hasTarget && data.age !== null
-          ? `, next to your glide-path target for age ${data.age}`
+          ? `, next to ${data.targetSource === "current" ? "your current glide path" : "the retirement simulation's glide path"} for age ${data.age}`
           : ""}
-        . Percentages are of the{" "}
-        {formatPercent(total > 0 ? known / total : 0, 0)} of your money whose
-        mix is known.
+        .
+        {data.currentGlidePathStale && (
+          <>
+            {" "}
+            <span className="text-amber-600">
+              Your current glide path uses an asset class that no longer exists,
+              so the retirement glide path is used until you edit it.
+            </span>
+          </>
+        )}{" "}
+        Percentages are of the {formatPercent(total > 0 ? known / total : 0, 0)}{" "}
+        of your money whose mix is known.{" "}
+        {canEditPath && !editingPath && (
+          <button
+            type="button"
+            className="text-blue-600 hover:underline"
+            onClick={() => setEditingPath(true)}
+          >
+            {data.targetSource === "current"
+              ? "Edit your current glide path"
+              : "Set a current glide path"}
+          </button>
+        )}
       </p>
+      {editingPath && (
+        <CurrentGlidePathEditor
+          classes={rows.map((r) => ({
+            assetClassId: r.assetClassId,
+            name: r.name,
+          }))}
+          currentGlidePath={data.currentGlidePath}
+          age={data.age}
+          todaysTarget={Object.fromEntries(
+            rows.map((r) => [r.assetClassId, r.targetPct]),
+          )}
+          onClose={() => setEditingPath(false)}
+        />
+      )}
       <div className="space-y-2">
         {categories.map((c) => {
           const cls =
@@ -395,6 +436,85 @@ function AllocationCard({ data }: { data: Overview }) {
           known mix. Confirm a stand-in or enter their facts above.
         </p>
       )}
+      {data.unlinkedAccounts.length > 0 && (
+        <details className="text-caption text-faint mt-1">
+          <summary className="cursor-pointer">
+            Not counted: {data.unlinkedAccounts.length} SimpleFIN account
+            {data.unlinkedAccounts.length === 1 ? "" : "s"} (
+            {formatCurrency(
+              data.unlinkedAccounts.reduce((s, a) => s + a.total, 0),
+            )}
+            ) not linked to any of your Ledgr accounts
+          </summary>
+          <p className="mt-1">
+            Only accounts linked to a Ledgr account count, so the same money is
+            never counted twice — an unlinked feed is usually a duplicate or an
+            old connection to an account that&apos;s already linked. If one is
+            real money Ledgr doesn&apos;t track yet, link it in Settings →
+            Integrations → SimpleFIN.
+          </p>
+          <ul className="mt-1 list-inside list-disc">
+            {data.unlinkedAccounts.map((a) => (
+              <li key={a.simplefinAccountId}>
+                {a.label} ({formatCurrency(a.total)})
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </Card>
+  );
+}
+
+/** Asset classes in stacking order (stocks at the bottom), each colored
+ *  like its first fund category on the mix card. */
+function glidePathClasses(data: Overview): GlidePathClass[] {
+  // Config order (stocks first, so they stack at the bottom).
+  const rank = (b: CompositionBucket | undefined) =>
+    b === undefined
+      ? COMPOSITION_BUCKET_VALUES.length
+      : COMPOSITION_BUCKET_VALUES.indexOf(b);
+  return [...data.allocation.rows]
+    .filter((r) =>
+      data.glidePath.some((p) => (p.allocations[r.assetClassId] ?? 0) > 0),
+    )
+    .sort((a, b) => rank(a.buckets[0]) - rank(b.buckets[0]))
+    .map((r) => ({
+      assetClassId: r.assetClassId,
+      name: r.name,
+      color: r.buckets[0] ? BUCKET_COLORS[r.buckets[0]] : CHART_COLORS.mixOther,
+      isStock: r.buckets.some(isStockBucket),
+    }));
+}
+
+function GlidePathCard({ data }: { data: Overview }) {
+  const projection = useDashboardProjection();
+  const retirementAge =
+    projection.data && "settings" in projection.data && projection.data.settings
+      ? Number(projection.data.settings.retirementAge) || null
+      : null;
+  if (data.glidePath.length === 0) return null;
+  return (
+    <Card
+      title={
+        data.targetSource === "current"
+          ? "Your current glide path"
+          : "Your glide path (from the retirement plan)"
+      }
+    >
+      <p className="text-caption text-faint mb-2">
+        The target mix by age that your mix is compared with. Your stocks are
+        the bottom two bands — compare the top of them (where the blues meet the
+        green) with the dashed line: Vanguard&apos;s target-date stock share,
+        shifted to your retirement age. Above the line, you hold more stock than
+        Vanguard would; below it, less.
+      </p>
+      <GlidePathChart
+        path={data.glidePath}
+        classes={glidePathClasses(data)}
+        age={data.age}
+        retirementAge={retirementAge}
+      />
     </Card>
   );
 }
@@ -480,32 +600,35 @@ export function HoldingsSection() {
       </Card>
       <div className="grid gap-4 lg:grid-cols-2">
         <AllocationCard data={data} />
-        <Card title="What it costs">
-          {cost.expenseRatio === null ? (
-            <p className="text-faint text-sm">
-              No expense ratios yet — they come from SEC filings or your own
-              entries.
-            </p>
-          ) : (
-            <>
-              <p className="text-primary text-2xl font-semibold">
-                {formatPercent(cost.expenseRatio, 2)}
-                <span className="text-muted ml-2 text-sm font-normal">
-                  a year
-                </span>
+        <div className="space-y-4">
+          <Card title="What it costs">
+            {cost.expenseRatio === null ? (
+              <p className="text-faint text-sm">
+                No expense ratios yet — they come from SEC filings or your own
+                entries.
               </p>
-              <p className="text-muted mt-1 text-sm">
-                About {formatCurrency(cost.yearlyCost)} a year in fund fees.
-              </p>
-              {cost.coveredShare < FULL_SHARE && (
-                <p className="text-caption text-faint mt-1">
-                  Covers {formatPercent(cost.coveredShare, 0)} of your money —
-                  funds without a known expense ratio aren&apos;t included.
+            ) : (
+              <>
+                <p className="text-primary text-2xl font-semibold">
+                  {formatPercent(cost.expenseRatio, 2)}
+                  <span className="text-muted ml-2 text-sm font-normal">
+                    a year
+                  </span>
                 </p>
-              )}
-            </>
-          )}
-        </Card>
+                <p className="text-muted mt-1 text-sm">
+                  About {formatCurrency(cost.yearlyCost)} a year in fund fees.
+                </p>
+                {cost.coveredShare < FULL_SHARE && (
+                  <p className="text-caption text-faint mt-1">
+                    Covers {formatPercent(cost.coveredShare, 0)} of your money —
+                    funds without a known expense ratio aren&apos;t included.
+                  </p>
+                )}
+              </>
+            )}
+          </Card>
+          <GlidePathCard data={data} />
+        </div>
       </div>
     </div>
   );

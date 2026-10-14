@@ -482,12 +482,12 @@ export function ContribCard({
               {c.autoMaximize && (
                 <p className="text-caption mt-1 text-green-600">
                   {c.contributionMethod === "percent_of_salary"
-                    ? `Set to ${formatPercent(currentValue / 100)} of salary (${formatCurrency(salary ? salary * (currentValue / 100) : 0)}/yr toward ${formatCurrency(annualLimit!)} limit)`
+                    ? `Set to ${formatPercent(currentValue / 100)} of salary (${formatCurrency(salary ? salary * (currentValue / 100) : 0, 0)}/yr toward ${formatCurrency(annualLimit!, 0)} limit)`
                     : c.contributionMethod === "fixed_per_period"
-                      ? `Set to ${formatCurrency(currentValue)}/period (${formatCurrency(currentValue * periodsPerYear!)}/yr toward ${formatCurrency(annualLimit!)} limit)`
+                      ? `Set to ${formatCurrency(currentValue)}/period (${formatCurrency(currentValue * periodsPerYear!, 0)}/yr toward ${formatCurrency(annualLimit!, 0)} limit)`
                       : c.contributionMethod === "fixed_monthly"
-                        ? `Set to ${formatCurrency(currentValue)}/month (${formatCurrency(currentValue * 12)}/yr toward ${formatCurrency(annualLimit!)} limit)`
-                        : `Set to ${formatCurrency(currentValue)}/yr toward ${formatCurrency(annualLimit!)} limit`}
+                        ? `Set to ${formatCurrency(currentValue)}/month (${formatCurrency(currentValue * 12, 0)}/yr toward ${formatCurrency(annualLimit!, 0)} limit)`
+                        : `Set to ${formatCurrency(currentValue, 0)}/yr toward ${formatCurrency(annualLimit!, 0)} limit`}
                 </p>
               )}
             </div>

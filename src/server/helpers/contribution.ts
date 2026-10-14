@@ -403,6 +403,9 @@ export type GroupableMatchRow = {
 
 export type GroupedMatchResult = {
   matchAnnual: number;
+  /** The match at the plan's cap (contributing at least the capped
+   *  percent of pay) — the most the employer would put in. */
+  matchAvailableAnnual: number;
   employerMatchTaxTreatment: MatchTaxTreatment;
 };
 
@@ -469,6 +472,7 @@ export function computeGroupedEmployerMatch(
       for (const m of members) {
         result.set(m.id, {
           matchAnnual: 0,
+          matchAvailableAnnual: 0,
           employerMatchTaxTreatment: m.employerMatchTaxTreatment,
         });
       }
@@ -509,11 +513,29 @@ export function computeGroupedEmployerMatch(
       winner.salary,
     );
 
+    // The full match: the same formula with the group contributing at
+    // least the capped percent of pay. Uncapped or flat matches can't go
+    // higher than what's already captured.
+    const capAnnual =
+      winner.employerMaxMatchPct > 0
+        ? winner.employerMaxMatchPct * winner.salary
+        : combinedAnnual;
+    const availableMatch = computeEmployerMatch(
+      winner.employerMatchType,
+      winner.employerMatchValue,
+      winner.employerMaxMatchPct,
+      Math.max(combinedAnnual, capAnnual),
+      "combined",
+      0,
+      winner.salary,
+    );
+
     for (const m of members) {
       const share =
         combinedAnnual > 0 ? m.annual / combinedAnnual : 1 / members.length;
       result.set(m.id, {
         matchAnnual: totalMatch * share,
+        matchAvailableAnnual: availableMatch * share,
         // Match tax character is a plan property, not a per-split-row one
         // — every row in the group gets the winning row's value, never its
         // own (a Roth/Trad split shift must never reclassify match dollars).
@@ -631,6 +653,7 @@ export function buildContribAccounts(
       employerMatchOnBonus: roundToCents(
         match.matchAnnual - baseMatchByRow.get(c.id)!.matchAnnual,
       ),
+      employerMatchAvailable: roundToCents(match.matchAvailableAnnual),
       employerMatchTaxTreatment: match.employerMatchTaxTreatment,
     };
   });
