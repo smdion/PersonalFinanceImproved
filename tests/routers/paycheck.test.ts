@@ -20,6 +20,10 @@ import {
   seedRetirementProfilePerson,
 } from "./setup";
 import { eq } from "drizzle-orm";
+import {
+  buildBracketInput,
+  buildLiabilityBracketInput,
+} from "@/server/routers/paycheck";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
@@ -1545,5 +1549,37 @@ describe("settings.jobs — optional fields", () => {
     expect(job!.title).toBe("Senior Engineer");
     expect(job).not.toHaveProperty("anchorPayDate");
     expect(job).not.toHaveProperty("w4FilingStatus");
+  });
+});
+
+describe("buildBracketInput — withholding vs tax-return standard deduction", () => {
+  it("2025 MFJ: withholds on the Pub 15-T tables' $30,000 basis, owes on OBBBA's $31,500", async () => {
+    const { db, cleanup } = await createTestCaller();
+    try {
+      const rows = db
+        .select()
+        .from(schema.taxBrackets)
+        .where(eq(schema.taxBrackets.taxYear, 2025))
+        .all();
+      const limits = new Map(
+        db
+          .select()
+          .from(schema.contributionLimits)
+          .where(eq(schema.contributionLimits.taxYear, 2025))
+          .all()
+          .map((l) => [l.limitType, Number(l.value)] as const),
+      );
+      const standard = rows.find(
+        (r) => r.filingStatus === "MFJ" && !r.w4Checkbox,
+      )!;
+
+      const withholding = buildBracketInput(standard, limits, rows);
+      expect(withholding.w4Adjustment).toBe(12900);
+      expect(
+        buildLiabilityBracketInput(standard, limits).standardDeduction,
+      ).toBe(31500);
+    } finally {
+      cleanup();
+    }
   });
 });

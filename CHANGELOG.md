@@ -41,6 +41,7 @@ This release is about making Ledgr's many numbers easier to act on. No database 
 ### Fixed
 
 - **Coast FIRE no longer says "unreachable" for a plan that's on track** when no retirement budget is set — a one-cent rounding difference failed every age it tried.
+- **2025 standard deduction** is now OBBBA's $31,500 married / $15,750 single / $23,625 head of household (was the pre-law $30,000 / $15,000 / $22,500) for 2025 tax figures. 2025 paycheck withholding still follows the IRS 2025 withholding tables, which were never updated.
 
 ---
 

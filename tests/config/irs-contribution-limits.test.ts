@@ -97,6 +97,18 @@ const IRS_LIMITS: Record<
       value: 2000,
       source: "IRC §63(f) / IRS Rev. Proc. 2024-40 — filer 65+, Single/HoH",
     },
+    standard_deduction_mfj: {
+      value: 31500,
+      source: "OBBBA §70102 (supersedes Rev. Proc. 2024-40)",
+    },
+    standard_deduction_single: {
+      value: 15750,
+      source: "OBBBA §70102 (supersedes Rev. Proc. 2024-40)",
+    },
+    standard_deduction_hoh: {
+      value: 23625,
+      source: "OBBBA §70102 (supersedes Rev. Proc. 2024-40)",
+    },
   },
   2026: {
     "401k_employee_limit": {

@@ -218,25 +218,40 @@ describe("tax_brackets seed data structural invariants", () => {
     }
   });
 
-  it("w4_checkbox=true rows: second bracket threshold = standardDeduction / 2", () => {
-    for (const row of rows.filter((r) => r.w4Checkbox)) {
-      const sd = standardDeductions.get(`${row.taxYear}:${row.filingStatus}`);
-      if (sd === undefined) continue;
+  // Pub 15-T builds both tables on one standard deduction: the Step 2(c)
+  // table's first taxed threshold is half of it, and the standard table's
+  // is that deduction minus the Worksheet 1A adjustment. The paycheck
+  // reads the deduction back off the tables (paycheck.ts
+  // withholdingStandardDeduction), so the two tables must agree.
+  it("each year's standard and Step 2(c) tables imply the Worksheet 1A adjustment", () => {
+    for (const row of rows.filter((r) => !r.w4Checkbox)) {
+      const checkbox = rows.find(
+        (r) =>
+          r.w4Checkbox &&
+          r.taxYear === row.taxYear &&
+          r.filingStatus === row.filingStatus,
+      );
+      if (!checkbox) continue;
       expect(
-        row.brackets[1]!.threshold,
-        `${row.taxYear} ${row.filingStatus} w4_checkbox=true`,
-      ).toBe(sd / 2);
+        checkbox.brackets[1]!.threshold * 2 - row.brackets[1]!.threshold,
+        `${row.taxYear} ${row.filingStatus}`,
+      ).toBe(W4_ADJUSTMENT[row.filingStatus]);
     }
   });
 
-  it("w4_checkbox=false rows: standardDeduction - second bracket threshold = W-4 Worksheet 1A adjustment", () => {
-    for (const row of rows.filter((r) => !r.w4Checkbox)) {
+  // The tables match the tax-return standard deduction except where the
+  // law changed after they were published: OBBBA raised 2025's deduction
+  // mid-year and the 2025 tables were never reissued.
+  const TABLES_PREDATE_LAW = new Set(["2025"]);
+  it("withholding tables use the tax-return standard deduction (except 2025)", () => {
+    for (const row of rows.filter((r) => r.w4Checkbox)) {
+      if (TABLES_PREDATE_LAW.has(String(row.taxYear))) continue;
       const sd = standardDeductions.get(`${row.taxYear}:${row.filingStatus}`);
       if (sd === undefined) continue;
       expect(
-        sd - row.brackets[1]!.threshold,
-        `${row.taxYear} ${row.filingStatus} w4_checkbox=false`,
-      ).toBe(W4_ADJUSTMENT[row.filingStatus]);
+        row.brackets[1]!.threshold * 2,
+        `${row.taxYear} ${row.filingStatus}`,
+      ).toBe(sd);
     }
   });
 });
