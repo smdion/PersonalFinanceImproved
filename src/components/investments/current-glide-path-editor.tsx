@@ -78,8 +78,11 @@ export function CurrentGlidePathEditor({
           },
         ],
   );
+  // Whole ages 0–120 (a cleared field reads as 0 — or NaN — and must not
+  // save), each once, every mix adding to 100%.
   const valid =
     rows.length > 0 &&
+    rows.every((r) => Number.isInteger(r.age) && r.age >= 0 && r.age <= 120) &&
     new Set(rows.map((r) => r.age)).size === rows.length &&
     rows.every((r) => Math.abs(rowTotal(r) - 100) < 0.5);
   const update = (i: number, change: Partial<Row>) =>
@@ -117,11 +120,16 @@ export function CurrentGlidePathEditor({
                       type="number"
                       min={0}
                       max={120}
-                      value={r.age}
+                      value={Number.isNaN(r.age) ? "" : r.age}
                       aria-label="Age"
                       className="bg-surface-primary w-14 rounded border px-1"
                       onChange={(e) =>
-                        update(i, { age: Number(e.target.value) })
+                        update(i, {
+                          age:
+                            e.target.value === ""
+                              ? NaN
+                              : Number(e.target.value),
+                        })
                       }
                     />
                   </td>

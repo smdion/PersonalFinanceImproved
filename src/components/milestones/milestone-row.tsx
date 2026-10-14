@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Check, CircleDashed, TrendingUp, TriangleAlert } from "lucide-react";
 import { ProgressBar } from "@/components/ui/card";
@@ -122,9 +123,12 @@ export function MilestoneRow({
           )}
           <div className="flex items-center gap-3">
             {result.href !== "/milestones" && (
-              <a href={result.href} className="text-blue-600 hover:underline">
+              <Link
+                href={result.href}
+                className="text-blue-600 hover:underline"
+              >
                 Go there →
-              </a>
+              </Link>
             )}
             {extra}
           </div>

@@ -32,6 +32,7 @@ import { CHART_COLORS } from "@/lib/utils/colors";
 import { COMPOSITION_BUCKET_LABELS } from "@/lib/config/display-labels";
 import {
   COMPOSITION_BUCKET_VALUES,
+  isStockBucket,
   type CompositionBucket,
 } from "@/lib/config/enum-values";
 
@@ -468,18 +469,11 @@ function AllocationCard({ data }: { data: Overview }) {
 /** Asset classes in stacking order (stocks at the bottom), each colored
  *  like its first fund category on the mix card. */
 function glidePathClasses(data: Overview): GlidePathClass[] {
-  const STOCK = new Set<CompositionBucket>(["us_equity", "intl_equity"]);
-  const ORDER: CompositionBucket[] = [
-    "us_equity",
-    "intl_equity",
-    "us_bond",
-    "intl_bond",
-    "tips",
-    "cash",
-    "other",
-  ];
+  // Config order (stocks first, so they stack at the bottom).
   const rank = (b: CompositionBucket | undefined) =>
-    b === undefined ? ORDER.length : ORDER.indexOf(b);
+    b === undefined
+      ? COMPOSITION_BUCKET_VALUES.length
+      : COMPOSITION_BUCKET_VALUES.indexOf(b);
   return [...data.allocation.rows]
     .filter((r) =>
       data.glidePath.some((p) => (p.allocations[r.assetClassId] ?? 0) > 0),
@@ -489,7 +483,7 @@ function glidePathClasses(data: Overview): GlidePathClass[] {
       assetClassId: r.assetClassId,
       name: r.name,
       color: r.buckets[0] ? BUCKET_COLORS[r.buckets[0]] : CHART_COLORS.mixOther,
-      isStock: r.buckets.some((b) => STOCK.has(b)),
+      isStock: r.buckets.some(isStockBucket),
     }));
 }
 

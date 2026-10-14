@@ -32,6 +32,8 @@ export function QuickSearch() {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Where focus was before opening, to hand it back on close.
+  const returnFocus = useRef<HTMLElement | null>(null);
   const results = searchPages(ENTRIES, query);
 
   useEffect(() => {
@@ -48,7 +50,13 @@ export function QuickSearch() {
   }, []);
 
   useEffect(() => {
-    if (open) inputRef.current?.focus();
+    if (open) {
+      returnFocus.current = document.activeElement as HTMLElement | null;
+      inputRef.current?.focus();
+    } else {
+      returnFocus.current?.focus?.();
+      returnFocus.current = null;
+    }
   }, [open]);
 
   if (!open) return null;
@@ -63,6 +71,7 @@ export function QuickSearch() {
     >
       <div
         role="dialog"
+        aria-modal="true"
         aria-label="Quick search"
         className="bg-surface-primary border-default w-full max-w-md rounded-lg border shadow-lg"
         onClick={(e) => e.stopPropagation()}
@@ -70,6 +79,13 @@ export function QuickSearch() {
         <input
           ref={inputRef}
           value={query}
+          role="combobox"
+          aria-label="Search pages"
+          aria-expanded="true"
+          aria-controls="quick-search-results"
+          aria-activedescendant={
+            results[active] ? `quick-search-option-${active}` : undefined
+          }
           placeholder="Search pages — try “HSA limit” or “FI”"
           className="border-subtle bg-surface-primary w-full rounded-t-lg border-b px-3 py-2 text-sm outline-none"
           onChange={(e) => {
@@ -88,27 +104,37 @@ export function QuickSearch() {
             }
           }}
         />
-        <ul className="max-h-80 overflow-auto py-1">
-          {results.length === 0 && (
-            <li className="text-muted px-3 py-2 text-sm">No matching page</li>
-          )}
+        {results.length === 0 && (
+          <p className="text-muted px-3 py-2 text-sm" role="status">
+            No matching page
+          </p>
+        )}
+        {/* Keyboard moves through the options from the input
+            (aria-activedescendant); a click picks one directly. */}
+        <ul
+          id="quick-search-results"
+          role="listbox"
+          aria-label="Pages"
+          className="max-h-80 overflow-auto py-1"
+        >
           {results.map((r, i) => (
-            <li key={r.href}>
-              <button
-                type="button"
-                className={`flex w-full items-center justify-between px-3 py-1.5 text-left text-sm ${
-                  i === active
-                    ? "bg-surface-sunken text-primary"
-                    : "text-secondary"
-                }`}
-                onMouseEnter={() => setActive(i)}
-                onClick={() => go(r.href)}
-              >
-                <span>{r.label}</span>
-                {r.group && (
-                  <span className="text-caption text-faint">{r.group}</span>
-                )}
-              </button>
+            <li
+              key={r.href}
+              id={`quick-search-option-${i}`}
+              role="option"
+              aria-selected={i === active}
+              className={`flex w-full cursor-pointer items-center justify-between px-3 py-1.5 text-left text-sm ${
+                i === active
+                  ? "bg-surface-sunken text-primary"
+                  : "text-secondary"
+              }`}
+              onMouseEnter={() => setActive(i)}
+              onClick={() => go(r.href)}
+            >
+              <span>{r.label}</span>
+              {r.group && (
+                <span className="text-caption text-faint">{r.group}</span>
+              )}
             </li>
           ))}
         </ul>
