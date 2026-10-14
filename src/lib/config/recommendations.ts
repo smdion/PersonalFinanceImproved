@@ -50,7 +50,8 @@ export const MILESTONE_RECOMMENDATIONS: readonly {
   { id: "foo5", area: "paycheck" },
   { id: "savingsRate", area: "paycheck" },
   { id: "pfRetirementRate", area: "paycheck" },
-  { id: "foo3", area: "moneyMoves" },
+  // foo3 (high-interest debt) returns once the debts list gives it rates —
+  // until then it can only be reached or unknown, never a to-do.
   { id: "goalHorizon", area: "moneyMoves" },
   { id: "moneyGuyCheckpoints", area: "moneyMoves" },
   { id: "fidelityCheckpoints", area: "moneyMoves" },

@@ -664,6 +664,10 @@ function journey(input: MilestoneInput, now: MilestoneYear): MilestoneResult[] {
   );
 
   // Money works harder than you: growth at the napkin rate vs gross pay.
+  // Finalized years compare against gross income (salary + bonus, as
+  // recorded); projected years only have the engine's projected salary —
+  // the engine carries no per-year gross figure — so the "on pace" year
+  // can come a little early for a household with a large bonus.
   {
     const growth = now.liquid * MONEY_GUY_NAPKIN_RETURN;
     const pay = now.grossIncome;
@@ -954,7 +958,7 @@ function savingsRate(input: MilestoneInput): MilestoneResult {
       .join(" · "),
     nextStep: met
       ? null
-      : `${formatCurrency(gapPerMonth)} more a month reaches 25%`,
+      : `${formatCurrency(gapPerMonth)} more a month reaches ${formatSavingsRate(MONEY_GUY_SAVINGS_RATE)}`,
     impact: met ? null : { kind: "perYear", amount: gapPerMonth * 12 },
   });
 }
@@ -1202,6 +1206,15 @@ function foo(
   return out;
 }
 
+/** Calendar year of a payoff date. A date-only string is read as written
+ *  ("2050-01-01" → 2050), never via `new Date()`, which parses it as UTC
+ *  midnight and lands on the prior year west of UTC. */
+function payoffYearOf(payoffDate: Date | string): number {
+  return typeof payoffDate === "string"
+    ? Number(payoffDate.slice(0, 4))
+    : payoffDate.getFullYear();
+}
+
 /** A mortgage is still owed: the active loan, or a balance in this year's
  *  figures when the loan details aren't available. */
 function owesMortgage(input: MilestoneInput, now: MilestoneYear): boolean {
@@ -1247,7 +1260,13 @@ function housing(input: MilestoneInput, now: MilestoneYear): MilestoneResult[] {
     out.push(
       result("housing", {
         status: "unknown",
-        headline: mortgage?.active ? "Needs income" : "No mortgage on file",
+        // Same "owes a mortgage" test as the paid-off-home row below, so the
+        // two never disagree (a balance with no active loan on file).
+        headline: mortgage?.active
+          ? "Needs income"
+          : owesMortgage(input, now)
+            ? "Set up the mortgage to judge this"
+            : "No mortgage on file",
       }),
     );
   } else {
@@ -1265,11 +1284,11 @@ function housing(input: MilestoneInput, now: MilestoneYear): MilestoneResult[] {
         headline: `${formatPercent(share, 1)} of gross pay (${formatCurrency(mortgage.monthlyHousingCost)}/mo)`,
         note:
           share > HOUSING_COST_SHARE.max && share <= HOUSING_COST_SHARE.stretch
-            ? "Over 25%, within Money Guy's high-cost-area allowance"
+            ? `Over ${formatPercent(HOUSING_COST_SHARE.max)}, within Money Guy's high-cost-area allowance`
             : null,
         nextStep:
           share > HOUSING_COST_SHARE.max
-            ? "Raises bring this under 25% over time"
+            ? `Raises bring this under ${formatPercent(HOUSING_COST_SHARE.max)} over time`
             : null,
       }),
     );
@@ -1320,7 +1339,7 @@ function housing(input: MilestoneInput, now: MilestoneYear): MilestoneResult[] {
         expectedAge: payoffAge,
         nextStep:
           payoffAge !== null && payoffAge > PAID_OFF_HOME_BY_AGE
-            ? `${Math.ceil(payoffAge - PAID_OFF_HOME_BY_AGE)} years past 60 — extra principal or investments that could pay it off both count`
+            ? `${Math.ceil(payoffAge - PAID_OFF_HOME_BY_AGE)} years past ${PAID_OFF_HOME_BY_AGE} — extra principal or investments that could pay it off both count`
             : null,
       }),
     );
@@ -1470,7 +1489,7 @@ function pfRetirementRate(input: MilestoneInput): MilestoneResult {
     ].join(" · "),
     nextStep: met
       ? null
-      : `${formatCurrency(gapPerMonth)} more a month into retirement accounts reaches 15%`,
+      : `${formatCurrency(gapPerMonth)} more a month into retirement accounts reaches ${formatSavingsRate(PF_RETIREMENT_RATE.min)}`,
     impact: met ? null : { kind: "perYear", amount: gapPerMonth * 12 },
   });
 }
@@ -2199,7 +2218,7 @@ export function buildMilestoneInput(raw: {
         : 0,
       payoffYear:
         active && m.activeLoanResult
-          ? new Date(m.activeLoanResult.payoffDate).getFullYear()
+          ? payoffYearOf(m.activeLoanResult.payoffDate)
           : null,
     };
   }

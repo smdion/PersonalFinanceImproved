@@ -100,4 +100,20 @@ describe("recommendation dismissals", () => {
     );
     expect(parseDismissals(null)).toEqual({});
   });
+
+  it("clamps a snooze to the end of a shorter month", () => {
+    expect(snoozeUntil("2026-01-31", 1)).toBe("2026-02-28");
+    expect(snoozeUntil("2028-01-31", 1)).toBe("2028-02-29");
+    expect(snoozeUntil("2026-08-31", 1)).toBe("2026-09-30");
+    expect(snoozeUntil("2028-02-29", 12)).toBe("2029-02-28");
+  });
+
+  it("drops only the bad entry, keeping the rest", () => {
+    expect(
+      parseDismissals({
+        good: { until: null, urgency: "soon" },
+        bad: { until: "someday", urgency: "now" },
+      }),
+    ).toEqual({ good: { until: null, urgency: "soon" } });
+  });
 });

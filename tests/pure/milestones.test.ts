@@ -500,6 +500,15 @@ describe("saving, safety and home", () => {
     expect(byId(results, "foo9").status).toBe("onTrack");
   });
 
+  it("housing and paid-off home agree when a balance has no active loan", () => {
+    const results = run({ mortgage: null });
+    // Not "No mortgage on file" while the paid-off row says one is owed.
+    expect(byId(results, "housing").headline).toBe(
+      "Set up the mortgage to judge this",
+    );
+    expect(byId(results, "paidOffHome").status).not.toBe("reached");
+  });
+
   it("paid-off home by 60", () => {
     expect(byId(run(), "paidOffHome")).toMatchObject({
       status: "onTrack",
@@ -1106,6 +1115,17 @@ describe("input builders", () => {
       projection: null,
       holdings: null,
     };
+    // A date-only payoff string keeps its year in every time zone.
+    expect(
+      buildMilestoneInput({
+        ...base,
+        highIncomeThreshold: 200_000,
+        mortgage: {
+          ...base.mortgage!,
+          activeLoanResult: { remainingMonths: 200, payoffDate: "2043-01-01" },
+        },
+      }).mortgage?.payoffYear,
+    ).toBe(2043);
     const below = buildMilestoneInput({
       ...base,
       highIncomeThreshold: 200_000,

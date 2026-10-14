@@ -16,30 +16,38 @@ const URGENCY_RANK: Record<RecommendationUrgency, number> = {
   soon: 1,
 };
 
-export const dismissalsSchema = z.record(
-  z.string().min(1).max(80),
-  z.object({
-    /** Hidden until this date (YYYY-MM-DD); null = for good. */
-    until: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .nullable(),
-    /** The urgency when dismissed. */
-    urgency: z.enum(["now", "soon"]),
-    /** Why — the household's own note. */
-    note: z.string().trim().max(280).optional(),
-    /** When it was dismissed or snoozed (YYYY-MM-DD). */
-    on: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
-  }),
-);
+const dismissalIdSchema = z.string().min(1).max(80);
+const dismissalSchema = z.object({
+  /** Hidden until this date (YYYY-MM-DD); null = for good. */
+  until: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .nullable(),
+  /** The urgency when dismissed. */
+  urgency: z.enum(["now", "soon"]),
+  /** Why — the household's own note. */
+  note: z.string().trim().max(280).optional(),
+  /** When it was dismissed or snoozed (YYYY-MM-DD). */
+  on: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+});
+export const dismissalsSchema = z.record(dismissalIdSchema, dismissalSchema);
 export type Dismissals = z.infer<typeof dismissalsSchema>;
 
 export function parseDismissals(raw: unknown): Dismissals {
-  const parsed = dismissalsSchema.safeParse(raw);
-  return parsed.success ? parsed.data : {};
+  // Entry by entry: one bad entry (a hand-edited date) drops only itself,
+  // not every dismissal and snooze the household has.
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return {};
+  const out: Dismissals = {};
+  for (const [id, value] of Object.entries(raw)) {
+    const entry = dismissalSchema.safeParse(value);
+    if (dismissalIdSchema.safeParse(id).success && entry.success) {
+      out[id] = entry.data;
+    }
+  }
+  return out;
 }
 
 function isActive(d: Dismissals[string], today: string): boolean {
@@ -83,5 +91,8 @@ export function nextDismissals(
 /** A snooze end date `months` from `today` (YYYY-MM-DD). */
 export function snoozeUntil(today: string, months: number): string {
   const [y, m, d] = today.split("-").map(Number) as [number, number, number];
-  return localDateStr(new Date(y, m - 1 + months, d));
+  // Clamp to the target month's last day: Jan 31 + 1 month is Feb 28/29,
+  // not Mar 3 (Date rolls the overflow into the next month).
+  const lastDay = new Date(y, m - 1 + months + 1, 0).getDate();
+  return localDateStr(new Date(y, m - 1 + months, Math.min(d, lastDay)));
 }
