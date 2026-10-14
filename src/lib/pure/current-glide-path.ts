@@ -55,3 +55,17 @@ export function parseCurrentGlidePath(
       ),
     }));
 }
+
+/** Asset-class ids the glide path uses that aren't among `activeIds` — an
+ *  asset class deleted or deactivated after the path was saved. Its share
+ *  would silently drop out of the target and skew rebalancing amounts. */
+export function unknownAssetClassIds(
+  path: readonly { allocations: Record<number, number> }[],
+  activeIds: ReadonlySet<number>,
+): number[] {
+  const unknown = new Set<number>();
+  for (const row of path)
+    for (const id of Object.keys(row.allocations).map(Number))
+      if (!activeIds.has(id)) unknown.add(id);
+  return [...unknown].sort((a, b) => a - b);
+}

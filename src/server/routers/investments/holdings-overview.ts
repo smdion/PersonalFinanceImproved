@@ -22,7 +22,10 @@ import { getSecConnection } from "@/lib/sec/connection";
 import { loadBucketLinks, toFactRows } from "@/server/helpers/fund-facts";
 import { loadAccounts, loadLatestHoldings } from "./_shared";
 import { SK_CURRENT_GLIDE_PATH } from "@/lib/constants/settings-keys";
-import { parseCurrentGlidePath } from "@/lib/pure/current-glide-path";
+import {
+  parseCurrentGlidePath,
+  unknownAssetClassIds,
+} from "@/lib/pure/current-glide-path";
 
 type Db = typeof import("@/lib/db").db;
 
@@ -39,8 +42,11 @@ async function targetByAssetClass(db: Db): Promise<{
   glidePath: { age: number; allocations: Record<number, number> }[];
   currentGlidePath:
     { age: number; allocations: Record<number, number> }[] | null;
+  /** The saved current glide path names an asset class that no longer
+   *  exists, so the target falls back to the retirement glide path. */
+  currentGlidePathStale: boolean;
 }> {
-  const [[person], rows, [currentRow]] = await Promise.all([
+  const [[person], rows, [currentRow], activeClasses] = await Promise.all([
     db
       .select({ dob: schema.people.dateOfBirth })
       .from(schema.people)
@@ -52,9 +58,20 @@ async function targetByAssetClass(db: Db): Promise<{
       .from(schema.appSettings)
       .where(eq(schema.appSettings.key, SK_CURRENT_GLIDE_PATH))
       .limit(1),
+    db
+      .select({ id: schema.assetClassParams.id })
+      .from(schema.assetClassParams)
+      .where(eq(schema.assetClassParams.isActive, true)),
   ]);
   const currentGlidePath = parseCurrentGlidePath(currentRow?.value ?? null);
-  const source = currentGlidePath ? "current" : "retirement";
+  const currentGlidePathStale =
+    currentGlidePath !== null &&
+    unknownAssetClassIds(
+      currentGlidePath,
+      new Set(activeClasses.map((c) => c.id)),
+    ).length > 0;
+  const usable = currentGlidePathStale ? null : currentGlidePath;
+  const source = usable ? "current" : "retirement";
   const byAge = new Map<number, Record<number, number>>();
   for (const r of rows) {
     const a = byAge.get(r.age) ?? {};
@@ -64,9 +81,16 @@ async function targetByAssetClass(db: Db): Promise<{
   const retirementPath = [...byAge.entries()]
     .sort(([a], [b]) => a - b)
     .map(([gpAge, allocations]) => ({ age: gpAge, allocations }));
-  const glidePath = currentGlidePath ?? retirementPath;
+  const glidePath = usable ?? retirementPath;
   if (!person)
-    return { age: null, target: {}, source, glidePath, currentGlidePath };
+    return {
+      age: null,
+      target: {},
+      source,
+      glidePath,
+      currentGlidePath,
+      currentGlidePathStale,
+    };
   const age = getAge(new Date(`${person.dob}T00:00:00`), new Date());
   return {
     age,
@@ -74,6 +98,7 @@ async function targetByAssetClass(db: Db): Promise<{
     source,
     glidePath,
     currentGlidePath,
+    currentGlidePathStale,
   };
 }
 
@@ -197,6 +222,7 @@ export async function loadHoldingsOverview(db: Db) {
     targetSource: target.source,
     glidePath: target.glidePath,
     currentGlidePath: target.currentGlidePath,
+    currentGlidePathStale: target.currentGlidePathStale,
     /** SimpleFIN accounts with holdings that aren't linked to a Ledgr
      *  account — left out of everything below. */
     unlinkedAccounts: [...unlinkedTotals.entries()]

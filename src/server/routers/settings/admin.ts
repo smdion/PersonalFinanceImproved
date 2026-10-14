@@ -1,4 +1,8 @@
 import { z } from "zod/v4";
+import {
+  parseCurrentGlidePath,
+  unknownAssetClassIds,
+} from "@/lib/pure/current-glide-path";
 import { TRPCError } from "@trpc/server";
 import { eq, asc, desc } from "drizzle-orm";
 import {
@@ -165,6 +169,23 @@ export const adminProcedures = {
             throw new TRPCError({
               code: "BAD_REQUEST",
               message: `Invalid ${input.key}: ${parsed.error.issues[0]?.message ?? "bad value"}`,
+            });
+        }
+        if (input.key === SK_CURRENT_GLIDE_PATH && input.value != null) {
+          const active = await ctx.db
+            .select({ id: schema.assetClassParams.id })
+            .from(schema.assetClassParams)
+            .where(eq(schema.assetClassParams.isActive, true));
+          const path = parseCurrentGlidePath(input.value);
+          if (
+            path &&
+            unknownAssetClassIds(path, new Set(active.map((c) => c.id)))
+              .length > 0
+          )
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "The glide path uses an asset class that doesn't exist (or is turned off)",
             });
         }
         // value column is NOT NULL — when null, delete the row so the default applies

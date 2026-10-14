@@ -268,9 +268,18 @@ function AllocationCard({ data }: { data: Overview }) {
         {hasTarget && data.age !== null
           ? `, next to ${data.targetSource === "current" ? "your current glide path" : "the retirement simulation's glide path"} for age ${data.age}`
           : ""}
-        . Percentages are of the{" "}
-        {formatPercent(total > 0 ? known / total : 0, 0)} of your money whose
-        mix is known.{" "}
+        .
+        {data.currentGlidePathStale && (
+          <>
+            {" "}
+            <span className="text-amber-600">
+              Your current glide path uses an asset class that no longer exists,
+              so the retirement glide path is used until you edit it.
+            </span>
+          </>
+        )}{" "}
+        Percentages are of the {formatPercent(total > 0 ? known / total : 0, 0)}{" "}
+        of your money whose mix is known.{" "}
         {canEditPath && !editingPath && (
           <button
             type="button"

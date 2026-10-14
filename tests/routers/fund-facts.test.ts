@@ -206,6 +206,40 @@ describe("fund facts", () => {
       .run();
   });
 
+  it("falls back to the retirement glide path when the current one names a removed asset class", async () => {
+    ctx.db
+      .insert(sqliteSchema.appSettings)
+      .values({
+        key: "current_glide_path",
+        value: [
+          {
+            age: 30,
+            allocations: { [String(id.stocks)]: 0.6, "999999": 0.4 },
+          },
+        ],
+      })
+      .run();
+    const o = await ctx.caller.investments.getHoldingsOverview();
+    expect(o.currentGlidePathStale).toBe(true);
+    expect(o.targetSource).toBe("retirement");
+    // Saving one like it is refused outright.
+    await expect(
+      ctx.caller.settings.appSettings.upsert({
+        key: "current_glide_path",
+        value: [
+          {
+            age: 30,
+            allocations: { [String(id.stocks)]: 0.6, "999999": 0.4 },
+          },
+        ],
+      }),
+    ).rejects.toThrow(/asset class that doesn't exist/);
+    ctx.db
+      .delete(sqliteSchema.appSettings)
+      .where(eq(sqliteSchema.appSettings.key, "current_glide_path"))
+      .run();
+  });
+
   it("values holdings at today's close when priced, else as reported", async () => {
     const o = await ctx.caller.investments.getHoldingsOverview();
     const rows = o.accounts[0]!.holdings;

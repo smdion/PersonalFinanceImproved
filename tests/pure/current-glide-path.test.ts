@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   currentGlidePathSchema,
   parseCurrentGlidePath,
+  unknownAssetClassIds,
 } from "@/lib/pure/current-glide-path";
 
 describe("current glide path", () => {
@@ -33,5 +34,11 @@ describe("current glide path", () => {
   it("reads unset or bad data as none (the retirement glide path applies)", () => {
     expect(parseCurrentGlidePath(null)).toBeNull();
     expect(parseCurrentGlidePath([{ age: "forty" }])).toBeNull();
+  });
+
+  it("lists asset classes the path uses that no longer exist", () => {
+    const parsed = parseCurrentGlidePath(path)!;
+    expect(unknownAssetClassIds(parsed, new Set([1, 2]))).toEqual([]);
+    expect(unknownAssetClassIds(parsed, new Set([1]))).toEqual([2]);
   });
 });
