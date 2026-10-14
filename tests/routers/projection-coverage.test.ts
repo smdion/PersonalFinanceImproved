@@ -187,12 +187,6 @@ function decumulationConfig(
 }
 
 // ---------------------------------------------------------------------------
-// computeProjection — full result path
-// ---------------------------------------------------------------------------
-
-describe("projection router — computeProjection full result path", () => {});
-
-// ---------------------------------------------------------------------------
 // computeProjection — persistent projection cache
 // ---------------------------------------------------------------------------
 
