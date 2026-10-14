@@ -43,7 +43,7 @@ This release is about making Ledgr's many numbers easier to act on. No database 
 
 - **Coast FIRE no longer says "unreachable" for a plan that's on track** when no retirement budget is set — a one-cent rounding difference failed every age it tried.
 - **2025 standard deduction** is now OBBBA's $31,500 married / $15,750 single / $23,625 head of household (was the pre-law $30,000 / $15,000 / $22,500) for 2025 tax figures. 2025 paycheck withholding still follows the IRS 2025 withholding tables, which were never updated.
-- **Relocation with a move year** no longer understates the nest egg. The years after the move restarted at today's salary and today's prices, and the move year itself saved nothing; the move is now part of one projection from today. "Earliest you could move" uses the same calculation, and relocation expenses carry the same inflation as the rest of the projection.
+- **Relocation with a move year** no longer understates the nest egg. The years after the move restarted at today's salary and today's prices, and the move year itself saved nothing; the move is now part of one projection from today. "Earliest you could move" uses the same calculation (and the portfolio it says you need is the balance going into that year, not the end of it), relocation expenses carry the same inflation as the rest of the projection, and they no longer replace your retirement budget in the first retirement year.
 
 ---
 

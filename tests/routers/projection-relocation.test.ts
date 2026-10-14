@@ -12,8 +12,10 @@ import {
   seedStandardDataset,
   seedBudgetProfile,
   seedBudgetItem,
+  seedContributionProfile,
   adminSession,
 } from "./setup";
+import * as engine from "@/lib/calculators/engine";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
@@ -511,6 +513,81 @@ describe("projection.relocationScenarios additional", () => {
       expect(result!.name).toBe("Rich Relocation");
     } finally {
       ctx.cleanup();
+    }
+  });
+});
+
+describe("projection.relocation — move-year handoff", () => {
+  const baseInput = {
+    currentBudgetColumn: 0,
+    currentExpenseOverride: null,
+    relocationBudgetColumn: 0,
+    relocationExpenseOverride: null,
+    yearAdjustments: [],
+    largePurchases: [],
+  };
+
+  it("expense schedules stop before retirement (the retirement budget stays)", async () => {
+    const spy = vi.spyOn(engine, "calculateProjection");
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const { currentProfileId, relocProfileId } =
+        await seedRelocationDataset(db);
+      spy.mockClear();
+      await caller.projection.computeRelocationFiProjection({
+        ...baseInput,
+        currentProfileId,
+        currentContributionProfileId: null,
+        relocationProfileId: relocProfileId,
+        relocationContributionProfileId: null,
+        moveYear: new Date().getFullYear() + 2,
+      });
+      for (const [input] of spy.mock.calls) {
+        const retirementYear =
+          input.asOfDate.getFullYear() +
+          (input.retirementAge - input.currentAge);
+        for (const o of input.budgetOverrides) {
+          expect(o.year).toBeLessThan(retirementYear);
+        }
+      }
+    } finally {
+      spy.mockRestore();
+      cleanup();
+    }
+  });
+
+  it("a different relocation contribution profile carries its routing from the move year", async () => {
+    const spy = vi.spyOn(engine, "calculateProjection");
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const { currentProfileId, relocProfileId } =
+        await seedRelocationDataset(db);
+      const otherProfile = seedContributionProfile(db, {
+        name: "Relocation",
+        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+      });
+      const moveYear = new Date().getFullYear() + 2;
+      spy.mockClear();
+      await caller.projection.computeRelocationFiProjection({
+        ...baseInput,
+        currentProfileId,
+        currentContributionProfileId: null,
+        relocationProfileId: relocProfileId,
+        relocationContributionProfileId: otherProfile,
+        moveYear,
+      });
+      const blended = spy.mock.calls
+        .map(([input]) => input)
+        .find((input) =>
+          (input.profileSwitches ?? []).some((ps) => ps.year === moveYear),
+        );
+      expect(blended).toBeDefined();
+      expect(
+        blended!.accumulationOverrides.find((o) => o.year === moveYear),
+      ).toMatchObject({ routingMode: expect.any(String) });
+    } finally {
+      spy.mockRestore();
+      cleanup();
     }
   });
 });

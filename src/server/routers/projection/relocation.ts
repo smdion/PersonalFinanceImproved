@@ -38,6 +38,7 @@ import type {
   AccumulationOverride,
   DecumulationOverride,
 } from "@/lib/calculators/types";
+import { buildCategoryRecord } from "@/lib/config/account-types";
 import { relocationScenarioParamsSchema } from "@/lib/db/json-schemas";
 
 /** Router's large-purchase input is zod-nullable, not optional-undefined like
@@ -309,7 +310,10 @@ export const relocationProjectionRouter = createTRPCRouter({
 
       const relocBudgetOverrides: { year: number; value: number }[] = [];
       if (isFinite(firstAffectedYear)) {
-        for (let y = firstAffectedYear; y <= retirementYear; y++) {
+        // Stops before retirementYear: a budget override in the first
+        // retirement year replaces the seeded retirement budget (and later
+        // years inflate from it) — these schedules are working-years only.
+        for (let y = firstAffectedYear; y < retirementYear; y++) {
           const base = adjustmentByYear.has(y)
             ? adjustmentByYear.get(y)!
             : baseMonthly * Math.pow(1 + inflationRate, y - engineBaseYear);
@@ -329,7 +333,7 @@ export const relocationProjectionRouter = createTRPCRouter({
           relocBudgetOverrides.map((o) => [o.year, o.value]),
         );
         const schedule: { year: number; value: number }[] = [];
-        for (let y = moveYear; y <= retirementYear; y++) {
+        for (let y = moveYear; y < retirementYear; y++) {
           schedule.push({
             year: y,
             value:
@@ -342,6 +346,27 @@ export const relocationProjectionRouter = createTRPCRouter({
       };
       const currentBase = currentPayload.baseEngineInput;
       const relocBase = relocPayload.baseEngineInput;
+      // A ProfileSwitch carries contribution specs and the rate ceiling but
+      // not routing/splits, so a different relocation Contribution Profile
+      // also gets a sticky-forward accumulation override at the move year
+      // (before the household's own overrides for that year, which win).
+      const relocProfileDiffers =
+        (input.relocationContributionProfileId ?? null) !==
+        (input.currentContributionProfileId ?? null);
+      const withRelocationRouting = (moveYear: number) => {
+        if (!relocProfileDiffers) return dbAccumulationOverrides;
+        const d = relocBase.accumulationDefaults;
+        return [
+          {
+            year: moveYear,
+            routingMode: d.routingMode,
+            accountOrder: d.accountOrder,
+            accountSplits: d.accountSplits,
+            taxSplits: d.taxSplits,
+          },
+          ...dbAccumulationOverrides,
+        ].sort((a, b) => a.year - b.year);
+      };
       const runMovingIn = (moveYear: number) =>
         calculateProjection({
           ...currentBase,
@@ -358,12 +383,12 @@ export const relocationProjectionRouter = createTRPCRouter({
               contributionSpecs: relocBase.contributionSpecs ?? [],
               employerMatchRateByCategory:
                 relocBase.employerMatchRateByCategory,
+              // Never borrow the current profile's amounts: they also feed
+              // brokerage intentional-contribution detection every year.
               baseYearContributions:
-                relocBase.baseYearContributions ??
-                currentBase.baseYearContributions!,
+                relocBase.baseYearContributions ?? buildCategoryRecord(() => 0),
               baseYearEmployerMatch:
-                relocBase.baseYearEmployerMatch ??
-                currentBase.baseYearEmployerMatch!,
+                relocBase.baseYearEmployerMatch ?? buildCategoryRecord(() => 0),
               employerMatchByParentCat: relocBase.employerMatchByParentCat,
               contributionRate: relocBase.accumulationDefaults.contributionRate,
             },
@@ -372,7 +397,7 @@ export const relocationProjectionRouter = createTRPCRouter({
             ),
           ],
           decumulationDefaults: relocDecumulationDefaults,
-          accumulationOverrides: dbAccumulationOverrides,
+          accumulationOverrides: withRelocationRouting(moveYear),
           decumulationOverrides: dbDecumulationOverrides,
         });
 
@@ -508,7 +533,12 @@ export const relocationProjectionRouter = createTRPCRouter({
         const foundRow = currentAccRows[lo]!;
         earliestRelocateYear = foundRow.year;
         earliestRelocateAge = Math.floor(foundRow.age);
-        recommendedPortfolioToRelocate = foundRow.endBalance;
+        // The move happens at the START of foundRow.year, so what's needed
+        // is the balance going into it: the prior year's end (or today's).
+        recommendedPortfolioToRelocate =
+          lo > 0
+            ? currentAccRows[lo - 1]!.endBalance
+            : currentPayload.portfolioTotal;
       }
 
       // --- Blended projection (when moveYear is provided) ---
@@ -531,7 +561,9 @@ export const relocationProjectionRouter = createTRPCRouter({
       if (input.moveYear !== null) {
         const moveYear = input.moveYear;
 
-        if (moveYear <= currentYear) {
+        // Compared with the engine's year 0 (the snapshot's year), the same
+        // basis the move-year switch and expense schedules use.
+        if (moveYear <= engineBaseYear) {
           // Immediate move — blended is just the full relocation path.
           blendedRows = relocAccRows.map((row) => ({
             year: row.year,
