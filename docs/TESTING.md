@@ -562,29 +562,29 @@ Validates Zod schemas from `src/lib/db/json-schemas.ts` used by tRPC routers.
 
 **Session factories:** `adminSession` (full access), `viewerSession` (read-only), `createViewerSessionWithPermissions([...])` (viewer + specific mutation grants).
 
-**39 test files** covering all routers:
+**64 test files** covering all routers:
 
-| Router           | Test files                                                                                                                                                                  | Coverage                                    |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| **Budget**       | budget.test.ts, budget-coverage.test.ts                                                                                                                                     | Profile CRUD, auth, column operations       |
-| **Contribution** | contribution.test.ts, contribution-profiles.test.ts, contribution-profiles-coverage.test.ts                                                                                 | Computation pipeline, profile management    |
-| **Mortgage**     | mortgage.test.ts                                                                                                                                                            | Active summary, what-if scenarios           |
-| **Version**      | version.test.ts, version-extended.test.ts                                                                                                                                   | List/query, changelog                       |
-| **Auth**         | auth-enforcement.test.ts                                                                                                                                                    | Cross-router permission validation          |
-| **Assets**       | assets.test.ts                                                                                                                                                              | Asset CRUD, categories                      |
-| **Brokerage**    | brokerage.test.ts                                                                                                                                                           | Brokerage account management                |
-| **Historical**   | historical.test.ts                                                                                                                                                          | Historical data queries                     |
-| **Net Worth**    | networth.test.ts                                                                                                                                                            | Net worth aggregation                       |
-| **Paycheck**     | paycheck.test.ts, paycheck-coverage.test.ts                                                                                                                                 | Paycheck simulation                         |
-| **Performance**  | performance.test.ts, performance-coverage.test.ts                                                                                                                           | Portfolio performance metrics               |
-| **Projection**   | projection.test.ts, projection-coverage.test.ts                                                                                                                             | Monte Carlo projections                     |
-| **Retirement**   | retirement.test.ts                                                                                                                                                          | Readiness analysis                          |
-| **Savings**      | savings.test.ts, savings-router-coverage.test.ts                                                                                                                            | Savings goals                               |
-| **Settings**     | settings-admin.test.ts, settings-admin-coverage.test.ts, settings-coverage.test.ts, settings-mortgage.test.ts, settings-retirement.test.ts                                  | Admin settings, mortgage, retirement config |
-| **Onboarding**   | onboarding.test.ts, onboarding-coverage.test.ts                                                                                                                             | Onboarding wizard                           |
-| **Shared**       | shared-coverage.test.ts, shared-rollups.test.ts                                                                                                                             | Shared procedures, rollup queries           |
-| **Sync**         | sync-config.test.ts, sync-connections.test.ts, sync-connections-coverage.test.ts, sync-core.test.ts, sync-mappings.test.ts, sync-names.test.ts, sync-names-coverage.test.ts | Full sync pipeline                          |
-| **Tax Limits**   | tax-limits.test.ts                                                                                                                                                          | IRS limit CRUD                              |
+| Router           | Test files                                                                                                                                     | Coverage                                    |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| **Budget**       | budget.test.ts, budget-coverage.test.ts                                                                                                        | Profile CRUD, auth, column operations       |
+| **Contribution** | contribution.test.ts, contribution-profiles.test.ts                                                                                            | Computation pipeline, profile management    |
+| **Mortgage**     | mortgage.test.ts                                                                                                                               | Active summary, what-if scenarios           |
+| **Version**      | version.test.ts, version-extended.test.ts                                                                                                      | List/query, changelog                       |
+| **Auth**         | auth-enforcement.test.ts                                                                                                                       | Cross-router permission validation          |
+| **Assets**       | assets.test.ts                                                                                                                                 | Asset CRUD, categories                      |
+| **Brokerage**    | brokerage.test.ts                                                                                                                              | Brokerage account management                |
+| **Historical**   | historical.test.ts                                                                                                                             | Historical data queries                     |
+| **Net Worth**    | networth.test.ts                                                                                                                               | Net worth aggregation                       |
+| **Paycheck**     | paycheck.test.ts                                                                                                                               | Paycheck simulation                         |
+| **Performance**  | performance.test.ts                                                                                                                            | Portfolio performance metrics               |
+| **Projection**   | projection.test.ts, projection-coverage.test.ts                                                                                                | Monte Carlo projections                     |
+| **Retirement**   | retirement.test.ts                                                                                                                             | Readiness analysis                          |
+| **Savings**      | savings.test.ts, savings-router-coverage.test.ts                                                                                               | Savings goals                               |
+| **Settings**     | settings-admin.test.ts, settings-coverage.test.ts, settings-mortgage.test.ts, settings-retirement.test.ts                                      | Admin settings, mortgage, retirement config |
+| **Onboarding**   | onboarding.test.ts                                                                                                                             | Onboarding wizard                           |
+| **Shared**       | shared-coverage.test.ts, shared-rollups.test.ts                                                                                                | Shared procedures, rollup queries           |
+| **Sync**         | sync-config.test.ts, sync-connections.test.ts, sync-connections-coverage.test.ts, sync-core.test.ts, sync-mappings.test.ts, sync-names.test.ts | Full sync pipeline                          |
+| **Tax Limits**   | tax-limits.test.ts                                                                                                                             | IRS limit CRUD                              |
 
 ---
 
