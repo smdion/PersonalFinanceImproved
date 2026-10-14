@@ -47,30 +47,12 @@ vi.mock("@/components/ui/toggle", () => ({
   ),
 }));
 
-vi.mock("@/lib/utils/format", () => ({
-  formatCurrency: (n: number) => `$${Math.round(n).toLocaleString()}`,
-  formatPercent: (n: number, digits = 1) => `${(n * 100).toFixed(digits)}%`,
-  accountDisplayName: (a: { accountType: string }) => a.accountType,
-}));
-
 vi.mock("@/components/ui/confirm-dialog", () => ({
   confirm: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock("@/components/paycheck/inline-account-type", () => ({
   InlineAccountType: ({ value }: { value: string }) => <span>{value}</span>,
-}));
-
-vi.mock("@/lib/config/account-types", () => ({
-  categoriesWithIrsLimit: () => ["401k"],
-  getLimitGroup: () => "401k",
-  isOverflowTarget: () => false,
-  getDisplayConfig: () => ({ displayLabel: "401k", hasDiscountBar: false }),
-  getAccountTypeConfig: () => ({ matchCountsTowardLimit: false }),
-}));
-
-vi.mock("@/lib/config/display-labels", () => ({
-  TAX_TREATMENT_LABELS: { pre_tax: "Pre-Tax", tax_free: "Tax-Free" },
 }));
 
 const baseContrib: RawContrib = {
@@ -115,7 +97,7 @@ describe("ContribCard", () => {
   it("renders account type and tax treatment", () => {
     render(<ContribCard {...defaultProps} />);
     expect(screen.getByText("401k")).toBeInTheDocument();
-    expect(screen.getByText("Pre-Tax")).toBeInTheDocument();
+    expect(screen.getByText("Traditional")).toBeInTheDocument();
   });
 
   it("shows the joint label when ownership is joint", () => {
@@ -167,7 +149,11 @@ describe("ContribCard", () => {
         contrib={{ ...baseContrib, autoMaximize: true }}
       />,
     );
-    expect(screen.getByText(/Set to 5.0% of salary/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Set to 5% of salary ($5,000.00/yr toward $23,000.00 limit)",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("accounts for sibling contributions sharing the same IRS limit", () => {

@@ -6,44 +6,6 @@ vi.mock("@/components/ui/help-tip", () => ({
   HelpTip: () => null,
 }));
 
-vi.mock("@/lib/utils/format", () => ({
-  formatCurrency: (n: number) => `$${Math.round(n).toLocaleString()}`,
-  accountDisplayName: (acct: { institution: string; accountLabel: string }) =>
-    `${acct.institution} ${acct.accountLabel}`,
-}));
-
-vi.mock("@/lib/utils/colors", () => ({
-  taxTypeLabel: (t: string) => t,
-  accountBorderColor: () => "border-blue-300",
-  accountMatchColor: () => "bg-blue-50",
-  accountColor: () => "bg-blue-500",
-  CHART_COLORS: {},
-}));
-
-vi.mock("@/lib/config/account-types", () => {
-  const mk = (label: string, roth = true) => ({
-    displayLabel: label,
-    supportsRothSplit: roth,
-    colors: {
-      border: "border-blue-300",
-      bgLight: "bg-blue-50",
-      text: "text-blue-600",
-    },
-  });
-  const config = {
-    "401k": mk("401(k)"),
-    ira: mk("IRA"),
-    brokerage: mk("Brokerage", false),
-    hsa: mk("HSA", false),
-  };
-  return {
-    ACCOUNT_TYPE_CONFIG: config,
-    getAllCategories: () => ["401k", "ira", "brokerage", "hsa"],
-    getAccountTypeConfig: (category: string) =>
-      config[category as keyof typeof config],
-  };
-});
-
 vi.mock("@/components/portfolio/contribution-accounts-inline", () => ({
   InlineText: ({ value }: { value: string }) => <span>{value}</span>,
   InlineSelect: ({ value }: { value: string }) => <span>{value}</span>,
@@ -80,7 +42,7 @@ const baseAccount = {
   displayName: null,
   ownerPersonId: 1,
   ownershipType: "individual",
-  parentCategory: "401k",
+  parentCategory: "Retirement",
   isActive: true,
   displayOrder: 0,
 };
@@ -101,21 +63,23 @@ const defaultProps = {
 };
 
 describe("AccountCard", () => {
-  it("renders account institution and label", () => {
+  it("renders the account name, institution and category", () => {
     render(<AccountCard {...defaultProps} />);
-    expect(screen.getByText("Fidelity 401(k)")).toBeInTheDocument();
+    expect(screen.getByText("401(k)")).toBeInTheDocument();
+    expect(screen.getByText("Fidelity")).toBeInTheDocument();
+    expect(screen.getByText("Retirement")).toBeInTheDocument();
   });
 
   it("renders balance", () => {
     render(<AccountCard {...defaultProps} />);
-    expect(screen.getByText("$150,000")).toBeInTheDocument();
+    expect(screen.getByText("$150,000.00")).toBeInTheDocument();
   });
 
   it("calls onToggleExpand when header is clicked", () => {
     const onToggleExpand = vi.fn();
     render(<AccountCard {...defaultProps} onToggleExpand={onToggleExpand} />);
     // The header row has cursor-pointer and onClick={onToggleExpand}
-    const nameEl = screen.getByText("Fidelity 401(k)");
+    const nameEl = screen.getByText("Fidelity");
     const headerRow = nameEl.closest("div[class*='cursor-pointer']")!;
     fireEvent.click(headerRow);
     expect(onToggleExpand).toHaveBeenCalled();
