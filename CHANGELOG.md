@@ -40,6 +40,10 @@ This release is about making Ledgr's many numbers easier to act on. No database 
 
 ---
 
+### Fixed
+
+- **Coast FIRE no longer says "unreachable" for a plan that's on track** when no retirement budget is set — a one-cent rounding difference failed every age it tried.
+
 ## [0.8.6] - 2026-10-13
 
 Includes a database update that runs automatically on start; Ledgr saves a backup of your data first. Restoring a backup from an older version still works (pending-rollover rows from older backups are left out — that feature no longer exists).

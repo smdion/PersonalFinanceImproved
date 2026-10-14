@@ -60,6 +60,9 @@ export type CoastFireResult = {
   projectedExpensesAtRetirement: number;
 };
 
+/** Dollars of rounding slack in the no-stated-need fallback check (see passes()). */
+const NET_WITHDRAWAL_ROUNDING_TOLERANCE = 1;
+
 const UNREACHABLE: CoastFireResult = {
   coastFireAge: null,
   status: "unreachable",
@@ -154,7 +157,14 @@ function passes(projection: ProjectionResult): boolean {
         retirementYear.taxCost +
         retirementYear.ssIncome,
     );
-    return netSustainableWithdrawal >= retirementYear.projectedExpenses;
+    // For the budget-continuation strategies the two sides are the same
+    // figure rebuilt from separately-rounded parts, so they can differ by a
+    // cent — and a strict `>=` then failed every probe, reporting a
+    // fully-funded plan as "unreachable". Compare with a $1 tolerance.
+    return (
+      netSustainableWithdrawal >=
+      retirementYear.projectedExpenses - NET_WITHDRAWAL_ROUNDING_TOLERANCE
+    );
   }
   return (
     retirementYear.projectedExpenses >=
