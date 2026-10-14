@@ -1206,9 +1206,9 @@ function foo(
   return out;
 }
 
-/** Calendar year of a payoff date. A date-only string is read as written
- *  ("2050-01-01" → 2050), never via `new Date()`, which parses it as UTC
- *  midnight and lands on the prior year west of UTC. */
+/** Calendar year of a payoff date. A date-only string's year is read as
+ *  written (its first four digits), never via `new Date()`, which parses
+ *  a Jan 1 date as UTC midnight and lands on the prior year west of UTC. */
 function payoffYearOf(payoffDate: Date | string): number {
   return typeof payoffDate === "string"
     ? Number(payoffDate.slice(0, 4))
