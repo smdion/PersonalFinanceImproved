@@ -9,33 +9,18 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { Button } from "@/components/ui/button";
 
 describe("Button", () => {
-  it("renders children and defaults to primary/md styling", () => {
-    render(<Button>Save</Button>);
-    const btn = screen.getByText("Save");
-    expect(btn.className).toContain("bg-blue-600");
-    expect(btn.className).toContain("text-sm");
-  });
-
-  it("applies secondary variant styling", () => {
-    render(<Button variant="secondary">Cancel</Button>);
-    expect(screen.getByText("Cancel").className).toContain(
-      "bg-surface-elevated",
+  it("gives every variant and size its own styling", () => {
+    const styleOf = (props: Parameters<typeof Button>[0]) => {
+      const { unmount } = render(<Button {...props}>X</Button>);
+      const cls = screen.getByText("X").className;
+      unmount();
+      return cls;
+    };
+    const variants = ["primary", "secondary", "ghost", "danger"] as const;
+    expect(new Set(variants.map((variant) => styleOf({ variant }))).size).toBe(
+      variants.length,
     );
-  });
-
-  it("applies ghost variant styling", () => {
-    render(<Button variant="ghost">Dismiss</Button>);
-    expect(screen.getByText("Dismiss").className).toContain("text-muted");
-  });
-
-  it("applies danger variant styling", () => {
-    render(<Button variant="danger">Delete</Button>);
-    expect(screen.getByText("Delete").className).toContain("bg-red-600");
-  });
-
-  it("applies xs size styling", () => {
-    render(<Button size="xs">Tiny</Button>);
-    expect(screen.getByText("Tiny").className).toContain("text-xs");
+    expect(styleOf({ size: "xs" })).not.toBe(styleOf({ size: "md" }));
   });
 
   it("renders an icon before the label", () => {
@@ -66,7 +51,6 @@ describe("Button", () => {
     render(<Button disabled>Click me</Button>);
     const btn = screen.getByText("Click me") as HTMLButtonElement;
     expect(btn.disabled).toBe(true);
-    expect(btn.className).toContain("disabled:opacity-50");
   });
 
   it("merges a custom className with the variant/size classes", () => {

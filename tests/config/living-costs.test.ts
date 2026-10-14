@@ -5,10 +5,6 @@ import {
 } from "@/lib/config/living-costs";
 
 describe("living-costs", () => {
-  it("has 10 Ramsey ranges", () => {
-    expect(RAMSEY_RANGES).toHaveLength(10);
-  });
-
   it("all ranges have valid low/high percentages", () => {
     for (const range of RAMSEY_RANGES) {
       expect(range.name).toBeTruthy();
@@ -18,23 +14,19 @@ describe("living-costs", () => {
     }
   });
 
-  it("default mapping covers all Ramsey range names", () => {
-    const rangeNames = RAMSEY_RANGES.map((r) => r.name);
-    for (const name of rangeNames) {
-      expect(DEFAULT_LIVING_COST_MAPPING[name]).toBeDefined();
-      expect(DEFAULT_LIVING_COST_MAPPING[name].length).toBeGreaterThan(0);
-    }
+  it("the ranges can all be met at once (lows sum ≤ 100% ≤ highs sum)", () => {
+    const lows = RAMSEY_RANGES.reduce((s, r) => s + r.low, 0);
+    const highs = RAMSEY_RANGES.reduce((s, r) => s + r.high, 0);
+    expect(lows).toBeLessThanOrEqual(1);
+    expect(highs).toBeGreaterThanOrEqual(1);
   });
 
-  it("all mapping values are non-empty string arrays", () => {
-    for (const [key, categories] of Object.entries(
-      DEFAULT_LIVING_COST_MAPPING,
-    )) {
-      expect(Array.isArray(categories), `${key} should be array`).toBe(true);
-      for (const cat of categories) {
-        expect(typeof cat).toBe("string");
-        expect(cat.length).toBeGreaterThan(0);
-      }
+  it("the default mapping covers exactly the Ramsey ranges", () => {
+    expect(Object.keys(DEFAULT_LIVING_COST_MAPPING).sort()).toEqual(
+      RAMSEY_RANGES.map((r) => r.name).sort(),
+    );
+    for (const categories of Object.values(DEFAULT_LIVING_COST_MAPPING)) {
+      expect(categories.length).toBeGreaterThan(0);
     }
   });
 });

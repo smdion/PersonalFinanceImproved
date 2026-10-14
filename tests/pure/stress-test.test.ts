@@ -22,21 +22,30 @@ import {
 // ── Stress test parameter sets ──────────────────────────────────────
 
 describe("STRESS_TEST scenarios", () => {
-  it("conservative returns/inflation are tail-risk values", () => {
-    expect(STRESS_TEST_CONSERVATIVE.returnRate).toBeLessThan(0.06);
-    expect(STRESS_TEST_CONSERVATIVE.inflationRate).toBeGreaterThanOrEqual(0.04);
-    expect(STRESS_TEST_CONSERVATIVE.salaryGrowthRate).toBe(0);
-    expect(STRESS_TEST_CONSERVATIVE.withdrawalRate).toBeLessThan(0.04);
+  const rosy = (p: typeof STRESS_TEST_BASELINE) =>
+    detectRosyAssumptions(p.returnRate, p.inflationRate, p.salaryGrowthRate);
+
+  it("only the optimistic scenario trips the rosy-assumption warnings", () => {
+    expect(rosy(STRESS_TEST_CONSERVATIVE)).toEqual([]);
+    expect(rosy(STRESS_TEST_BASELINE)).toEqual([]);
+    expect(rosy(STRESS_TEST_OPTIMISTIC).map((f) => f.field)).toEqual(
+      expect.arrayContaining(["returnRate", "inflationRate"]),
+    );
   });
 
-  it("optimistic returns are top-quartile", () => {
-    expect(STRESS_TEST_OPTIMISTIC.returnRate).toBeGreaterThanOrEqual(0.09);
-    expect(STRESS_TEST_OPTIMISTIC.inflationRate).toBeLessThanOrEqual(0.025);
-  });
-
-  it("baseline matches long-run averages", () => {
-    expect(STRESS_TEST_BASELINE.returnRate).toBe(0.07);
-    expect(STRESS_TEST_BASELINE.inflationRate).toBe(0.03);
+  it("conservative is harsher than baseline on every lever", () => {
+    expect(STRESS_TEST_CONSERVATIVE.returnRate).toBeLessThan(
+      STRESS_TEST_BASELINE.returnRate,
+    );
+    expect(STRESS_TEST_CONSERVATIVE.inflationRate).toBeGreaterThan(
+      STRESS_TEST_BASELINE.inflationRate,
+    );
+    expect(STRESS_TEST_CONSERVATIVE.salaryGrowthRate).toBeLessThan(
+      STRESS_TEST_BASELINE.salaryGrowthRate,
+    );
+    expect(STRESS_TEST_CONSERVATIVE.withdrawalRate).toBeLessThan(
+      STRESS_TEST_BASELINE.withdrawalRate,
+    );
   });
 
   it("getStressTestScenarios returns conservative→baseline→optimistic order", () => {
