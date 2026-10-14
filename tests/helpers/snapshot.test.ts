@@ -167,21 +167,6 @@ describe("getLatestSnapshot", () => {
 });
 
 // ---------------------------------------------------------------------------
-// invalidateYearEndCache
-// ---------------------------------------------------------------------------
-
-describe("invalidateYearEndCache", () => {
-  it("does not throw", () => {
-    expect(() => invalidateYearEndCache()).not.toThrow();
-  });
-
-  it("can be called multiple times", () => {
-    invalidateYearEndCache();
-    invalidateYearEndCache();
-  });
-});
-
-// ---------------------------------------------------------------------------
 // buildYearEndHistory (DB-dependent)
 // ---------------------------------------------------------------------------
 
@@ -209,23 +194,34 @@ describe("buildYearEndHistory", () => {
     expect(currentRow!.isCurrent).toBe(true);
   });
 
-  it("current-year row has expected fields", async () => {
-    const rows = await buildYearEndHistory(ctx.rawDb);
-    const currentYear = new Date().getFullYear();
-    const current = rows.find((r) => r.year === currentYear)!;
+  it("caches the history until invalidateYearEndCache is called", async () => {
+    const before = await buildYearEndHistory(ctx.rawDb);
+    expect(before.some((r) => r.year === 2019)).toBe(false);
 
-    // Check all expected fields exist
-    expect(current).toHaveProperty("netWorth");
-    expect(current).toHaveProperty("portfolioTotal");
-    expect(current).toHaveProperty("portfolioByType");
-    expect(current).toHaveProperty("cash");
-    expect(current).toHaveProperty("houseValue");
-    expect(current).toHaveProperty("otherAssets");
-    expect(current).toHaveProperty("mortgageBalance");
-    expect(current).toHaveProperty("otherLiabilities");
-    expect(current).toHaveProperty("grossIncome");
-    expect(current).toHaveProperty("perfByAccount");
-    expect(typeof current.netWorth).toBe("number");
+    ctx.db
+      .insert(ctx.schema.netWorthAnnual)
+      .values({
+        yearEndDate: "2019-12-31",
+        portfolioTotal: "1000",
+        cash: "0",
+        houseValue: "0",
+        otherAssets: "0",
+        mortgageBalance: "0",
+        otherLiabilities: "0",
+        portfolioByTaxLocation: { retirement: {}, portfolio: {} },
+      })
+      .run();
+
+    // Still the cached result...
+    const cached = await buildYearEndHistory(ctx.rawDb);
+    expect(cached.some((r) => r.year === 2019)).toBe(false);
+
+    // ...until invalidated.
+    invalidateYearEndCache();
+    const fresh = await buildYearEndHistory(ctx.rawDb);
+    expect(fresh.some((r) => r.year === 2019)).toBe(true);
+
+    ctx.db.delete(ctx.schema.netWorthAnnual).run();
   });
 
   it("returns historical rows from net_worth_annual", async () => {

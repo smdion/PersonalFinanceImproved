@@ -867,8 +867,9 @@ describe("contributionProfiles coverage", () => {
         const result = await caller.contributionProfile.getById({
           id: profileId,
         });
-        expect(result).not.toBeNull();
-        expect(result!.accountDetails.length).toBeGreaterThanOrEqual(1);
+        // The ended job's employer is not used as the institution.
+        expect(result!.accountDetails).toHaveLength(1);
+        expect(result!.accountDetails[0]!.accountName).toBe("Alex IRA");
       } finally {
         cleanup();
       }
@@ -929,7 +930,7 @@ describe("contributionProfiles coverage", () => {
           name: "401k",
           institution: "Fidelity",
           accountType: "401k",
-          accountLabel: "Jordan 401k",
+          accountLabel: "Jordan Old 401k",
           ownerPersonId: otherPersonId, // different person
           parentCategory: "Retirement",
         });
@@ -943,8 +944,9 @@ describe("contributionProfiles coverage", () => {
         const result = await caller.contributionProfile.getById({
           id: profileId,
         });
-        expect(result).not.toBeNull();
-        expect(result!.accountDetails.length).toBeGreaterThanOrEqual(1);
+        // Matched to "Jordan Old 401k" by name, so it takes that label.
+        expect(result!.accountDetails).toHaveLength(1);
+        expect(result!.accountDetails[0]!.accountName).toBe("Jordan Old 401k");
       } finally {
         cleanup();
       }
@@ -1067,8 +1069,8 @@ describe("contributionProfiles coverage", () => {
         const result = await caller.contributionProfile.getById({
           id: profileId,
         });
-        expect(result).not.toBeNull();
-        expect(result!.accountDetails.length).toBe(1);
+        expect(result!.accountDetails).toHaveLength(1);
+        expect(result!.accountDetails[0]!.accountName).toBe("Alex IRA");
       } finally {
         cleanup();
       }
