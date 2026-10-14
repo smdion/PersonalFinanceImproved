@@ -12,7 +12,8 @@ import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
 import type { TaxBracketInput } from "@/lib/calculators/types";
 
 // 2025 MFJ brackets (standard, no W-4 2(c) checkbox)
-// Source: IRS Rev. Proc. 2024-40
+// Source: IRS Rev. Proc. 2024-40 brackets; standard deduction as amended by
+// OBBBA §70102 ($31,500 MFJ for 2025).
 const MFJ_2025_BRACKETS: TaxBracketInput = {
   filingStatus: "MFJ",
   w4Checkbox: false,
@@ -25,7 +26,7 @@ const MFJ_2025_BRACKETS: TaxBracketInput = {
     { min: 501050, max: 751600, rate: 0.35 },
     { min: 751600, max: null, rate: 0.37 },
   ],
-  standardDeduction: 30000,
+  standardDeduction: 31500,
   w4Adjustment: 0, // unused by calculateTax; brackets here are already real-1040-shaped
   socialSecurityWageBase: 176100,
   socialSecurityRate: 0.062,
@@ -69,17 +70,10 @@ describe("toTaxableIncomeBrackets — Pub 15-T -> real 1040 derivation (R57)", (
 });
 
 describe("Tax accuracy — IRS published tables", () => {
-  describe("Standard deduction", () => {
-    it("MFJ standard deduction is $30,000 for 2025", () => {
-      expect(MFJ_2025_BRACKETS.standardDeduction).toBe(30000);
-    });
-  });
-
   describe("Federal income tax bracket math", () => {
-    it("$120k gross with $30k pre-tax deductions → ~$10k federal tax", () => {
-      // AGI = $120k - $30k pre-tax = $90k (but tax calculator doesn't reduce by deductions, those are separate)
-      // Actually: taxable = gross - preTaxDeductions - standardDeduction
-      // $120k - $30k - $30k = $60k taxable
+    it("$120k gross with $30k pre-tax deductions → ~$6.5k federal tax", () => {
+      // taxable = gross - preTaxDeductions - standardDeduction
+      // $120k - $30k - $31.5k = $58.5k taxable
       const result = calculateTax({
         annualGross: 120000,
         preTaxDeductionsAnnual: 30000,
@@ -89,11 +83,11 @@ describe("Tax accuracy — IRS published tables", () => {
         asOfDate: new Date("2025-01-01"),
       });
 
-      // Taxable = $120k - $30k - $30k std ded = $60k
-      expect(result.taxableIncome).toBe(60000);
+      // Taxable = $120k - $30k - $31.5k std ded = $58.5k
+      expect(result.taxableIncome).toBe(58500);
 
-      // Tax = $23,850 × 10% + ($60k - $23,850) × 12% = $2,385 + $4,338 = $6,723
-      const expectedTax = 23850 * 0.1 + (60000 - 23850) * 0.12;
+      // Tax = $23,850 × 10% + ($58.5k - $23,850) × 12% = $2,385 + $4,158 = $6,543
+      const expectedTax = 23850 * 0.1 + (58500 - 23850) * 0.12;
       expect(result.federalTax).toBeCloseTo(expectedTax, 0);
     });
 
@@ -107,16 +101,16 @@ describe("Tax accuracy — IRS published tables", () => {
         asOfDate: new Date("2025-01-01"),
       });
 
-      // Taxable = $200k - $30k std ded = $170k
-      expect(result.taxableIncome).toBe(170000);
+      // Taxable = $200k - $31.5k std ded = $168.5k
+      expect(result.taxableIncome).toBe(168500);
 
       // Tax walk:
       // $0-$23,850 at 10% = $2,385
       // $23,850-$96,950 at 12% = $8,772
-      // $96,950-$170,000 at 22% = $16,071
-      // Total = $27,228
+      // $96,950-$168,500 at 22% = $15,741
+      // Total = $26,898
       const expectedTax =
-        23850 * 0.1 + (96950 - 23850) * 0.12 + (170000 - 96950) * 0.22;
+        23850 * 0.1 + (96950 - 23850) * 0.12 + (168500 - 96950) * 0.22;
       expect(result.federalTax).toBeCloseTo(expectedTax, 0);
       expect(result.marginalRate).toBe(0.22);
     });
