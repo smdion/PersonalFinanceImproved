@@ -1459,7 +1459,7 @@ describe("projection router — computeProjection edge cases", () => {
         contributionProfileId: profileId,
       });
 
-      expect(response).toHaveProperty("result");
+      expect(response.result).not.toBeNull();
       expect(response.contributionSpecs.length).toBeGreaterThanOrEqual(1);
     } finally {
       cleanup();
@@ -1487,13 +1487,11 @@ describe("projection router — computeProjection edge cases", () => {
         decumulationOverrides: [],
       });
 
-      expect(response).toHaveProperty("returnRateSummary");
       const summary = response.returnRateSummary;
-      expect(summary).toHaveProperty("currentRate");
-      expect(summary).toHaveProperty("retirementRate");
-      expect(summary).toHaveProperty("avgAccumulation");
-      expect(summary).toHaveProperty("schedule");
-      expect(Array.isArray(summary.schedule)).toBe(true);
+      expect(summary.retirementRate).toBeCloseTo(0.05);
+      // The glide from 7% (35) to 5% (65) averages in between.
+      expect(summary.avgAccumulation).toBeLessThan(0.07);
+      expect(summary.avgAccumulation).toBeGreaterThan(0.05);
       expect(summary.schedule.length).toBeGreaterThan(0);
     } finally {
       cleanup();
@@ -1520,10 +1518,8 @@ describe("projection router — MC edge cases", () => {
         seed: 42,
       });
 
-      expect(response).toHaveProperty("result");
-      if (response.result !== null) {
-        expect(response.simulationInputs.glidePath).toHaveLength(0);
-      }
+      expect(response.result).not.toBeNull();
+      expect(response.simulationInputs.glidePath).toHaveLength(0);
     } finally {
       cleanup();
     }
@@ -1547,7 +1543,7 @@ describe("projection router — MC edge cases", () => {
         },
       });
 
-      expect(response).toHaveProperty("result");
+      expect(response.result).not.toBeNull();
     } finally {
       cleanup();
     }
@@ -1556,12 +1552,13 @@ describe("projection router — MC edge cases", () => {
   it("MC with snapshotId", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
-      const { perfAcctId } = seedFullProjectionData(db);
+      const { perfAcctId, snapId } = seedFullProjectionData(db);
       seedAssetClasses(db);
       seedCorrelations(db);
       seedGlidePath(db);
 
-      const snapId = seedSnapshot(db, "2025-06-01", [
+      // A newer $250k snapshot is the default; snapshotId picks the $100k one.
+      seedSnapshot(db, "2025-06-01", [
         {
           performanceAccountId: perfAcctId,
           amount: "250000",
@@ -1569,14 +1566,20 @@ describe("projection router — MC edge cases", () => {
         },
       ]);
 
-      const response = await caller.projection.computeMonteCarloProjection({
-        numTrials: 100,
-        preset: "custom",
-        seed: 42,
-        snapshotId: snapId,
-      });
+      const run = (extra: object) =>
+        caller.projection.computeMonteCarloProjection({
+          numTrials: 100,
+          preset: "custom",
+          seed: 42,
+          ...extra,
+        });
+      const latest = await run({});
+      const older = await run({ snapshotId: snapId });
 
-      expect(response).toHaveProperty("result");
+      expect(older.result).not.toBeNull();
+      expect(older.result!.percentileBands).not.toEqual(
+        latest.result!.percentileBands,
+      );
     } finally {
       cleanup();
     }
@@ -1606,19 +1609,17 @@ describe("projection router — MC edge cases", () => {
         assetClassOverrides: [{ id: 2, meanReturn: 0.06 }],
       });
 
-      expect(response).toHaveProperty("result");
-      if (response.result !== null) {
-        expect(response.simulationInputs.hasAssetClassOverrides).toBe(true);
-        // Both overrides should be active
-        const stockClass = response.simulationInputs.assetClasses.find(
-          (ac: { id: number }) => ac.id === 1,
-        );
-        const bondClass = response.simulationInputs.assetClasses.find(
-          (ac: { id: number }) => ac.id === 2,
-        );
-        expect(stockClass?.meanReturn).toBeCloseTo(0.11);
-        expect(bondClass?.meanReturn).toBeCloseTo(0.06);
-      }
+      expect(response.result).not.toBeNull();
+      expect(response.simulationInputs.hasAssetClassOverrides).toBe(true);
+      // Both overrides should be active
+      const stockClass = response.simulationInputs.assetClasses.find(
+        (ac: { id: number }) => ac.id === 1,
+      );
+      const bondClass = response.simulationInputs.assetClasses.find(
+        (ac: { id: number }) => ac.id === 2,
+      );
+      expect(stockClass?.meanReturn).toBeCloseTo(0.11);
+      expect(bondClass?.meanReturn).toBeCloseTo(0.06);
     } finally {
       cleanup();
     }
@@ -1648,13 +1649,11 @@ describe("projection router — MC edge cases", () => {
         assetClassOverrides: [{ id: 1, meanReturn: 0.15 }],
       });
 
-      expect(response).toHaveProperty("result");
-      if (response.result !== null) {
-        const stockClass = response.simulationInputs.assetClasses.find(
-          (ac: { id: number }) => ac.id === 1,
-        );
-        expect(stockClass?.meanReturn).toBeCloseTo(0.15);
-      }
+      expect(response.result).not.toBeNull();
+      const stockClass = response.simulationInputs.assetClasses.find(
+        (ac: { id: number }) => ac.id === 1,
+      );
+      expect(stockClass?.meanReturn).toBeCloseTo(0.15);
     } finally {
       cleanup();
     }
@@ -1822,11 +1821,13 @@ describe("projection router — computeCoastFire", () => {
       seedAssetClasses(db);
 
       const response = await caller.projection.computeCoastFire({});
-      expect(response).toHaveProperty("result");
-      expect(response.result).not.toBeNull();
-      expect(response.result).toHaveProperty("coastFireAge");
-      expect(response.result).toHaveProperty("sustainableWithdrawalToday");
-      expect(response.result).toHaveProperty("endBalanceToday");
+      const r = response.result!;
+      expect(r).not.toBeNull();
+      // Earliest age contributions can stop: between today (36) and the
+      // retirement age (65) for this fixture.
+      expect(r.coastFireAge).toBeGreaterThanOrEqual(36);
+      expect(r.coastFireAge).toBeLessThan(65);
+      expect(r.projectedExpensesAtRetirementToday).toBeGreaterThan(0);
     } finally {
       cleanup();
     }
@@ -1841,7 +1842,7 @@ describe("projection router — computeCoastFire", () => {
       const response = await caller.projection.computeCoastFire({
         decumulationDefaults: { withdrawalRate: 0.035 },
       });
-      expect(response).toHaveProperty("result");
+      expect(response.result).not.toBeNull();
     } finally {
       cleanup();
     }
