@@ -117,10 +117,6 @@ Tests emergency fund calculator: coverage months, target progress, self-loan adj
 
 Uses `roundDeep()` to eliminate floating-point noise before snapshot comparison.
 
-### math.test.ts — 6 tests
-
-Utility math functions: `safeDivide` (zero-denominator safety), `roundToCents`, `sumBy`.
-
 ### monte-carlo-integration.test.ts — 4 fixtures
 
 Integration tests for the Monte Carlo simulation pipeline (engine -> `calculateMonteCarlo`).

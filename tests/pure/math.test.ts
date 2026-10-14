@@ -48,6 +48,21 @@ describe("parsePositiveInt", () => {
 });
 
 describe("roundToCents", () => {
+  it("rounds .5-cent boundaries half-away-from-zero", () => {
+    expect(roundToCents(1.005)).toBe(1.01);
+    expect(roundToCents(1.045)).toBe(1.05);
+    expect(roundToCents(2879.105)).toBe(2879.11);
+    expect(roundToCents(-1.005)).toBe(-1.01);
+    expect(roundToCents(-2879.105)).toBe(-2879.11);
+  });
+
+  it("rounds just either side of a .5-cent boundary normally", () => {
+    expect(roundToCents(1.004)).toBe(1.0);
+    expect(roundToCents(1.006)).toBe(1.01);
+    expect(roundToCents(2879.104)).toBe(2879.1);
+    expect(roundToCents(-1.004)).toBe(-1.0);
+  });
+
   it("rounds to 2 decimal places", () => {
     expect(roundToCents(1.234)).toBe(1.23);
     expect(roundToCents(1.235)).toBe(1.24); // half-up
