@@ -9,23 +9,16 @@ import { TRPCError } from "@trpc/server";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import {
-  deriveObservedPeriods,
-  validateHoldingPeriod,
-  type HoldingPeriod,
-} from "@/lib/pure/holding-periods";
+import { validateHoldingPeriod } from "@/lib/pure/holding-periods";
 import { fetchFundTickers } from "@/lib/sec/client";
 import { getSecContact } from "@/lib/sec/connection";
 import { syncSecurityFacts } from "@/lib/sec/facts-sync";
 import { inferSecurityKind } from "@/lib/pure/simplefin-holdings";
 import { loadTrackedAccountNames } from "@/server/helpers/account-names";
-import { toNumber } from "@/server/helpers/transforms";
 import { toFactRows } from "@/server/helpers/fund-facts";
 import { effectiveFacts } from "@/lib/pure/fund-facts";
 import { localDateStr } from "@/lib/utils/date";
-import { loadAccounts } from "./_shared";
-
-type Db = typeof import("@/lib/db").db;
+import { loadEnteredPeriods, loadObservedPeriods } from "./_shared";
 
 const PROBLEM_TEXT: Record<string, string> = {
   weightsDontSum: "The funds' shares must add up to 100%",
@@ -51,75 +44,6 @@ const periodInput = z.object({
     )
     .min(1),
 });
-
-/** Every account's observed periods, from daily holdings of counted feeds. */
-async function loadObservedPeriods(db: Db): Promise<HoldingPeriod[]> {
-  const accounts = await loadAccounts(db);
-  const h = schema.holdingObservations;
-  const rows = await db
-    .select({
-      simplefinAccountId: h.simplefinAccountId,
-      securityId: h.securityId,
-      asOf: h.asOf,
-      shares: h.shares,
-      value: h.reportedMarketValue,
-    })
-    .from(h)
-    .where(sql`${h.simplefinAccountId} IS NOT NULL`);
-  const positions = [];
-  const latest = new Map<number, string>();
-  for (const r of rows) {
-    const perf = accounts.get(r.simplefinAccountId!)?.performanceAccountId;
-    if (perf == null || toNumber(r.shares) === 0) continue;
-    positions.push({
-      performanceAccountId: perf,
-      day: r.asOf,
-      securityId: r.securityId,
-      value: r.value === null ? 0 : toNumber(r.value),
-    });
-    if (!latest.has(perf) || r.asOf > latest.get(perf)!)
-      latest.set(perf, r.asOf);
-  }
-  return deriveObservedPeriods(positions, latest);
-}
-
-async function loadEnteredPeriods(
-  db: Db,
-  performanceAccountId?: number,
-): Promise<(HoldingPeriod & { notes: string | null })[]> {
-  const p = schema.holdingPeriods;
-  const periods = await db
-    .select()
-    .from(p)
-    .where(
-      performanceAccountId === undefined
-        ? undefined
-        : eq(p.performanceAccountId, performanceAccountId),
-    );
-  if (periods.length === 0) return [];
-  const weights = await db
-    .select()
-    .from(schema.holdingPeriodWeights)
-    .where(
-      inArray(
-        schema.holdingPeriodWeights.holdingPeriodId,
-        periods.map((x) => x.id),
-      ),
-    );
-  return periods.map((x) => ({
-    id: x.id,
-    performanceAccountId: x.performanceAccountId,
-    start: x.startDate,
-    end: x.endDate,
-    basis: x.basis,
-    notes: x.notes,
-    weights: Object.fromEntries(
-      weights
-        .filter((w) => w.holdingPeriodId === x.id)
-        .map((w) => [w.securityId, toNumber(w.weight)]),
-    ),
-  }));
-}
 
 export const investmentHoldingPeriodsRouter = createTRPCRouter({
   /** Periods (observed + entered) per account, and the funds they name. */

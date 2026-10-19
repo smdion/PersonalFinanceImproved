@@ -2,7 +2,18 @@
  * Shared helpers for the investments router group.
  * Internal to investments/ — do not import from outside this directory.
  */
-import { and, asc, desc, eq, gte, isNotNull, isNull, max } from "drizzle-orm";
+import {
+  and,
+  asc,
+  desc,
+  eq,
+  gte,
+  inArray,
+  isNotNull,
+  isNull,
+  max,
+  sql,
+} from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { isHsaCategory } from "@/lib/config/account-types";
 import { addDays, utcDayOf } from "@/lib/utils/date";
@@ -32,6 +43,11 @@ import {
   type UnplacedFeed,
 } from "@/lib/pure/snapshot-suggestions";
 import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
+import {
+  deriveObservedPeriods,
+  type DailyPosition,
+  type HoldingPeriod,
+} from "@/lib/pure/holding-periods";
 
 type Db = typeof import("@/lib/db").db;
 
@@ -450,4 +466,85 @@ export async function loadLatestHoldings(db: Db) {
       avgCostPerShare:
         r.avgCostPerShare === null ? null : Number(r.avgCostPerShare),
     }));
+}
+
+/** Daily fund values per tracked account (counted feeds, 0-share rows
+ *  dropped) and each account's latest day — input to the observed periods
+ *  and the matched mix. */
+export async function loadDailyPositions(db: Db): Promise<{
+  positions: DailyPosition[];
+  latest: Map<number, string>;
+}> {
+  const accounts = await loadAccounts(db);
+  const h = schema.holdingObservations;
+  const rows = await db
+    .select({
+      simplefinAccountId: h.simplefinAccountId,
+      securityId: h.securityId,
+      asOf: h.asOf,
+      shares: h.shares,
+      value: h.reportedMarketValue,
+    })
+    .from(h)
+    .where(sql`${h.simplefinAccountId} IS NOT NULL`);
+  const positions: DailyPosition[] = [];
+  const latest = new Map<number, string>();
+  for (const r of rows) {
+    const perf = accounts.get(r.simplefinAccountId!)?.performanceAccountId;
+    if (perf == null || toNumber(r.shares) === 0) continue;
+    positions.push({
+      performanceAccountId: perf,
+      day: r.asOf,
+      securityId: r.securityId,
+      value: r.value === null ? 0 : toNumber(r.value),
+    });
+    if (!latest.has(perf) || r.asOf > latest.get(perf)!)
+      latest.set(perf, r.asOf);
+  }
+  return { positions, latest };
+}
+
+/** Every account's observed periods, from daily holdings of counted feeds. */
+export async function loadObservedPeriods(db: Db): Promise<HoldingPeriod[]> {
+  const { positions, latest } = await loadDailyPositions(db);
+  return deriveObservedPeriods(positions, latest);
+}
+
+/** Stored (entered / inferred) periods with their weights. */
+export async function loadEnteredPeriods(
+  db: Db,
+  performanceAccountId?: number,
+): Promise<(HoldingPeriod & { notes: string | null })[]> {
+  const p = schema.holdingPeriods;
+  const periods = await db
+    .select()
+    .from(p)
+    .where(
+      performanceAccountId === undefined
+        ? undefined
+        : eq(p.performanceAccountId, performanceAccountId),
+    );
+  if (periods.length === 0) return [];
+  const weights = await db
+    .select()
+    .from(schema.holdingPeriodWeights)
+    .where(
+      inArray(
+        schema.holdingPeriodWeights.holdingPeriodId,
+        periods.map((x) => x.id),
+      ),
+    );
+  return periods.map((x) => ({
+    id: x.id,
+    performanceAccountId: x.performanceAccountId,
+    start: x.startDate,
+    end: x.endDate,
+    basis: x.basis,
+    notes: x.notes,
+    weights: Object.fromEntries(
+      weights
+        .filter((w) => w.holdingPeriodId === x.id)
+        .map((w) => [w.securityId, toNumber(w.weight)]),
+    ),
+  }));
 }

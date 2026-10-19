@@ -29,10 +29,10 @@ export type YearlyResult = {
 /** Month-end total-return price by month, "YYYY-MM". */
 export type MonthlyPrices = ReadonlyMap<string, number>;
 
-const monthKey = (year: number, month: number) =>
+export const monthKey = (year: number, month: number) =>
   `${year}-${String(month).padStart(2, "0")}`;
 
-function previousMonth(year: number, month: number): [number, number] {
+export function previousMonth(year: number, month: number): [number, number] {
   return month === 1 ? [year - 1, 12] : [year, month - 1];
 }
 

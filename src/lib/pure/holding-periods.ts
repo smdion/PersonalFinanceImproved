@@ -46,6 +46,28 @@ function weightsOf(
   return w;
 }
 
+/** Each account's fund weights per observed day (ascending) — what the
+ *  matched mix reads in the observed window. */
+export function dailyWeightsByAccount(
+  positions: readonly DailyPosition[],
+): Map<number, { day: string; weights: Record<number, number> }[]> {
+  const byAccountDay = new Map<number, Map<string, DailyPosition[]>>();
+  for (const p of positions) {
+    const days = byAccountDay.get(p.performanceAccountId) ?? new Map();
+    days.set(p.day, [...(days.get(p.day) ?? []), p]);
+    byAccountDay.set(p.performanceAccountId, days);
+  }
+  return new Map(
+    [...byAccountDay].map(([id, days]) => [
+      id,
+      [...days.keys()]
+        .sort()
+        .map((day) => ({ day, weights: weightsOf(days.get(day)!) }))
+        .filter((d) => Object.keys(d.weights).length > 0),
+    ]),
+  );
+}
+
 function sameFunds(a: Record<number, number>, b: Record<number, number>) {
   const ka = Object.keys(a);
   return ka.length === Object.keys(b).length && ka.every((k) => k in b);
