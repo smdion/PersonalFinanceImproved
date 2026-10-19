@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**366 procedures across 52 routers.**
+**367 procedures across 52 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -142,6 +142,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | ---------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `getAccountInsights`   | query | `portfolioProcedure` | (no description)                                                                                                                                                                                         |
 | `getLiveSinceSnapshot` | query | `portfolioProcedure` | How the household's linked accounts moved each day since the latest snapshot, as a change from it — the Portfolio chart's live line and the Net Worth page's "today" estimate add it to the snapshot's o |
+| `getRecentChanges`     | query | `portfolioProcedure` | tracked account, counted feeds only (deposits included).                                                                                                                                                 |
 
 ## `investments/comparison`
 

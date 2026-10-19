@@ -26,8 +26,39 @@ import {
   loadBalanceHistory,
 } from "./_shared";
 import { valueHoldings } from "./holdings-overview";
+import { recentChanges } from "@/lib/pure/recent-change";
+import { RECENT_CHANGE_WINDOWS_DAYS } from "@/lib/config/benchmarks";
+import { loadTrackedAccountNames } from "@/server/helpers/account-names";
 
 export const investmentAccountInsightsRouter = createTRPCRouter({
+  /** Balance change over the last 1 / 7 / 30 / 90 days — household and per
+   *  tracked account, counted feeds only (deposits included). */
+  getRecentChanges: portfolioProcedure.query(async ({ ctx }) => {
+    const [{ feeds }, history, names] = await Promise.all([
+      loadFeedContext(ctx.db),
+      loadBalanceHistory(ctx.db),
+      loadTrackedAccountNames(ctx.db),
+    ]);
+    const historyOf = (id: number) => history.get(id) ?? [];
+    const accountIds = [...new Set(feeds.map((f) => f.performanceAccountId))];
+    return {
+      household: recentChanges(
+        feeds.map((f) => historyOf(f.id)),
+        RECENT_CHANGE_WINDOWS_DAYS,
+      ),
+      accounts: accountIds.map((id) => ({
+        performanceAccountId: id,
+        label: names.get(id) ?? "Unnamed account",
+        changes: recentChanges(
+          feeds
+            .filter((f) => f.performanceAccountId === id)
+            .map((f) => historyOf(f.id)),
+          RECENT_CHANGE_WINDOWS_DAYS,
+        ),
+      })),
+    };
+  }),
+
   getAccountInsights: portfolioProcedure.query(async ({ ctx }) => {
     const today = utcDayOf(new Date());
     const since = addDays(today, -RECENT_ACTIVITY_DAYS);
