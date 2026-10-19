@@ -1,7 +1,8 @@
 "use client";
 
 /**
- * Uninvested cash per account — judged once by lib/pure/cash-positions.ts
+ * Investing findings — uninvested cash (lib/pure/cash-positions.ts) and
+ * per-fund findings (lib/pure/fund-findings.ts), each judged once,
  * from the holdings overview (portfolio permission), the current glide
  * path's cash target, the HSA buffer defaults and setting, and the Roth
  * verdict (a traditional IRA mid-backdoor isn't drag). Fetching only.
@@ -17,11 +18,19 @@ import {
   judgeHsaCash,
   type CashFinding,
 } from "@/lib/pure/cash-positions";
+import {
+  judgeCheaperFunds,
+  judgeTaxLossHarvest,
+  type CheaperFundFinding,
+  type HarvestFinding,
+} from "@/lib/pure/fund-findings";
 
-export function useCashFindings(): {
+export function useInvestingFindings(): {
   isLoading: boolean;
   drag: CashFinding[];
   hsa: (CashFinding & { buffer: number })[];
+  harvest: HarvestFinding[];
+  cheaper: CheaperFundFinding[];
 } {
   const user = useUser();
   const available = hasPermission(user, "portfolio");
@@ -40,6 +49,8 @@ export function useCashFindings(): {
       isLoading: available && overview.isLoading,
       drag: [],
       hsa: [],
+      harvest: [],
+      cheaper: [],
     };
 
   const cashClassId =
@@ -70,5 +81,7 @@ export function useCashFindings(): {
       bufferSetting,
       defaultBuffers: summary.data?.hsaBuffers ?? [],
     }),
+    harvest: judgeTaxLossHarvest(o.accounts),
+    cheaper: judgeCheaperFunds(o.accounts),
   };
 }

@@ -282,6 +282,8 @@ export async function loadHoldingsOverview(db: Db) {
               symbolConfirmed: r.ticker !== null,
               name: r.name,
               shares: r.shares,
+              /** The institution's average cost per share (null when not reported). */
+              avgCostPerShare: r.avgCostPerShare,
               value: r.value,
               valueBasis: r.valueBasis,
               valuedOn: r.valuedOn,

@@ -76,3 +76,17 @@ export const ROTH_RECOMMENDATION_WINDOWS = {
   /** Federal filing deadline for the prior tax year (IRC 6072(a)). */
   contributionDeadline: "04-15",
 } as const;
+
+/** Cheaper equivalent fund: a fund counts as one class when one bucket is
+ *  at least this share of it (a balanced fund has no single-class twin),
+ *  and is flagged when its expense ratio is at least `minExpenseGap` above
+ *  the low-cost line (LOW_COST_EXPENSE_RATIO). Suggested only in IRAs and
+ *  taxable accounts — workplace and HSA menus are fixed. */
+export const CHEAPER_FUND = {
+  singleClassMinShare: 0.9,
+  minExpenseGap: 0.001,
+} as const;
+
+/** Tax-loss harvesting: a taxable position whose market value is at least
+ *  this share below its cost. Relative, so it fits any account size. */
+export const TAX_LOSS_HARVEST = { minLossShare: 0.05 } as const;

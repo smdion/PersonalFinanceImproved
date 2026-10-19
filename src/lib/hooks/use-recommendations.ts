@@ -14,8 +14,9 @@ import { recommendationsFromDataSources } from "@/lib/pure/recommendations-data"
 import { budgetApiServiceLabel } from "@/lib/utils/format";
 import { useRothIra } from "@/lib/hooks/use-roth-ira";
 import { recommendationsFromRothIra } from "@/lib/pure/recommendations-roth";
-import { useCashFindings } from "@/lib/hooks/use-cash-findings";
+import { useInvestingFindings } from "@/lib/hooks/use-investing-findings";
 import { recommendationsFromCash } from "@/lib/pure/recommendations-cash";
+import { recommendationsFromFunds } from "@/lib/pure/recommendations-funds";
 import {
   rankRecommendations,
   recommendationsFromMilestones,
@@ -30,7 +31,7 @@ export function useRecommendations(): ReturnType<typeof useMilestones> & {
   const { dismissals, today } = useRecommendationDismissals();
   const data = useDataSourceStatuses();
   const roth = useRothIra();
-  const cash = useCashFindings();
+  const cash = useInvestingFindings();
   const ranked = rankRecommendations([
     ...recommendationsFromMilestones(milestones.results),
     ...recommendationsFromDataSources(data.statuses, (s) =>
@@ -44,6 +45,7 @@ export function useRecommendations(): ReturnType<typeof useMilestones> & {
       today,
     ),
     ...recommendationsFromCash(cash),
+    ...recommendationsFromFunds(cash),
   ]);
   const { shown, dismissed } = applyDismissals(ranked, dismissals, today);
   return {
