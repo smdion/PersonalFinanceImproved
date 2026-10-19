@@ -50,6 +50,8 @@ import {
   sumHouseholdIncome,
 } from "@/lib/pure/household-income";
 import { rothIraSummary } from "@/lib/pure/roth-ira";
+import { hsaCashBuffers } from "@/lib/pure/cash-positions";
+import { isHsaCategory } from "@/lib/config/account-types";
 import { findActiveJob } from "@/lib/pure/profiles";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import { ageInYear } from "@/lib/utils/date";
@@ -629,12 +631,26 @@ export const paycheckRouter = createTRPCRouter({
         })),
       });
 
+      // Default cash to keep in each person's HSA: the year's HDHP minimum
+      // deductible for their coverage (from their HSA contribution account).
+      const hsaBuffers = hsaCashBuffers({
+        limits: limitsRecord,
+        people: results.map((r) => ({
+          personId: r.person.id,
+          hsaCoverageType:
+            r.rawContribs.find(
+              (c) => isHsaCategory(c.accountType) && c.hsaCoverageType,
+            )?.hsaCoverageType ?? null,
+        })),
+      });
+
       return {
         people: results,
         jointContribs,
         householdIncome,
         householdTax,
         rothIra,
+        hsaBuffers,
         // The tax-data vintage this summary was priced under — for a
         // "Tax data: YYYY" indicator, matching the retirement projection side.
         taxYear,

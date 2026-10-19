@@ -48,6 +48,9 @@ let milestonesState: {
 vi.mock("@/lib/hooks/use-roth-ira", () => ({
   useRothIra: () => ({ isLoading: false, view: null }),
 }));
+vi.mock("@/lib/hooks/use-cash-findings", () => ({
+  useCashFindings: () => ({ isLoading: false, drag: [], hsa: [] }),
+}));
 vi.mock("@/lib/hooks/use-milestones", () => ({
   useContributionSummaryInput: () => ({}),
   useMilestones: () => milestonesState,

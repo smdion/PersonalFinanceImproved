@@ -503,4 +503,23 @@ describe("fund facts", () => {
       other.cleanup();
     }
   });
+
+  it("uninvested cash: the same-day feed balance less the reported positions", async () => {
+    const setBalance = (balance: string, day: string) =>
+      ctx.db
+        .update(sqliteSchema.simplefinAccounts)
+        .set({
+          lastBalance: balance,
+          lastBalanceDate: new Date(`${day}T12:00:00Z`),
+        })
+        .run();
+    setBalance("2600", "2026-10-09");
+    const same = await ctx.caller.investments.getHoldingsOverview();
+    expect(same.accounts[0]!.accountType).toBe("ira");
+    expect(same.accounts[0]!.uninvestedCash).toBe(600);
+    // A balance from another day can't be compared with the positions.
+    setBalance("2600", "2026-10-12");
+    const other = await ctx.caller.investments.getHoldingsOverview();
+    expect(other.accounts[0]!.uninvestedCash).toBeNull();
+  });
 });

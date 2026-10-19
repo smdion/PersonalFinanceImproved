@@ -19,6 +19,8 @@ import { CurrentGlidePathEditor } from "./current-glide-path-editor";
 import { GlidePathChart, type GlidePathClass } from "./glide-path-chart";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { useUser, isAdmin } from "@/lib/context/user-context";
+import { isHsaCategory } from "@/lib/config/account-types";
+import { HsaCashBuffer } from "./hsa-cash-buffer";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import {
@@ -590,6 +592,12 @@ export function HoldingsSection() {
             {data.accounts.map((a) => (
               <div key={a.simplefinAccountId}>
                 <AccountHeader a={a} />
+                {a.accountType !== null && isHsaCategory(a.accountType) && (
+                  <HsaCashBuffer
+                    ownerPersonId={a.ownerPersonId}
+                    uninvestedCash={a.uninvestedCash}
+                  />
+                )}
                 {a.holdings.map((h) => (
                   <HoldingRow key={h.securityId} h={h} editable={false} />
                 ))}

@@ -1319,6 +1319,18 @@ function housing(input: MilestoneInput, now: MilestoneYear): MilestoneResult[] {
   return out;
 }
 
+/** The 5/25 band (REBALANCE_BANDS): off by more than 5 points, or by more
+ *  than 25% of a target of at least 5%. The one band rule — the rebalance
+ *  milestone and the cash-drag recommendation both use it. */
+export function outsideRebalanceBand(share: number, target: number): boolean {
+  const gap = Math.abs(share - target);
+  return (
+    gap > REBALANCE_BANDS.absolute ||
+    (target >= REBALANCE_BANDS.relativeMinTarget &&
+      gap > REBALANCE_BANDS.relative * target)
+  );
+}
+
 function investing(input: MilestoneInput): MilestoneResult[] {
   const h = input.holdings;
   const notLinked = "Not enough linked holdings";
@@ -1339,14 +1351,9 @@ function investing(input: MilestoneInput): MilestoneResult[] {
       }),
     );
   } else {
-    const off = targeted.filter((c) => {
-      const gap = Math.abs(c.share - c.targetShare!);
-      return (
-        gap > REBALANCE_BANDS.absolute ||
-        (c.targetShare! >= REBALANCE_BANDS.relativeMinTarget &&
-          gap > REBALANCE_BANDS.relative * c.targetShare!)
-      );
-    });
+    const off = targeted.filter((c) =>
+      outsideRebalanceBand(c.share, c.targetShare!),
+    );
     // The bands decide when; the targets decide what: once any class is
     // outside its band, every class moves back to its target (Bogleheads
     // rebalance to the target mix, not just the class that tripped).

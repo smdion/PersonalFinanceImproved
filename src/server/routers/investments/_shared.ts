@@ -51,6 +51,11 @@ export type AccountInfo = {
   isHsa: boolean;
   /** The linked tracked account's type (null when it feeds no tracked account). */
   accountType: string | null;
+  /** The tracked account's own owner (null for joint or unlinked). */
+  accountOwnerPersonId: number | null;
+  /** The feed's last reported balance and the UTC day it's from. */
+  balance: number | null;
+  balanceDay: string | null;
   performanceAccountId: number | null;
   /** From a sub-account link (null for a whole-account link or a joint sub-account). */
   ownerPersonId: number | null;
@@ -174,9 +179,12 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
       orgName: schema.simplefinAccounts.orgName,
       accountName: schema.simplefinAccounts.accountName,
       accountType: schema.performanceAccounts.accountType,
+      accountOwnerPersonId: schema.performanceAccounts.ownerPersonId,
       performanceAccountId: schema.simplefinAccounts.linkedPerformanceAccountId,
       linkedSubKey: schema.simplefinAccounts.linkedSubKey,
       isIncluded: schema.simplefinAccounts.isIncluded,
+      lastBalance: schema.simplefinAccounts.lastBalance,
+      lastBalanceDate: schema.simplefinAccounts.lastBalanceDate,
     })
     .from(schema.simplefinAccounts)
     .leftJoin(
@@ -219,6 +227,9 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
             : feedName,
           isHsa: r.accountType != null && isHsaCategory(r.accountType),
           accountType: feeds ? r.accountType : null,
+          accountOwnerPersonId: feeds ? r.accountOwnerPersonId : null,
+          balance: r.lastBalance === null ? null : toNumber(r.lastBalance),
+          balanceDay: r.lastBalanceDate ? utcDayOf(r.lastBalanceDate) : null,
           performanceAccountId: feeds ? r.performanceAccountId : null,
           ownerPersonId: sub?.ownerPersonId ?? null,
           taxType: sub?.taxType ?? null,

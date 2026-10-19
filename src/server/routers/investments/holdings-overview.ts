@@ -170,6 +170,29 @@ export async function valueHoldings(
   return valued;
 }
 
+/**
+ * Money in the account that isn't in any reported position (an HSA's cash
+ * balance, a brokerage's settlement cash): the feed's balance less the
+ * positions as the institution valued them, only when both are from the
+ * same day (otherwise price moves would read as cash). null = can't tell.
+ */
+function uninvestedCash(
+  account: { balance: number | null; balanceDay: string | null } | undefined,
+  rows: readonly {
+    asOf: string;
+    value: number;
+    reportedMarketValue: number | null;
+  }[],
+): number | null {
+  if (!account || account.balance === null || rows.length === 0) return null;
+  if (rows.some((r) => r.asOf !== account.balanceDay)) return null;
+  const reported = rows.reduce(
+    (s, r) => s + (r.reportedMarketValue ?? r.value),
+    0,
+  );
+  return Math.max(0, account.balance - reported);
+}
+
 /** Holdings valued today, with each fund's facts; allocation vs target; blended cost. */
 export async function loadHoldingsOverview(db: Db) {
   const [holdings, accounts, sec, assetClasses, target] = await Promise.all([
@@ -240,7 +263,12 @@ export async function loadHoldingsOverview(db: Db) {
           simplefinAccountId: id,
           performanceAccountId: a?.performanceAccountId ?? null,
           label: a?.label ?? "",
+          accountType: a?.accountType ?? null,
+          /** From a sub-account link; null for a whole-account link. */
+          taxType: a?.taxType ?? null,
+          ownerPersonId: a?.ownerPersonId ?? a?.accountOwnerPersonId ?? null,
           total: rows.reduce((s, r) => s + r.value, 0),
+          uninvestedCash: uninvestedCash(a, rows),
           /** Its funds added up (null for an effectively single-fund account). */
           rollup: accountRollup(rows),
           holdings: rows

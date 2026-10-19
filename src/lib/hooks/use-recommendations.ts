@@ -14,6 +14,8 @@ import { recommendationsFromDataSources } from "@/lib/pure/recommendations-data"
 import { budgetApiServiceLabel } from "@/lib/utils/format";
 import { useRothIra } from "@/lib/hooks/use-roth-ira";
 import { recommendationsFromRothIra } from "@/lib/pure/recommendations-roth";
+import { useCashFindings } from "@/lib/hooks/use-cash-findings";
+import { recommendationsFromCash } from "@/lib/pure/recommendations-cash";
 import {
   rankRecommendations,
   recommendationsFromMilestones,
@@ -28,6 +30,7 @@ export function useRecommendations(): ReturnType<typeof useMilestones> & {
   const { dismissals, today } = useRecommendationDismissals();
   const data = useDataSourceStatuses();
   const roth = useRothIra();
+  const cash = useCashFindings();
   const ranked = rankRecommendations([
     ...recommendationsFromMilestones(milestones.results),
     ...recommendationsFromDataSources(data.statuses, (s) =>
@@ -40,13 +43,15 @@ export function useRecommendations(): ReturnType<typeof useMilestones> & {
       roth.taxYear ?? Number(today.slice(0, 4)),
       today,
     ),
+    ...recommendationsFromCash(cash),
   ]);
   const { shown, dismissed } = applyDismissals(ranked, dismissals, today);
   return {
     ...milestones,
     // Wait for the data-source checks too, or "Nothing to do" flashes
     // before the "Keep data current" items arrive.
-    isLoading: milestones.isLoading || !data.loaded || roth.isLoading,
+    isLoading:
+      milestones.isLoading || !data.loaded || roth.isLoading || cash.isLoading,
     recommendations: shown,
     dismissed,
   };

@@ -32,7 +32,7 @@
  * `tax_year` values, i.e. exactly the behaviour before this resolver existed.
  */
 
-import type { W4FilingStatus } from "./enum-values";
+import type { HsaCoverageType, W4FilingStatus } from "./enum-values";
 
 /**
  * The three per-slice entry shapes, kept local so `src/lib/config/` has no
@@ -261,6 +261,13 @@ export const ROTH_IRA_REDUCED_LIMIT_FLOOR = 200;
  *  is statutory and not indexed (IRC 408A(c)(3)(B)). The app has no MFS
  *  status, so this is only used to say so. */
 export const ROTH_IRA_MFS_PHASEOUT = { start: 0, end: 10_000 } as const;
+
+/** The yearly HDHP minimum-deductible row for each HSA coverage type —
+ *  the default cash buffer to keep uninvested in an HSA. */
+export const HDHP_MIN_DEDUCTIBLE_KEY: Record<HsaCoverageType, string> = {
+  self_only: "hdhp_min_deductible_self",
+  family: "hdhp_min_deductible_family",
+};
 
 /** Filing statuses where a spouse's IRA can be funded from the couple's
  *  combined compensation (spousal IRA, IRC 219(c)). */
