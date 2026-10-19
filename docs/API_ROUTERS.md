@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**367 procedures across 52 routers.**
+**372 procedures across 53 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -168,6 +168,16 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | Procedure   | Kind  | Auth                 | Description                                                              |
 | ----------- | ----- | -------------------- | ------------------------------------------------------------------------ |
 | `getHealth` | query | `portfolioProcedure` | Accounts whose holdings stopped arriving or don't add up to the balance. |
+
+## `investments/holding-periods`
+
+| Procedure             | Kind     | Auth                 | Description                                                                                                                                                                  |
+| --------------------- | -------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `addFundByName`       | mutation | `portfolioProcedure` | A fund with no public ticker (a workplace plan's own fund), by name. Its fee and mix are entered by hand (setUserFacts).                                                     |
+| `addFundByTicker`     | mutation | `portfolioProcedure` | A fund by its public ticker: checked against SEC's fund ticker list (no guessing — an unknown ticker is refused), reusing a row that already has it, then its facts fetched. |
+| `deleteHoldingPeriod` | mutation | `portfolioProcedure` | (no description)                                                                                                                                                             |
+| `listHoldingPeriods`  | query    | `portfolioProcedure` | Periods (observed + entered) per account, and the funds they name.                                                                                                           |
+| `saveHoldingPeriod`   | mutation | `portfolioProcedure` | Create or update an entered period with its funds, in one transaction.                                                                                                       |
 
 ## `investments/snapshot-flows`
 
