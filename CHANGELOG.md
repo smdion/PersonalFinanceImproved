@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.8] - 2026-10-19
+
+### Changed
+
+- **Reference data:** the IRS Roth IRA income phase-out ranges, the Additional Medicare Tax thresholds you owe on (separate from the $200k your employer withholds at) and HDHP minimum deductibles for 2025 and 2026 are added to your tax data — you can edit them in Settings like the other IRS limits.
+
+---
+
 ## [0.8.7] - 2026-10-13
 
 This release is about making Ledgr's many numbers easier to act on. No database schema change; on start Ledgr adds the IRS total-additions limit (2025 and 2026) to its reference data and corrects the 2025 standard deduction if it still has the pre-OBBBA figure (an amount you changed yourself in Settings is left alone).
