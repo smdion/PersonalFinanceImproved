@@ -43,6 +43,13 @@
       "when": 1791858575688,
       "tag": "0005_v086_schema_cleanup",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792446873043,
+      "tag": "0006_v088_holding_periods",
+      "breakpoints": true
     }
   ]
 }

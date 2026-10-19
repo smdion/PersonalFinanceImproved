@@ -46,6 +46,7 @@ import type {
   FactsBasis,
   CompositionBucket,
   HoldingSource,
+  HoldingPeriodBasis,
   UtilityKind,
   UtilityUnit,
   StandInPreview,
@@ -2471,6 +2472,75 @@ export const holdingObservations = pgTable(
     check(
       "holding_observations_one_account_check",
       sql`(${table.simplefinAccountId} IS NULL) <> (${table.performanceAccountId} IS NULL)`,
+    ),
+  ],
+);
+
+/**
+ * What a tracked account held over a span of dates, before daily SimpleFIN
+ * holdings existed (or for an account with no feed): entered by the
+ * household or inferred (a proposal to confirm). Observed periods are NOT
+ * stored here — they're derived from holding_observations on read (one
+ * source of truth). endDate null = still held. Weights live in
+ * holding_period_weights. CHECKs are enforced in the app layer too —
+ * SQLite drops CHECK constraints.
+ */
+export const holdingPeriods = pgTable(
+  "holding_periods",
+  {
+    id: serial("id").primaryKey(),
+    // RESTRICT: entered history is costly to re-enter; deleting the
+    // account is refused while it has periods (see performance.delete).
+    performanceAccountId: integer("performance_account_id")
+      .notNull()
+      .references(() => performanceAccounts.id, { onDelete: "restrict" }),
+    startDate: date("start_date").notNull(),
+    endDate: date("end_date"),
+    basis: text("basis").$type<HoldingPeriodBasis>().notNull(),
+    /** For an inferred period: how well it explains the account's returns (0–1). */
+    fitQuality: decimal("fit_quality", { precision: 12, scale: 6 }),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("holding_periods_account_start_idx").on(
+      table.performanceAccountId,
+      table.startDate,
+    ),
+    check(
+      "holding_periods_dates_check",
+      sql`${table.endDate} IS NULL OR ${table.endDate} >= ${table.startDate}`,
+    ),
+  ],
+);
+
+/** One fund's share of a holding period (weights of a period sum to 1). */
+export const holdingPeriodWeights = pgTable(
+  "holding_period_weights",
+  {
+    id: serial("id").primaryKey(),
+    holdingPeriodId: integer("holding_period_id")
+      .notNull()
+      .references(() => holdingPeriods.id, { onDelete: "cascade" }),
+    securityId: integer("security_id")
+      .notNull()
+      .references(() => securities.id, { onDelete: "restrict" }),
+    weight: decimal("weight", { precision: 12, scale: 6 }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("holding_period_weights_period_security_idx").on(
+      table.holdingPeriodId,
+      table.securityId,
+    ),
+    index("holding_period_weights_security_idx").on(table.securityId),
+    check(
+      "holding_period_weights_range_check",
+      sql`${table.weight} > 0 AND ${table.weight} <= 1`,
     ),
   ],
 );

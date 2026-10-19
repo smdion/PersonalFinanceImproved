@@ -170,6 +170,9 @@ const VERSION_TABLE_NAMES = [
   "holding_observations",
   "investment_transactions",
   "security_facts",
+  // v0.8.8 holding history
+  "holding_periods",
+  "holding_period_weights",
 ];
 
 // ---------------------------------------------------------------------------

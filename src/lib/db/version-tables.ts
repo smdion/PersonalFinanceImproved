@@ -96,12 +96,14 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "budget_item_category_links", tier: 2 }, // FK into budget_items (tier 1)
   { name: "savings_goal_category_links", tier: 2 }, // FK into savings_goals (tier 0)
   { name: "simplefin_accounts", tier: 2 }, // FK into performance_accounts (tier 1)
+  { name: "holding_periods", tier: 2 }, // FK into performance_accounts (tier 1)
 
   // Tier 3 — depends on tier 2
   // SimpleFIN history (v0.8.5) — can't be re-fetched after 90 days, so versioned + backed up.
   { name: "simplefin_account_balances", tier: 3 }, // FK into simplefin_accounts (tier 2)
   { name: "holding_observations", tier: 3 }, // FKs into simplefin_accounts (tier 2), performance_accounts (tier 1), securities (tier 0)
   { name: "investment_transactions", tier: 3 }, // FK into simplefin_accounts (tier 2)
+  { name: "holding_period_weights", tier: 3 }, // FKs into holding_periods (tier 2), securities (tier 0)
 ];
 
 // Validate tier ordering: entries must be grouped by ascending tier.

@@ -38,6 +38,7 @@ import type {
   FactsBasis,
   CompositionBucket,
   HoldingSource,
+  HoldingPeriodBasis,
   UtilityKind,
   UtilityUnit,
   StandInPreview,
@@ -2234,6 +2235,67 @@ export const holdingObservations = sqliteTable(
     index("holding_observations_perf_account_idx").on(
       table.performanceAccountId,
     ),
+  ],
+);
+
+/**
+ * What a tracked account held over a span of dates, before daily SimpleFIN
+ * holdings existed (or for an account with no feed): entered by the
+ * household or inferred (a proposal to confirm). Observed periods are NOT
+ * stored here — they're derived from holding_observations on read (one
+ * source of truth). endDate null = still held. Weights live in
+ * holding_period_weights. CHECKs are enforced in the app layer too —
+ * SQLite drops CHECK constraints.
+ */
+export const holdingPeriods = sqliteTable(
+  "holding_periods",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    // RESTRICT: entered history is costly to re-enter; deleting the
+    // account is refused while it has periods (see performance.delete).
+    performanceAccountId: integer("performance_account_id")
+      .notNull()
+      .references(() => performanceAccounts.id, { onDelete: "restrict" }),
+    startDate: text("start_date").notNull(),
+    endDate: text("end_date"),
+    basis: text("basis").$type<HoldingPeriodBasis>().notNull(),
+    /** For an inferred period: how well it explains the account's returns (0–1). */
+    fitQuality: text("fit_quality"),
+    notes: text("notes"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index("holding_periods_account_start_idx").on(
+      table.performanceAccountId,
+      table.startDate,
+    ),
+  ],
+);
+
+/** One fund's share of a holding period (weights of a period sum to 1). */
+export const holdingPeriodWeights = sqliteTable(
+  "holding_period_weights",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    holdingPeriodId: integer("holding_period_id")
+      .notNull()
+      .references(() => holdingPeriods.id, { onDelete: "cascade" }),
+    securityId: integer("security_id")
+      .notNull()
+      .references(() => securities.id, { onDelete: "restrict" }),
+    weight: text("weight").notNull(),
+  },
+  (table) => [
+    uniqueIndex("holding_period_weights_period_security_idx").on(
+      table.holdingPeriodId,
+      table.securityId,
+    ),
+    index("holding_period_weights_security_idx").on(table.securityId),
   ],
 );
 

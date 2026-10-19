@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**79 tables.**
+**81 tables.**
 
 ## Mermaid diagram
 
@@ -185,6 +185,12 @@ erDiagram
   holding_observations {
     int id PK
   }
+  holding_periods {
+    int id PK
+  }
+  holding_period_weights {
+    int id PK
+  }
   investment_transactions {
     int id PK
   }
@@ -285,6 +291,9 @@ erDiagram
   security_facts }o--|| securities : references
   simplefin_account_balances }o--|| simplefin_accounts : references
   holding_observations }o--|| securities : references
+  holding_periods }o--|| performance_accounts : references
+  holding_period_weights }o--|| holding_periods : references
+  holding_period_weights }o--|| securities : references
   investment_transactions }o--|| simplefin_accounts : references
   simplefin_accounts }o--|| performance_accounts : references
   asset_class_buckets }o--|| asset_class_params : references
@@ -325,6 +334,8 @@ erDiagram
 - **historical_notes**
 - **historical_salaries** → people
 - **holding_observations** → securities
+- **holding_period_weights** → holding_periods, securities
+- **holding_periods** → performance_accounts
 - **home_improvement_items**
 - **investment_transactions** → simplefin_accounts
 - **irmaa_brackets**

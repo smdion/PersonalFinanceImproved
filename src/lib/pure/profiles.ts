@@ -242,11 +242,18 @@ export type ContribResolutionStatus =
  */
 export function canDeletePerformanceAccount(
   referenceCount: number,
+  /** Entered holding periods (holding_periods FK is RESTRICT too). */
+  holdingPeriodCount = 0,
 ): DeletionCheck {
   if (referenceCount > 0)
     return {
       allowed: false,
       reason: `Cannot delete: ${referenceCount} performance record(s) reference this account. Deactivate it instead.`,
+    };
+  if (holdingPeriodCount > 0)
+    return {
+      allowed: false,
+      reason: `Cannot delete: ${holdingPeriodCount} holding period(s) entered for this account. Deactivate it instead.`,
     };
   return { allowed: true };
 }

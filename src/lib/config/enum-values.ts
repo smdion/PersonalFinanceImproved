@@ -125,6 +125,14 @@ export const HOLDING_SOURCE_VALUES = ["simplefin", "manual"] as const;
 export type HoldingSource = (typeof HOLDING_SOURCE_VALUES)[number];
 export const holdingSourceSchema = z.enum(HOLDING_SOURCE_VALUES);
 
+// ── Holding period basis ──
+
+/** Where a dated holding period came from. Observed periods (daily
+ *  SimpleFIN holdings) aren't stored — they're derived on read. */
+export const HOLDING_PERIOD_BASIS_VALUES = ["user", "inferred"] as const;
+export type HoldingPeriodBasis = (typeof HOLDING_PERIOD_BASIS_VALUES)[number];
+export const holdingPeriodBasisSchema = z.enum(HOLDING_PERIOD_BASIS_VALUES);
+
 // ── Pay Week ──
 
 export const PAY_WEEK_VALUES = ["even", "odd", "na"] as const;

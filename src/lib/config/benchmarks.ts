@@ -166,3 +166,13 @@ export const BUCKET_INDEX_PROXIES: Readonly<
   cash: { ticker: "SGOV", label: "0–3 month Treasury bills (SGOV)" },
   other: null,
 };
+
+/** Holding periods. An observed period (from daily holdings) ends when the
+ *  set of funds changes or the daily data skips more than
+ *  `observedMaxGapTradingDays` trading days (shares move with prices every
+ *  day, so they never split a period). Entered weights must sum to 1
+ *  within `weightSumTolerance` (rounding), as the current glide path's do. */
+export const HOLDING_PERIODS = {
+  observedMaxGapTradingDays: 3,
+  weightSumTolerance: 0.005,
+} as const;
