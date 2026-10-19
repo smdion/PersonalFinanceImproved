@@ -251,6 +251,21 @@ export function resolveTaxParams(
   };
 }
 
+/** Pub 590-A Worksheet 2-2: a reduced Roth IRA limit rounds UP to the next
+ *  multiple of this, and any amount above $0 but below the floor becomes
+ *  the floor (statutory, IRC 408A(c)(3) — not indexed). */
+export const ROTH_IRA_REDUCED_LIMIT_ROUNDING = 10;
+export const ROTH_IRA_REDUCED_LIMIT_FLOOR = 200;
+
+/** Married filing separately (and lived together): the Roth IRA phase-out
+ *  is statutory and not indexed (IRC 408A(c)(3)(B)). The app has no MFS
+ *  status, so this is only used to say so. */
+export const ROTH_IRA_MFS_PHASEOUT = { start: 0, end: 10_000 } as const;
+
+/** Filing statuses where a spouse's IRA can be funded from the couple's
+ *  combined compensation (spousal IRA, IRC 219(c)). */
+export const SPOUSAL_IRA_FILING_STATUSES: readonly W4FilingStatus[] = ["MFJ"];
+
 /** All filing statuses the engine expects a bracket set for. */
 export const REQUIRED_FILING_STATUSES: W4FilingStatus[] = [
   "MFJ",

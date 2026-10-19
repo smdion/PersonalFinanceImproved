@@ -59,6 +59,10 @@ export const SK_SAVINGS_PROJECTION_YEARS = "savings_projection_years";
 
 // ── Paycheck ────────────────────────────────────────────────────────
 export const SK_PAYCHECK_TAX_YEAR = "paycheck_tax_year";
+/** Dollars below the Roth IRA phase-out start "direct contribution OK" needs; unset = the range's width. */
+export const SK_ROTH_IRA_DIRECT_MARGIN = "roth_ira_direct_margin";
+/** Dollars of HSA cash to keep uninvested; unset = the year's HDHP minimum deductible for the coverage. */
+export const SK_HSA_CASH_BUFFER = "hsa_cash_buffer";
 
 // ── Dashboard Cards ─────────────────────────────────────────────────
 export const SK_HIGH_INCOME_THRESHOLD = "high_income_threshold";

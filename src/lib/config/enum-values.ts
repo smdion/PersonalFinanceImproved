@@ -52,6 +52,10 @@ export type InvestmentTransactionKind =
 export const investmentTransactionKindSchema = z.enum(
   INVESTMENT_TRANSACTION_KIND_VALUES,
 );
+/** Kinds that are income in the year they're paid (taxable in a taxable
+ *  account): dividends incl. capital-gain distributions, and interest. */
+export const INVESTMENT_INCOME_KINDS: ReadonlySet<InvestmentTransactionKind> =
+  new Set(["dividend", "interest"]);
 
 // ── Security kind (holdings) ──
 

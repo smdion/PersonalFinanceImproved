@@ -46,6 +46,17 @@ export function formatEmployerMatch(
  * Resolve the IRS contribution limit for an account type, factoring in
  * coverage variants (HSA family vs individual) and age-based catchup/super-catchup.
  */
+/** The limit row an account's base IRS limit comes from: the coverage
+ *  variant (family HSA) when it applies, else the base key. */
+export function irsLimitBaseKey(
+  keys: { base: string; coverageVariant?: string | null },
+  hsaCoverageType: string | null,
+): string {
+  return keys.coverageVariant && hsaCoverageType === "family"
+    ? keys.coverageVariant
+    : keys.base;
+}
+
 export function resolveIrsLimit(
   accountType: string,
   age: number,
@@ -58,11 +69,10 @@ export function resolveIrsLimit(
   const keys = cfg.irsLimitKeys;
   if (!keys) return 0;
 
-  let baseKey = keys.base;
-  if (keys.coverageVariant && hsaCoverageType === "family")
-    baseKey = keys.coverageVariant;
-
-  let limit = requireLimit(limitsRecord, baseKey);
+  let limit = requireLimit(
+    limitsRecord,
+    irsLimitBaseKey(keys, hsaCoverageType),
+  );
 
   if (
     cfg.superCatchupAgeRange &&
@@ -75,6 +85,28 @@ export function resolveIrsLimit(
   }
 
   return limit;
+}
+
+/**
+ * resolveIrsLimit, or null when the year's tax data lacks the limit row
+ * (a restore or a demo schema can be missing newer keys) — for readers that
+ * should hide a figure rather than throw.
+ */
+export function irsLimitOrNull(
+  accountType: string,
+  age: number,
+  hsaCoverageType: string | null,
+  limitsRecord: Record<string, number>,
+): number | null {
+  if (!categoriesWithIrsLimit().includes(accountType as AccountCategory))
+    return null;
+  const keys = getAccountTypeConfig(
+    accountType as AccountCategory,
+  ).irsLimitKeys;
+  if (!keys) return null;
+  if (limitsRecord[irsLimitBaseKey(keys, hsaCoverageType)] === undefined)
+    return null;
+  return resolveIrsLimit(accountType, age, hsaCoverageType, limitsRecord);
 }
 
 /**
@@ -102,11 +134,8 @@ export function payrollFicaExemptCap(
   const keys = cfg.irsLimitKeys;
   if (!keys) return Infinity;
   if (keys.coverageVariant && hsaCoverageType === null) return Infinity;
-  const baseKey =
-    keys.coverageVariant && hsaCoverageType === "family"
-      ? keys.coverageVariant
-      : keys.base;
-  if (limitsRecord[baseKey] === undefined) return Infinity;
+  if (limitsRecord[irsLimitBaseKey(keys, hsaCoverageType)] === undefined)
+    return Infinity;
   return Math.max(
     0,
     resolveIrsLimit(accountType, ageAtYearEnd, hsaCoverageType, limitsRecord) -

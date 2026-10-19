@@ -64,3 +64,15 @@ export const MILESTONE_RECOMMENDATIONS: readonly {
   { id: "fundCosts", area: "investing" },
   { id: "lowCost", area: "investing" },
 ];
+
+/** Dated windows for the Roth IRA recommendations (month-day, MM-DD).
+ *  For the current tax year both are "now" from `nowFrom` to Dec 31 (the
+ *  pro-rata balance is measured on Dec 31). A past tax year's Roth IRA
+ *  contribution can still be made until the filing deadline in the next
+ *  year — "now" until then, nothing after; its pro-rata date has passed. */
+export const ROTH_RECOMMENDATION_WINDOWS = {
+  rothIra: { nowFrom: "10-01" },
+  proRata: { nowFrom: "10-01" },
+  /** Federal filing deadline for the prior tax year (IRC 6072(a)). */
+  contributionDeadline: "04-15",
+} as const;

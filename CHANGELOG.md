@@ -10,6 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.8.8] - 2026-10-19
 
+### Added
+
+- **Roth IRA MAGI and direct-vs-backdoor:** the Household Income card now shows your Roth IRA MAGI — salary + bonus, less pre-tax payroll money and HSA money paid outside payroll, plus taxable investment income (dividends and interest in taxable accounts: this year so far plus last year's rest of the year, or annualized where an account's history is shorter). It compares that with the year's phase-out range and says "direct contribution OK" only with a safety margin below it (by default the range's own width; admins can change it on the card), "too close to call" with each person's allowed amount inside the margin or range, or "use the backdoor" above it. When a conversion is on the table, it warns about pre-tax IRA money that would make it mostly taxable (pro-rata). It names what it can't see (bank interest, sold investments, accounts without a feed). Needs the Portfolio permission; otherwise the card shows AGI from wages.
+- **Recommendations:** a Roth IRA item (backdoor or too close to call) and a pro-rata item per person with pre-tax IRA money, both pressing from October through year-end; for last year's taxes, only the Roth item until the filing deadline.
+
 ### Changed
 
 - **Reference data:** the IRS Roth IRA income phase-out ranges, the Additional Medicare Tax thresholds you owe on (separate from the $200k your employer withholds at) and HDHP minimum deductibles for 2025 and 2026 are added to your tax data — you can edit them in Settings like the other IRS limits.

@@ -3,43 +3,25 @@
 import React, { memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
-import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency } from "@/lib/utils/format";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import { sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 import { TaxesSummary } from "./taxes-summary";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
+import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
+import { RothIraPanel } from "./roth-ira-panel";
 
 function HouseholdIncomeCardImpl() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
-  const salaryActiveFields = useActiveSalaries();
-  // Independent axes, each Plan pin -> globally-active setting.
-  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const {
-    contributionProfileId: activeContribProfileId,
-    queryInput: contribProfileInput,
-  } = useEffectiveContribProfileId();
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
-  // The Paycheck page's tax year, so net pay and the taxes below agree.
-  const [taxYearSetting] = usePersistedSetting<number | null>(
-    "paycheck_tax_year",
-    null,
-  );
-  const queryInput = {
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
-    ...contribProfileInput,
-    ...salaryProfileInput,
-    ...(taxYearSetting != null ? { taxYearOverride: taxYearSetting } : {}),
-  };
-  const { data, isLoading, error } = trpc.paycheck.computeSummary.useQuery(
-    Object.keys(queryInput).length > 0 ? queryInput : undefined,
-  );
+  const {
+    data,
+    isLoading,
+    error,
+    contributionProfileId: activeContribProfileId,
+  } = useHouseholdIncomeSummary();
   if (isLoading) return <LoadingCard title="Household Income" />;
   if (error)
     return <ErrorCard title="Household Income" message="Failed to load" />;
@@ -204,16 +186,7 @@ function HouseholdIncomeCardImpl() {
           </span>
         </div>
         {data?.householdTax && (
-          <div className="flex justify-between">
-            <span className="inline-flex items-center">
-              MAGI (est.)
-              <HelpTip
-                text="Salary plus bonus, minus the money that comes out before tax (pre-tax 401k, payroll HSA, health insurance). Not yet included: taxable investment income and HSA contributions made outside payroll — treat it as a floor for things like Roth IRA contribution limits."
-                maxWidth={280}
-              />
-            </span>
-            <span>{formatCurrency(data.householdTax.wageAgi)}</span>
-          </div>
+          <RothIraPanel wageAgi={data.householdTax.wageAgi} />
         )}
       </div>
       <TaxesSummary data={data} viewMode={viewMode} />

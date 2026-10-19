@@ -20,6 +20,8 @@ import {
   SK_MILESTONE_SAVINGS_TARGET_SOURCE,
   SK_RECOMMENDATION_DISMISSALS,
   SK_CURRENT_GLIDE_PATH,
+  SK_ROTH_IRA_DIRECT_MARGIN,
+  SK_HSA_CASH_BUFFER,
 } from "@/lib/constants/settings-keys";
 import { currentGlidePathSchema } from "@/lib/pure/current-glide-path";
 import { dismissalsSchema } from "@/lib/pure/recommendation-dismissals";
@@ -62,6 +64,8 @@ const STRUCTURED_SETTINGS: Record<string, z.ZodType> = {
   [SK_MILESTONE_SAVINGS_TARGET_SOURCE]: savingsTargetSourceSchema,
   [SK_RECOMMENDATION_DISMISSALS]: dismissalsSchema,
   [SK_CURRENT_GLIDE_PATH]: currentGlidePathSchema,
+  [SK_ROTH_IRA_DIRECT_MARGIN]: z.number().finite().nonnegative(),
+  [SK_HSA_CASH_BUFFER]: z.number().finite().nonnegative(),
 };
 
 // --- Procedures ---

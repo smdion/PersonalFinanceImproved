@@ -49,6 +49,7 @@ import {
   computeAnnualEarnings,
   sumHouseholdIncome,
 } from "@/lib/pure/household-income";
+import { rothIraSummary } from "@/lib/pure/roth-ira";
 import { findActiveJob } from "@/lib/pure/profiles";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import { ageInYear } from "@/lib/utils/date";
@@ -613,11 +614,27 @@ export const paycheckRouter = createTRPCRouter({
         }
       }
 
+      const rothIra = rothIraSummary({
+        filingStatus: earners[0]?.job?.w4FilingStatus ?? null,
+        taxYear,
+        limits: limitsRecord,
+        people: results.map((r) => ({
+          personId: r.person.id,
+          name: r.person.name,
+          birthYear: Number(r.person.dateOfBirth.slice(0, 4)),
+          earnings: r.earnings,
+          jobAccountTypes: r.rawContribs
+            .filter((c) => c.jobId !== null)
+            .map((c) => c.accountType),
+        })),
+      });
+
       return {
         people: results,
         jointContribs,
         householdIncome,
         householdTax,
+        rothIra,
         // The tax-data vintage this summary was priced under — for a
         // "Tax data: YYYY" indicator, matching the retirement projection side.
         taxYear,

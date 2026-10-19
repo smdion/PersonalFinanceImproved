@@ -49,6 +49,8 @@ export type AccountInfo = {
   label: string;
   /** Linked to an HSA-type tracked account. */
   isHsa: boolean;
+  /** The linked tracked account's type (null when it feeds no tracked account). */
+  accountType: string | null;
   performanceAccountId: number | null;
   /** From a sub-account link (null for a whole-account link or a joint sub-account). */
   ownerPersonId: number | null;
@@ -216,6 +218,7 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
             ? `${tracked}${sub ? ` · ${sub.label}` : ""}`
             : feedName,
           isHsa: r.accountType != null && isHsaCategory(r.accountType),
+          accountType: feeds ? r.accountType : null,
           performanceAccountId: feeds ? r.performanceAccountId : null,
           ownerPersonId: sub?.ownerPersonId ?? null,
           taxType: sub?.taxType ?? null,

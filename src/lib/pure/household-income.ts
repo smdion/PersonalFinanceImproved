@@ -19,6 +19,7 @@ import type {
 } from "@/lib/calculators/types";
 import { bonusCheckContribution, isPreTax } from "@/lib/calculators/paycheck";
 import { roundToCents, sumBy } from "@/lib/utils/math";
+import { isHsaTreatment } from "@/lib/config/account-types";
 
 export type AnnualEarnings = {
   salary: number;
@@ -36,6 +37,9 @@ export type AnnualEarnings = {
   netRegular: number;
   /** Take-home from the bonus check. */
   netBonus: number;
+  /** HSA money paid in outside payroll — deducted above the line (Form 8889),
+   *  so it lowers AGI but isn't on the paycheck. */
+  hsaOutsidePayroll: number;
 };
 
 export function computeAnnualEarnings(args: {
@@ -79,6 +83,14 @@ export function computeAnnualEarnings(args: {
     ),
     netRegular: roundToCents(paycheck.netPay * periodsPerYear),
     netBonus: paycheck.bonusEstimate.bonusNet,
+    hsaOutsidePayroll: roundToCents(
+      sumBy(
+        args.contributionAccounts.filter(
+          (ca) => !ca.isPayrollDeducted && isHsaTreatment(ca.taxTreatment),
+        ),
+        (ca) => ca.annualContribution,
+      ),
+    ),
   };
 }
 
@@ -94,5 +106,6 @@ export function sumHouseholdIncome(people: AnnualEarnings[]): AnnualEarnings {
     ficaWages: total((e) => e.ficaWages),
     netRegular: total((e) => e.netRegular),
     netBonus: total((e) => e.netBonus),
+    hsaOutsidePayroll: total((e) => e.hsaOutsidePayroll),
   };
 }
