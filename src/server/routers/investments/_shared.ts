@@ -390,7 +390,10 @@ const TRANSFER_MARGIN_DAYS = 7;
 
 /**
  * Each SimpleFIN account's holdings on the latest date it reported them,
- * with fund details. Funds sold since (latest row 0 shares) are left out.
+ * with fund details. Only positions reported on that account's latest day
+ * count: institutions often drop a sold fund from the list instead of
+ * reporting it once at 0 shares, so a fund's own latest row can be days
+ * stale. Rows at 0 shares on that day are left out too.
  */
 export async function loadLatestHoldings(db: Db) {
   const h = schema.holdingObservations;
@@ -410,15 +413,20 @@ export async function loadLatestHoldings(db: Db) {
     })
     .from(h)
     .innerJoin(s, eq(s.id, h.securityId));
-  const latest = new Map<string, (typeof rows)[number]>();
+  const accountLatestDay = new Map<number, string>();
   for (const r of rows) {
     if (r.simplefinAccountId === null) continue; // manual rows come later
-    const key = `${r.simplefinAccountId}:${r.securityId}`;
-    const prev = latest.get(key);
-    if (!prev || r.asOf > prev.asOf) latest.set(key, r);
+    const day = accountLatestDay.get(r.simplefinAccountId);
+    if (!day || r.asOf > day)
+      accountLatestDay.set(r.simplefinAccountId, r.asOf);
   }
-  return [...latest.values()]
-    .filter((r) => Number(r.shares) !== 0)
+  return rows
+    .filter(
+      (r) =>
+        r.simplefinAccountId !== null &&
+        r.asOf === accountLatestDay.get(r.simplefinAccountId) &&
+        Number(r.shares) !== 0,
+    )
     .map((r) => ({
       ...r,
       simplefinAccountId: r.simplefinAccountId!,
