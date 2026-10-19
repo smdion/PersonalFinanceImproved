@@ -645,6 +645,28 @@ describe("settings.deductions CRUD", () => {
     expect(updated).not.toHaveProperty("amountPerPeriod");
   });
 
+  it("rejects a FICA-exempt deduction that isn't pre-tax (create and update)", async () => {
+    await expect(
+      caller.settings.deductions.create({
+        jobId,
+        deductionName: "After-tax but exempt",
+        isPretax: false,
+        ficaExempt: true,
+      }),
+    ).rejects.toThrow(/FICA-exempt deduction must also be pre-tax/);
+    const deds = await caller.settings.deductions.list();
+    await expect(
+      caller.settings.deductions.update({
+        id: deds[0]!.id,
+        jobId,
+        deductionName: "Health Insurance Premium",
+        isPretax: false,
+        ficaExempt: true,
+      }),
+    ).rejects.toThrow(/FICA-exempt deduction must also be pre-tax/);
+    expect(await caller.settings.deductions.list()).toHaveLength(2);
+  });
+
   it("delete removes a deduction", async () => {
     const deds = await caller.settings.deductions.list();
     const id = deds[1]!.id;

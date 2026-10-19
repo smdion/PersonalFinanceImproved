@@ -5,6 +5,7 @@
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
   getAccountTypeConfig,
+  getAllCategories,
   categoriesWithIrsLimit,
   getLimitGroup,
   isRetirementParent,
@@ -74,6 +75,43 @@ export function resolveIrsLimit(
   }
 
   return limit;
+}
+
+/**
+ * The yearly cap on an account's payroll contributions that are not FICA
+ * wages (account-type config `payrollFicaExempt` — HSA via a §125
+ * cafeteria plan, IRS Pub 15 / 15-B): the IRS limit for the person's
+ * coverage and age, less the employer's money, which counts toward the
+ * same limit. `null` = contributions to this account type are FICA wages.
+ *
+ * When the coverage isn't recorded (an account type whose limit depends on
+ * it) or the limit isn't in the tax data, the cap can't be sized, so the
+ * whole payroll contribution is treated as exempt (Infinity) rather than
+ * guessed at the lower limit. One rule for the paycheck and the annual tax.
+ */
+export function payrollFicaExemptCap(
+  accountType: string,
+  ageAtYearEnd: number,
+  hsaCoverageType: string | null,
+  limitsRecord: Record<string, number>,
+  employerAnnual: number,
+): number | null {
+  if (!getAllCategories().includes(accountType as AccountCategory)) return null;
+  const cfg = getAccountTypeConfig(accountType as AccountCategory);
+  if (!cfg.payrollFicaExempt) return null;
+  const keys = cfg.irsLimitKeys;
+  if (!keys) return Infinity;
+  if (keys.coverageVariant && hsaCoverageType === null) return Infinity;
+  const baseKey =
+    keys.coverageVariant && hsaCoverageType === "family"
+      ? keys.coverageVariant
+      : keys.base;
+  if (limitsRecord[baseKey] === undefined) return Infinity;
+  return Math.max(
+    0,
+    resolveIrsLimit(accountType, ageAtYearEnd, hsaCoverageType, limitsRecord) -
+      employerAnnual,
+  );
 }
 
 /**

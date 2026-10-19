@@ -14,6 +14,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **Reference data:** the IRS Roth IRA income phase-out ranges, the Additional Medicare Tax thresholds you owe on (separate from the $200k your employer withholds at) and HDHP minimum deductibles for 2025 and 2026 are added to your tax data — you can edit them in Settings like the other IRS limits.
 
+### Fixed
+
+- **Paycheck FICA:** HSA money taken from your paycheck no longer counts as Social Security and Medicare wages (it goes in pre-tax for both under your employer's cafeteria plan), up to the HSA limit for your coverage and age less your employer's contribution. 401(k) deferrals still count, as the IRS requires.
+- **Social Security over the wage base:** when your pay for the year passes the Social Security wage base, each check now shows the year's Social Security averaged over your checks, so a check × the number of checks matches your real take-home for the year. The year schedule still shows when it stops.
+- **Bonus FICA:** the room left under the Social Security wage base is now based on your regular checks' FICA wages, and HSA money the bonus check takes is FICA-exempt within your remaining HSA room.
+- **Deductions:** a deduction can only be marked FICA-exempt if it is also pre-tax; an older row saved the other way is treated as FICA wages.
+
 ---
 
 ## [0.8.7] - 2026-10-13

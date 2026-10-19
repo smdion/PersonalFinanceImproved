@@ -59,6 +59,10 @@ export type ContributionAccountInput = {
    *  Equals employerMatch when uncapped or a flat amount. */
   employerMatchAvailable?: number;
   employerMatchTaxTreatment: TaxTreatmentType;
+  /** Yearly cap on this account's payroll contributions that aren't FICA
+   *  wages (payrollFicaExemptCap); null = they are FICA wages; Infinity =
+   *  exempt in full (cap can't be sized). */
+  ficaExemptAnnualCap: number | null;
 };
 
 /**

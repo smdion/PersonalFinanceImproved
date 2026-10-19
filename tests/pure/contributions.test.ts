@@ -10,6 +10,7 @@ import {
   isEligibleForPriorYear,
   validateContributionOrder,
   formatEmployerMatch,
+  payrollFicaExemptCap,
 } from "@/lib/pure/contributions";
 
 // These tests use the real account-type config, so they reflect actual IRS rules.
@@ -531,5 +532,42 @@ describe("householdSavings", () => {
     });
     expect(r).toMatchObject({ total: 10_000, rate: 0.1 });
     expect(r.groups.map((g) => g.group)).toEqual(["retirement"]);
+  });
+});
+
+describe("payrollFicaExemptCap", () => {
+  it("is null for an account type whose payroll money is FICA wages", () => {
+    expect(payrollFicaExemptCap("401k", 40, null, limits2025, 0)).toBeNull();
+    expect(payrollFicaExemptCap("ira", 40, null, limits2025, 0)).toBeNull();
+    expect(
+      payrollFicaExemptCap("not_a_type", 40, null, limits2025, 0),
+    ).toBeNull();
+  });
+
+  it("is the coverage limit less employer money for an HSA", () => {
+    expect(payrollFicaExemptCap("hsa", 40, "family", limits2025, 500)).toBe(
+      8550 - 500,
+    );
+    expect(payrollFicaExemptCap("hsa", 40, "self_only", limits2025, 0)).toBe(
+      4300,
+    );
+  });
+
+  it("adds the catch-up at 55 and never goes below zero", () => {
+    expect(payrollFicaExemptCap("hsa", 56, "self_only", limits2025, 0)).toBe(
+      4300 + 1000,
+    );
+    expect(payrollFicaExemptCap("hsa", 40, "self_only", limits2025, 9000)).toBe(
+      0,
+    );
+  });
+
+  it("is uncapped when the coverage or the limit isn't known", () => {
+    expect(payrollFicaExemptCap("hsa", 40, null, limits2025, 0)).toBe(Infinity);
+    expect(payrollFicaExemptCap("hsa", 40, "family", {}, 0)).toBe(Infinity);
+    const { hsa_family_limit: _omit, ...noFamily } = limits2025;
+    expect(payrollFicaExemptCap("hsa", 40, "family", noFamily, 0)).toBe(
+      Infinity,
+    );
   });
 });

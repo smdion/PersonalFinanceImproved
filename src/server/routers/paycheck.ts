@@ -49,6 +49,7 @@ import type {
 import { computeHouseholdTax } from "@/lib/pure/tax";
 import { findActiveJob } from "@/lib/pure/profiles";
 import { resolveTaxParams } from "@/lib/config/tax-params";
+import { ageInYear } from "@/lib/utils/date";
 
 /**
  * The standard deduction Pub 15-T's withholding tables were built on, read
@@ -425,6 +426,13 @@ export const paycheckRouter = createTRPCRouter({
             personalContribs,
             salary,
             periodsPerYear,
+            {
+              limits: limitsRecord,
+              ageAtYearEnd: ageInYear(
+                Number(person.dateOfBirth.slice(0, 4)),
+                taxYear,
+              ),
+            },
             contributionPay(activeJob, salary, bonusTerms, comp.bonusOverride)
               .bonusGross,
           );

@@ -32,6 +32,8 @@ export type BonusEstimate = {
   bonusFederalWithholding: number;
   bonusFica: number;
   bonusContributions: number;
+  /** The bonus's FICA wages: bonusGross less FICA-exempt payroll contributions the bonus check takes. */
+  bonusFicaWages: number;
 };
 
 export type PaycheckInput = {
@@ -61,6 +63,8 @@ export type PaycheckResult = {
   preTaxDeductions: DeductionLine[];
   federalTaxableGross: number;
   federalWithholding: number;
+  /** Per-period FICA wages: gross less Section 125 deductions and FICA-exempt payroll contributions. */
+  ficaWages: number;
   ficaSS: number;
   ficaMedicare: number;
   postTaxDeductions: DeductionLine[];

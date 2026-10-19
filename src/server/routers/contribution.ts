@@ -46,7 +46,7 @@ import {
 } from "./_shared";
 import { roundToCents, safeDivide } from "@/lib/utils/math";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
-import { getAge, isPriorYearContribWindow } from "@/lib/utils/date";
+import { ageInYear, getAge, isPriorYearContribWindow } from "@/lib/utils/date";
 import {
   resolveIrsLimit,
   resolvePriorYearLimit,
@@ -595,6 +595,13 @@ export const contributionRouter = createTRPCRouter({
             personalContribs,
             salary,
             periodsPerYear,
+            {
+              limits: limitsRecord,
+              ageAtYearEnd: ageInYear(
+                Number(person.dateOfBirth.slice(0, 4)),
+                asOfDate.getFullYear(),
+              ),
+            },
             pay.bonusGross,
           );
           const rawContribs = [...jobContribs, ...personalContribs];

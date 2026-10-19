@@ -82,6 +82,7 @@ import type {
 } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/pure/date-keys";
 import { resolveTaxParams } from "@/lib/config/tax-params";
+import { ageInYear } from "@/lib/utils/date";
 
 /**
  * Compute the current net-pay-per-check for a job by running the paycheck
@@ -140,6 +141,7 @@ export async function computeJobNetPayPerCheck(
     allLimitRows,
     activeContribSetting,
     allTaxParams,
+    [jobPerson],
   ] = await Promise.all([
     db.select().from(schema.taxBrackets),
     db
@@ -171,6 +173,10 @@ export async function computeJobNetPayPerCheck(
       .from(schema.appSettings)
       .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID)),
     db.select().from(schema.taxParams),
+    db
+      .select({ dateOfBirth: schema.people.dateOfBirth })
+      .from(schema.people)
+      .where(eq(schema.people.id, job.personId)),
   ]);
 
   // One resolver, same as the retirement engine + paycheck. This path
@@ -268,6 +274,15 @@ export async function computeJobNetPayPerCheck(
     personalContribs.filter((c) => c.ownership !== "joint"),
     currentSalary,
     periodsPerYear,
+    {
+      limits: limitsRecord,
+      ageAtYearEnd: jobPerson
+        ? ageInYear(
+            Number(jobPerson.dateOfBirth.slice(0, 4)),
+            resolvedTax.resolvedYear,
+          )
+        : 0,
+    },
     contributionPay(salaryEntry, currentSalary, bonusTerms).bonusGross,
   );
 

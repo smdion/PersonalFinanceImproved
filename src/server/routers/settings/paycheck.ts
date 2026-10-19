@@ -142,6 +142,18 @@ const deductionInput = z.object({
   ficaExempt: z.boolean().default(false),
 });
 
+// Section 125 money is pre-tax for income tax AND FICA; an after-tax
+// deduction can't skip FICA. The paycheck calculator also ignores the flag
+// on an after-tax row (old backups), so this guards new writes.
+const ficaExemptRequiresPretax = (data: {
+  isPretax: boolean;
+  ficaExempt: boolean;
+}) => !data.ficaExempt || data.isPretax;
+const ficaExemptRequiresPretaxIssue = {
+  message: "A FICA-exempt deduction must also be pre-tax",
+  path: ["ficaExempt"],
+};
+
 // --- Procedures ---
 
 export const paycheckProcedures = {
@@ -534,7 +546,12 @@ export const paycheckProcedures = {
     // so gating identity higher than the value that depends on it doesn't
     // make sense. delete stays admin — more destructive, not requested.
     create: contributionProfileProcedure
-      .input(deductionInput)
+      .input(
+        deductionInput.refine(
+          ficaExemptRequiresPretax,
+          ficaExemptRequiresPretaxIssue,
+        ),
+      )
       .mutation(({ ctx, input }) =>
         ctx.db
           .insert(schema.paycheckDeductions)
@@ -543,7 +560,12 @@ export const paycheckProcedures = {
           .then((r) => r[0]),
       ),
     update: contributionProfileProcedure
-      .input(z.object({ id: z.number().int() }).extend(deductionInput.shape))
+      .input(
+        z
+          .object({ id: z.number().int() })
+          .extend(deductionInput.shape)
+          .refine(ficaExemptRequiresPretax, ficaExemptRequiresPretaxIssue),
+      )
       .mutation(({ ctx, input: { id, ...data } }) =>
         ctx.db
           .update(schema.paycheckDeductions)
