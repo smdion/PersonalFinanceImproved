@@ -204,15 +204,14 @@ function LivingCostsCardImpl() {
   // this app doesn't track uniformly; until then, this card intentionally
   // always shows the full-year view (see the note rendered near the toggle
   // below).
-  const netIncome = paycheckData?.people
-    ? sumBy(paycheckData.people, (p) =>
-        p.paycheck ? p.paycheck.netPay * p.paycheck.periodsPerYear : 0,
-      )
+  // Household annual income — salary + the resolved bonus, the same
+  // figure the Income card and the taxes use (the contribution totals
+  // below already include bonus-check contributions).
+  const householdIncome = paycheckData?.householdIncome ?? null;
+  const netIncome = householdIncome
+    ? householdIncome.netRegular + householdIncome.netBonus
     : 0;
-
-  const grossIncome = paycheckData?.people
-    ? sumBy(paycheckData.people, (p) => p.salary ?? 0)
-    : 0;
+  const grossIncome = householdIncome?.gross ?? 0;
   const incomeBase = useGross ? grossIncome : netIncome;
   const incomeLabel = useGross ? "gross" : "net";
 

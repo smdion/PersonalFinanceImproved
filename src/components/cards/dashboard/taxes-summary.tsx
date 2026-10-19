@@ -72,6 +72,12 @@ export function TaxesSummary({
           </span>
         )}
       </div>
+      {!isYtd &&
+        householdTax!.warnings.map((w) => (
+          <p key={w} className="text-faint mt-1">
+            {w}
+          </p>
+        ))}
     </div>
   );
 }

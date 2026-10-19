@@ -50,7 +50,8 @@ const budgetQuery = {
 };
 
 // One person, monthly pay (periodsPerYear: 12) for simple arithmetic.
-// netPay 4000/mo -> netIncome 48000/yr. salary (gross) 60000/yr.
+// netPay 4000/mo -> netIncome 48000/yr. salary (gross) 60000/yr, no bonus
+// (householdIncome is the router's rollup the card reads).
 // One raw paycheck deduction (health insurance) at $100/period -> $1200/yr,
 // only ever subtracted in Gross mode (Net mode's netPay already nets it out).
 const paycheckQuery = {
@@ -63,8 +64,9 @@ const paycheckQuery = {
         rawDeductions: [{ amountPerPeriod: "100" }],
       },
     ],
+    householdIncome: { gross: 60000, netRegular: 48000, netBonus: 0 },
     householdTax: { totalTax: 12000 },
-  },
+  } as Record<string, unknown>,
 };
 
 // Retirement: one IRA (non-payroll, $2000/yr) + one 401k (payroll-deducted,
@@ -206,5 +208,24 @@ describe("LivingCostsCard math", () => {
     // Gross and Net waterfalls reconcile to the same total once Taxes and
     // Other Paycheck Deductions are both accounted for.
     expect(screen.getByText("Total: 100% of gross")).toBeInTheDocument();
+  });
+
+  it("income includes the bonus (household annual income), in both modes", () => {
+    const original = paycheckQuery.data.householdIncome;
+    paycheckQuery.data.householdIncome = {
+      gross: 72000,
+      netRegular: 48000,
+      netBonus: 7200,
+    };
+    try {
+      render(<LivingCostsCard />);
+      // Housing: 12000 / (48000 + 7200) net = 21.7% -> 22%.
+      expect(screen.getByText("22%")).toBeInTheDocument();
+      fireEvent.click(screen.getByText(/Gross \(\$72,000\.00\)/));
+      // Housing and Taxes: 12000 / 72000 gross = 16.7% -> 17% each.
+      expect(screen.getAllByText("17%")).toHaveLength(2);
+    } finally {
+      paycheckQuery.data.householdIncome = original;
+    }
   });
 });
