@@ -2,23 +2,9 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**372 procedures across 53 routers.**
+**363 procedures across 52 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
-
-## `analytics`
-
-| Procedure             | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| --------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bulkUpsertHoldings`  | mutation | `portfolioProcedure` | Bulk upsert holdings for one account+snapshot in a single round-trip. Replaces the entire set for that account+snapshot (delete-then-insert in a transaction).                                           |
-| `getAccounts`         | query    | `portfolioProcedure` | Get all active performance accounts (used to build the account list on the page).                                                                                                                        |
-| `getAssetClasses`     | query    | `portfolioProcedure` | Get all asset class params (for the asset class dropdown).                                                                                                                                               |
-| `getGlidePathForAge`  | query    | `portfolioProcedure` | Get glide path allocations for a specific age (for drift computation). Returns an empty array if no glide path is configured.                                                                            |
-| `getHoldings`         | query    | `portfolioProcedure` | Get all holdings for a given snapshot (or the latest snapshot that has holdings). Only returns holdings for isActive = true performance_accounts.                                                        |
-| `getHoldingsHistory`  | query    | `portfolioProcedure` | Fetch holdings across multiple snapshots for historical allocation/drift charts. Only returns snapshots that actually have ≥1 holding.                                                                   |
-| `getSnapshotBalances` | query    | `portfolioProcedure` | Get portfolio account balances for a given snapshot (to compute dollar values from weights).                                                                                                             |
-| `getSnapshots`        | query    | `portfolioProcedure` | Get all portfolio snapshots (for the snapshot selector).                                                                                                                                                 |
-| `lookupTicker`        | query    | `portfolioProcedure` | Ticker lookup from the fund facts Ledgr already stores (SEC filings or your entries) — name, expense ratio, and the asset class linked to the fund's dominant category when one holds at least 80% of it |
 
 ## `api-docs`
 

@@ -155,7 +155,6 @@ const VERSION_TABLE_NAMES = [
   "mc_preset_return_overrides",
   "projection_overrides",
   "mc_user_presets",
-  "account_holdings",
   "budget_income_adjustments",
   "account_basis",
   "budget_item_category_links",
@@ -198,9 +197,9 @@ const BASELINE_HASHES: Record<string, string> = {
     "v0.6_final",
 };
 
-// sha256 of every PostgreSQL migration file of the v0.8 line up to the
-// v0.8.5 squash, including the pre-release 0004–0011 that v0.8.5 squashed
-// into one. The LATEST applied row names exactly where an install was, so a
+// sha256 of every PostgreSQL migration file of the v0.8 line, including the
+// pre-release 0004–0011 that v0.8.5 squashed into one. Add each new
+// migration here when it ships. The LATEST applied row names exactly where an install was, so a
 // backup taken before the squash is labelled with its real schema tag
 // (all are in backup-transforms' V08_SCHEMA_TAGS).
 const V08_MIGRATION_HASHES: Record<string, string> = {
@@ -234,6 +233,11 @@ const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.8.6: savings_goals parent key + index, old roth_basis names, pending_rollovers dropped.
   b9e85651c61ef84f14d47c010ce6eebd53291b32401381f8445d340924a7886d:
     "0005_v086_schema_cleanup",
+  // v0.8.8: holding history tables; legacy account_holdings dropped.
+  "410f5133c53ca099b8a7e996a5f490795aeadf37fb76e8a896af234a60387964":
+    "0006_v088_holding_periods",
+  "18d3b73b7b2f4b5b517acf2bace36352da2177adda54e886e13b407cce3e23e7":
+    "0007_v088_drop_account_holdings",
 };
 
 /**
@@ -274,6 +278,17 @@ async function detectSchemaEra(
   // Heuristic fallback for older eras (these installs are years old and rare;
   // their probes have never been exact but the cumulative backup-transform
   // ladder tolerates an over-conservative guess).
+
+  // A v0.8.5+ install (has `securities`) whose migration rows can't be
+  // matched: label it v0.8.5 rather than letting it fall through — since
+  // 0007 dropped account_holdings, it would otherwise read as v0.5.
+  const { rows: probeV085 } = await client.query(
+    `SELECT EXISTS (
+      SELECT 1 FROM information_schema.tables
+      WHERE table_schema = 'public' AND table_name = 'securities'
+    ) AS exists`,
+  );
+  if (probeV085[0]?.exists) return "0004_v085_investments";
 
   // v0.6.x install whose __drizzle_migrations lacks the baseline row:
   // account_holdings is in the v6 baseline itself.
@@ -1278,6 +1293,12 @@ function handleSQLiteSquashUpgrade(
   }
 
   // Heuristic fallback for older eras / installs missing the baseline row.
+  // v0.8.5+ first (has `securities`; account_holdings is gone since 0007).
+  const probeV085Sqlite = sqlite
+    .prepare(
+      "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='securities'",
+    )
+    .get() as { n: number };
   const probeV06Sqlite = sqlite
     .prepare(
       "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='account_holdings'",
@@ -1295,13 +1316,15 @@ function handleSQLiteSquashUpgrade(
     .get() as { n: number };
   const schemaVersion =
     hashEra ??
-    (probeV06Sqlite.n > 0
-      ? "v0.6_final"
-      : probeV05Sqlite.n > 0
-        ? "v0.5_final"
-        : probeV03Sqlite.n > 0
-          ? "v0.3_final"
-          : "v0.2_final");
+    (probeV085Sqlite.n > 0
+      ? "0004_v085_investments"
+      : probeV06Sqlite.n > 0
+        ? "v0.6_final"
+        : probeV05Sqlite.n > 0
+          ? "v0.5_final"
+          : probeV03Sqlite.n > 0
+            ? "v0.3_final"
+            : "v0.2_final");
 
   log("info", "sqlite_squash_upgrade_start", {
     appliedMigrations: appliedCount,

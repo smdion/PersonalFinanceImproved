@@ -74,6 +74,7 @@ const V08_SCHEMA_TAGS = [
   "0004_v085_investments", // PG + SQLite: v0.8.5 as released — investments, SEC fund facts, asset_class_buckets
   "0005_v086_schema_cleanup", // PG + SQLite: savings_goals parent key (PG) + index, old roth_basis names, filing_status type — no data shape change
   "0006_v088_holding_periods", // PG + SQLite: holding_periods + holding_period_weights (new tables — older backups restore them empty)
+  "0007_v088_drop_account_holdings", // PG + SQLite: drop legacy account_holdings (replaced by holding_periods) — no longer in VERSION_TABLES, so an older backup's rows are skipped on restore
 ] as const;
 
 /** First tags whose backups carry asset_class_buckets (PG, SQLite). */

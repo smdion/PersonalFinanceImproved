@@ -27,7 +27,6 @@ import { secRouter } from "./sec";
 import { demoRouter } from "./demo";
 import { dataBrowserRouter } from "./data-browser";
 import { testingRouter } from "./testing";
-import { analyticsRouter } from "./analytics";
 import { taxBucketsRouter } from "./tax-buckets";
 
 export const appRouter = createTRPCRouter({
@@ -58,7 +57,6 @@ export const appRouter = createTRPCRouter({
   demo: demoRouter,
   dataBrowser: dataBrowserRouter,
   testing: testingRouter,
-  analytics: analyticsRouter,
   taxBuckets: taxBucketsRouter,
 });
 
