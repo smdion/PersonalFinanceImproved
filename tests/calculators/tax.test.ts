@@ -54,9 +54,11 @@ describe("calculateTax", () => {
       expect(result.federalTax).toBeCloseTo(26059.28, 0);
     });
 
-    it("computes effective rate", () => {
-      expect(result.effectiveRate).toBeGreaterThan(0.15);
-      expect(result.effectiveRate).toBeLessThan(0.25);
+    it("computes effective rate as federal tax ÷ AGI (FICA excluded)", () => {
+      expect(result.effectiveRate).toBeCloseTo(
+        result.federalTax / result.agi,
+        10,
+      );
     });
 
     it("computes FICA Social Security capped at wage base", () => {

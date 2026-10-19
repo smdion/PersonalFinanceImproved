@@ -112,10 +112,10 @@ describe("paycheck router — seeded person, no job", () => {
       expect(entry.paycheck).toBeNull();
     });
 
-    it("tax is null — no job was seeded", async () => {
+    it("earnings is null — no job was seeded", async () => {
       const result = await caller.paycheck.computeSummary();
       const entry = result.people[0]!;
-      expect(entry.tax).toBeNull();
+      expect(entry.earnings).toBeNull();
     });
 
     it("salary is 0 — no job was seeded", async () => {
@@ -193,15 +193,15 @@ describe("paycheck router — optional input params", () => {
       expect(result.taxYear).toBe(2025);
     });
 
-    it("returns null paycheck/tax for an unseeded (but in-range) year", async () => {
+    it("returns null paycheck/earnings for an unseeded (but in-range) year", async () => {
       // 2024 is within the 2000-2100 bound but has no seeded tables — the
-      // person entry still renders, paycheck/tax null (onMissing: "null").
+      // person entry still renders, paycheck/earnings null (onMissing: "null").
       const result = await caller.paycheck.computeSummary({
         taxYearOverride: 2024,
       });
       expect(result.people).toHaveLength(1);
       expect(result.people[0]!.paycheck).toBeNull();
-      expect(result.people[0]!.tax).toBeNull();
+      expect(result.people[0]!.earnings).toBeNull();
       expect(result.taxYear).toBe(2024);
     });
 
@@ -1087,6 +1087,59 @@ describe("paycheck router — multiple people", () => {
     const p2 = result.people.find((p) => p.person.name === "Person Two")!;
     expect(p1.salary).toBe(100000);
     expect(p2.salary).toBe(80000);
+  });
+});
+
+describe("paycheck router — household income and tax include the bonus", () => {
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let cleanup: () => void;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    caller = ctx.caller;
+    cleanup = ctx.cleanup;
+    const person1 = await seedPerson(ctx.db, "Bonus Earner", "1985-01-01");
+    const person2 = await seedPerson(ctx.db, "Salary Earner", "1987-01-01");
+    seedJob(ctx.db, person1, {
+      employerName: "CompanyA",
+      annualSalary: "100000",
+      payPeriod: "biweekly",
+      payWeek: "even",
+      startDate: "2020-01-01",
+      w4FilingStatus: "MFJ",
+      bonusOverride: "12000",
+    });
+    seedJob(ctx.db, person2, {
+      employerName: "CompanyB",
+      annualSalary: "80000",
+      payPeriod: "monthly",
+      payWeek: "na",
+      startDate: "2021-01-01",
+      w4FilingStatus: "MFJ",
+    });
+  });
+
+  afterAll(() => cleanup());
+
+  it("household income is salary + the set bonus, and the tax is figured on it", async () => {
+    const result = await caller.paycheck.computeSummary();
+    const income = result.householdIncome!;
+    expect(income.salary).toBe(180_000);
+    expect(income.bonus).toBe(12_000);
+    expect(income.gross).toBe(192_000);
+    const tax = result.householdTax!;
+    expect(tax.wageAgi).toBeCloseTo(income.gross - income.preTaxFederal, 2);
+    // The MFJ liability row is in the reference data, so no fallback.
+    expect(
+      tax.warnings.some((w) => w.includes("no Additional Medicare liability")),
+    ).toBe(false);
+  });
+
+  it("each earner's FICA wages include their bonus", async () => {
+    const result = await caller.paycheck.computeSummary();
+    const p1 = result.people.find((p) => p.person.name === "Bonus Earner")!;
+    expect(p1.earnings!.gross).toBe(112_000);
+    expect(p1.earnings!.ficaWages).toBeCloseTo(112_000, 0);
   });
 });
 

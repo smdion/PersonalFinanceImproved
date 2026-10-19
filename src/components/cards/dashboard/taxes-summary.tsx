@@ -23,19 +23,13 @@ export function TaxesSummary({
 }) {
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
-  const people = data?.people?.filter((d) => d.paycheck && d.tax) ?? [];
-  if (people.length === 0) return null;
+  const people = data?.people?.filter((d) => d.paycheck) ?? [];
+  const householdTax = data?.householdTax ?? null;
+  if (people.length === 0 || (!isYtd && !householdTax)) return null;
 
-  // Household-level tax (combined federal, per-person FICA) for annual projection.
-  // Per-person calculateTax double-counts the MFJ standard deduction — the router
-  // computes a combined household result with one standard deduction applied once.
-  const householdTax = data?.householdTax;
-  const taxResult = householdTax ?? people[0]?.tax;
-
-  // For annual projection (projected or blended): use the household-level tax calculation
-  // which correctly combines incomes, applies ONE standard deduction, and caps SS per-person.
-  // Blended household tax is a future enhancement — for now, projected tax is acceptable.
-  // For YTD: use paycheck-based withholding since it reflects actual amounts withheld.
+  // Projected and year-end: the household tax on household annual income
+  // (salary + the resolved bonus — one standard deduction, FICA per person,
+  // Additional Medicare on the household). YTD: paycheck withholding so far.
   let totalFederal: number;
   let totalFica: number;
   if (isYtd) {
@@ -48,16 +42,9 @@ export function TaxesSummary({
       people,
       (d) => (d.paycheck!.ficaSS + d.paycheck!.ficaMedicare) * periods(d),
     );
-  } else if (householdTax) {
-    totalFederal = householdTax.federalTax;
-    totalFica = householdTax.ficaSS + householdTax.ficaMedicare;
   } else {
-    // Fallback to per-person sum if household calc unavailable
-    totalFederal = sumBy(people, (d) => d.tax?.federalTax ?? 0);
-    totalFica = sumBy(
-      people,
-      (d) => (d.tax?.ficaSS ?? 0) + (d.tax?.ficaMedicare ?? 0),
-    );
+    totalFederal = householdTax!.federalTax;
+    totalFica = householdTax!.ficaSS + householdTax!.ficaMedicare;
   }
 
   return (
@@ -76,11 +63,11 @@ export function TaxesSummary({
           {isYtd ? "Federal W/H" : "Federal"} {formatCurrency(totalFederal)} ·
           FICA {formatCurrency(totalFica)}
         </span>
-        {taxResult && (
+        {householdTax && (
           <span className="inline-flex items-center gap-1">
-            {formatPercent(taxResult.effectiveRate, 1)} effective
-            <HelpTip text="Actual percentage of total income paid in federal tax. Lower than marginal due to progressive brackets." />
-            · {formatPercent(taxResult.marginalRate, 1)} marginal
+            {formatPercent(householdTax.effectiveRate, 1)} effective
+            <HelpTip text="Federal income tax as a share of AGI (salary + bonus minus pre-tax money) — the same way your tax history is figured. FICA isn't included; it's its own line." />
+            · {formatPercent(householdTax.marginalRate, 1)} marginal
             <HelpTip text="Tax rate on your next dollar of income. This is the bracket your top earnings fall into." />
           </span>
         )}

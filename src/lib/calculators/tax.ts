@@ -4,7 +4,17 @@
  * Estimates total federal tax burden for the year. Unlike the paycheck calculator (which
  * computes per-period withholding), this computes the actual annual tax liability.
  *
- * Flow: Annual Gross → AGI → Taxable Income → Federal Tax (brackets) → FICA → Total
+ * Flow: per-person earnings → household wage AGI → Taxable Income → Federal Tax (brackets)
+ *       + per-person FICA + household Additional Medicare → Total
+ *
+ * calculateHouseholdTax is the one path: federal on the household's combined
+ * income with ONE standard deduction; Social Security per person on that
+ * person's FICA wages, capped at the wage base; Medicare per person; the
+ * 0.9% Additional Medicare Tax on the household's combined Medicare wages
+ * above the filing status's LIABILITY threshold (reference data). Employers
+ * withhold it per employee above a different, WITHHOLDING threshold — that
+ * one belongs to paycheck withholding only; here it only sizes the
+ * withheld-vs-owed warning. calculateTax is the one-person form.
  *
  * Known limitation: Tax-exempt interest (e.g. municipal bond interest) is not included
  * in provisional income for Social Security benefit taxation. The engine's computeTaxableSS()
@@ -16,8 +26,8 @@
  * Key differences from the paycheck calculator:
  *   - Uses actual annual income (not annualized per-period)
  *   - Applies standard deduction (paycheck withholding doesn't)
- *   - Includes Additional Medicare Tax (0.9% above threshold — not withheld per-paycheck)
- *   - SS wage base cap is applied to total annual gross, not per-period
+ *   - Includes Additional Medicare Tax (0.9% above the liability threshold)
+ *   - SS wage base cap is applied to each person's annual FICA wages, not per-period
  *
  * W-4 Step 2(c) checkbox:
  *   The checkbox indicates the employee has two jobs or a working spouse, which halves the
@@ -27,111 +37,166 @@
  *   Note: 2(c) primarily affects paycheck withholding accuracy, not actual tax liability.
  *   For annual tax estimation, the standard (non-2c) brackets should typically be used.
  */
-import type { TaxInput, TaxResult } from "./types";
-import { roundToCents, safeDivide } from "../utils/math";
+import type { TaxBracketInput, TaxInput, TaxResult } from "./types";
+import { roundToCents, safeDivide, sumBy } from "../utils/math";
+import { formatCurrency } from "../utils/format";
 import { sumBracketTax } from "./tax-brackets";
 
-export function calculateTax(input: TaxInput): TaxResult {
+/** One person's earnings for the year, as the tax sees them (see computeAnnualEarnings). */
+export type TaxEarnings = {
+  /** Salary + bonus. */
+  gross: number;
+  /** Money that comes out before federal income tax (pre-tax contributions, Section 125 deductions). */
+  preTaxFederal: number;
+  /** Social Security / Medicare wages: gross less Section 125 deductions and FICA-exempt payroll contributions. */
+  ficaWages: number;
+};
+
+export type HouseholdTaxInput = {
+  people: TaxEarnings[];
+  /** Liability brackets (non-2(c)) with the filing status's standard deduction. */
+  taxBrackets: TaxBracketInput;
+  /** The filing status's Additional Medicare LIABILITY threshold
+   *  (`fica_medicare_surtax_liability_<status>`). null when the tax data
+   *  lacks the row — the withholding threshold is used, with a warning. */
+  medicareLiabilityThreshold: number | null;
+};
+
+export type HouseholdTaxResult = {
+  /** Σ gross − Σ pre-tax: the AGI the tax is figured on (wages only — no investment income). */
+  wageAgi: number;
+  taxableIncome: number;
+  federalTax: number;
+  marginalRate: number;
+  ficaSS: number;
+  /** Medicare including the Additional Medicare Tax. */
+  ficaMedicare: number;
+  /** The Additional Medicare Tax owed (part of ficaMedicare). */
+  additionalMedicare: number;
+  totalTax: number;
+  /** Federal income tax ÷ wage AGI — the same definition as the tax history. FICA is its own line. */
+  effectiveRate: number;
+  warnings: string[];
+};
+
+export function calculateHouseholdTax(
+  input: HouseholdTaxInput,
+): HouseholdTaxResult {
+  const { people, taxBrackets } = input;
   const warnings: string[] = [];
 
-  const {
-    annualGross,
-    preTaxDeductionsAnnual,
-    taxBrackets,
-    w4CheckboxOverride,
-  } = input;
+  // ── Federal: combined income, ONE standard deduction ──
+  // Itemized deductions are not modelled.
+  const wageAgi =
+    sumBy(people, (p) => p.gross) - sumBy(people, (p) => p.preTaxFederal);
+  const taxableIncome = Math.max(0, wageAgi - taxBrackets.standardDeduction);
+  const bracketResult = sumBracketTax(taxableIncome, taxBrackets.brackets);
+  const federalTax = roundToCents(bracketResult.total);
+
+  // ── Social Security: per person, capped at the wage base ──
+  // (A person with two employers can have more withheld; the excess is a
+  // credit on the return — this is the liability.)
+  const ficaSS = roundToCents(
+    sumBy(
+      people,
+      (p) =>
+        Math.min(Math.max(0, p.ficaWages), taxBrackets.socialSecurityWageBase) *
+        taxBrackets.socialSecurityRate,
+    ),
+  );
+
+  // ── Medicare: per person, no cap; Additional Medicare on the household ──
+  const medicareWages = sumBy(people, (p) => Math.max(0, p.ficaWages));
+  const withholdingThreshold = taxBrackets.medicareAdditionalThreshold;
+  const liabilityThreshold =
+    input.medicareLiabilityThreshold ?? withholdingThreshold;
+  if (input.medicareLiabilityThreshold === null) {
+    warnings.push(
+      `Your tax data has no Additional Medicare liability threshold for this filing status, so the ${formatCurrency(withholdingThreshold, 0)} withholding threshold is used.`,
+    );
+  }
+  const rate = taxBrackets.medicareAdditionalRate;
+  const additionalMedicare = roundToCents(
+    Math.max(0, medicareWages - liabilityThreshold) * rate,
+  );
+  const ficaMedicare = roundToCents(
+    medicareWages * taxBrackets.medicareRate + additionalMedicare,
+  );
+
+  // Employers withhold the surtax per employee above the withholding
+  // threshold; Form 8959 settles the difference at filing.
+  const withheld = roundToCents(
+    sumBy(
+      people,
+      (p) => Math.max(0, p.ficaWages - withholdingThreshold) * rate,
+    ),
+  );
+  if (additionalMedicare - withheld >= 1) {
+    warnings.push(
+      `Additional Medicare Tax: your household owes 0.9% on combined Medicare wages above ${formatCurrency(liabilityThreshold, 0)}, but employers only withhold it on one person's wages above ${formatCurrency(withholdingThreshold, 0)} — about ${formatCurrency(additionalMedicare - withheld, 0)} more is due when you file (Form 8959).`,
+    );
+  } else if (withheld - additionalMedicare >= 1) {
+    warnings.push(
+      `Additional Medicare Tax: employers withhold 0.9% on one person's wages above ${formatCurrency(withholdingThreshold, 0)}, but your household only owes it on combined Medicare wages above ${formatCurrency(liabilityThreshold, 0)} — about ${formatCurrency(withheld - additionalMedicare, 0)} comes back as a credit when you file (Form 8959).`,
+    );
+  }
+
+  const totalTax = roundToCents(federalTax + ficaSS + ficaMedicare);
+  return {
+    wageAgi: roundToCents(wageAgi),
+    taxableIncome: roundToCents(taxableIncome),
+    federalTax,
+    marginalRate: bracketResult.marginalRate,
+    ficaSS,
+    ficaMedicare,
+    additionalMedicare,
+    totalTax,
+    effectiveRate: Number(safeDivide(federalTax, wageAgi) ?? 0),
+    warnings,
+  };
+}
+
+/** One person's tax — calculateHouseholdTax for a household of one. */
+export function calculateTax(input: TaxInput): TaxResult {
+  const { taxBrackets, w4CheckboxOverride } = input;
 
   // ── W-4 2(c) checkbox resolution ──
   // null = auto (use whatever bracket set the tRPC layer passed based on job settings)
   // true/false = user explicitly chose, overriding the job's W-4 setting
   const w4CheckboxUsed = w4CheckboxOverride ?? taxBrackets.w4Checkbox ?? false;
+  const warnings: string[] = [];
   if (w4CheckboxOverride !== null) {
     warnings.push(
       `W-4 Step 2(c) checkbox manually ${w4CheckboxOverride ? "enabled" : "disabled"} by user`,
     );
   }
 
-  // ── Step 1: Adjusted Gross Income → Taxable Income ──
-  // AGI = gross minus pre-tax deductions (401k, HSA, health insurance, etc.)
-  // Taxable income = AGI minus standard deduction (itemized deductions not yet implemented)
-  //
-  // `agi` doubles as a MAGI estimate for callers (e.g. the Household Income
-  // dashboard tile) — Ledgr doesn't track the usual MAGI add-backs (tax-exempt
-  // interest, foreign earned income exclusion) or non-payroll above-the-line
-  // deductions (e.g. a traditional IRA contribution made outside payroll), so
-  // this is AGI proper, not a purpose-specific MAGI.
-  // Close enough for a working household with no muni bonds/foreign income.
-  const agi = annualGross - preTaxDeductionsAnnual;
-  const taxableIncome = Math.max(0, agi - taxBrackets.standardDeduction);
-
-  // ── Step 2: Federal income tax via progressive bracket walk ──
-  // Walk brackets bottom-to-top, taxing each slice at its bracket rate.
-  // The marginal rate is the rate of the highest bracket the income reaches.
-  const bracketResult = sumBracketTax(taxableIncome, taxBrackets.brackets);
-  const marginalRate = bracketResult.marginalRate;
-  const federalTax = roundToCents(bracketResult.total);
-
-  // ── Step 3: FICA Social Security ──
-  // Employee pays 6.2% (from input) on gross income up to the wage base cap (e.g. $176,100).
-  // Income above the cap is not subject to SS tax.
-  const ssBase = Math.min(annualGross, taxBrackets.socialSecurityWageBase);
-  const ficaSS = roundToCents(ssBase * taxBrackets.socialSecurityRate);
-
-  // ── Step 4: FICA Medicare ──
-  // Base Medicare: 1.45% (from input) on ALL gross income (no cap).
-  //
-  // Additional Medicare Tax (0.9% surtax) — two different thresholds apply:
-  //
-  //   1. WITHHOLDING threshold: $200,000 per person, regardless of filing status.
-  //      Employers must withhold on the individual employee's wages above $200k.
-  //      This is the threshold used in this calculator (medicareAdditionalThreshold).
-  //
-  //   2. LIABILITY threshold (determined on tax return): varies by filing status.
-  //      - MFJ: $250,000 combined household income
-  //      - MFS: $125,000
-  //      - Single/HoH: $200,000
-  //
-  //   Because withholding and liability use different thresholds for MFJ filers,
-  //   the amount withheld may not match the actual liability:
-  //     - If each spouse earns $150k ($300k combined > $250k MFJ threshold),
-  //       neither employer withholds the surtax, but the couple OWES it on their return.
-  //     - If one spouse earns $210k but combined income is under $250k,
-  //       the employer withholds the surtax, but the couple can claim a CREDIT on their return.
-  //   Reconciliation happens on Form 8959 at filing time.
-  let ficaMedicare = annualGross * taxBrackets.medicareRate;
-  const additionalMedicareApplies =
-    annualGross > taxBrackets.medicareAdditionalThreshold;
-  if (additionalMedicareApplies) {
-    ficaMedicare +=
-      (annualGross - taxBrackets.medicareAdditionalThreshold) *
-      taxBrackets.medicareAdditionalRate;
-    if (input.filingStatus === "MFJ") {
-      warnings.push(
-        `Additional Medicare Tax: your employer withholds the 0.9% surtax on individual wages above ` +
-          `$${taxBrackets.medicareAdditionalThreshold.toLocaleString()}, but MFJ filers owe it on combined ` +
-          `household income above $250k. If your combined income is below $250k you can claim a credit ` +
-          `on Form 8959; if both spouses earn under $200k but combined income exceeds $250k, you may owe ` +
-          `additional tax at filing.`,
-      );
-    }
-  }
-  ficaMedicare = roundToCents(ficaMedicare);
-
-  // ── Step 5: Totals and rates ──
-  const totalTax = federalTax + ficaSS + ficaMedicare;
-  // Effective rate = total tax burden as a percentage of gross income
-  const effectiveRate = Number(safeDivide(totalTax, annualGross) ?? 0);
+  const household = calculateHouseholdTax({
+    people: [
+      {
+        gross: input.annualGross,
+        preTaxFederal: input.preTaxDeductionsAnnual,
+        ficaWages: input.ficaWagesAnnual ?? input.annualGross,
+      },
+    ],
+    taxBrackets,
+    // One person: the Single/HoH liability threshold equals the per-employee
+    // withholding one; a married caller passes the liability row.
+    medicareLiabilityThreshold:
+      input.medicareLiabilityThreshold ??
+      taxBrackets.medicareAdditionalThreshold,
+  });
 
   return {
-    agi: roundToCents(agi),
-    taxableIncome: roundToCents(taxableIncome),
-    federalTax,
-    effectiveRate,
-    marginalRate,
-    ficaSS,
-    ficaMedicare,
-    totalTax: roundToCents(totalTax),
+    agi: household.wageAgi,
+    taxableIncome: household.taxableIncome,
+    federalTax: household.federalTax,
+    effectiveRate: household.effectiveRate,
+    marginalRate: household.marginalRate,
+    ficaSS: household.ficaSS,
+    ficaMedicare: household.ficaMedicare,
+    totalTax: household.totalTax,
     w4CheckboxUsed,
-    warnings,
+    warnings: [...warnings, ...household.warnings],
   };
 }

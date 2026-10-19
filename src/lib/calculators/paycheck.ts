@@ -162,7 +162,7 @@ function regularFicaExemptPerPeriod(
 }
 
 /** Pre-tax treatments: traditional 401k ('pre_tax') and HSA ('hsa') both reduce taxable income. */
-function isPreTax(treatment: string): boolean {
+export function isPreTax(treatment: string): boolean {
   // lint-violation-ok: "hsa" here is the tax-treatment value (TaxTreatment enum), not an account category
   return treatment === "pre_tax" || treatment === "hsa";
 }

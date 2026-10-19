@@ -191,7 +191,7 @@ function HouseholdIncomeCardImpl() {
                 maxWidth={280}
               />
             </span>
-            <span>{formatCurrency(data.householdTax.agi)}</span>
+            <span>{formatCurrency(data.householdTax.wageAgi)}</span>
           </div>
         )}
       </div>

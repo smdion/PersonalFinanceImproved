@@ -9,7 +9,7 @@ import {
   calculateBlendedAnnual,
 } from "@/lib/calculators/paycheck";
 import type { SalarySegment } from "@/lib/calculators/paycheck";
-import { calculateTax } from "@/lib/calculators/tax";
+import { calculateHouseholdTax } from "@/lib/calculators/tax";
 import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
 import {
   toNumber,
@@ -43,10 +43,12 @@ import {
 import type {
   DeductionLine,
   TaxBracketInput,
-  TaxInput,
   BlendedAnnualTotals,
 } from "@/lib/calculators/types";
-import { computeHouseholdTax } from "@/lib/pure/tax";
+import {
+  computeAnnualEarnings,
+  sumHouseholdIncome,
+} from "@/lib/pure/household-income";
 import { findActiveJob } from "@/lib/pure/profiles";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import { ageInYear } from "@/lib/utils/date";
@@ -316,7 +318,7 @@ export const paycheckRouter = createTRPCRouter({
               job: null,
               salary: 0,
               paycheck: null,
-              tax: null,
+              earnings: null,
               rawDeductions: [],
               rawContribs: [],
               incompleteAccountIds,
@@ -341,7 +343,7 @@ export const paycheckRouter = createTRPCRouter({
               job: jobForClient,
               salary: 0,
               paycheck: null,
-              tax: null,
+              earnings: null,
               rawDeductions: [],
               rawContribs: [],
               incompleteAccountIds,
@@ -524,32 +526,17 @@ export const paycheckRouter = createTRPCRouter({
             }
           }
 
-          // Annual tax estimate using non-checkbox brackets
-          const annualBracketRow = allBrackets.find(
-            (b) =>
-              b.filingStatus === activeJob.w4FilingStatus &&
-              b.w4Checkbox === false,
-          );
-
-          let tax = null;
-          if (annualBracketRow) {
-            const annualBracketInput = buildLiabilityBracketInput(
-              annualBracketRow,
-              limitsMap,
-            );
-            const preTaxAnnual =
-              paycheck.preTaxDeductions.reduce((s, d) => s + d.amount, 0) *
-              periodsPerYear;
-            const taxInput: TaxInput = {
-              annualGross: salary,
-              preTaxDeductionsAnnual: preTaxAnnual,
-              filingStatus: activeJob.w4FilingStatus!,
-              taxBrackets: annualBracketInput,
-              w4CheckboxOverride: null,
-              asOfDate,
-            };
-            tax = calculateTax(taxInput);
-          }
+          // This person's year: salary + the resolved bonus, pre-tax money
+          // and FICA wages — what the household tax and every income
+          // figure read (household annual income, DESIGN.md).
+          const earnings = computeAnnualEarnings({
+            salary,
+            periodsPerYear,
+            paycheck,
+            contributionAccounts: contribAccounts,
+            deductions,
+            includeContribInBonus: paycheckInput.includeContribInBonus,
+          });
 
           const rawContribs = [...jobContribs, ...personalContribs];
           const budgetOverride = activeJob.budgetPeriodsPerMonth ?? null;
@@ -578,7 +565,7 @@ export const paycheckRouter = createTRPCRouter({
             paycheck,
             fullFormulaBonusEstimate,
             blendedAnnual,
-            tax,
+            earnings,
             rawDeductions: jobDeductions,
             rawContribs,
             budgetPerMonth: getRegularPeriodsPerMonth(
@@ -599,55 +586,37 @@ export const paycheckRouter = createTRPCRouter({
         (c) => c.isActive && c.ownership === "joint",
       );
 
-      // Household-level tax calculation for MFJ filers.
-      // Per-person calculateTax gives each person the full MFJ standard deduction,
-      // which double-counts it. The correct approach: combine all incomes, apply
-      // ONE standard deduction, walk brackets once for federal. FICA stays per-person.
-      const activePeople = results.filter((r) => r.paycheck && r.tax && r.job);
+      // Household annual income and tax. Federal on the combined income
+      // with ONE standard deduction; FICA per person on FICA wages;
+      // Additional Medicare on the household's combined Medicare wages
+      // above the filing status's liability threshold.
+      const earners = results.filter((r) => r.paycheck && r.earnings && r.job);
+      const householdIncome =
+        earners.length > 0
+          ? sumHouseholdIncome(earners.map((r) => r.earnings!))
+          : null;
       let householdTax = null;
-      if (activePeople.length > 0) {
-        const filingStatus = activePeople[0]!.job!.w4FilingStatus!;
+      if (earners.length > 0) {
+        const filingStatus = earners[0]!.job!.w4FilingStatus!;
         const bracketRow = allBrackets.find(
           (b) => b.filingStatus === filingStatus && b.w4Checkbox === false,
         );
         if (bracketRow) {
-          const bracketInput = buildLiabilityBracketInput(
-            bracketRow,
-            limitsMap,
-          );
-          const combinedGross = activePeople.reduce((s, r) => s + r.salary, 0);
-          const combinedPreTax = activePeople.reduce((s, r) => {
-            const ppy = getPeriodsPerYear(r.job!.payPeriod!);
-            return (
-              s +
-              r.paycheck!.preTaxDeductions.reduce((ss, d) => ss + d.amount, 0) *
-                ppy
-            );
-          }, 0);
-          const combinedTax = calculateTax({
-            annualGross: combinedGross,
-            preTaxDeductionsAnnual: combinedPreTax,
-            filingStatus,
-            taxBrackets: bracketInput,
-            w4CheckboxOverride: null,
-            asOfDate,
+          householdTax = calculateHouseholdTax({
+            people: earners.map((r) => r.earnings!),
+            taxBrackets: buildLiabilityBracketInput(bracketRow, limitsMap),
+            medicareLiabilityThreshold:
+              limitsRecord[
+                `fica_medicare_surtax_liability_${filingStatus.toLowerCase()}`
+              ] ?? null,
           });
-          // Use combined federal tax but per-person FICA (each has own SS wage base cap)
-          householdTax = computeHouseholdTax(
-            activePeople.map((r) => ({
-              salary: r.salary,
-              preTaxDeductionsAnnual: 0, // already factored into combinedTax
-              ficaSS: r.tax?.ficaSS ?? 0,
-              ficaMedicare: r.tax?.ficaMedicare ?? 0,
-            })),
-            combinedTax,
-          );
         }
       }
 
       return {
         people: results,
         jointContribs,
+        householdIncome,
         householdTax,
         // The tax-data vintage this summary was priced under — for a
         // "Tax data: YYYY" indicator, matching the retirement projection side.

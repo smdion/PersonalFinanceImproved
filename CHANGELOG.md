@@ -19,6 +19,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Paycheck FICA:** HSA money taken from your paycheck no longer counts as Social Security and Medicare wages (it goes in pre-tax for both under your employer's cafeteria plan), up to the HSA limit for your coverage and age less your employer's contribution. 401(k) deferrals still count, as the IRS requires.
 - **Social Security over the wage base:** when your pay for the year passes the Social Security wage base, each check now shows the year's Social Security averaged over your checks, so a check × the number of checks matches your real take-home for the year. The year schedule still shows when it stops.
 - **Bonus FICA:** the room left under the Social Security wage base is now based on your regular checks' FICA wages, and HSA money the bonus check takes is FICA-exempt within your remaining HSA room.
+- **Annual tax includes your bonus:** the projected and year-end taxes (and the wage AGI under MAGI) were figured on salary alone. They now use household annual income — salary plus your bonus (the set amount if you've entered one, otherwise the formula) — with the money that comes out of the bonus check before tax.
+- **Annual FICA** is now figured on FICA wages (after Section 125 deductions and payroll HSA money), Social Security capped per person, matching your paychecks.
+- **Additional Medicare Tax** is now figured on your household's combined Medicare wages above your filing status's threshold (e.g. $250k married filing jointly) instead of each person's wages above $200k. The note about withheld vs owed now shows when either applies — including both of you under $200k but together over $250k — with the amount.
+- **Effective tax rate** is now federal income tax ÷ AGI, the same way your tax history is figured; FICA is its own line.
 - **Deductions:** a deduction can only be marked FICA-exempt if it is also pre-tax; an older row saved the other way is treated as FICA wages.
 
 ---

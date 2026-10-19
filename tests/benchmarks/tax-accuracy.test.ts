@@ -175,7 +175,9 @@ describe("Tax accuracy — IRS published tables", () => {
   });
 
   describe("Effective tax rate reasonableness", () => {
-    it("$75k income → effective rate 15-25%", () => {
+    // Effective rate = federal income tax ÷ AGI (the tax-return definition);
+    // FICA is reported separately.
+    it("$75k income → effective rate 5-8% (federal ÷ AGI)", () => {
       const result = calculateTax({
         annualGross: 75000,
         preTaxDeductionsAnnual: 0,
@@ -185,12 +187,16 @@ describe("Tax accuracy — IRS published tables", () => {
         asOfDate: new Date("2025-01-01"),
       });
 
-      // At $75k MFJ with $30k std ded: taxable=$45k, federal ~$4.7k, FICA ~$5.7k → ~14%
-      expect(result.effectiveRate).toBeGreaterThan(0.12);
-      expect(result.effectiveRate).toBeLessThan(0.22);
+      // At $75k MFJ with $30k std ded: taxable=$45k, federal ~$4.7k → ~6.3%
+      expect(result.effectiveRate).toBeCloseTo(
+        result.federalTax / result.agi,
+        10,
+      );
+      expect(result.effectiveRate).toBeGreaterThan(0.05);
+      expect(result.effectiveRate).toBeLessThan(0.08);
     });
 
-    it("$300k income → effective rate 25-35%", () => {
+    it("$300k income → effective rate 15-19% (federal ÷ AGI)", () => {
       const result = calculateTax({
         annualGross: 300000,
         preTaxDeductionsAnnual: 0,
@@ -200,9 +206,9 @@ describe("Tax accuracy — IRS published tables", () => {
         asOfDate: new Date("2025-01-01"),
       });
 
-      // At $300k MFJ: taxable=$270k, federal ~$52k, SS capped + Medicare → ~22%
-      expect(result.effectiveRate).toBeGreaterThan(0.2);
-      expect(result.effectiveRate).toBeLessThan(0.3);
+      // At $300k MFJ: taxable=$270k, federal ~$50k → ~16.7%
+      expect(result.effectiveRate).toBeGreaterThan(0.15);
+      expect(result.effectiveRate).toBeLessThan(0.19);
     });
 
     it("zero income → zero tax", () => {
