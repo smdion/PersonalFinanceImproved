@@ -20,6 +20,9 @@ import { syncSecurityFacts } from "@/lib/sec/facts-sync";
 import { inferSecurityKind } from "@/lib/pure/simplefin-holdings";
 import { loadTrackedAccountNames } from "@/server/helpers/account-names";
 import { toNumber } from "@/server/helpers/transforms";
+import { toFactRows } from "@/server/helpers/fund-facts";
+import { effectiveFacts } from "@/lib/pure/fund-facts";
+import { localDateStr } from "@/lib/utils/date";
 import { loadAccounts } from "./_shared";
 
 type Db = typeof import("@/lib/db").db;
@@ -130,14 +133,22 @@ export const investmentHoldingPeriodsRouter = createTRPCRouter({
     const ids = [
       ...new Set(periods.flatMap((x) => Object.keys(x.weights).map(Number))),
     ];
-    const funds = await ctx.db
-      .select({
-        id: schema.securities.id,
-        name: schema.securities.name,
-        ticker: schema.securities.ticker,
-        sourceSymbol: schema.securities.sourceSymbol,
-      })
-      .from(schema.securities);
+    const [funds, factRows] = await Promise.all([
+      ctx.db
+        .select({
+          id: schema.securities.id,
+          name: schema.securities.name,
+          ticker: schema.securities.ticker,
+        })
+        .from(schema.securities),
+      ids.length
+        ? ctx.db
+            .select()
+            .from(schema.securityFacts)
+            .where(inArray(schema.securityFacts.securityId, ids))
+        : Promise.resolve([]),
+    ]);
+    const today = localDateStr();
     return {
       accounts: [...names.entries()].map(([id, label]) => ({ id, label })),
       periods: periods.sort(
@@ -151,6 +162,13 @@ export const investmentHoldingPeriodsRouter = createTRPCRouter({
           id: f.id,
           label: f.ticker ? `${f.ticker} — ${f.name}` : f.name,
           inPeriods: ids.includes(f.id),
+          /** Fee and mix (funds named in a period only). */
+          facts: ids.includes(f.id)
+            ? effectiveFacts(
+                toFactRows(factRows.filter((r) => r.securityId === f.id)),
+                today,
+              )
+            : null,
         }))
         .sort(
           (a, b) =>
