@@ -632,6 +632,11 @@ function LivingCostsCardImpl() {
           <span className="h-2 w-2 rounded-full border border-green-200 bg-green-100" />{" "}
           Target
         </span>
+        {bonusShown > 0.5 && (
+          // One home for this choice: the Bonus section on the Paycheck
+          // page. (Plain text — the whole card is already a link.)
+          <span>Bonus as extra spending: set per person on Paycheck</span>
+        )}
         {extraGrossRows.length > 0 && (
           <span className="ml-auto flex items-center gap-1">
             <HelpTip
