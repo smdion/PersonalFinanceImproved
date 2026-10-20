@@ -9,6 +9,8 @@
  * doesn't. This computes the human-readable diff shown before that swap.
  */
 
+import { takesFromBonusCheck } from "@/lib/calculators/paycheck";
+
 export type ContribFieldSet = {
   contributionValue?: string | number | null;
   contributionMethod?: string | null;
@@ -55,7 +57,14 @@ function fieldsDiffer(
   return (
     COMPARED_FIELDS.some((field) => a[field] !== b[field]) ||
     // Absent means no, so absent and false are the same election.
-    (isPayroll && (a.fromBonus === true) !== (b.fromBonus === true))
+    takesFromBonusCheck({
+      isPayrollDeducted: isPayroll,
+      fromBonus: a.fromBonus ?? undefined,
+    }) !==
+      takesFromBonusCheck({
+        isPayrollDeducted: isPayroll,
+        fromBonus: b.fromBonus ?? undefined,
+      })
   );
 }
 
@@ -65,7 +74,10 @@ function formatValue(fields: ContribFieldSet, isPayroll: boolean): string {
   const value = fields.contributionValue;
   if (value == null) return "using account's own value";
   const amount = isPercent ? `${value}%` : String(value);
-  return isPayroll && fields.fromBonus === true
+  return takesFromBonusCheck({
+    isPayrollDeducted: isPayroll,
+    fromBonus: fields.fromBonus ?? undefined,
+  })
     ? `${amount} + bonus checks`
     : amount;
 }

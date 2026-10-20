@@ -609,7 +609,7 @@ describe("projection router — computeMonteCarloProjection", () => {
           preset: "custom",
           assetClassOverrides: [{ id: 9999, meanReturn: 0.12 }],
         }),
-      ).rejects.toThrow(/isn't one of the active asset classes/);
+      ).rejects.toThrow(/no longer active/);
     } finally {
       cleanup();
     }

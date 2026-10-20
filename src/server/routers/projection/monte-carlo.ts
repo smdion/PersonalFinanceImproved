@@ -374,7 +374,8 @@ export const monteCarloRouter = createTRPCRouter({
           if (!activeIds.has(override.id)) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: `Asset class ${override.id} isn't one of the active asset classes`,
+              message:
+                "One of the asset classes you changed is no longer active — reload and try again.",
             });
           }
         }

@@ -24,6 +24,7 @@
  * household query instead.
  */
 
+import type { BonusDestination } from "@/lib/config/enum-values";
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import {
@@ -94,7 +95,7 @@ export type PaycheckPersonView = {
   /** The accounts the bonus check takes, and how much (fromBonus). */
   bonusCheckAccounts: { id: number; amount: number }[];
   /** Where this job's bonus goes (its Salary Profile entry). */
-  bonusDestination: "budget" | "spending";
+  bonusDestination: BonusDestination;
   alignedPreTax?: DeductionRowData[];
   alignedPostTax?: DeductionRowData[];
   coverageNote?: string;

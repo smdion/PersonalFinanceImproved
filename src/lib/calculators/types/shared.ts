@@ -54,6 +54,8 @@ export type TaxBracketInput = {
 };
 
 export type ContributionAccountInput = {
+  /** The contribution_accounts row it came from, when there is one. */
+  id?: number;
   name: string;
   annualContribution: number;
   perPeriodContribution: number;

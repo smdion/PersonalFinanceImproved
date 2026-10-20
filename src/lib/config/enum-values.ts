@@ -196,6 +196,16 @@ export const W4_FILING_STATUS_VALUES = ["MFJ", "Single", "HOH"] as const;
 export type W4FilingStatus = (typeof W4_FILING_STATUS_VALUES)[number];
 export const w4FilingStatusSchema = z.enum(W4_FILING_STATUS_VALUES);
 
+// ── Bonus Destination ──
+
+/** Where a job's bonus goes: into the budget, or extra spending outside it
+ *  (Living Costs shows its take-home as its own bar). Absent = budget. */
+export const BONUS_DESTINATION_VALUES = ["budget", "spending"] as const;
+export type BonusDestination = (typeof BONUS_DESTINATION_VALUES)[number];
+export const bonusDestinationSchema = z.enum(BONUS_DESTINATION_VALUES);
+/** A Salary Profile entry with no `bonusDestination` sends it here. */
+export const DEFAULT_BONUS_DESTINATION: BonusDestination = "budget";
+
 // ── Budget API Service ──
 
 export const BUDGET_API_SERVICE_VALUES = ["ynab", "actual"] as const;

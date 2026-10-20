@@ -1,4 +1,5 @@
 /** Paycheck router for gross-to-net pay calculations including federal/state tax withholding, pre-tax deductions, and per-period contribution breakdowns. */
+import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
@@ -585,19 +586,18 @@ export const paycheckRouter = createTRPCRouter({
              *  absent = the budget). */
             bonusDestination:
               salaryProfileActiveMap.get(activeJob.id)?.bonusDestination ??
-              ("budget" as const),
+              DEFAULT_BONUS_DESTINATION,
             /** The accounts the bonus check takes, and how much — the
-             *  accounts set to be taken from bonus checks (fromBonus).
-             *  contribAccounts is built from rawContribs, in order. */
-            bonusCheckAccounts: rawContribs
-              .map((c, i) => ({
-                id: c.id,
-                amount: bonusCheckContribution(
-                  contribAccounts[i]!,
-                  paycheck.bonusEstimate.bonusGross,
-                ),
-              }))
-              .filter((a) => a.amount > 0),
+             *  accounts set to be taken from bonus checks (fromBonus). */
+            bonusCheckAccounts: contribAccounts.flatMap((a) => {
+              const amount = bonusCheckContribution(
+                a,
+                paycheck.bonusEstimate.bonusGross,
+              );
+              return a.id !== undefined && amount > 0
+                ? [{ id: a.id, amount }]
+                : [];
+            }),
             budgetPerMonth: getRegularPeriodsPerMonth(
               periodsPerYear,
               budgetOverride,

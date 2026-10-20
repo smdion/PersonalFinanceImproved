@@ -51,7 +51,7 @@ export function renderMcCell(
   if (mcDetYr) {
     const parts: string[] = [];
     parts.push(
-      `MC det. bal: ${formatCurrency(deflate(mcDetYr.endBalance, yr.year))}`,
+      `Simulation det. bal: ${formatCurrency(deflate(mcDetYr.endBalance, yr.year))}`,
     );
     parts.push(`Standalone: ${formatCurrency(detBal)}`);
     parts.push(
@@ -72,7 +72,7 @@ export function renderMcCell(
       );
       parts.push(`Tax rate: ${formatPercent(decYr.effectiveTaxRate, 1)}`);
     }
-    proofNote = `MC Engine: ${parts.join(" ·")}`;
+    proofNote = `Simulation engine: ${parts.join(" ·")}`;
   }
   return (
     <Tooltip

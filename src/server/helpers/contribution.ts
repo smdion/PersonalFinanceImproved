@@ -34,7 +34,8 @@ import {
 } from "@/lib/pure/profiles";
 import {
   bonusCheckContribution,
-  takesFromBonusCheck,
+  isPaidThroughPayroll,
+  rowTakesFromBonusCheck,
 } from "@/lib/calculators/paycheck";
 import {
   irsLimitOrNull,
@@ -446,13 +447,46 @@ export type GroupedMatchResult = {
  * fallback would itself be a second computation path, and would invent a
  * number for genuinely ambiguous config instead of surfacing the problem).
  */
+/** One physical account's match group: its job (or person, for an account
+ *  with no job) + account type + parent category. The match is capped per
+ *  group (computeGroupedEmployerMatch) and figured on the group's pay
+ *  (matchPayGroupsWithBonus). */
+function matchGroupKey(r: {
+  jobId: number | null;
+  personId: number | null;
+  accountType: string;
+  parentCategory: string | null;
+}): string {
+  const jobKey = r.jobId != null ? `job:${r.jobId}` : `person:${r.personId}`;
+  return `${jobKey}:${r.accountType}:${r.parentCategory}`;
+}
+
+/**
+ * The match groups whose bonus check takes a deferral (rowTakesFromBonusCheck
+ * on any of the group's rows — a Roth/Traditional pair is one account). The
+ * employer matches what's deferred, on the pay it came from: a group's match
+ * is figured on base salary, plus the bonus for these groups only. The one
+ * rule for the match's pay — every match path uses it.
+ */
+export function matchPayGroupsWithBonus(
+  rows: readonly {
+    jobId: number | null;
+    personId: number | null;
+    accountType: string;
+    parentCategory: string | null;
+    isPayrollDeducted?: boolean | null;
+    fromBonus?: boolean | null;
+  }[],
+): Set<string> {
+  return new Set(rows.filter(rowTakesFromBonusCheck).map(matchGroupKey));
+}
+
 export function computeGroupedEmployerMatch(
   rows: GroupableMatchRow[],
 ): Map<number, GroupedMatchResult> {
   const groups = new Map<string, GroupableMatchRow[]>();
   for (const r of rows) {
-    const jobKey = r.jobId != null ? `job:${r.jobId}` : `person:${r.personId}`;
-    const key = `${jobKey}:${r.accountType}:${r.parentCategory}`;
+    const key = matchGroupKey(r);
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key)!.push(r);
   }
@@ -575,22 +609,14 @@ export function buildContribAccounts(
    *  caller can quietly treat exempt payroll money as FICA wages. */
   ficaContext: { limits: Record<string, number>; ageAtYearEnd: number | null },
   /** The job's bonus (contributionPay). Each account takes its share only
-   *  when set to (fromBonus); the match is figured on it when any does. */
+   *  when set to (fromBonus); its match counts it the same way
+   *  (matchPayGroupsWithBonus). */
   bonusGross = 0,
 ): ContributionAccountInput[] {
   const allContribs = [...jobContribs, ...personalContribs];
-  // The employer matches what's deferred, on the pay it came from: the
-  // bonus counts toward the match's pay when its check takes a deferral.
-  const matchPay =
-    salary +
-    (allContribs.some((c) =>
-      takesFromBonusCheck({
-        isPayrollDeducted: c.isPayrollDeducted ?? c.jobId !== null,
-        fromBonus: c.fromBonus,
-      }),
-    )
-      ? bonusGross
-      : 0);
+  const bonusGroups = matchPayGroupsWithBonus(allContribs);
+  const matchPay = (c: (typeof allContribs)[number]) =>
+    salary + (bonusGroups.has(matchGroupKey(c)) ? bonusGross : 0);
 
   const annualById = new Map<number, number>();
   for (const c of allContribs) {
@@ -618,7 +644,7 @@ export function buildContribAccounts(
         { salary, bonusGross },
         periodsPerYear,
       ),
-      salary: matchPay,
+      salary: matchPay(c),
       employerMatchType: c.employerMatchType,
       employerMatchValue: toNumber(c.employerMatchValue),
       employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
@@ -629,7 +655,7 @@ export function buildContribAccounts(
   // The same match on regular paychecks alone — the difference is what the
   // bonus check's deferral earns (Year-End estimates place it by date).
   const baseMatchByRow =
-    matchPay > salary
+    bonusGroups.size > 0 && bonusGross > 0
       ? computeGroupedEmployerMatch(
           allContribs.map((c) => ({
             id: c.id,
@@ -659,9 +685,10 @@ export function buildContribAccounts(
 
     // Group from config displayGroup
     const group = getDisplayGroup(c.accountType as AccountCategory);
-    const isPayrollDeducted = c.isPayrollDeducted ?? c.jobId !== null;
+    const isPayrollDeducted = isPaidThroughPayroll(c);
 
     return {
+      id: c.id,
       name: c.subType || c.label || c.accountType,
       annualContribution: roundToCents(annual),
       perPeriodContribution: roundToCents(perPeriod),
@@ -775,39 +802,6 @@ function jobPayFor<T extends { job: { id: number; personId: number } }>(
 }
 
 /**
- * The jobs whose bonus check takes at least one contribution (fromBonus).
- * The employer matches what's deferred, on the pay it came from: an
- * account's match is figured on its job's base salary, plus the bonus for
- * these jobs. Keyed by the job each account's pay comes from (jobPayFor),
- * so every row of one matched account resolves the same pay.
- */
-function jobsWithBonusDeferrals<
-  T extends { job: { id: number; personId: number } },
->(
-  rows: readonly {
-    jobId: number | null;
-    personId: number | null;
-    isPayrollDeducted?: boolean | null;
-    fromBonus: boolean | undefined;
-  }[],
-  jobSalaries: readonly T[],
-): Set<number> {
-  const ids = new Set<number>();
-  for (const r of rows) {
-    if (
-      !takesFromBonusCheck({
-        isPayrollDeducted: r.isPayrollDeducted ?? r.jobId !== null,
-        fromBonus: r.fromBonus,
-      })
-    )
-      continue;
-    const js = jobPayFor(r, jobSalaries);
-    if (js) ids.add(js.job.id);
-  }
-  return ids;
-}
-
-/**
  * A contribution's yearly amount, the paycheck's way: what the regular
  * paychecks take from the base salary, plus what the bonus check takes
  * (bonusCheckContribution — percent-of-pay at its rate of the bonus, a fixed
@@ -841,7 +835,7 @@ export function annualContributionWithBonus(
     regular +
     bonusCheckContribution(
       {
-        isPayrollDeducted: c.isPayrollDeducted ?? c.jobId !== null,
+        isPayrollDeducted: isPaidThroughPayroll(c),
         fromBonus: c.fromBonus,
         rateOfGross: method === "percent_of_salary" ? value / 100 : null,
         perPeriodContribution:
@@ -889,7 +883,7 @@ export function aggregateContributionsByCategory(
   const incompleteAccountIds: number[] = [];
   const salaryById = new Map<number, number>();
   const annualById = new Map<number, number>();
-  const bonusJobs = jobsWithBonusDeferrals(activeContribs, jobSalaries);
+  const bonusGroups = matchPayGroupsWithBonus(activeContribs);
   for (const c of activeContribs) {
     const cv = Number(c.contributionValue);
     // Direct job link, or fall back to person's first active job when jobId is null
@@ -913,7 +907,7 @@ export function aggregateContributionsByCategory(
     // Match on the pay the deferrals came from, bonus checks included.
     salaryById.set(
       c.id,
-      salary + (js && bonusJobs.has(js.job.id) ? (js.bonusGross ?? 0) : 0),
+      salary + (bonusGroups.has(matchGroupKey(c)) ? (js?.bonusGross ?? 0) : 0),
     );
     annualById.set(c.id, annual);
 
@@ -1025,7 +1019,7 @@ export function buildContributionDisplaySpecs(
   const salaryById = new Map<number, number>();
   const annualById = new Map<number, number>();
   const incompleteById = new Map<number, boolean>();
-  const bonusJobs = jobsWithBonusDeferrals(filtered, jobSalaries);
+  const bonusGroups = matchPayGroupsWithBonus(filtered);
   for (const c of filtered) {
     const job = c.jobId
       ? activeJobs.find((j) => j.id === c.jobId)
@@ -1040,8 +1034,8 @@ export function buildContributionDisplaySpecs(
     salaryById.set(
       c.id,
       salary +
-        (js && bonusJobs.has(js.job.id)
-          ? (js.bonusGrossThisYear ?? js.bonusGross ?? 0)
+        (bonusGroups.has(matchGroupKey(c))
+          ? (js?.bonusGrossThisYear ?? js?.bonusGross ?? 0)
           : 0),
     );
     incompleteById.set(c.id, incomplete);

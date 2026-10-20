@@ -40,7 +40,8 @@ import type {
   W4FilingStatus,
 } from "@/lib/config/enum-values";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
-import { salaryEntryEdit } from "@/lib/pure/salary-entry-edit";
+import { salaryEntryEdit } from "@/lib/db/salary-entry-edit";
+import type { BonusDestination } from "@/lib/config/enum-values";
 import { toast } from "@/lib/hooks/use-toast";
 
 export default function PaycheckPage() {
@@ -202,7 +203,7 @@ export default function PaycheckPage() {
      *  field write creates/updates this job's entry. Edited from Salary
      *  Profile Manager instead (see extra-paycheck-rules-editor.tsx). */
     extraPaycheckRouting: ExtraPaycheckRoutingData | null;
-    bonusDestination?: "budget" | "spending";
+    bonusDestination?: BonusDestination;
     otherEarnings?: Record<string, number>;
   };
 

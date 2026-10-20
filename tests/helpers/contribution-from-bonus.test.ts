@@ -13,6 +13,7 @@ import {
   applyContribActiveFields,
   buildContributionDisplaySpecs,
   buildProfileContribData,
+  buildContribAccounts,
   type ContribRowWithActiveFields,
 } from "@/server/helpers/contribution";
 import type { AccountCategory } from "@/lib/calculators/types";
@@ -175,5 +176,66 @@ describe("What-If overlay (applyContribActiveFields)", () => {
       true,
     );
     expect(row!.fromBonus).toBe(false);
+  });
+});
+
+describe("employer match — each account's own election", () => {
+  // A 10% 401(k) matched 100% up to 6% (not taken from the bonus) and an
+  // HSA that is. The HSA's election must not move the 401(k)'s match.
+  const k = {
+    ...k401({ fromBonus: false }),
+    contributionValue: "10",
+    employerMaxMatchPct: "0.06",
+  };
+  const hsa = {
+    ...k401({ fromBonus: true }),
+    id: 2,
+    accountType: "hsa" as AccountCategory,
+    parentCategory: "Portfolio",
+    contributionValue: "2",
+    employerMatchType: "none",
+    employerMatchValue: null,
+    employerMaxMatchPct: null,
+  };
+
+  it("summary: the 401(k) match stays on salary alone", () => {
+    const alone = aggregateContributionsByCategory([k], jobs, pay);
+    const both = aggregateContributionsByCategory([k, hsa], jobs, pay);
+    expect(alone.employerMatchByCategory["401k"]).toBeCloseTo(6_000, 2);
+    expect(both.employerMatchByCategory["401k"]).toBeCloseTo(6_000, 2);
+  });
+
+  it("paycheck accounts: the same", () => {
+    const limits = { hsa_individual_limit: 4_300, hsa_family_limit: 8_550 };
+    const accounts = buildContribAccounts(
+      [
+        k as unknown as ContribRowWithActiveFields,
+        hsa as unknown as ContribRowWithActiveFields,
+      ],
+      [],
+      SALARY,
+      26,
+      { limits, ageAtYearEnd: 40 },
+      BONUS,
+    );
+    expect(accounts[0]!.employerMatch).toBeCloseTo(6_000, 2);
+    expect(accounts[0]!.employerMatchOnBonus).toBe(0);
+  });
+});
+
+describe("What-If overlay — an entry that only turns an account off", () => {
+  it("removes the account from the sandbox", () => {
+    const resolved = applyContribActiveFields(
+      [k401() as unknown as Parameters<typeof applyContribActiveFields>[0][0]],
+      {
+        "1": {
+          contributionValue: "6",
+          contributionMethod: "percent_of_salary",
+        },
+      },
+    );
+    expect(
+      applyContribActiveFields(resolved, { "1": { isActive: false } }, true),
+    ).toEqual([]);
   });
 });

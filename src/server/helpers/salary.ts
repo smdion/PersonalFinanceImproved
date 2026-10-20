@@ -17,6 +17,7 @@ import { toNumber } from "./transforms";
 import type { Db } from "./transforms";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import type {
+  BonusDestination,
   PayPeriod,
   PayWeek,
   W4FilingStatus,
@@ -162,7 +163,7 @@ export type SalaryProfileEntry = {
    *  routing configured"). See ExtraPaycheckRoutingData (schema-pg.ts). */
   extraPaycheckRouting: ExtraPaycheckRoutingData | null;
   /** Where the bonus goes: the budget (absent) or extra spending. */
-  bonusDestination?: "budget" | "spending";
+  bonusDestination?: BonusDestination;
   /** Other pay per check, by paycheck_earnings id — absent = none. */
   otherEarnings?: Record<string, number>;
 };

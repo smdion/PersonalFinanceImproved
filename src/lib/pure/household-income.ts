@@ -20,6 +20,7 @@ import type {
 import { bonusCheckContribution, isPreTax } from "@/lib/calculators/paycheck";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import { isHsaTreatment } from "@/lib/config/account-types";
+import type { BonusDestination } from "@/lib/config/enum-values";
 
 export type AnnualEarnings = {
   salary: number;
@@ -128,10 +129,6 @@ export function sumHouseholdIncome(people: AnnualEarnings[]): AnnualEarnings {
     hsaOutsidePayroll: total((e) => e.hsaOutsidePayroll),
   };
 }
-
-/** Where a job's bonus goes: into the budget, or extra spending outside it
- *  (the Salary Profile entry's `bonusDestination`; absent = the budget). */
-export type BonusDestination = "budget" | "spending";
 
 /** Bonus take-home set aside as extra spending (outside the budget). Its
  *  taxes and bonus-check contributions are already counted elsewhere. */

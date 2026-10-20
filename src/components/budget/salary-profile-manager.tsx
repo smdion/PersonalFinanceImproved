@@ -25,12 +25,16 @@ import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import { ExtraPaycheckDestinationToggle } from "@/components/savings/extra-paycheck-rules-editor";
 import { PayScheduleSection } from "@/components/paycheck/pay-schedule-section";
 import { TaxWithholdingSection } from "@/components/paycheck/tax-withholding-section";
-import { BonusTerms } from "@/components/paycheck/bonus-section";
+import {
+  BonusTerms,
+  showsAllBonusTerms,
+} from "@/components/paycheck/bonus-section";
 import { OtherPaySection } from "@/components/paycheck/other-pay-section";
 import { SectionHeader } from "@/components/paycheck/section-header";
 import type { EarningRow } from "@/components/paycheck/types";
-import type { BonusDestination } from "@/lib/pure/household-income";
-import { salaryEntryEdit } from "@/lib/pure/salary-entry-edit";
+import type { BonusDestination } from "@/lib/config/enum-values";
+import { salaryEntryEdit } from "@/lib/db/salary-entry-edit";
+import { toast } from "@/lib/hooks/use-toast";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 
 /**
@@ -171,7 +175,7 @@ export function SalaryProfileManager({
               )}
             </div>
           </div>
-          <HelpTip text="A Salary Profile sets each person's pay for what-if analysis. Each job either has a complete entry in this profile — salary, bonus %, and multiplier — or it isn't in the profile at all and contributes $0. There's no fallback to a job record: if you want a different number, use a different profile. It is independent of the Contribution Profile — set either, both, or neither. An active Plan and page-level salary customizations always win over a profile." />
+          <HelpTip text="A Salary Profile sets each person's pay for what-if analysis. Each job either has a complete entry in this profile — salary, bonus %, and multiplier — or it isn't in the profile at all and contributes $0. There's no fallback to a job record: if you want a different number, use a different profile. It is independent of the Contribution Profile — set either, both, or neither. The Paycheck page edits the active Salary Profile." />
         </div>
       )}
 
@@ -423,65 +427,35 @@ function detailForJob(sd: Detail, jobId: number): Detail {
   };
 }
 
-/** The three fields this table edits, and how each maps display ↔ stored
- *  units. */
-const FIELDS = {
-  salary: {
-    label: "Salary",
-    /** Stored value ↔ what the input shows. Bonus % is a fraction in the DB
-     *  and a percentage in the UI; the others are 1:1. */
-    toDisplay: (n: number) => n,
-    fromDisplay: (n: number) => n,
-    step: "1000",
-  },
-} as const;
-
-type FieldKey = keyof typeof FIELDS;
-
-/** What the input/cell shows: this entry's own value, in display units. */
-function entryDisplay(sd: Detail, field: FieldKey): number {
-  return FIELDS[field].toDisplay(sd[field]);
-}
-
 /** Format a display-unit number for an input without trailing float noise. */
 function fmt(n: number): string {
   return String(Math.round(n * 1e6) / 1e6);
 }
 
-/** A plain numeric cell for a job that already has an entry in this
- *  profile — every edit is an ordinary edit, no pin/live distinction. */
-function EntryNumberCell({
+/** The salary cell for a job that has an entry in this profile. */
+function SalaryCell({
   sd,
-  field,
   draft,
   onDraft,
   onCommit,
-  prefix,
-  suffix,
-  width = "w-24",
 }: {
   sd: Detail;
-  field: FieldKey;
   draft: string | undefined;
   onDraft: (value: string) => void;
   onCommit: () => void;
-  prefix?: string;
-  suffix?: string;
-  width?: string;
 }) {
-  const value = draft ?? fmt(entryDisplay(sd, field));
   return (
     <div className="flex items-center justify-end gap-1">
-      {prefix && <span className="text-faint text-xs">{prefix}</span>}
+      <span className="text-faint text-xs">$</span>
       <input
         type="number"
-        value={value}
+        aria-label={`${sd.personName} salary`}
+        value={draft ?? fmt(sd.salary)}
         onChange={(e) => onDraft(e.target.value)}
         onBlur={onCommit}
-        step={FIELDS[field].step}
-        className={`${width} bg-surface-primary text-primary rounded border px-2 py-1 text-right text-xs`}
+        step="1000"
+        className="bg-surface-primary text-primary w-28 rounded border px-2 py-1 text-right text-xs"
       />
-      {suffix && <span className="text-faint text-xs">{suffix}</span>}
     </div>
   );
 }
@@ -553,6 +527,7 @@ function JobPicker({
   }
   return (
     <select
+      aria-label={`${sd.personName}'s job`}
       value={sd.jobId ?? ""}
       onChange={(e) => onChange(Number(e.target.value))}
       className="bg-surface-primary text-primary max-w-[10rem] rounded border px-1 py-0.5 text-xs"
@@ -568,9 +543,10 @@ function JobPicker({
 }
 
 /**
- * A job's entry in this profile, as the Paycheck page shows it — the same
- * Pay schedule, Withholding, Bonus, Other pay and Extra paycheck sections,
- * saving the same way (salaryEntryEdit → patchEntry). One salary editor.
+ * A job's entry in this profile with the Paycheck page's own Withholding,
+ * Bonus, Other pay and Extra paycheck sections, saving the same way
+ * (salaryEntryEdit → patchEntry), plus Pay schedule, which only this
+ * editor shows (the Paycheck page shows the schedule, not its fields).
  */
 function EntrySections({
   sd,
@@ -609,7 +585,7 @@ function EntrySections({
               bonusDestination={sd.bonusDestination}
               onUpdateJob={onUpdate}
               editable={editable}
-              showAll={sd.bonusPercent > 0 || sd.bonusOverride !== null}
+              showAll={showsAllBonusTerms(sd)}
               formulaBonus={sd.formulaBonus}
             />
           </div>
@@ -622,7 +598,9 @@ function EntrySections({
               onUpdate(`otherEarnings:${id}`, String(amount))
             }
             readOnly={!editable}
-            canRemove={canRemoveLines}
+            lineReadOnly={!editable}
+            canRemove={editable && canRemoveLines}
+            note="Amounts: this profile · lines: every profile"
           />
         )}
         {sd.payPeriod === "biweekly" && (
@@ -670,13 +648,13 @@ function ProfileDetail({
   });
   if (!profile) return null;
 
-  const cell = (sd: Detail, field: FieldKey) => (
+  const salaryCell = (sd: Detail) => (
     <td
       className={`px-3 py-1.5 text-right tabular-nums ${
         sd.hasEntry ? "text-secondary" : "text-faint"
       }`}
     >
-      {sd.hasEntry ? formatCurrency(entryDisplay(sd, field)) : "—"}
+      {sd.hasEntry ? formatCurrency(sd.salary) : "—"}
     </td>
   );
 
@@ -712,7 +690,7 @@ function ProfileDetail({
                       </span>
                     )}
                   </td>
-                  {cell(sd, "salary")}
+                  {salaryCell(sd)}
                   <td
                     className={`px-3 py-1.5 text-right tabular-nums ${
                       sd.hasEntry ? "text-secondary" : "text-faint"
@@ -933,7 +911,7 @@ function ProfileEditPanel({
         sd.earningRows.map((r) => [String(r.id), r.amount]),
       ),
     });
-    if (edit === null) setError("That value isn't valid here.");
+    if (edit === null) toast.error("That value isn't valid here.");
     else if (edit)
       patchEntryMutation.mutate({
         id: profileId,
@@ -942,14 +920,13 @@ function ProfileEditPanel({
       });
   };
 
-  const commitField = (sd: Detail, field: FieldKey) => {
-    const key = `${sd.personId}:${field}`;
+  const commitSalary = (sd: Detail) => {
+    const key = `${sd.personId}:salary`;
     const draft = drafts[key];
     if (draft === undefined) return;
     clearDraft(key);
-    const num = FIELDS[field].fromDisplay(parseFloat(draft.trim()));
-    if (sd[field] === num) return;
-    updateEntry(sd)("annualSalary", String(num));
+    if (Number(draft) === sd.salary) return;
+    updateEntry(sd)("annualSalary", draft);
   };
 
   return (
@@ -991,22 +968,6 @@ function ProfileEditPanel({
                   override !== undefined
                     ? detailForJob(rawSd, override)
                     : rawSd;
-                const cellFor = (
-                  field: FieldKey,
-                  prefix?: string,
-                  suffix?: string,
-                ) => (
-                  <EntryNumberCell
-                    sd={sd}
-                    field={field}
-                    draft={drafts[`${sd.personId}:${field}`]}
-                    onDraft={(v) => setDraft(`${sd.personId}:${field}`, v)}
-                    onCommit={() => commitField(sd, field)}
-                    prefix={prefix}
-                    suffix={suffix}
-                    width={field === "salary" ? "w-28" : "w-20"}
-                  />
-                );
                 const isSaving =
                   sd.jobId !== null &&
                   ((patchEntryMutation.isPending &&
@@ -1037,7 +998,14 @@ function ProfileEditPanel({
                       {sd.hasEntry ? (
                         <>
                           <td className="px-3 py-1.5">
-                            {cellFor("salary", "$")}
+                            <SalaryCell
+                              sd={sd}
+                              draft={drafts[`${sd.personId}:salary`]}
+                              onDraft={(v) =>
+                                setDraft(`${sd.personId}:salary`, v)
+                              }
+                              onCommit={() => commitSalary(sd)}
+                            />
                           </td>
                           <td className="text-secondary px-3 py-1.5 text-right tabular-nums">
                             {formatCurrency(sd.estimatedBonus)}
@@ -1051,8 +1019,16 @@ function ProfileEditPanel({
                               </span>
                               <button
                                 type="button"
-                                onClick={() => removeEntry(sd.jobId)}
+                                onClick={async () => {
+                                  if (
+                                    await confirm(
+                                      `Remove ${sd.employerName ?? "this job"} from this profile? It then contributes $0 here.`,
+                                    )
+                                  )
+                                    removeEntry(sd.jobId);
+                                }}
                                 title="Remove this job from the profile"
+                                aria-label={`Remove ${sd.employerName ?? "this job"} from this profile`}
                                 className="text-caption text-faint shrink-0 hover:text-red-500"
                               >
                                 ×

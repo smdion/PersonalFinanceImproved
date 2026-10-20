@@ -2,6 +2,7 @@
 
 /** Contribution row UI: displays a single contribution's summary/edit view with tax treatment, method, employer match fields, and an add-contribution form. */
 
+import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
 import React, { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
@@ -358,7 +359,7 @@ export function ContributionRow({
             <div className="flex items-center gap-2 pt-3">
               <input
                 type="checkbox"
-                checked={c.isPayrollDeducted ?? c.jobId !== null}
+                checked={isPaidThroughPayroll(c)}
                 onChange={(e) =>
                   onUpdate?.({ isPayrollDeducted: e.target.checked })
                 }

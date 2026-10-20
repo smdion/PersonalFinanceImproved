@@ -108,3 +108,28 @@ export function addDays(day: string, n: number): string {
   d.setUTCDate(d.getUTCDate() + n);
   return utcDayOf(d);
 }
+
+/** A real calendar date "YYYY-MM-DD" between 1900 and 2100 — what a
+ *  stored date field accepts (a half-typed year like "0002-01-09" isn't). */
+export function isCalendarDate(value: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!m) return false;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (y < 1900 || y > 2100) return false;
+  const date = new Date(Date.UTC(y, mo - 1, d));
+  return date.getUTCMonth() === mo - 1 && date.getUTCDate() === d;
+}
+
+/** A day that some year has in that month (Feb 29 counts). */
+export function isMonthDay(month: number, day: number): boolean {
+  return (
+    Number.isInteger(month) &&
+    Number.isInteger(day) &&
+    month >= 1 &&
+    month <= 12 &&
+    day >= 1 &&
+    isCalendarDate(
+      `2000-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+    )
+  );
+}

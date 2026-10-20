@@ -272,11 +272,7 @@ function SimpleGrowthEditor({
           onClick={() => setShowDetail((v) => !v)}
           className="text-caption text-blue-600 hover:text-blue-700"
         >
-          {showDetail
-            ? "hide detail"
-            : isUniform
-              ? "customize by year"
-              : "edit"}
+          {showDetail ? "hide detail" : isUniform ? "set by year" : "edit"}
         </button>
       </div>
       {showDetail && (

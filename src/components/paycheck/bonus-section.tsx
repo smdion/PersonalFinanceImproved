@@ -2,18 +2,16 @@
 
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { FieldRow } from "@/components/ui/field-row";
+import { DateInput } from "@/components/ui/date-input";
+import { BONUS_DESTINATION_OPTIONS } from "@/lib/config/display-labels";
+import { safeDivide } from "@/lib/utils/math";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SectionHeader } from "./section-header";
-import type { BonusDestination } from "@/lib/pure/household-income";
+import type { BonusDestination } from "@/lib/config/enum-values";
 import type { PaycheckResult } from "./types";
 import type { BonusEstimate } from "@/lib/calculators/types/calculators";
-
-const BONUS_DESTINATION_OPTIONS = [
-  { value: "budget", label: "Budget" },
-  { value: "spending", label: "Extra spending" },
-] as const;
 
 /** "Bonus goes to: Budget | Extra spending" — like the extra paycheck's
  *  choice, saved in the Salary Profile entry. Extra spending gets its own
@@ -48,6 +46,24 @@ function BonusDestinationToggle({
 }
 
 const numeric = (v: string) => v.replace(/[^0-9.]/g, "");
+
+/** Show every bonus term (not only Bonus %): there's a bonus, or this
+ *  year's actual is recorded. A 0% row is the way to add one. The one rule
+ *  for both salary editors. */
+export function showsAllBonusTerms(terms: {
+  bonusPercent: number;
+  bonusOverride: number | null;
+}): boolean {
+  return terms.bonusPercent > 0 || terms.bonusOverride !== null;
+}
+
+/** The bonus pay date (month/day, every year) as a date-input value: this
+ *  year's, or the next year that has it (Feb 29). */
+function bonusDateValue(month: number, day: number): string {
+  let year = new Date().getFullYear();
+  while (new Date(year, month - 1, day).getMonth() !== month - 1) year++;
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
 
 /**
  * The bonus terms a Salary Profile entry holds — percent, multiplier, this
@@ -97,6 +113,7 @@ export function BonusTerms({
           className="font-medium"
           isEditable={editable}
           hideEditIcon
+          ariaLabel="Bonus percent"
         />
       </FieldRow>
       {showAll && (
@@ -118,6 +135,7 @@ export function BonusTerms({
               className="font-medium"
               isEditable={editable}
               hideEditIcon
+              ariaLabel="Bonus multiplier"
             />
           </FieldRow>
           <FieldRow
@@ -138,14 +156,16 @@ export function BonusTerms({
                 terms.bonusOverride !== null ? String(terms.bonusOverride) : ""
               }
               onSave={(v) => onUpdateJob("bonusOverride", numeric(v))}
+              // "" = not recorded; a recorded $0 is a real "no bonus this year".
               formatDisplay={(v) =>
-                v && Number(v) > 0 ? formatCurrency(Number(v)) : "—"
+                v === "" ? "—" : formatCurrency(Number(v))
               }
               parseInput={numeric}
               type="number"
               className="font-medium"
               isEditable={editable}
               hideEditIcon
+              ariaLabel={`${new Date().getFullYear()} actual bonus`}
             />
           </FieldRow>
           <FieldRow
@@ -157,19 +177,16 @@ export function BonusTerms({
             }
             hint={paidOnHint}
           >
-            <input
-              type="date"
-              aria-label="Bonus paid on"
+            <DateInput
+              ariaLabel="Bonus paid on"
               value={
                 bonusMonth != null
-                  ? `${new Date().getFullYear()}-${String(bonusMonth).padStart(2, "0")}-${String(bonusDayOfMonth ?? 1).padStart(2, "0")}`
+                  ? bonusDateValue(bonusMonth, bonusDayOfMonth ?? 1)
                   : ""
               }
               // One write for both parts of the date ("MM-DD", or "" to
               // clear) — two writes would race on the same profile entry.
-              onChange={(e) =>
-                onUpdateJob("bonusDate", e.target.value.slice(5))
-              }
+              onCommit={(v) => onUpdateJob("bonusDate", v.slice(5))}
               disabled={!editable}
               className="bg-surface-primary w-36 rounded border px-2 py-0.5 text-sm disabled:opacity-60"
             />
@@ -238,12 +255,14 @@ export function BonusSection({
   // Shown even with no bonus, so a bonus can be added here (a 0% row is
   // the way in) instead of the section disappearing.
   const hasBonus = bonusEstimate.bonusGross > 0;
-  const fedRate = hasBonus
-    ? bonusEstimate.bonusFederalWithholding / bonusEstimate.bonusGross
-    : 0;
-  const takeHomeRate = hasBonus
-    ? bonusEstimate.bonusNet / bonusEstimate.bonusGross
-    : 0;
+  const fedRate = safeDivide(
+    bonusEstimate.bonusFederalWithholding,
+    bonusEstimate.bonusGross,
+  );
+  const takeHomeRate = safeDivide(
+    bonusEstimate.bonusNet,
+    bonusEstimate.bonusGross,
+  );
 
   return (
     <div className="space-y-2">
@@ -256,7 +275,7 @@ export function BonusSection({
           bonusDestination={bonusDestination}
           onUpdateJob={onUpdateJob}
           editable={editable}
-          showAll={hasBonus || resolvedBonusTerms.bonusPercent > 0}
+          showAll={hasBonus || showsAllBonusTerms(resolvedBonusTerms)}
           formulaBonus={fullFormulaBonusEstimate.bonusGross}
           paidOnHint={
             paycheck.bonusPeriod != null

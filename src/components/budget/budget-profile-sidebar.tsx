@@ -26,9 +26,6 @@ type Props = {
   profiles: BudgetProfileListEntry[];
   displayProfileId: number | null;
   canEdit: boolean;
-  /** For "base the new profile off of this Contribution Profile" at
-   *  creation time. */
-
   /** Rename a profile (click-to-edit on the row name). Called with the
    *  trimmed new name only when it changed. */
   onRename: (profileId: number, newName: string) => void;

@@ -21,10 +21,6 @@ import {
   zSandboxContribActiveFields,
   zSandboxContribAdditions,
 } from "./_shared";
-import {
-  SK_ACTIVE_CONTRIB_PROFILE_ID,
-  SK_ACTIVE_SALARY_PROFILE_ID,
-} from "@/lib/constants/settings-keys";
 import * as schema from "@/lib/db/schema";
 import { canDeleteBudgetProfile, canRemoveColumn } from "@/lib/pure/profiles";
 import {
@@ -157,6 +153,30 @@ async function resolveEffectiveContribProfileIdForItem(
   return resolvedId;
 }
 
+/**
+ * Household monthly take-home from paycheck.computeSummary: each job's net
+ * pay × the paychecks per month the budget counts. netPay is gross −
+ * pre-tax − withholding − FICA − post-tax, so this is the same take-home the
+ * client's buildPayrollBreakdown derives line by line. Null when no one has
+ * a paycheck.
+ */
+function netMonthlyTakeHome(data: {
+  people: readonly {
+    job?: unknown;
+    paycheck?: { netPay: number; periodsPerYear: number } | null;
+    budgetPerMonth?: number | null;
+  }[];
+}): number | null {
+  let total: number | null = null;
+  for (const d of data.people) {
+    const pc = d.paycheck;
+    if (!pc || !d.job) continue;
+    total =
+      (total ?? 0) + pc.netPay * (d.budgetPerMonth ?? pc.periodsPerYear / 12);
+  }
+  return total;
+}
+
 export const budgetRouter = createTRPCRouter({
   /**
    * List all budget profiles with summary totals (for profile sidebar), plus
@@ -187,27 +207,14 @@ export const budgetRouter = createTRPCRouter({
 
     // Intentional batch load: fetch all items once and distribute across profiles
     // in memory. This is O(1) queries regardless of profile count, not N+1.
-    const [allItems, activeGoals, settingRows] = await Promise.all([
+    const [allItems, activeGoals, activeProfiles] = await Promise.all([
       ctx.db.select().from(schema.budgetItems),
       ctx.db
         .select()
         .from(schema.savingsGoals)
         .where(eq(schema.savingsGoals.isActive, true)),
-      ctx.db
-        .select()
-        .from(schema.appSettings)
-        .where(
-          inArray(schema.appSettings.key, [
-            SK_ACTIVE_CONTRIB_PROFILE_ID,
-            SK_ACTIVE_SALARY_PROFILE_ID,
-          ]),
-        ),
+      resolveActiveProfilePair(ctx.db),
     ]);
-    const settingValue = (key: string): number | null => {
-      const raw = settingRows.find((r) => r.key === key)?.value ?? null;
-      const num = Number(raw);
-      return raw == null || Number.isNaN(num) ? null : num;
-    };
     // Savings funding is per-(goal, profile) — resolve once per profile and
     // fold the monthly total into annualTotal so it isn't silently excluded
     // (Budget spends what Contributions sets, Savings allocates what's
@@ -234,10 +241,6 @@ export const budgetRouter = createTRPCRouter({
     // profile, since a budget column is a spending level, not a different
     // pay world. One paycheck.computeSummary call (the procedure the
     // Paycheck page uses), not a parallel re-derivation.
-    const activeProfiles: ProfilePair = {
-      contribProfileId: settingValue(SK_ACTIVE_CONTRIB_PROFILE_ID),
-      salaryProfileId: settingValue(SK_ACTIVE_SALARY_PROFILE_ID),
-    };
     const paycheckData = await createCallerFactory(paycheckRouter)(
       internalCtx(ctx),
     ).computeSummary({
@@ -248,18 +251,7 @@ export const budgetRouter = createTRPCRouter({
         ? { salaryProfileId: activeProfiles.salaryProfileId }
         : {}),
     });
-    // netPay is gross − pre-tax − withholding − FICA − post-tax, so "sum
-    // netPay × budget periods per month" is the same monthly take-home the
-    // client's buildPayrollBreakdown derives line by line.
-    let netMonthly: number | null = null;
-    for (const d of paycheckData.people) {
-      const pc = d.paycheck;
-      if (!pc || !d.job) continue;
-      const perMonth =
-        ("budgetPerMonth" in d ? d.budgetPerMonth : null) ??
-        pc.periodsPerYear / 12;
-      netMonthly = (netMonthly ?? 0) + pc.netPay * perMonth;
-    }
+    const netMonthly = netMonthlyTakeHome(paycheckData);
 
     const rows: Array<
       (typeof profiles)[number] & {
@@ -327,10 +319,8 @@ export const budgetRouter = createTRPCRouter({
   }),
 
   /** Create a new budget profile, pre-populated with standard template
-   *  categories. Optionally links every starting column to a Contribution
-   *  Profile so the new profile's income/take-home math uses that
-   *  Contribution Profile from the start, instead of defaulting to Live and
-   *  requiring a separate trip to "Manage Modes" to link it. */
+   *  categories. Its take-home math uses the active Contribution and Salary
+   *  profiles, like every budget profile. */
   createProfile: budgetProcedure
     .input(
       z.object({
@@ -714,8 +704,8 @@ export const budgetRouter = createTRPCRouter({
         ).map((r) => [r.id, r]),
       );
 
-      // For linked items, each column's own contribution monthly amount
-      // replaces that column's DB amount. For unlinked items, use DB amounts
+      // For linked items, the contribution's monthly amount (the same in
+      // every column) replaces the column's DB amount. For unlinked items, use DB amounts
       // as-is. The What-If tab's hand-edited amounts are ONE MORE LAYER on
       // top of that resolution chain — never a replacement for it, per
       // toItemAmountActiveMap's docblock — applied here so every
@@ -801,11 +791,9 @@ export const budgetRouter = createTRPCRouter({
         columnMonths,
       );
 
-      // Monthly take-home under the SELECTED column's own resolved
-      // (Contribution, Salary) profile pair, honoring sandboxSalaryEntries —
-      // the same paycheck.computeSummary call and the same
-      // budgetPerMonth-aware annualization listProfiles' netMonthlyForPair
-      // uses (see this file, above), so the What-If tab's "available income"
+      // Monthly take-home under the (Contribution, Salary) pair in use,
+      // honoring sandboxSalaryEntries — the same paycheck.computeSummary
+      // call and the same netMonthlyTakeHome as listProfiles, so the What-If tab's "available income"
       // figure can't disagree with what Savings' Unspent shows for the same
       // inputs. Not derived from WhatIfPaycheckSummary's client-side annual
       // total, which uses a naive periodsPerYear multiplication that ignores
@@ -842,14 +830,7 @@ export const budgetRouter = createTRPCRouter({
               : {}),
           },
         );
-        for (const d of incomePaycheckData.people) {
-          const pc = d.paycheck;
-          if (!pc || !d.job) continue;
-          const perMonth =
-            ("budgetPerMonth" in d ? d.budgetPerMonth : null) ??
-            pc.periodsPerYear / 12;
-          netMonthlyIncome = (netMonthlyIncome ?? 0) + pc.netPay * perMonth;
-        }
+        netMonthlyIncome = netMonthlyTakeHome(incomePaycheckData);
       } catch (err) {
         // Supplementary figure for the What-If tab's income handoff — a
         // failure here (e.g. malformed contribution-account data elsewhere
@@ -867,8 +848,8 @@ export const budgetRouter = createTRPCRouter({
         rawItems,
         columnMonths,
         weightedAnnualTotal,
-        /** Monthly take-home for the selected column's resolved profile
-         *  pair — see the computation above for why this must be read
+        /** Monthly take-home for the profile pair in use — see the
+         *  computation above for why this must be read
          *  instead of re-deriving income client-side. */
         netMonthlyIncome,
         /** Sum of Budget-mode extra-paycheck adjustments landing in the

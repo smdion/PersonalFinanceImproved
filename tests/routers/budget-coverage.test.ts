@@ -1693,18 +1693,6 @@ describe("budget router — computeActiveSummary sandbox support", () => {
 });
 
 // ---------------------------------------------------------------------------
-// REGRESSION (pre-existing bug): computeActiveSummary resolved ONE
-// contribution/salary profile from `selectedColumn` and wrote that single
-// monthly figure into every column's amounts, then derived allColumnResults
-// from that flattened data. So on a profile whose columns pin DIFFERENT
-// Contribution Profiles:
-//   - every column's linked-item $ showed the selected column's profile, and
-//   - the totals changed depending on which column you happened to be
-//     viewing, while the client's own per-column payroll breakdown
-//     (use-budget-derived-data.ts → usePerColumnPaycheck) resolved each
-//     column independently and disagreed.
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
 // REGRESSION (pre-existing bug): the Savings Profiles rail's "Unspent" figure.
 //
 // savings-allocation-panel.tsx called `paycheck.computeSummary.useQuery()`

@@ -20,8 +20,6 @@ import {
   loadEffectiveSalaryProfile,
   resolveCompensation,
   applyActiveSalary,
-  applyActiveBonusTerms,
-  contributionPay,
   applySandboxSalaryEntries,
 } from "./salary";
 import type { SalaryActiveMap, SalaryOverrideEntry } from "./salary";
@@ -67,10 +65,10 @@ export async function getActiveBudgetProfile(
 
 /**
  * Resolve "the profile a mutation should target" — explicit `profileId` when
- * given (a client editing a Plan-pinned or manually-viewed non-active
- * profile), else the globally-active profile. The single place profile
- * item/column mutations (createItem, addColumn, removeColumn, renameColumn,
- * updateColumnMonths, updateColumnContributionProfileIds, reorderCategory)
+ * given (a client editing a profile it is viewing but hasn't made active),
+ * else the active profile. The single place profile item/column mutations
+ * (createItem, addColumn, removeColumn, renameColumn, updateColumnMonths,
+ * reorderCategory)
  * should resolve their target profile — a bare `getActiveBudgetProfile(db)`
  * in one of those procedures silently redirects an edit made while viewing a
  * non-active profile onto the active one instead.
@@ -459,103 +457,87 @@ export async function resolveLinkedBudgetItemAmounts<
     new Map(),
   );
 
-  const computeContribMonthlyForPair = async (
-    contribProfileId: number | null,
-    salaryProfileId: number | null,
-  ): Promise<{
-    contribMonthlyById: Map<number, number>;
-    statusById: Map<number, ContribResolutionStatus>;
-  }> => {
-    const contribMonthlyById = new Map<number, number>();
-    const incompleteIds = new Set<number>();
-    const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
-      db,
-      salaryProfileId,
-    );
-    const profileResult = await loadAndApplyContribProfile(
-      db,
-      contribProfileId,
-      rawContribs,
-      allJobs,
-      salaryProfileActiveMap,
-    );
-    const activeContribs = applyContribActiveFields(
-      profileResult.contribs,
-      opts?.sandboxContribActiveFields ?? {},
-      true,
-    );
-    const activeContribIds = new Set(activeContribs.map((c) => c.id));
-    const activeJobs = filterActiveJobs(profileResult.jobs);
-    const {
-      periodsPerYear: defaultPeriodsPerYear,
-      incomplete: joblessIncomplete,
-    } = resolveJoblessPeriodsPerYear(activeJobs);
-
-    const salaryByJobId = new Map<number, number>();
-    for (const j of activeJobs) {
-      const comp = resolveCompensation(salaryProfileActiveMap, j.id);
-      const sandboxEntry = effectiveSalaryMap.get(j.personId);
-      const salary = applyActiveSalary(
-        j.personId,
-        comp.salary,
-        effectiveSalaryMap,
-      );
-      const bonusTerms = applyActiveBonusTerms(sandboxEntry, comp.terms);
-      // Regular paychecks only: what a bonus check carries isn't monthly
-      // cash flow (contributionPay — base salary).
-      salaryByJobId.set(j.id, contributionPay(salary, bonusTerms).salary);
-    }
-
-    for (const c of activeContribs) {
-      if (!linkedContribIds.has(c.id)) continue;
-      const val = Number(c.contributionValue);
-      const isFixedPerPeriod = c.contributionMethod === "fixed_per_period";
-      let jobPeriodsPerYear: number;
-      let incomplete: boolean;
-      if (c.jobId) {
-        const job = activeJobs.find((j) => j.id === c.jobId);
-        const resolved = resolveContribPeriods(c.contributionMethod, job);
-        jobPeriodsPerYear = resolved.periodsPerYear;
-        incomplete = resolved.incomplete;
-      } else {
-        jobPeriodsPerYear = defaultPeriodsPerYear;
-        incomplete = isFixedPerPeriod && joblessIncomplete;
-      }
-      if (incomplete) {
-        incompleteIds.add(c.id);
-        contribMonthlyById.set(c.id, 0);
-        continue;
-      }
-      const salary = c.jobId ? (salaryByJobId.get(c.jobId) ?? 0) : 0;
-      const annual = computeAnnualContribution(
-        c.contributionMethod,
-        val,
-        salary,
-        jobPeriodsPerYear,
-      );
-      contribMonthlyById.set(c.id, annual / 12);
-    }
-
-    const statusById = new Map<number, ContribResolutionStatus>();
-    for (const accountId of linkedContribIds) {
-      statusById.set(
-        accountId,
-        classifyContribResolution(
-          accountId,
-          rawContribIds,
-          profileResult.contribActiveFields,
-          activeContribIds,
-          incompleteIds,
-        ),
-      );
-    }
-    return { contribMonthlyById, statusById };
-  };
-
-  const { contribMonthlyById, statusById } = await computeContribMonthlyForPair(
-    profiles.contribProfileId,
+  // The active pair, computed once — every column shows the same figure.
+  // (`amounts`/`contribStatus` below repeat it per column for the API shape.)
+  const contribMonthlyById = new Map<number, number>();
+  const incompleteIds = new Set<number>();
+  const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
+    db,
     profiles.salaryProfileId,
   );
+  const profileResult = await loadAndApplyContribProfile(
+    db,
+    profiles.contribProfileId,
+    rawContribs,
+    allJobs,
+    salaryProfileActiveMap,
+  );
+  const activeContribs = applyContribActiveFields(
+    profileResult.contribs,
+    opts?.sandboxContribActiveFields ?? {},
+    true,
+  );
+  const activeContribIds = new Set(activeContribs.map((c) => c.id));
+  const activeJobs = filterActiveJobs(profileResult.jobs);
+  const {
+    periodsPerYear: defaultPeriodsPerYear,
+    incomplete: joblessIncomplete,
+  } = resolveJoblessPeriodsPerYear(activeJobs);
+
+  const salaryByJobId = new Map<number, number>();
+  for (const j of activeJobs) {
+    const comp = resolveCompensation(salaryProfileActiveMap, j.id);
+    // Regular paychecks only (base salary): what a bonus check takes isn't
+    // monthly cash flow.
+    salaryByJobId.set(
+      j.id,
+      applyActiveSalary(j.personId, comp.salary, effectiveSalaryMap),
+    );
+  }
+
+  for (const c of activeContribs) {
+    if (!linkedContribIds.has(c.id)) continue;
+    const val = Number(c.contributionValue);
+    const isFixedPerPeriod = c.contributionMethod === "fixed_per_period";
+    let jobPeriodsPerYear: number;
+    let incomplete: boolean;
+    if (c.jobId) {
+      const job = activeJobs.find((j) => j.id === c.jobId);
+      const resolved = resolveContribPeriods(c.contributionMethod, job);
+      jobPeriodsPerYear = resolved.periodsPerYear;
+      incomplete = resolved.incomplete;
+    } else {
+      jobPeriodsPerYear = defaultPeriodsPerYear;
+      incomplete = isFixedPerPeriod && joblessIncomplete;
+    }
+    if (incomplete) {
+      incompleteIds.add(c.id);
+      contribMonthlyById.set(c.id, 0);
+      continue;
+    }
+    const salary = c.jobId ? (salaryByJobId.get(c.jobId) ?? 0) : 0;
+    const annual = computeAnnualContribution(
+      c.contributionMethod,
+      val,
+      salary,
+      jobPeriodsPerYear,
+    );
+    contribMonthlyById.set(c.id, annual / 12);
+  }
+
+  const statusById = new Map<number, ContribResolutionStatus>();
+  for (const accountId of linkedContribIds) {
+    statusById.set(
+      accountId,
+      classifyContribResolution(
+        accountId,
+        rawContribIds,
+        profileResult.contribActiveFields,
+        activeContribIds,
+        incompleteIds,
+      ),
+    );
+  }
 
   return items.map((i) => {
     if (i.contributionAccountId == null) {

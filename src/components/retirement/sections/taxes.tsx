@@ -430,7 +430,7 @@ export function TaxesSection({
           <span className="text-muted text-xs font-medium tracking-wide uppercase">
             Withdrawal Order
           </span>
-          <HelpTip text="Your saved default account draw order. Waterfall mode drains accounts in exactly this sequence; Bracket Filling uses the 401k/403b/IRA part of it to decide which Traditional account fills the bracket first. RMDs are enforced regardless of order. The Retirement page's Configure toggle can customize this for one session without changing what's saved here." />
+          <HelpTip text="Your saved default account draw order. Waterfall mode drains accounts in exactly this sequence; Bracket Filling uses the 401k/403b/IRA part of it to decide which Traditional account fills the bracket first. RMDs are enforced regardless of order. The Retirement page's Configure toggle can change this for one session without changing what's saved here." />
         </div>
         <WithdrawalOrderEditor
           order={persistedOrder}

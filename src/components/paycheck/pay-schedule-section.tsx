@@ -9,6 +9,7 @@ import {
 } from "@/lib/config/display-labels";
 import { PAY_PERIOD_VALUES, PAY_WEEK_VALUES } from "@/lib/config/enum-values";
 import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
+import { DateInput } from "@/components/ui/date-input";
 import { SectionHeader } from "./section-header";
 
 const numeric = (v: string) => v.replace(/[^0-9.]/g, "");
@@ -85,11 +86,10 @@ export function PayScheduleSection({
             </>
           }
         >
-          <input
-            type="date"
-            aria-label="A known payday"
+          <DateInput
+            ariaLabel="A known payday"
             value={job.anchorPayDate ?? ""}
-            onChange={(e) => onUpdateJob("anchorPayDate", e.target.value)}
+            onCommit={(v) => onUpdateJob("anchorPayDate", v)}
             disabled={!editable}
             className={selectClass}
           />
@@ -120,6 +120,7 @@ export function PayScheduleSection({
             className="font-medium"
             isEditable={editable}
             hideEditIcon
+            ariaLabel="Paychecks per month in the budget"
           />
         </FieldRow>
       </div>

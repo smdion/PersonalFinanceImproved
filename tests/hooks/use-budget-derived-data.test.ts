@@ -86,8 +86,6 @@ function setup(editMode: boolean, rawItems: RawItem[] = [rawItem]) {
       data: {
         profile: {
           id: 1,
-          columnContributionProfileIds: null,
-          columnSalaryProfileIds: null,
           columnMonths: null,
         },
         columnLabels: ["Standard"],

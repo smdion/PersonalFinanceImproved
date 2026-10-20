@@ -24,6 +24,8 @@ type InlineEditProps = {
    *  padlock) already signals "this area is editable", so a pencil on every
    *  value is redundant clutter. Click-to-edit still works. */
   hideEditIcon?: boolean;
+  /** What the value is, for screen readers (e.g. "Bonus percent"). */
+  ariaLabel?: string;
 };
 
 /**
@@ -40,6 +42,7 @@ export function InlineEdit({
   isEditable = true,
   truncate = false,
   hideEditIcon = false,
+  ariaLabel,
 }: InlineEditProps) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value);
@@ -101,6 +104,7 @@ export function InlineEdit({
         onChange={(e) => setDraft(e.target.value)}
         onBlur={save}
         onKeyDown={handleKeyDown}
+        aria-label={ariaLabel}
         className={`bg-surface-primary w-full max-w-[120px] rounded border border-blue-400 px-1.5 py-0.5 text-sm focus:ring-2 focus:ring-blue-300 focus:outline-none dark:focus:ring-blue-600 ${className}`}
       />
     );
@@ -118,6 +122,7 @@ export function InlineEdit({
         truncate ? "max-w-full min-w-0" : ""
       } ${className}`}
       title="Click to edit"
+      aria-label={ariaLabel ? `${ariaLabel}: ${display}` : undefined}
     >
       <span
         className={`${truncate ? "min-w-0 truncate" : ""} ${

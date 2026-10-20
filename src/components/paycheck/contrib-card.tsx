@@ -1,5 +1,6 @@
 "use client";
 
+import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Toggle } from "@/components/ui/toggle";
@@ -304,7 +305,7 @@ export function ContribCard({
       {/* This account's own Contribution Profile election — the one gate
           for money taken from bonus checks (bonusCheckContribution).
           Payroll accounts only: nothing else is on a check. */}
-      {(c.isPayrollDeducted ?? c.jobId !== null) && (
+      {isPaidThroughPayroll(c) && (
         <div className="mt-1">
           <Toggle
             isChecked={c.fromBonus === true}

@@ -11,6 +11,8 @@ import { PAY_PERIOD_LABELS } from "@/lib/config/display-labels";
 import { PayStub } from "./pay-stub";
 import { AnnualSummary } from "./annual-summary";
 import { BonusSection } from "./bonus-section";
+import { splitLineLabel } from "./deduction-row";
+import { isPreTax } from "@/lib/calculators/paycheck";
 import { TaxWithholdingSection } from "./tax-withholding-section";
 import { ContributionsSection } from "./contributions-section";
 import { AddDeductionForm } from "./add-deduction-form";
@@ -19,7 +21,7 @@ import { ExtraPaycheckDestinationToggle } from "@/components/savings/extra-paych
 import { SectionHeader } from "./section-header";
 import { OtherPaySection } from "./other-pay-section";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
-import type { BonusDestination } from "@/lib/pure/household-income";
+import type { BonusDestination } from "@/lib/config/enum-values";
 import type {
   PaycheckResult,
   ViewMode,
@@ -71,22 +73,21 @@ export type PersonPaycheckInteraction =
 
 const NOOP = () => {};
 
-/** An account's name in the Bonus section — like the pay stub, a name used
- *  for both a traditional and a Roth account says which this is. */
-function bonusAccountName(raw: RawContrib, all: RawContrib[]): string {
+/** An account's name in the Bonus section: its own name, and — like the
+ *  pay stub — which one it is when the stub has the same name before and
+ *  after tax (splitLineLabel). */
+function bonusAccountName(
+  raw: RawContrib,
+  lines: Parameters<typeof splitLineLabel>[2],
+): string {
   const custom = raw.displayNameCustom ?? raw.displayNameActive;
   if (custom) return custom;
-  const name = accountDisplayName(raw);
-  const twin = all.some(
-    (c) =>
-      c.id !== raw.id &&
-      accountDisplayName(c) === name &&
-      c.taxTreatment !== raw.taxTreatment,
+  // The account's line on the pay stub is named this (buildContribAccounts).
+  const lineName = raw.subType || raw.label || raw.accountType;
+  return (
+    splitLineLabel(lineName, isPreTax(raw.taxTreatment), lines) ??
+    accountDisplayName(raw)
   );
-  if (!twin) return name;
-  if (raw.taxTreatment === "pre_tax") return `${name} (Traditional)`;
-  if (raw.taxTreatment === "tax_free") return `${name} (Roth)`;
-  return name;
 }
 
 export function PersonPaycheck({
@@ -132,8 +133,7 @@ export function PersonPaycheck({
      *  (the same pattern use-paycheck-person-views.ts's `job: any` and
      *  household-income-card.tsx already rely on), so they're read the
      *  same way here as before the migration — only their write path
-     *  changed (paycheck/page.tsx now routes them to salaryProfile.update
-     *  instead of settings.jobs.update). */
+     *  changed (paycheck/page.tsx saves them with salaryProfile.patchEntry). */
     bonusMonth: number | null;
     bonusDayOfMonth: number | null;
     personId: number;
@@ -342,7 +342,12 @@ export function PersonPaycheck({
               const raw = rawContribs.find((c) => c.id === a.id);
               return {
                 id: a.id,
-                name: raw ? bonusAccountName(raw, rawContribs) : "Contribution",
+                name: raw
+                  ? bonusAccountName(raw, {
+                      preTax: alignedPreTax ?? paycheck.preTaxDeductions,
+                      postTax: alignedPostTax ?? paycheck.postTaxDeductions,
+                    })
+                  : "Contribution",
                 amount: a.amount,
               };
             })}

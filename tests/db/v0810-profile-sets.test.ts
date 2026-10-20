@@ -423,3 +423,20 @@ describe("migration 0009 on SQLite", () => {
     ).toThrow(/UNIQUE/);
   });
 });
+
+describe("convertV0810ProfileSets — a Plan salary that changes nothing", () => {
+  it("makes no new Salary Profile when the stored salary equals the profile's", () => {
+    const t = oldTables();
+    t["scenarios"] = [
+      {
+        id: 9,
+        name: "Same",
+        salary_profile_id: 1,
+        overrides: { people: { "2": { salary: 70_000 } } },
+      },
+    ];
+    const r = convertV0810ProfileSets(t);
+    expect(r.newSalaryProfiles).toEqual([]);
+    expect(t["scenarios"]![0]!["salary_profile_id"]).toBe(1);
+  });
+});

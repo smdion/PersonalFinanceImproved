@@ -42,6 +42,7 @@ import type {
   UtilityKind,
   UtilityUnit,
   StandInPreview,
+  BonusDestination,
 } from "@/lib/config/enum-values";
 
 /** One date-ranged rule directing an extra paycheck to one or more savings goals. */
@@ -2444,7 +2445,6 @@ export type EntityFieldMap = Record<
 >;
 
 /** A Plan: a named set of profiles, one of each kind. */
-
 export const scenarios = sqliteTable(
   "scenarios",
   {
@@ -2714,7 +2714,7 @@ export const salaryProfiles = sqliteTable("salary_profiles", {
           bonusDayOfMonth: number | null;
           extraPaycheckRouting: ExtraPaycheckRoutingData | null;
           /** Where the bonus goes; absent = the budget. */
-          bonusDestination?: "budget" | "spending";
+          bonusDestination?: BonusDestination;
           /** Other pay per check, by paycheck_earnings id; absent = none. */
           otherEarnings?: Record<string, number>;
         }

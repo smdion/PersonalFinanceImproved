@@ -14,8 +14,10 @@ import {
   w4FilingStatusSchema,
   payPeriodSchema,
   payWeekSchema,
+  bonusDestinationSchema,
   zDecimal,
 } from "@/lib/config/enum-values";
+import { isCalendarDate } from "@/lib/utils/date";
 
 // ── Primitives & re-usable fragments ────────────────────────────
 
@@ -239,24 +241,27 @@ export const extraPaycheckRoutingSchema = z
  */
 export const salaryEntrySchema = z
   .object({
-    salary: z.number(),
+    salary: z.number().nonnegative(),
     /** Fraction, not percent: 0.12 = 12%. Matches the bonus % shown in the UI. */
-    bonusPercent: z.number(),
-    bonusMultiplier: z.number(),
-    monthsInBonusYear: z.number(),
+    bonusPercent: z.number().nonnegative(),
+    bonusMultiplier: z.number().nonnegative(),
+    monthsInBonusYear: z.number().min(0).max(12),
     /** This year's actual paid-out bonus, pinned once known — orthogonal to
      *  the formula fields above, which growth/projection math always uses
      *  untouched. Only the live Paycheck display reads this. */
-    bonusOverride: z.number().nullable(),
+    bonusOverride: z.number().nonnegative().nullable(),
     payPeriod: payPeriodSchema,
     payWeek: payWeekSchema,
     /** `null` is a real, complete value ("no anchor, use start date"). */
-    anchorPayDate: z.string().nullable(),
+    anchorPayDate: z
+      .string()
+      .refine(isCalendarDate, "Not a date (YYYY-MM-DD, 1900-2100)")
+      .nullable(),
     /** null = the pay schedule's usual number. */
     budgetPeriodsPerMonth: z.number().positive().nullable(),
     w4FilingStatus: w4FilingStatusSchema,
     w4Box2cChecked: z.boolean(),
-    additionalFedWithholding: z.number(),
+    additionalFedWithholding: z.number().nonnegative(),
     /** 1-12, month when bonus is typically paid (null = unknown/spread). */
     bonusMonth: z.number().int().min(1).max(12).nullable(),
     /** 1-31, day of month when bonus is paid (null = first period of month). */
@@ -267,7 +272,7 @@ export const salaryEntrySchema = z
     /** Where this job's bonus goes: into the budget (absent) or extra
      *  spending outside it — Living Costs shows its take-home as its own
      *  bar. */
-    bonusDestination: z.enum(["budget", "spending"]).optional(),
+    bonusDestination: bonusDestinationSchema.optional(),
     /** Other pay per check, by paycheck_earnings id (amount ≥ 0). Absent =
      *  none — the same as `{}`, so older entries need no backfill. */
     otherEarnings: z

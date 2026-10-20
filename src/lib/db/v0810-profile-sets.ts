@@ -151,6 +151,8 @@ export function convertV0810ProfileSets(tables: V0810Tables): V0810Result {
         );
         continue;
       }
+      // Same as the profile already says: nothing to keep.
+      if (Number(entry["salary"]) === salary) continue;
       entry["salary"] = salary;
       changed = true;
     }

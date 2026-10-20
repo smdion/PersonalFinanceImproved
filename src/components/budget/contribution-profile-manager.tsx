@@ -1,5 +1,6 @@
 "use client";
 
+import { takesFromBonusCheck } from "@/lib/calculators/paycheck";
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
@@ -551,7 +552,10 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                             not a funding target
                           </span>
                         )}
-                        {ad.liveIsPayroll && af?.fromBonus === true && (
+                        {takesFromBonusCheck({
+                          isPayrollDeducted: ad.liveIsPayroll,
+                          fromBonus: af?.fromBonus,
+                        }) && (
                           <span className="text-micro text-faint shrink-0">
                             also from bonus checks
                           </span>
@@ -1772,7 +1776,7 @@ function ProfileInlineEditor({
                               title={
                                 af.employerMatchValue === undefined &&
                                 storedMatch !== ""
-                                  ? "Inherited from the account's own settings — editing this sets a customization for this profile only"
+                                  ? "The account's own match — editing saves a value in this profile only"
                                   : undefined
                               }
                               placeholder="—"
@@ -1823,7 +1827,7 @@ function ProfileInlineEditor({
                               title={
                                 af.employerMaxMatchPct === undefined &&
                                 storedCap !== ""
-                                  ? "Inherited from the account's own settings — editing this sets a customization for this profile only"
+                                  ? "The account's own match — editing saves a value in this profile only"
                                   : undefined
                               }
                               placeholder="—"

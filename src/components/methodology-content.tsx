@@ -344,9 +344,9 @@ export function MethodologyContent() {
                 <td className="pr-2">Historical sequences</td>
                 <td className="pr-2">Historical sequences</td>
                 <td className="pr-2">Historical sequences</td>
-                <td className="pr-2">MC (proprietary)</td>
-                <td className="pr-2">MC + historical</td>
-                <td className="pr-2">MC (proprietary)</td>
+                <td className="pr-2">Simulation (proprietary)</td>
+                <td className="pr-2">Simulation + historical</td>
+                <td className="pr-2">Simulation (proprietary)</td>
                 <td>Historical sequences</td>
               </tr>
               <tr>

@@ -19,6 +19,7 @@ import {
   monthsElapsedYtd,
   periodsElapsedYtd,
   bonusCheckContribution,
+  isPaidThroughPayroll,
 } from "@/lib/calculators/paycheck";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
 import {
@@ -921,7 +922,7 @@ export const contributionRouter = createTRPCRouter({
             // Same isPayrollDeducted resolution paycheck.ts's calculator
             // input uses (buildContribAccounts) — independent of the tax
             // treatment split above.
-            if (rawContrib.isPayrollDeducted ?? rawContrib.jobId !== null) {
+            if (isPaidThroughPayroll(rawContrib)) {
               entry.payrollDeducted += withBonus;
             } else {
               entry.nonPayroll += acct.annualContribution;
@@ -1316,14 +1317,10 @@ export const contributionRouter = createTRPCRouter({
             : 0,
           hsaContrib: isHsaTreatment(c.taxTreatment) ? roundToCents(annual) : 0,
           // Same isPayrollDeducted resolution as the per-person loop above.
-          nonPayrollContrib:
-            (c.isPayrollDeducted ?? c.jobId !== null)
-              ? 0
-              : roundToCents(annual),
-          payrollDeductedContrib:
-            (c.isPayrollDeducted ?? c.jobId !== null)
-              ? roundToCents(annual)
-              : 0,
+          nonPayrollContrib: isPaidThroughPayroll(c) ? 0 : roundToCents(annual),
+          payrollDeductedContrib: isPaidThroughPayroll(c)
+            ? roundToCents(annual)
+            : 0,
           bonusContrib: 0,
           isJoint: true,
           hasDiscountBar: jDisplay.hasDiscountBar,

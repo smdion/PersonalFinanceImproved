@@ -472,6 +472,31 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
  * (bonusCheckContribution) — only accounts set to be taken from bonus checks.
  */
 /**
+ * Whether a contribution account is paid through payroll: its own
+ * `isPayrollDeducted`, or — when that's unset — whether it belongs to a job.
+ * The one definition; everything that asks uses it.
+ */
+export function isPaidThroughPayroll(account: {
+  isPayrollDeducted?: boolean | null;
+  jobId: number | null;
+}): boolean {
+  return account.isPayrollDeducted ?? account.jobId !== null;
+}
+
+/** takesFromBonusCheck for a contribution account row (payroll resolved
+ *  with isPaidThroughPayroll). */
+export function rowTakesFromBonusCheck(row: {
+  isPayrollDeducted?: boolean | null;
+  jobId: number | null;
+  fromBonus?: boolean | null;
+}): boolean {
+  return takesFromBonusCheck({
+    isPayrollDeducted: isPaidThroughPayroll(row),
+    fromBonus: row.fromBonus === true,
+  });
+}
+
+/**
  * Whether the bonus check takes this account: paid through payroll and set
  * to be taken from bonus checks (`fromBonus`). The one rule — the bonus-check
  * amount, the employer match's pay and every label use it.

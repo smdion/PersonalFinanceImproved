@@ -32,6 +32,7 @@
  * Permissions intentionally mirror contributionProfile (no new gate): reads on
  * protectedProcedure, writes on contributionProfileProcedure.
  */
+import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import { assertNoPlanUses } from "@/server/helpers/plans";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
@@ -279,7 +280,8 @@ export const salaryProfileRouter = createTRPCRouter({
            *  configured — see extraPaycheckRoutingSchema (json-schemas.ts). */
           extraPaycheckRouting: entry?.extraPaycheckRouting ?? null,
           /** Where this job's bonus goes; absent = the budget. */
-          bonusDestination: entry?.bonusDestination ?? ("budget" as const),
+          bonusDestination:
+            entry?.bonusDestination ?? DEFAULT_BONUS_DESTINATION,
           /** This job's other-pay lines with their per-check amount in this
            *  profile (0 when it sets none) — same as the Paycheck page. */
           earningRows: allEarnings
@@ -342,7 +344,8 @@ export const salaryProfileRouter = createTRPCRouter({
           bonusMonth: selected?.bonusMonth ?? null,
           bonusDayOfMonth: selected?.bonusDayOfMonth ?? null,
           extraPaycheckRouting: selected?.extraPaycheckRouting ?? null,
-          bonusDestination: selected?.bonusDestination ?? ("budget" as const),
+          bonusDestination:
+            selected?.bonusDestination ?? DEFAULT_BONUS_DESTINATION,
           earningRows: selected?.earningRows ?? [],
           /** What this profile actually produces for this person. */
           effectiveSalary: selected?.effectiveSalary ?? 0,
