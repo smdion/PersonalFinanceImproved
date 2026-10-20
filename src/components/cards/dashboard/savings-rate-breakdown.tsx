@@ -1,7 +1,7 @@
 "use client";
 
 import { HelpTip } from "@/components/ui/help-tip";
-import { Toggle } from "@/components/ui/toggle";
+import { ChipToggle } from "@/components/ui/chip-toggle";
 import {
   formatCurrency,
   formatPercent,
@@ -77,20 +77,19 @@ export function SavingsRateBreakdown({
         {onToggleMatch && onTogglePortfolio && (
           // What the rate counts — the same household setting and switches
           // as the Contributions page.
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <span>Counts:</span>
-            <Toggle
+          <span className="flex flex-wrap items-center gap-1.5">
+            <span>Counts</span>
+            <ChipToggle
               isChecked={!excludeMatch}
               onChange={onToggleMatch}
               label="Employer match"
-              size="xs"
+              title="Count the employer match (also on the Contributions page)"
             />
-            <Toggle
+            <ChipToggle
               isChecked={includePortfolio}
               onChange={onTogglePortfolio}
               label="Portfolio"
-              size="xs"
-              title="Brokerage and other non-retirement savings"
+              title="Count brokerage and other non-retirement savings (also on the Contributions page)"
             />
           </span>
         )}

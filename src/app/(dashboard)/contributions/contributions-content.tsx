@@ -6,7 +6,7 @@ import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { PageHeader } from "@/components/ui/page-header";
-import { Toggle } from "@/components/ui/toggle";
+import { ChipToggle } from "@/components/ui/chip-toggle";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -270,27 +270,6 @@ export function ContributionsContent() {
         </div>
       )}
 
-      {/* What the savings rate counts — a household setting (also the
-          Dashboard's), so it sits with the rates it changes, not with the
-          page-wide controls. The tables below always show every account. */}
-      <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
-        <span className="text-muted">Savings rate counts:</span>
-        <Toggle
-          isChecked={!excludeMatch}
-          onChange={toggleMatch}
-          label="Employer match"
-          size="xs"
-        />
-        <Toggle
-          isChecked={includePortfolio}
-          onChange={togglePortfolio}
-          label="Portfolio"
-          size="xs"
-          title="Brokerage and other non-retirement savings"
-        />
-        <span className="text-faint">Also used on the Dashboard.</span>
-      </div>
-
       {/* Household summary — rates from server (single source of truth) */}
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
         {(() => {
@@ -309,21 +288,45 @@ export function ContributionsContent() {
           const primary = excludeMatch ? "without" : "with";
           return (
             <>
-              {viewMode === "projected" && (
-                <div className="md:col-span-3">
-                  <PlainSummary
-                    text={contributionsSummaryLine({
-                      rate: primary === "without" ? hhRateWithout : hhRateWith,
-                      annualAmount: counted(
-                        excludeMatch ? savingsWithout : savingsWith,
-                      ),
-                      matchIncluded: !excludeMatch,
-                      includePortfolio,
-                      nextAction: nextPaycheckAction,
-                    })}
-                  />
-                </div>
-              )}
+              {/* The sentence, with what the savings rate counts at its
+                  right — a household setting (the Dashboard's too), so it
+                  sits with the rates it changes. The account tables below
+                  always show every account. */}
+              <div className="md:col-span-3">
+                <PlainSummary
+                  aside={
+                    <>
+                      <span className="text-caption text-faint">Counts</span>
+                      <ChipToggle
+                        isChecked={!excludeMatch}
+                        onChange={toggleMatch}
+                        label="Employer match"
+                        title="Count the employer match in the savings rate (also on the Dashboard)"
+                      />
+                      <ChipToggle
+                        isChecked={includePortfolio}
+                        onChange={togglePortfolio}
+                        label="Portfolio"
+                        title="Count brokerage and other non-retirement savings (also on the Dashboard)"
+                      />
+                    </>
+                  }
+                  text={
+                    viewMode !== "projected"
+                      ? undefined
+                      : contributionsSummaryLine({
+                          rate:
+                            primary === "without" ? hhRateWithout : hhRateWith,
+                          annualAmount: counted(
+                            excludeMatch ? savingsWithout : savingsWith,
+                          ),
+                          matchIncluded: !excludeMatch,
+                          includePortfolio,
+                          nextAction: nextPaycheckAction,
+                        })
+                  }
+                />
+              </div>
               <SummaryCard
                 label={`${isBlended ? "Total Savings (Est.)" : "Total Savings"}${includePortfolio ? "" : " — retirement only"}`}
                 rate={primary === "without" ? hhRateWithout : hhRateWith}
