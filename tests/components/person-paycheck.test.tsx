@@ -122,6 +122,7 @@ const defaultProps = {
   rawDeductions: [],
   rawContribs: [],
   bonusCheckAccounts: [],
+  bonusDestination: "budget" as const,
   perContribData: [],
   contribExpanded: true,
   onToggleContrib: vi.fn(),

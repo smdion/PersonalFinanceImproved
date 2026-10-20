@@ -340,7 +340,9 @@ intentional:
    part of a Salary Profile entry, written through
    `salaryProfile.create`/`update` (`contributionProfileProcedure`) — no
    longer admin-gated. Anyone who could already edit a Contribution Profile
-   can now set these for any job.
+   can now set these for any job — including where the bonus goes
+   (`bonusDestination`, absent = the budget), which used to be an admin-only
+   household setting.
 
 **`paycheck_deductions` has no live amount of its own either** —
 `amount_per_period` was dropped the same way `contribution_accounts` lost

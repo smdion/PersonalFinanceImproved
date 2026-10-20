@@ -293,6 +293,10 @@ export const salaryEntrySchema = z
     extraPaycheckRouting: extraPaycheckRoutingSchema.nullable(),
     /** Other pay per check, by paycheck_earnings id (amount ≥ 0). Absent =
      *  none — the same as `{}`, so older entries need no backfill. */
+    /** Where this job's bonus goes: into the budget (absent) or extra
+     *  spending outside it — Living Costs shows its take-home as its own
+     *  bar. */
+    bonusDestination: z.enum(["budget", "spending"]).optional(),
     otherEarnings: z
       .record(z.string().regex(/^\d+$/), z.number().nonnegative())
       .optional(),

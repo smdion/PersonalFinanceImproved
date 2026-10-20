@@ -6,7 +6,7 @@ import { SegmentedControl } from "@/components/ui/segmented-control";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SectionHeader } from "./section-header";
-import { useBonusDestinations } from "@/lib/hooks/use-bonus-destinations";
+import type { BonusDestination } from "@/lib/pure/household-income";
 import type { PaycheckResult } from "./types";
 import type { BonusEstimate } from "@/lib/calculators/types/calculators";
 
@@ -16,33 +16,32 @@ const BONUS_DESTINATION_OPTIONS = [
 ] as const;
 
 /** "Bonus goes to: Budget | Extra spending" — like the extra paycheck's
- *  choice. Extra spending gets its own Living Costs bar. */
+ *  choice, saved in the Salary Profile entry. Extra spending gets its own
+ *  Living Costs bar. */
 function BonusDestinationToggle({
-  personId,
+  value,
+  onChange,
   disabled,
 }: {
-  personId: number;
+  value: BonusDestination;
+  onChange: (value: BonusDestination) => void;
   disabled?: boolean;
 }) {
-  const { destinations, canEdit, saving, setDestination } =
-    useBonusDestinations();
-  const current = destinations[String(personId)] ?? "budget";
   return (
     <FieldRow
       label={
         <>
           Goes to
-          <HelpTip text="Extra spending: the bonus isn't part of your budget. Living Costs shows its take-home as its own bar instead of counting it as unallocated. Applies to every profile." />
-          {saving && <span className="text-caption text-faint">Saving…</span>}
+          <HelpTip text="Extra spending: the bonus isn't part of your budget. Living Costs shows its take-home as its own bar instead of counting it as unallocated." />
         </>
       }
     >
       <SegmentedControl
         ariaLabel="Bonus goes to"
-        value={current}
+        value={value}
         options={BONUS_DESTINATION_OPTIONS}
-        onChange={(v) => void setDestination(personId, v)}
-        disabled={disabled || !canEdit}
+        onChange={onChange}
+        disabled={disabled}
       />
     </FieldRow>
   );
@@ -51,18 +50,17 @@ function BonusDestinationToggle({
 const numeric = (v: string) => v.replace(/[^0-9.]/g, "");
 
 export function BonusSection({
-  personId,
   paycheck,
   fullFormulaBonusEstimate,
   job,
   resolvedBonusTerms,
   bonusAccounts,
+  bonusDestination,
   onUpdateJob,
   readOnly,
   salaryReadOnly,
   note,
 }: {
-  personId: number;
   paycheck: PaycheckResult;
   /** The nominal formula bonus, ignoring any current-year pin — shown as
    *  "(calc: $X)" next to the Actual field so pinning a real number
@@ -88,6 +86,8 @@ export function BonusSection({
    *  "Also taken from bonus checks" election, set on its row under
    *  Contributions. */
   bonusAccounts: { id: number; name: string; amount: number }[];
+  /** Where this job's bonus goes (its Salary Profile entry). */
+  bonusDestination: BonusDestination;
   onUpdateJob: (field: string, value: string) => void;
   /** Sandbox/preview mode — bonus terms are shown but not editable. */
   readOnly?: boolean;
@@ -208,7 +208,11 @@ export function BonusSection({
                 className="bg-surface-primary w-36 rounded border px-2 py-0.5 text-sm disabled:opacity-60"
               />
             </FieldRow>
-            <BonusDestinationToggle personId={personId} disabled={readOnly} />
+            <BonusDestinationToggle
+              value={bonusDestination}
+              onChange={(v) => onUpdateJob("bonusDestination", v)}
+              disabled={!editable}
+            />
           </>
         )}
 

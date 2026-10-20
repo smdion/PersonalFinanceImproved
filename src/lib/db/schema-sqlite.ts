@@ -2704,9 +2704,9 @@ export const salaryProfiles = sqliteTable("salary_profiles", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   name: text("name").notNull().unique(),
   description: text("description"),
-  /** jobId → complete salary entry. A job either has ALL seventeen fields (a
-   *  — plus the optional `otherEarnings`, absent = none —
-   *  real, complete number/election for this profile) or no key at all
+  /** jobId → complete salary entry. A job either has every required field
+   *  (plus the optional `bonusDestination`/`otherEarnings`, absent = budget /
+   *  none) — a real, complete number/election for this profile — or no key at all
    *  (this profile says nothing about that job — contributes $0, not a
    *  fallback to some other value). No partial entries — see
    *  salaryEntriesSchema in json-schemas.ts. */
@@ -2736,6 +2736,8 @@ export const salaryProfiles = sqliteTable("salary_profiles", {
           /** @deprecated see include401kInBonus. */
           includeBonusInContributions?: boolean;
           extraPaycheckRouting: ExtraPaycheckRoutingData | null;
+          /** Where the bonus goes; absent = the budget. */
+          bonusDestination?: "budget" | "spending";
           /** Other pay per check, by paycheck_earnings id; absent = none. */
           otherEarnings?: Record<string, number>;
         }

@@ -26,13 +26,6 @@ vi.mock("@/lib/hooks/use-persisted-setting", () => ({
     vi.fn(),
   ],
 }));
-// Where each bonus goes is set on the Paycheck page; the card reads it.
-const bonus = vi.hoisted(() => ({
-  destinations: {} as Record<string, "budget" | "spending">,
-}));
-vi.mock("@/lib/hooks/use-bonus-destinations", () => ({
-  useBonusDestinations: () => ({ destinations: bonus.destinations }),
-}));
 // HelpTip needs a Radix TooltipProvider ancestor this card doesn't supply on
 // its own (normally comes from a layout higher up) — same pattern as
 // coast-fire-card.test.tsx.
@@ -222,11 +215,13 @@ describe("LivingCostsCard math", () => {
       netRegular: 48000,
       netBonus: 7200,
     };
+    // Where the bonus goes comes from the job's Salary Profile entry.
     const people = paycheckQuery.data.people as {
       earnings?: { netBonus: number };
+      bonusDestination?: "budget" | "spending";
     }[];
     people[0]!.earnings = { netBonus: 7200 };
-    bonus.destinations = { "5": "spending" };
+    people[0]!.bonusDestination = "spending";
     try {
       render(<LivingCostsCard />);
       expect(screen.getByText("Bonus (extra spending)")).toBeInTheDocument();
@@ -235,8 +230,8 @@ describe("LivingCostsCard math", () => {
       expect(screen.getByText("($26,800.00)")).toBeInTheDocument();
     } finally {
       paycheckQuery.data.householdIncome = original;
-      bonus.destinations = {};
       delete people[0]!.earnings;
+      delete people[0]!.bonusDestination;
     }
   });
 

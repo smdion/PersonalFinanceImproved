@@ -7,7 +7,6 @@ import { calculatePaycheck } from "@/lib/calculators/paycheck";
 import {
   bonusSpendingNet,
   computeAnnualEarnings,
-  parseBonusDestinations,
   sumHouseholdIncome,
 } from "@/lib/pure/household-income";
 import type {
@@ -165,17 +164,15 @@ describe("sumHouseholdIncome", () => {
 });
 
 describe("bonus destinations", () => {
-  it("only bonuses set to extra spending count; unreadable settings mean budget", () => {
-    const people = [
-      { personId: 1, netBonus: 6900.2 },
-      { personId: 2, netBonus: 11857.22 },
-    ];
-    expect(bonusSpendingNet(people, { "2": "spending", "1": "budget" })).toBe(
-      11857.22,
-    );
-    expect(bonusSpendingNet(people, parseBonusDestinations("junk"))).toBe(0);
-    expect(parseBonusDestinations({ "1": "spending" })).toEqual({
-      "1": "spending",
-    });
+  it("only bonuses set to extra spending count", () => {
+    expect(
+      bonusSpendingNet([
+        { netBonus: 6900.2, bonusDestination: "budget" },
+        { netBonus: 11857.22, bonusDestination: "spending" },
+      ]),
+    ).toBe(11857.22);
+    expect(
+      bonusSpendingNet([{ netBonus: 6900.2, bonusDestination: "budget" }]),
+    ).toBe(0);
   });
 });

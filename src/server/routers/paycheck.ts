@@ -581,6 +581,11 @@ export const paycheckRouter = createTRPCRouter({
                   ] ?? 0,
               })),
             rawContribs,
+            /** Where this job's bonus goes (its Salary Profile entry;
+             *  absent = the budget). */
+            bonusDestination:
+              salaryProfileActiveMap.get(activeJob.id)?.bonusDestination ??
+              ("budget" as const),
             /** The accounts the bonus check takes, and how much — the
              *  accounts set to be taken from bonus checks (fromBonus).
              *  contribAccounts is built from rawContribs, in order. */

@@ -200,6 +200,7 @@ export default function PaycheckPage() {
      *  field write creates/updates this job's entry. Edited from Salary
      *  Profile Manager instead (see extra-paycheck-rules-editor.tsx). */
     extraPaycheckRouting: ExtraPaycheckRoutingData | null;
+    bonusDestination?: "budget" | "spending";
     otherEarnings?: Record<string, number>;
   };
 
@@ -400,6 +401,7 @@ export default function PaycheckPage() {
               rawDeductions={d.rawDeductions}
               rawContribs={d.rawContribs}
               bonusCheckAccounts={d.bonusCheckAccounts}
+              bonusDestination={d.bonusDestination}
               perContribData={d.perContribData}
               incompleteAccountIds={d.incompleteAccountIds}
               earningRows={d.earningRows}
@@ -489,6 +491,19 @@ export default function PaycheckPage() {
                                   [field.slice("otherEarnings:".length)]: num,
                                 },
                               },
+                            );
+                            return;
+                          }
+                          // Where this job's bonus goes — its Salary
+                          // Profile entry, like every other bonus term.
+                          if (field === "bonusDestination") {
+                            if (!salaryEditsProfile) return;
+                            if (value !== "budget" && value !== "spending")
+                              return;
+                            writeSalaryProfileEntry(
+                              job.id,
+                              salaryProfileEntryDefaults,
+                              { bonusDestination: value },
                             );
                             return;
                           }

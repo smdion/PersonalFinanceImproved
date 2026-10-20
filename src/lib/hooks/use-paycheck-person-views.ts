@@ -93,6 +93,8 @@ export type PaycheckPersonView = {
   rawContribs: RawContrib[];
   /** The accounts the bonus check takes, and how much (fromBonus). */
   bonusCheckAccounts: { id: number; amount: number }[];
+  /** Where this job's bonus goes (its Salary Profile entry). */
+  bonusDestination: "budget" | "spending";
   alignedPreTax?: DeductionRowData[];
   alignedPostTax?: DeductionRowData[];
   coverageNote?: string;
@@ -356,6 +358,8 @@ export function usePaycheckPersonViews({
           rawContribs: d.rawContribs as RawContrib[],
           bonusCheckAccounts:
             "bonusCheckAccounts" in d ? d.bonusCheckAccounts : [],
+          bonusDestination:
+            "bonusDestination" in d ? d.bonusDestination : "budget",
           alignedPreTax: alignedData?.preTax[index as 0 | 1],
           alignedPostTax: alignedData?.postTax[index as 0 | 1],
           coverageNote: alignedData?.coverageNotes[index as 0 | 1]?.note,

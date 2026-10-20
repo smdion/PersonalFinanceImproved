@@ -18,7 +18,6 @@ import type {
   PaycheckResult,
 } from "@/lib/calculators/types";
 import { bonusCheckContribution, isPreTax } from "@/lib/calculators/paycheck";
-import { z } from "zod/v4";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import { isHsaTreatment } from "@/lib/config/account-types";
 
@@ -130,28 +129,18 @@ export function sumHouseholdIncome(people: AnnualEarnings[]): AnnualEarnings {
   };
 }
 
-/** Where a person's bonus goes: into the budget, or extra spending outside it. */
-export const bonusDestinationsSchema = z.record(
-  z.string().regex(/^\d+$/),
-  z.enum(["budget", "spending"]),
-);
-export type BonusDestinations = z.infer<typeof bonusDestinationsSchema>;
-
-/** Stored setting → destinations; unreadable or unset → none (all budget). */
-export function parseBonusDestinations(raw: unknown): BonusDestinations {
-  const parsed = bonusDestinationsSchema.safeParse(raw);
-  return parsed.success ? parsed.data : {};
-}
+/** Where a job's bonus goes: into the budget, or extra spending outside it
+ *  (the Salary Profile entry's `bonusDestination`; absent = the budget). */
+export type BonusDestination = "budget" | "spending";
 
 /** Bonus take-home set aside as extra spending (outside the budget). Its
  *  taxes and bonus-check contributions are already counted elsewhere. */
 export function bonusSpendingNet(
-  people: readonly { personId: number; netBonus: number }[],
-  destinations: BonusDestinations,
+  people: readonly { netBonus: number; bonusDestination: BonusDestination }[],
 ): number {
   return roundToCents(
     sumBy(
-      people.filter((p) => destinations[String(p.personId)] === "spending"),
+      people.filter((p) => p.bonusDestination === "spending"),
       (p) => p.netBonus,
     ),
   );

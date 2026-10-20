@@ -151,3 +151,28 @@ describe("contributions taken from bonus checks (fromBonus)", () => {
     }
   });
 });
+
+describe("where the bonus goes (Salary Profile entry)", () => {
+  it("is the job's entry's bonusDestination, the budget when absent", async () => {
+    const h = await seedHousehold();
+    try {
+      const destination = async () =>
+        (await h.caller.paycheck.computeSummary({})).people.find(
+          (p) => p.person.id === h.personId,
+        )!.bonusDestination;
+      expect(await destination()).toBe("budget");
+
+      const profiles = await h.caller.salaryProfile.list();
+      const active = profiles.find((p) => p.isActive) ?? profiles[0]!;
+      const jobId = Number(Object.keys(active.salaries)[0]);
+      await h.caller.salaryProfile.patchEntry({
+        id: active.id,
+        jobId,
+        fields: { bonusDestination: "spending" },
+      });
+      expect(await destination()).toBe("spending");
+    } finally {
+      h.cleanup();
+    }
+  });
+});

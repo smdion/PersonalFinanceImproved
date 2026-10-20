@@ -9,7 +9,6 @@ import { StatusDot } from "@/components/ui/badge";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useBonusDestinations } from "@/lib/hooks/use-bonus-destinations";
 import { bonusSpendingNet } from "@/lib/pure/household-income";
 import {
   RAMSEY_RANGES,
@@ -157,8 +156,6 @@ function LivingCostsCardImpl() {
   const { data: extraPaycheckJobs, isLoading: isExtraPaycheckLoading } =
     trpc.savings.extraPaycheckRouting.list.useQuery();
   const [useGross, setUseGross] = useState(false);
-  // Bonuses set to "extra spending" on the Paycheck page get their own bar.
-  const { destinations: bonusDestinations } = useBonusDestinations();
 
   if (
     isBudgetLoading ||
@@ -424,13 +421,13 @@ function LivingCostsCardImpl() {
   });
   // Take-home of bonuses set to "extra spending" (their taxes and
   // bonus-check contributions are already in the Taxes / Retirement /
-  // Portfolio bars) — same in both modes.
+  // Portfolio bars) — same in both modes. Each job's Salary Profile entry
+  // says where its bonus goes.
   const bonusShown = bonusSpendingNet(
     (paycheckData?.people ?? []).map((p) => ({
-      personId: p.person.id,
       netBonus: p.earnings?.netBonus ?? 0,
+      bonusDestination: "bonusDestination" in p ? p.bonusDestination : "budget",
     })),
-    bonusDestinations,
   );
   const retirementShown = useGross ? retirementTotal : retirementNonPayroll;
   const portfolioShown = useGross ? portfolioTotal : portfolioNonPayroll;

@@ -19,6 +19,7 @@ import { ExtraPaycheckDestinationToggle } from "@/components/savings/extra-paych
 import { SectionHeader } from "./section-header";
 import { OtherPaySection } from "./other-pay-section";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
+import type { BonusDestination } from "@/lib/pure/household-income";
 import type {
   PaycheckResult,
   ViewMode,
@@ -84,6 +85,7 @@ export function PersonPaycheck({
   rawDeductions,
   rawContribs,
   bonusCheckAccounts,
+  bonusDestination,
   perContribData,
   alignedPreTax,
   alignedPostTax,
@@ -154,6 +156,8 @@ export function PersonPaycheck({
   rawContribs: RawContrib[];
   /** The accounts the bonus check takes, and how much (fromBonus). */
   bonusCheckAccounts: { id: number; amount: number }[];
+  /** Where this job's bonus goes (its Salary Profile entry). */
+  bonusDestination: BonusDestination;
   /** Contribution annual/limit figures, resolved ONCE by the caller's shared
    *  hook. This card and its children never query for them. */
   perContribData: PerContribView[];
@@ -312,7 +316,6 @@ export function PersonPaycheck({
             blendedAnnual={blendedAnnual}
           />
           <BonusSection
-            personId={person.id}
             paycheck={paycheck}
             fullFormulaBonusEstimate={fullFormulaBonusEstimate}
             job={job}
@@ -329,6 +332,7 @@ export function PersonPaycheck({
                 amount: a.amount,
               };
             })}
+            bonusDestination={bonusDestination}
             onUpdateJob={onUpdateJob}
             readOnly={readOnly}
             salaryReadOnly={salaryReadOnly}
