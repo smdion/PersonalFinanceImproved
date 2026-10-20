@@ -109,16 +109,18 @@ Auth.js with Authentik OIDC. Base roles + permission addons:
 
 **Permission addons** (independent, mix-and-match via Authentik groups):
 
-| Authentik Group     | Permission    | Grants                                            |
-| ------------------- | ------------- | ------------------------------------------------- |
-| `ledgr-admin`       | (admin role)  | Full access to everything                         |
-| `ledgr-scenario`    | `scenario`    | Create/edit/delete scenarios + overrides          |
-| `ledgr-portfolio`   | `portfolio`   | Create/delete portfolio snapshots                 |
-| `ledgr-performance` | `performance` | Manage performance accounts + account performance |
-| `ledgr-budget`      | `budget`      | Edit budget items, columns, profiles              |
-| `ledgr-savings`     | `savings`     | Manage savings goals, transactions, allocations   |
-| `ledgr-brokerage`   | `brokerage`   | Manage brokerage goals + planned transactions     |
-| `ledgr-sync`        | `sync`        | Trigger budget API sync operations                |
+| Authentik Group              | Permission            | Grants                                                                                                                                         |
+| ---------------------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ledgr-admin`                | (admin role)          | Full access to everything                                                                                                                      |
+| `ledgr-scenario`             | `scenario`            | Create/edit/delete Plans (sets of profiles)                                                                                                    |
+| `ledgr-contribution-profile` | `contributionProfile` | Contribution and Salary Profiles — every Salary Profile entry field (incl. W-4, pay schedule, where the bonus goes) — and making either active |
+| `ledgr-version`              | `version`             | Create, restore, import and delete saved versions (backups)                                                                                    |
+| `ledgr-portfolio`            | `portfolio`           | Create/delete portfolio snapshots                                                                                                              |
+| `ledgr-performance`          | `performance`         | Manage performance accounts + account performance                                                                                              |
+| `ledgr-budget`               | `budget`              | Edit budget items, columns, profiles                                                                                                           |
+| `ledgr-savings`              | `savings`             | Manage savings goals, transactions, allocations                                                                                                |
+| `ledgr-brokerage`            | `brokerage`           | Manage brokerage goals + planned transactions                                                                                                  |
+| `ledgr-sync`                 | `sync`                | Trigger budget API sync operations                                                                                                             |
 
 Route-level protection via Next.js middleware on `/(dashboard)` routes. Permission enforcement at tRPC procedure level. UI gating via `UserContext` (`useUser()`, `hasPermission()`, `isAdmin()`).
 
@@ -455,7 +457,7 @@ The household can set a **current glide path** — its target mix by age for wha
 
 ## Household annual income and tax
 
-This year's income figures come from one model: `computeAnnualEarnings()` (`lib/pure/household-income.ts`), built from each person's paycheck result — salary plus the **resolved** bonus (the set bonus if there is one, else the formula), pre-tax money (pre-tax payroll contributions on regular and bonus checks, `annualContributionWithBonus`'s rule, plus pre-tax deductions) and FICA wages (gross less Section 125 deductions and payroll contributions to an account type with `payrollFicaExempt` — HSA — within its yearly cap: the IRS limit less employer money (`payrollFicaExemptCap`), one cap shared across a person's rows of the same account type (`shareFicaExemptCaps`), age at Dec 31 from `ficaCapContext`; only pre-tax rows count). The paycheck router returns it per person and as `householdIncome`; the annual tax, the Income card, Living Costs and MAGI all read it.
+This year's income figures come from one model: `computeAnnualEarnings()` (`lib/pure/household-income.ts`), built from each person's paycheck result — salary plus the **resolved** bonus (the set bonus if there is one, else the formula), pre-tax money (pre-tax payroll contributions on regular checks and — for accounts set to `fromBonus` — on bonus checks, `annualContributionWithBonus`'s rule, plus pre-tax deductions) and FICA wages (gross less Section 125 deductions and payroll contributions to an account type with `payrollFicaExempt` — HSA — within its yearly cap: the IRS limit less employer money (`payrollFicaExemptCap`), one cap shared across a person's rows of the same account type (`shareFicaExemptCaps`), age at Dec 31 from `ficaCapContext`; only pre-tax rows count). The paycheck router returns it per person and as `householdIncome`; the annual tax, the Income card, Living Costs and MAGI all read it. A job's bonus can go to extra spending instead of the budget (Salary Profile entry `bonusDestination`): Living Costs then shows its take-home (`bonusSpendingNet`) as its own bar.
 
 `calculateHouseholdTax()` figures the year's liability: federal on the combined income with one standard deduction; Social Security per person on FICA wages, capped at the wage base; Medicare per person; and the 0.9% Additional Medicare Tax on the household's combined Medicare wages above the filing status's **liability** threshold (`fica_medicare_surtax_liability_<status>`). Employers withhold it per employee above a separate **withholding** threshold (`fica_medicare_surtax_threshold`, IRC 3102(f)) — that row belongs to paycheck withholding only; the household tax uses it just to say how withheld and owed differ (Form 8959). Both are seeded reference rows, admin-editable. The NIIT thresholds, by contrast, stay in engine config: they're statutory, not indexed, and only the retirement engine reads them — don't "fix" one toward the other. The effective rate is federal ÷ wage AGI, the tax-return definition; FICA is its own line. Actual-YTD withholding is summed from the year schedule (`withheldThroughPeriod`), which charges full Social Security until the wage base — the per-check figure is the year's Social Security averaged over every check.
 
@@ -518,14 +520,16 @@ mechanics: RULES.md "Profiles and Plans" / "Profile Resolution".
 
 What each kind holds:
 
-- **Salary Profile** — one complete entry per job: salary, bonus terms, pay
-  schedule, W-4 elections, extra-paycheck routing, other pay (see
+- **Salary Profile** — one complete entry per job: salary, bonus terms, where
+  the bonus goes (`bonusDestination`), pay schedule, W-4 elections,
+  extra-paycheck routing, other pay (see
   `resolveCompensation`/`mergeSalaryProfileJobFields` in
   `server/helpers/salary.ts` and RULES.md's "The Salary Profile layer"). "How
   much do I earn" and "what withholding/schedule elections apply" are one axis
   — an accepted tradeoff. A job's employer name is fixed once created.
-- **Contribution Profile** — contribution account values/methods/match and
-  deduction amounts. It never touches `jobs`.
+- **Contribution Profile** — contribution account values/methods/match,
+  whether each payroll account is also taken from bonus checks (`fromBonus`),
+  and deduction amounts. It never touches `jobs`.
 - **Budget Profile** — budget items per column (spending level), optionally
   weighted by months; savings goal allocations (%/$) are a facet of it
   (`savings_goal_profile_allocations` is keyed to `budget_profile_id`), not a
@@ -544,7 +548,7 @@ Documented deviations from general architectural rules, kept for pragmatic reaso
 
 1. **Resolution helper lives in `helpers.ts`, not `override-resolution.ts`**: Profile resolution requires DB access. The engine layer (`lib/calculators/engine/`) is pure functions with no DB. Splitting into two layers adds complexity without proportional benefit at current scale. Revisit if override resolution logic grows beyond ~50 lines.
 
-2. **Zod validation for override shapes is manually defined, not derived from config**: Deriving from Drizzle schema or `ACCOUNT_TYPE_CONFIG` adds abstraction with risk of rejecting valid overrides if derivation logic has bugs. Manual schema is easier to audit and maintain at current field count (~12 overridable fields). Revisit if overridable fields exceed ~25 or schema changes frequently.
+2. **Zod validation for a profile's active fields is manually defined, not derived from config**: `contribAccountActiveFieldsPatchSchema` / `deductionActiveFieldsSchema` / `salaryEntrySchema` are hand-written rather than derived from the Drizzle schema or `ACCOUNT_TYPE_CONFIG` — derivation adds abstraction with the risk of rejecting valid values if it has bugs, and the hand-written schemas are easy to audit at the current field count. Which fields a profile holds is still read from these schemas, never a hand-kept list (`lib/db/profile-fields.ts`). Revisit if the fields exceed ~25 or change often.
 
 3. **Plans keep the internal name `scenarios`** (table, router, permission key `scenario`): renaming would be a migration plus an RBAC-data change for no user-facing gain. Everything user-facing says "Plan".
 
@@ -552,16 +556,16 @@ Documented deviations from general architectural rules, kept for pragmatic reaso
 
 ## Deployment (Phase 6 — Not Started)
 
-| Concern          | Implementation                                                                                                                            |
-| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Dockerfile       | 3-stage build (deps → builder → runner), `node:24-alpine` pinned to digest, standalone output                                             |
-| Compose          | Hardened: `read_only`, `cap_drop: ALL`, `no-new-privileges`, `127.0.0.1` port binding, CPU+memory limits                                  |
-| Proxy            | SWAG reverse proxy via `homelab.proxy.*` container labels                                                                                 |
-| Health           | `GET /api/health` — simple probe (status + version). `GET /api/health/detailed` — authenticated (pool stats, budget API, sync timestamps) |
-| Security headers | CSP (no `unsafe-eval`), HSTS, X-Frame-Options DENY, Permissions-Policy                                                                    |
-| Monitoring       | Structured JSON logging, Grafana dashboard, Discord alerting                                                                              |
-| Migrations       | `db-migrate.ts` compiled to JS via esbuild, runs as `node db-migrate.js` in entrypoint                                                    |
-| Secrets          | All in `vars/secrets.yaml`, rendered via Ansible `env.j2` template                                                                        |
+| Concern          | Implementation                                                                                                                                                                    |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Dockerfile       | 3-stage build (deps → builder → runner), `node:24-alpine` pinned to digest, standalone output                                                                                     |
+| Compose          | Hardened: `read_only`, `cap_drop: ALL`, `no-new-privileges`, `127.0.0.1` port binding, CPU+memory limits                                                                          |
+| Proxy            | SWAG reverse proxy via `homelab.proxy.*` container labels                                                                                                                         |
+| Health           | `GET /api/health` — simple probe (status + version). `GET /api/health/detailed` — authenticated (pool stats, budget API, sync timestamps)                                         |
+| Security headers | CSP (no `unsafe-eval`), HSTS, X-Frame-Options DENY, Permissions-Policy                                                                                                            |
+| Monitoring       | Structured JSON logging, Grafana dashboard, Discord alerting                                                                                                                      |
+| Migrations       | `db-migrate.ts` compiled on its own with `tsc` (no `src/` imports), runs as `node db-migrate.js` in entrypoint; data-converting migrations: RULES.md "Data-converting migrations" |
+| Secrets          | All in `vars/secrets.yaml`, rendered via Ansible `env.j2` template                                                                                                                |
 
 ### Human Actions Required
 

@@ -252,7 +252,7 @@ Portfolio Snapshots + Performance Data + Settings
 ### Rules
 
 1. **No hardcoded fallbacks for user-specific data.** If data doesn't exist, return 0 — don't invent a number. Universal defaults (4% withdrawal rate, IRS limits) are acceptable if stored in DB.
-2. **One budget column controls everything.** `budget_active_column` determines which scenario is active across all pages.
+2. **One budget column controls everything.** `budget_active_column` determines which spending level (column) is shown across all pages.
 3. **What-ifs are explicit opt-ins.** Sandbox controls (the What-If tab) are clearly labeled as "what-if", never write the active profiles, and never leak into other pages.
 4. **Shared helpers, not duplicated queries.** Use `helpers.ts` when multiple routers need the same derived value.
 5. **Age and personal data come from the `people` table.** Never hardcode ages or personal details.
@@ -284,6 +284,7 @@ type SalaryProfileEntry = {
   bonusMonth: number | null;
   bonusDayOfMonth: number | null;
   extraPaycheckRouting: ExtraPaycheckRoutingData | null; // null = none configured
+  bonusDestination?: BonusDestination; // "budget" | "spending"; absent = the budget
   otherEarnings?: Record<string, number>; // other pay per check; absent = none
 };
 ```
@@ -299,7 +300,17 @@ it: salary/bonus resolve to $0/no bonus, and every other field resolves to
 excluding rather than guessing) — never a substitute for a live column,
 because none exists. `salaryEntrySchema` (`json-schemas.ts`) is `.strict()`
 so a partial or stale-shaped entry is rejected at write time, not silently
-stored and later misread.
+stored and later misread. It also carries every limit: amounts are ≥ 0,
+`monthsInBonusYear` 0–12, `anchorPayDate` a real date (1900–2100),
+`bonusMonth` 1–12, `bonusDayOfMonth` 1–31, `budgetPeriodsPerMonth` > 0
+(null = the schedule's usual number).
+
+**One parse for every salary editor.** A field edit from the Paycheck page
+or Profiles → Salary goes through `salaryEntryEdit()`
+(`lib/db/salary-entry-edit.ts`), which checks the value against
+`salaryEntrySchema`'s own field, and is saved with `salaryProfile.patchEntry`
+(a field-level merge in one transaction — never a whole-`salaries` PUT from
+a client copy). Never add a second parse or a second set of limits.
 
 **This collapses two axes that used to be independent** (accepted per the
 project owner's explicit direction, not a silent side effect): "how much do
@@ -324,11 +335,17 @@ re-deriving the merge.
 override `employerName`/bonus-pay-date/bonus-inclusion-flags is deleted
 wholesale). How much the bonus is is a Salary Profile fact. Whether a
 contribution is also taken from bonus checks is a per-account contribution
-election (`contributionAccounts[id].fromBonus`, absent = no), applied only
-in `bonusCheckContribution`. The employer match is figured on the pay the
-deferrals came from: base salary, plus the bonus when that job's bonus check
-takes any contribution. Two consequences of the deleted bucket, both
-intentional:
+election (`contributionAccounts[id].fromBonus`, absent = no), read only
+through `takesFromBonusCheck()` / `rowTakesFromBonusCheck()`
+(`lib/calculators/paycheck.ts`: paid through payroll — `isPaidThroughPayroll()`,
+the one definition — and `fromBonus`). `bonusCheckContribution` (what the
+bonus check takes) and the employer match's pay both use it: an account's
+match is figured on base salary, plus the bonus only when its own match
+group (job/person + account type + parent category — a Roth/Traditional
+pair is one account) is taken from bonus checks
+(`matchPayGroupsWithBonus`, `server/helpers/contribution.ts`). One account's
+election never moves another account's match. Two consequences of the
+deleted bucket, both intentional:
 
 1. **`employerName`'s profile-override capability is gone**, not preserved
    elsewhere. Modeling "a different employer, same everything else" via a
@@ -338,11 +355,14 @@ intentional:
 2. **The permission gate for W-4/schedule/bonus-date fields moved.** These
    used to be admin-only (raw `jobs.update`, `adminProcedure`). They're now
    part of a Salary Profile entry, written through
-   `salaryProfile.create`/`patchEntry` (`contributionProfileProcedure`) — no
+   `salaryProfile.create`/`update`/`duplicate`/`patchEntry`/`removeEntry`
+   (all `contributionProfileProcedure`; the editors use `patchEntry`) — no
    longer admin-gated. Anyone who could already edit a Contribution Profile
    can now set these for any job — including where the bonus goes
    (`bonusDestination`, absent = the budget), which used to be an admin-only
-   household setting.
+   household setting. The UI gates on the same permission
+   (`hasPermission(user, "contributionProfile")`, via
+   `resolvePaycheckEditTarget`).
 
 **`paycheck_deductions` has no live amount of its own either** —
 `amount_per_period` was dropped the same way `contribution_accounts` lost
@@ -363,7 +383,8 @@ a Contribution Profile's `deductions` active-field entry
 - Any field of `SalaryProfileEntry` reappearing in a Contribution Profile
   active-field bucket — the `jobs` bucket there is deleted, only
   `contributionAccounts`/`deductions` remain; any per-job bucket; any second
-  bonus-contribution gate besides `bonusCheckContribution`'s `fromBonus`
+  bonus-contribution gate besides `takesFromBonusCheck`; an inline
+  `isPayrollDeducted ?? jobId !== null` instead of `isPaidThroughPayroll()`
 - A salary figure displayed as a Contribution Profile statistic
 - A job's `payPeriod`/`w4FilingStatus`/etc. treated as `undefined` meaning
   the same thing as `0`/`false`/a guessed default, instead of "incomplete —
@@ -372,6 +393,7 @@ a Contribution Profile's `deductions` active-field entry
 - Two routers fetching the same data independently
 - A What-If sandbox value that leaks into another page or into the active profiles
 - Logic, wording or UI that treats one profile as a baseline ("Main", "default", "not active — viewing", "changed from main")
+- User-facing text that says "pin/pinned" (say active or set), "override" (say set, changed, changes by year, month changes), "customized"/"customize" (say set or changed), or "Monte Carlo"/"MC" (say Simulation). Code names may keep them.
 - A metric (wealth score, FI progress, tax location, etc.) computed via different code paths on different pages
 - A router calling `getLatestSnapshot()` for year-level data instead of reading from `buildYearEndHistory()`
 - A procedure computing mortgage balance, cash, or salary independently when `YearEndRow` already provides it
@@ -479,11 +501,14 @@ manager's "which one am I editing" row and the What-If sandbox. A Plan is not
 a tier — applying it changes the active profiles.
 
 Budget columns have **no profiles of their own**: every column uses the
-active Contribution and Salary profiles (`resolveActiveProfilePair`), and a
-linked item's dollars are computed once and shown in every column
-(`resolveLinkedBudgetItemAmounts`). Migration 0009 dropped the old
-per-column profile ids. Never add a per-column profile back — a different
-set of profiles is a different Plan.
+same (Contribution, Salary) pair — the page's local selection → the active
+one. `budget.computeActiveSummary` takes two-tier
+`{ localSelectionId, globalDefaultId }` objects (`profileResolutionTiersSchema`
+/ `profileFromTiers`) with no column tier; callers with no page context use
+`resolveActiveProfilePair`. A linked item's dollars are computed once
+(`resolveLinkedBudgetItemAmounts(db, items, n, pair)`) and repeated across
+columns. Migration 0009 dropped the old per-column profile ids. Never add a
+per-column profile back — a different set of profiles is a different Plan.
 
 **`null` means two different things and must not be conflated:**
 
@@ -510,7 +535,7 @@ active one rather than erroring.
    - **`net_worth_annual`** — finalized year-end records capture point-in-time state (tax location breakdown from a Dec 31 snapshot that may later be pruned). Class (a).
    - **`annualReturnPct`** — stored on finalized `annual_performance` and `account_performance` rows. Immutable after finalization. Recomputed on-read for non-finalized years. Class (a).
    - **`lifetimeGains`, `lifetimeContributions`, `lifetimeMatch`** — cumulative fields on `annual_performance`. Computed at finalization from previous year's baseline. **Cascade rule:** when `account_performance` rows on a finalized year are edited, lifetime fields on the annual row and all subsequent years must be recomputed. Without cascade, corrections to historical data create silent drift in all forward lifetime totals. Class (a).
-   - **`jobs.extra_paycheck_routing.baseNetPayPerCheck`** (plus its `payPeriod`/`anchorPayDate` snapshot) — snapshotted by `computeJobNetPayPerCheck` (savings.ts) only when an extra-paycheck routing rule or its growth rates are saved, resolved against whichever Contribution/Salary Profile was globally active at that moment. Class (b): inputs are preserved and recomputation is deterministic, but this value feeds a materializer that generates real future `savings_planned_transactions` — re-resolving it on every read would mean a routine profile switch silently rewrites a plan the user already committed to. **Cascades on active-profile edits, not on profile switches:** the no-recompute rule protects against _browsing_ a different profile (a what-if comparison must never retroactively rewrite a real plan) — it was never meant to protect against _correcting_ the one real profile that's already active. `salaryProfile.update` refreshes this snapshot automatically (best-effort — a refresh failure never blocks the user's actual edit) whenever the edit targets the globally-active profile and the affected job already has routing configured; editing a non-active profile never triggers it. Recorded at save time (explicit routing save, or an active-profile edit) under whatever was active then, never re-resolved on plain reads. `payPeriod`/`anchorPayDate` are snapshotted alongside `baseNetPayPerCheck` (both optional, materializer/`extraPaycheckRouting.list` fall back to the job's live Salary Profile entry when absent — `jobs` itself has no such columns any more) so the materializer always generates transaction dates against the SAME schedule the net-pay figure was computed under — this is what makes the value internally coherent, replacing the earlier design's save-time mismatch check (removed; a later correction to the job's real pay period/anchor date no longer needs blocking, since it can no longer retroactively desync an already-saved schedule from an already-saved amount — it just doesn't apply until routing is explicitly re-saved, the same way `baseNetPayPerCheck` itself already behaved). **`enabled`** (optional, defaults to true) lets a user pause routing without deleting the configured rules — the Savings/Budget toggle in `extra-paycheck-rules-editor.tsx` (`savings.extraPaycheckRouting.setEnabled`) flips this in place; `enabled: false` (or no `rules` at all) means the extra paycheck stays as regular income, same as an unrouted job. The Budget page's `ExtraPaycheckBudgetNote` shows which months/amounts to expect for jobs in this state, plus the real materialized figure for the current month (see the next entry).
+   - **The Salary Profile entry's `extraPaycheckRouting.baseNetPayPerCheck`** (was `jobs.extra_paycheck_routing`; plus its `payPeriod`/`anchorPayDate` snapshot) — snapshotted by `computeJobNetPayPerCheck` (savings.ts) only when an extra-paycheck routing rule or its growth rates are saved, resolved against whichever Contribution/Salary Profile was globally active at that moment. Class (b): inputs are preserved and recomputation is deterministic, but this value feeds a materializer that generates real future `savings_planned_transactions` — re-resolving it on every read would mean a routine profile switch silently rewrites a plan the user already committed to. **Cascades on active-profile edits, not on profile switches:** the no-recompute rule protects against _browsing_ a different profile (a what-if comparison must never retroactively rewrite a real plan) — it was never meant to protect against _correcting_ the one real profile that's already active. `salaryProfile.update`/`patchEntry`/`removeEntry` refresh this snapshot automatically (`refreshExtraPaycheckRoutingIfActive`) (best-effort — a refresh failure never blocks the user's actual edit) whenever the edit targets the globally-active profile and the affected job already has routing configured; editing a non-active profile never triggers it. Recorded at save time (explicit routing save, or an active-profile edit) under whatever was active then, never re-resolved on plain reads. `payPeriod`/`anchorPayDate` are snapshotted alongside `baseNetPayPerCheck` (both optional, materializer/`extraPaycheckRouting.list` fall back to the job's live Salary Profile entry when absent — `jobs` itself has no such columns any more) so the materializer always generates transaction dates against the SAME schedule the net-pay figure was computed under — this is what makes the value internally coherent, replacing the earlier design's save-time mismatch check (removed; a later correction to the job's real pay period/anchor date no longer needs blocking, since it can no longer retroactively desync an already-saved schedule from an already-saved amount — it just doesn't apply until routing is explicitly re-saved, the same way `baseNetPayPerCheck` itself already behaved). **`enabled`** (optional, defaults to true) lets a user pause routing without deleting the configured rules — the Savings/Budget toggle in `extra-paycheck-rules-editor.tsx` (`savings.extraPaycheckRouting.setEnabled`) flips this in place; `enabled: false` (or no `rules` at all) means the extra paycheck stays as regular income, same as an unrouted job. The Budget page's `ExtraPaycheckBudgetNote` shows which months/amounts to expect for jobs in this state, plus the real materialized figure for the current month (see the next entry).
    - **`budget_income_adjustments`** (`schema-pg.ts`) — the Budget-mode counterpart of the `savings_planned_transactions` entry above, written by `budget-income-materializer.ts`. `isExtraPaycheckBudgetMode(routing)` (no `rules`, or `enabled: false`) and the Savings materializer's own filter are mutually exclusive per job — every job matches exactly one of the two at any given time, so the pair of materializers covers every job exactly once under its current mode. One row per (job, month) — no split/goal fan-out, since Budget mode has no split concept. Class (b) for the same reason as `baseNetPayPerCheck`: inputs are preserved and recomputation is deterministic, but re-resolving on every read would silently rewrite an already-materialized month. Same delete-and-reinsert-future-rows regeneration semantics as the Savings materializer, minus the settlement-preservation logic — nothing FK-references these rows, so a plain delete-all-future-`source='rule'`-rows-and-reinsert is safe. `budget.computeActiveSummary`'s `budgetIncomeAdjustmentThisMonth` field sums this table for the REAL current calendar month only, deliberately independent of `selectedColumn`/`profileId` — folding it into `netMonthlyIncome` (which IS `selectedColumn`-parameterized) would let a What-If scenario comparison silently disagree with itself about which reality produced the number. Surfaced as a separate, additively-labeled line in `ExtraPaycheckBudgetNote` and the What-If tab's leftover-income line — never merged into `netMonthlyIncome` or any total derived from it.
 
    If the inputs are preserved, the computation is deterministic, AND nothing downstream treats the value as a settled point-in-time commitment, compute at read time — unless the computation is expensive enough to justify a class (c) performance cache, in which case store it keyed by a hash of every input that affects the result, with an explicit invalidation path (TTL, version bump, or explicit force-refresh). If the inputs may not survive (snapshots pruned, accounts restructured) — class (a) — or the value is itself a deliberate "recorded as of when this was saved" commitment — class (b) — store at finalization/save time, but document the sync/cascade mechanism (or the explicit absence of one, and why, for class (b)).
@@ -521,6 +546,23 @@ active one rather than erroring.
 8. **No hardcoded user data.** Never reference specific names, employers, job titles, or other user-specific data in code. Everything comes from the DB. The app must work for any household, not just the current users.
 9. **Account type validation is app-level, not DB-level.** `accountType` columns are `text` (not enum), validated at the app layer against `ACCOUNT_TYPE_CONFIG` keys via `accountCategoryEnum()`. This allows adding new account types without DB migrations.
 10. **Programmatic account naming.** `accountLabel` is server-computed via `buildAccountLabel()` from `format.ts`: `{Owner} {Label?} {SubType || Type} ({Institution})`. `displayName` is an optional user override. All display uses `accountDisplayName()` — never inline `displayName ?? accountLabel` or direct field reads. Owner is baked into the label; components must NOT append owner separately.
+
+### Data-converting migrations
+
+A migration that rewrites data runs **one converter** both on a live
+database (`db-migrate.ts`, inside the migration's transaction, just before
+its SQL drops what the converter reads) and on an older backup being
+restored (`backup-transforms.ts` → `transformBackupToCurrentSchema`, e.g.
+`transformV0810ProfileSets`). `db-migrate.ts` is compiled on its own and
+can't import from `src/`, so it keeps an **identical copy** of the converter
+between `// BEGIN …` / `// END …` markers — a test checks the copies match
+(`tests/db/v0810-profile-sets.test.ts`); edit both together. Converters work
+on snake_case rows (JSON as object or text), are idempotent (a no-op once
+their source is gone) and write only non-default values; the restore path
+also drops the columns the migration drops, and each new data-changing
+migration tag goes in `V08_SCHEMA_TAGS`. A replayed unique violation is
+swallowed on PostgreSQL, so a migration that adds a unique index asserts it
+exists afterwards (`assertV0810IndexPg`).
 
 ### Account Categories
 
