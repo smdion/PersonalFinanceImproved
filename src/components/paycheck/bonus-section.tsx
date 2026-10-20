@@ -27,6 +27,7 @@ function BonusDestinationToggle({
 }) {
   return (
     <FieldRow
+      stacked
       label={
         <>
           Goes to
@@ -171,7 +172,7 @@ export function BonusTerms({
           <FieldRow
             label={
               <>
-                Paid on
+                <span className="whitespace-nowrap">Paid on</span>
                 <HelpTip text="Date when bonus is typically paid. Helps model contribution timing and cash flow." />
               </>
             }
@@ -188,7 +189,7 @@ export function BonusTerms({
               // clear) — two writes would race on the same profile entry.
               onCommit={(v) => onUpdateJob("bonusDate", v.slice(5))}
               disabled={!editable}
-              className="bg-surface-primary w-36 rounded border px-2 py-0.5 text-sm disabled:opacity-60"
+              className="bg-surface-primary w-32 rounded border px-1.5 py-0.5 text-sm disabled:opacity-60"
             />
           </FieldRow>
           <BonusDestinationToggle

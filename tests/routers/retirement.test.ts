@@ -1671,10 +1671,12 @@ describe("computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
 
       const schema = await getSchema();
       // A healthy account on the active job, plus a JOBLESS fixed_per_period
-      // account — retirement.ts's per-arm closure resolves a job for it by
-      // jobId only (no personId fallback), so a null jobId can never
-      // resolve a pay period; the stranded account must be excluded from
-      // this arm's total, not take down the whole comparison.
+      // account owned by someone with no job at all — like the contribution
+      // summary (one path: aggregateContributionsByCategory), a jobless
+      // account takes its owner's job's pay schedule, and with no job there
+      // is none to take; the stranded account must be excluded from this
+      // arm's total, not take down the whole comparison.
+      const joblessPersonId = await seedPerson(db, "NoJobPerson", "1992-01-01");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
       const healthyAcct = await (db as any)
         .insert(schema.contributionAccounts)
@@ -1694,7 +1696,7 @@ describe("computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
       const strandedAcct = await (db as any)
         .insert(schema.contributionAccounts)
         .values({
-          personId,
+          personId: joblessPersonId,
           jobId: null,
           accountType: "401k",
           parentCategory: "Retirement",
@@ -1750,6 +1752,84 @@ describe("computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
       // The healthy account's contribution still counts — only the
       // stranded one is excluded, not the whole arm.
       expect(current.annualContributions).toBeGreaterThan(0);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("counts what the bonus check takes for an account set to fromBonus (the contribution summary's rule)", async () => {
+    const { caller, db, cleanup } = await createTestCaller();
+    try {
+      const personId = await seedPerson(db, "BonusArm", "1990-01-01");
+      await markPrimary(db, personId);
+      await seedRetirementSettings(db, personId);
+      const jobId = seedJob(db, personId, {
+        payPeriod: "biweekly",
+        annualSalary: "100000",
+        bonusPercent: "0.1",
+      });
+      const perfAcctId = seedPerformanceAccount(db, {
+        parentCategory: "Retirement",
+        accountType: "401k",
+        ownerPersonId: personId,
+      });
+      const budgetId = await insertBudgetProfile(db, "Budget");
+      await insertBudgetItem(db, budgetId, "Essentials", "Rent", [2000]);
+      const schema = await getSchema();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+      const acct = await (db as any)
+        .insert(schema.contributionAccounts)
+        .values({
+          personId,
+          jobId,
+          accountType: "401k",
+          parentCategory: "Retirement",
+          taxTreatment: "pre_tax",
+          employerMatchType: "none",
+          isActive: true,
+          performanceAccountId: perfAcctId,
+        })
+        .returning({ id: schema.contributionAccounts.id })
+        .get();
+      const profileWith = async (name: string, fromBonus: boolean) =>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+        (await (db as any)
+          .insert(schema.contributionProfiles)
+          .values({
+            name,
+            contributionActiveFields: {
+              contributionAccounts: {
+                [String(acct.id)]: {
+                  contributionValue: "10",
+                  contributionMethod: "percent_of_salary",
+                  ...(fromBonus ? { fromBonus: true } : {}),
+                },
+              },
+              deductions: {},
+            },
+          })
+          .returning({ id: schema.contributionProfiles.id })
+          .get()) as { id: number };
+      const on = await profileWith("From bonus", true);
+      const off = await profileWith("Salary only", false);
+
+      const result = (await caller.retirement.computeRelocationAnalysis({
+        currentProfileId: budgetId,
+        currentBudgetColumn: 0,
+        relocationProfileId: budgetId,
+        relocationBudgetColumn: 0,
+        currentContributionProfileId: on.id,
+        relocationContributionProfileId: off.id,
+      })) as Record<string, { annualContributions: number }>;
+      // 10% of $100,000, plus 10% of the $10,000 bonus when taken from it.
+      expect(result.currentContribProfile!.annualContributions).toBeCloseTo(
+        11_000,
+        0,
+      );
+      expect(result.relocationContribProfile!.annualContributions).toBeCloseTo(
+        10_000,
+        0,
+      );
     } finally {
       cleanup();
     }

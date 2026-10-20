@@ -451,7 +451,7 @@ export type GroupedMatchResult = {
  *  with no job) + account type + parent category. The match is capped per
  *  group (computeGroupedEmployerMatch) and figured on the group's pay
  *  (matchPayGroupsWithBonus). */
-function matchGroupKey(r: {
+export function matchGroupKey(r: {
   jobId: number | null;
   personId: number | null;
   accountType: string;

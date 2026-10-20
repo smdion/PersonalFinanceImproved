@@ -23,11 +23,17 @@ import {
   periodsElapsedYtd,
 } from "@/lib/calculators/paycheck";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
-import { loadEffectiveSalaryProfile, resolveCompensation } from "./salary";
 import {
-  computeAnnualContribution,
+  contributionPay,
+  loadEffectiveSalaryProfile,
+  resolveCompensation,
+} from "./salary";
+import {
+  annualContributionWithBonus,
   computeGroupedEmployerMatch,
   loadAndApplyContribProfile,
+  matchGroupKey,
+  matchPayGroupsWithBonus,
   resolveContribPeriods,
 } from "./contribution";
 
@@ -62,6 +68,9 @@ export async function loadContributionMix(
   );
   const jobById = new Map(jobs.map((j) => [j.id, j]));
   const jobByPerson = new Map(jobs.map((j) => [j.personId, j]));
+  // The employer matches what's deferred, on the pay it came from — the
+  // bonus counts for accounts taken from bonus checks (one rule).
+  const bonusGroups = matchPayGroupsWithBonus(rows);
 
   const resolved = rows.map((c) => {
     const job =
@@ -70,20 +79,24 @@ export async function loadContributionMix(
         : c.personId != null
           ? jobByPerson.get(c.personId)
           : undefined;
-    const salary =
-      c.jobId != null && job
-        ? resolveCompensation(salaryMap, job.id).salary
-        : 0;
+    // This year's pay: base salary and the bonus (the actual when set).
+    const comp =
+      c.jobId != null && job ? resolveCompensation(salaryMap, job.id) : null;
+    const pay = comp
+      ? contributionPay(comp.salary, comp.terms, comp.bonusOverride)
+      : { salary: 0, bonusGross: 0 };
+    const salary = pay.salary;
     const { periodsPerYear } = resolveContribPeriods(
       c.contributionMethod,
       job ? { payPeriod: job.payPeriod ?? undefined } : undefined,
     );
-    const annual = computeAnnualContribution(
-      c.contributionMethod,
-      Number(c.contributionValue),
-      salary,
-      periodsPerYear,
-    );
+    // The year's amount, bonus check included (annualContributionWithBonus),
+    // and the share of it the regular paychecks carry.
+    const annual = annualContributionWithBonus(c, pay, periodsPerYear);
+    const regular = annualContributionWithBonus(c, { salary }, periodsPerYear);
+    const regularShare = annual > 0 ? regular / annual : 1;
+    const matchPay =
+      salary + (bonusGroups.has(matchGroupKey(c)) ? pay.bonusGross : 0);
     // Where the year stands on this contribution's schedule — the same
     // paycheck walk the Contributions page's YTD / Year-End Estimate use.
     const payPeriods =
@@ -104,25 +117,37 @@ export async function loadContributionMix(
         contributedThrough?.get(c.performanceAccountId!),
       ),
     };
+    // The bonus check's part is still to come until its date (unknown date:
+    // like the paychecks).
+    const bonusDate =
+      job?.bonusMonth != null
+        ? new Date(
+            asOf.getFullYear(),
+            job.bonusMonth - 1,
+            job.bonusDayOfMonth ?? 1,
+          )
+        : null;
     return {
       c,
       job,
-      salary,
+      matchPay,
       annual,
+      regularShare,
+      bonusLeft: bonusDate === null ? null : bonusDate > asOf ? 1 : 0,
       remaining: contribRemainingFraction(c.contributionMethod, elapsed),
       step: contribStepFraction(c.contributionMethod, payPeriods),
     };
   });
 
   const match = computeGroupedEmployerMatch(
-    resolved.map(({ c, salary, annual }) => ({
+    resolved.map(({ c, matchPay, annual }) => ({
       id: c.id,
       jobId: c.jobId,
       personId: c.personId,
       accountType: c.accountType,
       parentCategory: c.parentCategory,
       annual,
-      salary,
+      salary: matchPay,
       employerMatchType: c.employerMatchType,
       employerMatchValue: toNumber(c.employerMatchValue),
       employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
@@ -151,7 +176,15 @@ export async function loadContributionMix(
       mix.employerRoth += m.matchAnnual;
   };
   const out = new Map<number, AccountContributionMix>();
-  for (const { c, job, annual, remaining, step } of resolved) {
+  for (const {
+    c,
+    job,
+    annual,
+    regularShare,
+    bonusLeft,
+    remaining,
+    step,
+  } of resolved) {
     const account = out.get(c.performanceAccountId!) ?? {
       ...empty(),
       byPerson: new Map(),
@@ -160,8 +193,13 @@ export async function loadContributionMix(
     };
     add(account, c, annual);
     const withMatch = annual + (match.get(c.id)?.matchAnnual ?? 0);
-    account.remainingThisYear += withMatch * remaining;
-    account.perContribution += withMatch * step;
+    // A paycheck's worth is the regular paychecks' part; the bonus check's
+    // part is still to come only until its date.
+    account.remainingThisYear +=
+      withMatch *
+      (regularShare * remaining +
+        (1 - regularShare) * (bonusLeft ?? remaining));
+    account.perContribution += withMatch * regularShare * step;
     // Whose paycheck it is: the contribution's person, else its job's.
     const person = c.personId ?? job?.personId ?? null;
     if (person !== null) {

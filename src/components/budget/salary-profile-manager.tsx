@@ -34,6 +34,7 @@ import { SectionHeader } from "@/components/paycheck/section-header";
 import type { EarningRow } from "@/components/paycheck/types";
 import type { BonusDestination } from "@/lib/config/enum-values";
 import { salaryEntryEdit } from "@/lib/db/salary-entry-edit";
+import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
 import { toast } from "@/lib/hooks/use-toast";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 
@@ -282,7 +283,7 @@ type JobOption = {
   /** What this profile actually produces for this job. */
   effectiveSalary: number;
   estimatedBonus: number;
-  // ── Pay/withholding/bonus-timing fields (see Entry below for the full
+  // ── Pay/withholding/bonus-timing fields (see salaryEntrySchema for the full
   // ── field-by-field meaning — these just mirror it for display). ──
   payPeriod: PayPeriod;
   payWeek: PayWeek;
@@ -338,56 +339,6 @@ type Detail = {
   bonusDestination: BonusDestination;
   earningRows: EarningRow[];
   formulaBonus: number;
-};
-
-/** The complete entry shape written to the profile's jsonb — every
- *  field, always. Spelled out rather than imported from
- *  server/helpers/salary.ts's SalaryProfileEntry: components may not import
- *  server modules (see the Detail docblock above) — this mirrors it by hand
- *  and must be kept in sync with it and with salaryEntrySchema. */
-type Entry = {
-  salary: number;
-  bonusPercent: number;
-  bonusMultiplier: number;
-  monthsInBonusYear: number;
-  bonusOverride: number | null;
-  payPeriod: PayPeriod;
-  payWeek: PayWeek;
-  anchorPayDate: string | null;
-  budgetPeriodsPerMonth: number | null;
-  w4FilingStatus: W4FilingStatus;
-  w4Box2cChecked: boolean;
-  additionalFedWithholding: number;
-  bonusMonth: number | null;
-  bonusDayOfMonth: number | null;
-  /** Where this job's extra (3rd biweekly) paycheck routes, if configured —
-   *  edited via the extra-paycheck rules editor rendered below, not through
-   *  this panel's own field cells. */
-  extraPaycheckRouting: ExtraPaycheckRoutingData | null;
-};
-
-/** What a brand-new entry starts as when a job is explicitly added to a
- *  profile — plain zeros/on-target defaults, never copied from anywhere.
- *  The new pay/withholding fields default to the most common real-world
- *  setup (biweekly, MFJ, no extra withholding) rather than to nulls
- *  everywhere, since most of them can't be usefully "empty" — a pay period
- *  has to be something. */
-const BLANK_ENTRY: Entry = {
-  salary: 0,
-  bonusPercent: 0,
-  bonusMultiplier: 1,
-  monthsInBonusYear: 12,
-  bonusOverride: null,
-  payPeriod: "biweekly",
-  payWeek: "na",
-  anchorPayDate: null,
-  budgetPeriodsPerMonth: null,
-  w4FilingStatus: "MFJ",
-  w4Box2cChecked: false,
-  additionalFedWithholding: 0,
-  bonusMonth: null,
-  bonusDayOfMonth: null,
-  extraPaycheckRouting: null,
 };
 
 /**
@@ -890,7 +841,7 @@ function ProfileEditPanel({
     patchEntryMutation.mutate({
       id: profileId,
       jobId,
-      fields: BLANK_ENTRY,
+      fields: BLANK_SALARY_ENTRY,
     });
   };
 

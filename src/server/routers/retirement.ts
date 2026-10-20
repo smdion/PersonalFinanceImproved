@@ -21,25 +21,26 @@ import {
   loadEffectiveSalaryProfile,
   mergeSalaryProfileJobFields,
   getLatestSnapshot,
-  computeAnnualContribution,
-  computeGroupedEmployerMatch,
   fetchContributionProfile,
   resolveProfile,
   getPrimaryPerson,
   resolveLinkedBudgetItemAmounts,
   resolveActiveProfilePair,
-  resolveContribPeriods,
 } from "@/server/helpers";
 import { getAllPeople } from "@/server/helpers/people";
 import type { Db } from "@/server/helpers";
 import type { W4FilingStatus } from "@/lib/config/enum-values";
-import type { ContribRowWithActiveFields } from "@/server/helpers/contribution";
+import {
+  aggregateContributionsByCategory,
+  type ContribRowWithActiveFields,
+} from "@/server/helpers/contribution";
 import {
   isRetirementParent,
   accountCategoryEnum,
+  type AccountCategory,
 } from "@/lib/config/account-types";
 import { getAge } from "@/lib/utils/date";
-import { roundToCents } from "@/lib/utils/math";
+import { roundToCents, sumBy } from "@/lib/utils/math";
 import {
   filterActiveJobs,
   canDeleteRetirementProfile,
@@ -473,77 +474,45 @@ export const retirementRouter = createTRPCRouter({
           (c.jobId === null && people.some((p) => p.id === c.personId)),
       );
 
-      // Helper to compute totals from a set of contrib rows + job salaries.
-      // `contribs` is always the output of resolveProfile/applyContribActiveFields
-      // (contributionValue/Method guaranteed present) — never the raw
-      // activeContribs rows, which carry no value of their own.
+      // Yearly contributions and employer match for one arm — the one
+      // summary path (aggregateContributionsByCategory: bonus checks per
+      // account's fromBonus, the per-account match pay, incomplete
+      // accounts). `contribs` is always resolveProfile's output, never the
+      // raw activeContribs rows, which carry no value of their own. Jobs are
+      // the arm's profile-patched ones, so a profile's pay schedule counts.
       const computeContribTotals = (
         contribs: ContribRowWithActiveFields[],
         salaries: typeof jobSalaries,
-        // Profile-patched jobs (resolved.activeJobs), NOT the outer raw
-        // activeJobs closed over above — a per-arm profile-set payPeriod
-        // must affect fixed_per_period annualization here, since different
-        // arms can legitimately represent different real jobs/offers with
-        // different pay schedules. Defaults to the raw jobs only for the
-        // (non-comparison) live-data callers that never resolve a profile.
         jobsForPeriods: {
           id: number;
+          personId: number;
           payPeriod: string | undefined;
         }[] = activeJobs,
       ) => {
-        const salaryById = new Map<number, number>();
-        const annualById = new Map<number, number>();
-        const incompleteIds: number[] = [];
-        for (const c of contribs) {
-          const cv = Number(c.contributionValue);
-          const js = salaries.find((x) => x.job.id === c.jobId);
-          const job = jobsForPeriods.find((j) => j.id === c.jobId);
-          const salary = js?.salary ?? 0;
-          // A missing job here must degrade this ONE contribution out of
-          // this arm's total, not throw — one incomplete job can't be
-          // allowed to kill the whole relocation comparison.
-          const { periodsPerYear: periods, incomplete } = resolveContribPeriods(
-            c.contributionMethod,
-            job,
-          );
-          if (incomplete) incompleteIds.push(c.id);
-          salaryById.set(c.id, salary);
-          annualById.set(
-            c.id,
-            incomplete
-              ? 0
-              : computeAnnualContribution(
-                  c.contributionMethod,
-                  cv,
-                  salary,
-                  periods,
-                ),
-          );
-        }
-
-        const matchByRow = computeGroupedEmployerMatch(
+        const r = aggregateContributionsByCategory(
           contribs.map((c) => ({
-            id: c.id,
-            jobId: c.jobId,
-            personId: c.personId,
-            accountType: c.accountType,
-            parentCategory: c.parentCategory,
-            annual: annualById.get(c.id)!,
-            salary: salaryById.get(c.id)!,
-            employerMatchType: c.employerMatchType,
-            employerMatchValue: toNumber(c.employerMatchValue),
-            employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
-            employerMatchTaxTreatment: "pre_tax", // not used by this total
+            ...c,
+            accountType: c.accountType as AccountCategory,
+            parentCategory: c.parentCategory ?? "",
+          })),
+          jobsForPeriods,
+          salaries.map((js) => ({
+            job: { id: js.job.id, personId: js.job.personId },
+            salary: js.salary,
+            bonusGross: js.bonusGross,
           })),
         );
-
-        let totalContribs = 0;
-        let totalEmployerMatch = 0;
-        for (const c of contribs) {
-          totalContribs += annualById.get(c.id)!;
-          totalEmployerMatch += matchByRow.get(c.id)!.matchAnnual;
-        }
-        return { totalContribs, totalEmployerMatch, incompleteIds };
+        return {
+          totalContribs: sumBy(
+            Object.values(r.contribByCategory),
+            (c) => c.annual,
+          ),
+          totalEmployerMatch: sumBy(
+            Object.values(r.employerMatchByCategory),
+            (m) => m,
+          ),
+          incompleteIds: r.incompleteAccountIds,
+        };
       };
 
       // Resolve contribution profiles for each scenario. No profile

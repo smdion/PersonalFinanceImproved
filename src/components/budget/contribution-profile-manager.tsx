@@ -1,5 +1,6 @@
 "use client";
 
+import { Toggle } from "@/components/ui/toggle";
 import { takesFromBonusCheck } from "@/lib/calculators/paycheck";
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -1633,22 +1634,21 @@ function ProfileInlineEditor({
                             className="text-caption bg-surface-primary text-primary mt-0.5 w-full rounded border px-1.5 py-0.5"
                           />
                         )}
-                        {/* The one gate for money taken from bonus checks
-                            (bonusCheckContribution) — payroll accounts only. */}
+                        {/* This account's election (takesFromBonusCheck) —
+                            payroll accounts only; the same switch as Paycheck. */}
                         {!isDisabled && ad.liveIsPayroll && (
-                          <label className="text-caption text-muted mt-1 flex items-center gap-1.5">
-                            <input
-                              type="checkbox"
-                              checked={af.fromBonus === true}
-                              onChange={(e) =>
+                          <div className="mt-1">
+                            <Toggle
+                              isChecked={af.fromBonus === true}
+                              onChange={(v) =>
                                 patchAccount(ad.id, {
-                                  fromBonus: e.target.checked || undefined,
+                                  fromBonus: v || undefined,
                                 })
                               }
-                              className="border-strong rounded"
+                              label="Also taken from bonus checks"
+                              size="xs"
                             />
-                            Also taken from bonus checks
-                          </label>
+                          </div>
                         )}
                       </td>
                       <td className="px-3 py-1.5">
