@@ -13,16 +13,16 @@ import { FieldRow } from "@/components/ui/field-row";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils/format";
-import { usePlans } from "@/lib/hooks/use-plans";
+import { useConfirmApplyPlan, usePlans } from "@/lib/hooks/use-plans";
 import {
   PLAN_PROFILE_KINDS,
   PLAN_PROFILE_KIND_TITLES,
-  planProfileIds,
   type PlanProfileIds,
   type PlanProfileKind,
 } from "@/lib/config/plans";
+import { planProfileIds } from "@/lib/pure/plans";
+import { useDashboardEngineInput } from "@/lib/hooks/use-dashboard-projection";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
-import { confirm } from "@/components/ui/confirm-dialog";
 
 const MAX_COMPARED = 3;
 
@@ -30,6 +30,7 @@ const MAX_COMPARED = 3;
 function PlanColumn({
   name,
   ids,
+  activeIds,
   inUse,
   profileName,
   onApply,
@@ -37,6 +38,7 @@ function PlanColumn({
 }: {
   name: string;
   ids: PlanProfileIds;
+  activeIds: PlanProfileIds;
   inUse: boolean;
   profileName: (kind: PlanProfileKind, id: number | null) => string;
   onApply?: () => void;
@@ -55,18 +57,29 @@ function PlanColumn({
     },
     { enabled: ids.budget != null },
   );
+  // The dashboard's own projection input (one computation path — and the
+  // Plan in use hits the same cached run), changing only the kinds where
+  // this Plan differs from the active profiles. The household's chosen
+  // retirement-budget settings stay as they are; a Plan's Budget profile
+  // stands in for the working-years budget only when none is chosen.
+  const engineInput = useDashboardEngineInput();
+  const differs = (k: PlanProfileKind) =>
+    ids[k] != null && ids[k] !== activeIds[k];
   const projection = trpc.projection.computeProjection.useQuery({
-    accumulationOverrides: [],
-    decumulationOverrides: [],
-    ...(ids.contribution != null
-      ? { contributionProfileId: ids.contribution }
+    ...engineInput,
+    ...(differs("contribution")
+      ? { contributionProfileId: ids.contribution! }
       : {}),
-    ...(ids.salary != null ? { salaryProfileId: ids.salary } : {}),
-    ...(ids.retirement != null ? { retirementProfileId: ids.retirement } : {}),
-    ...(ids.budget != null ? { accumulationBudgetProfileId: ids.budget } : {}),
+    ...(differs("salary") ? { salaryProfileId: ids.salary! } : {}),
+    ...(differs("retirement") ? { retirementProfileId: ids.retirement! } : {}),
+    ...(differs("budget") && engineInput.accumulationBudgetProfileId == null
+      ? { accumulationBudgetProfileId: ids.budget! }
+      : {}),
   });
 
-  // The union's "no profile" branch carries neither figure.
+  // The union's "no profile" branch carries neither figure. Take-home is the
+  // first column's; with per-column profiles (removed in v0.8.10) a
+  // month-weighted budget could differ by column — none exist in practice.
   const summary =
     budget.data && "netMonthlyIncome" in budget.data ? budget.data : null;
   const takeHome =
@@ -164,6 +177,7 @@ function PlanColumn({
 
 export function ComparePlans() {
   const { plans, activeIds, planInUse, apply } = usePlans();
+  const confirmApplyPlan = useConfirmApplyPlan();
   const { data: budgetProfiles } = useBudgetProfilesList();
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
   const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
@@ -230,15 +244,11 @@ export function ComparePlans() {
                 key={p.id}
                 name={p.name}
                 ids={ids}
+                activeIds={activeIds}
                 inUse={p.id === planInUse?.id}
                 profileName={profileName}
                 onApply={async () => {
-                  if (
-                    await confirm(
-                      `Apply Plan "${p.name}"? Its profiles become the active ones for everyone in the household (and what syncs to your budget app).`,
-                    )
-                  )
-                    apply.mutate({ id: p.id });
+                  if (await confirmApplyPlan(p)) apply.mutate({ id: p.id });
                 }}
                 applying={apply.isPending}
               />

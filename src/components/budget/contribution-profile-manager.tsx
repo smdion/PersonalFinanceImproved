@@ -13,7 +13,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
 import { FormField, FormInput } from "@/components/forms";
 import { usePlanNamesUsing } from "@/lib/hooks/use-plans";
-import { planInUseMessage } from "@/lib/config/plans";
+import { planInUseMessage } from "@/lib/pure/plans";
 import { toast } from "@/lib/hooks/use-toast";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";

@@ -12,12 +12,10 @@ import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile"
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
-import { usePlans } from "@/lib/hooks/use-plans";
+import { useConfirmApplyPlan, usePlans } from "@/lib/hooks/use-plans";
 import {
   PLAN_PROFILE_KINDS,
   PLAN_PROFILE_KIND_TITLES,
-  planProfileIds,
-  type PlanProfileKind,
 } from "@/lib/config/plans";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -91,17 +89,6 @@ export function ScenarioBar() {
   const [, setActiveContribId] = useActiveContribProfile();
   const [, setActiveSalaryId] = useActiveSalaryProfile();
   const [, setActiveRetirementId] = useActiveRetirementProfile();
-  const profilesByKind: Record<
-    PlanProfileKind,
-    readonly { id: number; name: string }[] | undefined
-  > = {
-    salary: salaryProfiles,
-    contribution: contribProfiles,
-    budget: budgetProfiles,
-    retirement: retirementProfiles,
-  };
-  const profileName = (kind: PlanProfileKind, id: number | null) =>
-    profilesByKind[kind]?.find((p) => p.id === id)?.name ?? "—";
 
   // Every query that resolves "the active budget profile" server-side takes
   // no budget-profile id as an argument, so React Query can't know those
@@ -141,21 +128,11 @@ export function ScenarioBar() {
     setActiveContribId(id);
   };
 
+  const confirmApplyPlan = useConfirmApplyPlan();
   const handleApply = async (planId: number) => {
     const plan = plans.find((p) => p.id === planId);
-    if (!plan) return;
-    const ids = planProfileIds(plan);
-    const changes = PLAN_PROFILE_KINDS.filter(
-      (k) => ids[k] != null && ids[k] !== activeIds[k],
-    ).map((k) => `${PLAN_PROFILE_KIND_TITLES[k]}: ${profileName(k, ids[k])}`);
     setDropdownOpen(false);
-    if (changes.length === 0) return;
-    const ok = await confirmWithDiff(
-      `Apply Plan "${plan.name}"? This makes these the active profiles for everyone in the household (and what syncs to your budget app):`,
-      changes,
-      "Apply",
-    );
-    if (ok) apply.mutate({ id: planId });
+    if (plan && (await confirmApplyPlan(plan))) apply.mutate({ id: planId });
   };
 
   const allActiveKnown = PLAN_PROFILE_KINDS.every((k) => activeIds[k] != null);

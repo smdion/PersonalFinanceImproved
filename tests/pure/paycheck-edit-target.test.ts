@@ -38,6 +38,15 @@ describe("resolvePaycheckEditTarget", () => {
     ).toBe("readOnly");
   });
 
+  it("lines (deduction / other-pay name, tax treatment, adding) follow the profile permission, not admin", () => {
+    expect(
+      resolvePaycheckEditTarget("line", ctx({ canEditSetup: false })).target,
+    ).toBe("setup");
+    expect(
+      resolvePaycheckEditTarget("line", ctx({ canEditProfiles: false })).target,
+    ).toBe("readOnly");
+  });
+
   it("without profile permission, profile fields are read-only (never a DB write)", () => {
     for (const kind of ["salary", "contribution"] as const)
       expect(
@@ -72,6 +81,6 @@ describe("profile field kinds come from the profile schemas", () => {
 
   it("deduction fields", () => {
     expect(deductionFieldKind("amountPerPeriod")).toBe("contribution");
-    expect(deductionFieldKind("deductionName")).toBe("setup");
+    expect(deductionFieldKind("deductionName")).toBe("line");
   });
 });

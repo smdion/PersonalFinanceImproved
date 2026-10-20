@@ -161,6 +161,35 @@ describe("Plans", () => {
     expect(activeBudget?.id).toBe(current.budgetProfileId);
   });
 
+  it("only kinds that change need permission — a non-admin can apply a Plan that keeps the active Retirement profile", async () => {
+    const current = await seedProfiles(ctx.db, "Current", true);
+    const ids = await seedProfiles(ctx.db, "Plan");
+    // Make the current retirement profile the active one, and the Plan use it.
+    ctx.db
+      .insert(schema.appSettings)
+      .values({
+        key: SK_ACTIVE_RETIREMENT_PROFILE_ID,
+        value: current.retirementProfileId,
+      })
+      .run();
+    const plan = await ctx.caller.settings.scenarios.create({
+      name: "Same retirement",
+      ...ids,
+      retirementProfileId: current.retirementProfileId,
+    });
+    const viewer = createViewerSessionWithPermissions([
+      "budget",
+      "contributionProfile",
+    ]).user;
+    await applyPlan(ctx.db as never, viewer, plan!.id);
+    expect(setting(ctx.db, SK_ACTIVE_SALARY_PROFILE_ID)).toBe(
+      ids.salaryProfileId,
+    );
+    expect(setting(ctx.db, SK_ACTIVE_RETIREMENT_PROFILE_ID)).toBe(
+      current.retirementProfileId,
+    );
+  });
+
   it("refuses to delete a budget profile a Plan uses", async () => {
     await seedProfiles(ctx.db, "Current", true);
     const ids = await seedProfiles(ctx.db, "Plan");

@@ -17,7 +17,8 @@ export function contributionAccountFieldKind(field: string): PaycheckFieldKind {
     : "setup";
 }
 
-/** Same rule for a deduction: only its amount lives in a profile. */
+/** For a deduction only the amount lives in a profile; the rest is the
+ *  line itself (name, tax treatment). */
 export function deductionFieldKind(field: string): PaycheckFieldKind {
-  return field in deductionActiveFieldsSchema.shape ? "contribution" : "setup";
+  return field in deductionActiveFieldsSchema.shape ? "contribution" : "line";
 }

@@ -163,6 +163,8 @@ export default function PaycheckPage() {
   const salaryEditsProfile = editTarget("salary").target === "salaryProfile";
   const contribEditsProfile =
     editTarget("contribution").target === "contributionProfile";
+  const lineEditable = editTarget("line").target === "setup";
+  const setupEditable = editTarget("setup").target === "setup";
 
   const updateSalaryProfile = trpc.salaryProfile.update.useMutation({
     onSuccess: () => {
@@ -383,6 +385,8 @@ export default function PaycheckPage() {
               // active Salary Profile (see editTarget).
               salaryReadOnly={!salaryEditsProfile}
               contribValueReadOnly={!contribEditsProfile}
+              lineReadOnly={!lineEditable}
+              setupReadOnly={!setupEditable}
               // Only while editing — locked, the padlock already says "View
               // only" and a note under every section is just noise.
               editLabels={
@@ -529,6 +533,24 @@ export default function PaycheckPage() {
                           // This year's actual bonus, pinned on the same entry —
                           // orthogonal to the formula fields above (see
                           // SalaryProfileEntry.bonusOverride's docblock).
+                          // The bonus pay date is two fields of one entry —
+                          // one write, so the second can't overwrite the first
+                          // with a stale copy of the entry. "MM-DD" or "".
+                          if (field === "bonusDate") {
+                            if (!salaryEditsProfile) return;
+                            const [m, dd] = value
+                              ? value.split("-").map(Number)
+                              : [null, null];
+                            writeSalaryProfileEntry(
+                              job.id,
+                              salaryProfileEntryDefaults,
+                              {
+                                bonusMonth: m ?? null,
+                                bonusDayOfMonth: dd ?? null,
+                              },
+                            );
+                            return;
+                          }
                           if (field === "bonusOverride") {
                             if (salaryEditsProfile) {
                               writeSalaryProfileEntry(
@@ -582,7 +604,8 @@ export default function PaycheckPage() {
                           }
                           // Only real job columns left: employerName and
                           // title (jobs.update's trimmed schema — see
-                          // settings/paycheck.ts).
+                          // settings/paycheck.ts). Household setup: admin.
+                          if (!setupEditable) return;
                           updateJob.mutate({
                             id: job.id,
                             personId: job.personId,
@@ -606,7 +629,7 @@ export default function PaycheckPage() {
                           // the database.
                           // A preset sets both tax flags at once.
                           if (field === "taxTreatment") {
-                            if (editTarget("setup").target !== "setup") return;
+                            if (!lineEditable) return;
                             const preset = DEDUCTION_PRESETS.find(
                               (p) => p.key === value,
                             );
@@ -690,13 +713,16 @@ export default function PaycheckPage() {
                             [field]: value,
                           });
                         },
-                        onCreateDeduction: (data) =>
-                          createDeduction.mutate(data),
-                        onDeleteDeduction: async (id: number) => {
-                          if (await confirm("Remove this deduction?")) {
-                            deleteDeduction.mutate({ id });
-                          }
-                        },
+                        onCreateDeduction: !lineEditable
+                          ? undefined
+                          : (data) => createDeduction.mutate(data),
+                        onDeleteDeduction: !setupEditable
+                          ? undefined
+                          : async (id: number) => {
+                              if (await confirm("Remove this deduction?")) {
+                                deleteDeduction.mutate({ id });
+                              }
+                            },
                         onToggleAutoMax: (
                           id: number,
                           value: boolean,
@@ -738,43 +764,49 @@ export default function PaycheckPage() {
                             return;
                           }
                         },
-                        onDeleteContrib: (id: number) => {
-                          deleteContrib.mutate({ id });
-                        },
-                        onCreateContrib: (data) => {
-                          // A form linking into an existing (often inactive
-                          // stub) contribution row carries its id — update
-                          // that row instead of creating a duplicate.
-                          const { id, ...rest } = data;
-                          if (id != null) {
-                            updateContrib.mutate({ id, ...rest });
-                          } else {
-                            createContrib.mutate(rest);
-                          }
-                        },
-                        onUpdateInstitution: (
-                          id: number,
-                          performanceAccountId: number | null,
-                        ) => {
-                          const raw = (d.rawContribs as RawContrib[]).find(
-                            (cc) => cc.id === id,
-                          );
-                          if (!raw) return;
-                          updateContrib.mutate({
-                            id: raw.id,
-                            personId: raw.personId,
-                            accountType: raw.accountType,
-                            taxTreatment: raw.taxTreatment as
-                              "pre_tax" | "tax_free" | "after_tax" | "hsa",
-                            employerMatchType: raw.employerMatchType as
-                              | "none"
-                              | "percent_of_contribution"
-                              | "dollar_match"
-                              | "fixed_annual",
-                            isActive: raw.isActive,
-                            performanceAccountId,
-                          });
-                        },
+                        onDeleteContrib: !setupEditable
+                          ? undefined
+                          : (id: number) => {
+                              deleteContrib.mutate({ id });
+                            },
+                        onCreateContrib: !setupEditable
+                          ? undefined
+                          : (data) => {
+                              // A form linking into an existing (often inactive
+                              // stub) contribution row carries its id — update
+                              // that row instead of creating a duplicate.
+                              const { id, ...rest } = data;
+                              if (id != null) {
+                                updateContrib.mutate({ id, ...rest });
+                              } else {
+                                createContrib.mutate(rest);
+                              }
+                            },
+                        onUpdateInstitution: !setupEditable
+                          ? undefined
+                          : (
+                              id: number,
+                              performanceAccountId: number | null,
+                            ) => {
+                              const raw = (d.rawContribs as RawContrib[]).find(
+                                (cc) => cc.id === id,
+                              );
+                              if (!raw) return;
+                              updateContrib.mutate({
+                                id: raw.id,
+                                personId: raw.personId,
+                                accountType: raw.accountType,
+                                taxTreatment: raw.taxTreatment as
+                                  "pre_tax" | "tax_free" | "after_tax" | "hsa",
+                                employerMatchType: raw.employerMatchType as
+                                  | "none"
+                                  | "percent_of_contribution"
+                                  | "dollar_match"
+                                  | "fixed_annual",
+                                isActive: raw.isActive,
+                                performanceAccountId,
+                              });
+                            },
                       },
                     }
               }

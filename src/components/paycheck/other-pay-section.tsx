@@ -28,6 +28,8 @@ export function OtherPaySection({
   onSetAmount,
   readOnly,
   amountReadOnly,
+  lineReadOnly,
+  canRemove = true,
   note,
 }: {
   /** Where the amounts save. */
@@ -40,6 +42,10 @@ export function OtherPaySection({
   readOnly?: boolean;
   /** The salary padlock — amounts live on the same Salary Profile entry. */
   amountReadOnly?: boolean;
+  /** Adding a line / changing how it's taxed isn't allowed. */
+  lineReadOnly?: boolean;
+  /** Removing a line is household setup (admin). */
+  canRemove?: boolean;
 }) {
   const utils = trpc.useUtils();
   const refresh = () => utils.paycheck.invalidate();
@@ -56,7 +62,7 @@ export function OtherPaySection({
   const [name, setName] = useState("");
   const [presetKey, setPresetKey] = useState(EARNING_PRESETS[0]!.key);
 
-  if (rows.length === 0 && readOnly) return null;
+  if (rows.length === 0 && (readOnly || lineReadOnly)) return null;
 
   const setPreset = (row: EarningRow, key: string) => {
     const p = EARNING_PRESETS.find((x) => x.key === key);
@@ -97,7 +103,7 @@ export function OtherPaySection({
                   aria-label={`How ${row.earningName} is paid and taxed`}
                   value={preset?.key ?? "custom"}
                   onChange={(e) => setPreset(row, e.target.value)}
-                  disabled={readOnly}
+                  disabled={readOnly || lineReadOnly}
                   title={preset?.label ?? "Custom tax treatment"}
                   className="text-faint -ml-0.5 cursor-pointer appearance-none bg-transparent hover:underline disabled:cursor-default dark:bg-transparent"
                 >
@@ -125,7 +131,7 @@ export function OtherPaySection({
                 hideEditIcon
               />
               <ActionSlot>
-                {!readOnly && (
+                {!readOnly && canRemove && (
                   <button
                     onClick={() => remove.mutate({ id: row.id })}
                     className="text-faint transition-opacity hover:text-red-500 md:opacity-0 md:group-hover:opacity-100"
@@ -139,6 +145,7 @@ export function OtherPaySection({
           );
         })}
         {!readOnly &&
+          !lineReadOnly &&
           (adding ? (
             <form
               onSubmit={(e) => {

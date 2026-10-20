@@ -4,8 +4,20 @@ import { render, screen } from "@testing-library/react";
 
 vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
 
+vi.mock("@/lib/hooks/use-dashboard-projection", () => ({
+  useDashboardEngineInput: () => ({
+    contributionProfileId: 20,
+    salaryProfileId: 10,
+    decumulationDefaults: {},
+  }),
+}));
+vi.mock("@/components/ui/confirm-dialog", () => ({ confirmWithDiff: vi.fn() }));
+
 const plans = vi.fn();
-vi.mock("@/lib/hooks/use-plans", () => ({ usePlans: () => plans() }));
+vi.mock("@/lib/hooks/use-plans", () => ({
+  usePlans: () => plans(),
+  useConfirmApplyPlan: () => vi.fn(),
+}));
 vi.mock("@/lib/hooks/use-budget-profiles-list", () => ({
   useBudgetProfilesList: () => ({ data: [{ id: 3, name: "Lean" }] }),
 }));
@@ -60,7 +72,8 @@ describe("ComparePlans", () => {
   it("figures each Plan with its own profiles", () => {
     plans.mockReturnValue({
       plans: [plan],
-      activeIds: { salary: 1, contribution: 2, budget: 3, retirement: 4 },
+      // Every kind differs from the Plan's, so each is changed in the input.
+      activeIds: { salary: 10, contribution: 20, budget: 30, retirement: 40 },
       planInUse: null,
       apply,
     });
@@ -82,8 +95,10 @@ describe("ComparePlans", () => {
         salaryProfile: expect.objectContaining({ localSelectionId: 1 }),
       }),
     );
+    // The dashboard's input, with this Plan's profiles where they differ.
     expect(projectionQuery).toHaveBeenCalledWith(
       expect.objectContaining({
+        decumulationDefaults: {},
         contributionProfileId: 2,
         salaryProfileId: 1,
         retirementProfileId: 4,
@@ -94,5 +109,20 @@ describe("ComparePlans", () => {
     expect(screen.getByText("$60,000")).toBeInTheDocument(); // take-home
     expect(screen.getByText("$12,000")).toBeInTheDocument(); // left over
     expect(screen.getByText("through the plan")).toBeInTheDocument();
+  });
+  it("the Plan in use runs exactly the dashboard's projection (same cached run)", () => {
+    projectionQuery.mockClear();
+    plans.mockReturnValue({
+      plans: [{ ...plan, salaryProfileId: 10, contributionProfileId: 20 }],
+      activeIds: { salary: 10, contribution: 20, budget: 3, retirement: 4 },
+      planInUse: { id: 9 },
+      apply,
+    });
+    render(<ComparePlans />);
+    expect(projectionQuery).toHaveBeenCalledWith({
+      contributionProfileId: 20,
+      salaryProfileId: 10,
+      decumulationDefaults: {},
+    });
   });
 });

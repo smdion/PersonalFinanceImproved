@@ -19,11 +19,16 @@ import {
 } from "@/lib/constants/settings-keys";
 import {
   PLAN_PROFILE_COLUMN,
-  PLAN_PROFILE_KINDS,
   PLAN_PROFILE_KIND_LABELS,
-  planInUseMessage,
+  type PlanProfileIds,
   type PlanProfileKind,
 } from "@/lib/config/plans";
+import {
+  planChanges,
+  planInUseMessage,
+  planProfileIds,
+} from "@/lib/pure/plans";
+import { resolveRetirementProfileIdFrom } from "./retirement-profile";
 import type { Permission } from "@/server/auth";
 import type { Db } from "./transforms";
 
@@ -74,11 +79,36 @@ export async function assertNoPlanUses(
   });
 }
 
+/** The active profile of each kind, as the server resolves it. */
+async function readActiveProfileIds(db: Db): Promise<PlanProfileIds> {
+  const [settings, retirementProfiles, activeBudget] = await Promise.all([
+    db.select().from(schema.appSettings),
+    db
+      .select({ id: schema.retirementProfiles.id })
+      .from(schema.retirementProfiles),
+    db
+      .select({ id: schema.budgetProfiles.id })
+      .from(schema.budgetProfiles)
+      .where(eq(schema.budgetProfiles.isActive, true)),
+  ]);
+  const setting = (key: string) => {
+    const v = settings.find((s) => s.key === key)?.value;
+    return typeof v === "number" ? v : v == null ? null : Number(v) || null;
+  };
+  return {
+    salary: setting(SK_ACTIVE_SALARY_PROFILE_ID),
+    contribution: setting(SK_ACTIVE_CONTRIB_PROFILE_ID),
+    budget: activeBudget[0]?.id ?? null,
+    retirement: resolveRetirementProfileIdFrom(settings, retirementProfiles),
+  };
+}
+
 /**
- * Make a Plan's profiles the active ones, in one transaction. A kind the
- * Plan leaves empty keeps its current active profile. Every kind that would
- * change needs the same permission as changing it by hand, checked before
- * anything is written so a refusal never half-applies a Plan.
+ * Make a Plan's profiles the active ones, in one transaction. Only kinds
+ * that would actually change are written — and only those need the same
+ * permission as changing them by hand (a kind already active, or a slot an
+ * older Plan left empty, is left alone). Checked before anything is
+ * written, so a refusal never half-applies a Plan.
  */
 export async function applyPlan(
   db: Db,
@@ -92,10 +122,10 @@ export async function applyPlan(
   if (!plan)
     throw new TRPCError({ code: "NOT_FOUND", message: "Plan not found" });
 
-  const targets = PLAN_PROFILE_KINDS.flatMap((kind) => {
-    const id = plan[PLAN_PROFILE_COLUMN[kind]];
-    return id == null ? [] : [{ kind, id }];
-  });
+  const targets = planChanges(
+    planProfileIds(plan),
+    await readActiveProfileIds(db),
+  );
 
   const missing = targets
     .filter(({ kind }) => {

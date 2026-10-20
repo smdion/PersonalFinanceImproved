@@ -92,6 +92,8 @@ export function PersonPaycheck({
   incompleteAccountIds,
   earningRows,
   editLabels,
+  lineReadOnly,
+  setupReadOnly,
 }: {
   person: { name: string; id: number };
   job: {
@@ -139,6 +141,12 @@ export function PersonPaycheck({
   salaryReadOnly?: boolean;
   /** Contribution Profile fields (amounts) aren't editable. */
   contribValueReadOnly?: boolean;
+  /** Deduction / other-pay lines (name, tax treatment, adding) aren't
+   *  editable — see resolvePaycheckEditTarget. */
+  lineReadOnly?: boolean;
+  /** Household setup (employer, title, accounts, removing rows) isn't
+   *  editable (admin only). */
+  setupReadOnly?: boolean;
   rawDeductions: RawDeduction[];
   rawContribs: RawContrib[];
   /** Contribution annual/limit figures, resolved ONCE by the caller's shared
@@ -201,7 +209,7 @@ export function PersonPaycheck({
                     value={job.title}
                     onSave={(v) => onUpdateJob("title", v)}
                     className="text-muted"
-                    isEditable={!readOnly}
+                    isEditable={!readOnly && !setupReadOnly}
                     hideEditIcon
                   />
                   {" at "}
@@ -211,7 +219,7 @@ export function PersonPaycheck({
                 value={job.employerName}
                 onSave={(v) => onUpdateJob("employerName", v)}
                 className="text-muted"
-                isEditable={!readOnly}
+                isEditable={!readOnly && !setupReadOnly}
                 hideEditIcon
               />
             </p>
@@ -260,13 +268,14 @@ export function PersonPaycheck({
             alignedPreTax={alignedPreTax}
             alignedPostTax={alignedPostTax}
             onAddDeduction={
-              readOnly
+              readOnly || lineReadOnly
                 ? undefined
                 : (isPretax) => setAddingDeduction({ isPretax })
             }
             onDeleteDeduction={handlers?.onDeleteDeduction ?? undefined}
             readOnly={readOnly}
             amountReadOnly={contribValueReadOnly}
+            lineReadOnly={lineReadOnly}
             note={editLabels && `Amounts: ${editLabels.contribution}`}
           />
           <TaxWithholdingSection
@@ -316,6 +325,8 @@ export function PersonPaycheck({
             }
             readOnly={readOnly}
             amountReadOnly={salaryReadOnly}
+            lineReadOnly={lineReadOnly}
+            canRemove={!setupReadOnly}
             note={editLabels?.salary}
           />
         </div>

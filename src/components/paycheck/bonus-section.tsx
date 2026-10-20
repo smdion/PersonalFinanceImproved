@@ -197,17 +197,11 @@ export function BonusSection({
                     ? `${new Date().getFullYear()}-${String(job.bonusMonth).padStart(2, "0")}-${String(job.bonusDayOfMonth ?? 1).padStart(2, "0")}`
                     : ""
                 }
-                onChange={(e) => {
-                  const v = e.target.value;
-                  if (!v) {
-                    onUpdateJob("bonusMonth", "");
-                    onUpdateJob("bonusDayOfMonth", "");
-                  } else {
-                    const d = new Date(v + "T00:00:00");
-                    onUpdateJob("bonusMonth", String(d.getMonth() + 1));
-                    onUpdateJob("bonusDayOfMonth", String(d.getDate()));
-                  }
-                }}
+                // One write for both parts of the date ("MM-DD", or "" to
+                // clear) — two writes would race on the same profile entry.
+                onChange={(e) =>
+                  onUpdateJob("bonusDate", e.target.value.slice(5))
+                }
                 disabled={!editable}
                 className="bg-surface-primary w-36 rounded border px-2 py-0.5 text-sm disabled:opacity-60"
               />

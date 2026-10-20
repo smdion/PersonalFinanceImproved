@@ -31,6 +31,7 @@ export function DeductionRow({
   onDelete,
   readOnly,
   amountReadOnly,
+  lineReadOnly,
 }: {
   row: DeductionRowData;
   /** Display name, when it needs more than the stored name (e.g. "401k
@@ -44,6 +45,8 @@ export function DeductionRow({
   /** The amount is a profile field — read-only when profile edits aren't
    *  in play, while the tax treatment (setup) may still be editable. */
   amountReadOnly?: boolean;
+  /** The tax treatment (part of the line) isn't editable. */
+  lineReadOnly?: boolean;
 }) {
   const name = label ?? deductionDisplayName(row.name);
 
@@ -87,7 +90,7 @@ export function DeductionRow({
         // Only while editing: locked, the section it sits in (before/after
         // tax) already says how it's taxed, and the extra line would make
         // this row taller than the other person's matching row.
-        row.raw && preset && !readOnly ? (
+        row.raw && preset && !readOnly && !lineReadOnly ? (
           // How the stub lists it — moving a deduction between the stub's
           // before-tax and after-tax sections changes which taxes it skips.
           <select

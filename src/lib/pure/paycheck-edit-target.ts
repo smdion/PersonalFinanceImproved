@@ -6,9 +6,13 @@
  *   Profile for pay, bonus, schedule, W-4, extra-paycheck routing and other
  *   pay; the Contribution Profile for contribution amounts/methods/auto-max
  *   and deduction amounts.
- * - Setup fields (employer, title, deduction name and tax treatment, account
- *   type, linking, adding/removing rows) belong to every profile, so they
- *   save to the household's setup.
+ * - Lines — a deduction's or other-pay line's name and tax treatment, and
+ *   adding one — belong to the job (every profile), and need the same
+ *   permission as editing profiles (the server's deductions / earnings
+ *   create+update).
+ * - Setup — employer, title, contribution accounts and their links, and
+ *   removing any row — belongs to the household and is admin-only, as the
+ *   server enforces.
  * - Without the permission to edit profiles, profile fields are read-only
  *   and say why — they never fall back to a database write.
  * - While the shared padlock is locked, everything is read-only.
@@ -22,7 +26,9 @@ export type PaycheckFieldKind =
   | "salary"
   /** A contribution account's amount/method/auto-max, or a deduction amount. */
   | "contribution"
-  /** Shared setup: names, tax treatment, account type, links, add/remove. */
+  /** A deduction / other-pay line's name or tax treatment, or adding one. */
+  | "line"
+  /** Employer, title, contribution accounts, links, removing rows (admin). */
   | "setup";
 
 export type PaycheckEditTarget =
@@ -35,7 +41,7 @@ export type PaycheckEditContext = {
   locked: boolean;
   /** May edit profiles (the `contributionProfile` permission). */
   canEditProfiles: boolean;
-  /** May edit the household setup on this page (jobs, deductions, accounts). */
+  /** May edit the household setup (admin): jobs, accounts, removals. */
   canEditSetup: boolean;
   salaryProfileName: string | null;
   contributionProfileName: string | null;
@@ -52,6 +58,8 @@ export function resolvePaycheckEditTarget(
       : { target: "readOnly", label: "View only" };
   if (!ctx.canEditProfiles)
     return { target: "readOnly", label: "Needs profile edit permission" };
+  if (kind === "line")
+    return { target: "setup", label: "Your setup — every profile" };
   if (kind === "salary")
     return ctx.salaryProfileName == null
       ? { target: "readOnly", label: "No active Salary Profile" }

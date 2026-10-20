@@ -74,6 +74,7 @@ export function PayStub({
   onCreateDeduction,
   readOnly,
   amountReadOnly,
+  lineReadOnly,
   note,
 }: {
   paycheck: PaycheckResult;
@@ -88,6 +89,8 @@ export function PayStub({
   readOnly?: boolean;
   /** Deduction amounts are profile fields (resolvePaycheckEditTarget). */
   amountReadOnly?: boolean;
+  /** A line's tax treatment isn't editable. */
+  lineReadOnly?: boolean;
   /** Where deduction amounts save. */
   note?: string;
 }) {
@@ -140,6 +143,7 @@ export function PayStub({
           }
           readOnly={readOnly}
           amountReadOnly={amountReadOnly}
+          lineReadOnly={lineReadOnly}
         />
       ))
     );
@@ -164,7 +168,7 @@ export function PayStub({
         <div className="border-subtle space-y-1 border-t pt-2">
           <GroupTitle
             help="Taken from your pay before taxes, reducing your taxable income (e.g. health insurance, traditional 401k)"
-            onAdd={readOnly ? undefined : () => onAddDeduction?.(true)}
+            onAdd={onAddDeduction ? () => onAddDeduction(true) : undefined}
             addLabel="Add a before-tax deduction"
           >
             Before-tax deductions
@@ -230,7 +234,7 @@ export function PayStub({
         <div className="border-subtle space-y-1 border-t pt-2">
           <GroupTitle
             help="Taken from your pay after taxes — does not reduce your taxable income (e.g. Roth 401k, disability)"
-            onAdd={readOnly ? undefined : () => onAddDeduction?.(false)}
+            onAdd={onAddDeduction ? () => onAddDeduction(false) : undefined}
             addLabel="Add an after-tax deduction"
           >
             After-tax deductions

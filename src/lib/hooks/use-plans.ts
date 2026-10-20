@@ -4,12 +4,17 @@ import { useCallback, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import {
   PLAN_PROFILE_COLUMN,
-  findPlanWithProfiles,
-  planMatchesActive,
-  planProfileIds,
+  PLAN_PROFILE_KIND_TITLES,
   type PlanProfileIds,
   type PlanProfileKind,
 } from "@/lib/config/plans";
+import {
+  planChanges,
+  planMatchesActive,
+  planProfileIds,
+} from "@/lib/pure/plans";
+import { diffContribProfileSwap } from "@/lib/pure/contrib-profile-diff";
+import { confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { SK_LAST_APPLIED_PLAN_ID } from "@/lib/constants/settings-keys";
 import { useActiveContribProfile } from "./use-active-contrib-profile";
 import { useActiveSalaryProfile } from "./use-active-salary-profile";
@@ -64,8 +69,7 @@ export function usePlans() {
   );
 
   const lastAppliedPlan = plans.find((p) => p.id === lastAppliedId) ?? null;
-  // The last applied Plan wins a tie (an older Plan that leaves a kind empty
-  // can match the same set).
+  // The last applied Plan wins a tie (two Plans can hold the same set).
   const matching = plans.filter((p) =>
     planMatchesActive(planProfileIds(p), activeIds),
   );
@@ -73,7 +77,8 @@ export function usePlans() {
     (lastAppliedPlan && matching.includes(lastAppliedPlan)
       ? lastAppliedPlan
       : matching[0]) ?? null;
-  const sameAsActive = findPlanWithProfiles(plans, activeIds) ?? null;
+  // Saving the set in use again would duplicate that Plan.
+  const sameAsActive = planInUse;
 
   const apply = trpc.settings.scenarios.activate.useMutation({
     // Applying changes every kind of active profile at once, so every
@@ -88,8 +93,69 @@ export function usePlans() {
     planInUse,
     /** The Plan last applied — offered as "Update ‹Plan›" once it no longer matches. */
     lastAppliedPlan,
-    /** A Plan holding exactly the active set (all four), if one exists. */
+    /** Same as planInUse — offered as "same profiles as ‹Plan›" when saving. */
     sameAsActive,
     apply,
   };
+}
+
+/**
+ * Ask before applying a Plan — one confirm for the header and Compare
+ * Plans. It lists the profiles that change and, like the Contributions
+ * picker, the contribution amounts a Contribution Profile swap changes,
+ * since applying is household-wide (and syncs to the budget app).
+ */
+export function useConfirmApplyPlan() {
+  const { activeIds } = usePlans();
+  const { data: budgetProfiles } = useBudgetProfilesList();
+  const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
+  const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
+  const { data: retirementProfiles } =
+    trpc.retirement.retirementProfiles.list.useQuery();
+  const { data: compare } = trpc.contributionProfile.compareData.useQuery();
+  const lists = useMemo<
+    Record<PlanProfileKind, readonly { id: number; name: string }[] | undefined>
+  >(
+    () => ({
+      salary: salaryProfiles,
+      contribution: contribProfiles,
+      budget: budgetProfiles,
+      retirement: retirementProfiles,
+    }),
+    [salaryProfiles, contribProfiles, budgetProfiles, retirementProfiles],
+  );
+
+  return useCallback(
+    async (plan: Parameters<typeof planProfileIds>[0] & { name: string }) => {
+      const changes = planChanges(planProfileIds(plan), activeIds);
+      if (changes.length === 0) return false;
+      const lines = changes.map(
+        ({ kind, id }) =>
+          `${PLAN_PROFILE_KIND_TITLES[kind]}: ${lists[kind]?.find((p) => p.id === id)?.name ?? "—"}`,
+      );
+      const contribChange = changes.find((c) => c.kind === "contribution");
+      if (contribChange && compare) {
+        const outgoing = compare.profiles.find(
+          (p) => p.id === activeIds.contribution,
+        );
+        const incoming = compare.profiles.find(
+          (p) => p.id === contribChange.id,
+        );
+        if (outgoing)
+          lines.push(
+            ...diffContribProfileSwap(
+              outgoing.accountActiveFields,
+              incoming?.accountActiveFields ?? {},
+              compare.accounts,
+            ),
+          );
+      }
+      return confirmWithDiff(
+        `Apply Plan "${plan.name}"? This makes these the active profiles for everyone in the household (and what syncs to your budget app):`,
+        lines,
+        "Apply",
+      );
+    },
+    [activeIds, lists, compare],
+  );
 }

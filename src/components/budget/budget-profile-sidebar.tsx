@@ -13,7 +13,7 @@
 import { budgetApiServiceLabel, formatCurrency } from "@/lib/utils/format";
 import { confirm, promptTextWithSelect } from "@/components/ui/confirm-dialog";
 import { usePlanNamesUsing } from "@/lib/hooks/use-plans";
-import { planInUseMessage } from "@/lib/config/plans";
+import { planInUseMessage } from "@/lib/pure/plans";
 import { toast } from "@/lib/hooks/use-toast";
 import {
   ProfileListRow,
@@ -115,7 +115,7 @@ export function BudgetProfileSidebar({
                     }
                     if (
                       await confirm(
-                        `Delete profile "${p.name}"? Its budget items and any savings allocations customized for this profile will be permanently deleted too.`,
+                        `Delete profile "${p.name}"? Its budget items and any savings allocations set for this profile will be permanently deleted too.`,
                       )
                     ) {
                       onDeleteProfile(p.id);

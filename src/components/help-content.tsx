@@ -290,9 +290,10 @@ export function HelpContent() {
             &ldquo;Minimum Match&rdquo;) and switch between them instantly.
           </li>
           <li>
-            <strong>Scenario mode</strong> &mdash; Toggle into what-if mode to
-            test salary or contribution changes without affecting your real
-            data.
+            <strong>Where edits save</strong> &mdash; unlock the page and each
+            section says which profile its changes go to. To try a change
+            without saving it, use What-If on the{" "}
+            <NavLink href="/profiles?tab=whatif">Profiles</NavLink> page.
           </li>
         </ul>
       </Section>
@@ -301,8 +302,8 @@ export function HelpContent() {
       <Section title="Budget" icon={ClipboardList}>
         <p>
           The <NavLink href="/budget">Budget</NavLink> page is a multi-column
-          budgeting workspace. Each column can represent a different time period
-          or scenario.
+          budgeting workspace. Each column is a spending level (e.g. Standard,
+          Tight), and a profile can split the year between them by months.
         </p>
         <h4 className="text-secondary font-semibold">Key features</h4>
         <ul className="ml-2 list-inside list-disc space-y-1">
@@ -329,9 +330,10 @@ export function HelpContent() {
             modal shows the impact of your edits across the app.
           </li>
           <li>
-            <strong>Salary overrides</strong> &mdash; Temporarily change the
-            income assumption to see how a raise or job change would affect your
-            budget.
+            <strong>Try a change</strong> &mdash; a raise, a new budget, a
+            different contribution mix: use the What-If tab on the{" "}
+            <NavLink href="/profiles?tab=whatif">Profiles</NavLink> page, which
+            saves nothing.
           </li>
         </ul>
       </Section>
@@ -919,35 +921,6 @@ export function HelpContent() {
       <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
         Features
       </h3>
-
-      <Section title="Scenarios & What-If Mode">
-        <p>
-          Several pages support <strong>scenario mode</strong> (also called
-          what-if mode). When activated, you can make temporary changes to see
-          their impact without affecting your real data.
-        </p>
-        <ul className="ml-2 list-inside list-disc space-y-1">
-          <li>
-            <strong>Salary overrides</strong> &mdash; Temporarily change the
-            income used in calculations. Available on Paycheck, Budget, and
-            Brokerage pages.
-          </li>
-          <li>
-            <strong>Contribution profiles</strong> &mdash; Switch between saved
-            profiles to model different contribution strategies.
-          </li>
-          <li>
-            <strong>Scenario indicator</strong> &mdash; A visual badge appears
-            whenever you&rsquo;re viewing data under a what-if scenario so you
-            always know what&rsquo;s real vs. hypothetical.
-          </li>
-          <li>
-            <strong>Push preview</strong> &mdash; On the Budget page, see a
-            detailed preview of how your scenario changes would flow through to
-            other pages before committing them.
-          </li>
-        </ul>
-      </Section>
 
       <Section title="Profiles and Plans">
         <p>
