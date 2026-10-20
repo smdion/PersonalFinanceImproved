@@ -6,8 +6,8 @@ import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import { trpc } from "@/lib/trpc";
 import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { diffContribProfileSwap } from "@/lib/pure/contrib-profile-diff";
-import { ProfilePill } from "./profile-pill";
-import type { ProfileOption } from "./profile-pill";
+import Link from "next/link";
+import { SlidersHorizontal } from "lucide-react";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
@@ -21,23 +21,34 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/ui/form-error";
 import { useClickOutside } from "@/lib/hooks/use-click-outside";
+import { profilesHref } from "@/lib/config/profile-tabs";
+import type { PlanProfileKind } from "@/lib/config/plans";
 
-function options(
-  profiles: readonly { id: number; name: string }[] | undefined,
-  activeId: number | null,
-): ProfileOption[] {
-  return (profiles ?? []).map((p) => ({
-    id: p.id,
-    name: p.name,
-    isActive: p.id === activeId,
-    badge: p.id === activeId ? "Active" : undefined,
-  }));
-}
+const VIEW_MODES = [
+  {
+    mode: "projected",
+    label: "Projected",
+    title: "Projected — current rate applied to all pay periods",
+  },
+  {
+    mode: "blended",
+    label: "Year-end",
+    title:
+      "Year-end estimate — using actual salary changes throughout the year",
+  },
+  {
+    mode: "ytd",
+    label: "YTD",
+    title: "Year to date — amounts earned so far, by elapsed pay periods",
+  },
+] as const;
 
 /**
- * The header: which profile of each kind is active, which Plan (a saved set
- * of profiles) that matches, and the view mode. Every picker changes the
- * active profile for the whole household; choosing a Plan changes all four.
+ * The header: one "Profiles" button (plus the Plan in use, when the active
+ * profiles match one; the active profile of each kind in its tooltip) that
+ * opens a panel to change them (each picker changes the active profile for the whole household;
+ * applying a Plan changes all four), plus the view mode, which changes
+ * every page's numbers and so stays one click away.
  */
 export function ScenarioBar() {
   const { viewMode, setViewMode } = useScenario();
@@ -61,6 +72,18 @@ export function ScenarioBar() {
   useEffect(() => {
     if (creating) inputRef.current?.focus();
   }, [creating]);
+  // Escape closes the panel.
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setDropdownOpen(false);
+        setCreating(false);
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [dropdownOpen]);
 
   const utils = trpc.useUtils();
   const refreshPlans = () => utils.settings.scenarios.list.invalidate();
@@ -166,30 +189,75 @@ export function ScenarioBar() {
       deleteMut.mutate({ id });
   };
 
+  const kinds: {
+    kind: PlanProfileKind;
+    profiles: readonly { id: number; name: string }[] | undefined;
+    onChange: (id: number) => void;
+    canChange: boolean;
+    isPending?: boolean;
+  }[] = [
+    {
+      kind: "salary",
+      profiles: salaryProfiles,
+      onChange: (id) => setActiveSalaryId(id),
+      canChange: canChangeContribOrSalary,
+    },
+    {
+      kind: "contribution",
+      profiles: contribProfiles,
+      onChange: (id) => void handleActivateContrib(id),
+      canChange: canChangeContribOrSalary,
+    },
+    {
+      kind: "budget",
+      profiles: budgetProfiles,
+      onChange: (id) => activateBudget.mutate({ id }),
+      canChange: canChangeBudget,
+      isPending: activateBudget.isPending,
+    },
+    {
+      kind: "retirement",
+      profiles: retirementProfiles,
+      onChange: (id) => setActiveRetirementId(id),
+      canChange: canChangeRetirement,
+    },
+  ];
+  const activeName = (k: (typeof kinds)[number]) =>
+    k.profiles?.find((p) => p.id === activeIds[k.kind])?.name ?? "None";
+  const fullNames = kinds.map(activeName);
+  const summaryTitle = kinds
+    .map((k, i) => `${PLAN_PROFILE_KIND_TITLES[k.kind]}: ${fullNames[i]}`)
+    .join("\n");
+
   return (
     <div
       data-scenario-bar
-      className="bg-surface-primary border-default flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 border-b px-3 py-1.5 text-xs sm:px-4"
+      className="bg-surface-primary border-default flex items-center justify-end gap-3 border-b px-3 py-1.5 text-xs sm:px-4"
     >
-      {/* Plan — a saved set of profiles */}
-      <div className="flex items-center gap-2" ref={dropdownRef}>
-        <span className="text-faint hidden sm:inline" id="plan-label">
-          Plan:
+      {/* Profiles — the panel to change the active profiles and Plans */}
+      <div className="flex min-w-0 items-center gap-2">
+        <span className="text-faint hidden sm:inline" id="profiles-label">
+          Profiles
         </span>
-        <div className="relative">
+        <div className="relative min-w-0" ref={dropdownRef}>
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            aria-haspopup="listbox"
+            aria-haspopup="dialog"
             aria-expanded={dropdownOpen}
-            aria-labelledby="plan-label"
+            aria-label={`Profiles and Plans — ${summaryTitle.replace(/\n/g, ", ")}`}
+            title={summaryTitle}
             disabled={apply.isPending}
-            className="text-label bg-surface-primary text-primary flex items-center gap-1.5 rounded px-3 py-1.5 shadow-sm transition-colors disabled:opacity-50"
+            className="text-label bg-surface-primary text-primary flex max-w-[min(20rem,60vw)] items-center gap-1.5 rounded px-3 py-1.5 shadow-sm transition-colors disabled:opacity-50"
           >
-            <span className={planInUse ? "font-medium" : "text-muted"}>
-              {planInUse ? planInUse.name : "None (unsaved mix)"}
+            <SlidersHorizontal
+              className="text-faint h-3.5 w-3.5 shrink-0"
+              aria-hidden="true"
+            />
+            <span className="truncate font-medium">
+              {planInUse ? planInUse.name : "Manage"}
             </span>
             <svg
-              className="text-faint h-3 w-3"
+              className="text-faint h-3 w-3 shrink-0"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -206,216 +274,210 @@ export function ScenarioBar() {
 
           {dropdownOpen && (
             <div
-              className="bg-surface-primary absolute top-full right-0 z-50 mt-1 w-72 max-w-[calc(100vw-2rem)] rounded-lg border shadow-lg"
-              role="listbox"
-              aria-label="Plans"
+              className="bg-surface-primary z-50 rounded-lg border shadow-lg max-sm:fixed max-sm:inset-x-2 max-sm:top-12 sm:absolute sm:top-full sm:right-0 sm:mt-1 sm:w-80"
+              role="dialog"
+              aria-label="Profiles and Plans"
             >
-              <p className="text-caption text-faint px-3 pt-2 pb-1">
-                A Plan is a saved set of profiles. Applying one makes them the
-                active profiles.
-              </p>
-              {plans.length === 0 && (
-                <p className="text-muted px-3 py-2">No Plans saved yet.</p>
-              )}
-              {plans.map((p) => {
-                const inUse = p.id === planInUse?.id;
-                return (
-                  <div
-                    key={p.id}
-                    className={`hover:bg-surface-sunken group flex items-center gap-2 px-3 py-1.5 ${inUse ? "bg-blue-50 text-blue-700" : "text-secondary"}`}
+              {/* The active profile of each kind */}
+              <div className="space-y-1.5 p-3">
+                <p className="text-caption text-faint">
+                  Active profiles — every page uses these, for everyone in the
+                  household.
+                </p>
+                {kinds.map((k) => (
+                  <label
+                    key={k.kind}
+                    className="flex items-center justify-between gap-3"
                   >
-                    <button
-                      role="option"
-                      aria-selected={inUse}
-                      onClick={() => handleApply(p.id)}
-                      className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                    <span className="text-muted">
+                      {PLAN_PROFILE_KIND_TITLES[k.kind]}
+                    </span>
+                    <select
+                      value={activeIds[k.kind] ?? ""}
+                      onChange={(e) => k.onChange(Number(e.target.value))}
+                      disabled={!k.canChange || k.isPending}
+                      title={
+                        k.canChange
+                          ? undefined
+                          : "You don't have permission to change this"
+                      }
+                      className="border-default bg-surface-primary text-primary max-w-[11rem] min-w-0 flex-1 rounded border px-2 py-1 text-xs disabled:opacity-60"
                     >
-                      <span className="truncate">{p.name}</span>
-                      {inUse && (
-                        <span className="ml-auto shrink-0">
-                          <Badge color="blue">In use</Badge>
-                        </span>
+                      {activeIds[k.kind] == null && (
+                        <option value="">None</option>
                       )}
-                    </button>
-                    {canManagePlans && (
+                      {(k.profiles ?? []).map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ))}
+              </div>
+
+              {/* Plans — a saved set of profiles */}
+              <div className="border-subtle border-t">
+                <p className="text-caption text-faint px-3 pt-2 pb-1">
+                  A Plan is a saved set of profiles. Applying one makes them the
+                  active profiles.
+                </p>
+                {plans.length === 0 && (
+                  <p className="text-muted px-3 py-2">No Plans saved yet.</p>
+                )}
+                {plans.map((p) => {
+                  const inUse = p.id === planInUse?.id;
+                  return (
+                    <div
+                      key={p.id}
+                      className={`hover:bg-surface-sunken group flex items-center gap-2 px-3 py-1.5 ${inUse ? "bg-blue-50 text-blue-700" : "text-secondary"}`}
+                    >
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(p.id, p.name);
-                        }}
-                        className="text-faint transition-opacity hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100"
-                        title="Delete Plan"
-                        aria-label={`Delete Plan ${p.name}`}
+                        onClick={() => handleApply(p.id)}
+                        aria-current={inUse || undefined}
+                        className="flex min-w-0 flex-1 items-center gap-2 text-left"
                       >
-                        <svg
-                          className="h-3 w-3"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2}
-                          aria-hidden="true"
+                        <span className="truncate">{p.name}</span>
+                        {inUse && (
+                          <span className="ml-auto shrink-0">
+                            <Badge color="blue">In use</Badge>
+                          </span>
+                        )}
+                      </button>
+                      {canManagePlans && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(p.id, p.name);
+                          }}
+                          className="text-faint transition-opacity hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100"
+                          title="Delete Plan"
+                          aria-label={`Delete Plan ${p.name}`}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
+                          <svg
+                            className="h-3 w-3"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                            aria-hidden="true"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+                <FormError error={apply.error} prefix="Couldn't apply" />
+
+                {canManagePlans && (
+                  <div className="space-y-1.5 p-2">
+                    {!planInUse && lastAppliedPlan && activeSet && (
+                      <button
+                        onClick={handleUpdate}
+                        className="w-full rounded px-1 py-1.5 text-left text-blue-600 hover:bg-blue-50"
+                      >
+                        Update “{lastAppliedPlan.name}” to these profiles
+                      </button>
+                    )}
+                    {creating ? (
+                      <div className="space-y-1.5">
+                        <input
+                          ref={inputRef}
+                          type="text"
+                          value={newName}
+                          onChange={(e) => setNewName(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleCreate();
+                            if (e.key === "Escape") setCreating(false);
+                          }}
+                          placeholder="Plan name"
+                          aria-label="New Plan name"
+                          className="border-strong bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs"
+                        />
+                        {sameAsActive && (
+                          <p className="text-caption text-amber-700">
+                            Same profiles as “{sameAsActive.name}”.
+                          </p>
+                        )}
+                        <FormError error={createMut.error} prefix="Failed" />
+                        <div className="flex gap-1">
+                          <Button
+                            onClick={handleCreate}
+                            size="sm"
+                            disabled={!newName.trim() || createMut.isPending}
+                            className="!text-caption flex-1"
+                          >
+                            Save Plan
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setCreating(false)}
+                            className="!text-caption"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setCreating(true)}
+                        disabled={!activeSet}
+                        className="w-full rounded px-1 py-1.5 text-left text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+                      >
+                        + Save these profiles as a new Plan
                       </button>
                     )}
                   </div>
-                );
-              })}
-              <FormError error={apply.error} prefix="Couldn't apply" />
+                )}
+              </div>
 
-              {canManagePlans && (
-                <div className="border-subtle space-y-1.5 border-t p-2">
-                  {!planInUse && lastAppliedPlan && activeSet && (
-                    <button
-                      onClick={handleUpdate}
-                      className="w-full rounded py-1.5 text-left text-blue-600 hover:bg-blue-50"
-                    >
-                      Update “{lastAppliedPlan.name}” to these profiles
-                    </button>
-                  )}
-                  {creating ? (
-                    <div className="space-y-1.5">
-                      <input
-                        ref={inputRef}
-                        type="text"
-                        value={newName}
-                        onChange={(e) => setNewName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") handleCreate();
-                          if (e.key === "Escape") setCreating(false);
-                        }}
-                        placeholder="Plan name"
-                        aria-label="New Plan name"
-                        className="border-strong bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs"
-                      />
-                      {sameAsActive && (
-                        <p className="text-caption text-amber-700">
-                          Same profiles as “{sameAsActive.name}”.
-                        </p>
-                      )}
-                      <FormError error={createMut.error} prefix="Failed" />
-                      <div className="flex gap-1">
-                        <Button
-                          onClick={handleCreate}
-                          size="sm"
-                          disabled={!newName.trim() || createMut.isPending}
-                          className="!text-caption flex-1"
-                        >
-                          Save Plan
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setCreating(false)}
-                          className="!text-caption"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setCreating(true)}
-                      disabled={!activeSet}
-                      className="w-full rounded py-1.5 text-left text-blue-600 hover:bg-blue-50 disabled:opacity-50"
-                    >
-                      + Save these profiles as a new Plan
-                    </button>
-                  )}
-                </div>
-              )}
+              <div className="border-subtle border-t px-3 py-2">
+                <Link
+                  href={profilesHref("salary")}
+                  onClick={() => setDropdownOpen(false)}
+                  className="text-blue-600 hover:underline"
+                >
+                  Edit profiles →
+                </Link>
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="bg-surface-strong hidden h-4 w-px sm:block" />
-
-      {/* Active profile of each kind */}
-      <ProfilePill
-        label={PLAN_PROFILE_KIND_TITLES.salary}
-        options={options(salaryProfiles, activeIds.salary)}
-        onActivate={(id) => setActiveSalaryId(Number(id))}
-        disabled={!canChangeContribOrSalary}
-      />
-      <ProfilePill
-        label={PLAN_PROFILE_KIND_TITLES.contribution}
-        options={options(contribProfiles, activeIds.contribution)}
-        onActivate={(id) => handleActivateContrib(Number(id))}
-        disabled={!canChangeContribOrSalary}
-      />
-      <ProfilePill
-        label={PLAN_PROFILE_KIND_TITLES.budget}
-        options={options(budgetProfiles, activeIds.budget)}
-        onActivate={(id) => activateBudget.mutate({ id: Number(id) })}
-        isPending={activateBudget.isPending}
-        disabled={!canChangeBudget}
-      />
-      <ProfilePill
-        label={PLAN_PROFILE_KIND_TITLES.retirement}
-        options={options(retirementProfiles, activeIds.retirement)}
-        onActivate={(id) => setActiveRetirementId(Number(id))}
-        disabled={!canChangeRetirement}
-      />
-
-      <div className="bg-surface-strong hidden h-4 w-px sm:block" />
-
-      {/* View mode toggle */}
-      <div className="flex items-center gap-2">
+      {/* View mode — changes every page's numbers, so it stays one click away */}
+      <div className="flex shrink-0 items-center gap-2">
         <span className="text-faint hidden sm:inline" id="view-mode-label">
-          View:
+          View
         </span>
         <div
           className="bg-surface-elevated flex rounded-md p-0.5"
           role="tablist"
           aria-labelledby="view-mode-label"
         >
-          <button
-            role="tab"
-            aria-selected={viewMode === "projected"}
-            onClick={() => setViewMode("projected")}
-            title="Current rate applied to all pay periods"
-            className={`text-label rounded px-3 py-1.5 transition-colors ${
-              viewMode === "projected"
-                ? "bg-surface-primary text-primary shadow-sm"
-                : "text-muted hover:text-secondary"
-            }`}
-          >
-            Projected
-          </button>
-          <button
-            role="tab"
-            aria-selected={viewMode === "blended"}
-            onClick={() => setViewMode("blended")}
-            title="Year-end estimate using actual salary changes throughout the year"
-            className={`text-label rounded px-3 py-1.5 transition-colors ${
-              viewMode === "blended"
-                ? "bg-surface-primary text-primary shadow-sm"
-                : "text-muted hover:text-secondary"
-            }`}
-          >
-            <span className="sm:hidden">Year-end</span>
-            <span className="hidden sm:inline">Year-end estimate</span>
-          </button>
-          <button
-            role="tab"
-            aria-selected={viewMode === "ytd"}
-            onClick={() => setViewMode("ytd")}
-            title="Amounts earned so far based on elapsed pay periods"
-            className={`text-label rounded px-3 py-1.5 transition-colors ${
-              viewMode === "ytd"
-                ? "bg-surface-primary text-primary shadow-sm"
-                : "text-muted hover:text-secondary"
-            }`}
-          >
-            <span className="sm:hidden">YTD</span>
-            <span className="hidden sm:inline">Year to date</span>
-          </button>
+          {VIEW_MODES.map((v) => (
+            <button
+              key={v.mode}
+              role="tab"
+              aria-selected={viewMode === v.mode}
+              onClick={() => setViewMode(v.mode)}
+              title={v.title}
+              className={`text-label rounded px-2.5 py-1.5 transition-colors ${
+                viewMode === v.mode
+                  ? "bg-surface-primary text-primary shadow-sm"
+                  : "text-muted hover:text-secondary"
+              }`}
+            >
+              {v.label}
+            </button>
+          ))}
         </div>
       </div>
     </div>

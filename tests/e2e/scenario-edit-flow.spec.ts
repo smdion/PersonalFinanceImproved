@@ -40,7 +40,7 @@ test.describe("Scenario edit flow", () => {
     await expect(scenarioBar).toBeVisible({ timeout: 5000 });
   });
 
-  test("header shows a picker per profile kind and a Plans menu", async ({
+  test("header has one Profiles and Plans button and the view switch", async ({
     page,
   }) => {
     // Not the dashboard: on CI's empty database "/" opens the first-run
@@ -49,11 +49,13 @@ test.describe("Scenario edit flow", () => {
     await page.goto("/networth");
     await page.waitForLoadState("domcontentloaded");
     const bar = page.locator("[data-scenario-bar]");
+    await expect(bar.getByRole("tab", { name: "Projected" })).toBeVisible();
+    await bar.getByRole("button", { name: /Profiles and Plans/ }).click();
+    const panel = page.getByRole("dialog", { name: "Profiles and Plans" });
     for (const kind of ["Salary", "Contributions", "Budget", "Retirement"])
-      await expect(bar.getByText(`${kind}:`)).toBeVisible();
-    await bar.locator('button[aria-labelledby="plan-label"]').click();
+      await expect(panel.getByText(kind, { exact: true })).toBeVisible();
     await expect(
-      page.getByText("A Plan is a saved set of profiles", { exact: false }),
+      panel.getByText("A Plan is a saved set of profiles", { exact: false }),
     ).toBeVisible();
     // No baseline wording anywhere in the header.
     await expect(bar).not.toContainText(/Main Plan|Active \(global\)/);
