@@ -27,6 +27,7 @@ import {
   COMPOSITION_BUCKET_VALUES,
   type CompositionBucket,
 } from "@/lib/config/enum-values";
+import { PortfolioAccountsLink } from "@/components/portfolio/portfolio-accounts-link";
 
 export type Overview = RouterOutputs["investments"]["getHoldingsOverview"];
 export type Holding = Overview["accounts"][number]["holdings"][number];
@@ -326,8 +327,8 @@ export function HoldingRow({
       )}
       {!editable && h.standInPending && (
         <p className="text-caption mt-0.5 text-amber-700 dark:text-amber-400">
-          A possible stand-in fund needs your OK — Portfolio → Account &amp;
-          Contribution Settings → this account.
+          A possible stand-in fund needs your OK —{" "}
+          <PortfolioAccountsLink className="underline" />, this account.
         </p>
       )}
       {editable && h.standInPending && (

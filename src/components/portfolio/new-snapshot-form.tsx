@@ -17,6 +17,8 @@ import { localDateStr } from "@/lib/utils/date";
 import { snapshotAccountKey } from "@/lib/pure/portfolio";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { SettingsLink } from "@/components/ui/settings-link";
+import { PortfolioAccountsLink } from "@/components/portfolio/portfolio-accounts-link";
 
 type PortfolioTaxType = "preTax" | "taxFree" | "hsa" | "afterTax";
 type PortfolioAccountType = string; // Derived from DB text column; validated by ACCOUNT_TYPE_CONFIG
@@ -544,9 +546,15 @@ export function NewSnapshotForm({
             })}
           </ul>
           <p className="mt-1">
-            Add the missing part in Portfolio → Account &amp; Contribution
-            Settings → the account → Sub-accounts, then link it in Settings →
-            Integrations → SimpleFIN.
+            Add the missing part in{" "}
+            <PortfolioAccountsLink className="underline" /> (the account →
+            Sub-accounts), then link it in{" "}
+            <SettingsLink
+              tab="integrations"
+              section="simplefin"
+              className="underline"
+            />
+            .
           </p>
         </div>
       )}

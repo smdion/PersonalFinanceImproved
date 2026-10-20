@@ -36,21 +36,17 @@ import { LtcgBracketsSettings } from "@/components/settings/ltcg-brackets";
 import { IrmaaBracketsSettings } from "@/components/settings/irmaa-brackets";
 import { FplByHouseholdSettings } from "@/components/settings/fpl-by-household";
 import { ReturnRatesSettings } from "@/components/settings/return-rates";
+import { useDeepLinkParam } from "@/lib/hooks/use-deep-link-param";
+import {
+  SETTINGS_SECTION_PARAM,
+  TAX_DATA_SECTIONS,
+  TAX_YEAR_SECTIONS,
+  type TaxDataSectionKey,
+} from "@/lib/config/settings-sections";
 
-const TAX_YEAR_SECTIONS = [
-  { key: "limits", label: "IRS Limits" },
-  { key: "tax", label: "Tax Brackets" },
-  { key: "ltcg", label: "LTCG Brackets" },
-  { key: "irmaa", label: "IRMAA Tables" },
-  { key: "fpl", label: "ACA/FPL" },
-] as const;
-
-const SECTIONS = [
-  ...TAX_YEAR_SECTIONS,
-  { key: "returns", label: "Return Rates" },
-] as const;
-
-type SectionKey = (typeof SECTIONS)[number]["key"];
+const SECTIONS = TAX_DATA_SECTIONS;
+type SectionKey = TaxDataSectionKey;
+const SECTION_KEYS = SECTIONS.map((s) => s.key);
 type TaxYearSectionKey = (typeof TAX_YEAR_SECTIONS)[number]["key"];
 
 /** Old top-level Settings tab keys (pre-consolidation) — still what
@@ -87,9 +83,10 @@ export function TaxDataSettings() {
   };
   const tableCount = TAX_YEAR_SECTIONS.length;
 
-  const [section, setSection] = usePersistedSetting<SectionKey>(
-    SK_SETTINGS_TAX_DATA_SECTION,
-    "limits",
+  const [section, setSection] = useDeepLinkParam(
+    SETTINGS_SECTION_PARAM,
+    SECTION_KEYS,
+    usePersistedSetting<SectionKey>(SK_SETTINGS_TAX_DATA_SECTION, "limits"),
   );
   // Client-side-only years with no backing row anywhere yet — added via
   // "+Year" below so a brand-new year is selectable before any of the 5

@@ -25,20 +25,23 @@ import { Button } from "@/components/ui/button";
 import { Toggle } from "@/components/ui/toggle";
 import { PeopleSettings } from "@/components/settings/people";
 
-const GENERAL_SECTIONS = [
-  { key: "people", label: "People" },
-  { key: "household", label: "Household" },
-  { key: "retirement", label: "Retirement" },
-  { key: "livingCosts", label: "Living Costs Mapping" },
-  { key: "dataSources", label: "Data Sources" },
-] as const;
+import { useDeepLinkParam } from "@/lib/hooks/use-deep-link-param";
+import {
+  GENERAL_SECTIONS,
+  SETTINGS_SECTION_PARAM,
+  type GeneralSectionKey,
+} from "@/lib/config/settings-sections";
 
-type GeneralSectionKey = (typeof GENERAL_SECTIONS)[number]["key"];
+const SECTION_KEYS = GENERAL_SECTIONS.map((s) => s.key);
 
 export function GeneralSettings() {
-  const [section, setSection] = usePersistedSetting<GeneralSectionKey>(
-    SK_SETTINGS_GENERAL_SECTION,
-    "people",
+  const [section, setSection] = useDeepLinkParam(
+    SETTINGS_SECTION_PARAM,
+    SECTION_KEYS,
+    usePersistedSetting<GeneralSectionKey>(
+      SK_SETTINGS_GENERAL_SECTION,
+      "people",
+    ),
   );
 
   return (

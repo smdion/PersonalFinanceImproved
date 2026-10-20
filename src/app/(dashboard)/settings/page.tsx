@@ -18,17 +18,15 @@ import { PageHeader } from "@/components/ui/page-header";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { SK_SETTINGS_ACTIVE_TAB } from "@/lib/constants/settings-keys";
+import { useDeepLinkParam } from "@/lib/hooks/use-deep-link-param";
+import {
+  ADMIN_SETTINGS_TABS,
+  SETTINGS_SECTION_PARAM,
+  SETTINGS_TAB_PARAM,
+  SETTINGS_TABS,
+} from "@/lib/config/settings-sections";
 
-// Internal key stays "taxdata" (unchanged since the original Tax Data
-// consolidation) even though the visible label is now "Reference Data" —
-// Return Rates folded in alongside the 5 tax-year tables (see
-// tax-data.tsx), and renaming the key itself would just be churn for no
-// user-facing benefit.
-const baseTabs = [
-  { key: "general", label: "General" },
-  { key: "taxdata", label: "Reference Data" },
-  { key: "integrations", label: "Integrations" },
-] as const;
+const SECTION_PARAM_ONLY = [SETTINGS_SECTION_PARAM];
 
 // "people" folded into General as a sub-item — an existing user's
 // SK_SETTINGS_ACTIVE_TAB may still hold it.
@@ -37,9 +35,14 @@ const OLD_GENERAL_TAB_KEYS = ["people"];
 export default function SettingsPage() {
   const user = useUser();
   const admin = isAdmin(user);
-  const [persistedTab, setActiveTab] = usePersistedSetting<string>(
-    SK_SETTINGS_ACTIVE_TAB,
-    "general",
+  const tabs = admin
+    ? [...SETTINGS_TABS, ...ADMIN_SETTINGS_TABS]
+    : [...SETTINGS_TABS];
+  const [persistedTab, setActiveTab] = useDeepLinkParam(
+    SETTINGS_TAB_PARAM,
+    tabs.map((t) => t.key),
+    usePersistedSetting<string>(SK_SETTINGS_ACTIVE_TAB, "general"),
+    SECTION_PARAM_ONLY,
   );
   const activeTab = OLD_TAX_TAB_KEYS.includes(persistedTab)
     ? "taxdata"
@@ -48,14 +51,6 @@ export default function SettingsPage() {
       : OLD_GENERAL_TAB_KEYS.includes(persistedTab)
         ? "general"
         : persistedTab;
-  const tabs = admin
-    ? [
-        ...baseTabs,
-        { key: "access" as const, label: "Access Control" },
-        { key: "debug" as const, label: "Debug" },
-        { key: "api" as const, label: "API" },
-      ]
-    : [...baseTabs];
 
   return (
     <div>

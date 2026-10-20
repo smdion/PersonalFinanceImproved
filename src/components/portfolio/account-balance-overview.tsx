@@ -20,6 +20,7 @@ import {
   type AccountCategory,
 } from "@/lib/config/account-types";
 import { SummaryTable } from "./summary-table";
+import { SettingsLink } from "@/components/ui/settings-link";
 
 export function AccountBalanceOverview() {
   const { data: latestSnap } =
@@ -295,8 +296,9 @@ function MixAndCost({
         </h4>
         {cost.expenseRatio === null ? (
           <p className="text-faint text-xs">
-            No fund fees known yet — set up SEC fund facts in Settings →
-            Integrations, or enter a fund&apos;s fee in its account below.
+            No fund fees known yet — set up SEC fund facts in{" "}
+            <SettingsLink tab="integrations" section="sec" />, or enter a
+            fund&apos;s fee in its account below.
           </p>
         ) : (
           <div className="space-y-1 text-xs">

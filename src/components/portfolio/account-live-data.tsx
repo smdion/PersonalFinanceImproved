@@ -20,6 +20,7 @@ import {
   HoldingRow,
   type Holding,
 } from "@/components/investments/fund-holding-row";
+import { SettingsLink } from "@/components/ui/settings-link";
 
 export type AccountInsight =
   RouterOutputs["investments"]["getAccountInsights"][number];
@@ -295,7 +296,8 @@ export function AccountLiveSection({
   if (!insight)
     return (
       <p className="text-caption text-faint">
-        Not linked to SimpleFIN — link it in Settings → Integrations to see live
+        Not linked to SimpleFIN — link it in{" "}
+        <SettingsLink tab="integrations" section="simplefin" /> to see live
         balances, holdings and deposits here.
       </p>
     );
@@ -305,7 +307,8 @@ export function AccountLiveSection({
       <div className="text-xs">
         {insight.status === "none" ? (
           <p className="text-faint">
-            Not linked to SimpleFIN — link it in Settings → Integrations.
+            Not linked to SimpleFIN — link it in{" "}
+            <SettingsLink tab="integrations" section="simplefin" />.
           </p>
         ) : (
           <p className="text-muted">
@@ -330,13 +333,24 @@ export function AccountLiveSection({
               ? " (it's linked to a part no longer in your snapshot)"
               : ""}
             , so snapshots leave it out — add the part under Sub-accounts below,
-            then link it in Settings → Integrations.
+            then link it in{" "}
+            <SettingsLink
+              tab="integrations"
+              section="simplefin"
+              className="underline"
+            />
+            .
           </p>
         ))}
         {insight.unlinkedParts.length > 0 && (
           <p className="mt-0.5 text-amber-700 dark:text-amber-400">
-            Not linked yet: {insight.unlinkedParts.join(", ")} — link them in
-            Settings → Integrations.
+            Not linked yet: {insight.unlinkedParts.join(", ")} — link them in{" "}
+            <SettingsLink
+              tab="integrations"
+              section="simplefin"
+              className="underline"
+            />
+            .
           </p>
         )}
       </div>

@@ -14,6 +14,10 @@
  */
 import { z } from "zod/v4";
 import {
+  settingsHref,
+  settingsLocationLabel,
+} from "@/lib/config/settings-sections";
+import {
   CHECKPOINT_START_AGE,
   CUSTOM_GOAL_METRICS,
   EMERGENCY_FUND_MONTHS,
@@ -310,6 +314,8 @@ export type MilestoneResult = MilestoneDefinition & {
   note: string | null;
   /** The step that closes the gap or gets there sooner. */
   nextStep: string | null;
+  /** Where the next step is done, when that isn't the milestone's own page. */
+  nextStepHref?: string;
   reachedYear: number | null;
   expectedYear: number | null;
   expectedAge: number | null;
@@ -995,7 +1001,8 @@ function limitStep(
     return result(id, {
       status: "unknown",
       headline: "This year's IRS limits aren't entered",
-      nextStep: "Add them under Settings → IRS Limits",
+      nextStep: `Add them under ${settingsLocationLabel("taxdata", "limits")}`,
+      nextStepHref: settingsHref("taxdata", "limits"),
     });
   }
   if (rows.length === 0) {

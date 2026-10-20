@@ -10,6 +10,7 @@ import {
   ConnectionStatusLine,
   ConnectionResultMessage,
 } from "./integrations/connection-card";
+import { PortfolioAccountsLink } from "@/components/portfolio/portfolio-accounts-link";
 
 type SimplefinAccountListItem = {
   id: number;
@@ -145,10 +146,10 @@ function AccountRow({
         <p className="text-caption mt-0.5 pl-6 text-amber-600">
           This looks like a {account.missingPart} account, but the tracked
           account has no {account.missingPart} part in your latest snapshot, so
-          its money isn&apos;t counted anywhere. Add the part in Portfolio →
-          Account &amp; Contribution Settings → the account → Sub-accounts (one
-          per person, if it&apos;s tracked per person); a link suggestion
-          appears here after.
+          its money isn&apos;t counted anywhere. Add the part in{" "}
+          <PortfolioAccountsLink className="underline" /> (the account →
+          Sub-accounts, one per person, if it&apos;s tracked per person); a link
+          suggestion appears here after.
         </p>
       )}
       {account.suggestion && (

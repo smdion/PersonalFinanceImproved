@@ -35,6 +35,7 @@ import {
   formatCurrency,
   formatPercent,
 } from "@/lib/utils/format";
+import { SettingsLink } from "@/components/ui/settings-link";
 
 /** The benchmark you compare with, then the S&P 500 for context. */
 const PRIMARY_COLOR = CHART_COLORS.benchTotalUs;
@@ -203,8 +204,14 @@ export function ComparisonSection() {
 
       {!data.pricesConnected && (
         <div className="my-3 rounded border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
-          Connect Tiingo in Settings → Integrations to compare with market
-          indexes. It&apos;s free and supplies the index prices.
+          Connect Tiingo in{" "}
+          <SettingsLink
+            tab="integrations"
+            section="tiingo"
+            className="underline"
+          />{" "}
+          to compare with market indexes. It&apos;s free and supplies the index
+          prices.
         </div>
       )}
 

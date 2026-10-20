@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { SettingsLink } from "@/components/ui/settings-link";
 import {
   LayoutDashboard,
   Wallet,
@@ -66,6 +67,8 @@ function Kbd({ children }: { children: React.ReactNode }) {
   );
 }
 
+const HELP_LINK = "text-blue-600 underline hover:text-blue-700";
+
 function NavLink({
   href,
   children,
@@ -74,7 +77,7 @@ function NavLink({
   children: React.ReactNode;
 }) {
   return (
-    <Link href={href} className="text-blue-600 underline hover:text-blue-700">
+    <Link href={href} className={HELP_LINK}>
       {children}
     </Link>
   );
@@ -105,15 +108,23 @@ export function HelpContent() {
         <ol className="ml-2 list-inside list-decimal space-y-1">
           <li>
             <strong>Add people</strong> &mdash; Create household members in{" "}
-            <NavLink href="/settings">Settings &gt; People</NavLink>. Each
-            person gets their own paycheck, tax bracket, and contribution
+            <SettingsLink
+              tab="general"
+              section="people"
+              className={HELP_LINK}
+            />
+            . Each person gets their own paycheck, tax bracket, and contribution
             limits.
           </li>
           <li>
             <strong>Set IRS limits</strong> &mdash; Review the current-year
             401(k), HSA, and IRA limits under{" "}
-            <NavLink href="/settings">Settings &gt; IRS Limits</NavLink>. These
-            are pre-populated but can be adjusted.
+            <SettingsLink
+              tab="taxdata"
+              section="limits"
+              className={HELP_LINK}
+            />
+            . These are pre-populated but can be adjusted.
           </li>
           <li>
             <strong>Configure a paycheck</strong> &mdash; Head to the{" "}
@@ -124,7 +135,7 @@ export function HelpContent() {
           <li>
             <strong>Connect a budget API</strong> (optional) &mdash; If you use
             YNAB or Actual Budget, link them in{" "}
-            <NavLink href="/settings">Settings &gt; Integrations</NavLink> to
+            <SettingsLink tab="integrations" className={HELP_LINK} /> to
             automatically sync budget categories and balances.
           </li>
         </ol>
@@ -170,7 +181,13 @@ export function HelpContent() {
             was last refreshed from your budget API (if connected). Hover to see
             a breakdown by data type. Click the row to trigger a manual sync, or
             let auto-sync handle it automatically when data becomes stale
-            (configurable in Settings &gt; Integrations).
+            (configurable in{" "}
+            <SettingsLink
+              tab="integrations"
+              section="syncBehavior"
+              className={HELP_LINK}
+            />
+            ).
           </li>
         </ul>
       </Section>
@@ -964,9 +981,9 @@ export function HelpContent() {
         <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Setup</strong> &mdash; Go to{" "}
-            <NavLink href="/settings">Settings &gt; Integrations</NavLink>. For
-            YNAB, enter your personal access token. For Actual Budget, enter
-            your server URL and password.
+            <SettingsLink tab="integrations" className={HELP_LINK} />. For YNAB,
+            enter your personal access token. For Actual Budget, enter your
+            server URL and password.
           </li>
           <li>
             <strong>What syncs</strong> &mdash; Budget categories, category
@@ -978,10 +995,15 @@ export function HelpContent() {
             enable auto-sync to refresh automatically when data becomes stale.
           </li>
           <li>
-            <strong>Auto-sync settings</strong> &mdash; In Settings &gt;
-            Integrations, toggle auto-sync on/off and set the stale-data
-            threshold (how many hours old data must be before it auto-syncs on
-            page load). Default threshold is 4 hours.
+            <strong>Auto-sync settings</strong> &mdash; In{" "}
+            <SettingsLink
+              tab="integrations"
+              section="syncBehavior"
+              className={HELP_LINK}
+            />
+            , toggle auto-sync on/off and set the stale-data threshold (how many
+            hours old data must be before it auto-syncs on page load). Default
+            threshold is 4 hours.
           </li>
           <li>
             <strong>No API? No problem</strong> &mdash; Every feature works

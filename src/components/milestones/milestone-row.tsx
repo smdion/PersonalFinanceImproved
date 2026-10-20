@@ -118,7 +118,16 @@ export function MilestoneRow({
           {result.nextStep && (
             <p>
               <span className="text-primary font-medium">Next step: </span>
-              {result.nextStep}
+              {result.nextStepHref ? (
+                <Link
+                  href={result.nextStepHref}
+                  className="text-blue-600 hover:underline"
+                >
+                  {result.nextStep}
+                </Link>
+              ) : (
+                result.nextStep
+              )}
             </p>
           )}
           <div className="flex items-center gap-3">
