@@ -84,9 +84,6 @@ export const taxOptimizationBaseInput = z.object({
   decumulationDefaults: decumulationDefaultsInputSchema,
   accumulationOverrides: accumulationOverrideSchema,
   decumulationOverrides: decumulationOverrideSchema,
-  salaryActiveFields: z
-    .array(z.object({ personId: z.number(), salary: z.number() }))
-    .optional(),
   contributionProfileId: z.number().int().optional(),
   /** Independent "what if I earned X" axis. */
   salaryProfileId: z.number().int().optional(),
@@ -150,7 +147,6 @@ async function runProjection(
     salaryProfileId: input.salaryProfileId,
   });
   const payload = await buildEnginePayload(db, data, {
-    salaryActiveFields: input.salaryActiveFields,
     contributionProfileId: input.contributionProfileId,
     salaryProfileId: input.salaryProfileId,
     retirementProfileId: input.retirementProfileId,

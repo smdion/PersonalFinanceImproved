@@ -28,7 +28,6 @@ import {
   type HouseholdSavings,
   type SavingsGroup,
 } from "@/lib/pure/contributions";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
@@ -58,7 +57,6 @@ export function ContributionsContent() {
   const { data: profiles } = trpc.contributionProfile.list.useQuery();
   const [period, setPeriod] = useState<PeriodMode>("annual");
   const [activeProfileId] = useActiveContribProfile();
-  const salaryActiveFields = useActiveSalaries();
   // Independent Salary Profile axis (Plan pin -> globally-active setting).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   // Plan pin -> globally-active profile — the primary summary below must stay
@@ -75,7 +73,6 @@ export function ContributionsContent() {
     },
   );
   const dataInput = {
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(effectiveActiveContribProfileId != null
       ? { contributionProfileId: effectiveActiveContribProfileId }
       : {}),

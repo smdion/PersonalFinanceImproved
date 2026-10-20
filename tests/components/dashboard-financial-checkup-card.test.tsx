@@ -18,9 +18,6 @@ vi.mock("@/components/ui/help-tip", () => ({
 vi.mock("@/lib/context/scenario-context", () => ({
   useScenario: () => ({ viewMode: "projected" as const, isInScenario: false }),
 }));
-vi.mock("@/lib/hooks/use-salary-overrides", () => ({
-  useActiveSalaries: () => [],
-}));
 vi.mock("@/lib/context/user-context", () => ({
   useUser: () => ({ role: "viewer", name: "Test", permissions: [] }),
   isAdmin: (u: { role: string }) => u.role === "admin",

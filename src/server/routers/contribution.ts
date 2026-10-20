@@ -39,7 +39,6 @@ import {
 } from "@/server/helpers";
 import { getAllPeople } from "@/server/helpers/people";
 import {
-  toSalaryActiveMap,
   zSandboxSalaryEntries,
   zSandboxContribActiveFields,
   zSandboxContribAdditions,
@@ -185,9 +184,6 @@ export const contributionRouter = createTRPCRouter({
     .input(
       z
         .object({
-          salaryActiveFields: z
-            .array(z.object({ personId: z.number(), salary: z.number() }))
-            .optional(),
           contributionProfileId: z.number().int().optional(),
           salaryProfileId: z.number().int().optional(),
           /** See paycheckRouter.computeSummary's identical field — must be
@@ -205,7 +201,6 @@ export const contributionRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const salaryActiveMap = toSalaryActiveMap(input?.salaryActiveFields);
       const currentYear = new Date().getFullYear();
       const inPriorYearWindow = isPriorYearContribWindow();
       const priorYear = currentYear - 1;
@@ -331,12 +326,12 @@ export const contributionRouter = createTRPCRouter({
         priorYearLimitsRecord[l.limitType] = toNumber(l.value);
 
       // Two independent axes: Salary Profile fills salary gaps left by the
-      // Plan/session overrides already in the map; Contribution Profile
-      // overrides account/job fields only. No explicit salaryProfileId
+      // The What-If sandbox's salaries; the Contribution Profile sets
+      // account/job fields only. No explicit salaryProfileId
       // falls back to the globally-active profile.
       const effectiveSalaryMap = applySandboxSalaryEntries(
         input?.sandboxSalaryEntries,
-        salaryActiveMap,
+        new Map(),
       );
       const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
         ctx.db,
@@ -389,9 +384,9 @@ export const contributionRouter = createTRPCRouter({
         // No entry for this job in the active Salary Profile — same
         // "nothing to resolve" state as no job at all (see below).
         if (!job || job.payPeriod == null) continue;
-        // Must apply the same Plan/session override tier as the actual-salary
+        // Must apply the same What-If sandbox tier as the actual-salary
         // computation below, or YTD-vs-actual diverges whenever a What-If
-        // salary override is active (expected YTD would keep using the
+        // salary is set (expected YTD would keep using the
         // un-overridden Salary Profile value).
         const rawSalary = resolveCompensation(
           salaryProfileActiveMap,

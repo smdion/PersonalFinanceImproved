@@ -11,7 +11,7 @@ import { vi } from "vitest";
 // actually renders, in both the Net and Gross toggle states.
 //
 // Mocked at the trpc + primitive-hook layer (usePersistedSetting,
-// useActiveSalaries, useScenario) rather than mocking the card's own
+// useScenario) rather than mocking the card's own
 // higher-level hooks (useEffectiveSalaryProfileId, useBudgetProfilesList,
 // etc.) — those are thin, real, pure derivations over the same primitives,
 // so letting them run for real is both less brittle and exercises the actual
@@ -19,9 +19,6 @@ import { vi } from "vitest";
 
 vi.mock("@/lib/context/scenario-context", () => ({
   useScenario: () => ({ activeScenario: null }),
-}));
-vi.mock("@/lib/hooks/use-salary-overrides", () => ({
-  useActiveSalaries: () => [],
 }));
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   usePersistedSetting: (_key: string, defaultValue: unknown) => [

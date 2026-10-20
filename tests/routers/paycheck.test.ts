@@ -151,7 +151,6 @@ describe("paycheck router — optional input params", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
   let db: BetterSQLite3Database<typeof sqliteSchema>;
   let cleanup: () => void;
-  let personId: number;
 
   beforeAll(async () => {
     const ctx = await createTestCaller();
@@ -159,7 +158,7 @@ describe("paycheck router — optional input params", () => {
     db = ctx.db;
     cleanup = ctx.cleanup;
 
-    personId = await seedPerson(db, "Bob Jones", "1985-07-22");
+    await seedPerson(db, "Bob Jones", "1985-07-22");
   });
 
   afterAll(() => cleanup());
@@ -170,14 +169,6 @@ describe("paycheck router — optional input params", () => {
       expect(result).toHaveProperty("people");
       expect(result).toHaveProperty("jointContribs");
       expect(result).toHaveProperty("householdTax");
-    });
-
-    it("empty salaryActiveFields array does not affect results", async () => {
-      const result = await caller.paycheck.computeSummary({
-        salaryActiveFields: [],
-      });
-      expect(Array.isArray(result.people)).toBe(true);
-      expect(result.people).toHaveLength(1);
     });
   });
 
@@ -209,17 +200,6 @@ describe("paycheck router — optional input params", () => {
       await expect(
         caller.paycheck.computeSummary({ taxYearOverride: 1900 }),
       ).rejects.toThrow();
-    });
-  });
-
-  describe("computeSummary with active salary for seeded person", () => {
-    it("accepts a salary override for the person — no job so still null paycheck", async () => {
-      const result = await caller.paycheck.computeSummary({
-        salaryActiveFields: [{ personId, salary: 120000 }],
-      });
-      // No job exists, so override has no effect on paycheck (still null)
-      expect(result.people).toHaveLength(1);
-      expect(result.people[0]!.paycheck).toBeNull();
     });
   });
 

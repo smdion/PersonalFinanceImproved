@@ -10,7 +10,6 @@ import { sumBy, safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useBonusDestinations } from "@/lib/hooks/use-bonus-destinations";
 import { bonusSpendingNet } from "@/lib/pure/household-income";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import {
   RAMSEY_RANGES,
   DEFAULT_LIVING_COST_MAPPING,
@@ -90,7 +89,6 @@ function BudgetSummary({
 function LivingCostsCardImpl() {
   const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
-  const salaryActiveFields = useActiveSalaries();
   // Independent Salary Profile axis (Plan pin -> globally-active setting).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
@@ -148,13 +146,11 @@ function LivingCostsCardImpl() {
         localSelectionId: null,
         globalDefaultId: rawActiveSalaryProfileId,
       },
-      ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     });
   // Spent this month in the linked budget app (YNAB/Actual) — the "how am
   // I actually doing" line next to the plan.
   const { data: actualsData } = trpc.budget.listApiActuals.useQuery();
   const lcQueryInput = {
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...contribProfileInput,
     ...salaryProfileInput,
   };

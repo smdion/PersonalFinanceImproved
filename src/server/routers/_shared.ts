@@ -34,16 +34,15 @@
 //   protectedProcedure   → @/server/trpc
 
 import { z } from "zod/v4";
-import type { SalaryActiveMap } from "@/server/helpers";
 import { accountCategoryEnum } from "@/lib/config/account-types";
 import { CONTRIBUTION_METHOD_VALUES } from "@/lib/config/enum-values";
 
 /**
  * Optional "what-if" targeting for procedures that read through
- * buildYearEndHistory/getAnnualExpensesFromBudget — lets a caller (a Plan
- * pin, or a page-local profile picker) ask "what would this look like under
- * budget profile X, column Y, with these active salaries" instead of always
- * reading the globally-active budget profile and true DB salaries.
+ * buildYearEndHistory/getAnnualExpensesFromBudget — lets a caller (a
+ * page-local profile picker) ask "what would this look like under budget
+ * profile X, column Y" instead of always reading the globally-active budget
+ * profile.
  * Every field is optional; omitting all of them reproduces the untargeted,
  * cacheable default behavior.
  */
@@ -51,30 +50,10 @@ export const zYearEndTargeting = z
   .object({
     budgetProfileId: z.number().nullable().optional(),
     budgetColumn: z.number().nullable().optional(),
-    salaryActiveFields: z
-      .array(z.object({ personId: z.number(), salary: z.number() }))
-      .optional(),
   })
   .optional();
 
 export type YearEndTargetingInput = z.infer<typeof zYearEndTargeting>;
-
-/**
- * Convert a procedure's `salaryActiveFields` input array into the Map shape
- * helpers expect.
- *
- * The Plan/session tier sets an active value for SALARY ONLY — it has no
- * bonus dimension, so every entry sets exactly that one field and leaves
- * bonus terms to resolve live (or to a Salary Profile, which merges into
- * the gaps per field).
- */
-export function toSalaryActiveMap(
-  salaryActiveFields: { personId: number; salary: number }[] | undefined,
-): SalaryActiveMap {
-  return new Map(
-    (salaryActiveFields ?? []).map((s) => [s.personId, { salary: s.salary }]),
-  );
-}
 
 /** Guardrail on the sandbox record's size — see zSandboxSalaryEntries. */
 const MAX_SANDBOX_PEOPLE = 10;

@@ -50,7 +50,6 @@ function baseInputs(
     withdrawalRate: 0.04,
     taxMode: "simple",
     hasAssetClassOverrides: false,
-    hasSalaryActiveFields: false,
     correlations: [],
     returnClampMin: -1,
     returnClampMax: 1,

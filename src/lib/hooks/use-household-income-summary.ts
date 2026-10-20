@@ -7,14 +7,12 @@
  * React Query shares one request.
  */
 import { trpc } from "@/lib/trpc";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { SK_PAYCHECK_TAX_YEAR } from "@/lib/constants/settings-keys";
 
 export function useHouseholdIncomeSummary() {
-  const salaryActiveFields = useActiveSalaries();
   // Independent axes, each Plan pin -> globally-active setting.
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const { contributionProfileId, queryInput: contribProfileInput } =
@@ -25,7 +23,6 @@ export function useHouseholdIncomeSummary() {
     null,
   );
   const queryInput = {
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...contribProfileInput,
     ...salaryProfileInput,
     ...(taxYearSetting != null ? { taxYearOverride: taxYearSetting } : {}),

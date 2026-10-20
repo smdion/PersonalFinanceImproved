@@ -477,7 +477,6 @@ async function computeLiveMaxMonthlyFunding(
   income?: {
     contributionProfileId?: number;
     salaryProfileId?: number;
-    salaryActiveFields?: { personId: number; salary: number }[];
     contributionProfileTiers?: ProfileResolutionTiers;
     salaryProfileTiers?: ProfileResolutionTiers;
   },
@@ -491,9 +490,6 @@ async function computeLiveMaxMonthlyFunding(
     ...(income?.salaryProfileId != null
       ? { salaryProfileId: income.salaryProfileId }
       : {}),
-    ...(income?.salaryActiveFields && income.salaryActiveFields.length > 0
-      ? { salaryActiveFields: income.salaryActiveFields }
-      : {}),
   };
   const [paycheckData, budgetSummary] = await Promise.all([
     paycheckCaller.computeSummary(
@@ -506,9 +502,6 @@ async function computeLiveMaxMonthlyFunding(
         : {}),
       ...(income?.salaryProfileTiers
         ? { salaryProfile: income.salaryProfileTiers }
-        : {}),
-      ...(income?.salaryActiveFields && income.salaryActiveFields.length > 0
-        ? { salaryActiveFields: income.salaryActiveFields }
         : {}),
     }),
   ]);
@@ -1941,9 +1934,6 @@ export const savingsRouter = createTRPCRouter({
           // can't silently diverge from what its own preview showed.
           contributionProfileId: z.number().int().optional(),
           salaryProfileId: z.number().int().optional(),
-          salaryActiveFields: z
-            .array(z.object({ personId: z.number(), salary: z.number() }))
-            .optional(),
           contributionProfileTiers: profileResolutionTiersSchema.optional(),
           salaryProfileTiers: profileResolutionTiersSchema.optional(),
         })
@@ -1985,7 +1975,6 @@ export const savingsRouter = createTRPCRouter({
         {
           contributionProfileId: input?.contributionProfileId,
           salaryProfileId: input?.salaryProfileId,
-          salaryActiveFields: input?.salaryActiveFields,
           contributionProfileTiers: input?.contributionProfileTiers,
           salaryProfileTiers: input?.salaryProfileTiers,
         },
@@ -2043,9 +2032,6 @@ export const savingsRouter = createTRPCRouter({
           // See computeLiveMaxMonthlyFunding's `income` param docblock.
           contributionProfileId: z.number().int().optional(),
           salaryProfileId: z.number().int().optional(),
-          salaryActiveFields: z
-            .array(z.object({ personId: z.number(), salary: z.number() }))
-            .optional(),
           contributionProfileTiers: profileResolutionTiersSchema.optional(),
           salaryProfileTiers: profileResolutionTiersSchema.optional(),
         })
@@ -2083,7 +2069,6 @@ export const savingsRouter = createTRPCRouter({
         {
           contributionProfileId: input?.contributionProfileId,
           salaryProfileId: input?.salaryProfileId,
-          salaryActiveFields: input?.salaryActiveFields,
           contributionProfileTiers: input?.contributionProfileTiers,
           salaryProfileTiers: input?.salaryProfileTiers,
         },

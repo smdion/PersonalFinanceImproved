@@ -211,14 +211,14 @@ describe("projection router — computeProjection cache", () => {
   it("a changed input misses the cache and computes fresh (different hash rows)", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
-      const { personId } = seedFullProjectionData(db);
+      seedFullProjectionData(db);
 
       await caller.projection.computeProjection({
         accumulationOverrides: [],
         decumulationOverrides: [],
       });
       await caller.projection.computeProjection({
-        salaryActiveFields: [{ personId, salary: 200000 }],
+        accumulationExpenseOverride: 50000,
         accumulationOverrides: [],
         decumulationOverrides: [],
       });
@@ -694,28 +694,6 @@ describe("projection router — computeMonteCarloProjection", () => {
     }
   });
 
-  it("MC with salary overrides", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
-    try {
-      const { personId } = seedFullProjectionData(db);
-      seedAssetClasses(db);
-      seedCorrelations(db);
-      seedGlidePath(db);
-
-      const response = await caller.projection.computeMonteCarloProjection({
-        numTrials: 100,
-        preset: "custom",
-        seed: 42,
-        salaryActiveFields: [{ personId, salary: 200000 }],
-      });
-
-      expect(response.result).not.toBeNull();
-      expect(response.simulationInputs.hasSalaryActiveFields).toBe(true);
-    } finally {
-      cleanup();
-    }
-  });
-
   it("MC with expense overrides (accumulation + decumulation)", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -999,24 +977,6 @@ describe("projection router — computeStrategyComparison", () => {
         (s: { successRate: number | null }) => s.successRate !== null,
       );
       expect(hasSuccess).toBe(true);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("strategy comparison with salary overrides", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
-    try {
-      const { personId } = seedFullProjectionData(db);
-
-      const base = await caller.projection.computeStrategyComparison();
-      const raised = await caller.projection.computeStrategyComparison({
-        salaryActiveFields: [{ personId, salary: 200000 }],
-      });
-
-      expect(fixedOf(raised).endBalance).toBeGreaterThan(
-        fixedOf(base).endBalance,
-      );
     } finally {
       cleanup();
     }

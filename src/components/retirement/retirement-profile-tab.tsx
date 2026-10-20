@@ -58,7 +58,6 @@ import {
   wholeToDec,
 } from "@/components/retirement/sections/helpers";
 import { buildSettingsPatch } from "@/components/retirement/sections/settings-patch";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
@@ -83,7 +82,6 @@ export function RetirementProfileTab({
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
-  const salaryActiveFields = useActiveSalaries();
   const [decBudgetProfileId, setDecBudgetProfileId] = usePersistedSetting<
     number | null
   >("retirement_dec_budget_profile_id", null);
@@ -120,7 +118,6 @@ export function RetirementProfileTab({
   // don't depend on which portfolio snapshot is selected.
   const baseInput = useMemo(
     () => ({
-      ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
       ...(effectiveContribProfileId != null
         ? { contributionProfileId: effectiveContribProfileId }
         : {}),
@@ -139,7 +136,6 @@ export function RetirementProfileTab({
       ...(profileId != null ? { retirementProfileId: profileId } : {}),
     }),
     [
-      salaryActiveFields,
       effectiveContribProfileId,
       effectiveSalaryProfileId,
       decBudgetProfileId,

@@ -96,7 +96,6 @@ function setup(editMode: boolean, rawItems: RawItem[] = [rawItem]) {
       },
       savingsGoals: undefined,
       apiActualsData: null,
-      salaryActiveFields: [],
       contributionProfileTiers: {
         planPinId: null,
         localSelectionId: null,

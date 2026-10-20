@@ -261,14 +261,12 @@ export default function PaycheckPage() {
   }
 
   // One shared derivation for the whole page — the same hook the Budget
-  // page's What-If tab uses (with honorSessionScenario:false there). Session
-  // scenario overrides apply here, which is today's behavior.
+  // page's What-If tab uses.
   const { views, isLoading, error, sharedContribGroupOrder } =
     usePaycheckPersonViews({
       contributionProfileId: displayContribId,
       salaryProfileId: displaySalaryId,
       taxYearOverride,
-      honorSessionScenario: true,
     });
 
   // Get available tax years for the toggle. Sourced from contribution_limits

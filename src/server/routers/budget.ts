@@ -19,7 +19,6 @@ import {
   zSandboxDeductionAdditions,
   zSandboxContribActiveFields,
   zSandboxContribAdditions,
-  toSalaryActiveMap,
 } from "./_shared";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
@@ -205,9 +204,6 @@ export const budgetRouter = createTRPCRouter({
           /** The active Plan's pins, if a Plan is selected in the browser. */
           planContribProfileId: z.number().int().nullable().optional(),
           planSalaryProfileId: z.number().int().nullable().optional(),
-          salaryActiveFields: z
-            .array(z.object({ personId: z.number(), salary: z.number() }))
-            .optional(),
         })
         .optional(),
     )
@@ -346,9 +342,6 @@ export const budgetRouter = createTRPCRouter({
 
         const promise = (async () => {
           const paycheckData = await paycheckCaller.computeSummary({
-            ...(input?.salaryActiveFields && input.salaryActiveFields.length > 0
-              ? { salaryActiveFields: input.salaryActiveFields }
-              : {}),
             ...(contribProfileId != null
               ? { contributionProfileId: contribProfileId }
               : {}),
@@ -733,9 +726,6 @@ export const budgetRouter = createTRPCRouter({
            */
           contributionProfile: profileResolutionTiersSchema.optional(),
           salaryProfile: profileResolutionTiersSchema.optional(),
-          salaryActiveFields: z
-            .array(z.object({ personId: z.number(), salary: z.number() }))
-            .optional(),
           /** The What-If tab's hand-edited salary/bonus entries — see
            *  paycheckRouter.computeSummary's identical field. Threaded into
            *  every paycheck.computeSummary call this procedure makes
@@ -874,13 +864,6 @@ export const budgetRouter = createTRPCRouter({
           (number | null)[] | null,
         numColumns,
       });
-      // Plan-level salaryActiveFields are threaded through here so budget item
-      // $ amounts for percent-of-salary contributions stay consistent with
-      // what the Paycheck page shows under the same active Plan — previously
-      // this always passed an empty map and silently ignored the Plan's
-      // active salaries. Precedence: Plan active salary > Salary Profile > live.
-      const planSalaryActiveMap = toSalaryActiveMap(input?.salaryActiveFields);
-
       // Resolved through the SAME helper listProfiles uses above
       // (resolveLinkedBudgetItemAmounts) — this procedure used to maintain
       // its own independent copy of this exact resolution (the only
@@ -896,7 +879,6 @@ export const budgetRouter = createTRPCRouter({
             contribProfileIdByColumn,
             salaryProfileIdByColumn,
             {
-              planSalaryActiveMap,
               sandboxContribActiveFields: input?.sandboxContribActiveFields,
               sandboxSalaryEntries: input?.sandboxSalaryEntries,
             },
@@ -1009,9 +991,6 @@ export const budgetRouter = createTRPCRouter({
         );
         const incomePaycheckData = await paycheckCallerForIncome.computeSummary(
           {
-            ...(input?.salaryActiveFields && input.salaryActiveFields.length > 0
-              ? { salaryActiveFields: input.salaryActiveFields }
-              : {}),
             ...(contribProfileIdByColumn[selectedColumn] != null
               ? {
                   contributionProfileId:

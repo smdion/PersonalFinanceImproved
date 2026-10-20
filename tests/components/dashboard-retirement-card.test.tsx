@@ -13,9 +13,6 @@ vi.mock("@/components/ui/help-tip", () => ({
   HelpTip: () => null,
 }));
 
-vi.mock("@/lib/hooks/use-salary-overrides", () => ({
-  useActiveSalaries: () => [],
-}));
 vi.mock("@/lib/hooks/use-effective-salary-profile-id", () => ({
   useEffectiveSalaryProfileId: () => ({ queryInput: {} }),
 }));

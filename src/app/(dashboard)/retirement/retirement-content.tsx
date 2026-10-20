@@ -13,8 +13,6 @@ import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { formatCurrency } from "@/lib/utils/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
@@ -67,7 +65,6 @@ export function RetirementContent() {
     localSelection: viewingRetirementId,
     globalDefaultId: activeRetirementId,
   });
-  const salaryActiveFields = useActiveSalaries();
   // Read-only here — the editor for these moved to the Budget page's
   // Retirement Profile tab (retirement-profile-tab.tsx), which writes the
   // same app_settings keys. This page's ProjectionCard/baseInput still need
@@ -122,7 +119,6 @@ export function RetirementContent() {
   // whether metadataOnly is set.
   const baseInput = useMemo(
     () => ({
-      ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
       ...(effectiveContribProfileId != null
         ? { contributionProfileId: effectiveContribProfileId }
         : {}),
@@ -144,7 +140,6 @@ export function RetirementContent() {
         : {}),
     }),
     [
-      salaryActiveFields,
       effectiveContribProfileId,
       effectiveSalaryProfileId,
       decBudgetProfileId,

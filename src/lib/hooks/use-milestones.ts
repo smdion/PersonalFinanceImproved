@@ -8,7 +8,6 @@
  */
 import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
@@ -26,11 +25,9 @@ import {
 
 /** The contribution-summary input every dashboard card sends. */
 export function useContributionSummaryInput() {
-  const salaryActiveFields = useActiveSalaries();
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const { queryInput: contribProfileInput } = useEffectiveContribProfileId();
   return {
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...contribProfileInput,
     ...salaryProfileInput,
   } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];

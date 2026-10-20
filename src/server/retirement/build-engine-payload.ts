@@ -16,8 +16,6 @@ import {
   toNumber,
   contributionPay,
   getTotalCompensation,
-  applyActiveSalary,
-  applyActiveBonusTerms,
   getLatestSnapshot,
   computeBudgetAnnualTotal,
   requireLimit,
@@ -242,7 +240,6 @@ export async function buildEnginePayload(
   db: Db,
   data: Awaited<ReturnType<typeof fetchRetirementData>>,
   opts: {
-    salaryActiveFields?: { personId: number; salary: number }[];
     contributionProfileId?: number;
     salaryProfileId?: number;
     accumulationBudgetProfileId?: number;
@@ -547,24 +544,13 @@ export async function buildEnginePayload(
   // Age (average-based for multi-person households)
   const age = avgAge;
 
-  // Salary
-  // Explicit UI active values take priority, then the Salary Profile, then DB.
-  // The Contribution Profile applied above contributes no salary — the two
-  // axes are independent pins.
-  const uiSalaryActiveMap = new Map(
-    (opts.salaryActiveFields ?? []).map(
-      (o) => [o.personId, { salary: o.salary }] as const,
-    ),
-  );
-  // salaryProfileActiveMap was already resolved above (needed earlier for
-  // the Contribution Profile application) — job-targeted (Salary Profile
-  // pins), separate from uiSalaryActiveMap (person-targeted, Plan/session
-  // tier, always wins per field).
+  // Salary comes from the Salary Profile (salaryProfileActiveMap, resolved
+  // above); the Contribution Profile contributes no salary — the two are
+  // independent.
   const asOfDate = referenceDate;
   const activeJobs = filterActiveJobs(patchedJobs);
   // Uses getSalariesForJobs helper (deduplicates the parallel-fetch pattern).
-  // Post-process to apply the Plan/session salary override and compute
-  // totalComp. A Salary Profile entry is now a complete, all-or-nothing
+  // Post-process to compute totalComp. A Salary Profile entry is now a complete, all-or-nothing
   // number (see resolveCompensation's docblock) — there is no more
   // "resolved actual vs full-formula" distinction to adjust for (job_bonus_
   // overrides is gone), so currentYearBonusAdjustment is always empty; kept
@@ -573,13 +559,8 @@ export async function buildEnginePayload(
   const currentYearBonusAdjustmentByPerson = new Map<number, number>();
   const jobSalaries = activeJobs.map((job) => {
     const comp = resolveCompensation(salaryProfileActiveMap, job.id);
-    const uiEntry = uiSalaryActiveMap.get(job.personId);
-    const salary = applyActiveSalary(
-      job.personId,
-      comp.salary,
-      uiSalaryActiveMap,
-    );
-    const bonusTerms = applyActiveBonusTerms(uiEntry, comp.terms);
+    const salary = comp.salary;
+    const bonusTerms = comp.terms;
     const totalComp = getTotalCompensation(salary, bonusTerms);
     return {
       job,

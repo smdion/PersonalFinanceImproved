@@ -27,7 +27,6 @@ interface ProfileResolutionTiers {
 export interface RecalcIncomeParams {
   contributionProfileId?: number;
   salaryProfileId?: number;
-  salaryActiveFields?: { personId: number; salary: number }[];
   /** The raw tiers behind `contributionProfileId`/`salaryProfileId` — the
    *  mutation forwards these to budget.computeActiveSummary so that
    *  procedure's OWN per-column profile resolution (Plan pin > column pin >

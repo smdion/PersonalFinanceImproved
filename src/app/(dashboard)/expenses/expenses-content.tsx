@@ -11,7 +11,6 @@ import { ProgressBar } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 // Imported from the leaf module, not the @/lib/budget-api barrel — the
@@ -94,9 +93,6 @@ export function ExpensesContent() {
   const { data: contribProfilesList } =
     trpc.contributionProfile.list.useQuery();
 
-  // Salary overrides from scenario context (used by all pages) — mirrors
-  // paycheck/page.tsx so a what-if salary scenario stays holistic across pages.
-  const scenarioActiveSalaries = useActiveSalaries();
   // Independent Salary Profile axis (Plan pin -> globally-active setting).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
@@ -146,15 +142,9 @@ export function ExpensesContent() {
       localSelectionId: null,
       globalDefaultId: rawActiveSalaryProfileId,
     },
-    ...(scenarioActiveSalaries.length > 0
-      ? { salaryActiveFields: scenarioActiveSalaries }
-      : {}),
   });
 
   const paycheckInput = {
-    ...(scenarioActiveSalaries.length > 0
-      ? { salaryActiveFields: scenarioActiveSalaries }
-      : {}),
     ...(effectiveContribProfileId != null
       ? { contributionProfileId: effectiveContribProfileId }
       : {}),

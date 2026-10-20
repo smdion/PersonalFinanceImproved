@@ -21,7 +21,6 @@ import {
   SK_ACTIVE_SALARY_PROFILE_ID,
   SK_ACTIVE_CONTRIB_PROFILE_ID,
 } from "@/lib/constants/settings-keys";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
 import {
@@ -134,12 +133,10 @@ export function BudgetContent() {
     }),
     [planSalaryProfileId, activeSalaryProfileIdSetting],
   );
-  const salaryActiveFields = useActiveSalaries();
   const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
     contributionProfile: contributionProfileTiers,
     salaryProfile: salaryProfileTiers,
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(displayProfileId != null ? { profileId: displayProfileId } : {}),
   });
   const { data: apiActualsData } = trpc.budget.listApiActuals.useQuery(
@@ -296,7 +293,6 @@ export function BudgetContent() {
     data,
     savingsGoals,
     apiActualsData,
-    salaryActiveFields,
     contributionProfileTiers,
     salaryProfileTiers,
     editMode,

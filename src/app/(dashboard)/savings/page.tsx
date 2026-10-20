@@ -11,7 +11,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useLocalStorageSet } from "@/lib/hooks/use-local-storage-set";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import {
   SummaryCards,
   NewFundFormCard,
@@ -135,8 +134,6 @@ export default function SavingsPage() {
   const { data: apiBalancesData } = trpc.savings.listApiBalances.useQuery();
   const { data: apiCategoriesData } = trpc.budget.listApiCategories.useQuery();
 
-  const salaryActiveFields = useActiveSalaries();
-
   // Independent Salary Profile axis (Plan pin -> column pin -> globally-active
   // setting) — mirrors the Contribution axis below so a per-column Salary
   // Profile pin (set from Manage Modes) isn't silently ignored here while
@@ -165,7 +162,6 @@ export default function SavingsPage() {
     selectedColumn: budgetColumn,
     contributionProfile: contributionProfileTiers,
     salaryProfile: salaryProfileTiers,
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
   });
   const { data: budgetProfilesList } = useBudgetProfilesList();
 
@@ -195,7 +191,6 @@ export default function SavingsPage() {
   });
 
   const paycheckInput = {
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(effectiveContribProfileId != null
       ? { contributionProfileId: effectiveContribProfileId }
       : {}),
@@ -244,7 +239,6 @@ export default function SavingsPage() {
       profileId: effectiveRecalcProfileId ?? undefined,
       contributionProfile: contributionProfileTiers,
       salaryProfile: salaryProfileTiers,
-      ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     },
     { enabled: isPreviewingOtherProfile },
   );
@@ -278,7 +272,6 @@ export default function SavingsPage() {
     ...(effectiveSalaryProfileId != null
       ? { salaryProfileId: effectiveSalaryProfileId }
       : {}),
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     // Threaded through so budget.computeActiveSummary's OWN per-column
     // resolution (inside computeLiveMaxMonthlyFunding, savings.ts) matches
     // exactly what this page's own maxMonthlyFunding query above used —

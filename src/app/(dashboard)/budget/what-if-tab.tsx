@@ -34,10 +34,7 @@
  *    Plan or to the globally-active settings — they default FROM those (via
  *    `useEffectiveProfileId`, so an active Plan's pins are the starting
  *    point) and diverge locally from there.
- * 4. A session scenario (the browser-local what-if in the top bar) is a
- *    different concept from this tab's sandbox and must not stack on top of
- *    it — hence `honorSessionScenario: false`.
- * 5. Sandbox drafts (salary/bonus edits, budget item edits) are keyed by
+ * 4. Sandbox drafts (salary/bonus edits, budget item edits) are keyed by
  *    ids that only mean something for the CURRENTLY picked profile — they
  *    reset when that picker changes (see useSandboxState's effects), and
  *    there is deliberately no `beforeunload` guard: this is a throwaway
@@ -1166,8 +1163,6 @@ export function WhatIfTab({
     contributionProfileId: contribId,
     salaryProfileId: salaryId,
     taxYearOverride: taxYear,
-    // A session scenario must not silently stack on top of the tab's picks.
-    honorSessionScenario: false,
     sandboxSalaryEntries: sandbox.salaryEntries,
     sandboxDeductionEdits: sandbox.sandboxDeductionEdits,
     sandboxDeductionAdditions: sandbox.sandboxDeductionAdditions,
@@ -1267,7 +1262,6 @@ export function WhatIfTab({
     data: budgetData,
     savingsGoals,
     apiActualsData: null,
-    salaryActiveFields: [],
     contributionProfileTiers,
     salaryProfileTiers,
     editMode: true,

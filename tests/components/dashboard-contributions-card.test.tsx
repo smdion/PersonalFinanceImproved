@@ -8,16 +8,13 @@ import { vi } from "vitest";
 // coverage. This card is the most complex of the dashboard cards (per-account
 // funding bars, joint accounts, ESPP-style discount bars, household totals).
 //
-// Hook modules (useScenario, useActiveSalaries, usePersistedSetting) are
+// Hook modules (useScenario, usePersistedSetting) are
 // mocked directly rather than reaching through tRPC, since they each layer
 // their own tRPC calls internally — mocking the hook surface is simpler and
 // matches how leaf components consume them.
 
 vi.mock("@/lib/context/scenario-context", () => ({
   useScenario: () => ({ viewMode: "projected" as const, isInScenario: false }),
-}));
-vi.mock("@/lib/hooks/use-salary-overrides", () => ({
-  useActiveSalaries: () => [],
 }));
 vi.mock("@/lib/context/user-context", () => ({
   useUser: () => ({ role: "viewer", name: "Test", permissions: [] }),

@@ -32,7 +32,7 @@ import {
   pushSnapshotIfConfigured,
 } from "@/server/helpers/snapshot-derivatives";
 import { invalidateYearEndCache } from "@/server/helpers/snapshot";
-import { zYearEndTargeting, toSalaryActiveMap } from "./_shared";
+import { zYearEndTargeting } from "./_shared";
 import { zDecimal } from "./settings/_shared";
 import {
   accountCategoryEnum,
@@ -217,7 +217,6 @@ export const networthRouter = createTRPCRouter({
       const yearEndHistory = await buildYearEndHistory(ctx.db, asOfDate, {
         budgetProfileId: input?.budgetProfileId,
         budgetColumn: input?.budgetColumn,
-        salaryActiveFields: toSalaryActiveMap(input?.salaryActiveFields),
       });
       const currentRow =
         yearEndHistory.find((h) => h.isCurrent) ??
@@ -296,7 +295,6 @@ export const networthRouter = createTRPCRouter({
         buildYearEndHistory(ctx.db, new Date(), {
           budgetProfileId: input?.budgetProfileId,
           budgetColumn: input?.budgetColumn,
-          salaryActiveFields: toSalaryActiveMap(input?.salaryActiveFields),
         }),
         getAllPeople(ctx.db),
         ctx.db.select().from(schema.mortgageLoans),
@@ -359,7 +357,6 @@ export const networthRouter = createTRPCRouter({
         buildYearEndHistory(ctx.db, new Date(), {
           budgetProfileId: input?.budgetProfileId,
           budgetColumn: input?.budgetColumn,
-          salaryActiveFields: toSalaryActiveMap(input?.salaryActiveFields),
         }),
         getAllPeople(ctx.db),
       ]);

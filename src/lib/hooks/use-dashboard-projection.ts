@@ -9,7 +9,6 @@
 import { trpc } from "@/lib/trpc";
 import { useScenario } from "@/lib/context/scenario-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { defaultDecumulationConfig } from "@/lib/config/account-types";
@@ -17,7 +16,6 @@ import { projectedFiYear } from "@/lib/pure/milestones";
 import { milestoneProjectionYears } from "@/lib/pure/milestone-input";
 
 export function useDashboardEngineInput() {
-  const salaryActiveFields = useActiveSalaries();
   // Contribution/Salary Profile axes — every other dashboard card resolves
   // these before querying (this card
   // used to omit both, which the engine treats as "no profile" = $0
@@ -63,7 +61,6 @@ export function useDashboardEngineInput() {
   // (account-types.ts) so the two call sites can't independently drift.
   const decumulationDefaults = defaultDecumulationConfig();
   const engineInput = {
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...contribProfileInput,
     ...salaryProfileInput,
     decumulationDefaults,

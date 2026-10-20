@@ -719,38 +719,6 @@ describe("contribution router", () => {
     });
   });
 
-  describe("computeSummary — salary override", () => {
-    let personId: number;
-
-    beforeAll(async () => {
-      personId = await seedPerson(db, "Salary-Override", "1990-03-15");
-      const jobId = seedJob(db, personId, { annualSalary: "100000" });
-      insertContribAccount(db, {
-        personId,
-        jobId,
-        accountType: "401k",
-        contributionMethod: "percent_of_salary",
-        contributionValue: "10",
-        taxTreatment: "pre_tax",
-        employerMatchType: "none",
-        parentCategory: "Retirement",
-      });
-    });
-
-    it("uses overridden salary for contribution calculation", async () => {
-      const result = await computeSummary({
-        salaryActiveFields: [{ personId, salary: 200000 }],
-      });
-      const person = result.people.find((p) => p.person.id === personId);
-      expect(person!.salary).toBe(200000);
-      const acctType = person!.accountTypes.find(
-        (a) => a.categoryKey === "401k",
-      );
-      // 10% of 200000 = 20000
-      expect(acctType!.employeeContrib).toBe(20000);
-    });
-  });
-
   describe("computeSummary — joint ownership contribution", () => {
     let personId: number;
 
@@ -1009,15 +977,6 @@ describe("contribution router", () => {
       // 15% of 180000 = 27000 — the old coupled-profile result, now reached
       // by pinning both axes explicitly.
       expect(acctType!.employeeContrib).toBe(27000);
-    });
-
-    it("an explicit salaryActiveFields entry outranks the Salary Profile", async () => {
-      const result = await computeSummary({
-        salaryProfileId,
-        salaryActiveFields: [{ personId, salary: 210000 }],
-      });
-      const person = result.people.find((p) => p.person.id === personId);
-      expect(person!.salary).toBe(210000);
     });
   });
 
