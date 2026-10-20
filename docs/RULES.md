@@ -438,9 +438,8 @@ every page then use that set.
   unsaved state. `app_settings.last_applied_plan_id` is kept only so the header
   can offer "Update ‹Plan›" or "Save as new Plan".
 - **Every saved grouping of profiles is a Plan.** No other feature stores its
-  own combination of profiles for comparison. (Budget columns still carry
-  per-column Contribution/Salary profiles until the v0.8.10 migration removes
-  them — see "Profile Resolution".)
+  own combination of profiles for comparison — Budget columns are spending
+  levels with no profiles of their own (see "Profile Resolution").
 - A new Plan names all four kinds (create/update require them). A null slot —
   only on Plans saved before this rule — leaves that kind's active profile
   alone when applied.
@@ -448,9 +447,9 @@ every page then use that set.
 - Deleting a profile any Plan uses is **refused** for all four kinds
   (`assertNoPlanUses`, message from `planInUseMessage`), because the FK is
   `set null` and would otherwise silently empty that slot of the Plan.
-- `scenarios.overrides` / `is_baseline` are legacy columns with **no readers
-  and no writers**; the v0.8.10 migration converts any stored salary entries
-  into Salary Profiles and drops them. Never add a reader.
+- A Plan holds no values: migration 0009 turned the salaries older Plans
+  stored (`scenarios.overrides`) into Salary Profiles and dropped
+  `overrides`/`is_baseline`. Never add a value to a Plan — make a profile.
 
 **What-If** (Budget page tab) is the only unsaved sandbox: its pickers and
 edits are local state and never write the active profiles. To keep a What-If
@@ -479,22 +478,16 @@ page edits or previews a profile without making it active: a profile
 manager's "which one am I editing" row and the What-If sandbox. A Plan is not
 a tier — applying it changes the active profiles.
 
-On the Budget page there is one more tier, **per-budget-column profiles**
-(`budget_profiles.column_contribution_profile_ids` /
-`.column_salary_profile_ids`, until v0.8.10): **column profile → local
-selection → active**, resolved exclusively through
-`resolveContributionProfileId` / `resolveSalaryProfileId`
-(`lib/calculators/contribution-profile-resolution.ts`) — server-side budget
-item $ computation and client-side payroll display must call the same
-resolver for the same column or the two numbers on screen silently disagree.
-Those resolvers take a **required options object with one named field per
-tier** (`columnPinIds`, `localSelectionId`, `globalDefaultId`), not positional
-arguments, and `budget.computeActiveSummary` takes the same tiers over the
-wire; it resolves **per column**, not once from `selectedColumn`.
+Budget columns have **no profiles of their own**: every column uses the
+active Contribution and Salary profiles (`resolveActiveProfilePair`), and a
+linked item's dollars are computed once and shown in every column
+(`resolveLinkedBudgetItemAmounts`). Migration 0009 dropped the old
+per-column profile ids. Never add a per-column profile back — a different
+set of profiles is a different Plan.
 
 **`null` means two different things and must not be conflated:**
 
-- In a **column array** or a **Plan slot**, `null` means "names no profile —
+- In a **Plan slot**, `null` means "names no profile —
   fall through". Never rewrite these to a concrete id.
 - On the **active setting**, `null` means nothing at all. Since
   `0008_kill_live_sentinel` these always name a real row:

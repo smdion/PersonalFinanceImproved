@@ -780,18 +780,16 @@ export const budgetRouter = createTRPCRouter({
           subcategory: i.subcategory,
           amounts: dbAmounts,
           contribAmount: linked?.contribAmount ?? null,
-          /** Per-column contribution $ — column i uses column i's own
-           *  resolved Contribution/Salary Profile. Null for unlinked items. */
+          /** Contribution $ per column — computed once from the active
+           *  profiles, the same in every column. Null for unlinked items. */
           contribAmounts: linked?.contribAmounts ?? null,
           isEssential: i.isEssential,
           apiCategoryId: i.apiCategoryId,
           apiCategoryName: i.apiCategoryName,
           apiSyncDirection: i.apiSyncDirection,
           contributionAccountId: i.contributionAccountId,
-          // Per-column reason a linked item's amount is $0 for THAT column
-          // — never flattened across columns (a status true only under a
-          // different column's profile must not show while viewing this
-          // one). See classifyContribResolution.
+          // Per-column reason a linked item's amount is $0 (one per column,
+          // from the same active profiles). See classifyContribResolution.
           contribStatus: resolvedItemsById.get(i.id)?.contribStatus ?? null,
         };
       });

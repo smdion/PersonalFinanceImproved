@@ -241,8 +241,8 @@ export function useBudgetDerivedData({
     (items: RawItem[]) =>
       Array.from({ length: numCols }, (_, col) =>
         items.reduce((s, it) => {
-          // contribAmounts is the server's own per-column figure (column i
-          // resolved with column i's profiles); contribAmount is only the
+          // contribAmounts is the server's own per-column figure (every
+          // column from the active profiles); contribAmount is only the
           // selected column's value and is the last resort before raw
           // amounts. Fuzzy name-matching (matchContrib) never contributes
           // here — it's a badge/tooltip-only estimate for UNLINKED items,

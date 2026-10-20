@@ -249,10 +249,9 @@ export function BudgetItemRow({
         </span>
       </td>
       {Array.from({ length: numCols }, (_, col) => {
-        // Per-column first: a linked item's monthly $ depends on the
-        // Contribution/Salary Profile THIS column resolves to, which can
-        // differ column to column. contribAmount is only the selected
-        // column's figure and is the back-compat fallback.
+        // Per-column first (the server's figure for this column);
+        // contribAmount is only the selected column's figure and is the
+        // back-compat fallback.
         const amt =
           item.contribAmounts?.[col] ??
           (item.contribAmount != null
