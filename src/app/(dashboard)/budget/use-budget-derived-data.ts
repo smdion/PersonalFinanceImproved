@@ -31,9 +31,8 @@ import type {
 import type { PushPreviewItem } from "@/components/ui/push-preview-modal";
 
 /** Non-column tiers of docs/RULES.md's profile precedence, supplied by the
- *  page (Plan pin → [column pin] → local selection → globally-active). */
+ *  page ([column profile] → local selection → active). */
 export type ProfileResolutionTiers = {
-  planPinId: number | null;
   localSelectionId: number | null;
   globalDefaultId: number | null;
 };

@@ -11,7 +11,7 @@
  * that a new mechanism (an unsaved draft, a Play-toggle fork) wasn't
  * needed — the app already has one:
  *   - A selector that VIEWS a different profile without activating it
- *     (useEffectiveProfileId: Plan pin -> local selection -> global active)
+ *     (useEffectiveProfileId: local selection -> active)
  *   - The SAME shared padlock every profile surface uses (EditLockToggle,
  *     EDIT_LOCK_KEYS.profileEditLocked)
  *   - Unlocked -> click a chip -> writes straight to the profile, then

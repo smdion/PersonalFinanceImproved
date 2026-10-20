@@ -2,22 +2,18 @@
  * Resolve which Contribution / Salary Profile applies to a given budget
  * column — the only place that decision is ever made.
  *
- * The precedence is the one documented in docs/RULES.md ("Profile Pins"):
+ * The precedence is the one documented in docs/RULES.md:
  *
- *   Plan pin → per-budget-column pin → local page selection → globally-active
+ *   per-budget-column profile → local page selection → active profile
  *
  * and it is expressed here as a required options object rather than
- * positional arguments **on purpose**. Every tier is a named field a caller
- * must supply explicitly: a forgotten positional argument used to fall back
- * silently to the wrong tier (which is exactly how the Plan pin ended up
- * being fed into the lowest tier and losing to a column pin — the bug this
- * shape prevents from recurring), whereas a missing required field simply
- * doesn't compile.
+ * positional arguments **on purpose**: every tier is a named field a caller
+ * must supply explicitly, so a forgotten one doesn't compile instead of
+ * silently falling back to the wrong tier.
  *
- * `null` at the pin tiers (`planPinId`, any element of `columnPinIds`) means
- * "this Plan/column pins nothing — fall through to the next tier". It is NOT
- * a profile id and must never be rewritten to one, or every unpinned column
- * silently becomes pinned. `null` out of these functions therefore only
+ * `null` in `columnPinIds` means "this column names no profile — fall
+ * through to the next tier". It is NOT a profile id and must never be
+ * rewritten to one, or every such column silently gets one. `null` out of these functions therefore only
  * happens when no tier resolves (e.g. the globally-active id hasn't loaded
  * yet); post-migration the setting always names a real row.
  *
@@ -41,8 +37,6 @@
 
 /** One column's worth of tiers, for a single profile axis. */
 export type ColumnProfileResolutionInput = {
-  /** The active Plan's pin for this axis, or null when it pins nothing. */
-  planPinId: number | null;
   /**
    * `budget_profiles.column_contribution_profile_ids` /
    * `.column_salary_profile_ids` — same length as the profile's columns.
@@ -72,8 +66,6 @@ export type AllColumnsProfileResolutionInput = Omit<
 function resolveProfileIdForColumn(
   input: ColumnProfileResolutionInput,
 ): number | null {
-  if (input.planPinId != null) return input.planPinId;
-
   const { columnPinIds, numColumns, column } = input;
   const columnPin =
     columnPinIds && columnPinIds.length === numColumns

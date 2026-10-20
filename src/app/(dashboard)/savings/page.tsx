@@ -101,19 +101,11 @@ export default function SavingsPage() {
     "active_contrib_profile_id",
     null,
   );
-  // Fetch contribution profiles list for subtitle display + Plan-pin validIds.
+  // Fetch contribution profiles list for subtitle display.
   const { data: contribProfilesList } =
     trpc.contributionProfile.list.useQuery();
-  // Plan pin -> globally-active contribution profile (single computation
-  // path — matches expenses/page.tsx, paycheck/page.tsx, contributions/page.tsx).
-  const { planPinId: planContribProfileId } = useEffectiveProfileId(
-    "contribution",
-    {
-      validIds: contribProfilesList?.map((p) => p.id),
-      localSelection: null,
-      globalDefaultId: rawActiveContribProfileId,
-    },
-  );
+  // The active contribution profile (single computation path — matches
+  // expenses/page.tsx, paycheck/page.tsx, contributions/page.tsx).
   // null = "use whichever budget profile is active" (today's behavior,
   // unchanged). Only affects the live pool used by Pull In New Pay /
   // Update % — goal balances, targets, and the e-fund always reflect the
@@ -134,27 +126,18 @@ export default function SavingsPage() {
   const { data: apiBalancesData } = trpc.savings.listApiBalances.useQuery();
   const { data: apiCategoriesData } = trpc.budget.listApiCategories.useQuery();
 
-  // Independent Salary Profile axis (Plan pin -> column pin -> globally-active
-  // setting) — mirrors the Contribution axis below so a per-column Salary
+  // Independent Salary Profile axis (column profile -> active setting) —
+  // mirrors the Contribution axis below so a per-column Salary
   // Profile pin (set from Manage Modes) isn't silently ignored here while
   // computeActiveSummary honors it for the Budget tab's item $ amounts.
   const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
-  const { data: salaryProfilesList } = trpc.salaryProfile.list.useQuery();
-  const { planPinId: planSalaryProfileId } = useEffectiveProfileId("salary", {
-    validIds: salaryProfilesList?.map((p) => p.id),
-    localSelection: null,
-    globalDefaultId: rawActiveSalaryProfileId,
-  });
-  // Tiers, not a pre-resolved id — see docs/RULES.md "Profile Pins" and
-  // contribution-profile-resolution.ts: folding the Plan pin into the
-  // global-default tier is what let a column pin outrank an active Plan.
+  // Tiers, not a pre-resolved id — see docs/RULES.md "Profile Resolution" and
+  // contribution-profile-resolution.ts.
   const contributionProfileTiers = {
-    planPinId: planContribProfileId,
     localSelectionId: null,
     globalDefaultId: rawActiveContribProfileId,
   };
   const salaryProfileTiers = {
-    planPinId: planSalaryProfileId,
     localSelectionId: null,
     globalDefaultId: rawActiveSalaryProfileId,
   };
@@ -220,7 +203,7 @@ export default function SavingsPage() {
   // which is not profile-scoped).
   const activeProfileId =
     budgetProfilesList?.find((p) => p.isActive)?.id ?? null;
-  // Plan pin -> the page's own recalc-profile picker -> true active profile
+  // The page's own recalc-profile picker -> the active profile
   // (single computation path — see useEffectiveProfileId).
   const { profileId: effectiveRecalcProfileId } = useEffectiveProfileId(
     "budget",

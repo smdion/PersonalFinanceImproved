@@ -222,8 +222,6 @@ export type MilestoneInput = {
   projection: {
     years: MilestoneProjectionYear[];
     inflationRate: number;
-    /** The projection is a what-if scenario, not the live plan. */
-    isScenario: boolean;
   } | null;
   /** FI number in today's dollars (yearly expenses ÷ withdrawal rate). */
   fiTarget: number;
@@ -467,8 +465,7 @@ function expectedNote(
   if (!input.projection) return null;
   if (!expected) return "Not reached in the projection";
   const prefix = estimate ? "About" : "On pace for";
-  const scenario = input.projection.isScenario ? " (scenario)" : "";
-  return `${prefix} ${expected.year} · age ${Math.round(expected.age)}${scenario}`;
+  return `${prefix} ${expected.year} · age ${Math.round(expected.age)}`;
 }
 
 /**

@@ -11,9 +11,7 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
-import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useUser, hasPermission } from "@/lib/context/user-context";
-import { ScenarioBanner } from "@/components/ui/scenario-indicator";
 import { EmptyState } from "@/components/ui/empty-state";
 import { confirm } from "@/components/ui/confirm-dialog";
 import {
@@ -38,12 +36,7 @@ import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 export default function PaycheckPage() {
   const user = useUser();
   const canEditProfiles = hasPermission(user, "contributionProfile");
-  const {
-    viewMode: mode,
-    isInScenario,
-    setOverride: setScenarioOverride,
-    activeScenario: _activeScenario,
-  } = useScenario();
+  const { viewMode: mode } = useScenario();
   const [contribExpanded, setContribExpanded] = useState(false);
   const [taxYearSetting, setTaxYearSetting] = usePersistedSetting<
     number | null
@@ -62,21 +55,10 @@ export default function PaycheckPage() {
     EDIT_LOCK_KEYS.profileEditLocked,
   );
 
-  // Contribution profile state
-  const contribProfilesQuery = trpc.contributionProfile.list.useQuery();
-  const contribProfiles = contribProfilesQuery.data ?? [];
-
-  // Local viewing state — defaults to global active, but can view others without activating
-  const [viewingContribId, setViewingContribId] = useState<number | null>(null);
-  // Plan pin -> local viewing selection -> globally-active profile (single computation path)
-  const { profileId: displayContribId } = useEffectiveProfileId(
-    "contribution",
-    {
-      validIds: contribProfiles.map((p) => p.id),
-      localSelection: viewingContribId,
-      globalDefaultId: contribProfileId,
-    },
-  );
+  // This page shows and edits the active profiles — switch them in the
+  // header. (Each profile is its own world; there is no "viewing another
+  // one" here, so what you edit is always what the rest of the app uses.)
+  const displayContribId = contribProfileId;
 
   const viewingProfileQuery = trpc.contributionProfile.getById.useQuery(
     { id: displayContribId! },
@@ -155,8 +137,8 @@ export default function PaycheckPage() {
   }
 
   /**
-   * Dispatch a field edit to the correct target (scenario, profile, or direct DB).
-   * Returns true if handled by scenario or profile mode; false means caller should do a direct DB write.
+   * Send a field edit to the active Contribution Profile. Returns false when
+   * there's no profile edit in play, meaning the caller writes the database.
    */
   function writeOverride(
     entityType: "contributionAccounts" | "deductions",
@@ -164,10 +146,6 @@ export default function PaycheckPage() {
     field: string,
     value: string | number | boolean | null,
   ): boolean {
-    if (isInScenario) {
-      setScenarioOverride(entityType, entityId, field, value);
-      return true;
-    }
     if (isProfileMode) {
       updateProfileActiveField(entityType, entityId, field, value);
       return true;
@@ -175,23 +153,12 @@ export default function PaycheckPage() {
     return false;
   }
 
-  // Independent Salary Profile axis. Same three-tier resolution as the
-  // contribution axis above (Plan pin -> this page's dropdown -> globally
-  // active), rather than useEffectiveSalaryProfileId(), because the picker
-  // needs a local-selection tier that hook deliberately doesn't have. The
-  // resolved id feeds both the picker and the query input below, so they
-  // can't drift.
+  // Independent Salary Profile axis — the active one, same as above.
   const salaryProfilesQuery = trpc.salaryProfile.list.useQuery();
   const salaryProfiles = salaryProfilesQuery.data ?? [];
-  const [activeSalaryId] = useActiveSalaryProfile();
-  const [viewingSalaryId, setViewingSalaryId] = useState<number | null>(null);
-  const { profileId: displaySalaryId } = useEffectiveProfileId("salary", {
-    validIds: salaryProfiles.map((p) => p.id),
-    localSelection: viewingSalaryId,
-    // Always a real row id post-migration — useActiveSalaryProfile repairs
-    // the setting if the row it names ever disappears.
-    globalDefaultId: activeSalaryId,
-  });
+  // Always a real row id post-migration — useActiveSalaryProfile repairs the
+  // setting if the row it names ever disappears.
+  const [displaySalaryId] = useActiveSalaryProfile();
   const displayedSalaryProfile = salaryProfiles.find(
     (p) => p.id === displaySalaryId,
   );
@@ -341,7 +308,6 @@ export default function PaycheckPage() {
 
   return (
     <div>
-      <ScenarioBanner />
       <PageHeader
         title="Paycheck"
         subtitle={
@@ -376,52 +342,17 @@ export default function PaycheckPage() {
           ) : undefined
         }
       >
-        {salaryProfiles.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-muted text-xs">Salary:</span>
-            <select
-              className="bg-surface-primary rounded border px-2 py-1 text-xs"
-              value={displaySalaryId ?? ""}
-              onChange={(e) => setViewingSalaryId(Number(e.target.value))}
-              aria-label="Salary profile"
-            >
-              {salaryProfiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            {displaySalaryId !== activeSalaryId && (
-              <span className="text-caption text-muted font-medium">
-                (viewing — not active)
-              </span>
-            )}
-          </div>
-        )}
-        {contribProfiles.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-muted text-xs">Contribution:</span>
-            <select
-              className="bg-surface-primary rounded border px-2 py-1 text-xs"
-              value={displayContribId ?? ""}
-              onChange={(e) =>
-                setViewingContribId(
-                  e.target.value ? Number(e.target.value) : null,
-                )
-              }
-            >
-              {contribProfiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            {displayContribId !== contribProfileId && (
-              <span className="text-caption text-muted font-medium">
-                (viewing — not active)
-              </span>
-            )}
-          </div>
+        {(displayedSalaryProfile || activeProfile) && (
+          <span className="text-muted text-xs">
+            Editing{" "}
+            {[
+              displayedSalaryProfile &&
+                `Salary Profile “${displayedSalaryProfile.name}”`,
+              activeProfile && `Contribution Profile “${activeProfile.name}”`,
+            ]
+              .filter(Boolean)
+              .join(" and ")}
+          </span>
         )}
         {(isSalaryProfileMode || contribProfileActive) && (
           <EditLockToggle
@@ -506,10 +437,6 @@ export default function PaycheckPage() {
                                 : decimalFields.includes(field)
                                   ? Number(value)
                                   : value;
-                          if (isInScenario) {
-                            setScenarioOverride("jobs", job.id, field, parsed);
-                            return;
-                          }
                           // A job has no salary, bonus, pay-schedule, or W-4
                           // terms of its own any more — every edit to any of
                           // those lands in the displayed Salary Profile as
@@ -668,34 +595,17 @@ export default function PaycheckPage() {
                           value: string,
                         ) => {
                           // amountPerPeriod is the only deduction field a
-                          // Contribution Profile can set as an active field
-                          // (Part B scope) — route it through the same
-                          // scenario-or-profile dispatcher contribution
-                          // accounts already use. Structural fields
-                          // (deductionName/isPretax/ficaExempt) stay on the
-                          // old scenario-or-raw path — they're never
-                          // profile-settable.
+                          // Contribution Profile can set — it goes through the
+                          // same profile writer contribution accounts use.
+                          // Structural fields (deductionName/isPretax/
+                          // ficaExempt) are never profile-settable and write
+                          // the database.
                           // A preset sets both tax flags at once.
                           if (field === "taxTreatment") {
                             const preset = DEDUCTION_PRESETS.find(
                               (p) => p.key === value,
                             );
                             if (!preset) return;
-                            if (isInScenario) {
-                              setScenarioOverride(
-                                "deductions",
-                                id,
-                                "isPretax",
-                                String(preset.isPretax),
-                              );
-                              setScenarioOverride(
-                                "deductions",
-                                id,
-                                "ficaExempt",
-                                String(preset.ficaExempt),
-                              );
-                              return;
-                            }
                             const raw = (
                               d.rawDeductions as RawDeduction[]
                             ).find((dd) => dd.id === id);
@@ -709,13 +619,11 @@ export default function PaycheckPage() {
                             });
                             return;
                           }
-                          if (field === "amountPerPeriod") {
-                            if (writeOverride("deductions", id, field, value))
-                              return;
-                          } else if (isInScenario) {
-                            setScenarioOverride("deductions", id, field, value);
+                          if (
+                            field === "amountPerPeriod" &&
+                            writeOverride("deductions", id, field, value)
+                          )
                             return;
-                          }
                           const raw = (d.rawDeductions as RawDeduction[]).find(
                             (dd) => dd.id === id,
                           );
@@ -735,10 +643,8 @@ export default function PaycheckPage() {
                           value: string,
                         ) => {
                           // contributionValue/contributionMethod have no
-                          // account-level fallback anymore — writeOverride is the
-                          // ONLY path for them (scenario or profile active
-                          // fields); there is nothing left for the direct-write
-                          // fallback below to do with those two fields.
+                          // account-level fallback anymore — writeOverride (the
+                          // profile) is the ONLY path for them.
                           if (
                             writeOverride(
                               "contributionAccounts",
@@ -767,11 +673,9 @@ export default function PaycheckPage() {
                             [field]: value,
                           });
                         },
-                        onCreateDeduction: isInScenario
-                          ? undefined
-                          : (data) => createDeduction.mutate(data),
+                        onCreateDeduction: (data) =>
+                          createDeduction.mutate(data),
                         onDeleteDeduction: async (id: number) => {
-                          if (isInScenario) return; // Can't delete in scenario mode
                           if (await confirm("Remove this deduction?")) {
                             deleteDeduction.mutate({ id });
                           }
@@ -781,15 +685,6 @@ export default function PaycheckPage() {
                           value: boolean,
                           targetContribValue?: number,
                         ) => {
-                          if (isInScenario) {
-                            setScenarioOverride(
-                              "contributionAccounts",
-                              id,
-                              "autoMaximize",
-                              value,
-                            );
-                            return;
-                          }
                           const raw = (d.rawContribs as RawContrib[]).find(
                             (cc) => cc.id === id,
                           );
@@ -842,49 +737,43 @@ export default function PaycheckPage() {
                             autoMaximize: value,
                           });
                         },
-                        onDeleteContrib: isInScenario
-                          ? undefined
-                          : (id: number) => {
-                              deleteContrib.mutate({ id });
-                            },
-                        onCreateContrib: isInScenario
-                          ? undefined
-                          : (data) => {
-                              // A form linking into an existing (often inactive
-                              // stub) contribution row carries its id — update
-                              // that row instead of creating a duplicate.
-                              const { id, ...rest } = data;
-                              if (id != null) {
-                                updateContrib.mutate({ id, ...rest });
-                              } else {
-                                createContrib.mutate(rest);
-                              }
-                            },
-                        onUpdateInstitution: isInScenario
-                          ? undefined
-                          : (
-                              id: number,
-                              performanceAccountId: number | null,
-                            ) => {
-                              const raw = (d.rawContribs as RawContrib[]).find(
-                                (cc) => cc.id === id,
-                              );
-                              if (!raw) return;
-                              updateContrib.mutate({
-                                id: raw.id,
-                                personId: raw.personId,
-                                accountType: raw.accountType,
-                                taxTreatment: raw.taxTreatment as
-                                  "pre_tax" | "tax_free" | "after_tax" | "hsa",
-                                employerMatchType: raw.employerMatchType as
-                                  | "none"
-                                  | "percent_of_contribution"
-                                  | "dollar_match"
-                                  | "fixed_annual",
-                                isActive: raw.isActive,
-                                performanceAccountId,
-                              });
-                            },
+                        onDeleteContrib: (id: number) => {
+                          deleteContrib.mutate({ id });
+                        },
+                        onCreateContrib: (data) => {
+                          // A form linking into an existing (often inactive
+                          // stub) contribution row carries its id — update
+                          // that row instead of creating a duplicate.
+                          const { id, ...rest } = data;
+                          if (id != null) {
+                            updateContrib.mutate({ id, ...rest });
+                          } else {
+                            createContrib.mutate(rest);
+                          }
+                        },
+                        onUpdateInstitution: (
+                          id: number,
+                          performanceAccountId: number | null,
+                        ) => {
+                          const raw = (d.rawContribs as RawContrib[]).find(
+                            (cc) => cc.id === id,
+                          );
+                          if (!raw) return;
+                          updateContrib.mutate({
+                            id: raw.id,
+                            personId: raw.personId,
+                            accountType: raw.accountType,
+                            taxTreatment: raw.taxTreatment as
+                              "pre_tax" | "tax_free" | "after_tax" | "hsa",
+                            employerMatchType: raw.employerMatchType as
+                              | "none"
+                              | "percent_of_contribution"
+                              | "dollar_match"
+                              | "fixed_annual",
+                            isActive: raw.isActive,
+                            performanceAccountId,
+                          });
+                        },
                       },
                     }
               }

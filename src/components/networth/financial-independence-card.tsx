@@ -122,9 +122,7 @@ export function FinancialIndependenceCard({
           </div>
           {projected.fi !== null && fiProgress < 1 && (
             <div className="text-caption text-faint mt-0.5 text-right">
-              {projected.isScenario
-                ? "Based on the scenario's plan"
-                : "Based on retirement plan"}
+              Based on retirement plan
             </div>
           )}
         </div>

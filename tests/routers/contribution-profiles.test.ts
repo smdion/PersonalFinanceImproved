@@ -1010,7 +1010,7 @@ describe("contributionProfiles coverage", () => {
   });
 
   describe("delete — Plan-pin guard", () => {
-    it("refuses to delete a profile a Plan pins", async () => {
+    it("refuses to delete a profile a Plan uses", async () => {
       // The scenarios FK is `set null`, so without this guard deleting would
       // silently unpin every Plan referencing it. salaryProfile.delete had
       // this check first; contributionProfile.delete was missing it.
@@ -1028,7 +1028,7 @@ describe("contributionProfiles coverage", () => {
 
         await expect(
           caller.contributionProfile.delete({ id: profileId }),
-        ).rejects.toThrow("pinned by 1 Plan");
+        ).rejects.toThrow("used by Plan");
       } finally {
         cleanup();
       }

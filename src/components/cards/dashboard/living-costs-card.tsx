@@ -89,47 +89,30 @@ function BudgetSummary({
 function LivingCostsCardImpl() {
   const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
-  // Independent Salary Profile axis (Plan pin -> globally-active setting).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
-  const { data: salaryProfilesList } = trpc.salaryProfile.list.useQuery();
-  const { planPinId: planSalaryProfileId } = useEffectiveProfileId("salary", {
-    validIds: salaryProfilesList?.map((p) => p.id),
-    localSelection: null,
-    globalDefaultId: rawActiveSalaryProfileId,
-  });
   const {
     contributionProfileId: activeContribProfileId,
     queryInput: contribProfileInput,
   } = useEffectiveContribProfileId();
-  const { data: contribProfilesList } =
-    trpc.contributionProfile.list.useQuery();
-  const { planPinId: planContribProfileId } = useEffectiveProfileId(
-    "contribution",
-    {
-      validIds: contribProfilesList?.map((p) => p.id),
-      localSelection: null,
-      globalDefaultId: activeContribProfileId,
-    },
-  );
-  // Budget Profile axis (Plan pin -> globally-active row) — without this,
-  // the card always shows the globally-active budget profile regardless of
-  // what a Plan pins or what the top bar just switched to.
+  // Budget Profile axis — the active row, through the shared resolver.
   const { data: budgetProfilesList } = useBudgetProfilesList();
   const globalActiveBudgetId =
     budgetProfilesList?.find((p) => p.isActive)?.id ?? null;
-  const { profileId: displayBudgetProfileId, isPinned: isBudgetPinned } =
-    useEffectiveProfileId("budget", {
+  const { profileId: displayBudgetProfileId } = useEffectiveProfileId(
+    "budget",
+    {
       validIds: budgetProfilesList?.map((p) => p.id),
       localSelection: null,
       globalDefaultId: globalActiveBudgetId,
-    });
+    },
+  );
   const activeBudgetProfileName = budgetProfilesList?.find(
     (p) => p.id === displayBudgetProfileId,
   )?.name;
   // Same tiers used by the paycheck query below, so the budget total and the
-  // income figure on this card never disagree about which Plan-pinned
-  // Salary/Contribution Profile is in effect.
+  // income figure on this card never disagree about which Salary /
+  // Contribution Profile is in effect.
   const { data: budgetData, isLoading: isBudgetLoading } =
     trpc.budget.computeActiveSummary.useQuery({
       selectedColumn: budgetColumn,
@@ -137,12 +120,10 @@ function LivingCostsCardImpl() {
         ? { profileId: displayBudgetProfileId }
         : {}),
       contributionProfile: {
-        planPinId: planContribProfileId,
         localSelectionId: null,
         globalDefaultId: activeContribProfileId,
       },
       salaryProfile: {
-        planPinId: planSalaryProfileId,
         localSelectionId: null,
         globalDefaultId: rawActiveSalaryProfileId,
       },
@@ -517,9 +498,7 @@ function LivingCostsCardImpl() {
         </>
       }
       subtitle={`${onTarget}/${rows.length} within range${
-        activeBudgetProfileName
-          ? ` · ${activeBudgetProfileName}${isBudgetPinned ? " (active)" : ""}`
-          : ""
+        activeBudgetProfileName ? ` · ${activeBudgetProfileName}` : ""
       } · full-year view`}
       href="/budget"
     >

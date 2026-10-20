@@ -13,7 +13,7 @@ import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-
 import { SK_PAYCHECK_TAX_YEAR } from "@/lib/constants/settings-keys";
 
 export function useHouseholdIncomeSummary() {
-  // Independent axes, each Plan pin -> globally-active setting.
+  // Independent axes, each the active setting.
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const { contributionProfileId, queryInput: contribProfileInput } =
     useEffectiveContribProfileId();

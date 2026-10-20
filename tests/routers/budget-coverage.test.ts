@@ -1253,7 +1253,6 @@ describe("budget router — syncBudgetToApi", () => {
 
       const summary = await caller.budget.computeActiveSummary({
         contributionProfile: {
-          planPinId: null,
           localSelectionId: null,
           globalDefaultId: profileId,
         },
@@ -1666,7 +1665,6 @@ describe("budget router — computeActiveSummary with contribution-linked items"
       // fix: previously the server ignored this param entirely).
       const overriddenSummary = await caller.budget.computeActiveSummary({
         contributionProfile: {
-          planPinId: null,
           localSelectionId: null,
           globalDefaultId: profileId,
         },
@@ -1720,7 +1718,6 @@ describe("budget router — computeActiveSummary with contribution-linked items"
 
       const summary = await caller.budget.computeActiveSummary({
         contributionProfile: {
-          planPinId: null,
           localSelectionId: null,
           globalDefaultId: globalProfileId,
         },
@@ -1791,7 +1788,6 @@ describe("budget router — computeActiveSummary sandbox support", () => {
         },
       });
       const contributionProfile = {
-        planPinId: null,
         localSelectionId: null,
         globalDefaultId: profileId,
       };
@@ -1983,8 +1979,7 @@ describe("budget router — computeActiveSummary resolves a profile PER COLUMN",
         const reference = await caller.budget.computeActiveSummary({
           selectedColumn: colIdx,
           contributionProfile: {
-            planPinId: profileId,
-            localSelectionId: null,
+            localSelectionId: profileId,
             globalDefaultId: null,
           },
         });
@@ -1996,37 +1991,6 @@ describe("budget router — computeActiveSummary resolves a profile PER COLUMN",
           6,
         );
       }
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("a Plan pin overrides every column's own pin (documented precedence)", async () => {
-    const { caller, db, seed, contrib, cleanup } =
-      await seedTwoColumnsWithDifferentPins();
-    try {
-      const planProfileId = seedContributionProfile(db, {
-        name: "Plan-Pinned Profile",
-        contributionActiveFields: {
-          contributionAccounts: {
-            [String(contrib.id)]: {
-              contributionValue: "3600", // $300/mo
-              contributionMethod: "fixed_annual",
-            },
-          },
-        },
-      });
-      const summary = await caller.budget.computeActiveSummary({
-        selectedColumn: 0,
-        contributionProfile: {
-          planPinId: planProfileId,
-          localSelectionId: null,
-          globalDefaultId: null,
-        },
-      });
-      const item = summary.rawItems!.find((i) => i.id === seed.itemIds[0]!);
-      // OLD behavior: [100, 200] — the column pins beat the Plan pin.
-      expect(item!.contribAmounts).toEqual([300, 300]);
     } finally {
       cleanup();
     }
@@ -2137,41 +2101,6 @@ describe("budget router — listProfiles computes Unspent under the resolved pro
 
       expect(main.netMonthly).not.toBeCloseTo(oldNet, 2);
       expect(main.unspentMonthly).not.toBeCloseTo(oldUnspent, 2);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("honors an active Plan's Contribution Profile pin over the globally-active one", async () => {
-    const { caller, db, contrib, cleanup } =
-      await seedHouseholdWithActiveContribProfile();
-    try {
-      const planProfileId = seedContributionProfile(db, {
-        name: "Plan-Pinned Contributions",
-        contributionActiveFields: {
-          contributionAccounts: {
-            [String(contrib.id)]: {
-              contributionValue: "3",
-              contributionMethod: "percent_of_salary",
-            },
-          },
-        },
-      });
-
-      const [pinned, unpinned] = await Promise.all([
-        caller.budget.listProfiles({ planContribProfileId: planProfileId }),
-        caller.budget.listProfiles(),
-      ]);
-      const reference = await caller.paycheck.computeSummary({
-        contributionProfileId: planProfileId,
-      });
-
-      const pinnedMain = pinned.find((p) => p.isActive)!;
-      expect(pinnedMain.netMonthly).toBeCloseTo(netMonthlyFrom(reference), 6);
-      expect(pinnedMain.netMonthly).not.toBeCloseTo(
-        unpinned.find((p) => p.isActive)!.netMonthly!,
-        2,
-      );
     } finally {
       cleanup();
     }

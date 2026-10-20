@@ -40,6 +40,20 @@ test.describe("Scenario edit flow", () => {
     await expect(scenarioBar).toBeVisible({ timeout: 5000 });
   });
 
+  test("header shows a picker per profile kind and a Plans menu", async ({
+    page,
+  }) => {
+    const bar = page.locator("[data-scenario-bar]");
+    for (const kind of ["Salary", "Contributions", "Budget", "Retirement"])
+      await expect(bar.getByText(`${kind}:`)).toBeVisible();
+    await bar.locator('button[aria-labelledby="plan-label"]').click();
+    await expect(
+      page.getByText("A Plan is a saved set of profiles", { exact: false }),
+    ).toBeVisible();
+    // No baseline wording anywhere in the header.
+    await expect(bar).not.toContainText(/Main Plan|Active \(global\)/);
+  });
+
   test("retirement page renders the plan health card", async ({ page }) => {
     // v0.5 PlanHealthCard integration smoke test. The card only
     // renders when there are findings — for the demo seed it should

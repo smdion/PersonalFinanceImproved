@@ -24,12 +24,12 @@ import type {
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 
 // ---------------------------------------------------------------------------
-// Plan/session + What-If sandbox tiers — independent of Salary Profiles.
+// What-If sandbox tier — independent of Salary Profiles.
 // Both are ephemeral, request-scoped layers on top of whatever a Salary
 // Profile resolves to; neither is persisted salary "truth."
 // ---------------------------------------------------------------------------
 
-/** A Plan/session or What-If sandbox salary/bonus tweak — genuinely
+/** A What-If sandbox salary/bonus tweak — genuinely
  *  partial (e.g. "just try a different salary"), unlike a Salary Profile's
  *  own entries. Presence per field is the signal here; absence falls
  *  through to whatever the tier below already resolved. */
@@ -40,7 +40,7 @@ export type SalaryOverrideEntry = {
   monthsInBonusYear?: number;
 };
 
-/** personId → the Plan/session tier's active salary override, if any. */
+/** personId → the What-If sandbox's salary/bonus tweak, if any. */
 export type SalaryActiveMap = Map<number, SalaryOverrideEntry>;
 
 /**
@@ -56,7 +56,7 @@ export function applyActiveSalary(
 }
 
 /**
- * Merge a Plan/session or What-If sandbox entry's bonus-term overrides onto
+ * Merge a What-If sandbox entry's bonus-term overrides onto
  * a Salary Profile's resolved terms — the override tier can adjust
  * bonusPercent/bonusMultiplier/monthsInBonusYear independently of salary,
  * same per-field precedence as applyActiveSalary for the salary field.
@@ -102,7 +102,7 @@ export function pinnedFields(
 
 /**
  * Apply a What-If sandbox's hand-edited salary/bonus entries as the highest
- * precedence tier, above the Plan/session tier already merged into the map.
+ * precedence tier, onto whatever is already in the map.
  * Gaps-only, per field.
  */
 export function applySandboxSalaryEntries(

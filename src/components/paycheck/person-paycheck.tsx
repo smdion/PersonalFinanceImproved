@@ -4,7 +4,6 @@ import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency, maskAmountsInText } from "@/lib/utils/format";
 import { PAY_PERIOD_LABELS } from "@/lib/config/display-labels";
-import { useScenario } from "@/lib/context/scenario-context";
 import { PayStub } from "./pay-stub";
 import { AnnualSummary } from "./annual-summary";
 import { BonusSection } from "./bonus-section";
@@ -167,7 +166,6 @@ export function PersonPaycheck({
   const [addingDeduction, setAddingDeduction] = useState<{
     isPretax: boolean;
   } | null>(null);
-  const { isInScenario } = useScenario();
 
   const readOnly = interaction.kind === "readonly";
   const handlers = interaction.kind === "live" ? interaction.handlers : null;
@@ -259,7 +257,7 @@ export function PersonPaycheck({
               alignedPreTax={alignedPreTax}
               alignedPostTax={alignedPostTax}
               onAddDeduction={
-                readOnly || isInScenario
+                readOnly
                   ? undefined
                   : (isPretax) => setAddingDeduction({ isPretax })
               }
@@ -272,7 +270,7 @@ export function PersonPaycheck({
               onSetAmount={(id, amount) =>
                 onUpdateJob(`otherEarnings:${id}`, String(amount))
               }
-              readOnly={readOnly || isInScenario}
+              readOnly={readOnly}
               amountReadOnly={salaryReadOnly}
             />
             {job.payPeriod === "biweekly" && (
@@ -282,7 +280,6 @@ export function PersonPaycheck({
                   <ExtraPaycheckDestinationToggle
                     jobId={job.id}
                     routing={job.extraPaycheckRouting ?? null}
-                    disabled={isInScenario}
                   />
                 </div>
               </div>

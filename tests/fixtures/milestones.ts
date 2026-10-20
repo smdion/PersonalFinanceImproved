@@ -98,7 +98,6 @@ export function makeInput(
     projection: {
       years: makeProjection(2026, 300_000, 0.1),
       inflationRate: 0.03,
-      isScenario: false,
     },
     fiTarget: 1_500_000,
     savings: makeSavings(),

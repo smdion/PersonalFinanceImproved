@@ -181,8 +181,8 @@ export function RbacGroupsSettings() {
                 {
                   // Display-only rename: the persisted permission key stays
                   // "scenario" (no DB/RBAC-data migration) — the UI everywhere
-                  // else already calls this concept "Plan" (docs/RULES.md's
-                  // Main Plan / Plan distinction), and this admin-facing label
+                  // else already calls this concept "Plan", and this
+                  // admin-facing label
                   // was the one place still showing the raw internal key.
                   p.permission === "scenario" ? "Plan" : p.permission
                 }

@@ -57,11 +57,11 @@ export function ContributionsContent() {
   const { data: profiles } = trpc.contributionProfile.list.useQuery();
   const [period, setPeriod] = useState<PeriodMode>("annual");
   const [activeProfileId] = useActiveContribProfile();
-  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  // Plan pin -> globally-active profile — the primary summary below must stay
+  // the active profile — the primary summary below must stay
   // in sync with Paycheck/Budget's resolution instead of always reading raw
-  // Live data (see docs/RULES.md "Profile Pins"). This is distinct from
+  // Live data (see docs/RULES.md "Profile Resolution"). This is distinct from
   // selectedProfileId below, which is a "compare against a specific other
   // profile" picker and deliberately stays local-only.
   const { profileId: effectiveActiveContribProfileId } = useEffectiveProfileId(

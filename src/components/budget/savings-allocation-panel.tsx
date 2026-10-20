@@ -33,7 +33,6 @@ export function SavingsAllocationPanel({
   locked,
   viewingProfileId,
   onSelectProfile,
-  isPinned,
   onActivateProfile,
   livePoolEstimate,
   livePoolColumnLabel,
@@ -48,9 +47,6 @@ export function SavingsAllocationPanel({
   locked: boolean;
   viewingProfileId: number | null;
   onSelectProfile: (id: number) => void;
-  /** Whether viewingProfileId came from the active Plan's pin rather than a
-   *  manual selection — see budget-content.tsx's shared useEffectiveProfileId call. */
-  isPinned?: boolean;
   /** Sets the given budget profile as globally active (shown as a visible
    *  "Activate" button when viewing a non-active profile). */
   onActivateProfile?: (id: number) => void;
@@ -94,8 +90,7 @@ export function SavingsAllocationPanel({
     trpc.savings.goalProfileAllocations.listSummaries.useQuery();
   // "Unspent" arrives already computed, per profile, from budget.listProfiles
   // — take-home pay resolved under THAT profile's own per-column
-  // Contribution/Salary Profile pins (honoring the active Plan's pins and any
-  // Plan-level salary override), minus that profile's spending, minus its
+  // Contribution/Salary Profile resolution, minus that profile's spending, minus its
   // savings allocations. This panel used to make its own
   // paycheck.computeSummary query with no input, which server-side means no
   // profile is applied at all — so the figure silently ignored every active
@@ -211,9 +206,7 @@ export function SavingsAllocationPanel({
           <SavingsAllocationTable
             profileId={effectiveProfileId}
             profileName={effectiveProfile?.name}
-            isViewingNonActive={
-              !isPinned && effectiveProfileId !== activeProfile?.id
-            }
+            isViewingNonActive={effectiveProfileId !== activeProfile?.id}
             activeProfileName={activeProfile?.name}
             canEdit={canEdit}
             locked={locked}

@@ -233,8 +233,8 @@ Portfolio Snapshots + Performance Data + Settings
 | Budget column                      | `app_settings`                           | `budget_active_column`                                                                                                                                                                                                                                      |
 | Annual expenses                    | `getAnnualExpensesFromBudget()`          | Uses `budget_active_column`                                                                                                                                                                                                                                 |
 | Total compensation (profile-aware) | `resolveCompensation()`                  | `server/helpers/salary.ts` — the single place salary+bonus is computed under a Salary Profile entry                                                                                                                                                         |
-| Salary override merge              | `applyActiveSalary()`                    | Final `active ?? raw` merge of the Plan/session override onto an already-resolved raw salary                                                                                                                                                                |
-| Salary override map                | `loadAndApplySalaryProfile()`            | Plan/session pins, then the active Salary Profile's entries                                                                                                                                                                                                 |
+| Salary override merge              | `applyActiveSalary()`                    | Final `active ?? raw` merge of the What-If sandbox salary onto an already-resolved raw salary                                                                                                                                                               |
+| Salary override map                | `loadAndApplySalaryProfile()`            | The active (or requested) Salary Profile's entries                                                                                                                                                                                                          |
 | Portfolio balances                 | `getLatestSnapshot()`                    | Latest `portfolio_snapshots` row                                                                                                                                                                                                                            |
 | Contribution accounts              | `buildContribAccounts()`                 | `contribution_accounts` table                                                                                                                                                                                                                               |
 | Employer match                     | `computeGroupedEmployerMatch()`          | Combines Roth/Traditional splits of one account before applying the match cap once; every consumer (`buildContribAccounts`, `buildContributionDisplaySpecs`, `aggregateContributionsByCategory`, `retirement.ts`'s scenario comparison) routes through this |
@@ -253,7 +253,7 @@ Portfolio Snapshots + Performance Data + Settings
 
 1. **No hardcoded fallbacks for user-specific data.** If data doesn't exist, return 0 — don't invent a number. Universal defaults (4% withdrawal rate, IRS limits) are acceptable if stored in DB.
 2. **One budget column controls everything.** `budget_active_column` determines which scenario is active across all pages.
-3. **Scenarios are explicit opt-ins.** Override controls are clearly labeled as "what-if", not hidden divergences.
+3. **What-ifs are explicit opt-ins.** Sandbox controls (the What-If tab) are clearly labeled as "what-if", never write the active profiles, and never leak into other pages.
 4. **Shared helpers, not duplicated queries.** Use `helpers.ts` when multiple routers need the same derived value.
 5. **Age and personal data come from the `people` table.** Never hardcode ages or personal details.
 6. **Grep before reimplementing a documented rule.** Before writing a display rule, derived formula, or label mapping that plausibly already exists (check DESIGN.md and grep for similarly-named components/hooks first), find and reuse the existing implementation rather than writing a second one from the spec. Two independent implementations of the same rule will diverge — this is how the sub-row label rule, tax-type labels, and the household savings-rate formula each shipped real bugs after being written twice.
@@ -362,7 +362,8 @@ a Contribution Profile's `deductions` active-field entry
   exclude, don't guess"
 - A fallback value that silently replaces missing data
 - Two routers fetching the same data independently
-- A "what-if" override that leaks into non-scenario calculations
+- A What-If sandbox value that leaks into another page or into the active profiles
+- Logic, wording or UI that treats one profile as a baseline ("Main", "default", "not active — viewing", "changed from main")
 - A metric (wealth score, FI progress, tax location, etc.) computed via different code paths on different pages
 - A router calling `getLatestSnapshot()` for year-level data instead of reading from `buildYearEndHistory()`
 - A procedure computing mortgage balance, cash, or salary independently when `YearEndRow` already provides it
@@ -403,40 +404,52 @@ a Contribution Profile's `deductions` active-field entry
 
 ---
 
-## Global Scenario System
+## Profiles and Plans
 
-**Main Plan** = the real database state. Editing in Main Plan changes real data.
+**Each profile is its own world.** Salary, Contribution, Budget and
+Retirement profiles are independent of each other and of every other profile
+of the same kind. There is no default, "Main" or "Live" profile and no
+baseline to diff against — only the **active** profile of each kind
+(`app_settings.active_salary_profile_id` / `active_contrib_profile_id` /
+`active_retirement_profile_id`, `budget_profiles.is_active`). Every page shows
+the active profiles, and an edit to a profile field saves to the profile it
+belongs to.
 
-**Scenario** = a named collection of overrides layered on top. Overrides are diffs, not copies.
+**A Plan is a named set of profiles** — one of each kind, nothing else
+(`scenarios`: `name`, `description`, four profile FKs, `ON DELETE set null`).
+It holds no values of its own. **Applying** a Plan (`settings.scenarios.activate`
+→ `applyPlan`) writes its profiles as the active ones, in one transaction,
+after checking the permission each kind's own "make active" needs (budget →
+`budget`, contribution/salary → `contributionProfile`, retirement → admin) —
+a refusal never half-applies. Applying is household-wide: sync, snapshots and
+every page then use that set.
 
-**View Mode** = global toggle between "Projected Year" and "Actual YTD".
+- **Which Plan is in use is derived, never stored**: the Plan whose profiles
+  equal the active ones (`planMatchesActive`). Change any one active profile
+  and the header shows "None (unsaved mix)" — trying a mix is a normal,
+  unsaved state. `app_settings.last_applied_plan_id` is kept only so the header
+  can offer "Update ‹Plan›" or "Save as new Plan".
+- **Every saved grouping of profiles is a Plan.** No other feature stores its
+  own combination of profiles for comparison. (Budget columns still carry
+  per-column Contribution/Salary profiles until the v0.8.10 migration removes
+  them — see "Profile Resolution".)
+- A new Plan names all four kinds (create/update require them). A null slot —
+  only on Plans saved before this rule — leaves that kind's active profile
+  alone when applied.
+- Plan names are unique (`CONFLICT` on create/rename).
+- Deleting a profile any Plan uses is **refused** for all four kinds
+  (`assertNoPlanUses`, message from `planInUseMessage`), because the FK is
+  `set null` and would otherwise silently empty that slot of the Plan.
+- `scenarios.overrides` / `is_baseline` are legacy columns with **no readers
+  and no writers**; the v0.8.10 migration converts any stored salary entries
+  into Salary Profiles and drops them. Never add a reader.
 
-### How Scenarios Work
+**What-If** (Budget page tab) is the only unsaved sandbox: its pickers and
+edits are local state and never write the active profiles. To keep a What-If
+result, save its edits as profiles (and those profiles as a Plan).
 
-1. No nested scenarios — flat overlay on main plan.
-2. In Main Plan, pages retain local temp changes (budget toggle, retirement sliders).
-3. In a Scenario, edits become overrides (write to override map, not DB).
-4. Overrides propagate holistically through shared helpers.
-5. Persistence is user's choice (DB-persisted or session-only).
-
-### Override Structure
-
-```json
-{
-  "jobs": { "1": { "annualSalary": "180000" } },
-  "contributionAccounts": { "3": { "contributionValue": "10" } },
-  "appSettings": { "budget_active_column": 2 },
-  "retirementAssumptions": { "returnRate": "0.07", "retirementAge": "62" }
-}
-```
-
-### Data Flow
-
-```
-Main Plan (DB) → tRPC query → ScenarioContext applies overrides → Page renders
-                                    ↑
-                          Active scenario overrides (JSONB or React state)
-```
+**View Mode** = global toggle: "Projected", "Year-end estimate", "Year to date".
+A card that can't honor it says so instead of silently showing another mode.
 
 ### Lever Order
 
@@ -449,68 +462,39 @@ later one's numbers — the reverse is never true. This is why the Budget
 page's tabs are ordered Contributions, Budget, Savings rather than
 alphabetically or by table-creation order.
 
-### Profile Pins (a second, deliberately separate mechanism)
+### Profile Resolution
 
-A Scenario can also **pin** which Budget Profile / Contribution Profile /
-Salary Profile is "active" while it's selected — e.g. "under this Plan,
-always use my Chicago-relocation budget profile." This is a _reference_, not
-a value diff, so it does **not** live in the `overrides` JSONB bucket above.
-Instead `scenarios` carries three nullable FK columns, `budget_profile_id`,
-`contribution_profile_id`, and `salary_profile_id` (all `onDelete: "set
-null"`), each with an explicit index — the same shape as
-`retirement_salary_overrides.contributionProfileId` /
-`.salaryProfileId`. The Contribution and Salary axes are **independent**: a
-Plan can pin either, both, or neither.
+Which profile a page shows (see `useEffectiveProfileId`): **the page's own
+local selection → the active profile.** Local selections exist only where a
+page edits or previews a profile without making it active: a profile
+manager's "which one am I editing" row and the What-If sandbox. A Plan is not
+a tier — applying it changes the active profiles.
 
-Precedence when resolving "which profile is active" (see
-`useEffectiveProfileId`): **Plan pin → per-budget-column pin → local page
-selection → globally-active profile.** The per-column tier only exists on the
-budget page's columns: `budget_profiles.column_contribution_profile_ids` /
-`.column_salary_profile_ids` are same-length-as-columns arrays resolved
-exclusively through `resolveContributionProfileId` / `resolveSalaryProfileId`
+On the Budget page there is one more tier, **per-budget-column profiles**
+(`budget_profiles.column_contribution_profile_ids` /
+`.column_salary_profile_ids`, until v0.8.10): **column profile → local
+selection → active**, resolved exclusively through
+`resolveContributionProfileId` / `resolveSalaryProfileId`
 (`lib/calculators/contribution-profile-resolution.ts`) — server-side budget
 item $ computation and client-side payroll display must call the same
 resolver for the same column or the two numbers on screen silently disagree.
-
 Those resolvers take a **required options object with one named field per
-tier** (`planPinId`, `columnPinIds`, `localSelectionId`, `globalDefaultId`),
-not positional arguments. Never pass an already-resolved id (e.g.
-`useEffectiveProfileId`'s `profileId`) into the `globalDefaultId` slot: that
-collapses the Plan pin into the lowest tier and lets a column's own pin beat
-an active Plan's pin, which is exactly the bug the named-tier shape exists to
-prevent. Pass `useEffectiveProfileId`'s `planPinId` as `planPinId` instead.
-`budget.computeActiveSummary` / `budget.listProfiles` take the same tiers over
-the wire for the same reason. `computeActiveSummary` resolves **per column**,
-not once from `selectedColumn` — a profile whose columns pin different
-Contribution Profiles is the whole point of per-column pins.
+tier** (`columnPinIds`, `localSelectionId`, `globalDefaultId`), not positional
+arguments, and `budget.computeActiveSummary` takes the same tiers over the
+wire; it resolves **per column**, not once from `selectedColumn`.
 
 **`null` means two different things and must not be conflated:**
 
-- On a **pin** (`scenarios.*_profile_id`,
-  `retirement_salary_overrides.*_profile_id`, any element of
-  `budget_profiles.column_*_profile_ids`), `null` means "this Plan/column
-  pins nothing — fall through to the next tier". Never rewrite these to a
-  concrete id; that silently converts "no pin" into "pinned".
-- On the **globally-active setting** (`app_settings.active_contrib_profile_id`
-  / `active_salary_profile_id`), `null` means nothing at all. Since
-  `0008_kill_live_sentinel` these always name a real row: there is no
-  synthetic "Live" profile and no id-`0` sentinel, `useActiveContribProfile` /
-  `useActiveSalaryProfile` re-point the setting if the row it names goes
-  missing, and the delete guards refuse to remove the active or last
-  remaining profile of either kind.
+- In a **column array** or a **Plan slot**, `null` means "names no profile —
+  fall through". Never rewrite these to a concrete id.
+- On the **active setting**, `null` means nothing at all. Since
+  `0008_kill_live_sentinel` these always name a real row:
+  `useActiveContribProfile` / `useActiveSalaryProfile` re-point the setting if
+  the row it names goes missing, and the delete guards refuse to remove the
+  active or last remaining profile of either kind.
 
-A pin that points at a since-deleted profile silently falls through to the
-next tier rather than erroring — `onDelete: "set null"` guarantees the FK
-itself can't dangle. Session-only scenarios (never persisted to DB) hold the
-same fields as plain React state instead of DB columns; the precedence rule
-is identical either way.
-
-Deleting a Contribution/Salary Profile that's pinned by a Plan is **blocked**
-by the router (both `delete` procedures name the offending Plan(s)), because
-the FK is `set null` and would otherwise silently unpin every Plan
-referencing it. Budget Profile deletion instead surfaces the consequence in
-the confirmation dialog — see `budget-profile-sidebar.tsx` /
-`contribution-profile-manager.tsx`.
+A local selection pointing at a since-deleted profile falls through to the
+active one rather than erroring.
 
 ---
 

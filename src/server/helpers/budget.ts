@@ -368,17 +368,11 @@ export function computeBudgetAnnualTotal(
 
 /**
  * Resolves the (Contribution Profile, Salary Profile) id every column of
- * `budgetProfile` should use, for a caller that has NO Plan/session context
- * of its own — a budget-API sync, a background expense rollup, a retirement
- * readiness check. Uses ONLY the household's globally-active profile
- * settings (`app_settings`) plus `budgetProfile`'s own per-column pins —
- * deliberately NOT a Plan pin: which Plan is "currently selected" is pure
- * browser/session state (see `budget.ts` router's `listProfiles` docblock —
- * "Plan pins are session/browser state, so the caller supplies them"), with
- * no server-side "currently active Plan" to read. That's the right behavior
- * here, not a gap to fill: a budget-API push writes to a REAL external
- * system and must reflect the household's real persisted state, never an
- * ephemeral session-local Plan preview one browser tab happens to have open.
+ * `budgetProfile` should use, for a caller with no page context of its own —
+ * a budget-API sync, a background expense rollup, a retirement readiness
+ * check. Uses the household's active profile settings (`app_settings`) plus
+ * `budgetProfile`'s own per-column profiles — the same state every page
+ * shows, since applying a Plan writes those settings.
  *
  * Feed the result straight into `resolveLinkedBudgetItemAmounts` below.
  */
@@ -411,7 +405,6 @@ export async function resolveBudgetProfileColumnProfileIds(
     return raw == null || Number.isNaN(num) ? null : num;
   };
   const contribProfileIdByColumn = resolveContributionProfileIdsForAllColumns({
-    planPinId: null,
     localSelectionId: null,
     globalDefaultId: settingValue(SK_ACTIVE_CONTRIB_PROFILE_ID),
     columnPinIds: budgetProfile.columnContributionProfileIds as
@@ -419,7 +412,6 @@ export async function resolveBudgetProfileColumnProfileIds(
     numColumns,
   });
   const salaryProfileIdByColumn = resolveSalaryProfileIdsForAllColumns({
-    planPinId: null,
     localSelectionId: null,
     globalDefaultId: settingValue(SK_ACTIVE_SALARY_PROFILE_ID),
     columnPinIds: budgetProfile.columnSalaryProfileIds as

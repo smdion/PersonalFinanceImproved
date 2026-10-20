@@ -93,19 +93,13 @@ export function ExpensesContent() {
   const { data: contribProfilesList } =
     trpc.contributionProfile.list.useQuery();
 
-  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
-  const { data: salaryProfilesList } = trpc.salaryProfile.list.useQuery();
-  const { planPinId: planSalaryProfileId } = useEffectiveProfileId("salary", {
-    validIds: salaryProfilesList?.map((p) => p.id),
-    localSelection: null,
-    globalDefaultId: rawActiveSalaryProfileId,
-  });
 
-  // Plan pin -> globally-active profile for both budget and contribution —
-  // this page has no local viewing picker of its own, so localSelection is
-  // always null (single computation path — see useEffectiveProfileId).
+  // The active profile for both budget and contribution — this page has no
+  // local picker of its own, so localSelection is always null (single
+  // computation path — see useEffectiveProfileId).
   const activeBudgetProfileId =
     budgetProfilesList?.find((p) => p.isActive)?.id ?? null;
   const { profileId: effectiveBudgetProfileId } = useEffectiveProfileId(
@@ -116,29 +110,27 @@ export function ExpensesContent() {
       globalDefaultId: activeBudgetProfileId,
     },
   );
-  const {
-    profileId: effectiveContribProfileId,
-    planPinId: planContribProfileId,
-  } = useEffectiveProfileId("contribution", {
-    validIds: contribProfilesList?.map((p) => p.id),
-    localSelection: null,
-    globalDefaultId: activeContribProfileId,
-  });
+  const { profileId: effectiveContribProfileId } = useEffectiveProfileId(
+    "contribution",
+    {
+      validIds: contribProfilesList?.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: activeContribProfileId,
+    },
+  );
 
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
     ...(effectiveBudgetProfileId != null
       ? { profileId: effectiveBudgetProfileId }
       : {}),
-    // Tiers, not a pre-resolved id — the Plan pin has to stay in its own tier
-    // or a budget column's pin would outrank it (docs/RULES.md "Profile Pins").
+    // Tiers, not a pre-resolved id, so a budget column's own profile still
+    // applies (docs/RULES.md "Profile Resolution").
     contributionProfile: {
-      planPinId: planContribProfileId,
       localSelectionId: null,
       globalDefaultId: activeContribProfileId,
     },
     salaryProfile: {
-      planPinId: planSalaryProfileId,
       localSelectionId: null,
       globalDefaultId: rawActiveSalaryProfileId,
     },

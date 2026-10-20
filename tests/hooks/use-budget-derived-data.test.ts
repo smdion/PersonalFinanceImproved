@@ -97,12 +97,10 @@ function setup(editMode: boolean, rawItems: RawItem[] = [rawItem]) {
       savingsGoals: undefined,
       apiActualsData: null,
       contributionProfileTiers: {
-        planPinId: null,
         localSelectionId: null,
         globalDefaultId: null,
       },
       salaryProfileTiers: {
-        planPinId: null,
         localSelectionId: null,
         globalDefaultId: null,
       },

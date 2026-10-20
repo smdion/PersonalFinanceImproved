@@ -7,7 +7,6 @@
  * the cache hashes the full built input, so a near-copy would always miss.
  */
 import { trpc } from "@/lib/trpc";
-import { useScenario } from "@/lib/context/scenario-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
@@ -20,10 +19,7 @@ export function useDashboardEngineInput() {
   // these before querying (this card
   // used to omit both, which the engine treats as "no profile" = $0
   // contributions, not "the active profile" — silently zeroing out
-  // Contributions/Coast FIRE/nest egg on this card alone). Each also Plan
-  // pin-aware (Plan pin -> globally-active setting), not just the raw
-  // global setting, or a Plan pinning a different profile wouldn't move
-  // this card.
+  // Contributions/Coast FIRE/nest egg on this card alone).
   const { queryInput: contribProfileInput } = useEffectiveContribProfileId();
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [accBudgetProfileId] = usePersistedSetting<number | null>(
@@ -96,12 +92,10 @@ export function useDashboardProjection() {
  */
 export function useProjectedFiYear(fiTargetToday: number, cashToday: number) {
   const { data, isLoading } = useDashboardProjection();
-  const { isInScenario } = useScenario();
   if (!data?.result)
     return {
       isLoading,
       hasProjection: false,
-      isScenario: isInScenario,
       fi: null,
     } as const;
   const years = milestoneProjectionYears(
@@ -111,7 +105,6 @@ export function useProjectedFiYear(fiTargetToday: number, cashToday: number) {
   return {
     isLoading,
     hasProjection: true,
-    isScenario: isInScenario,
     fi: projectedFiYear(
       years,
       fiTargetToday,

@@ -11,12 +11,9 @@
  *
  * That last one is why this hook exists at all beyond code reuse:
  * `ContributionsSection` used to make its OWN `contribution.computeSummary`
- * query keyed on the RAW globally-active contribution setting while using the
- * Plan-pin-aware hook for the salary axis. On the shipped Paycheck page that
- * meant (a) an active Plan pinning a Contribution Profile was silently
- * ignored by the contribution cards while honored everywhere else on the
- * page, and (b) changing the page's own Contribution Profile dropdown moved
- * the pay-stub numbers but not the cards' annual/limit figures. Contribution
+ * query keyed on a different profile id than the pay stub, so the
+ * contribution cards and the pay stub could show two different Contribution
+ * Profiles. Contribution
  * data is now resolved ONCE here, with the same ids as the paycheck query,
  * and handed down as a prop. No component below this point queries for it.
  *

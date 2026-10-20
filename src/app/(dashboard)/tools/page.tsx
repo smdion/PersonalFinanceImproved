@@ -139,13 +139,12 @@ export default function ToolsPage() {
   const effectiveTargetContribProfileId =
     relocTargetContribProfileId ?? defaultContribProfileId ?? null;
 
-  // Salary Profile axis (Plan pin -> globally-active setting) — one profile
+  // Salary Profile axis (the active profile) — one profile
   // applies to both scenarios, matching every other engine-backed endpoint
   // (Retirement page, Monte Carlo, Coast FIRE). Without this the engine-
   // backed relocation projection silently fell back to whichever Salary
   // Profile is globally active, diverging from the Retirement page's own
-  // number for the same "current" baseline whenever a Plan pins a
-  // different one.
+  // number for the same "current" baseline.
   const { salaryProfileId: effectiveSalaryProfileId } =
     useEffectiveSalaryProfileId();
 

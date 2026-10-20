@@ -64,8 +64,7 @@ const MAX_SANDBOX_PEOPLE = 10;
  * sandbox needs no new input shape and no new schema.
  *
  * Applied server-side by `applySandboxSalaryEntries` as the highest
- * precedence tier (above a Plan/session active salary, above a Salary
- * Profile pin, above the live job). Every field is optional and PRESENCE IS
+ * precedence tier (above the Salary Profile). Every field is optional and PRESENCE IS
  * THE PIN SIGNAL, exactly as on a profile row.
  *
  * Size-capped because, unlike a profile row, this arrives directly from the

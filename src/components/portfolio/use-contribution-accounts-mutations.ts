@@ -70,8 +70,7 @@ export function useContributionAccountsMutations({
   activeContribProfileId,
 }: {
   allContribs: ContribRecord[];
-  /** The globally-effective Contribution Profile id (Plan pin -> globally-
-   *  active), if any. When set, PROFILE_OWNED_CONTRIB_FIELDS edits route
+  /** The globally-effective Contribution Profile id (the active), if any. When set, PROFILE_OWNED_CONTRIB_FIELDS edits route
    *  here instead of the raw account row. */
   activeContribProfileId?: number | null;
 }) {

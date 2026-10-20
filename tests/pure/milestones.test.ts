@@ -140,27 +140,12 @@ describe("wealth journey", () => {
         projection: {
           years: makeProjection(2026, 300_000, 0),
           inflationRate: 0.03,
-          isScenario: false,
         },
       }),
       "liquidMillionaire",
     );
     expect(r.status).toBe("behind");
     expect(r.note).toBe("Not reached in the projection");
-  });
-
-  it("labels scenario projections", () => {
-    const r = byId(
-      run({
-        projection: {
-          years: makeProjection(2026, 300_000, 0.1),
-          inflationRate: 0.03,
-          isScenario: true,
-        },
-      }),
-      "liquidMillionaire",
-    );
-    expect(r.note).toContain("(scenario)");
   });
 
   it("dates 'investments save harder' from finalized years only", () => {
@@ -231,7 +216,6 @@ describe("wealth journey", () => {
         projection: {
           years: makeProjection(2026, 300_000, 0),
           inflationRate: 0.03,
-          isScenario: false,
         },
       }),
       "fi",

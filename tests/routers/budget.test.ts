@@ -1337,7 +1337,6 @@ describe("budget router", () => {
      * resolves against when the test doesn't pin one more specifically. */
     function profileTiers(contribProfileId: number) {
       return {
-        planPinId: null,
         localSelectionId: null,
         globalDefaultId: contribProfileId,
       };
@@ -1650,7 +1649,6 @@ describe("budget router", () => {
 
       const result = await caller.budget.computeActiveSummary({
         contributionProfile: {
-          planPinId: null,
           localSelectionId: null,
           globalDefaultId: emptyProfileId,
         },
@@ -1684,7 +1682,6 @@ describe("budget router", () => {
 
       const result = await caller.budget.computeActiveSummary({
         contributionProfile: {
-          planPinId: null,
           localSelectionId: null,
           globalDefaultId: offProfileId,
         },
@@ -1728,7 +1725,6 @@ describe("budget router", () => {
 
       const result = await caller.budget.computeActiveSummary({
         contributionProfile: {
-          planPinId: null,
           localSelectionId: null,
           globalDefaultId: someProfileId,
         },

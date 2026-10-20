@@ -21,7 +21,6 @@ import {
   SK_ACTIVE_SALARY_PROFILE_ID,
   SK_ACTIVE_CONTRIB_PROFILE_ID,
 } from "@/lib/constants/settings-keys";
-import { useScenario } from "@/lib/context/scenario-context";
 import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
 import {
   ContributionProfileManager,
@@ -63,7 +62,6 @@ import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-pr
 export function BudgetContent() {
   const user = useUser();
   const canEdit = hasPermission(user, "budget");
-  const { isInScenario, setScenarioBudgetProfile } = useScenario();
   const [activeColumn, setActiveColumn] = usePersistedSetting<number>(
     "budget_active_column",
     0,
@@ -79,59 +77,38 @@ export function BudgetContent() {
   const [viewingProfileId, setViewingProfileId] = useState<number | null>(null);
   // Single shared resolution for both the Budget tab and Savings tab — see
   // useEffectiveProfileId's docblock for why this must not be two independent calls.
-  const { profileId: displayProfileId, source: displayProfileSource } =
-    useEffectiveProfileId("budget", {
-      validIds: allProfiles?.map((p) => p.id),
-      localSelection: viewingProfileId,
-      globalDefaultId: activeProfileId,
-    });
-  const isPinnedProfile = displayProfileSource === "plan-pin";
+  const { profileId: displayProfileId } = useEffectiveProfileId("budget", {
+    validIds: allProfiles?.map((p) => p.id),
+    localSelection: viewingProfileId,
+    globalDefaultId: activeProfileId,
+  });
 
   const [activeContribProfileId] = usePersistedSetting<number | null>(
     SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
-  // Plan pin -> [per-column pin] -> globally-active contribution profile.
-  // The Plan pin is kept as its OWN tier rather than pre-resolved into the
-  // global-default slot — collapsing it there is what let a budget column's
-  // pin beat an active Plan's pin (docs/RULES.md "Profile Pins").
-  const { planPinId: planContribProfileId } = useEffectiveProfileId(
-    "contribution",
-    {
-      validIds: contribProfiles?.map((p) => p.id),
-      localSelection: null,
-      globalDefaultId: activeContribProfileId,
-    },
-  );
-  // Salary Profile — the independent second axis. Plan pin -> globally-active.
+  // [per-column profile] -> active contribution / salary profile.
   const [activeSalaryProfileIdSetting] = usePersistedSetting<number | null>(
     SK_ACTIVE_SALARY_PROFILE_ID,
     null,
   );
   const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
-  const { planPinId: planSalaryProfileId } = useEffectiveProfileId("salary", {
-    validIds: salaryProfiles?.map((p) => p.id),
-    localSelection: null,
-    globalDefaultId: activeSalaryProfileIdSetting,
-  });
   // One shared tier object per axis, fed to BOTH the server query and the
   // client-side per-column resolution so they cannot resolve differently.
   const contributionProfileTiers = useMemo(
     () => ({
-      planPinId: planContribProfileId,
       localSelectionId: null,
       globalDefaultId: activeContribProfileId,
     }),
-    [planContribProfileId, activeContribProfileId],
+    [activeContribProfileId],
   );
   const salaryProfileTiers = useMemo(
     () => ({
-      planPinId: planSalaryProfileId,
       localSelectionId: null,
       globalDefaultId: activeSalaryProfileIdSetting,
     }),
-    [planSalaryProfileId, activeSalaryProfileIdSetting],
+    [activeSalaryProfileIdSetting],
   );
   const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
@@ -168,15 +145,8 @@ export function BudgetContent() {
     duplicateProfile,
   } = useProfileMutations();
   const { clone: cloneProfile } = useCloneProfile(duplicateProfile);
-  // While a Plan is selected, "activating" a profile pins it to that Plan
-  // instead of changing the globally-active profile (which would affect
-  // Main Plan and every other Plan too) — see docs/RULES.md "Profile Pins".
   const handleActivateBudgetProfile = (id: number) => {
-    if (isInScenario) {
-      setScenarioBudgetProfile(id);
-    } else {
-      setActiveProfile.mutate({ id });
-    }
+    setActiveProfile.mutate({ id });
   };
   const {
     addColumn,
@@ -232,12 +202,8 @@ export function BudgetContent() {
   // Resolved (not raw) — same computation RetirementProfileManager runs
   // internally for its own row highlighting (same inputs, shared query
   // cache, so the two can't disagree). RetirementProfileTab needs the
-  // RESOLVED id, not the raw click state: when nothing's been clicked yet
-  // AND a session Plan pins a different profile than the household's
-  // globally-active one, the raw id is null and the tab's own server-side
-  // fallback only knows about the global active setting, not the Plan
-  // pin — passing the resolved id here keeps the two columns showing the
-  // same profile in that case instead of silently disagreeing.
+  // RESOLVED id, not the raw click state (null until something's clicked),
+  // so the two columns always show the same profile.
   const { data: retirementProfilesForResolve } =
     trpc.retirement.retirementProfiles.list.useQuery();
   const [activeRetirementProfileId] = useActiveRetirementProfile();
@@ -363,9 +329,7 @@ export function BudgetContent() {
 
   const activeProfile = allProfiles?.find((p) => p.isActive) ?? null;
   const isViewingNonActive =
-    displayProfileSource === "user-selection" &&
-    displayProfileId != null &&
-    displayProfileId !== activeProfileId;
+    displayProfileId != null && displayProfileId !== activeProfileId;
 
   const rowHandlers = {
     getDraft,
@@ -683,7 +647,6 @@ export function BudgetContent() {
               locked={!editMode}
               viewingProfileId={displayProfileId}
               onSelectProfile={setViewingProfileId}
-              isPinned={isPinnedProfile}
               onActivateProfile={handleActivateBudgetProfile}
               livePoolEstimate={
                 isWeighted && columnMonths && allColumnResults

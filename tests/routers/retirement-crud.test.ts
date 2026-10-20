@@ -13,6 +13,7 @@
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
+import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import {
   createTestCaller,
   seedPerson,
@@ -517,6 +518,7 @@ describe("retirement.returnRates", () => {
 
 describe("retirement.retirementProfiles", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
   let cleanup: () => void;
   let personA: number;
   let personB: number;
@@ -525,6 +527,7 @@ describe("retirement.retirementProfiles", () => {
   beforeAll(async () => {
     const ctx = await createTestCaller(adminSession);
     caller = ctx.caller;
+    db = ctx.db;
     cleanup = ctx.cleanup;
     personA = await seedPerson(ctx.db, "Person A");
     personB = await seedPerson(ctx.db, "Person B");
@@ -863,18 +866,16 @@ describe("retirement.retirementProfiles", () => {
       sourceProfileId: firstProfileId,
       name: "Pinned by a Plan",
     });
-    const plan = await caller.settings.scenarios.create({
-      name: "Test Plan",
-      retirementProfileId: recreated!.id,
-    });
+    const [plan] = db
+      .insert(sqliteSchema.scenarios)
+      .values({ name: "Test Plan", retirementProfileId: recreated!.id })
+      .returning()
+      .all();
     await expect(
       caller.retirement.retirementProfiles.delete({ id: recreated!.id }),
-    ).rejects.toThrow(/active in/);
-    // Clear the Plan's pin so cleanup doesn't leave a dangling reference.
-    await caller.settings.scenarios.setRetirementProfilePin({
-      id: plan!.id,
-      retirementProfileId: null,
-    });
+    ).rejects.toThrow(/used by Plan Test Plan/);
+    // Remove the Plan so the profile can go.
+    await caller.settings.scenarios.delete({ id: plan!.id });
     await caller.retirement.retirementProfiles.delete({ id: recreated!.id });
   });
 

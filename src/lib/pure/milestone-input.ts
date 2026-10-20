@@ -370,7 +370,6 @@ export function buildMilestoneInput(raw: {
   projection: {
     projectionByYear: Parameters<typeof milestoneProjectionYears>[0];
     annualInflation: number;
-    isScenario: boolean;
   } | null;
   holdings: Parameters<typeof milestoneHoldings>[0] | null;
 }): MilestoneInput {
@@ -495,7 +494,6 @@ export function buildMilestoneInput(raw: {
             cashToday,
           ),
           inflationRate: raw.projection.annualInflation,
-          isScenario: raw.projection.isScenario,
         }
       : null,
     fiTarget: inputs.fiTarget,

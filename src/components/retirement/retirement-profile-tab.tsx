@@ -62,7 +62,6 @@ import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
-import { useScenario } from "@/lib/context/scenario-context";
 import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 
@@ -99,19 +98,22 @@ export function RetirementProfileTab({
   const salaryProfilesQuery = trpc.salaryProfile.list.useQuery();
   const salaryProfiles = salaryProfilesQuery.data ?? [];
 
-  const { activeScenario } = useScenario();
-  const { profileId: effectiveContribProfileId, isPinned: isContribPinned } =
-    useEffectiveProfileId("contribution", {
+  const { profileId: effectiveContribProfileId } = useEffectiveProfileId(
+    "contribution",
+    {
       validIds: contribProfiles.map((p) => p.id),
       localSelection: null,
       globalDefaultId: contribProfileId,
-    });
-  const { profileId: effectiveSalaryProfileId, isPinned: isSalaryPinned } =
-    useEffectiveProfileId("salary", {
+    },
+  );
+  const { profileId: effectiveSalaryProfileId } = useEffectiveProfileId(
+    "salary",
+    {
       validIds: salaryProfiles.map((p) => p.id),
       localSelection: null,
       globalDefaultId: salaryProfileId,
-    });
+    },
+  );
 
   // No snapshot selector on this tab (that stayed with ProjectionCard on the
   // Retirement page) — settings/perPersonSettings/budgetProfileSummaries
@@ -407,12 +409,9 @@ export function RetirementProfileTab({
                 contribProfiles={contribProfiles}
                 contribProfileId={contribProfileId}
                 setContribProfileId={setContribProfileId}
-                isContribPinned={isContribPinned}
                 salaryProfiles={salaryProfiles}
                 salaryProfileId={salaryProfileId}
                 setSalaryProfileId={setSalaryProfileId}
-                isSalaryPinned={isSalaryPinned}
-                pinnedPlanName={activeScenario?.name}
                 isEditable={admin}
               />
             </div>

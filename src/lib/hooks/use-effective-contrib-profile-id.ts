@@ -5,11 +5,10 @@ import { useEffectiveProfileId } from "./use-effective-profile-id";
 import { useActiveContribProfile } from "./use-active-contrib-profile";
 
 /**
- * The Contribution Profile axis, resolved once: Plan pin → globally-active
- * setting. Mirrors useEffectiveSalaryProfileId exactly — every page that
- * shows contribution-dependent data should call this rather than reading
- * the globally-active setting directly, which silently ignores a Plan's
- * pin (see docs/RULES.md "Profile Pins").
+ * The Contribution Profile axis, resolved once: the active setting.
+ * Mirrors useEffectiveSalaryProfileId exactly — every page that shows
+ * contribution-dependent data calls this rather than reading the setting
+ * directly (see docs/RULES.md "Profile Resolution").
  *
  * Returns the id plus a ready-made query-input fragment, since every
  * consumer spreads it into a tRPC input the same way.

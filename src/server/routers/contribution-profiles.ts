@@ -15,6 +15,7 @@
  * profile is an ordinary, renamable, editable row, and one with empty
  * contributionActiveFields is simply a profile with nothing customized.
  */
+import { assertNoPlanUses } from "@/server/helpers/plans";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq, inArray } from "drizzle-orm";
@@ -783,18 +784,7 @@ export const contributionProfileRouter = createTRPCRouter({
           message: "Profile not found",
         });
 
-      const pinningPlans = await ctx.db
-        .select({ name: schema.scenarios.name })
-        .from(schema.scenarios)
-        .where(eq(schema.scenarios.contributionProfileId, input.id));
-      if (pinningPlans.length > 0) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `Cannot delete: pinned by ${pinningPlans.length} Plan(s) (${pinningPlans
-            .map((p) => p.name)
-            .join(", ")}). Unpin it there first.`,
-        });
-      }
+      await assertNoPlanUses(ctx.db, "contribution", input.id);
 
       await ctx.db
         .delete(schema.contributionProfiles)

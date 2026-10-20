@@ -1126,11 +1126,9 @@ export async function buildEnginePayload(
     subType: c.subType,
     label: c.label ?? null,
   }));
-  // Intentionally un-overridden by the Plan/session tier — this is the
-  // reference baseline a profile switch's stored salary override gets
+  // The active Salary Profile's own salaries — this is the reference baseline a profile switch's stored salary override gets
   // GROWN from ("Profile salary overrides are in today's dollars; grow to
-  // the switch year" below). Applying a Plan override here would
-  // double-count it into the profile-switch growth math. A job has no
+  // the switch year" below). A job has no
   // salary/bonus of its own — the globally-ACTIVE Salary Profile
   // (salaryProfileActiveMap, already loaded above) is the only live source.
   const liveJobSalaries = activeJobs.map((j) => {

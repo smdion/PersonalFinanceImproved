@@ -12,7 +12,9 @@ import { formatEmployerMatch } from "@/lib/pure/contributions";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
 import { FormField, FormInput } from "@/components/forms";
-import { useScenario } from "@/lib/context/scenario-context";
+import { usePlanNamesUsing } from "@/lib/hooks/use-plans";
+import { planInUseMessage } from "@/lib/config/plans";
+import { toast } from "@/lib/hooks/use-toast";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useDraftCommit } from "@/lib/hooks/use-draft-commit";
@@ -49,8 +51,7 @@ export function ContributionProfileManager({
   locked: boolean;
 }) {
   const utils = trpc.useUtils();
-  const { persistedScenarios, isInScenario, setScenarioContributionProfile } =
-    useScenario();
+  const planNamesUsing = usePlanNamesUsing();
   const [activeContribId, setActiveContribId] = useActiveContribProfile();
   const { data: profiles, isLoading } =
     trpc.contributionProfile.list.useQuery();
@@ -105,7 +106,7 @@ export function ContributionProfileManager({
   // Post-migration the active-profile setting always points at a real row;
   // useActiveContribProfile repairs it if that row ever goes missing.
   const globalActiveContribId = activeContribId;
-  // Plan pin -> local selection -> globally-active profile (single computation path)
+  // local selection -> active profile (single computation path)
   const { profileId: effectiveSelectedId, source: effectiveSelectedSource } =
     useEffectiveProfileId("contribution", {
       validIds: profiles?.map((p) => p.id),
@@ -134,9 +135,7 @@ export function ContributionProfileManager({
   const canDeleteAny = profiles.length > 1;
 
   // Warn before a swap silently drops an account's active value —
-  // compare against whichever profile is CURRENTLY in effect for this
-  // viewing context (Plan pin, if any, else the global active one), same
-  // resolution useEffectiveProfileId already does for display.
+  // compare against the active profile.
   const handleActivate = async (id: number) => {
     const outgoing = compareData?.profiles.find(
       (p) => p.id === effectiveSelectedId,
@@ -156,11 +155,7 @@ export function ContributionProfileManager({
         if (!ok) return;
       }
     }
-    if (isInScenario) {
-      setScenarioContributionProfile(id);
-    } else {
-      setActiveContribId(id);
-    }
+    setActiveContribId(id);
   };
 
   return (
@@ -305,18 +300,14 @@ export function ContributionProfileManager({
                   onDelete={
                     canEdit && canDeleteAny
                       ? async () => {
-                          const pinnedBy = persistedScenarios
-                            .filter((s) => s.contributionProfileId === p.id)
-                            .map((s) => s.name);
-                          const pinnedByClause =
-                            pinnedBy.length > 0
-                              ? ` The Plan${pinnedBy.length > 1 ? "s" : ""} "${pinnedBy.join('", "')}" ${pinnedBy.length > 1 ? "have" : "has"} this profile active, so deleting is blocked until you clear it there.`
-                              : "";
-                          if (
-                            await confirm(
-                              `Delete profile "${p.name}"?${pinnedByClause}`,
-                            )
-                          ) {
+                          const usedBy = planNamesUsing("contribution", p.id);
+                          if (usedBy.length > 0) {
+                            toast.error(
+                              planInUseMessage("contribution", usedBy),
+                            );
+                            return;
+                          }
+                          if (await confirm(`Delete profile "${p.name}"?`)) {
                             deleteMutation.mutate({ id: p.id });
                           }
                         }

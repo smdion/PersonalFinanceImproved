@@ -123,7 +123,7 @@ function FundingBar({
 
 function ContributionsCardImpl() {
   const { viewMode } = useScenario();
-  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const { queryInput: contribProfileInput } = useEffectiveContribProfileId();
   const contribInput = {

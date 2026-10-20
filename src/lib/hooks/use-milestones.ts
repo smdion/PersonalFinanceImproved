@@ -12,7 +12,6 @@ import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-pr
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
-import { useScenario } from "@/lib/context/scenario-context";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
@@ -47,7 +46,6 @@ export function useMilestones(): {
   input: MilestoneInput | null;
   results: MilestoneResult[];
 } {
-  const { isInScenario } = useScenario();
   const user = useUser();
   const withHoldings = hasPermission(user, "portfolio");
   const withBrokerageGoals = hasPermission(user, "brokerage");
@@ -106,7 +104,6 @@ export function useMilestones(): {
       ? {
           projectionByYear: projectionData.result.projectionByYear,
           annualInflation: Number(projectionData.settings.annualInflation) || 0,
-          isScenario: isInScenario,
         }
       : null,
     holdings: withHoldings ? (holdings.data ?? null) : null,

@@ -9,7 +9,6 @@ import {
 
 /** Every tier explicitly "pins nothing" unless a test says otherwise. */
 const base: ColumnProfileResolutionInput = {
-  planPinId: null,
   columnPinIds: null,
   numColumns: 3,
   column: 0,
@@ -80,66 +79,10 @@ describe("resolveContributionProfileId", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// REGRESSION (pre-existing bug): documented precedence was implemented
-// backwards.
-//
-// docs/RULES.md has always documented
-//   Plan pin > per-budget-column pin > local page selection > globally-active
-// but the shipped code resolved the Plan pin FIRST (via useEffectiveProfileId)
-// and then handed that result into this resolver's LOWEST tier — so a budget
-// column's own pin beat the active Plan's pin. On a household with an active
-// Plan pinning Contribution Profile 42 and a budget column pinning profile 7,
-// the Budget page showed column 7's contribution reality while every other
-// page on the same Plan showed 42.
-//
-// Against the OLD signature these two cases were literally inexpressible (the
-// Plan pin had no tier of its own); against the OLD behavior, with the Plan
-// pin passed as the "active" argument, they returned the COLUMN pin (7 / 8).
-// ---------------------------------------------------------------------------
-describe("Plan pin beats a per-column pin (documented precedence)", () => {
-  it("contribution axis: Plan pin wins over the column's own pin", () => {
+describe("documented precedence: column → local selection → active", () => {
+  it("a column's own profile beats a local page selection", () => {
     expect(
       resolveContributionProfileId({
-        planPinId: 42,
-        columnPinIds: [7, 7, 7],
-        numColumns: 3,
-        column: 1,
-        localSelectionId: 99,
-        globalDefaultId: 2,
-      }),
-    ).toBe(42);
-  });
-
-  it("salary axis: Plan pin wins over the column's own pin", () => {
-    expect(
-      resolveSalaryProfileId({
-        planPinId: 43,
-        columnPinIds: [8, 8],
-        numColumns: 2,
-        column: 0,
-        localSelectionId: 99,
-        globalDefaultId: 3,
-      }),
-    ).toBe(43);
-  });
-
-  it("every column resolves to the Plan pin when one is active", () => {
-    expect(
-      resolveContributionProfileIdsForAllColumns({
-        planPinId: 42,
-        columnPinIds: [7, null, 9],
-        numColumns: 3,
-        localSelectionId: null,
-        globalDefaultId: 2,
-      }),
-    ).toEqual([42, 42, 42]);
-  });
-
-  it("column pin still beats a local page selection when no Plan pin is active", () => {
-    expect(
-      resolveContributionProfileId({
-        planPinId: null,
         columnPinIds: [7, null, null],
         numColumns: 3,
         column: 0,
@@ -149,10 +92,21 @@ describe("Plan pin beats a per-column pin (documented precedence)", () => {
     ).toBe(7);
   });
 
+  it("salary axis: a column's own profile beats a local page selection", () => {
+    expect(
+      resolveSalaryProfileId({
+        columnPinIds: [null, 8],
+        numColumns: 2,
+        column: 1,
+        localSelectionId: 99,
+        globalDefaultId: 2,
+      }),
+    ).toBe(8);
+  });
+
   it("local page selection beats the global default on an unpinned column", () => {
     expect(
       resolveContributionProfileId({
-        planPinId: null,
         columnPinIds: [7, null, null],
         numColumns: 3,
         column: 1,
@@ -167,7 +121,6 @@ describe("resolveContributionProfileIdsForAllColumns", () => {
   it("resolves every column independently", () => {
     expect(
       resolveContributionProfileIdsForAllColumns({
-        planPinId: null,
         columnPinIds: [null, 7, null],
         numColumns: 3,
         localSelectionId: null,
@@ -179,7 +132,6 @@ describe("resolveContributionProfileIdsForAllColumns", () => {
   it("returns an all-default array when the override array is null", () => {
     expect(
       resolveContributionProfileIdsForAllColumns({
-        planPinId: null,
         columnPinIds: null,
         numColumns: 3,
         localSelectionId: null,
@@ -191,7 +143,6 @@ describe("resolveContributionProfileIdsForAllColumns", () => {
   it("returns an empty array for zero columns", () => {
     expect(
       resolveContributionProfileIdsForAllColumns({
-        planPinId: null,
         columnPinIds: [1, 2],
         numColumns: 0,
         localSelectionId: null,
@@ -203,7 +154,6 @@ describe("resolveContributionProfileIdsForAllColumns", () => {
   it("salary axis resolves every column independently too", () => {
     expect(
       resolveSalaryProfileIdsForAllColumns({
-        planPinId: null,
         columnPinIds: [null, 8],
         numColumns: 2,
         localSelectionId: null,

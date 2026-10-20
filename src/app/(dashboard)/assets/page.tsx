@@ -4,8 +4,8 @@
  * Server-side prefetches assets.computeSummary with no year-end targeting
  * override — matches the router's own default-active-profile resolution
  * for the common case. Same caveat as budget/page.tsx's reference pattern:
- * if the client resolves a different effective budget profile (a Plan pin
- * or persisted override), this prefetch is a no-op rather than wrong data —
+ * if the client resolves a different effective budget profile (a page-local
+ * selection), this prefetch is a no-op rather than wrong data —
  * TanStack Query dedupes by exact input, so a mismatched key just falls
  * back to the client's own fetch.
  *

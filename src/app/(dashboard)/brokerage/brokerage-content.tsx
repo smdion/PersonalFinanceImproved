@@ -60,7 +60,7 @@ export function BrokerageContent() {
   const updateCostBasis = trpc.performance.updateCostBasis.useMutation({
     onSuccess: () => utils.performance.performanceAccounts.list.invalidate(),
   });
-  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [activeProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",

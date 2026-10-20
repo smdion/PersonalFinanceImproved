@@ -26,6 +26,10 @@ export const SK_ACTIVE_SALARY_PROFILE_ID = "active_salary_profile_id";
  *  which blanks the retirement page. Mirrors SK_ACTIVE_CONTRIB_PROFILE_ID /
  *  SK_ACTIVE_SALARY_PROFILE_ID above. */
 export const SK_ACTIVE_RETIREMENT_PROFILE_ID = "active_retirement_profile_id";
+/** The Plan last applied (scenarios.id) — only so the header can offer
+ *  "Update ‹Plan›" after a profile changes; which Plan is in use is derived
+ *  from the active profiles, never read from here. */
+export const SK_LAST_APPLIED_PLAN_ID = "last_applied_plan_id";
 
 // ── Retirement ──────────────────────────────────────────────────────
 export const SK_RETIREMENT_SIMULATION_AUTOLOAD =

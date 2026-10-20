@@ -19,7 +19,6 @@ import type { RawGoal } from "./types";
  *  for why the recalculate/lock-in mutations need this threaded through
  *  explicitly rather than re-resolving it themselves. */
 interface ProfileResolutionTiers {
-  planPinId: number | null;
   localSelectionId: number | null;
   globalDefaultId: number | null;
 }
@@ -29,8 +28,8 @@ export interface RecalcIncomeParams {
   salaryProfileId?: number;
   /** The raw tiers behind `contributionProfileId`/`salaryProfileId` — the
    *  mutation forwards these to budget.computeActiveSummary so that
-   *  procedure's OWN per-column profile resolution (Plan pin > column pin >
-   *  local selection > global default) matches what the client's own
+   *  procedure's OWN per-column profile resolution (column profile > local
+   *  selection > active) matches what the client's own
    *  maxMonthlyFunding query used, not just the paycheck side (see
    *  computeLiveMaxMonthlyFunding in savings.ts). */
   contributionProfileTiers?: ProfileResolutionTiers;

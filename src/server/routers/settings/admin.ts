@@ -44,11 +44,9 @@ import {
   RBAC_ADMIN_GROUP_KEY,
 } from "@/server/auth";
 import { settingValue } from "./_shared";
-import {
-  apiConfigSchema,
-  accountMappingSchema,
-  scenarioOverridesSchema,
-} from "@/lib/db/json-schemas";
+import { apiConfigSchema, accountMappingSchema } from "@/lib/db/json-schemas";
+import { applyPlan } from "@/server/helpers/plans";
+import type { Db } from "@/server/helpers/transforms";
 
 // --- Zod schemas ---
 
@@ -70,6 +68,33 @@ const STRUCTURED_SETTINGS: Record<string, z.ZodType> = {
   [SK_HSA_CASH_BUFFER]: z.number().finite().nonnegative(),
   [SK_BONUS_DESTINATIONS]: bonusDestinationsSchema,
 };
+
+const planName = z.string().trim().min(1).max(100);
+
+/** A Plan holds one profile of every kind. */
+const planProfileIdsInput = z.object({
+  salaryProfileId: z.number().int(),
+  contributionProfileId: z.number().int(),
+  budgetProfileId: z.number().int(),
+  retirementProfileId: z.number().int(),
+});
+
+/** Plan names are unique, like profile names. */
+async function assertPlanNameFree(
+  db: Db,
+  name: string,
+  exceptId?: number,
+): Promise<void> {
+  const [clash] = await db
+    .select({ id: schema.scenarios.id })
+    .from(schema.scenarios)
+    .where(eq(schema.scenarios.name, name));
+  if (clash && clash.id !== exceptId)
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: `A Plan named "${name}" already exists.`,
+    });
+}
 
 // --- Procedures ---
 
@@ -257,127 +282,57 @@ export const adminProcedures = {
     }),
   }),
 
-  // ══ SCENARIOS (global what-if system) ══
+  // ══ PLANS (a named set of profiles — see server/helpers/plans.ts) ══
   scenarios: createTRPCRouter({
+    /** Every saved Plan. */
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db.select().from(schema.scenarios).orderBy(asc(schema.scenarios.id)),
     ),
+    /** Save a set of profiles as a Plan — all four kinds, by name. */
     create: scenarioProcedure
       .input(
         z.object({
-          name: z.string().min(1),
+          name: planName,
           description: z.string().nullable().optional(),
-          overrides: scenarioOverridesSchema.default({}),
-          budgetProfileId: z.number().int().nullable().optional(),
-          contributionProfileId: z.number().int().nullable().optional(),
-          salaryProfileId: z.number().int().nullable().optional(),
-          retirementProfileId: z.number().int().nullable().optional(),
+          ...planProfileIdsInput.shape,
         }),
       )
-      .mutation(({ ctx, input }) =>
-        ctx.db
+      .mutation(async ({ ctx, input }) => {
+        await assertPlanNameFree(ctx.db, input.name);
+        return ctx.db
           .insert(schema.scenarios)
           .values(input)
           .returning()
-          .then((r) => r[0]),
-      ),
+          .then((r) => r[0]);
+      }),
+    /** Rename a Plan or change which profiles it holds. */
     update: scenarioProcedure
       .input(
         z.object({
           id: z.number().int(),
-          name: z.string().min(1).optional(),
+          name: planName.optional(),
           description: z.string().nullable().optional(),
-          overrides: scenarioOverridesSchema.optional(),
-          budgetProfileId: z.number().int().nullable().optional(),
-          contributionProfileId: z.number().int().nullable().optional(),
-          salaryProfileId: z.number().int().nullable().optional(),
-          retirementProfileId: z.number().int().nullable().optional(),
+          ...planProfileIdsInput.partial().shape,
         }),
       )
-      .mutation(({ ctx, input: { id, ...data } }) =>
-        ctx.db
+      .mutation(async ({ ctx, input: { id, ...data } }) => {
+        if (data.name !== undefined)
+          await assertPlanNameFree(ctx.db, data.name, id);
+        return ctx.db
           .update(schema.scenarios)
           .set({ ...data, updatedAt: new Date() })
           .where(eq(schema.scenarios.id, id))
           .returning()
-          .then((r) => r[0]),
-      ),
-    /** Pin (or clear, with null) which Budget Profile is "active" when this Plan is selected. */
-    setBudgetProfilePin: scenarioProcedure
-      .input(
-        z.object({
-          id: z.number().int(),
-          budgetProfileId: z.number().nullable(),
-        }),
-      )
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .update(schema.scenarios)
-          .set({
-            budgetProfileId: input.budgetProfileId,
-            updatedAt: new Date(),
-          })
-          .where(eq(schema.scenarios.id, input.id))
-          .returning()
-          .then((r) => r[0]),
-      ),
-    /** Pin (or clear, with null) which Contribution Profile is "active" when this Plan is selected. */
-    setContributionProfilePin: scenarioProcedure
-      .input(
-        z.object({
-          id: z.number().int(),
-          contributionProfileId: z.number().nullable(),
-        }),
-      )
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .update(schema.scenarios)
-          .set({
-            contributionProfileId: input.contributionProfileId,
-            updatedAt: new Date(),
-          })
-          .where(eq(schema.scenarios.id, input.id))
-          .returning()
-          .then((r) => r[0]),
-      ),
-    /** Pin (or clear, with null) which Salary Profile is "active" when this Plan is selected. */
-    setSalaryProfilePin: scenarioProcedure
-      .input(
-        z.object({
-          id: z.number().int(),
-          salaryProfileId: z.number().nullable(),
-        }),
-      )
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .update(schema.scenarios)
-          .set({
-            salaryProfileId: input.salaryProfileId,
-            updatedAt: new Date(),
-          })
-          .where(eq(schema.scenarios.id, input.id))
-          .returning()
-          .then((r) => r[0]),
-      ),
-    /** Set (or clear, with null) which Retirement Profile is active when this Plan is selected. */
-    setRetirementProfilePin: scenarioProcedure
-      .input(
-        z.object({
-          id: z.number().int(),
-          retirementProfileId: z.number().nullable(),
-        }),
-      )
-      .mutation(({ ctx, input }) =>
-        ctx.db
-          .update(schema.scenarios)
-          .set({
-            retirementProfileId: input.retirementProfileId,
-            updatedAt: new Date(),
-          })
-          .where(eq(schema.scenarios.id, input.id))
-          .returning()
-          .then((r) => r[0]),
-      ),
+          .then((r) => r[0]);
+      }),
+    /** Make this Plan's profiles the active ones, household-wide (applyPlan). */
+    activate: protectedProcedure
+      .input(z.object({ id: z.number().int() }))
+      .mutation(async ({ ctx, input }) => {
+        await applyPlan(ctx.db, ctx.session.user, input.id);
+        await invalidateYearEndCache();
+        return { ok: true };
+      }),
     delete: scenarioProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(({ ctx, input }) =>
@@ -385,103 +340,6 @@ export const adminProcedures = {
           .delete(schema.scenarios)
           .where(eq(schema.scenarios.id, input.id)),
       ),
-    /** Update a single override within a scenario's overrides JSONB */
-    setOverride: scenarioProcedure
-      .input(
-        z.object({
-          id: z.number().int(),
-          entity: z.string(),
-          recordId: z.string(),
-          field: z.string(),
-          value: settingValue,
-        }),
-      )
-      .mutation(async ({ ctx, input }) => {
-        // Wrapped in a transaction so the read-modify-write of the JSONB
-        // overrides column is atomic. (No FOR UPDATE — was never actually
-        // added despite an earlier comment claiming it; SQLite has no
-        // equivalent and relies on single-writer semantics elsewhere in
-        // this codebase, so the transaction boundary alone is consistent
-        // with that pattern.)
-        return ctx.db.transaction(async (tx) => {
-          const [existing] = await tx
-            .select()
-            .from(schema.scenarios)
-            .where(eq(schema.scenarios.id, input.id));
-          if (!existing)
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "Scenario not found",
-            });
-          const overrides = (existing.overrides ?? {}) as Record<
-            string,
-            Record<string, Record<string, unknown>>
-          >;
-          if (!overrides[input.entity]) overrides[input.entity] = {};
-          if (!overrides[input.entity]![input.recordId])
-            overrides[input.entity]![input.recordId] = {};
-          overrides[input.entity]![input.recordId]![input.field] = input.value;
-          return tx
-            .update(schema.scenarios)
-            .set({ overrides, updatedAt: new Date() })
-            .where(eq(schema.scenarios.id, input.id))
-            .returning()
-            .then((r) => r[0]);
-        });
-      }),
-    /** Remove a single override from a scenario */
-    clearOverride: scenarioProcedure
-      .input(
-        z.object({
-          id: z.number().int(),
-          entity: z.string(),
-          recordId: z.string(),
-          field: z.string(),
-        }),
-      )
-      .mutation(async ({ ctx, input }) => {
-        // Wrapped in a transaction so the read-modify-write of the JSONB
-        // overrides column is atomic. (No FOR UPDATE — was never actually
-        // added despite an earlier comment claiming it; SQLite has no
-        // equivalent and relies on single-writer semantics elsewhere in
-        // this codebase, so the transaction boundary alone is consistent
-        // with that pattern.)
-        return ctx.db.transaction(async (tx) => {
-          const [existing] = await tx
-            .select()
-            .from(schema.scenarios)
-            .where(eq(schema.scenarios.id, input.id));
-          if (!existing)
-            throw new TRPCError({
-              code: "NOT_FOUND",
-              message: "Scenario not found",
-            });
-          const overrides = (existing.overrides ?? {}) as Record<
-            string,
-            Record<string, Record<string, unknown>>
-          >;
-          delete overrides[input.entity]?.[input.recordId]?.[input.field];
-          // Clean up empty branches
-          if (
-            overrides[input.entity]?.[input.recordId] &&
-            Object.keys(overrides[input.entity]![input.recordId]!).length === 0
-          ) {
-            delete overrides[input.entity]![input.recordId];
-          }
-          if (
-            overrides[input.entity] &&
-            Object.keys(overrides[input.entity]!).length === 0
-          ) {
-            delete overrides[input.entity];
-          }
-          return tx
-            .update(schema.scenarios)
-            .set({ overrides, updatedAt: new Date() })
-            .where(eq(schema.scenarios.id, input.id))
-            .returning()
-            .then((r) => r[0]);
-        });
-      }),
   }),
 
   // ══ API CONNECTIONS ══

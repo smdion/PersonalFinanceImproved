@@ -43,9 +43,8 @@ export function RetirementContent() {
     "projection" | "comparison" | "planHealth"
   >("projection");
   const [dollarMode, setDollarMode] = useState<"nominal" | "real">("real");
-  // Retirement Profile axis (phase 4, the assumptions band) — same
-  // three-tier resolution as Contribution/Salary above: Plan pin -> this
-  // page's local viewing selection -> globally-active profile. Unlike
+  // Retirement Profile axis (phase 4, the assumptions band) — this page's
+  // local viewing selection -> the active profile. Unlike
   // those two, retirement previously had NO "view without activating"
   // support server-side; retirementProfileId in baseInput below is what
   // adds it (build-engine-payload.ts, phase 4).
