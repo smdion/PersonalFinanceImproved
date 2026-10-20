@@ -39,6 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Additional Medicare Tax** is now figured on your household's combined Medicare wages above your filing status's threshold (e.g. $250k married filing jointly) instead of each person's wages above $200k. The note about withheld vs owed now shows when either applies — including both of you under $200k but together over $250k — with the amount.
 - **Effective tax rate** is now federal income tax ÷ AGI, the same way your tax history is figured; FICA is its own line.
 - **Deductions:** a deduction can only be marked FICA-exempt if it is also pre-tax; an older row saved the other way is treated as FICA wages.
+- **Tax data check (CI):** each table is now due by its own publication date in the right year (IRS/CMS by Nov 30 of the year before, HHS poverty lines by Jan 31), so the check no longer fails before the IRS has published, or asks for next year's poverty lines in October.
 
 ---
 
