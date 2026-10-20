@@ -57,6 +57,13 @@
       "when": 1792448703605,
       "tag": "0007_v088_drop_account_holdings",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792459104126,
+      "tag": "0008_v088_paycheck_earnings",
+      "breakpoints": true
     }
   ]
 }

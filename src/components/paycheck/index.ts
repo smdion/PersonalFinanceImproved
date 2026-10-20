@@ -21,6 +21,7 @@ export type { ContribAccountFormValues } from "./contrib-account-form";
 export type { DeductionFormValues } from "./deduction-form";
 export type {
   RawDeduction,
+  EarningRow,
   RawContrib,
   DeductionRowData,
   ContribCardProps,

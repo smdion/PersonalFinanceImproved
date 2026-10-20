@@ -5,6 +5,7 @@
 import type {
   PayPeriodType,
   DeductionLine,
+  EarningLine,
   TaxBracketInput,
   ContributionAccountInput,
 } from "./shared";
@@ -44,6 +45,8 @@ export type PaycheckInput = {
   additionalFedWithholding: number; // W-4 Line 4c — flat extra $ added to PER-CHECK federal withholding after bracket withholding, never annualized and never applied to the supplemental bonus rate
   contributionAccounts: ContributionAccountInput[];
   deductions: DeductionLine[];
+  /** Other pay and taxable benefits on each check (beyond salary). */
+  earnings: EarningLine[];
   taxBrackets: TaxBracketInput;
   limits: Record<string, number>;
   ytdGrossEarnings: number;
@@ -58,7 +61,10 @@ export type PaycheckInput = {
 };
 
 export type PaycheckResult = {
+  /** Cash pay per check: salary ÷ periods + cash earnings. */
   gross: number;
+  /** The other pay / taxable-benefit lines on each check. */
+  earnings: EarningLine[];
   preTaxDeductions: DeductionLine[];
   federalTaxableGross: number;
   federalWithholding: number;

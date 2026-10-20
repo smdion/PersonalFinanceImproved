@@ -25,8 +25,7 @@ export function taxForOnePerson(input: OnePersonTaxInput) {
   const r = calculateHouseholdTax({
     people: [
       {
-        gross: input.annualGross,
-        preTaxFederal: input.preTaxDeductionsAnnual,
+        federalWages: input.annualGross - input.preTaxDeductionsAnnual,
         ficaWages: input.ficaWagesAnnual ?? input.annualGross,
       },
     ],

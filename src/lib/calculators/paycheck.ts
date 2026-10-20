@@ -214,8 +214,27 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   }
 
   const periodsPerYear = getPeriodsPerYear(input.payPeriod);
+  // Other pay on each check: cash lines are paid (gross, net); non-cash
+  // lines (imputed income) are only taxed. Each line says which taxes
+  // apply, so a cash line exempt from a tax comes back out of that base.
+  const earnings = input.earnings ?? [];
+  const cashEarnings = sumBy(
+    earnings.filter((e) => e.isCash),
+    (e) => e.amount,
+  );
+  const sumTaxable = (tax: "federalTaxable" | "ficaTaxable") =>
+    sumBy(
+      earnings.filter((e) => !e.isCash && e[tax]),
+      (e) => e.amount,
+    ) -
+    sumBy(
+      earnings.filter((e) => e.isCash && !e[tax]),
+      (e) => e.amount,
+    );
+  const federalEarningsAdjustment = sumTaxable("federalTaxable");
+  const ficaEarningsAdjustment = sumTaxable("ficaTaxable");
   const gross = roundToCents(
-    safeDivide(input.annualSalary, periodsPerYear, 0)!,
+    safeDivide(input.annualSalary, periodsPerYear, 0)! + cashEarnings,
   );
 
   // ── Step 1: Classify deductions ──
@@ -274,11 +293,16 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   const ficaExemptFromContribs = sumBy(input.contributionAccounts, (ca) =>
     regularFicaExemptPerPeriod(ca, periodsPerYear),
   );
-  const ficaBase = gross - ficaExemptFromDeductions - ficaExemptFromContribs;
+  const ficaBase =
+    gross -
+    ficaExemptFromDeductions -
+    ficaExemptFromContribs +
+    ficaEarningsAdjustment;
 
   // ── Step 3: Federal withholding (IRS annualized method) ──
   // Federal taxable gross = gross minus ALL pre-tax deductions (401k, HSA, health insurance, etc.)
-  const federalTaxableGross = gross - totalPreTax;
+  // plus taxable benefits not paid in cash (imputed income).
+  const federalTaxableGross = gross - totalPreTax + federalEarningsAdjustment;
 
   // Annualize for bracket lookup, then divide result back to per-period.
   // Pub 15-T Worksheet 1A line 1h: subtract the line 1g adjustment —
@@ -415,6 +439,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
 
   return {
     gross,
+    earnings,
     preTaxDeductions,
     federalTaxableGross,
     federalWithholding: roundToCents(federalWithholding),

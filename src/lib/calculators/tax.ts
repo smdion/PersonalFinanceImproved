@@ -39,11 +39,9 @@ import { sumBracketTax } from "./tax-brackets";
 
 /** One person's earnings for the year, as the tax sees them (see computeAnnualEarnings). */
 export type TaxEarnings = {
-  /** Salary + bonus. */
-  gross: number;
-  /** Money that comes out before federal income tax (pre-tax contributions, Section 125 deductions). */
-  preTaxFederal: number;
-  /** Social Security / Medicare wages: gross less Section 125 deductions and FICA-exempt payroll contributions. */
+  /** Federal income-tax wages: taxable pay (incl. imputed income) less pre-tax money. */
+  federalWages: number;
+  /** Social Security / Medicare wages: gross less Section 125 deductions and FICA-exempt payroll contributions, plus FICA-taxable benefits. */
   ficaWages: number;
 };
 
@@ -58,7 +56,7 @@ export type HouseholdTaxInput = {
 };
 
 export type HouseholdTaxResult = {
-  /** Σ gross − Σ pre-tax: the AGI the tax is figured on (wages only — no investment income). */
+  /** Σ federal wages: the AGI the tax is figured on (wages only — no investment income). */
   wageAgi: number;
   taxableIncome: number;
   federalTax: number;
@@ -82,8 +80,7 @@ export function calculateHouseholdTax(
 
   // ── Federal: combined income, ONE standard deduction ──
   // Itemized deductions are not modelled.
-  const wageAgi =
-    sumBy(people, (p) => p.gross) - sumBy(people, (p) => p.preTaxFederal);
+  const wageAgi = sumBy(people, (p) => p.federalWages);
   const taxableIncome = Math.max(0, wageAgi - taxBrackets.standardDeduction);
   const bracketResult = sumBracketTax(taxableIncome, taxBrackets.brackets);
   const federalTax = roundToCents(bracketResult.total);

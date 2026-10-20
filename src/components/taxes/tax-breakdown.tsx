@@ -54,10 +54,21 @@ export function TaxBreakdown({ data }: { data: PaycheckSummary }) {
     <Card title={`${data.taxYear} tax (projected)`}>
       <div className="space-y-1 text-sm">
         <Row
-          label="Salary + bonus"
+          label={
+            income.otherCashPay > 0
+              ? "Salary + bonus + other pay"
+              : "Salary + bonus"
+          }
           value={formatCurrency(income.gross)}
-          help="Household annual income: salary plus your set bonus (the formula if none is set)."
+          help="Household annual income: salary plus your set bonus (the formula if none is set), plus any other pay on your checks."
         />
+        {income.imputedIncome > 0 && (
+          <Row
+            label="Taxable benefits (not paid)"
+            value={`+${formatCurrency(income.imputedIncome)}`}
+            help="Benefits taxed as pay but never paid to you — e.g. group life insurance over $50k. They raise your taxable wages, not your take-home."
+          />
+        )}
         <Row
           label="Pre-tax money"
           value={`−${formatCurrency(income.preTaxFederal)}`}

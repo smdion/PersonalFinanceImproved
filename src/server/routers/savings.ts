@@ -83,6 +83,7 @@ import type {
 import { currentMonthKey } from "@/lib/pure/date-keys";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions";
+import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
 
 /**
  * Compute the current net-pay-per-check for a job by running the paycheck
@@ -262,12 +263,16 @@ export async function computeJobNetPayPerCheck(
   const periodsPerYear = getPeriodsPerYear(salaryEntry.payPeriod);
   const taxBrackets = buildBracketInput(bracketRow, limitsMap, allBrackets);
 
-  const deductions: DeductionLine[] = jobDeductions.map((d) => ({
-    name: d.deductionName,
-    amount: toNumber(String(d.amountPerPeriod)),
-    taxTreatment: d.isPretax ? ("pre_tax" as const) : ("after_tax" as const),
-    ficaExempt: d.ficaExempt,
-  }));
+  const deductions: DeductionLine[] = jobDeductions.map((d) =>
+    deductionLine(d, toNumber(String(d.amountPerPeriod))),
+  );
+  const earnings = earningLines(
+    await db
+      .select()
+      .from(schema.paycheckEarnings)
+      .where(eq(schema.paycheckEarnings.jobId, job.id)),
+    salaryEntry.otherEarnings,
+  );
 
   const contribAccounts = buildContribAccounts(
     jobContribs,
@@ -293,6 +298,7 @@ export async function computeJobNetPayPerCheck(
     bonusOverride: null,
     contributionAccounts: contribAccounts,
     deductions,
+    earnings,
     taxBrackets,
     limitsMap,
     limitsRecord,

@@ -44,6 +44,10 @@
  *    play area, not an in-progress save.
  */
 
+import {
+  DEDUCTION_PRESETS,
+  deductionPresetFor,
+} from "@/lib/config/paycheck-presets";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { trpc } from "@/lib/trpc";
@@ -198,6 +202,7 @@ type DeductionAddition = {
   name: string;
   amountPerPeriod: number;
   isPretax: boolean;
+  ficaExempt: boolean;
 };
 
 /** A hand-added hypothetical contribution account — same localId contract
@@ -302,6 +307,7 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
         name: "New deduction",
         amountPerPeriod: 0,
         isPretax: false,
+        ficaExempt: false,
       },
     ]);
   };
@@ -383,11 +389,12 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
     () =>
       deductionAdditions
         .filter((d) => d.name.trim() !== "" && d.amountPerPeriod !== 0)
-        .map(({ personId, name, amountPerPeriod, isPretax }) => ({
+        .map(({ personId, name, amountPerPeriod, isPretax, ficaExempt }) => ({
           personId,
           name,
           amountPerPeriod,
           isPretax,
+          ficaExempt,
         })),
     [deductionAdditions],
   );
@@ -738,7 +745,7 @@ function WhatIfDeductionsEditor({
                         />
                       </td>
                       <td className="text-faint px-3 py-1">
-                        {d.isPretax ? "Pre-tax" : "Post-tax"}
+                        {deductionPresetFor(d).short}
                       </td>
                       <td />
                     </tr>
@@ -775,16 +782,25 @@ function WhatIfDeductionsEditor({
                       </td>
                       <td className="px-3 py-1">
                         <select
-                          value={a.isPretax ? "pre" : "post"}
-                          onChange={(e) =>
-                            onUpdateAddition(a.localId, {
-                              isPretax: e.target.value === "pre",
-                            })
-                          }
+                          aria-label="How your pay stub lists it"
+                          value={deductionPresetFor(a).key}
+                          onChange={(e) => {
+                            const p = DEDUCTION_PRESETS.find(
+                              (x) => x.key === e.target.value,
+                            );
+                            if (p)
+                              onUpdateAddition(a.localId, {
+                                isPretax: p.isPretax,
+                                ficaExempt: p.ficaExempt,
+                              });
+                          }}
                           className="bg-surface-primary rounded border px-1 py-0.5 text-xs"
                         >
-                          <option value="pre">Pre-tax</option>
-                          <option value="post">Post-tax</option>
+                          {DEDUCTION_PRESETS.map((p) => (
+                            <option key={p.key} value={p.key} title={p.label}>
+                              {p.short}
+                            </option>
+                          ))}
                         </select>
                       </td>
                       <td className="px-1 py-1">
@@ -1435,7 +1451,7 @@ export function WhatIfTab({
       jobId,
       deductionName: addition.name,
       isPretax: addition.isPretax,
-      ficaExempt: false,
+      ficaExempt: addition.ficaExempt,
     });
   };
 

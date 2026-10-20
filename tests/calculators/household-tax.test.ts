@@ -16,8 +16,7 @@ const MFJ_LIABILITY = 250_000;
 const WITHHOLDING = B.medicareAdditionalThreshold; // 200k per employee
 const SINGLE: TaxBracketInput = { ...B, filingStatus: "Single" };
 const wages = (gross: number, preTaxFederal = 0, ficaWages = gross) => ({
-  gross,
-  preTaxFederal,
+  federalWages: gross - preTaxFederal,
   ficaWages,
 });
 

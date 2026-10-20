@@ -24,6 +24,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Changed
 
+- **Paycheck matches your pay stub's lines:** each deduction now says how your stub lists it — _Before-tax (Section 125)_ for health/dental/vision/payroll HSA, _Before-tax (retirement)_ for a traditional 401(k), or _After-tax_ (Roth 401(k), disability, life insurance, dues) — and you can change it right on the pay stub. New **Other Pay & Taxable Benefits** section: extra pay on every check, or a taxable benefit that's never paid (e.g. group life insurance over $50k — "imputed income"), which raises your taxes but not your take-home. Its amount per check is saved with your salary in the Salary Profile. The annual tax, AGI and Roth IRA MAGI include it. The What-If tab's added deductions take the same choices.
+
 - **Reference data:** the IRS Roth IRA income phase-out ranges, the Additional Medicare Tax thresholds you owe on (separate from the $200k your employer withholds at) and HDHP minimum deductibles for 2025 and 2026 are added to your tax data — you can edit them in Settings like the other IRS limits.
 
 ### Fixed

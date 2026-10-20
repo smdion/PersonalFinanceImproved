@@ -36,6 +36,7 @@ import {
   type RawContrib,
   type DeductionRowData,
   type JointContrib,
+  type EarningRow,
 } from "@/components/paycheck";
 import {
   getLimitGroup as configGetLimitGroup,
@@ -93,6 +94,8 @@ export type PaycheckPersonView = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- router output shape
   blendedAnnual: any;
   rawDeductions: RawDeduction[];
+  /** This job's other-pay lines with their per-check amounts. */
+  earningRows: EarningRow[];
   rawContribs: RawContrib[];
   alignedPreTax?: DeductionRowData[];
   alignedPostTax?: DeductionRowData[];
@@ -384,6 +387,7 @@ export function usePaycheckPersonViews({
             .fullFormulaBonusEstimate,
           blendedAnnual: (d as Record<string, unknown>).blendedAnnual,
           rawDeductions: d.rawDeductions as RawDeduction[],
+          earningRows: "earningRows" in d ? d.earningRows : [],
           rawContribs: d.rawContribs as RawContrib[],
           alignedPreTax: alignedData?.preTax[index as 0 | 1],
           alignedPostTax: alignedData?.postTax[index as 0 | 1],

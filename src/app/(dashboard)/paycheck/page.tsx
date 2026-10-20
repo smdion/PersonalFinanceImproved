@@ -234,6 +234,7 @@ export default function PaycheckPage() {
      *  field write creates/updates this job's entry. Edited from Salary
      *  Profile Manager instead (see extra-paycheck-rules-editor.tsx). */
     extraPaycheckRouting: ExtraPaycheckRoutingData | null;
+    otherEarnings?: Record<string, number>;
   };
 
   /**
@@ -464,6 +465,7 @@ export default function PaycheckPage() {
               rawContribs={d.rawContribs}
               perContribData={d.perContribData}
               incompleteAccountIds={d.incompleteAccountIds}
+              earningRows={d.earningRows}
               alignedPreTax={d.alignedPreTax}
               alignedPostTax={d.alignedPostTax}
               coverageNote={d.coverageNote}
@@ -540,6 +542,30 @@ export default function PaycheckPage() {
                                 job.includeBonusInContributions,
                               extraPaycheckRouting: null,
                             };
+                          // An other-pay line's amount per check — saved in
+                          // the Salary Profile entry's otherEarnings map.
+                          if (field.startsWith("otherEarnings:")) {
+                            const num = Number(value);
+                            if (!Number.isFinite(num) || num < 0) return;
+                            if (!salaryEditsProfile) return;
+                            const current = Object.fromEntries(
+                              d.earningRows.map((r) => [
+                                String(r.id),
+                                r.amount,
+                              ]),
+                            );
+                            writeSalaryProfileEntry(
+                              job.id,
+                              salaryProfileEntryDefaults,
+                              {
+                                otherEarnings: {
+                                  ...current,
+                                  [field.slice("otherEarnings:".length)]: num,
+                                },
+                              },
+                            );
+                            return;
+                          }
                           if (field === "annualSalary") {
                             const num = Number(value);
                             if (isNaN(num) || num <= 0) return;

@@ -340,6 +340,29 @@ export const paycheckDeductions = pgTable(
   (table) => [index("paycheck_deductions_job_id_idx").on(table.jobId)],
 );
 
+/**
+ * Pay on a job's checks besides salary and bonus — structural only, like
+ * paycheck_deductions: what the line is and which taxes apply. The amount
+ * per check lives in the Salary Profile entry (`otherEarnings`, keyed by
+ * this id), the same axis as salary and bonus. `isCash` false = a taxable
+ * benefit that's never paid (imputed income, e.g. group-term life over
+ * $50k — IRC 79): taxed, but not take-home.
+ */
+export const paycheckEarnings = pgTable(
+  "paycheck_earnings",
+  {
+    id: serial("id").primaryKey(),
+    jobId: integer("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    earningName: text("earning_name").notNull(),
+    isCash: boolean("is_cash").notNull().default(true),
+    federalTaxable: boolean("federal_taxable").notNull().default(true),
+    ficaTaxable: boolean("fica_taxable").notNull().default(true),
+  },
+  (table) => [index("paycheck_earnings_job_id_idx").on(table.jobId)],
+);
+
 // ────────────────────────────────────────────────────────────────────────────
 // 3. Budget
 // ────────────────────────────────────────────────────────────────────────────
@@ -2939,6 +2962,7 @@ export const salaryProfiles = pgTable("salary_profiles", {
   name: text("name").notNull().unique(),
   description: text("description"),
   /** jobId → complete salary entry. A job either has ALL seventeen fields (a
+   *  — plus the optional `otherEarnings`, absent = none —
    *  real, complete number/election for this profile) or no key at all
    *  (this profile says nothing about that job — contributes $0, not a
    *  fallback to some other value). No partial entries — see
@@ -2965,6 +2989,8 @@ export const salaryProfiles = pgTable("salary_profiles", {
           include401kInBonus: boolean;
           includeBonusInContributions: boolean;
           extraPaycheckRouting: ExtraPaycheckRoutingData | null;
+          /** Other pay per check, by paycheck_earnings id; absent = none. */
+          otherEarnings?: Record<string, number>;
         }
       >
     >()

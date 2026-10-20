@@ -118,7 +118,7 @@ function HouseholdIncomeCardImpl() {
     >
       <Metric
         value={formatCurrency(totalGrossAnnual)}
-        label={`${modeLabel} (salary + bonus)`}
+        label={`${modeLabel} (salary + bonus${(income?.otherCashPay ?? 0) > 0 ? " + other pay" : ""})`}
       />
       <div className="mt-3">
         <table className="w-full text-sm">

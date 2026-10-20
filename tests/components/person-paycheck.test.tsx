@@ -33,6 +33,9 @@ vi.mock("@/components/paycheck/annual-summary", () => ({
   AnnualSummary: () => <div data-testid="annual-summary">AnnualSummary</div>,
 }));
 
+vi.mock("@/components/paycheck/other-pay-section", () => ({
+  OtherPaySection: () => <div data-testid="other-pay" />,
+}));
 vi.mock("@/components/paycheck/bonus-section", () => ({
   BonusSection: () => <div data-testid="bonus-section">BonusSection</div>,
 }));

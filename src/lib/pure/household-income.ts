@@ -26,8 +26,16 @@ export type AnnualEarnings = {
   salary: number;
   /** The resolved bonus: the set (actual) bonus if there is one, else the formula. */
   bonus: number;
-  /** salary + bonus. */
+  /** Cash pay: salary + bonus + other cash pay. */
   gross: number;
+  /** Other cash pay on the checks for the year (stipends etc.), in gross. */
+  otherCashPay: number;
+  /** Taxable benefits never paid (imputed income) for the year — taxed,
+   *  not in gross or take-home. */
+  imputedIncome: number;
+  /** Federal income-tax wages (≈ W-2 box 1): pay that's federally taxable,
+   *  incl. imputed income, less pre-tax money. The tax and AGI read this. */
+  federalWages: number;
   /** Comes out before federal income tax: pre-tax payroll contributions
    *  (regular and bonus checks) and pre-tax deductions. */
   preTaxFederal: number;
@@ -69,18 +77,30 @@ export function computeAnnualEarnings(args: {
       (d) => d.amount,
     ) * periodsPerYear;
 
-  // FICA-exempt money on the regular checks is gross − FICA wages per check;
-  // the bonus's FICA wages already net out what its check exempts.
-  const regularFicaExempt =
-    (paycheck.gross - paycheck.ficaWages) * periodsPerYear;
+  // Other pay on the checks, by its own tax flags.
+  const lines = paycheck.earnings ?? [];
+  const perYear = (pick: (e: (typeof lines)[number]) => boolean) =>
+    sumBy(lines.filter(pick), (e) => e.amount) * periodsPerYear;
+  const otherCashPay = perYear((e) => e.isCash);
+  const imputedIncome = perYear((e) => !e.isCash);
+  const otherFederalTaxable = perYear((e) => e.federalTaxable);
+  const preTaxFederal = preTaxContributions + preTaxDeductions;
 
   return {
     salary,
     bonus,
-    gross: roundToCents(salary + bonus),
-    preTaxFederal: roundToCents(preTaxContributions + preTaxDeductions),
+    gross: roundToCents(salary + bonus + otherCashPay),
+    otherCashPay: roundToCents(otherCashPay),
+    imputedIncome: roundToCents(imputedIncome),
+    federalWages: roundToCents(
+      salary + bonus + otherFederalTaxable - preTaxFederal,
+    ),
+    preTaxFederal: roundToCents(preTaxFederal),
+    // The checks' own FICA wages (salary, other pay, less exempt money)
+    // plus the bonus check's — built from explicit parts, never from salary.
     ficaWages: roundToCents(
-      salary - regularFicaExempt + paycheck.bonusEstimate.bonusFicaWages,
+      paycheck.ficaWages * periodsPerYear +
+        paycheck.bonusEstimate.bonusFicaWages,
     ),
     netRegular: roundToCents(paycheck.netPay * periodsPerYear),
     netBonus: paycheck.bonusEstimate.bonusNet,
@@ -103,6 +123,9 @@ export function sumHouseholdIncome(people: AnnualEarnings[]): AnnualEarnings {
     salary: total((e) => e.salary),
     bonus: total((e) => e.bonus),
     gross: total((e) => e.gross),
+    otherCashPay: total((e) => e.otherCashPay),
+    imputedIncome: total((e) => e.imputedIncome),
+    federalWages: total((e) => e.federalWages),
     preTaxFederal: total((e) => e.preTaxFederal),
     ficaWages: total((e) => e.ficaWages),
     netRegular: total((e) => e.netRegular),

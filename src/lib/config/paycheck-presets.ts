@@ -52,3 +52,50 @@ export function deductionPresetFor(flags: {
     ) ?? DEDUCTION_PRESETS[DEDUCTION_PRESETS.length - 1]!
   );
 }
+
+/** How a line of other pay is taxed and paid, named the way a stub lists it. */
+export type EarningPreset = {
+  key: string;
+  short: string;
+  label: string;
+  isCash: boolean;
+  federalTaxable: boolean;
+  ficaTaxable: boolean;
+};
+
+export const EARNING_PRESETS: readonly EarningPreset[] = [
+  {
+    key: "paidTaxed",
+    short: "Paid on the check",
+    label:
+      "Extra pay on every check — e.g. a stipend or allowance (paid and taxed)",
+    isCash: true,
+    federalTaxable: true,
+    ficaTaxable: true,
+  },
+  {
+    key: "imputed",
+    short: "Taxable benefit (not paid)",
+    label:
+      "Taxable benefit, never paid — e.g. group life insurance over $50k, a company car (taxed, not take-home)",
+    isCash: false,
+    federalTaxable: true,
+    ficaTaxable: true,
+  },
+];
+
+/** The preset an earning's flags match, or null for a custom combination. */
+export function earningPresetFor(flags: {
+  isCash: boolean;
+  federalTaxable: boolean;
+  ficaTaxable: boolean;
+}): EarningPreset | null {
+  return (
+    EARNING_PRESETS.find(
+      (p) =>
+        p.isCash === flags.isCash &&
+        p.federalTaxable === flags.federalTaxable &&
+        p.ficaTaxable === flags.ficaTaxable,
+    ) ?? null
+  );
+}

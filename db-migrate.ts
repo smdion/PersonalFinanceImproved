@@ -172,6 +172,7 @@ const VERSION_TABLE_NAMES = [
   // v0.8.8 holding history
   "holding_periods",
   "holding_period_weights",
+  "paycheck_earnings",
 ];
 
 // ---------------------------------------------------------------------------
@@ -238,6 +239,8 @@ const V08_MIGRATION_HASHES: Record<string, string> = {
     "0006_v088_holding_periods",
   "18d3b73b7b2f4b5b517acf2bace36352da2177adda54e886e13b407cce3e23e7":
     "0007_v088_drop_account_holdings",
+  "557d5cbc5313ee2ca388e2c5d9fbf5c03d3f0794968b4f313778389a987b5a61":
+    "0008_v088_paycheck_earnings",
 };
 
 /**

@@ -50,6 +50,7 @@ import {
   sumHouseholdIncome,
 } from "@/lib/pure/household-income";
 import { rothIraSummary } from "@/lib/pure/roth-ira";
+import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
 import { medicareLiabilityKey } from "@/lib/config/tax-params";
 import { hsaCashBuffers } from "@/lib/pure/cash-positions";
 import { isHsaCategory } from "@/lib/config/account-types";
@@ -202,6 +203,7 @@ export const paycheckRouter = createTRPCRouter({
         allLimitRows,
         allBracketRows,
         allTaxParams,
+        allEarnings,
       ] = await Promise.all([
         getAllPeople(ctx.db),
         ctx.db.select().from(schema.jobs),
@@ -213,6 +215,7 @@ export const paycheckRouter = createTRPCRouter({
         ctx.db.select().from(schema.contributionLimits),
         ctx.db.select().from(schema.taxBrackets),
         ctx.db.select().from(schema.taxParams),
+        ctx.db.select().from(schema.paycheckEarnings),
       ]);
 
       // One resolver, same as the retirement engine — but "null" on a
@@ -385,29 +388,36 @@ export const paycheckRouter = createTRPCRouter({
           const jobDeductions = profileResult.deductions.filter(
             (d) => d.jobId === activeJob.id,
           );
-          const deductions: DeductionLine[] = jobDeductions.map((d) => ({
-            name: d.deductionName,
+          const deductions: DeductionLine[] = jobDeductions.map((d) =>
             // A sandbox edit is one more layer on top of the profile-
             // resolved amount, applied here (not a second pass after
             // calculatePaycheck) so it's the SAME arithmetic every other
             // deduction goes through.
-            amount:
+            deductionLine(
+              d,
               deductionEditMap.get(d.id) ?? toNumber(String(d.amountPerPeriod)),
-            taxTreatment: d.isPretax
-              ? ("pre_tax" as const)
-              : ("after_tax" as const),
-            ficaExempt: d.ficaExempt,
-          }));
+            ),
+          );
+          // Other pay: rows for this job, amounts from its Salary Profile
+          // entry (the same axis as salary and bonus).
+          const earningLinesForJob = earningLines(
+            allEarnings.filter((e) => e.jobId === activeJob.id),
+            salaryProfileActiveMap.get(activeJob.id)?.otherEarnings,
+          );
           // Hypothetical additions have no DB row — appended for the
           // duration of this request only, never written anywhere.
           for (const addition of input?.sandboxDeductionAdditions ?? []) {
             if (addition.personId !== person.id) continue;
-            deductions.push({
-              name: addition.name,
-              amount: addition.amountPerPeriod,
-              taxTreatment: addition.isPretax ? "pre_tax" : "after_tax",
-              ficaExempt: false,
-            });
+            deductions.push(
+              deductionLine(
+                {
+                  deductionName: addition.name,
+                  isPretax: addition.isPretax,
+                  ficaExempt: addition.ficaExempt,
+                },
+                addition.amountPerPeriod,
+              ),
+            );
           }
 
           const jobContribs = effectiveContribs.filter(
@@ -447,6 +457,7 @@ export const paycheckRouter = createTRPCRouter({
             bonusOverride: comp.bonusOverride,
             contributionAccounts: contribAccounts,
             deductions,
+            earnings: earningLinesForJob,
             taxBrackets: taxBracketInput,
             limitsMap,
             limitsRecord,
@@ -565,6 +576,17 @@ export const paycheckRouter = createTRPCRouter({
             blendedAnnual,
             earnings,
             rawDeductions: jobDeductions,
+            /** This job's other-pay lines with their per-check amount from
+             *  the Salary Profile entry (0 when it sets none). */
+            earningRows: allEarnings
+              .filter((e) => e.jobId === activeJob.id)
+              .map((e) => ({
+                ...e,
+                amount:
+                  salaryProfileActiveMap.get(activeJob.id)?.otherEarnings?.[
+                    String(e.id)
+                  ] ?? 0,
+              })),
             rawContribs,
             budgetPerMonth: getRegularPeriodsPerMonth(
               periodsPerYear,

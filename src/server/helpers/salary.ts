@@ -164,6 +164,8 @@ export type SalaryProfileEntry = {
    *  above, not a job identity fact. `null` is a real, complete value ("no
    *  routing configured"). See ExtraPaycheckRoutingData (schema-pg.ts). */
   extraPaycheckRouting: ExtraPaycheckRoutingData | null;
+  /** Other pay per check, by paycheck_earnings id — absent = none. */
+  otherEarnings?: Record<string, number>;
 };
 
 /** A Salary Profile's own `salaries` map, keyed by jobId (string key) —
@@ -406,6 +408,7 @@ export function mergeSalaryProfileJobFields<J extends { id: number }>(
       include401kInBonus: entry?.include401kInBonus,
       includeBonusInContributions: entry?.includeBonusInContributions,
       extraPaycheckRouting: entry?.extraPaycheckRouting,
+      otherEarnings: entry?.otherEarnings,
     };
   });
 }

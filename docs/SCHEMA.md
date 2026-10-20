@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**80 tables.**
+**81 tables.**
 
 ## Mermaid diagram
 
@@ -21,6 +21,9 @@ erDiagram
     int id PK
   }
   paycheck_deductions {
+    int id PK
+  }
+  paycheck_earnings {
     int id PK
   }
   budget_profiles {
@@ -252,6 +255,7 @@ erDiagram
   contribution_accounts }o--|| jobs : references
   contribution_accounts }o--|| people : references
   paycheck_deductions }o--|| jobs : references
+  paycheck_earnings }o--|| jobs : references
   budget_items }o--|| budget_profiles : references
   budget_item_category_links }o--|| budget_items : references
   savings_goal_category_links }o--|| savings_goals : references
@@ -346,6 +350,7 @@ erDiagram
 - **net_worth_annual**
 - **other_asset_items**
 - **paycheck_deductions** → jobs
+- **paycheck_earnings** → jobs
 - **people**
 - **performance_accounts** → people
 - **portfolio_accounts** → portfolio_snapshots, people

@@ -36,6 +36,7 @@ export const jobs = active.jobs;
 export const contributionAccounts = active.contributionAccounts;
 export const contributionLimits = active.contributionLimits;
 export const paycheckDeductions = active.paycheckDeductions;
+export const paycheckEarnings = active.paycheckEarnings;
 export const budgetProfiles = active.budgetProfiles;
 export const budgetItems = active.budgetItems;
 export const budgetItemCategoryLinks = active.budgetItemCategoryLinks;

@@ -84,6 +84,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
 
   // Tier 2 — depends on tier 1
   { name: "paycheck_deductions", tier: 2 },
+  { name: "paycheck_earnings", tier: 2 }, // FK into jobs (tier 1)
   { name: "contribution_accounts", tier: 2 },
   { name: "portfolio_accounts", tier: 2 },
   { name: "account_performance", tier: 2 },

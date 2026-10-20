@@ -124,3 +124,15 @@ export const SUB_TYPE_OPTIONS: Partial<Record<AccountCategory, string[]>> =
   );
 
 export type { PaycheckResult, ViewMode, AccountCategory };
+
+/** A job's other-pay line (paycheck_earnings) with its per-check amount
+ *  from the Salary Profile entry. */
+export type EarningRow = {
+  id: number;
+  jobId: number;
+  earningName: string;
+  isCash: boolean;
+  federalTaxable: boolean;
+  ficaTaxable: boolean;
+  amount: number;
+};

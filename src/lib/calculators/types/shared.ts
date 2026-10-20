@@ -23,6 +23,18 @@ export type DeductionLine = {
   ficaExempt: boolean;
 };
 
+/** Pay on a check besides salary (paycheck_earnings + the Salary Profile's
+ *  amount). `isCash` false = a taxable benefit that's never paid (imputed
+ *  income): taxed, not take-home. */
+export type EarningLine = {
+  name: string;
+  /** Per check. */
+  amount: number;
+  isCash: boolean;
+  federalTaxable: boolean;
+  ficaTaxable: boolean;
+};
+
 export type TaxBracketInput = {
   filingStatus: FilingStatusType;
   w4Checkbox: boolean; // whether this bracket set is the 2(c) checked version

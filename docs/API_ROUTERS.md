@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**363 procedures across 52 routers.**
+**367 procedures across 52 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -464,11 +464,14 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `create`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `create`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `create`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `create`             | mutation | `contributionProfileProcedure` | Same permission level as deductions: structure only, the amount is the Salary Profile's.                                                                                                                 |
 | `create`             | mutation | `contributionProfileProcedure` | deduction's identity (name/isPretax/ficaExempt) is the same class of previously-admin-gated job fact that W-4/pay-schedule fields already moved off of (Stage B); its AMOUNT already resolves via a Cont |
 | `delete`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `delete`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `delete`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `delete`             | mutation | `adminProcedure`               | Also drops its amount from every Salary Profile, so no profile keeps an amount for a line that no longer exists.                                                                                         |
 | `delete`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
 | `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
 | `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
 | `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
@@ -478,6 +481,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `update`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `update`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `update`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `update`             | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
 | `update`             | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
 
 ## `settings/tax-limits`
