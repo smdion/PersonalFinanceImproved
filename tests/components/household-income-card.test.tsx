@@ -188,15 +188,13 @@ describe("HouseholdIncomeCard", () => {
     expect(screen.queryByText(/Roth IRA MAGI/)).not.toBeInTheDocument();
   });
 
-  it("with portfolio access: one Roth IRA line — MAGI and the verdict, linking to Taxes", () => {
+  it("with portfolio access: one Roth IRA line — MAGI and the verdict", () => {
     user = { role: "admin", name: "T", permissions: [] };
     render(<HouseholdIncomeCard />);
     // 63,000 wage AGI + 4,500 investment income, inside 60k–75k.
     expect(screen.getByText("$67,500.00")).toBeInTheDocument();
     expect(screen.getByText("Too close to call")).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Roth IRA MAGI (est.)" }),
-    ).toHaveAttribute("href", "/taxes");
+    expect(screen.getByText("Roth IRA MAGI (est.)")).toBeInTheDocument();
     // The detail is on the Taxes page, not the card.
     expect(screen.queryByText(/pre-tax in IRAs/)).not.toBeInTheDocument();
     expect(screen.queryByText(/range width/)).not.toBeInTheDocument();

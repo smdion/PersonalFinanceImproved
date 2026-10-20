@@ -7,7 +7,6 @@
  * income or IRA balances) it shows the wage AGI instead. The dashboard
  * shows only RothIraLine.
  */
-import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
@@ -174,7 +173,7 @@ const SHORT_VERDICT = {
 
 /**
  * One line for the Household Income card: Roth IRA MAGI and the verdict in
- * a few words, linking to the Taxes page for the detail. Without the
+ * a few words; the detail is on the Taxes page. Without the
  * portfolio permission, the wage AGI.
  */
 export function RothIraLine({ wageAgi }: { wageAgi: number }) {
@@ -182,9 +181,11 @@ export function RothIraLine({ wageAgi }: { wageAgi: number }) {
   const j = view?.judgement ?? null;
   return (
     <div className="flex justify-between">
-      <Link href="/taxes" className="hover:text-primary hover:underline">
+      {/* Plain text: the whole card is already a link (no nested <a>);
+          the detail is on Planning → Taxes. */}
+      <span>
         {available && view ? "Roth IRA MAGI (est.)" : "AGI from wages (est.)"}
-      </Link>
+      </span>
       <span>
         {j && (
           <span

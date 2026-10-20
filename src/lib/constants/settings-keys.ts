@@ -64,6 +64,11 @@ export const SK_ROTH_IRA_DIRECT_MARGIN = "roth_ira_direct_margin";
 /** Dollars of HSA cash to keep uninvested; unset = the year's HDHP minimum deductible for the coverage. */
 export const SK_HSA_CASH_BUFFER = "hsa_cash_buffer";
 
+// ── Living Costs ────────────────────────────────────────────────────
+/** Show the bonus's take-home as its own bar (money for extra spending,
+ *  not part of the budget) instead of leaving it in Unallocated. */
+export const SK_LIVING_COSTS_BONUS_BAR = "living_costs_bonus_bar";
+
 // ── Dashboard Cards ─────────────────────────────────────────────────
 export const SK_HIGH_INCOME_THRESHOLD = "high_income_threshold";
 export const SK_SAVINGS_RATE_THRESHOLDS = "savings_rate_thresholds";

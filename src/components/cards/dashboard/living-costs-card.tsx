@@ -8,6 +8,7 @@ import { StatusDot } from "@/components/ui/badge";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { SK_LIVING_COSTS_BONUS_BAR } from "@/lib/constants/settings-keys";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import {
   RAMSEY_RANGES,
@@ -176,6 +177,12 @@ function LivingCostsCardImpl() {
   const { data: extraPaycheckJobs, isLoading: isExtraPaycheckLoading } =
     trpc.savings.extraPaycheckRouting.list.useQuery();
   const [useGross, setUseGross] = useState(false);
+  // The bonus as its own bar — households that don't budget the bonus and
+  // spend it separately.
+  const [bonusBar, setBonusBar] = usePersistedSetting<boolean>(
+    SK_LIVING_COSTS_BONUS_BAR,
+    false,
+  );
 
   if (
     isBudgetLoading ||
@@ -439,6 +446,9 @@ function LivingCostsCardImpl() {
     ).filter((k) => k.startsWith(String(yearStart.getUTCFullYear())));
     return extraMonthsThisYear.length * netPayPerCheck;
   });
+  // The bonus's take-home (its taxes and bonus-check contributions are
+  // already in the Taxes / Retirement / Portfolio bars) — same in both modes.
+  const bonusShown = bonusBar ? (householdIncome?.netBonus ?? 0) : 0;
   const retirementShown = useGross ? retirementTotal : retirementNonPayroll;
   const portfolioShown = useGross ? portfolioTotal : portfolioNonPayroll;
   const unallocated = Math.max(
@@ -449,6 +459,7 @@ function LivingCostsCardImpl() {
       portfolioShown -
       annualSavings -
       extraPaycheckAllocatedThisYear -
+      bonusShown -
       totalBudgetSpending,
     0,
   );
@@ -473,6 +484,11 @@ function LivingCostsCardImpl() {
       annual: extraPaycheckAllocatedThisYear,
       color: "bg-cyan-400",
     },
+    {
+      name: "Bonus (extra spending)",
+      annual: bonusShown,
+      color: "bg-amber-300",
+    },
     { name: "Unallocated", annual: unallocated, color: "bg-surface-strong" },
   ]
     .map((r) => ({ ...r, pct: safeDivide(r.annual, incomeBase, 0) }))
@@ -496,7 +512,7 @@ function LivingCostsCardImpl() {
         <>
           Budget &amp; Spending
           <HelpTip
-            text={`Always shows the full-year projected picture, regardless of the Paycheck page's Current Salary/Year-End Estimate/Actual YTD selector — every number here besides income (budget spending, savings, retirement, portfolio, extra-paycheck routing) is this app's annualized RATE for that thing, not a real posted-transaction year-to-date total, so scoping just the income side to "so far this year" would push every percentage well past 100%. Budget categories as % of ${incomeLabel} income compared to Dave Ramsey's recommended ranges (Ramsey's original ranges are based on net take-home pay). Retirement/Portfolio/Savings/Extra Paycheck/Unallocated below show where the rest of your ${incomeLabel} income goes: Net counts only non-payroll contributions (IRA, manually-funded brokerage/HSA) actually funded from take-home pay — payroll-deducted contributions, Roth included, never touch net pay; Gross counts your full contribution total, payroll and non-payroll combined, plus taxes and any other payroll deduction (health/dental/vision insurance, etc.) — those already come out before net pay is computed too, so Gross names them explicitly instead of leaving them invisibly baked into Net. Extra Paycheck is this year's 3rd-biweekly-paycheck months currently set to route to a savings goal (see the Savings/Budget toggle on Salary Profile or the Paycheck page) — computed from the real pay calendar, not from which months have already been transferred. Unallocated includes any budget category with no Ramsey mapping, plus any genuinely untracked money.`}
+            text={`Always shows the full-year projected picture, regardless of the Paycheck page's Current Salary/Year-End Estimate/Actual YTD selector — every number here besides income (budget spending, savings, retirement, portfolio, extra-paycheck routing) is this app's annualized RATE for that thing, not a real posted-transaction year-to-date total, so scoping just the income side to "so far this year" would push every percentage well past 100%. Budget categories as % of ${incomeLabel} income compared to Dave Ramsey's recommended ranges (Ramsey's original ranges are based on net take-home pay). Retirement/Portfolio/Savings/Extra Paycheck/Bonus/Unallocated below show where the rest of your ${incomeLabel} income goes: Net counts only non-payroll contributions (IRA, manually-funded brokerage/HSA) actually funded from take-home pay — payroll-deducted contributions, Roth included, never touch net pay; Gross counts your full contribution total, payroll and non-payroll combined, plus taxes and any other payroll deduction (health/dental/vision insurance, etc.) — those already come out before net pay is computed too, so Gross names them explicitly instead of leaving them invisibly baked into Net. Extra Paycheck is this year's 3rd-biweekly-paycheck months currently set to route to a savings goal (see the Savings/Budget toggle on Salary Profile or the Paycheck page) — computed from the real pay calendar, not from which months have already been transferred. Bonus (when \"Bonus as its own bar\" is on) is the bonus's take-home, for households that spend it outside the budget. Unallocated includes any budget category with no Ramsey mapping, plus any genuinely untracked money.`}
           />
         </>
       }
@@ -544,6 +560,19 @@ function LivingCostsCardImpl() {
         >
           Gross ({formatCurrency(grossIncome)})
         </button>
+        {(householdIncome?.netBonus ?? 0) > 0 && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setBonusBar(!bonusBar);
+            }}
+            aria-pressed={bonusBar}
+            className={`ml-auto rounded px-2 py-0.5 text-xs ${bonusBar ? "bg-blue-100 font-medium text-blue-700" : "text-muted hover:bg-surface-elevated"}`}
+          >
+            Bonus as its own bar
+          </button>
+        )}
       </div>
       <div className="space-y-2">
         {rows.map((r) => (

@@ -23,9 +23,10 @@ vi.mock("@/lib/context/scenario-context", () => ({
 vi.mock("@/lib/hooks/use-salary-overrides", () => ({
   useActiveSalaries: () => [],
 }));
+const settings = vi.hoisted(() => ({ values: {} as Record<string, unknown> }));
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
-  usePersistedSetting: (_key: string, defaultValue: unknown) => [
-    defaultValue,
+  usePersistedSetting: (key: string, defaultValue: unknown) => [
+    key in settings.values ? settings.values[key] : defaultValue,
     vi.fn(),
   ],
 }));
@@ -208,6 +209,29 @@ describe("LivingCostsCard math", () => {
     // Gross and Net waterfalls reconcile to the same total once Taxes and
     // Other Paycheck Deductions are both accounted for.
     expect(screen.getByText("Total: 100% of gross")).toBeInTheDocument();
+  });
+
+  it("bonus as its own bar: the bonus take-home leaves Unallocated", () => {
+    const original = paycheckQuery.data.householdIncome;
+    paycheckQuery.data.householdIncome = {
+      gross: 72000,
+      netRegular: 48000,
+      netBonus: 7200,
+    };
+    settings.values["living_costs_bonus_bar"] = true;
+    try {
+      render(<LivingCostsCard />);
+      expect(screen.getByText("Bonus (extra spending)")).toBeInTheDocument();
+      expect(screen.getByText("($7,200.00)")).toBeInTheDocument();
+      // Net 55,200 − 2,000 retirement − 2,400 savings − 7,200 bonus − 16,800 budget
+      expect(screen.getByText("($26,800.00)")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: "Bonus as its own bar" }),
+      ).toHaveAttribute("aria-pressed", "true");
+    } finally {
+      paycheckQuery.data.householdIncome = original;
+      delete settings.values["living_costs_bonus_bar"];
+    }
   });
 
   it("income includes the bonus (household annual income), in both modes", () => {
