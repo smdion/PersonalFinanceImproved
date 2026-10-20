@@ -254,7 +254,7 @@ export function FundOverridesSummary({
               d="M9 5l7 7-7 7"
             />
           </svg>
-          Monthly Overrides ({currentRanges.length})
+          Month changes ({currentRanges.length})
         </button>
         {canEdit !== false && (
           <button
@@ -273,12 +273,12 @@ export function FundOverridesSummary({
         <div className="mt-2 space-y-1.5">
           {currentRanges.length === 0 && pastRanges.length === 0 && (
             <p className="text-muted py-1 text-xs">
-              No overrides. Default: {formatCurrency(defaultAllocation)}/mo
+              No month changes. Usual: {formatCurrency(defaultAllocation)}/mo
             </p>
           )}
           {currentRanges.length === 0 && pastRanges.length > 0 && (
             <p className="text-muted py-1 text-xs">
-              No upcoming overrides. Default:{" "}
+              No upcoming month changes. Usual:{" "}
               {formatCurrency(defaultAllocation)}/mo
             </p>
           )}

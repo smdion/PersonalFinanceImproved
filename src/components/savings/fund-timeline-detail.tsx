@@ -130,7 +130,7 @@ export function FundTimelineDetail({
                       }`}
                     >
                       +{formatCurrency(allocation)}/mo
-                      {isOverride && " (override)"}
+                      {isOverride && " (this month)"}
                     </span>
                     {canEdit !== false && (
                       <button

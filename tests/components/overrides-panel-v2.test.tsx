@@ -59,7 +59,7 @@ function baseMockState(overrides: Record<string, unknown> = {}): any {
 
 /** Opens the wizard and advances past the Year step, leaving Type step showing. */
 function openWizardToTypeStep(year?: string) {
-  fireEvent.click(screen.getByText("+ Add Override"));
+  fireEvent.click(screen.getByText("+ Add a change"));
   if (year) {
     const yearInput = screen.getByLabelText(/Starting Year|Year/);
     fireEvent.change(yearInput, { target: { value: year } });
@@ -70,11 +70,9 @@ function openWizardToTypeStep(year?: string) {
 describe("OverridesPanelV2", () => {
   it("renders without crashing with no overrides", () => {
     render(<OverridesPanelV2 state={baseMockState()} />);
-    expect(screen.getByText("Overrides")).toBeInTheDocument();
+    expect(screen.getByText("Changes by year")).toBeInTheDocument();
     expect(
-      screen.getByText(
-        "No overrides — projection uses page settings for all years",
-      ),
+      screen.getByText("No changes — every year uses the page settings"),
     ).toBeInTheDocument();
   });
 
@@ -123,19 +121,19 @@ describe("OverridesPanelV2", () => {
     expect(deleteSalaryOverride.mutate).toHaveBeenCalledWith({ id: 7 });
   });
 
-  it("opens the wizard on '+ Add Override' and shows the Year step", () => {
+  it("opens the wizard on '+ Add a change' and shows the Year step", () => {
     render(<OverridesPanelV2 state={baseMockState()} />);
-    fireEvent.click(screen.getByText("+ Add Override"));
+    fireEvent.click(screen.getByText("+ Add a change"));
     expect(screen.getByText("Cancel")).toBeInTheDocument();
     expect(screen.getByText("Starting Year")).toBeInTheDocument();
   });
 
   it("closes the wizard when Cancel is clicked", () => {
     render(<OverridesPanelV2 state={baseMockState()} />);
-    fireEvent.click(screen.getByText("+ Add Override"));
+    fireEvent.click(screen.getByText("+ Add a change"));
     fireEvent.click(screen.getByText("Cancel"));
     expect(screen.queryByText("Starting Year")).not.toBeInTheDocument();
-    expect(screen.getByText("+ Add Override")).toBeInTheDocument();
+    expect(screen.getByText("+ Add a change")).toBeInTheDocument();
   });
 
   it("advances from Year step to Type step showing pre-retirement options", () => {
@@ -294,7 +292,7 @@ describe("OverridesPanelV2", () => {
     const cancelButtons = screen.getAllByText("Cancel");
     fireEvent.click(cancelButtons[cancelButtons.length - 1]!);
     expect(setAccumOverrides).not.toHaveBeenCalled();
-    expect(screen.getByText("+ Add Override")).toBeInTheDocument();
+    expect(screen.getByText("+ Add a change")).toBeInTheDocument();
   });
 
   it("completes the salary_change flow with a custom salary and calls createSalaryOverride", () => {
@@ -346,7 +344,7 @@ describe("OverridesPanelV2", () => {
     });
     render(<OverridesPanelV2 state={s} />);
     fireEvent.click(screen.getByLabelText("Edit"));
-    expect(screen.getByText("Editing override for 2030")).toBeInTheDocument();
+    expect(screen.getByText("Editing the change for 2030")).toBeInTheDocument();
     const rateInput = screen.getByPlaceholderText("15") as HTMLInputElement;
     expect(rateInput.value).toBe("15");
   });

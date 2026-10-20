@@ -367,7 +367,7 @@ export function AccountCard({
                     <InlineText
                       label="Display Name"
                       value={pa.displayName ?? ""}
-                      placeholder="Optional override"
+                      placeholder="Optional"
                       onSave={(val) =>
                         onPerfUpdate({ displayName: val || null })
                       }

@@ -790,7 +790,7 @@ export function HelpContent() {
             withdrawal rates side-by-side to find the right balance.
           </li>
           <li>
-            <strong>Expense overrides</strong> &mdash; Adjust expected
+            <strong>Expense changes by year</strong> &mdash; Adjust expected
             retirement expenses to see how lifestyle changes affect outcomes.
           </li>
           <li>
@@ -878,8 +878,8 @@ export function HelpContent() {
           <li>
             <strong>People</strong> &mdash; Add household members with birth
             dates and W-4 filing status. The W-4 status drives paycheck
-            withholding; retirement projections have their own filing status
-            override in the Taxes in Retirement section.
+            withholding; retirement projections can use a different filing
+            status, set in the Taxes in Retirement section.
           </li>
           <li>
             <strong>IRS Limits</strong> &mdash; Review and adjust annual

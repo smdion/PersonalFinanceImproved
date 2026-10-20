@@ -1,7 +1,7 @@
 /**
  * T6 — src/components/savings/fund-overrides-summary.tsx had no test
  * coverage for its `collapseOverrides()` range-merging logic (only
- * indirectly reachable through the rendered "Monthly Overrides" panel).
+ * indirectly reachable through the rendered "Month changes" panel).
  * Uses far-future months (2099+) so every override always lands in
  * `currentRanges`, not `pastRanges`, regardless of when the test runs.
  */
@@ -10,7 +10,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { FundOverridesSummary } from "@/components/savings/fund-overrides-summary";
 
 function openPanel() {
-  fireEvent.click(screen.getByText(/Monthly Overrides/));
+  fireEvent.click(screen.getByText(/Month changes/));
 }
 
 describe("FundOverridesSummary — collapseOverrides via render", () => {
@@ -112,7 +112,9 @@ describe("FundOverridesSummary — collapseOverrides via render", () => {
       screen.getByText(
         (_, el) =>
           el?.tagName === "P" &&
-          (el.textContent ?? "").includes("No overrides. Default: $300.00/mo"),
+          (el.textContent ?? "").includes(
+            "No month changes. Usual: $300.00/mo",
+          ),
       ),
     ).toBeInTheDocument();
   });

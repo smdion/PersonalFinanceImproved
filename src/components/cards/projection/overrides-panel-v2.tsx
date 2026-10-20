@@ -81,7 +81,7 @@ const OVERRIDE_OPTIONS: {
   {
     key: "reset",
     label: "Reset to Defaults",
-    description: "Revert all overrides for a year",
+    description: "Remove every change for a year",
     icon: "↩️",
     phase: "any",
   },
@@ -157,8 +157,8 @@ export function OverridesPanelV2({
             ? "Lump Sum"
             : o.contributionRate != null
               ? "Contribution"
-              : "Override",
-        summary: parts.join(" · ") || "Override",
+              : "Change",
+        summary: parts.join(" · ") || "Change",
         color: "emerald",
         onDelete: () =>
           state.setAccumOverrides((prev) => prev.filter((_, j) => j !== idx)),
@@ -217,8 +217,8 @@ export function OverridesPanelV2({
         id: `decum-${o.year}-${i}`,
         year: o.year,
         phase: "post",
-        type: o.reset ? "Reset" : o.lumpSums?.length ? "Lump Sum" : "Override",
-        summary: parts.join(" · ") || "Override",
+        type: o.reset ? "Reset" : o.lumpSums?.length ? "Lump Sum" : "Change",
+        summary: parts.join(" · ") || "Change",
         color: "amber",
         onDelete: () =>
           state.setDecumOverrides((prev) => prev.filter((_, j) => j !== idx)),
@@ -534,9 +534,9 @@ export function OverridesPanelV2({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h4 className="text-label text-muted font-semibold tracking-wider uppercase">
-            Overrides
+            Changes by year
           </h4>
-          <HelpTip text="Change contributions, withdrawals, salary, budget, or add lump sums at specific future years. Changes carry forward until the next override." />
+          <HelpTip text="Change contributions, withdrawals, salary, budget, or add lump sums at specific future years. Changes carry forward until the next change." />
           {totalCount > 0 && (
             <span className="text-caption text-faint">{totalCount} active</span>
           )}
@@ -557,7 +557,7 @@ export function OverridesPanelV2({
               : "bg-indigo-600 text-white hover:bg-indigo-700"
           }`}
         >
-          {showWizard ? "Cancel" : "+ Add Override"}
+          {showWizard ? "Cancel" : "+ Add a change"}
         </button>
       </div>
 
@@ -567,7 +567,7 @@ export function OverridesPanelV2({
           {/* Step indicator */}
           {editingOverride && (
             <div className="text-caption font-medium text-indigo-600">
-              Editing override for {selectedYear}
+              Editing the change for {selectedYear}
             </div>
           )}
           <div className="text-caption text-muted flex items-center gap-2">
@@ -746,7 +746,7 @@ export function OverridesPanelV2({
 
       {totalCount === 0 && !showWizard && (
         <p className="text-faint py-2 text-center text-xs">
-          No overrides — projection uses page settings for all years
+          No changes — every year uses the page settings
         </p>
       )}
     </div>

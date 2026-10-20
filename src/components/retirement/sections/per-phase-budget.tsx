@@ -108,12 +108,12 @@ export function PerPhaseBudgetSection({
         <div>
           <span className="text-muted">
             Budget Source
-            <HelpTip text="Your starting retirement 'salary' — what you pay yourself from your portfolio each year. Grows by the Post-Retirement Raise rate. Set a manual override or use a budget profile." />
+            <HelpTip text="Your starting retirement 'salary' — what you pay yourself from your portfolio each year. Grows by the Post-Retirement Raise rate. Set an amount yourself or use a budget profile." />
           </span>
           <div className="flex flex-col gap-1 font-medium">
             {decExpenseOverride ? (
               <span className="text-faint text-xs italic">
-                Using manual override
+                Using the amount you set
               </span>
             ) : (
               <>
@@ -169,8 +169,8 @@ export function PerPhaseBudgetSection({
         {/* Retirement salary override */}
         <div>
           <span className="text-muted">
-            Salary Override
-            <HelpTip text="Set a flat annual amount as your starting retirement salary. Overrides the budget profile. Grows by the Post-Retirement Raise rate each year." />
+            Set amount
+            <HelpTip text="Set a flat annual amount as your starting retirement salary, used instead of the budget profile. Grows by the Post-Retirement Raise rate each year." />
           </span>
           <div className="flex items-center gap-1 font-medium">
             <InlineEdit

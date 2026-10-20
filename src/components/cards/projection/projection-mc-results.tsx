@@ -256,10 +256,10 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                       )}
                       {si.hasAssetClassOverrides && (
                         <Badge color="amber" size="sm" case="normal">
-                          Overrides
+                          Your figures
                           <HelpTip
                             maxWidth={260}
-                            text="One or more asset classes are using custom return/volatility figures instead of this preset's own values — the return, volatility, and asset-mix figures below already reflect the overridden numbers."
+                            text="One or more asset classes are using custom return/volatility figures instead of this preset's own values — the return, volatility, and asset-mix figures below already reflect your numbers."
                           />
                         </Badge>
                       )}

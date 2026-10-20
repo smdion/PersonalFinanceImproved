@@ -190,7 +190,7 @@ export function AccumulationRow({
           }[] = [];
           if (yr.hasSalaryOverride) {
             lines.push({
-              text: `Salary overridden for this year${salaryOverrideNotes ? ` — ${salaryOverrideNotes}` : ""}`,
+              text: `Salary changed for this year${salaryOverrideNotes ? ` — ${salaryOverrideNotes}` : ""}`,
               style: "note",
               color: "emerald",
             });
@@ -319,7 +319,7 @@ export function AccumulationRow({
                   )
                 ) {
                   lines.push({
-                    text: `Overridden for this year${accumOverrideNotes ? ` — ${accumOverrideNotes}` : ""}`,
+                    text: `Changed for this year${accumOverrideNotes ? ` — ${accumOverrideNotes}` : ""}`,
                     style: "note",
                     color: "emerald",
                   });
@@ -803,7 +803,7 @@ export function AccumulationRow({
               : 0;
           const budgetProfileName =
             accumulationExpenseOverride != null
-              ? `Manual override${yr.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
+              ? `Set for this year${yr.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
               : accBudgetProfile
                 ? `${accBudgetProfile.name}${accumulationBudgetColumn != null && accBudgetProfile.columnLabels[accumulationBudgetColumn] ? ` (${accBudgetProfile.columnLabels[accumulationBudgetColumn]})` : ""}${yr.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
                 : undefined;
@@ -915,7 +915,7 @@ export function AccumulationRow({
               !accumOverrides.some(
                 (o) => o.year === yr.year && o.contributionRate !== undefined,
               )
-                ? `Override: ${accumOverrideNotes}`
+                ? `Changed this year: ${accumOverrideNotes}`
                 : undefined,
             proRate:
               yr.proRateFraction != null

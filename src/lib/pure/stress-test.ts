@@ -81,7 +81,7 @@ export const STRESS_TEST_BASELINE: StressTestParams = {
   label: "Long-run baseline",
   description:
     "Long-run US averages: 7% nominal return, 3% inflation, 1% real salary " +
-    "growth, 4% withdrawal. The default if you don't override.",
+    "growth, 4% withdrawal. The default unless you change it.",
 };
 
 /**

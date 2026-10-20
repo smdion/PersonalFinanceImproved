@@ -374,7 +374,7 @@ export const monteCarloRouter = createTRPCRouter({
           if (!activeIds.has(override.id)) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: `Asset class override id '${override.id}' does not match any active asset class`,
+              message: `Asset class ${override.id} isn't one of the active asset classes`,
             });
           }
         }

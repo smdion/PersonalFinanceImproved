@@ -963,7 +963,7 @@ export function DecumulationRow({
               : undefined;
           const budgetProfileName =
             decumulationExpenseOverride != null
-              ? `Manual override${dyr.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
+              ? `Set for this year${dyr.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
               : decBudgetProfile
                 ? `${decBudgetProfile.name}${decumulationBudgetColumn != null && decBudgetProfile.columnLabels[decumulationBudgetColumn] ? ` (${decBudgetProfile.columnLabels[decumulationBudgetColumn]})` : ""}${dyr.hasBudgetOverride && budgetOverrideNotes ? ` (${budgetOverrideNotes})` : ""}`
                 : undefined;
@@ -1058,7 +1058,7 @@ export function DecumulationRow({
                 }
               : undefined,
             overrideNote: decumOverrideNotes
-              ? `Override: ${decumOverrideNotes}`
+              ? `Changed this year: ${decumOverrideNotes}`
               : undefined,
           });
         })()}

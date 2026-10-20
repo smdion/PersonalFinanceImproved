@@ -399,7 +399,7 @@ function Legend({ isBlended }: { isBlended: boolean }) {
         <span className="inline-block h-2 w-2 shrink-0 rounded bg-blue-200 dark:bg-blue-800/60" />
         <span className="font-medium text-blue-500">*</span>
         <span>Custom expense amount applies this year</span>
-        <HelpTip text="A Year Adjustment overrides the baseline relocation monthly expense for this year only. Use it to model a phased move, a cost-cut year, or a temporary spike." />
+        <HelpTip text="A Year Adjustment replaces the baseline relocation monthly expense for this year only. Use it to model a phased move, a cost-cut year, or a temporary spike." />
       </span>
       <span className="flex items-center gap-1">
         <span className="inline-block h-2 w-2 shrink-0 rounded bg-orange-200 dark:bg-orange-800/60" />

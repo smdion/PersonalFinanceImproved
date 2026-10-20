@@ -121,7 +121,7 @@ function spawnWorker(): Worker {
     if (code !== 0) {
       log("error", "mc_worker_exited_nonzero", { code });
       failActiveJobAndRespawn(
-        new Error(`Monte Carlo worker exited unexpectedly (code ${code})`),
+        new Error(`The simulation stopped unexpectedly (code ${code})`),
       );
     }
     // A clean exit (code 0) only happens if something explicitly
@@ -129,7 +129,7 @@ function spawnWorker(): Worker {
     // treat it as unexpected too if a job was mid-flight.
     else if (activeJob) {
       failActiveJobAndRespawn(
-        new Error("Monte Carlo worker exited while a job was in flight"),
+        new Error("The simulation stopped before it finished"),
       );
     }
   });

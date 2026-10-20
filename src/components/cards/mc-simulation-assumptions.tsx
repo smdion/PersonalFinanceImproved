@@ -205,8 +205,7 @@ export function SimulationAssumptions({
           Simulation Assumptions
           {activeOverrides.length > 0 && (
             <span className="ml-1 text-amber-600">
-              ({activeOverrides.length} override
-              {activeOverrides.length > 1 ? "s" : ""} active)
+              ({activeOverrides.length} set by you)
             </span>
           )}
         </span>

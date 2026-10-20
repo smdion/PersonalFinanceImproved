@@ -2512,7 +2512,7 @@ export const savingsRouter = createTRPCRouter({
           if (Math.abs(total - 100) > 0.01) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: `Override splits must sum to 100% (got ${total.toFixed(1)}%)`,
+              message: `A month's split must add up to 100% (got ${total.toFixed(1)}%)`,
             });
           }
         }

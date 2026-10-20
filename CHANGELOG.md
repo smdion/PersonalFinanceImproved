@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **One salary editor:** Profiles → Salary shows each job with the Paycheck page's own sections — Pay schedule, Withholding, Bonus, Other pay, Extra paycheck — and both save the same way. The table above keeps salary, bonus and total.
 - **Budget columns are spending levels.** Every column uses the active Salary and Contribution profiles; a column no longer has profiles of its own (the What-If tab's "columns with their own profiles" note is gone).
 - **Plan names are unique.**
+- **Plainer words:** the year-by-year changes on the Retirement projection are "Changes by year", Savings' one-month amounts are "Month changes", the extra paycheck's are "Specific months", and Retirement's own spending amount is a "Set amount" (no more "override").
 
 ### Fixed
 

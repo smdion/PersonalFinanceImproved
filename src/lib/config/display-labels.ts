@@ -99,8 +99,7 @@ export const CONTRIB_RESOLUTION_TOOLTIPS: Record<
     "This column's Contribution Profile has no value set for this account — resolves to $0 here, not a guessed amount.",
   inactive_in_profile:
     "Turned off in this column's Contribution Profile — resolves to $0 here, not a guessed amount.",
-  inactive_in_sandbox:
-    "Turned off by a What-If override — resolves to $0 in this sandbox only.",
+  inactive_in_sandbox: "Turned off in What-If — $0 in this sandbox only.",
   no_pay_period:
     "Linked contribution account has no resolvable pay period (missing/ended job) — excluded from this total, not defaulted.",
   account_unavailable:

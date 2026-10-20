@@ -175,7 +175,7 @@ export function CreateAccountForm({
             type="text"
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Optional override"
+            placeholder="Optional"
             className="border-strong mt-1 block w-full rounded border px-2 py-1.5 text-sm"
           />
         </label>

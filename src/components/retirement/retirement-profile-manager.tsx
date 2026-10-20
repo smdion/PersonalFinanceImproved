@@ -239,7 +239,7 @@ export function RetirementProfileManager({
                 Tax law:{" "}
                 <HelpTip
                   maxWidth={280}
-                  text="Which tax year's figures (brackets, limits, LTCG, IRMAA, FPL) this profile's projections are priced under. Latest (auto) tracks the newest data as it's added each year. Pinning a year keeps this profile's numbers reproducible even after a newer year is seeded."
+                  text="Which tax year's figures (brackets, limits, LTCG, IRMAA, FPL) this profile's projections are priced under. Latest (auto) tracks the newest data as it's added each year. Choosing a year keeps this profile's numbers reproducible even after a newer year is seeded."
                 />{" "}
                 {admin ? (
                   <select
