@@ -123,6 +123,23 @@ describe("judgeCashDrag", () => {
   });
 });
 
+describe("judgeCashDrag — whole-account IRA link", () => {
+  it("an IRA with no tax type (whole-account link) is skipped while a backdoor is the plan", () => {
+    const ira = account({
+      accountType: "ira",
+      taxType: null,
+      holdings: [fund(7_000, { cash: 1 })],
+    });
+    expect(
+      judgeCashDrag({
+        accounts: [ira],
+        cashClass,
+        excludeTraditionalIra: true,
+      }),
+    ).toEqual([]);
+  });
+});
+
 describe("hsaCashBuffers", () => {
   it("the HDHP minimum deductible for the coverage; unknown coverage → null", () => {
     expect(

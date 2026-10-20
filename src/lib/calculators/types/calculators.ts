@@ -4,7 +4,6 @@
 
 import type {
   PayPeriodType,
-  FilingStatusType,
   DeductionLine,
   TaxBracketInput,
   ContributionAccountInput,
@@ -104,34 +103,6 @@ export type BlendedAnnualTotals = {
 };
 
 // --- Tax ---
-
-export type TaxInput = {
-  annualGross: number;
-  preTaxDeductionsAnnual: number;
-  filingStatus: FilingStatusType;
-  taxBrackets: TaxBracketInput;
-  w4CheckboxOverride: boolean | null; // null = auto-detect, true/false = user override
-  asOfDate: Date;
-  /** Social Security / Medicare wages; defaults to annualGross. */
-  ficaWagesAnnual?: number;
-  /** Additional Medicare liability threshold for the filing status
-   *  (`fica_medicare_surtax_liability_<status>`); when omitted, the
-   *  per-employee withholding threshold (equal for Single/HoH). */
-  medicareLiabilityThreshold?: number | null;
-};
-
-export type TaxResult = {
-  agi: number;
-  taxableIncome: number;
-  federalTax: number;
-  effectiveRate: number;
-  marginalRate: number;
-  ficaSS: number;
-  ficaMedicare: number;
-  totalTax: number;
-  w4CheckboxUsed: boolean;
-  warnings: string[];
-};
 
 // --- Budget ---
 

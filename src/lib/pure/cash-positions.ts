@@ -72,12 +72,14 @@ export function judgeCashDrag(args: {
   const out: CashFinding[] = [];
   for (const a of args.accounts) {
     if (a.accountType !== null && isHsaCategory(a.accountType)) continue;
+    // A whole-account link has no tax type; while a backdoor is the plan,
+    // treat an IRA of unknown type like a traditional one (its cash may be
+    // the contribution waiting to convert).
     if (
       args.excludeTraditionalIra &&
       a.accountType !== null &&
       isIraCategory(a.accountType) &&
-      a.taxType !== null &&
-      isPreTaxType(a.taxType)
+      (a.taxType === null || isPreTaxType(a.taxType))
     )
       continue;
     const { inClass, known } = cashIn(a, buckets);

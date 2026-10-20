@@ -1,15 +1,11 @@
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
-import { calculateTax } from "@/lib/calculators/tax";
+import { taxForOnePerson, type OnePersonTaxInput } from "./tax-helpers";
 import { roundToCents } from "@/lib/utils/math";
-import {
-  MFJ_TAXABLE_INCOME_BRACKETS,
-  MFJ_2C_BRACKETS,
-  AS_OF_DATE,
-} from "./fixtures";
-import type { TaxInput, TaxBracketInput } from "@/lib/calculators/types";
+import { MFJ_TAXABLE_INCOME_BRACKETS, AS_OF_DATE } from "./fixtures";
+import type { TaxBracketInput } from "@/lib/calculators/types";
 
-describe("calculateTax", () => {
+describe("household tax, one person", () => {
   describe("household combined income (MFJ, no checkbox)", () => {
     // Combined: Person A $120,000 + Person B $110,000 = $230,000
     // Pre-tax annual deductions:
@@ -21,7 +17,7 @@ describe("calculateTax", () => {
     // calculateTax needs real Form 1040 taxable-income-space brackets,
     // not the raw Pub 15-T withholding brackets (production derives this via
     // buildLiabilityBracketInput -> toTaxableIncomeBrackets).
-    const input: TaxInput = {
+    const input: OnePersonTaxInput = {
       annualGross: 230000,
       preTaxDeductionsAnnual: 31276,
       filingStatus: "MFJ",
@@ -29,7 +25,7 @@ describe("calculateTax", () => {
       w4CheckboxOverride: null,
       asOfDate: AS_OF_DATE,
     };
-    const result = calculateTax(input);
+    const result = taxForOnePerson(input);
 
     it("computes AGI", () => {
       // AGI = 230000 - 31276 = 198724
@@ -75,42 +71,9 @@ describe("calculateTax", () => {
     });
   });
 
-  describe("W-4 2(c) checkbox override", () => {
-    const baseInput: TaxInput = {
-      annualGross: 120000,
-      preTaxDeductionsAnnual: 1352,
-      filingStatus: "MFJ",
-      taxBrackets: MFJ_2C_BRACKETS,
-      w4CheckboxOverride: null,
-      asOfDate: AS_OF_DATE,
-    };
-
-    it("auto-detects from bracket set when override is null", () => {
-      const result = calculateTax(baseInput);
-      expect(result.w4CheckboxUsed).toBe(true);
-      expect(result.warnings).toHaveLength(0);
-    });
-
-    it("adds warning when user explicitly overrides", () => {
-      const result = calculateTax({ ...baseInput, w4CheckboxOverride: true });
-      expect(result.w4CheckboxUsed).toBe(true);
-      expect(result.warnings).toContainEqual(
-        expect.stringContaining("W-4 Step 2(c) checkbox manually enabled"),
-      );
-    });
-
-    it("shows disabled message when override is false", () => {
-      const result = calculateTax({ ...baseInput, w4CheckboxOverride: false });
-      expect(result.w4CheckboxUsed).toBe(false);
-      expect(result.warnings).toContainEqual(
-        expect.stringContaining("manually disabled"),
-      );
-    });
-  });
-
   describe("zero income edge case", () => {
     it("returns zero tax for zero income", () => {
-      const result = calculateTax({
+      const result = taxForOnePerson({
         annualGross: 0,
         preTaxDeductionsAnnual: 0,
         filingStatus: "MFJ",
@@ -149,7 +112,7 @@ const BOUNDARY_BRACKETS: TaxBracketInput = {
 };
 
 function taxAt(annualGross: number) {
-  return calculateTax({
+  return taxForOnePerson({
     annualGross,
     preTaxDeductionsAnnual: 0,
     filingStatus: "Single",
@@ -170,7 +133,7 @@ describe("calculateTax — bracket boundary cases", () => {
   });
 
   it("income below standard deduction produces zero tax when deduction exceeds income", () => {
-    const r = calculateTax({
+    const r = taxForOnePerson({
       annualGross: 5000,
       preTaxDeductionsAnnual: 0,
       filingStatus: "Single",

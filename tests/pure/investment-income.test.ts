@@ -81,6 +81,17 @@ describe("estimateFeedIncome", () => {
     expect(r.estimate).toBe(1000);
   });
 
+  it("a tax year that hasn't started uses this year's estimate, never $0", () => {
+    const next = estimateFeedIncome({
+      rows,
+      taxYear: 2027,
+      today: "2026-07-01",
+      coverageStart: "2025-01-01",
+    });
+    expect(next.estimate).toBe(1100);
+    expect(next.basis).toBe("ytdPlusLastYear");
+  });
+
   it("nothing stored → none", () => {
     expect(
       estimateFeedIncome({

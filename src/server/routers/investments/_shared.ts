@@ -36,7 +36,7 @@ import {
   type SubAccount,
 } from "@/server/helpers/sub-accounts";
 import { loadTrackedAccountNames } from "@/server/helpers/account-names";
-import { toNumber } from "@/server/helpers/transforms";
+import { toNumber, type DbOrTx } from "@/server/helpers/transforms";
 import type { FeedAccount } from "@/lib/pure/flow-suggestions";
 import {
   suggestSnapshotAmounts,
@@ -471,7 +471,11 @@ export async function loadLatestHoldings(db: Db) {
 /** Daily fund values per tracked account (counted feeds, 0-share rows
  *  dropped) and each account's latest day — input to the observed periods
  *  and the matched mix. */
-export async function loadDailyPositions(db: Db): Promise<{
+export async function loadDailyPositions(
+  db: Db,
+  /** Only observations on or after this day (YYYY-MM-DD). */
+  since?: string,
+): Promise<{
   positions: DailyPosition[];
   latest: Map<number, string>;
 }> {
@@ -486,7 +490,12 @@ export async function loadDailyPositions(db: Db): Promise<{
       value: h.reportedMarketValue,
     })
     .from(h)
-    .where(sql`${h.simplefinAccountId} IS NOT NULL`);
+    .where(
+      and(
+        sql`${h.simplefinAccountId} IS NOT NULL`,
+        since !== undefined ? gte(h.asOf, since) : undefined,
+      ),
+    );
   const positions: DailyPosition[] = [];
   const latest = new Map<number, string>();
   for (const r of rows) {
@@ -494,6 +503,7 @@ export async function loadDailyPositions(db: Db): Promise<{
     if (perf == null || toNumber(r.shares) === 0) continue;
     positions.push({
       performanceAccountId: perf,
+      feedId: r.simplefinAccountId!,
       day: r.asOf,
       securityId: r.securityId,
       value: r.value === null ? 0 : toNumber(r.value),
@@ -512,7 +522,7 @@ export async function loadObservedPeriods(db: Db): Promise<HoldingPeriod[]> {
 
 /** Stored (entered / inferred) periods with their weights. */
 export async function loadEnteredPeriods(
-  db: Db,
+  db: DbOrTx,
   performanceAccountId?: number,
 ): Promise<(HoldingPeriod & { notes: string | null })[]> {
   const p = schema.holdingPeriods;

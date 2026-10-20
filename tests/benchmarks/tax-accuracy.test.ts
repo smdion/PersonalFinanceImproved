@@ -7,7 +7,7 @@
 import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { calculateTax } from "@/lib/calculators/tax";
+import { taxForOnePerson } from "../calculators/tax-helpers";
 import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
 import type { TaxBracketInput } from "@/lib/calculators/types";
 
@@ -74,7 +74,7 @@ describe("Tax accuracy — IRS published tables", () => {
     it("$120k gross with $30k pre-tax deductions → ~$6.5k federal tax", () => {
       // taxable = gross - preTaxDeductions - standardDeduction
       // $120k - $30k - $31.5k = $58.5k taxable
-      const result = calculateTax({
+      const result = taxForOnePerson({
         annualGross: 120000,
         preTaxDeductionsAnnual: 30000,
         filingStatus: "MFJ",
@@ -92,7 +92,7 @@ describe("Tax accuracy — IRS published tables", () => {
     });
 
     it("$200k gross with $0 deductions → correct bracket walk", () => {
-      const result = calculateTax({
+      const result = taxForOnePerson({
         annualGross: 200000,
         preTaxDeductionsAnnual: 0,
         filingStatus: "MFJ",
@@ -118,7 +118,7 @@ describe("Tax accuracy — IRS published tables", () => {
 
   describe("FICA calculations", () => {
     it("SS tax on $113,711 (below wage base)", () => {
-      const result = calculateTax({
+      const result = taxForOnePerson({
         annualGross: 113711,
         preTaxDeductionsAnnual: 0,
         filingStatus: "MFJ",
@@ -132,7 +132,7 @@ describe("Tax accuracy — IRS published tables", () => {
     });
 
     it("SS tax capped at wage base ($176,100)", () => {
-      const result = calculateTax({
+      const result = taxForOnePerson({
         annualGross: 250000,
         preTaxDeductionsAnnual: 0,
         filingStatus: "MFJ",
@@ -146,7 +146,7 @@ describe("Tax accuracy — IRS published tables", () => {
     });
 
     it("Medicare base rate on full income + surtax above $200k", () => {
-      const result = calculateTax({
+      const result = taxForOnePerson({
         annualGross: 250000,
         preTaxDeductionsAnnual: 0,
         filingStatus: "MFJ",
@@ -160,7 +160,7 @@ describe("Tax accuracy — IRS published tables", () => {
     });
 
     it("no Medicare surtax when below threshold", () => {
-      const result = calculateTax({
+      const result = taxForOnePerson({
         annualGross: 150000,
         preTaxDeductionsAnnual: 0,
         filingStatus: "MFJ",
@@ -178,7 +178,7 @@ describe("Tax accuracy — IRS published tables", () => {
     // Effective rate = federal income tax ÷ AGI (the tax-return definition);
     // FICA is reported separately.
     it("$75k income → effective rate 5-8% (federal ÷ AGI)", () => {
-      const result = calculateTax({
+      const result = taxForOnePerson({
         annualGross: 75000,
         preTaxDeductionsAnnual: 0,
         filingStatus: "MFJ",
@@ -197,7 +197,7 @@ describe("Tax accuracy — IRS published tables", () => {
     });
 
     it("$300k income → effective rate 15-19% (federal ÷ AGI)", () => {
-      const result = calculateTax({
+      const result = taxForOnePerson({
         annualGross: 300000,
         preTaxDeductionsAnnual: 0,
         filingStatus: "MFJ",
@@ -212,7 +212,7 @@ describe("Tax accuracy — IRS published tables", () => {
     });
 
     it("zero income → zero tax", () => {
-      const result = calculateTax({
+      const result = taxForOnePerson({
         annualGross: 0,
         preTaxDeductionsAnnual: 0,
         filingStatus: "MFJ",

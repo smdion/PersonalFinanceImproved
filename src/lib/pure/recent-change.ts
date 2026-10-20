@@ -3,10 +3,12 @@
  * stored daily balances — a raw change that includes deposits and
  * withdrawals (no percentage: without flows it isn't a return).
  *
- * Per feed: the last balance of its latest day vs the last balance on or
- * before that day minus N. A window is shown for a group only once every
- * feed in it reaches back that far, with the real "since" date (the
- * earliest base day used). Pure — no DB.
+ * Every feed in a group is measured over the same dates: from the group's
+ * latest day back N days — each feed's last balance on or before the end
+ * vs its last on or before the start. A feed that stopped reporting
+ * before the window contributes no change (its balance is the same at
+ * both ends). A window is shown only once every feed reaches back that
+ * far, with the real "since" date (the earliest base day used). Pure.
  */
 import { addDays } from "@/lib/utils/date";
 import { roundToCents } from "@/lib/utils/math";
@@ -21,16 +23,19 @@ export type WindowChange = {
   since: string | null;
 };
 
-function feedChange(rows: readonly DailyBalance[], days: number) {
-  const latest = rows[rows.length - 1];
-  if (!latest) return null;
-  const target = addDays(latest.day, -days);
-  let base: DailyBalance | undefined;
+function lastOnOrBefore(rows: readonly DailyBalance[], day: string) {
+  let found: DailyBalance | undefined;
   for (const r of rows) {
-    if (r.day > target) break;
-    base = r;
+    if (r.day > day) break;
+    found = r;
   }
-  return base
+  return found;
+}
+
+function feedChange(rows: readonly DailyBalance[], end: string, days: number) {
+  const latest = lastOnOrBefore(rows, end);
+  const base = lastOnOrBefore(rows, addDays(end, -days));
+  return latest && base
     ? { change: latest.balance - base.balance, since: base.day }
     : null;
 }
@@ -43,7 +48,11 @@ export function recentChanges(
   const withData = histories.filter((h) => h.length > 0);
   return windows.map((days) => {
     if (withData.length === 0) return { days, change: null, since: null };
-    const parts = withData.map((h) => feedChange(h, days));
+    const end = withData
+      .map((h) => h[h.length - 1]!.day)
+      .sort()
+      .at(-1)!;
+    const parts = withData.map((h) => feedChange(h, end, days));
     if (parts.some((p) => p === null))
       return { days, change: null, since: null };
     return {

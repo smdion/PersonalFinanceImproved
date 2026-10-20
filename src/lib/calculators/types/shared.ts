@@ -32,7 +32,7 @@ export type TaxBracketInput = {
    *  annualized wages (line 1h) before the bracket lookup, when the W-4
    *  Step 2(c) box is unchecked. 0 when w4Checkbox is true (no worksheet
    *  adjustment applies — the 2(c) tables already assume it isn't taken).
-   *  Withholding-only; annual tax liability (calculateTax) doesn't use it. */
+   *  Withholding-only; annual tax liability (calculateHouseholdTax) doesn't use it. */
   w4Adjustment: number;
   socialSecurityWageBase: number;
   socialSecurityRate: number;

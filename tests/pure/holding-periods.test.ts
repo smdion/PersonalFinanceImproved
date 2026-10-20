@@ -58,6 +58,25 @@ describe("deriveObservedPeriods", () => {
     expect(p[0]!.end).toBe("2026-10-09");
   });
 
+  it("two feeds of one account reporting on different days don't split periods", () => {
+    const feed = (d: string, values: Record<number, number>, feedId: number) =>
+      day(d, values).map((p) => ({ ...p, feedId }));
+    const p = deriveObservedPeriods(
+      [
+        ...feed("2026-10-12", { 1: 100 }, 7), // Mon, feed A
+        ...feed("2026-10-13", { 2: 100 }, 8), // Tue, feed B
+        ...feed("2026-10-14", { 1: 101 }, 7),
+        ...feed("2026-10-15", { 2: 99 }, 8),
+      ],
+      new Map([[1, "2026-10-15"]]),
+    );
+    expect(p.map((x) => [x.start, x.end])).toEqual([
+      ["2026-10-12", "2026-10-12"],
+      ["2026-10-13", null],
+    ]);
+    expect(Object.keys(p[1]!.weights)).toEqual(["1", "2"]);
+  });
+
   it("accounts are separate; feeds of one account on a day add up", () => {
     const p = deriveObservedPeriods(
       [

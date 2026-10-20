@@ -33,7 +33,11 @@ import {
   type ContribResolutionStatus,
 } from "@/lib/pure/profiles";
 import { bonusCheckContribution } from "@/lib/calculators/paycheck";
-import { payrollFicaExemptCap } from "@/lib/pure/contributions";
+import {
+  irsLimitOrNull,
+  payrollFicaExemptCap,
+  shareFicaExemptCaps,
+} from "@/lib/pure/contributions";
 import {
   bonusCarriesContributions,
   contributionPay,
@@ -630,7 +634,7 @@ export function buildContribAccounts(
         )
       : matchByRow;
 
-  return allContribs.map((c) => {
+  const accounts = allContribs.map((c) => {
     const contribValue = Number(c.contributionValue);
     const annual = annualById.get(c.id)!;
     const perPeriod =
@@ -672,6 +676,27 @@ export function buildContribAccounts(
         : null,
     };
   });
+  // One FICA-exempt cap per person and account type, across their rows.
+  const shared = shareFicaExemptCaps(
+    allContribs.map((c, k) => ({
+      personId: c.personId,
+      accountType: c.accountType,
+      cap: accounts[k]!.ficaExemptAnnualCap,
+      limit: irsLimitOrNull(
+        c.accountType,
+        ficaContext.ageAtYearEnd,
+        c.hsaCoverageType ?? null,
+        ficaContext.limits,
+      ),
+      employerAnnual: matchByRow.get(c.id)!.matchAnnual,
+      annualPayroll: annualContributionWithBonus(
+        c,
+        { salary, bonusGross },
+        periodsPerYear,
+      ),
+    })),
+  );
+  return accounts.map((a, k) => ({ ...a, ficaExemptAnnualCap: shared[k]! }));
 }
 
 // ---------------------------------------------------------------------------

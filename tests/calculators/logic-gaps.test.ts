@@ -12,7 +12,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { calculatePaycheck } from "@/lib/calculators/paycheck";
-import { calculateTax } from "@/lib/calculators/tax";
+import { taxForOnePerson, type OnePersonTaxInput } from "./tax-helpers";
 import { calculateBudget } from "@/lib/calculators/budget";
 import { calculateContributions } from "@/lib/calculators/contribution";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
@@ -29,7 +29,6 @@ import {
 } from "./fixtures";
 import type {
   PaycheckInput,
-  TaxInput,
   MortgageInput,
   NetWorthInput,
 } from "@/lib/calculators/types";
@@ -311,7 +310,7 @@ describe("paycheck bonus month placement", () => {
 describe("tax MFJ Additional Medicare threshold", () => {
   it("withholding uses $200k threshold regardless of filing status", () => {
     // Person earning $210k — Additional Medicare kicks in at $200k for withholding
-    const input: TaxInput = {
+    const input: OnePersonTaxInput = {
       annualGross: 210000,
       preTaxDeductionsAnnual: 0,
       filingStatus: "MFJ",
@@ -319,7 +318,7 @@ describe("tax MFJ Additional Medicare threshold", () => {
       w4CheckboxOverride: null,
       asOfDate: AS_OF_DATE,
     };
-    const result = calculateTax(input);
+    const result = taxForOnePerson(input);
 
     // Base Medicare: $210,000 × 0.0145 = $3,045
     // Additional: ($210,000 - $200,000) × 0.009 = $90
@@ -328,7 +327,7 @@ describe("tax MFJ Additional Medicare threshold", () => {
   });
 
   it("income below $200k has no additional Medicare", () => {
-    const input: TaxInput = {
+    const input: OnePersonTaxInput = {
       annualGross: 180000,
       preTaxDeductionsAnnual: 0,
       filingStatus: "MFJ",
@@ -336,14 +335,14 @@ describe("tax MFJ Additional Medicare threshold", () => {
       w4CheckboxOverride: null,
       asOfDate: AS_OF_DATE,
     };
-    const result = calculateTax(input);
+    const result = taxForOnePerson(input);
 
     // Base only: $180,000 × 0.0145 = $2,610
     expect(result.ficaMedicare).toBeCloseTo(2610, 0);
   });
 
   it("income exactly at $200k threshold has no additional Medicare", () => {
-    const input: TaxInput = {
+    const input: OnePersonTaxInput = {
       annualGross: 200000,
       preTaxDeductionsAnnual: 0,
       filingStatus: "MFJ",
@@ -351,7 +350,7 @@ describe("tax MFJ Additional Medicare threshold", () => {
       w4CheckboxOverride: null,
       asOfDate: AS_OF_DATE,
     };
-    const result = calculateTax(input);
+    const result = taxForOnePerson(input);
 
     // No additional: $200,000 × 0.0145 = $2,900
     expect(result.ficaMedicare).toBeCloseTo(2900, 0);

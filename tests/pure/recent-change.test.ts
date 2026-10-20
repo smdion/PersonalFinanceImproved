@@ -27,6 +27,12 @@ describe("recentChanges", () => {
     ]);
   });
 
+  it("a feed that stopped reporting adds no change to today's window", () => {
+    const stale = h(["2026-09-01", 10], ["2026-09-20", 500]);
+    const [d1] = recentChanges([a, stale], [1]);
+    expect(d1!.change).toBe(10); // a's 170 − 160; stale flat over 10-16 → 10-17
+  });
+
   it("feeds with no history are ignored; none at all → not covered", () => {
     expect(recentChanges([a, []], [1])[0]!.change).toBe(10);
     expect(recentChanges([], [1])[0]!.change).toBeNull();

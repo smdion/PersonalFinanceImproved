@@ -14,7 +14,7 @@
  * above the filing status's LIABILITY threshold (reference data). Employers
  * withhold it per employee above a different, WITHHOLDING threshold — that
  * one belongs to paycheck withholding only; here it only sizes the
- * withheld-vs-owed warning. calculateTax is the one-person form.
+ * withheld-vs-owed warning.
  *
  * Known limitation: Tax-exempt interest (e.g. municipal bond interest) is not included
  * in provisional income for Social Security benefit taxation. The engine's computeTaxableSS()
@@ -29,15 +29,10 @@
  *   - Includes Additional Medicare Tax (0.9% above the liability threshold)
  *   - SS wage base cap is applied to each person's annual FICA wages, not per-period
  *
- * W-4 Step 2(c) checkbox:
- *   The checkbox indicates the employee has two jobs or a working spouse, which halves the
- *   bracket thresholds to avoid under-withholding. The tRPC layer passes the appropriate bracket
- *   set based on the job's W-4 settings, but the user can override this choice via
- *   `w4CheckboxOverride`. The result reports which option was used so the UI can display it.
- *   Note: 2(c) primarily affects paycheck withholding accuracy, not actual tax liability.
- *   For annual tax estimation, the standard (non-2c) brackets should typically be used.
+ * Liability uses the standard (non-2(c)) brackets: the W-4 Step 2(c)
+ * tables only shape paycheck withholding.
  */
-import type { TaxBracketInput, TaxInput, TaxResult } from "./types";
+import type { TaxBracketInput } from "./types";
 import { roundToCents, safeDivide, sumBy } from "../utils/math";
 import { formatCurrency } from "../utils/format";
 import { sumBracketTax } from "./tax-brackets";
@@ -153,50 +148,5 @@ export function calculateHouseholdTax(
     totalTax,
     effectiveRate: Number(safeDivide(federalTax, wageAgi) ?? 0),
     warnings,
-  };
-}
-
-/** One person's tax — calculateHouseholdTax for a household of one. */
-export function calculateTax(input: TaxInput): TaxResult {
-  const { taxBrackets, w4CheckboxOverride } = input;
-
-  // ── W-4 2(c) checkbox resolution ──
-  // null = auto (use whatever bracket set the tRPC layer passed based on job settings)
-  // true/false = user explicitly chose, overriding the job's W-4 setting
-  const w4CheckboxUsed = w4CheckboxOverride ?? taxBrackets.w4Checkbox ?? false;
-  const warnings: string[] = [];
-  if (w4CheckboxOverride !== null) {
-    warnings.push(
-      `W-4 Step 2(c) checkbox manually ${w4CheckboxOverride ? "enabled" : "disabled"} by user`,
-    );
-  }
-
-  const household = calculateHouseholdTax({
-    people: [
-      {
-        gross: input.annualGross,
-        preTaxFederal: input.preTaxDeductionsAnnual,
-        ficaWages: input.ficaWagesAnnual ?? input.annualGross,
-      },
-    ],
-    taxBrackets,
-    // One person: the Single/HoH liability threshold equals the per-employee
-    // withholding one; a married caller passes the liability row.
-    medicareLiabilityThreshold:
-      input.medicareLiabilityThreshold ??
-      taxBrackets.medicareAdditionalThreshold,
-  });
-
-  return {
-    agi: household.wageAgi,
-    taxableIncome: household.taxableIncome,
-    federalTax: household.federalTax,
-    effectiveRate: household.effectiveRate,
-    marginalRate: household.marginalRate,
-    ficaSS: household.ficaSS,
-    ficaMedicare: household.ficaMedicare,
-    totalTax: household.totalTax,
-    w4CheckboxUsed,
-    warnings: [...warnings, ...household.warnings],
   };
 }

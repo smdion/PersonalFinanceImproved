@@ -54,17 +54,32 @@ export type MatchedMixLevels = {
   excludedShare: number;
 };
 
+/** account → "YYYY-MM" → weights on the month's first observed day. */
+function firstObservedByMonth(
+  observedDaily: MatchedMixInput["observedDaily"],
+): Map<number, Map<string, Record<number, number>>> {
+  const out = new Map<number, Map<string, Record<number, number>>>();
+  for (const [accountId, days] of observedDaily) {
+    const byMonth = new Map<string, Record<number, number>>();
+    for (const d of days) {
+      const key = d.day.slice(0, 7);
+      if (!byMonth.has(key)) byMonth.set(key, d.weights);
+    }
+    out.set(accountId, byMonth);
+  }
+  return out;
+}
+
 function fundWeightsFor(
   input: MatchedMixInput,
+  observed: Map<number, Map<string, Record<number, number>>>,
   accountId: number,
   year: number,
   month: number,
 ): Record<number, number> | null {
   const key = monthKey(year, month);
-  const firstObserved = input.observedDaily
-    .get(accountId)
-    ?.find((d) => d.day.startsWith(key));
-  if (firstObserved) return firstObserved.weights;
+  const firstObserved = observed.get(accountId)?.get(key);
+  if (firstObserved) return firstObserved;
   const p = periodOn(input.periods, accountId, `${key}-01`);
   return p ? p.weights : null;
 }
@@ -72,6 +87,7 @@ function fundWeightsFor(
 /** Bucket weights for a month (renormalized over priced buckets), or null when not covered. */
 function monthBuckets(
   input: MatchedMixInput,
+  observed: Map<number, Map<string, Record<number, number>>>,
   year: number,
   month: number,
 ): {
@@ -85,7 +101,7 @@ function monthBuckets(
   const holdings: { value: number; facts: EffectiveFacts }[] = [];
   for (const [accountId, value] of values) {
     if (value <= 0) continue;
-    const w = fundWeightsFor(input, accountId, year, month);
+    const w = fundWeightsFor(input, observed, accountId, year, month);
     if (!w) return null;
     for (const [id, share] of Object.entries(w)) {
       const facts = input.facts.get(Number(id));
@@ -114,10 +130,11 @@ export function matchedMixLevels(input: MatchedMixInput): MatchedMixLevels {
   let level = 100;
   let firstMonth: string | null = null;
   let excludedShare = 0;
+  const observed = firstObservedByMonth(input.observedDaily);
   for (const year of input.years)
     for (let month = 1; month <= 12; month++) {
       const [py, pm] = previousMonth(year, month);
-      const mix = monthBuckets(input, year, month);
+      const mix = monthBuckets(input, observed, year, month);
       let ret: number | null = mix ? 0 : null;
       if (mix)
         for (const [b, w] of Object.entries(mix.weights) as [

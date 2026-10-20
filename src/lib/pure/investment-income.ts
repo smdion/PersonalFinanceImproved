@@ -88,7 +88,11 @@ export function estimateFeedIncome(args: {
   const none = { estimate: 0, ytd: 0, lastYearRemainder: 0 };
   const yearStart = `${taxYear}-01-01`;
   const yearEnd = `${taxYear}-12-31`;
-  if (coverageStart === null || coverageStart > yearEnd || today < yearStart)
+  // A year that hasn't started (a Paycheck page set to next year): the
+  // best estimate is this year's — never $0, which would understate MAGI.
+  if (today < yearStart && coverageStart !== null)
+    return estimateFeedIncome({ ...args, taxYear: Number(today.slice(0, 4)) });
+  if (coverageStart === null || coverageStart > yearEnd)
     return { ...none, basis: "none" };
 
   const income = args.rows.filter(

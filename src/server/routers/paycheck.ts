@@ -135,7 +135,7 @@ export function buildBracketInput(
 /**
  * Annual-liability variant of buildBracketInput: same limits, but brackets
  * reshaped into real Form 1040 taxable-income space via
- * toTaxableIncomeBrackets (calculateTax's own standardDeduction
+ * toTaxableIncomeBrackets (calculateHouseholdTax's own standardDeduction
  * subtraction was double-counting against the un-reshaped Pub 15-T
  * withholding brackets). Requires the standard (non-2c) row — the 2(c)
  * half-tables have no 1040 analogue.

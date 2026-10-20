@@ -10,6 +10,7 @@ import {
   monthsElapsedYtd,
   periodsElapsedYtd,
   getExtraPaycheckMonthKeys,
+  withheldThroughPeriod,
   type SalarySegment,
 } from "@/lib/calculators/paycheck";
 import type {
@@ -321,6 +322,28 @@ describe("calculatePaycheck", () => {
         ],
       });
       expect(r.ficaWages).toBeCloseTo(gross - 30, 2);
+    });
+
+    it("an after-tax row on an HSA isn't FICA-exempt (read-time rule, like deductions)", () => {
+      const r = calculatePaycheck({
+        ...base,
+        contributionAccounts: [
+          hsa(200, Infinity, { taxTreatment: "after_tax" }),
+        ],
+      });
+      expect(r.ficaWages).toBeCloseTo(gross, 2);
+    });
+
+    it("YTD withheld comes from the year schedule — full SS until the base, not the average", () => {
+      const wageBase = base.taxBrackets.socialSecurityWageBase;
+      const r = calculatePaycheck({ ...base, annualSalary: wageBase * 1.5 });
+      const first10 = withheldThroughPeriod(r.yearSchedule, 10);
+      // Ten full-rate checks, well before the base is reached.
+      expect(first10.fica).toBeCloseTo(
+        10 * r.ficaWages * (ssRate + medRate),
+        0,
+      );
+      expect(first10.fica).toBeGreaterThan(10 * (r.ficaSS + r.ficaMedicare));
     });
 
     it("over the wage base, per-check SS is the year's SS averaged over the checks", () => {

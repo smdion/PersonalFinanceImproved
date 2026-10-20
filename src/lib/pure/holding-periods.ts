@@ -27,9 +27,12 @@ export type HoldingPeriod = {
   weights: Record<number, number>;
 };
 
-/** One fund's value in an account on a day (latest-day rule already applied, 0-share rows dropped). */
+/** One fund's value in an account on a day, from one feed (latest-day rule
+ *  already applied, 0-share rows dropped). */
 export type DailyPosition = {
   performanceAccountId: number;
+  /** The SimpleFIN feed it came from — an account can have several. */
+  feedId: number;
   day: string;
   securityId: number;
   value: number;
@@ -46,23 +49,68 @@ function weightsOf(
   return w;
 }
 
+/**
+ * Each account's holdings per day, ascending — the one grouping both the
+ * observed periods and the matched mix read. An account fed by several
+ * feeds (e.g. one per sub-account) that report on different days gets, on
+ * each day, every feed's most recent holdings within the allowed gap — so
+ * a day where only one feed reported isn't read as a change of funds.
+ */
+export function holdingsByAccountDay(
+  positions: readonly DailyPosition[],
+): Map<number, { day: string; positions: DailyPosition[] }[]> {
+  // account → feed → day → positions
+  const tree = new Map<number, Map<number, Map<string, DailyPosition[]>>>();
+  for (const p of positions) {
+    const feeds = tree.get(p.performanceAccountId) ?? new Map();
+    const days = feeds.get(p.feedId) ?? new Map<string, DailyPosition[]>();
+    const list = days.get(p.day);
+    if (list) list.push(p);
+    else days.set(p.day, [p]);
+    feeds.set(p.feedId, days);
+    tree.set(p.performanceAccountId, feeds);
+  }
+  const out = new Map<number, { day: string; positions: DailyPosition[] }[]>();
+  for (const [accountId, feeds] of tree) {
+    const allDays = [
+      ...new Set([...feeds.values()].flatMap((d) => [...d.keys()])),
+    ].sort();
+    const feedDays = [...feeds].map(([, days]) => ({
+      days,
+      sorted: [...days.keys()].sort(),
+      at: -1,
+    }));
+    const rows: { day: string; positions: DailyPosition[] }[] = [];
+    for (const day of allDays) {
+      const positionsToday: DailyPosition[] = [];
+      for (const f of feedDays) {
+        while (f.at + 1 < f.sorted.length && f.sorted[f.at + 1]! <= day) f.at++;
+        if (f.at < 0) continue;
+        const last = f.sorted[f.at]!;
+        if (
+          tradingDaysBetween(last, day) >
+          HOLDING_PERIODS.observedMaxGapTradingDays + 1
+        )
+          continue;
+        positionsToday.push(...f.days.get(last)!);
+      }
+      rows.push({ day, positions: positionsToday });
+    }
+    out.set(accountId, rows);
+  }
+  return out;
+}
+
 /** Each account's fund weights per observed day (ascending) — what the
  *  matched mix reads in the observed window. */
 export function dailyWeightsByAccount(
   positions: readonly DailyPosition[],
 ): Map<number, { day: string; weights: Record<number, number> }[]> {
-  const byAccountDay = new Map<number, Map<string, DailyPosition[]>>();
-  for (const p of positions) {
-    const days = byAccountDay.get(p.performanceAccountId) ?? new Map();
-    days.set(p.day, [...(days.get(p.day) ?? []), p]);
-    byAccountDay.set(p.performanceAccountId, days);
-  }
   return new Map(
-    [...byAccountDay].map(([id, days]) => [
+    [...holdingsByAccountDay(positions)].map(([id, rows]) => [
       id,
-      [...days.keys()]
-        .sort()
-        .map((day) => ({ day, weights: weightsOf(days.get(day)!) }))
+      rows
+        .map((r) => ({ day: r.day, weights: weightsOf(r.positions) }))
         .filter((d) => Object.keys(d.weights).length > 0),
     ]),
   );
@@ -86,19 +134,12 @@ export function deriveObservedPeriods(
   /** Each account's latest day of holdings data from its feeds. */
   latestFeedDay: ReadonlyMap<number, string>,
 ): HoldingPeriod[] {
-  const byAccountDay = new Map<number, Map<string, DailyPosition[]>>();
-  for (const p of positions) {
-    const days = byAccountDay.get(p.performanceAccountId) ?? new Map();
-    days.set(p.day, [...(days.get(p.day) ?? []), p]);
-    byAccountDay.set(p.performanceAccountId, days);
-  }
   const out: HoldingPeriod[] = [];
-  for (const [accountId, days] of byAccountDay) {
-    const sorted = [...days.keys()].sort();
+  for (const [accountId, rows] of holdingsByAccountDay(positions)) {
     let open: HoldingPeriod | null = null;
     let lastDay: string | null = null;
-    for (const day of sorted) {
-      const w = weightsOf(days.get(day)!);
+    for (const { day, positions: today } of rows) {
+      const w = weightsOf(today);
       if (Object.keys(w).length === 0) continue;
       const gap =
         lastDay !== null &&

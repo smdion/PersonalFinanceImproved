@@ -106,16 +106,18 @@ export const investmentHoldingPeriodsRouter = createTRPCRouter({
   saveHoldingPeriod: portfolioProcedure
     .input(periodInput)
     .mutation(async ({ ctx, input }) => {
-      const others = (
-        await loadEnteredPeriods(ctx.db, input.performanceAccountId)
-      ).filter((x) => x.basis === "user");
-      const problems = validateHoldingPeriod(input, others);
-      if (problems.length > 0)
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: problems.map((p) => PROBLEM_TEXT[p] ?? p).join("; "),
-        });
       return ctx.db.transaction(async (tx) => {
+        // Validated inside the transaction, so two saves at once can't
+        // both pass the overlap check.
+        const others = (
+          await loadEnteredPeriods(tx, input.performanceAccountId)
+        ).filter((x) => x.basis === "user");
+        const problems = validateHoldingPeriod(input, others);
+        if (problems.length > 0)
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: problems.map((p) => PROBLEM_TEXT[p] ?? p).join("; "),
+          });
         const p = schema.holdingPeriods;
         const values = {
           performanceAccountId: input.performanceAccountId,
@@ -161,9 +163,15 @@ export const investmentHoldingPeriodsRouter = createTRPCRouter({
   deleteHoldingPeriod: portfolioProcedure
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
+      // Only entered periods are the household's to delete.
       await ctx.db
         .delete(schema.holdingPeriods)
-        .where(eq(schema.holdingPeriods.id, input.id));
+        .where(
+          and(
+            eq(schema.holdingPeriods.id, input.id),
+            eq(schema.holdingPeriods.basis, "user"),
+          ),
+        );
       return { success: true };
     }),
 

@@ -9,6 +9,7 @@
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
+import { withheldThroughPeriod } from "@/lib/calculators/paycheck";
 import type { RouterOutputs } from "@/lib/trpc";
 import type { ViewMode } from "@/lib/calculators/types/shared";
 
@@ -33,15 +34,16 @@ export function TaxesSummary({
   let totalFederal: number;
   let totalFica: number;
   if (isYtd) {
-    const periods = (d: (typeof people)[0]) => d.paycheck!.periodsElapsedYtd;
-    totalFederal = sumBy(
-      people,
-      (d) => d.paycheck!.federalWithholding * periods(d),
+    // From the year schedule, which charges full Social Security until the
+    // wage base is reached (the per-check figure is the year's average).
+    const withheld = people.map((d) =>
+      withheldThroughPeriod(
+        d.paycheck!.yearSchedule,
+        d.paycheck!.periodsElapsedYtd,
+      ),
     );
-    totalFica = sumBy(
-      people,
-      (d) => (d.paycheck!.ficaSS + d.paycheck!.ficaMedicare) * periods(d),
-    );
+    totalFederal = sumBy(withheld, (w) => w.federal);
+    totalFica = sumBy(withheld, (w) => w.fica);
   } else {
     totalFederal = householdTax!.federalTax;
     totalFica = householdTax!.ficaSS + householdTax!.ficaMedicare;

@@ -58,7 +58,8 @@ async function matchedMixBenchmark(
   years: readonly YearlyResult[],
 ) {
   const [{ positions }, entered] = await Promise.all([
-    loadDailyPositions(db),
+    // From the month before the first year — enough for every month's weights.
+    loadDailyPositions(db, `${years[0]!.year - 1}-12-01`),
     loadEnteredPeriods(db),
   ]);
   if (positions.length === 0 && entered.length === 0) return null;

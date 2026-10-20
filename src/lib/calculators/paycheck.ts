@@ -158,7 +158,27 @@ function regularFicaExemptPerPeriod(
 ): number {
   const cap = ca.ficaExemptAnnualCap;
   if (!ca.isPayrollDeducted || cap === null || cap === undefined) return 0;
+  // Only pre-tax money skips FICA — an after-tax row (bad data, an old
+  // backup) is FICA wages, the same read-time rule as deductions.
+  if (!isPreTax(ca.taxTreatment)) return 0;
   return Math.min(ca.perPeriodContribution, cap / periodsPerYear);
+}
+
+/**
+ * Federal and FICA withheld on the first `periods` regular checks of the
+ * year, from the year schedule — which charges full Social Security until
+ * the wage base is reached, unlike the per-check figure (the year's SS
+ * spread over every check). Bonus withholding isn't included.
+ */
+export function withheldThroughPeriod(
+  schedule: readonly PeriodBreakdown[],
+  periods: number,
+): { federal: number; fica: number } {
+  const done = schedule.slice(0, Math.max(0, periods));
+  return {
+    federal: roundToCents(sumBy(done, (p) => p.federalWithholding)),
+    fica: roundToCents(sumBy(done, (p) => p.ficaSS + p.ficaMedicare)),
+  };
 }
 
 /** Pre-tax treatments: traditional 401k ('pre_tax') and HSA ('hsa') both reduce taxable income. */
@@ -494,6 +514,7 @@ function calculateBonus(
     ? sumBy(input.contributionAccounts, (ca) => {
         const cap = ca.ficaExemptAnnualCap;
         if (cap === null || cap === undefined) return 0;
+        if (!isPreTax(ca.taxTreatment)) return 0;
         const capLeft =
           cap - regularFicaExemptPerPeriod(ca, periodsPerYear) * periodsPerYear;
         return Math.min(

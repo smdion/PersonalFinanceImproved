@@ -56,6 +56,12 @@ const summary = {
         federalWithholding: 600,
         ficaSS: 310,
         ficaMedicare: 72.5,
+        // Withholding so far comes from the year schedule.
+        yearSchedule: Array.from({ length: 12 }, () => ({
+          federalWithholding: 600,
+          ficaSS: 310,
+          ficaMedicare: 72.5,
+        })),
       },
       fullFormulaBonusEstimate: bonusEstimate(9000, 6450),
       resolvedBonusTerms: { bonusOverride: 6000 },
