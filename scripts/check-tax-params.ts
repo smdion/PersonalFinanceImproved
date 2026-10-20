@@ -39,16 +39,18 @@ const ROOT = path.resolve(__dirname, "..");
 // ---------------------------------------------------------------------------
 
 /**
- * Cutoff date (month, day) after which each table should have a row for the
- * next tax year. Mid-month dates avoid false failures on the 1st when
- * IRS/CMS/HHS data may not yet be published.
+ * Date (month, day) by which each table's figures for a tax year are
+ * reliably published — after the usual release window, so a late year never
+ * fails CI before the source exists. Months from July on fall in the year
+ * BEFORE the tax year (IRS/CMS publish ahead); earlier months fall in the
+ * tax year itself (HHS publishes in January). See taxYearDeadline.
  */
 const EXPECTED_AVAILABILITY: Record<string, { month: number; day: number }> = {
-  contribution_limits: { month: 10, day: 15 }, // Mid-October — IRS Rev. Proc.
-  tax_brackets: { month: 10, day: 15 }, // Mid-October — IRS Pub 15-T
-  ltcg_brackets: { month: 10, day: 15 }, // Mid-October — IRS Rev. Proc.
-  irmaa_brackets: { month: 11, day: 15 }, // Mid-November — CMS announcement
-  fpl_by_household: { month: 1, day: 15 }, // Mid-January — HHS Federal Register
+  contribution_limits: { month: 11, day: 30 }, // IRS limits notice — Oct–mid Nov
+  tax_brackets: { month: 11, day: 30 }, // IRS Rev. Proc. — Oct–Nov
+  ltcg_brackets: { month: 11, day: 30 }, // same Rev. Proc. as the brackets
+  irmaa_brackets: { month: 11, day: 30 }, // CMS announcement — Oct–Nov
+  fpl_by_household: { month: 1, day: 31 }, // HHS Federal Register — mid January
 };
 
 // tax_params has no availability cutoff of its own — it's a vintage
@@ -59,13 +61,22 @@ const EXPECTED_AVAILABILITY: Record<string, { month: number; day: number }> = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function getCurrentTaxYear(): number {
-  const now = new Date();
-  const month = now.getMonth() + 1; // 1-indexed
-  const year = now.getFullYear();
-  // After October 15, next year's data should be seeded for the *next* tax year.
-  // Uses the earliest cutoff date to determine the tax year boundary.
-  return month > 10 || (month === 10 && now.getDate() >= 15) ? year + 1 : year;
+/** When a table's figures for `taxYear` are due (see EXPECTED_AVAILABILITY). */
+function taxYearDeadline(
+  taxYear: number,
+  cutoff: { month: number; day: number },
+): Date {
+  const calendarYear = cutoff.month >= 7 ? taxYear - 1 : taxYear;
+  return new Date(calendarYear, cutoff.month - 1, cutoff.day);
+}
+
+/** The latest tax year a table should already have rows for, as of `now`. */
+function expectedTaxYearFor(
+  cutoff: { month: number; day: number },
+  now: Date,
+): number {
+  const next = now.getFullYear() + 1;
+  return now >= taxYearDeadline(next, cutoff) ? next : next - 1;
 }
 
 function readFile(relativePath: string): string {
@@ -98,13 +109,14 @@ interface SeedCheck {
   cutoff: { month: number; day: number };
 }
 
-function checkSeedFile(sql: string, expectedTaxYear: number): SeedCheck[] {
+function checkSeedFile(sql: string, now: Date): SeedCheck[] {
   return Object.entries(EXPECTED_AVAILABILITY).map(([table, cutoff]) => {
     const years = seedYearsForTable(sql, table);
+    const expectedYear = expectedTaxYearFor(cutoff, now);
     return {
       table,
-      expectedYear: expectedTaxYear,
-      found: years.includes(expectedTaxYear),
+      expectedYear,
+      found: years.includes(expectedYear),
       maxYear: years.length > 0 ? Math.max(...years) : 0,
       cutoff,
     };
@@ -213,41 +225,36 @@ function checkCodeFallbacks(sql: string): FallbackCheck[] {
 // ---------------------------------------------------------------------------
 
 function run() {
-  const expectedTaxYear = getCurrentTaxYear();
+  const now = new Date();
   const sql = readFile("seed-reference-data.sql");
 
-  console.log(
-    `Tax parameter staleness check (expected tax year: ${expectedTaxYear})\n`,
-  );
+  console.log("Tax parameter staleness check\n");
 
   // --- Check 1: Seed file ---
-  const seedChecks = checkSeedFile(sql, expectedTaxYear);
+  const seedChecks = checkSeedFile(sql, now);
   let seedWarnings = 0;
   let seedErrors = 0;
 
   console.log("=== Seed Data (seed-reference-data.sql) ===\n");
 
-  const now = new Date();
   for (const check of seedChecks) {
-    const cutoffDate = new Date(
-      now.getFullYear(),
-      check.cutoff.month - 1,
-      check.cutoff.day,
-    );
-    const isPastDeadline = now >= cutoffDate;
+    // The year after the expected one is the next to come due.
+    const nextYear = check.expectedYear + 1;
+    const nextDue = taxYearDeadline(nextYear, check.cutoff);
 
     if (check.found) {
       console.log(
         `  ✓ ${check.table}: ${check.expectedYear} data present (max year: ${check.maxYear})`,
       );
-    } else if (isPastDeadline) {
-      console.log(
-        `  ✗ ${check.table}: MISSING ${check.expectedYear} data (max year: ${check.maxYear}, expected after ${check.cutoff.month}/${check.cutoff.day})`,
-      );
-      seedErrors++;
     } else {
       console.log(
-        `  ○ ${check.table}: ${check.expectedYear} data not yet expected (available after ${check.cutoff.month}/${check.cutoff.day}, max year: ${check.maxYear})`,
+        `  ✗ ${check.table}: MISSING ${check.expectedYear} data (max year: ${check.maxYear}, due by ${check.cutoff.month}/${check.cutoff.day})`,
+      );
+      seedErrors++;
+    }
+    if (check.maxYear < nextYear) {
+      console.log(
+        `  ○ ${check.table}: ${nextYear} data due by ${nextDue.toISOString().slice(0, 10)}`,
       );
       seedWarnings++;
     }
