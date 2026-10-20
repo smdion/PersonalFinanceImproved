@@ -239,3 +239,33 @@ describe("backdoorPlanned and phase-out keys", () => {
     );
   });
 });
+
+describe("pro-rata materiality", () => {
+  const view = (amount: number, iraLimit: number | null = 7000) =>
+    buildRothIraView({
+      rothIra: {
+        filingStatus: "MFJ",
+        phaseOut: { start: 200_000, end: 210_000 },
+        people: [
+          {
+            personId: 1,
+            name: "A",
+            compensation: 150_000,
+            iraLimit,
+            hasEmployerPlan: true,
+          },
+        ],
+      },
+      wageAgi: 220_000,
+      hsaOutsidePayroll: 0,
+      investmentIncome: 0,
+      preTaxIraByPerson: [{ personId: 1, amount }],
+      marginOverride: null,
+    });
+  it("leftover cents aren't a pro-rata blocker; a real balance is", () => {
+    expect(view(0.12).proRata).toEqual([]);
+    expect(view(69).proRata).toEqual([]); // under 1% of the $7,000 limit
+    expect(view(70).proRata).toHaveLength(1);
+    expect(view(5000, null).proRata).toEqual([]); // limit unknown
+  });
+});

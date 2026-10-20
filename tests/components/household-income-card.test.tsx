@@ -80,6 +80,8 @@ const summary = {
   },
   householdTax: {
     wageAgi: 63000,
+    taxableIncome: 47250,
+    additionalMedicare: 0,
     federalTax: 4000,
     ficaSS: 4092,
     ficaMedicare: 957,
@@ -150,6 +152,7 @@ vi.mock("@/lib/trpc", () => ({
 }));
 
 import { HouseholdIncomeCard } from "@/components/cards/dashboard/household-income-card";
+import { TaxesContent } from "@/app/(dashboard)/taxes/taxes-content";
 
 describe("HouseholdIncomeCard", () => {
   beforeEach(() => {
@@ -166,14 +169,14 @@ describe("HouseholdIncomeCard", () => {
     expect(screen.getByText("$49,900.00")).toBeInTheDocument();
   });
 
-  it("projected and year-end taxes are the household tax, with its notes", () => {
+  it("projected and year-end taxes are the household tax; notes stay on the Taxes page", () => {
     for (const mode of ["projected", "blended"]) {
       viewMode = mode;
       const { unmount } = render(<HouseholdIncomeCard />);
       expect(screen.getByText("$9,049.00")).toBeInTheDocument();
       expect(
-        screen.getByText("Additional Medicare Tax: example note"),
-      ).toBeInTheDocument();
+        screen.queryByText("Additional Medicare Tax: example note"),
+      ).not.toBeInTheDocument();
       unmount();
     }
   });
@@ -185,18 +188,18 @@ describe("HouseholdIncomeCard", () => {
     expect(screen.queryByText(/Roth IRA MAGI/)).not.toBeInTheDocument();
   });
 
-  it("with portfolio access: Roth IRA MAGI adds investment income and judges the phase-out", () => {
+  it("with portfolio access: one Roth IRA line — MAGI and the verdict, linking to Taxes", () => {
     user = { role: "admin", name: "T", permissions: [] };
     render(<HouseholdIncomeCard />);
     // 63,000 wage AGI + 4,500 investment income, inside 60k–75k.
     expect(screen.getByText("$67,500.00")).toBeInTheDocument();
-    expect(screen.getByText(/Too close to call/)).toBeInTheDocument();
-    // 7000 × (1 − 7,500/15,000) = 3,500
-    expect(screen.getByText(/Pat \$3,500/)).toBeInTheDocument();
-    expect(screen.getByText(/\$15,000 \(range width\)/)).toBeInTheDocument();
+    expect(screen.getByText("Too close to call")).toBeInTheDocument();
     expect(
-      screen.getByText(/Pat has \$2,500 pre-tax in IRAs/),
-    ).toBeInTheDocument();
+      screen.getByRole("link", { name: "Roth IRA MAGI (est.)" }),
+    ).toHaveAttribute("href", "/taxes");
+    // The detail is on the Taxes page, not the card.
+    expect(screen.queryByText(/pre-tax in IRAs/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/range width/)).not.toBeInTheDocument();
   });
 
   it("YTD taxes are withholding so far, without the annual notes", () => {
@@ -207,5 +210,32 @@ describe("HouseholdIncomeCard", () => {
     expect(
       screen.queryByText("Additional Medicare Tax: example note"),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("Taxes page", () => {
+  beforeEach(() => {
+    user = { role: "viewer", name: "T", permissions: [] };
+  });
+
+  it("shows the tax line by line, with its notes", () => {
+    render(<TaxesContent />);
+    expect(screen.getByText("Federal income tax")).toBeInTheDocument();
+    expect(screen.getByText("$9,049.00")).toBeInTheDocument();
+    expect(
+      screen.getByText("Additional Medicare Tax: example note"),
+    ).toBeInTheDocument();
+  });
+
+  it("with portfolio access: the full Roth IRA check", () => {
+    user = { role: "admin", name: "T", permissions: [] };
+    render(<TaxesContent />);
+    expect(screen.getByText("$67,500.00")).toBeInTheDocument();
+    // 7000 × (1 − 7,500/15,000) = 3,500
+    expect(screen.getByText(/Pat \$3,500/)).toBeInTheDocument();
+    expect(screen.getByText(/\$15,000 \(range width\)/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Pat has \$2,500 pre-tax in IRAs/),
+    ).toBeInTheDocument();
   });
 });

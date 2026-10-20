@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * Household taxes for the selected view — part of the Household Income
- * card (the gap between gross and net pay). Projected / year-end use the
+ * Household taxes for the selected view — two lines on the Household
+ * Income card (the gap between gross and net pay); the breakdown and notes
+ * are on the Taxes page. Projected / year-end use the
  * household-level tax (one standard deduction, SS capped per person); Actual
  * YTD uses paycheck withholding so far.
  */
@@ -74,12 +75,6 @@ export function TaxesSummary({
           </span>
         )}
       </div>
-      {!isYtd &&
-        householdTax!.warnings.map((w) => (
-          <p key={w} className="text-faint mt-1">
-            {w}
-          </p>
-        ))}
     </div>
   );
 }

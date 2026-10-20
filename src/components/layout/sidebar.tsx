@@ -109,6 +109,7 @@ export const navStructure: NavEntry[] = [
     Icon: Search,
     items: [
       { href: "/retirement", label: "Retirement", Icon: Palmtree },
+      { href: "/taxes", label: "Taxes", Icon: Receipt },
       { href: "/tax-buckets", label: "Tax Buckets", Icon: Unlock },
       {
         href: "/tax-optimization",

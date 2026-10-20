@@ -275,6 +275,12 @@ export function medicareLiabilityKey(filingStatus: string): string {
   return `fica_medicare_surtax_liability_${filingStatus.toLowerCase()}`;
 }
 
+/** A pre-tax IRA balance below this share of the person's IRA limit isn't
+ *  worth a pro-rata warning: converting a full year's contribution, under
+ *  ~1% of it would be taxable (leftover cents, a dividend after a
+ *  conversion). */
+export const PRO_RATA_MATERIAL_SHARE_OF_IRA_LIMIT = 0.01;
+
 /** Married filing separately (and lived together): the Roth IRA phase-out
  *  is statutory and not indexed (IRC 408A(c)(3)(B)). The app has no MFS
  *  status, so this is only used to say so. */

@@ -9,7 +9,7 @@ import { sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 import { TaxesSummary } from "./taxes-summary";
 import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
-import { RothIraPanel } from "./roth-ira-panel";
+import { RothIraLine } from "@/components/taxes/roth-ira-section";
 
 function HouseholdIncomeCardImpl() {
   const { viewMode } = useScenario();
@@ -186,7 +186,7 @@ function HouseholdIncomeCardImpl() {
           </span>
         </div>
         {data?.householdTax && (
-          <RothIraPanel wageAgi={data.householdTax.wageAgi} />
+          <RothIraLine wageAgi={data.householdTax.wageAgi} />
         )}
       </div>
       <TaxesSummary data={data} viewMode={viewMode} />

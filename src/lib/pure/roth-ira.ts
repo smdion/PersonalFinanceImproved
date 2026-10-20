@@ -1,5 +1,5 @@
 /**
- * Roth IRA eligibility — judged once here; the Income card's panel and the
+ * Roth IRA eligibility — judged once here; the Taxes page, the Income card's line and the
  * Backdoor Roth / pro-rata recommendations read the result.
  *
  * Roth IRA MAGI (Pub 590-A Worksheet 2-1) starts from AGI, removes Roth
@@ -25,6 +25,7 @@ import {
 import { irsLimitOrNull } from "@/lib/pure/contributions";
 import { ageInYear } from "@/lib/utils/date";
 import {
+  PRO_RATA_MATERIAL_SHARE_OF_IRA_LIMIT,
   ROTH_IRA_REDUCED_LIMIT_FLOOR,
   ROTH_IRA_REDUCED_LIMIT_ROUNDING,
   SPOUSAL_IRA_FILING_STATUSES,
@@ -209,7 +210,7 @@ export type RothIraView = {
 /**
  * The Roth IRA view from the paycheck summary (wages, limits, phase-out
  * rows) and the investment side (investment income, IRA balances). Every
- * reader — the Income card's panel and the recommendations — goes through
+ * reader — the Taxes page, the Income card's line and the recommendations — goes through
  * this, so the verdict is judged once.
  */
 export function buildRothIraView(args: {
@@ -254,7 +255,12 @@ export function buildRothIraView(args: {
     }),
     proRata: args.rothIra.people.flatMap((p) => {
       const amount = preTax.get(p.personId) ?? 0;
-      return amount > 0
+      // Only a balance that would make a real share of a conversion
+      // taxable (leftover cents don't); unknown limit → no warning.
+      const material =
+        p.iraLimit !== null &&
+        amount >= PRO_RATA_MATERIAL_SHARE_OF_IRA_LIMIT * p.iraLimit;
+      return material
         ? [
             {
               personId: p.personId,
