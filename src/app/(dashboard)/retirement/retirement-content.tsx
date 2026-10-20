@@ -43,27 +43,21 @@ export function RetirementContent() {
     "projection" | "comparison" | "planHealth"
   >("projection");
   const [dollarMode, setDollarMode] = useState<"nominal" | "real">("real");
-  // Retirement Profile axis (phase 4, the assumptions band) — this page's
-  // local viewing selection -> the active profile. Unlike
-  // those two, retirement previously had NO "view without activating"
-  // support server-side; retirementProfileId in baseInput below is what
-  // adds it (build-engine-payload.ts, phase 4).
+  // Retirement Profile axis (the assumptions band) — the active profile;
+  // the band's picker changes it, same as the header.
   const [activeRetirementId, setActiveRetirementId] =
     useActiveRetirementProfile();
   const retirementProfilesQuery =
     trpc.retirement.retirementProfiles.list.useQuery();
   const retirementProfiles = retirementProfilesQuery.data ?? [];
-  const [viewingRetirementId, setViewingRetirementId] = useState<number | null>(
-    null,
+  const { profileId: effectiveRetirementProfileId } = useEffectiveProfileId(
+    "retirement",
+    {
+      validIds: retirementProfiles.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: activeRetirementId,
+    },
   );
-  const {
-    profileId: effectiveRetirementProfileId,
-    source: retirementProfileSource,
-  } = useEffectiveProfileId("retirement", {
-    validIds: retirementProfiles.map((p) => p.id),
-    localSelection: viewingRetirementId,
-    globalDefaultId: activeRetirementId,
-  });
   // Read-only here — the editor for these moved to the Budget page's
   // Retirement Profile tab (retirement-profile-tab.tsx), which writes the
   // same app_settings keys. This page's ProjectionCard/baseInput still need
@@ -358,14 +352,11 @@ export function RetirementContent() {
             settings={settings}
             perPersonSettings={perPersonSettings}
             profiles={retirementProfiles}
-            viewingProfileId={effectiveRetirementProfileId}
-            onViewingProfileChange={setViewingRetirementId}
-            activeProfileId={activeRetirementId}
+            activeProfileId={effectiveRetirementProfileId}
             onActivate={(id) => {
               setActiveRetirementId(id);
               utils.projection.invalidate();
             }}
-            effectiveSource={retirementProfileSource}
             admin={admin}
           />
 
