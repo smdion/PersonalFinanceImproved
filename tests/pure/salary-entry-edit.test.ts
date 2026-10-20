@@ -1,0 +1,73 @@
+import { describe, it, expect } from "vitest";
+import { salaryEntryEdit } from "@/lib/pure/salary-entry-edit";
+
+describe("salaryEntryEdit — one parse for every salary editor", () => {
+  it("numbers, with blanks clearing the nullable ones", () => {
+    expect(salaryEntryEdit("annualSalary", "95000")).toEqual({ salary: 95000 });
+    expect(salaryEntryEdit("annualSalary", "0")).toBeNull();
+    expect(salaryEntryEdit("bonusPercent", "0.12")).toEqual({
+      bonusPercent: 0.12,
+    });
+    expect(salaryEntryEdit("bonusMultiplier", "abc")).toBeNull();
+    expect(salaryEntryEdit("bonusOverride", "")).toEqual({
+      bonusOverride: null,
+    });
+    expect(salaryEntryEdit("bonusOverride", "8000")).toEqual({
+      bonusOverride: 8000,
+    });
+    expect(salaryEntryEdit("budgetPeriodsPerMonth", "")).toEqual({
+      budgetPeriodsPerMonth: null,
+    });
+    expect(salaryEntryEdit("additionalFedWithholding", "25")).toEqual({
+      additionalFedWithholding: 25,
+    });
+  });
+
+  it("the bonus date is one write of both fields", () => {
+    expect(salaryEntryEdit("bonusDate", "03-15")).toEqual({
+      bonusMonth: 3,
+      bonusDayOfMonth: 15,
+    });
+    expect(salaryEntryEdit("bonusDate", "")).toEqual({
+      bonusMonth: null,
+      bonusDayOfMonth: null,
+    });
+  });
+
+  it("choices must be one of their values", () => {
+    expect(salaryEntryEdit("payPeriod", "biweekly")).toEqual({
+      payPeriod: "biweekly",
+    });
+    expect(salaryEntryEdit("payPeriod", "daily")).toBeNull();
+    expect(salaryEntryEdit("w4FilingStatus", "MFJ")).toEqual({
+      w4FilingStatus: "MFJ",
+    });
+    expect(salaryEntryEdit("bonusDestination", "spending")).toEqual({
+      bonusDestination: "spending",
+    });
+    expect(salaryEntryEdit("bonusDestination", "vacation")).toBeNull();
+    expect(salaryEntryEdit("w4Box2cChecked", "true")).toEqual({
+      w4Box2cChecked: true,
+    });
+    expect(salaryEntryEdit("anchorPayDate", "")).toEqual({
+      anchorPayDate: null,
+    });
+    expect(salaryEntryEdit("anchorPayDate", "2026-01-09")).toEqual({
+      anchorPayDate: "2026-01-09",
+    });
+  });
+
+  it("an other-pay amount keeps the job's other lines", () => {
+    expect(
+      salaryEntryEdit("otherEarnings:7", "40", {
+        otherEarnings: { "3": 12.5, "7": 30 },
+      }),
+    ).toEqual({ otherEarnings: { "3": 12.5, "7": 40 } });
+    expect(salaryEntryEdit("otherEarnings:7", "-1")).toBeNull();
+  });
+
+  it("job columns aren't Salary Profile fields", () => {
+    expect(salaryEntryEdit("employerName", "Acme")).toBeUndefined();
+    expect(salaryEntryEdit("title", "Engineer")).toBeUndefined();
+  });
+});

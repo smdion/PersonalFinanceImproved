@@ -40,6 +40,7 @@ import type {
   W4FilingStatus,
 } from "@/lib/config/enum-values";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
+import { salaryEntryEdit } from "@/lib/pure/salary-entry-edit";
 
 export default function PaycheckPage() {
   const user = useUser();
@@ -105,7 +106,7 @@ export default function PaycheckPage() {
   // written. There is no more "jobs" entity kind here: that active-fields
   // bucket (payPeriod/payWeek/anchorPayDate, W-4, bonus timing/flags) was
   // retired in the Stage B migration — those fields now live on the
-  // Salary Profile entry instead (see writeSalaryProfileEntry above), and
+  // Salary Profile entry instead (see patchSalaryEntry above), and
   // the bonus flags became each account's own `fromBonus`.
   function updateProfileActiveField(
     entityType: "contributionAccounts" | "deductions",
@@ -167,7 +168,7 @@ export default function PaycheckPage() {
   const lineEditable = editTarget("line").target === "setup";
   const setupEditable = editTarget("setup").target === "setup";
 
-  const updateSalaryProfile = trpc.salaryProfile.update.useMutation({
+  const patchSalaryProfileEntry = trpc.salaryProfile.patchEntry.useMutation({
     onSuccess: () => {
       utils.paycheck.invalidate();
       utils.salaryProfile.invalidate();
@@ -205,25 +206,24 @@ export default function PaycheckPage() {
   };
 
   /**
-   * Merge a field edit into this job's entry in the displayed Salary
-   * Profile. Entries are complete/all-or-nothing (no partial pins) — the
-   * first edit to a job that has no entry yet creates one, defaulting
-   * every untouched field to `defaults` (that job's currently-resolved
-   * values), so the write is always a complete entry.
+   * Save field edits to this job's entry in the displayed Salary Profile —
+   * a field-level patch on the server (salaryProfile.patchEntry), so two
+   * quick edits, or another tab, can't overwrite each other with a stale
+   * copy. Entries are complete/all-or-nothing: the first edit to a job
+   * with no entry yet sends `defaults` (that job's currently-resolved
+   * values) with it, so the entry it creates is complete.
    */
-  function writeSalaryProfileEntry(
+  function patchSalaryEntry(
     jobId: number,
     defaults: CompleteSalaryEntry,
     updates: Partial<CompleteSalaryEntry>,
   ) {
     if (!displayedSalaryProfile) return;
     const existing = displayedSalaryProfile.salaries[String(jobId)];
-    updateSalaryProfile.mutate({
+    patchSalaryProfileEntry.mutate({
       id: displayedSalaryProfile.id,
-      salaries: {
-        ...displayedSalaryProfile.salaries,
-        [String(jobId)]: { ...(existing ?? defaults), ...updates },
-      },
+      jobId,
+      fields: existing ? updates : { ...defaults, ...updates },
     });
   }
 
@@ -421,28 +421,6 @@ export default function PaycheckPage() {
                       handlers: {
                         onUpdateJob: (field: string, value: string) => {
                           const job = d.job!;
-                          const boolFields = ["w4Box2cChecked"];
-                          const nullableIntFields = [
-                            "bonusMonth",
-                            "bonusDayOfMonth",
-                          ];
-                          const nullableDecimalFields = [
-                            "budgetPeriodsPerMonth",
-                          ];
-                          const decimalFields = ["additionalFedWithholding"];
-                          const parsed = boolFields.includes(field)
-                            ? value === "true"
-                            : nullableIntFields.includes(field)
-                              ? value === ""
-                                ? null
-                                : Number(value)
-                              : nullableDecimalFields.includes(field)
-                                ? value === ""
-                                  ? null
-                                  : Number(value)
-                                : decimalFields.includes(field)
-                                  ? Number(value)
-                                  : value;
                           // A job has no salary, bonus, pay-schedule, or W-4
                           // terms of its own any more — every edit to any of
                           // those lands in the displayed Salary Profile as
@@ -470,142 +448,23 @@ export default function PaycheckPage() {
                               bonusDayOfMonth: job.bonusDayOfMonth ?? null,
                               extraPaycheckRouting: null,
                             };
-                          // An other-pay line's amount per check — saved in
-                          // the Salary Profile entry's otherEarnings map.
-                          if (field.startsWith("otherEarnings:")) {
-                            const num = Number(value);
-                            if (!Number.isFinite(num) || num < 0) return;
-                            if (!salaryEditsProfile) return;
-                            const current = Object.fromEntries(
+                          // Every Salary Profile field — the same parse and
+                          // save path as Profiles → Salary (salaryEntryEdit).
+                          const edit = salaryEntryEdit(field, value, {
+                            otherEarnings: Object.fromEntries(
                               d.earningRows.map((r) => [
                                 String(r.id),
                                 r.amount,
                               ]),
-                            );
-                            writeSalaryProfileEntry(
-                              job.id,
-                              salaryProfileEntryDefaults,
-                              {
-                                otherEarnings: {
-                                  ...current,
-                                  [field.slice("otherEarnings:".length)]: num,
-                                },
-                              },
-                            );
-                            return;
-                          }
-                          // Where this job's bonus goes — its Salary
-                          // Profile entry, like every other bonus term.
-                          if (field === "bonusDestination") {
-                            if (!salaryEditsProfile) return;
-                            if (value !== "budget" && value !== "spending")
-                              return;
-                            writeSalaryProfileEntry(
-                              job.id,
-                              salaryProfileEntryDefaults,
-                              { bonusDestination: value },
-                            );
-                            return;
-                          }
-                          if (field === "annualSalary") {
-                            const num = Number(value);
-                            if (isNaN(num) || num <= 0) return;
-                            if (!salaryEditsProfile) return;
-                            writeSalaryProfileEntry(
-                              job.id,
-                              salaryProfileEntryDefaults,
-                              { salary: num },
-                            );
-                            return;
-                          }
-                          const salaryProfileBonusFields = [
-                            "bonusPercent",
-                            "bonusMultiplier",
-                            "monthsInBonusYear",
-                          ];
-                          if (salaryProfileBonusFields.includes(field)) {
-                            if (salaryEditsProfile) {
-                              writeSalaryProfileEntry(
+                            ),
+                          });
+                          if (edit !== undefined) {
+                            if (edit && salaryEditsProfile)
+                              patchSalaryEntry(
                                 job.id,
                                 salaryProfileEntryDefaults,
-                                {
-                                  [field as
-                                    | "bonusPercent"
-                                    | "bonusMultiplier"
-                                    | "monthsInBonusYear"]: Number(parsed),
-                                },
+                                edit,
                               );
-                            }
-                            return;
-                          }
-                          // This year's actual bonus, pinned on the same entry —
-                          // orthogonal to the formula fields above (see
-                          // SalaryProfileEntry.bonusOverride's docblock).
-                          // The bonus pay date is two fields of one entry —
-                          // one write, so the second can't overwrite the first
-                          // with a stale copy of the entry. "MM-DD" or "".
-                          if (field === "bonusDate") {
-                            if (!salaryEditsProfile) return;
-                            const [m, dd] = value
-                              ? value.split("-").map(Number)
-                              : [null, null];
-                            writeSalaryProfileEntry(
-                              job.id,
-                              salaryProfileEntryDefaults,
-                              {
-                                bonusMonth: m ?? null,
-                                bonusDayOfMonth: dd ?? null,
-                              },
-                            );
-                            return;
-                          }
-                          if (field === "bonusOverride") {
-                            if (salaryEditsProfile) {
-                              writeSalaryProfileEntry(
-                                job.id,
-                                salaryProfileEntryDefaults,
-                                {
-                                  bonusOverride:
-                                    value === "" ? null : Number(value),
-                                },
-                              );
-                            }
-                            return;
-                          }
-                          // The remaining 11 fields — pay schedule, W-4, and
-                          // the bonus-timing/contribution-flag fields — all
-                          // moved onto this same Salary Profile entry in the
-                          // Stage B migration. There is no more Contribution
-                          // Profile "jobs" active-fields bucket (retired
-                          // entirely) and no more raw job columns for any of
-                          // them; the ONLY write path left is the displayed
-                          // Salary Profile, same as salary/bonus above.
-                          const salaryProfileNewFields: (keyof CompleteSalaryEntry)[] =
-                            [
-                              "payPeriod",
-                              "payWeek",
-                              "anchorPayDate",
-                              "budgetPeriodsPerMonth",
-                              "w4FilingStatus",
-                              "w4Box2cChecked",
-                              "additionalFedWithholding",
-                              "bonusMonth",
-                              "bonusDayOfMonth",
-                            ];
-                          if (
-                            salaryProfileNewFields.includes(
-                              field as keyof CompleteSalaryEntry,
-                            )
-                          ) {
-                            if (salaryEditsProfile) {
-                              writeSalaryProfileEntry(
-                                job.id,
-                                salaryProfileEntryDefaults,
-                                {
-                                  [field]: parsed,
-                                } as Partial<CompleteSalaryEntry>,
-                              );
-                            }
                             return;
                           }
                           // Only real job columns left: employerName and
@@ -619,7 +478,7 @@ export default function PaycheckPage() {
                             title: job.title,
                             startDate: job.startDate,
                             endDate: job.endDate ?? undefined,
-                            [field]: parsed,
+                            [field]: value,
                           });
                         },
                         onUpdateDeduction: (

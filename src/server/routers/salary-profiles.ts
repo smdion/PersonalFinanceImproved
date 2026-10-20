@@ -230,9 +230,10 @@ export const salaryProfileRouter = createTRPCRouter({
           entry,
         ]),
       );
-      const [people, allJobs] = await Promise.all([
+      const [people, allJobs, allEarnings] = await Promise.all([
         ctx.db.select().from(schema.people),
         ctx.db.select().from(schema.jobs),
+        ctx.db.select().from(schema.paycheckEarnings),
       ]);
 
       /** Full per-job detail — computed once per job so both the selected
@@ -259,8 +260,8 @@ export const salaryProfileRouter = createTRPCRouter({
           /** This year's actual paid-out bonus, pinned on the same entry —
            *  see SalaryProfileEntry.bonusOverride's docblock. */
           bonusOverride: entry?.bonusOverride ?? null,
-          /** Pay schedule, W-4 elections, and bonus pay date/flags — the 11
-           *  fields that moved off `jobs` in Stage B. Defaults below match
+          /** Pay schedule, W-4 elections and bonus pay date — fields that
+           *  moved off `jobs` in Stage B. Defaults below match
            *  onboarding-wizard.tsx's defaults for a brand-new entry, purely
            *  a visible starting point for the editor when this job has no
            *  entry yet — never used in any live calculation (a job with no
@@ -277,10 +278,22 @@ export const salaryProfileRouter = createTRPCRouter({
           /** Where this job's extra (3rd biweekly) paycheck routes, if
            *  configured — see extraPaycheckRoutingSchema (json-schemas.ts). */
           extraPaycheckRouting: entry?.extraPaycheckRouting ?? null,
+          /** Where this job's bonus goes; absent = the budget. */
+          bonusDestination: entry?.bonusDestination ?? ("budget" as const),
+          /** This job's other-pay lines with their per-check amount in this
+           *  profile (0 when it sets none) — same as the Paycheck page. */
+          earningRows: allEarnings
+            .filter((e) => e.jobId === job.id)
+            .map((e) => ({
+              ...e,
+              amount: entry?.otherEarnings?.[String(e.id)] ?? 0,
+            })),
           /** What this profile actually produces for this job — the pinned
            *  actual when set, else the formula estimate. */
           effectiveSalary: comp.salary,
           estimatedBonus: comp.bonusOverride ?? comp.bonus,
+          /** The formula's bonus, ignoring this year's actual. */
+          formulaBonus: comp.bonus,
         };
       };
 
@@ -329,9 +342,12 @@ export const salaryProfileRouter = createTRPCRouter({
           bonusMonth: selected?.bonusMonth ?? null,
           bonusDayOfMonth: selected?.bonusDayOfMonth ?? null,
           extraPaycheckRouting: selected?.extraPaycheckRouting ?? null,
+          bonusDestination: selected?.bonusDestination ?? ("budget" as const),
+          earningRows: selected?.earningRows ?? [],
           /** What this profile actually produces for this person. */
           effectiveSalary: selected?.effectiveSalary ?? 0,
           estimatedBonus: selected?.estimatedBonus ?? 0,
+          formulaBonus: selected?.formulaBonus ?? 0,
         };
       });
 

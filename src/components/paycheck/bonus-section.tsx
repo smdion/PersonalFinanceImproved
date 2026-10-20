@@ -49,6 +49,142 @@ function BonusDestinationToggle({
 
 const numeric = (v: string) => v.replace(/[^0-9.]/g, "");
 
+/**
+ * The bonus terms a Salary Profile entry holds — percent, multiplier, this
+ * year's actual, the pay date and where it goes. Shared by the Paycheck
+ * page's Bonus section and Profiles → Salary, so both edit them the same
+ * way (each sends edits through salaryEntryEdit → patchEntry).
+ */
+export function BonusTerms({
+  terms,
+  bonusMonth,
+  bonusDayOfMonth,
+  bonusDestination,
+  onUpdateJob,
+  editable,
+  showAll,
+  formulaBonus,
+  paidOnHint,
+}: {
+  terms: {
+    bonusPercent: number;
+    bonusMultiplier: number;
+    bonusOverride: number | null;
+  };
+  bonusMonth: number | null;
+  bonusDayOfMonth: number | null;
+  bonusDestination: BonusDestination;
+  onUpdateJob: (field: string, value: string) => void;
+  editable: boolean;
+  /** Every term, not only Bonus % (a 0% row is the way to add a bonus). */
+  showAll: boolean;
+  /** The formula's bonus, shown beside an empty "actual". */
+  formulaBonus?: number;
+  /** A line under the pay date (e.g. which pay period it lands in). */
+  paidOnHint?: string;
+}) {
+  return (
+    <>
+      <FieldRow label="Bonus %">
+        <InlineEdit
+          value={String(terms.bonusPercent * 100)}
+          onSave={(v) =>
+            onUpdateJob("bonusPercent", String(Number(numeric(v)) / 100))
+          }
+          formatDisplay={(v) => formatPercent(Number(v) / 100, 1)}
+          parseInput={numeric}
+          type="number"
+          className="font-medium"
+          isEditable={editable}
+          hideEditIcon
+        />
+      </FieldRow>
+      {showAll && (
+        <>
+          <FieldRow
+            label={
+              <>
+                Multiplier
+                <HelpTip text="Scales your bonus target — 1.0x means on-target, higher means exceeding expectations" />
+              </>
+            }
+          >
+            <InlineEdit
+              value={String(terms.bonusMultiplier)}
+              onSave={(v) => onUpdateJob("bonusMultiplier", numeric(v))}
+              formatDisplay={(v) => `${Number(v).toFixed(2)}x`}
+              parseInput={numeric}
+              type="number"
+              className="font-medium"
+              isEditable={editable}
+              hideEditIcon
+            />
+          </FieldRow>
+          <FieldRow
+            label={
+              <>
+                {new Date().getFullYear()} actual
+                <HelpTip text="Lock in this year's actual bonus once it's paid out, instead of the calculated salary x percent x multiplier. Only affects this calendar year — next year's projections still use the full formula." />
+              </>
+            }
+            hint={
+              terms.bonusOverride === null && formulaBonus !== undefined
+                ? `Formula: ${formatCurrency(formulaBonus)}`
+                : undefined
+            }
+          >
+            <InlineEdit
+              value={
+                terms.bonusOverride !== null ? String(terms.bonusOverride) : ""
+              }
+              onSave={(v) => onUpdateJob("bonusOverride", numeric(v))}
+              formatDisplay={(v) =>
+                v && Number(v) > 0 ? formatCurrency(Number(v)) : "—"
+              }
+              parseInput={numeric}
+              type="number"
+              className="font-medium"
+              isEditable={editable}
+              hideEditIcon
+            />
+          </FieldRow>
+          <FieldRow
+            label={
+              <>
+                Paid on
+                <HelpTip text="Date when bonus is typically paid. Helps model contribution timing and cash flow." />
+              </>
+            }
+            hint={paidOnHint}
+          >
+            <input
+              type="date"
+              aria-label="Bonus paid on"
+              value={
+                bonusMonth != null
+                  ? `${new Date().getFullYear()}-${String(bonusMonth).padStart(2, "0")}-${String(bonusDayOfMonth ?? 1).padStart(2, "0")}`
+                  : ""
+              }
+              // One write for both parts of the date ("MM-DD", or "" to
+              // clear) — two writes would race on the same profile entry.
+              onChange={(e) =>
+                onUpdateJob("bonusDate", e.target.value.slice(5))
+              }
+              disabled={!editable}
+              className="bg-surface-primary w-36 rounded border px-2 py-0.5 text-sm disabled:opacity-60"
+            />
+          </FieldRow>
+          <BonusDestinationToggle
+            value={bonusDestination}
+            onChange={(v) => onUpdateJob("bonusDestination", v)}
+            disabled={!editable}
+          />
+        </>
+      )}
+    </>
+  );
+}
+
 export function BonusSection({
   paycheck,
   fullFormulaBonusEstimate,
@@ -113,108 +249,21 @@ export function BonusSection({
     <div className="space-y-2">
       <SectionHeader note={note}>Bonus</SectionHeader>
       <div className="bg-surface-sunken border-subtle space-y-1.5 rounded-lg border p-4 text-sm">
-        <FieldRow label="Bonus %">
-          <InlineEdit
-            value={String(resolvedBonusTerms.bonusPercent * 100)}
-            onSave={(v) =>
-              onUpdateJob("bonusPercent", String(Number(numeric(v)) / 100))
-            }
-            formatDisplay={(v) => formatPercent(Number(v) / 100, 1)}
-            parseInput={numeric}
-            type="number"
-            className="font-medium"
-            isEditable={editable}
-            hideEditIcon
-          />
-        </FieldRow>
-        {(hasBonus || resolvedBonusTerms.bonusPercent > 0) && (
-          <>
-            <FieldRow
-              label={
-                <>
-                  Multiplier
-                  <HelpTip text="Scales your bonus target — 1.0x means on-target, higher means exceeding expectations" />
-                </>
-              }
-            >
-              <InlineEdit
-                value={String(resolvedBonusTerms.bonusMultiplier)}
-                onSave={(v) => onUpdateJob("bonusMultiplier", numeric(v))}
-                formatDisplay={(v) => `${Number(v).toFixed(2)}x`}
-                parseInput={numeric}
-                type="number"
-                className="font-medium"
-                isEditable={editable}
-                hideEditIcon
-              />
-            </FieldRow>
-            <FieldRow
-              label={
-                <>
-                  {new Date().getFullYear()} actual
-                  <HelpTip text="Lock in this year's actual bonus once it's paid out, instead of the calculated salary x percent x multiplier. Only affects this calendar year — next year's projections still use the full formula." />
-                </>
-              }
-              hint={
-                resolvedBonusTerms.bonusOverride === null
-                  ? `Formula: ${formatCurrency(fullFormulaBonusEstimate.bonusGross)}`
-                  : undefined
-              }
-            >
-              <InlineEdit
-                value={
-                  resolvedBonusTerms.bonusOverride !== null
-                    ? String(resolvedBonusTerms.bonusOverride)
-                    : ""
-                }
-                onSave={(v) => onUpdateJob("bonusOverride", numeric(v))}
-                formatDisplay={(v) =>
-                  v && Number(v) > 0 ? formatCurrency(Number(v)) : "—"
-                }
-                parseInput={numeric}
-                type="number"
-                className="font-medium"
-                isEditable={editable}
-                hideEditIcon
-              />
-            </FieldRow>
-            <FieldRow
-              label={
-                <>
-                  Paid on
-                  <HelpTip text="Date when bonus is typically paid. Helps model contribution timing and cash flow." />
-                </>
-              }
-              hint={
-                paycheck.bonusPeriod != null
-                  ? `Pay period ${paycheck.bonusPeriod} of ${paycheck.periodsPerYear}`
-                  : undefined
-              }
-            >
-              <input
-                type="date"
-                aria-label="Bonus paid on"
-                value={
-                  job.bonusMonth != null
-                    ? `${new Date().getFullYear()}-${String(job.bonusMonth).padStart(2, "0")}-${String(job.bonusDayOfMonth ?? 1).padStart(2, "0")}`
-                    : ""
-                }
-                // One write for both parts of the date ("MM-DD", or "" to
-                // clear) — two writes would race on the same profile entry.
-                onChange={(e) =>
-                  onUpdateJob("bonusDate", e.target.value.slice(5))
-                }
-                disabled={!editable}
-                className="bg-surface-primary w-36 rounded border px-2 py-0.5 text-sm disabled:opacity-60"
-              />
-            </FieldRow>
-            <BonusDestinationToggle
-              value={bonusDestination}
-              onChange={(v) => onUpdateJob("bonusDestination", v)}
-              disabled={!editable}
-            />
-          </>
-        )}
+        <BonusTerms
+          terms={resolvedBonusTerms}
+          bonusMonth={job.bonusMonth}
+          bonusDayOfMonth={job.bonusDayOfMonth}
+          bonusDestination={bonusDestination}
+          onUpdateJob={onUpdateJob}
+          editable={editable}
+          showAll={hasBonus || resolvedBonusTerms.bonusPercent > 0}
+          formulaBonus={fullFormulaBonusEstimate.bonusGross}
+          paidOnHint={
+            paycheck.bonusPeriod != null
+              ? `Pay period ${paycheck.bonusPeriod} of ${paycheck.periodsPerYear}`
+              : undefined
+          }
+        />
 
         {hasBonus && (
           <div className="border-subtle mt-1 space-y-1 border-t pt-2">

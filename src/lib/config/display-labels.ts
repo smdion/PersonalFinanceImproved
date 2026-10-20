@@ -15,6 +15,13 @@ export const PAY_PERIOD_LABELS: Record<string, string> = {
   monthly: "Monthly",
 };
 
+/** Which biweekly payday week a job is on. */
+export const PAY_WEEK_LABELS: Record<string, string> = {
+  even: "Even weeks",
+  odd: "Odd weeks",
+  na: "—",
+};
+
 export const CONTRIBUTION_METHOD_LABELS: Record<string, string> = {
   percent_of_salary: "% of Salary",
   fixed_per_period: "Fixed/Period",
