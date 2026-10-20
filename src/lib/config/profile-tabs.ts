@@ -7,6 +7,7 @@ export const PROFILE_TABS = [
   { key: "savings", label: "Savings" },
   { key: "retirement", label: "Retirement" },
   { key: "whatif", label: "What-If" },
+  { key: "plans", label: "Plans" },
 ] as const;
 
 export type ProfileTabKey = (typeof PROFILE_TABS)[number]["key"];

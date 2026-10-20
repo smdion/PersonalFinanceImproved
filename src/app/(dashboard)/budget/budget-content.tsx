@@ -13,6 +13,7 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { ComparePlans } from "@/components/plans/compare-plans";
 import {
   PROFILE_TABS,
   profilesHref,
@@ -451,7 +452,7 @@ export function BudgetContent({
               {/* One padlock for every profile tab (EDIT_LOCK_KEYS
                   .profileEditLocked) — locking any one locks them all.
                   What-If is a sandbox with nothing to lock. */}
-              {activeTab !== "whatif" && (
+              {activeTab !== "whatif" && activeTab !== "plans" && (
                 <EditLockToggle
                   locked={!editMode}
                   onToggle={toggleEditMode}
@@ -595,6 +596,12 @@ export function BudgetContent({
               canEdit={hasPermission(user, "contributionProfile")}
               locked={!editMode}
             />
+          </CardBoundary>
+        )}
+
+        {activeTab === "plans" && (
+          <CardBoundary title="Plans">
+            <ComparePlans />
           </CardBoundary>
         )}
 
