@@ -374,14 +374,6 @@ export const budgetProfiles = pgTable(
     description: text("description"),
     columnLabels: jsonb("column_labels").$type<string[]>().notNull(),
     columnMonths: jsonb("column_months").$type<number[]>(),
-    columnContributionProfileIds: jsonb(
-      "column_contribution_profile_ids",
-    ).$type<(number | null)[]>(),
-    /** Per-column Salary Profile pin — parallel to
-     *  columnContributionProfileIds, resolved by resolveSalaryProfileId. */
-    columnSalaryProfileIds: jsonb("column_salary_profile_ids").$type<
-      (number | null)[]
-    >(),
     isActive: boolean("is_active").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -2681,13 +2673,14 @@ export const relocationScenarios = pgTable("relocation_scenarios", {
     .defaultNow(),
 });
 
-// --- Scenario overrides (global what-if system) ---
-
-/** Nested override map: { entityType: { recordId: { field: value } } } */
-export type ScenarioOverrides = Record<
+/** Nested field map: { entityType: { recordId: { field: value } } } — a
+ *  Contribution Profile's active fields. */
+export type EntityFieldMap = Record<
   string,
   Record<string, Record<string, unknown>>
 >;
+
+/** A Plan: a named set of profiles, one of each kind. */
 
 export const scenarios = pgTable(
   "scenarios",
@@ -2695,36 +2688,26 @@ export const scenarios = pgTable(
     id: serial("id").primaryKey(),
     name: text("name").notNull(),
     description: text("description"),
-    overrides: jsonb("overrides")
-      .$type<ScenarioOverrides>()
-      .notNull()
-      .default({}),
-    isBaseline: boolean("is_baseline").notNull().default(false),
-    /** Pins which Budget Profile is "active" for every page/calculator when this
-     *  Plan is selected, instead of the globally-active budget_profiles row.
-     *  A reference pin, not a value override — deliberately a dedicated FK
-     *  column rather than a generic `overrides` entry (see docs/RULES.md). */
+    /** The Plan's Budget Profile — applying the Plan makes it the active
+     *  one (settings.scenarios.activate). Null only on a Plan made before
+     *  v0.8.9; applying one leaves that kind's active profile alone. */
     budgetProfileId: integer("budget_profile_id").references(
       () => budgetProfiles.id,
       { onDelete: "set null" },
     ),
-    /** Pins which Contribution Profile is "active" for this Plan — see budgetProfileId. */
+    /** The Plan's Contribution Profile — see budgetProfileId. */
     contributionProfileId: integer("contribution_profile_id").references(
       () => contributionProfiles.id,
       { onDelete: "set null" },
     ),
-    /** Pins which Salary Profile is "active" for this Plan — see budgetProfileId.
-     *  Independent of contributionProfileId: a Plan can pin either, both, or
-     *  neither. */
+    /** The Plan's Salary Profile — see budgetProfileId. */
     salaryProfileId: integer("salary_profile_id").references(
       () => salaryProfiles.id,
       { onDelete: "set null" },
     ),
-    /** Sets which Retirement Profile is active for this Plan — the fourth
-     *  profile axis, alongside budget/contribution/salary above. `null` means
-     *  this Plan sets nothing for retirement and resolution falls through to
-     *  the global active profile; never backfill it to a real id, which would
-     *  convert "sets nothing" into "sets profile 1" for every existing Plan. */
+    /** The Plan's Retirement Profile — see budgetProfileId. Never backfill
+     *  a null to a real id: that would turn "leaves it alone" into "sets
+     *  profile 1" for every older Plan. */
     retirementProfileId: integer("retirement_profile_id").references(
       () => retirementProfiles.id,
       { onDelete: "set null" },
@@ -2737,6 +2720,8 @@ export const scenarios = pgTable(
       .defaultNow(),
   },
   (table) => [
+    // Plan names are unique (migration 0009 renames duplicates first).
+    uniqueIndex("scenarios_name_unique").on(table.name),
     index("scenarios_budget_profile_id_idx").on(table.budgetProfileId),
     index("scenarios_contribution_profile_id_idx").on(
       table.contributionProfileId,
@@ -2934,7 +2919,7 @@ export const contributionProfiles = pgTable("contribution_profiles", {
   name: text("name").notNull().unique(),
   description: text("description"),
   contributionActiveFields: jsonb("contribution_active_fields")
-    .$type<ScenarioOverrides>()
+    .$type<EntityFieldMap>()
     .notNull()
     .default({}),
   createdAt: timestamp("created_at", { withTimezone: true })
@@ -2985,12 +2970,6 @@ export const salaryProfiles = pgTable("salary_profiles", {
           additionalFedWithholding: number;
           bonusMonth: number | null;
           bonusDayOfMonth: number | null;
-          /** @deprecated read by nothing — whether a contribution is taken
-           *  from bonus checks is the Contribution Profile's per-account
-           *  `fromBonus`. Converted and dropped by migration 0009. */
-          include401kInBonus?: boolean;
-          /** @deprecated see include401kInBonus. */
-          includeBonusInContributions?: boolean;
           extraPaycheckRouting: ExtraPaycheckRoutingData | null;
           /** Where the bonus goes; absent = the budget. */
           bonusDestination?: "budget" | "spending";

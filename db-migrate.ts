@@ -14,6 +14,413 @@ function log(
   else console.log(JSON.stringify(entry));
 }
 
+// BEGIN v0810-profile-sets (keep identical in db-migrate.ts)
+type V0810Row = Record<string, unknown>;
+
+/** The rows the v0.8.10 conversion reads and changes, keyed by table name
+ *  (snake_case columns, as both a backup and `SELECT *` give them). */
+export type V0810Tables = Record<string, V0810Row[] | undefined>;
+
+export type V0810Result = {
+  /** Salary Profiles made from older Plans' salaries (ids already set). */
+  newSalaryProfiles: V0810Row[];
+  /** Ids of rows changed in place, per table. */
+  changed: {
+    salary_profiles: Set<number>;
+    contribution_profiles: Set<number>;
+    scenarios: Set<number>;
+  };
+  /** app_settings keys to delete. */
+  deletedSettings: string[];
+  /** What was converted, for the log. */
+  notes: string[];
+};
+
+/** A JSON column as an object: a backup or PostgreSQL gives the value,
+ *  SQLite gives text. Anything unreadable is null. */
+function v0810Json(value: unknown): unknown {
+  if (typeof value !== "string") return value ?? null;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return null;
+  }
+}
+
+function v0810Object(value: unknown): Record<string, unknown> | null {
+  const v = v0810Json(value);
+  return v && typeof v === "object" && !Array.isArray(v)
+    ? (v as Record<string, unknown>)
+    : null;
+}
+
+function v0810Truthy(value: unknown): boolean {
+  return value === true || value === 1 || value === "1" || value === "true";
+}
+
+/**
+ * Convert v0.8.9-and-older profile data to the v0.8.10 shapes, in place:
+ *
+ * 1. A Plan's stored salaries (`scenarios.overrides.people[personId].salary`)
+ *    become a new Salary Profile — a copy of the Plan's own (or else the
+ *    active) Salary Profile with those salaries on each person's current
+ *    job — and the Plan uses it.
+ * 2. Where each person's bonus goes (the `bonus_destinations` setting)
+ *    moves into every Salary Profile entry for that person's jobs
+ *    (`bonusDestination`, only when "spending"); the setting is deleted.
+ * 3. The Salary Profile's bonus switches (`include401kInBonus` /
+ *    `includeBonusInContributions`) become each payroll account's own
+ *    `fromBonus` in every Contribution Profile that has an entry for it —
+ *    read from the active Salary Profile's entry for the account's job,
+ *    else the first profile that has one — and are removed from entries.
+ * 4. Duplicate Plan names get " (2)", " (3)", … so the new unique index
+ *    can be built.
+ *
+ * Every step does nothing when its source is gone, so running it twice
+ * changes nothing the second time. Only non-default values are written.
+ */
+export function convertV0810ProfileSets(tables: V0810Tables): V0810Result {
+  const result: V0810Result = {
+    newSalaryProfiles: [],
+    changed: {
+      salary_profiles: new Set(),
+      contribution_profiles: new Set(),
+      scenarios: new Set(),
+    },
+    deletedSettings: [],
+    notes: [],
+  };
+  const scenarios = tables["scenarios"] ?? [];
+  const salaryProfiles = tables["salary_profiles"] ?? [];
+  const contributionProfiles = tables["contribution_profiles"] ?? [];
+  const accounts = tables["contribution_accounts"] ?? [];
+  const jobs = tables["jobs"] ?? [];
+  const settings = tables["app_settings"] ?? [];
+
+  const setting = (key: string) =>
+    v0810Json(settings.find((s) => s["key"] === key)?.["value"]);
+  const byId = (rows: V0810Row[]) =>
+    [...rows].sort((a, b) => Number(a["id"]) - Number(b["id"]));
+
+  // Each profile's salaries, parsed once and written back at the end.
+  const salariesOf = new Map<V0810Row, Record<string, V0810Row>>();
+  for (const p of salaryProfiles) {
+    const s = v0810Object(p["salaries"]) as Record<string, V0810Row> | null;
+    salariesOf.set(p, s ?? {});
+  }
+  const activeSalaryId = Number(setting("active_salary_profile_id"));
+  const activeSalary =
+    salaryProfiles.find((p) => Number(p["id"]) === activeSalaryId) ??
+    byId(salaryProfiles)[0];
+  const jobById = new Map(jobs.map((j) => [Number(j["id"]), j]));
+  const currentJob = (personId: number) =>
+    byId(jobs).find(
+      (j) =>
+        Number(j["person_id"]) === personId &&
+        !j["end_date"] &&
+        !v0810Truthy(j["is_speculative"]),
+    );
+
+  // 1. Plan salaries → their own Salary Profile.
+  const takenProfileNames = new Set(salaryProfiles.map((p) => p["name"]));
+  let nextProfileId =
+    Math.max(0, ...salaryProfiles.map((p) => Number(p["id"]) || 0)) + 1;
+  for (const plan of byId(scenarios)) {
+    const people = v0810Object(v0810Object(plan["overrides"])?.["people"]);
+    if (!people) continue;
+    const base =
+      salaryProfiles.find(
+        (p) => Number(p["id"]) === Number(plan["salary_profile_id"]),
+      ) ?? activeSalary;
+    if (!base) continue;
+    const salaries: Record<string, V0810Row> = JSON.parse(
+      JSON.stringify(salariesOf.get(base) ?? {}),
+    );
+    let changed = false;
+    for (const [personId, fields] of Object.entries(people)) {
+      const salary = Number(v0810Object(fields)?.["salary"]);
+      if (!Number.isFinite(salary)) continue;
+      const job = currentJob(Number(personId));
+      const entry = job ? salaries[String(job["id"])] : undefined;
+      if (!entry) {
+        result.notes.push(
+          `Plan ${plan["id"]}: person ${personId} has no current job in its Salary Profile; their stored salary was not kept`,
+        );
+        continue;
+      }
+      entry["salary"] = salary;
+      changed = true;
+    }
+    if (!changed) continue;
+    let name = `${String(plan["name"])} salary`;
+    for (let n = 2; takenProfileNames.has(name); n++)
+      name = `${String(plan["name"])} salary (${n})`;
+    takenProfileNames.add(name);
+    const profile: V0810Row = {
+      id: nextProfileId++,
+      name,
+      description: `Made from Plan "${String(plan["name"])}" when upgrading to v0.8.10.`,
+      salaries,
+      // A restored backup inserts every column its rows carry.
+      ...("created_at" in base ? { created_at: base["created_at"] } : {}),
+    };
+    result.newSalaryProfiles.push(profile);
+    salariesOf.set(profile, salaries);
+    plan["salary_profile_id"] = profile["id"];
+    result.changed.scenarios.add(Number(plan["id"]));
+    result.notes.push(
+      `Plan ${plan["id"]}: its salaries became Salary Profile "${name}"`,
+    );
+  }
+  const allSalaryProfiles = [...salaryProfiles, ...result.newSalaryProfiles];
+
+  // 2. Bonus destinations → Salary Profile entries.
+  const destinations = v0810Object(setting("bonus_destinations"));
+  if (destinations) {
+    for (const p of salaryProfiles) {
+      for (const [jobId, entry] of Object.entries(salariesOf.get(p)!)) {
+        const personId = jobById.get(Number(jobId))?.["person_id"];
+        if (
+          destinations[String(personId)] === "spending" &&
+          entry["bonusDestination"] !== "spending"
+        ) {
+          entry["bonusDestination"] = "spending";
+          result.changed.salary_profiles.add(Number(p["id"]));
+        }
+      }
+    }
+    for (const p of result.newSalaryProfiles) {
+      for (const [jobId, entry] of Object.entries(salariesOf.get(p)!)) {
+        const personId = jobById.get(Number(jobId))?.["person_id"];
+        if (destinations[String(personId)] === "spending")
+          entry["bonusDestination"] = "spending";
+      }
+    }
+  }
+  if (settings.some((s) => s["key"] === "bonus_destinations"))
+    result.deletedSettings.push("bonus_destinations");
+
+  // 3. Bonus switches → each payroll account's fromBonus.
+  const switchOn = (entry: V0810Row | undefined) =>
+    entry === undefined
+      ? undefined
+      : v0810Truthy(entry["include401kInBonus"]) ||
+        v0810Truthy(entry["includeBonusInContributions"]);
+  const ordered = [
+    ...(activeSalary ? [activeSalary] : []),
+    ...byId(salaryProfiles).filter((p) => p !== activeSalary),
+  ];
+  const fromBonusByAccount = new Map<number, boolean>();
+  for (const a of accounts) {
+    const isPayroll =
+      a["is_payroll_deducted"] === null ||
+      a["is_payroll_deducted"] === undefined
+        ? a["job_id"] !== null && a["job_id"] !== undefined
+        : v0810Truthy(a["is_payroll_deducted"]);
+    if (!isPayroll) continue;
+    const jobId =
+      a["job_id"] !== null && a["job_id"] !== undefined
+        ? Number(a["job_id"])
+        : Number(currentJob(Number(a["person_id"]))?.["id"]);
+    const values = ordered
+      .map((p) => switchOn(salariesOf.get(p)![String(jobId)]))
+      .filter((v): v is boolean => v !== undefined);
+    if (values.length === 0) continue;
+    if (values.some((v) => v !== values[0]))
+      result.notes.push(
+        `Account ${a["id"]}: Salary Profiles disagreed on taking contributions from bonus checks; used ${values[0] ? "yes" : "no"} (the active profile's)`,
+      );
+    if (values[0]) fromBonusByAccount.set(Number(a["id"]), true);
+  }
+  for (const cp of contributionProfiles) {
+    const fields = v0810Object(cp["contribution_active_fields"]);
+    const perAccount = v0810Object(fields?.["contributionAccounts"]);
+    if (!fields || !perAccount) continue;
+    let changed = false;
+    for (const accountId of fromBonusByAccount.keys()) {
+      const entry = v0810Object(perAccount[String(accountId)]);
+      if (!entry || entry["fromBonus"] === true) continue;
+      perAccount[String(accountId)] = { ...entry, fromBonus: true };
+      changed = true;
+    }
+    if (!changed) continue;
+    cp["contribution_active_fields"] = {
+      ...fields,
+      contributionAccounts: perAccount,
+    };
+    result.changed.contribution_profiles.add(Number(cp["id"]));
+  }
+  for (const p of allSalaryProfiles) {
+    for (const entry of Object.values(salariesOf.get(p)!)) {
+      if (
+        "include401kInBonus" in entry ||
+        "includeBonusInContributions" in entry
+      ) {
+        delete entry["include401kInBonus"];
+        delete entry["includeBonusInContributions"];
+        if (!result.newSalaryProfiles.includes(p))
+          result.changed.salary_profiles.add(Number(p["id"]));
+      }
+    }
+  }
+  for (const p of salaryProfiles)
+    if (result.changed.salary_profiles.has(Number(p["id"])))
+      p["salaries"] = salariesOf.get(p);
+
+  // 4. Unique Plan names.
+  // A new name must be free of every Plan's name, not just the ones before.
+  const allPlanNames = new Set(scenarios.map((p) => String(p["name"])));
+  const takenPlanNames = new Set<string>();
+  for (const plan of byId(scenarios)) {
+    const base = String(plan["name"]);
+    let name = base;
+    if (takenPlanNames.has(name)) {
+      let n = 2;
+      while (
+        takenPlanNames.has(`${base} (${n})`) ||
+        allPlanNames.has(`${base} (${n})`)
+      )
+        n++;
+      name = `${base} (${n})`;
+    }
+    if (name !== base) {
+      plan["name"] = name;
+      result.changed.scenarios.add(Number(plan["id"]));
+      result.notes.push(`Plan ${plan["id"]}: renamed to "${name}"`);
+    }
+    takenPlanNames.add(name);
+  }
+  return result;
+}
+// END v0810-profile-sets
+
+/** The tables convertV0810ProfileSets reads. */
+const V0810_TABLES = [
+  "scenarios",
+  "salary_profiles",
+  "contribution_profiles",
+  "contribution_accounts",
+  "jobs",
+  "app_settings",
+] as const;
+
+/** Migration 0009's tag — its data conversion runs just before its SQL. */
+export const V0810_TAG = "0009_v0810_profile_sets";
+
+/**
+ * Run the v0.8.10 data conversion on a PostgreSQL database, inside the
+ * caller's transaction (before 0009's statements drop the columns it reads).
+ * A table that doesn't exist is skipped.
+ */
+async function applyV0810ProfileSetsPg(client: {
+  query: (
+    sql: string,
+    params?: unknown[],
+  ) => Promise<{ rows: Record<string, unknown>[] }>;
+}): Promise<void> {
+  const tables: V0810Tables = {};
+  for (const table of V0810_TABLES) {
+    await client.query("SAVEPOINT v0810_read");
+    try {
+      tables[table] = (await client.query(`SELECT * FROM "${table}"`)).rows;
+      await client.query("RELEASE SAVEPOINT v0810_read");
+    } catch (err) {
+      if ((err as { code?: string }).code !== "42P01") throw err;
+      await client.query("ROLLBACK TO SAVEPOINT v0810_read");
+    }
+  }
+  const r = convertV0810ProfileSets(tables);
+  for (const p of r.newSalaryProfiles)
+    await client.query(
+      "INSERT INTO salary_profiles (id, name, description, salaries) VALUES ($1, $2, $3, $4::jsonb)",
+      [p["id"], p["name"], p["description"], JSON.stringify(p["salaries"])],
+    );
+  if (r.newSalaryProfiles.length > 0)
+    await client.query(
+      "SELECT setval(pg_get_serial_sequence('salary_profiles', 'id'), (SELECT MAX(id) FROM salary_profiles))",
+    );
+  for (const p of tables["salary_profiles"] ?? [])
+    if (r.changed.salary_profiles.has(Number(p["id"])))
+      await client.query(
+        "UPDATE salary_profiles SET salaries = $1::jsonb WHERE id = $2",
+        [JSON.stringify(p["salaries"]), p["id"]],
+      );
+  for (const p of tables["contribution_profiles"] ?? [])
+    if (r.changed.contribution_profiles.has(Number(p["id"])))
+      await client.query(
+        "UPDATE contribution_profiles SET contribution_active_fields = $1::jsonb WHERE id = $2",
+        [JSON.stringify(p["contribution_active_fields"]), p["id"]],
+      );
+  for (const p of tables["scenarios"] ?? [])
+    if (r.changed.scenarios.has(Number(p["id"])))
+      await client.query(
+        "UPDATE scenarios SET name = $1, salary_profile_id = $2 WHERE id = $3",
+        [p["name"], p["salary_profile_id"], p["id"]],
+      );
+  for (const key of r.deletedSettings)
+    await client.query("DELETE FROM app_settings WHERE key = $1", [key]);
+  for (const note of r.notes) log("info", "v0810_conversion", { note });
+}
+
+/** 0009 builds a unique index on Plan names. The replay loops swallow a
+ *  unique violation (23505), so make sure the index really exists. */
+async function assertV0810IndexPg(client: {
+  query: (sql: string) => Promise<{ rows: unknown[] }>;
+}): Promise<void> {
+  const { rows } = await client.query(
+    "SELECT 1 FROM pg_indexes WHERE indexname = 'scenarios_name_unique'",
+  );
+  if (rows.length === 0)
+    throw new Error(
+      "Migration 0009: the unique index on Plan names wasn't created — two Plans still share a name.",
+    );
+}
+
+/** The SQLite twin of applyV0810ProfileSetsPg (JSON columns are text). */
+export function applyV0810ProfileSetsSqlite(
+  sqlite: InstanceType<typeof import("better-sqlite3")>,
+): void {
+  const tables: V0810Tables = {};
+  for (const table of V0810_TABLES) {
+    try {
+      tables[table] = sqlite
+        .prepare(`SELECT * FROM "${table}"`)
+        .all() as Record<string, unknown>[];
+    } catch (err) {
+      if (!String((err as Error).message).includes("no such table")) throw err;
+    }
+  }
+  const r = convertV0810ProfileSets(tables);
+  for (const p of r.newSalaryProfiles)
+    sqlite
+      .prepare(
+        "INSERT INTO salary_profiles (id, name, description, salaries) VALUES (?, ?, ?, ?)",
+      )
+      .run(p["id"], p["name"], p["description"], JSON.stringify(p["salaries"]));
+  for (const p of tables["salary_profiles"] ?? [])
+    if (r.changed.salary_profiles.has(Number(p["id"])))
+      sqlite
+        .prepare("UPDATE salary_profiles SET salaries = ? WHERE id = ?")
+        .run(JSON.stringify(p["salaries"]), p["id"]);
+  for (const p of tables["contribution_profiles"] ?? [])
+    if (r.changed.contribution_profiles.has(Number(p["id"])))
+      sqlite
+        .prepare(
+          "UPDATE contribution_profiles SET contribution_active_fields = ? WHERE id = ?",
+        )
+        .run(JSON.stringify(p["contribution_active_fields"]), p["id"]);
+  for (const p of tables["scenarios"] ?? [])
+    if (r.changed.scenarios.has(Number(p["id"])))
+      sqlite
+        .prepare(
+          "UPDATE scenarios SET name = ?, salary_profile_id = ? WHERE id = ?",
+        )
+        .run(p["name"], p["salary_profile_id"], p["id"]);
+  for (const key of r.deletedSettings)
+    sqlite.prepare("DELETE FROM app_settings WHERE key = ?").run(key);
+  for (const note of r.notes) log("info", "v0810_conversion", { note });
+}
+
 function getDialect(): "postgresql" | "sqlite" {
   const url = process.env.DATABASE_URL;
   if (
@@ -241,6 +648,9 @@ const V08_MIGRATION_HASHES: Record<string, string> = {
     "0007_v088_drop_account_holdings",
   "557d5cbc5313ee2ca388e2c5d9fbf5c03d3f0794968b4f313778389a987b5a61":
     "0008_v088_paycheck_earnings",
+  // v0.8.10: Plans are sets of profiles; per-account fromBonus; unique Plan names.
+  "79acc58519aec1a6bbb497fca3bd5691f987ae6f4351b3eca06174db040571e8":
+    "0009_v0810_profile_sets",
 };
 
 /**
@@ -650,11 +1060,8 @@ async function handleSquashUpgrade(
       const sql = fs.readFileSync(sqlPath, "utf-8");
       const hash = crypto.createHash("sha256").update(sql).digest("hex");
 
-      // (Per-tag data-backfill hooks for 0016_drop_salary_ledger_tables /
-      // 0036_category_links_backfill were removed in the v0.8.0 squash —
-      // those tags are no longer in any journal, so this replay loop only
-      // ever sees 0000_v8_initial_schema. See git history at 0d30aaf~1 if
-      // that backfill logic is ever needed again.)
+      // The only per-tag data step is 0009's (V0810_TAG): it runs inside the
+      // migration's transaction, before the statements drop what it reads.
 
       const statements = sql
         .split("--> statement-breakpoint")
@@ -663,6 +1070,8 @@ async function handleSquashUpgrade(
 
       await client.query("BEGIN");
       try {
+        // v0.8.10 data conversion, before 0009 drops what it reads.
+        if (entry.tag === V0810_TAG) await applyV0810ProfileSetsPg(client);
         for (const stmt of statements) {
           await client.query("SAVEPOINT squash_stmt");
           try {
@@ -677,6 +1086,7 @@ async function handleSquashUpgrade(
             }
           }
         }
+        if (entry.tag === V0810_TAG) await assertV0810IndexPg(client);
         await client.query(
           "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
           [hash, String(Date.now())],
@@ -910,15 +1320,15 @@ async function runPostgres() {
         const sql = fs.readFileSync(sqlPath, "utf-8");
         const hash = crypto.createHash("sha256").update(sql).digest("hex");
         if (recordedHashes.has(hash)) continue;
-        // (Per-tag data-backfill hooks removed — see the note in
-        // handleSquashUpgrade's replay loop above. Post-squash this loop
-        // only ever sees 0000_v8_initial_schema.)
+        // (The only per-tag data step is 0009's — V0810_TAG below.)
         const statements = sql
           .split("--> statement-breakpoint")
           .map((s: string) => s.trim())
           .filter(Boolean);
         await preClient.query("BEGIN");
         try {
+          // v0.8.10 data conversion, before 0009 drops what it reads.
+          if (entry.tag === V0810_TAG) await applyV0810ProfileSetsPg(preClient);
           for (const stmt of statements) {
             await preClient.query("SAVEPOINT apply_stmt");
             try {
@@ -933,6 +1343,7 @@ async function runPostgres() {
               }
             }
           }
+          if (entry.tag === V0810_TAG) await assertV0810IndexPg(preClient);
           await preClient.query(
             "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
             [hash, String(Date.now())],
@@ -1351,15 +1762,16 @@ function handleSQLiteSquashUpgrade(
     const sql = fs.readFileSync(sqlPath, "utf-8");
     const hash = crypto.createHash("sha256").update(sql).digest("hex");
 
-    // (Per-tag data-backfill hooks removed — see the note in
-    // handleSquashUpgrade above. Post-squash this loop only ever sees
-    // 0000_v8_initial_schema.)
+    // The only per-tag data step is 0009's (V0810_TAG): it runs inside the
+    // migration's transaction, before the statements drop what it reads.
     const statements = sql
       .split("--> statement-breakpoint")
       .map((s: string) => s.trim())
       .filter(Boolean);
 
     const applyTx = sqlite.transaction(() => {
+      // v0.8.10 data conversion, before 0009 drops what it reads.
+      if (entry.tag === V0810_TAG) applyV0810ProfileSetsSqlite(sqlite);
       for (const stmt of statements) {
         try {
           sqlite.exec(stmt);
@@ -1477,14 +1889,15 @@ function runSQLite() {
       const sql = fs.readFileSync(sqlPath, "utf-8");
       const hash = crypto.createHash("sha256").update(sql).digest("hex");
       if (appliedHashes.has(hash)) continue;
-      // (Per-tag data-backfill hooks removed — see the note in
-      // handleSquashUpgrade above. Post-squash this loop only ever sees
-      // 0000_v8_initial_schema.)
+      // The only per-tag data step is 0009's (V0810_TAG): it runs inside the
+      // migration's transaction, before the statements drop what it reads.
       const statements = sql
         .split("--> statement-breakpoint")
         .map((s: string) => s.trim())
         .filter(Boolean);
       const applyTx = sqlite.transaction(() => {
+        // v0.8.10 data conversion, before 0009 drops what it reads.
+        if (entry.tag === V0810_TAG) applyV0810ProfileSetsSqlite(sqlite);
         for (const stmt of statements) {
           try {
             sqlite.exec(stmt);

@@ -182,6 +182,37 @@ if [[ "$NOT_BACKFILLED" != "0" ]]; then
 fi
 ok "is_immutable backfill verified ($NOT_BACKFILLED rows would have leaked through)"
 
+# ── 6. Verify v0.8.10 (0009_v0810_profile_sets) ──────────────────────
+
+step "Verifying v0.8.10 profile sets"
+
+HAS_PLAN_NAME_IDX=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM pg_indexes WHERE indexname='scenarios_name_unique'")
+if [[ "$HAS_PLAN_NAME_IDX" != "1" ]]; then
+  err "scenarios_name_unique missing (two Plans may still share a name)"
+  exit 1
+fi
+ok "Plan names unique"
+
+LEFT_COLS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM information_schema.columns WHERE (table_name='scenarios' AND column_name IN ('overrides','is_baseline')) OR (table_name='budget_profiles' AND column_name IN ('column_contribution_profile_ids','column_salary_profile_ids'))")
+if [[ "$LEFT_COLS" != "0" ]]; then
+  err "$LEFT_COLS dropped column(s) still present"
+  exit 1
+fi
+ok "Plan overrides and Budget column profile ids dropped"
+
+OLD_FLAGS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM salary_profiles, jsonb_each(salaries) e WHERE e.value ? 'include401kInBonus' OR e.value ? 'includeBonusInContributions'")
+if [[ "$OLD_FLAGS" != "0" ]]; then
+  err "$OLD_FLAGS Salary Profile entries still carry the old bonus switches"
+  exit 1
+fi
+OLD_SETTING=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM app_settings WHERE key='bonus_destinations'")
+if [[ "$OLD_SETTING" != "0" ]]; then
+  err "bonus_destinations setting not converted"
+  exit 1
+fi
+FROM_BONUS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM contribution_profiles, jsonb_each(contribution_active_fields->'contributionAccounts') a WHERE a.value->>'fromBonus' = 'true'")
+ok "Bonus switches converted ($FROM_BONUS account entries taken from bonus checks)"
+
 echo ""
 echo -e "${GREEN}${BOLD}MIGRATION TEST PASSED${NC}"
 echo "The throwaway PG container is being torn down via the trap."

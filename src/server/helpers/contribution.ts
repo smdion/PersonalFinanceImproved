@@ -3,7 +3,7 @@
  */
 import { and, eq, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type { ScenarioOverrides } from "@/lib/db/schema";
+import type { EntityFieldMap } from "@/lib/db/schema";
 import { roundToCents, safeDivide, sumBy } from "@/lib/utils/math";
 import { isTaxFree } from "@/lib/config/account-types";
 import type {
@@ -177,12 +177,12 @@ async function resolveActiveJobPeriodsPerYear(
  * SELECT+UPDATE round trip per edit (see `applyContributionAccountEditsBatch`).
  */
 function mergeContributionAccountEdit(
-  activeFields: ScenarioOverrides,
+  activeFields: EntityFieldMap,
   contributionAccountId: number,
   monthlyAmount: number,
   periodsPerYear: number,
   incomplete: boolean,
-): ScenarioOverrides | null {
+): EntityFieldMap | null {
   const accountFields = (activeFields.contributionAccounts?.[
     String(contributionAccountId)
   ] ?? {}) as Record<string, unknown>;
@@ -259,7 +259,7 @@ export async function applyContributionAccountEdit(
   if (!profile) return; // stale FK — nothing to update
 
   const activeFields = (profile.contributionActiveFields ??
-    {}) as ScenarioOverrides;
+    {}) as EntityFieldMap;
   const nextActiveFields = mergeContributionAccountEdit(
     activeFields,
     contributionAccountId,
@@ -321,7 +321,7 @@ export async function applyContributionAccountEditsBatch(
     if (!profile) continue; // stale FK — nothing to update
 
     let activeFields = (profile.contributionActiveFields ??
-      {}) as ScenarioOverrides;
+      {}) as EntityFieldMap;
     let changed = false;
     for (const edit of profileEdits) {
       const next = mergeContributionAccountEdit(

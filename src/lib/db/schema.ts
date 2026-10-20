@@ -16,7 +16,7 @@ export type {
   ApiConfig,
   AccountMapping,
   RelocationScenarioParams,
-  ScenarioOverrides,
+  EntityFieldMap,
 } from "./schema-pg";
 
 // At runtime, load the active dialect's schema.

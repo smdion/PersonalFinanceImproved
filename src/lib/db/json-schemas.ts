@@ -40,16 +40,6 @@ export const columnLabelsSchema = z.array(z.string().min(1)).min(1);
 /** budget_profiles.column_months — per-column month counts (nullable) */
 export const columnMonthsSchema = z.array(z.number().min(0)).nullable();
 
-/** budget_profiles.column_contribution_profile_ids — per-column profile refs (nullable) */
-export const columnContributionProfileIdsSchema = z
-  .array(z.number().int().nullable())
-  .nullable();
-
-/** budget_profiles.column_salary_profile_ids — per-column profile refs (nullable) */
-export const columnSalaryProfileIdsSchema = z
-  .array(z.number().int().nullable())
-  .nullable();
-
 // ── budget_items ────────────────────────────────────────────────
 
 /** budget_items.amounts — per-column dollar amounts */
@@ -133,17 +123,6 @@ export const accountMappingsSchema = z.array(accountMappingSchema).nullable();
 
 /** api_connections.skipped_category_ids (nullable) */
 export const skippedCategoryIdsSchema = z.array(z.string()).nullable();
-
-// ── scenarios ───────────────────────────────────────────────────
-
-/**
- * scenarios.overrides — nested map: { entityType: { recordId: { field: value } } }
- * Also used by contribution_profiles.contribution_active_fields.
- */
-export const scenarioOverridesSchema = z.record(
-  z.string(),
-  z.record(z.string(), z.record(z.string(), settingValueSchema)),
-);
 
 // ── relocation_scenarios ────────────────────────────────────────
 
@@ -281,13 +260,6 @@ export const salaryEntrySchema = z
     bonusMonth: z.number().nullable(),
     /** 1-31, day of month when bonus is paid (null = first period of month). */
     bonusDayOfMonth: z.number().nullable(),
-    /** @deprecated accepted so entries saved before v0.8.10 still pass
-     *  `.strict()`; read by nothing (a contribution taken from bonus checks
-     *  is the Contribution Profile's per-account `fromBonus`). Migration
-     *  0009 converts and removes it. */
-    include401kInBonus: z.boolean().optional(),
-    /** @deprecated see include401kInBonus. */
-    includeBonusInContributions: z.boolean().optional(),
     /** `null` is a real, complete value ("no extra-paycheck routing
      *  configured for this job"). See extraPaycheckRoutingSchema above. */
     extraPaycheckRouting: extraPaycheckRoutingSchema.nullable(),
@@ -321,9 +293,8 @@ export const salaryEntriesSchema = z.record(z.string(), salaryEntrySchema);
  * surfaced by getIncompleteContribAccountIds. Every other field here stays
  * genuinely optional — those describe account behavior a profile MAY
  * customize, not "the" value.
- * contribution_profiles.contribution_active_fields uses
- * scenarioOverridesSchema at the structural level but the leaf objects have
- * a known shape.
+ * contribution_profiles.contribution_active_fields is an EntityFieldMap
+ * (schema-pg.ts) whose leaf objects have this known shape.
  */
 /**
  * Base shape, all fields optional — used directly (without the refine

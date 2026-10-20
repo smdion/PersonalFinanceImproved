@@ -64,6 +64,13 @@
       "when": 1792459105182,
       "tag": "0008_v088_paycheck_earnings",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1792520393852,
+      "tag": "0009_v0810_profile_sets",
+      "breakpoints": true
     }
   ]
 }

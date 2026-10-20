@@ -10,6 +10,7 @@
  */
 
 import { log } from "@/lib/logger";
+import { convertV0810ProfileSets } from "./v0810-profile-sets";
 
 // ---------------------------------------------------------------------------
 // Known schema versions
@@ -76,6 +77,7 @@ const V08_SCHEMA_TAGS = [
   "0006_v088_holding_periods", // PG + SQLite: holding_periods + holding_period_weights (new tables — older backups restore them empty)
   "0008_v088_paycheck_earnings", // PG + SQLite: paycheck_earnings (other pay / taxable benefits; amounts in salary-profile entries' optional otherEarnings — older backups restore the table empty)
   "0007_v088_drop_account_holdings", // PG + SQLite: drop legacy account_holdings (replaced by holding_periods) — no longer in VERSION_TABLES, so an older backup's rows are skipped on restore
+  "0009_v0810_profile_sets", // PG + SQLite: Plan salaries → Salary Profiles, bonus destinations → entries, bonus switches → per-account fromBonus, unique Plan names; scenarios.overrides/is_baseline and budget column profile ids dropped (transformV0810ProfileSets)
 ] as const;
 
 /** First tags whose backups carry asset_class_buckets (PG, SQLite). */
@@ -150,6 +152,35 @@ function dropPreReleaseV085Fields(tables: TableData): void {
     unknown
   >[])
     delete row["composition_bucket"];
+}
+
+/**
+ * A backup from before v0.8.10: the same conversion migration 0009 runs on a
+ * live database (convertV0810ProfileSets), then the columns 0009 drops are
+ * dropped from the rows. Idempotent — a backup already in the new shape
+ * passes through unchanged.
+ */
+function transformV0810ProfileSets(tables: TableData): void {
+  const rows = tables as Record<string, Record<string, unknown>[]>;
+  const r = convertV0810ProfileSets(rows);
+  if (r.newSalaryProfiles.length > 0)
+    rows["salary_profiles"] = [
+      ...(rows["salary_profiles"] ?? []),
+      ...r.newSalaryProfiles,
+    ];
+  if (rows["app_settings"])
+    rows["app_settings"] = rows["app_settings"].filter(
+      (s) => !r.deletedSettings.includes(String(s["key"])),
+    );
+  for (const plan of rows["scenarios"] ?? []) {
+    delete plan["overrides"];
+    delete plan["is_baseline"];
+  }
+  for (const profile of rows["budget_profiles"] ?? []) {
+    delete profile["column_contribution_profile_ids"];
+    delete profile["column_salary_profile_ids"];
+  }
+  for (const note of r.notes) log("info", "backup_v0810_conversion", { note });
 }
 
 const V07_SCHEMA_TAGS = [
@@ -1035,6 +1066,7 @@ export function transformBackupToCurrentSchema(
   transformV07xToCurrent(cloned);
   rebuildAssetClassBuckets(cloned, schemaVersion);
   dropPreReleaseV085Fields(cloned);
+  transformV0810ProfileSets(cloned);
 
   log("info", "backup_transform_complete", {
     from: schemaVersion,
