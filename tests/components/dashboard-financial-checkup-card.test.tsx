@@ -226,11 +226,11 @@ describe("FinancialCheckupCard smoke", () => {
     });
     render(<FinancialCheckupCard />);
     fireEvent.click(screen.getByRole("button", { name: /Savings Rate/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Excl. match" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Employer match" }));
     const row = screen.getByRole("button", { name: /Savings Rate/ });
     expect(within(row).getByText("25%")).toBeInTheDocument();
     expect(row.querySelector(".text-green-500")).not.toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Incl. match" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Employer match" }));
   });
 
   it("expands the Savings Rate row into what it's made of", () => {
@@ -241,19 +241,21 @@ describe("FinancialCheckupCard smoke", () => {
     expect(screen.getByText("22%")).toBeInTheDocument();
     expect(screen.queryByText("Employer match")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /Savings Rate/ }));
-    expect(screen.getByText("Employer match")).toBeInTheDocument();
+    // The breakdown's match line, plus the "Employer match" switch.
+    expect(screen.getAllByText("Employer match")).toHaveLength(2);
     expect(screen.getByText("Roth")).toBeInTheDocument();
     const row = () => screen.getByRole("button", { name: /Savings Rate/ });
-    fireEvent.click(screen.getByRole("button", { name: "Excl. match" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Employer match" }));
     expect(within(row()).getByText("20%")).toBeInTheDocument();
-    expect(screen.queryByText("Employer match")).toBeNull();
+    // Only the switch is left.
+    expect(screen.getAllByText("Employer match")).toHaveLength(1);
     // Portfolio toggle: the fixture has no Portfolio money, so the rate holds
     // and the row says what's counted.
-    fireEvent.click(screen.getByRole("button", { name: "Excl. portfolio" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Portfolio" }));
     expect(within(row()).getByText("20%")).toBeInTheDocument();
     expect(screen.getByText("retirement only")).toBeInTheDocument();
     // The switches are shared app-wide (a module store): put them back.
-    fireEvent.click(screen.getByRole("button", { name: "Incl. match" }));
-    fireEvent.click(screen.getByRole("button", { name: "Incl. portfolio" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Employer match" }));
+    fireEvent.click(screen.getByRole("switch", { name: "Portfolio" }));
   });
 });

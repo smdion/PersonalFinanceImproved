@@ -1,6 +1,7 @@
 "use client";
 
 import { HelpTip } from "@/components/ui/help-tip";
+import { Toggle } from "@/components/ui/toggle";
 import {
   formatCurrency,
   formatPercent,
@@ -74,21 +75,23 @@ export function SavingsRateBreakdown({
           {viewMode === "ytd" ? "earned" : "total comp"}
         </p>
         {onToggleMatch && onTogglePortfolio && (
-          <span className="flex gap-1">
-            <button
-              type="button"
-              onClick={onToggleMatch}
-              className="bg-surface-elevated hover:bg-surface-strong text-muted rounded-full px-2 py-0.5 whitespace-nowrap transition-colors"
-            >
-              {excludeMatch ? "Incl. match" : "Excl. match"}
-            </button>
-            <button
-              type="button"
-              onClick={onTogglePortfolio}
-              className="bg-surface-elevated hover:bg-surface-strong text-muted rounded-full px-2 py-0.5 whitespace-nowrap transition-colors"
-            >
-              {includePortfolio ? "Excl. portfolio" : "Incl. portfolio"}
-            </button>
+          // What the rate counts — the same household setting and switches
+          // as the Contributions page.
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span>Counts:</span>
+            <Toggle
+              isChecked={!excludeMatch}
+              onChange={onToggleMatch}
+              label="Employer match"
+              size="xs"
+            />
+            <Toggle
+              isChecked={includePortfolio}
+              onChange={onTogglePortfolio}
+              label="Portfolio"
+              size="xs"
+              title="Brokerage and other non-retirement savings"
+            />
           </span>
         )}
       </div>

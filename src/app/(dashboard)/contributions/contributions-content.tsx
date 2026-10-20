@@ -6,6 +6,7 @@ import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { PageHeader } from "@/components/ui/page-header";
+import { Toggle } from "@/components/ui/toggle";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -208,35 +209,31 @@ export function ContributionsContent() {
       >
         <div className="flex items-center gap-3">
           {profiles && profiles.length > 0 && (
-            <select
-              value={selectedProfileId ?? ""}
-              onChange={(e) =>
-                setSelectedProfileId(
-                  e.target.value ? parseInt(e.target.value) : undefined,
-                )
-              }
-              className="bg-surface-primary text-primary rounded border px-2 py-1 text-sm"
-            >
-              <option value="">Current</option>
-              {profiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+            // Which Contribution Profile this page shows — the active one
+            // unless you pick another to look at (this page only).
+            <label className="flex items-center gap-2">
+              <span className="text-faint hidden text-xs sm:inline">
+                Contribution Profile
+              </span>
+              <select
+                value={selectedProfileId ?? activeProfileId ?? ""}
+                onChange={(e) =>
+                  setSelectedProfileId(
+                    e.target.value ? parseInt(e.target.value) : undefined,
+                  )
+                }
+                className="bg-surface-primary text-primary rounded border px-2 py-1 text-sm"
+              >
+                {activeProfileId == null && <option value="">None</option>}
+                {profiles.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                    {p.id === activeProfileId ? " (active)" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
           )}
-          <button
-            onClick={toggleMatch}
-            className="text-muted hover:bg-surface-elevated rounded px-2 py-1 text-xs transition-colors"
-          >
-            {excludeMatch ? "Incl. match" : "Excl. match"}
-          </button>
-          <button
-            onClick={togglePortfolio}
-            className="text-muted hover:bg-surface-elevated rounded px-2 py-1 text-xs transition-colors"
-          >
-            {includePortfolio ? "Excl. portfolio" : "Incl. portfolio"}
-          </button>
           <div className="bg-surface-elevated flex gap-1 rounded-full p-0.5">
             {(["annual", "monthly", "per-period"] as const).map((m) => (
               <button
@@ -272,6 +269,27 @@ export function ContributionsContent() {
           </p>
         </div>
       )}
+
+      {/* What the savings rate counts — a household setting (also the
+          Dashboard's), so it sits with the rates it changes, not with the
+          page-wide controls. The tables below always show every account. */}
+      <div className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+        <span className="text-muted">Savings rate counts:</span>
+        <Toggle
+          isChecked={!excludeMatch}
+          onChange={toggleMatch}
+          label="Employer match"
+          size="xs"
+        />
+        <Toggle
+          isChecked={includePortfolio}
+          onChange={togglePortfolio}
+          label="Portfolio"
+          size="xs"
+          title="Brokerage and other non-retirement savings"
+        />
+        <span className="text-faint">Also used on the Dashboard.</span>
+      </div>
 
       {/* Household summary — rates from server (single source of truth) */}
       <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
