@@ -71,6 +71,24 @@ export type PersonPaycheckInteraction =
 
 const NOOP = () => {};
 
+/** An account's name in the Bonus section — like the pay stub, a name used
+ *  for both a traditional and a Roth account says which this is. */
+function bonusAccountName(raw: RawContrib, all: RawContrib[]): string {
+  const custom = raw.displayNameCustom ?? raw.displayNameActive;
+  if (custom) return custom;
+  const name = accountDisplayName(raw);
+  const twin = all.some(
+    (c) =>
+      c.id !== raw.id &&
+      accountDisplayName(c) === name &&
+      c.taxTreatment !== raw.taxTreatment,
+  );
+  if (!twin) return name;
+  if (raw.taxTreatment === "pre_tax") return `${name} (Traditional)`;
+  if (raw.taxTreatment === "tax_free") return `${name} (Roth)`;
+  return name;
+}
+
 export function PersonPaycheck({
   person,
   job,
@@ -324,11 +342,7 @@ export function PersonPaycheck({
               const raw = rawContribs.find((c) => c.id === a.id);
               return {
                 id: a.id,
-                name: raw
-                  ? (raw.displayNameCustom ??
-                    raw.displayNameActive ??
-                    accountDisplayName(raw))
-                  : "Contribution",
+                name: raw ? bonusAccountName(raw, rawContribs) : "Contribution",
                 amount: a.amount,
               };
             })}
