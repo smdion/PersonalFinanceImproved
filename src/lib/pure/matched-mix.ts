@@ -24,8 +24,7 @@ import { HOLDINGS_MIN_COVERAGE } from "@/lib/config/milestones";
 import {
   monthKey,
   previousMonth,
-  simulateIndex,
-  windowReturn,
+  runBenchmark,
   type MonthlyPrices,
   type YearlyResult,
 } from "@/lib/pure/benchmark-yearly";
@@ -208,12 +207,5 @@ export function matchedMixRun(
   const covered = years.filter((y) =>
     levels.prices.has(monthKey(y.year - 1, 12)),
   );
-  const run = covered.length ? simulateIndex(covered, levels.prices) : null;
-  const months = sumBy(run ?? [], (r) => r.months);
-  const last = run?.at(-1);
-  return {
-    available: !!run && run.length > 0,
-    years: run ?? [],
-    window: run && last ? windowReturn(covered, last.end, months) : null,
-  };
+  return runBenchmark(covered, levels.prices);
 }
