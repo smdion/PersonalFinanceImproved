@@ -23,12 +23,18 @@ vi.mock("@/lib/context/scenario-context", () => ({
 vi.mock("@/lib/hooks/use-salary-overrides", () => ({
   useActiveSalaries: () => [],
 }));
-const settings = vi.hoisted(() => ({ values: {} as Record<string, unknown> }));
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
-  usePersistedSetting: (key: string, defaultValue: unknown) => [
-    key in settings.values ? settings.values[key] : defaultValue,
+  usePersistedSetting: (_key: string, defaultValue: unknown) => [
+    defaultValue,
     vi.fn(),
   ],
+}));
+// Where each bonus goes is set on the Paycheck page; the card reads it.
+const bonus = vi.hoisted(() => ({
+  destinations: {} as Record<string, "budget" | "spending">,
+}));
+vi.mock("@/lib/hooks/use-bonus-destinations", () => ({
+  useBonusDestinations: () => ({ destinations: bonus.destinations }),
 }));
 // HelpTip needs a Radix TooltipProvider ancestor this card doesn't supply on
 // its own (normally comes from a layout higher up) — same pattern as
@@ -60,6 +66,7 @@ const paycheckQuery = {
   data: {
     people: [
       {
+        person: { id: 5 },
         salary: 60000,
         paycheck: { netPay: 4000, periodsPerYear: 12 },
         rawDeductions: [{ amountPerPeriod: "100" }],
@@ -211,26 +218,28 @@ describe("LivingCostsCard math", () => {
     expect(screen.getByText("Total: 100% of gross")).toBeInTheDocument();
   });
 
-  it("bonus as its own bar: the bonus take-home leaves Unallocated", () => {
+  it("a bonus set to extra spending gets its own bar and leaves Unallocated", () => {
     const original = paycheckQuery.data.householdIncome;
     paycheckQuery.data.householdIncome = {
       gross: 72000,
       netRegular: 48000,
       netBonus: 7200,
     };
-    settings.values["living_costs_bonus_bar"] = true;
+    const people = paycheckQuery.data.people as {
+      earnings?: { netBonus: number };
+    }[];
+    people[0]!.earnings = { netBonus: 7200 };
+    bonus.destinations = { "5": "spending" };
     try {
       render(<LivingCostsCard />);
       expect(screen.getByText("Bonus (extra spending)")).toBeInTheDocument();
       expect(screen.getByText("($7,200.00)")).toBeInTheDocument();
       // Net 55,200 − 2,000 retirement − 2,400 savings − 7,200 bonus − 16,800 budget
       expect(screen.getByText("($26,800.00)")).toBeInTheDocument();
-      expect(
-        screen.getByRole("button", { name: "Bonus as its own bar" }),
-      ).toHaveAttribute("aria-pressed", "true");
     } finally {
       paycheckQuery.data.householdIncome = original;
-      delete settings.values["living_costs_bonus_bar"];
+      bonus.destinations = {};
+      delete people[0]!.earnings;
     }
   });
 

@@ -5,7 +5,9 @@
 import { describe, it, expect } from "vitest";
 import { calculatePaycheck } from "@/lib/calculators/paycheck";
 import {
+  bonusSpendingNet,
   computeAnnualEarnings,
+  parseBonusDestinations,
   sumHouseholdIncome,
 } from "@/lib/pure/household-income";
 import type {
@@ -159,5 +161,21 @@ describe("sumHouseholdIncome", () => {
     expect(h.gross).toBeCloseTo(a.gross + b.gross, 2);
     expect(h.bonus).toBe(5_000);
     expect(h.ficaWages).toBeCloseTo(a.ficaWages + b.ficaWages, 2);
+  });
+});
+
+describe("bonus destinations", () => {
+  it("only bonuses set to extra spending count; unreadable settings mean budget", () => {
+    const people = [
+      { personId: 1, netBonus: 6900.2 },
+      { personId: 2, netBonus: 11857.22 },
+    ];
+    expect(bonusSpendingNet(people, { "2": "spending", "1": "budget" })).toBe(
+      11857.22,
+    );
+    expect(bonusSpendingNet(people, parseBonusDestinations("junk"))).toBe(0);
+    expect(parseBonusDestinations({ "1": "spending" })).toEqual({
+      "1": "spending",
+    });
   });
 });

@@ -287,6 +287,7 @@ export function PersonPaycheck({
               salaryReadOnly={salaryReadOnly}
             />
             <BonusSection
+              personId={person.id}
               paycheck={paycheck}
               fullFormulaBonusEstimate={fullFormulaBonusEstimate}
               job={job}

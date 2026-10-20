@@ -133,6 +133,19 @@ describe("settings.appSettings", () => {
       }
     });
 
+    it("validates bonus destinations (person id → budget | spending)", async () => {
+      await expect(
+        caller.settings.appSettings.upsert({
+          key: "bonus_destinations",
+          value: { "1": "vacation" },
+        }),
+      ).rejects.toThrow(/Invalid bonus_destinations/);
+      await caller.settings.appSettings.upsert({
+        key: "bonus_destinations",
+        value: { "1": "spending", "2": "budget" },
+      });
+    });
+
     it("validates milestone goals and checklist on write", async () => {
       await expect(
         caller.settings.appSettings.upsert({

@@ -5,10 +5,52 @@ import { Toggle } from "@/components/ui/toggle";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SectionHeader } from "./section-header";
+import { useBonusDestinations } from "@/lib/hooks/use-bonus-destinations";
 import type { PaycheckResult } from "./types";
 import type { BonusEstimate } from "@/lib/calculators/types/calculators";
 
+/** "Bonus goes to: Budget | Extra spending" — like the extra paycheck's
+ *  choice. Extra spending gets its own Living Costs bar. */
+function BonusDestinationToggle({
+  personId,
+  disabled,
+}: {
+  personId: number;
+  disabled?: boolean;
+}) {
+  const { destinations, canEdit, saving, setDestination } =
+    useBonusDestinations();
+  const current = destinations[String(personId)] ?? "budget";
+  const off = disabled || !canEdit;
+  const option = (value: "budget" | "spending", label: string) => (
+    <button
+      onClick={() => !off && void setDestination(personId, value)}
+      disabled={off}
+      aria-pressed={current === value}
+      className={`px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50 ${
+        current === value
+          ? "bg-blue-600 text-white"
+          : "bg-surface-primary text-muted hover:text-primary"
+      }`}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-caption text-muted">Bonus goes to:</span>
+      <div className="border-default text-caption inline-flex overflow-hidden rounded border">
+        {option("budget", "Budget")}
+        {option("spending", "Extra spending")}
+      </div>
+      <HelpTip text="Extra spending: the bonus isn't part of your budget. Living Costs shows its take-home as its own bar instead of counting it as unallocated." />
+      {saving && <span className="text-caption text-faint">Saving…</span>}
+    </div>
+  );
+}
+
 export function BonusSection({
+  personId,
   paycheck,
   fullFormulaBonusEstimate,
   job,
@@ -17,6 +59,7 @@ export function BonusSection({
   readOnly,
   salaryReadOnly,
 }: {
+  personId: number;
   paycheck: PaycheckResult;
   /** The nominal formula bonus, ignoring any current-year pin — shown as
    *  "(target: $X)" next to the Actual field so pinning a real number
@@ -61,6 +104,7 @@ export function BonusSection({
       <SectionHeader>Bonus Estimate</SectionHeader>
       <div className="space-y-1 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm">
         <div className="mb-1 space-y-1">
+          <BonusDestinationToggle personId={personId} disabled={readOnly} />
           <div className="flex items-center gap-1">
             <Toggle
               isChecked={job.include401kInBonus}
