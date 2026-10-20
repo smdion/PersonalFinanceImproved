@@ -9,6 +9,7 @@ import type {
 import type { Recommendation } from "@/lib/pure/recommendations";
 import { LOW_COST_EXPENSE_RATIO } from "@/lib/config/milestones";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { sumBy } from "@/lib/utils/math";
 
 export function recommendationsFromFunds(args: {
   harvest: readonly HarvestFinding[];
@@ -22,7 +23,7 @@ export function recommendationsFromFunds(args: {
     ]);
   return [
     ...[...byAccount.entries()].map(([id, fs]): Recommendation => {
-      const total = fs.reduce((s, f) => s + f.loss, 0);
+      const total = sumBy(fs, (f) => f.loss);
       return {
         id: `harvest:${id}`,
         area: "investing",

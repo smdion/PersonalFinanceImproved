@@ -12,8 +12,10 @@ import { useUser, hasPermission } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
 import { useRothIra } from "@/lib/hooks/use-roth-ira";
+import { backdoorPlanned } from "@/lib/pure/roth-ira";
 import { SK_HSA_CASH_BUFFER } from "@/lib/constants/settings-keys";
 import {
+  currentCashClass,
   judgeCashDrag,
   judgeHsaCash,
   type CashFinding,
@@ -53,10 +55,6 @@ export function useInvestingFindings(): {
       cheaper: [],
     };
 
-  const cashClassId =
-    o.allocation.categories.find((c) => c.bucket === "cash")?.assetClassId ??
-    null;
-  const cashRow = o.allocation.rows.find((r) => r.assetClassId === cashClassId);
   const accounts = o.accounts.map((a) => ({
     simplefinAccountId: a.simplefinAccountId,
     label: a.label,
@@ -70,11 +68,8 @@ export function useInvestingFindings(): {
     isLoading: summary.isLoading || roth.isLoading,
     drag: judgeCashDrag({
       accounts,
-      cashClass:
-        o.targetSource === "current" && cashRow && cashRow.targetPct !== null
-          ? { targetShare: cashRow.targetPct, buckets: cashRow.buckets }
-          : null,
-      excludeTraditionalIra: roth.view?.judgement?.verdict === "backdoor",
+      cashClass: currentCashClass(o),
+      excludeTraditionalIra: backdoorPlanned(roth.view),
     }),
     hsa: judgeHsaCash({
       accounts,

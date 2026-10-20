@@ -16,21 +16,21 @@
  * a household setting. Every number comes from yearly reference data.
  */
 import {
-  getAccountTypeConfig,
   getAllCategories,
   isHsaCategory,
   isIraCategory,
+  isPayrollDeductibleCategory,
   isPreTaxType,
 } from "@/lib/config/account-types";
-import type { AccountCategory } from "@/lib/config/account-types.types";
 import { irsLimitOrNull } from "@/lib/pure/contributions";
 import { ageInYear } from "@/lib/utils/date";
 import {
   ROTH_IRA_REDUCED_LIMIT_FLOOR,
   ROTH_IRA_REDUCED_LIMIT_ROUNDING,
   SPOUSAL_IRA_FILING_STATUSES,
+  rothIraPhaseoutKeys,
 } from "@/lib/config/tax-params";
-import { sumBy } from "@/lib/utils/math";
+import { roundToCents, sumBy } from "@/lib/utils/math";
 
 export type RothIraVerdict = "direct" | "tooClose" | "backdoor";
 
@@ -78,8 +78,7 @@ export function rothIraAllowed(
   // Round UP to the next $10 (cents first, so float error can't add $10);
   // any amount above $0 and under $200 becomes $200.
   const step = ROTH_IRA_REDUCED_LIMIT_ROUNDING;
-  const allowed =
-    Math.ceil(Math.round((base - reduction) * 100) / 100 / step) * step;
+  const allowed = Math.ceil(roundToCents(base - reduction) / step) * step;
   return allowed > 0
     ? Math.min(base, Math.max(allowed, ROTH_IRA_REDUCED_LIMIT_FLOOR))
     : 0;
@@ -288,11 +287,8 @@ export type RothIraSummary = {
 /** A workplace retirement plan (payroll-deducted, not an HSA) — where a
  *  pre-tax IRA balance could be rolled to clear the pro-rata pool. */
 function isEmployerPlanType(accountType: string): boolean {
-  if (!getAllCategories().includes(accountType as AccountCategory))
-    return false;
   return (
-    getAccountTypeConfig(accountType as AccountCategory).isPayrollDeductible &&
-    !isHsaCategory(accountType)
+    isPayrollDeductibleCategory(accountType) && !isHsaCategory(accountType)
   );
 }
 
@@ -317,9 +313,9 @@ export function rothIraSummary(args: {
 }): RothIraSummary | null {
   const iraCategory = getAllCategories().find(isIraCategory);
   if (!args.filingStatus || !iraCategory) return null;
-  const status = args.filingStatus.toLowerCase();
-  const start = args.limits[`roth_ira_phaseout_start_${status}`];
-  const end = args.limits[`roth_ira_phaseout_end_${status}`];
+  const keys = rothIraPhaseoutKeys(args.filingStatus);
+  const start = args.limits[keys.start];
+  const end = args.limits[keys.end];
   return {
     filingStatus: args.filingStatus,
     phaseOut: start !== undefined && end !== undefined ? { start, end } : null,
@@ -338,4 +334,10 @@ export function rothIraSummary(args: {
       hasEmployerPlan: p.jobAccountTypes.some(isEmployerPlanType),
     })),
   };
+}
+
+/** A backdoor Roth is the plan (verdict "backdoor") — while it is, money in
+ *  a traditional IRA is in transit, not idle cash. */
+export function backdoorPlanned(view: RothIraView | null): boolean {
+  return view?.judgement?.verdict === "backdoor";
 }

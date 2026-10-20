@@ -26,7 +26,13 @@ import {
 import { localDateStr } from "@/lib/utils/date";
 import { effectiveFacts } from "@/lib/pure/fund-facts";
 import { dailyWeightsByAccount } from "@/lib/pure/holding-periods";
-import { matchedMixLevels } from "@/lib/pure/matched-mix";
+import {
+  accountValuesByYear,
+  matchedMixDescription,
+  matchedMixLevels,
+  matchedMixRun,
+} from "@/lib/pure/matched-mix";
+import { toNumber } from "@/server/helpers/transforms";
 import type { MonthlyPrices } from "@/lib/pure/benchmark-yearly";
 import { toFactRows } from "@/server/helpers/fund-facts";
 import { loadDailyPositions, loadEnteredPeriods } from "./_shared";
@@ -63,15 +69,13 @@ async function matchedMixBenchmark(
     loadEnteredPeriods(db),
   ]);
   if (positions.length === 0 && entered.length === 0) return null;
-  const accountValues = new Map<number, Map<number, number>>();
-  for (const r of rows) {
-    const m = accountValues.get(r.year) ?? new Map<number, number>();
-    m.set(
-      r.performanceAccountId,
-      (m.get(r.performanceAccountId) ?? 0) + Number(r.beginningBalance),
-    );
-    accountValues.set(r.year, m);
-  }
+  const accountValues = accountValuesByYear(
+    rows.map((r) => ({
+      year: r.year,
+      performanceAccountId: r.performanceAccountId,
+      beginningBalance: toNumber(r.beginningBalance),
+    })),
+  );
   const observedDaily = dailyWeightsByAccount(positions);
   const ids = [
     ...new Set([
@@ -117,21 +121,12 @@ async function matchedMixBenchmark(
     facts,
     proxyPrices,
   });
-  // simulateIndex starts at a year's January; begin at the first year
-  // whose previous December is priced.
-  const covered = years.filter((y) => levels.prices.has(`${y.year - 1}-12`));
-  const run = covered.length ? simulateIndex(covered, levels.prices) : null;
-  const months = run?.reduce((s, r) => s + r.months, 0) ?? 0;
-  const last = run?.at(-1);
-  const pct = Math.round(levels.excludedShare * 100);
   return {
     key: "matched_mix",
     label: MATCHED_MIX_LABEL,
     ticker: "",
-    description: `Your own funds' mix over time (from your holding history), priced with a plain index fund for each class — what the same choices would have earned in index funds. Fund mixes are as of their latest facts, so years long ago are approximate for funds that change their mix (target-date funds).${pct > 0 ? ` Up to ${pct}% of the money (funds with no known mix, or "other") is left out.` : ""} Shown from the first full year your history covers.`,
-    available: !!run && run.length > 0,
-    years: run ?? [],
-    window: run && last ? windowReturn(covered, last.end, months) : null,
+    description: matchedMixDescription(levels.excludedShare),
+    ...matchedMixRun(years, levels),
   };
 }
 

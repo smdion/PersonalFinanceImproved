@@ -5,7 +5,12 @@ import {
   preTaxIraByPerson,
   rothIraAllowed,
   rothIraSummary,
+  backdoorPlanned,
 } from "@/lib/pure/roth-ira";
+import {
+  medicareLiabilityKey,
+  rothIraPhaseoutKeys,
+} from "@/lib/config/tax-params";
 
 // Fictional phase-out ranges (passed in as the router reads them from data).
 const MFJ = { start: 200_000, end: 210_000 };
@@ -217,5 +222,20 @@ describe("rothIraSummary", () => {
     expect(
       rothIraSummary({ filingStatus: null, taxYear: 2026, limits, people }),
     ).toBeNull();
+  });
+});
+
+describe("backdoorPlanned and phase-out keys", () => {
+  it("true only for a backdoor verdict", () => {
+    expect(backdoorPlanned(null)).toBe(false);
+  });
+  it("keys follow the filing status, lower-cased", () => {
+    expect(rothIraPhaseoutKeys("HOH")).toEqual({
+      start: "roth_ira_phaseout_start_hoh",
+      end: "roth_ira_phaseout_end_hoh",
+    });
+    expect(medicareLiabilityKey("MFJ")).toBe(
+      "fica_medicare_surtax_liability_mfj",
+    );
   });
 });

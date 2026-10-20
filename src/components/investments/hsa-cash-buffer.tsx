@@ -12,6 +12,7 @@ import { useUser, isAdmin } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
 import { SK_HSA_CASH_BUFFER } from "@/lib/constants/settings-keys";
+import { resolveHsaCashBuffer } from "@/lib/pure/cash-positions";
 
 export function HsaCashBuffer({
   ownerPersonId,
@@ -26,9 +27,11 @@ export function HsaCashBuffer({
     SK_HSA_CASH_BUFFER,
     null,
   );
-  const deductible =
-    data?.hsaBuffers.find((b) => b.personId === ownerPersonId)?.buffer ?? null;
-  const buffer = setting ?? deductible;
+  const buffer = resolveHsaCashBuffer(
+    setting,
+    data?.hsaBuffers ?? [],
+    ownerPersonId,
+  );
   return (
     <div className="text-caption text-faint mb-1 flex flex-wrap gap-x-3">
       {uninvestedCash !== null && (

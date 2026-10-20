@@ -13,7 +13,7 @@
  * yearly saving is measured to that line (proxy fees aren't stored, so the
  * line — not a proxy figure — is what the saving is counted against).
  */
-import { isIraCategory } from "@/lib/config/account-types";
+import { isIraCategory, isTaxableCategory } from "@/lib/config/account-types";
 import {
   COMPOSITION_BUCKET_VALUES,
   type CompositionBucket,
@@ -21,7 +21,6 @@ import {
 import { BUCKET_INDEX_PROXIES } from "@/lib/config/benchmarks";
 import { LOW_COST_EXPENSE_RATIO } from "@/lib/config/milestones";
 import { CHEAPER_FUND, TAX_LOSS_HARVEST } from "@/lib/config/recommendations";
-import { isTaxableAccountType } from "@/lib/pure/investment-income";
 import type { EffectiveFacts } from "@/lib/pure/fund-facts";
 
 export type FundAccountInput = {
@@ -52,7 +51,7 @@ export function judgeTaxLossHarvest(
 ): HarvestFinding[] {
   const out: HarvestFinding[] = [];
   for (const a of accounts) {
-    if (!isTaxableAccountType(a.accountType)) continue;
+    if (!isTaxableCategory(a.accountType)) continue;
     for (const h of a.holdings) {
       if (h.avgCostPerShare === null || h.shares <= 0) continue;
       const cost = h.avgCostPerShare * h.shares;
@@ -96,7 +95,7 @@ export function judgeCheaperFunds(
   for (const a of accounts) {
     const switchable =
       a.accountType !== null &&
-      (isIraCategory(a.accountType) || isTaxableAccountType(a.accountType));
+      (isIraCategory(a.accountType) || isTaxableCategory(a.accountType));
     if (!switchable) continue;
     for (const h of a.holdings) {
       const er = h.facts.expenseRatio?.value ?? null;

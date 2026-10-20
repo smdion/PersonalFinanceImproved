@@ -14,8 +14,11 @@ import { formatCurrency } from "@/lib/utils/format";
 import { ROTH_IRA_MFS_PHASEOUT } from "@/lib/config/tax-params";
 
 /** Shown wherever the verdict is: the app has no married-filing-separately
- *  status, whose phase-out is far lower. */
-export const ROTH_MFS_NOTE = `Filing married-separately? Your phase-out is ${formatCurrency(ROTH_IRA_MFS_PHASEOUT.start, 0)}–${formatCurrency(ROTH_IRA_MFS_PHASEOUT.end, 0)} — this verdict doesn't apply.`;
+ *  status, whose phase-out is far lower. Built when shown, so privacy mode
+ *  masks its dollars. */
+export function rothMfsNote(): string {
+  return `Filing married-separately? Your phase-out is ${formatCurrency(ROTH_IRA_MFS_PHASEOUT.start, 0)}–${formatCurrency(ROTH_IRA_MFS_PHASEOUT.end, 0)} — this verdict doesn't apply.`;
+}
 
 export function recommendationsFromRothIra(
   view: RothIraView | null,
@@ -39,7 +42,7 @@ export function recommendationsFromRothIra(
     ? `by the ${taxYear} filing deadline`
     : "until the tax-filing deadline";
   const range = `${formatCurrency(j.phaseOutStart, 0)}–${formatCurrency(j.phaseOutEnd, 0)}`;
-  const context = `${taxYear} Roth IRA MAGI about ${formatCurrency(view.magi, 0)}; phase-out ${range}. ${ROTH_MFS_NOTE}`;
+  const context = `${taxYear} Roth IRA MAGI about ${formatCurrency(view.magi, 0)}; phase-out ${range}. ${rothMfsNote()}`;
   const out: Recommendation[] = [
     {
       id: "rothIra",

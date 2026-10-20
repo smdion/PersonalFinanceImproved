@@ -10,6 +10,7 @@
  */
 import { HOLDING_PERIODS } from "@/lib/config/benchmarks";
 import { tradingDaysBetween } from "@/lib/pure/market-calendar";
+import { sumBy } from "@/lib/utils/math";
 
 export type PeriodBasis = "observed" | "user" | "inferred";
 
@@ -41,7 +42,7 @@ export type DailyPosition = {
 function weightsOf(
   positions: readonly DailyPosition[],
 ): Record<number, number> {
-  const total = positions.reduce((s, p) => s + Math.max(0, p.value), 0);
+  const total = sumBy(positions, (p) => Math.max(0, p.value));
   const w: Record<number, number> = {};
   if (total <= 0) return w;
   for (const p of positions)
@@ -197,7 +198,7 @@ export function validateHoldingPeriod(
     problems.push("duplicateFund");
   if (period.weights.some((w) => !(w.weight > 0 && w.weight <= 1)))
     problems.push("badWeight");
-  const sum = period.weights.reduce((s, w) => s + w.weight, 0);
+  const sum = sumBy(period.weights, (w) => w.weight);
   if (
     period.weights.length > 0 &&
     Math.abs(sum - 1) > HOLDING_PERIODS.weightSumTolerance

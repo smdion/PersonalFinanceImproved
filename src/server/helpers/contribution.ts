@@ -571,7 +571,7 @@ export function buildContribAccounts(
   /** The year's limits and the person's age at Dec 31 — sizes each
    *  account's FICA-exempt cap (payrollFicaExemptCap). Required so no
    *  caller can quietly treat exempt payroll money as FICA wages. */
-  ficaContext: { limits: Record<string, number>; ageAtYearEnd: number },
+  ficaContext: { limits: Record<string, number>; ageAtYearEnd: number | null },
   /** The bonus whose check carries contributions (contributionPay); the match is figured on it too. */
   bonusGross = 0,
 ): ContributionAccountInput[] {
@@ -682,12 +682,15 @@ export function buildContribAccounts(
       personId: c.personId,
       accountType: c.accountType,
       cap: accounts[k]!.ficaExemptAnnualCap,
-      limit: irsLimitOrNull(
-        c.accountType,
-        ficaContext.ageAtYearEnd,
-        c.hsaCoverageType ?? null,
-        ficaContext.limits,
-      ),
+      limit:
+        ficaContext.ageAtYearEnd === null
+          ? null
+          : irsLimitOrNull(
+              c.accountType,
+              ficaContext.ageAtYearEnd,
+              c.hsaCoverageType ?? null,
+              ficaContext.limits,
+            ),
       employerAnnual: matchByRow.get(c.id)!.matchAnnual,
       annualPayroll: annualContributionWithBonus(
         c,

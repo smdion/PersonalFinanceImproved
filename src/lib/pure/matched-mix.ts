@@ -24,9 +24,13 @@ import { HOLDINGS_MIN_COVERAGE } from "@/lib/config/milestones";
 import {
   monthKey,
   previousMonth,
+  simulateIndex,
+  windowReturn,
   type MonthlyPrices,
+  type YearlyResult,
 } from "@/lib/pure/benchmark-yearly";
 import { portfolioBuckets, type EffectiveFacts } from "@/lib/pure/fund-facts";
+import { sumBy } from "@/lib/utils/math";
 import { periodOn, type HoldingPeriod } from "@/lib/pure/holding-periods";
 
 export type MatchedMixInput = {
@@ -96,7 +100,7 @@ function monthBuckets(
 } | null {
   const values = input.accountValues.get(year);
   if (!values) return null;
-  const total = [...values.values()].reduce((s, v) => s + Math.max(0, v), 0);
+  const total = sumBy([...values.values()], (v) => Math.max(0, v));
   if (total <= 0) return null;
   const holdings: { value: number; facts: EffectiveFacts }[] = [];
   for (const [accountId, value] of values) {
@@ -164,4 +168,52 @@ export function matchedMixLevels(input: MatchedMixInput): MatchedMixLevels {
       excludedShare = Math.max(excludedShare, mix!.excluded);
     }
   return { prices, firstMonth, excludedShare };
+}
+
+/** Year → account → beginning balance: each account's weight in a year. */
+export function accountValuesByYear(
+  rows: readonly {
+    year: number;
+    performanceAccountId: number;
+    beginningBalance: number;
+  }[],
+): Map<number, Map<number, number>> {
+  const out = new Map<number, Map<number, number>>();
+  for (const r of rows) {
+    const m = out.get(r.year) ?? new Map<number, number>();
+    m.set(
+      r.performanceAccountId,
+      (m.get(r.performanceAccountId) ?? 0) + r.beginningBalance,
+    );
+    out.set(r.year, m);
+  }
+  return out;
+}
+
+/** "Up to N% of the money is left out" — for the entry's description. */
+export function matchedMixDescription(excludedShare: number): string {
+  const pct = Math.round(excludedShare * 100);
+  return `Your own funds' mix over time (from your holding history), priced with a plain index fund for each class — what the same choices would have earned in index funds. Fund mixes are as of their latest facts, so years long ago are approximate for funds that change their mix (target-date funds).${pct > 0 ? ` Up to ${pct}% of the money (funds with no known mix, or "other") is left out.` : ""} Shown from the first full year your history covers.`;
+}
+
+/**
+ * The matched-mix levels through the same simulateIndex as every benchmark.
+ * simulateIndex starts at a year's January, so the run begins at the first
+ * year whose previous December is priced.
+ */
+export function matchedMixRun(
+  years: readonly YearlyResult[],
+  levels: MatchedMixLevels,
+) {
+  const covered = years.filter((y) =>
+    levels.prices.has(monthKey(y.year - 1, 12)),
+  );
+  const run = covered.length ? simulateIndex(covered, levels.prices) : null;
+  const months = sumBy(run ?? [], (r) => r.months);
+  const last = run?.at(-1);
+  return {
+    available: !!run && run.length > 0,
+    years: run ?? [],
+    window: run && last ? windowReturn(covered, last.end, months) : null,
+  };
 }

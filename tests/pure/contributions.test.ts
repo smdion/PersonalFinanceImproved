@@ -12,6 +12,7 @@ import {
   formatEmployerMatch,
   payrollFicaExemptCap,
   shareFicaExemptCaps,
+  ficaCapContext,
 } from "@/lib/pure/contributions";
 
 // These tests use the real account-type config, so they reflect actual IRS rules.
@@ -599,5 +600,24 @@ describe("shareFicaExemptCaps", () => {
         row({ cap: Infinity }),
       ]),
     ).toEqual([4000, 4000, null, Infinity]);
+  });
+});
+
+describe("ficaCapContext", () => {
+  it("age at Dec 31 of the tax year; unknown person → can't size (exempt in full)", () => {
+    expect(ficaCapContext(limits2025, "1970-06-01", 2025).ageAtYearEnd).toBe(
+      55,
+    );
+    const unknown = ficaCapContext(limits2025, null, 2025);
+    expect(unknown.ageAtYearEnd).toBeNull();
+    expect(
+      payrollFicaExemptCap(
+        "hsa",
+        unknown.ageAtYearEnd,
+        "family",
+        limits2025,
+        0,
+      ),
+    ).toBe(Infinity);
   });
 });

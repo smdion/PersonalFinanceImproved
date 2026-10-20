@@ -257,6 +257,24 @@ export function resolveTaxParams(
 export const ROTH_IRA_REDUCED_LIMIT_ROUNDING = 10;
 export const ROTH_IRA_REDUCED_LIMIT_FLOOR = 200;
 
+/** The yearly limit rows for a filing status (lower-cased in the key,
+ *  matching `standard_deduction_<status>`). */
+export function rothIraPhaseoutKeys(filingStatus: string): {
+  start: string;
+  end: string;
+} {
+  const s = filingStatus.toLowerCase();
+  return {
+    start: `roth_ira_phaseout_start_${s}`,
+    end: `roth_ira_phaseout_end_${s}`,
+  };
+}
+
+/** The Additional Medicare LIABILITY threshold row for a filing status. */
+export function medicareLiabilityKey(filingStatus: string): string {
+  return `fica_medicare_surtax_liability_${filingStatus.toLowerCase()}`;
+}
+
 /** Married filing separately (and lived together): the Roth IRA phase-out
  *  is statutory and not indexed (IRC 408A(c)(3)(B)). The app has no MFS
  *  status, so this is only used to say so. */

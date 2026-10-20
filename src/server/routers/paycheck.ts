@@ -50,11 +50,12 @@ import {
   sumHouseholdIncome,
 } from "@/lib/pure/household-income";
 import { rothIraSummary } from "@/lib/pure/roth-ira";
+import { medicareLiabilityKey } from "@/lib/config/tax-params";
 import { hsaCashBuffers } from "@/lib/pure/cash-positions";
 import { isHsaCategory } from "@/lib/config/account-types";
 import { findActiveJob } from "@/lib/pure/profiles";
 import { resolveTaxParams } from "@/lib/config/tax-params";
-import { ageInYear } from "@/lib/utils/date";
+import { ficaCapContext } from "@/lib/pure/contributions";
 
 /**
  * The standard deduction Pub 15-T's withholding tables were built on, read
@@ -431,13 +432,7 @@ export const paycheckRouter = createTRPCRouter({
             personalContribs,
             salary,
             periodsPerYear,
-            {
-              limits: limitsRecord,
-              ageAtYearEnd: ageInYear(
-                Number(person.dateOfBirth.slice(0, 4)),
-                taxYear,
-              ),
-            },
+            ficaCapContext(limitsRecord, person.dateOfBirth, taxYear),
             contributionPay(activeJob, salary, bonusTerms, comp.bonusOverride)
               .bonusGross,
           );
@@ -609,9 +604,7 @@ export const paycheckRouter = createTRPCRouter({
             people: earners.map((r) => r.earnings!),
             taxBrackets: buildLiabilityBracketInput(bracketRow, limitsMap),
             medicareLiabilityThreshold:
-              limitsRecord[
-                `fica_medicare_surtax_liability_${filingStatus.toLowerCase()}`
-              ] ?? null,
+              limitsRecord[medicareLiabilityKey(filingStatus)] ?? null,
           });
         }
       }

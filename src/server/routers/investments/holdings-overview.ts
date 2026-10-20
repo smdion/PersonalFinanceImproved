@@ -2,6 +2,7 @@
  * Holdings valued today and the Benchmarks overview built on them. Loaders
  * for the investments routers (Benchmarks, Portfolio account insights).
  */
+import { sumBy } from "@/lib/utils/math";
 import { eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import {
@@ -186,10 +187,7 @@ function uninvestedCash(
 ): number | null {
   if (!account || account.balance === null || rows.length === 0) return null;
   if (rows.some((r) => r.asOf !== account.balanceDay)) return null;
-  const reported = rows.reduce(
-    (s, r) => s + (r.reportedMarketValue ?? r.value),
-    0,
-  );
+  const reported = sumBy(rows, (r) => r.reportedMarketValue ?? r.value);
   return Math.max(0, account.balance - reported);
 }
 

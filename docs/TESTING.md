@@ -15,30 +15,30 @@ Framework: [Vitest](https://vitest.dev/) with globals enabled. E2E: [Playwright]
 
 ## Overview
 
-| Suite             | Files | Tests | Purpose                                                                                 |
-| ----------------- | ----- | ----- | --------------------------------------------------------------------------------------- |
-| **Calculators**   | 31    | 557   | Unit tests for every calculator module + logic gaps + spending strategies               |
-| **Benchmarks**    | 11    | 88    | Validates engine against published research and institutional data                      |
-| **Config**        | 10    | 198   | Account types, IRS limits, RMD tables, tax parameter freshness                          |
-| **Edge Cases**    | 1     | 56    | Boundary and extreme inputs across all calculators                                      |
-| **Invariants**    | 1     | 32    | Property-based testing with fast-check (580+ generated inputs)                          |
-| **Snapshots**     | 3     | 73    | Byte-identical output after refactoring                                                 |
-| **Components**    | 61    | 604   | UI component behavior + dashboard + error boundary + sidebar                            |
-| **Hooks**         | 8     | 48    | React hook unit tests (renderHook)                                                      |
-| **Accessibility** | 1     | 11    | axe-core ARIA/a11y checks on UI components                                              |
-| **Integration**   | 2     | 77    | Zod schema validation for tRPC inputs and JSONB columns                                 |
-| **Routers**       | 56    | 1419  | tRPC router integration tests (all routers + auth enforcement)                          |
-| **Helpers**       | 15    | 238   | Server helper unit tests (budget, contribution, salary, snapshot, transforms, settings) |
-| **Pure**          | 21    | 426   | Business logic extracted per RULES.md's DB-transaction-free pure-function rule          |
-| **DB**            | 13    | 305   | Schema/migration/dialect-compat unit tests (SQLite + PostgreSQL)                        |
-| **Server**        | 3     | 31    | Auth callback + server-only helper unit tests                                           |
-| **Budget API**    | 5     | 100   | Budget API provider abstraction (Actual/YNAB clients, factory, conversions, resilience) |
-| **Simplefin**     | 2     | 25    | SimpleFIN client + sync logic                                                           |
-| **Scripts**       | 1     | 11    | Repo tooling script unit tests                                                          |
-| **Lint**          | 2     | 23    | RULES.md rule sweeps + repo-convention checks                                           |
-| **E2E**           | 14    | 42    | Playwright smoke tests (health, navigation, page flows)                                 |
+| Suite             | Files | Tests | Purpose                                                                                          |
+| ----------------- | ----- | ----- | ------------------------------------------------------------------------------------------------ |
+| **Calculators**   | 52    | 934   | Unit tests for every calculator module + logic gaps + spending strategies + invariants/snapshots |
+| **Benchmarks**    | 11    | 88    | Validates engine against published research and institutional data                               |
+| **Config**        | 15    | 308   | Account types, IRS limits, RMD tables, tax parameter freshness + key completeness                |
+| **Edge Cases**    | 1     | 56    | Boundary and extreme inputs across all calculators                                               |
+| **Components**    | 85    | 748   | UI component behavior + dashboard cards + error boundary + sidebar                               |
+| **Hooks**         | 15    | 85    | React hook unit tests (renderHook)                                                               |
+| **Accessibility** | 1     | 13    | axe-core ARIA/a11y checks on UI components                                                       |
+| **Integration**   | 2     | 70    | Zod schema validation for tRPC inputs and JSONB columns                                          |
+| **Routers**       | 68    | 1574  | tRPC router integration tests (all routers + auth enforcement)                                   |
+| **Helpers**       | 23    | 328   | Server helper unit tests (budget, contribution, salary, snapshot, transforms, settings)          |
+| **Pure**          | 84    | 1034  | Business logic extracted per RULES.md's DB-transaction-free pure-function rule                   |
+| **DB**            | 13    | 353   | Schema/migration/dialect-compat unit tests (SQLite + PostgreSQL)                                 |
+| **Server**        | 7     | 65    | Auth callback + server-only helper unit tests                                                    |
+| **Budget API**    | 6     | 151   | Budget API provider abstraction (Actual/YNAB clients, factory, conversions, resilience)          |
+| **SimpleFIN**     | 5     | 64    | SimpleFIN client, ingest + sync logic                                                            |
+| **SEC / Tiingo**  | 3     | 16    | SEC fund facts and Tiingo price clients                                                          |
+| **Utils**         | 3     | 16    | Shared utility tests (incl. timezone detection)                                                  |
+| **Scripts**       | 1     | 11    | Repo tooling script unit tests                                                                   |
+| **Lint**          | 3     | 64    | RULES.md rule sweeps + repo-convention checks                                                    |
+| **E2E**           | 14    | 42    | Playwright smoke tests (health, navigation, page flows)                                          |
 
-Total: **<!-- AUTO-GEN:totalTests -->5880<!-- /AUTO-GEN --> tests** across **<!-- AUTO-GEN:vitestFiles -->398<!-- /AUTO-GEN --> vitest files** + **42 Playwright E2E tests** (<!-- AUTO-GEN:e2eFiles -->14<!-- /AUTO-GEN --> files).
+Total: **<!-- AUTO-GEN:totalTests -->5978<!-- /AUTO-GEN --> tests** across **<!-- AUTO-GEN:vitestFiles -->398<!-- /AUTO-GEN --> vitest files** + **42 Playwright E2E tests** (<!-- AUTO-GEN:e2eFiles -->14<!-- /AUTO-GEN --> files).
 
 _Note: `totalTests` above is not auto-verified by `pnpm docs:verify` (only `vitestFiles`/`e2eFiles` are) — update it by hand from `pnpm test:coverage` + `pnpm test:benchmarks` output when the per-suite table changes._
 

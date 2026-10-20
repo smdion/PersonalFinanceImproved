@@ -82,7 +82,7 @@ import type {
 } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/pure/date-keys";
 import { resolveTaxParams } from "@/lib/config/tax-params";
-import { ageInYear } from "@/lib/utils/date";
+import { ficaCapContext } from "@/lib/pure/contributions";
 
 /**
  * Compute the current net-pay-per-check for a job by running the paycheck
@@ -274,15 +274,11 @@ export async function computeJobNetPayPerCheck(
     personalContribs.filter((c) => c.ownership !== "joint"),
     currentSalary,
     periodsPerYear,
-    {
-      limits: limitsRecord,
-      ageAtYearEnd: jobPerson
-        ? ageInYear(
-            Number(jobPerson.dateOfBirth.slice(0, 4)),
-            resolvedTax.resolvedYear,
-          )
-        : 0,
-    },
+    ficaCapContext(
+      limitsRecord,
+      jobPerson?.dateOfBirth ?? null,
+      resolvedTax.resolvedYear,
+    ),
     contributionPay(salaryEntry, currentSalary, bonusTerms).bonusGross,
   );
 

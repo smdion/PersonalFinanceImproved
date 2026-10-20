@@ -11,7 +11,7 @@
  * far, with the real "since" date (the earliest base day used). Pure.
  */
 import { addDays } from "@/lib/utils/date";
-import { roundToCents } from "@/lib/utils/math";
+import { roundToCents, sumBy } from "@/lib/utils/math";
 
 export type DailyBalance = { day: string; balance: number };
 
@@ -57,7 +57,7 @@ export function recentChanges(
       return { days, change: null, since: null };
     return {
       days,
-      change: roundToCents(parts.reduce((s, p) => s + p!.change, 0)),
+      change: roundToCents(sumBy(parts, (p) => p!.change)),
       since: parts.map((p) => p!.since).sort()[0]!,
     };
   });

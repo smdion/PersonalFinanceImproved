@@ -71,7 +71,7 @@ export function roundToCents(value: number): number {
 /**
  * Sum an array of objects by a numeric property.
  */
-export function sumBy<T>(items: T[], fn: (item: T) => number): number {
+export function sumBy<T>(items: readonly T[], fn: (item: T) => number): number {
   return items.reduce((sum, item) => sum + fn(item), 0);
 }
 

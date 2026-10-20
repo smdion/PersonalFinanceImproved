@@ -3,9 +3,9 @@ import {
   estimateFeedIncome,
   estimateTaxableInvestmentIncome,
   investmentIncomeGaps,
-  isTaxableAccountType,
   type IncomeTransaction,
 } from "@/lib/pure/investment-income";
+import { isTaxableCategory } from "@/lib/config/account-types";
 
 const tx = (
   posted: string,
@@ -21,14 +21,14 @@ const tx = (
   ...over,
 });
 
-describe("isTaxableAccountType", () => {
+describe("isTaxableCategory", () => {
   it("is decided by the account-type config, not the name", () => {
-    expect(isTaxableAccountType("brokerage")).toBe(true);
-    expect(isTaxableAccountType("ira")).toBe(false);
-    expect(isTaxableAccountType("401k")).toBe(false);
-    expect(isTaxableAccountType("hsa")).toBe(false);
-    expect(isTaxableAccountType(null)).toBe(false);
-    expect(isTaxableAccountType("unknown")).toBe(false);
+    expect(isTaxableCategory("brokerage")).toBe(true);
+    expect(isTaxableCategory("ira")).toBe(false);
+    expect(isTaxableCategory("401k")).toBe(false);
+    expect(isTaxableCategory("hsa")).toBe(false);
+    expect(isTaxableCategory(null)).toBe(false);
+    expect(isTaxableCategory("unknown")).toBe(false);
   });
 });
 

@@ -12,6 +12,8 @@ import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatNumber } from "@/lib/utils/format";
+import { roundToCents, sumBy } from "@/lib/utils/math";
+import { STATUS_COLORS } from "@/lib/utils/colors";
 import { FactsForm } from "./fund-holding-row";
 
 type Data = RouterOutputs["investments"]["listHoldingPeriods"];
@@ -97,7 +99,7 @@ export function HoldingHistorySection() {
                 notes:
                   "notes" in p && typeof p.notes === "string" ? p.notes : "",
                 rows: Object.entries(p.weights).map(([id, w]) =>
-                  row(Number(id), String(+(w * 100).toFixed(2))),
+                  row(Number(id), String(roundToCents(w * 100))),
                 ),
               })
             }
@@ -180,7 +182,7 @@ function PeriodRow({
                     {noMix && (
                       <button
                         type="button"
-                        className="ml-2 text-amber-600 underline"
+                        className={`ml-2 underline ${STATUS_COLORS.amber.text}`}
                         onClick={() => setFactsFor(Number(id))}
                       >
                         mix unknown — enter it
@@ -249,7 +251,7 @@ function PeriodForm({
       setFundName("");
     },
   });
-  const total = draft.rows.reduce((s, r) => s + (Number(r.pct) || 0), 0);
+  const total = sumBy(draft.rows, (r) => Number(r.pct) || 0);
   const input = "border-strong bg-surface-primary rounded border px-1.5 py-0.5";
   return (
     <div className="bg-surface-elevated mt-3 space-y-2 rounded p-3 text-xs">
@@ -358,16 +360,18 @@ function PeriodForm({
         </Button>
       </div>
       {(byTicker.error || byName.error) && (
-        <p className="text-red-600">
+        <p className={STATUS_COLORS.red.text}>
           {(byTicker.error ?? byName.error)!.message}
         </p>
       )}
       {Math.abs(total - 100) > 0.5 && draft.rows.some((r) => r.pct) && (
-        <p className="text-amber-600">
+        <p className={STATUS_COLORS.amber.text}>
           Adds up to {formatNumber(total, 1)}%, not 100%.
         </p>
       )}
-      {save.isError && <p className="text-red-600">{save.error.message}</p>}
+      {save.isError && (
+        <p className={STATUS_COLORS.red.text}>{save.error.message}</p>
+      )}
       <div className="flex gap-2">
         <Button
           size="xs"

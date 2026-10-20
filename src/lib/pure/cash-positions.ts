@@ -116,24 +116,64 @@ export function hsaCashBuffers(args: {
   });
 }
 
+/** The cash to keep in a person's HSA: the household setting, else their
+ *  HDHP-deductible default; null = unknown (no item). The one rule — the
+ *  HSA cash item and the buffer shown under the HSA both use it. */
+export function resolveHsaCashBuffer(
+  bufferSetting: number | null,
+  defaultBuffers: readonly { personId: number; buffer: number | null }[],
+  ownerPersonId: number | null,
+): number | null {
+  if (bufferSetting !== null) return bufferSetting;
+  if (ownerPersonId === null) return null;
+  return (
+    defaultBuffers.find((b) => b.personId === ownerPersonId)?.buffer ?? null
+  );
+}
+
+/** The current glide path's cash class for judgeCashDrag, from the
+ *  holdings overview: the class the `cash` bucket counts toward and its
+ *  target. null unless the target comes from the household's current glide
+ *  path (the simulation's glide path isn't a holding target). */
+export function currentCashClass(overview: {
+  targetSource: string;
+  allocation: {
+    categories: readonly {
+      bucket: CompositionBucket;
+      assetClassId: number | null;
+    }[];
+    rows: readonly {
+      assetClassId: number;
+      buckets: readonly CompositionBucket[];
+      targetPct: number | null;
+    }[];
+  };
+}): { targetShare: number; buckets: readonly CompositionBucket[] } | null {
+  if (overview.targetSource !== "current") return null;
+  const classId =
+    overview.allocation.categories.find((c) => c.bucket === "cash")
+      ?.assetClassId ?? null;
+  const row = overview.allocation.rows.find((r) => r.assetClassId === classId);
+  return row && row.targetPct !== null
+    ? { targetShare: row.targetPct, buckets: row.buckets }
+    : null;
+}
+
 export function judgeHsaCash(args: {
   accounts: readonly CashAccountInput[];
   /** Household setting (dollars per HSA); null = the deductible default. */
   bufferSetting: number | null;
   defaultBuffers: readonly { personId: number; buffer: number | null }[];
 }): (CashFinding & { buffer: number })[] {
-  const byPerson = new Map(
-    args.defaultBuffers.map((b) => [b.personId, b.buffer]),
-  );
   const cash = new Set<CompositionBucket>(["cash"]);
   const out: (CashFinding & { buffer: number })[] = [];
   for (const a of args.accounts) {
     if (a.accountType === null || !isHsaCategory(a.accountType)) continue;
-    const buffer =
-      args.bufferSetting ??
-      (a.ownerPersonId !== null
-        ? (byPerson.get(a.ownerPersonId) ?? null)
-        : null);
+    const buffer = resolveHsaCashBuffer(
+      args.bufferSetting,
+      args.defaultBuffers,
+      a.ownerPersonId,
+    );
     if (buffer === null) continue;
     const { inClass, known } = cashIn(a, cash);
     const excess = inClass - buffer;

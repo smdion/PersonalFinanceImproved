@@ -12,7 +12,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useRothIra } from "@/lib/hooks/use-roth-ira";
 import type { InvestmentIncomeBasis } from "@/lib/pure/investment-income";
-import { ROTH_MFS_NOTE } from "@/lib/pure/recommendations-roth";
+import { rothMfsNote } from "@/lib/pure/recommendations-roth";
 
 const BASIS_TEXT: Record<InvestmentIncomeBasis, string> = {
   actual: "the year's actual",
@@ -22,7 +22,9 @@ const BASIS_TEXT: Record<InvestmentIncomeBasis, string> = {
   none: "no investment transactions stored for this year",
 };
 
-const NOT_COUNTED = `Not counted: bank/HYSA interest, gains from selling investments, RSU/ESPP and other pay outside salary and bonus, a job change mid-year (only the current job), traditional IRA deductions. ${ROTH_MFS_NOTE}`;
+/** Built at render time so privacy mode masks its dollars. */
+const notCounted = () =>
+  `Not counted: bank/HYSA interest, gains from selling investments, RSU/ESPP and other pay outside salary and bonus, a job change mid-year (only the current job), traditional IRA deductions. ${rothMfsNote()}`;
 
 export function RothIraPanel({ wageAgi }: { wageAgi: number }) {
   const user = useUser();
@@ -78,7 +80,7 @@ export function RothIraPanel({ wageAgi }: { wageAgi: number }) {
         <span className="inline-flex items-center">
           Roth IRA MAGI (est.)
           <HelpTip
-            text={`Salary + bonus − pre-tax payroll money (${formatCurrency(view.parts.wageAgi)}), − HSA money paid outside payroll (${formatCurrency(view.parts.hsaOutsidePayroll)}), + taxable investment income (${formatCurrency(view.parts.investmentIncome)}: ${income ? BASIS_TEXT[income.basis] : "—"}). Roth conversions aren't counted, as the IRS's Roth IRA MAGI leaves them out. ${NOT_COUNTED}${coverageGaps.length ? ` Also missing: ${coverageGaps.join("; ")}.` : ""}`}
+            text={`Salary + bonus − pre-tax payroll money (${formatCurrency(view.parts.wageAgi)}), − HSA money paid outside payroll (${formatCurrency(view.parts.hsaOutsidePayroll)}), + taxable investment income (${formatCurrency(view.parts.investmentIncome)}: ${income ? BASIS_TEXT[income.basis] : "—"}). Roth conversions aren't counted, as the IRS's Roth IRA MAGI leaves them out. ${notCounted()}${coverageGaps.length ? ` Also missing: ${coverageGaps.join("; ")}.` : ""}`}
             maxWidth={320}
           />
         </span>

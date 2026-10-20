@@ -31,7 +31,7 @@ export function recommendationsFromCash(args: {
       context:
         "Buffer: your setting, or the year's HDHP minimum deductible for your coverage",
       impact: { kind: "oneTime", amount: f.excess },
-      href: "/portfolio",
+      href: "/benchmarks",
       source: "ledgr",
     })),
   ];

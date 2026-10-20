@@ -5,13 +5,14 @@
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
   getAccountTypeConfig,
-  getAllCategories,
   categoriesWithIrsLimit,
   getLimitGroup,
+  isPayrollFicaExemptCategory,
   isRetirementParent,
 } from "@/lib/config/account-types";
 import { requireLimit } from "@/server/helpers/settings";
 import { safeDivide, roundToCents } from "@/lib/utils/math";
+import { ageInYear } from "@/lib/utils/date";
 import type { ViewMode } from "@/lib/calculators/types";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 
@@ -110,6 +111,26 @@ export function irsLimitOrNull(
 }
 
 /**
+ * What sizes a person's FICA-exempt caps: the limits for a tax year and the
+ * person's age at Dec 31 of that year (catch-up eligibility). Age null when
+ * the person isn't known — the cap then can't be sized (see
+ * payrollFicaExemptCap), never guessed at age 0.
+ */
+export function ficaCapContext(
+  limits: Record<string, number>,
+  dateOfBirth: string | null,
+  taxYear: number,
+): { limits: Record<string, number>; ageAtYearEnd: number | null } {
+  return {
+    limits,
+    ageAtYearEnd:
+      dateOfBirth === null
+        ? null
+        : ageInYear(Number(dateOfBirth.slice(0, 4)), taxYear),
+  };
+}
+
+/**
  * One FICA-exempt cap per person and account type, shared across that
  * person's rows (two HSA payroll rows — a base and a catch-up — share one
  * IRS limit). Each row's own cap is the limit less ITS employer money;
@@ -170,16 +191,16 @@ export function shareFicaExemptCaps<
  */
 export function payrollFicaExemptCap(
   accountType: string,
-  ageAtYearEnd: number,
+  ageAtYearEnd: number | null,
   hsaCoverageType: string | null,
   limitsRecord: Record<string, number>,
   employerAnnual: number,
 ): number | null {
-  if (!getAllCategories().includes(accountType as AccountCategory)) return null;
-  const cfg = getAccountTypeConfig(accountType as AccountCategory);
-  if (!cfg.payrollFicaExempt) return null;
-  const keys = cfg.irsLimitKeys;
-  if (!keys) return Infinity;
+  if (!isPayrollFicaExemptCategory(accountType)) return null;
+  const keys = getAccountTypeConfig(
+    accountType as AccountCategory,
+  ).irsLimitKeys;
+  if (!keys || ageAtYearEnd === null) return Infinity;
   if (keys.coverageVariant && hsaCoverageType === null) return Infinity;
   if (limitsRecord[irsLimitBaseKey(keys, hsaCoverageType)] === undefined)
     return Infinity;
@@ -207,9 +228,7 @@ export function resolvePriorYearLimit(
   const keys = cfg.irsLimitKeys;
   if (!keys) return 0;
 
-  let baseKey = keys.base;
-  if (keys.coverageVariant && hsaCoverageType === "family")
-    baseKey = keys.coverageVariant;
+  const baseKey = irsLimitBaseKey(keys, hsaCoverageType);
 
   const priorYearAge = age - 1;
   let limit = priorYearLimitsRecord[baseKey] ?? 0;

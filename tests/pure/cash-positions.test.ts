@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
+  currentCashClass,
   hsaCashBuffers,
+  resolveHsaCashBuffer,
   judgeCashDrag,
   judgeHsaCash,
   type CashAccountInput,
@@ -223,5 +225,31 @@ describe("recommendationsFromCash", () => {
       ["cashDrag:4", "investing", { kind: "oneTime", amount: 8000 }],
       ["hsaCash:5", "investing", { kind: "oneTime", amount: 3000 }],
     ]);
+  });
+});
+
+describe("resolveHsaCashBuffer / currentCashClass", () => {
+  it("the setting wins, else the owner's default, else unknown", () => {
+    const d = [{ personId: 1, buffer: 3000 }];
+    expect(resolveHsaCashBuffer(500, d, 1)).toBe(500);
+    expect(resolveHsaCashBuffer(null, d, 1)).toBe(3000);
+    expect(resolveHsaCashBuffer(null, d, 2)).toBeNull();
+    expect(resolveHsaCashBuffer(null, d, null)).toBeNull();
+  });
+  it("the cash class only from the household's current glide path", () => {
+    const overview = (targetSource: string) => ({
+      targetSource,
+      allocation: {
+        categories: [{ bucket: "cash" as const, assetClassId: 9 }],
+        rows: [
+          { assetClassId: 9, buckets: ["cash" as const], targetPct: 0.03 },
+        ],
+      },
+    });
+    expect(currentCashClass(overview("current"))).toEqual({
+      targetShare: 0.03,
+      buckets: ["cash"],
+    });
+    expect(currentCashClass(overview("retirement"))).toBeNull();
   });
 });

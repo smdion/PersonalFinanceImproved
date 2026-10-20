@@ -16,17 +16,14 @@
  * feed: a feed added later has no history before it was first synced.
  * Pure — no DB.
  */
-import {
-  getAccountTypeConfig,
-  getAllCategories,
-} from "@/lib/config/account-types";
-import type { AccountCategory } from "@/lib/config/account-types.types";
+import { isTaxableCategory } from "@/lib/config/account-types";
 import {
   INVESTMENT_INCOME_KINDS,
   type InvestmentTransactionKind,
 } from "@/lib/config/enum-values";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import { addDays } from "@/lib/utils/date";
+import { MS_PER_DAY } from "@/lib/constants";
 
 export type IncomeTransaction = {
   feedId: number;
@@ -62,18 +59,7 @@ export type InvestmentIncomeEstimate = {
   basis: InvestmentIncomeBasis;
 };
 
-/** Whether an account type's money is taxed as it earns (a taxable account). */
-export function isTaxableAccountType(accountType: string | null): boolean {
-  if (accountType === null) return false;
-  if (!getAllCategories().includes(accountType as AccountCategory))
-    return false;
-  return (
-    getAccountTypeConfig(accountType as AccountCategory).taxBucketKey ===
-    "afterTax"
-  );
-}
-
-const dayNumber = (day: string) => Date.parse(`${day}T00:00:00Z`) / 86_400_000;
+const dayNumber = (day: string) => Date.parse(`${day}T00:00:00Z`) / MS_PER_DAY;
 
 /** One feed's estimate from its own rows and coverage. */
 export function estimateFeedIncome(args: {
@@ -167,7 +153,7 @@ export function estimateTaxableInvestmentIncome(args: {
   /** Taxable feeds with no stored history for the year at all — not counted. */
   noHistoryFeeds: string[];
 } {
-  const taxable = args.feeds.filter((f) => isTaxableAccountType(f.accountType));
+  const taxable = args.feeds.filter((f) => isTaxableCategory(f.accountType));
   const perFeed = taxable.map((f) => ({
     feed: f,
     est: estimateFeedIncome({
@@ -231,7 +217,7 @@ export function investmentIncomeGaps(args: {
           .filter(
             (a) =>
               a.amount > 0 &&
-              isTaxableAccountType(a.accountType) &&
+              isTaxableCategory(a.accountType) &&
               !fed.has(a.performanceAccountId),
           )
           .map((a) => a.performanceAccountId),
