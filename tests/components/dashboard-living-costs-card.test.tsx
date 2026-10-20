@@ -29,6 +29,13 @@ vi.mock("@/lib/hooks/use-persisted-setting", () => ({
     vi.fn(),
   ],
 }));
+// Where each bonus goes is set on the Paycheck page; the card reads it.
+const bonus = vi.hoisted(() => ({
+  destinations: {} as Record<string, "budget" | "spending">,
+}));
+vi.mock("@/lib/hooks/use-bonus-destinations", () => ({
+  useBonusDestinations: () => ({ destinations: bonus.destinations }),
+}));
 // HelpTip needs a Radix TooltipProvider ancestor this card doesn't supply on
 // its own (normally comes from a layout higher up) — same pattern as
 // coast-fire-card.test.tsx.
@@ -50,7 +57,8 @@ const budgetQuery = {
 };
 
 // One person, monthly pay (periodsPerYear: 12) for simple arithmetic.
-// netPay 4000/mo -> netIncome 48000/yr. salary (gross) 60000/yr.
+// netPay 4000/mo -> netIncome 48000/yr. salary (gross) 60000/yr, no bonus
+// (householdIncome is the router's rollup the card reads).
 // One raw paycheck deduction (health insurance) at $100/period -> $1200/yr,
 // only ever subtracted in Gross mode (Net mode's netPay already nets it out).
 const paycheckQuery = {
@@ -58,13 +66,15 @@ const paycheckQuery = {
   data: {
     people: [
       {
+        person: { id: 5 },
         salary: 60000,
         paycheck: { netPay: 4000, periodsPerYear: 12 },
         rawDeductions: [{ amountPerPeriod: "100" }],
       },
     ],
+    householdIncome: { gross: 60000, netRegular: 48000, netBonus: 0 },
     householdTax: { totalTax: 12000 },
-  },
+  } as Record<string, unknown>,
 };
 
 // Retirement: one IRA (non-payroll, $2000/yr) + one 401k (payroll-deducted,
@@ -206,5 +216,49 @@ describe("LivingCostsCard math", () => {
     // Gross and Net waterfalls reconcile to the same total once Taxes and
     // Other Paycheck Deductions are both accounted for.
     expect(screen.getByText("Total: 100% of gross")).toBeInTheDocument();
+  });
+
+  it("a bonus set to extra spending gets its own bar and leaves Unallocated", () => {
+    const original = paycheckQuery.data.householdIncome;
+    paycheckQuery.data.householdIncome = {
+      gross: 72000,
+      netRegular: 48000,
+      netBonus: 7200,
+    };
+    const people = paycheckQuery.data.people as {
+      earnings?: { netBonus: number };
+    }[];
+    people[0]!.earnings = { netBonus: 7200 };
+    bonus.destinations = { "5": "spending" };
+    try {
+      render(<LivingCostsCard />);
+      expect(screen.getByText("Bonus (extra spending)")).toBeInTheDocument();
+      expect(screen.getByText("($7,200.00)")).toBeInTheDocument();
+      // Net 55,200 − 2,000 retirement − 2,400 savings − 7,200 bonus − 16,800 budget
+      expect(screen.getByText("($26,800.00)")).toBeInTheDocument();
+    } finally {
+      paycheckQuery.data.householdIncome = original;
+      bonus.destinations = {};
+      delete people[0]!.earnings;
+    }
+  });
+
+  it("income includes the bonus (household annual income), in both modes", () => {
+    const original = paycheckQuery.data.householdIncome;
+    paycheckQuery.data.householdIncome = {
+      gross: 72000,
+      netRegular: 48000,
+      netBonus: 7200,
+    };
+    try {
+      render(<LivingCostsCard />);
+      // Housing: 12000 / (48000 + 7200) net = 21.7% -> 22%.
+      expect(screen.getByText("22%")).toBeInTheDocument();
+      fireEvent.click(screen.getByText(/Gross \(\$72,000\.00\)/));
+      // Housing and Taxes: 12000 / 72000 gross = 16.7% -> 17% each.
+      expect(screen.getAllByText("17%")).toHaveLength(2);
+    } finally {
+      paycheckQuery.data.householdIncome = original;
+    }
   });
 });

@@ -113,6 +113,9 @@ describe("investments router", () => {
     obs(fund, "2026-05-15", "10");
     obs(sold, "2026-05-14", "4");
     obs(sold, "2026-05-15", "0");
+    // Sold and simply no longer listed (no 0-share row): must not linger.
+    const dropped = sec("EXDRX", "Example Dropped Fund");
+    obs(dropped, "2026-05-14", "3");
   });
 
   afterAll(() => ctx.cleanup());
@@ -126,7 +129,7 @@ describe("investments router", () => {
     filter: Parameters<typeof loadClassifiedTransactions>[1] = {},
   ) => loadClassifiedTransactions(db(), filter);
 
-  it("lists the latest holdings per account, leaving out sold funds", async () => {
+  it("lists the latest holdings per account, leaving out sold and no-longer-listed funds", async () => {
     const holdings = await loadLatestHoldings(db());
     expect(holdings).toHaveLength(1);
     expect(holdings[0]).toMatchObject({

@@ -42,9 +42,6 @@
  *     only its index, since a table rebuild inside the migration runner's
  *     transaction would cascade-delete savings history. The savings router
  *     detaches sub-goals on delete instead.
- *   - account_holdings.weight_bps range CHECK: present on installs upgraded
- *     through the v0.7.0 in-memory replay, absent on a fresh v0.8 baseline
- *     (stripped, per above).
  * None affect PostgreSQL, where schema-pg.ts is authoritative and all are
  * enforced.
  */

@@ -52,6 +52,10 @@ export type InvestmentTransactionKind =
 export const investmentTransactionKindSchema = z.enum(
   INVESTMENT_TRANSACTION_KIND_VALUES,
 );
+/** Kinds that are income in the year they're paid (taxable in a taxable
+ *  account): dividends incl. capital-gain distributions, and interest. */
+export const INVESTMENT_INCOME_KINDS: ReadonlySet<InvestmentTransactionKind> =
+  new Set(["dividend", "interest"]);
 
 // ── Security kind (holdings) ──
 
@@ -120,6 +124,14 @@ export const MAJOR_COMPOSITION_BUCKETS: readonly CompositionBucket[] =
 export const HOLDING_SOURCE_VALUES = ["simplefin", "manual"] as const;
 export type HoldingSource = (typeof HOLDING_SOURCE_VALUES)[number];
 export const holdingSourceSchema = z.enum(HOLDING_SOURCE_VALUES);
+
+// ── Holding period basis ──
+
+/** Where a dated holding period came from. Observed periods (daily
+ *  SimpleFIN holdings) aren't stored — they're derived on read. */
+export const HOLDING_PERIOD_BASIS_VALUES = ["user", "inferred"] as const;
+export type HoldingPeriodBasis = (typeof HOLDING_PERIOD_BASIS_VALUES)[number];
+export const holdingPeriodBasisSchema = z.enum(HOLDING_PERIOD_BASIS_VALUES);
 
 // ── Pay Week ──
 

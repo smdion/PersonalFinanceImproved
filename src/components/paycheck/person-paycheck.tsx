@@ -14,6 +14,7 @@ import { AddDeductionForm } from "./add-deduction-form";
 import { SSCapIndicator } from "./ss-cap-indicator";
 import { ExtraPaycheckDestinationToggle } from "@/components/savings/extra-paycheck-rules-editor";
 import { SectionHeader } from "./section-header";
+import { OtherPaySection } from "./other-pay-section";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import type {
   PaycheckResult,
@@ -23,6 +24,7 @@ import type {
   DeductionRowData,
   CreateDeductionData,
   JointContrib,
+  EarningRow,
 } from "./types";
 import type { ContribAccountFormValues } from "./contrib-account-form";
 import type { PerContribView } from "@/lib/hooks/use-paycheck-person-views";
@@ -89,6 +91,7 @@ export function PersonPaycheck({
   sharedGroupOrder,
   interaction,
   incompleteAccountIds,
+  earningRows,
 }: {
   person: { name: string; id: number };
   job: {
@@ -158,6 +161,8 @@ export function PersonPaycheck({
    *  getIncompleteContribAccountIds. Surfaced as a badge, never silently
    *  dropped from the total. */
   incompleteAccountIds?: number[];
+  /** This job's other-pay lines with their per-check amounts. */
+  earningRows?: EarningRow[];
 }) {
   const [addingDeduction, setAddingDeduction] = useState<{
     isPretax: boolean;
@@ -261,6 +266,15 @@ export function PersonPaycheck({
               onDeleteDeduction={handlers?.onDeleteDeduction ?? undefined}
               readOnly={readOnly}
             />
+            <OtherPaySection
+              jobId={job.id}
+              rows={earningRows ?? []}
+              onSetAmount={(id, amount) =>
+                onUpdateJob(`otherEarnings:${id}`, String(amount))
+              }
+              readOnly={readOnly || isInScenario}
+              amountReadOnly={salaryReadOnly}
+            />
             {job.payPeriod === "biweekly" && (
               <div className="space-y-2">
                 <SectionHeader>Extra Paycheck</SectionHeader>
@@ -287,6 +301,7 @@ export function PersonPaycheck({
               salaryReadOnly={salaryReadOnly}
             />
             <BonusSection
+              personId={person.id}
               paycheck={paycheck}
               fullFormulaBonusEstimate={fullFormulaBonusEstimate}
               job={job}

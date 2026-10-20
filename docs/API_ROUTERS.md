@@ -2,23 +2,9 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**365 procedures across 51 routers.**
+**367 procedures across 52 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
-
-## `analytics`
-
-| Procedure             | Kind     | Auth                 | Description                                                                                                                                                                                              |
-| --------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bulkUpsertHoldings`  | mutation | `portfolioProcedure` | Bulk upsert holdings for one account+snapshot in a single round-trip. Replaces the entire set for that account+snapshot (delete-then-insert in a transaction).                                           |
-| `getAccounts`         | query    | `portfolioProcedure` | Get all active performance accounts (used to build the account list on the page).                                                                                                                        |
-| `getAssetClasses`     | query    | `portfolioProcedure` | Get all asset class params (for the asset class dropdown).                                                                                                                                               |
-| `getGlidePathForAge`  | query    | `portfolioProcedure` | Get glide path allocations for a specific age (for drift computation). Returns an empty array if no glide path is configured.                                                                            |
-| `getHoldings`         | query    | `portfolioProcedure` | Get all holdings for a given snapshot (or the latest snapshot that has holdings). Only returns holdings for isActive = true performance_accounts.                                                        |
-| `getHoldingsHistory`  | query    | `portfolioProcedure` | Fetch holdings across multiple snapshots for historical allocation/drift charts. Only returns snapshots that actually have ≥1 holding.                                                                   |
-| `getSnapshotBalances` | query    | `portfolioProcedure` | Get portfolio account balances for a given snapshot (to compute dollar values from weights).                                                                                                             |
-| `getSnapshots`        | query    | `portfolioProcedure` | Get all portfolio snapshots (for the snapshot selector).                                                                                                                                                 |
-| `lookupTicker`        | query    | `portfolioProcedure` | Ticker lookup from the fund facts Ledgr already stores (SEC filings or your entries) — name, expense ratio, and the asset class linked to the fund's dominant category when one holds at least 80% of it |
 
 ## `api-docs`
 
@@ -142,6 +128,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | ---------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `getAccountInsights`   | query | `portfolioProcedure` | (no description)                                                                                                                                                                                         |
 | `getLiveSinceSnapshot` | query | `portfolioProcedure` | How the household's linked accounts moved each day since the latest snapshot, as a change from it — the Portfolio chart's live line and the Net Worth page's "today" estimate add it to the snapshot's o |
+| `getRecentChanges`     | query | `portfolioProcedure` | tracked account, counted feeds only (deposits included).                                                                                                                                                 |
 
 ## `investments/comparison`
 
@@ -168,6 +155,16 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | ----------- | ----- | -------------------- | ------------------------------------------------------------------------ |
 | `getHealth` | query | `portfolioProcedure` | Accounts whose holdings stopped arriving or don't add up to the balance. |
 
+## `investments/holding-periods`
+
+| Procedure             | Kind     | Auth                 | Description                                                                                                                                                                  |
+| --------------------- | -------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `addFundByName`       | mutation | `portfolioProcedure` | A fund with no public ticker (a workplace plan's own fund), by name. Its fee and mix are entered by hand (setUserFacts).                                                     |
+| `addFundByTicker`     | mutation | `portfolioProcedure` | A fund by its public ticker: checked against SEC's fund ticker list (no guessing — an unknown ticker is refused), reusing a row that already has it, then its facts fetched. |
+| `deleteHoldingPeriod` | mutation | `portfolioProcedure` | (no description)                                                                                                                                                             |
+| `listHoldingPeriods`  | query    | `portfolioProcedure` | Periods (observed + entered) per account, and the funds they name.                                                                                                           |
+| `saveHoldingPeriod`   | mutation | `portfolioProcedure` | Create or update an entered period with its funds, in one transaction.                                                                                                       |
+
 ## `investments/snapshot-flows`
 
 | Procedure          | Kind  | Auth                 | Description                                                                                                                                                                                              |
@@ -182,6 +179,12 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `suggestBasis`       | query | `portfolioProcedure` | The year's Roth basis rows with Roth contributions and conversions no saved fill has counted yet. Basis is cumulative, so these add onto the stored figures; money out of a Roth account reduces them (c |
 | `suggestPerformance` | query | `portfolioProcedure` | The year's Performance rows with what SimpleFIN has seen that no saved fill has counted yet, added onto the stored figures.                                                                              |
 | `suggestSnapshot`    | query | `portfolioProcedure` | Suggested balances for a new portfolio snapshot, by snapshot sub-account key, from linked SimpleFIN accounts.                                                                                            |
+
+## `investments/tax-inputs`
+
+| Procedure          | Kind  | Auth                 | Description      |
+| ------------------ | ----- | -------------------- | ---------------- |
+| `getRothIraInputs` | query | `portfolioProcedure` | (no description) |
 
 ## `milestones`
 
@@ -461,11 +464,14 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `create`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `create`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `create`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `create`             | mutation | `contributionProfileProcedure` | Same permission level as deductions: structure only, the amount is the Salary Profile's.                                                                                                                 |
 | `create`             | mutation | `contributionProfileProcedure` | deduction's identity (name/isPretax/ficaExempt) is the same class of previously-admin-gated job fact that W-4/pay-schedule fields already moved off of (Stage B); its AMOUNT already resolves via a Cont |
 | `delete`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `delete`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `delete`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `delete`             | mutation | `adminProcedure`               | Also drops its amount from every Salary Profile, so no profile keeps an amount for a line that no longer exists.                                                                                         |
 | `delete`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
 | `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
 | `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
 | `list`               | query    | `protectedProcedure`           | (no description)                                                                                                                                                                                         |
@@ -475,6 +481,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `update`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `update`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `update`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
+| `update`             | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
 | `update`             | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
 
 ## `settings/tax-limits`

@@ -84,24 +84,26 @@ export const VERSION_TABLES: VersionTableEntry[] = [
 
   // Tier 2 — depends on tier 1
   { name: "paycheck_deductions", tier: 2 },
+  { name: "paycheck_earnings", tier: 2 }, // FK into jobs (tier 1)
   { name: "contribution_accounts", tier: 2 },
   { name: "portfolio_accounts", tier: 2 },
   { name: "account_performance", tier: 2 },
   { name: "mc_preset_glide_paths", tier: 2 },
   { name: "mc_preset_return_overrides", tier: 2 },
-  { name: "account_holdings", tier: 2 },
   { name: "savings_planned_tx_settlements", tier: 2 },
   { name: "budget_income_adjustments", tier: 2 },
   { name: "account_basis", tier: 2 }, // FKs into performance_accounts (tier 1) + people (tier 0)
   { name: "budget_item_category_links", tier: 2 }, // FK into budget_items (tier 1)
   { name: "savings_goal_category_links", tier: 2 }, // FK into savings_goals (tier 0)
   { name: "simplefin_accounts", tier: 2 }, // FK into performance_accounts (tier 1)
+  { name: "holding_periods", tier: 2 }, // FK into performance_accounts (tier 1)
 
   // Tier 3 — depends on tier 2
   // SimpleFIN history (v0.8.5) — can't be re-fetched after 90 days, so versioned + backed up.
   { name: "simplefin_account_balances", tier: 3 }, // FK into simplefin_accounts (tier 2)
   { name: "holding_observations", tier: 3 }, // FKs into simplefin_accounts (tier 2), performance_accounts (tier 1), securities (tier 0)
   { name: "investment_transactions", tier: 3 }, // FK into simplefin_accounts (tier 2)
+  { name: "holding_period_weights", tier: 3 }, // FKs into holding_periods (tier 2), securities (tier 0)
 ];
 
 // Validate tier ordering: entries must be grouped by ascending tier.

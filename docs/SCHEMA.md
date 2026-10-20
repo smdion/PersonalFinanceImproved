@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**79 tables.**
+**81 tables.**
 
 ## Mermaid diagram
 
@@ -21,6 +21,9 @@ erDiagram
     int id PK
   }
   paycheck_deductions {
+    int id PK
+  }
+  paycheck_earnings {
     int id PK
   }
   budget_profiles {
@@ -81,9 +84,6 @@ erDiagram
     int id PK
   }
   account_performance {
-    int id PK
-  }
-  account_holdings {
     int id PK
   }
   net_worth_annual {
@@ -185,6 +185,12 @@ erDiagram
   holding_observations {
     int id PK
   }
+  holding_periods {
+    int id PK
+  }
+  holding_period_weights {
+    int id PK
+  }
   investment_transactions {
     int id PK
   }
@@ -249,6 +255,7 @@ erDiagram
   contribution_accounts }o--|| jobs : references
   contribution_accounts }o--|| people : references
   paycheck_deductions }o--|| jobs : references
+  paycheck_earnings }o--|| jobs : references
   budget_items }o--|| budget_profiles : references
   budget_item_category_links }o--|| budget_items : references
   savings_goal_category_links }o--|| savings_goals : references
@@ -269,8 +276,6 @@ erDiagram
   portfolio_accounts }o--|| people : references
   account_performance }o--|| people : references
   account_performance }o--|| performance_accounts : references
-  account_holdings }o--|| performance_accounts : references
-  account_holdings }o--|| portfolio_snapshots : references
   historical_salaries }o--|| people : references
   mortgage_what_if_scenarios }o--|| mortgage_loans : references
   mortgage_extra_payments }o--|| mortgage_loans : references
@@ -285,6 +290,9 @@ erDiagram
   security_facts }o--|| securities : references
   simplefin_account_balances }o--|| simplefin_accounts : references
   holding_observations }o--|| securities : references
+  holding_periods }o--|| performance_accounts : references
+  holding_period_weights }o--|| holding_periods : references
+  holding_period_weights }o--|| securities : references
   investment_transactions }o--|| simplefin_accounts : references
   simplefin_accounts }o--|| performance_accounts : references
   asset_class_buckets }o--|| asset_class_params : references
@@ -301,7 +309,6 @@ erDiagram
 ## Tables
 
 - **account_basis** → performance_accounts, people
-- **account_holdings** → performance_accounts, portfolio_snapshots
 - **account_performance** → people, performance_accounts
 - **annual_performance**
 - **api_connections**
@@ -325,6 +332,8 @@ erDiagram
 - **historical_notes**
 - **historical_salaries** → people
 - **holding_observations** → securities
+- **holding_period_weights** → holding_periods, securities
+- **holding_periods** → performance_accounts
 - **home_improvement_items**
 - **investment_transactions** → simplefin_accounts
 - **irmaa_brackets**
@@ -341,6 +350,7 @@ erDiagram
 - **net_worth_annual**
 - **other_asset_items**
 - **paycheck_deductions** → jobs
+- **paycheck_earnings** → jobs
 - **people**
 - **performance_accounts** → people
 - **portfolio_accounts** → portfolio_snapshots, people

@@ -82,6 +82,8 @@ import type {
 } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/pure/date-keys";
 import { resolveTaxParams } from "@/lib/config/tax-params";
+import { ficaCapContext } from "@/lib/pure/contributions";
+import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
 
 /**
  * Compute the current net-pay-per-check for a job by running the paycheck
@@ -140,6 +142,7 @@ export async function computeJobNetPayPerCheck(
     allLimitRows,
     activeContribSetting,
     allTaxParams,
+    [jobPerson],
   ] = await Promise.all([
     db.select().from(schema.taxBrackets),
     db
@@ -171,6 +174,10 @@ export async function computeJobNetPayPerCheck(
       .from(schema.appSettings)
       .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID)),
     db.select().from(schema.taxParams),
+    db
+      .select({ dateOfBirth: schema.people.dateOfBirth })
+      .from(schema.people)
+      .where(eq(schema.people.id, job.personId)),
   ]);
 
   // One resolver, same as the retirement engine + paycheck. This path
@@ -256,18 +263,27 @@ export async function computeJobNetPayPerCheck(
   const periodsPerYear = getPeriodsPerYear(salaryEntry.payPeriod);
   const taxBrackets = buildBracketInput(bracketRow, limitsMap, allBrackets);
 
-  const deductions: DeductionLine[] = jobDeductions.map((d) => ({
-    name: d.deductionName,
-    amount: toNumber(String(d.amountPerPeriod)),
-    taxTreatment: d.isPretax ? ("pre_tax" as const) : ("after_tax" as const),
-    ficaExempt: d.ficaExempt,
-  }));
+  const deductions: DeductionLine[] = jobDeductions.map((d) =>
+    deductionLine(d, toNumber(String(d.amountPerPeriod))),
+  );
+  const earnings = earningLines(
+    await db
+      .select()
+      .from(schema.paycheckEarnings)
+      .where(eq(schema.paycheckEarnings.jobId, job.id)),
+    salaryEntry.otherEarnings,
+  );
 
   const contribAccounts = buildContribAccounts(
     jobContribs,
     personalContribs.filter((c) => c.ownership !== "joint"),
     currentSalary,
     periodsPerYear,
+    ficaCapContext(
+      limitsRecord,
+      jobPerson?.dateOfBirth ?? null,
+      resolvedTax.resolvedYear,
+    ),
     contributionPay(salaryEntry, currentSalary, bonusTerms).bonusGross,
   );
 
@@ -282,6 +298,7 @@ export async function computeJobNetPayPerCheck(
     bonusOverride: null,
     contributionAccounts: contribAccounts,
     deductions,
+    earnings,
     taxBrackets,
     limitsMap,
     limitsRecord,

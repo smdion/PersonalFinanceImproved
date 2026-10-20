@@ -5,7 +5,7 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
-import { BENCHMARKS } from "@/lib/config/benchmarks";
+import { BENCHMARKS, BUCKET_INDEX_PROXIES } from "@/lib/config/benchmarks";
 
 function Section({
   id,
@@ -220,10 +220,24 @@ export default function MethodologyPage() {
         }
       >
         <p>
+          The matched line (&ldquo;Your mix, in index funds&rdquo;) comes from
+          your holding history. Where daily holdings exist it uses your actual
+          mix at the start of each month; for periods you entered, the mix you
+          entered, held steady (rebalanced monthly). Each fund counts by its
+          known mix of asset classes, priced with one index fund per class (
+          {Object.values(BUCKET_INDEX_PROXIES)
+            .flatMap((p) => (p ? [p.label] : []))
+            .join(", ")}
+          ). Fund mixes are as of their latest facts, so long-ago years are
+          approximate for funds that change their mix, like target-date funds.
+          It starts at the first full year your history covers, and shows how
+          much money it had to leave out.
+        </p>
+        <p>
           The difference from the S&amp;P 500 is then split into steps: the
           S&amp;P 500 → your mix of asset classes → your funds and their costs →
-          when you added money. Both need your holdings history, so they appear
-          once holding periods are known.
+          when you added money. That split, and an ahead/behind verdict, need
+          three years of known holdings, so they come later.
         </p>
       </Section>
     </div>

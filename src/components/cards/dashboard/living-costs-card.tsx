@@ -8,6 +8,8 @@ import { StatusDot } from "@/components/ui/badge";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useBonusDestinations } from "@/lib/hooks/use-bonus-destinations";
+import { bonusSpendingNet } from "@/lib/pure/household-income";
 import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import {
   RAMSEY_RANGES,
@@ -176,6 +178,8 @@ function LivingCostsCardImpl() {
   const { data: extraPaycheckJobs, isLoading: isExtraPaycheckLoading } =
     trpc.savings.extraPaycheckRouting.list.useQuery();
   const [useGross, setUseGross] = useState(false);
+  // Bonuses set to "extra spending" on the Paycheck page get their own bar.
+  const { destinations: bonusDestinations } = useBonusDestinations();
 
   if (
     isBudgetLoading ||
@@ -204,15 +208,14 @@ function LivingCostsCardImpl() {
   // this app doesn't track uniformly; until then, this card intentionally
   // always shows the full-year view (see the note rendered near the toggle
   // below).
-  const netIncome = paycheckData?.people
-    ? sumBy(paycheckData.people, (p) =>
-        p.paycheck ? p.paycheck.netPay * p.paycheck.periodsPerYear : 0,
-      )
+  // Household annual income — salary + the resolved bonus, the same
+  // figure the Income card and the taxes use (the contribution totals
+  // below already include bonus-check contributions).
+  const householdIncome = paycheckData?.householdIncome ?? null;
+  const netIncome = householdIncome
+    ? householdIncome.netRegular + householdIncome.netBonus
     : 0;
-
-  const grossIncome = paycheckData?.people
-    ? sumBy(paycheckData.people, (p) => p.salary ?? 0)
-    : 0;
+  const grossIncome = householdIncome?.gross ?? 0;
   const incomeBase = useGross ? grossIncome : netIncome;
   const incomeLabel = useGross ? "gross" : "net";
 
@@ -440,6 +443,16 @@ function LivingCostsCardImpl() {
     ).filter((k) => k.startsWith(String(yearStart.getUTCFullYear())));
     return extraMonthsThisYear.length * netPayPerCheck;
   });
+  // Take-home of bonuses set to "extra spending" (their taxes and
+  // bonus-check contributions are already in the Taxes / Retirement /
+  // Portfolio bars) — same in both modes.
+  const bonusShown = bonusSpendingNet(
+    (paycheckData?.people ?? []).map((p) => ({
+      personId: p.person.id,
+      netBonus: p.earnings?.netBonus ?? 0,
+    })),
+    bonusDestinations,
+  );
   const retirementShown = useGross ? retirementTotal : retirementNonPayroll;
   const portfolioShown = useGross ? portfolioTotal : portfolioNonPayroll;
   const unallocated = Math.max(
@@ -450,6 +463,7 @@ function LivingCostsCardImpl() {
       portfolioShown -
       annualSavings -
       extraPaycheckAllocatedThisYear -
+      bonusShown -
       totalBudgetSpending,
     0,
   );
@@ -474,6 +488,11 @@ function LivingCostsCardImpl() {
       annual: extraPaycheckAllocatedThisYear,
       color: "bg-cyan-400",
     },
+    {
+      name: "Bonus (extra spending)",
+      annual: bonusShown,
+      color: "bg-amber-300",
+    },
     { name: "Unallocated", annual: unallocated, color: "bg-surface-strong" },
   ]
     .map((r) => ({ ...r, pct: safeDivide(r.annual, incomeBase, 0) }))
@@ -497,7 +516,7 @@ function LivingCostsCardImpl() {
         <>
           Budget &amp; Spending
           <HelpTip
-            text={`Always shows the full-year projected picture, regardless of the Paycheck page's Current Salary/Year-End Estimate/Actual YTD selector — every number here besides income (budget spending, savings, retirement, portfolio, extra-paycheck routing) is this app's annualized RATE for that thing, not a real posted-transaction year-to-date total, so scoping just the income side to "so far this year" would push every percentage well past 100%. Budget categories as % of ${incomeLabel} income compared to Dave Ramsey's recommended ranges (Ramsey's original ranges are based on net take-home pay). Retirement/Portfolio/Savings/Extra Paycheck/Unallocated below show where the rest of your ${incomeLabel} income goes: Net counts only non-payroll contributions (IRA, manually-funded brokerage/HSA) actually funded from take-home pay — payroll-deducted contributions, Roth included, never touch net pay; Gross counts your full contribution total, payroll and non-payroll combined, plus taxes and any other payroll deduction (health/dental/vision insurance, etc.) — those already come out before net pay is computed too, so Gross names them explicitly instead of leaving them invisibly baked into Net. Extra Paycheck is this year's 3rd-biweekly-paycheck months currently set to route to a savings goal (see the Savings/Budget toggle on Salary Profile or the Paycheck page) — computed from the real pay calendar, not from which months have already been transferred. Unallocated includes any budget category with no Ramsey mapping, plus any genuinely untracked money.`}
+            text={`Always shows the full-year projected picture, regardless of the Paycheck page's Current Salary/Year-End Estimate/Actual YTD selector — every number here besides income (budget spending, savings, retirement, portfolio, extra-paycheck routing) is this app's annualized RATE for that thing, not a real posted-transaction year-to-date total, so scoping just the income side to "so far this year" would push every percentage well past 100%. Budget categories as % of ${incomeLabel} income compared to Dave Ramsey's recommended ranges (Ramsey's original ranges are based on net take-home pay). Retirement/Portfolio/Savings/Extra Paycheck/Bonus/Unallocated below show where the rest of your ${incomeLabel} income goes: Net counts only non-payroll contributions (IRA, manually-funded brokerage/HSA) actually funded from take-home pay — payroll-deducted contributions, Roth included, never touch net pay; Gross counts your full contribution total, payroll and non-payroll combined, plus taxes and any other payroll deduction (health/dental/vision insurance, etc.) — those already come out before net pay is computed too, so Gross names them explicitly instead of leaving them invisibly baked into Net. Extra Paycheck is this year's 3rd-biweekly-paycheck months currently set to route to a savings goal (see the Savings/Budget toggle on Salary Profile or the Paycheck page) — computed from the real pay calendar, not from which months have already been transferred. Bonus is the take-home of any bonus set to \"Extra spending\" on the Paycheck page. Unallocated includes any budget category with no Ramsey mapping, plus any genuinely untracked money.`}
           />
         </>
       }

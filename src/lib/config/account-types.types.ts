@@ -96,6 +96,11 @@ export type AccountTypeConfig = {
    *  true = employer-plan (401k, 403b, HSA) — deducted before take-home pay.
    *  false = individual account (IRA, brokerage) — paid from take-home pay. */
   isPayrollDeductible: boolean;
+  /** Payroll contributions are made under a §125 cafeteria plan and so are
+   *  not FICA wages (IRS Pub 15 / 15-B) — up to the IRS limit for the
+   *  account type, after employer money. true for HSA only today. Applies
+   *  only when the contribution is actually payroll-deducted. */
+  payrollFicaExempt: boolean;
 
   // --- Classification ---
   parentCategory: "Retirement" | "Portfolio";

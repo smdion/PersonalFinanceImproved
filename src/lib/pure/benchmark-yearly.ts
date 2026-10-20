@@ -13,7 +13,7 @@
  * shorter than a year is never annualized.
  */
 import { computeReturn } from "./performance";
-import { roundToCents } from "@/lib/utils/math";
+import { roundToCents, sumBy } from "@/lib/utils/math";
 
 export type YearlyResult = {
   year: number;
@@ -29,10 +29,10 @@ export type YearlyResult = {
 /** Month-end total-return price by month, "YYYY-MM". */
 export type MonthlyPrices = ReadonlyMap<string, number>;
 
-const monthKey = (year: number, month: number) =>
+export const monthKey = (year: number, month: number) =>
   `${year}-${String(month).padStart(2, "0")}`;
 
-function previousMonth(year: number, month: number): [number, number] {
+export function previousMonth(year: number, month: number): [number, number] {
   return month === 1 ? [year - 1, 12] : [year, month - 1];
 }
 
@@ -136,4 +136,92 @@ export function windowReturn(
   if (totalMonths < 12)
     return { value: Math.pow(1 + monthly, totalMonths) - 1, annualized: false };
   return { value: annual, annualized: true };
+}
+
+/** One account-year of performance, as numbers (the router converts). */
+export type PerformanceYearRow = {
+  year: number;
+  beginningBalance: number;
+  totalContributions: number;
+  rollovers: number;
+  distributions: number;
+  fees: number;
+  yearlyGainLoss: number;
+  endingBalance: number;
+};
+
+/** The household's yearly results (all accounts summed), oldest first.
+ *  Rollovers count as money in; distributions and fees as money out. */
+export function yearlyResultsFrom(
+  rows: readonly PerformanceYearRow[],
+): YearlyResult[] {
+  const byYear = new Map<number, YearlyResult>();
+  for (const r of rows) {
+    const y = byYear.get(r.year) ?? {
+      year: r.year,
+      begin: 0,
+      contributions: 0,
+      outflows: 0,
+      gain: 0,
+      end: 0,
+    };
+    y.begin += r.beginningBalance;
+    y.contributions += r.totalContributions + r.rollovers;
+    y.outflows += r.distributions + r.fees;
+    y.gain += r.yearlyGainLoss;
+    y.end += r.endingBalance;
+    byYear.set(r.year, y);
+  }
+  return [...byYear.values()].sort((a, b) => a.year - b.year);
+}
+
+/**
+ * Where the default window starts: after any leading placeholder years —
+ * records with an effectively zero return (e.g. flat estimates entered for
+ * early years). They stay selectable; they just don't start the comparison.
+ */
+export function firstRealYear(years: readonly YearlyResult[]): number | null {
+  const real = years.find((y) => Math.abs(yearlyReturn(y) ?? 0) >= 0.001);
+  return real?.year ?? years[0]?.year ?? null;
+}
+
+/** One benchmark's run over `years` and its window return — the one path
+ *  every benchmark (and the matched mix) goes through. */
+export function runBenchmark(
+  years: readonly YearlyResult[],
+  prices: MonthlyPrices | null,
+): {
+  available: boolean;
+  years: IndexYear[];
+  window: ReturnType<typeof windowReturn>;
+} {
+  const run = prices && years.length > 0 ? simulateIndex(years, prices) : null;
+  const months = sumBy(run ?? [], (r) => r.months);
+  const last = run?.at(-1);
+  return {
+    available: !!run && run.length > 0,
+    years: run ?? [],
+    window: run && last ? windowReturn(years, last.end, months) : null,
+  };
+}
+
+/**
+ * Months your own window return covers: the most any benchmark priced (so
+ * you and the indexes cover the same months), else the calendar months of
+ * `years` — the current year only through today.
+ */
+export function yourWindowMonths(
+  years: readonly YearlyResult[],
+  benchmarkYears: readonly (readonly IndexYear[])[],
+  today: Date,
+): number {
+  const priced = Math.max(
+    0,
+    ...benchmarkYears.map((ys) => sumBy(ys, (r) => r.months)),
+  );
+  if (priced > 0) return priced;
+  const full =
+    years.length * 12 -
+    (years.at(-1)?.year === today.getFullYear() ? 12 - today.getMonth() : 0);
+  return Math.max(full, 0);
 }

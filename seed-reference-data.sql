@@ -16,11 +16,22 @@ INSERT INTO contribution_limits (tax_year, limit_type, value, notes) VALUES
   (2025, 'fica_ss_rate', 0.062000, 'SS tax rate (employee)'),
   (2025, 'fica_medicare_rate', 0.014500, 'Medicare tax rate'),
   (2025, 'fica_medicare_surtax_rate', 0.009000, 'Additional Medicare above threshold'),
-  (2025, 'fica_medicare_surtax_threshold', 200000.000000, 'Surtax threshold'),
+  (2025, 'fica_medicare_surtax_threshold', 200000.000000, 'Additional Medicare Tax per-employee WITHHOLDING threshold (IRC 3102(f)); liability uses fica_medicare_surtax_liability_*'),
   (2025, 'supplemental_tax_rate', 0.220000, 'Federal flat rate on bonuses'),
   (2025, 'standard_deduction_mfj', 31500.000000, 'OBBBA §70102 (supersedes Rev. Proc. 2024-40)'),
   (2025, 'standard_deduction_single', 15750.000000, 'OBBBA §70102 (supersedes Rev. Proc. 2024-40)'),
   (2025, 'standard_deduction_hoh', 23625.000000, 'OBBBA §70102 (supersedes Rev. Proc. 2024-40)'),
+  (2025, 'fica_medicare_surtax_liability_mfj', 250000.000000, 'Additional Medicare Tax liability threshold, MFJ combined Medicare wages (IRC 3101(b)(2), not indexed)'),
+  (2025, 'fica_medicare_surtax_liability_single', 200000.000000, 'Additional Medicare Tax liability threshold, Single (IRC 3101(b)(2), not indexed)'),
+  (2025, 'fica_medicare_surtax_liability_hoh', 200000.000000, 'Additional Medicare Tax liability threshold, HoH (IRC 3101(b)(2), not indexed)'),
+  (2025, 'roth_ira_phaseout_start_mfj', 236000.000000, 'Roth IRA contribution MAGI phase-out start, MFJ (IRS Notice 2024-80)'),
+  (2025, 'roth_ira_phaseout_end_mfj', 246000.000000, 'Roth IRA contribution MAGI phase-out end, MFJ (IRS Notice 2024-80)'),
+  (2025, 'roth_ira_phaseout_start_single', 150000.000000, 'Roth IRA contribution MAGI phase-out start, Single (IRS Notice 2024-80)'),
+  (2025, 'roth_ira_phaseout_end_single', 165000.000000, 'Roth IRA contribution MAGI phase-out end, Single (IRS Notice 2024-80)'),
+  (2025, 'roth_ira_phaseout_start_hoh', 150000.000000, 'Roth IRA contribution MAGI phase-out start, HoH (IRS Notice 2024-80)'),
+  (2025, 'roth_ira_phaseout_end_hoh', 165000.000000, 'Roth IRA contribution MAGI phase-out end, HoH (IRS Notice 2024-80)'),
+  (2025, 'hdhp_min_deductible_self', 1650.000000, 'HDHP minimum annual deductible, self-only (IRS Rev. Proc. 2024-25)'),
+  (2025, 'hdhp_min_deductible_family', 3300.000000, 'HDHP minimum annual deductible, family (IRS Rev. Proc. 2024-25)'),
   (2025, 'additional_std_deduction_65_married', 1600.000000, 'IRC 63(f) age-65+ additional standard deduction, per spouse, MFJ/MFS/QSS (Rev. Proc. 2024-40)'),
   (2025, 'additional_std_deduction_65_unmarried', 2000.000000, 'IRC 63(f) age-65+ additional standard deduction, Single/HoH (Rev. Proc. 2024-40)'),
   (2025, 'obbba_senior_deduction_per_person', 6000.000000, 'OBBBA temporary senior deduction, 2025-2028, per qualifying person 65+ (not CPI-indexed)'),
@@ -41,11 +52,22 @@ INSERT INTO contribution_limits (tax_year, limit_type, value, notes) VALUES
   (2026, 'fica_ss_rate', 0.062000, '6.2% employee share'),
   (2026, 'fica_medicare_rate', 0.014500, '1.45% employee share'),
   (2026, 'fica_medicare_surtax_rate', 0.009000, '0.9% Additional Medicare Tax'),
-  (2026, 'fica_medicare_surtax_threshold', 200000.000000, 'Single/HoH; MFJ is 250k'),
+  (2026, 'fica_medicare_surtax_threshold', 200000.000000, 'Additional Medicare Tax per-employee WITHHOLDING threshold (IRC 3102(f)); liability uses fica_medicare_surtax_liability_*'),
   (2026, 'supplemental_tax_rate', 0.220000, 'Flat supplemental rate'),
   (2026, 'standard_deduction_mfj', 32200.000000, 'IRS Rev. Proc. 2025-32'),
   (2026, 'standard_deduction_single', 16100.000000, 'IRS Rev. Proc. 2025-32'),
   (2026, 'standard_deduction_hoh', 24150.000000, 'IRS Rev. Proc. 2025-32'),
+  (2026, 'fica_medicare_surtax_liability_mfj', 250000.000000, 'Additional Medicare Tax liability threshold, MFJ combined Medicare wages (IRC 3101(b)(2), not indexed)'),
+  (2026, 'fica_medicare_surtax_liability_single', 200000.000000, 'Additional Medicare Tax liability threshold, Single (IRC 3101(b)(2), not indexed)'),
+  (2026, 'fica_medicare_surtax_liability_hoh', 200000.000000, 'Additional Medicare Tax liability threshold, HoH (IRC 3101(b)(2), not indexed)'),
+  (2026, 'roth_ira_phaseout_start_mfj', 242000.000000, 'Roth IRA contribution MAGI phase-out start, MFJ (IRS Notice 2025-67)'),
+  (2026, 'roth_ira_phaseout_end_mfj', 252000.000000, 'Roth IRA contribution MAGI phase-out end, MFJ (IRS Notice 2025-67)'),
+  (2026, 'roth_ira_phaseout_start_single', 153000.000000, 'Roth IRA contribution MAGI phase-out start, Single (IRS Notice 2025-67)'),
+  (2026, 'roth_ira_phaseout_end_single', 168000.000000, 'Roth IRA contribution MAGI phase-out end, Single (IRS Notice 2025-67)'),
+  (2026, 'roth_ira_phaseout_start_hoh', 153000.000000, 'Roth IRA contribution MAGI phase-out start, HoH (IRS Notice 2025-67)'),
+  (2026, 'roth_ira_phaseout_end_hoh', 168000.000000, 'Roth IRA contribution MAGI phase-out end, HoH (IRS Notice 2025-67)'),
+  (2026, 'hdhp_min_deductible_self', 1700.000000, 'HDHP minimum annual deductible, self-only (IRS Rev. Proc. 2025-19)'),
+  (2026, 'hdhp_min_deductible_family', 3400.000000, 'HDHP minimum annual deductible, family (IRS Rev. Proc. 2025-19)'),
   (2026, 'additional_std_deduction_65_married', 1650.000000, 'IRC 63(f) age-65+ additional standard deduction, per spouse, MFJ/MFS/QSS (Rev. Proc. 2025-32)'),
   (2026, 'additional_std_deduction_65_unmarried', 2050.000000, 'IRC 63(f) age-65+ additional standard deduction, Single/HoH (Rev. Proc. 2025-32)'),
   (2026, 'obbba_senior_deduction_per_person', 6000.000000, 'OBBBA temporary senior deduction, 2025-2028, per qualifying person 65+ (not CPI-indexed)'),
@@ -149,3 +171,9 @@ UPDATE contribution_limits SET value = 15750.000000, notes = 'OBBBA §70102 (sup
   WHERE tax_year = 2025 AND limit_type = 'standard_deduction_single' AND CAST(value AS NUMERIC) = 15000;
 UPDATE contribution_limits SET value = 23625.000000, notes = 'OBBBA §70102 (supersedes Rev. Proc. 2024-40)'
   WHERE tax_year = 2025 AND limit_type = 'standard_deduction_hoh' AND CAST(value AS NUMERIC) = 22500;
+
+-- Additional Medicare threshold notes (v0.8.8): the 200k row is the
+-- per-employee withholding threshold; the old notes implied it was the
+-- liability figure ("MFJ is 250k"). Notes only — the value is unchanged.
+UPDATE contribution_limits SET notes = 'Additional Medicare Tax per-employee WITHHOLDING threshold (IRC 3102(f)); liability uses fica_medicare_surtax_liability_*'
+  WHERE limit_type = 'fica_medicare_surtax_threshold' AND notes IN ('Surtax threshold', 'Single/HoH; MFJ is 250k');

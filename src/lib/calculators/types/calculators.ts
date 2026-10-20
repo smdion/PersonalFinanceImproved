@@ -4,8 +4,8 @@
 
 import type {
   PayPeriodType,
-  FilingStatusType,
   DeductionLine,
+  EarningLine,
   TaxBracketInput,
   ContributionAccountInput,
 } from "./shared";
@@ -32,6 +32,8 @@ export type BonusEstimate = {
   bonusFederalWithholding: number;
   bonusFica: number;
   bonusContributions: number;
+  /** The bonus's FICA wages: bonusGross less FICA-exempt payroll contributions the bonus check takes. */
+  bonusFicaWages: number;
 };
 
 export type PaycheckInput = {
@@ -43,6 +45,8 @@ export type PaycheckInput = {
   additionalFedWithholding: number; // W-4 Line 4c — flat extra $ added to PER-CHECK federal withholding after bracket withholding, never annualized and never applied to the supplemental bonus rate
   contributionAccounts: ContributionAccountInput[];
   deductions: DeductionLine[];
+  /** Other pay and taxable benefits on each check (beyond salary). */
+  earnings: EarningLine[];
   taxBrackets: TaxBracketInput;
   limits: Record<string, number>;
   ytdGrossEarnings: number;
@@ -57,10 +61,15 @@ export type PaycheckInput = {
 };
 
 export type PaycheckResult = {
+  /** Cash pay per check: salary ÷ periods + cash earnings. */
   gross: number;
+  /** The other pay / taxable-benefit lines on each check. */
+  earnings: EarningLine[];
   preTaxDeductions: DeductionLine[];
   federalTaxableGross: number;
   federalWithholding: number;
+  /** Per-period FICA wages: gross less Section 125 deductions and FICA-exempt payroll contributions. */
+  ficaWages: number;
   ficaSS: number;
   ficaMedicare: number;
   postTaxDeductions: DeductionLine[];
@@ -100,28 +109,6 @@ export type BlendedAnnualTotals = {
 };
 
 // --- Tax ---
-
-export type TaxInput = {
-  annualGross: number;
-  preTaxDeductionsAnnual: number;
-  filingStatus: FilingStatusType;
-  taxBrackets: TaxBracketInput;
-  w4CheckboxOverride: boolean | null; // null = auto-detect, true/false = user override
-  asOfDate: Date;
-};
-
-export type TaxResult = {
-  agi: number;
-  taxableIncome: number;
-  federalTax: number;
-  effectiveRate: number;
-  marginalRate: number;
-  ficaSS: number;
-  ficaMedicare: number;
-  totalTax: number;
-  w4CheckboxUsed: boolean;
-  warnings: string[];
-};
 
 // --- Budget ---
 

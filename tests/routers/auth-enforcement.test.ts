@@ -129,22 +129,22 @@ describe("auth enforcement", () => {
   // already used for budget above.
 
   describe("portfolioProcedure enforcement", () => {
-    it("viewer without portfolio permission cannot list performance accounts", async () => {
+    it("viewer without portfolio permission cannot list holding history", async () => {
       const session = createViewerSessionWithPermissions(["budget"]);
       const { caller, cleanup } = await createTestCaller(session);
       try {
-        await expect(caller.analytics.getAccounts()).rejects.toThrow();
+        await expect(caller.investments.listHoldingPeriods()).rejects.toThrow();
       } finally {
         cleanup();
       }
     });
 
-    it("viewer with portfolio permission can list performance accounts", async () => {
+    it("viewer with portfolio permission can list holding history", async () => {
       const session = createViewerSessionWithPermissions(["portfolio"]);
       const { caller, cleanup } = await createTestCaller(session);
       try {
-        const result = await caller.analytics.getAccounts();
-        expect(Array.isArray(result)).toBe(true);
+        const result = await caller.investments.listHoldingPeriods();
+        expect(Array.isArray(result.periods)).toBe(true);
       } finally {
         cleanup();
       }

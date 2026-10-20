@@ -14,6 +14,7 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { FormField, FormInput, FormSelect } from "@/components/forms";
+import { DEDUCTION_PRESETS } from "@/lib/config/paycheck-presets";
 
 export type DeductionFormValues = {
   jobId: number;
@@ -34,8 +35,9 @@ export function DeductionForm({
   const { data: jobs } = trpc.settings.jobs.list.useQuery();
   const [jobId, setJobId] = useState<number | null>(null);
   const [deductionName, setDeductionName] = useState("");
-  const [isPretax, setIsPretax] = useState(true);
-  const [ficaExempt, setFicaExempt] = useState(false);
+  const [presetKey, setPresetKey] = useState(DEDUCTION_PRESETS[0]!.key);
+  const preset =
+    DEDUCTION_PRESETS.find((p) => p.key === presetKey) ?? DEDUCTION_PRESETS[0]!;
 
   const canSubmit = jobId != null && deductionName.trim().length > 0;
 
@@ -44,8 +46,8 @@ export function DeductionForm({
     onSave({
       jobId,
       deductionName: deductionName.trim(),
-      isPretax,
-      ficaExempt,
+      isPretax: preset.isPretax,
+      ficaExempt: preset.ficaExempt,
     });
   };
 
@@ -76,24 +78,18 @@ export function DeductionForm({
         />
       </FormField>
 
-      <FormField label="Tax Treatment">
+      <FormField label="How your pay stub lists it">
         <FormSelect
-          value={isPretax ? "pretax" : "posttax"}
-          onChange={(e) => setIsPretax(e.target.value === "pretax")}
+          value={presetKey}
+          onChange={(e) => setPresetKey(e.target.value)}
         >
-          <option value="pretax">Pretax</option>
-          <option value="posttax">Post-tax</option>
+          {DEDUCTION_PRESETS.map((p) => (
+            <option key={p.key} value={p.key}>
+              {p.label}
+            </option>
+          ))}
         </FormSelect>
       </FormField>
-
-      <label className="text-secondary flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          checked={ficaExempt}
-          onChange={(e) => setFicaExempt(e.target.checked)}
-        />
-        FICA-exempt
-      </label>
 
       <div className="flex gap-2 pt-1">
         <button

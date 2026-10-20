@@ -47,6 +47,7 @@ import {
 import { roundToCents, safeDivide } from "@/lib/utils/math";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { getAge, isPriorYearContribWindow } from "@/lib/utils/date";
+import { ficaCapContext } from "@/lib/pure/contributions";
 import {
   resolveIrsLimit,
   resolvePriorYearLimit,
@@ -595,6 +596,11 @@ export const contributionRouter = createTRPCRouter({
             personalContribs,
             salary,
             periodsPerYear,
+            ficaCapContext(
+              limitsRecord,
+              person.dateOfBirth,
+              asOfDate.getFullYear(),
+            ),
             pay.bonusGross,
           );
           const rawContribs = [...jobContribs, ...personalContribs];

@@ -6,7 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { ComparisonSection } from "@/components/investments/comparison-section";
 import { HoldingsSection } from "@/components/investments/holdings-section";
-import { AnalyticsContent } from "../analytics/analytics-content";
+import { HoldingHistorySection } from "@/components/investments/holding-history-section";
 
 export function BenchmarksContent() {
   const user = useUser();
@@ -29,14 +29,7 @@ export function BenchmarksContent() {
       />
       <ComparisonSection />
       <HoldingsSection />
-      <details className="group">
-        <summary className="text-secondary hover:text-primary cursor-pointer text-sm font-medium">
-          Accounts SimpleFIN doesn&apos;t report holdings for
-        </summary>
-        <div className="mt-3">
-          <AnalyticsContent embedded />
-        </div>
-      </details>
+      <HoldingHistorySection />
     </div>
   );
 }

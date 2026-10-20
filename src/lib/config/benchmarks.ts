@@ -1,3 +1,4 @@
+import type { CompositionBucket } from "@/lib/config/enum-values";
 /**
  * What Ledgr compares your investments with. Each is priced with a real,
  * low-cost fund (total return: dividends reinvested), so "the benchmark"
@@ -143,3 +144,35 @@ export const VANGUARD_TDF_STOCK_SHARE: readonly {
   { yearsToRetirement: 0, stockShare: 0.5 },
   { yearsToRetirement: -7, stockShare: 0.3 },
 ];
+
+/** Windows (days) for the recent balance change; each shows once the stored
+ *  daily balances reach back that far. */
+export const RECENT_CHANGE_WINDOWS_DAYS: readonly number[] = [1, 7, 30, 90];
+
+/**
+ * A plain index fund standing in for each composition bucket — what the
+ * matched-mix line prices a household's own weights with, and the "same
+ * class, index fund" a cheaper-fund suggestion points to. Data, not code;
+ * `other` has no proxy and is shown as left out.
+ */
+export const BUCKET_INDEX_PROXIES: Readonly<
+  Record<CompositionBucket, { ticker: string; label: string } | null>
+> = {
+  us_equity: { ticker: "VTI", label: "Total US stock market (VTI)" },
+  intl_equity: { ticker: "VXUS", label: "Total international stocks (VXUS)" },
+  us_bond: { ticker: "BND", label: "Total US bonds (BND)" },
+  intl_bond: { ticker: "BNDX", label: "Total international bonds (BNDX)" },
+  tips: { ticker: "VTIP", label: "Short-term TIPS (VTIP)" },
+  cash: { ticker: "SGOV", label: "0–3 month Treasury bills (SGOV)" },
+  other: null,
+};
+
+/** Holding periods. An observed period (from daily holdings) ends when the
+ *  set of funds changes or the daily data skips more than
+ *  `observedMaxGapTradingDays` trading days (shares move with prices every
+ *  day, so they never split a period). Entered weights must sum to 1
+ *  within `weightSumTolerance` (rounding), as the current glide path's do. */
+export const HOLDING_PERIODS = {
+  observedMaxGapTradingDays: 3,
+  weightSumTolerance: 0.005,
+} as const;

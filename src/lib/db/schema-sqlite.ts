@@ -38,6 +38,7 @@ import type {
   FactsBasis,
   CompositionBucket,
   HoldingSource,
+  HoldingPeriodBasis,
   UtilityKind,
   UtilityUnit,
   StandInPreview,
@@ -137,7 +138,7 @@ export type ExtraPaycheckRoutingData = {
 //   6.  Self loans ................. selfLoans
 //   7.  Portfolio performance ...... performanceAccounts, portfolioSnapshots,
 //                                    portfolioAccounts, annualPerformance,
-//                                    accountPerformance, accountHoldings
+//                                    accountPerformance
 //   8.  Net worth (annual) ......... netWorthAnnual, homeImprovementItems,
 //                                    otherAssetItems, historicalNotes
 //   9.  Mortgages .................. mortgageLoans, mortgageWhatIfScenarios,
@@ -324,6 +325,33 @@ export const paycheckDeductions = sqliteTable(
       .default(false),
   },
   (table) => [index("paycheck_deductions_job_id_idx").on(table.jobId)],
+);
+
+/**
+ * Pay on a job's checks besides salary and bonus — structural only, like
+ * paycheck_deductions: what the line is and which taxes apply. The amount
+ * per check lives in the Salary Profile entry (`otherEarnings`, keyed by
+ * this id), the same axis as salary and bonus. `isCash` false = a taxable
+ * benefit that's never paid (imputed income, e.g. group-term life over
+ * $50k — IRC 79): taxed, but not take-home.
+ */
+export const paycheckEarnings = sqliteTable(
+  "paycheck_earnings",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    jobId: integer("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "cascade" }),
+    earningName: text("earning_name").notNull(),
+    isCash: integer("is_cash", { mode: "boolean" }).notNull().default(true),
+    federalTaxable: integer("federal_taxable", { mode: "boolean" })
+      .notNull()
+      .default(true),
+    ficaTaxable: integer("fica_taxable", { mode: "boolean" })
+      .notNull()
+      .default(true),
+  },
+  (table) => [index("paycheck_earnings_job_id_idx").on(table.jobId)],
 );
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -982,67 +1010,6 @@ export const accountPerformance = sqliteTable(
     index("account_performance_owner_id_idx").on(table.ownerPersonId),
     index("account_performance_perf_acct_idx").on(table.performanceAccountId),
     index("account_performance_is_active_idx").on(table.isActive),
-  ],
-);
-
-export const accountHoldings = sqliteTable(
-  "account_holdings",
-  {
-    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
-
-    // Which account and which snapshot this holding belongs to.
-    // Holdings are immutable once the snapshot is taken — updating
-    // holdings creates new rows under the new snapshot, not in-place edits.
-    performanceAccountId: integer("performance_account_id")
-      .notNull()
-      .references(() => performanceAccounts.id, { onDelete: "cascade" }),
-    snapshotId: integer("snapshot_id")
-      .notNull()
-      .references(() => portfolioSnapshots.id, { onDelete: "cascade" }),
-
-    ticker: text("ticker").notNull(),
-    name: text("name").notNull(),
-
-    // Weight in basis points (0–10000 = 0%–100% of the account balance).
-    // Dollar value is COMPUTED: portfolioAccount.amount × weightBps / 10000.
-    // Never store an independent dollar amount — that would create a second
-    // total that can silently diverge from the authoritative snapshot balance.
-    weightBps: integer("weight_bps").notNull(),
-
-    // Expense ratio as a decimal rate (not basis points).
-    // Matches decimal(12,6) convention used by all other rate columns
-    // (asset_class_params.mean_return, glide_path_allocations.allocation, etc.).
-    // Nullable = user hasn't entered it / FMP returned nothing.
-    expenseRatio: text("expense_ratio"),
-
-    // FK to asset_class_params.id — the same table the MC engine reads.
-    // Nullable = not yet classified.
-    assetClassId: integer("asset_class_id").references(
-      () => assetClassParams.id,
-      { onDelete: "set null" },
-    ),
-
-    // Source of the asset class assignment — surfaces to user so they
-    // know whether to trust or override it.
-    // 'sec' = filled in from stored SEC fund facts, 'manual' = user set it,
-    // 'fmp' = legacy rows filled from FMP before it was removed.
-    assetClassSource: text("asset_class_source")
-      .notNull()
-      .default("manual")
-      .$type<"sec" | "fmp" | "manual">(),
-  },
-  (table) => [
-    // Unique: one ticker entry per account per snapshot
-    uniqueIndex("account_holdings_acct_snap_ticker_idx").on(
-      table.performanceAccountId,
-      table.snapshotId,
-      table.ticker,
-    ),
-    // FK indexes (PostgreSQL doesn't auto-create these)
-    index("account_holdings_perf_acct_idx").on(table.performanceAccountId),
-    index("account_holdings_snapshot_idx").on(table.snapshotId),
-    index("account_holdings_asset_class_idx").on(table.assetClassId),
-    // Weight sanity check (per-row; sum across holdings is validated in the app)
   ],
 );
 
@@ -2238,6 +2205,67 @@ export const holdingObservations = sqliteTable(
 );
 
 /**
+ * What a tracked account held over a span of dates, before daily SimpleFIN
+ * holdings existed (or for an account with no feed): entered by the
+ * household or inferred (a proposal to confirm). Observed periods are NOT
+ * stored here — they're derived from holding_observations on read (one
+ * source of truth). endDate null = still held. Weights live in
+ * holding_period_weights. CHECKs are enforced in the app layer too —
+ * SQLite drops CHECK constraints.
+ */
+export const holdingPeriods = sqliteTable(
+  "holding_periods",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    // RESTRICT: entered history is costly to re-enter; deleting the
+    // account is refused while it has periods (see performance.delete).
+    performanceAccountId: integer("performance_account_id")
+      .notNull()
+      .references(() => performanceAccounts.id, { onDelete: "restrict" }),
+    startDate: text("start_date").notNull(),
+    endDate: text("end_date"),
+    basis: text("basis").$type<HoldingPeriodBasis>().notNull(),
+    /** For an inferred period: how well it explains the account's returns (0–1). */
+    fitQuality: text("fit_quality"),
+    notes: text("notes"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    index("holding_periods_account_start_idx").on(
+      table.performanceAccountId,
+      table.startDate,
+    ),
+  ],
+);
+
+/** One fund's share of a holding period (weights of a period sum to 1). */
+export const holdingPeriodWeights = sqliteTable(
+  "holding_period_weights",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    holdingPeriodId: integer("holding_period_id")
+      .notNull()
+      .references(() => holdingPeriods.id, { onDelete: "cascade" }),
+    securityId: integer("security_id")
+      .notNull()
+      .references(() => securities.id, { onDelete: "restrict" }),
+    weight: text("weight").notNull(),
+  },
+  (table) => [
+    uniqueIndex("holding_period_weights_period_security_idx").on(
+      table.holdingPeriodId,
+      table.securityId,
+    ),
+    index("holding_period_weights_security_idx").on(table.securityId),
+  ],
+);
+
+/**
  * Investment-account transactions exactly as SimpleFIN sent them. The kind
  * (contribution, fee, …) is computed on read; only an explicit override is
  * stored. HSA medical-spending descriptions are redacted at ingest, which
@@ -2678,6 +2706,7 @@ export const salaryProfiles = sqliteTable("salary_profiles", {
   name: text("name").notNull().unique(),
   description: text("description"),
   /** jobId → complete salary entry. A job either has ALL seventeen fields (a
+   *  — plus the optional `otherEarnings`, absent = none —
    *  real, complete number/election for this profile) or no key at all
    *  (this profile says nothing about that job — contributes $0, not a
    *  fallback to some other value). No partial entries — see
@@ -2704,6 +2733,8 @@ export const salaryProfiles = sqliteTable("salary_profiles", {
           include401kInBonus: boolean;
           includeBonusInContributions: boolean;
           extraPaycheckRouting: ExtraPaycheckRoutingData | null;
+          /** Other pay per check, by paycheck_earnings id; absent = none. */
+          otherEarnings?: Record<string, number>;
         }
       >
     >()

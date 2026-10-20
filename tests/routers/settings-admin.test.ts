@@ -121,6 +121,31 @@ describe("settings.appSettings", () => {
       }
     });
 
+    it("validates the Roth safety margin and HSA cash buffer as dollar amounts", async () => {
+      for (const key of ["roth_ira_direct_margin", "hsa_cash_buffer"]) {
+        await expect(
+          caller.settings.appSettings.upsert({ key, value: -5 }),
+        ).rejects.toThrow(new RegExp(`Invalid ${key}`));
+        await expect(
+          caller.settings.appSettings.upsert({ key, value: "lots" }),
+        ).rejects.toThrow(new RegExp(`Invalid ${key}`));
+        await caller.settings.appSettings.upsert({ key, value: 2500 });
+      }
+    });
+
+    it("validates bonus destinations (person id → budget | spending)", async () => {
+      await expect(
+        caller.settings.appSettings.upsert({
+          key: "bonus_destinations",
+          value: { "1": "vacation" },
+        }),
+      ).rejects.toThrow(/Invalid bonus_destinations/);
+      await caller.settings.appSettings.upsert({
+        key: "bonus_destinations",
+        value: { "1": "spending", "2": "budget" },
+      });
+    });
+
     it("validates milestone goals and checklist on write", async () => {
       await expect(
         caller.settings.appSettings.upsert({

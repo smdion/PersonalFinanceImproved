@@ -43,6 +43,27 @@
       "when": 1791858576742,
       "tag": "0005_v086_schema_cleanup",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1792446874052,
+      "tag": "0006_v088_holding_periods",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1792448704631,
+      "tag": "0007_v088_drop_account_holdings",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1792459105182,
+      "tag": "0008_v088_paycheck_earnings",
+      "breakpoints": true
     }
   ]
 }

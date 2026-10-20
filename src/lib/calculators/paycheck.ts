@@ -6,8 +6,8 @@
  *
  * Key concepts:
  *   - FICA base ≠ federal taxable base. Section 125 deductions (health insurance, marked ficaExempt)
- *     reduce BOTH FICA and income tax. Non-Section-125 pre-tax deductions (401k, HSA) only reduce
- *     income tax, NOT FICA.
+ *     and payroll contributions to an account type flagged payrollFicaExempt (HSA, within its
+ *     yearly cap) reduce BOTH FICA and income tax. 401k deferrals only reduce income tax, NOT FICA.
  *   - Federal withholding uses the IRS annualized method: multiply per-period taxable income by
  *     periods/year, look up tax in annual brackets, divide back by periods/year.
  *   - The bracket set passed in may be W-4 2(c) checked or unchecked — the tRPC layer selects the
@@ -29,7 +29,7 @@ import type {
   PeriodBreakdown,
   BonusEstimate,
 } from "./types";
-import { formatPercent } from "../utils/format";
+import { formatCurrency, formatPercent } from "../utils/format";
 import { roundToCents, safeDivide, sumBy } from "../utils/math";
 import { MS_PER_DAY } from "../constants";
 import { PAY_PERIOD_LABELS } from "../config/display-labels";
@@ -149,8 +149,40 @@ function computeSSWithholding(
   return remainingBase * ssRate;
 }
 
+/** Per-period payroll contribution that isn't FICA wages: the contribution,
+ *  up to its yearly FICA-exempt cap spread over the year. 0 when the
+ *  account's payroll money is FICA wages (cap null) or not payroll-deducted. */
+function regularFicaExemptPerPeriod(
+  ca: PaycheckInput["contributionAccounts"][number],
+  periodsPerYear: number,
+): number {
+  const cap = ca.ficaExemptAnnualCap;
+  if (!ca.isPayrollDeducted || cap === null || cap === undefined) return 0;
+  // Only pre-tax money skips FICA — an after-tax row (bad data, an old
+  // backup) is FICA wages, the same read-time rule as deductions.
+  if (!isPreTax(ca.taxTreatment)) return 0;
+  return Math.min(ca.perPeriodContribution, cap / periodsPerYear);
+}
+
+/**
+ * Federal and FICA withheld on the first `periods` regular checks of the
+ * year, from the year schedule — which charges full Social Security until
+ * the wage base is reached, unlike the per-check figure (the year's SS
+ * spread over every check). Bonus withholding isn't included.
+ */
+export function withheldThroughPeriod(
+  schedule: readonly PeriodBreakdown[],
+  periods: number,
+): { federal: number; fica: number } {
+  const done = schedule.slice(0, Math.max(0, periods));
+  return {
+    federal: roundToCents(sumBy(done, (p) => p.federalWithholding)),
+    fica: roundToCents(sumBy(done, (p) => p.ficaSS + p.ficaMedicare)),
+  };
+}
+
 /** Pre-tax treatments: traditional 401k ('pre_tax') and HSA ('hsa') both reduce taxable income. */
-function isPreTax(treatment: string): boolean {
+export function isPreTax(treatment: string): boolean {
   // lint-violation-ok: "hsa" here is the tax-treatment value (TaxTreatment enum), not an account category
   return treatment === "pre_tax" || treatment === "hsa";
 }
@@ -182,8 +214,27 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   }
 
   const periodsPerYear = getPeriodsPerYear(input.payPeriod);
+  // Other pay on each check: cash lines are paid (gross, net); non-cash
+  // lines (imputed income) are only taxed. Each line says which taxes
+  // apply, so a cash line exempt from a tax comes back out of that base.
+  const earnings = input.earnings ?? [];
+  const cashEarnings = sumBy(
+    earnings.filter((e) => e.isCash),
+    (e) => e.amount,
+  );
+  const sumTaxable = (tax: "federalTaxable" | "ficaTaxable") =>
+    sumBy(
+      earnings.filter((e) => !e.isCash && e[tax]),
+      (e) => e.amount,
+    ) -
+    sumBy(
+      earnings.filter((e) => e.isCash && !e[tax]),
+      (e) => e.amount,
+    );
+  const federalEarningsAdjustment = sumTaxable("federalTaxable");
+  const ficaEarningsAdjustment = sumTaxable("ficaTaxable");
   const gross = roundToCents(
-    safeDivide(input.annualSalary, periodsPerYear, 0)!,
+    safeDivide(input.annualSalary, periodsPerYear, 0)! + cashEarnings,
   );
 
   // ── Step 1: Classify deductions ──
@@ -205,8 +256,11 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
 
   // Source 2: Payroll-deducted contribution accounts (e.g. 401k, HSA)
   // Non-payroll accounts (IRA, brokerage) are skipped — they're contributed outside the paycheck.
-  // Contribution accounts are NEVER FICA-exempt. Only Section 125 health insurance
-  // deductions (from input.deductions) can be FICA-exempt.
+  // A contribution is FICA-exempt only when its account type says payroll
+  // money goes in under a §125 cafeteria plan (config payrollFicaExempt —
+  // HSA), up to its yearly cap (ficaExemptAnnualCap, sized server-side
+  // from the IRS limit less employer money). 401(k)/403(b) deferrals are
+  // always FICA wages.
   for (const ca of input.contributionAccounts) {
     if (!ca.isPayrollDeducted) continue;
     const line: DeductionLine = {
@@ -226,18 +280,29 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   const totalPostTax = sumBy(postTaxDeductions, (d) => d.amount);
 
   // ── Step 2: Compute FICA base ──
-  // FICA base = gross minus ONLY FICA-exempt deductions (Section 125 health/dental/vision).
-  // This is different from federal taxable gross because 401k and HSA reduce income tax but NOT FICA.
-  // Only items from input.deductions can be FICA-exempt; contribution accounts never are.
+  // FICA base = gross minus FICA-exempt money: Section 125 deductions
+  // (health/dental/vision) and payroll contributions to an account type
+  // that is FICA-exempt through payroll (HSA), within its yearly cap.
+  // 401(k) deferrals reduce income tax but NOT FICA.
+  // A deduction only counts as FICA-exempt when it is also pre-tax — a row
+  // flagged exempt but after-tax (bad data, an old backup) is FICA wages.
   const ficaExemptFromDeductions = sumBy(
-    input.deductions.filter((d) => d.ficaExempt),
+    input.deductions.filter((d) => d.ficaExempt && isPreTax(d.taxTreatment)),
     (d) => d.amount,
   );
-  const ficaBase = gross - ficaExemptFromDeductions;
+  const ficaExemptFromContribs = sumBy(input.contributionAccounts, (ca) =>
+    regularFicaExemptPerPeriod(ca, periodsPerYear),
+  );
+  const ficaBase =
+    gross -
+    ficaExemptFromDeductions -
+    ficaExemptFromContribs +
+    ficaEarningsAdjustment;
 
   // ── Step 3: Federal withholding (IRS annualized method) ──
   // Federal taxable gross = gross minus ALL pre-tax deductions (401k, HSA, health insurance, etc.)
-  const federalTaxableGross = gross - totalPreTax;
+  // plus taxable benefits not paid in cash (imputed income).
+  const federalTaxableGross = gross - totalPreTax + federalEarningsAdjustment;
 
   // Annualize for bracket lookup, then divide result back to per-period.
   // Pub 15-T Worksheet 1A line 1h: subtract the line 1g adjustment —
@@ -276,11 +341,20 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     // Full-year SS applies — every period pays SS
     ficaSS = ficaBase * ssRate;
   } else {
-    // Some periods will hit the cap. For the "current period" display, check YTD.
-    ficaSS = ficaBase * ssRate;
+    // The wage base is reached during the year: SS stops once it is. The
+    // per-check figure is the year's SS spread evenly, so per-check net
+    // × periods is the true annual take-home (checks before the cap pay
+    // more, after it none — the year schedule shows the timing).
+    // A caller that knows this check is already past the base (YTD) gets
+    // this check's real figure instead.
     if (input.ytdGrossEarnings > 0 && input.ytdGrossEarnings >= ssWageBase) {
       ficaSS = 0;
       warnings.push("SS wage base exceeded for this period");
+    } else {
+      ficaSS = (ssWageBase * ssRate) / periodsPerYear;
+      warnings.push(
+        `Social Security stops once your pay for the year passes ${formatCurrency(ssWageBase)}; per-check figures average it over the year.`,
+      );
     }
   }
 
@@ -300,7 +374,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
 
   // ── Step 6: Bonus estimate ──
   // Uses the IRS supplemental flat rate (e.g. 22%) instead of marginal bracket rate.
-  const bonusEstimate = calculateBonus(input, marginalRate);
+  const bonusEstimate = calculateBonus(input, marginalRate, annualFicaBase);
 
   // ── Step 7: Extra paycheck months ──
   // For biweekly pay, 2 months per year have 3 paydays instead of 2.
@@ -365,9 +439,11 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
 
   return {
     gross,
+    earnings,
     preTaxDeductions,
     federalTaxableGross,
     federalWithholding: roundToCents(federalWithholding),
+    ficaWages: roundToCents(ficaBase),
     ficaSS: roundToCents(ficaSS),
     ficaMedicare: roundToCents(ficaMedicare),
     postTaxDeductions,
@@ -389,8 +465,8 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
  *
  * Bonus gross = salary × bonus% × (months worked in bonus year / 12).
  * Federal withholding uses the supplemental flat rate (e.g. 22%), NOT the marginal bracket rate.
- * FICA is applied at full rates (SS + Medicare). SS wage base cap is not checked here — this is
- * a rough estimate; actual cap depends on when the bonus is paid relative to YTD earnings.
+ * FICA is applied to the bonus's FICA wages; SS only on the wage-base room the year's regular
+ * FICA wages leave.
  *
  * If `includeContribInBonus` is true, payroll-deducted contributions (e.g. 401k) are subtracted
  * from the bonus net. This matches employers who withhold retirement contributions from bonuses.
@@ -420,6 +496,8 @@ export function bonusCheckContribution(
 function calculateBonus(
   input: PaycheckInput,
   _marginalRate: number,
+  /** Regular pay's FICA wages for the year — what has used the SS wage base before the bonus. */
+  regularFicaWagesAnnual: number,
 ): BonusEstimate {
   if (input.bonusPercent <= 0 && input.bonusOverride === null) {
     return {
@@ -428,6 +506,7 @@ function calculateBonus(
       bonusFederalWithholding: 0,
       bonusFica: 0,
       bonusContributions: 0,
+      bonusFicaWages: 0,
     };
   }
 
@@ -448,16 +527,35 @@ function calculateBonus(
     bonusGross * input.supplementalTaxRate,
   );
 
-  // FICA on bonus — respect SS wage base cap using YTD salary earnings
+  // FICA on bonus. Its FICA wages are the bonus less any FICA-exempt
+  // payroll contribution the bonus check takes (HSA, within the cap the
+  // regular checks haven't used). SS only on the wage-base room the year's
+  // regular FICA wages leave.
   const ssRate = input.taxBrackets.socialSecurityRate;
   const medRate = input.taxBrackets.medicareRate;
   const ssWageBase = input.taxBrackets.socialSecurityWageBase;
-  // YTD salary already subject to SS; only tax bonus up to remaining cap room
-  const ytdSalaryForSS = Math.min(input.annualSalary, ssWageBase);
-  const ssCapRoom = Math.max(0, ssWageBase - ytdSalaryForSS);
-  const bonusSsTaxable = Math.min(bonusGross, ssCapRoom);
+  const periodsPerYear = getPeriodsPerYear(input.payPeriod);
+  const bonusFicaExempt = input.includeContribInBonus
+    ? sumBy(input.contributionAccounts, (ca) => {
+        const cap = ca.ficaExemptAnnualCap;
+        if (cap === null || cap === undefined) return 0;
+        if (!isPreTax(ca.taxTreatment)) return 0;
+        const capLeft =
+          cap - regularFicaExemptPerPeriod(ca, periodsPerYear) * periodsPerYear;
+        return Math.min(
+          bonusCheckContribution(ca, bonusGross),
+          Math.max(0, capLeft),
+        );
+      })
+    : 0;
+  const bonusFicaWages = Math.max(0, bonusGross - bonusFicaExempt);
+  const ssCapRoom = Math.max(
+    0,
+    ssWageBase - Math.min(regularFicaWagesAnnual, ssWageBase),
+  );
+  const bonusSsTaxable = Math.min(bonusFicaWages, ssCapRoom);
   const bonusFicaSS = roundToCents(bonusSsTaxable * ssRate);
-  const bonusFicaMed = roundToCents(bonusGross * medRate);
+  const bonusFicaMed = roundToCents(bonusFicaWages * medRate);
   const bonusFica = bonusFicaSS + bonusFicaMed;
 
   // Optionally deduct payroll contributions (e.g. 401k) from bonus paycheck.
@@ -479,6 +577,7 @@ function calculateBonus(
     bonusFederalWithholding,
     bonusFica,
     bonusContributions,
+    bonusFicaWages,
   };
 }
 
@@ -849,8 +948,9 @@ function buildYearSchedule(
       ? bonusEstimate.bonusFederalWithholding
       : 0;
 
-    // FICA base for this period includes bonus gross (bonus is FICA-taxable)
-    const periodFicaBase = ficaBase + periodBonusGross;
+    // FICA base for this period includes the bonus's FICA wages
+    const periodBonusFicaWages = isBonus ? bonusEstimate.bonusFicaWages : 0;
+    const periodFicaBase = ficaBase + periodBonusFicaWages;
     ytdFicaBase += periodFicaBase;
 
     // Social Security tax: three cases based on where we are relative to the wage base cap
@@ -865,7 +965,7 @@ function buildYearSchedule(
 
     // Split FICA between regular and bonus portions for display
     const regularFicaBase = ficaBase;
-    const bonusFicaBase = periodBonusGross;
+    const bonusFicaBase = periodBonusFicaWages;
     const totalFicaThisPeriod = periodSS + periodMed;
     // Attribute FICA proportionally between regular pay and bonus
     const bonusFicaPortion =
@@ -1180,12 +1280,7 @@ export function calculateBlendedAnnual(
     const segFederal = pc.federalWithholding;
     const segPreTax = sumBy(pc.preTaxDeductions, (d) => d.amount);
     const segPostTax = sumBy(pc.postTaxDeductions, (d) => d.amount);
-    // FICA base: gross minus only FICA-exempt deductions (same logic as calculatePaycheck)
-    const ficaExempt = sumBy(
-      pc.preTaxDeductions.filter((d) => d.ficaExempt),
-      (d) => d.amount,
-    );
-    const segFicaBase = segGross - ficaExempt;
+    const segFicaBase = pc.ficaWages;
 
     for (let p = seg.startPeriod; p <= seg.endPeriod; p++) {
       totalGross += segGross;

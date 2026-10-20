@@ -41,6 +41,7 @@ export const SEARCH_KEYWORDS: Record<string, readonly string[]> = {
   ],
   "/tax-buckets": ["roth", "traditional", "basis", "tax location"],
   "/tax-optimization": ["roth conversion", "irmaa", "brackets", "aca"],
+  "/taxes": ["roth ira", "backdoor", "magi", "pro-rata", "fica", "medicare"],
   "/tools": ["relocation", "move", "cost of living"],
   "/settings": [
     "irs limits",

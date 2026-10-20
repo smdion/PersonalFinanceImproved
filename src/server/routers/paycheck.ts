@@ -9,7 +9,7 @@ import {
   calculateBlendedAnnual,
 } from "@/lib/calculators/paycheck";
 import type { SalarySegment } from "@/lib/calculators/paycheck";
-import { calculateTax } from "@/lib/calculators/tax";
+import { calculateHouseholdTax } from "@/lib/calculators/tax";
 import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
 import {
   toNumber,
@@ -43,12 +43,20 @@ import {
 import type {
   DeductionLine,
   TaxBracketInput,
-  TaxInput,
   BlendedAnnualTotals,
 } from "@/lib/calculators/types";
-import { computeHouseholdTax } from "@/lib/pure/tax";
+import {
+  computeAnnualEarnings,
+  sumHouseholdIncome,
+} from "@/lib/pure/household-income";
+import { rothIraSummary } from "@/lib/pure/roth-ira";
+import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
+import { medicareLiabilityKey } from "@/lib/config/tax-params";
+import { hsaCashBuffers } from "@/lib/pure/cash-positions";
+import { isHsaCategory } from "@/lib/config/account-types";
 import { findActiveJob } from "@/lib/pure/profiles";
 import { resolveTaxParams } from "@/lib/config/tax-params";
+import { ficaCapContext } from "@/lib/pure/contributions";
 
 /**
  * The standard deduction Pub 15-T's withholding tables were built on, read
@@ -129,7 +137,7 @@ export function buildBracketInput(
 /**
  * Annual-liability variant of buildBracketInput: same limits, but brackets
  * reshaped into real Form 1040 taxable-income space via
- * toTaxableIncomeBrackets (calculateTax's own standardDeduction
+ * toTaxableIncomeBrackets (calculateHouseholdTax's own standardDeduction
  * subtraction was double-counting against the un-reshaped Pub 15-T
  * withholding brackets). Requires the standard (non-2c) row — the 2(c)
  * half-tables have no 1040 analogue.
@@ -195,6 +203,7 @@ export const paycheckRouter = createTRPCRouter({
         allLimitRows,
         allBracketRows,
         allTaxParams,
+        allEarnings,
       ] = await Promise.all([
         getAllPeople(ctx.db),
         ctx.db.select().from(schema.jobs),
@@ -206,6 +215,7 @@ export const paycheckRouter = createTRPCRouter({
         ctx.db.select().from(schema.contributionLimits),
         ctx.db.select().from(schema.taxBrackets),
         ctx.db.select().from(schema.taxParams),
+        ctx.db.select().from(schema.paycheckEarnings),
       ]);
 
       // One resolver, same as the retirement engine — but "null" on a
@@ -315,7 +325,7 @@ export const paycheckRouter = createTRPCRouter({
               job: null,
               salary: 0,
               paycheck: null,
-              tax: null,
+              earnings: null,
               rawDeductions: [],
               rawContribs: [],
               incompleteAccountIds,
@@ -340,7 +350,7 @@ export const paycheckRouter = createTRPCRouter({
               job: jobForClient,
               salary: 0,
               paycheck: null,
-              tax: null,
+              earnings: null,
               rawDeductions: [],
               rawContribs: [],
               incompleteAccountIds,
@@ -378,29 +388,36 @@ export const paycheckRouter = createTRPCRouter({
           const jobDeductions = profileResult.deductions.filter(
             (d) => d.jobId === activeJob.id,
           );
-          const deductions: DeductionLine[] = jobDeductions.map((d) => ({
-            name: d.deductionName,
+          const deductions: DeductionLine[] = jobDeductions.map((d) =>
             // A sandbox edit is one more layer on top of the profile-
             // resolved amount, applied here (not a second pass after
             // calculatePaycheck) so it's the SAME arithmetic every other
             // deduction goes through.
-            amount:
+            deductionLine(
+              d,
               deductionEditMap.get(d.id) ?? toNumber(String(d.amountPerPeriod)),
-            taxTreatment: d.isPretax
-              ? ("pre_tax" as const)
-              : ("after_tax" as const),
-            ficaExempt: d.ficaExempt,
-          }));
+            ),
+          );
+          // Other pay: rows for this job, amounts from its Salary Profile
+          // entry (the same axis as salary and bonus).
+          const earningLinesForJob = earningLines(
+            allEarnings.filter((e) => e.jobId === activeJob.id),
+            salaryProfileActiveMap.get(activeJob.id)?.otherEarnings,
+          );
           // Hypothetical additions have no DB row — appended for the
           // duration of this request only, never written anywhere.
           for (const addition of input?.sandboxDeductionAdditions ?? []) {
             if (addition.personId !== person.id) continue;
-            deductions.push({
-              name: addition.name,
-              amount: addition.amountPerPeriod,
-              taxTreatment: addition.isPretax ? "pre_tax" : "after_tax",
-              ficaExempt: false,
-            });
+            deductions.push(
+              deductionLine(
+                {
+                  deductionName: addition.name,
+                  isPretax: addition.isPretax,
+                  ficaExempt: addition.ficaExempt,
+                },
+                addition.amountPerPeriod,
+              ),
+            );
           }
 
           const jobContribs = effectiveContribs.filter(
@@ -425,6 +442,7 @@ export const paycheckRouter = createTRPCRouter({
             personalContribs,
             salary,
             periodsPerYear,
+            ficaCapContext(limitsRecord, person.dateOfBirth, taxYear),
             contributionPay(activeJob, salary, bonusTerms, comp.bonusOverride)
               .bonusGross,
           );
@@ -439,6 +457,7 @@ export const paycheckRouter = createTRPCRouter({
             bonusOverride: comp.bonusOverride,
             contributionAccounts: contribAccounts,
             deductions,
+            earnings: earningLinesForJob,
             taxBrackets: taxBracketInput,
             limitsMap,
             limitsRecord,
@@ -516,32 +535,17 @@ export const paycheckRouter = createTRPCRouter({
             }
           }
 
-          // Annual tax estimate using non-checkbox brackets
-          const annualBracketRow = allBrackets.find(
-            (b) =>
-              b.filingStatus === activeJob.w4FilingStatus &&
-              b.w4Checkbox === false,
-          );
-
-          let tax = null;
-          if (annualBracketRow) {
-            const annualBracketInput = buildLiabilityBracketInput(
-              annualBracketRow,
-              limitsMap,
-            );
-            const preTaxAnnual =
-              paycheck.preTaxDeductions.reduce((s, d) => s + d.amount, 0) *
-              periodsPerYear;
-            const taxInput: TaxInput = {
-              annualGross: salary,
-              preTaxDeductionsAnnual: preTaxAnnual,
-              filingStatus: activeJob.w4FilingStatus!,
-              taxBrackets: annualBracketInput,
-              w4CheckboxOverride: null,
-              asOfDate,
-            };
-            tax = calculateTax(taxInput);
-          }
+          // This person's year: salary + the resolved bonus, pre-tax money
+          // and FICA wages — what the household tax and every income
+          // figure read (household annual income, DESIGN.md).
+          const earnings = computeAnnualEarnings({
+            salary,
+            periodsPerYear,
+            paycheck,
+            contributionAccounts: contribAccounts,
+            deductions,
+            includeContribInBonus: paycheckInput.includeContribInBonus,
+          });
 
           const rawContribs = [...jobContribs, ...personalContribs];
           const budgetOverride = activeJob.budgetPeriodsPerMonth ?? null;
@@ -570,8 +574,19 @@ export const paycheckRouter = createTRPCRouter({
             paycheck,
             fullFormulaBonusEstimate,
             blendedAnnual,
-            tax,
+            earnings,
             rawDeductions: jobDeductions,
+            /** This job's other-pay lines with their per-check amount from
+             *  the Salary Profile entry (0 when it sets none). */
+            earningRows: allEarnings
+              .filter((e) => e.jobId === activeJob.id)
+              .map((e) => ({
+                ...e,
+                amount:
+                  salaryProfileActiveMap.get(activeJob.id)?.otherEarnings?.[
+                    String(e.id)
+                  ] ?? 0,
+              })),
             rawContribs,
             budgetPerMonth: getRegularPeriodsPerMonth(
               periodsPerYear,
@@ -591,56 +606,66 @@ export const paycheckRouter = createTRPCRouter({
         (c) => c.isActive && c.ownership === "joint",
       );
 
-      // Household-level tax calculation for MFJ filers.
-      // Per-person calculateTax gives each person the full MFJ standard deduction,
-      // which double-counts it. The correct approach: combine all incomes, apply
-      // ONE standard deduction, walk brackets once for federal. FICA stays per-person.
-      const activePeople = results.filter((r) => r.paycheck && r.tax && r.job);
+      // Household annual income and tax. Federal on the combined income
+      // with ONE standard deduction; FICA per person on FICA wages;
+      // Additional Medicare on the household's combined Medicare wages
+      // above the filing status's liability threshold.
+      const earners = results.filter((r) => r.paycheck && r.earnings && r.job);
+      const householdIncome =
+        earners.length > 0
+          ? sumHouseholdIncome(earners.map((r) => r.earnings!))
+          : null;
       let householdTax = null;
-      if (activePeople.length > 0) {
-        const filingStatus = activePeople[0]!.job!.w4FilingStatus!;
+      if (earners.length > 0) {
+        const filingStatus = earners[0]!.job!.w4FilingStatus!;
         const bracketRow = allBrackets.find(
           (b) => b.filingStatus === filingStatus && b.w4Checkbox === false,
         );
         if (bracketRow) {
-          const bracketInput = buildLiabilityBracketInput(
-            bracketRow,
-            limitsMap,
-          );
-          const combinedGross = activePeople.reduce((s, r) => s + r.salary, 0);
-          const combinedPreTax = activePeople.reduce((s, r) => {
-            const ppy = getPeriodsPerYear(r.job!.payPeriod!);
-            return (
-              s +
-              r.paycheck!.preTaxDeductions.reduce((ss, d) => ss + d.amount, 0) *
-                ppy
-            );
-          }, 0);
-          const combinedTax = calculateTax({
-            annualGross: combinedGross,
-            preTaxDeductionsAnnual: combinedPreTax,
-            filingStatus,
-            taxBrackets: bracketInput,
-            w4CheckboxOverride: null,
-            asOfDate,
+          householdTax = calculateHouseholdTax({
+            people: earners.map((r) => r.earnings!),
+            taxBrackets: buildLiabilityBracketInput(bracketRow, limitsMap),
+            medicareLiabilityThreshold:
+              limitsRecord[medicareLiabilityKey(filingStatus)] ?? null,
           });
-          // Use combined federal tax but per-person FICA (each has own SS wage base cap)
-          householdTax = computeHouseholdTax(
-            activePeople.map((r) => ({
-              salary: r.salary,
-              preTaxDeductionsAnnual: 0, // already factored into combinedTax
-              ficaSS: r.tax?.ficaSS ?? 0,
-              ficaMedicare: r.tax?.ficaMedicare ?? 0,
-            })),
-            combinedTax,
-          );
         }
       }
+
+      const rothIra = rothIraSummary({
+        filingStatus: earners[0]?.job?.w4FilingStatus ?? null,
+        taxYear,
+        limits: limitsRecord,
+        people: results.map((r) => ({
+          personId: r.person.id,
+          name: r.person.name,
+          birthYear: Number(r.person.dateOfBirth.slice(0, 4)),
+          earnings: r.earnings,
+          jobAccountTypes: r.rawContribs
+            .filter((c) => c.jobId !== null)
+            .map((c) => c.accountType),
+        })),
+      });
+
+      // Default cash to keep in each person's HSA: the year's HDHP minimum
+      // deductible for their coverage (from their HSA contribution account).
+      const hsaBuffers = hsaCashBuffers({
+        limits: limitsRecord,
+        people: results.map((r) => ({
+          personId: r.person.id,
+          hsaCoverageType:
+            r.rawContribs.find(
+              (c) => isHsaCategory(c.accountType) && c.hsaCoverageType,
+            )?.hsaCoverageType ?? null,
+        })),
+      });
 
       return {
         people: results,
         jointContribs,
+        householdIncome,
         householdTax,
+        rothIra,
+        hsaBuffers,
         // The tax-data vintage this summary was priced under — for a
         // "Tax data: YYYY" indicator, matching the retirement projection side.
         taxYear,

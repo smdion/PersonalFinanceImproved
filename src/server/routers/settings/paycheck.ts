@@ -142,6 +142,35 @@ const deductionInput = z.object({
   ficaExempt: z.boolean().default(false),
 });
 
+// Section 125 money is pre-tax for income tax AND FICA; an after-tax
+// deduction can't skip FICA. The paycheck calculator also ignores the flag
+// on an after-tax row (old backups), so this guards new writes.
+const ficaExemptRequiresPretax = (data: {
+  isPretax: boolean;
+  ficaExempt: boolean;
+}) => !data.ficaExempt || data.isPretax;
+const ficaExemptRequiresPretaxIssue = {
+  message: "A FICA-exempt deduction must also be pre-tax",
+  path: ["ficaExempt"],
+};
+
+// Other pay on a job's checks — structural only (the per-check amount is
+// the Salary Profile entry's `otherEarnings`, like salary and bonus).
+const earningInput = z
+  .object({
+    jobId: z.number().int(),
+    earningName: z.string().trim().min(1),
+    isCash: z.boolean(),
+    federalTaxable: z.boolean(),
+    ficaTaxable: z.boolean(),
+  })
+  // A benefit that's neither paid nor taxed changes nothing — almost
+  // certainly a mistake.
+  .refine((e) => e.isCash || e.federalTaxable || e.ficaTaxable, {
+    message: "A benefit that isn't paid must be taxed by something",
+    path: ["isCash"],
+  });
+
 // --- Procedures ---
 
 export const paycheckProcedures = {
@@ -519,6 +548,65 @@ export const paycheckProcedures = {
       ),
   }),
 
+  earnings: createTRPCRouter({
+    list: protectedProcedure.query(({ ctx }) =>
+      ctx.db
+        .select()
+        .from(schema.paycheckEarnings)
+        .orderBy(asc(schema.paycheckEarnings.jobId)),
+    ),
+    // Same permission level as deductions: structure only, the amount is
+    // the Salary Profile's.
+    create: contributionProfileProcedure
+      .input(earningInput)
+      .mutation(({ ctx, input }) =>
+        ctx.db
+          .insert(schema.paycheckEarnings)
+          .values(input)
+          .returning()
+          .then((r) => r[0]),
+      ),
+    update: contributionProfileProcedure
+      .input(z.object({ id: z.number().int() }).and(earningInput))
+      .mutation(({ ctx, input: { id, ...data } }) =>
+        ctx.db
+          .update(schema.paycheckEarnings)
+          .set(data)
+          .where(eq(schema.paycheckEarnings.id, id))
+          .returning()
+          .then((r) => r[0]),
+      ),
+    // Also drops its amount from every Salary Profile, so no profile keeps
+    // an amount for a line that no longer exists.
+    delete: adminProcedure
+      .input(z.object({ id: z.number().int() }))
+      .mutation(({ ctx, input }) =>
+        ctx.db.transaction(async (tx) => {
+          const profiles = await tx.select().from(schema.salaryProfiles);
+          for (const p of profiles) {
+            let changed = false;
+            const salaries = Object.fromEntries(
+              Object.entries(p.salaries).map(([jobId, entry]) => {
+                const amounts = entry.otherEarnings;
+                if (!amounts || !(String(input.id) in amounts))
+                  return [jobId, entry];
+                changed = true;
+                const { [String(input.id)]: _drop, ...rest } = amounts;
+                return [jobId, { ...entry, otherEarnings: rest }];
+              }),
+            );
+            if (changed)
+              await tx
+                .update(schema.salaryProfiles)
+                .set({ salaries })
+                .where(eq(schema.salaryProfiles.id, p.id));
+          }
+          await tx
+            .delete(schema.paycheckEarnings)
+            .where(eq(schema.paycheckEarnings.id, input.id));
+        }),
+      ),
+  }),
   deductions: createTRPCRouter({
     list: protectedProcedure.query(({ ctx }) =>
       ctx.db
@@ -534,7 +622,12 @@ export const paycheckProcedures = {
     // so gating identity higher than the value that depends on it doesn't
     // make sense. delete stays admin — more destructive, not requested.
     create: contributionProfileProcedure
-      .input(deductionInput)
+      .input(
+        deductionInput.refine(
+          ficaExemptRequiresPretax,
+          ficaExemptRequiresPretaxIssue,
+        ),
+      )
       .mutation(({ ctx, input }) =>
         ctx.db
           .insert(schema.paycheckDeductions)
@@ -543,7 +636,12 @@ export const paycheckProcedures = {
           .then((r) => r[0]),
       ),
     update: contributionProfileProcedure
-      .input(z.object({ id: z.number().int() }).extend(deductionInput.shape))
+      .input(
+        z
+          .object({ id: z.number().int() })
+          .extend(deductionInput.shape)
+          .refine(ficaExemptRequiresPretax, ficaExemptRequiresPretaxIssue),
+      )
       .mutation(({ ctx, input: { id, ...data } }) =>
         ctx.db
           .update(schema.paycheckDeductions)

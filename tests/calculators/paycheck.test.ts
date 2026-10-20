@@ -10,9 +10,14 @@ import {
   monthsElapsedYtd,
   periodsElapsedYtd,
   getExtraPaycheckMonthKeys,
+  withheldThroughPeriod,
   type SalarySegment,
 } from "@/lib/calculators/paycheck";
-import type { PaycheckResult } from "@/lib/calculators/types";
+import type {
+  ContributionAccountInput,
+  PaycheckInput,
+  PaycheckResult,
+} from "@/lib/calculators/types";
 import { PERSON_A_PAYCHECK_INPUT, PERSON_B_PAYCHECK_INPUT } from "./fixtures";
 
 describe("calculatePaycheck", () => {
@@ -232,6 +237,180 @@ describe("calculatePaycheck", () => {
     });
   });
 
+  describe("FICA wages", () => {
+    const hsa = (
+      perPeriod: number,
+      cap: number | null,
+      extra: Partial<ContributionAccountInput> = {},
+    ): ContributionAccountInput => ({
+      name: "HSA",
+      annualContribution: perPeriod * 26,
+      perPeriodContribution: perPeriod,
+      rateOfGross: null,
+      taxTreatment: "hsa",
+      isPayrollDeducted: true,
+      group: "portfolio",
+      employerMatch: 0,
+      employerMatchTaxTreatment: "pre_tax",
+      ficaExemptAnnualCap: cap,
+      ...extra,
+    });
+    const base: PaycheckInput = {
+      ...PERSON_A_PAYCHECK_INPUT,
+      annualSalary: 104_000,
+      deductions: [],
+      contributionAccounts: [],
+      bonusPercent: 0,
+    };
+    const gross = 104_000 / 26;
+    const { socialSecurityRate: ssRate, medicareRate: medRate } =
+      base.taxBrackets;
+
+    it("payroll HSA money isn't FICA wages", () => {
+      const r = calculatePaycheck({
+        ...base,
+        contributionAccounts: [hsa(200, Infinity)],
+      });
+      expect(r.ficaWages).toBeCloseTo(gross - 200, 2);
+      expect(r.ficaSS).toBeCloseTo((gross - 200) * ssRate, 2);
+      expect(r.ficaMedicare).toBeCloseTo((gross - 200) * medRate, 2);
+    });
+
+    it("a contribution whose account type is FICA wages (cap null) stays in", () => {
+      const r = calculatePaycheck({
+        ...base,
+        contributionAccounts: [hsa(200, null)],
+      });
+      expect(r.ficaWages).toBeCloseTo(gross, 2);
+    });
+
+    it("a non-payroll contribution doesn't lower FICA wages", () => {
+      const r = calculatePaycheck({
+        ...base,
+        contributionAccounts: [
+          hsa(200, Infinity, { isPayrollDeducted: false }),
+        ],
+      });
+      expect(r.ficaWages).toBeCloseTo(gross, 2);
+    });
+
+    it("only the part within the yearly cap is exempt", () => {
+      // Cap $2,600/yr = $100 per check; $200 contributed per check.
+      const r = calculatePaycheck({
+        ...base,
+        contributionAccounts: [hsa(200, 2600)],
+      });
+      expect(r.ficaWages).toBeCloseTo(gross - 100, 2);
+    });
+
+    it("an after-tax deduction flagged FICA-exempt is still FICA wages", () => {
+      const r = calculatePaycheck({
+        ...base,
+        deductions: [
+          {
+            name: "Bad row",
+            amount: 50,
+            taxTreatment: "after_tax",
+            ficaExempt: true,
+          },
+          {
+            name: "Medical",
+            amount: 30,
+            taxTreatment: "pre_tax",
+            ficaExempt: true,
+          },
+        ],
+      });
+      expect(r.ficaWages).toBeCloseTo(gross - 30, 2);
+    });
+
+    it("an after-tax row on an HSA isn't FICA-exempt (read-time rule, like deductions)", () => {
+      const r = calculatePaycheck({
+        ...base,
+        contributionAccounts: [
+          hsa(200, Infinity, { taxTreatment: "after_tax" }),
+        ],
+      });
+      expect(r.ficaWages).toBeCloseTo(gross, 2);
+    });
+
+    it("YTD withheld comes from the year schedule — full SS until the base, not the average", () => {
+      const wageBase = base.taxBrackets.socialSecurityWageBase;
+      const r = calculatePaycheck({ ...base, annualSalary: wageBase * 1.5 });
+      const first10 = withheldThroughPeriod(r.yearSchedule, 10);
+      // Ten full-rate checks, well before the base is reached.
+      expect(first10.fica).toBeCloseTo(
+        10 * r.ficaWages * (ssRate + medRate),
+        0,
+      );
+      expect(first10.fica).toBeGreaterThan(10 * (r.ficaSS + r.ficaMedicare));
+    });
+
+    it("over the wage base, per-check SS is the year's SS averaged over the checks", () => {
+      const wageBase = base.taxBrackets.socialSecurityWageBase;
+      const r = calculatePaycheck({ ...base, annualSalary: wageBase * 1.5 });
+      expect(r.ficaSS).toBeCloseTo((wageBase * ssRate) / 26, 2);
+      expect(r.warnings.some((w) => w.includes("Social Security stops"))).toBe(
+        true,
+      );
+      // The year schedule pays the same total, front-loaded.
+      const scheduleSS = r.yearSchedule.reduce((s, p) => s + p.ficaSS, 0);
+      expect(scheduleSS).toBeCloseTo(wageBase * ssRate, 0);
+    });
+
+    it("bonus SS room is what the year's regular FICA wages leave", () => {
+      const wageBase = base.taxBrackets.socialSecurityWageBase;
+      // Regular gross just under the wage base; the HSA brings FICA wages
+      // $5,200 lower, which leaves that much more room for the bonus.
+      const salary = wageBase - 1000;
+      const r = calculatePaycheck({
+        ...base,
+        annualSalary: salary,
+        contributionAccounts: [hsa(200, Infinity)],
+        includeContribInBonus: false,
+        bonusOverride: 20_000,
+      });
+      const regularFicaWages = r.ficaWages * 26;
+      const ssTaxable = Math.min(20_000, wageBase - regularFicaWages);
+      expect(r.bonusEstimate.bonusFicaWages).toBe(20_000);
+      expect(r.bonusEstimate.bonusFica).toBeCloseTo(
+        ssTaxable * ssRate + 20_000 * medRate,
+        1,
+      );
+    });
+
+    it("an HSA contribution the bonus check takes is exempt only within the cap left", () => {
+      // Percent-of-pay HSA at 2%: $80/check and $400 of a $20,000 bonus.
+      const pct = hsa(80, 26 * 80 + 150, { rateOfGross: 0.02 });
+      const r = calculatePaycheck({
+        ...base,
+        contributionAccounts: [pct],
+        includeContribInBonus: true,
+        bonusOverride: 20_000,
+      });
+      // Regular checks use 26 × $80 of the cap; $150 is left for the bonus.
+      expect(r.bonusEstimate.bonusFicaWages).toBeCloseTo(20_000 - 150, 2);
+    });
+
+    it("the bonus period in the year schedule uses the bonus's FICA wages", () => {
+      const r = calculatePaycheck({
+        ...base,
+        contributionAccounts: [hsa(80, Infinity, { rateOfGross: 0.02 })],
+        includeContribInBonus: true,
+        bonusOverride: 20_000,
+        bonusMonth: 3,
+      });
+      expect(r.bonusEstimate.bonusFicaWages).toBeCloseTo(20_000 - 400, 2);
+      // Well under the wage base: the bonus period's FICA is full-rate on
+      // the bonus's FICA wages, not on the bonus gross.
+      const bonusPeriod = r.yearSchedule.find((p) => p.bonusGross > 0);
+      expect(bonusPeriod?.bonusFica).toBeCloseTo(
+        r.bonusEstimate.bonusFicaWages * (ssRate + medRate),
+        1,
+      );
+    });
+  });
+
   describe("top tax bracket (null max)", () => {
     it("calculates withholding for income above the highest bracket floor", () => {
       // MFJ 2C top bracket starts at $400,450 (max: null). Need salary > $400,450.
@@ -253,6 +432,7 @@ describe("calculatePaycheck", () => {
 function makeMinimalPaycheck(gross: number): PaycheckResult {
   return {
     gross,
+    ficaWages: gross,
     federalWithholding: gross * 0.22,
     preTaxDeductions: [],
     postTaxDeductions: [],

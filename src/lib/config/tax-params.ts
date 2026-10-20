@@ -32,7 +32,7 @@
  * `tax_year` values, i.e. exactly the behaviour before this resolver existed.
  */
 
-import type { W4FilingStatus } from "./enum-values";
+import type { HsaCoverageType, W4FilingStatus } from "./enum-values";
 
 /**
  * The three per-slice entry shapes, kept local so `src/lib/config/` has no
@@ -250,6 +250,52 @@ export function resolveTaxParams(
     fplByHousehold,
   };
 }
+
+/** Pub 590-A Worksheet 2-2: a reduced Roth IRA limit rounds UP to the next
+ *  multiple of this, and any amount above $0 but below the floor becomes
+ *  the floor (statutory, IRC 408A(c)(3) — not indexed). */
+export const ROTH_IRA_REDUCED_LIMIT_ROUNDING = 10;
+export const ROTH_IRA_REDUCED_LIMIT_FLOOR = 200;
+
+/** The yearly limit rows for a filing status (lower-cased in the key,
+ *  matching `standard_deduction_<status>`). */
+export function rothIraPhaseoutKeys(filingStatus: string): {
+  start: string;
+  end: string;
+} {
+  const s = filingStatus.toLowerCase();
+  return {
+    start: `roth_ira_phaseout_start_${s}`,
+    end: `roth_ira_phaseout_end_${s}`,
+  };
+}
+
+/** The Additional Medicare LIABILITY threshold row for a filing status. */
+export function medicareLiabilityKey(filingStatus: string): string {
+  return `fica_medicare_surtax_liability_${filingStatus.toLowerCase()}`;
+}
+
+/** A pre-tax IRA balance below this share of the person's IRA limit isn't
+ *  worth a pro-rata warning: converting a full year's contribution, under
+ *  ~1% of it would be taxable (leftover cents, a dividend after a
+ *  conversion). */
+export const PRO_RATA_MATERIAL_SHARE_OF_IRA_LIMIT = 0.01;
+
+/** Married filing separately (and lived together): the Roth IRA phase-out
+ *  is statutory and not indexed (IRC 408A(c)(3)(B)). The app has no MFS
+ *  status, so this is only used to say so. */
+export const ROTH_IRA_MFS_PHASEOUT = { start: 0, end: 10_000 } as const;
+
+/** The yearly HDHP minimum-deductible row for each HSA coverage type —
+ *  the default cash buffer to keep uninvested in an HSA. */
+export const HDHP_MIN_DEDUCTIBLE_KEY: Record<HsaCoverageType, string> = {
+  self_only: "hdhp_min_deductible_self",
+  family: "hdhp_min_deductible_family",
+};
+
+/** Filing statuses where a spouse's IRA can be funded from the couple's
+ *  combined compensation (spousal IRA, IRC 219(c)). */
+export const SPOUSAL_IRA_FILING_STATUSES: readonly W4FilingStatus[] = ["MFJ"];
 
 /** All filing statuses the engine expects a bracket set for. */
 export const REQUIRED_FILING_STATUSES: W4FilingStatus[] = [

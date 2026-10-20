@@ -3,43 +3,25 @@
 import React, { memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
-import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency } from "@/lib/utils/format";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import { sumBy } from "@/lib/utils/math";
 import { LoadingCard, ErrorCard } from "./utils";
 import { TaxesSummary } from "./taxes-summary";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
+import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
+import { RothIraLine } from "@/components/taxes/roth-ira-section";
 
 function HouseholdIncomeCardImpl() {
   const { viewMode } = useScenario();
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
-  const salaryActiveFields = useActiveSalaries();
-  // Independent axes, each Plan pin -> globally-active setting.
-  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const {
-    contributionProfileId: activeContribProfileId,
-    queryInput: contribProfileInput,
-  } = useEffectiveContribProfileId();
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
-  // The Paycheck page's tax year, so net pay and the taxes below agree.
-  const [taxYearSetting] = usePersistedSetting<number | null>(
-    "paycheck_tax_year",
-    null,
-  );
-  const queryInput = {
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
-    ...contribProfileInput,
-    ...salaryProfileInput,
-    ...(taxYearSetting != null ? { taxYearOverride: taxYearSetting } : {}),
-  };
-  const { data, isLoading, error } = trpc.paycheck.computeSummary.useQuery(
-    Object.keys(queryInput).length > 0 ? queryInput : undefined,
-  );
+  const {
+    data,
+    isLoading,
+    error,
+    contributionProfileId: activeContribProfileId,
+  } = useHouseholdIncomeSummary();
   if (isLoading) return <LoadingCard title="Household Income" />;
   if (error)
     return <ErrorCard title="Household Income" message="Failed to load" />;
@@ -57,21 +39,24 @@ function HouseholdIncomeCardImpl() {
     (d as Record<string, unknown>).blendedAnnual as
       | import("@/lib/calculators/types/calculators").BlendedAnnualTotals
       | undefined;
-  // "Current Salary" (projected) shows the full formula bonus — a nominal
-  // target rate, independent of what's actually pinned. "Year-End Estimate"
-  // and "Actual YTD" are both grounded in what's really happening this
-  // year, so they use the resolved (pinned-if-set) bonus instead. YTD
-  // additionally distinguishes whether it's actually been paid yet
+  // Every view uses the resolved bonus — the set (actual) bonus if there
+  // is one, else the formula — the same bonus the taxes below are figured
+  // on, so gross, net and tax reconcile. When a set bonus differs from the
+  // formula, the formula figure is shown beside it. YTD additionally
+  // distinguishes whether it's actually been paid yet
   // (job.bonusMonth/bonusDayOfMonth has passed) vs. still pending, and only
   // counts paid bonuses toward the YTD total so that total stays "money
   // actually received."
-  const fullFormulaBonusOf = (d: (typeof people)[0]) =>
-    (d as Record<string, unknown>).fullFormulaBonusEstimate as
-      import("@/lib/calculators/types/calculators").BonusEstimate | undefined;
-  const bonusEstimateFor = (d: (typeof people)[0]) =>
-    isYtd || isBlended
-      ? d.paycheck!.bonusEstimate
-      : (fullFormulaBonusOf(d) ?? d.paycheck!.bonusEstimate);
+  const bonusEstimateFor = (d: (typeof people)[0]) => d.paycheck!.bonusEstimate;
+  /** The formula bonus, when a set bonus is in use and differs from it. */
+  const formulaBonusIfDifferent = (d: (typeof people)[0]) => {
+    if (!("fullFormulaBonusEstimate" in d)) return null;
+    if (d.resolvedBonusTerms.bonusOverride === null) return null;
+    const formula = d.fullFormulaBonusEstimate.bonusGross;
+    return Math.abs(formula - d.paycheck!.bonusEstimate.bonusGross) >= 1
+      ? formula
+      : null;
+  };
   const isBonusPaidYtd = (d: (typeof people)[0]) => {
     // paycheck.computeSummary's `job` is the Salary-Profile-merged shape
     // (mergeSalaryProfileJobFields) — bonusMonth/bonusDayOfMonth live there
@@ -101,18 +86,24 @@ function HouseholdIncomeCardImpl() {
         isBonusPaidYtd(d) ? bonusEstimateFor(d).bonusNet : 0,
       )
     : sumBy(people, (d) => bonusEstimateFor(d).bonusNet);
+  // Projected: household annual income — the figure the taxes are on.
+  const income = data?.householdIncome ?? null;
   const totalGrossAnnual = isBlended
     ? sumBy(people, (d) => {
         const ba = blendedOf(d);
         return ba ? ba.gross : d.paycheck!.gross * d.paycheck!.periodsPerYear;
       }) + totalBonusGross
-    : sumBy(people, (d) => d.paycheck!.gross * periods(d)) + totalBonusGross;
+    : !isYtd && income
+      ? income.gross
+      : sumBy(people, (d) => d.paycheck!.gross * periods(d)) + totalBonusGross;
   const totalNetAnnual = isBlended
     ? sumBy(people, (d) => {
         const ba = blendedOf(d);
         return ba ? ba.netPay : d.paycheck!.netPay * d.paycheck!.periodsPerYear;
       }) + totalBonusNet
-    : sumBy(people, (d) => d.paycheck!.netPay * periods(d)) + totalBonusNet;
+    : !isYtd && income
+      ? income.netRegular + income.netBonus
+      : sumBy(people, (d) => d.paycheck!.netPay * periods(d)) + totalBonusNet;
   const modeLabel = isYtd
     ? "Year-to-date"
     : isBlended
@@ -127,7 +118,7 @@ function HouseholdIncomeCardImpl() {
     >
       <Metric
         value={formatCurrency(totalGrossAnnual)}
-        label={`${modeLabel} (salary + bonus)`}
+        label={`${modeLabel} (salary + bonus${(income?.otherCashPay ?? 0) > 0 ? " + other pay" : ""})`}
       />
       <div className="mt-3">
         <table className="w-full text-sm">
@@ -162,6 +153,18 @@ function HouseholdIncomeCardImpl() {
                       </td>
                     </tr>
                   )}
+                  {formulaBonusIfDifferent(d) !== null && (
+                    <tr>
+                      <td
+                        colSpan={2}
+                        className="text-faint pb-1 pl-2 text-right text-xs"
+                      >
+                        Formula target{" "}
+                        {formatCurrency(formulaBonusIfDifferent(d)!)}; using
+                        your set bonus
+                      </td>
+                    </tr>
+                  )}
                 </React.Fragment>
               );
             })}
@@ -183,16 +186,7 @@ function HouseholdIncomeCardImpl() {
           </span>
         </div>
         {data?.householdTax && (
-          <div className="flex justify-between">
-            <span className="inline-flex items-center">
-              MAGI (est.)
-              <HelpTip
-                text="Modified Adjusted Gross Income, estimated from current salary minus pre-tax deductions (401k, HSA, health insurance). Doesn't account for above-the-line deductions made outside payroll (e.g. a traditional IRA contribution) or MAGI add-backs (tax-exempt interest, foreign earned income exclusion) — close enough for most working households, but treat it as a ballpark for things like Roth IRA contribution limits or ACA eligibility."
-                maxWidth={280}
-              />
-            </span>
-            <span>{formatCurrency(data.householdTax.agi)}</span>
-          </div>
+          <RothIraLine wageAgi={data.householdTax.wageAgi} />
         )}
       </div>
       <TaxesSummary data={data} viewMode={viewMode} />

@@ -78,12 +78,12 @@ export function MixBar({ facts }: { facts: Holding["facts"] }) {
   );
 }
 
-function FactsForm({
+export function FactsForm({
   holding,
   onDone,
   onSaved,
 }: {
-  holding: Holding;
+  holding: Pick<Holding, "securityId" | "facts">;
   onDone: () => void;
   /** After a save (not a cancel) — e.g. stop using a stand-in the household replaced. */
   onSaved?: () => void;

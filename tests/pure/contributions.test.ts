@@ -10,6 +10,9 @@ import {
   isEligibleForPriorYear,
   validateContributionOrder,
   formatEmployerMatch,
+  payrollFicaExemptCap,
+  shareFicaExemptCaps,
+  ficaCapContext,
 } from "@/lib/pure/contributions";
 
 // These tests use the real account-type config, so they reflect actual IRS rules.
@@ -531,5 +534,90 @@ describe("householdSavings", () => {
     });
     expect(r).toMatchObject({ total: 10_000, rate: 0.1 });
     expect(r.groups.map((g) => g.group)).toEqual(["retirement"]);
+  });
+});
+
+describe("payrollFicaExemptCap", () => {
+  it("is null for an account type whose payroll money is FICA wages", () => {
+    expect(payrollFicaExemptCap("401k", 40, null, limits2025, 0)).toBeNull();
+    expect(payrollFicaExemptCap("ira", 40, null, limits2025, 0)).toBeNull();
+    expect(
+      payrollFicaExemptCap("not_a_type", 40, null, limits2025, 0),
+    ).toBeNull();
+  });
+
+  it("is the coverage limit less employer money for an HSA", () => {
+    expect(payrollFicaExemptCap("hsa", 40, "family", limits2025, 500)).toBe(
+      8550 - 500,
+    );
+    expect(payrollFicaExemptCap("hsa", 40, "self_only", limits2025, 0)).toBe(
+      4300,
+    );
+  });
+
+  it("adds the catch-up at 55 and never goes below zero", () => {
+    expect(payrollFicaExemptCap("hsa", 56, "self_only", limits2025, 0)).toBe(
+      4300 + 1000,
+    );
+    expect(payrollFicaExemptCap("hsa", 40, "self_only", limits2025, 9000)).toBe(
+      0,
+    );
+  });
+
+  it("is uncapped when the coverage or the limit isn't known", () => {
+    expect(payrollFicaExemptCap("hsa", 40, null, limits2025, 0)).toBe(Infinity);
+    expect(payrollFicaExemptCap("hsa", 40, "family", {}, 0)).toBe(Infinity);
+    const { hsa_family_limit: _omit, ...noFamily } = limits2025;
+    expect(payrollFicaExemptCap("hsa", 40, "family", noFamily, 0)).toBe(
+      Infinity,
+    );
+  });
+});
+
+describe("shareFicaExemptCaps", () => {
+  const row = (
+    over: Partial<Parameters<typeof shareFicaExemptCaps>[0][number]>,
+  ) => ({
+    personId: 1,
+    accountType: "hsa",
+    cap: 4000,
+    limit: 4000,
+    employerAnnual: 0,
+    annualPayroll: 3000,
+    ...over,
+  });
+  it("one person's two HSA rows share one limit, used up in row order", () => {
+    expect(
+      shareFicaExemptCaps([row({}), row({ employerAnnual: 500, cap: 3500 })]),
+    ).toEqual([3500, 500]);
+  });
+  it("different people, null and unsizable caps are left alone", () => {
+    expect(
+      shareFicaExemptCaps([
+        row({}),
+        row({ personId: 2 }),
+        row({ cap: null, limit: null }),
+        row({ cap: Infinity }),
+      ]),
+    ).toEqual([4000, 4000, null, Infinity]);
+  });
+});
+
+describe("ficaCapContext", () => {
+  it("age at Dec 31 of the tax year; unknown person → can't size (exempt in full)", () => {
+    expect(ficaCapContext(limits2025, "1970-06-01", 2025).ageAtYearEnd).toBe(
+      55,
+    );
+    const unknown = ficaCapContext(limits2025, null, 2025);
+    expect(unknown.ageAtYearEnd).toBeNull();
+    expect(
+      payrollFicaExemptCap(
+        "hsa",
+        unknown.ageAtYearEnd,
+        "family",
+        limits2025,
+        0,
+      ),
+    ).toBe(Infinity);
   });
 });

@@ -1751,7 +1751,15 @@ export const performanceRouter = createTRPCRouter({
           .from(schema.accountPerformance)
           .where(eq(schema.accountPerformance.performanceAccountId, input.id));
         const perfCount = Number(perfCountRow?.count ?? 0);
-        const deleteCheck = canDeletePerformanceAccount(perfCount);
+        // holding_periods FK is RESTRICT as well.
+        const [periodCountRow] = await ctx.db
+          .select({ count: sql<number>`count(*)` })
+          .from(schema.holdingPeriods)
+          .where(eq(schema.holdingPeriods.performanceAccountId, input.id));
+        const deleteCheck = canDeletePerformanceAccount(
+          perfCount,
+          Number(periodCountRow?.count ?? 0),
+        );
         if (!deleteCheck.allowed) {
           throw new TRPCError({
             code: "PRECONDITION_FAILED",

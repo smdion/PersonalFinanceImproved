@@ -34,6 +34,11 @@ import {
 } from "@/lib/pure/profiles";
 import { bonusCheckContribution } from "@/lib/calculators/paycheck";
 import {
+  irsLimitOrNull,
+  payrollFicaExemptCap,
+  shareFicaExemptCaps,
+} from "@/lib/pure/contributions";
+import {
   bonusCarriesContributions,
   contributionPay,
   getTotalCompensation,
@@ -563,6 +568,10 @@ export function buildContribAccounts(
   personalContribs: ContribRowWithActiveFields[],
   salary: number,
   periodsPerYear: number,
+  /** The year's limits and the person's age at Dec 31 — sizes each
+   *  account's FICA-exempt cap (payrollFicaExemptCap). Required so no
+   *  caller can quietly treat exempt payroll money as FICA wages. */
+  ficaContext: { limits: Record<string, number>; ageAtYearEnd: number | null },
   /** The bonus whose check carries contributions (contributionPay); the match is figured on it too. */
   bonusGross = 0,
 ): ContributionAccountInput[] {
@@ -625,7 +634,7 @@ export function buildContribAccounts(
         )
       : matchByRow;
 
-  return allContribs.map((c) => {
+  const accounts = allContribs.map((c) => {
     const contribValue = Number(c.contributionValue);
     const annual = annualById.get(c.id)!;
     const perPeriod =
@@ -637,6 +646,7 @@ export function buildContribAccounts(
 
     // Group from config displayGroup
     const group = getDisplayGroup(c.accountType as AccountCategory);
+    const isPayrollDeducted = c.isPayrollDeducted ?? c.jobId !== null;
 
     return {
       name: c.subType || c.label || c.accountType,
@@ -647,7 +657,7 @@ export function buildContribAccounts(
           ? contribValue / 100
           : null,
       taxTreatment: c.taxTreatment,
-      isPayrollDeducted: c.isPayrollDeducted ?? c.jobId !== null,
+      isPayrollDeducted,
       group,
       employerMatch: roundToCents(match.matchAnnual),
       employerMatchOnBonus: roundToCents(
@@ -655,8 +665,41 @@ export function buildContribAccounts(
       ),
       employerMatchAvailable: roundToCents(match.matchAvailableAnnual),
       employerMatchTaxTreatment: match.employerMatchTaxTreatment,
+      ficaExemptAnnualCap: isPayrollDeducted
+        ? payrollFicaExemptCap(
+            c.accountType,
+            ficaContext.ageAtYearEnd,
+            c.hsaCoverageType ?? null,
+            ficaContext.limits,
+            match.matchAnnual,
+          )
+        : null,
     };
   });
+  // One FICA-exempt cap per person and account type, across their rows.
+  const shared = shareFicaExemptCaps(
+    allContribs.map((c, k) => ({
+      personId: c.personId,
+      accountType: c.accountType,
+      cap: accounts[k]!.ficaExemptAnnualCap,
+      limit:
+        ficaContext.ageAtYearEnd === null
+          ? null
+          : irsLimitOrNull(
+              c.accountType,
+              ficaContext.ageAtYearEnd,
+              c.hsaCoverageType ?? null,
+              ficaContext.limits,
+            ),
+      employerAnnual: matchByRow.get(c.id)!.matchAnnual,
+      annualPayroll: annualContributionWithBonus(
+        c,
+        { salary, bonusGross },
+        periodsPerYear,
+      ),
+    })),
+  );
+  return accounts.map((a, k) => ({ ...a, ficaExemptAnnualCap: shared[k]! }));
 }
 
 // ---------------------------------------------------------------------------

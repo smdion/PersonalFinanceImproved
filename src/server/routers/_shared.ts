@@ -172,19 +172,23 @@ export const zSandboxDeductionEdits = z
  * deductions` row exists for these (e.g. "what if I added a $200/mo life
  * insurance premium"), so they're keyed by `personId` instead of a real id
  * and appended to that person's deduction list for the duration of the
- * request only. `ficaExempt` is not exposed here (defaults to false, i.e.
- * FICA still applies) — a hypothetical addition doesn't know the DB's
- * per-deduction FICA-exemption nuance the way a real row does, and getting
- * that wrong silently would be worse than the (disclosed) simplification.
+ * request only. Tax treatment as a real row's: `isPretax` and `ficaExempt`
+ * (a Section 125 deduction is both; FICA-exempt requires pre-tax).
  */
 export const zSandboxDeductionAdditions = z
   .array(
-    z.object({
-      personId: z.number().int(),
-      name: z.string().trim().min(1),
-      amountPerPeriod: z.number(),
-      isPretax: z.boolean(),
-    }),
+    z
+      .object({
+        personId: z.number().int(),
+        name: z.string().trim().min(1),
+        amountPerPeriod: z.number(),
+        isPretax: z.boolean(),
+        ficaExempt: z.boolean().default(false),
+      })
+      .refine((d) => !d.ficaExempt || d.isPretax, {
+        message: "A FICA-exempt deduction must also be pre-tax",
+        path: ["ficaExempt"],
+      }),
   )
   .max(MAX_SANDBOX_DEDUCTIONS)
   .optional();

@@ -7,7 +7,10 @@
  */
 import { describe, it, expect } from "vitest";
 import { calculatePaycheck } from "@/lib/calculators/paycheck";
-import { calculateTax } from "@/lib/calculators/tax";
+import {
+  taxForOnePerson,
+  type OnePersonTaxInput,
+} from "../calculators/tax-helpers";
 import { calculateBudget } from "@/lib/calculators/budget";
 import { calculateContributions } from "@/lib/calculators/contribution";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
@@ -17,11 +20,7 @@ import {
   MFJ_2C_BRACKETS,
   MFJ_TAXABLE_INCOME_BRACKETS,
 } from "../calculators/fixtures";
-import type {
-  PaycheckInput,
-  TaxInput,
-  NetWorthInput,
-} from "@/lib/calculators/types";
+import type { PaycheckInput, NetWorthInput } from "@/lib/calculators/types";
 
 const JAN_1 = new Date(2025, 0, 1); // local-time constructor — avoids UTC-string timezone shift
 const DEC_31 = new Date(2025, 11, 31);
@@ -186,7 +185,7 @@ describe("paycheck edge cases", () => {
 // ── Tax edge cases ──
 
 describe("tax edge cases", () => {
-  const baseTax: TaxInput = {
+  const baseTax: OnePersonTaxInput = {
     annualGross: 0,
     preTaxDeductionsAnnual: 0,
     filingStatus: "MFJ",
@@ -196,7 +195,7 @@ describe("tax edge cases", () => {
   };
 
   it("handles zero income", () => {
-    const result = calculateTax(baseTax);
+    const result = taxForOnePerson(baseTax);
     expect(result.taxableIncome).toBe(0);
     expect(result.federalTax).toBe(0);
     expect(result.totalTax).toBe(0);
@@ -205,7 +204,7 @@ describe("tax edge cases", () => {
   });
 
   it("handles income below standard deduction", () => {
-    const result = calculateTax({ ...baseTax, annualGross: 20000 });
+    const result = taxForOnePerson({ ...baseTax, annualGross: 20000 });
     // AGI $20k - standard deduction $32.2k = $0 taxable
     expect(result.taxableIncome).toBe(0);
     expect(result.federalTax).toBe(0);
@@ -215,21 +214,21 @@ describe("tax edge cases", () => {
   });
 
   it("handles single income (one earner)", () => {
-    const result = calculateTax({ ...baseTax, annualGross: 118885.79 });
+    const result = taxForOnePerson({ ...baseTax, annualGross: 118885.79 });
     // Taxable = $118,885.79 - $32,200 = $86,685.79 → falls in 12% bracket (24800-100800)
     expect(result.taxableIncome).toBeCloseTo(86685.79, 0);
     expect(result.marginalRate).toBe(0.12);
   });
 
   it("handles very high income (top bracket)", () => {
-    const result = calculateTax({ ...baseTax, annualGross: 1000000 });
+    const result = taxForOnePerson({ ...baseTax, annualGross: 1000000 });
     expect(result.marginalRate).toBe(0.37);
     // Additional Medicare Tax should apply
     expect(result.ficaMedicare).toBeGreaterThan(1000000 * 0.0145);
   });
 
   it("handles pre-tax deductions exceeding gross", () => {
-    const result = calculateTax({
+    const result = taxForOnePerson({
       ...baseTax,
       annualGross: 50000,
       preTaxDeductionsAnnual: 60000,
@@ -240,12 +239,12 @@ describe("tax edge cases", () => {
   });
 
   it("handles income exactly at SS wage base", () => {
-    const result = calculateTax({ ...baseTax, annualGross: 176100 });
+    const result = taxForOnePerson({ ...baseTax, annualGross: 176100 });
     expect(result.ficaSS).toBeCloseTo(176100 * 0.062, 0);
   });
 
   it("handles income exactly at Medicare additional threshold", () => {
-    const result = calculateTax({ ...baseTax, annualGross: 200000 });
+    const result = taxForOnePerson({ ...baseTax, annualGross: 200000 });
     // No additional Medicare tax (threshold is $200k, not exceeded)
     expect(result.ficaMedicare).toBeCloseTo(200000 * 0.0145, 0);
   });

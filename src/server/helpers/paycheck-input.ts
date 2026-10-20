@@ -21,6 +21,7 @@
 import type {
   PaycheckInput,
   DeductionLine,
+  EarningLine,
   TaxBracketInput,
   ContributionAccountInput,
 } from "@/lib/calculators/types";
@@ -58,6 +59,9 @@ export interface ResolvedPaycheckInputs {
   bonusOverride: number | null;
   contributionAccounts: ContributionAccountInput[];
   deductions: DeductionLine[];
+  /** Other pay / taxable benefits per check — required so no caller can
+   *  quietly leave them out. */
+  earnings: EarningLine[];
   taxBrackets: TaxBracketInput;
   limitsMap: Map<string, number>;
   limitsRecord: Record<string, number>;
@@ -95,6 +99,7 @@ export function buildPaycheckInputForJob(
     ),
     contributionAccounts: resolved.contributionAccounts,
     deductions: resolved.deductions,
+    earnings: resolved.earnings,
     taxBrackets: resolved.taxBrackets,
     limits: resolved.limitsRecord,
     ytdGrossEarnings: 0,

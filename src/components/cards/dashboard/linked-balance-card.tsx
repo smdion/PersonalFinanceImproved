@@ -2,7 +2,7 @@
 
 import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
 import React, { memo, useState } from "react";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -313,6 +313,10 @@ function LinkedBalanceCardImpl() {
     { since: flowsSince ?? "" },
     { enabled: isConnected && canSeeActivity && !!flowsSince },
   );
+  const { data: recent } = trpc.investments.getRecentChanges.useQuery(
+    undefined,
+    { enabled: isConnected && canSeeActivity },
+  );
 
   if (statusLoading) return <LoadingCard title="Live Balance" />;
   // No SimpleFIN connection configured — omit the card entirely rather
@@ -448,6 +452,8 @@ function LinkedBalanceCardImpl() {
         </p>
       )}
 
+      {recent && <RecentChanges data={recent} />}
+
       {canSeeActivity && flows && flows.recent.length > 0 && (
         <div className="mb-2 space-y-0.5">
           {flows.recent.map((r) => (
@@ -516,6 +522,56 @@ function LinkedBalanceCardImpl() {
         lastSyncedAt={status?.lastSyncedAt ?? null}
       />
     </Card>
+  );
+}
+
+type RecentChangesData = RouterOutputs["investments"]["getRecentChanges"];
+
+/** "1 day +$X · 7 days −$Y" — only the windows the stored daily balances
+ *  cover, with the real start date; deposits and withdrawals included. */
+function changeLine(changes: RecentChangesData["household"]) {
+  const covered = changes.filter((c) => c.change !== null);
+  if (covered.length === 0) return null;
+  return covered
+    .map(
+      (c) =>
+        `${c.days} day${c.days === 1 ? "" : "s"} ${c.change! >= 0 ? "+" : "−"}${formatCurrency(Math.abs(c.change!))}`,
+    )
+    .join(" · ");
+}
+
+function RecentChanges({ data }: { data: RecentChangesData }) {
+  const household = changeLine(data.household);
+  if (!household) return null;
+  const longest = [...data.household].reverse().find((c) => c.since);
+  return (
+    <details className="text-caption text-muted mb-1">
+      <summary className="cursor-pointer">
+        {household}
+        <span className="text-faint">
+          {" "}
+          (includes deposits
+          {longest?.since
+            ? ` · since ${formatDate(longest.since, "medium")}`
+            : ""}
+          )
+        </span>
+      </summary>
+      <div className="mt-1 space-y-0.5">
+        {data.accounts.map((a) => {
+          const line = changeLine(a.changes);
+          return line ? (
+            <div
+              key={a.performanceAccountId}
+              className="text-faint flex justify-between gap-2"
+            >
+              <span className="truncate">{a.label}</span>
+              <span className="shrink-0">{line}</span>
+            </div>
+          ) : null;
+        })}
+      </div>
+    </details>
   );
 }
 

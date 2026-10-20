@@ -11,9 +11,6 @@ export default async function BenchmarksPage() {
   const dehydratedState = await prefetchForPage(async (helpers) => {
     await Promise.all([
       helpers.investments.getComparison.prefetch({}).catch(() => undefined),
-      helpers.analytics.getAccounts.prefetch().catch(() => undefined),
-      helpers.analytics.getSnapshots.prefetch().catch(() => undefined),
-      helpers.analytics.getAssetClasses.prefetch().catch(() => undefined),
     ]);
   });
 

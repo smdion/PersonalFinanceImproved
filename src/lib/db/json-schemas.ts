@@ -287,6 +287,11 @@ export const salaryEntrySchema = z
     /** `null` is a real, complete value ("no extra-paycheck routing
      *  configured for this job"). See extraPaycheckRoutingSchema above. */
     extraPaycheckRouting: extraPaycheckRoutingSchema.nullable(),
+    /** Other pay per check, by paycheck_earnings id (amount ≥ 0). Absent =
+     *  none — the same as `{}`, so older entries need no backfill. */
+    otherEarnings: z
+      .record(z.string().regex(/^\d+$/), z.number().nonnegative())
+      .optional(),
   })
   .strict();
 

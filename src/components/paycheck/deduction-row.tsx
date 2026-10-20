@@ -3,6 +3,10 @@
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency } from "@/lib/utils/format";
 import type { DeductionRowData, CreateDeductionData } from "./types";
+import {
+  DEDUCTION_PRESETS,
+  deductionPresetFor,
+} from "@/lib/config/paycheck-presets";
 
 const ACRONYMS: Record<string, string> = { hsa: "HSA", ira: "IRA", fsa: "FSA" };
 const displayName = (name: string) => ACRONYMS[name.toLowerCase()] ?? name;
@@ -49,8 +53,30 @@ export function DeductionRow({
   }
 
   return (
-    <div className="text-muted flex items-center justify-between">
-      <span>{displayName(row.name)}</span>
+    <div className="text-muted flex items-center justify-between gap-2">
+      <span className="flex min-w-0 items-center gap-1.5">
+        <span className="truncate">{displayName(row.name)}</span>
+        {row.raw && (
+          // How the stub lists it — moving a deduction between the stub's
+          // before-tax and after-tax sections changes which taxes it skips.
+          <select
+            aria-label={`How ${displayName(row.name)} is taxed`}
+            value={deductionPresetFor(row.raw).key}
+            onChange={(e) =>
+              onUpdateDeduction(row.raw!.id, "taxTreatment", e.target.value)
+            }
+            disabled={readOnly}
+            title={deductionPresetFor(row.raw).label}
+            className="text-faint bg-transparent text-[10px] hover:underline disabled:opacity-60"
+          >
+            {DEDUCTION_PRESETS.map((p) => (
+              <option key={p.key} value={p.key} title={p.label}>
+                {p.short}
+              </option>
+            ))}
+          </select>
+        )}
+      </span>
       {row.raw ? (
         <InlineEdit
           value={row.raw.amountPerPeriod}

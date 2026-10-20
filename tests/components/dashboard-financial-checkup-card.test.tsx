@@ -44,6 +44,19 @@ let milestonesState: {
   input: MilestoneInput | null;
   results: MilestoneResult[];
 };
+// The Roth IRA recommendation has its own tests (recommendations-roth).
+vi.mock("@/lib/hooks/use-roth-ira", () => ({
+  useRothIra: () => ({ isLoading: false, view: null }),
+}));
+vi.mock("@/lib/hooks/use-investing-findings", () => ({
+  useInvestingFindings: () => ({
+    isLoading: false,
+    drag: [],
+    hsa: [],
+    harvest: [],
+    cheaper: [],
+  }),
+}));
 vi.mock("@/lib/hooks/use-milestones", () => ({
   useContributionSummaryInput: () => ({}),
   useMilestones: () => milestonesState,

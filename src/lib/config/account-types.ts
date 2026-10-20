@@ -108,6 +108,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     generateOverflowWarnings: true,
     defaultWithdrawalSplit: 0.35,
     isPayrollDeductible: true,
+    payrollFicaExempt: false,
     supportsPriorYearContrib: false,
     parentCategory: "Retirement",
     displayGroup: "retirement",
@@ -157,6 +158,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     generateOverflowWarnings: true,
     defaultWithdrawalSplit: 0,
     isPayrollDeductible: true,
+    payrollFicaExempt: false,
     supportsPriorYearContrib: false,
     parentCategory: "Retirement",
     displayGroup: "retirement",
@@ -204,6 +206,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     generateOverflowWarnings: true,
     defaultWithdrawalSplit: 0.25,
     isPayrollDeductible: false,
+    payrollFicaExempt: false,
     supportsPriorYearContrib: true,
     parentCategory: "Retirement",
     displayGroup: "retirement",
@@ -251,6 +254,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     generateOverflowWarnings: true,
     defaultWithdrawalSplit: 0.1,
     isPayrollDeductible: true,
+    payrollFicaExempt: true,
     supportsPriorYearContrib: true,
     parentCategory: "Retirement",
     displayGroup: "hsa",
@@ -301,6 +305,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     generateOverflowWarnings: false,
     defaultWithdrawalSplit: 0.3,
     isPayrollDeductible: false,
+    payrollFicaExempt: false,
     supportsPriorYearContrib: false,
     parentCategory: "Portfolio",
     displayGroup: "taxable",
@@ -726,6 +731,34 @@ export function isRothType(taxType: string): boolean {
 /** Check if an engine-internal taxType key is after-tax (Brokerage). */
 export function isAfterTaxType(taxType: string): boolean {
   return taxType === "afterTax";
+}
+
+/** Whether a category's money is taxed as it earns (a taxable account —
+ *  its config tax bucket is after-tax). Unknown categories: false. */
+export function isTaxableCategory(category: string | null): boolean {
+  if (category === null || !isKnownCategory(category)) return false;
+  return isAfterTaxType(ACCOUNT_TYPE_CONFIG[category].taxBucketKey);
+}
+
+/** Whether contributions to a category come out of the paycheck (config
+ *  `isPayrollDeductible`). Unknown categories: false. */
+export function isPayrollDeductibleCategory(category: string): boolean {
+  return (
+    isKnownCategory(category) &&
+    ACCOUNT_TYPE_CONFIG[category].isPayrollDeductible
+  );
+}
+
+/** Whether a category's payroll contributions skip FICA (config
+ *  `payrollFicaExempt`, §125 — HSA). Unknown categories: false. */
+export function isPayrollFicaExemptCategory(category: string): boolean {
+  return (
+    isKnownCategory(category) && ACCOUNT_TYPE_CONFIG[category].payrollFicaExempt
+  );
+}
+
+function isKnownCategory(category: string): category is AccountCategory {
+  return (getAllCategories() as string[]).includes(category);
 }
 
 /** Check if an engine-internal taxType key is the HSA bucket. */

@@ -57,15 +57,23 @@ import { toNumber } from "@/server/helpers/transforms";
 
 ### Existing pure modules
 
-| Module                  | Domain                 | Key exports                                                                                     |
-| ----------------------- | ---------------------- | ----------------------------------------------------------------------------------------------- |
-| `pure/performance.ts`   | Year-end finalization  | `resolveCategoryValues`, `filterAccountsForNextYear`, `assembleNetWorthValues`, `computeReturn` |
-| `pure/contributions.ts` | IRS limits             | `resolveIrsLimit`, `computeSiblingTotal`, `isEligibleForPriorYear`                              |
-| `pure/portfolio.ts`     | Snapshot carry-forward | `buildPrevInactiveKeys`, `resolveAccountActiveStatus`, `computeSnapshotEndingBalances`          |
-| `pure/tax.ts`           | Household tax          | `computeHouseholdTax`, `combinedPreTaxDeductions`                                               |
-| `pure/historical.ts`    | Temporal resolution    | `resolveSalaryForYear`, `buildSalaryByYear`, `resolveCarryForwardAssetValue`                    |
-| `pure/projection.ts`    | MC blending            | `interpolateAllocations`, `blendDeterministicRates`, `blendedPortfolioStats`                    |
-| `pure/profiles.ts`      | Deletion guards        | `canDeleteBudgetProfile`, `canDeleteContribProfile`, `findActiveJob`, `resolveLinkedProfile`    |
+| Module                                      | Domain                    | Key exports                                                                                     |
+| ------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------- |
+| `pure/performance.ts`                       | Year-end finalization     | `resolveCategoryValues`, `filterAccountsForNextYear`, `assembleNetWorthValues`, `computeReturn` |
+| `pure/contributions.ts`                     | IRS limits                | `resolveIrsLimit`, `computeSiblingTotal`, `isEligibleForPriorYear`                              |
+| `pure/portfolio.ts`                         | Snapshot carry-forward    | `buildPrevInactiveKeys`, `resolveAccountActiveStatus`, `computeSnapshotEndingBalances`          |
+| `pure/household-income.ts`                  | Household annual income   | `computeAnnualEarnings`, `sumHouseholdIncome`                                                   |
+| `pure/roth-ira.ts`                          | Roth IRA eligibility      | `buildRothIraView`, `judgeRothIra`, `rothIraAllowed`, `preTaxIraByPerson`, `rothIraSummary`     |
+| `pure/investment-income.ts`                 | Taxable investment income | `estimateTaxableInvestmentIncome`, `estimateFeedIncome`, `investmentIncomeGaps`                 |
+| `pure/cash-positions.ts`                    | Uninvested cash           | `judgeCashDrag`, `judgeHsaCash`, `resolveHsaCashBuffer`, `currentCashClass`, `hsaCashBuffers`   |
+| `pure/fund-findings.ts`                     | Per-fund findings         | `judgeTaxLossHarvest`, `judgeCheaperFunds`                                                      |
+| `pure/holding-periods.ts`                   | Holding history           | `deriveObservedPeriods`, `holdingsByAccountDay`, `validateHoldingPeriod`, `periodOn`            |
+| `pure/matched-mix.ts`                       | Matched-mix benchmark     | `matchedMixLevels`, `matchedMixRun`, `accountValuesByYear`                                      |
+| `pure/recent-change.ts`                     | Recent balance change     | `recentChanges`                                                                                 |
+| `pure/recommendations-{roth,cash,funds}.ts` | Recommendation adapters   | `recommendationsFromRothIra`, `recommendationsFromCash`, `recommendationsFromFunds`             |
+| `pure/historical.ts`                        | Temporal resolution       | `resolveSalaryForYear`, `buildSalaryByYear`, `resolveCarryForwardAssetValue`                    |
+| `pure/projection.ts`                        | MC blending               | `interpolateAllocations`, `blendDeterministicRates`, `blendedPortfolioStats`                    |
+| `pure/profiles.ts`                          | Deletion guards           | `canDeleteBudgetProfile`, `canDeleteContribProfile`, `findActiveJob`, `resolveLinkedProfile`    |
 
 ## Reporting Issues
 
