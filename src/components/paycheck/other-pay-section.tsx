@@ -99,7 +99,7 @@ export function OtherPaySection({
                   onChange={(e) => setPreset(row, e.target.value)}
                   disabled={readOnly}
                   title={preset?.label ?? "Custom tax treatment"}
-                  className="text-faint -ml-0.5 bg-transparent hover:underline disabled:opacity-100"
+                  className="text-faint -ml-0.5 cursor-pointer appearance-none bg-transparent hover:underline disabled:cursor-default dark:bg-transparent"
                 >
                   {EARNING_PRESETS.map((p) => (
                     <option key={p.key} value={p.key} title={p.label}>

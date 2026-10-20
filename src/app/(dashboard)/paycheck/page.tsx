@@ -366,7 +366,7 @@ export default function PaycheckPage() {
         />
       ) : (
         <div
-          className={`grid grid-cols-1 ${views.length > 1 ? "lg:grid-cols-2" : ""} grid-rows-[auto_auto_auto_auto] gap-6`}
+          className={`grid grid-cols-1 ${views.length > 1 ? "lg:grid-cols-2" : ""} grid-rows-[auto_auto_auto] gap-6`}
         >
           {views.map((d) => (
             <PersonPaycheck
@@ -383,11 +383,17 @@ export default function PaycheckPage() {
               // active Salary Profile (see editTarget).
               salaryReadOnly={!salaryEditsProfile}
               contribValueReadOnly={!contribEditsProfile}
-              editLabels={{
-                salary: editTarget("salary").label,
-                contribution: editTarget("contribution").label,
-                setup: editTarget("setup").label,
-              }}
+              // Only while editing — locked, the padlock already says "View
+              // only" and a note under every section is just noise.
+              editLabels={
+                profileLocked
+                  ? undefined
+                  : {
+                      salary: editTarget("salary").label,
+                      contribution: editTarget("contribution").label,
+                      setup: editTarget("setup").label,
+                    }
+              }
               rawDeductions={d.rawDeductions}
               rawContribs={d.rawContribs}
               perContribData={d.perContribData}

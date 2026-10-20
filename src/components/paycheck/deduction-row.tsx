@@ -84,7 +84,10 @@ export function DeductionRow({
       className="group"
       label={<span className="text-muted truncate">{name}</span>}
       hint={
-        row.raw && preset ? (
+        // Only while editing: locked, the section it sits in (before/after
+        // tax) already says how it's taxed, and the extra line would make
+        // this row taller than the other person's matching row.
+        row.raw && preset && !readOnly ? (
           // How the stub lists it — moving a deduction between the stub's
           // before-tax and after-tax sections changes which taxes it skips.
           <select
@@ -95,7 +98,7 @@ export function DeductionRow({
             }
             disabled={readOnly}
             title={preset.label}
-            className="text-faint -ml-0.5 bg-transparent hover:underline disabled:opacity-100"
+            className="text-faint -ml-0.5 cursor-pointer appearance-none bg-transparent hover:underline dark:bg-transparent"
           >
             {DEDUCTION_PRESETS.map((p) => (
               <option key={p.key} value={p.key} title={p.label}>

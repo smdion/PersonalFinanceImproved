@@ -175,10 +175,10 @@ export function PersonPaycheck({
   const onUpdateContrib = handlers?.onUpdateContrib ?? NOOP;
 
   return (
-    // Four rows — header, figures, settings, contributions — shared with the
-    // other person's card through the page grid's subgrid, so each section
-    // starts at the same height in both cards.
-    <div className="bg-surface-primary row-span-4 grid grid-rows-subgrid gap-0 overflow-hidden rounded-xl border shadow-sm">
+    // Three rows — header, body, contributions — shared with the other
+    // person's card through the page grid's subgrid, so each starts at the
+    // same height in both cards.
+    <div className="bg-surface-primary row-span-3 grid grid-rows-subgrid gap-0 overflow-hidden rounded-xl border shadow-sm">
       {/* Header: person, job, schedule, salary */}
       <div className="border-subtle from-surface-sunken/80 border-b bg-gradient-to-r to-transparent p-5">
         <div className="flex items-start justify-between gap-4">
@@ -247,49 +247,33 @@ export function PersonPaycheck({
         </div>
       </div>
 
-      {/* Figures: one check, and the year */}
-      <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-2">
-        <PayStub
-          paycheck={paycheck}
-          rawDeductions={rawDeductions}
-          onUpdateDeduction={onUpdateDeduction}
-          alignedPreTax={alignedPreTax}
-          alignedPostTax={alignedPostTax}
-          onAddDeduction={
-            readOnly
-              ? undefined
-              : (isPretax) => setAddingDeduction({ isPretax })
-          }
-          onDeleteDeduction={handlers?.onDeleteDeduction ?? undefined}
-          readOnly={readOnly}
-          amountReadOnly={contribValueReadOnly}
-          note={editLabels && `Amounts: ${editLabels.contribution}`}
-        />
-        <AnnualSummary
-          paycheck={paycheck}
-          mode={mode}
-          blendedAnnual={blendedAnnual}
-        />
-      </div>
-
-      {/* Settings — same order for every person */}
-      <div className="border-subtle grid grid-cols-1 content-start gap-4 border-t px-5 py-5 md:grid-cols-2">
+      {/* Body — two balanced columns so neither leaves a gap beside the
+          other: the tall pay stub with the W-4 and extra-paycheck settings
+          under it; the year's totals with the bonus and other pay. Same
+          order for every person. */}
+      <div className="grid grid-cols-1 content-start gap-4 p-5 md:grid-cols-2">
         <div className="space-y-4">
+          <PayStub
+            paycheck={paycheck}
+            rawDeductions={rawDeductions}
+            onUpdateDeduction={onUpdateDeduction}
+            alignedPreTax={alignedPreTax}
+            alignedPostTax={alignedPostTax}
+            onAddDeduction={
+              readOnly
+                ? undefined
+                : (isPretax) => setAddingDeduction({ isPretax })
+            }
+            onDeleteDeduction={handlers?.onDeleteDeduction ?? undefined}
+            readOnly={readOnly}
+            amountReadOnly={contribValueReadOnly}
+            note={editLabels && `Amounts: ${editLabels.contribution}`}
+          />
           <TaxWithholdingSection
             job={job}
             onUpdateJob={onUpdateJob}
             readOnly={readOnly}
             salaryReadOnly={salaryReadOnly}
-            note={editLabels?.salary}
-          />
-          <OtherPaySection
-            jobId={job.id}
-            rows={earningRows ?? []}
-            onSetAmount={(id, amount) =>
-              onUpdateJob(`otherEarnings:${id}`, String(amount))
-            }
-            readOnly={readOnly}
-            amountReadOnly={salaryReadOnly}
             note={editLabels?.salary}
           />
           {job.payPeriod === "biweekly" && (
@@ -307,17 +291,34 @@ export function PersonPaycheck({
             </div>
           )}
         </div>
-        <BonusSection
-          personId={person.id}
-          paycheck={paycheck}
-          fullFormulaBonusEstimate={fullFormulaBonusEstimate}
-          job={job}
-          resolvedBonusTerms={resolvedBonusTerms}
-          onUpdateJob={onUpdateJob}
-          readOnly={readOnly}
-          salaryReadOnly={salaryReadOnly}
-          note={editLabels?.salary}
-        />
+        <div className="space-y-4">
+          <AnnualSummary
+            paycheck={paycheck}
+            mode={mode}
+            blendedAnnual={blendedAnnual}
+          />
+          <BonusSection
+            personId={person.id}
+            paycheck={paycheck}
+            fullFormulaBonusEstimate={fullFormulaBonusEstimate}
+            job={job}
+            resolvedBonusTerms={resolvedBonusTerms}
+            onUpdateJob={onUpdateJob}
+            readOnly={readOnly}
+            salaryReadOnly={salaryReadOnly}
+            note={editLabels?.salary}
+          />
+          <OtherPaySection
+            jobId={job.id}
+            rows={earningRows ?? []}
+            onSetAmount={(id, amount) =>
+              onUpdateJob(`otherEarnings:${id}`, String(amount))
+            }
+            readOnly={readOnly}
+            amountReadOnly={salaryReadOnly}
+            note={editLabels?.salary}
+          />
+        </div>
       </div>
 
       {/* Contributions + extras */}

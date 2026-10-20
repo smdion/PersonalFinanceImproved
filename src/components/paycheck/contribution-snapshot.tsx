@@ -486,7 +486,7 @@ export function ContributionSnapshot() {
                           </div>
                           {/* Employer match IRS context */}
                           {at.employerMatch > 0 && (
-                            <p className="text-caption mt-0.5 text-blue-500">
+                            <p className="text-caption text-faint mt-0.5">
                               Match
                               {matchCountsTowardLimit
                                 ? " counts toward IRS limit"
