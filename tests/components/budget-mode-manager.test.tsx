@@ -129,34 +129,6 @@ describe("BudgetModeManager", () => {
     expect(addButton).toBeDisabled();
   });
 
-  it("renders contribution profile dropdowns when profiles provided", () => {
-    const profiles = [
-      { id: 1, name: "Default", isDefault: true },
-      { id: 2, name: "High Saver", isDefault: false },
-    ];
-    render(
-      <BudgetModeManager
-        {...defaultProps}
-        contributionProfiles={profiles}
-        columnContributionProfileIds={[null, 2]}
-        onUpdateContributionProfiles={vi.fn()}
-      />,
-    );
-
-    // Should show dropdown with "High Saver" option
-    expect(screen.getAllByText("Default")).toHaveLength(2); // one per column
-    expect(screen.getAllByText("High Saver")).toHaveLength(2); // option in each dropdown
-  });
-
-  it("does not render profile dropdowns when no profiles", () => {
-    render(<BudgetModeManager {...defaultProps} />);
-    expect(
-      screen.queryByTitle(
-        "Contribution profile for this mode's income calculations",
-      ),
-    ).toBeNull();
-  });
-
   it("calls onRemoveColumn after confirmation", async () => {
     const onRemoveColumn = vi.fn();
     render(

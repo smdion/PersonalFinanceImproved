@@ -78,8 +78,7 @@ function PlanColumn({
   });
 
   // The union's "no profile" branch carries neither figure. Take-home is the
-  // first column's; with per-column profiles (removed in v0.8.10) a
-  // month-weighted budget could differ by column — none exist in practice.
+  // same in every budget column (columns are spending levels).
   const summary =
     budget.data && "netMonthlyIncome" in budget.data ? budget.data : null;
   const takeHome =

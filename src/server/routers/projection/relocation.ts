@@ -199,10 +199,10 @@ export const relocationProjectionRouter = createTRPCRouter({
               ctx.db,
               currentItems,
               currentNumColumns,
-              new Array(currentNumColumns).fill(
-                input.currentContributionProfileId ?? null,
-              ),
-              new Array(currentNumColumns).fill(input.salaryProfileId ?? null),
+              {
+                contribProfileId: input.currentContributionProfileId ?? null,
+                salaryProfileId: input.salaryProfileId ?? null,
+              },
             );
       const resolvedRelocItems =
         input.relocationExpenseOverride !== null
@@ -211,10 +211,10 @@ export const relocationProjectionRouter = createTRPCRouter({
               ctx.db,
               relocItems,
               relocNumColumns,
-              new Array(relocNumColumns).fill(
-                input.relocationContributionProfileId ?? null,
-              ),
-              new Array(relocNumColumns).fill(input.salaryProfileId ?? null),
+              {
+                contribProfileId: input.relocationContributionProfileId ?? null,
+                salaryProfileId: input.salaryProfileId ?? null,
+              },
             );
 
       const currentAnnualExpenses =

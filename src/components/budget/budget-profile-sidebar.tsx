@@ -11,7 +11,7 @@
  */
 
 import { budgetApiServiceLabel, formatCurrency } from "@/lib/utils/format";
-import { confirm, promptTextWithSelect } from "@/components/ui/confirm-dialog";
+import { confirm, promptText } from "@/components/ui/confirm-dialog";
 import { usePlanNamesUsing } from "@/lib/hooks/use-plans";
 import { planInUseMessage } from "@/lib/pure/plans";
 import { toast } from "@/lib/hooks/use-toast";
@@ -28,7 +28,6 @@ type Props = {
   canEdit: boolean;
   /** For "base the new profile off of this Contribution Profile" at
    *  creation time. */
-  contribProfiles: { id: number; name: string }[];
 
   /** Rename a profile (click-to-edit on the row name). Called with the
    *  trimmed new name only when it changed. */
@@ -41,7 +40,7 @@ type Props = {
 
   // Callbacks
   onSelectProfile: (profileId: number) => void;
-  onCreateProfile: (name: string, contributionProfileId: number | null) => void;
+  onCreateProfile: (name: string) => void;
   onSetActiveProfile: (profileId: number) => void;
   onDeleteProfile: (profileId: number) => void;
   onCloneProfile: (profileId: number, currentName: string) => void;
@@ -51,7 +50,6 @@ export function BudgetProfileSidebar({
   profiles,
   displayProfileId,
   canEdit,
-  contribProfiles,
   onRename,
   apiService,
   apiLinkedProfileId,
@@ -70,21 +68,11 @@ export function BudgetProfileSidebar({
         onCreate={
           canEdit
             ? async () => {
-                const result = await promptTextWithSelect(
+                const name = await promptText(
                   "New budget profile name:",
                   "e.g. Aggressive Savings",
-                  "Base it off of a Contribution Profile (optional)",
-                  contribProfiles.map((p) => ({
-                    value: String(p.id),
-                    label: p.name,
-                  })),
                 );
-                if (result) {
-                  onCreateProfile(
-                    result.text,
-                    result.selectValue ? Number(result.selectValue) : null,
-                  );
-                }
+                if (name) onCreateProfile(name);
               }
             : undefined
         }

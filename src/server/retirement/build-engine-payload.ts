@@ -515,8 +515,10 @@ export async function buildEnginePayload(
         db,
         items,
         numColumns,
-        new Array(numColumns).fill(opts.contributionProfileId ?? null),
-        new Array(numColumns).fill(opts.salaryProfileId ?? null),
+        {
+          contribProfileId: opts.contributionProfileId ?? null,
+          salaryProfileId: opts.salaryProfileId ?? null,
+        },
       );
       const totals = labels.map((_: string, colIdx: number) =>
         sumBy(resolvedItems, (item) => item.amounts[colIdx] ?? 0),
@@ -1021,22 +1023,16 @@ export async function buildEnginePayload(
     (decProfile?.columnLabels as string[] | null)?.length ?? 1;
   const resolvedAccItems = opts.accumulationExpenseOverride
     ? accItems
-    : await resolveLinkedBudgetItemAmounts(
-        db,
-        accItems,
-        accNumColumns,
-        new Array(accNumColumns).fill(opts.contributionProfileId ?? null),
-        new Array(accNumColumns).fill(opts.salaryProfileId ?? null),
-      );
+    : await resolveLinkedBudgetItemAmounts(db, accItems, accNumColumns, {
+        contribProfileId: opts.contributionProfileId ?? null,
+        salaryProfileId: opts.salaryProfileId ?? null,
+      });
   const resolvedDecItems = opts.decumulationExpenseOverride
     ? decItems
-    : await resolveLinkedBudgetItemAmounts(
-        db,
-        decItems,
-        decNumColumns,
-        new Array(decNumColumns).fill(opts.contributionProfileId ?? null),
-        new Array(decNumColumns).fill(opts.salaryProfileId ?? null),
-      );
+    : await resolveLinkedBudgetItemAmounts(db, decItems, decNumColumns, {
+        contribProfileId: opts.contributionProfileId ?? null,
+        salaryProfileId: opts.salaryProfileId ?? null,
+      });
   const accumulationExpenses =
     opts.accumulationExpenseOverride ??
     computeBudgetAnnualTotal(resolvedAccItems, accCol, accMonths);

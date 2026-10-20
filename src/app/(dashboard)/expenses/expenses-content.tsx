@@ -124,8 +124,8 @@ export function ExpensesContent() {
     ...(effectiveBudgetProfileId != null
       ? { profileId: effectiveBudgetProfileId }
       : {}),
-    // Tiers, not a pre-resolved id, so a budget column's own profile still
-    // applies (docs/RULES.md "Profile Resolution").
+    // Tiers — the shape every budget caller sends (docs/RULES.md "Profile
+    // Resolution").
     contributionProfile: {
       localSelectionId: null,
       globalDefaultId: activeContribProfileId,

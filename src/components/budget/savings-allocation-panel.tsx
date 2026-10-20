@@ -89,8 +89,8 @@ export function SavingsAllocationPanel({
   const { data: summaries } =
     trpc.savings.goalProfileAllocations.listSummaries.useQuery();
   // "Unspent" arrives already computed, per profile, from budget.listProfiles
-  // — take-home pay resolved under THAT profile's own per-column
-  // Contribution/Salary Profile resolution, minus that profile's spending, minus its
+  // — take-home pay under the active Contribution/Salary Profiles, minus
+  // that profile's spending, minus its
   // savings allocations. This panel used to make its own
   // paycheck.computeSummary query with no input, which server-side means no
   // profile is applied at all — so the figure silently ignored every active

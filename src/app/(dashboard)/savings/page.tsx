@@ -65,10 +65,6 @@ import {
   deriveBudgetMonthlyTotal,
   type CapacityPerson,
 } from "@/lib/calculators/savings-capacity";
-import {
-  resolveContributionProfileId,
-  resolveSalaryProfileId,
-} from "@/lib/calculators/contribution-profile-resolution";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import {
@@ -119,13 +115,10 @@ export default function SavingsPage() {
   const { data: apiBalancesData } = trpc.savings.listApiBalances.useQuery();
   const { data: apiCategoriesData } = trpc.budget.listApiCategories.useQuery();
 
-  // Independent Salary Profile axis (column profile -> active setting) —
-  // mirrors the Contribution axis below so a per-column Salary
-  // Profile pin (set from Manage Modes) isn't silently ignored here while
-  // computeActiveSummary honors it for the Budget tab's item $ amounts.
+  // Independent Salary Profile axis — the active one.
   const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
-  // Tiers, not a pre-resolved id — see docs/RULES.md "Profile Resolution" and
-  // contribution-profile-resolution.ts.
+  // Tiers, the same shape every budget caller sends (docs/RULES.md
+  // "Profile Resolution").
   const contributionProfileTiers = {
     localSelectionId: null,
     globalDefaultId: rawActiveContribProfileId,
@@ -141,30 +134,11 @@ export default function SavingsPage() {
   });
   const { data: budgetProfilesList } = useBudgetProfilesList();
 
-  // Derive contribution profile from the budget column's linked profile
-  // (holistic rule) — resolveContributionProfileId is the only path this
-  // and computeActiveSummary/use-budget-derived-data.ts should use, so
-  // budget item $ amounts, this page's pool, and the payroll breakdown
-  // never disagree about which contribution profile is in effect.
-  const effectiveContribProfileId = resolveContributionProfileId({
-    ...contributionProfileTiers,
-    columnPinIds: budgetData?.profile?.columnContributionProfileIds as
-      (number | null)[] | null,
-    column: budgetColumn,
-    numColumns: budgetData?.columnLabels?.length ?? 0,
-  });
-  // Same holistic rule for the Salary axis — resolveSalaryProfileId is the
-  // only path this and computeActiveSummary should use for column
-  // resolution, so this page's payroll preview never disagrees with the
-  // Budget tab's linked item $ amounts about which Salary Profile is in
-  // effect for the selected column.
-  const effectiveSalaryProfileId = resolveSalaryProfileId({
-    ...salaryProfileTiers,
-    columnPinIds: budgetData?.profile?.columnSalaryProfileIds as
-      (number | null)[] | null,
-    column: budgetColumn,
-    numColumns: budgetData?.columnLabels?.length ?? 0,
-  });
+  // The active profiles — the same ones computeActiveSummary and the Budget
+  // page use, so budget item $ amounts, this page's pool and the payroll
+  // breakdown never disagree.
+  const effectiveContribProfileId = rawActiveContribProfileId;
+  const effectiveSalaryProfileId = rawActiveSalaryProfileId;
 
   const paycheckInput = {
     ...(effectiveContribProfileId != null
@@ -210,10 +184,9 @@ export default function SavingsPage() {
     ...(effectiveSalaryProfileId != null
       ? { salaryProfileId: effectiveSalaryProfileId }
       : {}),
-    // Threaded through so budget.computeActiveSummary's OWN per-column
-    // resolution (inside computeLiveMaxMonthlyFunding, savings.ts) matches
-    // exactly what this page's own maxMonthlyFunding query above used —
-    // not just a single resolved id (round two).
+    // Threaded through so budget.computeActiveSummary's own resolution
+    // (inside computeLiveMaxMonthlyFunding, savings.ts) matches exactly
+    // what this page's own maxMonthlyFunding query above used.
     contributionProfileTiers: contributionProfileTiers,
     salaryProfileTiers: salaryProfileTiers,
   };

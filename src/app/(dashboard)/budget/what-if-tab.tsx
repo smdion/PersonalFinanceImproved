@@ -1266,38 +1266,6 @@ export function WhatIfTab({
     visibleCount: 9999,
   });
 
-  // Columns whose resolved Contribution/Salary Profile differs from what the
-  // tab's own picker shows — i.e. a column's own profile outranks the
-  // preview tier for that column.
-  const overriddenColumns = useMemo(() => {
-    const contribByCol =
-      budgetData && "contribProfileIdByColumn" in budgetData
-        ? budgetData.contribProfileIdByColumn
-        : [];
-    const salaryByCol =
-      budgetData && "salaryProfileIdByColumn" in budgetData
-        ? budgetData.salaryProfileIdByColumn
-        : [];
-    const out: string[] = [];
-    for (let i = 0; i < cols.length; i++) {
-      const parts: string[] = [];
-      if (contribByCol[i] != null && contribByCol[i] !== contribId) {
-        const name =
-          contribProfiles?.find((p) => p.id === contribByCol[i])?.name ??
-          `#${contribByCol[i]}`;
-        parts.push(`Contribution: ${name}`);
-      }
-      if (salaryByCol[i] != null && salaryByCol[i] !== salaryId) {
-        const name =
-          salaryProfiles?.find((p) => p.id === salaryByCol[i])?.name ??
-          `#${salaryByCol[i]}`;
-        parts.push(`Salary: ${name}`);
-      }
-      if (parts.length > 0) out.push(`${cols[i]} → ${parts.join(", ")}`);
-    }
-    return out;
-  }, [budgetData, cols, contribId, salaryId, contribProfiles, salaryProfiles]);
-
   // ── Leftover: net income − this column's budget total ──
   const netMonthlyIncome =
     budgetData && "netMonthlyIncome" in budgetData
@@ -1619,19 +1587,6 @@ export function WhatIfTab({
             </button>
           )}
         </div>
-        {overriddenColumns.length > 0 && (
-          <div className="text-caption mt-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-amber-700">
-            <span className="font-semibold">Resolved elsewhere: </span>
-            some budget modes resolve to a different profile than the picks
-            above, because an active Plan or the mode&rsquo;s own selection
-            outranks a page-level preview.
-            <ul className="mt-1 list-inside list-disc">
-              {overriddenColumns.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          </div>
-        )}
       </div>
 
       {/* ── Step 1: Salary/bonus edits ── */}

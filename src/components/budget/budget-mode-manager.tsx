@@ -5,21 +5,12 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { HelpTip } from "@/components/ui/help-tip";
 import { confirm } from "@/components/ui/confirm-dialog";
 
-type ContributionProfile = { id: number; name: string };
-type SalaryProfile = { id: number; name: string };
-
 type BudgetModeManagerProps = {
   cols: string[];
   onRenameColumn: (colIndex: number, label: string) => void;
   onRemoveColumn: (colIndex: number) => void;
   onAddColumn: (label: string) => void;
   addColumnPending: boolean;
-  contributionProfiles?: ContributionProfile[];
-  columnContributionProfileIds?: (number | null)[] | null;
-  onUpdateContributionProfiles?: (ids: (number | null)[]) => void;
-  salaryProfiles?: SalaryProfile[];
-  columnSalaryProfileIds?: (number | null)[] | null;
-  onUpdateSalaryProfiles?: (ids: (number | null)[]) => void;
   columnMonths?: number[] | null;
   onUpdateColumnMonths?: (months: number[] | null) => void;
 };
@@ -30,21 +21,12 @@ export function BudgetModeManager({
   onRemoveColumn,
   onAddColumn,
   addColumnPending,
-  contributionProfiles,
-  columnContributionProfileIds,
-  onUpdateContributionProfiles,
-  salaryProfiles,
-  columnSalaryProfileIds,
-  onUpdateSalaryProfiles,
   columnMonths,
   onUpdateColumnMonths,
 }: BudgetModeManagerProps) {
   const [newModeName, setNewModeName] = useState("");
   const [monthDrafts, setMonthDrafts] = useState<Record<number, string>>({});
 
-  const hasContribProfiles =
-    contributionProfiles && contributionProfiles.length > 0;
-  const hasSalaryProfiles = salaryProfiles && salaryProfiles.length > 0;
   const isWeighted = !!columnMonths && columnMonths.length > 0;
   const canWeight = cols.length > 1 && onUpdateColumnMonths;
 
@@ -76,12 +58,10 @@ export function BudgetModeManager({
     <div className="bg-surface-sunken mb-4 rounded-lg border p-3">
       <h3 className="text-secondary mb-2 text-sm font-semibold">
         Budget Modes
-        <HelpTip text="Each mode is a separate set of budget amounts. Use modes to compare scenarios like 'Lean' vs 'Comfortable' spending." />
+        <HelpTip text="Each mode is a separate set of budget amounts — a spending level like 'Lean' vs 'Comfortable', or, weighted by months, parts of the year. Pay and contributions come from the active profiles." />
       </h3>
       <div className="space-y-2">
         {cols.map((label, idx) => {
-          const currentProfileId = columnContributionProfileIds?.[idx] ?? null;
-          const currentSalaryProfileId = columnSalaryProfileIds?.[idx] ?? null;
           return (
             <div key={label} className="flex items-center gap-2">
               <InlineEdit
@@ -94,52 +74,6 @@ export function BudgetModeManager({
                 type="text"
                 className="text-sm font-medium"
               />
-              {hasContribProfiles && onUpdateContributionProfiles && (
-                <select
-                  value={currentProfileId ?? ""}
-                  onChange={(e) => {
-                    const next = [
-                      ...(columnContributionProfileIds ?? cols.map(() => null)),
-                    ];
-                    next[idx] = e.target.value ? Number(e.target.value) : null;
-                    onUpdateContributionProfiles(next);
-                  }}
-                  className="text-caption bg-surface-primary text-muted rounded border px-1.5 py-0.5 focus:border-blue-400 focus:outline-none"
-                  title="Contribution profile for this mode's income calculations"
-                >
-                  {/* Empty = this column pins nothing and follows whichever
-                      profile is globally active. */}
-                  <option value="">Use active profile</option>
-                  {contributionProfiles.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {hasSalaryProfiles && onUpdateSalaryProfiles && (
-                <select
-                  value={currentSalaryProfileId ?? ""}
-                  onChange={(e) => {
-                    const next = [
-                      ...(columnSalaryProfileIds ?? cols.map(() => null)),
-                    ];
-                    next[idx] = e.target.value ? Number(e.target.value) : null;
-                    onUpdateSalaryProfiles(next);
-                  }}
-                  className="text-caption bg-surface-primary text-muted rounded border px-1.5 py-0.5 focus:border-blue-400 focus:outline-none"
-                  title="Salary profile for this mode's income calculations — independent of the contribution profile"
-                >
-                  {/* Empty = this column pins nothing and follows whichever
-                      profile is globally active. */}
-                  <option value="">Use active profile</option>
-                  {salaryProfiles.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              )}
               {isWeighted && canWeight && (
                 <div className="flex items-center gap-1">
                   <input
@@ -249,8 +183,6 @@ export function BudgetModeManager({
       </div>
       <p className="text-caption text-faint mt-2">
         Click a mode name to rename it. Each mode is a column of budget amounts.
-        {hasContribProfiles &&
-          " Use the dropdowns to assign a contribution profile and/or a salary profile for income calculations per mode."}
       </p>
     </div>
   );

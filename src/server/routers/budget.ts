@@ -30,16 +30,9 @@ import { canDeleteBudgetProfile, canRemoveColumn } from "@/lib/pure/profiles";
 import {
   columnLabelsSchema,
   columnMonthsSchema,
-  columnContributionProfileIdsSchema,
-  columnSalaryProfileIdsSchema,
   budgetAmountsSchema,
 } from "@/lib/db/json-schemas";
 import { calculateBudget } from "@/lib/calculators/budget";
-import {
-  resolveContributionProfileId,
-  resolveContributionProfileIdsForAllColumns,
-  resolveSalaryProfileIdsForAllColumns,
-} from "@/lib/calculators/contribution-profile-resolution";
 import type { BudgetInput } from "@/lib/calculators/types";
 import {
   computeBudgetAnnualTotal,
@@ -48,7 +41,8 @@ import {
   resolveTargetBudgetProfile,
   getResolvedGoalAllocations,
   resolveLinkedBudgetItemAmounts,
-  resolveBudgetProfileColumnProfileIds,
+  resolveActiveProfilePair,
+  type ProfilePair,
   loadBudgetItemLinks,
   setBudgetItemLink,
   deleteBudgetItemLink,
@@ -115,10 +109,9 @@ async function renumberItems(
 }
 
 /**
- * The non-column tiers of docs/RULES.md's profile precedence, as supplied by
- * the caller. The per-column tier comes from the budget profile row itself
- * and is never sent over the wire. All three fields are required (nullable)
- * so a caller can't silently omit one and get the old, wrong fallback.
+ * docs/RULES.md's profile precedence as the caller supplies it: its own
+ * local selection (What-If), else the active profile. Both fields are
+ * required (nullable) so a caller can't silently omit one.
  */
 export const profileResolutionTiersSchema = z.object({
   /** The calling page's own local selection / preview pick, if it has one. */
@@ -131,36 +124,29 @@ export type ProfileResolutionTiers = z.infer<
   typeof profileResolutionTiersSchema
 >;
 
+/** The profile a page's tiers resolve to: its own local selection (What-If
+ *  sandbox), else the active one. Without tiers, the active profile. */
+async function profileFromTiers(
+  db: DbOrTx,
+  tiers: ProfileResolutionTiers | undefined,
+  kind: "contribProfileId" | "salaryProfileId",
+): Promise<number | null> {
+  if (tiers) return tiers.localSelectionId ?? tiers.globalDefaultId;
+  return (await resolveActiveProfilePair(db))[kind];
+}
+
 /**
- * Resolve which Contribution Profile a budget-linked item edit should write
- * into, for one specific item's column — same precedence
- * (resolveContributionProfileId) the rest of the page already resolves with,
- * so a linked item's edit lands in the exact profile the user is looking at.
- * Throws rather than silently writing nowhere: contributionValue/Method have
- * no account-level fallback anymore (see applyContribActiveFields), so an
- * edit with no resolvable profile has nowhere correct to go.
+ * Which Contribution Profile a budget-linked item edit writes into — the
+ * one the page shows. Throws rather than silently writing nowhere:
+ * contributionValue/Method have no account-level fallback (see
+ * applyContribActiveFields), so an edit with no profile has nowhere
+ * correct to go.
  */
 async function resolveEffectiveContribProfileIdForItem(
   db: DbOrTx,
-  item: { profileId: number },
-  colIndex: number,
-  tiers: ProfileResolutionTiers,
+  tiers: ProfileResolutionTiers | undefined,
 ): Promise<number> {
-  const [budgetProfile] = await db
-    .select({
-      columnLabels: schema.budgetProfiles.columnLabels,
-      columnContributionProfileIds:
-        schema.budgetProfiles.columnContributionProfileIds,
-    })
-    .from(schema.budgetProfiles)
-    .where(eq(schema.budgetProfiles.id, item.profileId));
-  const resolvedId = resolveContributionProfileId({
-    ...tiers,
-    columnPinIds: budgetProfile?.columnContributionProfileIds as
-      (number | null)[] | null,
-    numColumns: budgetProfile?.columnLabels.length ?? 0,
-    column: colIndex,
-  });
+  const resolvedId = await profileFromTiers(db, tiers, "contribProfileId");
   if (resolvedId == null) {
     throw new TRPCError({
       code: "BAD_REQUEST",
@@ -171,17 +157,12 @@ async function resolveEffectiveContribProfileIdForItem(
   return resolvedId;
 }
 
-const NO_PROFILE_TIERS: ProfileResolutionTiers = {
-  localSelectionId: null,
-  globalDefaultId: null,
-};
-
 export const budgetRouter = createTRPCRouter({
   /**
    * List all budget profiles with summary totals (for profile sidebar), plus
-   * each profile's own "Unspent" figure — take-home pay under THAT profile's
-   * own per-column Contribution/Salary Profile resolution, minus that
-   * profile's spending, minus its savings allocations.
+   * each profile's own "Unspent" figure — take-home pay under the active
+   * Contribution/Salary Profiles, minus that profile's spending, minus its
+   * savings allocations.
    *
    * Unspent is computed here rather than client-side because the panel that
    * shows it used to call `paycheck.computeSummary` with no input at all,
@@ -200,9 +181,6 @@ export const budgetRouter = createTRPCRouter({
         isActive: schema.budgetProfiles.isActive,
         columnLabels: schema.budgetProfiles.columnLabels,
         columnMonths: schema.budgetProfiles.columnMonths,
-        columnContributionProfileIds:
-          schema.budgetProfiles.columnContributionProfileIds,
-        columnSalaryProfileIds: schema.budgetProfiles.columnSalaryProfileIds,
       })
       .from(schema.budgetProfiles)
       .orderBy(asc(schema.budgetProfiles.id));
@@ -251,104 +229,37 @@ export const budgetRouter = createTRPCRouter({
       );
     }
 
-    // ── Per-profile take-home pay ──
-    // Each profile's columns resolve their own Contribution/Salary Profile
-    // through the SAME resolver computeActiveSummary and the client's
-    // per-column payroll breakdown use, so this figure can't disagree with
-    // what the Budget tab shows for the same profile.
-    const contribTiers: ProfileResolutionTiers = {
-      localSelectionId: null,
-      globalDefaultId: settingValue(SK_ACTIVE_CONTRIB_PROFILE_ID),
+    // ── Take-home pay ──
+    // The active Contribution/Salary pair — the same for every budget
+    // profile, since a budget column is a spending level, not a different
+    // pay world. One paycheck.computeSummary call (the procedure the
+    // Paycheck page uses), not a parallel re-derivation.
+    const activeProfiles: ProfilePair = {
+      contribProfileId: settingValue(SK_ACTIVE_CONTRIB_PROFILE_ID),
+      salaryProfileId: settingValue(SK_ACTIVE_SALARY_PROFILE_ID),
     };
-    const salaryTiers: ProfileResolutionTiers = {
-      localSelectionId: null,
-      globalDefaultId: settingValue(SK_ACTIVE_SALARY_PROFILE_ID),
-    };
-
-    // One paycheck computation per DISTINCT (Contribution, Salary) pin pair
-    // across every profile's every column — not one per column. Goes
-    // through paycheck.computeSummary itself (same procedure the Paycheck
-    // page calls) rather than a parallel re-derivation.
-    //
-    // Exempting this internal call from the caller's own rate-limit
-    // budget (internalCtx) removes a backstop that was, until now,
-    // accidentally capping this fan-out — each nested call opens its own
-    // demo-schema pool connection when a demo profile is active
-    // (demoSchemaMiddleware), and a single profile's columns resolve
-    // concurrently via Promise.all below, so a profile with many columns
-    // and many distinct pin combinations could otherwise make an
-    // unbounded number of these calls AT ONCE. MAX_NET_MONTHLY_PAIRS
-    // caps total DISTINCT pairs STARTED per request; anything beyond it
-    // is left as null (income simply omitted for that pair) rather than
-    // making the call, with one warning logged the first time this
-    // actually clamps something.
-    //
-    // `distinctPairsStarted` is incremented SYNCHRONOUSLY, before the
-    // `await`, specifically so this holds even when many columns fire
-    // concurrently: JS runs the synchronous portion of each call in the
-    // Promise.all array's construction order before any of them
-    // suspends, so the counter correctly climbs 1, 2, 3... across a
-    // burst of new pairs instead of every concurrent caller seeing a
-    // stale pre-await Map size (which a naive `netMonthlyByPair.size`
-    // check would — the bug an earlier version of this cap had). The
-    // pending-promise map also dedupes concurrent callers asking for the
-    // SAME pair at the same time, so they share one paycheck call
-    // instead of racing two.
-    const MAX_NET_MONTHLY_PAIRS = 20;
-    let netMonthlyPairsClamped = false;
-    let distinctPairsStarted = 0;
-    const paycheckCaller = createCallerFactory(paycheckRouter)(
+    const paycheckData = await createCallerFactory(paycheckRouter)(
       internalCtx(ctx),
-    );
-    const netMonthlyByPair = new Map<string, number | null>();
-    const netMonthlyPending = new Map<string, Promise<number | null>>();
-    const netMonthlyForPair = (
-      contribProfileId: number | null,
-      salaryProfileId: number | null,
-    ): Promise<number | null> => {
-      const key = `${contribProfileId}:${salaryProfileId}`;
-      const cached = netMonthlyByPair.get(key);
-      if (cached !== undefined) return Promise.resolve(cached);
-      const pending = netMonthlyPending.get(key);
-      if (pending) return pending;
-
-      if (distinctPairsStarted >= MAX_NET_MONTHLY_PAIRS) {
-        if (!netMonthlyPairsClamped) {
-          netMonthlyPairsClamped = true;
-          log("warn", "listProfiles.netMonthlyPairs_clamped", {
-            limit: MAX_NET_MONTHLY_PAIRS,
-          });
-        }
-        return Promise.resolve(null);
-      }
-      distinctPairsStarted += 1;
-
-      const promise = (async () => {
-        const paycheckData = await paycheckCaller.computeSummary({
-          ...(contribProfileId != null
-            ? { contributionProfileId: contribProfileId }
-            : {}),
-          ...(salaryProfileId != null ? { salaryProfileId } : {}),
-        });
-        // netPay is gross − pre-tax − withholding − FICA − post-tax, so
-        // "sum netPay × budget periods per month" is the same monthly
-        // take-home the client's buildPayrollBreakdown derives line by
-        // line.
-        let net: number | null = null;
-        for (const d of paycheckData.people) {
-          const pc = d.paycheck;
-          if (!pc || !d.job) continue;
-          const perMonth =
-            ("budgetPerMonth" in d ? d.budgetPerMonth : null) ??
-            pc.periodsPerYear / 12;
-          net = (net ?? 0) + pc.netPay * perMonth;
-        }
-        netMonthlyByPair.set(key, net);
-        return net;
-      })();
-      netMonthlyPending.set(key, promise);
-      return promise;
-    };
+    ).computeSummary({
+      ...(activeProfiles.contribProfileId != null
+        ? { contributionProfileId: activeProfiles.contribProfileId }
+        : {}),
+      ...(activeProfiles.salaryProfileId != null
+        ? { salaryProfileId: activeProfiles.salaryProfileId }
+        : {}),
+    });
+    // netPay is gross − pre-tax − withholding − FICA − post-tax, so "sum
+    // netPay × budget periods per month" is the same monthly take-home the
+    // client's buildPayrollBreakdown derives line by line.
+    let netMonthly: number | null = null;
+    for (const d of paycheckData.people) {
+      const pc = d.paycheck;
+      if (!pc || !d.job) continue;
+      const perMonth =
+        ("budgetPerMonth" in d ? d.budgetPerMonth : null) ??
+        pc.periodsPerYear / 12;
+      netMonthly = (netMonthly ?? 0) + pc.netPay * perMonth;
+    }
 
     const rows: Array<
       (typeof profiles)[number] & {
@@ -367,17 +278,6 @@ export const budgetRouter = createTRPCRouter({
       const labels = (p.columnLabels as string[]) ?? [];
       const months = (p.columnMonths as number[] | null) ?? null;
       const numColumns = labels.length;
-      const contribIds = resolveContributionProfileIdsForAllColumns({
-        ...contribTiers,
-        columnPinIds: p.columnContributionProfileIds as
-          (number | null)[] | null,
-        numColumns,
-      });
-      const salaryIds = resolveSalaryProfileIdsForAllColumns({
-        ...salaryTiers,
-        columnPinIds: p.columnSalaryProfileIds as (number | null)[] | null,
-        numColumns,
-      });
       // Resolved through the same chain computeActiveSummary uses (see
       // resolveLinkedBudgetItemAmounts) — raw `amounts` silently dropped
       // every contribution-linked item from this sidebar's totals.
@@ -385,8 +285,7 @@ export const budgetRouter = createTRPCRouter({
         ctx.db,
         items,
         numColumns,
-        contribIds,
-        salaryIds,
+        activeProfiles,
       );
       const colTotals = labels.map((_: string, ci: number) =>
         resolvedItems.reduce((sum, item) => sum + (item.amounts[ci] ?? 0), 0),
@@ -402,26 +301,6 @@ export const budgetRouter = createTRPCRouter({
       const isWeighted = months !== null && months.length > 0;
       const spending = isWeighted ? budgetAnnual / 12 : (colTotals[0] ?? 0);
 
-      // A weighted profile has no single "the" contribution profile — its
-      // take-home is blended across modes exactly the way its spending is,
-      // using each mode's own months/year.
-      let netMonthly: number | null = null;
-      if (numColumns > 0) {
-        const perColumnNet = await Promise.all(
-          Array.from({ length: numColumns }, (_, col) =>
-            netMonthlyForPair(contribIds[col] ?? null, salaryIds[col] ?? null),
-          ),
-        );
-        if (perColumnNet.some((n) => n !== null)) {
-          netMonthly = isWeighted
-            ? perColumnNet.reduce<number>(
-                (sum, n, i) => sum + (n ?? 0) * (months![i] ?? 0),
-                0,
-              ) / 12
-            : (perColumnNet[0] ?? null);
-        }
-      }
-
       rows.push({
         ...p,
         annualTotal,
@@ -434,9 +313,8 @@ export const budgetRouter = createTRPCRouter({
         // — what a weighted profile's own monthlyTotal should have meant.
         weightedMonthlySpending: budgetAnnual / 12,
         monthlySavings,
-        /** Take-home pay under this profile's own resolved pins, blended
-         *  the same way its spending is. Null when nobody has an active
-         *  job/paycheck to compute from. */
+        /** Take-home pay under the active profiles. Null when nobody has
+         *  an active job/paycheck to compute from. */
         netMonthly,
         /** netMonthly − this profile's spending − its savings allocations.
          *  Null whenever netMonthly is. */
@@ -458,8 +336,6 @@ export const budgetRouter = createTRPCRouter({
       z.object({
         name: z.string().trim().min(1),
         columnLabels: columnLabelsSchema.default(["Standard"]),
-        contributionProfileId: z.number().int().nullable().optional(),
-        salaryProfileId: z.number().int().nullable().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -469,14 +345,6 @@ export const budgetRouter = createTRPCRouter({
           name: input.name,
           columnLabels: input.columnLabels,
           isActive: false,
-          columnContributionProfileIds: input.contributionProfileId
-            ? new Array(input.columnLabels.length).fill(
-                input.contributionProfileId,
-              )
-            : null,
-          columnSalaryProfileIds: input.salaryProfileId
-            ? new Array(input.columnLabels.length).fill(input.salaryProfileId)
-            : null,
         })
         .returning();
       const profile = rows[0]!;
@@ -522,9 +390,7 @@ export const budgetRouter = createTRPCRouter({
    * allocations — under a new name. Field-by-field on purpose, not a blanket
    * row copy:
    *
-   * - Copied: column labels/months, both sets of per-column profile pins
-   *   (a duplicate should start life resolving exactly like its source), and
-   *   each item's amounts/category/subcategory/essential flag/sort order.
+   * - Copied: column labels/months and each item's amounts/category/subcategory/essential flag/sort order.
    * - NOT copied: every API-linking field (`apiCategoryId`,
    *   `apiCategoryName`, `apiSyncDirection`, `apiLastSyncedAt`) and
    *   `contributionAccountId`. Two profiles both linked to push at the same
@@ -569,8 +435,6 @@ export const budgetRouter = createTRPCRouter({
             description: source.description,
             columnLabels: source.columnLabels,
             columnMonths: source.columnMonths,
-            columnContributionProfileIds: source.columnContributionProfileIds,
-            columnSalaryProfileIds: source.columnSalaryProfileIds,
             isActive: false,
           })
           .returning()
@@ -700,10 +564,8 @@ export const budgetRouter = createTRPCRouter({
           selectedColumn: z.number().optional(),
           profileId: z.number().optional(),
           /**
-           * The caller's non-column resolution tiers for each profile axis.
-           * Named per-tier (rather than one pre-resolved "active" id) so a
-           * budget column's own profile still applies — see
-           * contribution-profile-resolution.ts.
+           * The caller's resolution tiers for each profile axis (local
+           * selection → active); omitted = the active profiles.
            */
           contributionProfile: profileResolutionTiersSchema.optional(),
           salaryProfile: profileResolutionTiersSchema.optional(),
@@ -813,38 +675,24 @@ export const budgetRouter = createTRPCRouter({
       );
 
       // ── Contribution-linked budget amounts ──
-      // Budget items linked to a contribution account (via contributionAccountId)
-      // use the contribution's monthly amount directly — no fill-in heuristics.
-      // Each column resolves its OWN Contribution/Salary Profile: a profile
-      // whose columns pin different Contribution Profiles from each other is
-      // the whole point of per-column pins, and computing one profile from
-      // `selectedColumn` and broadcasting its monthly figure into every
-      // column's amounts (what this used to do) made these server totals
-      // disagree with the client's genuinely per-column payroll breakdown in
-      // use-budget-derived-data.ts.
-
-      // Per-column profile resolution, using the documented precedence
-      // (column profile > caller's local selection > active).
-      // Must match use-budget-derived-data.ts's resolution exactly, or budget
-      // item $ amounts and the payroll breakdown shown on the same page
-      // silently disagree about which contribution/salary reality is in
-      // effect. The two axes are independent — resolved separately so a
-      // column can pin one without the other.
-      const contribTiers = input?.contributionProfile ?? NO_PROFILE_TIERS;
-      const salaryTiers = input?.salaryProfile ?? NO_PROFILE_TIERS;
-      const contribProfileIdByColumn =
-        resolveContributionProfileIdsForAllColumns({
-          ...contribTiers,
-          columnPinIds: activeProfile.columnContributionProfileIds as
-            (number | null)[] | null,
-          numColumns,
-        });
-      const salaryProfileIdByColumn = resolveSalaryProfileIdsForAllColumns({
-        ...salaryTiers,
-        columnPinIds: activeProfile.columnSalaryProfileIds as
-          (number | null)[] | null,
-        numColumns,
-      });
+      // Budget items linked to a contribution account (via
+      // contributionAccountId) use the contribution's monthly amount
+      // directly — no fill-in heuristics — under the (Contribution, Salary)
+      // pair the page shows: its own local selection (What-If), else the
+      // active profiles. A budget column is a spending level, so the pair is
+      // the same for every column (and matches use-budget-derived-data.ts).
+      const profiles: ProfilePair = {
+        contribProfileId: await profileFromTiers(
+          ctx.db,
+          input?.contributionProfile,
+          "contribProfileId",
+        ),
+        salaryProfileId: await profileFromTiers(
+          ctx.db,
+          input?.salaryProfile,
+          "salaryProfileId",
+        ),
+      };
       // Resolved through the SAME helper listProfiles uses above
       // (resolveLinkedBudgetItemAmounts) — this procedure used to maintain
       // its own independent copy of this exact resolution (the only
@@ -857,8 +705,7 @@ export const budgetRouter = createTRPCRouter({
             ctx.db,
             items,
             numColumns,
-            contribProfileIdByColumn,
-            salaryProfileIdByColumn,
+            profiles,
             {
               sandboxContribActiveFields: input?.sandboxContribActiveFields,
               sandboxSalaryEntries: input?.sandboxSalaryEntries,
@@ -972,14 +819,13 @@ export const budgetRouter = createTRPCRouter({
         );
         const incomePaycheckData = await paycheckCallerForIncome.computeSummary(
           {
-            ...(contribProfileIdByColumn[selectedColumn] != null
+            ...(profiles.contribProfileId != null
               ? {
-                  contributionProfileId:
-                    contribProfileIdByColumn[selectedColumn]!,
+                  contributionProfileId: profiles.contribProfileId,
                 }
               : {}),
-            ...(salaryProfileIdByColumn[selectedColumn] != null
-              ? { salaryProfileId: salaryProfileIdByColumn[selectedColumn]! }
+            ...(profiles.salaryProfileId != null
+              ? { salaryProfileId: profiles.salaryProfileId }
               : {}),
             ...(input?.sandboxSalaryEntries
               ? { sandboxSalaryEntries: input.sandboxSalaryEntries }
@@ -1032,11 +878,6 @@ export const budgetRouter = createTRPCRouter({
          *  computation above. A separate, additively-labeled figure; never
          *  folded into netMonthlyIncome or any What-If total. */
         budgetIncomeAdjustmentThisMonth,
-        /** What each column actually resolved to, per the documented
-         *  precedence — surfaced so the UI can explain a column whose
-         *  effective profile differs from the page's own picker. */
-        contribProfileIdByColumn,
-        salaryProfileIdByColumn,
       };
     }),
 
@@ -1076,9 +917,7 @@ export const budgetRouter = createTRPCRouter({
           const contribProfileId =
             await resolveEffectiveContribProfileIdForItem(
               tx,
-              item,
-              input.colIndex,
-              input.contributionProfile ?? NO_PROFILE_TIERS,
+              input.contributionProfile,
             );
           await applyContributionAccountEdit(
             tx,
@@ -1217,9 +1056,7 @@ export const budgetRouter = createTRPCRouter({
             const contribProfileId =
               await resolveEffectiveContribProfileIdForItem(
                 tx,
-                item,
-                lastChange.colIndex,
-                input.contributionProfile ?? NO_PROFILE_TIERS,
+                input.contributionProfile,
               );
             contributionEdits.push({
               contributionAccountId: item.contributionAccountId,
@@ -1267,18 +1104,6 @@ export const budgetRouter = createTRPCRouter({
       const newMonths = profile.columnMonths
         ? columnMonthsSchema.parse([...(profile.columnMonths as number[]), 0])
         : null;
-      const newContribIds = profile.columnContributionProfileIds
-        ? columnContributionProfileIdsSchema.parse([
-            ...(profile.columnContributionProfileIds as (number | null)[]),
-            null,
-          ])
-        : null;
-      const newSalaryIds = profile.columnSalaryProfileIds
-        ? columnSalaryProfileIdsSchema.parse([
-            ...(profile.columnSalaryProfileIds as (number | null)[]),
-            null,
-          ])
-        : null;
       // Atomic: the new column must land on the profile AND on every item's
       // amounts array together, or the budget is left ragged.
       await ctx.db.transaction(async (tx) => {
@@ -1287,8 +1112,6 @@ export const budgetRouter = createTRPCRouter({
           .set({
             columnLabels: newLabels,
             columnMonths: newMonths,
-            columnContributionProfileIds: newContribIds,
-            columnSalaryProfileIds: newSalaryIds,
           })
           .where(eq(schema.budgetProfiles.id, profile.id));
 
@@ -1345,20 +1168,6 @@ export const budgetRouter = createTRPCRouter({
             ),
           )
         : null;
-      const newContribIds = profile.columnContributionProfileIds
-        ? columnContributionProfileIdsSchema.parse(
-            (profile.columnContributionProfileIds as (number | null)[]).filter(
-              (_: number | null, i: number) => i !== input.colIndex,
-            ),
-          )
-        : null;
-      const newSalaryIds = profile.columnSalaryProfileIds
-        ? columnSalaryProfileIdsSchema.parse(
-            (profile.columnSalaryProfileIds as (number | null)[]).filter(
-              (_: number | null, i: number) => i !== input.colIndex,
-            ),
-          )
-        : null;
       // Atomic: drop the column from the profile AND from every item's
       // amounts array together (see addColumn).
       await ctx.db.transaction(async (tx) => {
@@ -1367,8 +1176,6 @@ export const budgetRouter = createTRPCRouter({
           .set({
             columnLabels: newLabels,
             columnMonths: newMonths,
-            columnContributionProfileIds: newContribIds,
-            columnSalaryProfileIds: newSalaryIds,
           })
           .where(eq(schema.budgetProfiles.id, profile.id));
 
@@ -1667,97 +1474,6 @@ export const budgetRouter = createTRPCRouter({
       await ctx.db
         .update(schema.budgetProfiles)
         .set({ columnMonths: input.columnMonths })
-        .where(eq(schema.budgetProfiles.id, profile.id));
-      return { ok: true };
-    }),
-
-  /** Update per-column contribution profile assignments. */
-  updateColumnContributionProfileIds: budgetProcedure
-    .input(
-      z.object({
-        columnContributionProfileIds: columnContributionProfileIdsSchema,
-        profileId: z.number().optional(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
-      if (!profile)
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "No active profile",
-        });
-
-      if (input.columnContributionProfileIds) {
-        if (
-          input.columnContributionProfileIds.length !==
-          profile.columnLabels.length
-        ) {
-          log("warn", "budget_column_mismatch", {
-            field: "columnContributionProfileIds",
-            expected: profile.columnLabels.length,
-            got: input.columnContributionProfileIds.length,
-          });
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: "This budget's columns changed — reload and try again.",
-          });
-        }
-      }
-
-      // Store null if all entries are null (clean up to default behavior)
-      const cleaned = input.columnContributionProfileIds?.every(
-        (v) => v === null,
-      )
-        ? null
-        : input.columnContributionProfileIds;
-
-      await ctx.db
-        .update(schema.budgetProfiles)
-        .set({ columnContributionProfileIds: cleaned })
-        .where(eq(schema.budgetProfiles.id, profile.id));
-      return { ok: true };
-    }),
-
-  /** Update per-column salary profile assignments (independent of the
-   *  contribution-profile assignments above). */
-  updateColumnSalaryProfileIds: budgetProcedure
-    .input(
-      z.object({
-        columnSalaryProfileIds: columnSalaryProfileIdsSchema,
-        profileId: z.number().optional(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const profile = await resolveTargetBudgetProfile(ctx.db, input.profileId);
-      if (!profile)
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "No active profile",
-        });
-
-      if (
-        input.columnSalaryProfileIds &&
-        input.columnSalaryProfileIds.length !== profile.columnLabels.length
-      ) {
-        log("warn", "budget_column_mismatch", {
-          field: "columnSalaryProfileIds",
-          expected: profile.columnLabels.length,
-          got: input.columnSalaryProfileIds.length,
-        });
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "This budget's columns changed — reload and try again.",
-        });
-      }
-
-      // Store null if all entries are null (clean up to default behavior)
-      const cleaned = input.columnSalaryProfileIds?.every((v) => v === null)
-        ? null
-        : input.columnSalaryProfileIds;
-
-      await ctx.db
-        .update(schema.budgetProfiles)
-        .set({ columnSalaryProfileIds: cleaned })
         .where(eq(schema.budgetProfiles.id, profile.id));
       return { ok: true };
     }),
@@ -2145,8 +1861,7 @@ export const budgetRouter = createTRPCRouter({
       });
 
       const numColumns = (profile.columnLabels as string[]).length;
-      const { contribProfileIdByColumn, salaryProfileIdByColumn } =
-        await resolveBudgetProfileColumnProfileIds(ctx.db, profile);
+      const activeProfiles = await resolveActiveProfilePair(ctx.db);
       // Contribution-linked items freeze `amounts` on edit (see
       // resolveLinkedBudgetItemAmounts docblock) — pushing raw `amounts`
       // would push the stale value instead of the profile's live one.
@@ -2154,8 +1869,7 @@ export const budgetRouter = createTRPCRouter({
         ctx.db,
         items,
         numColumns,
-        contribProfileIdByColumn,
-        salaryProfileIdByColumn,
+        activeProfiles,
       );
 
       let pushed = 0;

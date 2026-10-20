@@ -1,8 +1,8 @@
 /**
  * Pure helper functions shared by the budget page.
  *
- * These reshape the per-column paycheck data returned by
- * `usePerColumnPaycheck` into the payroll + non-payroll breakdowns the
+ * These reshape the paycheck data (one copy per budget column — see
+ * use-budget-derived-data.ts) into the payroll + non-payroll breakdowns the
  * budget summary table and contribution matching rely on. The hand-rolled
  * local casts are intentional: narrowing against `@/server/*` types would
  * violate the `no-restricted-imports` rule at eslint.config.mjs lines
