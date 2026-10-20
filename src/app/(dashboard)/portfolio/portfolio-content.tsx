@@ -9,6 +9,8 @@ import React, { useState, useCallback, useMemo } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
+import { HoldingHistorySection } from "@/components/investments/holding-history-section";
+import { HOLDING_HISTORY_ANCHOR } from "@/lib/config/page-links";
 import { Card } from "@/components/ui/card";
 import {
   formatCurrency,
@@ -943,6 +945,15 @@ export function PortfolioContent() {
           <ContributionAccountsSettings />
         </div>
       </CardBoundary>
+      {/* What each account held over time — entered here, read by
+          Benchmarks' "Your mix, in index funds". */}
+      {hasPermission(user, "portfolio") && (
+        <CardBoundary title="Holding history">
+          <div id={HOLDING_HISTORY_ANCHOR} className="mt-8 scroll-mt-4">
+            <HoldingHistorySection />
+          </div>
+        </CardBoundary>
+      )}
     </div>
   );
 }

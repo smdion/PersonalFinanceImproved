@@ -512,17 +512,4 @@ describe("projection router — computeProjection", () => {
     expect(response.annualExpenses).toBeGreaterThan(0);
     expect(response.result!.projectionByYear.length).toBeGreaterThan(0);
   });
-
-  it("an active salary replaces the job salary and grows the nest egg", async () => {
-    const input = { accumulationOverrides: [], decumulationOverrides: [] };
-    const base = await caller.projection.computeProjection(input);
-    const raised = await caller.projection.computeProjection({
-      ...input,
-      salaryActiveFields: [{ personId: 1, salary: 150000 }],
-    });
-    expect(raised.combinedSalary).toBe(150000);
-    const peak = (r: typeof base) =>
-      Math.max(...r.result!.projectionByYear.map((y) => y.endBalance));
-    expect(peak(raised)).toBeGreaterThan(peak(base));
-  });
 });

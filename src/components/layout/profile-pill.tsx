@@ -9,9 +9,7 @@ export type ProfileOption = {
   name: string;
   /** Drives the highlight + the closed pill's label — the effectively-in-effect profile. */
   isActive: boolean;
-  /** Right-aligned status text, e.g. "Active" or "Active (global)".
-   *  "Active (global)" marks the household's default profile when a Plan has
-   *  made a different one active, so the two don't both just read "Active". */
+  /** Right-aligned status text, e.g. "Active". */
   badge?: string;
 };
 
@@ -20,6 +18,8 @@ type ProfilePillProps = {
   options: ProfileOption[];
   onActivate: (id: string | number) => void;
   isPending?: boolean;
+  /** No permission to change this kind — the pill shows it, read-only. */
+  disabled?: boolean;
 };
 
 export function ProfilePill({
@@ -27,6 +27,7 @@ export function ProfilePill({
   options,
   onActivate,
   isPending,
+  disabled,
 }: ProfilePillProps) {
   const [open, setOpen] = useState(false);
   const ref = useClickOutside<HTMLDivElement>(() => setOpen(false));
@@ -42,7 +43,10 @@ export function ProfilePill({
           onClick={() => setOpen(!open)}
           aria-haspopup="listbox"
           aria-expanded={open}
-          disabled={isPending}
+          disabled={isPending || disabled}
+          title={
+            disabled ? "You don't have permission to change this" : undefined
+          }
           className="text-label bg-surface-primary text-primary flex items-center gap-1.5 rounded px-3 py-1.5 shadow-sm transition-colors disabled:opacity-50"
         >
           <span className="font-medium">{activeName}</span>
@@ -84,9 +88,7 @@ export function ProfilePill({
                 <span className="truncate">{o.name}</span>
                 {o.badge && (
                   <span className="ml-auto shrink-0">
-                    <Badge color={o.badge.includes("global") ? "gray" : "blue"}>
-                      {o.badge}
-                    </Badge>
+                    <Badge color="blue">{o.badge}</Badge>
                   </span>
                 )}
               </button>

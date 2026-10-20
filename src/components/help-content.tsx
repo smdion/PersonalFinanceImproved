@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { SettingsLink } from "@/components/ui/settings-link";
 import {
   LayoutDashboard,
   Wallet,
@@ -66,6 +67,8 @@ function Kbd({ children }: { children: React.ReactNode }) {
   );
 }
 
+const HELP_LINK = "text-blue-600 underline hover:text-blue-700";
+
 function NavLink({
   href,
   children,
@@ -74,7 +77,7 @@ function NavLink({
   children: React.ReactNode;
 }) {
   return (
-    <Link href={href} className="text-blue-600 underline hover:text-blue-700">
+    <Link href={href} className={HELP_LINK}>
       {children}
     </Link>
   );
@@ -105,15 +108,23 @@ export function HelpContent() {
         <ol className="ml-2 list-inside list-decimal space-y-1">
           <li>
             <strong>Add people</strong> &mdash; Create household members in{" "}
-            <NavLink href="/settings">Settings &gt; People</NavLink>. Each
-            person gets their own paycheck, tax bracket, and contribution
+            <SettingsLink
+              tab="general"
+              section="people"
+              className={HELP_LINK}
+            />
+            . Each person gets their own paycheck, tax bracket, and contribution
             limits.
           </li>
           <li>
             <strong>Set IRS limits</strong> &mdash; Review the current-year
             401(k), HSA, and IRA limits under{" "}
-            <NavLink href="/settings">Settings &gt; IRS Limits</NavLink>. These
-            are pre-populated but can be adjusted.
+            <SettingsLink
+              tab="taxdata"
+              section="limits"
+              className={HELP_LINK}
+            />
+            . These are pre-populated but can be adjusted.
           </li>
           <li>
             <strong>Configure a paycheck</strong> &mdash; Head to the{" "}
@@ -124,7 +135,7 @@ export function HelpContent() {
           <li>
             <strong>Connect a budget API</strong> (optional) &mdash; If you use
             YNAB or Actual Budget, link them in{" "}
-            <NavLink href="/settings">Settings &gt; Integrations</NavLink> to
+            <SettingsLink tab="integrations" className={HELP_LINK} /> to
             automatically sync budget categories and balances.
           </li>
         </ol>
@@ -170,7 +181,13 @@ export function HelpContent() {
             was last refreshed from your budget API (if connected). Hover to see
             a breakdown by data type. Click the row to trigger a manual sync, or
             let auto-sync handle it automatically when data becomes stale
-            (configurable in Settings &gt; Integrations).
+            (configurable in{" "}
+            <SettingsLink
+              tab="integrations"
+              section="syncBehavior"
+              className={HELP_LINK}
+            />
+            ).
           </li>
         </ul>
       </Section>
@@ -273,9 +290,10 @@ export function HelpContent() {
             &ldquo;Minimum Match&rdquo;) and switch between them instantly.
           </li>
           <li>
-            <strong>Scenario mode</strong> &mdash; Toggle into what-if mode to
-            test salary or contribution changes without affecting your real
-            data.
+            <strong>Where edits save</strong> &mdash; unlock the page and each
+            section says which profile its changes go to. To try a change
+            without saving it, use What-If on the{" "}
+            <NavLink href="/profiles?tab=whatif">Profiles</NavLink> page.
           </li>
         </ul>
       </Section>
@@ -284,8 +302,8 @@ export function HelpContent() {
       <Section title="Budget" icon={ClipboardList}>
         <p>
           The <NavLink href="/budget">Budget</NavLink> page is a multi-column
-          budgeting workspace. Each column can represent a different time period
-          or scenario.
+          budgeting workspace. Each column is a spending level (e.g. Standard,
+          Tight), and a profile can split the year between them by months.
         </p>
         <h4 className="text-secondary font-semibold">Key features</h4>
         <ul className="ml-2 list-inside list-disc space-y-1">
@@ -312,9 +330,10 @@ export function HelpContent() {
             modal shows the impact of your edits across the app.
           </li>
           <li>
-            <strong>Salary overrides</strong> &mdash; Temporarily change the
-            income assumption to see how a raise or job change would affect your
-            budget.
+            <strong>Try a change</strong> &mdash; a raise, a new budget, a
+            different contribution mix: use the What-If tab on the{" "}
+            <NavLink href="/profiles?tab=whatif">Profiles</NavLink> page, which
+            saves nothing.
           </li>
         </ul>
       </Section>
@@ -903,54 +922,32 @@ export function HelpContent() {
         Features
       </h3>
 
-      <Section title="Scenarios & What-If Mode">
+      <Section title="Profiles and Plans">
         <p>
-          Several pages support <strong>scenario mode</strong> (also called
-          what-if mode). When activated, you can make temporary changes to see
-          their impact without affecting your real data.
+          Each profile is its own world — Salary (pay, bonus, W-4, schedule),
+          Contributions (what goes to each account), Budget (spending) and
+          Retirement (ages, assumptions). There&apos;s no default profile, only
+          the active one of each kind, picked in the header.
         </p>
         <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
-            <strong>Salary overrides</strong> &mdash; Temporarily change the
-            income used in calculations. Available on Paycheck, Budget, and
-            Brokerage pages.
+            <strong>Create and edit profiles</strong> on the{" "}
+            <NavLink href="/profiles">Profiles</NavLink> page (Budget profiles
+            on the <NavLink href="/budget">Budget</NavLink> page).
           </li>
           <li>
-            <strong>Contribution profiles</strong> &mdash; Switch between saved
-            profiles to model different contribution strategies.
+            <strong>Switch</strong> with the header&apos;s pickers — every page
+            then uses that profile.
           </li>
           <li>
-            <strong>Scenario indicator</strong> &mdash; A visual badge appears
-            whenever you&rsquo;re viewing data under a what-if scenario so you
-            always know what&rsquo;s real vs. hypothetical.
+            <strong>A Plan</strong> saves a set of profiles (one of each kind).
+            Applying a Plan makes its profiles the active ones for the whole
+            household; change a picker and you&apos;re on an unsaved mix you can
+            save as a new Plan or use to update the last one.
           </li>
           <li>
-            <strong>Push preview</strong> &mdash; On the Budget page, see a
-            detailed preview of how your scenario changes would flow through to
-            other pages before committing them.
-          </li>
-        </ul>
-      </Section>
-
-      <Section title="Contribution Profiles">
-        <p>
-          Contribution profiles are reusable sets of paycheck contribution
-          elections. They let you quickly switch between different savings
-          strategies.
-        </p>
-        <ul className="ml-2 list-inside list-disc space-y-1">
-          <li>
-            <strong>Create profiles</strong> on the Paycheck page &mdash; name
-            them descriptively (e.g. &ldquo;Max Retirement&rdquo;, &ldquo;House
-            Down Payment&rdquo;).
-          </li>
-          <li>
-            <strong>Switch profiles</strong> to instantly recalculate take-home
-            pay, budget capacity, and savings projections.
-          </li>
-          <li>
-            Profiles are used across Budget, Brokerage, Savings, and Retirement
-            pages for consistent projections.
+            <strong>What-If</strong> (Profiles page) is a sandbox: try changes
+            without saving anything.
           </li>
         </ul>
       </Section>
@@ -964,9 +961,9 @@ export function HelpContent() {
         <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
             <strong>Setup</strong> &mdash; Go to{" "}
-            <NavLink href="/settings">Settings &gt; Integrations</NavLink>. For
-            YNAB, enter your personal access token. For Actual Budget, enter
-            your server URL and password.
+            <SettingsLink tab="integrations" className={HELP_LINK} />. For YNAB,
+            enter your personal access token. For Actual Budget, enter your
+            server URL and password.
           </li>
           <li>
             <strong>What syncs</strong> &mdash; Budget categories, category
@@ -978,10 +975,15 @@ export function HelpContent() {
             enable auto-sync to refresh automatically when data becomes stale.
           </li>
           <li>
-            <strong>Auto-sync settings</strong> &mdash; In Settings &gt;
-            Integrations, toggle auto-sync on/off and set the stale-data
-            threshold (how many hours old data must be before it auto-syncs on
-            page load). Default threshold is 4 hours.
+            <strong>Auto-sync settings</strong> &mdash; In{" "}
+            <SettingsLink
+              tab="integrations"
+              section="syncBehavior"
+              className={HELP_LINK}
+            />
+            , toggle auto-sync on/off and set the stale-data threshold (how many
+            hours old data must be before it auto-syncs on page load). Default
+            threshold is 4 hours.
           </li>
           <li>
             <strong>No API? No problem</strong> &mdash; Every feature works

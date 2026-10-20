@@ -26,7 +26,7 @@ export function canDeleteBudgetProfile(profile: {
  * ONE profile always exists (the active-profile setting must always point at
  * a real row), hence the profileCount guard.
  *
- * The "pinned by a Plan" guard lives in the router, which has to name the
+ * The "used by a Plan" guard lives in the router (assertNoPlanUses), which has to name the
  * offending Plans in its message.
  */
 export function canDeleteContribProfile(
@@ -74,7 +74,7 @@ export function canDeleteSalaryProfile(
 /**
  * Check if a retirement profile can be deleted. Twin of
  * canDeleteContribProfile/canDeleteSalaryProfile — no sentinel id, same
- * last-one-standing rule. "Pinned by a Plan" lives in the router, same as
+ * last-one-standing rule. "Used by a Plan" lives in the router, same as
  * the other two, which has to name the offending Plans in its message.
  */
 export function canDeleteRetirementProfile(

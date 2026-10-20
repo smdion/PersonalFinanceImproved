@@ -40,7 +40,6 @@ type StrategyResult = {
 };
 
 type AnalyzerInput = {
-  salaryActiveFields?: { personId: number; salary: number }[];
   contributionProfileId?: number;
   accumulationBudgetProfileId?: number;
   accumulationBudgetColumn?: number;

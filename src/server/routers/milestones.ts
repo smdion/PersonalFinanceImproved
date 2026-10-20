@@ -14,7 +14,7 @@ import {
 } from "@/lib/constants/settings-keys";
 import { parseMilestoneSettings } from "@/lib/pure/milestones";
 import { milestoneYearFromHistory } from "@/lib/pure/milestone-input";
-import { zYearEndTargeting, toSalaryActiveMap } from "./_shared";
+import { zYearEndTargeting } from "./_shared";
 
 export const milestonesRouter = createTRPCRouter({
   /** Year-end history mapped for the Milestones engine, plus the household's own goals and checklist. */
@@ -26,7 +26,6 @@ export const milestonesRouter = createTRPCRouter({
         buildYearEndHistory(ctx.db, asOfDate, {
           budgetProfileId: input?.budgetProfileId,
           budgetColumn: input?.budgetColumn,
-          salaryActiveFields: toSalaryActiveMap(input?.salaryActiveFields),
         }),
         ctx.db
           .select()

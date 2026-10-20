@@ -8,7 +8,8 @@
  * UnlinkedContribsBanner + AccountCard list.
  */
 
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
@@ -26,6 +27,10 @@ import { AccountCard } from "./contribution-accounts-card";
 import { CreateAccountForm } from "./contribution-accounts-create-form";
 import { useContributionAccountsMutations } from "./use-contribution-accounts-mutations";
 import { UnlinkedContribsBanner } from "./unlinked-contribs-banner";
+import {
+  PORTFOLIO_ACCOUNTS_ANCHOR,
+  PORTFOLIO_ACCOUNTS_SECTION,
+} from "./portfolio-accounts-link";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import type { Holding } from "@/components/investments/fund-holding-row";
@@ -94,7 +99,11 @@ export function ContributionAccountsSettings() {
     contribCompareData?.profiles.find((p) => p.id === activeContribProfileId)
       ?.accountActiveFields ?? {};
   const [showClosed, setShowClosed] = useState(false);
-  const [expanded, setExpanded] = useState(false);
+  // Opened (and scrolled to) by links elsewhere — see PortfolioAccountsLink.
+  const linked =
+    useSearchParams().get("section") === PORTFOLIO_ACCOUNTS_SECTION;
+  const [expanded, setExpanded] = useState(linked);
+  const sectionRef = useRef<HTMLDivElement>(null);
   const [expandedAcctId, setExpandedAcctId] = useState<number | null>(null);
   const [creatingAccount, setCreatingAccount] = useState(false);
 
@@ -198,12 +207,22 @@ export function ContributionAccountsSettings() {
     activeContribProfileId,
   });
 
+  const hasAccounts = allAccounts.length > 0;
+  useEffect(() => {
+    if (linked && hasAccounts)
+      sectionRef.current?.scrollIntoView({ block: "start" });
+  }, [linked, hasAccounts]);
+
   if (allAccounts.length === 0 && !creatingAccount) return null;
 
   const visibleAccounts = showClosed ? allAccounts : activeAccounts;
 
   return (
-    <div>
+    <div
+      id={PORTFOLIO_ACCOUNTS_ANCHOR}
+      ref={sectionRef}
+      className="scroll-mt-4"
+    >
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}

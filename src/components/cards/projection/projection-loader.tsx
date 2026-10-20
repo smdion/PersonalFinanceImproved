@@ -15,6 +15,8 @@
  *  each show their own in-place skeleton so the layout never shifts.
  */
 
+import { SettingsLink } from "@/components/ui/settings-link";
+
 type Phase = "pending" | "active" | "done" | "disabled";
 
 type Props = {
@@ -262,10 +264,8 @@ function PhaseIcon({
 function SettingsTip() {
   return (
     <p className="text-caption text-faint whitespace-nowrap">
-      <a href="/settings" className="hover:text-muted underline">
-        Settings → General
-      </a>{" "}
-      to configure
+      <SettingsLink tab="general" className="hover:text-muted underline" /> to
+      configure
     </p>
   );
 }

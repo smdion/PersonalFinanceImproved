@@ -116,11 +116,11 @@ export function PerformanceTable({
                 </th>
                 <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                   Contribution Basis
-                  <HelpTip text="Roth contribution/rollover basis, per (account, owner, year) — always penalty-free and tax-free. Blank for accounts that don't track Roth basis (HSA, brokerage). Edit on the current year to update Tax Buckets too — same underlying figure." />
+                  <HelpTip text="Roth contribution/rollover basis, per (account, owner, year) — always penalty-free and tax-free. Blank for accounts that don't track Roth basis (HSA, brokerage). Edit on the current year to update Retirement taxes too — same underlying figure." />
                 </th>
                 <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                   Conversion Basis
-                  <HelpTip text="Roth conversion basis — tax-free, but penalty-free only once its own 5-year clock has passed. See Tax Buckets for the accessible-now/locked split." />
+                  <HelpTip text="Roth conversion basis — tax-free, but penalty-free only once its own 5-year clock has passed. See Retirement taxes for the accessible-now/locked split." />
                 </th>
               </>
             )}

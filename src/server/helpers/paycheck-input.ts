@@ -7,8 +7,7 @@
  * this covers ONLY the object-construction tail, not the upstream
  * resolution logic. paycheck.ts's router and savings.ts's
  * computeJobNetPayPerCheck resolve salary/contributions/deductions through
- * genuinely different pipelines — the router applies Plan/session
- * overrides, What-If sandbox edits, and bonus-term/deduction overrides;
+ * genuinely different pipelines — the router applies What-If sandbox edits, and bonus-term/deduction overrides;
  * computeJobNetPayPerCheck resolves against the active Contribution
  * Profile's active fields too (job tax-inputs, deductions, contributions,
  * and salary all resolve the same way there as everywhere else in this

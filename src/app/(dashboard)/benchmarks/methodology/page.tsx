@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { BENCHMARKS, BUCKET_INDEX_PROXIES } from "@/lib/config/benchmarks";
+import { SettingsLink } from "@/components/ui/settings-link";
 
 function Section({
   id,
@@ -182,8 +183,8 @@ export default function MethodologyPage() {
           ))}
         </ul>
         <p>
-          Prices come from Tiingo (month-end, total return). Connect it in
-          Settings → Integrations.
+          Prices come from Tiingo (month-end, total return). Connect it in{" "}
+          <SettingsLink tab="integrations" section="tiingo" />.
         </p>
       </Section>
 

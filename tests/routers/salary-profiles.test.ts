@@ -410,7 +410,7 @@ describe("salaryProfile router", () => {
       }
     });
 
-    it("refuses to delete a profile pinned by a Plan", async () => {
+    it("refuses to delete a profile a Plan uses", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const profileId = seedSalaryProfile(db, { name: "Pinned" });
@@ -425,7 +425,7 @@ describe("salaryProfile router", () => {
 
         await expect(
           caller.salaryProfile.delete({ id: profileId }),
-        ).rejects.toThrow("pinned by 1 Plan");
+        ).rejects.toThrow("used by Plan");
       } finally {
         cleanup();
       }

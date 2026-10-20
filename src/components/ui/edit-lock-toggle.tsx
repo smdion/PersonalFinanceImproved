@@ -36,19 +36,26 @@ export function EditLockToggle({
       </span>
     );
   }
+  // Says what state it's in, not just an icon: a locked page otherwise
+  // looks broken (fields that won't edit, no reason given).
   return (
     <button
       type="button"
       onClick={onToggle}
       title={locked ? "Unlock to edit" : "Lock editing"}
       aria-label={locked ? "Unlock to edit" : "Lock editing"}
-      className="text-faint hover:text-primary transition-colors"
+      className={`text-caption inline-flex items-center gap-1 rounded px-1.5 py-0.5 transition-colors ${
+        locked
+          ? "text-faint hover:text-primary"
+          : "bg-amber-50 text-amber-700 hover:text-amber-900 dark:bg-amber-900/20 dark:text-amber-400"
+      }`}
     >
       {locked ? (
         <Lock className="h-3.5 w-3.5" />
       ) : (
         <LockOpen className="h-3.5 w-3.5" />
       )}
+      <span>{locked ? "View only — unlock to edit" : "Editing"}</span>
     </button>
   );
 }

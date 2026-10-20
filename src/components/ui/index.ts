@@ -10,7 +10,6 @@ export { EmptyState } from "./empty-state";
 export { PageHeader } from "./page-header";
 export { ThemeToggle } from "./theme-toggle";
 export { AccountBadge } from "./account-badge";
-export { ScenarioValue, ScenarioBanner } from "./scenario-indicator";
 export { ContribPeriodToggle } from "./contrib-period-toggle";
 export { PushPreviewModal } from "./push-preview-modal";
 export { FormError, FormErrorBlock } from "./form-error";

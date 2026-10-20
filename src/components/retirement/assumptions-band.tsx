@@ -10,8 +10,8 @@
  * Copies the Paycheck page's pattern exactly, per §05's explicit finding
  * that a new mechanism (an unsaved draft, a Play-toggle fork) wasn't
  * needed — the app already has one:
- *   - A selector that VIEWS a different profile without activating it
- *     (useEffectiveProfileId: Plan pin -> local selection -> global active)
+ *   - A selector that switches the active Retirement profile (same write
+ *     as the header's picker — there's no "viewing another profile" here)
  *   - The SAME shared padlock every profile surface uses (EditLockToggle,
  *     EDIT_LOCK_KEYS.profileEditLocked)
  *   - Unlocked -> click a chip -> writes straight to the profile, then
@@ -37,7 +37,6 @@ import { useState, type ReactNode } from "react";
 import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";
 import { InlineEdit } from "@/components/ui/inline-edit";
-import { Badge } from "@/components/ui/badge";
 import {
   EditLockToggle,
   EDIT_LOCK_KEYS,
@@ -101,20 +100,10 @@ type Props = {
   settings: Settings;
   perPersonSettings: PerPersonSettings;
   profiles: ProfileListEntry[];
-  /** Which profile is actually being shown right now — the resolved
-   *  Plan-pin / local-selection / global-active id from
-   *  useEffectiveProfileId, fed into computeProjection's own
-   *  retirementProfileId override so the chart and the band always agree
-   *  on which profile they're both looking at. */
-  viewingProfileId: number | null;
-  onViewingProfileChange: (id: number | null) => void;
-  /** Whether the viewed profile is the household's globally-active one —
-   *  drives the "(viewing — not active)" / "Make active" affordance. */
+  /** The active Retirement Profile — the one this page shows. */
   activeProfileId: number | null;
+  /** Make another profile the active one (admin only — same as the header). */
   onActivate: (id: number) => void;
-  /** From useEffectiveProfileId — "plan-pin" means a session Plan is
-   *  overriding the local selector, matching Paycheck's own indicator. */
-  effectiveSource: "plan-pin" | "user-selection" | "global-default";
   admin: boolean;
 };
 
@@ -122,11 +111,8 @@ export function AssumptionsBand({
   settings,
   perPersonSettings,
   profiles,
-  viewingProfileId,
-  onViewingProfileChange,
   activeProfileId,
   onActivate,
-  effectiveSource,
   admin,
 }: Props) {
   const utils = trpc.useUtils();
@@ -173,12 +159,13 @@ export function AssumptionsBand({
         <span className="text-label text-muted font-semibold tracking-wider uppercase">
           Assumptions
         </span>
-        {profiles.length > 1 ? (
+        {profiles.length > 1 && admin ? (
           <select
             className="bg-surface-primary rounded border px-1.5 py-0.5 text-xs"
-            value={viewingProfileId ?? ""}
-            onChange={(e) => onViewingProfileChange(Number(e.target.value))}
-            aria-label="Retirement profile"
+            value={activeProfileId ?? ""}
+            onChange={(e) => onActivate(Number(e.target.value))}
+            aria-label="Active retirement profile"
+            title="Makes this the active Retirement profile everywhere"
           >
             {profiles.map((p) => (
               <option key={p.id} value={p.id}>
@@ -191,24 +178,6 @@ export function AssumptionsBand({
             {profiles.find((p) => p.id === profileId)?.name ?? "Current Plan"}
           </span>
         )}
-        {effectiveSource === "plan-pin" ? (
-          <Badge color="blue" case="normal">
-            Active in this Plan
-          </Badge>
-        ) : profileId !== activeProfileId ? (
-          <span className="text-caption text-muted font-medium">
-            (viewing — not active)
-            {admin && (
-              <button
-                type="button"
-                onClick={() => onActivate(profileId)}
-                className="ml-1 text-blue-600 hover:underline"
-              >
-                Make active
-              </button>
-            )}
-          </span>
-        ) : null}
         <div className="flex-1" />
         <EditLockToggle
           locked={locked}

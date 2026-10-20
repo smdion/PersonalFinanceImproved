@@ -233,7 +233,7 @@ export function RelocationBudgetSelectors({
           <div>
             <label className="text-muted mb-1 block">
               Current Contributions
-              <HelpTip text="Salary and contribution profile for your current scenario. Managed on the Budget page." />
+              <HelpTip text="Salary and contribution profile for your current scenario. Managed on the Profiles page." />
             </label>
             <select
               className="w-full rounded border px-2 py-1 text-sm"
@@ -277,7 +277,7 @@ export function RelocationBudgetSelectors({
           <div>
             <label className="text-muted mb-1 block">
               Relocation Contributions
-              <HelpTip text="Salary and contribution profile for the relocation scenario. Create profiles on the Budget page." />
+              <HelpTip text="Salary and contribution profile for the relocation scenario. Create profiles on the Profiles page." />
             </label>
             <select
               className="w-full rounded border px-2 py-1 text-sm"

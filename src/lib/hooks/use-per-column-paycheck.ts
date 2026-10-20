@@ -3,8 +3,6 @@
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 
-type SalaryActiveField = { personId: number; salary: number };
-
 /** A column's profile pins — the two axes are independent, so both are part
  *  of the dedup key: two columns share a query only if they agree on BOTH. */
 type ColumnPins = { contribId: number | null; salaryId: number | null };
@@ -21,7 +19,6 @@ const pinKey = (p: ColumnPins) => `${p.contribId}:${p.salaryId}`;
  */
 export function usePerColumnPaycheck(
   perColumnProfileIds: (number | null)[],
-  salaryActiveFields: SalaryActiveField[],
   perColumnSalaryProfileIds: (number | null)[] = [],
 ) {
   const perColumnPins: ColumnPins[] = useMemo(
@@ -50,8 +47,6 @@ export function usePerColumnPaycheck(
   // Build query inputs for up to 5 unique pairs (padding with nulls for stable hook count)
   const buildInput = (pins: ColumnPins | null) => {
     const input: Record<string, unknown> = {};
-    if (salaryActiveFields.length > 0)
-      input.salaryActiveFields = salaryActiveFields;
     if (pins?.contribId != null) input.contributionProfileId = pins.contribId;
     if (pins?.salaryId != null) input.salaryProfileId = pins.salaryId;
     return Object.keys(input).length > 0 ? input : undefined;

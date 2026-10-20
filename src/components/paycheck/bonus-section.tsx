@@ -2,12 +2,19 @@
 
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Toggle } from "@/components/ui/toggle";
+import { FieldRow } from "@/components/ui/field-row";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SectionHeader } from "./section-header";
 import { useBonusDestinations } from "@/lib/hooks/use-bonus-destinations";
 import type { PaycheckResult } from "./types";
 import type { BonusEstimate } from "@/lib/calculators/types/calculators";
+
+const BONUS_DESTINATION_OPTIONS = [
+  { value: "budget", label: "Budget" },
+  { value: "spending", label: "Extra spending" },
+] as const;
 
 /** "Bonus goes to: Budget | Extra spending" — like the extra paycheck's
  *  choice. Extra spending gets its own Living Costs bar. */
@@ -21,33 +28,28 @@ function BonusDestinationToggle({
   const { destinations, canEdit, saving, setDestination } =
     useBonusDestinations();
   const current = destinations[String(personId)] ?? "budget";
-  const off = disabled || !canEdit;
-  const option = (value: "budget" | "spending", label: string) => (
-    <button
-      onClick={() => !off && void setDestination(personId, value)}
-      disabled={off}
-      aria-pressed={current === value}
-      className={`px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50 ${
-        current === value
-          ? "bg-blue-600 text-white"
-          : "bg-surface-primary text-muted hover:text-primary"
-      }`}
-    >
-      {label}
-    </button>
-  );
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="text-caption text-muted">Bonus goes to:</span>
-      <div className="border-default text-caption inline-flex overflow-hidden rounded border">
-        {option("budget", "Budget")}
-        {option("spending", "Extra spending")}
-      </div>
-      <HelpTip text="Extra spending: the bonus isn't part of your budget. Living Costs shows its take-home as its own bar instead of counting it as unallocated." />
-      {saving && <span className="text-caption text-faint">Saving…</span>}
-    </div>
+    <FieldRow
+      label={
+        <>
+          Goes to
+          <HelpTip text="Extra spending: the bonus isn't part of your budget. Living Costs shows its take-home as its own bar instead of counting it as unallocated. Applies to every profile." />
+          {saving && <span className="text-caption text-faint">Saving…</span>}
+        </>
+      }
+    >
+      <SegmentedControl
+        ariaLabel="Bonus goes to"
+        value={current}
+        options={BONUS_DESTINATION_OPTIONS}
+        onChange={(v) => void setDestination(personId, v)}
+        disabled={disabled || !canEdit}
+      />
+    </FieldRow>
   );
 }
+
+const numeric = (v: string) => v.replace(/[^0-9.]/g, "");
 
 export function BonusSection({
   personId,
@@ -58,11 +60,12 @@ export function BonusSection({
   onUpdateJob,
   readOnly,
   salaryReadOnly,
+  note,
 }: {
   personId: number;
   paycheck: PaycheckResult;
   /** The nominal formula bonus, ignoring any current-year pin — shown as
-   *  "(target: $X)" next to the Actual field so pinning a real number
+   *  "(calc: $X)" next to the Actual field so pinning a real number
    *  doesn't hide what the formula would otherwise say. */
   fullFormulaBonusEstimate: BonusEstimate;
   job: {
@@ -86,219 +89,190 @@ export function BonusSection({
   onUpdateJob: (field: string, value: string) => void;
   /** Sandbox/preview mode — bonus terms are shown but not editable. */
   readOnly?: boolean;
-  /** Mirrors PersonPaycheck's salary padlock — bonus %, multiplier, the
-   *  current-year Actual pin, "Paid in", and the two toggles below ALL live
-   *  on the same Salary Profile entry as salary now (see
-   *  writeSalaryProfileEntry in paycheck/page.tsx and SalaryProfileEntry in
-   *  server/helpers/salary.ts), so every editable field in this section
-   *  gates on this same lock. */
+  /** Every editable field here lives on the Salary Profile entry (see
+   *  resolvePaycheckEditTarget), so all of them gate on this. */
   salaryReadOnly?: boolean;
+  /** Where this section's edits save. */
+  note?: string;
 }) {
   const { bonusEstimate } = paycheck;
-  if (bonusEstimate.bonusGross === 0 && resolvedBonusTerms.bonusPercent === 0)
-    return null;
-  const bonusTermsEditable = !readOnly && !salaryReadOnly;
+  const editable = !readOnly && !salaryReadOnly;
+  // Shown even with no bonus, so a bonus can be added here (a 0% row is
+  // the way in) instead of the section disappearing.
+  const hasBonus = bonusEstimate.bonusGross > 0;
+  const fedRate = hasBonus
+    ? bonusEstimate.bonusFederalWithholding / bonusEstimate.bonusGross
+    : 0;
+  const takeHomeRate = hasBonus
+    ? bonusEstimate.bonusNet / bonusEstimate.bonusGross
+    : 0;
 
   return (
     <div className="space-y-2">
-      <SectionHeader>Bonus Estimate</SectionHeader>
-      <div className="space-y-1 rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm">
-        <div className="mb-1 space-y-1">
-          <BonusDestinationToggle personId={personId} disabled={readOnly} />
-          <div className="flex items-center gap-1">
-            <Toggle
-              isChecked={job.include401kInBonus}
-              onChange={(v) => onUpdateJob("include401kInBonus", String(v))}
-              label="Deduct 401k from bonus"
-              size="xs"
-              disabled={!bonusTermsEditable}
-            />
-            <HelpTip text="When on, 401k contributions are withheld from the bonus paycheck just like a regular paycheck." />
-          </div>
-          <div className="flex items-center gap-1">
-            <Toggle
-              isChecked={job.includeBonusInContributions}
-              onChange={(v) =>
-                onUpdateJob("includeBonusInContributions", String(v))
-              }
-              label="Contributions on salary + bonus"
-              size="xs"
-              disabled={!bonusTermsEditable}
-            />
-            <HelpTip text="When on, percent-of-salary contributions (e.g. 401k at 16%) are calculated against salary + bonus instead of salary alone." />
-          </div>
-        </div>
-        <div className="flex items-center justify-between">
-          <span>Bonus %</span>
+      <SectionHeader note={note}>Bonus</SectionHeader>
+      <div className="bg-surface-sunken border-subtle space-y-1.5 rounded-lg border p-4 text-sm">
+        <FieldRow label="Bonus %">
           <InlineEdit
             value={String(resolvedBonusTerms.bonusPercent * 100)}
-            onSave={(v) => {
-              const pct = Number(v.replace(/[^0-9.]/g, "")) / 100;
-              onUpdateJob("bonusPercent", String(pct));
-            }}
-            formatDisplay={(v) => formatPercent(Number(v) / 100, 1)}
-            parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-            type="number"
-            className="font-medium"
-            isEditable={bonusTermsEditable}
-          />
-        </div>
-        <div className="flex items-center justify-between">
-          <span>
-            Multiplier
-            <HelpTip text="Scales your bonus target — 1.0x means on-target, higher means exceeding expectations" />
-          </span>
-          <InlineEdit
-            value={String(resolvedBonusTerms.bonusMultiplier)}
             onSave={(v) =>
-              onUpdateJob("bonusMultiplier", v.replace(/[^0-9.]/g, ""))
+              onUpdateJob("bonusPercent", String(Number(numeric(v)) / 100))
             }
-            formatDisplay={(v) => `${Number(v).toFixed(2)}x`}
-            parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+            formatDisplay={(v) => formatPercent(Number(v) / 100, 1)}
+            parseInput={numeric}
             type="number"
             className="font-medium"
-            isEditable={bonusTermsEditable}
+            isEditable={editable}
+            hideEditIcon
           />
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="flex items-center gap-1">
-            {new Date().getFullYear()} Actual
-            <HelpTip text="Lock in this year's actual bonus once it's paid out, instead of the calculated salary x percent x multiplier. Only affects this calendar year — next year's projections still use the full formula." />
-            {resolvedBonusTerms.bonusOverride === null && (
-              <span className="text-caption text-faint">
-                (calc: {formatCurrency(fullFormulaBonusEstimate.bonusGross)})
-              </span>
-            )}
-          </span>
-          <InlineEdit
-            value={
-              resolvedBonusTerms.bonusOverride !== null
-                ? String(resolvedBonusTerms.bonusOverride)
-                : ""
-            }
-            onSave={(v) => {
-              const cleaned = v.replace(/[^0-9.]/g, "");
-              onUpdateJob("bonusOverride", cleaned);
-            }}
-            formatDisplay={(v) =>
-              v && Number(v) > 0 ? formatCurrency(Number(v)) : "—"
-            }
-            parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-            type="number"
-            className={`font-medium ${resolvedBonusTerms.bonusOverride !== null ? "text-amber-700" : "text-faint"}`}
-            isEditable={bonusTermsEditable}
-          />
-        </div>
-        <div className="flex items-center justify-between">
-          <span>
-            Paid in
-            <HelpTip text="Date when bonus is typically paid. Helps model contribution timing and cash flow." />
-          </span>
-          <div className="flex items-center gap-1">
-            <input
-              type="date"
-              value={
-                job.bonusMonth != null
-                  ? `${new Date().getFullYear()}-${String(job.bonusMonth).padStart(2, "0")}-${String(job.bonusDayOfMonth ?? 1).padStart(2, "0")}`
-                  : ""
+        </FieldRow>
+        {(hasBonus || resolvedBonusTerms.bonusPercent > 0) && (
+          <>
+            <FieldRow
+              label={
+                <>
+                  Multiplier
+                  <HelpTip text="Scales your bonus target — 1.0x means on-target, higher means exceeding expectations" />
+                </>
               }
-              onChange={(e) => {
-                const v = e.target.value;
-                if (!v) {
-                  onUpdateJob("bonusMonth", "");
-                  onUpdateJob("bonusDayOfMonth", "");
-                } else {
-                  const d = new Date(v + "T00:00:00");
-                  onUpdateJob("bonusMonth", String(d.getMonth() + 1));
-                  onUpdateJob("bonusDayOfMonth", String(d.getDate()));
+            >
+              <InlineEdit
+                value={String(resolvedBonusTerms.bonusMultiplier)}
+                onSave={(v) => onUpdateJob("bonusMultiplier", numeric(v))}
+                formatDisplay={(v) => `${Number(v).toFixed(2)}x`}
+                parseInput={numeric}
+                type="number"
+                className="font-medium"
+                isEditable={editable}
+                hideEditIcon
+              />
+            </FieldRow>
+            <FieldRow
+              label={
+                <>
+                  {new Date().getFullYear()} actual
+                  <HelpTip text="Lock in this year's actual bonus once it's paid out, instead of the calculated salary x percent x multiplier. Only affects this calendar year — next year's projections still use the full formula." />
+                </>
+              }
+              hint={
+                resolvedBonusTerms.bonusOverride === null
+                  ? `Formula: ${formatCurrency(fullFormulaBonusEstimate.bonusGross)}`
+                  : undefined
+              }
+            >
+              <InlineEdit
+                value={
+                  resolvedBonusTerms.bonusOverride !== null
+                    ? String(resolvedBonusTerms.bonusOverride)
+                    : ""
                 }
-              }}
-              disabled={!bonusTermsEditable}
-              className="bg-surface-primary rounded border px-2 py-0.5 text-sm font-medium"
-            />
-            {bonusTermsEditable && job.bonusMonth != null && (
-              <button
-                type="button"
-                onClick={() => {
-                  onUpdateJob("bonusMonth", "");
-                  onUpdateJob("bonusDayOfMonth", "");
-                }}
-                className="text-faint hover:text-secondary text-xs"
-                title="Clear date"
-              >
-                ✕
-              </button>
+                onSave={(v) => onUpdateJob("bonusOverride", numeric(v))}
+                formatDisplay={(v) =>
+                  v && Number(v) > 0 ? formatCurrency(Number(v)) : "—"
+                }
+                parseInput={numeric}
+                type="number"
+                className="font-medium"
+                isEditable={editable}
+                hideEditIcon
+              />
+            </FieldRow>
+            <FieldRow
+              label={
+                <>
+                  Paid on
+                  <HelpTip text="Date when bonus is typically paid. Helps model contribution timing and cash flow." />
+                </>
+              }
+              hint={
+                paycheck.bonusPeriod != null
+                  ? `Pay period ${paycheck.bonusPeriod} of ${paycheck.periodsPerYear}`
+                  : undefined
+              }
+            >
+              <input
+                type="date"
+                aria-label="Bonus paid on"
+                value={
+                  job.bonusMonth != null
+                    ? `${new Date().getFullYear()}-${String(job.bonusMonth).padStart(2, "0")}-${String(job.bonusDayOfMonth ?? 1).padStart(2, "0")}`
+                    : ""
+                }
+                // One write for both parts of the date ("MM-DD", or "" to
+                // clear) — two writes would race on the same profile entry.
+                onChange={(e) =>
+                  onUpdateJob("bonusDate", e.target.value.slice(5))
+                }
+                disabled={!editable}
+                className="bg-surface-primary w-36 rounded border px-2 py-0.5 text-sm disabled:opacity-60"
+              />
+            </FieldRow>
+            <div className="space-y-1 pt-1">
+              <Toggle
+                isChecked={job.include401kInBonus}
+                onChange={(v) => onUpdateJob("include401kInBonus", String(v))}
+                label="Deduct 401(k) from the bonus check"
+                size="xs"
+                title="401(k) contributions are withheld from the bonus check just like a regular check"
+                disabled={!editable}
+              />
+              <Toggle
+                isChecked={job.includeBonusInContributions}
+                onChange={(v) =>
+                  onUpdateJob("includeBonusInContributions", String(v))
+                }
+                label="Percent contributions count the bonus"
+                size="xs"
+                title="Percent-of-salary contributions are figured on salary + bonus instead of salary alone"
+                disabled={!editable}
+              />
+            </div>
+            <BonusDestinationToggle personId={personId} disabled={readOnly} />
+          </>
+        )}
+
+        {hasBonus && (
+          <div className="border-subtle mt-1 space-y-1 border-t pt-2">
+            <FieldRow label="Gross">
+              <span className="font-medium">
+                {formatCurrency(bonusEstimate.bonusGross)}
+              </span>
+            </FieldRow>
+            <FieldRow
+              label={
+                <>
+                  Federal (supplemental)
+                  <HelpTip text="Bonuses use the flat supplemental withholding rate instead of your regular bracket" />
+                </>
+              }
+              hint={`at ${formatPercent(fedRate, 0)}`}
+            >
+              <span className="text-muted">
+                -{formatCurrency(bonusEstimate.bonusFederalWithholding)}
+              </span>
+            </FieldRow>
+            <FieldRow label="Social Security + Medicare">
+              <span className="text-muted">
+                -{formatCurrency(bonusEstimate.bonusFica)}
+              </span>
+            </FieldRow>
+            {bonusEstimate.bonusContributions > 0 && (
+              <FieldRow label="401(k) and other contributions">
+                <span className="text-muted">
+                  -{formatCurrency(bonusEstimate.bonusContributions)}
+                </span>
+              </FieldRow>
             )}
-          </div>
-        </div>
-        {paycheck.bonusPeriod != null && (
-          <div className="text-muted flex justify-between text-xs">
-            <span>Falls in pay period</span>
-            <span className="font-medium">
-              {paycheck.bonusPeriod} of {paycheck.periodsPerYear}
-            </span>
+            <FieldRow
+              label={<span className="font-medium">Net</span>}
+              hint={`${formatPercent(takeHomeRate, 1)} take-home`}
+              className="border-subtle border-t pt-1"
+            >
+              <span className="font-semibold text-green-700 dark:text-green-400">
+                {formatCurrency(bonusEstimate.bonusNet)}
+              </span>
+            </FieldRow>
           </div>
         )}
-        {bonusEstimate.bonusGross > 0 &&
-          (() => {
-            const fedRate =
-              bonusEstimate.bonusGross > 0
-                ? bonusEstimate.bonusFederalWithholding /
-                  bonusEstimate.bonusGross
-                : 0;
-            const totalTaxRate =
-              bonusEstimate.bonusGross > 0
-                ? (bonusEstimate.bonusFederalWithholding +
-                    bonusEstimate.bonusFica +
-                    bonusEstimate.bonusContributions) /
-                  bonusEstimate.bonusGross
-                : 0;
-            return (
-              <>
-                <div className="flex justify-between">
-                  <span>Gross</span>
-                  <span className="font-medium">
-                    {formatCurrency(bonusEstimate.bonusGross)}
-                  </span>
-                </div>
-                <div className="text-muted flex justify-between">
-                  <span>
-                    Federal (supplemental)
-                    <HelpTip text="Bonuses use the flat supplemental withholding rate instead of your regular bracket" />
-                    <span className="text-faint ml-1 text-xs">
-                      @ {formatPercent(fedRate, 0)}
-                    </span>
-                  </span>
-                  <span>
-                    -{formatCurrency(bonusEstimate.bonusFederalWithholding)}
-                  </span>
-                </div>
-                <div className="text-muted flex justify-between">
-                  <span>FICA</span>
-                  <span>-{formatCurrency(bonusEstimate.bonusFica)}</span>
-                </div>
-                {bonusEstimate.bonusContributions > 0 && (
-                  <div className="text-muted flex justify-between">
-                    <span>401k / contributions</span>
-                    <span>
-                      -{formatCurrency(bonusEstimate.bonusContributions)}
-                    </span>
-                  </div>
-                )}
-                <div className="flex justify-between border-t border-yellow-200 pt-1 font-medium">
-                  <span>
-                    Net
-                    <span className="text-faint ml-1 text-xs font-normal">
-                      ({formatPercent(1 - totalTaxRate, 1)} take-home)
-                    </span>
-                  </span>
-                  <span className="text-green-700">
-                    {formatCurrency(bonusEstimate.bonusNet)}
-                  </span>
-                </div>
-              </>
-            );
-          })()}
       </div>
     </div>
   );

@@ -37,6 +37,8 @@ import {
   isStockBucket,
   type CompositionBucket,
 } from "@/lib/config/enum-values";
+import { SettingsLink } from "@/components/ui/settings-link";
+import { PortfolioAccountsLink } from "@/components/portfolio/portfolio-accounts-link";
 
 type OverviewAccount = Overview["accounts"][number];
 
@@ -269,15 +271,16 @@ function AllocationCard({ data }: { data: Overview }) {
       <p className="text-caption text-faint mb-3">
         What your funds hold, added up across accounts
         {hasTarget && data.age !== null
-          ? `, next to ${data.targetSource === "current" ? "your current glide path" : "the retirement simulation's glide path"} for age ${data.age}`
+          ? `, next to ${data.targetSource === "current" ? "your target mix today" : "the retirement simulation's glide path"} for age ${data.age}`
           : ""}
         .
         {data.currentGlidePathStale && (
           <>
             {" "}
             <span className="text-amber-600">
-              Your current glide path uses an asset class that no longer exists,
-              so the retirement glide path is used until you edit it.
+              Your target mix today uses an asset class that no longer exists,
+              so the retirement simulation&apos;s glide path is used until you
+              edit it.
             </span>
           </>
         )}{" "}
@@ -290,8 +293,8 @@ function AllocationCard({ data }: { data: Overview }) {
             onClick={() => setEditingPath(true)}
           >
             {data.targetSource === "current"
-              ? "Edit your current glide path"
-              : "Set a current glide path"}
+              ? "Edit your target mix today"
+              : "Set a target mix today"}
           </button>
         )}
       </p>
@@ -452,8 +455,8 @@ function AllocationCard({ data }: { data: Overview }) {
             Only accounts linked to a Ledgr account count, so the same money is
             never counted twice — an unlinked feed is usually a duplicate or an
             old connection to an account that&apos;s already linked. If one is
-            real money Ledgr doesn&apos;t track yet, link it in Settings →
-            Integrations → SimpleFIN.
+            real money Ledgr doesn&apos;t track yet, link it in{" "}
+            <SettingsLink tab="integrations" section="simplefin" />.
           </p>
           <ul className="mt-1 list-inside list-disc">
             {data.unlinkedAccounts.map((a) => (
@@ -500,8 +503,8 @@ function GlidePathCard({ data }: { data: Overview }) {
     <Card
       title={
         data.targetSource === "current"
-          ? "Your current glide path"
-          : "Your glide path (from the retirement plan)"
+          ? "Your target mix today"
+          : "Glide path (from the retirement simulation)"
       }
     >
       <p className="text-caption text-faint mb-2">
@@ -538,9 +541,9 @@ export function HoldingsSection() {
     return (
       <Card title="What you hold now">
         <p className="text-faint text-sm">
-          No holdings reported yet. Connect SimpleFIN in Settings →
-          Integrations; institutions that report holdings appear here after the
-          next sync.
+          No holdings reported yet. Connect SimpleFIN in{" "}
+          <SettingsLink tab="integrations" section="simplefin" />; institutions
+          that report holdings appear here after the next sync.
         </p>
       </Card>
     );
@@ -566,12 +569,17 @@ export function HoldingsSection() {
       >
         <p className="text-caption text-faint mb-2">
           To confirm a stand-in fund or enter a fund&apos;s own fee and mix,
-          open the account in Portfolio → Account &amp; Contribution Settings.
+          open the account in <PortfolioAccountsLink />.
         </p>
         {!data.secConnected && (
           <p className="mb-3 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
-            Set up SEC fund facts in Settings → Integrations to see each
-            fund&apos;s mix and expense ratio.
+            Set up SEC fund facts in{" "}
+            <SettingsLink
+              tab="integrations"
+              section="sec"
+              className="underline"
+            />{" "}
+            to see each fund&apos;s mix and expense ratio.
           </p>
         )}
         {view === "fund" ? (

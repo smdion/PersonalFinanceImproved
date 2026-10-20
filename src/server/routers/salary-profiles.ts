@@ -33,6 +33,7 @@
  * Permissions intentionally mirror contributionProfile (no new gate): reads on
  * protectedProcedure, writes on contributionProfileProcedure.
  */
+import { assertNoPlanUses } from "@/server/helpers/plans";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
@@ -639,18 +640,7 @@ export const salaryProfileRouter = createTRPCRouter({
           message: "Profile not found",
         });
 
-      const pinningPlans = await ctx.db
-        .select({ name: schema.scenarios.name })
-        .from(schema.scenarios)
-        .where(eq(schema.scenarios.salaryProfileId, input.id));
-      if (pinningPlans.length > 0) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: `Cannot delete: pinned by ${pinningPlans.length} Plan(s) (${pinningPlans
-            .map((p) => p.name)
-            .join(", ")}). Unpin it there first.`,
-        });
-      }
+      await assertNoPlanUses(ctx.db, "salary", input.id);
 
       await ctx.db
         .delete(schema.salaryProfiles)

@@ -18,7 +18,6 @@ import {
   maskAmountsInText,
 } from "@/lib/utils/format";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { BrokerageGoalsSection } from "@/components/cards/brokerage-goals";
 import {
@@ -61,8 +60,7 @@ export function BrokerageContent() {
   const updateCostBasis = trpc.performance.updateCostBasis.useMutation({
     onSuccess: () => utils.performance.performanceAccounts.list.invalidate(),
   });
-  const salaryActiveFields = useActiveSalaries();
-  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [activeProfileId] = usePersistedSetting<number | null>(
     "active_contrib_profile_id",
@@ -133,7 +131,6 @@ export function BrokerageContent() {
   }, [brokerageLumpSums]);
 
   const engineInput = {
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(accumOverridesFromLumpSums.length > 0
       ? { accumulationOverrides: accumOverridesFromLumpSums }
       : {}),
@@ -143,7 +140,6 @@ export function BrokerageContent() {
     ...salaryProfileInput,
   };
   const contribInput = {
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(activeProfileId != null
       ? { contributionProfileId: activeProfileId }
       : {}),
@@ -252,8 +248,7 @@ export function BrokerageContent() {
     activeProfileId != null
       ? (contribProfiles?.find((p) => p.id === activeProfileId)?.name ?? null)
       : null;
-  const hasContextOverrides =
-    activeProfileName != null || salaryActiveFields.length > 0;
+  const hasContextOverrides = activeProfileName != null;
 
   return (
     <div>
@@ -270,14 +265,6 @@ export function BrokerageContent() {
               Contribution profile:{" "}
               <span className="text-primary font-medium">
                 {activeProfileName}
-              </span>
-            </span>
-          )}
-          {salaryActiveFields.length > 0 && (
-            <span>
-              Salary overrides:{" "}
-              <span className="text-primary font-medium">
-                {salaryActiveFields.length} active
               </span>
             </span>
           )}

@@ -8,12 +8,10 @@
  */
 import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
-import { useScenario } from "@/lib/context/scenario-context";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
@@ -26,11 +24,9 @@ import {
 
 /** The contribution-summary input every dashboard card sends. */
 export function useContributionSummaryInput() {
-  const salaryActiveFields = useActiveSalaries();
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const { queryInput: contribProfileInput } = useEffectiveContribProfileId();
   return {
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...contribProfileInput,
     ...salaryProfileInput,
   } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
@@ -50,7 +46,6 @@ export function useMilestones(): {
   input: MilestoneInput | null;
   results: MilestoneResult[];
 } {
-  const { isInScenario } = useScenario();
   const user = useUser();
   const withHoldings = hasPermission(user, "portfolio");
   const withBrokerageGoals = hasPermission(user, "brokerage");
@@ -109,7 +104,6 @@ export function useMilestones(): {
       ? {
           projectionByYear: projectionData.result.projectionByYear,
           annualInflation: Number(projectionData.settings.annualInflation) || 0,
-          isScenario: isInScenario,
         }
       : null,
     holdings: withHoldings ? (holdings.data ?? null) : null,

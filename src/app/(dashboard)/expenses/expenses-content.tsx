@@ -11,7 +11,6 @@ import { ProgressBar } from "@/components/ui/card";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 // Imported from the leaf module, not the @/lib/budget-api barrel — the
@@ -94,22 +93,13 @@ export function ExpensesContent() {
   const { data: contribProfilesList } =
     trpc.contributionProfile.list.useQuery();
 
-  // Salary overrides from scenario context (used by all pages) — mirrors
-  // paycheck/page.tsx so a what-if salary scenario stays holistic across pages.
-  const scenarioActiveSalaries = useActiveSalaries();
-  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
-  const { data: salaryProfilesList } = trpc.salaryProfile.list.useQuery();
-  const { planPinId: planSalaryProfileId } = useEffectiveProfileId("salary", {
-    validIds: salaryProfilesList?.map((p) => p.id),
-    localSelection: null,
-    globalDefaultId: rawActiveSalaryProfileId,
-  });
 
-  // Plan pin -> globally-active profile for both budget and contribution —
-  // this page has no local viewing picker of its own, so localSelection is
-  // always null (single computation path — see useEffectiveProfileId).
+  // The active profile for both budget and contribution — this page has no
+  // local picker of its own, so localSelection is always null (single
+  // computation path — see useEffectiveProfileId).
   const activeBudgetProfileId =
     budgetProfilesList?.find((p) => p.isActive)?.id ?? null;
   const { profileId: effectiveBudgetProfileId } = useEffectiveProfileId(
@@ -120,41 +110,33 @@ export function ExpensesContent() {
       globalDefaultId: activeBudgetProfileId,
     },
   );
-  const {
-    profileId: effectiveContribProfileId,
-    planPinId: planContribProfileId,
-  } = useEffectiveProfileId("contribution", {
-    validIds: contribProfilesList?.map((p) => p.id),
-    localSelection: null,
-    globalDefaultId: activeContribProfileId,
-  });
+  const { profileId: effectiveContribProfileId } = useEffectiveProfileId(
+    "contribution",
+    {
+      validIds: contribProfilesList?.map((p) => p.id),
+      localSelection: null,
+      globalDefaultId: activeContribProfileId,
+    },
+  );
 
   const { data: budgetData } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
     ...(effectiveBudgetProfileId != null
       ? { profileId: effectiveBudgetProfileId }
       : {}),
-    // Tiers, not a pre-resolved id — the Plan pin has to stay in its own tier
-    // or a budget column's pin would outrank it (docs/RULES.md "Profile Pins").
+    // Tiers, not a pre-resolved id, so a budget column's own profile still
+    // applies (docs/RULES.md "Profile Resolution").
     contributionProfile: {
-      planPinId: planContribProfileId,
       localSelectionId: null,
       globalDefaultId: activeContribProfileId,
     },
     salaryProfile: {
-      planPinId: planSalaryProfileId,
       localSelectionId: null,
       globalDefaultId: rawActiveSalaryProfileId,
     },
-    ...(scenarioActiveSalaries.length > 0
-      ? { salaryActiveFields: scenarioActiveSalaries }
-      : {}),
   });
 
   const paycheckInput = {
-    ...(scenarioActiveSalaries.length > 0
-      ? { salaryActiveFields: scenarioActiveSalaries }
-      : {}),
     ...(effectiveContribProfileId != null
       ? { contributionProfileId: effectiveContribProfileId }
       : {}),

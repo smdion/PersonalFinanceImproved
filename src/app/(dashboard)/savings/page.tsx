@@ -4,6 +4,7 @@
 
 import React, { useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
@@ -11,7 +12,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useLocalStorageSet } from "@/lib/hooks/use-local-storage-set";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import {
   SummaryCards,
   NewFundFormCard,
@@ -69,7 +69,6 @@ import {
   resolveContributionProfileId,
   resolveSalaryProfileId,
 } from "@/lib/calculators/contribution-profile-resolution";
-import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import {
@@ -102,26 +101,11 @@ export default function SavingsPage() {
     "active_contrib_profile_id",
     null,
   );
-  // Fetch contribution profiles list for subtitle display + Plan-pin validIds.
+  // Fetch contribution profiles list for subtitle display.
   const { data: contribProfilesList } =
     trpc.contributionProfile.list.useQuery();
-  // Plan pin -> globally-active contribution profile (single computation
-  // path — matches expenses/page.tsx, paycheck/page.tsx, contributions/page.tsx).
-  const { planPinId: planContribProfileId } = useEffectiveProfileId(
-    "contribution",
-    {
-      validIds: contribProfilesList?.map((p) => p.id),
-      localSelection: null,
-      globalDefaultId: rawActiveContribProfileId,
-    },
-  );
-  // null = "use whichever budget profile is active" (today's behavior,
-  // unchanged). Only affects the live pool used by Pull In New Pay /
-  // Update % — goal balances, targets, and the e-fund always reflect the
-  // real active profile regardless of this selection.
-  const [recalcProfileId, setRecalcProfileId] = usePersistedSetting<
-    number | null
-  >("savings_recalc_profile_id", null);
+  // The active contribution profile (single computation path — matches
+  // expenses/page.tsx, paycheck/page.tsx, contributions/page.tsx).
 
   // ── Shared queries ──
   const efundTierInput =
@@ -135,29 +119,18 @@ export default function SavingsPage() {
   const { data: apiBalancesData } = trpc.savings.listApiBalances.useQuery();
   const { data: apiCategoriesData } = trpc.budget.listApiCategories.useQuery();
 
-  const salaryActiveFields = useActiveSalaries();
-
-  // Independent Salary Profile axis (Plan pin -> column pin -> globally-active
-  // setting) — mirrors the Contribution axis below so a per-column Salary
+  // Independent Salary Profile axis (column profile -> active setting) —
+  // mirrors the Contribution axis below so a per-column Salary
   // Profile pin (set from Manage Modes) isn't silently ignored here while
   // computeActiveSummary honors it for the Budget tab's item $ amounts.
   const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
-  const { data: salaryProfilesList } = trpc.salaryProfile.list.useQuery();
-  const { planPinId: planSalaryProfileId } = useEffectiveProfileId("salary", {
-    validIds: salaryProfilesList?.map((p) => p.id),
-    localSelection: null,
-    globalDefaultId: rawActiveSalaryProfileId,
-  });
-  // Tiers, not a pre-resolved id — see docs/RULES.md "Profile Pins" and
-  // contribution-profile-resolution.ts: folding the Plan pin into the
-  // global-default tier is what let a column pin outrank an active Plan.
+  // Tiers, not a pre-resolved id — see docs/RULES.md "Profile Resolution" and
+  // contribution-profile-resolution.ts.
   const contributionProfileTiers = {
-    planPinId: planContribProfileId,
     localSelectionId: null,
     globalDefaultId: rawActiveContribProfileId,
   };
   const salaryProfileTiers = {
-    planPinId: planSalaryProfileId,
     localSelectionId: null,
     globalDefaultId: rawActiveSalaryProfileId,
   };
@@ -165,7 +138,6 @@ export default function SavingsPage() {
     selectedColumn: budgetColumn,
     contributionProfile: contributionProfileTiers,
     salaryProfile: salaryProfileTiers,
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
   });
   const { data: budgetProfilesList } = useBudgetProfilesList();
 
@@ -195,7 +167,6 @@ export default function SavingsPage() {
   });
 
   const paycheckInput = {
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(effectiveContribProfileId != null
       ? { contributionProfileId: effectiveContribProfileId }
       : {}),
@@ -217,47 +188,11 @@ export default function SavingsPage() {
         )
       : null;
 
-  // ── Recalculate/lock-in pool, scoped to whichever profile is selected ──
-  // Only feeds the "Pull In New Pay" / "Update %" preview + mutations
-  // below — every other number on this page (goal balances, targets,
-  // e-fund, chart, capacity bar) always reflects the real active profile,
-  // matching computeSummary's own scope (see savings.ts computeSummary,
-  // which is not profile-scoped).
+  // Pull In New Pay / Update % use the active budget profile, like every
+  // other number on this page.
   const activeProfileId =
     budgetProfilesList?.find((p) => p.isActive)?.id ?? null;
-  // Plan pin -> the page's own recalc-profile picker -> true active profile
-  // (single computation path — see useEffectiveProfileId).
-  const { profileId: effectiveRecalcProfileId } = useEffectiveProfileId(
-    "budget",
-    {
-      validIds: budgetProfilesList?.map((p) => p.id),
-      localSelection: recalcProfileId,
-      globalDefaultId: activeProfileId,
-    },
-  );
-  const isPreviewingOtherProfile =
-    effectiveRecalcProfileId !== null &&
-    effectiveRecalcProfileId !== activeProfileId;
-  const { data: recalcBudgetData } = trpc.budget.computeActiveSummary.useQuery(
-    {
-      selectedColumn: budgetColumn,
-      profileId: effectiveRecalcProfileId ?? undefined,
-      contributionProfile: contributionProfileTiers,
-      salaryProfile: salaryProfileTiers,
-      ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
-    },
-    { enabled: isPreviewingOtherProfile },
-  );
-  const recalcMonthlyTotal = isPreviewingOtherProfile
-    ? deriveBudgetMonthlyTotal(recalcBudgetData)
-    : null;
-  const recalcMaxMonthlyFunding =
-    isPreviewingOtherProfile && paycheckData && recalcMonthlyTotal !== null
-      ? computeMaxMonthlyFunding(
-          paycheckData.people as CapacityPerson[],
-          recalcMonthlyTotal,
-        )
-      : maxMonthlyFunding;
+  const recalcMaxMonthlyFunding = maxMonthlyFunding;
 
   // The exact Contribution/Salary Profile selection `paycheckData` (and so
   // recalcMaxMonthlyFunding/maxMonthlyFunding) was computed from — threaded
@@ -267,10 +202,7 @@ export default function SavingsPage() {
   // previously always used the household's globally-active Contribution/
   // Salary Profile regardless of what was actually selected here, so a
   // household with any non-default selection saw "Pull in new pay" report
-  // success while the persisted value never moved). Not tied to
-  // effectiveRecalcProfileId — that's the BUDGET-side profile being
-  // previewed, orthogonal to which Contribution/Salary Profile computes
-  // take-home pay.
+  // success while the persisted value never moved).
   const recalcIncomeParams = {
     ...(effectiveContribProfileId != null
       ? { contributionProfileId: effectiveContribProfileId }
@@ -278,7 +210,6 @@ export default function SavingsPage() {
     ...(effectiveSalaryProfileId != null
       ? { salaryProfileId: effectiveSalaryProfileId }
       : {}),
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     // Threaded through so budget.computeActiveSummary's OWN per-column
     // resolution (inside computeLiveMaxMonthlyFunding, savings.ts) matches
     // exactly what this page's own maxMonthlyFunding query above used —
@@ -305,9 +236,12 @@ export default function SavingsPage() {
     "table",
   );
   const [masterTab, setMasterTab] = useState<"plan" | "manage">("plan");
+  // ?section=extraPaychecks (savingsExtraPaychecksHref) opens Paychecks &
+  // Growth directly — the one place extra-paycheck routing is set up.
+  const linkedSection = useSearchParams().get("section");
   const [editTab, setEditTab] = useState<
     "allocations" | "transactions" | "extraPaychecks"
-  >("allocations");
+  >(linkedSection === "extraPaychecks" ? "extraPaychecks" : "allocations");
 
   // ── Top-level form state (lives here to render in correct layout position) ──
   const [newFund, setNewFund] = useState<NewFundForm>({
@@ -748,48 +682,6 @@ export default function SavingsPage() {
                 {editTab === "allocations" && (
                   <div className="space-y-3">
                     {canEdit &&
-                      rawGoals.some((g) => g.allocationPercent != null) &&
-                      budgetProfilesList &&
-                      budgetProfilesList.length > 1 && (
-                        <div className="text-label text-faint flex items-center justify-end gap-2">
-                          <label htmlFor="recalc-profile-select">
-                            Budget for Pull In / Update %:
-                          </label>
-                          <select
-                            id="recalc-profile-select"
-                            value={recalcProfileId ?? ""}
-                            onChange={(e) =>
-                              setRecalcProfileId(
-                                e.target.value === ""
-                                  ? null
-                                  : Number(e.target.value),
-                              )
-                            }
-                            className="border-surface-strong bg-surface-elevated text-secondary rounded border px-1.5 py-0.5"
-                          >
-                            <option value="">
-                              Active
-                              {activeProfileId != null
-                                ? ` (${budgetProfilesList.find((p) => p.id === activeProfileId)?.name ?? ""})`
-                                : ""}
-                            </option>
-                            {budgetProfilesList
-                              .filter((p) => p.id !== activeProfileId)
-                              .map((p) => (
-                                <option key={p.id} value={p.id}>
-                                  {p.name}
-                                </option>
-                              ))}
-                          </select>
-                          {isPreviewingOtherProfile && (
-                            <span className="text-amber-600">
-                              Previewing — goal balances/targets still reflect
-                              your active budget.
-                            </span>
-                          )}
-                        </div>
-                      )}
-                    {canEdit &&
                       (apiBalancesData?.service ||
                         rawGoals.some((g) => g.allocationPercent != null)) && (
                         <div className="flex justify-end gap-2">
@@ -803,7 +695,7 @@ export default function SavingsPage() {
                                     rawGoals,
                                     recalcMaxMonthlyFunding,
                                     undefined,
-                                    effectiveRecalcProfileId ?? undefined,
+                                    activeProfileId ?? undefined,
                                     recalcIncomeParams,
                                   )
                                 }
@@ -823,7 +715,7 @@ export default function SavingsPage() {
                                     rawGoals,
                                     recalcMaxMonthlyFunding,
                                     undefined,
-                                    effectiveRecalcProfileId ?? undefined,
+                                    activeProfileId ?? undefined,
                                     recalcIncomeParams,
                                   )
                                 }
@@ -955,7 +847,7 @@ export default function SavingsPage() {
                     </div>
 
                     {/* Extra paycheck rules — one column per earner. The
-                        Savings/Budget toggle also lives on Budget → Salary
+                        Savings/Budget toggle also lives on Profiles → Salary
                         Profiles (comp-layer decision), but the detailed
                         mechanics — splits across savings goals, growth
                         rates, month overrides — are Savings-domain and
@@ -1021,7 +913,7 @@ export default function SavingsPage() {
               onPushPreview={apiSync.onPushPreview}
               recalculateAllocation={apiSync.recalculateAllocation}
               lockInAllocationPercent={apiSync.lockInAllocationPercent}
-              recalcProfileId={effectiveRecalcProfileId}
+              recalcProfileId={activeProfileId}
               recalcIncomeParams={recalcIncomeParams}
               callbacksRef={fundCallbacksRef}
               showNewFund={showNewFund}

@@ -104,11 +104,12 @@ function HouseholdIncomeCardImpl() {
     : !isYtd && income
       ? income.netRegular + income.netBonus
       : sumBy(people, (d) => d.paycheck!.netPay * periods(d)) + totalBonusNet;
+  // Same words as the header's View toggle.
   const modeLabel = isYtd
-    ? "Year-to-date"
+    ? "Year to date"
     : isBlended
       ? "Year-end estimate"
-      : "Projected annual";
+      : "Projected";
 
   return (
     <Card

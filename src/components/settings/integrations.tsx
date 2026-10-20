@@ -9,6 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { FormField, FormInput, FormSelect } from "@/components/forms";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
+import { useDeepLinkParam } from "@/lib/hooks/use-deep-link-param";
+import {
+  INTEGRATIONS_SECTIONS,
+  SETTINGS_SECTION_PARAM,
+  type IntegrationsSectionKey,
+} from "@/lib/config/settings-sections";
 import { SK_SETTINGS_INTEGRATIONS_SECTION } from "@/lib/constants/settings-keys";
 import type { Service, PreviewData } from "./integrations-types";
 import { PreviewPanel } from "./integrations-preview-panel";
@@ -502,16 +508,7 @@ function ServiceCard({
   );
 }
 
-const INTEGRATIONS_SECTIONS = [
-  { key: "ynab", label: "YNAB" },
-  { key: "actual", label: "Actual Budget" },
-  { key: "simplefin", label: "SimpleFIN" },
-  { key: "tiingo", label: "Tiingo" },
-  { key: "sec", label: "SEC fund facts" },
-  { key: "syncBehavior", label: "Sync Behavior" },
-] as const;
-
-type IntegrationsSectionKey = (typeof INTEGRATIONS_SECTIONS)[number]["key"];
+const SECTION_KEYS = INTEGRATIONS_SECTIONS.map((s) => s.key);
 
 function NavStatusDot({ connected }: { connected: boolean }) {
   return (
@@ -528,9 +525,13 @@ export function IntegrationsSettings() {
   const { data: simplefinStatus } = trpc.simplefin.getStatus.useQuery();
   const { data: tiingoStatus } = trpc.tiingo.getStatus.useQuery();
   const { data: secStatus } = trpc.sec.getStatus.useQuery();
-  const [section, setSection] = usePersistedSetting<IntegrationsSectionKey>(
-    SK_SETTINGS_INTEGRATIONS_SECTION,
-    "ynab",
+  const [section, setSection] = useDeepLinkParam(
+    SETTINGS_SECTION_PARAM,
+    SECTION_KEYS,
+    usePersistedSetting<IntegrationsSectionKey>(
+      SK_SETTINGS_INTEGRATIONS_SECTION,
+      "ynab",
+    ),
   );
 
   if (!admin) {

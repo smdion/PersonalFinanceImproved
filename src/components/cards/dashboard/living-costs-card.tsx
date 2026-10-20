@@ -2,6 +2,7 @@
 
 import React, { useState, memo } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
+import { useFullYearNote } from "@/lib/hooks/use-full-year-note";
 import { Card, ProgressBar } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { StatusDot } from "@/components/ui/badge";
@@ -10,7 +11,6 @@ import { sumBy, safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useBonusDestinations } from "@/lib/hooks/use-bonus-destinations";
 import { bonusSpendingNet } from "@/lib/pure/household-income";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import {
   RAMSEY_RANGES,
   DEFAULT_LIVING_COST_MAPPING,
@@ -88,50 +88,33 @@ function BudgetSummary({
 }
 
 function LivingCostsCardImpl() {
+  const fullYearNote = useFullYearNote();
   const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
-  const salaryActiveFields = useActiveSalaries();
-  // Independent Salary Profile axis (Plan pin -> globally-active setting).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
-  const { data: salaryProfilesList } = trpc.salaryProfile.list.useQuery();
-  const { planPinId: planSalaryProfileId } = useEffectiveProfileId("salary", {
-    validIds: salaryProfilesList?.map((p) => p.id),
-    localSelection: null,
-    globalDefaultId: rawActiveSalaryProfileId,
-  });
   const {
     contributionProfileId: activeContribProfileId,
     queryInput: contribProfileInput,
   } = useEffectiveContribProfileId();
-  const { data: contribProfilesList } =
-    trpc.contributionProfile.list.useQuery();
-  const { planPinId: planContribProfileId } = useEffectiveProfileId(
-    "contribution",
-    {
-      validIds: contribProfilesList?.map((p) => p.id),
-      localSelection: null,
-      globalDefaultId: activeContribProfileId,
-    },
-  );
-  // Budget Profile axis (Plan pin -> globally-active row) — without this,
-  // the card always shows the globally-active budget profile regardless of
-  // what a Plan pins or what the top bar just switched to.
+  // Budget Profile axis — the active row, through the shared resolver.
   const { data: budgetProfilesList } = useBudgetProfilesList();
   const globalActiveBudgetId =
     budgetProfilesList?.find((p) => p.isActive)?.id ?? null;
-  const { profileId: displayBudgetProfileId, isPinned: isBudgetPinned } =
-    useEffectiveProfileId("budget", {
+  const { profileId: displayBudgetProfileId } = useEffectiveProfileId(
+    "budget",
+    {
       validIds: budgetProfilesList?.map((p) => p.id),
       localSelection: null,
       globalDefaultId: globalActiveBudgetId,
-    });
+    },
+  );
   const activeBudgetProfileName = budgetProfilesList?.find(
     (p) => p.id === displayBudgetProfileId,
   )?.name;
   // Same tiers used by the paycheck query below, so the budget total and the
-  // income figure on this card never disagree about which Plan-pinned
-  // Salary/Contribution Profile is in effect.
+  // income figure on this card never disagree about which Salary /
+  // Contribution Profile is in effect.
   const { data: budgetData, isLoading: isBudgetLoading } =
     trpc.budget.computeActiveSummary.useQuery({
       selectedColumn: budgetColumn,
@@ -139,22 +122,18 @@ function LivingCostsCardImpl() {
         ? { profileId: displayBudgetProfileId }
         : {}),
       contributionProfile: {
-        planPinId: planContribProfileId,
         localSelectionId: null,
         globalDefaultId: activeContribProfileId,
       },
       salaryProfile: {
-        planPinId: planSalaryProfileId,
         localSelectionId: null,
         globalDefaultId: rawActiveSalaryProfileId,
       },
-      ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     });
   // Spent this month in the linked budget app (YNAB/Actual) — the "how am
   // I actually doing" line next to the plan.
   const { data: actualsData } = trpc.budget.listApiActuals.useQuery();
   const lcQueryInput = {
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...contribProfileInput,
     ...salaryProfileInput,
   };
@@ -516,15 +495,13 @@ function LivingCostsCardImpl() {
         <>
           Budget &amp; Spending
           <HelpTip
-            text={`Always shows the full-year projected picture, regardless of the Paycheck page's Current Salary/Year-End Estimate/Actual YTD selector — every number here besides income (budget spending, savings, retirement, portfolio, extra-paycheck routing) is this app's annualized RATE for that thing, not a real posted-transaction year-to-date total, so scoping just the income side to "so far this year" would push every percentage well past 100%. Budget categories as % of ${incomeLabel} income compared to Dave Ramsey's recommended ranges (Ramsey's original ranges are based on net take-home pay). Retirement/Portfolio/Savings/Extra Paycheck/Bonus/Unallocated below show where the rest of your ${incomeLabel} income goes: Net counts only non-payroll contributions (IRA, manually-funded brokerage/HSA) actually funded from take-home pay — payroll-deducted contributions, Roth included, never touch net pay; Gross counts your full contribution total, payroll and non-payroll combined, plus taxes and any other payroll deduction (health/dental/vision insurance, etc.) — those already come out before net pay is computed too, so Gross names them explicitly instead of leaving them invisibly baked into Net. Extra Paycheck is this year's 3rd-biweekly-paycheck months currently set to route to a savings goal (see the Savings/Budget toggle on Salary Profile or the Paycheck page) — computed from the real pay calendar, not from which months have already been transferred. Bonus is the take-home of any bonus set to \"Extra spending\" on the Paycheck page. Unallocated includes any budget category with no Ramsey mapping, plus any genuinely untracked money.`}
+            text={`Always shows the full-year projected picture, regardless of the header's View (Projected / Year-end estimate / Year to date) — every number here besides income (budget spending, savings, retirement, portfolio, extra-paycheck routing) is this app's annualized RATE for that thing, not a real posted-transaction year-to-date total, so scoping just the income side to "so far this year" would push every percentage well past 100%. Budget categories as % of ${incomeLabel} income compared to Dave Ramsey's recommended ranges (Ramsey's original ranges are based on net take-home pay). Retirement/Portfolio/Savings/Extra Paycheck/Bonus/Unallocated below show where the rest of your ${incomeLabel} income goes: Net counts only non-payroll contributions (IRA, manually-funded brokerage/HSA) actually funded from take-home pay — payroll-deducted contributions, Roth included, never touch net pay; Gross counts your full contribution total, payroll and non-payroll combined, plus taxes and any other payroll deduction (health/dental/vision insurance, etc.) — those already come out before net pay is computed too, so Gross names them explicitly instead of leaving them invisibly baked into Net. Extra Paycheck is this year's 3rd-biweekly-paycheck months currently set to route to a savings goal (see the Savings/Budget toggle on Salary Profile or the Paycheck page) — computed from the real pay calendar, not from which months have already been transferred. Bonus is the take-home of any bonus set to \"Extra spending\" on the Paycheck page. Unallocated includes any budget category with no Ramsey mapping, plus any genuinely untracked money.`}
           />
         </>
       }
       subtitle={`${onTarget}/${rows.length} within range${
-        activeBudgetProfileName
-          ? ` · ${activeBudgetProfileName}${isBudgetPinned ? " (active)" : ""}`
-          : ""
-      } · full-year view`}
+        activeBudgetProfileName ? ` · ${activeBudgetProfileName}` : ""
+      } · ${fullYearNote ?? "full-year view"}`}
       href="/budget"
     >
       {budgetData?.result && (
@@ -655,6 +632,11 @@ function LivingCostsCardImpl() {
           <span className="h-2 w-2 rounded-full border border-green-200 bg-green-100" />{" "}
           Target
         </span>
+        {bonusShown > 0.5 && (
+          // One home for this choice: the Bonus section on the Paycheck
+          // page. (Plain text — the whole card is already a link.)
+          <span>Bonus as extra spending: set per person on Paycheck</span>
+        )}
         {extraGrossRows.length > 0 && (
           <span className="ml-auto flex items-center gap-1">
             <HelpTip

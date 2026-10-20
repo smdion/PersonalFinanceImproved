@@ -22,12 +22,11 @@ import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
 import {
   getTotalCompensation,
-  applyActiveSalary,
   resolveCompensation,
   loadAndApplySalaryProfile,
   mergeSalaryProfileJobFields,
 } from "./salary";
-import type { SalaryActiveMap, SalaryProfileActiveMap } from "./salary";
+import type { SalaryProfileActiveMap } from "./salary";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {
   getEffectiveCash,
@@ -311,10 +310,7 @@ export type YearEndRow = {
  * column, session salaries), so a Plan-pinned or profile-scoped call only ever
  * reads a result built with exactly the same inputs.
  */
-export type YearEndHistoryTargeting = BudgetTargeting & {
-  /** personId -> active salary, merged in place of the raw current salary for the live current-year row. */
-  salaryActiveFields?: SalaryActiveMap;
-};
+export type YearEndHistoryTargeting = BudgetTargeting;
 
 // Short-lived (5s) cache keyed by the targeting, so a page that asks for
 // the same targeted history from several procedures in one load (the
@@ -334,14 +330,10 @@ function yearEndCacheKey(
   asOfDate: Date,
   targeting: YearEndHistoryTargeting | undefined,
 ) {
-  const salary = [...(targeting?.salaryActiveFields ?? new Map()).entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([personId, entry]) => [personId, entry]);
   return JSON.stringify([
     localDateStr(asOfDate),
     targeting?.budgetProfileId ?? null,
     targeting?.budgetColumn ?? null,
-    salary,
   ]);
 }
 
@@ -838,15 +830,9 @@ export async function buildYearEndHistory(
       filterActiveJobs(jobs),
       salaryProfileActiveMap,
     );
-    const salaryActiveMap = targeting?.salaryActiveFields ?? new Map();
     const combinedGross = activeJobs.reduce((s, job) => {
       const comp = resolveCompensation(salaryProfileActiveMap, job.id);
-      const salary = applyActiveSalary(
-        job.personId,
-        comp.salary,
-        salaryActiveMap,
-      );
-      return s + getTotalCompensation(salary, comp.terms);
+      return s + getTotalCompensation(comp.salary, comp.terms);
     }, 0);
 
     const netWorth =

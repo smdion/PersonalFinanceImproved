@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
-import { useScenario } from "@/lib/context/scenario-context";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 import { FormError } from "@/components/ui/form-error";
@@ -52,7 +51,6 @@ export function RetirementProfileManager({
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
-  const { isInScenario, setScenarioRetirementProfile } = useScenario();
   const [activeRetirementId, setActiveRetirementId] =
     useActiveRetirementProfile();
   const { data: profiles, isLoading } =
@@ -69,15 +67,14 @@ export function RetirementProfileManager({
   ).sort((a, b) => b - a);
 
   const validIds = (profiles ?? []).map((p) => p.id);
-  // "Active" (global/Plan-pinned) — drives the ACTIVE badge + "Make
+  // "Active" — drives the ACTIVE badge + "Make
   // active" affordance, same computation the projection page's
   // assumptions band uses for its own activeProfileId/effectiveSource.
-  const { profileId: activeEffectiveId, source: activeSource } =
-    useEffectiveProfileId("retirement", {
-      validIds,
-      localSelection: null,
-      globalDefaultId: activeRetirementId,
-    });
+  const { profileId: activeEffectiveId } = useEffectiveProfileId("retirement", {
+    validIds,
+    localSelection: null,
+    globalDefaultId: activeRetirementId,
+  });
   // "Viewing" — which row is selected/highlighted, independent of
   // activation. Falls back to the active profile when nothing's been
   // clicked yet, exactly like Contribution/Salary's sidebars.
@@ -168,11 +165,7 @@ export function RetirementProfileManager({
   const canDeleteAny = profiles.length > 1;
 
   const handleActivate = (id: number) => {
-    if (isInScenario) {
-      setScenarioRetirementProfile(id);
-    } else {
-      setActiveRetirementId(id);
-    }
+    setActiveRetirementId(id);
   };
 
   const handleStartDuplicate = (sourceId: number) => {
@@ -217,11 +210,6 @@ export function RetirementProfileManager({
             name={profile.name}
             isSelected={profile.id === viewingEffectiveId}
             isActive={isActive}
-            activeLabel={
-              isActive && activeSource === "plan-pin"
-                ? "Active in this Plan"
-                : "ACTIVE"
-            }
             onSelect={() => onViewingProfileChange(profile.id)}
             onRename={
               admin

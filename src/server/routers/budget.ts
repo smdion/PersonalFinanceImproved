@@ -1,4 +1,5 @@
 /** Budget router for multi-profile budget management including category items, column tiers, contribution profile linking, and budget API integration. */
+import { assertNoPlanUses } from "@/server/helpers/plans";
 import { eq, asc, inArray, and, gte, lt } from "drizzle-orm";
 import { log } from "@/lib/logger";
 import { z } from "zod/v4";
@@ -19,7 +20,6 @@ import {
   zSandboxDeductionAdditions,
   zSandboxContribActiveFields,
   zSandboxContribAdditions,
-  toSalaryActiveMap,
 } from "./_shared";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
@@ -121,8 +121,6 @@ async function renumberItems(
  * so a caller can't silently omit one and get the old, wrong fallback.
  */
 export const profileResolutionTiersSchema = z.object({
-  /** The active Plan's pin for this axis, already validated client-side. */
-  planPinId: z.number().int().nullable(),
   /** The calling page's own local selection / preview pick, if it has one. */
   localSelectionId: z.number().int().nullable(),
   /** The globally-active profile id for this axis. */
@@ -174,7 +172,6 @@ async function resolveEffectiveContribProfileIdForItem(
 }
 
 const NO_PROFILE_TIERS: ProfileResolutionTiers = {
-  planPinId: null,
   localSelectionId: null,
   globalDefaultId: null,
 };
@@ -189,291 +186,267 @@ export const budgetRouter = createTRPCRouter({
    * Unspent is computed here rather than client-side because the panel that
    * shows it used to call `paycheck.computeSummary` with no input at all,
    * which server-side means *no* profile is applied — so the figure silently
-   * ignored the active Contribution Profile, the active Salary Profile, any
-   * Plan pin, and any Plan-level salary override. This procedure already
-   * loops every profile and already resolves each profile's own savings
-   * allocations and per-mode weighting, so resolving the pay side here too
-   * keeps it to one round trip and one computation path.
-   *
-   * Plan pins are session/browser state, so the caller supplies them; the
-   * globally-active ids are read from app_settings here.
+   * ignored the active Contribution and Salary Profiles. This procedure
+   * already loops every profile and already resolves each profile's own
+   * savings allocations and per-mode weighting, so resolving the pay side
+   * here too keeps it to one round trip and one computation path. The
+   * active ids are read from app_settings here.
    */
-  listProfiles: protectedProcedure
-    .input(
-      z
-        .object({
-          /** The active Plan's pins, if a Plan is selected in the browser. */
-          planContribProfileId: z.number().int().nullable().optional(),
-          planSalaryProfileId: z.number().int().nullable().optional(),
-          salaryActiveFields: z
-            .array(z.object({ personId: z.number(), salary: z.number() }))
-            .optional(),
-        })
-        .optional(),
-    )
-    .query(async ({ ctx, input }) => {
-      const profiles = await ctx.db
-        .select({
-          id: schema.budgetProfiles.id,
-          name: schema.budgetProfiles.name,
-          isActive: schema.budgetProfiles.isActive,
-          columnLabels: schema.budgetProfiles.columnLabels,
-          columnMonths: schema.budgetProfiles.columnMonths,
-          columnContributionProfileIds:
-            schema.budgetProfiles.columnContributionProfileIds,
-          columnSalaryProfileIds: schema.budgetProfiles.columnSalaryProfileIds,
-        })
-        .from(schema.budgetProfiles)
-        .orderBy(asc(schema.budgetProfiles.id));
+  listProfiles: protectedProcedure.query(async ({ ctx }) => {
+    const profiles = await ctx.db
+      .select({
+        id: schema.budgetProfiles.id,
+        name: schema.budgetProfiles.name,
+        isActive: schema.budgetProfiles.isActive,
+        columnLabels: schema.budgetProfiles.columnLabels,
+        columnMonths: schema.budgetProfiles.columnMonths,
+        columnContributionProfileIds:
+          schema.budgetProfiles.columnContributionProfileIds,
+        columnSalaryProfileIds: schema.budgetProfiles.columnSalaryProfileIds,
+      })
+      .from(schema.budgetProfiles)
+      .orderBy(asc(schema.budgetProfiles.id));
 
-      // Intentional batch load: fetch all items once and distribute across profiles
-      // in memory. This is O(1) queries regardless of profile count, not N+1.
-      const [allItems, activeGoals, settingRows] = await Promise.all([
-        ctx.db.select().from(schema.budgetItems),
-        ctx.db
-          .select()
-          .from(schema.savingsGoals)
-          .where(eq(schema.savingsGoals.isActive, true)),
-        ctx.db
-          .select()
-          .from(schema.appSettings)
-          .where(
-            inArray(schema.appSettings.key, [
-              SK_ACTIVE_CONTRIB_PROFILE_ID,
-              SK_ACTIVE_SALARY_PROFILE_ID,
-            ]),
-          ),
-      ]);
-      const settingValue = (key: string): number | null => {
-        const raw = settingRows.find((r) => r.key === key)?.value ?? null;
-        const num = Number(raw);
-        return raw == null || Number.isNaN(num) ? null : num;
-      };
-      // Savings funding is per-(goal, profile) — resolve once per profile and
-      // fold the monthly total into annualTotal so it isn't silently excluded
-      // (Budget spends what Contributions sets, Savings allocates what's
-      // left — annualTotal should reflect all three stages, not just budget
-      // items).
-      const monthlySavingsByProfile = new Map<number, number>();
-      if (activeGoals.length > 0) {
-        await Promise.all(
-          profiles.map(async (p) => {
-            const resolved = await getResolvedGoalAllocations(
-              ctx.db,
-              activeGoals,
-              p.id,
-            );
-            let total = 0;
-            for (const r of resolved.values()) total += r.monthlyContribution;
-            monthlySavingsByProfile.set(p.id, total);
-          }),
-        );
-      }
-
-      // ── Per-profile take-home pay ──
-      // Each profile's columns resolve their own Contribution/Salary Profile
-      // through the SAME resolver computeActiveSummary and the client's
-      // per-column payroll breakdown use, so this figure can't disagree with
-      // what the Budget tab shows for the same profile.
-      const contribTiers: ProfileResolutionTiers = {
-        planPinId: input?.planContribProfileId ?? null,
-        localSelectionId: null,
-        globalDefaultId: settingValue(SK_ACTIVE_CONTRIB_PROFILE_ID),
-      };
-      const salaryTiers: ProfileResolutionTiers = {
-        planPinId: input?.planSalaryProfileId ?? null,
-        localSelectionId: null,
-        globalDefaultId: settingValue(SK_ACTIVE_SALARY_PROFILE_ID),
-      };
-
-      // One paycheck computation per DISTINCT (Contribution, Salary) pin pair
-      // across every profile's every column — not one per column. Goes
-      // through paycheck.computeSummary itself (same procedure the Paycheck
-      // page calls) rather than a parallel re-derivation.
-      //
-      // Exempting this internal call from the caller's own rate-limit
-      // budget (internalCtx) removes a backstop that was, until now,
-      // accidentally capping this fan-out — each nested call opens its own
-      // demo-schema pool connection when a demo profile is active
-      // (demoSchemaMiddleware), and a single profile's columns resolve
-      // concurrently via Promise.all below, so a profile with many columns
-      // and many distinct pin combinations could otherwise make an
-      // unbounded number of these calls AT ONCE. MAX_NET_MONTHLY_PAIRS
-      // caps total DISTINCT pairs STARTED per request; anything beyond it
-      // is left as null (income simply omitted for that pair) rather than
-      // making the call, with one warning logged the first time this
-      // actually clamps something.
-      //
-      // `distinctPairsStarted` is incremented SYNCHRONOUSLY, before the
-      // `await`, specifically so this holds even when many columns fire
-      // concurrently: JS runs the synchronous portion of each call in the
-      // Promise.all array's construction order before any of them
-      // suspends, so the counter correctly climbs 1, 2, 3... across a
-      // burst of new pairs instead of every concurrent caller seeing a
-      // stale pre-await Map size (which a naive `netMonthlyByPair.size`
-      // check would — the bug an earlier version of this cap had). The
-      // pending-promise map also dedupes concurrent callers asking for the
-      // SAME pair at the same time, so they share one paycheck call
-      // instead of racing two.
-      const MAX_NET_MONTHLY_PAIRS = 20;
-      let netMonthlyPairsClamped = false;
-      let distinctPairsStarted = 0;
-      const paycheckCaller = createCallerFactory(paycheckRouter)(
-        internalCtx(ctx),
-      );
-      const netMonthlyByPair = new Map<string, number | null>();
-      const netMonthlyPending = new Map<string, Promise<number | null>>();
-      const netMonthlyForPair = (
-        contribProfileId: number | null,
-        salaryProfileId: number | null,
-      ): Promise<number | null> => {
-        const key = `${contribProfileId}:${salaryProfileId}`;
-        const cached = netMonthlyByPair.get(key);
-        if (cached !== undefined) return Promise.resolve(cached);
-        const pending = netMonthlyPending.get(key);
-        if (pending) return pending;
-
-        if (distinctPairsStarted >= MAX_NET_MONTHLY_PAIRS) {
-          if (!netMonthlyPairsClamped) {
-            netMonthlyPairsClamped = true;
-            log("warn", "listProfiles.netMonthlyPairs_clamped", {
-              limit: MAX_NET_MONTHLY_PAIRS,
-            });
-          }
-          return Promise.resolve(null);
-        }
-        distinctPairsStarted += 1;
-
-        const promise = (async () => {
-          const paycheckData = await paycheckCaller.computeSummary({
-            ...(input?.salaryActiveFields && input.salaryActiveFields.length > 0
-              ? { salaryActiveFields: input.salaryActiveFields }
-              : {}),
-            ...(contribProfileId != null
-              ? { contributionProfileId: contribProfileId }
-              : {}),
-            ...(salaryProfileId != null ? { salaryProfileId } : {}),
-          });
-          // netPay is gross − pre-tax − withholding − FICA − post-tax, so
-          // "sum netPay × budget periods per month" is the same monthly
-          // take-home the client's buildPayrollBreakdown derives line by
-          // line.
-          let net: number | null = null;
-          for (const d of paycheckData.people) {
-            const pc = d.paycheck;
-            if (!pc || !d.job) continue;
-            const perMonth =
-              ("budgetPerMonth" in d ? d.budgetPerMonth : null) ??
-              pc.periodsPerYear / 12;
-            net = (net ?? 0) + pc.netPay * perMonth;
-          }
-          netMonthlyByPair.set(key, net);
-          return net;
-        })();
-        netMonthlyPending.set(key, promise);
-        return promise;
-      };
-
-      const rows: Array<
-        (typeof profiles)[number] & {
-          annualTotal: number;
-          columnCount: number;
-          monthlyTotal: number;
-          weightedMonthlySpending: number;
-          monthlySavings: number;
-          netMonthly: number | null;
-          unspentMonthly: number | null;
-        }
-      > = [];
-
-      for (const p of profiles) {
-        const items = allItems.filter((i) => i.profileId === p.id);
-        const labels = (p.columnLabels as string[]) ?? [];
-        const months = (p.columnMonths as number[] | null) ?? null;
-        const numColumns = labels.length;
-        const contribIds = resolveContributionProfileIdsForAllColumns({
-          ...contribTiers,
-          columnPinIds: p.columnContributionProfileIds as
-            (number | null)[] | null,
-          numColumns,
-        });
-        const salaryIds = resolveSalaryProfileIdsForAllColumns({
-          ...salaryTiers,
-          columnPinIds: p.columnSalaryProfileIds as (number | null)[] | null,
-          numColumns,
-        });
-        // Resolved through the same chain computeActiveSummary uses (see
-        // resolveLinkedBudgetItemAmounts) — raw `amounts` silently dropped
-        // every contribution-linked item from this sidebar's totals.
-        const resolvedItems = await resolveLinkedBudgetItemAmounts(
-          ctx.db,
-          items,
-          numColumns,
-          contribIds,
-          salaryIds,
-        );
-        const colTotals = labels.map((_: string, ci: number) =>
-          resolvedItems.reduce((sum, item) => sum + (item.amounts[ci] ?? 0), 0),
-        );
-        const monthlySavings = monthlySavingsByProfile.get(p.id) ?? 0;
-        // Annual: weighted if months set, otherwise column 0 * 12, plus
-        // savings (savings funding doesn't vary by mode — see
-        // savings_goal_profile_allocations' table comment).
-        const budgetAnnual = months
-          ? colTotals.reduce((sum, t, i) => sum + t * (months[i] ?? 0), 0)
-          : (colTotals[0] ?? 0) * 12;
-        const annualTotal = budgetAnnual + monthlySavings * 12;
-        const isWeighted = months !== null && months.length > 0;
-        const spending = isWeighted ? budgetAnnual / 12 : (colTotals[0] ?? 0);
-
-        // A weighted profile has no single "the" contribution profile — its
-        // take-home is blended across modes exactly the way its spending is,
-        // using each mode's own months/year.
-        let netMonthly: number | null = null;
-        if (numColumns > 0) {
-          const perColumnNet = await Promise.all(
-            Array.from({ length: numColumns }, (_, col) =>
-              netMonthlyForPair(
-                contribIds[col] ?? null,
-                salaryIds[col] ?? null,
-              ),
-            ),
+    // Intentional batch load: fetch all items once and distribute across profiles
+    // in memory. This is O(1) queries regardless of profile count, not N+1.
+    const [allItems, activeGoals, settingRows] = await Promise.all([
+      ctx.db.select().from(schema.budgetItems),
+      ctx.db
+        .select()
+        .from(schema.savingsGoals)
+        .where(eq(schema.savingsGoals.isActive, true)),
+      ctx.db
+        .select()
+        .from(schema.appSettings)
+        .where(
+          inArray(schema.appSettings.key, [
+            SK_ACTIVE_CONTRIB_PROFILE_ID,
+            SK_ACTIVE_SALARY_PROFILE_ID,
+          ]),
+        ),
+    ]);
+    const settingValue = (key: string): number | null => {
+      const raw = settingRows.find((r) => r.key === key)?.value ?? null;
+      const num = Number(raw);
+      return raw == null || Number.isNaN(num) ? null : num;
+    };
+    // Savings funding is per-(goal, profile) — resolve once per profile and
+    // fold the monthly total into annualTotal so it isn't silently excluded
+    // (Budget spends what Contributions sets, Savings allocates what's
+    // left — annualTotal should reflect all three stages, not just budget
+    // items).
+    const monthlySavingsByProfile = new Map<number, number>();
+    if (activeGoals.length > 0) {
+      await Promise.all(
+        profiles.map(async (p) => {
+          const resolved = await getResolvedGoalAllocations(
+            ctx.db,
+            activeGoals,
+            p.id,
           );
-          if (perColumnNet.some((n) => n !== null)) {
-            netMonthly = isWeighted
-              ? perColumnNet.reduce<number>(
-                  (sum, n, i) => sum + (n ?? 0) * (months![i] ?? 0),
-                  0,
-                ) / 12
-              : (perColumnNet[0] ?? null);
-          }
-        }
+          let total = 0;
+          for (const r of resolved.values()) total += r.monthlyContribution;
+          monthlySavingsByProfile.set(p.id, total);
+        }),
+      );
+    }
 
-        rows.push({
-          ...p,
-          annualTotal,
-          columnCount: labels.length,
-          // Column 0's raw monthly spending — meaningful on its own only for
-          // non-weighted profiles (a single mode IS the year). For weighted
-          // profiles, use weightedMonthlySpending instead.
-          monthlyTotal: colTotals[0] ?? 0,
-          // Weighted spending, blended to a "typical month" (budgetAnnual/12)
-          // — what a weighted profile's own monthlyTotal should have meant.
-          weightedMonthlySpending: budgetAnnual / 12,
-          monthlySavings,
-          /** Take-home pay under this profile's own resolved pins, blended
-           *  the same way its spending is. Null when nobody has an active
-           *  job/paycheck to compute from. */
-          netMonthly,
-          /** netMonthly − this profile's spending − its savings allocations.
-           *  Null whenever netMonthly is. */
-          unspentMonthly:
-            netMonthly === null ? null : netMonthly - spending - monthlySavings,
+    // ── Per-profile take-home pay ──
+    // Each profile's columns resolve their own Contribution/Salary Profile
+    // through the SAME resolver computeActiveSummary and the client's
+    // per-column payroll breakdown use, so this figure can't disagree with
+    // what the Budget tab shows for the same profile.
+    const contribTiers: ProfileResolutionTiers = {
+      localSelectionId: null,
+      globalDefaultId: settingValue(SK_ACTIVE_CONTRIB_PROFILE_ID),
+    };
+    const salaryTiers: ProfileResolutionTiers = {
+      localSelectionId: null,
+      globalDefaultId: settingValue(SK_ACTIVE_SALARY_PROFILE_ID),
+    };
+
+    // One paycheck computation per DISTINCT (Contribution, Salary) pin pair
+    // across every profile's every column — not one per column. Goes
+    // through paycheck.computeSummary itself (same procedure the Paycheck
+    // page calls) rather than a parallel re-derivation.
+    //
+    // Exempting this internal call from the caller's own rate-limit
+    // budget (internalCtx) removes a backstop that was, until now,
+    // accidentally capping this fan-out — each nested call opens its own
+    // demo-schema pool connection when a demo profile is active
+    // (demoSchemaMiddleware), and a single profile's columns resolve
+    // concurrently via Promise.all below, so a profile with many columns
+    // and many distinct pin combinations could otherwise make an
+    // unbounded number of these calls AT ONCE. MAX_NET_MONTHLY_PAIRS
+    // caps total DISTINCT pairs STARTED per request; anything beyond it
+    // is left as null (income simply omitted for that pair) rather than
+    // making the call, with one warning logged the first time this
+    // actually clamps something.
+    //
+    // `distinctPairsStarted` is incremented SYNCHRONOUSLY, before the
+    // `await`, specifically so this holds even when many columns fire
+    // concurrently: JS runs the synchronous portion of each call in the
+    // Promise.all array's construction order before any of them
+    // suspends, so the counter correctly climbs 1, 2, 3... across a
+    // burst of new pairs instead of every concurrent caller seeing a
+    // stale pre-await Map size (which a naive `netMonthlyByPair.size`
+    // check would — the bug an earlier version of this cap had). The
+    // pending-promise map also dedupes concurrent callers asking for the
+    // SAME pair at the same time, so they share one paycheck call
+    // instead of racing two.
+    const MAX_NET_MONTHLY_PAIRS = 20;
+    let netMonthlyPairsClamped = false;
+    let distinctPairsStarted = 0;
+    const paycheckCaller = createCallerFactory(paycheckRouter)(
+      internalCtx(ctx),
+    );
+    const netMonthlyByPair = new Map<string, number | null>();
+    const netMonthlyPending = new Map<string, Promise<number | null>>();
+    const netMonthlyForPair = (
+      contribProfileId: number | null,
+      salaryProfileId: number | null,
+    ): Promise<number | null> => {
+      const key = `${contribProfileId}:${salaryProfileId}`;
+      const cached = netMonthlyByPair.get(key);
+      if (cached !== undefined) return Promise.resolve(cached);
+      const pending = netMonthlyPending.get(key);
+      if (pending) return pending;
+
+      if (distinctPairsStarted >= MAX_NET_MONTHLY_PAIRS) {
+        if (!netMonthlyPairsClamped) {
+          netMonthlyPairsClamped = true;
+          log("warn", "listProfiles.netMonthlyPairs_clamped", {
+            limit: MAX_NET_MONTHLY_PAIRS,
+          });
+        }
+        return Promise.resolve(null);
+      }
+      distinctPairsStarted += 1;
+
+      const promise = (async () => {
+        const paycheckData = await paycheckCaller.computeSummary({
+          ...(contribProfileId != null
+            ? { contributionProfileId: contribProfileId }
+            : {}),
+          ...(salaryProfileId != null ? { salaryProfileId } : {}),
         });
+        // netPay is gross − pre-tax − withholding − FICA − post-tax, so
+        // "sum netPay × budget periods per month" is the same monthly
+        // take-home the client's buildPayrollBreakdown derives line by
+        // line.
+        let net: number | null = null;
+        for (const d of paycheckData.people) {
+          const pc = d.paycheck;
+          if (!pc || !d.job) continue;
+          const perMonth =
+            ("budgetPerMonth" in d ? d.budgetPerMonth : null) ??
+            pc.periodsPerYear / 12;
+          net = (net ?? 0) + pc.netPay * perMonth;
+        }
+        netMonthlyByPair.set(key, net);
+        return net;
+      })();
+      netMonthlyPending.set(key, promise);
+      return promise;
+    };
+
+    const rows: Array<
+      (typeof profiles)[number] & {
+        annualTotal: number;
+        columnCount: number;
+        monthlyTotal: number;
+        weightedMonthlySpending: number;
+        monthlySavings: number;
+        netMonthly: number | null;
+        unspentMonthly: number | null;
+      }
+    > = [];
+
+    for (const p of profiles) {
+      const items = allItems.filter((i) => i.profileId === p.id);
+      const labels = (p.columnLabels as string[]) ?? [];
+      const months = (p.columnMonths as number[] | null) ?? null;
+      const numColumns = labels.length;
+      const contribIds = resolveContributionProfileIdsForAllColumns({
+        ...contribTiers,
+        columnPinIds: p.columnContributionProfileIds as
+          (number | null)[] | null,
+        numColumns,
+      });
+      const salaryIds = resolveSalaryProfileIdsForAllColumns({
+        ...salaryTiers,
+        columnPinIds: p.columnSalaryProfileIds as (number | null)[] | null,
+        numColumns,
+      });
+      // Resolved through the same chain computeActiveSummary uses (see
+      // resolveLinkedBudgetItemAmounts) — raw `amounts` silently dropped
+      // every contribution-linked item from this sidebar's totals.
+      const resolvedItems = await resolveLinkedBudgetItemAmounts(
+        ctx.db,
+        items,
+        numColumns,
+        contribIds,
+        salaryIds,
+      );
+      const colTotals = labels.map((_: string, ci: number) =>
+        resolvedItems.reduce((sum, item) => sum + (item.amounts[ci] ?? 0), 0),
+      );
+      const monthlySavings = monthlySavingsByProfile.get(p.id) ?? 0;
+      // Annual: weighted if months set, otherwise column 0 * 12, plus
+      // savings (savings funding doesn't vary by mode — see
+      // savings_goal_profile_allocations' table comment).
+      const budgetAnnual = months
+        ? colTotals.reduce((sum, t, i) => sum + t * (months[i] ?? 0), 0)
+        : (colTotals[0] ?? 0) * 12;
+      const annualTotal = budgetAnnual + monthlySavings * 12;
+      const isWeighted = months !== null && months.length > 0;
+      const spending = isWeighted ? budgetAnnual / 12 : (colTotals[0] ?? 0);
+
+      // A weighted profile has no single "the" contribution profile — its
+      // take-home is blended across modes exactly the way its spending is,
+      // using each mode's own months/year.
+      let netMonthly: number | null = null;
+      if (numColumns > 0) {
+        const perColumnNet = await Promise.all(
+          Array.from({ length: numColumns }, (_, col) =>
+            netMonthlyForPair(contribIds[col] ?? null, salaryIds[col] ?? null),
+          ),
+        );
+        if (perColumnNet.some((n) => n !== null)) {
+          netMonthly = isWeighted
+            ? perColumnNet.reduce<number>(
+                (sum, n, i) => sum + (n ?? 0) * (months![i] ?? 0),
+                0,
+              ) / 12
+            : (perColumnNet[0] ?? null);
+        }
       }
 
-      return rows;
-    }),
+      rows.push({
+        ...p,
+        annualTotal,
+        columnCount: labels.length,
+        // Column 0's raw monthly spending — meaningful on its own only for
+        // non-weighted profiles (a single mode IS the year). For weighted
+        // profiles, use weightedMonthlySpending instead.
+        monthlyTotal: colTotals[0] ?? 0,
+        // Weighted spending, blended to a "typical month" (budgetAnnual/12)
+        // — what a weighted profile's own monthlyTotal should have meant.
+        weightedMonthlySpending: budgetAnnual / 12,
+        monthlySavings,
+        /** Take-home pay under this profile's own resolved pins, blended
+         *  the same way its spending is. Null when nobody has an active
+         *  job/paycheck to compute from. */
+        netMonthly,
+        /** netMonthly − this profile's spending − its savings allocations.
+         *  Null whenever netMonthly is. */
+        unspentMonthly:
+          netMonthly === null ? null : netMonthly - spending - monthlySavings,
+      });
+    }
+
+    return rows;
+  }),
 
   /** Create a new budget profile, pre-populated with standard template
    *  categories. Optionally links every starting column to a Contribution
@@ -690,6 +663,8 @@ export const budgetRouter = createTRPCRouter({
           message: deleteCheck.reason,
         });
 
+      await assertNoPlanUses(ctx.db, "budget", input.id);
+
       // Delete associated items first
       await ctx.db
         .delete(schema.budgetItems)
@@ -726,16 +701,12 @@ export const budgetRouter = createTRPCRouter({
           profileId: z.number().optional(),
           /**
            * The caller's non-column resolution tiers for each profile axis.
-           * Named per-tier (rather than one pre-resolved "active" id) because
-           * a pre-resolved id silently collapses the Plan pin into the lowest
-           * tier, which is how a budget column's own pin ended up beating an
-           * active Plan's pin — see contribution-profile-resolution.ts.
+           * Named per-tier (rather than one pre-resolved "active" id) so a
+           * budget column's own profile still applies — see
+           * contribution-profile-resolution.ts.
            */
           contributionProfile: profileResolutionTiersSchema.optional(),
           salaryProfile: profileResolutionTiersSchema.optional(),
-          salaryActiveFields: z
-            .array(z.object({ personId: z.number(), salary: z.number() }))
-            .optional(),
           /** The What-If tab's hand-edited salary/bonus entries — see
            *  paycheckRouter.computeSummary's identical field. Threaded into
            *  every paycheck.computeSummary call this procedure makes
@@ -853,7 +824,7 @@ export const budgetRouter = createTRPCRouter({
       // use-budget-derived-data.ts.
 
       // Per-column profile resolution, using the documented precedence
-      // (Plan pin > column pin > caller's local selection > globally-active).
+      // (column profile > caller's local selection > active).
       // Must match use-budget-derived-data.ts's resolution exactly, or budget
       // item $ amounts and the payroll breakdown shown on the same page
       // silently disagree about which contribution/salary reality is in
@@ -874,13 +845,6 @@ export const budgetRouter = createTRPCRouter({
           (number | null)[] | null,
         numColumns,
       });
-      // Plan-level salaryActiveFields are threaded through here so budget item
-      // $ amounts for percent-of-salary contributions stay consistent with
-      // what the Paycheck page shows under the same active Plan — previously
-      // this always passed an empty map and silently ignored the Plan's
-      // active salaries. Precedence: Plan active salary > Salary Profile > live.
-      const planSalaryActiveMap = toSalaryActiveMap(input?.salaryActiveFields);
-
       // Resolved through the SAME helper listProfiles uses above
       // (resolveLinkedBudgetItemAmounts) — this procedure used to maintain
       // its own independent copy of this exact resolution (the only
@@ -896,7 +860,6 @@ export const budgetRouter = createTRPCRouter({
             contribProfileIdByColumn,
             salaryProfileIdByColumn,
             {
-              planSalaryActiveMap,
               sandboxContribActiveFields: input?.sandboxContribActiveFields,
               sandboxSalaryEntries: input?.sandboxSalaryEntries,
             },
@@ -1009,9 +972,6 @@ export const budgetRouter = createTRPCRouter({
         );
         const incomePaycheckData = await paycheckCallerForIncome.computeSummary(
           {
-            ...(input?.salaryActiveFields && input.salaryActiveFields.length > 0
-              ? { salaryActiveFields: input.salaryActiveFields }
-              : {}),
             ...(contribProfileIdByColumn[selectedColumn] != null
               ? {
                   contributionProfileId:

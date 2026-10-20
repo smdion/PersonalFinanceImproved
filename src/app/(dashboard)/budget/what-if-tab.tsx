@@ -30,14 +30,9 @@
  *        state instead.
  *    Sandbox editing is NOT gated on `hasPermission(user, "budget")` — it
  *    writes nothing, so someone without budget-edit rights can still play.
- * 3. The three pickers are plain component state. They never write to the
- *    Plan or to the globally-active settings — they default FROM those (via
- *    `useEffectiveProfileId`, so an active Plan's pins are the starting
- *    point) and diverge locally from there.
- * 4. A session scenario (the browser-local what-if in the top bar) is a
- *    different concept from this tab's sandbox and must not stack on top of
- *    it — hence `honorSessionScenario: false`.
- * 5. Sandbox drafts (salary/bonus edits, budget item edits) are keyed by
+ * 3. The three pickers are plain component state. They never write the
+ *    active profiles — they start FROM them and diverge locally from there.
+ * 4. Sandbox drafts (salary/bonus edits, budget item edits) are keyed by
  *    ids that only mean something for the CURRENTLY picked profile — they
  *    reset when that picker changes (see useSandboxState's effects), and
  *    there is deliberately no `beforeunload` guard: this is a throwaway
@@ -88,6 +83,7 @@ import {
   type SavingsGoalEntry,
 } from "./use-budget-derived-data";
 import { WhatIfPaycheckSummary } from "./what-if-paycheck-summary";
+import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 
 type SandboxSalaryEntry = SandboxSalaryEntries[string];
 
@@ -1102,7 +1098,7 @@ export function WhatIfTab({
 }) {
   const utils = trpc.useUtils();
 
-  // ── Profile lists + defaults (Plan pins first, then globally-active) ──
+  // ── Profile lists + defaults (the active profiles) ──
   const { data: budgetProfiles } = useBudgetProfilesList();
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
   const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
@@ -1123,18 +1119,19 @@ export function WhatIfTab({
     localSelection: null,
     globalDefaultId: activeBudgetProfileId,
   });
-  const { profileId: defaultContribId, planPinId: planContribProfileId } =
-    useEffectiveProfileId("contribution", {
+  const { profileId: defaultContribId } = useEffectiveProfileId(
+    "contribution",
+    {
       validIds: contribProfiles?.map((p) => p.id),
       localSelection: null,
       globalDefaultId: activeContribSetting,
-    });
-  const { profileId: defaultSalaryId, planPinId: planSalaryProfileId } =
-    useEffectiveProfileId("salary", {
-      validIds: salaryProfiles?.map((p) => p.id),
-      localSelection: null,
-      globalDefaultId: activeSalarySetting,
-    });
+    },
+  );
+  const { profileId: defaultSalaryId } = useEffectiveProfileId("salary", {
+    validIds: salaryProfiles?.map((p) => p.id),
+    localSelection: null,
+    globalDefaultId: activeSalarySetting,
+  });
 
   // ── The three local pickers (plain state; null = "use the default") ──
   const [pickedBudgetId, setPickedBudgetId] = useState<number | null>(null);
@@ -1142,6 +1139,7 @@ export function WhatIfTab({
   const [pickedSalaryId, setPickedSalaryId] = useState<number | null>(null);
 
   const budgetId = pickedBudgetId ?? defaultBudgetId;
+  const [activeRetirementId] = useActiveRetirementProfile();
   const contribId = pickedContribId ?? defaultContribId;
   const salaryId = pickedSalaryId ?? defaultSalaryId;
 
@@ -1166,8 +1164,6 @@ export function WhatIfTab({
     contributionProfileId: contribId,
     salaryProfileId: salaryId,
     taxYearOverride: taxYear,
-    // A session scenario must not silently stack on top of the tab's picks.
-    honorSessionScenario: false,
     sandboxSalaryEntries: sandbox.salaryEntries,
     sandboxDeductionEdits: sandbox.sandboxDeductionEdits,
     sandboxDeductionAdditions: sandbox.sandboxDeductionAdditions,
@@ -1177,26 +1173,20 @@ export function WhatIfTab({
 
   // ── Budget panel ──
   // The tab's picks go into the LOCAL SELECTION tier of the documented
-  // precedence — the tier that already exists for exactly this "page-level
-  // preview" purpose. It is not a new tier and it does not outrank a Plan
-  // pin: if a Plan is active, its pin still wins, same as every other
-  // page-local selector in the app. The note below surfaces that when it
-  // actually happens.
+  // precedence — the tier that exists for exactly this sandbox.
   const contributionProfileTiers = useMemo(
     () => ({
-      planPinId: planContribProfileId,
       localSelectionId: contribId,
       globalDefaultId: activeContribSetting,
     }),
-    [planContribProfileId, contribId, activeContribSetting],
+    [contribId, activeContribSetting],
   );
   const salaryProfileTiers = useMemo(
     () => ({
-      planPinId: planSalaryProfileId,
       localSelectionId: salaryId,
       globalDefaultId: activeSalarySetting,
     }),
-    [planSalaryProfileId, salaryId, activeSalarySetting],
+    [salaryId, activeSalarySetting],
   );
 
   const [activeColumn, setActiveColumn] = useState(0);
@@ -1267,7 +1257,6 @@ export function WhatIfTab({
     data: budgetData,
     savingsGoals,
     apiActualsData: null,
-    salaryActiveFields: [],
     contributionProfileTiers,
     salaryProfileTiers,
     editMode: true,
@@ -1278,7 +1267,7 @@ export function WhatIfTab({
   });
 
   // Columns whose resolved Contribution/Salary Profile differs from what the
-  // tab's own picker shows — i.e. a Plan pin or a column pin outranks the
+  // tab's own picker shows — i.e. a column's own profile outranks the
   // preview tier for that column.
   const overriddenColumns = useMemo(() => {
     const contribByCol =
@@ -1558,11 +1547,19 @@ export function WhatIfTab({
   const salaryEditCount = Object.values(sandbox.salaryEntries).filter(
     (e) => e.salary !== undefined,
   ).length;
-  const planLabel = createPlan.isPending
-    ? "Saving…"
-    : salaryEditCount > 0
-      ? "Save as Plan (with your salary edits)"
-      : "Save as Plan";
+  const planLabel = createPlan.isPending ? "Saving…" : "Save as Plan";
+  const planProfiles =
+    salaryId != null &&
+    contribId != null &&
+    budgetId != null &&
+    activeRetirementId != null
+      ? {
+          salaryProfileId: salaryId,
+          contributionProfileId: contribId,
+          budgetProfileId: budgetId,
+          retirementProfileId: activeRetirementId,
+        }
+      : null;
 
   return (
     <div className="space-y-5">
@@ -1909,43 +1906,28 @@ export function WhatIfTab({
               />
               <button
                 type="button"
-                disabled={!planName.trim() || createPlan.isPending}
+                disabled={
+                  !planName.trim() || !planProfiles || createPlan.isPending
+                }
                 onClick={() => {
-                  const peopleOverrides = Object.fromEntries(
-                    Object.entries(sandbox.salaryEntries)
-                      .filter(
-                        (entry): entry is [string, { salary: number }] =>
-                          entry[1].salary !== undefined,
-                      )
-                      .map(([personId, e]) => [personId, { salary: e.salary }]),
-                  );
-                  const overrides =
-                    Object.keys(peopleOverrides).length > 0
-                      ? { people: peopleOverrides }
-                      : ({} as Record<
-                          string,
-                          Record<string, Record<string, number>>
-                        >);
-                  createPlan.mutate({
-                    name: planName.trim(),
-                    overrides,
-                    budgetProfileId: budgetId,
-                    contributionProfileId: contribId,
-                    salaryProfileId: salaryId,
-                  });
+                  if (planProfiles)
+                    createPlan.mutate({
+                      name: planName.trim(),
+                      ...planProfiles,
+                    });
                 }}
                 className="hover:bg-surface-sunken rounded border px-2.5 py-1 text-xs"
               >
                 {planLabel}
               </button>
               <span className="text-caption text-faint">
-                Pins these three profiles to a new Plan you can switch to from
-                the top bar.
+                Saves these profiles, plus your active Retirement profile, as a
+                Plan you can apply from the top bar.
                 {salaryEditCount > 0 && (
                   <>
                     {" "}
-                    Salary edits carry over; bonus-term edits don&rsquo;t — set
-                    those on a Salary Profile instead.
+                    A Plan holds profiles, not edited amounts — save your salary
+                    edits as a Salary Profile first.
                   </>
                 )}
               </span>

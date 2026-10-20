@@ -12,7 +12,9 @@
 
 import { budgetApiServiceLabel, formatCurrency } from "@/lib/utils/format";
 import { confirm, promptTextWithSelect } from "@/components/ui/confirm-dialog";
-import { useScenario } from "@/lib/context/scenario-context";
+import { usePlanNamesUsing } from "@/lib/hooks/use-plans";
+import { planInUseMessage } from "@/lib/pure/plans";
+import { toast } from "@/lib/hooks/use-toast";
 import {
   ProfileListRow,
   ProfileSidebarHeader,
@@ -60,12 +62,7 @@ export function BudgetProfileSidebar({
   onDeleteProfile,
   onCloneProfile,
 }: Props) {
-  const { persistedScenarios } = useScenario();
-
-  const pinningPlanNames = (profileId: number): string[] =>
-    persistedScenarios
-      .filter((s) => s.budgetProfileId === profileId)
-      .map((s) => s.name);
+  const planNamesUsing = usePlanNamesUsing();
 
   return (
     <div className="space-y-1.5">
@@ -111,15 +108,14 @@ export function BudgetProfileSidebar({
             onDelete={
               canEdit && !p.isActive
                 ? async () => {
-                    const pinnedBy = pinningPlanNames(p.id);
-                    // "active" not "pin/pinned" in user-facing text (RULES.md).
-                    const pinnedByClause =
-                      pinnedBy.length > 0
-                        ? ` The Plan${pinnedBy.length > 1 ? "s" : ""} "${pinnedBy.join('", "')}" ${pinnedBy.length > 1 ? "have" : "has"} this profile active and will fall back to the household's active profile once it's gone.`
-                        : "";
+                    const usedBy = planNamesUsing("budget", p.id);
+                    if (usedBy.length > 0) {
+                      toast.error(planInUseMessage("budget", usedBy));
+                      return;
+                    }
                     if (
                       await confirm(
-                        `Delete profile "${p.name}"? Its budget items and any savings allocations customized for this profile will be permanently deleted too.${pinnedByClause}`,
+                        `Delete profile "${p.name}"? Its budget items and any savings allocations set for this profile will be permanently deleted too.`,
                       )
                     ) {
                       onDeleteProfile(p.id);

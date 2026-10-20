@@ -26,7 +26,6 @@ const INITIAL_VISIBLE = 15;
 const LOAD_MORE_COUNT = 10;
 
 type ProfileResolutionTiers = {
-  planPinId: number | null;
   localSelectionId: number | null;
   globalDefaultId: number | null;
 };

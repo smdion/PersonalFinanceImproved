@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useScenario } from "@/lib/context/scenario-context";
-import { useUser, hasPermission } from "@/lib/context/user-context";
+import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import { trpc } from "@/lib/trpc";
 import { confirm, confirmWithDiff } from "@/components/ui/confirm-dialog";
 import { diffContribProfileSwap } from "@/lib/pure/contrib-profile-diff";
@@ -10,65 +10,90 @@ import { ProfilePill } from "./profile-pill";
 import type { ProfileOption } from "./profile-pill";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
-import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
+import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
-import { Badge, StatusDot } from "@/components/ui/badge";
+import { useConfirmApplyPlan, usePlans } from "@/lib/hooks/use-plans";
+import {
+  PLAN_PROFILE_KINDS,
+  PLAN_PROFILE_KIND_TITLES,
+} from "@/lib/config/plans";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { FormError } from "@/components/ui/form-error";
 import { useClickOutside } from "@/lib/hooks/use-click-outside";
 
-export function ScenarioBar() {
-  const {
-    activeSelection,
-    activeScenario,
-    persistedScenarios,
-    sessionScenarios,
-    setActive,
-    viewMode,
-    setViewMode,
-    createSessionScenario,
-    deleteSessionScenario,
-    isInScenario,
-    setScenarioBudgetProfile,
-    setScenarioContributionProfile,
-    setScenarioSalaryProfile,
-  } = useScenario();
+function options(
+  profiles: readonly { id: number; name: string }[] | undefined,
+  activeId: number | null,
+): ProfileOption[] {
+  return (profiles ?? []).map((p) => ({
+    id: p.id,
+    name: p.name,
+    isActive: p.id === activeId,
+    badge: p.id === activeId ? "Active" : undefined,
+  }));
+}
 
+/**
+ * The header: which profile of each kind is active, which Plan (a saved set
+ * of profiles) that matches, and the view mode. Every picker changes the
+ * active profile for the whole household; choosing a Plan changes all four.
+ */
+export function ScenarioBar() {
+  const { viewMode, setViewMode } = useScenario();
   const user = useUser();
-  const canManageScenarios = hasPermission(user, "scenario");
+  const canManagePlans = hasPermission(user, "scenario");
+  const canChangeBudget = hasPermission(user, "budget");
+  const canChangeContribOrSalary = hasPermission(user, "contributionProfile");
+  const canChangeRetirement = isAdmin(user);
+
+  const { plans, activeIds, planInUse, lastAppliedPlan, sameAsActive, apply } =
+    usePlans();
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [creating, setCreating] = useState<"persisted" | "session" | null>(
-    null,
-  );
+  const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const dropdownRef = useClickOutside<HTMLDivElement>(() => {
     setDropdownOpen(false);
-    setCreating(null);
+    setCreating(false);
   });
   const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (creating) inputRef.current?.focus();
+  }, [creating]);
 
-  const createMut = trpc.settings.scenarios.create.useMutation();
-  const deleteMut = trpc.settings.scenarios.delete.useMutation();
   const utils = trpc.useUtils();
+  const refreshPlans = () => utils.settings.scenarios.list.invalidate();
+  const createMut = trpc.settings.scenarios.create.useMutation({
+    onSuccess: () => {
+      refreshPlans();
+      setNewName("");
+      setCreating(false);
+    },
+  });
+  const updateMut = trpc.settings.scenarios.update.useMutation({
+    onSuccess: refreshPlans,
+  });
+  const deleteMut = trpc.settings.scenarios.delete.useMutation({
+    onSuccess: refreshPlans,
+  });
 
-  // Profile switcher data
+  // Profile lists
   const { data: budgetProfiles } = useBudgetProfilesList();
   const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
   const { data: contribCompareData } =
     trpc.contributionProfile.compareData.useQuery();
   const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
-  const [activeContribId, setActiveContribId] = useActiveContribProfile();
-  const [activeSalaryId, setActiveSalaryId] = useActiveSalaryProfile();
+  const { data: retirementProfiles } =
+    trpc.retirement.retirementProfiles.list.useQuery();
+  const [, setActiveContribId] = useActiveContribProfile();
+  const [, setActiveSalaryId] = useActiveSalaryProfile();
+  const [, setActiveRetirementId] = useActiveRetirementProfile();
 
-  // Every query that resolves "the active budget profile" server-side
-  // (computeActiveSummary and friends) takes no budget-profile id as a
-  // query argument, unlike the Salary/Contribution pills below — so React
-  // Query has no way to know those results are stale after a swap here.
-  // Same invalidation set salary-profile-manager.tsx/
-  // contribution-profile-manager.tsx already use for the same reason (a
-  // profile switch that feeds budget-linked contribution/paycheck/
-  // projection math), so a budget-profile swap can't leave any of them
-  // showing pre-swap numbers the way this bar's own pill briefly did.
+  // Every query that resolves "the active budget profile" server-side takes
+  // no budget-profile id as an argument, so React Query can't know those
+  // results are stale after a swap here — same invalidation set the
+  // profile managers use.
   const activateBudget = trpc.budget.setActiveProfile.useMutation({
     onSuccess: () => {
       utils.budget.invalidate();
@@ -79,90 +104,11 @@ export function ScenarioBar() {
     },
   });
 
-  // Plan pin -> globally-active profile, so the pill reflects what's actually
-  // in effect while a Plan is selected, not just the raw global default.
-  const globalActiveBudgetId =
-    budgetProfiles?.find((p) => p.isActive)?.id ?? null;
-  const { profileId: effectiveBudgetId, isPinned: budgetIsPinned } =
-    useEffectiveProfileId("budget", {
-      validIds: budgetProfiles?.map((p) => p.id),
-      localSelection: null,
-      globalDefaultId: globalActiveBudgetId,
-    });
-  // Post-migration the active-profile setting always names a real row;
-  // useActiveContribProfile repairs it if that row ever goes missing.
-  const globalActiveContribId = activeContribId;
-  const { profileId: effectiveContribId, isPinned: contribIsPinned } =
-    useEffectiveProfileId("contribution", {
-      validIds: contribProfiles?.map((p) => p.id),
-      localSelection: null,
-      globalDefaultId: globalActiveContribId,
-    });
-
-  // Each option gets its own badge so a Plan pin and the true global default
-  // never both silently read "Active" when they've diverged — see
-  // docs/RULES.md "Profile Pins".
-  const budgetOptions: ProfileOption[] = (budgetProfiles ?? []).map((p) => ({
-    id: p.id,
-    name: p.name,
-    isActive: p.id === effectiveBudgetId,
-    badge:
-      p.id === effectiveBudgetId
-        ? "Active"
-        : p.id === globalActiveBudgetId
-          ? "Active (global)"
-          : undefined,
-  }));
-
-  const contribOptions: ProfileOption[] = (contribProfiles ?? []).map((p) => ({
-    id: p.id,
-    name: p.name,
-    isActive: p.id === effectiveContribId,
-    badge:
-      p.id === effectiveContribId
-        ? "Active"
-        : p.id === globalActiveContribId
-          ? "Active (global)"
-          : undefined,
-  }));
-
-  const globalActiveSalaryId = activeSalaryId;
-  const { profileId: effectiveSalaryId, isPinned: salaryIsPinned } =
-    useEffectiveProfileId("salary", {
-      validIds: salaryProfiles?.map((p) => p.id),
-      localSelection: null,
-      globalDefaultId: globalActiveSalaryId,
-    });
-
-  const salaryOptions: ProfileOption[] = (salaryProfiles ?? []).map((p) => ({
-    id: p.id,
-    name: p.name,
-    isActive: p.id === effectiveSalaryId,
-    badge:
-      p.id === effectiveSalaryId
-        ? "Active"
-        : p.id === globalActiveSalaryId
-          ? "Active (global)"
-          : undefined,
-  }));
-
-  // While a Plan is selected, the pills pin that Plan's profile instead of
-  // changing the global default (which would affect Main Plan and every
-  // other Plan too) — see docs/RULES.md "Profile Pins".
-  const handleActivateBudget = (id: number) => {
-    if (isInScenario) {
-      setScenarioBudgetProfile(id);
-    } else {
-      activateBudget.mutate({ id });
-    }
-  };
   // Warn before a swap silently drops an account's active value — same
-  // treatment as contribution-profile-manager.tsx's handleActivate, compared
-  // against whichever profile is currently in effect (Plan pin, if any,
-  // else the global active one).
+  // treatment as contribution-profile-manager.tsx's handleActivate.
   const handleActivateContrib = async (id: number) => {
     const outgoing = contribCompareData?.profiles.find(
-      (p) => p.id === effectiveContribId,
+      (p) => p.id === activeIds.contribution,
     );
     const incoming = contribCompareData?.profiles.find((p) => p.id === id);
     if (contribCompareData && outgoing) {
@@ -179,85 +125,53 @@ export function ScenarioBar() {
         if (!ok) return;
       }
     }
-    if (isInScenario) {
-      setScenarioContributionProfile(id);
-    } else {
-      setActiveContribId(id);
-    }
-  };
-  const handleActivateSalary = (id: number) => {
-    if (isInScenario) {
-      setScenarioSalaryProfile(id);
-    } else {
-      setActiveSalaryId(id);
-    }
+    setActiveContribId(id);
   };
 
-  // Focus input when creating
-  useEffect(() => {
-    if (creating) inputRef.current?.focus();
-  }, [creating]);
+  const confirmApplyPlan = useConfirmApplyPlan();
+  const handleApply = async (planId: number) => {
+    const plan = plans.find((p) => p.id === planId);
+    setDropdownOpen(false);
+    if (plan && (await confirmApplyPlan(plan))) apply.mutate({ id: planId });
+  };
+
+  const allActiveKnown = PLAN_PROFILE_KINDS.every((k) => activeIds[k] != null);
+  const activeSet = allActiveKnown
+    ? {
+        salaryProfileId: activeIds.salary!,
+        contributionProfileId: activeIds.contribution!,
+        budgetProfileId: activeIds.budget!,
+        retirementProfileId: activeIds.retirement!,
+      }
+    : null;
 
   const handleCreate = () => {
-    if (!newName.trim() || !creating) return;
-    if (creating === "persisted") {
-      createMut.mutate(
-        { name: newName.trim() },
-        {
-          onSuccess: (scenario) => {
-            utils.settings.scenarios.list.invalidate();
-            if (scenario) setActive({ type: "persisted", id: scenario.id });
-            setNewName("");
-            setCreating(null);
-          },
-        },
-      );
-    } else {
-      const id = createSessionScenario(newName.trim());
-      setActive({ type: "session", id });
-      setNewName("");
-      setCreating(null);
-    }
+    if (!newName.trim() || !activeSet) return;
+    createMut.mutate({ name: newName.trim(), ...activeSet });
   };
 
-  const handleDelete = async (
-    type: "persisted" | "session",
-    id: number | string,
-  ) => {
-    if (!(await confirm("Delete this plan?"))) return;
-    if (type === "persisted") {
-      deleteMut.mutate(
-        { id: id as number },
-        { onSuccess: () => utils.settings.scenarios.list.invalidate() },
-      );
-      if (activeSelection.type === "persisted" && activeSelection.id === id) {
-        setActive({ type: "main" });
-      }
-    } else {
-      deleteSessionScenario(id as string);
-    }
-  };
-
-  const activeLabel = activeScenario ? activeScenario.name : "Main Plan";
-
-  const overrideCount = activeScenario
-    ? Object.values(activeScenario.overrides).reduce(
-        (sum, entity) =>
-          sum +
-          Object.values(entity).reduce(
-            (s, fields) => s + Object.keys(fields).length,
-            0,
-          ),
-        0,
+  const handleUpdate = async () => {
+    if (!lastAppliedPlan || !activeSet) return;
+    setDropdownOpen(false);
+    if (
+      await confirm(
+        `Update Plan "${lastAppliedPlan.name}" to the profiles you're using now?`,
       )
-    : 0;
+    )
+      updateMut.mutate({ id: lastAppliedPlan.id, ...activeSet });
+  };
+
+  const handleDelete = async (id: number, name: string) => {
+    if (await confirm(`Delete Plan "${name}"? Its profiles are not deleted.`))
+      deleteMut.mutate({ id });
+  };
 
   return (
     <div
       data-scenario-bar
-      className={`flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 border-b px-3 py-1.5 text-xs sm:px-4 ${isInScenario ? "border-amber-200 bg-amber-50" : "bg-surface-primary border-default"}`}
+      className="bg-surface-primary border-default flex flex-wrap items-center justify-end gap-x-3 gap-y-1.5 border-b px-3 py-1.5 text-xs sm:px-4"
     >
-      {/* Scenario selector — pill style matching view toggle */}
+      {/* Plan — a saved set of profiles */}
       <div className="flex items-center gap-2" ref={dropdownRef}>
         <span className="text-faint hidden sm:inline" id="plan-label">
           Plan:
@@ -268,32 +182,12 @@ export function ScenarioBar() {
             aria-haspopup="listbox"
             aria-expanded={dropdownOpen}
             aria-labelledby="plan-label"
-            className={`text-label flex items-center gap-1.5 rounded px-3 py-1.5 transition-colors ${
-              isInScenario
-                ? "bg-amber-100 text-amber-800 shadow-sm"
-                : "bg-surface-primary text-primary shadow-sm"
-            }`}
+            disabled={apply.isPending}
+            className="text-label bg-surface-primary text-primary flex items-center gap-1.5 rounded px-3 py-1.5 shadow-sm transition-colors disabled:opacity-50"
           >
-            {isInScenario && (
-              <svg
-                className="h-3 w-3 text-amber-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                />
-              </svg>
-            )}
-            <span className="font-medium">{activeLabel}</span>
-            {isInScenario && overrideCount > 0 && (
-              <Badge color="amber">{overrideCount}</Badge>
-            )}
+            <span className={planInUse ? "font-medium" : "text-muted"}>
+              {planInUse ? planInUse.name : "None (unsaved mix)"}
+            </span>
             <svg
               className="text-faint h-3 w-3"
               fill="none"
@@ -312,247 +206,163 @@ export function ScenarioBar() {
 
           {dropdownOpen && (
             <div
-              className="bg-surface-primary absolute top-full right-0 z-50 mt-1 w-64 max-w-[calc(100vw-2rem)] rounded-lg border shadow-lg"
+              className="bg-surface-primary absolute top-full right-0 z-50 mt-1 w-72 max-w-[calc(100vw-2rem)] rounded-lg border shadow-lg"
               role="listbox"
-              aria-label="Plan selection"
+              aria-label="Plans"
             >
-              {/* Main Plan */}
-              <button
-                role="option"
-                aria-selected={activeSelection.type === "main"}
-                onClick={() => {
-                  setActive({ type: "main" });
-                  setDropdownOpen(false);
-                }}
-                className={`hover:bg-surface-sunken flex w-full items-center gap-2 rounded-t-lg px-3 py-2 text-left ${
-                  activeSelection.type === "main"
-                    ? "bg-blue-50 text-blue-700"
-                    : "text-secondary"
-                }`}
-              >
-                <StatusDot color="green" size="xs" />
-                Main Plan
-                {activeSelection.type === "main" && (
-                  <span className="ml-auto">
-                    <Badge color="blue">Active</Badge>
-                  </span>
-                )}
-              </button>
-
-              {/* Persisted scenarios */}
-              {persistedScenarios.length > 0 && (
-                <div className="border-subtle border-t">
-                  <div className="text-caption text-faint px-3 py-1 tracking-wider uppercase">
-                    Saved Scenarios
-                  </div>
-                  {persistedScenarios.map((s) => (
-                    <div
-                      key={s.id}
-                      className={`hover:bg-surface-sunken group flex items-center gap-2 px-3 py-1.5 ${
-                        activeSelection.type === "persisted" &&
-                        activeSelection.id === s.id
-                          ? "bg-blue-50 text-blue-700"
-                          : "text-secondary"
-                      }`}
-                    >
-                      <button
-                        role="option"
-                        aria-selected={
-                          activeSelection.type === "persisted" &&
-                          activeSelection.id === s.id
-                        }
-                        onClick={() => {
-                          setActive({ type: "persisted", id: s.id });
-                          setDropdownOpen(false);
-                        }}
-                        className="flex flex-1 items-center gap-2 text-left"
-                      >
-                        <StatusDot color="blue" size="xs" />
-                        {s.name}
-                      </button>
-                      {canManageScenarios && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete("persisted", s.id);
-                          }}
-                          className="text-faint transition-opacity hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100"
-                          title="Delete plan"
-                          aria-label="Delete plan"
-                        >
-                          <svg
-                            className="h-3 w-3"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                            aria-hidden="true"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
+              <p className="text-caption text-faint px-3 pt-2 pb-1">
+                A Plan is a saved set of profiles. Applying one makes them the
+                active profiles.
+              </p>
+              {plans.length === 0 && (
+                <p className="text-muted px-3 py-2">No Plans saved yet.</p>
               )}
-
-              {/* Session scenarios */}
-              {sessionScenarios.length > 0 && (
-                <div className="border-subtle border-t">
-                  <div className="text-caption text-faint px-3 py-1 tracking-wider uppercase">
-                    Session Only (not saved)
-                  </div>
-                  {sessionScenarios.map((s) => (
-                    <div
-                      key={s.id}
-                      className={`hover:bg-surface-sunken group flex items-center gap-2 px-3 py-1.5 ${
-                        activeSelection.type === "session" &&
-                        activeSelection.id === s.id
-                          ? "bg-blue-50 text-blue-700"
-                          : "text-secondary"
-                      }`}
+              {plans.map((p) => {
+                const inUse = p.id === planInUse?.id;
+                return (
+                  <div
+                    key={p.id}
+                    className={`hover:bg-surface-sunken group flex items-center gap-2 px-3 py-1.5 ${inUse ? "bg-blue-50 text-blue-700" : "text-secondary"}`}
+                  >
+                    <button
+                      role="option"
+                      aria-selected={inUse}
+                      onClick={() => handleApply(p.id)}
+                      className="flex min-w-0 flex-1 items-center gap-2 text-left"
                     >
-                      <button
-                        role="option"
-                        aria-selected={
-                          activeSelection.type === "session" &&
-                          activeSelection.id === s.id
-                        }
-                        onClick={() => {
-                          setActive({ type: "session", id: s.id });
-                          setDropdownOpen(false);
-                        }}
-                        className="flex flex-1 items-center gap-2 text-left"
-                      >
-                        <span className="bg-surface-divider h-1.5 w-1.5 rounded-full" />
-                        {s.name}
-                        <span className="text-caption text-faint">
-                          (session)
+                      <span className="truncate">{p.name}</span>
+                      {inUse && (
+                        <span className="ml-auto shrink-0">
+                          <Badge color="blue">In use</Badge>
                         </span>
-                      </button>
-                      {canManageScenarios && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDelete("session", s.id);
-                          }}
-                          className="text-faint transition-opacity hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100"
-                          title="Delete plan"
-                          aria-label="Delete plan"
-                        >
-                          <svg
-                            className="h-3 w-3"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={2}
-                            aria-hidden="true"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M6 18L18 6M6 6l12 12"
-                            />
-                          </svg>
-                        </button>
                       )}
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Create new */}
-              <div className="border-subtle border-t p-2">
-                {creating ? (
-                  <div className="space-y-1.5">
-                    <input
-                      ref={inputRef}
-                      type="text"
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") handleCreate();
-                        if (e.key === "Escape") setCreating(null);
-                      }}
-                      placeholder="Plan name..."
-                      className="border-strong bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs"
-                    />
-                    <div className="flex gap-1">
-                      <Button
-                        onClick={handleCreate}
-                        size="sm"
-                        className="!text-caption flex-1"
+                    </button>
+                    {canManagePlans && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(p.id, p.name);
+                        }}
+                        className="text-faint transition-opacity hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100"
+                        title="Delete Plan"
+                        aria-label={`Delete Plan ${p.name}`}
                       >
-                        {creating === "persisted" ? "Save" : "Create Temp"}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setCreating(null)}
-                        className="!text-caption"
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex gap-1">
-                    {canManageScenarios && (
-                      <>
-                        <button
-                          onClick={() => setCreating("persisted")}
-                          className="flex-1 rounded py-2 text-center text-blue-600 transition-colors hover:bg-blue-50"
-                          title="Create a plan that persists across sessions"
+                        <svg
+                          className="h-3 w-3"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          aria-hidden="true"
                         >
-                          + Saved
-                        </button>
-                        <Button
-                          variant="ghost"
-                          onClick={() => setCreating("session")}
-                          className="flex-1 !py-2"
-                          title="Create a plan that only lasts this session (lost when you leave)"
-                        >
-                          + Quick
-                        </Button>
-                      </>
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
                     )}
                   </div>
-                )}
-              </div>
+                );
+              })}
+              <FormError error={apply.error} prefix="Couldn't apply" />
+
+              {canManagePlans && (
+                <div className="border-subtle space-y-1.5 border-t p-2">
+                  {!planInUse && lastAppliedPlan && activeSet && (
+                    <button
+                      onClick={handleUpdate}
+                      className="w-full rounded py-1.5 text-left text-blue-600 hover:bg-blue-50"
+                    >
+                      Update “{lastAppliedPlan.name}” to these profiles
+                    </button>
+                  )}
+                  {creating ? (
+                    <div className="space-y-1.5">
+                      <input
+                        ref={inputRef}
+                        type="text"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleCreate();
+                          if (e.key === "Escape") setCreating(false);
+                        }}
+                        placeholder="Plan name"
+                        aria-label="New Plan name"
+                        className="border-strong bg-surface-primary text-primary w-full rounded border px-2 py-1 text-xs"
+                      />
+                      {sameAsActive && (
+                        <p className="text-caption text-amber-700">
+                          Same profiles as “{sameAsActive.name}”.
+                        </p>
+                      )}
+                      <FormError error={createMut.error} prefix="Failed" />
+                      <div className="flex gap-1">
+                        <Button
+                          onClick={handleCreate}
+                          size="sm"
+                          disabled={!newName.trim() || createMut.isPending}
+                          className="!text-caption flex-1"
+                        >
+                          Save Plan
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setCreating(false)}
+                          className="!text-caption"
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setCreating(true)}
+                      disabled={!activeSet}
+                      className="w-full rounded py-1.5 text-left text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+                    >
+                      + Save these profiles as a new Plan
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Divider */}
       <div className="bg-surface-strong hidden h-4 w-px sm:block" />
 
-      {/* Profile switchers */}
+      {/* Active profile of each kind */}
       <ProfilePill
-        label={budgetIsPinned ? "Budget (active)" : "Budget"}
-        options={budgetOptions}
-        onActivate={(id) => handleActivateBudget(Number(id))}
-        isPending={activateBudget.isPending}
+        label={PLAN_PROFILE_KIND_TITLES.salary}
+        options={options(salaryProfiles, activeIds.salary)}
+        onActivate={(id) => setActiveSalaryId(Number(id))}
+        disabled={!canChangeContribOrSalary}
       />
-      <div className="bg-surface-strong hidden h-4 w-px sm:block" />
       <ProfilePill
-        label={contribIsPinned ? "Contributions (active)" : "Contributions"}
-        options={contribOptions}
+        label={PLAN_PROFILE_KIND_TITLES.contribution}
+        options={options(contribProfiles, activeIds.contribution)}
         onActivate={(id) => handleActivateContrib(Number(id))}
+        disabled={!canChangeContribOrSalary}
       />
-      <div className="bg-surface-strong hidden h-4 w-px sm:block" />
       <ProfilePill
-        label={salaryIsPinned ? "Salary (active)" : "Salary"}
-        options={salaryOptions}
-        onActivate={(id) => handleActivateSalary(Number(id))}
+        label={PLAN_PROFILE_KIND_TITLES.budget}
+        options={options(budgetProfiles, activeIds.budget)}
+        onActivate={(id) => activateBudget.mutate({ id: Number(id) })}
+        isPending={activateBudget.isPending}
+        disabled={!canChangeBudget}
+      />
+      <ProfilePill
+        label={PLAN_PROFILE_KIND_TITLES.retirement}
+        options={options(retirementProfiles, activeIds.retirement)}
+        onActivate={(id) => setActiveRetirementId(Number(id))}
+        disabled={!canChangeRetirement}
       />
 
-      {/* Divider */}
       <div className="bg-surface-strong hidden h-4 w-px sm:block" />
 
       {/* View mode toggle */}
@@ -576,8 +386,7 @@ export function ScenarioBar() {
                 : "text-muted hover:text-secondary"
             }`}
           >
-            <span className="sm:hidden">Current</span>
-            <span className="hidden sm:inline">Current Salary</span>
+            Projected
           </button>
           <button
             role="tab"
@@ -590,8 +399,8 @@ export function ScenarioBar() {
                 : "text-muted hover:text-secondary"
             }`}
           >
-            <span className="sm:hidden">Year-End</span>
-            <span className="hidden sm:inline">Year-End Estimate</span>
+            <span className="sm:hidden">Year-end</span>
+            <span className="hidden sm:inline">Year-end estimate</span>
           </button>
           <button
             role="tab"
@@ -605,7 +414,7 @@ export function ScenarioBar() {
             }`}
           >
             <span className="sm:hidden">YTD</span>
-            <span className="hidden sm:inline">Actual YTD</span>
+            <span className="hidden sm:inline">Year to date</span>
           </button>
         </div>
       </div>

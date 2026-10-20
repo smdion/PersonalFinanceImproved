@@ -14,6 +14,10 @@
  */
 import { z } from "zod/v4";
 import {
+  settingsHref,
+  settingsLocationLabel,
+} from "@/lib/config/settings-sections";
+import {
   CHECKPOINT_START_AGE,
   CUSTOM_GOAL_METRICS,
   EMERGENCY_FUND_MONTHS,
@@ -218,8 +222,6 @@ export type MilestoneInput = {
   projection: {
     years: MilestoneProjectionYear[];
     inflationRate: number;
-    /** The projection is a what-if scenario, not the live plan. */
-    isScenario: boolean;
   } | null;
   /** FI number in today's dollars (yearly expenses ÷ withdrawal rate). */
   fiTarget: number;
@@ -310,6 +312,8 @@ export type MilestoneResult = MilestoneDefinition & {
   note: string | null;
   /** The step that closes the gap or gets there sooner. */
   nextStep: string | null;
+  /** Where the next step is done, when that isn't the milestone's own page. */
+  nextStepHref?: string;
   reachedYear: number | null;
   expectedYear: number | null;
   expectedAge: number | null;
@@ -461,8 +465,7 @@ function expectedNote(
   if (!input.projection) return null;
   if (!expected) return "Not reached in the projection";
   const prefix = estimate ? "About" : "On pace for";
-  const scenario = input.projection.isScenario ? " (scenario)" : "";
-  return `${prefix} ${expected.year} · age ${Math.round(expected.age)}${scenario}`;
+  return `${prefix} ${expected.year} · age ${Math.round(expected.age)}`;
 }
 
 /**
@@ -995,7 +998,8 @@ function limitStep(
     return result(id, {
       status: "unknown",
       headline: "This year's IRS limits aren't entered",
-      nextStep: "Add them under Settings → IRS Limits",
+      nextStep: `Add them under ${settingsLocationLabel("taxdata", "limits")}`,
+      nextStepHref: settingsHref("taxdata", "limits"),
     });
   }
   if (rows.length === 0) {

@@ -15,7 +15,7 @@ import {
   computeHomeImpCumulative,
   resolveOtherAssetsForYear,
 } from "@/lib/pure/historical";
-import { zYearEndTargeting, toSalaryActiveMap } from "./_shared";
+import { zYearEndTargeting } from "./_shared";
 
 export const historicalRouter = createTRPCRouter({
   computeSummary: protectedProcedure
@@ -33,7 +33,6 @@ export const historicalRouter = createTRPCRouter({
         buildYearEndHistory(ctx.db, new Date(), {
           budgetProfileId: input?.budgetProfileId,
           budgetColumn: input?.budgetColumn,
-          salaryActiveFields: toSalaryActiveMap(input?.salaryActiveFields),
         }),
         getAllPeople(ctx.db),
         ctx.db.select().from(schema.jobs).orderBy(asc(schema.jobs.startDate)),

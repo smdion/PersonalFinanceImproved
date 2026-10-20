@@ -28,7 +28,7 @@
 
 ### What's Built
 
-- **<!-- AUTO-GEN:pages -->35<!-- /AUTO-GEN --> pages:** Dashboard, Paycheck, Budget, Portfolio, Performance, Net Worth, Retirement (+ Methodology, Accumulation Methodology, Decumulation Methodology), Mortgage, Assets, Savings, Historical, Settings, Tools (ESPP calculator, Relocation calculator), Contributions, Data Browser, Expenses, Help, House, Liabilities, Versions, Brokerage, Benchmarks (+ Methodology; /analytics redirects here)
+- **<!-- AUTO-GEN:pages -->36<!-- /AUTO-GEN --> pages:** Dashboard, Paycheck, Budget, Portfolio, Performance, Net Worth, Retirement (+ Methodology, Accumulation Methodology, Decumulation Methodology), Mortgage, Assets, Savings, Historical, Settings, Tools (ESPP calculator, Relocation calculator), Contributions, Data Browser, Expenses, Help, House, Liabilities, Versions, Brokerage, Benchmarks (+ Methodology; /analytics redirects here)
 - **<!-- AUTO-GEN:calculators -->18<!-- /AUTO-GEN --> calculators:** paycheck, tax, budget, contribution, mortgage, net-worth, savings, savings-capacity, efund, brokerage-goals, monte-carlo, random (distributions), relocation, coast-fire, social-security
 - **Modular engine:** `lib/calculators/engine/` — <!-- AUTO-GEN:engineModules -->26<!-- /AUTO-GEN --> modules (projection orchestrator, year handlers, contribution routing, withdrawal routing, tax estimation, override resolution, balance utils/deduction, individual account tracking, growth application, RMD enforcement, post-withdrawal optimizer, spending strategies: Guyton-Klinger, Vanguard Dynamic, Constant Percentage, Endowment, Spending Decline, Forgo Inflation, RMD Spending)
 - **<!-- AUTO-GEN:primaryRouters -->26<!-- /AUTO-GEN --> primary tRPC routers + <!-- AUTO-GEN:settingsSubRouters -->4<!-- /AUTO-GEN --> settings sub-routers** + shared helpers
@@ -73,8 +73,8 @@ Key concept → directory map:
 | DB schema               | `src/lib/db/schema.ts` (<!-- AUTO-GEN:tables -->81<!-- /AUTO-GEN -->+ tables)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | tRPC routers            | `src/server/routers/` (<!-- AUTO-GEN:primaryRouters -->26<!-- /AUTO-GEN --> primary + <!-- AUTO-GEN:settingsSubRouters -->4<!-- /AUTO-GEN --> settings sub-routers)                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Auth + tRPC middleware  | `src/server/auth.ts`, `src/server/trpc.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Pages (App Router)      | `src/app/(dashboard)/` (<!-- AUTO-GEN:pages -->35<!-- /AUTO-GEN --> pages)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Shared UI primitives    | `src/components/ui/` (<!-- AUTO-GEN:uiComponents -->26<!-- /AUTO-GEN --> components)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Pages (App Router)      | `src/app/(dashboard)/` (<!-- AUTO-GEN:pages -->36<!-- /AUTO-GEN --> pages)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Shared UI primitives    | `src/components/ui/` (<!-- AUTO-GEN:uiComponents -->28<!-- /AUTO-GEN --> components)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Domain components       | `src/components/{paycheck,budget,savings,networth,performance,mortgage,settings}/` — paycheck (<!-- AUTO-GEN:paycheckComponents -->18<!-- /AUTO-GEN -->), budget (<!-- AUTO-GEN:budgetComponents -->19<!-- /AUTO-GEN -->), savings (<!-- AUTO-GEN:savingsComponents -->23<!-- /AUTO-GEN -->), networth (<!-- AUTO-GEN:networthComponents -->9<!-- /AUTO-GEN -->), performance (<!-- AUTO-GEN:performanceComponents -->14<!-- /AUTO-GEN -->), mortgage (<!-- AUTO-GEN:mortgageComponents -->8<!-- /AUTO-GEN -->), settings (<!-- AUTO-GEN:settingsComponents -->26<!-- /AUTO-GEN -->) |
 | Dashboard cards         | `src/components/cards/` (<!-- AUTO-GEN:dashboardCards -->20<!-- /AUTO-GEN --> cards)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Budget API clients      | `src/lib/budget-api/` (YNAB + Actual)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -506,33 +506,35 @@ brokerage_goals table → retirement router → engine input (brokerageGoals)
 
 ---
 
-## Profile & Scenario Layering
+## Profiles and Plans
 
-Resolution order (each layer patches on top of previous):
+From the user's seat: each profile is its own world, and only the active one
+counts. The header shows the active Salary, Contribution, Budget and
+Retirement profile and the view mode; every page uses exactly those. A
+**Plan** is a saved set of those four — applying it makes them the active
+ones; changing any one picker leaves "None (unsaved mix)". The What-If tab is
+the only sandbox, and it never writes the active profiles. Rules and
+mechanics: RULES.md "Profiles and Plans" / "Profile Resolution".
 
-1. **Database (live data)** — base truth
-2. **Contribution profile** — persistent named active fields for contribution accounts (value/method/match) and deductions (amount). Salary, bonus terms, pay schedule (period/week/anchor date), and W-4 elections (filing status/checkbox/additional withholding) are NOT part of a Contribution Profile — a Contribution Profile no longer touches `jobs` at all. All of those live on the independent Salary Profile axis instead, as one complete 16-field entry per job (see `resolveCompensation`/`mergeSalaryProfileJobFields` in `server/helpers/salary.ts` and RULES.md's "The Salary Profile layer"). This collapses "how much do I earn" and "what withholding/schedule elections apply" into one axis — an accepted tradeoff, not an oversight. `employerName`'s Contribution-Profile override capability was removed the same time (no replacement) — a job's employer name is fixed once created
-3. **Budget profile** — persistent named budget column selection
-4. **Scenario** — temporary what-if overrides for jobs, contributions, app settings, retirement assumptions
+What each kind holds:
 
-Rules:
+- **Salary Profile** — one complete entry per job: salary, bonus terms, pay
+  schedule, W-4 elections, extra-paycheck routing, other pay (see
+  `resolveCompensation`/`mergeSalaryProfileJobFields` in
+  `server/helpers/salary.ts` and RULES.md's "The Salary Profile layer"). "How
+  much do I earn" and "what withholding/schedule elections apply" are one axis
+  — an accepted tradeoff. A job's employer name is fixed once created.
+- **Contribution Profile** — contribution account values/methods/match and
+  deduction amounts. It never touches `jobs`.
+- **Budget Profile** — budget items per column (spending level), optionally
+  weighted by months; savings goal allocations (%/$) are a facet of it
+  (`savings_goal_profile_allocations` is keyed to `budget_profile_id`), not a
+  fifth kind.
+- **Retirement Profile** — retirement assumptions (ages, inflation, strategy).
 
-- Contribution profiles and scenarios are complementary, not competing
-- A contribution profile sets a persistent baseline ("max 401k", "new job at $200k")
-- A scenario layers temporary adjustments on top ("retire at 60", "expenses +3%")
-- Both active simultaneously = profile resolves first, scenario patches on top
-- Budget profiles select which budget column to use, not override individual values
-- Savings goal allocations (%/$) vary by budget profile — `savings_goal_profile_allocations`
-  is keyed to `budget_profile_id`, not independently selectable; it's a facet of
-  Budget Profile, not a fourth profile type
-- A Scenario/Plan can additionally **pin** which Budget Profile and/or Contribution
-  Profile counts as "active" while it's selected, instead of always reading the
-  single globally-active one — a reference pin (dedicated FK columns on
-  `scenarios`), not a value diff, so it lives outside the `overrides` JSONB.
-  Resolution precedence for "which profile is active" everywhere in the app:
-  Plan pin → local page selection → globally-active profile. See
-  `useEffectiveProfileId` and RULES.md's "Profile Pins" section.
-- Default/Live profile = no-op (identical to no profile selected)
+Resolution: page-local selection (profile managers, What-If) → active; on the
+Budget page a column's own Contribution/Salary profile comes first until the
+v0.8.10 migration removes per-column profiles. There is no Plan tier.
 
 ---
 
@@ -544,7 +546,7 @@ Documented deviations from general architectural rules, kept for pragmatic reaso
 
 2. **Zod validation for override shapes is manually defined, not derived from config**: Deriving from Drizzle schema or `ACCOUNT_TYPE_CONFIG` adds abstraction with risk of rejecting valid overrides if derivation logic has bugs. Manual schema is easier to audit and maintain at current field count (~12 overridable fields). Revisit if overridable fields exceed ~25 or schema changes frequently.
 
-3. **Contribution profiles and scenarios remain separate systems**: Both are named override collections, but they serve different scopes (contributions vs. whole-plan what-ifs) and compose as layers. Documented precedence: DB base → contribution profile → budget profile → scenario. A Scenario/Plan can also pin a specific Budget/Contribution Profile as "active" (see Profile Pins in RULES.md) — that pin is a reference, resolved before this override-composition order runs, not a fourth layer in it.
+3. **Plans keep the internal name `scenarios`** (table, router, permission key `scenario`): renaming would be a migration plus an RBAC-data change for no user-facing gain. Everything user-facing says "Plan".
 
 ---
 
@@ -626,7 +628,7 @@ Consumers: `Badge`, `toast.tsx`, `scenario-indicator.tsx`'s
 
 ### Component Catalog
 
-Run `ls src/components/ui/` for the live list (<!-- AUTO-GEN:uiComponents -->26<!-- /AUTO-GEN --> components). Each
+Run `ls src/components/ui/` for the live list (<!-- AUTO-GEN:uiComponents -->28<!-- /AUTO-GEN --> components). Each
 component exports a `*Props` type with the full prop contract — read the file
 directly rather than maintaining a duplicate table here. Imports are barreled
 via `@/components/ui` or available per-file (`@/components/ui/button`, etc.).

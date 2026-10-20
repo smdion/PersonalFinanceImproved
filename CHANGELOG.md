@@ -8,6 +8,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.9] - 2026-10-20
+
+### Changed
+
+- **Profiles and Plans:** each profile is its own world, and the active one of each kind is what every page uses. The header now has a picker for each — Salary, Contributions, Budget and (new) Retirement — plus a **Plan** menu. A Plan is a saved set of profiles, one of each kind: applying it makes them the active profiles for everyone in the household (it asks first), and the header shows the Plan whose profiles you're using, or "None (unsaved mix)" after you change a picker — with "Update ‹Plan›" and "Save as a new Plan". There's no "Main Plan" or browser-only Plan any more, and Plans no longer carry salaries of their own.
+- **Profiles page (Planning → Profiles):** Salary, Contribution, Savings and Retirement profiles, the What-If sandbox, and **Plans** — which puts up to three Plans side by side (their profiles, take-home pay, budget spending, what's left, sustainable withdrawal at retirement, how long the money lasts). These used to be tabs on the Budget page; old links still land on the right tab. The Budget page is now the budget itself.
+- **Paycheck page:** shows and edits the active profiles (the page's own Salary/Contribution pickers are gone). Unlocked, each section says where its edits save ("Saves to Salary Profile '…'"); setup like employer, deduction names and tax treatment is admin-only, and without permission to edit profiles the figures are view-only instead of saving nowhere. Laid out as two balanced columns with every amount in one column; the bonus can now be set up here even before there is one; a deduction that's both before and after tax reads "401k (Traditional)" / "401k (Roth)"; the extra paycheck links to where its split is set up in Savings.
+- **Retirement and Roth & conversions:** the profile picker switches your active Retirement profile. **Savings:** Pull In New Pay / Update % use the active budget profile (the separate picker is gone).
+- **Names:** Taxes this year, Retirement taxes (was Tax Buckets), Roth & conversions (was Tax Optimization), What-If (was Budget Scenarios), "target mix today" (was current glide path). Contributions moved under Cash Flow; Holding history moved to Portfolio. Old names still work in Quick search.
+- **View toggle** reads Projected / Year-end estimate / Year to date everywhere; Living Costs and the Taxes page say when they always show the full year.
+- **Edit lock** says "View only — unlock to edit" or "Editing" instead of a bare padlock. Switches, choice buttons and editable figures look the same across pages.
+
+### Fixed
+
+- Directions to Settings and Portfolio ("Settings → Integrations", the IRS limits milestone step, and others) are now links that open the right tab or section.
+- A Budget profile used by a Plan can no longer be deleted (it would have left the Plan incomplete), matching the other profile kinds.
+- The extra-paycheck choice on the Paycheck page could save to a different Salary Profile than the one shown.
+- Disabled switches lost their layout.
+
+---
+
 ## [0.8.8] - 2026-10-19
 
 ### Added

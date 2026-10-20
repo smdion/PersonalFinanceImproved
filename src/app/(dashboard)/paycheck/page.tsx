@@ -11,9 +11,15 @@ import { useScenario } from "@/lib/context/scenario-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
-import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
-import { useUser, hasPermission } from "@/lib/context/user-context";
-import { ScenarioBanner } from "@/components/ui/scenario-indicator";
+import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
+import {
+  resolvePaycheckEditTarget,
+  type PaycheckFieldKind,
+} from "@/lib/pure/paycheck-edit-target";
+import {
+  contributionAccountFieldKind,
+  deductionFieldKind,
+} from "@/lib/db/profile-fields";
 import { EmptyState } from "@/components/ui/empty-state";
 import { confirm } from "@/components/ui/confirm-dialog";
 import {
@@ -38,12 +44,7 @@ import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 export default function PaycheckPage() {
   const user = useUser();
   const canEditProfiles = hasPermission(user, "contributionProfile");
-  const {
-    viewMode: mode,
-    isInScenario,
-    setOverride: setScenarioOverride,
-    activeScenario: _activeScenario,
-  } = useScenario();
+  const { viewMode: mode } = useScenario();
   const [contribExpanded, setContribExpanded] = useState(false);
   const [taxYearSetting, setTaxYearSetting] = usePersistedSetting<
     number | null
@@ -62,31 +63,16 @@ export default function PaycheckPage() {
     EDIT_LOCK_KEYS.profileEditLocked,
   );
 
-  // Contribution profile state
-  const contribProfilesQuery = trpc.contributionProfile.list.useQuery();
-  const contribProfiles = contribProfilesQuery.data ?? [];
-
-  // Local viewing state — defaults to global active, but can view others without activating
-  const [viewingContribId, setViewingContribId] = useState<number | null>(null);
-  // Plan pin -> local viewing selection -> globally-active profile (single computation path)
-  const { profileId: displayContribId } = useEffectiveProfileId(
-    "contribution",
-    {
-      validIds: contribProfiles.map((p) => p.id),
-      localSelection: viewingContribId,
-      globalDefaultId: contribProfileId,
-    },
-  );
+  // This page shows and edits the active profiles — switch them in the
+  // header. (Each profile is its own world; there is no "viewing another
+  // one" here, so what you edit is always what the rest of the app uses.)
+  const displayContribId = contribProfileId;
 
   const viewingProfileQuery = trpc.contributionProfile.getById.useQuery(
     { id: displayContribId! },
     { enabled: displayContribId != null },
   );
   const activeProfile = viewingProfileQuery.data;
-  const contribProfileActive = canEditProfiles && activeProfile != null;
-  /** Mirrors salaryEditsProfile — locked means edits fall through to the
-   *  direct-write path instead of the profile's active fields. */
-  const isProfileMode = contribProfileActive && !profileLocked;
 
   const invalidateProfileWrite = () => {
     utils.paycheck.invalidate();
@@ -154,50 +140,31 @@ export default function PaycheckPage() {
     }
   }
 
-  /**
-   * Dispatch a field edit to the correct target (scenario, profile, or direct DB).
-   * Returns true if handled by scenario or profile mode; false means caller should do a direct DB write.
-   */
-  function writeOverride(
-    entityType: "contributionAccounts" | "deductions",
-    entityId: number,
-    field: string,
-    value: string | number | boolean | null,
-  ): boolean {
-    if (isInScenario) {
-      setScenarioOverride(entityType, entityId, field, value);
-      return true;
-    }
-    if (isProfileMode) {
-      updateProfileActiveField(entityType, entityId, field, value);
-      return true;
-    }
-    return false;
-  }
-
-  // Independent Salary Profile axis. Same three-tier resolution as the
-  // contribution axis above (Plan pin -> this page's dropdown -> globally
-  // active), rather than useEffectiveSalaryProfileId(), because the picker
-  // needs a local-selection tier that hook deliberately doesn't have. The
-  // resolved id feeds both the picker and the query input below, so they
-  // can't drift.
+  // Independent Salary Profile axis — the active one, same as above.
   const salaryProfilesQuery = trpc.salaryProfile.list.useQuery();
   const salaryProfiles = salaryProfilesQuery.data ?? [];
-  const [activeSalaryId] = useActiveSalaryProfile();
-  const [viewingSalaryId, setViewingSalaryId] = useState<number | null>(null);
-  const { profileId: displaySalaryId } = useEffectiveProfileId("salary", {
-    validIds: salaryProfiles.map((p) => p.id),
-    localSelection: viewingSalaryId,
-    // Always a real row id post-migration — useActiveSalaryProfile repairs
-    // the setting if the row it names ever disappears.
-    globalDefaultId: activeSalaryId,
-  });
+  // Always a real row id post-migration — useActiveSalaryProfile repairs the
+  // setting if the row it names ever disappears.
+  const [displaySalaryId] = useActiveSalaryProfile();
   const displayedSalaryProfile = salaryProfiles.find(
     (p) => p.id === displaySalaryId,
   );
-  const isSalaryProfileMode = canEditProfiles && displayedSalaryProfile != null;
-  /** Salary figures write to the profile (not the job) while this is true. */
-  const salaryEditsProfile = isSalaryProfileMode && !profileLocked;
+  // Where each kind of edit saves — one rule for the write and its label
+  // (lib/pure/paycheck-edit-target.ts).
+  const editContext = {
+    locked: profileLocked,
+    canEditProfiles,
+    canEditSetup: isAdmin(user),
+    salaryProfileName: displayedSalaryProfile?.name ?? null,
+    contributionProfileName: activeProfile?.name ?? null,
+  };
+  const editTarget = (kind: PaycheckFieldKind) =>
+    resolvePaycheckEditTarget(kind, editContext);
+  const salaryEditsProfile = editTarget("salary").target === "salaryProfile";
+  const contribEditsProfile =
+    editTarget("contribution").target === "contributionProfile";
+  const lineEditable = editTarget("line").target === "setup";
+  const setupEditable = editTarget("setup").target === "setup";
 
   const updateSalaryProfile = trpc.salaryProfile.update.useMutation({
     onSuccess: () => {
@@ -261,14 +228,12 @@ export default function PaycheckPage() {
   }
 
   // One shared derivation for the whole page — the same hook the Budget
-  // page's What-If tab uses (with honorSessionScenario:false there). Session
-  // scenario overrides apply here, which is today's behavior.
+  // page's What-If tab uses.
   const { views, isLoading, error, sharedContribGroupOrder } =
     usePaycheckPersonViews({
       contributionProfileId: displayContribId,
       salaryProfileId: displaySalaryId,
       taxYearOverride,
-      honorSessionScenario: true,
     });
 
   // Get available tax years for the toggle. Sourced from contribution_limits
@@ -343,7 +308,6 @@ export default function PaycheckPage() {
 
   return (
     <div>
-      <ScenarioBanner />
       <PageHeader
         title="Paycheck"
         subtitle={
@@ -378,60 +342,23 @@ export default function PaycheckPage() {
           ) : undefined
         }
       >
-        {salaryProfiles.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-muted text-xs">Salary:</span>
-            <select
-              className="bg-surface-primary rounded border px-2 py-1 text-xs"
-              value={displaySalaryId ?? ""}
-              onChange={(e) => setViewingSalaryId(Number(e.target.value))}
-              aria-label="Salary profile"
-            >
-              {salaryProfiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            {displaySalaryId !== activeSalaryId && (
-              <span className="text-caption text-muted font-medium">
-                (viewing — not active)
-              </span>
-            )}
-          </div>
+        {(displayedSalaryProfile || activeProfile) && (
+          <span className="text-muted text-xs">
+            Showing{" "}
+            {[
+              displayedSalaryProfile &&
+                `Salary Profile “${displayedSalaryProfile.name}”`,
+              activeProfile && `Contribution Profile “${activeProfile.name}”`,
+            ]
+              .filter(Boolean)
+              .join(" and ")}
+          </span>
         )}
-        {contribProfiles.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-muted text-xs">Contribution:</span>
-            <select
-              className="bg-surface-primary rounded border px-2 py-1 text-xs"
-              value={displayContribId ?? ""}
-              onChange={(e) =>
-                setViewingContribId(
-                  e.target.value ? Number(e.target.value) : null,
-                )
-              }
-            >
-              {contribProfiles.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            {displayContribId !== contribProfileId && (
-              <span className="text-caption text-muted font-medium">
-                (viewing — not active)
-              </span>
-            )}
-          </div>
-        )}
-        {(isSalaryProfileMode || contribProfileActive) && (
-          <EditLockToggle
-            locked={profileLocked}
-            onToggle={toggleProfileLock}
-            disabled={!canEditProfiles}
-          />
-        )}
+        <EditLockToggle
+          locked={profileLocked}
+          onToggle={toggleProfileLock}
+          disabled={!canEditProfiles && !isAdmin(user)}
+        />
       </PageHeader>
 
       {views.length === 0 ? (
@@ -455,12 +382,22 @@ export default function PaycheckPage() {
               mode={mode}
               blendedAnnual={d.blendedAnnual}
               // A job has no salary of its own — every edit lands in the
-              // displayed Salary Profile, so editing requires a profile in
-              // view and the padlock unlocked.
-              salaryReadOnly={!isSalaryProfileMode || profileLocked}
-              // Mirrors salaryReadOnly — isProfileMode already folds in
-              // profileLocked (see its definition above).
-              contribValueReadOnly={!isProfileMode}
+              // active Salary Profile (see editTarget).
+              salaryReadOnly={!salaryEditsProfile}
+              contribValueReadOnly={!contribEditsProfile}
+              lineReadOnly={!lineEditable}
+              setupReadOnly={!setupEditable}
+              // Only while editing — locked, the padlock already says "View
+              // only" and a note under every section is just noise.
+              editLabels={
+                profileLocked
+                  ? undefined
+                  : {
+                      salary: editTarget("salary").label,
+                      contribution: editTarget("contribution").label,
+                      setup: editTarget("setup").label,
+                    }
+              }
               rawDeductions={d.rawDeductions}
               rawContribs={d.rawContribs}
               perContribData={d.perContribData}
@@ -508,10 +445,6 @@ export default function PaycheckPage() {
                                 : decimalFields.includes(field)
                                   ? Number(value)
                                   : value;
-                          if (isInScenario) {
-                            setScenarioOverride("jobs", job.id, field, parsed);
-                            return;
-                          }
                           // A job has no salary, bonus, pay-schedule, or W-4
                           // terms of its own any more — every edit to any of
                           // those lands in the displayed Salary Profile as
@@ -600,6 +533,24 @@ export default function PaycheckPage() {
                           // This year's actual bonus, pinned on the same entry —
                           // orthogonal to the formula fields above (see
                           // SalaryProfileEntry.bonusOverride's docblock).
+                          // The bonus pay date is two fields of one entry —
+                          // one write, so the second can't overwrite the first
+                          // with a stale copy of the entry. "MM-DD" or "".
+                          if (field === "bonusDate") {
+                            if (!salaryEditsProfile) return;
+                            const [m, dd] = value
+                              ? value.split("-").map(Number)
+                              : [null, null];
+                            writeSalaryProfileEntry(
+                              job.id,
+                              salaryProfileEntryDefaults,
+                              {
+                                bonusMonth: m ?? null,
+                                bonusDayOfMonth: dd ?? null,
+                              },
+                            );
+                            return;
+                          }
                           if (field === "bonusOverride") {
                             if (salaryEditsProfile) {
                               writeSalaryProfileEntry(
@@ -653,7 +604,8 @@ export default function PaycheckPage() {
                           }
                           // Only real job columns left: employerName and
                           // title (jobs.update's trimmed schema — see
-                          // settings/paycheck.ts).
+                          // settings/paycheck.ts). Household setup: admin.
+                          if (!setupEditable) return;
                           updateJob.mutate({
                             id: job.id,
                             personId: job.personId,
@@ -670,34 +622,18 @@ export default function PaycheckPage() {
                           value: string,
                         ) => {
                           // amountPerPeriod is the only deduction field a
-                          // Contribution Profile can set as an active field
-                          // (Part B scope) — route it through the same
-                          // scenario-or-profile dispatcher contribution
-                          // accounts already use. Structural fields
-                          // (deductionName/isPretax/ficaExempt) stay on the
-                          // old scenario-or-raw path — they're never
-                          // profile-settable.
+                          // Contribution Profile can set — it goes through the
+                          // same profile writer contribution accounts use.
+                          // Structural fields (deductionName/isPretax/
+                          // ficaExempt) are never profile-settable and write
+                          // the database.
                           // A preset sets both tax flags at once.
                           if (field === "taxTreatment") {
+                            if (!lineEditable) return;
                             const preset = DEDUCTION_PRESETS.find(
                               (p) => p.key === value,
                             );
                             if (!preset) return;
-                            if (isInScenario) {
-                              setScenarioOverride(
-                                "deductions",
-                                id,
-                                "isPretax",
-                                String(preset.isPretax),
-                              );
-                              setScenarioOverride(
-                                "deductions",
-                                id,
-                                "ficaExempt",
-                                String(preset.ficaExempt),
-                              );
-                              return;
-                            }
                             const raw = (
                               d.rawDeductions as RawDeduction[]
                             ).find((dd) => dd.id === id);
@@ -711,13 +647,19 @@ export default function PaycheckPage() {
                             });
                             return;
                           }
-                          if (field === "amountPerPeriod") {
-                            if (writeOverride("deductions", id, field, value))
-                              return;
-                          } else if (isInScenario) {
-                            setScenarioOverride("deductions", id, field, value);
+                          const target = editTarget(
+                            deductionFieldKind(field),
+                          ).target;
+                          if (target === "contributionProfile") {
+                            updateProfileActiveField(
+                              "deductions",
+                              id,
+                              field,
+                              value,
+                            );
                             return;
                           }
+                          if (target !== "setup") return;
                           const raw = (d.rawDeductions as RawDeduction[]).find(
                             (dd) => dd.id === id,
                           );
@@ -736,20 +678,22 @@ export default function PaycheckPage() {
                           field: string,
                           value: string,
                         ) => {
-                          // contributionValue/contributionMethod have no
-                          // account-level fallback anymore — writeOverride is the
-                          // ONLY path for them (scenario or profile active
-                          // fields); there is nothing left for the direct-write
-                          // fallback below to do with those two fields.
-                          if (
-                            writeOverride(
+                          // Profile-held fields (value/method/match/…) go to
+                          // the active Contribution Profile — there is no
+                          // account-level fallback for them.
+                          const target = editTarget(
+                            contributionAccountFieldKind(field),
+                          ).target;
+                          if (target === "contributionProfile") {
+                            updateProfileActiveField(
                               "contributionAccounts",
                               id,
                               field,
                               value,
-                            )
-                          )
+                            );
                             return;
+                          }
+                          if (target !== "setup") return;
                           const raw = (d.rawContribs as RawContrib[]).find(
                             (cc) => cc.id === id,
                           );
@@ -769,34 +713,28 @@ export default function PaycheckPage() {
                             [field]: value,
                           });
                         },
-                        onCreateDeduction: isInScenario
+                        onCreateDeduction: !lineEditable
                           ? undefined
                           : (data) => createDeduction.mutate(data),
-                        onDeleteDeduction: async (id: number) => {
-                          if (isInScenario) return; // Can't delete in scenario mode
-                          if (await confirm("Remove this deduction?")) {
-                            deleteDeduction.mutate({ id });
-                          }
-                        },
+                        onDeleteDeduction: !setupEditable
+                          ? undefined
+                          : async (id: number) => {
+                              if (await confirm("Remove this deduction?")) {
+                                deleteDeduction.mutate({ id });
+                              }
+                            },
                         onToggleAutoMax: (
                           id: number,
                           value: boolean,
                           targetContribValue?: number,
                         ) => {
-                          if (isInScenario) {
-                            setScenarioOverride(
-                              "contributionAccounts",
-                              id,
-                              "autoMaximize",
-                              value,
-                            );
-                            return;
-                          }
                           const raw = (d.rawContribs as RawContrib[]).find(
                             (cc) => cc.id === id,
                           );
                           if (!raw) return;
-                          if (isProfileMode) {
+                          // autoMaximize is a profile field — read-only
+                          // without a profile edit in play (editTarget).
+                          if (contribEditsProfile) {
                             // Set autoMaximize (and, when turning it on with a
                             // known target, the resolved contributionValue) via
                             // the field-level patch — the server merges onto the
@@ -825,31 +763,13 @@ export default function PaycheckPage() {
                             );
                             return;
                           }
-                          // No profile loaded / no edit permission — autoMaximize
-                          // itself is still a real account column, but there's no
-                          // account-level contribution value left to also push to
-                          // the target here (that only exists in profile mode).
-                          updateContrib.mutate({
-                            id: raw.id,
-                            personId: raw.personId,
-                            accountType: raw.accountType,
-                            taxTreatment: raw.taxTreatment as
-                              "pre_tax" | "tax_free" | "after_tax" | "hsa",
-                            employerMatchType: raw.employerMatchType as
-                              | "none"
-                              | "percent_of_contribution"
-                              | "dollar_match"
-                              | "fixed_annual",
-                            isActive: raw.isActive,
-                            autoMaximize: value,
-                          });
                         },
-                        onDeleteContrib: isInScenario
+                        onDeleteContrib: !setupEditable
                           ? undefined
                           : (id: number) => {
                               deleteContrib.mutate({ id });
                             },
-                        onCreateContrib: isInScenario
+                        onCreateContrib: !setupEditable
                           ? undefined
                           : (data) => {
                               // A form linking into an existing (often inactive
@@ -862,7 +782,7 @@ export default function PaycheckPage() {
                                 createContrib.mutate(rest);
                               }
                             },
-                        onUpdateInstitution: isInScenario
+                        onUpdateInstitution: !setupEditable
                           ? undefined
                           : (
                               id: number,

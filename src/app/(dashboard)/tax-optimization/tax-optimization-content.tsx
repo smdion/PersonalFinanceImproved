@@ -43,15 +43,14 @@ export function TaxOptimizationContent() {
   const retirementProfilesQuery =
     trpc.retirement.retirementProfiles.list.useQuery();
   const retirementProfiles = retirementProfilesQuery.data ?? [];
-  const [viewingRetirementId, setViewingRetirementId] = useState<number | null>(
-    null,
-  );
-  const { profileId: effectiveRetirementProfileId, source: profileSource } =
-    useEffectiveProfileId("retirement", {
+  const { profileId: effectiveRetirementProfileId } = useEffectiveProfileId(
+    "retirement",
+    {
       validIds: retirementProfiles.map((p) => p.id),
-      localSelection: viewingRetirementId,
+      localSelection: null,
       globalDefaultId: activeRetirementId,
-    });
+    },
+  );
 
   const selection = useMemo(
     () =>
@@ -81,7 +80,7 @@ export function TaxOptimizationContent() {
   if (metaQuery.isLoading || taxQuery.isLoading) {
     return (
       <div className="space-y-4">
-        <PageHeader title="Tax Optimization" />
+        <PageHeader title="Roth & conversions" />
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-96 w-full" />
       </div>
@@ -91,7 +90,7 @@ export function TaxOptimizationContent() {
   if (!meta || !("settings" in meta) || rows.length === 0) {
     return (
       <div className="space-y-4">
-        <PageHeader title="Tax Optimization" />
+        <PageHeader title="Roth & conversions" />
         <EmptyState
           message="No retirement projection yet"
           hint="Set retirement age, return rates, and a retirement budget on the Retirement page — the conversion and withdrawal-strategy tools need a plan to optimise against."
@@ -103,7 +102,7 @@ export function TaxOptimizationContent() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Tax Optimization"
+        title="Roth & conversions"
         subtitle="Roth-conversion timing and withdrawal-sequencing strategies that minimise lifetime tax — modelled on your active Retirement Profile."
       >
         {bracketYear != null && (
@@ -117,14 +116,11 @@ export function TaxOptimizationContent() {
         settings={meta.settings}
         perPersonSettings={meta.perPersonSettings}
         profiles={retirementProfiles}
-        viewingProfileId={effectiveRetirementProfileId}
-        onViewingProfileChange={setViewingRetirementId}
-        activeProfileId={activeRetirementId}
+        activeProfileId={effectiveRetirementProfileId}
         onActivate={(id) => {
           setActiveRetirementId(id);
           utils.projection.invalidate();
         }}
-        effectiveSource={profileSource}
         admin={admin}
       />
 

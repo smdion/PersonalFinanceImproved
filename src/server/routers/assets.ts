@@ -12,7 +12,7 @@ import {
   getActiveMortgageLoan,
 } from "@/server/helpers";
 import { getActiveBudgetApi } from "@/lib/budget-api";
-import { zYearEndTargeting, toSalaryActiveMap } from "./_shared";
+import { zYearEndTargeting } from "./_shared";
 import {
   computeHomeImpCumulative,
   resolveOtherAssetsForYear,
@@ -40,7 +40,6 @@ export const assetsRouter = createTRPCRouter({
         buildYearEndHistory(ctx.db, new Date(), {
           budgetProfileId: input?.budgetProfileId,
           budgetColumn: input?.budgetColumn,
-          salaryActiveFields: toSalaryActiveMap(input?.salaryActiveFields),
         }),
         ctx.db
           .select()

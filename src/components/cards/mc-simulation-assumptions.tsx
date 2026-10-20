@@ -46,7 +46,6 @@ export type SimulationInputs = {
   accumulationExpenseOverride?: number;
   taxMode: "simple" | "advanced";
   hasAssetClassOverrides: boolean;
-  hasSalaryActiveFields: boolean;
   correlations: { classAId: number; classBId: number; correlation: number }[];
   returnClampMin: number;
   returnClampMax: number;
@@ -187,8 +186,6 @@ export function SimulationAssumptions({
     activeOverrides.push(
       `Retirement expense override: ${formatCurrency(inputs.decumulationExpenseOverride)}/yr`,
     );
-  if (inputs.hasSalaryActiveFields)
-    activeOverrides.push("Salary customizations active");
 
   const presetColors: Record<string, string> = {
     aggressive: "text-red-600 bg-red-50 border-red-200",
@@ -326,7 +323,6 @@ export function SimulationAssumptions({
               <AssumptionRow
                 label="Income (Salary + Bonus)"
                 value={formatCurrency(inputs.salary)}
-                highlight={inputs.hasSalaryActiveFields}
               />
               <AssumptionRow
                 label="Base-Year Contributions"
@@ -415,7 +411,7 @@ export function SimulationAssumptions({
               <AssumptionRow
                 label="Blended Return"
                 value={formatPercent(inputs.blendedReturn, 1)}
-                tip="Weighted average expected return across all asset classes based on your current glide path allocation. Typical range: 5-10% (bonds-heavy to equity-heavy)."
+                tip="Weighted average expected return across all asset classes based on this year's allocation on the simulation's glide path. Typical range: 5-10% (bonds-heavy to equity-heavy)."
               />
               <AssumptionRow
                 label="Blended Volatility"

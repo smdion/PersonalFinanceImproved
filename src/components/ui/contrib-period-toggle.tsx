@@ -1,12 +1,12 @@
 "use client";
 
-import React from "react";
 import { safeDivide } from "@/lib/utils/math";
+import { SegmentedControl } from "./segmented-control";
 
 export type ContribPeriod = "annual" | "monthly" | "paycheck";
 
 const PERIOD_LABELS: Record<ContribPeriod, string> = {
-  paycheck: "Per Paycheck",
+  paycheck: "Per check",
   monthly: "Monthly",
   annual: "Annual",
 };
@@ -40,6 +40,10 @@ export function getContribMultiplier(
   }
 }
 
+const PERIOD_OPTIONS = (["paycheck", "monthly", "annual"] as const).map(
+  (value) => ({ value, label: PERIOD_LABELS[value] }),
+);
+
 export function ContribPeriodToggle({
   value,
   onChange,
@@ -50,25 +54,13 @@ export function ContribPeriodToggle({
   className?: string;
 }) {
   return (
-    <div
-      role="tablist"
-      className={`bg-surface-elevated flex rounded-lg p-1 ${className ?? ""}`}
-    >
-      {(["paycheck", "monthly", "annual"] as ContribPeriod[]).map((period) => (
-        <button
-          key={period}
-          role="tab"
-          aria-selected={value === period}
-          onClick={() => onChange(period)}
-          className={`rounded-md px-3 py-1 text-xs transition-colors ${
-            value === period
-              ? "bg-surface-primary text-primary font-medium shadow-sm"
-              : "text-muted hover:text-primary"
-          }`}
-        >
-          {PERIOD_LABELS[period]}
-        </button>
-      ))}
+    <div className={className}>
+      <SegmentedControl
+        ariaLabel="Show amounts"
+        value={value}
+        options={PERIOD_OPTIONS}
+        onChange={onChange}
+      />
     </div>
   );
 }

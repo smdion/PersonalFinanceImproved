@@ -86,9 +86,6 @@ vi.mock("@/components/ui/skeleton", () => ({
 vi.mock("@/lib/hooks/use-debounced-value", () => ({
   useDebouncedValue: <T,>(v: T) => v,
 }));
-vi.mock("@/lib/hooks/use-salary-overrides", () => ({
-  useActiveSalaries: () => [],
-}));
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   usePersistedSetting: <T,>(_key: string, initial: T) => [initial, vi.fn()],
 }));

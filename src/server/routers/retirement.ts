@@ -1,4 +1,5 @@
 /** Retirement router for readiness analysis including savings rates, employer matches, tax bucket projections, relocation comparisons, profile-switching scenarios, and retirement-settings/scenario/override/return-rate CRUD. */
+import { assertNoPlanUses } from "@/server/helpers/plans";
 import { eq, ne, asc, and, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
@@ -326,8 +327,8 @@ export const retirementRouter = createTRPCRouter({
       // Build per-profile column totals — resolved through the same
       // contribution-account chain computeActiveSummary/build-engine-payload.ts
       // use (see resolveLinkedBudgetItemAmounts) rather than raw `amounts`,
-      // which is intentionally stale for contribution-linked items. Global
-      // default profiles throughout (no Plan pin), matching this endpoint's
+      // which is intentionally stale for contribution-linked items. Active
+      // profiles throughout, matching this endpoint's
       // documented "control arm" salary resolution below.
       const profileSummaries = await Promise.all(
         allBudgetProfiles.map(async (p) => {
@@ -445,13 +446,9 @@ export const retirementRouter = createTRPCRouter({
         }
       }
 
-      // Salary — intentionally un-overridden by any Plan/session pin. This
-      // is the control arm of the relocation comparison; applying one here
-      // would collapse the comparison it exists to run. A job has no
-      // salary/bonus of its own any more, so the globally-ACTIVE Salary
-      // Profile is the only live source left (see resolveCompensation's
-      // docblock) — Plan-specific salary threading into relocation
-      // scenarios is a separate, not-yet-built feature.
+      // Salary — the control arm of the relocation comparison. A job has no
+      // salary/bonus of its own any more, so the ACTIVE Salary Profile is
+      // the only live source (see resolveCompensation's docblock).
       const asOfDate = referenceDate;
       const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
         ctx.db,
@@ -1367,18 +1364,7 @@ export const retirementRouter = createTRPCRouter({
             message: "Profile not found",
           });
 
-        const pinningPlans = await ctx.db
-          .select({ name: schema.scenarios.name })
-          .from(schema.scenarios)
-          .where(eq(schema.scenarios.retirementProfileId, input.id));
-        if (pinningPlans.length > 0) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message: `Cannot delete: active in ${pinningPlans.length} Plan(s) (${pinningPlans
-              .map((p) => p.name)
-              .join(", ")}). Change that Plan's retirement profile first.`,
-          });
-        }
+        await assertNoPlanUses(ctx.db, "retirement", input.id);
 
         // Explicit child-row cleanup, NOT relying on ON DELETE cascade.
         // Both FKs declare cascade in schema-pg.ts, and Postgres (the

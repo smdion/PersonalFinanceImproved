@@ -33,7 +33,6 @@ import {
 import { getAllPeople } from "@/server/helpers/people";
 import { applySandboxSalaryEntries } from "@/server/helpers/salary";
 import {
-  toSalaryActiveMap,
   zSandboxSalaryEntries,
   zSandboxDeductionEdits,
   zSandboxDeductionAdditions,
@@ -163,15 +162,11 @@ export const paycheckRouter = createTRPCRouter({
     .input(
       z
         .object({
-          salaryActiveFields: z
-            .array(z.object({ personId: z.number(), salary: z.number() }))
-            .optional(),
           taxYearOverride: z.number().int().min(2000).max(2100).optional(),
           contributionProfileId: z.number().int().optional(),
           salaryProfileId: z.number().int().optional(),
           /** The What-If tab's hand-edited salary/bonus entries — highest
-           *  precedence tier, above Plan/session overrides and the Salary
-           *  Profile pin. See applySandboxSalaryEntries. */
+           *  precedence tier, above the Salary Profile. See applySandboxSalaryEntries. */
           sandboxSalaryEntries: zSandboxSalaryEntries,
           /** The What-If tab's hand-edited amount for an existing deduction. */
           sandboxDeductionEdits: zSandboxDeductionEdits,
@@ -188,7 +183,6 @@ export const paycheckRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const salaryActiveMap = toSalaryActiveMap(input?.salaryActiveFields);
       const deductionEditMap = new Map(
         (input?.sandboxDeductionEdits ?? []).map((e) => [
           e.id,
@@ -248,13 +242,13 @@ export const paycheckRouter = createTRPCRouter({
       const limitsMap = new Map<string, number>(Object.entries(limitsRecord));
 
       // Salary and contribution overrides are two independent axes.
-      // Precedence for salary: Plan/session overrides (already in the map,
-      // highest) > Salary Profile. The Contribution Profile contributes no
+      // Precedence for salary: the What-If sandbox (highest) > Salary
+      // Profile. The Contribution Profile contributes no
       // salary at all — only account/job field overrides. No explicit
       // salaryProfileId falls back to the globally-active profile.
       const effectiveSalaryMap = applySandboxSalaryEntries(
         input?.sandboxSalaryEntries,
-        salaryActiveMap,
+        new Map(),
       );
       const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
         ctx.db,
@@ -362,7 +356,7 @@ export const paycheckRouter = createTRPCRouter({
           // entry (all 16 fields present together).
 
           // A job has no salary/bonus of its own — resolve against the
-          // Salary Profile, then the Plan/session + What-If sandbox tiers.
+          // Salary Profile, then the What-If sandbox.
           const comp = resolveCompensation(
             salaryProfileActiveMap,
             activeJob.id,

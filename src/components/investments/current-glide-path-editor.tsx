@@ -55,7 +55,7 @@ export function CurrentGlidePathEditor({
     onSuccess: () => {
       void utils.investments.invalidate();
       void utils.settings.appSettings.list.invalidate();
-      toast.success("Current glide path saved");
+      toast.success("Target mix today saved");
       onClose();
     },
     onError: (e) => toast.error(e.message),

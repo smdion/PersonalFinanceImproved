@@ -6,7 +6,6 @@ import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FormError } from "@/components/ui/form-error";
 import { FormField, FormInput, FormSelect } from "@/components/forms";
-import { useScenario } from "@/lib/context/scenario-context";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { ProfileViewingBadge } from "./profile-viewing-badge";
@@ -37,7 +36,7 @@ import { ExtraPaycheckDestinationToggle } from "@/components/savings/extra-paych
  * Profile's whole content is a jobId → entry map, so there's no
  * contribution math to resolve or aggregate. Every profile is an ordinary row
  * — renamable, editable, and deletable so long as it isn't the last one, the
- * active one, or pinned by a Plan.
+ * active one, or used by a Plan.
  *
  * THERE IS NO LIVE FALLBACK. A job either has a complete entry in a profile
  * — salary, bonus %, and multiplier, all real numbers you typed — or it has
@@ -70,7 +69,6 @@ export function SalaryProfileManager({
   locked: boolean;
 }) {
   const utils = trpc.useUtils();
-  const { isInScenario, setScenarioSalaryProfile } = useScenario();
   const [activeSalaryId, setActiveSalaryId] = useActiveSalaryProfile();
   const { data: profiles, isLoading } = trpc.salaryProfile.list.useQuery();
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(
@@ -141,11 +139,7 @@ export function SalaryProfileManager({
   const canDeleteAny = profiles.length > 1;
 
   const handleActivate = (id: number) => {
-    if (isInScenario) {
-      setScenarioSalaryProfile(id);
-    } else {
-      setActiveSalaryId(id);
-    }
+    setActiveSalaryId(id);
   };
 
   const handleDelete = async (id: number, name: string) => {
@@ -924,7 +918,6 @@ function ProfileDetail({
   const { data: profile } = trpc.salaryProfile.getById.useQuery({
     id: profileId,
   });
-  const { isInScenario } = useScenario();
   if (!profile) return null;
 
   const cell = (sd: Detail, field: FieldKey, suffix?: string) => (
@@ -1022,7 +1015,6 @@ function ProfileDetail({
                           <ExtraPaycheckDestinationToggle
                             jobId={sd.jobId}
                             routing={sd.extraPaycheckRouting}
-                            disabled={isInScenario}
                           />
                         )}
                       </div>
@@ -1141,7 +1133,6 @@ function ProfileEditPanel({
   const { data: profile } = trpc.salaryProfile.getById.useQuery({
     id: profileId,
   });
-  const { isInScenario } = useScenario();
   const [error, setError] = useState<string | null>(null);
   /** In-progress text per field; cleared once its mutation is sent. */
   const { drafts, setDraft, clearDraft } = useDraftCommit();
@@ -1516,7 +1507,6 @@ function ProfileEditPanel({
                               <ExtraPaycheckDestinationToggle
                                 jobId={sd.jobId}
                                 routing={sd.extraPaycheckRouting}
-                                disabled={isInScenario}
                               />
                             )}
                           </div>

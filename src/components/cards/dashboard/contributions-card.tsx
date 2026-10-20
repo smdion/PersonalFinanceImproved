@@ -15,7 +15,6 @@ import {
   accountTextColor,
   taxTypeLabel,
 } from "@/lib/utils/colors";
-import { useActiveSalaries } from "@/lib/hooks/use-salary-overrides";
 import { useScenario } from "@/lib/context/scenario-context";
 import { OVER_LIMIT_THRESHOLD } from "@/lib/constants";
 import { safeDivide, sumBy } from "@/lib/utils/math";
@@ -124,12 +123,10 @@ function FundingBar({
 
 function ContributionsCardImpl() {
   const { viewMode } = useScenario();
-  const salaryActiveFields = useActiveSalaries();
-  // Independent Salary Profile axis (Plan pin -> globally-active setting).
+  // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const { queryInput: contribProfileInput } = useEffectiveContribProfileId();
   const contribInput = {
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...contribProfileInput,
     ...salaryProfileInput,
   } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];

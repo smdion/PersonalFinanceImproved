@@ -288,7 +288,7 @@ export const MILESTONE_STATUS_LABELS: Record<
   unknown: "Not enough data",
 };
 
-/** Investment transaction kinds, as shown in Settings → SimpleFIN. */
+/** Investment transaction kinds, as shown in Settings → Integrations → SimpleFIN. */
 export const INVESTMENT_TRANSACTION_KIND_LABELS: Record<
   InvestmentTransactionKind,
   string

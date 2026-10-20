@@ -4,8 +4,7 @@
  * Server-side prefetches contributionProfile.list — takes no input, so
  * this prefetch always matches the client's eventual query exactly.
  * contribution.computeSummary itself isn't prefetched: its input depends
- * on several client-resolved profile/scenario tiers (Plan pins, persisted
- * selections) not available server-side — prefetching a guessed default
+ * on client-resolved profile ids not available server-side — prefetching a guessed default
  * would very likely produce a cache-key mismatch and go unused.
  *
  * Prefetch failures don't block rendering — wrapped in try/catch so the

@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**367 procedures across 52 routers.**
+**362 procedures across 52 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -54,7 +54,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `listApiActuals`                     | query    | `protectedProcedure` | Get API actuals for linked budget items (activity + balance from cached month data).                                                                                                                     |
 | `listApiCategories`                  | query    | `protectedProcedure` | Get cached categories from the active (or specified) budget API for the category picker.                                                                                                                 |
 | `listContribAccountsForLinking`      | query    | `protectedProcedure` | jobId === null means the contribution comes from take-home pay (IRA, taxable brokerage, etc.). Job-linked contributions (401k, HSA, ESPP) are payroll-deducted and already on the paycheck.              |
-| `listProfiles`                       | query    | `protectedProcedure` | allocations and per-mode weighting, so resolving the pay side here too keeps it to one round trip and one computation path. Plan pins are session/browser state, so the caller supplies them; the global |
+| `listProfiles`                       | query    | `protectedProcedure` | ignored the active Contribution and Salary Profiles. This procedure already loops every profile and already resolves each profile's own savings allocations and per-mode weighting, so resolving the pay |
 | `moveItem`                           | mutation | `budgetProcedure`    | Move a budget item to a different category.                                                                                                                                                              |
 | `removeColumn`                       | mutation | `budgetProcedure`    | Remove a column (budget mode) from the target profile (active if not given).                                                                                                                             |
 | `renameColumn`                       | mutation | `budgetProcedure`    | Rename a column (budget mode).                                                                                                                                                                           |
@@ -426,27 +426,22 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `settings/admin`
 
-| Procedure                   | Kind     | Auth                 | Description                                                                                  |
-| --------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------- |
-| `clearOverride`             | mutation | `scenarioProcedure`  | Remove a single override from a scenario                                                     |
-| `create`                    | mutation | `scenarioProcedure`  | ══ SCENARIOS (global what-if system) ══                                                      |
-| `delete`                    | mutation | `adminProcedure`     | Invalidate year-end cache when settings change (e.g. salary averaging toggle)                |
-| `delete`                    | mutation | `scenarioProcedure`  | (no description)                                                                             |
-| `delete`                    | mutation | `adminProcedure`     | (no description)                                                                             |
-| `get`                       | query    | `adminProcedure`     | Get current RBAC group mapping (DB overrides merged with defaults).                          |
-| `getDataFreshness`          | query    | `protectedProcedure` | ══ DATA FRESHNESS ══                                                                         |
-| `list`                      | query    | `protectedProcedure` | ══ APP SETTINGS ══                                                                           |
-| `list`                      | query    | `protectedProcedure` | ══ SCENARIOS (global what-if system) ══                                                      |
-| `list`                      | query    | `adminProcedure`     | (encrypted envelopes, or plaintext for legacy rows such as FMP).                             |
-| `setBudgetProfilePin`       | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Budget Profile is "active" when this Plan is selected.       |
-| `setContributionProfilePin` | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Contribution Profile is "active" when this Plan is selected. |
-| `setOverride`               | mutation | `scenarioProcedure`  | Update a single override within a scenario's overrides JSONB                                 |
-| `setRetirementProfilePin`   | mutation | `scenarioProcedure`  | Set (or clear, with null) which Retirement Profile is active when this Plan is selected.     |
-| `setSalaryProfilePin`       | mutation | `scenarioProcedure`  | Pin (or clear, with null) which Salary Profile is "active" when this Plan is selected.       |
-| `update`                    | mutation | `scenarioProcedure`  | (no description)                                                                             |
-| `updateDataFreshness`       | mutation | `adminProcedure`     | (no description)                                                                             |
-| `upsert`                    | mutation | `adminProcedure`     | (no description)                                                                             |
-| `upsert`                    | mutation | `adminProcedure`     | (no description)                                                                             |
+| Procedure             | Kind     | Auth                 | Description                                                                   |
+| --------------------- | -------- | -------------------- | ----------------------------------------------------------------------------- |
+| `activate`            | mutation | `protectedProcedure` | Make this Plan's profiles the active ones, household-wide (applyPlan).        |
+| `create`              | mutation | `scenarioProcedure`  | Save a set of profiles as a Plan — all four kinds, by name.                   |
+| `delete`              | mutation | `adminProcedure`     | Invalidate year-end cache when settings change (e.g. salary averaging toggle) |
+| `delete`              | mutation | `scenarioProcedure`  | (no description)                                                              |
+| `delete`              | mutation | `adminProcedure`     | (no description)                                                              |
+| `get`                 | query    | `adminProcedure`     | Get current RBAC group mapping (DB overrides merged with defaults).           |
+| `getDataFreshness`    | query    | `protectedProcedure` | ══ DATA FRESHNESS ══                                                          |
+| `list`                | query    | `protectedProcedure` | ══ APP SETTINGS ══                                                            |
+| `list`                | query    | `protectedProcedure` | Every saved Plan.                                                             |
+| `list`                | query    | `adminProcedure`     | (encrypted envelopes, or plaintext for legacy rows such as FMP).              |
+| `update`              | mutation | `scenarioProcedure`  | Rename a Plan or change which profiles it holds.                              |
+| `updateDataFreshness` | mutation | `adminProcedure`     | (no description)                                                              |
+| `upsert`              | mutation | `adminProcedure`     | (no description)                                                              |
+| `upsert`              | mutation | `adminProcedure`     | (no description)                                                              |
 
 ## `settings/onboarding`
 

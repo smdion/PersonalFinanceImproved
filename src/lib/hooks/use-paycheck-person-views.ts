@@ -11,12 +11,9 @@
  *
  * That last one is why this hook exists at all beyond code reuse:
  * `ContributionsSection` used to make its OWN `contribution.computeSummary`
- * query keyed on the RAW globally-active contribution setting while using the
- * Plan-pin-aware hook for the salary axis. On the shipped Paycheck page that
- * meant (a) an active Plan pinning a Contribution Profile was silently
- * ignored by the contribution cards while honored everywhere else on the
- * page, and (b) changing the page's own Contribution Profile dropdown moved
- * the pay-stub numbers but not the cards' annual/limit figures. Contribution
+ * query keyed on a different profile id than the pay stub, so the
+ * contribution cards and the pay stub could show two different Contribution
+ * Profiles. Contribution
  * data is now resolved ONCE here, with the same ids as the paycheck query,
  * and handed down as a prop. No component below this point queries for it.
  *
@@ -29,7 +26,6 @@
 
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import { useActiveSalaries } from "./use-salary-overrides";
 import {
   alignDeductionRows,
   type RawDeduction,
@@ -44,8 +40,6 @@ import {
   categoriesWithIrsLimit,
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
-
-const EMPTY_ACTIVE_SALARIES: { personId: number; salary: number }[] = [];
 
 /** Mirrors the server's SalaryEntryMap shape (server/helpers/salary.ts) —
  *  duplicated rather than imported since that file is server-only. */
@@ -102,7 +96,6 @@ export type PaycheckPersonView = {
   coverageNote?: string;
   coverageNoteGroup?: string;
   otherJointContribs: JointContrib[];
-  activeSalaryValue: number | null;
   /** Already-resolved contribution figures — see the docblock. */
   perContribData: PerContribView[];
   /** Contribution account ids owned by this person/job with no active
@@ -116,19 +109,6 @@ export type UsePaycheckPersonViewsOptions = {
   contributionProfileId: number | null;
   salaryProfileId: number | null;
   taxYearOverride?: number;
-  /**
-   * Whether an active session scenario's overrides apply on top.
-   *
-   * The real Paycheck page passes `true` (today's behavior). The What-If tab
-   * passes `false`: a session scenario is a temporary browser-local what-if,
-   * a different concept from the tab's own sandbox, and letting it stack on
-   * top of the tab's picks would silently show numbers that are neither.
-   *
-   * `useActiveSalaries` is still *called* unconditionally — React forbids
-   * conditional hook calls — but its value is discarded when this is false,
-   * so nothing scenario-derived reaches the query input.
-   */
-  honorSessionScenario: boolean;
   /** The What-If tab's hand-edited salary/bonus entries — sent to BOTH the
    *  paycheck AND contribution queries below (see paycheckRouter's
    *  identical field for why sending it to only one reproduces the
@@ -163,26 +143,14 @@ export function usePaycheckPersonViews({
   contributionProfileId,
   salaryProfileId,
   taxYearOverride,
-  honorSessionScenario,
   sandboxSalaryEntries,
   sandboxDeductionEdits,
   sandboxDeductionAdditions,
   sandboxContribActiveFields,
   sandboxContribAdditions,
 }: UsePaycheckPersonViewsOptions) {
-  const sessionActiveSalaries = useActiveSalaries();
-
-  // Stable identity: an inline `[]` would be a new array every render and
-  // churn every memo below it.
-  const salaryActiveFields = useMemo(
-    () =>
-      honorSessionScenario ? sessionActiveSalaries : EMPTY_ACTIVE_SALARIES,
-    [honorSessionScenario, sessionActiveSalaries],
-  );
-
   const queryInput = useMemo(
     () => ({
-      ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
       ...(taxYearOverride ? { taxYearOverride } : {}),
       ...(contributionProfileId != null ? { contributionProfileId } : {}),
       ...(salaryProfileId != null ? { salaryProfileId } : {}),
@@ -204,7 +172,6 @@ export function usePaycheckPersonViews({
         : {}),
     }),
     [
-      salaryActiveFields,
       taxYearOverride,
       contributionProfileId,
       salaryProfileId,
@@ -228,7 +195,6 @@ export function usePaycheckPersonViews({
   // Contribution annual/limit figures, resolved with the SAME profile ids as
   // the paycheck query above — one query for the whole page.
   const { data: contribData } = trpc.contribution.computeSummary.useQuery({
-    ...(salaryActiveFields.length > 0 ? { salaryActiveFields } : {}),
     ...(contributionProfileId != null ? { contributionProfileId } : {}),
     ...(sandboxSalaryEntries && Object.keys(sandboxSalaryEntries).length > 0
       ? { sandboxSalaryEntries }
@@ -249,11 +215,8 @@ export function usePaycheckPersonViews({
   // only writer of a session-scenario override anywhere in the app writes
   // entity "people", field "salary" (paycheck/page.tsx's toggleSalaryOverride)
   // — a different entity than any of the keys this block ever read, so
-  // every `getOverride` call here always returned its fallback. The one
-  // override that's actually real (salary, per person) already reaches the
-  // server correctly via `salaryActiveFields` in `queryInput` above and a real
-  // recompute — it never needed this client-side patch. Removed rather than
-  // kept as a misleading no-op.
+  // every `getOverride` call here always returned its fallback. Removed
+  // rather than kept as a misleading no-op.
   const people = useMemo(
     () => (rawData?.people ?? []).filter((d) => d.paycheck && d.job),
     [rawData?.people],
@@ -394,16 +357,13 @@ export function usePaycheckPersonViews({
           coverageNote: alignedData?.coverageNotes[index as 0 | 1]?.note,
           coverageNoteGroup: alignedData?.coverageNotes[index as 0 | 1]?.group,
           otherJointContribs: jointContribs,
-          activeSalaryValue:
-            salaryActiveFields.find((o) => o.personId === d.person.id)
-              ?.salary ?? null,
           perContribData: (personContrib?.perContribData ??
             []) as PerContribView[],
           incompleteAccountIds: ((d as Record<string, unknown>)
             .incompleteAccountIds ?? []) as number[],
         };
       }),
-    [people, contribData, alignedData, jointContribs, salaryActiveFields],
+    [people, contribData, alignedData, jointContribs],
   );
 
   return {
@@ -412,6 +372,5 @@ export function usePaycheckPersonViews({
     isLoading,
     error,
     sharedContribGroupOrder,
-    salaryActiveFields,
   };
 }
