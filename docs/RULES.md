@@ -458,9 +458,10 @@ ordering should follow it: **Contributions → Budget → Savings**. Contributio
 elections (+ salary) determine take-home pay; the Budget consumes that
 take-home pay and leaves a monthly surplus/deficit; Savings allocations spend
 whatever the Budget leaves over. Changing an earlier lever changes every
-later one's numbers — the reverse is never true. This is why the Budget
-page's tabs are ordered Contributions, Budget, Savings rather than
-alphabetically or by table-creation order.
+later one's numbers — the reverse is never true. This is why the Profiles
+page's tabs run Salary, Contributions, Savings (the Budget has its own page
+between them in the chain), then Retirement and What-If, which consume the
+rest — not alphabetically or by table-creation order.
 
 ### Profile Resolution
 

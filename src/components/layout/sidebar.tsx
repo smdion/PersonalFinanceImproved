@@ -36,6 +36,7 @@ import {
   LogOut,
   HelpCircle,
   Layers,
+  SlidersHorizontal,
   Database,
   PieChart,
   Gauge,
@@ -109,6 +110,7 @@ export const navStructure: NavEntry[] = [
     label: "Planning",
     Icon: Search,
     items: [
+      { href: "/profiles", label: "Profiles", Icon: SlidersHorizontal },
       { href: "/retirement", label: "Retirement", Icon: Palmtree },
       { href: "/taxes", label: "Taxes this year", Icon: Receipt },
       { href: "/tax-buckets", label: "Retirement taxes", Icon: Unlock },
@@ -119,7 +121,7 @@ export const navStructure: NavEntry[] = [
       },
       { href: "/tools", label: "Relocation", Icon: Wrench },
       {
-        href: "/budget?tab=whatif",
+        href: "/profiles?tab=whatif",
         label: "What-If",
         Icon: FlaskConical,
       },

@@ -949,25 +949,32 @@ export function HelpContent() {
         </ul>
       </Section>
 
-      <Section title="Contribution Profiles">
+      <Section title="Profiles and Plans">
         <p>
-          Contribution profiles are reusable sets of paycheck contribution
-          elections. They let you quickly switch between different savings
-          strategies.
+          Each profile is its own world — Salary (pay, bonus, W-4, schedule),
+          Contributions (what goes to each account), Budget (spending) and
+          Retirement (ages, assumptions). There&apos;s no default profile, only
+          the active one of each kind, picked in the header.
         </p>
         <ul className="ml-2 list-inside list-disc space-y-1">
           <li>
-            <strong>Create profiles</strong> on the Paycheck page &mdash; name
-            them descriptively (e.g. &ldquo;Max Retirement&rdquo;, &ldquo;House
-            Down Payment&rdquo;).
+            <strong>Create and edit profiles</strong> on the{" "}
+            <NavLink href="/profiles">Profiles</NavLink> page (Budget profiles
+            on the <NavLink href="/budget">Budget</NavLink> page).
           </li>
           <li>
-            <strong>Switch profiles</strong> to instantly recalculate take-home
-            pay, budget capacity, and savings projections.
+            <strong>Switch</strong> with the header&apos;s pickers — every page
+            then uses that profile.
           </li>
           <li>
-            Profiles are used across Budget, Brokerage, Savings, and Retirement
-            pages for consistent projections.
+            <strong>A Plan</strong> saves a set of profiles (one of each kind).
+            Applying a Plan makes its profiles the active ones for the whole
+            household; change a picker and you&apos;re on an unsaved mix you can
+            save as a new Plan or use to update the last one.
+          </li>
+          <li>
+            <strong>What-If</strong> (Profiles page) is a sandbox: try changes
+            without saving anything.
           </li>
         </ul>
       </Section>

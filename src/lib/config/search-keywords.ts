@@ -63,7 +63,14 @@ export const SEARCH_KEYWORDS: Record<string, readonly string[]> = {
     "fica",
     "medicare",
   ],
-  "/budget?tab=whatif": ["budget scenarios", "scenarios", "sandbox", "try"],
+  "/profiles?tab=whatif": ["budget scenarios", "scenarios", "sandbox", "try"],
+  "/profiles": [
+    "salary profile",
+    "contribution profile",
+    "savings profile",
+    "retirement profile",
+    "plans",
+  ],
   "/tools": ["relocation", "move", "cost of living"],
   "/settings": [
     "irs limits",

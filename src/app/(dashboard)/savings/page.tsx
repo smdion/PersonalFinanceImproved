@@ -847,7 +847,7 @@ export default function SavingsPage() {
                     </div>
 
                     {/* Extra paycheck rules — one column per earner. The
-                        Savings/Budget toggle also lives on Budget → Salary
+                        Savings/Budget toggle also lives on Profiles → Salary
                         Profiles (comp-layer decision), but the detailed
                         mechanics — splits across savings goals, growth
                         rates, month overrides — are Savings-domain and

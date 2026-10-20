@@ -11,7 +11,13 @@
  */
 
 import React, { useState, useRef, useEffect, useMemo } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
+import {
+  PROFILE_TABS,
+  profilesHref,
+  type ProfileTabKey,
+} from "@/lib/config/profile-tabs";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
@@ -59,7 +65,18 @@ import { RetirementProfileTab } from "@/components/retirement/retirement-profile
 import { RetirementProfileManager } from "@/components/retirement/retirement-profile-manager";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 
-export function BudgetContent() {
+/**
+ * The Budget page and the Profiles page share this body (one set of
+ * queries and drafts): `section="budget"` is the budget grid with its
+ * Budget-profile sidebar; `section="profiles"` is the Salary,
+ * Contributions, Savings and Retirement profile managers plus the What-If
+ * sandbox, with the tab in the URL (?tab=).
+ */
+export function BudgetContent({
+  section = "budget",
+}: {
+  section?: "budget" | "profiles";
+}) {
   const user = useUser();
   const canEdit = hasPermission(user, "budget");
   const [activeColumn, setActiveColumn] = usePersistedSetting<number>(
@@ -178,13 +195,16 @@ export function BudgetContent() {
   } = useItemMutations({ selectedColumnRef });
 
   // ---- Local UI state ----
-  // ?tab=whatif deep-links here from the sidebar's Analysis > What-If entry
-  // — read once on mount, not kept in sync afterward (tab clicks don't
-  // rewrite the URL).
+  // Profiles: the tab follows the URL (?tab=), so links and the back button
+  // land on the right tab. Budget has one view.
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<
-    "budget" | "contributions" | "salary" | "savings" | "retirement" | "what-if"
-  >(searchParams.get("tab") === "whatif" ? "what-if" : "budget");
+  const router = useRouter();
+  const urlTab = searchParams.get("tab");
+  const profileTab: ProfileTabKey =
+    PROFILE_TABS.find((t) => t.key === urlTab)?.key ?? "salary";
+  const activeTab = section === "budget" ? "budget" : profileTab;
+  const setActiveTab = (tab: ProfileTabKey) =>
+    router.replace(profilesHref(tab), { scroll: false });
   const [pushPreviewItems, setPushPreviewItems] = useState<ReturnType<
     typeof buildPushPreviewItems
   > | null>(null);
@@ -376,124 +396,77 @@ export function BudgetContent() {
   return (
     <BudgetPageContext.Provider value={pageCtxValue}>
       <div>
-        <PageHeader
-          title="Budget"
-          subtitle={
-            <>
-              <div>
-                Contributions set take-home pay, Budget spends it, Savings
-                allocates what&rsquo;s left — in that order.
-              </div>
-              <div className="mt-0.5">
-                Want to try a different profile without changing what&rsquo;s
-                active for everyone? Use the &ldquo;Plan&rdquo; dropdown at the
-                top of the page to create one, then pin profiles to it instead
-                of activating them here — a Plan&rsquo;s pins only apply while
-                you&rsquo;re viewing it, so the shared setup everyone else sees
-                stays untouched.
-              </div>
-            </>
-          }
-        />
-
-        {/* Ordered to match the actual dependency chain: Salary sets gross
-            pay, Contributions (often % of salary) derive take-home,
-            Budget spends it, which feeds Savings — see docs/RULES.md.
-            Retirement Profile sits after all four: it's a consumer of
-            these assumptions (age, income, decumulation plan), not a peer
-            input in that chain, so it's placed last among the profile
-            levers, immediately before What-If. */}
-        <div className="mb-4 flex items-center justify-between border-b">
-          <div className="flex gap-1">
-            <button
-              type="button"
-              onClick={() => setActiveTab("salary")}
-              className={`border-b-2 px-4 py-2 text-xs font-medium transition-colors ${activeTab === "salary" ? "border-blue-600 text-blue-600" : "text-muted hover:text-secondary border-transparent"}`}
-            >
-              Salary Profiles
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("contributions")}
-              className={`border-b-2 px-4 py-2 text-xs font-medium transition-colors ${activeTab === "contributions" ? "border-blue-600 text-blue-600" : "text-muted hover:text-secondary border-transparent"}`}
-            >
-              Contribution Profiles
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("budget")}
-              className={`border-b-2 px-4 py-2 text-xs font-medium transition-colors ${activeTab === "budget" ? "border-blue-600 text-blue-600" : "text-muted hover:text-secondary border-transparent"}`}
-            >
-              Budget Profiles
-            </button>
-            {hasPermission(user, "savings") && (
-              <button
-                type="button"
-                onClick={() => setActiveTab("savings")}
-                className={`border-b-2 px-4 py-2 text-xs font-medium transition-colors ${activeTab === "savings" ? "border-blue-600 text-blue-600" : "text-muted hover:text-secondary border-transparent"}`}
-              >
-                Savings Profiles
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => setActiveTab("retirement")}
-              className={`border-b-2 px-4 py-2 text-xs font-medium transition-colors ${activeTab === "retirement" ? "border-blue-600 text-blue-600" : "text-muted hover:text-secondary border-transparent"}`}
-            >
-              Retirement Profiles
-            </button>
-            {/* Last, after the five real levers: it previews combinations of
-                them rather than being a lever of its own. */}
-            <button
-              type="button"
-              onClick={() => setActiveTab("what-if")}
-              className={`border-b-2 px-4 py-2 text-xs font-medium transition-colors ${activeTab === "what-if" ? "border-blue-600 text-blue-600" : "text-muted hover:text-secondary border-transparent"}`}
-            >
-              What-If
-            </button>
-          </div>
-          {/* One padlock, fixed here regardless of which tab is active —
-              it used to live inside each tab's own panel, which meant its
-              on-screen position shifted with that panel's locked/unlocked
-              layout. One lock (EDIT_LOCK_KEYS.profileEditLocked, via editMode/
-              toggleEditMode from useBudgetPageState) now covers all four
-              profile tabs — locking/unlocking on any one of them locks/
-              unlocks the rest too, so there's no "I locked Salary but
-              Contribution is still wide open" gap. toggleEditMode still
-              saves any pending Budget-tab drafts before locking, regardless
-              of which tab was active when the padlock was clicked. What-If
-              has none of its own (it's a preview, not an editable surface),
-              so nothing renders there. Only the `disabled` (visibility/
-              permission) condition stays tab-specific. */}
-          {activeTab === "salary" && (
-            <EditLockToggle
-              locked={!editMode}
-              onToggle={toggleEditMode}
-              disabled={!hasPermission(user, "contributionProfile")}
-            />
-          )}
-          {activeTab === "contributions" && (
-            <EditLockToggle
-              locked={!editMode}
-              onToggle={toggleEditMode}
-              disabled={!hasPermission(user, "contributionProfile")}
-            />
-          )}
-          {activeTab === "budget" && (
+        {section === "budget" ? (
+          <PageHeader
+            title="Budget"
+            subtitle={
+              <>
+                Spends the take-home pay your Salary and Contribution profiles
+                produce; Savings allocates what&rsquo;s left.{" "}
+                <Link
+                  href="/profiles"
+                  className="text-blue-600 hover:underline dark:text-blue-400"
+                >
+                  Salary, Contribution, Savings and Retirement profiles
+                </Link>{" "}
+                have their own page.
+              </>
+            }
+          >
             <EditLockToggle
               locked={!editMode}
               onToggle={toggleEditMode}
               disabled={!canEdit || updateBatch.isPending}
             />
-          )}
-          {activeTab === "savings" && (
-            <EditLockToggle
-              locked={!editMode}
-              onToggle={toggleEditMode}
-              disabled={!hasPermission(user, "savings")}
+          </PageHeader>
+        ) : (
+          <>
+            <PageHeader
+              title="Profiles"
+              subtitle="Each profile is its own world — the header picks which one is active, and a Plan saves a set of them. Pick a profile here to edit it; Make active switches it everywhere."
             />
-          )}
-        </div>
+            {/* Ordered to match the dependency chain: Salary sets gross pay,
+                Contributions (often % of salary) derive take-home, the Budget
+                (its own page) spends it, Savings allocates what's left —
+                see docs/RULES.md "Lever Order". Retirement consumes all of
+                these, and What-If previews combinations of them, so they
+                come last. */}
+            <div className="mb-4 flex items-center justify-between border-b">
+              <div role="tablist" className="flex gap-1 overflow-x-auto">
+                {PROFILE_TABS.filter(
+                  (t) => t.key !== "savings" || hasPermission(user, "savings"),
+                ).map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === t.key}
+                    onClick={() => setActiveTab(t.key)}
+                    className={`border-b-2 px-4 py-2 text-xs font-medium whitespace-nowrap transition-colors ${activeTab === t.key ? "border-blue-600 text-blue-600" : "text-muted hover:text-secondary border-transparent"}`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              {/* One padlock for every profile tab (EDIT_LOCK_KEYS
+                  .profileEditLocked) — locking any one locks them all.
+                  What-If is a sandbox with nothing to lock. */}
+              {activeTab !== "whatif" && (
+                <EditLockToggle
+                  locked={!editMode}
+                  onToggle={toggleEditMode}
+                  disabled={
+                    activeTab === "savings"
+                      ? !hasPermission(user, "savings")
+                      : activeTab === "retirement"
+                        ? !isAdmin(user)
+                        : !hasPermission(user, "contributionProfile")
+                  }
+                />
+              )}
+            </div>
+          </>
+        )}
 
         {activeTab === "budget" && (
           <CardBoundary title="Budget Profiles">
@@ -625,7 +598,7 @@ export function BudgetContent() {
           </CardBoundary>
         )}
 
-        {activeTab === "what-if" && (
+        {activeTab === "whatif" && (
           <CardBoundary title="What-If">
             <WhatIfTab
               canDuplicateProfile={canEdit}
