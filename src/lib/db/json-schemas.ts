@@ -252,23 +252,24 @@ export const salaryEntrySchema = z
     payWeek: payWeekSchema,
     /** `null` is a real, complete value ("no anchor, use start date"). */
     anchorPayDate: z.string().nullable(),
-    budgetPeriodsPerMonth: z.number().nullable(),
+    /** null = the pay schedule's usual number. */
+    budgetPeriodsPerMonth: z.number().positive().nullable(),
     w4FilingStatus: w4FilingStatusSchema,
     w4Box2cChecked: z.boolean(),
     additionalFedWithholding: z.number(),
     /** 1-12, month when bonus is typically paid (null = unknown/spread). */
-    bonusMonth: z.number().nullable(),
+    bonusMonth: z.number().int().min(1).max(12).nullable(),
     /** 1-31, day of month when bonus is paid (null = first period of month). */
-    bonusDayOfMonth: z.number().nullable(),
+    bonusDayOfMonth: z.number().int().min(1).max(31).nullable(),
     /** `null` is a real, complete value ("no extra-paycheck routing
      *  configured for this job"). See extraPaycheckRoutingSchema above. */
     extraPaycheckRouting: extraPaycheckRoutingSchema.nullable(),
-    /** Other pay per check, by paycheck_earnings id (amount ≥ 0). Absent =
-     *  none — the same as `{}`, so older entries need no backfill. */
     /** Where this job's bonus goes: into the budget (absent) or extra
      *  spending outside it — Living Costs shows its take-home as its own
      *  bar. */
     bonusDestination: z.enum(["budget", "spending"]).optional(),
+    /** Other pay per check, by paycheck_earnings id (amount ≥ 0). Absent =
+     *  none — the same as `{}`, so older entries need no backfill. */
     otherEarnings: z
       .record(z.string().regex(/^\d+$/), z.number().nonnegative())
       .optional(),

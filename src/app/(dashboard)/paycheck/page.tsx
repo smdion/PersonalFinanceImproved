@@ -41,6 +41,7 @@ import type {
 } from "@/lib/config/enum-values";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import { salaryEntryEdit } from "@/lib/pure/salary-entry-edit";
+import { toast } from "@/lib/hooks/use-toast";
 
 export default function PaycheckPage() {
   const user = useUser();
@@ -459,7 +460,11 @@ export default function PaycheckPage() {
                             ),
                           });
                           if (edit !== undefined) {
-                            if (edit && salaryEditsProfile)
+                            if (edit === null) {
+                              toast.error("That value isn't valid here.");
+                              return;
+                            }
+                            if (salaryEditsProfile)
                               patchSalaryEntry(
                                 job.id,
                                 salaryProfileEntryDefaults,

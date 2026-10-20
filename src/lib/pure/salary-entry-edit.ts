@@ -88,19 +88,28 @@ export function salaryEntryEdit(
       const n = finite(value);
       return n !== null && n >= 0 ? { bonusOverride: n } : null;
     }
-    case "budgetPeriodsPerMonth":
+    case "budgetPeriodsPerMonth": {
+      if (value.trim() === "") return { budgetPeriodsPerMonth: null };
+      const n = finite(value);
+      return n !== null && n > 0 ? { budgetPeriodsPerMonth: n } : null;
+    }
     case "bonusMonth":
     case "bonusDayOfMonth": {
       if (value.trim() === "") return { [field]: null };
       const n = finite(value);
-      return n !== null ? { [field]: n } : null;
+      const max = field === "bonusMonth" ? 12 : 31;
+      return n !== null && Number.isInteger(n) && n >= 1 && n <= max
+        ? { [field]: n }
+        : null;
     }
     // The bonus pay date is two fields of one entry — one write, so the
     // second can't overwrite the first. "MM-DD", or "" to clear.
     case "bonusDate": {
       if (value === "") return { bonusMonth: null, bonusDayOfMonth: null };
       const [m, d] = value.split("-").map(Number);
-      return m && d ? { bonusMonth: m, bonusDayOfMonth: d } : null;
+      return m && d && m >= 1 && m <= 12 && d >= 1 && d <= 31
+        ? { bonusMonth: m, bonusDayOfMonth: d }
+        : null;
     }
     case "w4Box2cChecked":
       return { w4Box2cChecked: value === "true" };

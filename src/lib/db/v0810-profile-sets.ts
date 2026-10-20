@@ -134,6 +134,16 @@ export function convertV0810ProfileSets(tables: V0810Tables): V0810Result {
       const salary = Number(v0810Object(fields)?.["salary"]);
       if (!Number.isFinite(salary)) continue;
       const job = currentJob(Number(personId));
+      const current = jobs.filter(
+        (j) =>
+          Number(j["person_id"]) === Number(personId) &&
+          !j["end_date"] &&
+          !v0810Truthy(j["is_speculative"]),
+      );
+      if (current.length > 1)
+        result.notes.push(
+          `Plan ${plan["id"]}: person ${personId} has ${current.length} current jobs; their stored salary went to job ${job?.["id"]}`,
+        );
       const entry = job ? salaries[String(job["id"])] : undefined;
       if (!entry) {
         result.notes.push(
@@ -199,11 +209,7 @@ export function convertV0810ProfileSets(tables: V0810Tables): V0810Result {
       ? undefined
       : v0810Truthy(entry["include401kInBonus"]) ||
         v0810Truthy(entry["includeBonusInContributions"]);
-  const ordered = [
-    ...(activeSalary ? [activeSalary] : []),
-    ...byId(salaryProfiles).filter((p) => p !== activeSalary),
-  ];
-  const fromBonusByAccount = new Map<number, boolean>();
+  const payrollJobOf = new Map<number, number>();
   for (const a of accounts) {
     const isPayroll =
       a["is_payroll_deducted"] === null ||
@@ -215,24 +221,50 @@ export function convertV0810ProfileSets(tables: V0810Tables): V0810Result {
       a["job_id"] !== null && a["job_id"] !== undefined
         ? Number(a["job_id"])
         : Number(currentJob(Number(a["person_id"]))?.["id"]);
-    const values = ordered
-      .map((p) => switchOn(salariesOf.get(p)![String(jobId)]))
-      .filter((v): v is boolean => v !== undefined);
-    if (values.length === 0) continue;
-    if (values.some((v) => v !== values[0]))
-      result.notes.push(
-        `Account ${a["id"]}: Salary Profiles disagreed on taking contributions from bonus checks; used ${values[0] ? "yes" : "no"} (the active profile's)`,
-      );
-    if (values[0]) fromBonusByAccount.set(Number(a["id"]), true);
+    if (Number.isFinite(jobId)) payrollJobOf.set(Number(a["id"]), jobId);
   }
+  // Which Salary Profile's switch each Contribution Profile follows: the one
+  // its Plans pair it with (when they all agree on one), else the active
+  // one, else the oldest.
+  const pairedSalary = (contributionProfileId: number) => {
+    const ids = new Set(
+      scenarios
+        .filter(
+          (plan) =>
+            Number(plan["contribution_profile_id"]) === contributionProfileId,
+        )
+        .map((plan) => plan["salary_profile_id"])
+        .filter((id) => id !== null && id !== undefined)
+        .map(Number),
+    );
+    return ids.size === 1
+      ? allSalaryProfiles.find((p) => Number(p["id"]) === [...ids][0])
+      : undefined;
+  };
   for (const cp of contributionProfiles) {
     const fields = v0810Object(cp["contribution_active_fields"]);
     const perAccount = v0810Object(fields?.["contributionAccounts"]);
     if (!fields || !perAccount) continue;
+    const paired = pairedSalary(Number(cp["id"]));
+    const ordered = [
+      ...(paired ? [paired] : []),
+      ...(activeSalary && activeSalary !== paired ? [activeSalary] : []),
+      ...byId(salaryProfiles).filter((p) => p !== activeSalary && p !== paired),
+    ];
     let changed = false;
-    for (const accountId of fromBonusByAccount.keys()) {
+    for (const [accountId, jobId] of payrollJobOf) {
       const entry = v0810Object(perAccount[String(accountId)]);
-      if (!entry || entry["fromBonus"] === true) continue;
+      if (!entry) continue;
+      const sources = ordered
+        .map((p) => ({ p, on: switchOn(salariesOf.get(p)![String(jobId)]) }))
+        .filter((v): v is { p: V0810Row; on: boolean } => v.on !== undefined);
+      const first = sources[0];
+      if (!first) continue;
+      if (sources.some((v) => v.on !== first.on))
+        result.notes.push(
+          `Contribution Profile ${cp["id"]}, account ${accountId}: Salary Profiles disagreed on taking contributions from bonus checks; used ${first.on ? "yes" : "no"} from Salary Profile "${String(first.p["name"])}"`,
+        );
+      if (!first.on || entry["fromBonus"] === true) continue;
       perAccount[String(accountId)] = { ...entry, fromBonus: true };
       changed = true;
     }
@@ -259,6 +291,19 @@ export function convertV0810ProfileSets(tables: V0810Tables): V0810Result {
   for (const p of salaryProfiles)
     if (result.changed.salary_profiles.has(Number(p["id"])))
       p["salaries"] = salariesOf.get(p);
+
+  // Budget columns no longer have profiles of their own (0009 drops them):
+  // note each Budget profile whose columns had one.
+  for (const bp of tables["budget_profiles"] ?? []) {
+    const ids = [
+      v0810Json(bp["column_contribution_profile_ids"]),
+      v0810Json(bp["column_salary_profile_ids"]),
+    ].flatMap((v) => (Array.isArray(v) ? v : []));
+    if (ids.some((id) => id !== null && id !== undefined))
+      result.notes.push(
+        `Budget profile ${bp["id"]}: its columns' own profiles are gone; every column now uses the active Salary and Contribution profiles`,
+      );
+  }
 
   // 4. Unique Plan names.
   // A new name must be free of every Plan's name, not just the ones before.

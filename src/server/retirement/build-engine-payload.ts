@@ -1085,6 +1085,7 @@ export async function buildEnginePayload(
       employerMatchType: c.employerMatchType,
       employerMatchValue: c.employerMatchValue,
       employerMaxMatchPct: c.employerMaxMatchPct,
+      isPayrollDeducted: c.isPayrollDeducted,
       fromBonus: c.fromBonus,
       performanceAccountId: c.performanceAccountId,
       targetAnnual: c.targetAnnual,

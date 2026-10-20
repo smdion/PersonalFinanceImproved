@@ -71,3 +71,16 @@ describe("salaryEntryEdit — one parse for every salary editor", () => {
     expect(salaryEntryEdit("title", "Engineer")).toBeUndefined();
   });
 });
+
+describe("salaryEntryEdit — out-of-range values are refused", () => {
+  it("month 1-12, day 1-31, paychecks per month above 0", () => {
+    expect(salaryEntryEdit("bonusMonth", "13")).toBeNull();
+    expect(salaryEntryEdit("bonusMonth", "0")).toBeNull();
+    expect(salaryEntryEdit("bonusDayOfMonth", "40")).toBeNull();
+    expect(salaryEntryEdit("bonusDate", "13-40")).toBeNull();
+    expect(salaryEntryEdit("budgetPeriodsPerMonth", "0")).toBeNull();
+    expect(salaryEntryEdit("budgetPeriodsPerMonth", "2.17")).toEqual({
+      budgetPeriodsPerMonth: 2.17,
+    });
+  });
+});

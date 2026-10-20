@@ -28,6 +28,9 @@ export type ContribFieldSet = {
 export type DiffAccount = {
   id: number;
   accountName: string;
+  /** Paid through payroll — only then does `fromBonus` mean anything
+   *  (takesFromBonusCheck). Absent = yes. */
+  isPayroll?: boolean;
   live: ContribFieldSet;
 };
 
@@ -44,21 +47,27 @@ const COMPARED_FIELDS = [
   "isActive",
 ] as const;
 
-function fieldsDiffer(a: ContribFieldSet, b: ContribFieldSet): boolean {
+function fieldsDiffer(
+  a: ContribFieldSet,
+  b: ContribFieldSet,
+  isPayroll: boolean,
+): boolean {
   return (
     COMPARED_FIELDS.some((field) => a[field] !== b[field]) ||
     // Absent means no, so absent and false are the same election.
-    (a.fromBonus === true) !== (b.fromBonus === true)
+    (isPayroll && (a.fromBonus === true) !== (b.fromBonus === true))
   );
 }
 
-function formatValue(fields: ContribFieldSet): string {
+function formatValue(fields: ContribFieldSet, isPayroll: boolean): string {
   if (fields.isActive === false) return "excluded";
   const isPercent = fields.contributionMethod === "percent_of_salary";
   const value = fields.contributionValue;
   if (value == null) return "using account's own value";
   const amount = isPercent ? `${value}%` : String(value);
-  return fields.fromBonus === true ? `${amount} + bonus checks` : amount;
+  return isPayroll && fields.fromBonus === true
+    ? `${amount} + bonus checks`
+    : amount;
 }
 
 /**
@@ -84,13 +93,14 @@ export function diffContribProfileSwap(
         ? incomingFields
         : account.live;
 
-    if (!fieldsDiffer(outgoingFields, effectiveIncoming)) continue;
+    const isPayroll = account.isPayroll !== false;
+    if (!fieldsDiffer(outgoingFields, effectiveIncoming, isPayroll)) continue;
 
-    const from = formatValue(outgoingFields);
+    const from = formatValue(outgoingFields, isPayroll);
     const to =
       incomingFields && Object.keys(incomingFields).length > 0
-        ? formatValue(incomingFields)
-        : `using account's own value (currently ${formatValue(account.live)})`;
+        ? formatValue(incomingFields, isPayroll)
+        : `using account's own value (currently ${formatValue(account.live, isPayroll)})`;
     lines.push(`${account.accountName}: ${from} → ${to}`);
   }
   return lines;

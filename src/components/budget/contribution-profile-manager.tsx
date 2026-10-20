@@ -551,7 +551,7 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                             not a funding target
                           </span>
                         )}
-                        {af?.fromBonus === true && (
+                        {ad.liveIsPayroll && af?.fromBonus === true && (
                           <span className="text-micro text-faint shrink-0">
                             also from bonus checks
                           </span>

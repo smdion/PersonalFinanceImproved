@@ -316,6 +316,8 @@ export const contributionProfileRouter = createTRPCRouter({
         id: row.id,
         accountName:
           sameName.length > 0 ? `${accountName} — ${taxLabel}` : accountName,
+        /** Only a payroll account can be taken from bonus checks. */
+        isPayroll: row.isPayrollDeducted ?? row.jobId !== null,
         live: {
           // No contributionValue/contributionMethod here — accounts carry
           // no value of their own anymore (see applyContribActiveFields);

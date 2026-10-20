@@ -25,7 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Upgrading
 
-- The upgrade converts your data: each person's "Bonus goes to" choice into their Salary Profile entries; the Salary Profile bonus switches into each payroll account's "Also taken from bonus checks" (using the active Salary Profile's setting); duplicate Plan names get a number. It then removes what v0.8.10 no longer uses (Plans' stored salaries, Budget columns' own profiles). Going back to v0.8.9 afterwards needs the backup taken before the upgrade — restore it together with the v0.8.9 image.
+- The upgrade converts your data: each person's "Bonus goes to" choice into their Salary Profile entries; the Salary Profile bonus switches into each payroll account's "Also taken from bonus checks" in every Contribution Profile (each follows the Salary Profile its Plans use it with, else the active one; where Salary Profiles disagreed, the upgrade log says which it used); duplicate Plan names get a number. It then removes what v0.8.10 no longer uses (Plans' stored salaries, Budget columns' own profiles). Going back to v0.8.9 afterwards needs the backup taken before the upgrade — restore it together with the v0.8.9 image.
 
 ---
 

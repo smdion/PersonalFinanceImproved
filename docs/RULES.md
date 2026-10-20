@@ -338,7 +338,7 @@ intentional:
 2. **The permission gate for W-4/schedule/bonus-date fields moved.** These
    used to be admin-only (raw `jobs.update`, `adminProcedure`). They're now
    part of a Salary Profile entry, written through
-   `salaryProfile.create`/`update` (`contributionProfileProcedure`) — no
+   `salaryProfile.create`/`patchEntry` (`contributionProfileProcedure`) — no
    longer admin-gated. Anyone who could already edit a Contribution Profile
    can now set these for any job — including where the bonus goes
    (`bonusDestination`, absent = the budget), which used to be an admin-only

@@ -178,6 +178,44 @@ describe("convertV0810ProfileSets", () => {
       }
   });
 
+  it("a Contribution Profile its Plans pair with one Salary Profile follows that profile's switch", () => {
+    const t = oldTables();
+    // Contribution Profile 2 has an entry for account 100, and its only Plan
+    // pairs it with "Raise", whose switch for job 10 is off.
+    accountFields(t, 2)["100"] = {
+      contributionValue: "6",
+      contributionMethod: "percent_of_salary",
+    };
+    t["scenarios"]!.push({
+      id: 4,
+      name: "Raise plan",
+      contribution_profile_id: 2,
+      salary_profile_id: 2,
+      overrides: {},
+    });
+    const r = convertV0810ProfileSets(t);
+    expect(accountFields(t, 2)["100"]!["fromBonus"]).toBeUndefined();
+    // Profile 1 has no Plan of its own: the active Salary Profile's switch.
+    expect(accountFields(t, 1)["100"]!["fromBonus"]).toBe(true);
+    expect(
+      r.notes.some(
+        (n) => n.startsWith("Contribution Profile 2") && n.includes('"Raise"'),
+      ),
+    ).toBe(true);
+  });
+
+  it("notes Budget profiles whose columns had their own profiles", () => {
+    const t = oldTables();
+    t["budget_profiles"] = [
+      { id: 7, column_contribution_profile_ids: "[null, 2]" },
+      { id: 8, column_contribution_profile_ids: null },
+    ];
+    const r = convertV0810ProfileSets(t);
+    expect(r.notes.filter((n) => n.startsWith("Budget profile"))).toEqual([
+      "Budget profile 7: its columns' own profiles are gone; every column now uses the active Salary and Contribution profiles",
+    ]);
+  });
+
   it("duplicate Plan names get a free number", () => {
     const t = oldTables();
     convertV0810ProfileSets(t);

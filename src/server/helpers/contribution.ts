@@ -32,7 +32,10 @@ import {
   resolveContribFieldDisplayState,
   type ContribResolutionStatus,
 } from "@/lib/pure/profiles";
-import { bonusCheckContribution } from "@/lib/calculators/paycheck";
+import {
+  bonusCheckContribution,
+  takesFromBonusCheck,
+} from "@/lib/calculators/paycheck";
 import {
   irsLimitOrNull,
   payrollFicaExemptCap,
@@ -579,7 +582,15 @@ export function buildContribAccounts(
   // The employer matches what's deferred, on the pay it came from: the
   // bonus counts toward the match's pay when its check takes a deferral.
   const matchPay =
-    salary + (allContribs.some((c) => c.fromBonus) ? bonusGross : 0);
+    salary +
+    (allContribs.some((c) =>
+      takesFromBonusCheck({
+        isPayrollDeducted: c.isPayrollDeducted ?? c.jobId !== null,
+        fromBonus: c.fromBonus,
+      }),
+    )
+      ? bonusGross
+      : 0);
 
   const annualById = new Map<number, number>();
   for (const c of allContribs) {
@@ -732,6 +743,8 @@ type ContribRow = {
   employerMatchType: string | null;
   employerMatchValue: string | null;
   employerMaxMatchPct: string | null;
+  /** Paid through payroll; null/absent = when it has a job. */
+  isPayrollDeducted?: boolean | null;
   /** Also taken from bonus checks (Contribution Profile election). */
   fromBonus: boolean | undefined;
 };
@@ -774,13 +787,20 @@ function jobsWithBonusDeferrals<
   rows: readonly {
     jobId: number | null;
     personId: number | null;
+    isPayrollDeducted?: boolean | null;
     fromBonus: boolean | undefined;
   }[],
   jobSalaries: readonly T[],
 ): Set<number> {
   const ids = new Set<number>();
   for (const r of rows) {
-    if (!r.fromBonus) continue;
+    if (
+      !takesFromBonusCheck({
+        isPayrollDeducted: r.isPayrollDeducted ?? r.jobId !== null,
+        fromBonus: r.fromBonus,
+      })
+    )
+      continue;
     const js = jobPayFor(r, jobSalaries);
     if (js) ids.add(js.job.id);
   }
@@ -1343,9 +1363,14 @@ export function applyContribActiveFields(
   return rows
     .map((row): ContribRowWithActiveFields | null => {
       const activeFields = accountActiveFields[String(row.id)];
-      if (!activeFields || activeFields.contributionValue === undefined) {
+      // The first layer needs a value (there's no base value to fall back
+      // to); an overlay entry may change just another field (e.g. fromBonus)
+      // of a row the first layer already resolved.
+      if (!activeFields) {
         return isOverlay ? (row as ContribRowWithActiveFields) : null;
       }
+      if (!isOverlay && activeFields.contributionValue === undefined)
+        return null;
       return {
         ...row,
         ...activeFields,
@@ -1760,6 +1785,8 @@ export type ContribInputRow = {
   employerMatchType: string | null;
   employerMatchValue: string | number | null;
   employerMaxMatchPct: string | number | null;
+  /** Paid through payroll; null/absent = when it has a job. */
+  isPayrollDeducted?: boolean | null;
   /** Also taken from bonus checks (Contribution Profile election). */
   fromBonus: boolean | undefined;
   performanceAccountId?: number | null;
@@ -1813,6 +1840,7 @@ export function buildProfileContribData(
     employerMaxMatchPct: c.employerMaxMatchPct
       ? String(c.employerMaxMatchPct)
       : null,
+    isPayrollDeducted: c.isPayrollDeducted,
     fromBonus: c.fromBonus,
   }));
 

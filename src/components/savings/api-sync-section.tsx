@@ -28,9 +28,8 @@ export interface RecalcIncomeParams {
   salaryProfileId?: number;
   /** The raw tiers behind `contributionProfileId`/`salaryProfileId` — the
    *  mutation forwards these to budget.computeActiveSummary so that
-   *  procedure's OWN per-column profile resolution (column profile > local
-   *  selection > active) matches what the client's own
-   *  maxMonthlyFunding query used, not just the paycheck side (see
+   *  procedure's own profile resolution (local selection > active) matches
+   *  what the client's own maxMonthlyFunding query used, not just the paycheck side (see
    *  computeLiveMaxMonthlyFunding in savings.ts). */
   contributionProfileTiers?: ProfileResolutionTiers;
   salaryProfileTiers?: ProfileResolutionTiers;

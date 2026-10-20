@@ -472,6 +472,18 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
  * (bonusCheckContribution) — only accounts set to be taken from bonus checks.
  */
 /**
+ * Whether the bonus check takes this account: paid through payroll and set
+ * to be taken from bonus checks (`fromBonus`). The one rule — the bonus-check
+ * amount, the employer match's pay and every label use it.
+ */
+export function takesFromBonusCheck(account: {
+  isPayrollDeducted: boolean;
+  fromBonus: boolean | undefined;
+}): boolean {
+  return account.isPayrollDeducted && account.fromBonus === true;
+}
+
+/**
  * What a bonus check takes for one contribution account: a percent-of-pay
  * account its rate of the bonus, a fixed-amount account its regular
  * per-period dollars, an account not paid through payroll — or not set to be
@@ -490,8 +502,7 @@ export function bonusCheckContribution(
   },
   bonusGross: number,
 ): number {
-  if (!account.isPayrollDeducted || !account.fromBonus || bonusGross <= 0)
-    return 0;
+  if (!takesFromBonusCheck(account) || bonusGross <= 0) return 0;
   return account.rateOfGross !== null
     ? roundToCents(account.rateOfGross * bonusGross)
     : account.perPeriodContribution;

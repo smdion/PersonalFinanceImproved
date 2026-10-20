@@ -126,6 +126,10 @@ if ! psql "$TEMP_URL" -v ON_ERROR_STOP=1 < "$DUMP_FILE" >/tmp/ledgr-restore.log 
 fi
 ok "Snapshot restored"
 
+# v0.8.10: how many active Salary Profile entries have a bonus switch on
+# before the upgrade (0 once already upgraded — the columns are gone).
+SWITCHES_ON=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM salary_profiles p, jsonb_each(p.salaries) e WHERE p.id::text = (SELECT value #>> '{}' FROM app_settings WHERE key = 'active_salary_profile_id') AND ((e.value->>'include401kInBonus')::boolean OR (e.value->>'includeBonusInContributions')::boolean)" 2>/dev/null || echo 0)
+
 # ── 4. Run db:migrate against the throwaway ──────────────────────────
 
 step "Running pnpm db:migrate against the throwaway"
@@ -211,7 +215,11 @@ if [[ "$OLD_SETTING" != "0" ]]; then
   exit 1
 fi
 FROM_BONUS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM contribution_profiles, jsonb_each(contribution_active_fields->'contributionAccounts') a WHERE a.value->>'fromBonus' = 'true'")
-ok "Bonus switches converted ($FROM_BONUS account entries taken from bonus checks)"
+if [[ "${SWITCHES_ON:-0}" != "0" && "$FROM_BONUS" == "0" ]]; then
+  err "$SWITCHES_ON active Salary Profile entries had a bonus switch on, but no account is taken from bonus checks"
+  exit 1
+fi
+ok "Bonus switches converted ($SWITCHES_ON entries on before; $FROM_BONUS account entries taken from bonus checks)"
 
 echo ""
 echo -e "${GREEN}${BOLD}MIGRATION TEST PASSED${NC}"

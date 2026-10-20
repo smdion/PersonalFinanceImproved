@@ -933,7 +933,8 @@ function ProfileEditPanel({
         sd.earningRows.map((r) => [String(r.id), r.amount]),
       ),
     });
-    if (edit)
+    if (edit === null) setError("That value isn't valid here.");
+    else if (edit)
       patchEntryMutation.mutate({
         id: profileId,
         jobId: sd.jobId,
