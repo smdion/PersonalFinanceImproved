@@ -667,7 +667,8 @@ export function ContributionSnapshot() {
       {/* Household totals */}
       {viewMode === "blended" && (
         <p className="mb-2 text-xs text-amber-600">
-          Year-End Estimate: actual YTD from performance + projected remaining
+          Year-end estimate: actual so far this year (from Performance) plus the
+          rest of the year projected
         </p>
       )}
       <div className="grid grid-cols-1 gap-4 rounded-xl border border-indigo-100 bg-gradient-to-r from-indigo-50 to-blue-50 p-5 text-sm md:grid-cols-3">

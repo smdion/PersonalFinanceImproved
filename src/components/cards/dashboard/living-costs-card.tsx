@@ -2,6 +2,7 @@
 
 import React, { useState, memo } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
+import { useFullYearNote } from "@/lib/hooks/use-full-year-note";
 import { Card, ProgressBar } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { StatusDot } from "@/components/ui/badge";
@@ -87,6 +88,7 @@ function BudgetSummary({
 }
 
 function LivingCostsCardImpl() {
+  const fullYearNote = useFullYearNote();
   const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
@@ -493,13 +495,13 @@ function LivingCostsCardImpl() {
         <>
           Budget &amp; Spending
           <HelpTip
-            text={`Always shows the full-year projected picture, regardless of the Paycheck page's Current Salary/Year-End Estimate/Actual YTD selector — every number here besides income (budget spending, savings, retirement, portfolio, extra-paycheck routing) is this app's annualized RATE for that thing, not a real posted-transaction year-to-date total, so scoping just the income side to "so far this year" would push every percentage well past 100%. Budget categories as % of ${incomeLabel} income compared to Dave Ramsey's recommended ranges (Ramsey's original ranges are based on net take-home pay). Retirement/Portfolio/Savings/Extra Paycheck/Bonus/Unallocated below show where the rest of your ${incomeLabel} income goes: Net counts only non-payroll contributions (IRA, manually-funded brokerage/HSA) actually funded from take-home pay — payroll-deducted contributions, Roth included, never touch net pay; Gross counts your full contribution total, payroll and non-payroll combined, plus taxes and any other payroll deduction (health/dental/vision insurance, etc.) — those already come out before net pay is computed too, so Gross names them explicitly instead of leaving them invisibly baked into Net. Extra Paycheck is this year's 3rd-biweekly-paycheck months currently set to route to a savings goal (see the Savings/Budget toggle on Salary Profile or the Paycheck page) — computed from the real pay calendar, not from which months have already been transferred. Bonus is the take-home of any bonus set to \"Extra spending\" on the Paycheck page. Unallocated includes any budget category with no Ramsey mapping, plus any genuinely untracked money.`}
+            text={`Always shows the full-year projected picture, regardless of the header's View (Projected / Year-end estimate / Year to date) — every number here besides income (budget spending, savings, retirement, portfolio, extra-paycheck routing) is this app's annualized RATE for that thing, not a real posted-transaction year-to-date total, so scoping just the income side to "so far this year" would push every percentage well past 100%. Budget categories as % of ${incomeLabel} income compared to Dave Ramsey's recommended ranges (Ramsey's original ranges are based on net take-home pay). Retirement/Portfolio/Savings/Extra Paycheck/Bonus/Unallocated below show where the rest of your ${incomeLabel} income goes: Net counts only non-payroll contributions (IRA, manually-funded brokerage/HSA) actually funded from take-home pay — payroll-deducted contributions, Roth included, never touch net pay; Gross counts your full contribution total, payroll and non-payroll combined, plus taxes and any other payroll deduction (health/dental/vision insurance, etc.) — those already come out before net pay is computed too, so Gross names them explicitly instead of leaving them invisibly baked into Net. Extra Paycheck is this year's 3rd-biweekly-paycheck months currently set to route to a savings goal (see the Savings/Budget toggle on Salary Profile or the Paycheck page) — computed from the real pay calendar, not from which months have already been transferred. Bonus is the take-home of any bonus set to \"Extra spending\" on the Paycheck page. Unallocated includes any budget category with no Ramsey mapping, plus any genuinely untracked money.`}
           />
         </>
       }
       subtitle={`${onTarget}/${rows.length} within range${
         activeBudgetProfileName ? ` · ${activeBudgetProfileName}` : ""
-      } · full-year view`}
+      } · ${fullYearNote ?? "full-year view"}`}
       href="/budget"
     >
       {budgetData?.result && (
