@@ -16,7 +16,9 @@ import {
   EARNING_PRESETS,
   earningPresetFor,
 } from "@/lib/config/paycheck-presets";
+import { FieldRow } from "@/components/ui/field-row";
 import { SectionHeader } from "./section-header";
+import { ActionSlot } from "./deduction-row";
 import type { EarningRow } from "./types";
 import { STATUS_COLORS } from "@/lib/utils/colors";
 
@@ -26,7 +28,10 @@ export function OtherPaySection({
   onSetAmount,
   readOnly,
   amountReadOnly,
+  note,
 }: {
+  /** Where the amounts save. */
+  note?: string;
   jobId: number;
   rows: EarningRow[];
   /** Saves a line's per-check amount into the Salary Profile entry. */
@@ -68,31 +73,33 @@ export function OtherPaySection({
 
   return (
     <div className="space-y-2">
-      <SectionHeader>Other Pay &amp; Taxable Benefits</SectionHeader>
-      <div className="bg-surface-sunken space-y-1 rounded-lg p-4 text-sm">
+      <SectionHeader note={note}>
+        Other pay &amp; taxable benefits
+      </SectionHeader>
+      <div className="bg-surface-sunken border-subtle space-y-1.5 rounded-lg border p-4 text-sm">
         {rows.length === 0 && (
-          <p className="text-faint text-xs">
-            Anything else on your stub&apos;s earnings side — extra pay on every
-            check, or a taxable benefit like group life insurance over $50k
-            (taxed, but not paid to you).
+          <p className="text-caption text-faint">
+            None — extra pay on every check, or a taxable benefit you
+            aren&apos;t paid (e.g. life insurance over $50k).
           </p>
         )}
         {rows.map((row) => {
           const preset = earningPresetFor(row);
           return (
-            <div
+            <FieldRow
               key={row.id}
-              className="text-muted group flex items-center justify-between gap-2"
-            >
-              <span className="flex min-w-0 items-center gap-1.5">
-                <span className="truncate">{row.earningName}</span>
+              className="group"
+              label={
+                <span className="text-muted truncate">{row.earningName}</span>
+              }
+              hint={
                 <select
                   aria-label={`How ${row.earningName} is paid and taxed`}
                   value={preset?.key ?? "custom"}
                   onChange={(e) => setPreset(row, e.target.value)}
                   disabled={readOnly}
                   title={preset?.label ?? "Custom tax treatment"}
-                  className="text-faint bg-transparent text-[10px] hover:underline disabled:opacity-60"
+                  className="text-faint -ml-0.5 bg-transparent hover:underline disabled:opacity-100"
                 >
                   {EARNING_PRESETS.map((p) => (
                     <option key={p.key} value={p.key} title={p.label}>
@@ -101,32 +108,34 @@ export function OtherPaySection({
                   ))}
                   {!preset && <option value="custom">Custom</option>}
                 </select>
-              </span>
-              <span className="flex items-center gap-2">
-                <InlineEdit
-                  value={String(row.amount)}
-                  onSave={(v) => {
-                    const n = Number(v.replace(/[^0-9.]/g, ""));
-                    if (Number.isFinite(n) && n >= 0) onSetAmount(row.id, n);
-                  }}
-                  formatDisplay={(v) =>
-                    `${row.isCash ? "+" : ""}${formatCurrency(Number(v))}`
-                  }
-                  parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-                  type="number"
-                  isEditable={!readOnly && !amountReadOnly}
-                />
+              }
+            >
+              <InlineEdit
+                value={String(row.amount)}
+                onSave={(v) => {
+                  const n = Number(v.replace(/[^0-9.]/g, ""));
+                  if (Number.isFinite(n) && n >= 0) onSetAmount(row.id, n);
+                }}
+                formatDisplay={(v) =>
+                  `${row.isCash ? "+" : ""}${formatCurrency(Number(v))}`
+                }
+                parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+                type="number"
+                isEditable={!readOnly && !amountReadOnly}
+                hideEditIcon
+              />
+              <ActionSlot>
                 {!readOnly && (
                   <button
                     onClick={() => remove.mutate({ id: row.id })}
-                    className="text-faint text-xs opacity-0 group-hover:opacity-100 hover:text-red-600"
+                    className="text-faint transition-opacity hover:text-red-500 md:opacity-0 md:group-hover:opacity-100"
                     aria-label={`Remove ${row.earningName}`}
                   >
                     ✕
                   </button>
                 )}
-              </span>
-            </div>
+              </ActionSlot>
+            </FieldRow>
           );
         })}
         {!readOnly &&
@@ -199,9 +208,10 @@ export function OtherPaySection({
           ) : (
             <button
               onClick={() => setAdding(true)}
-              className="text-xs text-blue-500 hover:text-blue-700"
+              aria-label="Add other pay or a taxable benefit"
+              className="text-caption text-blue-600 hover:underline dark:text-blue-400"
             >
-              + Add other pay or a taxable benefit
+              + Add
               <HelpTip text="Lines on your stub's earnings side besides salary. A taxable benefit that isn't paid (e.g. group life insurance over $50k) adds to your taxes but not your take-home." />
             </button>
           ))}

@@ -2,26 +2,26 @@
 
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Toggle } from "@/components/ui/toggle";
+import { FieldRow } from "@/components/ui/field-row";
 import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { SectionHeader } from "./section-header";
 
 /**
  * W-4 tax-input controls. Deliberately a separate section from
- * BonusSection — that component early-returns when there's no bonus, which
- * would make these fields permanently uneditable for anyone without one.
+ * BonusSection, so they're always reachable.
  *
- * These fields now live on the resolved Salary Profile entry (see
- * SalaryProfileEntry in server/helpers/salary.ts), the same axis salary and
- * bonus terms are on — so, like BonusSection's bonus-formula fields, they
- * gate on `salaryReadOnly` (requires a Salary Profile in view and its
- * padlock unlocked) in addition to `readOnly`.
+ * These fields live on the Salary Profile entry (see SalaryProfileEntry in
+ * server/helpers/salary.ts), the same axis salary and bonus terms are on —
+ * so, like BonusSection, they gate on `salaryReadOnly` as well as
+ * `readOnly`.
  */
 export function TaxWithholdingSection({
   job,
   onUpdateJob,
   readOnly,
   salaryReadOnly,
+  note,
 }: {
   job: {
     w4FilingStatus: string;
@@ -30,42 +30,37 @@ export function TaxWithholdingSection({
   };
   onUpdateJob: (field: string, value: string) => void;
   readOnly?: boolean;
-  /** Mirrors PersonPaycheck's salary padlock — see the docblock above. */
+  /** See resolvePaycheckEditTarget — salary-profile fields. */
   salaryReadOnly?: boolean;
+  /** Where this section's edits save. */
+  note?: string;
 }) {
   const editable = !readOnly && !salaryReadOnly;
   return (
     <div className="space-y-2">
-      <SectionHeader>Tax Withholding</SectionHeader>
+      <SectionHeader note={note}>Withholding (W-4)</SectionHeader>
       <div className="bg-surface-sunken border-subtle space-y-1.5 rounded-lg border p-4 text-sm">
-        <div className="flex items-center justify-between">
-          <span>Filing Status</span>
+        <FieldRow label="Filing status">
           <select
+            aria-label="W-4 filing status"
             value={job.w4FilingStatus}
             onChange={(e) => onUpdateJob("w4FilingStatus", e.target.value)}
             disabled={!editable}
-            className="bg-surface-primary rounded border px-2 py-0.5 text-sm font-medium disabled:opacity-60"
+            className="bg-surface-primary w-36 rounded border px-2 py-0.5 text-sm disabled:opacity-60"
           >
-            <option value="MFJ">MFJ</option>
+            <option value="MFJ">Married jointly</option>
             <option value="Single">Single</option>
-            <option value="HOH">HOH</option>
+            <option value="HOH">Head of household</option>
           </select>
-        </div>
-        <div className="flex items-center gap-1">
-          <Toggle
-            isChecked={job.w4Box2cChecked}
-            onChange={(v) => onUpdateJob("w4Box2cChecked", String(v))}
-            label="Multiple jobs / spouse works (W-4 Step 2c)"
-            size="xs"
-            disabled={!editable}
-          />
-          <HelpTip text="Matches the W-4 filing status/checkbox combination used to look up federal withholding brackets." />
-        </div>
-        <div className="flex items-center justify-between">
-          <span>
-            Extra withholding
-            <HelpTip text="W-4 Line 4c — a flat extra amount added to federal withholding each paycheck, on top of the bracket calculation." />
-          </span>
+        </FieldRow>
+        <FieldRow
+          label={
+            <>
+              Extra withholding
+              <HelpTip text="W-4 Step 4(c) — a flat extra amount added to federal withholding each paycheck, on top of the bracket calculation." />
+            </>
+          }
+        >
           <InlineEdit
             value={String(job.additionalFedWithholding)}
             onSave={(v) => onUpdateJob("additionalFedWithholding", v)}
@@ -76,6 +71,17 @@ export function TaxWithholdingSection({
             type="number"
             className="font-medium"
             isEditable={editable}
+            hideEditIcon
+          />
+        </FieldRow>
+        <div className="pt-1">
+          <Toggle
+            isChecked={job.w4Box2cChecked}
+            onChange={(v) => onUpdateJob("w4Box2cChecked", String(v))}
+            label="Multiple jobs or spouse works (Step 2c)"
+            title="Matches the W-4 filing status/checkbox combination used to look up federal withholding brackets."
+            size="xs"
+            disabled={!editable}
           />
         </div>
       </div>

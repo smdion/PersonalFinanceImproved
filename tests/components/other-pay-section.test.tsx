@@ -62,7 +62,11 @@ describe("OtherPaySection", () => {
 
   it("adds a line with the chosen preset's flags", () => {
     render(<OtherPaySection jobId={1} rows={[]} onSetAmount={vi.fn()} />);
-    fireEvent.click(screen.getByText(/Add other pay or a taxable benefit/));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Add other pay or a taxable benefit",
+      }),
+    );
     fireEvent.change(screen.getByPlaceholderText(/Name as on your stub/), {
       target: { value: "Group life" },
     });

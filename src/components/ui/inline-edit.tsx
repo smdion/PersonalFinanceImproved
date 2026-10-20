@@ -119,7 +119,15 @@ export function InlineEdit({
       } ${className}`}
       title="Click to edit"
     >
-      <span className={truncate ? "min-w-0 truncate" : undefined}>
+      <span
+        className={`${truncate ? "min-w-0 truncate" : ""} ${
+          // Without the pencil, a dotted underline says "editable" without
+          // taking width — so editable and fixed values still line up.
+          hideEditIcon
+            ? "decoration-faint underline decoration-dotted underline-offset-4"
+            : ""
+        }`}
+      >
         {display}
       </span>
       {!hideEditIcon && (

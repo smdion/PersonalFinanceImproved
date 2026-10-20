@@ -4,6 +4,7 @@
 
 import React, { useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
@@ -235,9 +236,12 @@ export default function SavingsPage() {
     "table",
   );
   const [masterTab, setMasterTab] = useState<"plan" | "manage">("plan");
+  // ?section=extraPaychecks (savingsExtraPaychecksHref) opens Paychecks &
+  // Growth directly — the one place extra-paycheck routing is set up.
+  const linkedSection = useSearchParams().get("section");
   const [editTab, setEditTab] = useState<
     "allocations" | "transactions" | "extraPaychecks"
-  >("allocations");
+  >(linkedSection === "extraPaychecks" ? "extraPaychecks" : "allocations");
 
   // ── Top-level form state (lives here to render in correct layout position) ──
   const [newFund, setNewFund] = useState<NewFundForm>({

@@ -20,6 +20,10 @@ import { trpc } from "@/lib/trpc";
 import { formatCurrency, MONTH_NAMES_SHORT } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { FieldRow } from "@/components/ui/field-row";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { savingsExtraPaychecksHref } from "@/lib/config/page-links";
 import {
   getExtraPaycheckMonthKeys,
   isExtraPaycheckBudgetMode,
@@ -1192,6 +1196,11 @@ export function ExtraPaycheckRulesEditor({
  * re-querying savings.extraPaycheckRouting.list for a job Manager already
  * has data for.
  */
+const EXTRA_PAYCHECK_OPTIONS = [
+  { value: "savings", label: "Savings" },
+  { value: "budget", label: "Budget" },
+] as const;
+
 export function ExtraPaycheckDestinationToggle({
   jobId,
   routing,
@@ -1199,13 +1208,7 @@ export function ExtraPaycheckDestinationToggle({
 }: {
   jobId: number;
   routing: ExtraPaycheckRoutingData | null;
-  /** Set while a what-if Scenario is being previewed — this toggle has no
-   *  scenario-override path of its own (unlike salary/contribution edits,
-   *  which redirect into the Scenario's overlay), so a real write here
-   *  would silently persist outside the sandboxed preview the user believes
-   *  they're in. Deliberately NOT tied to the page's read-only/edit-lock
-   *  state — this is a toggle, not an editable value, so it stays
-   *  actionable even while the rest of the profile is locked. */
+  /** Read-only (no permission / locked) — the choice is shown, not changed. */
   disabled?: boolean;
 }) {
   const utils = trpc.useUtils();
@@ -1222,40 +1225,42 @@ export function ExtraPaycheckDestinationToggle({
     setEnabledMutation.mutate({ jobId, enabled: toSavings });
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      <span className="text-caption text-muted">Extra paycheck goes to:</span>
-      <div className="border-default text-caption inline-flex overflow-hidden rounded border">
-        <button
-          onClick={() => setMode(true)}
-          disabled={disabled}
-          className={`px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50 ${
-            !budgetMode
-              ? "bg-blue-600 text-white"
-              : "bg-surface-primary text-muted hover:text-primary"
-          }`}
-        >
-          Savings
-        </button>
-        <button
-          onClick={() => setMode(false)}
-          disabled={disabled}
-          className={`px-2 py-1 disabled:cursor-not-allowed disabled:opacity-50 ${
-            budgetMode
-              ? "bg-blue-600 text-white"
-              : "bg-surface-primary text-muted hover:text-primary"
-          }`}
-        >
-          Budget
-        </button>
-      </div>
-      {setEnabledMutation.isPending && (
-        <span className="text-caption text-faint">Saving…</span>
-      )}
-      {disabled && (
-        <span className="text-caption text-faint">
-          (unavailable in scenario preview)
-        </span>
-      )}
-    </div>
+    <FieldRow
+      label={
+        <>
+          Goes to
+          {setEnabledMutation.isPending && (
+            <span className="text-caption text-faint">Saving…</span>
+          )}
+        </>
+      }
+      hint={
+        rules.length === 0 ? (
+          // Savings needs a split set up first — say where, instead of a
+          // button that does nothing.
+          <Link
+            href={savingsExtraPaychecksHref}
+            className="text-blue-600 hover:underline dark:text-blue-400"
+          >
+            Set up where it goes in Savings
+          </Link>
+        ) : (
+          <Link
+            href={savingsExtraPaychecksHref}
+            className="text-blue-600 hover:underline dark:text-blue-400"
+          >
+            Change the split in Savings
+          </Link>
+        )
+      }
+    >
+      <SegmentedControl
+        ariaLabel="Extra paycheck goes to"
+        value={budgetMode ? "budget" : "savings"}
+        options={EXTRA_PAYCHECK_OPTIONS}
+        onChange={(v) => setMode(v === "savings")}
+        disabled={disabled || rules.length === 0}
+      />
+    </FieldRow>
   );
 }

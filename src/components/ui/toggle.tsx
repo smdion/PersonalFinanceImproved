@@ -1,9 +1,11 @@
 "use client";
 
 /**
- * Shared toggle switch component.
+ * Shared toggle switch component — the one control for an on/off setting.
  * Off state: light gray track, white dot flush-left — clearly "off".
  * On state: blue track, white dot flush-right — clearly "on".
+ * A label is plain text beside the switch (no pill), so labelled and
+ * unlabelled switches look the same everywhere.
  */
 export function Toggle({
   isChecked,
@@ -16,7 +18,7 @@ export function Toggle({
 }: {
   isChecked: boolean;
   onChange: (checked: boolean) => void;
-  /** Visible pill text next to the switch. */
+  /** Visible text next to the switch. */
   label?: string;
   /** Accessible name when the switch sits beside its own title/description
    *  elsewhere (a settings row) instead of owning a visible label here —
@@ -45,13 +47,9 @@ export function Toggle({
       }}
       title={title}
       disabled={disabled}
-      className={`${disabled ? "cursor-not-allowed opacity-60" : ""}inline-flex items-center gap-1.5 ${label ? "text-caption rounded px-2 py-1 font-medium" : ""} ${
-        label
-          ? isChecked
-            ? "border border-blue-200 bg-blue-50 text-blue-700"
-            : "bg-surface-sunken text-muted hover:bg-surface-elevated border"
-          : ""
-      } transition-colors`}
+      className={`inline-flex items-center gap-2 text-left ${
+        disabled ? "cursor-not-allowed opacity-60" : ""
+      } ${label ? (isChecked ? "text-primary" : "text-muted") : ""} transition-colors`}
     >
       <span
         className={`inline-block ${track} relative rounded-full transition-colors duration-200 ${
@@ -68,7 +66,7 @@ export function Toggle({
           }`}
         />
       </span>
-      {label && <span>{label}</span>}
+      {label && <span className="text-sm">{label}</span>}
     </button>
   );
 }
