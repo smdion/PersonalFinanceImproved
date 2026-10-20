@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { HelpTip } from "@/components/ui/help-tip";
 import type { CreateDeductionData } from "./types";
+import { DEDUCTION_PRESETS } from "@/lib/config/paycheck-presets";
 
 export function AddDeductionForm({
   jobId,
@@ -17,7 +17,10 @@ export function AddDeductionForm({
 }) {
   const [name, setName] = useState("");
   const [amount, setAmount] = useState("");
-  const [ficaExempt, setFicaExempt] = useState(false);
+  // The presets for the stub section this form adds to.
+  const presets = DEDUCTION_PRESETS.filter((p) => p.isPretax === isPretax);
+  const [presetKey, setPresetKey] = useState(presets[0]!.key);
+  const preset = presets.find((p) => p.key === presetKey) ?? presets[0]!;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,8 +29,8 @@ export function AddDeductionForm({
       jobId,
       deductionName: name.trim(),
       amountPerPeriod: amount.replace(/[^0-9.]/g, ""),
-      isPretax,
-      ficaExempt,
+      isPretax: preset.isPretax,
+      ficaExempt: preset.ficaExempt,
     });
   };
 
@@ -58,17 +61,19 @@ export function AddDeductionForm({
           className="border-strong w-24 rounded border px-2 py-1 text-sm focus:ring-2 focus:ring-blue-300 focus:outline-none"
         />
       </div>
-      {isPretax && (
-        <label className="text-muted flex items-center gap-1.5 text-xs">
-          <input
-            type="checkbox"
-            checked={ficaExempt}
-            onChange={(e) => setFicaExempt(e.target.checked)}
-            className="border-strong rounded"
-          />
-          FICA exempt (Section 125)
-          <HelpTip text="If checked, this deduction also reduces Social Security and Medicare taxes — common for health/dental premiums" />
-        </label>
+      {presets.length > 1 && (
+        <select
+          aria-label="How your pay stub lists it"
+          value={presetKey}
+          onChange={(e) => setPresetKey(e.target.value)}
+          className="border-strong w-full rounded border px-2 py-1 text-xs"
+        >
+          {presets.map((p) => (
+            <option key={p.key} value={p.key}>
+              {p.label}
+            </option>
+          ))}
+        </select>
       )}
       <div className="flex gap-2">
         <button

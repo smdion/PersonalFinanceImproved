@@ -2,6 +2,7 @@
 
 /** Paycheck gross-to-net calculator that breaks down taxes, deductions, and take-home pay. */
 
+import { DEDUCTION_PRESETS } from "@/lib/config/paycheck-presets";
 import React, { useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
@@ -650,6 +651,40 @@ export default function PaycheckPage() {
                           // (deductionName/isPretax/ficaExempt) stay on the
                           // old scenario-or-raw path — they're never
                           // profile-settable.
+                          // A preset sets both tax flags at once.
+                          if (field === "taxTreatment") {
+                            const preset = DEDUCTION_PRESETS.find(
+                              (p) => p.key === value,
+                            );
+                            if (!preset) return;
+                            if (isInScenario) {
+                              setScenarioOverride(
+                                "deductions",
+                                id,
+                                "isPretax",
+                                String(preset.isPretax),
+                              );
+                              setScenarioOverride(
+                                "deductions",
+                                id,
+                                "ficaExempt",
+                                String(preset.ficaExempt),
+                              );
+                              return;
+                            }
+                            const raw = (
+                              d.rawDeductions as RawDeduction[]
+                            ).find((dd) => dd.id === id);
+                            if (!raw) return;
+                            updateDeduction.mutate({
+                              id: raw.id,
+                              jobId: raw.jobId,
+                              deductionName: raw.deductionName,
+                              isPretax: preset.isPretax,
+                              ficaExempt: preset.ficaExempt,
+                            });
+                            return;
+                          }
                           if (field === "amountPerPeriod") {
                             if (writeOverride("deductions", id, field, value))
                               return;
