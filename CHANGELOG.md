@@ -8,6 +8,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.10] - 2026-10-20
+
+### Changed
+
+- **Contributions taken from bonus checks are set per account.** Each payroll contribution has its own "Also taken from bonus checks" switch, in the Contribution Profile (on the account under Contributions on the Paycheck page, or Profiles → Contributions) — so a 401(k) can come out of the bonus while an HSA doesn't, and switching Contribution Profiles can change it. This replaces the two bonus switches on the Salary Profile. The Paycheck page's Bonus section lists what the bonus check takes, account by account. The employer match counts the bonus when that job's bonus check takes a contribution, as before.
+- **"Bonus goes to" is part of the Salary Profile** (per job), like the extra-paycheck choice — so it follows the active Salary Profile, and anyone who can edit profiles can set it (it was admin-only).
+- **One salary editor:** Profiles → Salary shows each job with the Paycheck page's own sections — Pay schedule, Withholding, Bonus, Other pay, Extra paycheck — and both save the same way. The table above keeps salary, bonus and total.
+- **Budget columns are spending levels.** Every column uses the active Salary and Contribution profiles; a column no longer has profiles of its own (the What-If tab's "columns with their own profiles" note is gone).
+- **Plan names are unique.**
+
+### Fixed
+
+- **Plan salaries are back.** v0.8.9 stopped reading the salaries an older Plan carried. Upgrading turns each such Plan's salaries into a Salary Profile of its own ("‹Plan› salary") and the Plan uses it.
+- Two quick edits on the Paycheck page could save over each other; each edit now saves only the field it changes.
+
+### Upgrading
+
+- The upgrade converts your data: each person's "Bonus goes to" choice into their Salary Profile entries; the Salary Profile bonus switches into each payroll account's "Also taken from bonus checks" (using the active Salary Profile's setting); duplicate Plan names get a number. It then removes what v0.8.10 no longer uses (Plans' stored salaries, Budget columns' own profiles). Going back to v0.8.9 afterwards needs the backup taken before the upgrade — restore it together with the v0.8.9 image.
+
+---
+
 ## [0.8.9] - 2026-10-20
 
 ### Changed
