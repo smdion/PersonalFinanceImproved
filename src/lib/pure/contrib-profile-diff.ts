@@ -17,6 +17,8 @@ export type ContribFieldSet = {
   employerMaxMatchPct?: string | number | null;
   autoMaximize?: boolean | null;
   isActive?: boolean | null;
+  /** Also taken from bonus checks — absent means no. */
+  fromBonus?: boolean | null;
   /** Cosmetic only — deliberately excluded from the comparison below. */
   displayNameCustom?: string | null;
   /** @deprecated legacy key. */
@@ -43,7 +45,11 @@ const COMPARED_FIELDS = [
 ] as const;
 
 function fieldsDiffer(a: ContribFieldSet, b: ContribFieldSet): boolean {
-  return COMPARED_FIELDS.some((field) => a[field] !== b[field]);
+  return (
+    COMPARED_FIELDS.some((field) => a[field] !== b[field]) ||
+    // Absent means no, so absent and false are the same election.
+    (a.fromBonus === true) !== (b.fromBonus === true)
+  );
 }
 
 function formatValue(fields: ContribFieldSet): string {
@@ -51,7 +57,8 @@ function formatValue(fields: ContribFieldSet): string {
   const isPercent = fields.contributionMethod === "percent_of_salary";
   const value = fields.contributionValue;
   if (value == null) return "using account's own value";
-  return isPercent ? `${value}%` : String(value);
+  const amount = isPercent ? `${value}%` : String(value);
+  return fields.fromBonus === true ? `${amount} + bonus checks` : amount;
 }
 
 /**

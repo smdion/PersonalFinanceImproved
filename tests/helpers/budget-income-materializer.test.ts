@@ -81,8 +81,6 @@ describe("materializeBudgetIncomeAdjustments", () => {
             additionalFedWithholding: 0,
             bonusMonth: null,
             bonusDayOfMonth: null,
-            include401kInBonus: false,
-            includeBonusInContributions: true,
             // Default: Budget mode (no rules). baseNetPayPerCheck is the
             // snapshot the materializer projects forward.
             extraPaycheckRouting: {

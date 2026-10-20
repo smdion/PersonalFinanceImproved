@@ -482,8 +482,6 @@ describe("resolveProfile", () => {
         additionalFedWithholding: 0,
         bonusMonth: null,
         bonusDayOfMonth: null,
-        include401kInBonus: false,
-        includeBonusInContributions: false,
       },
     ],
   ]);
@@ -515,7 +513,6 @@ describe("resolveProfile", () => {
     personId: 1,
     payPeriod: "biweekly",
     endDate: null,
-    includeBonusInContributions: false,
     employerName: "OldCorp",
   } as (typeof import("@/lib/db/schema").jobs)["$inferSelect"];
 
@@ -731,10 +728,15 @@ describe("buildContributionDisplaySpecs", () => {
 // ---------------------------------------------------------------------------
 
 describe("annualContributionWithBonus", () => {
-  const pct = (value: number, jobId: number | null = 1) => ({
+  const pct = (
+    value: number,
+    jobId: number | null = 1,
+    fromBonus: boolean | undefined = true,
+  ) => ({
     contributionMethod: "percent_of_salary",
     contributionValue: value,
     jobId,
+    fromBonus,
   });
 
   it("takes the rate of the base salary when the bonus check carries nothing", () => {
@@ -743,9 +745,8 @@ describe("annualContributionWithBonus", () => {
     );
   });
 
-  it("adds the rate of the bonus once — however the bonus switches were set", () => {
-    // contributionPay folds both switches into one bonusGross; the bonus is
-    // never also part of the salary, so it can't be counted twice.
+  it("adds the rate of the bonus once when the account is taken from bonus checks", () => {
+    // The bonus is never also part of the salary, so it can't be counted twice.
     expect(
       annualContributionWithBonus(
         pct(10),
@@ -762,11 +763,24 @@ describe("annualContributionWithBonus", () => {
           contributionMethod: "fixed_per_period",
           contributionValue: 200,
           jobId: 1,
+          fromBonus: true,
         },
         { salary: 100_000, bonusGross: 12_000 },
         26,
       ),
     ).toBe(200 * 27);
+  });
+
+  it("takes nothing from the bonus unless the account is set to (fromBonus)", () => {
+    for (const fromBonus of [false, undefined]) {
+      expect(
+        annualContributionWithBonus(
+          { ...pct(10), fromBonus },
+          { salary: 100_000, bonusGross: 12_000 },
+          26,
+        ),
+      ).toBe(10_000);
+    }
   });
 
   it("takes nothing from the bonus for an account not paid through payroll", () => {

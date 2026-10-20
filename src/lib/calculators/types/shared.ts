@@ -63,6 +63,8 @@ export type ContributionAccountInput = {
   rateOfGross: number | null;
   taxTreatment: TaxTreatmentType;
   isPayrollDeducted: boolean;
+  /** Also taken from bonus checks (bonusCheckContribution). */
+  fromBonus: boolean;
   group: string; // e.g. 'retirement', 'portfolio' — driven by account data, not hardcoded
   employerMatch: number;
   /** Of employerMatch, the part that matches what the bonus check takes. */

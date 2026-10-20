@@ -4,8 +4,8 @@
  *
  * - Profile fields save to the active profile of their kind: the Salary
  *   Profile for pay, bonus, schedule, W-4, extra-paycheck routing and other
- *   pay; the Contribution Profile for contribution amounts/methods/auto-max
- *   and deduction amounts.
+ *   pay; the Contribution Profile for contribution amounts/methods/auto-max,
+ *   whether each is also taken from bonus checks, and deduction amounts.
  * - Lines — a deduction's or other-pay line's name and tax treatment, and
  *   adding one — belong to the job (every profile), and need the same
  *   permission as editing profiles (the server's deductions / earnings
@@ -24,7 +24,7 @@
 export type PaycheckFieldKind =
   /** A field of the job's Salary Profile entry. */
   | "salary"
-  /** A contribution account's amount/method/auto-max, or a deduction amount. */
+  /** A contribution account's amount/method/auto-max/from-bonus, or a deduction amount. */
   | "contribution"
   /** A deduction / other-pay line's name or tax treatment, or adding one. */
   | "line"

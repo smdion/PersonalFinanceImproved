@@ -301,6 +301,22 @@ export function ContribCard({
         </div>
       )}
 
+      {/* This account's own Contribution Profile election — the one gate
+          for money taken from bonus checks (bonusCheckContribution).
+          Payroll accounts only: nothing else is on a check. */}
+      {(c.isPayrollDeducted ?? c.jobId !== null) && (
+        <div className="mt-1">
+          <Toggle
+            isChecked={c.fromBonus === true}
+            onChange={(v) => onUpdateContrib(c.id, "fromBonus", String(v))}
+            label="Also taken from bonus checks"
+            size="xs"
+            title="The bonus check takes this contribution too: a percent of pay at its rate of the bonus, a fixed amount once more. The employer match follows."
+            disabled={!valueEditable}
+          />
+        </div>
+      )}
+
       {/* Auto-max toggle with explanation */}
       {categoriesWithIrsLimit().includes(c.accountType as AccountCategory) &&
         onToggleAutoMax &&

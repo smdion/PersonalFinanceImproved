@@ -1,7 +1,6 @@
 "use client";
 
 import { InlineEdit } from "@/components/ui/inline-edit";
-import { Toggle } from "@/components/ui/toggle";
 import { FieldRow } from "@/components/ui/field-row";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
@@ -57,6 +56,7 @@ export function BonusSection({
   fullFormulaBonusEstimate,
   job,
   resolvedBonusTerms,
+  bonusAccounts,
   onUpdateJob,
   readOnly,
   salaryReadOnly,
@@ -71,8 +71,6 @@ export function BonusSection({
   job: {
     bonusMonth: number | null;
     bonusDayOfMonth: number | null;
-    include401kInBonus: boolean;
-    includeBonusInContributions: boolean;
   };
   /** A job carries no bonus terms of its own any more — this is the only
    *  source to pre-fill from (Salary Profile entry, if any, else unset). */
@@ -86,6 +84,10 @@ export function BonusSection({
      *  the live estimate below uses the formula. */
     bonusOverride: number | null;
   };
+  /** The contributions the bonus check takes — each account's own
+   *  "Also taken from bonus checks" election, set on its row under
+   *  Contributions. */
+  bonusAccounts: { id: number; name: string; amount: number }[];
   onUpdateJob: (field: string, value: string) => void;
   /** Sandbox/preview mode — bonus terms are shown but not editable. */
   readOnly?: boolean;
@@ -206,26 +208,6 @@ export function BonusSection({
                 className="bg-surface-primary w-36 rounded border px-2 py-0.5 text-sm disabled:opacity-60"
               />
             </FieldRow>
-            <div className="space-y-1 pt-1">
-              <Toggle
-                isChecked={job.include401kInBonus}
-                onChange={(v) => onUpdateJob("include401kInBonus", String(v))}
-                label="Deduct 401(k) from the bonus check"
-                size="xs"
-                title="401(k) contributions are withheld from the bonus check just like a regular check"
-                disabled={!editable}
-              />
-              <Toggle
-                isChecked={job.includeBonusInContributions}
-                onChange={(v) =>
-                  onUpdateJob("includeBonusInContributions", String(v))
-                }
-                label="Percent contributions count the bonus"
-                size="xs"
-                title="Percent-of-salary contributions are figured on salary + bonus instead of salary alone"
-                disabled={!editable}
-              />
-            </div>
             <BonusDestinationToggle personId={personId} disabled={readOnly} />
           </>
         )}
@@ -255,12 +237,16 @@ export function BonusSection({
                 -{formatCurrency(bonusEstimate.bonusFica)}
               </span>
             </FieldRow>
-            {bonusEstimate.bonusContributions > 0 && (
-              <FieldRow label="401(k) and other contributions">
-                <span className="text-muted">
-                  -{formatCurrency(bonusEstimate.bonusContributions)}
-                </span>
+            {bonusAccounts.map((a) => (
+              <FieldRow key={a.id} label={a.name}>
+                <span className="text-muted">-{formatCurrency(a.amount)}</span>
               </FieldRow>
+            ))}
+            {bonusAccounts.length === 0 && (
+              <p className="text-caption text-faint">
+                No contributions are taken from this bonus. Turn on “Also taken
+                from bonus checks” on an account under Contributions.
+              </p>
             )}
             <FieldRow
               label={<span className="font-medium">Net</span>}

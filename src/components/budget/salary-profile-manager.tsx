@@ -292,8 +292,6 @@ type JobOption = {
   additionalFedWithholding: number;
   bonusMonth: number | null;
   bonusDayOfMonth: number | null;
-  include401kInBonus: boolean;
-  includeBonusInContributions: boolean;
   extraPaycheckRouting: ExtraPaycheckRoutingData | null;
 };
 
@@ -330,13 +328,11 @@ type Detail = {
   additionalFedWithholding: number;
   bonusMonth: number | null;
   bonusDayOfMonth: number | null;
-  include401kInBonus: boolean;
-  includeBonusInContributions: boolean;
   extraPaycheckRouting: ExtraPaycheckRoutingData | null;
 };
 
-/** The complete entry shape written to the profile's jsonb — all sixteen
- *  fields, always. Spelled out rather than imported from
+/** The complete entry shape written to the profile's jsonb — every
+ *  field, always. Spelled out rather than imported from
  *  server/helpers/salary.ts's SalaryProfileEntry: components may not import
  *  server modules (see the Detail docblock above) — this mirrors it by hand
  *  and must be kept in sync with it and with salaryEntrySchema. */
@@ -355,8 +351,6 @@ type Entry = {
   additionalFedWithholding: number;
   bonusMonth: number | null;
   bonusDayOfMonth: number | null;
-  include401kInBonus: boolean;
-  includeBonusInContributions: boolean;
   /** Where this job's extra (3rd biweekly) paycheck routes, if configured —
    *  edited via the extra-paycheck rules editor rendered below, not through
    *  this panel's own field cells. */
@@ -384,8 +378,6 @@ const BLANK_ENTRY: Entry = {
   additionalFedWithholding: 0,
   bonusMonth: null,
   bonusDayOfMonth: null,
-  include401kInBonus: false,
-  includeBonusInContributions: true,
   extraPaycheckRouting: null,
 };
 
@@ -419,8 +411,6 @@ function detailForJob(sd: Detail, jobId: number): Detail {
     additionalFedWithholding: opt.additionalFedWithholding,
     bonusMonth: opt.bonusMonth,
     bonusDayOfMonth: opt.bonusDayOfMonth,
-    include401kInBonus: opt.include401kInBonus,
-    includeBonusInContributions: opt.includeBonusInContributions,
     extraPaycheckRouting: opt.extraPaycheckRouting,
   };
 }
@@ -655,7 +645,7 @@ function DetailStat({ label, value }: { label: string; value: string }) {
 }
 
 /**
- * Read-only grid of the 11 pay/withholding/bonus-timing fields — too many to
+ * Read-only grid of the pay/withholding/bonus-timing fields — too many to
  * fit as table columns, so shown as a second row beneath each job (see
  * PayTaxDetailsEdit's docblock for the same tradeoff on the editable side).
  * Always shown, not behind a collapse toggle — extra-paycheck routing lives
@@ -701,18 +691,12 @@ function PayTaxDetailsView({ sd }: { sd: Detail }) {
         label="Bonus day"
         value={sd.bonusDayOfMonth !== null ? String(sd.bonusDayOfMonth) : "—"}
       />
-      <DetailStat
-        label="Contributions from bonus check"
-        value={
-          sd.include401kInBonus || sd.includeBonusInContributions ? "Yes" : "No"
-        }
-      />
     </div>
   );
 }
 
 /**
- * Editable grid of the 11 pay/withholding/bonus-timing fields — the
+ * Editable grid of the pay/withholding/bonus-timing fields — the
  * editable twin of PayTaxDetailsView. Enum selects and checkboxes commit
  * immediately (no typing state to debounce); the date/nullable-number
  * inputs go through the same drafts/commit-on-blur plumbing as the rest of
@@ -723,7 +707,6 @@ function PayTaxDetailsEdit({
   drafts,
   setDraft,
   onWriteField,
-  onWriteFields,
   onCommitAnchorPayDate,
   onCommitBudgetPeriodsPerMonth,
   onCommitAdditionalFedWithholding,
@@ -738,8 +721,6 @@ function PayTaxDetailsEdit({
     field: K,
     value: Entry[K],
   ) => void;
-  /** Several fields in one write (one request — they succeed or fail together). */
-  onWriteFields: (sd: Detail, fields: Partial<Entry>) => void;
   onCommitAnchorPayDate: (sd: Detail) => void;
   onCommitBudgetPeriodsPerMonth: (sd: Detail) => void;
   onCommitAdditionalFedWithholding: (sd: Detail) => void;
@@ -879,26 +860,6 @@ function PayTaxDetailsEdit({
           placeholder="—"
         />
       </FormField>
-      {/* One switch: the bonus check takes payroll contributions (percent-
-          of-pay accounts at their rate of the bonus, fixed amounts once
-          more). Two stored flags used to say this separately; both follow
-          it (bonusCarriesContributions). */}
-      <label
-        className="text-secondary flex items-center gap-1.5 self-end pb-1.5 text-xs"
-        title="The bonus check takes your payroll contributions: percent-of-pay accounts at their rate of the bonus, fixed amounts once more. The employer match follows."
-      >
-        <input
-          type="checkbox"
-          checked={sd.include401kInBonus || sd.includeBonusInContributions}
-          onChange={(e) =>
-            onWriteFields(sd, {
-              include401kInBonus: e.target.checked,
-              includeBonusInContributions: e.target.checked,
-            })
-          }
-        />
-        Contributions from bonus check
-      </label>
     </div>
   );
 }
@@ -1478,7 +1439,6 @@ function ProfileEditPanel({
                             drafts={drafts}
                             setDraft={setDraft}
                             onWriteField={writeField}
-                            onWriteFields={writeFields}
                             onCommitAnchorPayDate={commitAnchorPayDate}
                             onCommitBudgetPeriodsPerMonth={
                               commitBudgetPeriodsPerMonth

@@ -503,7 +503,7 @@ export async function resolveLinkedBudgetItemAmounts<
       const bonusTerms = applyActiveBonusTerms(sandboxEntry, comp.terms);
       // Regular paychecks only: what a bonus check carries isn't monthly
       // cash flow (contributionPay — base salary).
-      salaryByJobId.set(j.id, contributionPay(j, salary, bonusTerms).salary);
+      salaryByJobId.set(j.id, contributionPay(salary, bonusTerms).salary);
     }
 
     for (const c of activeContribs) {

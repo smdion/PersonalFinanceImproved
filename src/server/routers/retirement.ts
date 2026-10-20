@@ -460,7 +460,7 @@ export const retirementRouter = createTRPCRouter({
         const comp = resolveCompensation(salaryProfileActiveMap, j.id);
         return {
           job: j,
-          ...contributionPay(j, comp.salary, comp.terms),
+          ...contributionPay(comp.salary, comp.terms),
           baseSalary: comp.salary,
           totalComp: getTotalCompensation(comp.salary, comp.terms),
           resolvedBonusOverride: null,

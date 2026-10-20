@@ -25,10 +25,9 @@
  * current active one.
  *
  * Bonus terms live here rather than on a Contribution Profile: "how big is
- * the bonus" is the same category of fact as "how big is the salary". A
- * Contribution Profile still owns include401kInBonus /
- * includeBonusInContributions, which describe how contributions are computed
- * FROM a bonus.
+ * the bonus" is the same category of fact as "how big is the salary".
+ * Whether a contribution is also taken from bonus checks is a per-account
+ * Contribution Profile election (`fromBonus`), not a Salary Profile fact.
  *
  * Permissions intentionally mirror contributionProfile (no new gate): reads on
  * protectedProcedure, writes on contributionProfileProcedure.
@@ -275,9 +274,6 @@ export const salaryProfileRouter = createTRPCRouter({
           additionalFedWithholding: entry?.additionalFedWithholding ?? 0,
           bonusMonth: entry?.bonusMonth ?? null,
           bonusDayOfMonth: entry?.bonusDayOfMonth ?? null,
-          include401kInBonus: entry?.include401kInBonus ?? false,
-          includeBonusInContributions:
-            entry?.includeBonusInContributions ?? false,
           /** Where this job's extra (3rd biweekly) paycheck routes, if
            *  configured — see extraPaycheckRoutingSchema (json-schemas.ts). */
           extraPaycheckRouting: entry?.extraPaycheckRouting ?? null,
@@ -332,9 +328,6 @@ export const salaryProfileRouter = createTRPCRouter({
           additionalFedWithholding: selected?.additionalFedWithholding ?? 0,
           bonusMonth: selected?.bonusMonth ?? null,
           bonusDayOfMonth: selected?.bonusDayOfMonth ?? null,
-          include401kInBonus: selected?.include401kInBonus ?? false,
-          includeBonusInContributions:
-            selected?.includeBonusInContributions ?? false,
           extraPaycheckRouting: selected?.extraPaycheckRouting ?? null,
           /** What this profile actually produces for this person. */
           effectiveSalary: selected?.effectiveSalary ?? 0,

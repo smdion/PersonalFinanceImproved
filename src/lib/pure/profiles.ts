@@ -177,6 +177,8 @@ export function resolveLinkedProfile<T extends ProfileLike>(
 export type ContribAccountActiveFields = {
   contributionValue?: string | number;
   contributionMethod?: string;
+  /** Also taken from bonus checks. */
+  fromBonus?: boolean;
   isActive?: boolean;
 } | null;
 

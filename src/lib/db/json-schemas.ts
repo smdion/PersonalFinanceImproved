@@ -214,9 +214,8 @@ const yearlyGrowthEntrySchema = z.object({
  * A Salary Profile entry's `extraPaycheckRouting` field — see
  * ExtraPaycheckRoutingData in schema-pg.ts for the full field-by-field
  * rationale (this schema mirrors that type exactly). Moved here from
- * `jobs.extra_paycheck_routing` because it's the same category of fact as
- * `include401kInBonus`/`includeBonusInContributions` above: a comp-layer
- * decision about how this job's pay gets treated, not a job identity fact.
+ * `jobs.extra_paycheck_routing` because it's a comp-layer decision about how
+ * this job's pay gets treated, not a job identity fact.
  * `.strict()` for the same reason as salaryEntrySchema itself.
  */
 export const extraPaycheckRoutingSchema = z
@@ -237,7 +236,7 @@ export const extraPaycheckRoutingSchema = z
 /**
  * salary_profiles.salaries — jobId → salary entry.
  *
- * A job either has a COMPLETE entry (all seventeen fields, a real
+ * A job either has a COMPLETE entry (every required field, a real
  * self-contained set of numbers/elections for this profile) or no key at
  * all (this profile says nothing about that job, which resolves to
  * $0/no bonus/incomplete — never a fallback to some other value). There is
@@ -282,8 +281,13 @@ export const salaryEntrySchema = z
     bonusMonth: z.number().nullable(),
     /** 1-31, day of month when bonus is paid (null = first period of month). */
     bonusDayOfMonth: z.number().nullable(),
-    include401kInBonus: z.boolean(),
-    includeBonusInContributions: z.boolean(),
+    /** @deprecated accepted so entries saved before v0.8.10 still pass
+     *  `.strict()`; read by nothing (a contribution taken from bonus checks
+     *  is the Contribution Profile's per-account `fromBonus`). Migration
+     *  0009 converts and removes it. */
+    include401kInBonus: z.boolean().optional(),
+    /** @deprecated see include401kInBonus. */
+    includeBonusInContributions: z.boolean().optional(),
     /** `null` is a real, complete value ("no extra-paycheck routing
      *  configured for this job"). See extraPaycheckRoutingSchema above. */
     extraPaycheckRouting: extraPaycheckRoutingSchema.nullable(),
@@ -336,6 +340,9 @@ export const contribAccountActiveFieldsPatchSchema = z
     employerMaxMatchPct: z.union([z.string(), z.number()]).optional(),
     autoMaximize: z.boolean().optional(),
     isActive: z.boolean().optional(),
+    /** Also taken from bonus checks (bonusCheckContribution — the one
+     *  gate). Absent = no. */
+    fromBonus: z.boolean().optional(),
     /** A custom display label for this account within this profile —
      *  cosmetic, not financial (was `displayNameActive`, whose `Active`
      *  suffix falsely implied it behaves like `isActive` for swap-safety —

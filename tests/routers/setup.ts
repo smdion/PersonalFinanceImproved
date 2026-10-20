@@ -325,8 +325,6 @@ type JobColumnOverrides = Omit<
   | "additionalFedWithholding"
   | "bonusMonth"
   | "bonusDayOfMonth"
-  | "include401kInBonus"
-  | "includeBonusInContributions"
 >;
 
 /** Convenience overrides for the Salary Profile entry seedJob writes for
@@ -350,10 +348,9 @@ type SalaryEntryOverrides = Partial<
  *
  * A job carries no salary/bonus/payroll-config of its own any more —
  * `annualSalary`/`bonusPercent`/`bonusMultiplier`/`monthsInBonusYear` plus
- * the 11 payroll-config fields (payPeriod, payWeek, anchorPayDate,
+ * the payroll-config fields (payPeriod, payWeek, anchorPayDate,
  * budgetPeriodsPerMonth, w4FilingStatus, w4Box2cChecked,
- * additionalFedWithholding, bonusMonth, bonusDayOfMonth, include401kInBonus,
- * includeBonusInContributions) here are convenience fields (defaulting to
+ * additionalFedWithholding, bonusMonth, bonusDayOfMonth) here are convenience fields (defaulting to
  * the same values this helper always defaulted to, for the ones that
  * existed pre-Stage-B), written as a complete entry into the shared default
  * Salary Profile (see seedDefaultSalaryProfileEntry) instead of a job
@@ -381,8 +378,6 @@ export function seedJob(
     additionalFedWithholding,
     bonusMonth,
     bonusDayOfMonth,
-    include401kInBonus,
-    includeBonusInContributions,
     extraPaycheckRouting,
     ...jobOverrides
   } = overrides;
@@ -411,8 +406,6 @@ export function seedJob(
     additionalFedWithholding: additionalFedWithholding ?? 0,
     bonusMonth: bonusMonth ?? null,
     bonusDayOfMonth: bonusDayOfMonth ?? null,
-    include401kInBonus: include401kInBonus ?? false,
-    includeBonusInContributions: includeBonusInContributions ?? true,
     extraPaycheckRouting: extraPaycheckRouting ?? null,
   });
   return result.id;

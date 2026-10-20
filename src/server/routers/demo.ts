@@ -108,9 +108,6 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
       additionalFedWithholding: 0,
       bonusMonth: j.bonusMonth,
       bonusDayOfMonth: j.bonusDayOfMonth ?? null,
-      // Matches speculativeJobValues' defaults for the same two flags.
-      include401kInBonus: false,
-      includeBonusInContributions: false,
       // Not modeled by DemoProfile.jobs — no demo persona needs a
       // preconfigured extra-paycheck routing to look realistic.
       extraPaycheckRouting: null,

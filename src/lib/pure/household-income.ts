@@ -57,8 +57,6 @@ export function computeAnnualEarnings(args: {
   paycheck: PaycheckResult;
   contributionAccounts: ContributionAccountInput[];
   deductions: DeductionLine[];
-  /** Whether the bonus check takes payroll contributions (PaycheckInput.includeContribInBonus). */
-  includeContribInBonus: boolean;
 }): AnnualEarnings {
   const { salary, periodsPerYear, paycheck } = args;
   const bonus = paycheck.bonusEstimate.bonusGross;
@@ -67,9 +65,7 @@ export function computeAnnualEarnings(args: {
     args.contributionAccounts.filter(
       (ca) => ca.isPayrollDeducted && isPreTax(ca.taxTreatment),
     ),
-    (ca) =>
-      ca.annualContribution +
-      (args.includeContribInBonus ? bonusCheckContribution(ca, bonus) : 0),
+    (ca) => ca.annualContribution + bonusCheckContribution(ca, bonus),
   );
   const preTaxDeductions =
     sumBy(

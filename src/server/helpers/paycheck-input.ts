@@ -24,7 +24,7 @@ import type {
   TaxBracketInput,
   ContributionAccountInput,
 } from "@/lib/calculators/types";
-import { bonusCarriesContributions, type BonusTerms } from "./salary";
+import type { BonusTerms } from "./salary";
 import { toNumber } from "./transforms";
 import { requireLimit } from "./settings";
 
@@ -44,8 +44,6 @@ export interface JobForPaycheckInput {
   payWeek: PaycheckInput["payWeek"] | undefined;
   anchorPayDate: string | Date | null | undefined;
   startDate: string | Date;
-  include401kInBonus: boolean | undefined;
-  includeBonusInContributions?: boolean | undefined;
   bonusMonth: number | null | undefined;
   bonusDayOfMonth: number | null | undefined;
   additionalFedWithholding: string | number | null | undefined;
@@ -109,8 +107,6 @@ export function buildPaycheckInputForJob(
         : toNumber(resolved.bonusTerms.bonusMultiplier),
     bonusOverride: resolved.bonusOverride,
     monthsInBonusYear: resolved.bonusTerms.monthsInBonusYear ?? 12,
-    // Either Salary Profile switch means the bonus check carries contributions.
-    includeContribInBonus: bonusCarriesContributions(job),
     bonusMonth: job.bonusMonth ?? null,
     bonusDayOfMonth: job.bonusDayOfMonth ?? null,
     asOfDate: resolved.asOfDate,

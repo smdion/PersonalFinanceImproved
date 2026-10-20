@@ -104,8 +104,9 @@ export default function PaycheckPage() {
   // A field whose value is `undefined` is unset (removed) rather than
   // written. There is no more "jobs" entity kind here: that active-fields
   // bucket (payPeriod/payWeek/anchorPayDate, W-4, bonus timing/flags) was
-  // retired in the Stage B migration — those 11 fields now live on the
-  // Salary Profile entry instead (see writeSalaryProfileEntry above).
+  // retired in the Stage B migration — those fields now live on the
+  // Salary Profile entry instead (see writeSalaryProfileEntry above), and
+  // the bonus flags became each account's own `fromBonus`.
   function updateProfileActiveField(
     entityType: "contributionAccounts" | "deductions",
     entityId: number,
@@ -194,8 +195,6 @@ export default function PaycheckPage() {
     additionalFedWithholding: number;
     bonusMonth: number | null;
     bonusDayOfMonth: number | null;
-    include401kInBonus: boolean;
-    includeBonusInContributions: boolean;
     /** Not editable from this page — preserved as-is (or defaulted to
      *  "not configured" for a brand-new entry) whenever a Paycheck-page
      *  field write creates/updates this job's entry. Edited from Salary
@@ -209,7 +208,7 @@ export default function PaycheckPage() {
    * Profile. Entries are complete/all-or-nothing (no partial pins) — the
    * first edit to a job that has no entry yet creates one, defaulting
    * every untouched field to `defaults` (that job's currently-resolved
-   * values), so the write is always a full 16-field entry.
+   * values), so the write is always a complete entry.
    */
   function writeSalaryProfileEntry(
     jobId: number,
@@ -400,6 +399,7 @@ export default function PaycheckPage() {
               }
               rawDeductions={d.rawDeductions}
               rawContribs={d.rawContribs}
+              bonusCheckAccounts={d.bonusCheckAccounts}
               perContribData={d.perContribData}
               incompleteAccountIds={d.incompleteAccountIds}
               earningRows={d.earningRows}
@@ -419,11 +419,7 @@ export default function PaycheckPage() {
                       handlers: {
                         onUpdateJob: (field: string, value: string) => {
                           const job = d.job!;
-                          const boolFields = [
-                            "include401kInBonus",
-                            "w4Box2cChecked",
-                            "includeBonusInContributions",
-                          ];
+                          const boolFields = ["w4Box2cChecked"];
                           const nullableIntFields = [
                             "bonusMonth",
                             "bonusDayOfMonth",
@@ -448,7 +444,7 @@ export default function PaycheckPage() {
                           // A job has no salary, bonus, pay-schedule, or W-4
                           // terms of its own any more — every edit to any of
                           // those lands in the displayed Salary Profile as
-                          // part of that job's complete 16-field entry (see
+                          // part of that job's complete entry (see
                           // resolveCompensation/SalaryProfileEntry in
                           // server/helpers/salary.ts). Untouched fields
                           // default to this job's currently-resolved values.
@@ -470,9 +466,6 @@ export default function PaycheckPage() {
                               ),
                               bonusMonth: job.bonusMonth ?? null,
                               bonusDayOfMonth: job.bonusDayOfMonth ?? null,
-                              include401kInBonus: job.include401kInBonus,
-                              includeBonusInContributions:
-                                job.includeBonusInContributions,
                               extraPaycheckRouting: null,
                             };
                           // An other-pay line's amount per check — saved in
@@ -583,8 +576,6 @@ export default function PaycheckPage() {
                               "additionalFedWithholding",
                               "bonusMonth",
                               "bonusDayOfMonth",
-                              "include401kInBonus",
-                              "includeBonusInContributions",
                             ];
                           if (
                             salaryProfileNewFields.includes(
@@ -689,7 +680,10 @@ export default function PaycheckPage() {
                               "contributionAccounts",
                               id,
                               field,
-                              value,
+                              // Absent means no — turning it off removes it.
+                              field === "fromBonus"
+                                ? value === "true" || undefined
+                                : value,
                             );
                             return;
                           }

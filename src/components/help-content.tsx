@@ -925,9 +925,10 @@ export function HelpContent() {
       <Section title="Profiles and Plans">
         <p>
           Each profile is its own world — Salary (pay, bonus, W-4, schedule),
-          Contributions (what goes to each account), Budget (spending) and
-          Retirement (ages, assumptions). There&apos;s no default profile, only
-          the active one of each kind, picked in the header.
+          Contributions (what goes to each account, and whether it is also taken
+          from bonus checks), Budget (spending) and Retirement (ages,
+          assumptions). There&apos;s no default profile, only the active one of
+          each kind, picked in the header.
         </p>
         <ul className="ml-2 list-inside list-disc space-y-1">
           <li>

@@ -281,7 +281,7 @@ export async function computeJobNetPayPerCheck(
       jobPerson?.dateOfBirth ?? null,
       resolvedTax.resolvedYear,
     ),
-    contributionPay(salaryEntry, currentSalary, bonusTerms).bonusGross,
+    contributionPay(currentSalary, bonusTerms).bonusGross,
   );
 
   // Intentionally does not pass a bonusOverride — this value gets persisted

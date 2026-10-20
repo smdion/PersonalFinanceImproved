@@ -39,7 +39,6 @@ import {
   shareFicaExemptCaps,
 } from "@/lib/pure/contributions";
 import {
-  bonusCarriesContributions,
   contributionPay,
   getTotalCompensation,
   resolveCompensation,
@@ -572,10 +571,15 @@ export function buildContribAccounts(
    *  account's FICA-exempt cap (payrollFicaExemptCap). Required so no
    *  caller can quietly treat exempt payroll money as FICA wages. */
   ficaContext: { limits: Record<string, number>; ageAtYearEnd: number | null },
-  /** The bonus whose check carries contributions (contributionPay); the match is figured on it too. */
+  /** The job's bonus (contributionPay). Each account takes its share only
+   *  when set to (fromBonus); the match is figured on it when any does. */
   bonusGross = 0,
 ): ContributionAccountInput[] {
   const allContribs = [...jobContribs, ...personalContribs];
+  // The employer matches what's deferred, on the pay it came from: the
+  // bonus counts toward the match's pay when its check takes a deferral.
+  const matchPay =
+    salary + (allContribs.some((c) => c.fromBonus) ? bonusGross : 0);
 
   const annualById = new Map<number, number>();
   for (const c of allContribs) {
@@ -591,8 +595,6 @@ export function buildContribAccounts(
     );
   }
 
-  // The employer matches what's deferred, bonus checks included, on the
-  // pay it came from.
   const matchByRow = computeGroupedEmployerMatch(
     allContribs.map((c) => ({
       id: c.id,
@@ -605,7 +607,7 @@ export function buildContribAccounts(
         { salary, bonusGross },
         periodsPerYear,
       ),
-      salary: salary + bonusGross,
+      salary: matchPay,
       employerMatchType: c.employerMatchType,
       employerMatchValue: toNumber(c.employerMatchValue),
       employerMaxMatchPct: toNumber(c.employerMaxMatchPct),
@@ -616,7 +618,7 @@ export function buildContribAccounts(
   // The same match on regular paychecks alone — the difference is what the
   // bonus check's deferral earns (Year-End estimates place it by date).
   const baseMatchByRow =
-    bonusGross > 0
+    matchPay > salary
       ? computeGroupedEmployerMatch(
           allContribs.map((c) => ({
             id: c.id,
@@ -658,6 +660,7 @@ export function buildContribAccounts(
           : null,
       taxTreatment: c.taxTreatment,
       isPayrollDeducted,
+      fromBonus: c.fromBonus === true,
       group,
       employerMatch: roundToCents(match.matchAnnual),
       employerMatchOnBonus: roundToCents(
@@ -729,11 +732,13 @@ type ContribRow = {
   employerMatchType: string | null;
   employerMatchValue: string | null;
   employerMaxMatchPct: string | null;
+  /** Also taken from bonus checks (Contribution Profile election). */
+  fromBonus: boolean | undefined;
 };
 
 type PersonRef = { id: number; name: string };
 type JobRef = { id: number; personId: number; payPeriod: string | undefined };
-/** A job's contributionPay (server/helpers/salary.ts): base salary, and the bonus whose check carries contributions. */
+/** A job's contributionPay (server/helpers/salary.ts): base salary and the bonus. */
 type JobSalaryRef = {
   job: { id: number; personId: number };
   salary: number;
@@ -757,10 +762,37 @@ function jobPayFor<T extends { job: { id: number; personId: number } }>(
 }
 
 /**
+ * The jobs whose bonus check takes at least one contribution (fromBonus).
+ * The employer matches what's deferred, on the pay it came from: an
+ * account's match is figured on its job's base salary, plus the bonus for
+ * these jobs. Keyed by the job each account's pay comes from (jobPayFor),
+ * so every row of one matched account resolves the same pay.
+ */
+function jobsWithBonusDeferrals<
+  T extends { job: { id: number; personId: number } },
+>(
+  rows: readonly {
+    jobId: number | null;
+    personId: number | null;
+    fromBonus: boolean | undefined;
+  }[],
+  jobSalaries: readonly T[],
+): Set<number> {
+  const ids = new Set<number>();
+  for (const r of rows) {
+    if (!r.fromBonus) continue;
+    const js = jobPayFor(r, jobSalaries);
+    if (js) ids.add(js.job.id);
+  }
+  return ids;
+}
+
+/**
  * A contribution's yearly amount, the paycheck's way: what the regular
  * paychecks take from the base salary, plus what the bonus check takes
  * (bonusCheckContribution — percent-of-pay at its rate of the bonus, a fixed
- * amount once more; only for accounts paid through payroll). The one
+ * amount once more; only for payroll accounts set to be taken from bonus
+ * checks). The one
  * yearly amount the contribution summary and the retirement projection
  * use. (The budget follows regular paychecks only — base salary.) This
  * year's figures pass the pinned bonus as `bonusGross`; the projection
@@ -772,6 +804,7 @@ export function annualContributionWithBonus(
     contributionValue: string | number | null;
     jobId: number | null;
     isPayrollDeducted?: boolean | null;
+    fromBonus: boolean | undefined;
   },
   pay: { salary: number; bonusGross?: number },
   periodsPerYear: number,
@@ -789,6 +822,7 @@ export function annualContributionWithBonus(
     bonusCheckContribution(
       {
         isPayrollDeducted: c.isPayrollDeducted ?? c.jobId !== null,
+        fromBonus: c.fromBonus,
         rateOfGross: method === "percent_of_salary" ? value / 100 : null,
         perPeriodContribution:
           method === "fixed_per_period" ? value : regular / periodsPerYear,
@@ -835,6 +869,7 @@ export function aggregateContributionsByCategory(
   const incompleteAccountIds: number[] = [];
   const salaryById = new Map<number, number>();
   const annualById = new Map<number, number>();
+  const bonusJobs = jobsWithBonusDeferrals(activeContribs, jobSalaries);
   for (const c of activeContribs) {
     const cv = Number(c.contributionValue);
     // Direct job link, or fall back to person's first active job when jobId is null
@@ -856,7 +891,10 @@ export function aggregateContributionsByCategory(
           periods,
         );
     // Match on the pay the deferrals came from, bonus checks included.
-    salaryById.set(c.id, salary + (js?.bonusGross ?? 0));
+    salaryById.set(
+      c.id,
+      salary + (js && bonusJobs.has(js.job.id) ? (js.bonusGross ?? 0) : 0),
+    );
     annualById.set(c.id, annual);
 
     contribByCategory[c.accountType].annual += annual;
@@ -967,6 +1005,7 @@ export function buildContributionDisplaySpecs(
   const salaryById = new Map<number, number>();
   const annualById = new Map<number, number>();
   const incompleteById = new Map<number, boolean>();
+  const bonusJobs = jobsWithBonusDeferrals(filtered, jobSalaries);
   for (const c of filtered) {
     const job = c.jobId
       ? activeJobs.find((j) => j.id === c.jobId)
@@ -980,7 +1019,10 @@ export function buildContributionDisplaySpecs(
     const cv = Number(c.contributionValue);
     salaryById.set(
       c.id,
-      salary + (js?.bonusGrossThisYear ?? js?.bonusGross ?? 0),
+      salary +
+        (js && bonusJobs.has(js.job.id)
+          ? (js.bonusGrossThisYear ?? js.bonusGross ?? 0)
+          : 0),
     );
     incompleteById.set(c.id, incomplete);
     annualById.set(
@@ -1073,6 +1115,7 @@ export type LiveContribRow = {
 export type ResolvedContribRow = LiveContribRow & {
   contributionValue: string | number;
   contributionMethod: string;
+  fromBonus: boolean | undefined;
 };
 
 /**
@@ -1112,7 +1155,7 @@ export async function loadLiveContribData(db: Db) {
     const comp = resolveCompensation(salaryProfileActiveMap, j.id);
     return {
       job: { id: j.id },
-      ...contributionPay(j, comp.salary, comp.terms),
+      ...contributionPay(comp.salary, comp.terms),
       baseSalary: comp.salary,
       totalComp: getTotalCompensation(comp.salary, comp.terms),
       personId: j.personId,
@@ -1171,7 +1214,7 @@ export function resolveProfile<
   J extends { id: number; personId: number },
   S extends {
     job: { id: number; personId: number };
-    /** Payroll contribution basis — bonus-inclusive per the job's flag. */
+    /** Payroll contribution basis (base salary). */
     salary: number;
     /** Un-blended current salary, BEFORE any bonus. The base every bonus
      *  formula multiplies; `salary` above may already include a bonus, so
@@ -1213,10 +1256,15 @@ export function resolveProfile<
       // to anything at all.
       if (!activeFields || activeFields.contributionValue === undefined)
         return null;
-      return { ...c, ...activeFields } as C & {
+      return {
+        ...c,
+        ...activeFields,
+        fromBonus: activeFields.fromBonus === true,
+      } as C & {
         contributionValue: string | number;
         contributionMethod: string;
         isActive?: boolean;
+        fromBonus: boolean;
       };
     })
     .filter((c): c is NonNullable<typeof c> => c !== null)
@@ -1224,11 +1272,11 @@ export function resolveProfile<
 
   // Jobs carry no Contribution-Profile-owned fields any more — the deleted
   // `jobs` active-fields bucket used to let a profile patch employer name /
-  // bonus pay date / bonus-contribution flags; all of that either moved to
-  // the Salary Profile entry (bonus date + flags) or lost its
-  // profile-override path entirely (employerName — see RULES.md). Pay
-  // schedule and includeBonusInContributions now always come straight from
-  // the resolved Salary Profile entry, same axis as salary itself.
+  // bonus pay date / bonus-contribution flags; the bonus date moved to the
+  // Salary Profile entry, the flags became each account's own `fromBonus`
+  // election, and employerName lost its profile-override path (see
+  // RULES.md). Pay schedule comes straight from the resolved Salary
+  // Profile entry, same axis as salary itself.
   const patchedJobs = mergeSalaryProfileJobFields(
     liveJobs,
     salaryProfileActiveMap,
@@ -1240,17 +1288,11 @@ export function resolveProfile<
     payPeriod: j.payPeriod,
   }));
 
-  const patchedJobById = new Map(patchedJobs.map((j) => [j.id, j]));
-  const jobSalaries = liveJobSalaries.map((js) => {
-    const patchedJob = patchedJobById.get(js.job.id);
-    return {
-      ...js,
-      salary: js.baseSalary,
-      bonusGross: bonusCarriesContributions(patchedJob)
-        ? js.totalComp - js.baseSalary
-        : 0,
-    };
-  });
+  const jobSalaries = liveJobSalaries.map((js) => ({
+    ...js,
+    salary: js.baseSalary,
+    bonusGross: js.totalComp - js.baseSalary,
+  }));
   const combinedSalary = jobSalaries.reduce((sum, js) => sum + js.salary, 0);
 
   return {
@@ -1275,6 +1317,8 @@ export type ContribRowWithActiveFields =
   typeof schema.contributionAccounts.$inferSelect & {
     contributionValue: string | number;
     contributionMethod: string;
+    /** Also taken from bonus checks — always set once active fields apply. */
+    fromBonus: boolean | undefined;
     displayNameCustom?: string;
     /** @deprecated legacy key. */
     displayNameActive?: string;
@@ -1302,7 +1346,14 @@ export function applyContribActiveFields(
       if (!activeFields || activeFields.contributionValue === undefined) {
         return isOverlay ? (row as ContribRowWithActiveFields) : null;
       }
-      return { ...row, ...activeFields } as ContribRowWithActiveFields;
+      return {
+        ...row,
+        ...activeFields,
+        // An overlay layer that doesn't set it keeps the first layer's.
+        fromBonus:
+          (activeFields.fromBonus ??
+            (row as Partial<ContribRowWithActiveFields>).fromBonus) === true,
+      } as ContribRowWithActiveFields;
     })
     .filter((row): row is ContribRowWithActiveFields => row !== null)
     .filter((row) => row.isActive !== false);
@@ -1399,6 +1450,7 @@ export function buildSandboxContribRow(
     allocationPriority: 0,
     notes: null,
     isPayrollDeducted: null,
+    fromBonus: false,
     priorYearContribAmount: "0",
     priorYearContribYear: null,
   };
@@ -1708,6 +1760,8 @@ export type ContribInputRow = {
   employerMatchType: string | null;
   employerMatchValue: string | number | null;
   employerMaxMatchPct: string | number | null;
+  /** Also taken from bonus checks (Contribution Profile election). */
+  fromBonus: boolean | undefined;
   performanceAccountId?: number | null;
   targetAnnual?: string | number | null;
   allocationPriority?: number | null;
@@ -1732,9 +1786,9 @@ export function buildProfileContribData(
   }[],
   ctx: ProfileContribContext,
 ): ProfileContribData {
-  // salary = base salary; bonusGross = the bonus whose check carries
-  // contributions (contributionPay); totalComp = always includes bonus —
-  // used for rate calculations
+  // salary = base salary; bonusGross = the bonus (contributionPay — each
+  // account takes its share only when set to, fromBonus); totalComp =
+  // always includes bonus — used for rate calculations
   const totalCompensation = jobSalaries.reduce(
     (sum, js) => sum + js.totalComp,
     0,
@@ -1759,6 +1813,7 @@ export function buildProfileContribData(
     employerMaxMatchPct: c.employerMaxMatchPct
       ? String(c.employerMaxMatchPct)
       : null,
+    fromBonus: c.fromBonus,
   }));
 
   const {

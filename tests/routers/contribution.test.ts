@@ -43,8 +43,6 @@ function completeSalaryEntry(
     additionalFedWithholding: number;
     bonusMonth: number | null;
     bonusDayOfMonth: number | null;
-    include401kInBonus: boolean;
-    includeBonusInContributions: boolean;
   }> = {},
 ) {
   return {
@@ -62,8 +60,6 @@ function completeSalaryEntry(
     additionalFedWithholding: 0,
     bonusMonth: null,
     bonusDayOfMonth: null,
-    include401kInBonus: false,
-    includeBonusInContributions: true,
     ...overrides,
   };
 }
@@ -101,9 +97,12 @@ describe("contribution router", () => {
     overrides: Partial<typeof schema.contributionAccounts.$inferInsert> & {
       personId: number;
       accountType: string;
+      /** Also taken from bonus checks (this profile's election). */
+      fromBonus?: boolean;
     },
   ): number {
-    const { contributionValue, contributionMethod, ...rest } = overrides;
+    const { contributionValue, contributionMethod, fromBonus, ...rest } =
+      overrides;
     const result = dbArg
       .insert(schema.contributionAccounts)
       .values({
@@ -138,6 +137,7 @@ describe("contribution router", () => {
             [String(result.id)]: {
               contributionValue: String(value),
               contributionMethod: String(method),
+              ...(fromBonus ? { fromBonus: true } : {}),
             },
           },
         },
@@ -795,7 +795,6 @@ describe("contribution router", () => {
       personId = await seedPerson(db, "Bonus-Person", "1990-06-15");
       const jobId = seedJob(db, personId, {
         annualSalary: "120000",
-        include401kInBonus: true,
       });
       insertContribAccount(db, {
         personId,
@@ -806,6 +805,7 @@ describe("contribution router", () => {
         taxTreatment: "pre_tax",
         employerMatchType: "none",
         parentCategory: "Retirement",
+        fromBonus: true,
       });
       // Bonus terms have no live value on the job any more — only a Salary
       // Profile pin resolves them.
@@ -816,7 +816,6 @@ describe("contribution router", () => {
             salary: 120000,
             bonusPercent: 0.1,
             bonusMultiplier: 1,
-            include401kInBonus: true,
           }),
         },
       });
@@ -833,7 +832,7 @@ describe("contribution router", () => {
         (a) => a.categoryKey === "401k",
       );
       expect(acctType).toBeDefined();
-      // bonusContrib should be > 0 when include401kInBonus is set
+      // The account is taken from bonus checks (fromBonus).
       expect(acctType!.bonusContrib).toBeGreaterThan(0);
     });
   });

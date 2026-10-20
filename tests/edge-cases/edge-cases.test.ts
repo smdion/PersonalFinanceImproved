@@ -44,7 +44,6 @@ describe("paycheck edge cases", () => {
     bonusMultiplier: 1.0,
     bonusOverride: null,
     monthsInBonusYear: 12,
-    includeContribInBonus: false,
     bonusMonth: null,
     bonusDayOfMonth: null,
     asOfDate: JAN_1,

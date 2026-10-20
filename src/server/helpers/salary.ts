@@ -157,11 +157,8 @@ export type SalaryProfileEntry = {
   additionalFedWithholding: number;
   bonusMonth: number | null;
   bonusDayOfMonth: number | null;
-  include401kInBonus: boolean;
-  includeBonusInContributions: boolean;
-  /** Where this job's extra (3rd biweekly) paycheck gets routed — the same
-   *  category of fact as include401kInBonus/includeBonusInContributions
-   *  above, not a job identity fact. `null` is a real, complete value ("no
+  /** Where this job's extra (3rd biweekly) paycheck gets routed — a
+   *  comp-layer decision about this job's pay, not a job identity fact. `null` is a real, complete value ("no
    *  routing configured"). See ExtraPaycheckRoutingData (schema-pg.ts). */
   extraPaycheckRouting: ExtraPaycheckRoutingData | null;
   /** Other pay per check, by paycheck_earnings id — absent = none. */
@@ -372,14 +369,12 @@ export type JobWithSalaryFields<J> = J & {
   additionalFedWithholding: number | undefined;
   bonusMonth: number | null | undefined;
   bonusDayOfMonth: number | null | undefined;
-  include401kInBonus: boolean | undefined;
-  includeBonusInContributions: boolean | undefined;
   extraPaycheckRouting: ExtraPaycheckRoutingData | null | undefined;
 };
 
 /**
- * Merge each job with the 12 non-comp fields (pay schedule, W-4 elections,
- * bonus pay date/flags, extra-paycheck routing) from its entry in an
+ * Merge each job with the non-comp fields (pay schedule, W-4 elections,
+ * bonus pay date, extra-paycheck routing, other earnings) from its entry in an
  * already-resolved Salary Profile active map. These fields moved off the
  * `jobs` table entirely in Stage B (plus this session's extraPaycheckRouting
  * move) — a job's only source for them is its Salary Profile entry, same
@@ -405,8 +400,6 @@ export function mergeSalaryProfileJobFields<J extends { id: number }>(
       additionalFedWithholding: entry?.additionalFedWithholding,
       bonusMonth: entry?.bonusMonth,
       bonusDayOfMonth: entry?.bonusDayOfMonth,
-      include401kInBonus: entry?.include401kInBonus,
-      includeBonusInContributions: entry?.includeBonusInContributions,
       extraPaycheckRouting: entry?.extraPaycheckRouting,
       otherEarnings: entry?.otherEarnings,
     };
@@ -414,52 +407,31 @@ export function mergeSalaryProfileJobFields<J extends { id: number }>(
 }
 
 /**
- * Whether a job's bonus check carries contributions — the Salary Profile's
- * "Contributions from bonus check" switch. It's stored as two flags
- * (include401kInBonus, includeBonusInContributions) that once meant this
- * separately; either one means yes. The paycheck takes the contributions
- * out of the bonus check (bonusCheckContribution); every path follows it.
- */
-export function bonusCarriesContributions(
-  entry:
-    | {
-        include401kInBonus?: boolean | undefined;
-        includeBonusInContributions?: boolean | undefined;
-      }
-    | undefined,
-): boolean {
-  return !!(entry?.include401kInBonus || entry?.includeBonusInContributions);
-}
-
-/**
  * A job's pay as contributions see it, the way the paycheck does: the base
  * salary (regular paychecks — percent-of-pay amounts and the employer match
- * are figured on it) and the bonus whose check carries contributions (0
- * when it doesn't). Pass the pinned `bonusOverride` for THIS YEAR's figures
+ * are figured on it) and the bonus (what each account takes from the bonus
+ * check is its own election — bonusCheckContribution). Pass the pinned `bonusOverride` for THIS YEAR's figures
  * (paycheck, contribution summary, this year's contribution lines); leave it
  * out for anything that grows forward (projection) — see
  * SalaryProfileEntry.bonusOverride. Contribution amounts are then
  * annualContributionWithBonus (server/helpers/contribution.ts).
  */
 export function contributionPay(
-  entry: Parameters<typeof bonusCarriesContributions>[0],
   baseSalary: number,
   bonusTerms: BonusTerms,
   bonusOverride?: number | null,
 ): { salary: number; bonusGross: number } {
   return {
     salary: baseSalary,
-    bonusGross: bonusCarriesContributions(entry)
-      ? (bonusOverride ??
-        getTotalCompensation(baseSalary, bonusTerms) - baseSalary)
-      : 0,
+    bonusGross:
+      bonusOverride ??
+      getTotalCompensation(baseSalary, bonusTerms) - baseSalary,
   };
 }
 
 /**
- * Compute total compensation (salary + bonus) regardless of the
- * includeBonusInContributions flag. Used for display and projection
- * purposes where total comp is always the relevant number.
+ * Compute total compensation (salary + bonus). Used for display and
+ * projection purposes where total comp is always the relevant number.
  */
 export function getTotalCompensation(
   baseSalary: number,

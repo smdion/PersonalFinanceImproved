@@ -495,6 +495,8 @@ export const contributionProfileRouter = createTRPCRouter({
           liveMatchValue: row.employerMatchValue,
           liveMaxMatchPct: row.employerMaxMatchPct,
           liveIsActive: row.isActive,
+          /** Paid through payroll — only these can be taken from bonus checks. */
+          liveIsPayroll: row.isPayrollDeducted ?? row.jobId !== null,
           // Active values — null means this profile has no value at all for
           // this account (isIncomplete), not "falls back to a live value".
           activeFields: activeFields ?? null,

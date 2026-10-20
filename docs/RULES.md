@@ -265,7 +265,7 @@ data of its own any more — it is pure identity/lifecycle (`id`, `personId`,
 `startDate`, `endDate`, `isSpeculative`, `employerName`, `title`). Every
 number and election a job needs for a live calculation comes from a
 **Salary Profile**: `salary_profiles.salaries` maps `jobId` (string key) to
-a **complete, 17-field entry**:
+a **complete entry**:
 
 ```ts
 type SalaryProfileEntry = {
@@ -283,12 +283,12 @@ type SalaryProfileEntry = {
   additionalFedWithholding: number;
   bonusMonth: number | null;
   bonusDayOfMonth: number | null;
-  include401kInBonus: boolean;
-  includeBonusInContributions: boolean;
+  extraPaycheckRouting: ExtraPaycheckRoutingData | null; // null = none configured
+  otherEarnings?: Record<string, number>; // other pay per check; absent = none
 };
 ```
 
-> **A job either has ALL 16 fields in a given profile, or none at all.**
+> **A job either has every required field in a given profile, or none at all.**
 
 There is no partial-pin state, no per-field presence check, and no "resolves
 live from the job record" fallback — a job has nothing left on `jobs` to
@@ -315,15 +315,20 @@ under a profile entry, and `resolveProfile`, `build-engine-payload`, and the
 `salaryProfile.getById` editor preview all go through it. They previously
 re-derived it separately and disagreed. Do not add a fourth derivation.
 `mergeSalaryProfileJobFields()` is the equivalent single place for merging
-the other 11 fields onto a job object — every router that needs
+the other (non-comp) fields onto a job object — every router that needs
 `payPeriod`/`w4FilingStatus`/etc. on a job calls this rather than
 re-deriving the merge.
 
-**Contribution Profile no longer touches jobs at all.** The `jobs`
-active-fields bucket that used to let a Contribution Profile override
-`employerName`/bonus-pay-date/bonus-inclusion-flags is deleted wholesale —
-`contributionActiveFieldsSchema` has only `contributionAccounts` and
-`deductions` buckets now. Two consequences, both intentional:
+**A Contribution Profile never touches jobs:** its buckets are
+`contributionAccounts` and `deductions` only (the `jobs` bucket that used to
+override `employerName`/bonus-pay-date/bonus-inclusion-flags is deleted
+wholesale). How much the bonus is is a Salary Profile fact. Whether a
+contribution is also taken from bonus checks is a per-account contribution
+election (`contributionAccounts[id].fromBonus`, absent = no), applied only
+in `bonusCheckContribution`. The employer match is figured on the pay the
+deferrals came from: base salary, plus the bonus when that job's bonus check
+takes any contribution. Two consequences of the deleted bucket, both
+intentional:
 
 1. **`employerName`'s profile-override capability is gone**, not preserved
    elsewhere. Modeling "a different employer, same everything else" via a
@@ -355,7 +360,8 @@ a Contribution Profile's `deductions` active-field entry
   computed anywhere other than `resolveCompensation()`
 - Any field of `SalaryProfileEntry` reappearing in a Contribution Profile
   active-field bucket — the `jobs` bucket there is deleted, only
-  `contributionAccounts`/`deductions` remain
+  `contributionAccounts`/`deductions` remain; any per-job bucket; any second
+  bonus-contribution gate besides `bonusCheckContribution`'s `fromBonus`
 - A salary figure displayed as a Contribution Profile statistic
 - A job's `payPeriod`/`w4FilingStatus`/etc. treated as `undefined` meaning
   the same thing as `0`/`false`/a guessed default, instead of "incomplete —

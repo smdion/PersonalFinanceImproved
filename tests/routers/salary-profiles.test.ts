@@ -51,8 +51,6 @@ function entry(
     additionalFedWithholding: number;
     bonusMonth: number | null;
     bonusDayOfMonth: number | null;
-    include401kInBonus: boolean;
-    includeBonusInContributions: boolean;
     extraPaycheckRouting: Record<string, unknown> | null;
   }> = {},
 ) {
@@ -71,8 +69,6 @@ function entry(
     additionalFedWithholding: 0,
     bonusMonth: null,
     bonusDayOfMonth: null,
-    include401kInBonus: false,
-    includeBonusInContributions: true,
     extraPaycheckRouting: null,
     ...overrides,
   };

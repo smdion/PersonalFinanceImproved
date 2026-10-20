@@ -83,8 +83,6 @@ describe("materializeExtraPaycheckSavings", () => {
             additionalFedWithholding: 0,
             bonusMonth: null,
             bonusDayOfMonth: null,
-            include401kInBonus: false,
-            includeBonusInContributions: true,
             extraPaycheckRouting: {
               rules: [
                 {

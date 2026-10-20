@@ -94,8 +94,6 @@ describe("paycheck.computeSummary — tax-input active fields", () => {
               additionalFedWithholding: 100,
               bonusMonth: null,
               bonusDayOfMonth: null,
-              include401kInBonus: false,
-              includeBonusInContributions: true,
             },
           },
         })
@@ -154,8 +152,6 @@ describe("paycheck.computeSummary — tax-input active fields", () => {
               additionalFedWithholding: 0,
               bonusMonth: null,
               bonusDayOfMonth: null,
-              include401kInBonus: false,
-              includeBonusInContributions: true,
             },
           },
         })

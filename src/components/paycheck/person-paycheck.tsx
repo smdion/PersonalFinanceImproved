@@ -2,7 +2,11 @@
 
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
-import { formatCurrency, maskAmountsInText } from "@/lib/utils/format";
+import {
+  accountDisplayName,
+  formatCurrency,
+  maskAmountsInText,
+} from "@/lib/utils/format";
 import { PAY_PERIOD_LABELS } from "@/lib/config/display-labels";
 import { PayStub } from "./pay-stub";
 import { AnnualSummary } from "./annual-summary";
@@ -79,6 +83,7 @@ export function PersonPaycheck({
   contribValueReadOnly,
   rawDeductions,
   rawContribs,
+  bonusCheckAccounts,
   perContribData,
   alignedPreTax,
   alignedPostTax,
@@ -111,8 +116,6 @@ export function PersonPaycheck({
      *  instead of settings.jobs.update). */
     bonusMonth: number | null;
     bonusDayOfMonth: number | null;
-    include401kInBonus: boolean;
-    includeBonusInContributions: boolean;
     personId: number;
     w4FilingStatus: string;
     w4Box2cChecked: boolean;
@@ -149,6 +152,8 @@ export function PersonPaycheck({
   setupReadOnly?: boolean;
   rawDeductions: RawDeduction[];
   rawContribs: RawContrib[];
+  /** The accounts the bonus check takes, and how much (fromBonus). */
+  bonusCheckAccounts: { id: number; amount: number }[];
   /** Contribution annual/limit figures, resolved ONCE by the caller's shared
    *  hook. This card and its children never query for them. */
   perContribData: PerContribView[];
@@ -312,6 +317,18 @@ export function PersonPaycheck({
             fullFormulaBonusEstimate={fullFormulaBonusEstimate}
             job={job}
             resolvedBonusTerms={resolvedBonusTerms}
+            bonusAccounts={bonusCheckAccounts.map((a) => {
+              const raw = rawContribs.find((c) => c.id === a.id);
+              return {
+                id: a.id,
+                name: raw
+                  ? (raw.displayNameCustom ??
+                    raw.displayNameActive ??
+                    accountDisplayName(raw))
+                  : "Contribution",
+                amount: a.amount,
+              };
+            })}
             onUpdateJob={onUpdateJob}
             readOnly={readOnly}
             salaryReadOnly={salaryReadOnly}

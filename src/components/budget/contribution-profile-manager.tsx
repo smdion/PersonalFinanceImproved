@@ -551,6 +551,11 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                             not a funding target
                           </span>
                         )}
+                        {af?.fromBonus === true && (
+                          <span className="text-micro text-faint shrink-0">
+                            also from bonus checks
+                          </span>
+                        )}
                       </span>
                     </td>
                     <td className="text-muted px-3 py-1.5 whitespace-nowrap">
@@ -1205,11 +1210,10 @@ function ProfileEditor({
         )}
         {/* The old "Employer & Bonus Handling" jobs active-fields section
             was removed in the Stage B migration — that bucket
-            (contributionActiveFields.jobs) is retired entirely.
-            include401kInBonus/includeBonusInContributions/employerName now
-            live on the Salary Profile entry (employerName has no
-            profile-override mechanism at all any more), edited on the
-            Salary Profile tab instead. */}
+            (contributionActiveFields.jobs) is retired entirely. Whether a
+            contribution is taken from bonus checks is each account's own
+            `fromBonus` (the row's checkbox above); employerName has no
+            profile-override mechanism at all any more. */}
       </div>
     </div>
   );
@@ -1624,6 +1628,23 @@ function ProfileInlineEditor({
                             placeholder="Custom name..."
                             className="text-caption bg-surface-primary text-primary mt-0.5 w-full rounded border px-1.5 py-0.5"
                           />
+                        )}
+                        {/* The one gate for money taken from bonus checks
+                            (bonusCheckContribution) — payroll accounts only. */}
+                        {!isDisabled && ad.liveIsPayroll && (
+                          <label className="text-caption text-muted mt-1 flex items-center gap-1.5">
+                            <input
+                              type="checkbox"
+                              checked={af.fromBonus === true}
+                              onChange={(e) =>
+                                patchAccount(ad.id, {
+                                  fromBonus: e.target.checked || undefined,
+                                })
+                              }
+                              className="border-strong rounded"
+                            />
+                            Also taken from bonus checks
+                          </label>
                         )}
                       </td>
                       <td className="px-3 py-1.5">

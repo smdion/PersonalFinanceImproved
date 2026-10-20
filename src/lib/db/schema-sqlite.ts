@@ -72,9 +72,8 @@ export type YearlyGrowthEntry = { type: "pct" | "dollar"; value: number };
 
 /** Top-level shape stored in a Salary Profile entry's `extraPaycheckRouting`
  *  field (see salaryEntrySchema in json-schemas.ts) — moved off
- *  `jobs.extra_paycheck_routing` because it's a comp-layer decision, the
- *  same category of fact as `include401kInBonus`/
- *  `includeBonusInContributions`, not a job identity fact. */
+ *  `jobs.extra_paycheck_routing` because it's a comp-layer decision about
+ *  this job's pay, not a job identity fact. */
 export type ExtraPaycheckRoutingData = {
   rules: ExtraPaycheckRule[];
   overrides?: ExtraPaycheckOverride[];
@@ -2730,8 +2729,12 @@ export const salaryProfiles = sqliteTable("salary_profiles", {
           additionalFedWithholding: number;
           bonusMonth: number | null;
           bonusDayOfMonth: number | null;
-          include401kInBonus: boolean;
-          includeBonusInContributions: boolean;
+          /** @deprecated read by nothing — whether a contribution is taken
+           *  from bonus checks is the Contribution Profile's per-account
+           *  `fromBonus`. Converted and dropped by migration 0009. */
+          include401kInBonus?: boolean;
+          /** @deprecated see include401kInBonus. */
+          includeBonusInContributions?: boolean;
           extraPaycheckRouting: ExtraPaycheckRoutingData | null;
           /** Other pay per check, by paycheck_earnings id; absent = none. */
           otherEarnings?: Record<string, number>;

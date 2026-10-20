@@ -91,6 +91,8 @@ export type PaycheckPersonView = {
   /** This job's other-pay lines with their per-check amounts. */
   earningRows: EarningRow[];
   rawContribs: RawContrib[];
+  /** The accounts the bonus check takes, and how much (fromBonus). */
+  bonusCheckAccounts: { id: number; amount: number }[];
   alignedPreTax?: DeductionRowData[];
   alignedPostTax?: DeductionRowData[];
   coverageNote?: string;
@@ -352,6 +354,8 @@ export function usePaycheckPersonViews({
           rawDeductions: d.rawDeductions as RawDeduction[],
           earningRows: "earningRows" in d ? d.earningRows : [],
           rawContribs: d.rawContribs as RawContrib[],
+          bonusCheckAccounts:
+            "bonusCheckAccounts" in d ? d.bonusCheckAccounts : [],
           alignedPreTax: alignedData?.preTax[index as 0 | 1],
           alignedPostTax: alignedData?.postTax[index as 0 | 1],
           coverageNote: alignedData?.coverageNotes[index as 0 | 1]?.note,

@@ -72,39 +72,24 @@ describe("contributionPay", () => {
     monthsInBonusYear: 12,
   };
 
-  it("is the base salary and no bonus when the bonus check carries no contributions", () => {
-    expect(contributionPay({}, 120000, bonusTerms)).toEqual({
+  it("is the base salary and the bonus, never folded into the salary", () => {
+    // 120000 * 0.10 * 1 * (12/12) = 12000. Which accounts the bonus check
+    // takes is each account's own election (bonusCheckContribution).
+    expect(contributionPay(120000, bonusTerms)).toEqual({
       salary: 120000,
-      bonusGross: 0,
+      bonusGross: 12000,
     });
   });
 
   it("uses this year's pinned bonus when one is passed, the formula otherwise", () => {
-    expect(
-      contributionPay({ include401kInBonus: true }, 120000, bonusTerms, 15000),
-    ).toEqual({ salary: 120000, bonusGross: 15000 });
-    expect(
-      contributionPay({ include401kInBonus: true }, 120000, bonusTerms, null),
-    ).toEqual({ salary: 120000, bonusGross: 12000 });
-    // A pin doesn't make a bonus check carry contributions on its own.
-    expect(contributionPay({}, 120000, bonusTerms, 15000)).toEqual({
+    expect(contributionPay(120000, bonusTerms, 15000)).toEqual({
       salary: 120000,
-      bonusGross: 0,
+      bonusGross: 15000,
     });
-  });
-
-  it("carries the bonus when either switch is on, never folded into the salary", () => {
-    // 120000 * 0.10 * 1 * (12/12) = 12000
-    for (const entry of [
-      { include401kInBonus: true },
-      { includeBonusInContributions: true },
-      { include401kInBonus: true, includeBonusInContributions: true },
-    ]) {
-      expect(contributionPay(entry, 120000, bonusTerms)).toEqual({
-        salary: 120000,
-        bonusGross: 12000,
-      });
-    }
+    expect(contributionPay(120000, bonusTerms, null)).toEqual({
+      salary: 120000,
+      bonusGross: 12000,
+    });
   });
 });
 
@@ -115,7 +100,7 @@ describe("getTotalCompensation", () => {
     monthsInBonusYear: 12,
   };
 
-  it("returns salary + bonus regardless of includeBonusInContributions", () => {
+  it("returns salary + bonus", () => {
     expect(getTotalCompensation(120000, bonusTerms)).toBe(132000);
   });
 

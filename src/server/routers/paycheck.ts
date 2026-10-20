@@ -5,6 +5,7 @@ import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import {
+  bonusCheckContribution,
   calculatePaycheck,
   calculateBlendedAnnual,
 } from "@/lib/calculators/paycheck";
@@ -437,8 +438,7 @@ export const paycheckRouter = createTRPCRouter({
             salary,
             periodsPerYear,
             ficaCapContext(limitsRecord, person.dateOfBirth, taxYear),
-            contributionPay(activeJob, salary, bonusTerms, comp.bonusOverride)
-              .bonusGross,
+            contributionPay(salary, bonusTerms, comp.bonusOverride).bonusGross,
           );
 
           // This year's actual paid-out bonus, if pinned on the Salary
@@ -538,7 +538,6 @@ export const paycheckRouter = createTRPCRouter({
             paycheck,
             contributionAccounts: contribAccounts,
             deductions,
-            includeContribInBonus: paycheckInput.includeContribInBonus,
           });
 
           const rawContribs = [...jobContribs, ...personalContribs];
@@ -582,6 +581,18 @@ export const paycheckRouter = createTRPCRouter({
                   ] ?? 0,
               })),
             rawContribs,
+            /** The accounts the bonus check takes, and how much — the
+             *  accounts set to be taken from bonus checks (fromBonus).
+             *  contribAccounts is built from rawContribs, in order. */
+            bonusCheckAccounts: rawContribs
+              .map((c, i) => ({
+                id: c.id,
+                amount: bonusCheckContribution(
+                  contribAccounts[i]!,
+                  paycheck.bonusEstimate.bonusGross,
+                ),
+              }))
+              .filter((a) => a.amount > 0),
             budgetPerMonth: getRegularPeriodsPerMonth(
               periodsPerYear,
               budgetOverride,
