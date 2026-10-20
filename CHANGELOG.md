@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **Plan salaries are back.** v0.8.9 stopped reading the salaries an older Plan carried. Upgrading turns each such Plan's salaries into a Salary Profile of its own ("‹Plan› salary") and the Plan uses it.
 - Two quick edits on the Paycheck page could save over each other; each edit now saves only the field it changes.
+- **Relocation** compared contributions on base salary only. It now counts what the bonus check takes for accounts taken from bonus checks, and figures the employer match the same way as the Contributions page.
 
 ### Upgrading
 
