@@ -411,7 +411,7 @@ export function SimulationAssumptions({
               <AssumptionRow
                 label="Blended Return"
                 value={formatPercent(inputs.blendedReturn, 1)}
-                tip="Weighted average expected return across all asset classes based on your current glide path allocation. Typical range: 5-10% (bonds-heavy to equity-heavy)."
+                tip="Weighted average expected return across all asset classes based on this year's allocation on the simulation's glide path. Typical range: 5-10% (bonds-heavy to equity-heavy)."
               />
               <AssumptionRow
                 label="Blended Volatility"

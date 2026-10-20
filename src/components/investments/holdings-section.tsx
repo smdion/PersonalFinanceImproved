@@ -271,15 +271,16 @@ function AllocationCard({ data }: { data: Overview }) {
       <p className="text-caption text-faint mb-3">
         What your funds hold, added up across accounts
         {hasTarget && data.age !== null
-          ? `, next to ${data.targetSource === "current" ? "your current glide path" : "the retirement simulation's glide path"} for age ${data.age}`
+          ? `, next to ${data.targetSource === "current" ? "your target mix today" : "the retirement simulation's glide path"} for age ${data.age}`
           : ""}
         .
         {data.currentGlidePathStale && (
           <>
             {" "}
             <span className="text-amber-600">
-              Your current glide path uses an asset class that no longer exists,
-              so the retirement glide path is used until you edit it.
+              Your target mix today uses an asset class that no longer exists,
+              so the retirement simulation&apos;s glide path is used until you
+              edit it.
             </span>
           </>
         )}{" "}
@@ -292,8 +293,8 @@ function AllocationCard({ data }: { data: Overview }) {
             onClick={() => setEditingPath(true)}
           >
             {data.targetSource === "current"
-              ? "Edit your current glide path"
-              : "Set a current glide path"}
+              ? "Edit your target mix today"
+              : "Set a target mix today"}
           </button>
         )}
       </p>
@@ -502,8 +503,8 @@ function GlidePathCard({ data }: { data: Overview }) {
     <Card
       title={
         data.targetSource === "current"
-          ? "Your current glide path"
-          : "Your glide path (from the retirement plan)"
+          ? "Your target mix today"
+          : "Glide path (from the retirement simulation)"
       }
     >
       <p className="text-caption text-faint mb-2">

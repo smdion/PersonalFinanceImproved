@@ -73,6 +73,7 @@ export const navStructure: NavEntry[] = [
     Icon: ArrowLeftRight,
     items: [
       { href: "/paycheck", label: "Paycheck", Icon: Wallet },
+      { href: "/contributions", label: "Contributions", Icon: Layers },
       { href: "/budget", label: "Budget", Icon: ClipboardList },
       { href: "/savings", label: "Savings", Icon: PiggyBank },
       { href: "/expenses", label: "Expenses", Icon: Receipt },
@@ -109,17 +110,17 @@ export const navStructure: NavEntry[] = [
     Icon: Search,
     items: [
       { href: "/retirement", label: "Retirement", Icon: Palmtree },
-      { href: "/taxes", label: "Taxes", Icon: Receipt },
-      { href: "/tax-buckets", label: "Tax Buckets", Icon: Unlock },
+      { href: "/taxes", label: "Taxes this year", Icon: Receipt },
+      { href: "/tax-buckets", label: "Retirement taxes", Icon: Unlock },
       {
         href: "/tax-optimization",
-        label: "Tax Optimization",
+        label: "Roth & conversions",
         Icon: Calculator,
       },
       { href: "/tools", label: "Relocation", Icon: Wrench },
       {
         href: "/budget?tab=whatif",
-        label: "Budget Scenarios",
+        label: "What-If",
         Icon: FlaskConical,
       },
     ],
@@ -136,7 +137,6 @@ export const navStructure: NavEntry[] = [
       },
       { href: "/milestones", label: "Milestones", Icon: Award },
       { href: "/benchmarks", label: "Benchmarks", Icon: PieChart },
-      { href: "/contributions", label: "Contributions", Icon: Layers },
     ],
   },
   {

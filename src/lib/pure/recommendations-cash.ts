@@ -16,7 +16,7 @@ export function recommendationsFromCash(args: {
       area: "investing",
       urgency: "soon",
       title: `Uninvested cash in ${f.label}`,
-      action: `About ${formatCurrency(f.excess, 0)} more cash than your current glide path's target — invest it if it isn't set aside for something`,
+      action: `About ${formatCurrency(f.excess, 0)} more cash than your target mix today calls for — invest it if it isn't set aside for something`,
       context: `Of ${formatCurrency(f.value, 0)} in the account`,
       impact: { kind: "oneTime", amount: f.excess },
       href: "/portfolio",

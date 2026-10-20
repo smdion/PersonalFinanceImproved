@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Holding history (Benchmarks): what each account held over time. Observed
+ * Holding history (Portfolio): what each account held over time. Observed
  * periods come from daily SimpleFIN holdings and are read-only; for the
  * years before them — or an account with no feed — the household enters
  * periods (funds and %). The matched-mix comparison prices these. Shows

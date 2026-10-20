@@ -12,13 +12,13 @@ export function TaxesContent() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Taxes"
+        title="Taxes this year"
         subtitle="This year's tax on salary and bonus, and whether you can contribute to a Roth IRA directly"
       />
       {isLoading ? (
-        <LoadingCard title="Taxes" />
+        <LoadingCard title="Taxes this year" />
       ) : error || !data ? (
-        <ErrorCard title="Taxes" message="Failed to load" />
+        <ErrorCard title="Taxes this year" message="Failed to load" />
       ) : (
         <div className="grid gap-4 lg:grid-cols-2">
           <TaxBreakdown data={data} />

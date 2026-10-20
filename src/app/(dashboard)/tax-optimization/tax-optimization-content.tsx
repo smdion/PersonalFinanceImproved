@@ -80,7 +80,7 @@ export function TaxOptimizationContent() {
   if (metaQuery.isLoading || taxQuery.isLoading) {
     return (
       <div className="space-y-4">
-        <PageHeader title="Tax Optimization" />
+        <PageHeader title="Roth & conversions" />
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-96 w-full" />
       </div>
@@ -90,7 +90,7 @@ export function TaxOptimizationContent() {
   if (!meta || !("settings" in meta) || rows.length === 0) {
     return (
       <div className="space-y-4">
-        <PageHeader title="Tax Optimization" />
+        <PageHeader title="Roth & conversions" />
         <EmptyState
           message="No retirement projection yet"
           hint="Set retirement age, return rates, and a retirement budget on the Retirement page — the conversion and withdrawal-strategy tools need a plan to optimise against."
@@ -102,7 +102,7 @@ export function TaxOptimizationContent() {
   return (
     <div className="space-y-4">
       <PageHeader
-        title="Tax Optimization"
+        title="Roth & conversions"
         subtitle="Roth-conversion timing and withdrawal-sequencing strategies that minimise lifetime tax — modelled on your active Retirement Profile."
       >
         {bracketYear != null && (

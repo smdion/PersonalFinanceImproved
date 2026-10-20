@@ -56,6 +56,9 @@ vi.mock("@/components/ui/skeleton", () => ({
 vi.mock("@/components/ui/confirm-dialog", () => ({
   confirm: vi.fn(async () => true),
 }));
+vi.mock("@/components/investments/holding-history-section", () => ({
+  HoldingHistorySection: () => null,
+}));
 vi.mock("@/components/portfolio/contribution-accounts", () => ({
   ContributionAccountsSettings: () => <div>contrib-accounts</div>,
 }));

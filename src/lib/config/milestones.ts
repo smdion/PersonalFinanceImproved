@@ -520,7 +520,7 @@ export const MILESTONES = [
     title: "Rebalancing (5/25 bands)",
     rule: "Each asset class within 5 points, or 25% of its target, of where you want it (the 25% band only for classes targeted at 5% or more).",
     adaptedNote:
-      "Targets come from your current glide path on Benchmarks (or, until you set one, the retirement simulation's glide path) at your age. “Age in bonds” is the Bogleheads' classic starting point for the bond share.",
+      "Targets come from your target mix today on Benchmarks (or, until you set one, the retirement simulation's glide path) at your age. “Age in bonds” is the Bogleheads' classic starting point for the bond share.",
     href: "/benchmarks",
   },
   {
