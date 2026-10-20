@@ -43,6 +43,11 @@ test.describe("Scenario edit flow", () => {
   test("header shows a picker per profile kind and a Plans menu", async ({
     page,
   }) => {
+    // Not the dashboard: on CI's empty database "/" opens the first-run
+    // wizard as a full-screen modal that intercepts clicks (see
+    // privacy-mode.spec.ts). The header is on every page.
+    await page.goto("/networth");
+    await page.waitForLoadState("domcontentloaded");
     const bar = page.locator("[data-scenario-bar]");
     for (const kind of ["Salary", "Contributions", "Budget", "Retirement"])
       await expect(bar.getByText(`${kind}:`)).toBeVisible();
