@@ -1,10 +1,9 @@
 "use client";
 
 /**
- * Retirement → how your actual yearly returns compare with the return the
+ * Performance → how your actual yearly returns compare with the return the
  * projections assume for your ages. Display only — the projections keep
- * their own assumptions. Renders nothing until a retirement profile
- * resolves (an invalid stored id is being repaired) or without data.
+ * their own assumptions. Renders nothing without data.
  */
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
@@ -13,21 +12,11 @@ import { formatPercent } from "@/lib/utils/format";
 import { PERF_CATEGORY_PORTFOLIO } from "@/lib/config/display-labels";
 import { realizedVsAssumed } from "@/lib/pure/realized-vs-assumed";
 
-export function RealizedVsAssumedCard({
-  profileId,
-}: {
-  profileId: number | null;
-}) {
-  const { data: perf } = trpc.performance.computeSummary.useQuery(undefined, {
-    enabled: profileId !== null,
-  });
-  const { data: rates } = trpc.retirement.returnRates.list.useQuery(undefined, {
-    enabled: profileId !== null,
-  });
-  const { data: people } = trpc.settings.people.list.useQuery(undefined, {
-    enabled: profileId !== null,
-  });
-  if (profileId === null || !perf || !rates || !people) return null;
+export function RealizedVsAssumedCard() {
+  const { data: perf } = trpc.performance.computeSummary.useQuery();
+  const { data: rates } = trpc.retirement.returnRates.list.useQuery();
+  const { data: people } = trpc.settings.people.list.useQuery();
+  if (!perf || !rates || !people) return null;
 
   const { rows, realizedAnnual, assumedAnnual } = realizedVsAssumed(
     perf.annualRows
@@ -49,7 +38,7 @@ export function RealizedVsAssumedCard({
       title={
         <>
           Realized vs assumed returns{" "}
-          <HelpTip text="Your actual yearly return on all investments (the Performance page's Portfolio return) next to the return your projections assume for your household's average age that year, from the return-rate table. Both compound into one yearly figure over the same years. Display only — projections keep their own assumptions." />
+          <HelpTip text="Your actual yearly return on all investments (this page's Portfolio return) next to the return your projections assume for your household's average age that year, from the return-rate table. Both compound into one yearly figure over the same years. Display only — projections keep their own assumptions." />
         </>
       }
       className="mt-6"

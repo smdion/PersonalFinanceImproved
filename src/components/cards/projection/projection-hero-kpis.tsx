@@ -204,7 +204,10 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     baseline: lastYear
       ? deflate(lastPt ? lastPt.balance : rowTotal(lastYear), lastYear.year)
       : 0,
-    targetAge: engineSettings?.endAge ?? lastYear?.age ?? 0,
+    // The last projected year, which the engine labels endAge − 1 (its
+    // balance is the end-of-year figure the card reads as "at endAge") —
+    // the same row the baseline came from.
+    targetAge: lastYear?.age ?? 0,
     toDisplay: deflate,
     personFiltered: isPersonFiltered,
   });
@@ -388,14 +391,21 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
                 : endDisplay.baseline,
             )}
           </div>
-          <div className="text-caption text-faint mt-1 leading-tight">
-            {endDisplay.kind === "simulated"
-              ? `Sim. median at age ${engineSettings?.endAge ?? "?"}`
-              : `Baseline (fixed returns) at age ${engineSettings?.endAge ?? "?"}`}
-          </div>
-          {endDisplay.kind === "simulated" && (
-            <div className="text-caption text-faint leading-tight">
-              Baseline: {formatCurrency(endDisplay.baseline)} (fixed returns)
+          {endDisplay.kind === "simulated" ? (
+            <>
+              <div className="text-caption text-faint mt-1 leading-tight">
+                Range {formatCurrency(endDisplay.low)} –{" "}
+                {formatCurrency(endDisplay.high)} at age{" "}
+                {engineSettings?.endAge ?? "?"}
+              </div>
+              <div className="text-caption text-faint leading-tight">
+                Baseline: {formatCurrency(endDisplay.baseline)} (fixed returns)
+              </div>
+            </>
+          ) : (
+            <div className="text-caption text-faint mt-1 leading-tight">
+              Baseline (fixed returns) at age {engineSettings?.endAge ?? "?"}
+              {isPersonFiltered ? " — the simulation is household-wide" : ""}
             </div>
           )}
         </KpiCard>

@@ -28,6 +28,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
+import { RealizedVsAssumedCard } from "@/components/performance/realized-vs-assumed-card";
 import {
   LifetimeSummaryCards,
   CategoryTabs,
@@ -728,6 +729,9 @@ export function PerformanceContent() {
           <FilteredAccountTable rows={filteredYearRows} />
         </div>
       )}
+
+      {/* Actual returns vs the projections' assumption (display only) */}
+      <RealizedVsAssumedCard />
 
       {showFinalizeModal && currentYear && (
         <FinalizeYearModal
