@@ -21,6 +21,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **One salary editor:** Profiles → Salary shows each job with the Paycheck page's own sections — Pay schedule, Withholding, Bonus, Other pay, Extra paycheck — and both save the same way. The table above keeps salary, bonus and total.
 - **Budget columns are spending levels.** Every column uses the active Salary and Contribution profiles; a column no longer has profiles of its own (the What-If tab's "columns with their own profiles" note is gone).
 - **Plan names are unique.**
+- **A simpler header:** "Profiles [Manage ▾]" opens one panel with the active profile of each kind, your Plans and "Edit profiles →" (it shows the Plan's name when the active profiles match one), and "View [Projected | Year-end | YTD]" is labelled — two controls instead of six.
+- **What the savings rate counts is set next to it.** "Employer match" and "Portfolio" are small on/off chips on the savings-rate line of the Contributions page and the Dashboard's checkup card, showing their state — they used to sit with the page's filters and looked like they changed the whole page. The Contributions page's profile picker is labelled and marks the active profile.
+- **Portfolio:** Holding history collapses like Snapshot History and Account & Contribution Settings; links to it open it.
 - **Plainer words:** the year-by-year changes on the Retirement projection are "Changes by year", Savings' one-month amounts are "Month changes", the extra paycheck's are "Specific months", and Retirement's own spending amount is a "Set amount" (no more "override").
 
 ### Fixed
