@@ -74,24 +74,28 @@ describe("resolveRmdExcessTarget", () => {
     }
   });
 
-  it("no Retirement brokerage: a projection-only one when reinvesting, none when spending", () => {
+  it("no Retirement brokerage: a projection-only one, whatever the RMD setting (overflow lands there too)", () => {
     const noRetirementBrokerage = {
       entries: [entry(2, "Portfolio")],
       perfAccounts: [perf(2, "Portfolio")],
+      targetPerformanceAccountId: null,
     };
-    expect(
-      resolveRmdExcessTarget({
-        ...noRetirementBrokerage,
-        targetPerformanceAccountId: null,
-        reinvest: true,
-      }).addProjectedBrokerage,
-    ).toBe(true);
-    expect(
-      resolveRmdExcessTarget({
-        ...noRetirementBrokerage,
-        targetPerformanceAccountId: null,
-        reinvest: false,
-      }).addProjectedBrokerage,
-    ).toBe(false);
+    for (const reinvest of [true, false])
+      expect(
+        resolveRmdExcessTarget({ ...noRetirementBrokerage, reinvest })
+          .addProjectedBrokerage,
+      ).toBe(true);
+  });
+
+  it("the performance account's parent decides, not the snapshot row's copy", () => {
+    // Re-parented to Retirement after the last snapshot.
+    const r = resolveRmdExcessTarget({
+      entries: [entry(2, "Portfolio")],
+      perfAccounts: [perf(2, "Retirement")],
+      targetPerformanceAccountId: 2,
+      reinvest: true,
+    });
+    expect(r.addProjectedBrokerage).toBe(false);
+    expect(r.targetPerformanceAccountId).toBe(2);
   });
 });

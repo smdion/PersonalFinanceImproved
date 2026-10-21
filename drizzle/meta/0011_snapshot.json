@@ -1,5 +1,5 @@
 {
-  "id": "2679fae0-07a9-4959-b32e-6b00f55a48ba",
+  "id": "9b756cea-d8c8-4cac-94c5-9e2ee0a683be",
   "prevId": "5730f253-715a-4405-8b95-6c693426c87a",
   "version": "7",
   "dialect": "postgresql",
@@ -6172,6 +6172,21 @@
           "columns": [
             {
               "expression": "profile_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "retirement_settings_rmd_excess_target_idx": {
+          "name": "retirement_settings_rmd_excess_target_idx",
+          "columns": [
+            {
+              "expression": "rmd_excess_target_performance_account_id",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

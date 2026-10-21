@@ -206,9 +206,10 @@ export function syncAggregateBasis(
   const accts = basisTrackedAccounts(indAccts);
   if (accts.length === 0) return;
   // The accounts' sum is the truth only when they hold all the brokerage
-  // money; when some lives only in the aggregate (reconciliation had no
-  // account to put it in — e.g. overflow with only a projection-only
-  // account at $0), keep the aggregate's basis and say so.
+  // money. They normally do (overflow has a Retirement home — the
+  // projection-only brokerage when there's no real one); if some money
+  // still lives only in the aggregate, keep the aggregate's basis and say
+  // so rather than price it as all gain.
   const held = accts.reduce(
     (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
     0,

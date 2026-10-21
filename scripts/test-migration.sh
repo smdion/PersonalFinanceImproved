@@ -251,6 +251,11 @@ if [[ "$HAS_RMD_TARGET" != "1" ]]; then
   err "retirement_settings.rmd_excess_target_performance_account_id is missing"
   exit 1
 fi
+HAS_RMD_TARGET_IDX=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM pg_indexes WHERE indexname='retirement_settings_rmd_excess_target_idx'")
+if [[ "$HAS_RMD_TARGET_IDX" != "1" ]]; then
+  err "retirement_settings_rmd_excess_target_idx is missing"
+  exit 1
+fi
 SET_TARGETS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM retirement_settings WHERE rmd_excess_target_performance_account_id IS NOT NULL")
 ok "unspent-RMD account column present ($SET_TARGETS rows set; the rest spread across Retirement brokerages)"
 

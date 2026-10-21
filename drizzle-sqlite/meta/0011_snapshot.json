@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "65a3f2db-775b-48a9-afea-3f4cbbd6458c",
+  "id": "d3d2908c-ba6a-4051-9d64-a3a44a11bf03",
   "prevId": "6fa09be0-0ac1-4b66-a6e1-254217ac5f51",
   "tables": {
     "account_basis": {
@@ -5261,6 +5261,11 @@
         "retirement_settings_profile_id_idx": {
           "name": "retirement_settings_profile_id_idx",
           "columns": ["profile_id"],
+          "isUnique": false
+        },
+        "retirement_settings_rmd_excess_target_idx": {
+          "name": "retirement_settings_rmd_excess_target_idx",
+          "columns": ["rmd_excess_target_performance_account_id"],
           "isUnique": false
         },
         "retirement_settings_profile_person_unq": {

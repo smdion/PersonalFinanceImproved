@@ -1,2 +1,3 @@
 ALTER TABLE "retirement_settings" ADD COLUMN "rmd_excess_target_performance_account_id" integer;--> statement-breakpoint
-ALTER TABLE "retirement_settings" ADD CONSTRAINT "retirement_settings_rmd_excess_target_performance_account_id_performance_accounts_id_fk" FOREIGN KEY ("rmd_excess_target_performance_account_id") REFERENCES "public"."performance_accounts"("id") ON DELETE set null ON UPDATE no action;
+ALTER TABLE "retirement_settings" ADD CONSTRAINT "retirement_settings_rmd_excess_target_performance_account_id_performance_accounts_id_fk" FOREIGN KEY ("rmd_excess_target_performance_account_id") REFERENCES "public"."performance_accounts"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "retirement_settings_rmd_excess_target_idx" ON "retirement_settings" USING btree ("rmd_excess_target_performance_account_id");

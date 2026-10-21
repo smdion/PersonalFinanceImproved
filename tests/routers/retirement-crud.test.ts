@@ -138,6 +138,47 @@ describe("retirement.retirementSettings", () => {
     });
   });
 
+  describe("the unspent-RMD account when its account changes", () => {
+    const update = (id: number, over: Record<string, unknown> = {}) =>
+      caller.performance.performanceAccounts.update({
+        id,
+        institution: "Fidelity",
+        accountType: "brokerage",
+        ownershipType: "joint",
+        parentCategory: "Retirement",
+        isActive: true,
+        displayOrder: 0,
+        ...over,
+      });
+    const picked = async () =>
+      (await caller.retirement.retirementSettings.list())[0]!
+        .rmdExcessTargetPerformanceAccountId;
+    const pick = async (id: number) =>
+      caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        rmdExcessTargetPerformanceAccountId: id,
+      });
+
+    it("an unrelated edit keeps it; deactivating or moving it to Portfolio clears it", async () => {
+      const id = seedPerformanceAccount(db, {
+        name: "Changing brokerage",
+        accountType: "brokerage",
+        parentCategory: "Retirement",
+      });
+      await pick(id);
+      await update(id, { label: "Renamed" });
+      expect(await picked()).toBe(id);
+
+      await update(id, { parentCategory: "Portfolio" });
+      expect(await picked()).toBeNull();
+
+      await update(id);
+      await pick(id);
+      await update(id, { isActive: false });
+      expect(await picked()).toBeNull();
+    });
+  });
+
   describe("upsert with optional fields", () => {
     it("accepts all optional fields", async () => {
       const result = await caller.retirement.retirementSettings.upsert({

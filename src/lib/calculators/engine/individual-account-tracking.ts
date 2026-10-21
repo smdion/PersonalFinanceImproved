@@ -123,6 +123,8 @@ export function buildSpecToAccountMapping(
 ): { specToAccount: Map<string, string>; accountsWithSpecs: Set<string> } {
   const taxTreatmentToTaxType = TAX_TREATMENT_TO_TAX_TYPE;
   const specToAccount = new Map<string, string>();
+  // The projection-only retirement brokerage has no contributions of its own.
+  const accts = indAccts.filter((ia) => !ia.projectedOnly);
 
   for (const spec of contributionSpecs) {
     const specTaxType =
@@ -145,14 +147,14 @@ export function buildSpecToAccountMapping(
       (ia.ownerPersonId === undefined && ia.ownerName === undefined);
 
     const match =
-      indAccts.find(
+      accts.find(
         (ia) =>
           ia.category === spec.category &&
           exactOwner(ia) &&
           ia.taxType === specTaxType &&
           parentCatMatch(ia),
       ) ??
-      indAccts.find(
+      accts.find(
         (ia) =>
           ia.category === spec.category &&
           ia.ownerPersonId === undefined &&
@@ -160,18 +162,18 @@ export function buildSpecToAccountMapping(
           ia.taxType === specTaxType &&
           parentCatMatch(ia),
       ) ??
-      indAccts.find(
+      accts.find(
         (ia) =>
           ia.category === spec.category && exactOwner(ia) && parentCatMatch(ia),
       ) ??
-      indAccts.find(
+      accts.find(
         (ia) =>
           ia.category === spec.category &&
           ia.ownerPersonId === undefined &&
           ia.ownerName === undefined &&
           parentCatMatch(ia),
       ) ??
-      indAccts.find((ia) => ia.category === spec.category && ownerMatch(ia));
+      accts.find((ia) => ia.category === spec.category && ownerMatch(ia));
     if (match) specToAccount.set(specKeyOf(spec), indKey(match));
   }
 
@@ -392,7 +394,10 @@ export function distributeContributions(
       parentCatMatchData.forEach((baseMatch, pCat) => {
         const scaledMatch = roundToCents(catMatch * (baseMatch / totalMatch));
         const allPCatAccts = indAccts.filter(
-          (ia) => ia.category === cat && indParentCat.get(indKey(ia)) === pCat,
+          (ia) =>
+            ia.category === cat &&
+            !ia.projectedOnly &&
+            indParentCat.get(indKey(ia)) === pCat,
         );
         if (allPCatAccts.length === 0) return;
         const preTaxPCatAccts = allPCatAccts.filter((ia) =>
@@ -421,7 +426,9 @@ export function distributeContributions(
         }
       });
     } else {
-      const catAll = indAccts.filter((ia) => ia.category === cat);
+      const catAll = indAccts.filter(
+        (ia) => ia.category === cat && !ia.projectedOnly,
+      );
       const catPreTax = catAll.filter((ia) => isPreTaxType(ia.taxType));
       const catMatchPool = catPreTax.length > 0 ? catPreTax : catAll;
       const catWithSpecs = catMatchPool.filter((ia) =>
@@ -449,11 +456,11 @@ export function distributeContributions(
     // Retirement-parented brokerage specs/accounts first.
     // The accounts decide (a Retirement brokerage with no spec of its own
     // still takes overflow before any Portfolio one); specs only order and
-    // cap it within those accounts.
+    // cap it within those accounts. The projection-only retirement
+    // brokerage counts: with no real Retirement brokerage it's where
+    // retirement money lands, so overflow never becomes Portfolio money.
     const brokAccts = retirementFirst(
-      indAccts.filter(
-        (ia) => isOverflowTarget(ia.category) && !ia.projectedOnly,
-      ),
+      indAccts.filter((ia) => isOverflowTarget(ia.category)),
       (ia) => indParentCat.get(indKey(ia)) ?? ia.parentCategory,
     );
     const brokKeys = new Set(brokAccts.map((ia) => indKey(ia)));
@@ -1105,9 +1112,10 @@ export function buildIndividualYearBalances(
   },
   eligibility?: EligibilityRecord,
 ): IndividualAccountYearBalance[] {
-  return indAccts.map((ia) => {
+  const rows = indAccts.map((ia): IndividualAccountYearBalance => {
     const k = indKey(ia);
     const isOverflow = isOverflowTarget(ia.category);
+    const projectedFields = ia.projectedOnly ? { projectedOnly: true } : {};
     const balance =
       Math.abs(indBal.get(k) ?? 0) < 1 ? 0 : roundToCents(indBal.get(k) ?? 0);
     const basisState = maps.basis?.get(k);
@@ -1155,6 +1163,7 @@ export function buildIndividualYearBalances(
           : {}),
         ...basisFields,
         ...costBasisFields,
+        ...projectedFields,
       };
     }
 
@@ -1188,8 +1197,18 @@ export function buildIndividualYearBalances(
       ...basisFields,
       ...costBasisFields,
       ...drawnFields,
+      ...projectedFields,
     };
   });
+  // The projection-only retirement brokerage shows up once it holds money
+  // (an empty "projected" account would be noise in every table).
+  return rows.filter(
+    (r) =>
+      !r.projectedOnly ||
+      r.balance !== 0 ||
+      r.contribution !== 0 ||
+      (r.withdrawal ?? 0) !== 0,
+  );
 }
 
 // ---------------------------------------------------------------------------

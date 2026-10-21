@@ -703,7 +703,7 @@ const V08_MIGRATION_HASHES: Record<string, string> = {
   "63fc76f959fa22a150d4f8227fe4cdd898f2cc8eee5ecf11a049659dd67ad92d":
     "0010_v0810_holding_period_parts",
   // v0.8.11: where reinvested RMD money goes (per Retirement Profile).
-  "19060174a64756401fdf43ba6ac09c906594da547f20dc94f54e98b5370b12a9":
+  "0366e7ae1b9763c3f54b88688d82045f70e204c8817fbad10ce68c9d9e4e975c":
     "0011_v0811_rmd_excess_target",
 };
 

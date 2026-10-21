@@ -300,8 +300,13 @@ import { log } from "@/lib/logger";
  *  retirement brokerage when there is none).
  *
  *  45: the year-end basis sync keeps the aggregate basis when accounts
- *  don't hold all the brokerage money (it zeroed it). */
-export const PROJECTION_CACHE_ENGINE_VERSION = 45;
+ *  don't hold all the brokerage money (it zeroed it).
+ *
+ *  46: with no Retirement brokerage, overflow lands in the projection-only
+ *  retirement brokerage (it went to a Portfolio brokerage or stayed
+ *  aggregate-only); that account is added whatever the RMD setting and
+ *  hidden from yearly rows while empty. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 46;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

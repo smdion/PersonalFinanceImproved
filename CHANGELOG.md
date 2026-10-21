@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
-- **Choose where unspent required withdrawals go** (Retirement settings → RMD Handling → Reinvested into): when your RMDs are more than you spend and you reinvest the rest, pick which Retirement brokerage receives it, or leave it spread across them. It stays retirement money — never a Portfolio account; with no Retirement brokerage the projection adds a "Retirement brokerage (projected)" for it. Set per Retirement Profile.
+- **Choose where unspent required withdrawals go** (Retirement settings → RMD Handling → Reinvested into): when your RMDs are more than you spend and you reinvest the rest, pick which Retirement brokerage receives it, or leave it spread across them. It stays retirement money — never a Portfolio account; with no Retirement brokerage the projection adds a "Retirement brokerage (projected)" that holds it, along with any 401(k)/IRA contributions past the IRS limits (shown once it holds money). Set per Retirement Profile; deactivating the chosen account or moving it to Portfolio clears the choice.
 
 ### Fixed
 

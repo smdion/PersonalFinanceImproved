@@ -1909,6 +1909,95 @@ describe("engine invariants", () => {
       brokerageAddsUp(input);
     });
 
+    describe("no Retirement brokerage: overflow lands in the projection-only one", () => {
+      const projected: IndividualAccountInput = {
+        name: "Retirement brokerage (projected)",
+        category: "brokerage",
+        taxType: "afterTax",
+        startingBalance: 0,
+        startingBasis: 0,
+        parentCategory: "Retirement",
+        projectedOnly: true,
+      };
+      // No account holds money the aggregate doesn't know about, so neither
+      // reconciliation nor the basis sync has anything to report.
+      const noDiagnostics = (input: ProjectionInput) => {
+        for (const y of calculateProjection(input).projectionByYear.slice(0, 4))
+          expect(
+            (y.warnings ?? []).filter((w) => w.startsWith("[DIAG]")),
+            `${y.year}`,
+          ).toEqual([]);
+      };
+      const withoutRetirementBrokerage = (
+        keepPortfolio: boolean,
+      ): ProjectionInput => {
+        const base = overflowInput();
+        const afterTax = keepPortfolio ? 10000 : 0;
+        return {
+          ...base,
+          startingBalances: {
+            ...base.startingBalances,
+            afterTax,
+            afterTaxBasis: afterTax,
+          },
+          startingAccountBalances: {
+            ...base.startingAccountBalances,
+            brokerage: {
+              structure: "basis_tracking",
+              balance: afterTax,
+              basis: afterTax,
+            },
+          },
+          contributionSpecs: base.contributionSpecs!.filter(
+            (sp) =>
+              sp.name === "401k" ||
+              (keepPortfolio && sp.name === "Long-term brokerage"),
+          ),
+          baseYearContributions: {
+            ...base.baseYearContributions!,
+            brokerage: keepPortfolio ? 5000 : 0,
+          },
+          individualAccounts: [
+            ...base.individualAccounts!.filter(
+              (ia) =>
+                ia.name === "401k" ||
+                (keepPortfolio && ia.name === "Long-term brokerage"),
+            ),
+            projected,
+          ],
+        };
+      };
+
+      it("only a Portfolio brokerage: the Portfolio one gets none of it", () => {
+        const input = withoutRetirementBrokerage(true);
+        let portfolioPrev = 10000;
+        const years = calculateProjection(input).projectionByYear.slice(0, 4);
+        for (const y of years) {
+          const accts = y.individualAccountBalances ?? [];
+          const portfolio = accts.find(
+            (a) => a.parentCategory === "Portfolio",
+          )!;
+          expect(
+            portfolio.balance - portfolioPrev,
+            `${y.year}`,
+          ).toBeLessThanOrEqual(5000.01);
+          portfolioPrev = portfolio.balance;
+        }
+        expect(
+          years[3]!.individualAccountBalances!.find((a) => a.projectedOnly)
+            ?.balance,
+        ).toBeGreaterThan(0);
+        brokerageAddsUp(input);
+        noDiagnostics(input);
+      });
+
+      it("no brokerage at all: the projection-only one holds all of it", () => {
+        const input = withoutRetirementBrokerage(false);
+        brokerageAddsUp(input);
+        noDiagnostics(input);
+      });
+    });
+
     it("Portfolio money stays Portfolio: the ramp and a Brokerage-page lump sum", () => {
       const base = overflowInput();
       const year = base.asOfDate.getFullYear() + 1;
@@ -2303,8 +2392,12 @@ describe("engine invariants", () => {
         )!;
         return {
           excess: y.rmdExcessAmount,
+          // An account with no row (the projection-only one while empty) holds $0.
           bal: (name: string) =>
-            y.individualAccountBalances!.find((a) => a.name === name)!.balance,
+            y.individualAccountBalances!.find((a) => a.name === name)
+              ?.balance ?? 0,
+          hasRow: (name: string) =>
+            y.individualAccountBalances!.some((a) => a.name === name),
         };
       };
 
@@ -2349,6 +2442,9 @@ describe("engine invariants", () => {
         expect(reinvest.bal("P")).toBeCloseTo(spend.bal("P"), 0);
         expect(reinvest.bal("Projected")).toBeGreaterThan(0);
         expect(spend.bal("Projected")).toBe(0);
+        // Shown once it holds money, hidden while empty.
+        expect(reinvest.hasRow("Projected")).toBe(true);
+        expect(spend.hasRow("Projected")).toBe(false);
       });
     });
   });

@@ -519,6 +519,30 @@ describe("projection router — computeProjection", () => {
     expect(response.result!.projectionByYear.length).toBeGreaterThan(0);
   });
 
+  it("echoes the saved unspent-RMD account (the Retirement settings picker reads it)", async () => {
+    const brokerage = seedPerformanceAccount(db, {
+      name: "Echo brokerage",
+      accountType: "brokerage",
+      parentCategory: "Retirement",
+    });
+    db.update(schema.retirementSettings)
+      .set({ rmdExcessTargetPerformanceAccountId: brokerage })
+      .run();
+    try {
+      const response = await caller.projection.computeProjection({
+        accumulationOverrides: [],
+        decumulationOverrides: [],
+      });
+      expect(response.settings?.rmdExcessTargetPerformanceAccountId).toBe(
+        brokerage,
+      );
+    } finally {
+      db.update(schema.retirementSettings)
+        .set({ rmdExcessTargetPerformanceAccountId: null })
+        .run();
+    }
+  });
+
   it("the contribution rate counts retirement contributions only", async () => {
     const rate = async (contributionProfileId: number) => {
       const r = await caller.projection.computeProjection({

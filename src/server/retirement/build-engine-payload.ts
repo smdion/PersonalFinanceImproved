@@ -631,8 +631,9 @@ export async function buildEnginePayload(
   } = taxBucketBreakdown;
 
   // Where reinvested RMD money goes (Retirement settings): the chosen
-  // Retirement brokerage, else every Retirement brokerage, else a
-  // projection-only one — never a Portfolio account.
+  // Retirement brokerage, else every Retirement brokerage — never a
+  // Portfolio account. With no Retirement brokerage, a projection-only one
+  // holds that money and contribution overflow.
   const rmdTarget = resolveRmdExcessTarget({
     targetPerformanceAccountId:
       settings.rmdExcessTargetPerformanceAccountId ?? null,

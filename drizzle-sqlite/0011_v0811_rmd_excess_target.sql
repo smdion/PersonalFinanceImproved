@@ -1,1 +1,2 @@
-ALTER TABLE `retirement_settings` ADD `rmd_excess_target_performance_account_id` integer REFERENCES performance_accounts(id) ON DELETE SET NULL;
+ALTER TABLE `retirement_settings` ADD `rmd_excess_target_performance_account_id` integer REFERENCES performance_accounts(id) ON DELETE SET NULL;--> statement-breakpoint
+CREATE INDEX `retirement_settings_rmd_excess_target_idx` ON `retirement_settings` (`rmd_excess_target_performance_account_id`);
