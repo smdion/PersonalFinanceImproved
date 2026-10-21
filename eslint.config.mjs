@@ -100,6 +100,31 @@ const localRules = {
         };
       },
     },
+    "no-all-accounts-balance": {
+      meta: {
+        type: "problem",
+        docs: {
+          description:
+            "Retirement answers read retirementBalance; allAccountsBalance (Portfolio included) is for the net-worth views on the allow-list only.",
+        },
+        schema: [],
+      },
+      create(context) {
+        const MSG =
+          "allAccountsBalance counts Portfolio money, which retirement never spends. Read retirementBalance for any retirement answer (and assessPlan for 'does it work'); a net-worth view (liquid net worth, benchmarks) goes on the allow-list in eslint.config.mjs.";
+        const isIt = (n) =>
+          n && n.type === "Identifier" && n.name === "allAccountsBalance";
+        return {
+          MemberExpression(node) {
+            if (!node.computed && isIt(node.property))
+              context.report({ node, message: MSG });
+          },
+          "ObjectPattern > Property"(node) {
+            if (isIt(node.key)) context.report({ node, message: MSG });
+          },
+        };
+      },
+    },
   },
 };
 
@@ -205,6 +230,20 @@ const config = [
     files: ["src/**/*.{ts,tsx}"],
     plugins: { local: localRules },
     rules: { "local/no-tz-unsafe-date-string": "error" },
+  },
+  {
+    // Retirement answers never read the all-accounts balance (v0.8.11 A8).
+    // Allowed: the engine that produces it, and the net-worth views —
+    // FI milestones (liquid net worth, D1) and the Money Guy benchmark.
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: [
+      "src/lib/calculators/engine/**",
+      "src/lib/calculators/types/**",
+      "src/lib/pure/milestone-input.ts",
+      "src/components/cards/dashboard/retirement-benchmarks.tsx",
+    ],
+    plugins: { local: localRules },
+    rules: { "local/no-all-accounts-balance": "error" },
   },
   {
     // date.ts documents the anti-pattern (it's the helper's reason to
