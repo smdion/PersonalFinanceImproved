@@ -1,4 +1,5 @@
 /** Memoized derived data from engine query results — person filtering, visible column detection, deflation, contribution rate schedules, tooltip rendering, and milestone-based year filtering. */
+import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { useMemo, useCallback, useEffect } from "react";
 import type {
   EngineYearProjection,
@@ -551,8 +552,8 @@ export function useProjectionDerived(
       for (const o of accumOverrides) milestones.add(o.year);
       for (const o of decumOverrides) milestones.add(o.year);
       if (result?.firstOverflowYear) milestones.add(result.firstOverflowYear);
-      if (result?.retirementDepletionYear)
-        milestones.add(result.retirementDepletionYear);
+      const failureYear = result ? assessPlan(result).failureYear : null;
+      if (failureYear) milestones.add(failureYear);
       return years.filter((yr) => milestones.has(yr.year));
     },
     [showAllYears, accumOverrides, decumOverrides, result],

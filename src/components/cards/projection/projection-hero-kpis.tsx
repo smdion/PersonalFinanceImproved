@@ -3,6 +3,7 @@
 /** Hero KPI cards — MC-adaptive 5-card grid. Unified card chrome across
  *  all metrics so the row reads as a single design language. Uses the same
  *  visual pattern as the MC summary bar in projection-mc-results.tsx. */
+import { dominantFailureReason } from "@/lib/calculators/plan-outcome";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { rowTotal } from "./utils";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -255,8 +256,8 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
           <div className="flex flex-1 flex-col items-center justify-center gap-1">
             <CompactRing rate={mc.successRate} size={68} />
             <div className="text-micro text-faint">
-              {mc.distributions.depletionAge
-                ? `depletes ~age ${Math.round(mc.distributions.depletionAge.median)}`
+              {mc.distributions.failureAge
+                ? `${dominantFailureReason(mc.failureReasonRates) === "depleted" ? "runs out" : "falls short"} ~age ${Math.round(mc.distributions.failureAge.median)}`
                 : `vs age ${engineSettings?.endAge ?? "?"}`}
             </div>
           </div>

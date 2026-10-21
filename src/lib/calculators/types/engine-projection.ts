@@ -446,6 +446,10 @@ export type EngineDecumulationYear = {
    *  own materiality threshold — see decumulation-year.ts's
    *  `shortfallMaterialityFloor` for why $50-or-1%-of-need is the bar. */
   unmetNeedMaterial?: boolean;
+  /** The bar `unmetNeedMaterial` uses: $50 or 1% of the year's need,
+   *  whichever is greater. Also what counts as "no money left" for the
+   *  plan judge (plan-outcome.ts) — one threshold, set here. */
+  shortfallMaterialityFloor?: number;
   /** Portion of `unmetNeed` attributable specifically to excluding
    *  penalty-exposed money, not to the household being broke —
    *  see `RouteResult`'s docblock in `withdrawal-routing.ts` for the exact

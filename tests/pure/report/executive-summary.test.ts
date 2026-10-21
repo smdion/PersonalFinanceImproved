@@ -70,7 +70,7 @@ function mcResult(overrides: Partial<MonteCarloResult> = {}): MonteCarloResult {
         mean: 0,
         stdDev: 0,
       },
-      depletionAge: null,
+      failureAge: null,
       sustainableWithdrawal: {
         min: 0,
         p5: 0,
@@ -98,7 +98,7 @@ function mcResult(overrides: Partial<MonteCarloResult> = {}): MonteCarloResult {
         stdDev: 0,
       },
     },
-    worstCase: { p5DepletionAge: null, p5EndBalance: 100000 },
+    worstCase: { p5FailureAge: null, p5EndBalance: 100000 },
     ...overrides,
   } as unknown as MonteCarloResult;
 }

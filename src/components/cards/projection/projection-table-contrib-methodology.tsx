@@ -1,4 +1,8 @@
 /** Expandable section below the projection table showing contribution specs, methodology links, and engine validation evidence. */
+import {
+  assessPlan,
+  describePlanFailure,
+} from "@/lib/calculators/plan-outcome";
 import React from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
@@ -241,13 +245,15 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                 >
                   Full methodology &rarr;
                 </button>
-                {result.retirementDepletionYear && (
-                  <div className="mt-2 border-t border-amber-100 pt-1.5 font-medium text-red-600">
-                    Retirement money runs out at age{" "}
-                    {result.retirementDepletionAge} (
-                    {result.retirementDepletionYear})
-                  </div>
-                )}
+                {(() => {
+                  const outcome = assessPlan(result);
+                  return outcome.succeeded ? null : (
+                    <div className="mt-2 border-t border-amber-100 pt-1.5 font-medium text-red-600">
+                      The plan {describePlanFailure(outcome)} (
+                      {outcome.failureYear})
+                    </div>
+                  );
+                })()}
               </div>
               <div className="rounded-lg border border-green-100 bg-green-50/50 p-3 text-xs">
                 <h5 className="text-secondary mb-1.5 font-medium uppercase">

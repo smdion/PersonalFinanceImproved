@@ -10,7 +10,7 @@
  * correlated log-normal distributions based on asset class parameters and a
  * glide path that shifts allocations over time.
  */
-import { assessPlan } from "./plan-outcome";
+import { assessPlan, type PlanFailureReason } from "./plan-outcome";
 import { calculateProjection } from "./engine";
 import {
   createPRNG,
@@ -200,7 +200,12 @@ export function calculateMonteCarlo(
   // what to actually go build. Only meaningful for trials where the
   // boolean above is true; 0 otherwise.
   const penaltyAvoidedShortfallAmountsPV: number[] = [];
-  const depletionAges: number[] = [];
+  const failureAges: number[] = [];
+  const failureReasonCounts: Record<PlanFailureReason, number> = {
+    depleted: 0,
+    penaltyGap: 0,
+    shortfall: 0,
+  };
   const sustainableWithdrawals: number[] = [];
   const sustainableWithdrawalsPV: number[] = [];
   let spendingStableCount = 0;
@@ -337,9 +342,10 @@ export function calculateMonteCarlo(
       safeDivide(totalPenaltyAvoidedShortfallNominal, pvDeflator, 0),
     );
 
-    // Depletion age
-    if (result.retirementDepletionAge !== null) {
-      depletionAges.push(result.retirementDepletionAge);
+    // Failure age and reason (the plan judge's, not depletion alone).
+    if (!outcome.succeeded) {
+      failureAges.push(outcome.failureAge);
+      failureReasonCounts[outcome.failureReason]++;
     }
 
     // Spending stability: did withdrawals stay ≥75% of baseline every decumulation year?
@@ -543,17 +549,22 @@ export function calculateMonteCarlo(
   const meanEndBalance =
     sumBy(terminalBalances, (v) => v) / Math.max(terminalBalances.length, 1);
 
-  // Depletion age distribution (null if fewer than 5% of trials deplete)
-  const depletionDist =
-    depletionAges.length >= numTrials * 0.05
-      ? computeDistribution(depletionAges)
+  // Failure age distribution (null if fewer than 5% of trials fail)
+  const failureAgeDist =
+    failureAges.length >= numTrials * 0.05
+      ? computeDistribution(failureAges)
       : null;
 
   // P5 worst-case
   const p5EndBalance = percentile(sortedTerminal, 5);
-  const sortedDepletions = [...depletionAges].sort((a, b) => a - b);
-  const p5DepletionAge =
-    sortedDepletions.length > 0 ? percentile(sortedDepletions, 5) : null;
+  const sortedFailures = [...failureAges].sort((a, b) => a - b);
+  const p5FailureAge =
+    sortedFailures.length > 0 ? percentile(sortedFailures, 5) : null;
+  const failureReasonRates = {
+    depleted: safeDivide(failureReasonCounts.depleted, numTrials, 0),
+    penaltyGap: safeDivide(failureReasonCounts.penaltyGap, numTrials, 0),
+    shortfall: safeDivide(failureReasonCounts.shortfall, numTrials, 0),
+  };
 
   const computeTimeMs = Math.round(performance.now() - startTime);
 
@@ -570,12 +581,13 @@ export function calculateMonteCarlo(
     deterministicProjection,
     distributions: {
       terminalBalance: computeDistribution(terminalBalances),
-      depletionAge: depletionDist,
+      failureAge: failureAgeDist,
       sustainableWithdrawal: computeDistribution(sustainableWithdrawals),
       sustainableWithdrawalPV: computeDistribution(sustainableWithdrawalsPV),
     },
+    failureReasonRates,
     worstCase: {
-      p5DepletionAge,
+      p5FailureAge,
       p5EndBalance,
     },
     numTrials,

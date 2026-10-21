@@ -1471,6 +1471,7 @@ export function runDecumulationYear(
     brokerageZeroLtcgCapacity: routeResult.brokerageZeroLtcgCapacity,
     unmetNeed: finalUnmetNeed,
     unmetNeedMaterial,
+    shortfallMaterialityFloor,
     penaltyAvoidedShortfall,
     nonRetirementShortfall,
     penaltyCost,

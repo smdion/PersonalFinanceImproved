@@ -330,8 +330,13 @@ import { log } from "@/lib/logger";
  *  it; the tax gross-up funds what routing delivers and prices NIIT.
  *
  *  52: simulation bands, median and terminal balances count retirement
- *  money only (A6). */
-export const PROJECTION_CACHE_ENGINE_VERSION = 52;
+ *  money only (A6).
+ *
+ *  53: percentage routing moves a capped account's cut-off share instead of
+ *  dropping it; simulation results carry failure ages and reasons
+ *  (distributions.failureAge, failureReasonRates); year rows carry
+ *  shortfallMaterialityFloor. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 53;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

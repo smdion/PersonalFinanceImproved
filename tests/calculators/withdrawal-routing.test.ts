@@ -278,6 +278,38 @@ describe("routeWithdrawalsPercentage", () => {
     const s401k = slotFor(slots, "401k")!;
     expect(s401k.withdrawal).toBeLessThanOrEqual(5000);
   });
+
+  it("a capped account's cut-off share goes to the others, or shows as unmet", () => {
+    const config = makeDecumulationConfig({
+      withdrawalSplits: {
+        "401k": 0.5,
+        "403b": 0,
+        hsa: 0,
+        ira: 0,
+        brokerage: 0.5,
+      },
+      withdrawalAccountCaps: {
+        "401k": 20000,
+        "403b": null,
+        ira: null,
+        hsa: null,
+        brokerage: null,
+      },
+    });
+    const balances = makeAccountBalances({
+      preTax: 500000,
+      afterTax: 900000,
+      afterTaxBasis: 400000,
+      hsa: 50000,
+    });
+    const result = routeWithdrawalsPercentage(100000, config, balances);
+    const total = result.slots.reduce((t, sl) => t + sl.withdrawal, 0);
+    expect(slotFor(result.slots, "401k")!.withdrawal).toBeLessThanOrEqual(
+      20000,
+    );
+    expect(total).toBeCloseTo(100000, 2);
+    expect(result.unmetNeed).toBeUndefined();
+  });
 });
 
 // ---------------------------------------------------------------------------

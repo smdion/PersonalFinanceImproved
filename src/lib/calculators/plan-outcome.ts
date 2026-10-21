@@ -7,9 +7,10 @@
  * - leaves spending unmet (`unmetNeedMaterial` — the engine's one
  *   materiality verdict, covering money that ran out, money locked behind
  *   early-withdrawal penalties, and money only in Portfolio accounts), or
- * - ends with retirement money gone (`retirementBalance` < $1) — except
- *   the plan's final year: spending it all down to the last year, every
- *   year funded, is a plan that worked (spend-to-zero strategies).
+ * - ends with retirement money gone (below the engine's materiality floor)
+ *   while a later year still needs withdrawals — spending down to the last
+ *   year, or onto Social Security / a pension that covers the rest, is a
+ *   plan that worked.
  * Portfolio money never keeps a plan alive: it isn't spent in retirement.
  *
  * Survival only — callers with an extra test (Coast FIRE's first-year need)
@@ -46,15 +47,18 @@ const SUCCEEDED: PlanOutcome = {
   failureReason: null,
 };
 
+/** Retirement money gone for the year: below the engine's materiality
+ *  floor ($50 or 1% of the need) — gone in all but rounding. */
+function moneyGone(y: EngineDecumulationYear): boolean {
+  return y.retirementBalance < (y.shortfallMaterialityFloor ?? 1);
+}
+
 /** The reason a year with unmet spending failed. Penalty-locked money is
  *  the reason when it is most of what went unmet (`unmetNeed` is the
  *  year's whole shortfall — what routing couldn't reach and any spending
  *  lost to tax it couldn't fund). */
 function shortfallReason(y: EngineDecumulationYear): PlanFailureReason {
-  // Retirement money below the engine's materiality floor for the year
-  // ($50 or 1% of the need) is gone in all but rounding.
-  if (y.retirementBalance < Math.max(50, y.afterTaxNeed * 0.01))
-    return "depleted";
+  if (moneyGone(y)) return "depleted";
   const unmet = y.unmetNeed ?? 0;
   return unmet > 0 && (y.penaltyAvoidedShortfall ?? 0) >= unmet / 2
     ? "penaltyGap"
@@ -64,10 +68,10 @@ function shortfallReason(y: EngineDecumulationYear): PlanFailureReason {
 export function assessPlan(
   result: Pick<ProjectionResult, "projectionByYear">,
 ): PlanOutcome {
-  const years = result.projectionByYear;
-  const lastYear = years.at(-1)?.year;
-  for (const y of years) {
-    if (y.phase !== "decumulation") continue;
+  const years = result.projectionByYear.filter(
+    (y): y is EngineDecumulationYear => y.phase === "decumulation",
+  );
+  for (const [i, y] of years.entries()) {
     if (y.unmetNeedMaterial)
       return {
         succeeded: false,
@@ -75,7 +79,18 @@ export function assessPlan(
         failureYear: y.year,
         failureReason: shortfallReason(y),
       };
-    if (y.retirementBalance < 1 && y.year !== lastYear)
+    // Out of money with spending still to fund in a later year: the plan
+    // runs out here. With nothing left to fund (a final-year spend-down,
+    // or Social Security / a pension covering everything after), it held.
+    if (
+      moneyGone(y) &&
+      years
+        .slice(i + 1)
+        .some(
+          (later) =>
+            later.afterTaxNeed > (later.shortfallMaterialityFloor ?? 1),
+        )
+    )
       return {
         succeeded: false,
         failureAge: y.age,
@@ -84,6 +99,28 @@ export function assessPlan(
       };
   }
   return SUCCEEDED;
+}
+
+/** What failing means, by reason, as a phrase ("money runs out"). */
+export function planFailurePhrase(reason: PlanFailureReason): string {
+  switch (reason) {
+    case "depleted":
+      return "money runs out";
+    case "penaltyGap":
+      return "the plan falls short — money locked by early-withdrawal penalties";
+    case "shortfall":
+      return "the plan can't fully fund spending";
+  }
+}
+
+/** The most common failure reason among failing trials (ties: depleted,
+ *  then penaltyGap). Null when nothing failed. */
+export function dominantFailureReason(
+  rates: Record<PlanFailureReason, number>,
+): PlanFailureReason | null {
+  const order: PlanFailureReason[] = ["depleted", "penaltyGap", "shortfall"];
+  const best = order.reduce((a, b) => (rates[b] > rates[a] ? b : a));
+  return rates[best] > 0 ? best : null;
 }
 
 /** How a failed plan reads in text, by reason ("runs out at 79", "falls

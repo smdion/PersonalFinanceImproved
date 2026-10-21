@@ -212,7 +212,13 @@ export function routeWithdrawalsPercentage(
   const cappedAccounts = new Set<AccountCategory>();
   for (const cat of ACCOUNT_CATEGORIES) {
     const accountCap = config.withdrawalAccountCaps[cat];
-    if (accountCap !== null) targets[cat] = Math.min(targets[cat], accountCap);
+    // A cap moves the cut-off share to other accounts like an emptied
+    // account's does (it was dropped: delivered short with no unmet need).
+    if (accountCap !== null && targets[cat] > accountCap) {
+      excess += roundToCents(targets[cat] - accountCap);
+      targets[cat] = accountCap;
+      cappedAccounts.add(cat);
+    }
     if (targets[cat] > available[cat]) {
       excess += roundToCents(targets[cat] - available[cat]);
       targets[cat] = available[cat];

@@ -84,9 +84,9 @@ export const coastFireRouter = createTRPCRouter({
    * as computeProjection, then binary-searches candidate "coast ages" via
    * ~log₂(retirementAge - currentAge) engine runs.
    *
-   * Success criterion: `retirementDepletionAge === null` AND
-   * `sustainableWithdrawal >= projectedExpenses` at the first decumulation
-   * year. See `findCoastFireAge` for the full algorithm.
+   * Success criterion: the plan judge passes it (`assessPlan`) AND the
+   * strategy's first-year spending covers the stated need. See
+   * `findCoastFireAge` for the full algorithm.
    */
   computeCoastFire: protectedProcedure
     .input(

@@ -3,7 +3,7 @@
 exports[`monte carlo integration > fixture 1: basic monte carlo — 2 asset classes, simple glide path 1`] = `
 {
   "distributions": {
-    "depletionAge": null,
+    "failureAge": null,
     "sustainableWithdrawal": {
       "max": 193621.63,
       "mean": 193621.63,
@@ -75,8 +75,8 @@ exports[`monte carlo integration > fixture 1: basic monte carlo — 2 asset clas
   "totalBands": 55,
   "warningCount": 0,
   "worstCase": {
-    "p5DepletionAge": null,
     "p5EndBalance": 5245853.47,
+    "p5FailureAge": null,
   },
 }
 `;
@@ -84,7 +84,7 @@ exports[`monte carlo integration > fixture 1: basic monte carlo — 2 asset clas
 exports[`monte carlo integration > fixture 2: with inflation risk — adds inflation randomization 1`] = `
 {
   "distributions": {
-    "depletionAge": null,
+    "failureAge": null,
     "sustainableWithdrawal": {
       "max": 250063.48,
       "mean": 224055.68,
@@ -156,8 +156,8 @@ exports[`monte carlo integration > fixture 2: with inflation risk — adds infla
   "totalBands": 55,
   "warningCount": 0,
   "worstCase": {
-    "p5DepletionAge": 87.05,
     "p5EndBalance": 3352167.82,
+    "p5FailureAge": 87.05,
   },
 }
 `;
@@ -165,7 +165,7 @@ exports[`monte carlo integration > fixture 2: with inflation risk — adds infla
 exports[`monte carlo integration > fixture 3: conservative allocation — heavy bond weighting 1`] = `
 {
   "distributions": {
-    "depletionAge": null,
+    "failureAge": null,
     "sustainableWithdrawal": {
       "max": 147905.41,
       "mean": 147905.41,
@@ -237,8 +237,8 @@ exports[`monte carlo integration > fixture 3: conservative allocation — heavy 
   "totalBands": 55,
   "warningCount": 0,
   "worstCase": {
-    "p5DepletionAge": null,
     "p5EndBalance": 2950418.06,
+    "p5FailureAge": null,
   },
 }
 `;
@@ -246,7 +246,7 @@ exports[`monte carlo integration > fixture 3: conservative allocation — heavy 
 exports[`monte carlo integration > fixture 4: near-retirement — older person with short projection 1`] = `
 {
   "distributions": {
-    "depletionAge": {
+    "failureAge": {
       "max": 87,
       "mean": 84.67,
       "median": 84,
@@ -330,8 +330,8 @@ exports[`monte carlo integration > fixture 4: near-retirement — older person w
   "totalBands": 30,
   "warningCount": 0,
   "worstCase": {
-    "p5DepletionAge": 83.1,
     "p5EndBalance": 331931.83,
+    "p5FailureAge": 83.1,
   },
 }
 `;

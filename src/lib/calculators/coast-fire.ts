@@ -8,12 +8,13 @@
  * engine with an accumulationOverride that zeros contributionRate at a
  * candidate "coast age" and binary-searches for the earliest passing age.
  *
- * Success criterion: `retirementDepletionAge === null` AND the strategy's
+ * Success criterion: the plan judge passes it (`assessPlan` — every
+ * retirement year funded, retirement money lasting) AND the strategy's
  * actual first-decumulation-year spending
  * (`projectionByYear[firstDecumYear].projectedExpenses` — already the real
  * per-strategy output, not a generic rate) covers the household's stated
  * need (`firstDecumulationYearStatedNeed`, the inflated retirement budget).
- * The first check ensures the portfolio survives through end-of-plan; the
+ * The first check ensures retirement money funds every year; the
  * second ensures the strategy's actual withdrawal covers what the household
  * said they need. Together they answer "funds annual expenses through end
  * of plan".
@@ -37,10 +38,10 @@
  * the same stated-need value on the first decumulation year — so
  * `projectedExpenses >= firstDecumulationYearStatedNeed` is `X >= X` by
  * construction for those 4, and this check contributes nothing beyond the
- * `retirementDepletionAge`/penalty-shortfall checks above. That's correct,
+ * `assessPlan` check above. That's correct,
  * not a bug — those strategies' entire premise is "spend what you said you
- * need" — but it means their Coast FIRE result rests entirely on those other
- * two checks, same as before this fix.
+ * need" — but it means their Coast FIRE result rests entirely on the plan
+ * judge.
  */
 import { assessPlan } from "./plan-outcome";
 import { calculateProjection } from "./engine";

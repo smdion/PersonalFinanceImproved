@@ -3,7 +3,11 @@
  * assessPlan — the one plan judge (fictional year rows).
  */
 import { describe, it, expect } from "vitest";
-import { assessPlan } from "@/lib/calculators/plan-outcome";
+import {
+  assessPlan,
+  dominantFailureReason,
+  planFailurePhrase,
+} from "@/lib/calculators/plan-outcome";
 import type { ProjectionResult } from "@/lib/calculators/types";
 
 type Row = {
@@ -12,6 +16,7 @@ type Row = {
   unmetNeed?: number;
   unmetNeedMaterial?: boolean;
   penaltyAvoidedShortfall?: number;
+  afterTaxNeed?: number;
   phase?: "accumulation" | "decumulation";
 };
 const plan = (rows: Row[]) =>
@@ -19,6 +24,8 @@ const plan = (rows: Row[]) =>
     projectionByYear: rows.map((r) => ({
       phase: "decumulation",
       year: 2000 + r.age,
+      afterTaxNeed: 60000,
+      shortfallMaterialityFloor: Math.max(50, (r.afterTaxNeed ?? 60000) * 0.01),
       ...r,
     })),
   }) as unknown as Pick<ProjectionResult, "projectionByYear">;
@@ -60,6 +67,35 @@ describe("assessPlan", () => {
       failureAge: 66,
       failureReason: "depleted",
     });
+  });
+
+  it("out of money with Social Security covering every later year: the plan held", () => {
+    expect(
+      assessPlan(
+        plan([
+          { age: 70, retirementBalance: 20000 },
+          { age: 71, retirementBalance: 0 },
+          { age: 72, retirementBalance: 0, afterTaxNeed: 0 },
+          { age: 73, retirementBalance: 0, afterTaxNeed: 0 },
+        ]),
+      ).succeeded,
+    ).toBe(true);
+  });
+
+  it("a few dollars left is out of money (below the year's materiality floor)", () => {
+    expect(
+      assessPlan(
+        plan([
+          { age: 80, retirementBalance: 3 },
+          {
+            age: 81,
+            retirementBalance: 0,
+            unmetNeed: 60000,
+            unmetNeedMaterial: true,
+          },
+        ]),
+      ),
+    ).toMatchObject({ failureAge: 80, failureReason: "depleted" });
   });
 
   it("spending down to $0 in the plan's final year, every year funded, succeeds", () => {
@@ -116,5 +152,19 @@ describe("assessPlan", () => {
         ]),
       ).succeeded,
     ).toBe(true);
+  });
+});
+
+describe("failure wording", () => {
+  it("names the most common way failing futures fail", () => {
+    expect(
+      dominantFailureReason({ depleted: 0.05, penaltyGap: 0.2, shortfall: 0 }),
+    ).toBe("penaltyGap");
+    expect(planFailurePhrase("penaltyGap")).toMatch(
+      /early-withdrawal penalties/,
+    );
+    expect(
+      dominantFailureReason({ depleted: 0, penaltyGap: 0, shortfall: 0 }),
+    ).toBeNull();
   });
 });

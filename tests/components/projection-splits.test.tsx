@@ -316,7 +316,7 @@ describe("ProjectionHeroKpis", () => {
           },
         ],
         distributions: {
-          depletionAge: null,
+          failureAge: null,
           terminalBalance: { median: 1500000 },
         },
         medianEndBalance: 1500000,
@@ -429,7 +429,7 @@ describe("McDepletionCallout", () => {
           result: {
             successRate: 0.95,
             distributions: {
-              depletionAge: null,
+              failureAge: null,
               terminalBalance: { median: 1000000 },
             },
           },
@@ -450,8 +450,13 @@ describe("McDepletionCallout", () => {
         data: {
           result: {
             successRate: 0.72,
+            failureReasonRates: {
+              depleted: 0.2,
+              penaltyGap: 0.08,
+              shortfall: 0,
+            },
             distributions: {
-              depletionAge: { median: 88, p10: 82, p25: 85, p75: 92, p90: 95 },
+              failureAge: { median: 88, p10: 82, p25: 85, p75: 92, p90: 95 },
               terminalBalance: {
                 median: 50000,
                 p10: 0,
@@ -466,8 +471,9 @@ describe("McDepletionCallout", () => {
       },
     });
     render(<McDepletionCallout state={s} />);
-    expect(screen.getByText(/28% of futures/)).toBeInTheDocument();
-    expect(screen.getByText(/age 88/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/28% of futures, money runs out around age 88/),
+    ).toBeInTheDocument();
   });
 });
 

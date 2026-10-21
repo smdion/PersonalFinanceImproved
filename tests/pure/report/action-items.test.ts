@@ -53,11 +53,11 @@ function mcResult(overrides: Partial<MonteCarloResult> = {}): MonteCarloResult {
     percentileBands: [],
     distributions: {
       terminalBalance: distribution(500000),
-      depletionAge: null,
+      failureAge: null,
       sustainableWithdrawal: distribution(45000),
       sustainableWithdrawalPV: distribution(42000),
     },
-    worstCase: { p5DepletionAge: null, p5EndBalance: 100000 },
+    worstCase: { p5FailureAge: null, p5EndBalance: 100000 },
     ...overrides,
   } as unknown as MonteCarloResult;
 }

@@ -1480,8 +1480,8 @@ export function ProjectionCard(props: {
                   mcQuery.data.result.distributions.terminalBalance,
                 sustainableWithdrawalPV:
                   mcQuery.data.result.distributions.sustainableWithdrawalPV,
-                depletionAge:
-                  mcQuery.data.result.distributions.depletionAge ?? undefined,
+                failureAge:
+                  mcQuery.data.result.distributions.failureAge ?? undefined,
                 computeTimeMs: mcQuery.data.result.computeTimeMs,
               }}
               deflate={(amount: number) => {
