@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.8.10] - 2026-10-20
 
+### Added
+
+- **Check against a pay stub** (Paycheck page, under each person's paycheck): type any figures from one real stub — gross, federal taxable wages, Social Security and Medicare wages or tax, federal withholding, net pay — and see which match Ledgr's and, where one doesn't, the likely reason: a deduction taxed differently than on the stub (named), a taxable benefit Ledgr doesn't have, or the W-4. Social Security is skipped once the year's pay passes the wage base. Nothing is saved.
+
 ### Changed
 
 - **Contributions taken from bonus checks are set per account.** Each payroll contribution has its own "Also taken from bonus checks" switch, in the Contribution Profile (on the account under Contributions on the Paycheck page, or Profiles → Contributions) — so a 401(k) can come out of the bonus while an HSA doesn't, and switching Contribution Profiles can change it. This replaces the two bonus switches on the Salary Profile. The Paycheck page's Bonus section lists what the bonus check takes, account by account. An account's employer match counts the bonus when that account is taken from bonus checks.

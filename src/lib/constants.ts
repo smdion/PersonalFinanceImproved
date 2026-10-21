@@ -394,3 +394,13 @@ export const DEFAULT_LOAN_RATE = 6.5;
 
 /** Default loan term in years. */
 export const DEFAULT_LOAN_TERM_YEARS = 30;
+
+/** "Check against a pay stub": two figures within this are the same (the
+ *  stub rounds to cents). */
+export const PAYSTUB_TOLERANCE = 1;
+/** Pay-stub check, federal withholding: the IRS tables round and employers
+ *  round differently. */
+export const PAYSTUB_WITHHOLDING_TOLERANCE = 3;
+/** Pay-stub check: most deduction lines a gap is matched against (2^n
+ *  subsets). */
+export const PAYSTUB_MAX_LINES = 15;

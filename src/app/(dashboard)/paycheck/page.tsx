@@ -404,6 +404,7 @@ export default function PaycheckPage() {
               rawContribs={d.rawContribs}
               bonusCheckAccounts={d.bonusCheckAccounts}
               bonusDestination={d.bonusDestination}
+              ficaRates={d.ficaRates}
               perContribData={d.perContribData}
               incompleteAccountIds={d.incompleteAccountIds}
               earningRows={d.earningRows}

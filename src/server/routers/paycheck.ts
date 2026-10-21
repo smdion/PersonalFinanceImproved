@@ -582,6 +582,17 @@ export const paycheckRouter = createTRPCRouter({
                   ] ?? 0,
               })),
             rawContribs,
+            /** The year's Social Security / Medicare rates, wage base and
+             *  Additional Medicare withholding threshold — what
+             *  "Check against your pay stub" works back from (tax data,
+             *  never hard-coded). */
+            ficaRates: {
+              socialSecurity: taxBracketInput.socialSecurityRate,
+              medicare: taxBracketInput.medicareRate,
+              socialSecurityWageBase: taxBracketInput.socialSecurityWageBase,
+              medicareWithholdingThreshold:
+                taxBracketInput.medicareAdditionalThreshold,
+            },
             /** Where this job's bonus goes (its Salary Profile entry;
              *  absent = the budget). */
             bonusDestination:

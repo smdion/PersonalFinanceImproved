@@ -33,6 +33,8 @@ import type {
   EarningRow,
 } from "./types";
 import type { ContribAccountFormValues } from "./contrib-account-form";
+import { PaystubCheck } from "./paystub-check";
+import type { FicaRates } from "@/lib/pure/paystub-check";
 import type { PerContribView } from "@/lib/hooks/use-paycheck-person-views";
 import type {
   BlendedAnnualTotals,
@@ -105,6 +107,7 @@ export function PersonPaycheck({
   rawContribs,
   bonusCheckAccounts,
   bonusDestination,
+  ficaRates,
   perContribData,
   alignedPreTax,
   alignedPostTax,
@@ -141,6 +144,8 @@ export function PersonPaycheck({
     w4Box2cChecked: boolean;
     additionalFedWithholding: number;
     payPeriod: string;
+    anchorPayDate?: string | null;
+    startDate: string;
     extraPaycheckRouting: ExtraPaycheckRoutingData | null;
   };
   salary: number;
@@ -176,6 +181,8 @@ export function PersonPaycheck({
   bonusCheckAccounts: { id: number; amount: number }[];
   /** Where this job's bonus goes (its Salary Profile entry). */
   bonusDestination: BonusDestination;
+  /** The year's FICA figures (tax data) for "Check against a pay stub". */
+  ficaRates: FicaRates | null;
   /** Contribution annual/limit figures, resolved ONCE by the caller's shared
    *  hook. This card and its children never query for them. */
   perContribData: PerContribView[];
@@ -374,6 +381,14 @@ export function PersonPaycheck({
 
       {/* Contributions + extras */}
       <div className="border-subtle space-y-4 border-t px-5 pt-4 pb-5">
+        {ficaRates && (
+          <PaystubCheck
+            paycheck={paycheck}
+            rates={ficaRates}
+            payPeriod={job.payPeriod}
+            anchor={job.anchorPayDate ?? job.startDate}
+          />
+        )}
         <ContributionsSection
           rawContribs={rawContribs}
           perContribData={perContribData}
