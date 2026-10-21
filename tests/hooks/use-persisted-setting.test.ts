@@ -44,6 +44,25 @@ beforeEach(() => {
 });
 
 describe("usePersistedSetting", () => {
+  it("returns the DB value in the same render it loads, and says it's loaded", () => {
+    // A query input built from this setting must not fire once with the
+    // default first ($0 contributions, the wrong profile).
+    const seen: [string, boolean][] = [];
+    const { rerender } = renderHook(() => {
+      const [value, , loaded] = usePersistedSetting("my_key", "default");
+      seen.push([value, loaded]);
+      return value;
+    });
+    expect(seen.at(-1)).toEqual(["default", false]);
+    listQuery.mockReturnValue({
+      data: [{ key: "my_key", value: "from-db" }],
+    });
+    const before = seen.length;
+    rerender();
+    // The first render after the data arrives already has it.
+    expect(seen[before]).toEqual(["from-db", true]);
+  });
+
   it("seeds from localStorage before the query resolves", () => {
     localStorage.setItem("setting:my_key", JSON.stringify("stored-value"));
 

@@ -4,11 +4,20 @@ import { render, screen } from "@testing-library/react";
 
 vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
 
-vi.mock("@/lib/hooks/use-dashboard-projection", () => ({
-  useDashboardEngineInput: () => ({
-    contributionProfileId: 20,
-    salaryProfileId: 10,
-    decumulationDefaults: {},
+vi.mock("@/lib/hooks/use-plan-engine-input", () => ({
+  usePlanEngineInput: () => ({
+    input: {
+      contributionProfileId: 20,
+      salaryProfileId: 10,
+      decumulationDefaults: {},
+    },
+    ready: true,
+    ids: {
+      contributionProfileId: 20,
+      salaryProfileId: 10,
+      retirementProfileId: null,
+      snapshotId: null,
+    },
   }),
 }));
 vi.mock("@/components/ui/confirm-dialog", () => ({ confirmWithDiff: vi.fn() }));

@@ -34,7 +34,8 @@ import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
 import { isHighIncomeHousehold } from "@/lib/pure/contributions";
 
 function RetirementCardImpl() {
-  const { engineInput, data, isLoading, error } = useDashboardProjection();
+  const { engineInput, ready, data, isLoading, error } =
+    useDashboardProjection();
   // The household's checkpoint table and today's figures for Readiness —
   // the same query (and input) the Milestones engine reads.
   const milestoneInputs = trpc.milestones.computeInputs.useQuery(
@@ -63,11 +64,11 @@ function RetirementCardImpl() {
   // computed, if the inputs still match. Null result = nothing cached yet.
   const { data: mcPeek } = trpc.projection.computeMonteCarloProjection.useQuery(
     { ...engineInput, peekOnly: true },
-    { staleTime: 60_000 },
+    { staleTime: 60_000, enabled: ready },
   );
   const { data: coastFireMcPeek } = trpc.projection.computeCoastFireMC.useQuery(
     { ...engineInput, peekOnly: true },
-    { staleTime: 60_000 },
+    { staleTime: 60_000, enabled: ready },
   );
   if (isLoading) return <LoadingCard title="Retirement" />;
   if (error) return <ErrorCard title="Retirement" message="Failed to load" />;

@@ -86,6 +86,18 @@ vi.mock("@/components/ui/skeleton", () => ({
 vi.mock("@/lib/hooks/use-debounced-value", () => ({
   useDebouncedValue: <T,>(v: T) => v,
 }));
+vi.mock("@/lib/hooks/use-plan-engine-input", () => ({
+  usePlanEngineInput: () => ({
+    input: { decumulationDefaults: { withdrawalTaxPreference: {} } },
+    ready: true,
+    ids: {
+      contributionProfileId: null,
+      salaryProfileId: null,
+      retirementProfileId: null,
+      snapshotId: null,
+    },
+  }),
+}));
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   usePersistedSetting: <T,>(_key: string, initial: T) => [initial, vi.fn()],
 }));

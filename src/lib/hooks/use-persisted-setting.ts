@@ -6,8 +6,12 @@ import { toast } from "@/lib/hooks/use-toast";
 
 /**
  * Hook that persists a setting value to app_settings via tRPC.
- * DB query result is the source of truth once loaded.
+ * DB query result is the source of truth once loaded — returned in the
+ * same render it arrives (no extra render on the seed value: queries built
+ * from settings would otherwise fire once with the default first).
  * localStorage provides an instant initial value before the query resolves.
+ * The third element, `loaded`, is true once the DB settings have loaded —
+ * callers that build query inputs from settings wait for it.
  *
  * @param key - Unique setting key (e.g., 'retirement_show_todays_dollars')
  * @param defaultValue - Default value when no setting exists
@@ -25,7 +29,7 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
   key: string,
   defaultValue: T,
   options?: { writeVia?: (value: T) => Promise<unknown> },
-): [T, (value: T) => void] {
+): [T, (value: T) => void, boolean] {
   const utils = trpc.useUtils();
   const { data: settings } = trpc.settings.appSettings.list.useQuery(
     undefined,
@@ -75,6 +79,9 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
   // stale DB-echoed value can briefly clobber the user's latest input.
   const pendingWrite = useRef(false);
   const writeGeneration = useRef(0);
+  // Render-visible twin of pendingWrite: while a write is in flight the
+  // optimistic local value wins over the DB echo.
+  const [writing, setWriting] = useState(false);
 
   // Once DB settings load (or refresh), adopt DB value — unless we have a pending optimistic write.
   useEffect(() => {
@@ -90,6 +97,7 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
   const setValue = useCallback(
     (newValue: T) => {
       pendingWrite.current = true;
+      setWriting(true);
       const myGeneration = ++writeGeneration.current;
       // Revert target if this write fails — the last DB-confirmed value,
       // not just defaultValue, so an error doesn't blow away an unrelated
@@ -104,6 +112,7 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
         // refetch to overwrite a newer, still-pending edit.
         if (myGeneration === writeGeneration.current) {
           pendingWrite.current = false;
+          setWriting(false);
         }
       };
       const revert = () => {
@@ -140,7 +149,12 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
     [key, upsert, writeVia],
   );
 
-  return [localValue, setValue];
+  // The DB value as soon as it's loaded (unless a write is in flight) —
+  // the effect above only keeps localValue/localStorage in step with it.
+  const dbEntry = settings?.find((s) => s.key === key);
+  const value =
+    !writing && dbEntry !== undefined ? (dbEntry.value as T) : localValue;
+  return [value, setValue, settings !== undefined];
 }
 
 /**
@@ -149,6 +163,6 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
 export function usePersistedToggle(
   key: string,
   defaultValue = false,
-): [boolean, (value: boolean) => void] {
+): [boolean, (value: boolean) => void, boolean] {
   return usePersistedSetting<boolean>(key, defaultValue);
 }

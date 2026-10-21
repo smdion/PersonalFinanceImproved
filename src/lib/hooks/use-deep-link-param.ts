@@ -17,7 +17,7 @@ const NONE: readonly string[] = [];
 export function useDeepLinkParam<T extends string>(
   param: string,
   validKeys: readonly string[],
-  [persisted, setPersisted]: [T, (value: T) => void],
+  [persisted, setPersisted]: readonly [T, (value: T) => void, ...unknown[]],
   /** Other params that only make sense with this one (a tab's section). */
   clearAlso: readonly string[] = NONE,
 ): [T, (value: T) => void] {

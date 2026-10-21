@@ -24,6 +24,18 @@ vi.mock("@/lib/context/user-context", () => ({
   isAdmin: (u: { role: string }) => u.role === "admin",
   hasPermission: () => true,
 }));
+vi.mock("@/lib/hooks/use-plan-engine-input", () => ({
+  usePlanEngineInput: () => ({
+    input: { decumulationDefaults: { withdrawalTaxPreference: {} } },
+    ready: true,
+    ids: {
+      contributionProfileId: null,
+      salaryProfileId: null,
+      retirementProfileId: null,
+      snapshotId: null,
+    },
+  }),
+}));
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   usePersistedSetting: () => [null, vi.fn()],
 }));

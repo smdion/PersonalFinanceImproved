@@ -57,6 +57,8 @@ export function useProjectionQueries(
     withdrawalTaxPref,
     accumOverrides,
     decumOverrides,
+    accumOverridesTouched,
+    decumOverridesTouched,
     projectionMode,
     mcTrials,
     mcPreset,
@@ -102,8 +104,15 @@ export function useProjectionQueries(
         ...(withdrawalSplitsTouched ? { withdrawalSplits } : {}),
         withdrawalTaxPreference: withdrawalTaxPref,
       },
-      accumulationOverrides: accumOverrides,
-      decumulationOverrides: decumOverrides,
+      // Untouched "Changes by year" are omitted: the server applies the
+      // saved rows, so this input is byte-identical to the dashboard's
+      // (usePlanEngineInput) and doesn't wait for the rows to load here.
+      ...(accumOverridesTouched
+        ? { accumulationOverrides: accumOverrides }
+        : {}),
+      ...(decumOverridesTouched
+        ? { decumulationOverrides: decumOverrides }
+        : {}),
       ...(accumulationBudgetProfileId != null
         ? { accumulationBudgetProfileId }
         : {}),
@@ -139,6 +148,8 @@ export function useProjectionQueries(
       withdrawalTaxPref,
       accumOverrides,
       decumOverrides,
+      accumOverridesTouched,
+      decumOverridesTouched,
       accumulationBudgetProfileId,
       accumulationBudgetColumn,
       accumulationExpenseOverride,

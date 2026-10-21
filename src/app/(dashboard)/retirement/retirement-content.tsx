@@ -14,10 +14,9 @@ import { formatCurrency } from "@/lib/utils/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
-import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
+import { usePlanEngineInput } from "@/lib/hooks/use-plan-engine-input";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { ProjectionCard } from "@/components/cards/projection";
 import { AssumptionsBand } from "@/components/retirement/assumptions-band";
@@ -58,99 +57,43 @@ export function RetirementContent() {
       globalDefaultId: activeRetirementId,
     },
   );
-  // Read-only here — the editor for these moved to the Budget page's
-  // Retirement Profile tab (retirement-profile-tab.tsx), which writes the
-  // same app_settings keys. This page's ProjectionCard/baseInput still need
-  // the current values.
-  const [decBudgetProfileId] = usePersistedSetting<number | null>(
-    "retirement_dec_budget_profile_id",
-    null,
-  );
-  const [decBudgetCol] = usePersistedSetting<number | null>(
-    "retirement_decumulation_budget_column",
-    null,
-  );
-  const [decExpenseOverride] = usePersistedSetting<string | null>(
-    "retirement_dec_expense_override",
-    null,
-  );
-  // Contribution/Salary Profile *pickers* (and Plan-pin display) live on the
-  // Budget page's Retirement Profile tab now — see retirement-profile-tab.tsx.
-  // This page still needs the globally-active + Plan-pin-aware effective ids
-  // to feed ProjectionCard/comparisonInput, so the read side stays here.
-  const [contribProfileId] = useActiveContribProfile();
-  const contribProfilesQuery = trpc.contributionProfile.list.useQuery();
-  const contribProfiles = contribProfilesQuery.data ?? [];
-  const [salaryProfileId] = useActiveSalaryProfile();
-  const salaryProfilesQuery = trpc.salaryProfile.list.useQuery();
-  const salaryProfiles = salaryProfilesQuery.data ?? [];
-
-  const { profileId: effectiveContribProfileId } = useEffectiveProfileId(
-    "contribution",
-    {
-      validIds: contribProfiles.map((p) => p.id),
-      localSelection: null,
-      globalDefaultId: contribProfileId,
-    },
-  );
-  const { profileId: effectiveSalaryProfileId } = useEffectiveProfileId(
-    "salary",
-    {
-      validIds: salaryProfiles.map((p) => p.id),
-      localSelection: null,
-      globalDefaultId: salaryProfileId,
-    },
-  );
-  const [snapshotId, setSnapshotId] = usePersistedSetting<number | null>(
+  // The plan's projection input — the one builder the dashboard uses too
+  // (usePlanEngineInput), so both read the same cached runs. The editors
+  // for the retirement-budget settings live on the Budget page's Retirement
+  // Profile tab; the snapshot picker below writes its setting.
+  const plan = usePlanEngineInput();
+  const {
+    contributionProfileId: effectiveContribProfileId,
+    salaryProfileId: effectiveSalaryProfileId,
+    snapshotId,
+  } = plan.ids;
+  const decBudgetProfileId = plan.input.decumulationBudgetProfileId ?? null;
+  const decBudgetCol = plan.input.decumulationBudgetColumn ?? null;
+  const decExpenseOverride = plan.input.decumulationExpenseOverride ?? null;
+  const [, setSnapshotId] = usePersistedSetting<number | null>(
     "retirement_snapshot_id",
     null,
   );
   const snapshotTotalsQuery = trpc.networth.listSnapshotTotals.useQuery();
   const snapshotOptions = snapshotTotalsQuery.data ?? [];
-  // Shared across engineInput and comparisonInput below — both projection
-  // queries take the same set of optional overrides, differing only in
-  // whether metadataOnly is set.
-  const baseInput = useMemo(
-    () => ({
-      ...(effectiveContribProfileId != null
-        ? { contributionProfileId: effectiveContribProfileId }
-        : {}),
-      ...(effectiveSalaryProfileId != null
-        ? { salaryProfileId: effectiveSalaryProfileId }
-        : {}),
-      ...(decBudgetProfileId != null
-        ? { decumulationBudgetProfileId: decBudgetProfileId }
-        : {}),
-      ...(decBudgetCol != null
-        ? { decumulationBudgetColumn: decBudgetCol }
-        : {}),
-      ...(decExpenseOverride
-        ? { decumulationExpenseOverride: parseFloat(decExpenseOverride) }
-        : {}),
-      ...(snapshotId != null ? { snapshotId } : {}),
-      ...(effectiveRetirementProfileId != null
-        ? { retirementProfileId: effectiveRetirementProfileId }
-        : {}),
-    }),
-    [
-      effectiveContribProfileId,
-      effectiveSalaryProfileId,
-      decBudgetProfileId,
-      decBudgetCol,
-      decExpenseOverride,
-      snapshotId,
-      effectiveRetirementProfileId,
-    ],
-  );
+  // Shared across engineInput and comparisonInput below — the plan input
+  // without the withdrawal-editor defaults (these queries don't take them).
+  const baseInput = useMemo(() => {
+    const { decumulationDefaults: _decumulationDefaults, ...rest } = plan.input;
+    return rest;
+  }, [plan.input]);
   const engineInput = useMemo(
     () => ({ metadataOnly: true as const, ...baseInput }),
     [baseInput],
   );
   const debouncedEngineInput = useDebouncedValue(engineInput, 600);
-  const { data, isLoading, isFetching, error } =
-    trpc.projection.computeProjection.useQuery(debouncedEngineInput, {
-      placeholderData: (prev) => prev,
-    });
+  const projectionQuery = trpc.projection.computeProjection.useQuery(
+    debouncedEngineInput,
+    { placeholderData: (prev) => prev, enabled: plan.ready },
+  );
+  const { data, isFetching, error } = projectionQuery;
+  // Not ready = still loading (a disabled query reports isLoading false).
+  const isLoading = projectionQuery.isLoading || !plan.ready;
   // Lazy-load strategy comparison only when expanded
   const [comparisonExpanded, setComparisonExpanded] =
     usePersistedSetting<boolean>("retirement_comparison_expanded", false);
@@ -367,9 +310,7 @@ export function RetirementContent() {
               withdrawalRate={parseFloat(settings.withdrawalRate) * 100}
               decumulationBudgetProfileId={decBudgetProfileId ?? undefined}
               decumulationBudgetColumn={decBudgetCol ?? undefined}
-              decumulationExpenseOverride={
-                decExpenseOverride ? parseFloat(decExpenseOverride) : undefined
-              }
+              decumulationExpenseOverride={decExpenseOverride ?? undefined}
               parentCategoryFilter="Retirement"
               contributionProfileId={effectiveContribProfileId ?? undefined}
               salaryProfileId={effectiveSalaryProfileId ?? undefined}

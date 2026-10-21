@@ -269,6 +269,8 @@ export function useProjectionFormState() {
     withdrawalTaxPref,
     setWithdrawalTaxPref,
     accumOverrides,
+    accumOverridesTouched: accumTouched,
+    decumOverridesTouched: decumTouched,
     setAccumOverrides,
     decumOverrides,
     setDecumOverrides,
