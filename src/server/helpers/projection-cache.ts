@@ -288,8 +288,13 @@ import { log } from "@/lib/logger";
  *
  *  42: brokerage cost basis tracked per account; retirement brokerage
  *  withdrawals priced at the Retirement brokerages' own basis ratio, goal
- *  draws at the Portfolio ones'. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 42;
+ *  draws at the Portfolio ones'.
+ *
+ *  43: A2b review — a $0 basis is a known basis (one unentered account no
+ *  longer sends every account to the estimate); retirement lump sums and
+ *  conversion tax follow per-account basis; reconciliation carries the
+ *  aggregate's basis into raised accounts. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 43;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

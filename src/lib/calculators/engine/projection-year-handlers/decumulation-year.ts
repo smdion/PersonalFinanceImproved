@@ -5,6 +5,7 @@
 import {
   followDraws,
   followInflows,
+  followReconciliation,
   retirementBrokerageBasisRatio,
   syncAggregateBasis,
 } from "../brokerage-basis";
@@ -876,7 +877,10 @@ export function runDecumulationYear(
   clampBalances(balances, acctBal);
 
   // Apply decumulation lump sums (one-time injections/windfalls, NOT subject to limits)
-  applyLumpSums(config.lumpSums, ctx, state);
+  // Lump sums are cash in: new basis in the brokerage account they land in.
+  followInflows(indAccts, indKey, indBal, brokBasis, () =>
+    applyLumpSums(config.lumpSums, ctx, state),
+  );
 
   // Handle RMD-forced excess (mode-aware) -- extracted to balance-deduction.ts
   // Capture the excess amount (previously discarded) so it can
@@ -960,73 +964,77 @@ export function runDecumulationYear(
 
   // --- Roth Conversions (Phase 4) ---
   // Extracted to post-withdrawal-optimizer.ts -- Roth conversion + IRMAA + ACA chain.
-  const rothResult = performRothConversion({
-    // The conversion's tax comes out of retirement brokerage money.
-    brokerageBasisRatio: hasIndividualAccounts
-      ? retirementBrokerageBasisRatio(indAccts, indKey, indBal, brokBasis)
-      : undefined,
-    enableRothConversions: taxRates.enableRothConversions,
-    taxBrackets: grownTaxBrackets,
-    taxMultiplier: taxRates.taxMultiplier,
-    standardDeduction: grownStandardDeduction,
-    rothConversionTarget: config.rothConversionTarget,
-    // This param is performRothConversion's fallback, consulted ONLY when
-    // config.rothConversionTarget (above) is undefined. Priority (most to
-    // least specific):
-    //   1. taxRates.rothConversionTarget -- an explicit plan-level
-    //      conversion target the household set deliberately, separate
-    //      from (and possibly more conservative than) their withdrawal
-    //      bracket target.
-    //   2. config.rothBracketTarget -- a per-year WITHDRAWAL-routing
-    //      override. An earlier version put
-    //      this FIRST, ahead of taxRates.rothConversionTarget -- a
-    //      household with an explicit plan-level rothConversionTarget
-    //      (say 12%, deliberately below their rothBracketTarget) whose
-    //      per-year override bumps rothBracketTarget to 32% for one year
-    //      would have had that override silently retarget CONVERSIONS to
-    //      32% too, even though nothing about a withdrawal-routing
-    //      override should touch the conversion target. Never shipped
-    //      wrong numbers (buildCandidateInput always pairs an explicit
-    //      rothConversionTarget when conversions are on, bypassing this
-    //      fallback), but was a real, reachable bug for any household
-    //      that later creates that override combination by hand.
-    //   3. taxRates.rothBracketTarget -- final fallback when nothing else
-    //      is set, same as before.
-    // See fixtures 31/41/54/55/61 (engine-snapshot.test.ts) and the Bug-B
-    // MAGI test (roth-growth-magi-tax-fix.test.ts) for why
-    // taxRates.rothConversionTarget can't simply be dropped from this
-    // chain -- and the priority-ordering regression test alongside them
-    // for why it can't come second either.
-    //
-    // Reuses resolvedConversionTarget (computed once, above, before
-    // routeForMode) instead of re-deriving the identical chain a second
-    // time here -- the routing reservation and the conversion that
-    // actually runs must agree on this value, or the two silently drift
-    // (see resolvedConversionTarget's own
-    // comment).
-    rothBracketTarget: resolvedConversionTarget,
-    totalTraditionalWithdrawal,
-    taxableSS,
-    rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
-    brokerageGainsPortion,
-    irmaaAwareRothConversions:
-      input.irmaaAwareRothConversions ??
-      (enableIrmaaAwareness ? true : undefined),
-    irmaaBrackets: grownIrmaaBracketsForCap,
-    filingStatus,
-    balances,
-    acctBal,
-    // Without this, performRothConversion's own
-    // fixes above are fully implemented and fully unit-tested but never
-    // execute in production, since "params omitted" is deliberately the
-    // unchanged-behavior fallback.
-    nonRetirement,
-    indAccts: hasIndividualAccounts ? indAccts : undefined,
-    indBal: hasIndividualAccounts ? indBal : undefined,
-    indKey: hasIndividualAccounts ? indKey : undefined,
-    rmdSmoothingTarget,
-    rmdSmoothingMaxBracketTarget: config.rmdSmoothingMaxBracketTarget,
-  });
+  // The conversion's tax is paid from retirement brokerage money (money
+  // out: basis leaves at the account's own ratio).
+  const rothResult = followDraws(indAccts, indKey, indBal, brokBasis, () =>
+    performRothConversion({
+      // The conversion's tax comes out of retirement brokerage money.
+      brokerageBasisRatio: hasIndividualAccounts
+        ? retirementBrokerageBasisRatio(indAccts, indKey, indBal, brokBasis)
+        : undefined,
+      enableRothConversions: taxRates.enableRothConversions,
+      taxBrackets: grownTaxBrackets,
+      taxMultiplier: taxRates.taxMultiplier,
+      standardDeduction: grownStandardDeduction,
+      rothConversionTarget: config.rothConversionTarget,
+      // This param is performRothConversion's fallback, consulted ONLY when
+      // config.rothConversionTarget (above) is undefined. Priority (most to
+      // least specific):
+      //   1. taxRates.rothConversionTarget -- an explicit plan-level
+      //      conversion target the household set deliberately, separate
+      //      from (and possibly more conservative than) their withdrawal
+      //      bracket target.
+      //   2. config.rothBracketTarget -- a per-year WITHDRAWAL-routing
+      //      override. An earlier version put
+      //      this FIRST, ahead of taxRates.rothConversionTarget -- a
+      //      household with an explicit plan-level rothConversionTarget
+      //      (say 12%, deliberately below their rothBracketTarget) whose
+      //      per-year override bumps rothBracketTarget to 32% for one year
+      //      would have had that override silently retarget CONVERSIONS to
+      //      32% too, even though nothing about a withdrawal-routing
+      //      override should touch the conversion target. Never shipped
+      //      wrong numbers (buildCandidateInput always pairs an explicit
+      //      rothConversionTarget when conversions are on, bypassing this
+      //      fallback), but was a real, reachable bug for any household
+      //      that later creates that override combination by hand.
+      //   3. taxRates.rothBracketTarget -- final fallback when nothing else
+      //      is set, same as before.
+      // See fixtures 31/41/54/55/61 (engine-snapshot.test.ts) and the Bug-B
+      // MAGI test (roth-growth-magi-tax-fix.test.ts) for why
+      // taxRates.rothConversionTarget can't simply be dropped from this
+      // chain -- and the priority-ordering regression test alongside them
+      // for why it can't come second either.
+      //
+      // Reuses resolvedConversionTarget (computed once, above, before
+      // routeForMode) instead of re-deriving the identical chain a second
+      // time here -- the routing reservation and the conversion that
+      // actually runs must agree on this value, or the two silently drift
+      // (see resolvedConversionTarget's own
+      // comment).
+      rothBracketTarget: resolvedConversionTarget,
+      totalTraditionalWithdrawal,
+      taxableSS,
+      rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
+      brokerageGainsPortion,
+      irmaaAwareRothConversions:
+        input.irmaaAwareRothConversions ??
+        (enableIrmaaAwareness ? true : undefined),
+      irmaaBrackets: grownIrmaaBracketsForCap,
+      filingStatus,
+      balances,
+      acctBal,
+      // Without this, performRothConversion's own
+      // fixes above are fully implemented and fully unit-tested but never
+      // execute in production, since "params omitted" is deliberately the
+      // unchanged-behavior fallback.
+      nonRetirement,
+      indAccts: hasIndividualAccounts ? indAccts : undefined,
+      indBal: hasIndividualAccounts ? indBal : undefined,
+      indKey: hasIndividualAccounts ? indKey : undefined,
+      rmdSmoothingTarget,
+      rmdSmoothingMaxBracketTarget: config.rmdSmoothingMaxBracketTarget,
+    }),
+  );
   const {
     rothConversionAmount,
     rothConversionTaxCost,
@@ -1386,8 +1394,13 @@ export function runDecumulationYear(
   // tracked basis clamps to the reconciled (not pre-reconciliation) balance.
   if (hasIndividualAccounts) {
     routeWarnings.push(
-      ...followDraws(indAccts, indKey, indBal, brokBasis, () =>
-        reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
+      ...followReconciliation(
+        indAccts,
+        indKey,
+        indBal,
+        brokBasis,
+        balances.afterTaxBasis,
+        () => reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
       ),
     );
     // The aggregate basis is the accounts' sum.

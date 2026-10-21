@@ -5,6 +5,7 @@
 import {
   followDraws,
   followInflows,
+  followReconciliation,
   groupBasisRatio,
   syncAggregateBasis,
 } from "../brokerage-basis";
@@ -556,17 +557,20 @@ export function runAccumulationYear(
       );
       continue;
     }
-    // Goals draw Portfolio brokerages, so their own basis prices the gain.
-    const basisRatio = hasIndividualAccounts
-      ? groupBasisRatio(
-          goalFundingAccounts(indAccts),
-          indKey,
-          indBal,
-          brokBasis,
-        )
-      : balances.afterTax > 0
+    // Goals draw Portfolio brokerages, so their own basis prices the gain
+    // (the aggregate ratio when they hold nothing per account).
+    const basisRatio =
+      (hasIndividualAccounts
+        ? groupBasisRatio(
+            goalFundingAccounts(indAccts),
+            indKey,
+            indBal,
+            brokBasis,
+          )
+        : undefined) ??
+      (balances.afterTax > 0
         ? Math.min(1, balances.afterTaxBasis / balances.afterTax)
-        : 0;
+        : 0);
     const basisPortion = roundToCents(drawAmount * basisRatio);
     const gainsPortion = roundToCents(drawAmount - basisPortion);
     const taxCost = roundToCents(
@@ -630,8 +634,13 @@ export function runAccumulationYear(
   // same two tracks this closes the gap between.
   if (hasIndividualAccounts) {
     routeWarnings.push(
-      ...followDraws(indAccts, indKey, indBal, brokBasis, () =>
-        reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
+      ...followReconciliation(
+        indAccts,
+        indKey,
+        indBal,
+        brokBasis,
+        balances.afterTaxBasis,
+        () => reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
       ),
     );
     // The aggregate basis is the accounts' sum.

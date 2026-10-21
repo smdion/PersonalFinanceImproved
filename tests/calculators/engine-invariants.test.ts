@@ -2059,6 +2059,128 @@ describe("engine invariants", () => {
         }
       });
 
+      const noBasisDrift = (input: ProjectionInput) => {
+        const years = calculateProjection(input).projectionByYear;
+        for (const y of years)
+          expect(
+            (y.warnings ?? []).filter((w) => w.includes("brokerage basis")),
+            `${y.year}`,
+          ).toEqual([]);
+        return years;
+      };
+
+      it("each year's brokerage withdrawal uses exactly the Retirement brokerage's ratio", () => {
+        const years = calculateProjection(twoBrokerages()).projectionByYear;
+        const i = years.findIndex((y) => y.phase === "decumulation");
+        const prev = years[i - 1]!.individualAccountBalances!.find(
+          (a) => a.name === "Retirement brokerage",
+        )!;
+        const slot = (years[i] as EngineDecumulationYear).slots.find(
+          (sl) => sl.category === "brokerage",
+        )!;
+        expect(slot.basisPortion! / slot.withdrawal).toBeCloseTo(
+          prev.costBasis! / prev.balance,
+          3,
+        );
+      });
+
+      it("Roth conversions paid from brokerage leave no basis drift", () => {
+        // A Retirement brokerage big enough to keep paying conversion tax,
+        // and Traditional money worth converting.
+        const small = twoBrokerages();
+        const base: ProjectionInput = {
+          ...small,
+          startingBalances: {
+            ...small.startingBalances,
+            preTax: 600000,
+            afterTax: 410000,
+            afterTaxBasis: 120000,
+          },
+          startingAccountBalances: {
+            ...small.startingAccountBalances,
+            "401k": {
+              structure: "roth_traditional",
+              traditional: 570000,
+              roth: 20000,
+            },
+            brokerage: {
+              structure: "basis_tracking",
+              balance: 410000,
+              basis: 120000,
+            },
+          },
+          individualAccounts: small.individualAccounts!.map((ia) =>
+            ia.name === "Retirement brokerage"
+              ? { ...ia, startingBalance: 400000, startingBasis: 114500 }
+              : ia.name === "401k" && ia.taxType === "preTax"
+                ? { ...ia, startingBalance: 570000 }
+                : ia,
+          ),
+        };
+        const years = noBasisDrift({
+          ...base,
+          decumulationDefaults: {
+            ...base.decumulationDefaults,
+            distributionTaxRates: {
+              ...base.decumulationDefaults.distributionTaxRates,
+              enableRothConversions: true,
+              rothConversionTarget: 0.22,
+              taxBrackets: [
+                { threshold: 0, baseWithholding: 0, rate: 0.1 },
+                { threshold: 23200, baseWithholding: 2320, rate: 0.12 },
+                { threshold: 94300, baseWithholding: 10852, rate: 0.22 },
+              ],
+              grossUpForTaxes: true,
+              taxMultiplier: 1.0,
+            },
+          },
+        });
+        expect(
+          years.some(
+            (y) =>
+              y.phase === "decumulation" &&
+              (y as EngineDecumulationYear).rothConversionAmount > 0,
+          ),
+        ).toBe(true);
+      });
+
+      it("a lump sum in retirement brings its basis with it", () => {
+        const base = twoBrokerages();
+        const year = base.asOfDate.getFullYear() + 3;
+        noBasisDrift({
+          ...base,
+          decumulationOverrides: [
+            {
+              year,
+              lumpSums: [{ amount: 50000, targetAccount: "brokerage" }],
+            },
+          ] as ProjectionInput["decumulationOverrides"],
+        });
+      });
+
+      it("without contribution specs, brokerage contributions keep their basis", () => {
+        const base = overflowInput();
+        noBasisDrift({
+          ...base,
+          contributionSpecs: undefined,
+          individualAccounts: base.individualAccounts!.map((ia) =>
+            ia.category === "brokerage"
+              ? { ...ia, startingBasis: ia.startingBalance }
+              : ia,
+          ),
+          accumulationDefaults: {
+            ...base.accumulationDefaults,
+            accountSplits: {
+              "401k": 0.5,
+              "403b": 0,
+              hsa: 0,
+              ira: 0,
+              brokerage: 0.5,
+            },
+          },
+        });
+      });
+
       it("a goal's draw never touches Retirement basis", () => {
         const base = overflowInput();
         const year = base.asOfDate.getFullYear() + 2;

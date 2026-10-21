@@ -187,6 +187,22 @@ describe("computeTaxBucketBreakdown", () => {
       );
     });
 
+    it("a $0 basis is a known basis (it doesn't send the household to the estimate)", () => {
+      const result = computeTaxBucketBreakdown(
+        {
+          accounts: [
+            brokerage(7, 18174.42, "Retirement"),
+            brokerage(8, 0, "Retirement", { accountLabel: "ESPP" }),
+          ],
+        },
+        people,
+        [perf(7, "5177.68"), perf(8, "0")],
+      );
+      expect(
+        result.accountBreakdownByCategory.brokerage!.map((e) => e.costBasis),
+      ).toEqual([5177.68, 0]);
+    });
+
     it("an account's basis is split over its sub-type rows by amount", () => {
       const result = computeTaxBucketBreakdown(
         {

@@ -44,9 +44,9 @@ export function basisTrackedAccounts(
 
 /**
  * Starting basis per account: each account's own `startingBasis` (capped at
- * its balance) when every basis-tracking account has one; otherwise the
- * aggregate basis shared out by starting balance (inputs that predate
- * per-account basis).
+ * its balance); accounts without one share what's left of the aggregate
+ * basis (aggregate − the known ones) by starting balance — inputs that
+ * predate per-account basis, or an account whose basis was never entered.
  */
 export function seedBrokerageBasis(
   indAccts: readonly IndividualAccountInput[],
@@ -55,37 +55,40 @@ export function seedBrokerageBasis(
 ): BrokerageBasis {
   const accts = basisTrackedAccounts(indAccts);
   const basis: BrokerageBasis = new Map();
-  if (accts.length === 0) return basis;
-  if (accts.every((ia) => ia.startingBasis != null)) {
-    for (const ia of accts)
-      basis.set(
-        indKey(ia),
-        roundToCents(
-          Math.max(0, Math.min(ia.startingBasis!, ia.startingBalance)),
-        ),
-      );
-    return basis;
+  let known = 0;
+  for (const ia of accts) {
+    if (ia.startingBasis == null) continue;
+    const b = roundToCents(
+      Math.max(0, Math.min(ia.startingBasis, Math.max(0, ia.startingBalance))),
+    );
+    basis.set(indKey(ia), b);
+    known += b;
   }
-  const total = accts.reduce((s, ia) => s + Math.max(0, ia.startingBalance), 0);
-  for (const ia of accts)
+  const missing = accts.filter((ia) => ia.startingBasis == null);
+  const rest = Math.max(0, aggregateBasis - known);
+  const total = missing.reduce(
+    (s, ia) => s + Math.max(0, ia.startingBalance),
+    0,
+  );
+  for (const ia of missing)
     basis.set(
       indKey(ia),
       total > 0
-        ? roundToCents(
-            aggregateBasis * (Math.max(0, ia.startingBalance) / total),
-          )
+        ? roundToCents(rest * (Math.max(0, ia.startingBalance) / total))
         : 0,
     );
   return basis;
 }
 
-/** Basis ÷ balance over the given accounts (0..1); 0 when they hold nothing. */
+/** Basis ÷ balance over the given accounts (0..1); undefined when they
+ *  hold nothing (callers fall back to the aggregate ratio — a 0 would price
+ *  any unattributed money as all gain). */
 export function groupBasisRatio(
   accts: readonly IndividualAccountInput[],
   indKey: IndKeyFn,
   indBal: Map<string, number>,
   basis: BrokerageBasis,
-): number {
+): number | undefined {
   let bal = 0;
   let b = 0;
   for (const ia of basisTrackedAccounts(accts)) {
@@ -93,7 +96,7 @@ export function groupBasisRatio(
     bal += Math.max(0, indBal.get(k) ?? 0);
     b += basis.get(k) ?? 0;
   }
-  return bal > 0 ? Math.min(1, Math.max(0, b / bal)) : 0;
+  return bal > 0 ? Math.min(1, Math.max(0, b / bal)) : undefined;
 }
 
 function brokerageBalances(
@@ -144,6 +147,43 @@ export function followInflows<T>(
     const now = Math.max(0, indBal.get(k) ?? 0);
     if (now > was) basis.set(k, roundToCents((basis.get(k) ?? 0) + now - was));
   }
+  return result;
+}
+
+/**
+ * Run the yearly reconciliation (`mutate`). Accounts it lowers give up basis
+ * at their own ratio (`followDraws`). Accounts it raises are holding cash the
+ * aggregate already tracked with its basis (contributions with no
+ * per-account route, lump sums with no matching account, …): they receive
+ * the aggregate's basis surplus over the accounts, by their increase and at
+ * most the increase.
+ */
+export function followReconciliation<T>(
+  indAccts: readonly IndividualAccountInput[],
+  indKey: IndKeyFn,
+  indBal: Map<string, number>,
+  basis: BrokerageBasis,
+  aggregateBasis: number,
+  mutate: () => T,
+): T {
+  const before = brokerageBalances(indAccts, indKey, indBal);
+  const result = followDraws(indAccts, indKey, indBal, basis, mutate);
+  const raised = [...before]
+    .map(([k, was]) => [k, Math.max(0, indBal.get(k) ?? 0) - was] as const)
+    .filter(([, inc]) => inc > 0);
+  if (raised.length === 0) return result;
+  let accountsBasis = 0;
+  for (const k of before.keys()) accountsBasis += basis.get(k) ?? 0;
+  const surplus = aggregateBasis - accountsBasis;
+  if (surplus <= 0) return result;
+  const totalInc = raised.reduce((s, [, inc]) => s + inc, 0);
+  for (const [k, inc] of raised)
+    basis.set(
+      k,
+      roundToCents(
+        (basis.get(k) ?? 0) + Math.min(inc, surplus * (inc / totalInc)),
+      ),
+    );
   return result;
 }
 

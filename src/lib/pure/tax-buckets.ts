@@ -153,15 +153,16 @@ export function computeTaxBucketBreakdown(
         (rowsTotalByPerf.get(a.performanceAccountId) ?? 0) + a.amount,
       );
     }
-    const rowBasis = (a: TaxBucketSnapshotAccount): number => {
-      if (a.performanceAccountId == null) return 0;
+    // null = this row has no known basis (not a basis-tracking account, or
+    // its basis isn't entered); 0 is a real zero basis.
+    const rowBasis = (a: TaxBucketSnapshotAccount): number | null => {
+      if (a.performanceAccountId == null) return null;
       const perf = perfById.get(a.performanceAccountId);
-      if (!perf?.isActive || !tracksCostBasis(perf.accountType)) return 0;
+      if (!perf?.isActive || !tracksCostBasis(perf.accountType)) return null;
+      if (perf.costBasis == null) return null;
       const total = rowsTotalByPerf.get(a.performanceAccountId) ?? 0;
       return total > 0
-        ? roundToCents(
-            toNumber(String(perf.costBasis ?? "0")) * (a.amount / total),
-          )
+        ? roundToCents(toNumber(String(perf.costBasis)) * (a.amount / total))
         : 0;
     };
 
@@ -170,7 +171,8 @@ export function computeTaxBucketBreakdown(
       // filter engine output by parentCategory for the correct subset.
       if (a.parentCategory && !ENGINE_CATEGORIES.has(a.parentCategory))
         continue;
-      const basis = rowBasis(a);
+      const knownBasis = rowBasis(a);
+      const basis = knownBasis ?? 0;
       const ownerName = a.ownerPersonId
         ? personNameById.get(a.ownerPersonId)
         : undefined;
@@ -241,7 +243,7 @@ export function computeTaxBucketBreakdown(
       );
       if (existing) {
         existing.amount += a.amount;
-        if (basis > 0)
+        if (knownBasis != null)
           existing.costBasis = roundToCents((existing.costBasis ?? 0) + basis);
       } else {
         accountBreakdownByCategory[cat].push({
@@ -252,7 +254,7 @@ export function computeTaxBucketBreakdown(
           ownerPersonId: a.ownerPersonId ?? undefined,
           accountType: cat,
           parentCategory: a.parentCategory ?? undefined,
-          ...(basis > 0 ? { costBasis: basis } : {}),
+          ...(knownBasis != null ? { costBasis: basis } : {}),
         });
       }
 
