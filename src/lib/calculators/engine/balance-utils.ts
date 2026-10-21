@@ -182,6 +182,18 @@ export function subtractExcluded(
         (nonRetirement?.total[cat] ?? 0);
       setBalance(bal, Math.max(0, getTotalBalance(bal) - totalExcl));
     }
+    // Never more than the category's tracked accounts can give: money no
+    // tracked account holds is not penalty-free by default
+    // (EligibilityRecord.reachableByCategory).
+    const reachable = exposure?.reachableByCategory?.[cat];
+    const total = getTotalBalance(bal);
+    if (reachable != null && total > reachable) {
+      const keep = total > 0 ? Math.max(0, reachable) / total : 0;
+      if (bal.structure === "roth_traditional") {
+        setTraditional(bal, roundToCents(bal.traditional * keep));
+        setRoth(bal, roundToCents(bal.roth * keep));
+      } else setBalance(bal, roundToCents(total * keep));
+    }
   }
   return result;
 }

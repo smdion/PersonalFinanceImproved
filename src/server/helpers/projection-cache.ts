@@ -335,8 +335,11 @@ import { log } from "@/lib/logger";
  *  53: percentage routing moves a capped account's cut-off share instead of
  *  dropping it; simulation results carry failure ages and reasons
  *  (distributions.failureAge, failureReasonRates); year rows carry
- *  shortfallMaterialityFloor. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 53;
+ *  shortfallMaterialityFloor.
+ *
+ *  54: penalty-locked categories are capped at what their tracked accounts
+ *  can give penalty-free — untracked money in them was drawn as reachable. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 54;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

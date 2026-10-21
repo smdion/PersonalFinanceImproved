@@ -1668,6 +1668,74 @@ describe("engine invariants", () => {
     });
   });
 
+  describe("penalty-locked money stays locked", () => {
+    it("money in a category no tracked account holds isn't drawn before 59½", () => {
+      // Retired at 55; the 401(k) account (Traditional) is locked until
+      // 59½ (no Rule of 55). The category also holds $50k of Roth 401(k)
+      // money no account tracks — it was drawn penalty-free as if reachable.
+      const birthYear = AS_OF.getFullYear() - 55;
+      const base = makeInput({ currentAge: 55, retirementAge: 55 });
+      const input: ProjectionInput = {
+        ...base,
+        decumulationDefaults: {
+          ...base.decumulationDefaults,
+          avoidPenalizedWithdrawals: true,
+        },
+        startingBalances: {
+          preTax: 500000,
+          taxFree: 50000,
+          hsa: 0,
+          afterTax: 400000,
+          afterTaxBasis: 300000,
+        },
+        startingAccountBalances: {
+          "401k": {
+            structure: "roth_traditional",
+            traditional: 500000,
+            roth: 50000,
+          },
+          "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+          hsa: { structure: "single_bucket", balance: 0 },
+          ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+          brokerage: {
+            structure: "basis_tracking",
+            balance: 400000,
+            basis: 300000,
+          },
+        },
+        individualAccounts: [
+          {
+            name: "401k",
+            category: "401k",
+            taxType: "preTax",
+            startingBalance: 500000,
+            ownerPersonId: 1,
+            ownerName: "Alex",
+            ownerBirthYear: birthYear,
+            ruleOf55ForceIneligible: true,
+            parentCategory: "Retirement",
+          },
+          {
+            name: "Brokerage",
+            category: "brokerage",
+            taxType: "afterTax",
+            startingBalance: 400000,
+            startingBasis: 300000,
+            parentCategory: "Retirement",
+          },
+        ],
+      };
+      const firstYear = calculateProjection(input).projectionByYear.find(
+        (y): y is EngineDecumulationYear => y.phase === "decumulation",
+      )!;
+      expect(
+        firstYear.slots.find((sl) => sl.category === "401k")!.withdrawal,
+      ).toBe(0);
+      expect(firstYear.penaltyCost ?? 0).toBe(0);
+      expect(firstYear.totalWithdrawal).toBeGreaterThan(0);
+    });
+  });
+
   describe("retirement money stays retirement money", () => {
     // $40k to a 401(k) (over the IRS limit → overflow), $5k each to a
     // Retirement and a Portfolio brokerage, no targets; no growth so the

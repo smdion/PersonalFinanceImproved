@@ -191,6 +191,13 @@ export type EligibilityRecord = {
    *  and using the blind total would attribute a real household shortfall
    *  to "penalty avoidance" for dollars that were never excluded at all. */
   totalPenaltyExposedStillExcluded: number;
+  /** Per category with tracked retirement accounts under an early-access
+   *  rule (not brokerage): the most routing may draw from it — those
+   *  accounts' penalty-free money plus any account allowed a penalized
+   *  draw. Money in the category no tracked account holds (e.g. a Roth
+   *  401(k) contribution with no Roth 401(k) account yet) isn't reachable
+   *  without penalty by default; uncapped, it was drawn as if it were. */
+  reachableByCategory: Partial<Record<AccountCategory, number>>;
 };
 
 function zeroByCategory(): Record<AccountCategory, number> {
@@ -255,6 +262,7 @@ export function computeWithdrawalEligibility(input: {
   const penaltyExposedTotalStillExcluded = zeroByCategory();
   let totalPenaltyExposed = 0;
   let totalPenaltyExposedStillExcluded = 0;
+  const reachableByCategory: Partial<Record<AccountCategory, number>> = {};
 
   for (const ia of indAccts) {
     const key = indKey(ia);
@@ -413,6 +421,15 @@ export function computeWithdrawalEligibility(input: {
     // per-account `byKey` entry above is NOT gated — it still gets a
     // normal, informative reason string for the UI regardless of
     // parentCategory.
+    if (
+      isRetirementMoney(ia.parentCategory) &&
+      getAccountTypeConfig(ia.category).balanceStructure !== "basis_tracking"
+    )
+      reachableByCategory[ia.category] = roundToCents(
+        (reachableByCategory[ia.category] ?? 0) +
+          penaltyFreeAmount +
+          (ia.allowPenalizedWithdrawals ? penaltyExposedAmount : 0),
+      );
     if (penaltyExposedAmount > 0 && isRetirementMoney(ia.parentCategory)) {
       totalPenaltyExposed += penaltyExposedAmount;
       penaltyExposedTotal[ia.category] += penaltyExposedAmount;
@@ -443,6 +460,7 @@ export function computeWithdrawalEligibility(input: {
     penaltyExposedRothStillExcluded,
     penaltyExposedTotalStillExcluded,
     totalPenaltyExposedStillExcluded,
+    reachableByCategory,
   };
 }
 
