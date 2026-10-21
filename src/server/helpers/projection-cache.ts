@@ -254,8 +254,12 @@ import { log } from "@/lib/logger";
  *  personPayShare and the engine re-derives salaryFraction from it each year
  *  when it tracks salary per person (it used to apply the rate to the
  *  person's total pay, bonus included, whatever the bonus switch said).
- *  Engine logic changed for the same input, so cached rows must not serve. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 32;
+ *  Engine logic changed for the same input, so cached rows must not serve.
+ *
+ *  33: spending strategies and the Rate-Seeded seed size spending from
+ *  retirement money only (Portfolio-parented accounts excluded) — the same
+ *  input now gives different spending. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 33;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

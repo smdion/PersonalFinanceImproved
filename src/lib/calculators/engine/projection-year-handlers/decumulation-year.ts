@@ -63,10 +63,7 @@ import {
   reconcileIndividualToAggregate,
   specKeyOf,
 } from "../individual-account-tracking";
-import {
-  computeWithdrawalEligibility,
-  computeNonRetirementExclusion,
-} from "@/lib/pure/withdrawal-eligibility";
+import { computeWithdrawalEligibility } from "@/lib/pure/withdrawal-eligibility";
 import type { BasisDraw } from "@/lib/pure/roth-basis-tracking";
 import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
@@ -102,7 +99,14 @@ export function runDecumulationYear(
   yearIndex: number,
   setup: PreYearSetup,
 ): void {
-  const { age, year, returnRate, strategyAction, totalBalance } = setup;
+  const {
+    age,
+    year,
+    returnRate,
+    strategyAction,
+    retirementBalance,
+    totalBalance,
+  } = setup;
   const {
     input,
     budgetOverrideMap,
@@ -172,9 +176,7 @@ export function runDecumulationYear(
   // every consumer that decides how much money is "available"
   // (routeForMode's two call sites, performRothConversion, enforceRmd, and
   // QCD's capacity/debit below) so they can't disagree with each other.
-  const nonRetirement = hasIndividualAccounts
-    ? computeNonRetirementExclusion(indAccts, indBal, indKey)
-    : undefined;
+  const { nonRetirement } = setup;
 
   // Reconciliation check: acctBal Roth total should match balances.taxFree
   const acctBalRothTotal = getAllCategories().reduce((s, cat) => {
@@ -369,8 +371,16 @@ export function runDecumulationYear(
   // Tax gross-up: estimate tax from expected withdrawal routing, then
   // increase withdrawal so after-tax proceeds cover the expense need.
   const taxRates = decumulationDefaults.distributionTaxRates;
+  // Retirement money only (PreYearSetup.retirementBalance): Portfolio-
+  // parented Traditional money is never withdrawn for spending, so it can't
+  // be part of the estimate.
+  const retirementPreTax =
+    balances.preTax -
+    (nonRetirement ? sumBy(Object.values(nonRetirement.trad), (v) => v) : 0);
   const estTraditionalPortion =
-    totalBalance > 0 ? balances.preTax / totalBalance : 0;
+    retirementBalance > 0
+      ? Math.max(0, retirementPreTax) / retirementBalance
+      : 0;
 
   // Grow the ordinary tax brackets + standard deduction forward from their
   // own DB vintage:

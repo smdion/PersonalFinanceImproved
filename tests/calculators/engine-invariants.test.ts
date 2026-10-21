@@ -20,6 +20,7 @@ import {
   getTotalBalance,
   getTraditionalBalance,
 } from "@/lib/config/account-types";
+import { WITHDRAWAL_STRATEGY_VALUES } from "@/lib/config/withdrawal-strategies";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -1448,6 +1449,164 @@ describe("engine invariants", () => {
         }),
         { numRuns: NUM_RUNS },
       );
+    });
+  });
+
+  describe("retirement spending ignores Portfolio money", () => {
+    // Already retired (no contributions — only spending-sizing paths
+    // involved). The extra $1M sits in a Portfolio-parented brokerage at the
+    // same basis ratio as the household's brokerage, so nothing but the
+    // Portfolio balance itself differs.
+    const retired = (portfolio: number): ProjectionInput => {
+      const base = makeInput({ currentAge: 66, retirementAge: 66 });
+      const individualAccounts = [
+        {
+          name: "401k",
+          category: "401k" as const,
+          taxType: "preTax",
+          startingBalance: 80000,
+        },
+        {
+          name: "401k",
+          category: "401k" as const,
+          taxType: "taxFree",
+          startingBalance: 20000,
+        },
+        {
+          name: "IRA",
+          category: "ira" as const,
+          taxType: "preTax",
+          startingBalance: 30000,
+        },
+        {
+          name: "IRA",
+          category: "ira" as const,
+          taxType: "taxFree",
+          startingBalance: 20000,
+        },
+        {
+          name: "HSA",
+          category: "hsa" as const,
+          taxType: "hsa",
+          startingBalance: 15000,
+        },
+        {
+          name: "Retirement brokerage",
+          category: "brokerage" as const,
+          taxType: "afterTax",
+          startingBalance: 30000,
+        },
+      ].map((a) => ({ ...a, parentCategory: "Retirement" }));
+      if (portfolio > 0)
+        individualAccounts.push({
+          name: "Long-term brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: portfolio,
+          parentCategory: "Portfolio",
+        });
+      const basisRatio = 20000 / 30000;
+      return {
+        ...base,
+        individualAccounts,
+        startingBalances: {
+          ...base.startingBalances,
+          afterTax: 30000 + portfolio,
+          afterTaxBasis: (30000 + portfolio) * basisRatio,
+        },
+        startingAccountBalances: {
+          ...base.startingAccountBalances,
+          brokerage: {
+            structure: "basis_tracking",
+            balance: 30000 + portfolio,
+            basis: (30000 + portfolio) * basisRatio,
+          },
+        },
+      };
+    };
+    const spending = (input: ProjectionInput) =>
+      calculateProjection(input)
+        .projectionByYear.filter((y) => y.phase === "decumulation")
+        .slice(0, 10)
+        .map((y) => y.projectedExpenses);
+
+    it("every strategy sizes spending from retirement money only", () => {
+      for (const strategy of WITHDRAWAL_STRATEGY_VALUES) {
+        const withStrategy = (portfolio: number) => {
+          const input = retired(portfolio);
+          return {
+            ...input,
+            decumulationDefaults: {
+              ...input.decumulationDefaults,
+              withdrawalStrategy: strategy,
+            },
+          };
+        };
+        const without = spending(withStrategy(0));
+        const withPortfolio = spending(withStrategy(1_000_000));
+        without.forEach((v, i) =>
+          expect
+            .soft(withPortfolio[i], `${strategy}, year ${i + 1}`)
+            .toBeCloseTo(v, 0),
+        );
+      }
+    });
+
+    it("Portfolio Traditional money isn't part of the Traditional share or the year-1 withdrawal", () => {
+      // +$1M Traditional IRA tagged Portfolio (before RMD age, so RMDs —
+      // which do count it — don't enter the first years).
+      const withPortfolioIra = (): ProjectionInput => {
+        const input = retired(0);
+        return {
+          ...input,
+          individualAccounts: [
+            ...input.individualAccounts!,
+            {
+              name: "Portfolio IRA",
+              category: "ira",
+              taxType: "preTax",
+              startingBalance: 1_000_000,
+              parentCategory: "Portfolio",
+            },
+          ],
+          startingBalances: {
+            ...input.startingBalances,
+            preTax: input.startingBalances.preTax + 1_000_000,
+          },
+          startingAccountBalances: {
+            ...input.startingAccountBalances,
+            ira: {
+              structure: "roth_traditional",
+              traditional: 1_030_000,
+              roth: 20000,
+            },
+          },
+        };
+      };
+      const firstYear = (input: ProjectionInput) =>
+        calculateProjection(input).projectionByYear.find(
+          (y): y is EngineDecumulationYear => y.phase === "decumulation",
+        )!;
+      const without = firstYear(retired(0));
+      const withIra = firstYear(withPortfolioIra());
+      expect(withIra.estTraditionalPortion).toBeGreaterThan(0);
+      expect(withIra.estTraditionalPortion).toBeCloseTo(
+        without.estTraditionalPortion!,
+        6,
+      );
+      expect(withIra.targetWithdrawal).toBeCloseTo(
+        without.targetWithdrawal!,
+        0,
+      );
+    });
+
+    it("the Rate-Seeded first year seeds from retirement money only", () => {
+      const seeded = (portfolio: number) =>
+        spending({
+          ...retired(portfolio),
+          rateSeededDecumulationYear1: true,
+        })[0];
+      expect(seeded(1_000_000)).toBeCloseTo(seeded(0)!, 0);
     });
   });
 });

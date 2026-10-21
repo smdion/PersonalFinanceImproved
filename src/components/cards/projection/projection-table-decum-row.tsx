@@ -1501,7 +1501,7 @@ export function DecumulationRow({
               `Expenses: ${formatCurrency(deflate(dyr.projectedExpenses, yr.year))}`,
               `SS Income: ${formatCurrency(deflate(dyr.ssIncome ?? 0, yr.year))}`,
               `After-tax need: ${formatCurrency(deflate(dyr.afterTaxNeed ?? 0, yr.year))}`,
-              `Tax rate: ${formatPercent(dyr.effectiveTaxRate, 2)} (trad ${formatPercent(dyr.estTraditionalPortion ?? 0, 0)} of portfolio)`,
+              `Tax rate: ${formatPercent(dyr.effectiveTaxRate, 2)} (trad ${formatPercent(dyr.estTraditionalPortion ?? 0, 0)} of retirement money)`,
               `Gross-up: ×${(dyr.grossUpFactor ?? 1).toFixed(3)}`,
               `Target withdrawal: ${formatCurrency(deflate(dyr.targetWithdrawal, yr.year))}`,
               `Actual withdrawal: ${formatCurrency(deflate(dyr.totalWithdrawal, yr.year))}`,

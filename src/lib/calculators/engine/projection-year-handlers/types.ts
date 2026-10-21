@@ -19,6 +19,7 @@ import type { SpendingCrossYearState } from "../spending-strategy";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type { makeIndKey } from "../individual-account-tracking";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
+import type { NonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
 
 // ---------------------------------------------------------------------------
 // Local type used by brokerage goals (defined locally in projection.ts)
@@ -157,7 +158,23 @@ export type PreYearSetup = {
   isAccumulation: boolean;
   returnRate: number;
   strategyAction: string | null;
+  /** Start-of-year balance retirement can spend: every account less the
+   *  Portfolio-parented ones (`nonRetirement`), which never fund retirement
+   *  spending. Spending strategies and the Rate-Seeded seed size spending
+   *  from this, never from the all-accounts total. Equals `totalBalance` in
+   *  accumulation years (nothing reads it there). */
+  retirementBalance: number;
+  /** Start-of-year balance of every account, Portfolio-parented ones
+   *  included — the physical pool the tax gross-up caps its target at.
+   *  Routing then excludes Portfolio money and records what that leaves
+   *  unmet (`nonRetirementShortfall`), the same way penalty-locked money is
+   *  attributed; capping at the retirement balance would hide that cause. */
   totalBalance: number;
+  /** This decumulation year's Portfolio-parented balances
+   *  (computeNonRetirementExclusion), computed once in pre-year setup and
+   *  threaded to every consumer. Undefined in accumulation years and
+   *  without individual accounts. */
+  nonRetirement: NonRetirementExclusion | undefined;
   /** state.projectedSalary plus this year's bonus adjustment, if any —
    *  non-persisting (state.projectedSalary itself is never mutated by the
    *  adjustment, so next year's growth compounds from the true baseline).
