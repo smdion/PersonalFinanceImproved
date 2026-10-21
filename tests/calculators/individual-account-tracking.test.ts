@@ -820,6 +820,54 @@ describe("reconcileIndividualToAggregate (v0.7.8 follow-up, DESIGN-DECISION-v0.7
     };
   }
 
+  describe("retirement money absorbs the drift", () => {
+    const brokerages = () => [
+      makeIndividualAccount({
+        name: "Retirement brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        parentCategory: "Retirement",
+      }),
+      makeIndividualAccount({
+        name: "Long-term brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        parentCategory: "Portfolio",
+      }),
+    ];
+    const run = (target: number) => {
+      const accounts = brokerages();
+      const indBal = new Map<string, number>([
+        [indKey(accounts[0]!), 30000],
+        [indKey(accounts[1]!), 10000],
+      ]);
+      reconcileIndividualToAggregate(
+        accounts,
+        indKey,
+        indBal,
+        baseBalances({
+          brokerage: { structure: "basis_tracking", balance: target, basis: 0 },
+        }),
+      );
+      return [
+        indBal.get(indKey(accounts[0]!))!,
+        indBal.get(indKey(accounts[1]!))!,
+      ];
+    };
+
+    it("a correction moves only the Retirement accounts", () => {
+      expect(run(45000)).toEqual([35000, 10000]);
+      expect(run(35000)).toEqual([25000, 10000]);
+    });
+
+    it("a shortfall bigger than retirement money spreads over every account", () => {
+      // $35,000 short; retirement money holds $30,000.
+      const [ret, port] = run(5000);
+      expect(ret + port).toBeCloseTo(5000, 2);
+      expect(port).toBeLessThan(10000);
+    });
+  });
+
   it("performs zero writes when every group already matches (byte-identity guard)", () => {
     const accounts = [
       makeIndividualAccount({

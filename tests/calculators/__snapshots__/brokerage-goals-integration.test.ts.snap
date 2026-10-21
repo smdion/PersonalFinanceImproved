@@ -2806,13 +2806,13 @@ exports[`brokerage goals integration > fixture 4: goals with parentCategoryFilte
     {
       "contribution": 0,
       "employerMatch": 0,
-      "endBalance": 30565.67,
+      "endBalance": 30565.68,
       "endBasis": 18000,
       "goalWithdrawals": [],
       "growth": 1999.62,
       "individualAccounts": [
         {
-          "balance": 20377.11,
+          "balance": 20377.12,
           "category": "brokerage",
           "contribution": 0,
           "employerMatch": 0,
@@ -2837,19 +2837,19 @@ exports[`brokerage goals integration > fixture 4: goals with parentCategoryFilte
       "returnRate": 0.07,
       "totalTaxCost": 0,
       "totalWithdrawal": 0,
-      "unrealizedGain": 12565.67,
+      "unrealizedGain": 12565.68,
       "year": 2026,
     },
     {
       "contribution": 0,
       "employerMatch": 0,
-      "endBalance": 32705.27,
+      "endBalance": 32705.28,
       "endBasis": 18000,
       "goalWithdrawals": [],
       "growth": 2139.6,
       "individualAccounts": [
         {
-          "balance": 21803.51,
+          "balance": 21803.52,
           "category": "brokerage",
           "contribution": 0,
           "employerMatch": 0,
@@ -2874,19 +2874,19 @@ exports[`brokerage goals integration > fixture 4: goals with parentCategoryFilte
       "returnRate": 0.07,
       "totalTaxCost": 0,
       "totalWithdrawal": 0,
-      "unrealizedGain": 14705.27,
+      "unrealizedGain": 14705.28,
       "year": 2027,
     },
     {
       "contribution": 0,
       "employerMatch": 0,
-      "endBalance": 34994.64,
-      "endBasis": 18000,
+      "endBalance": 34994.65,
+      "endBasis": 18000.01,
       "goalWithdrawals": [],
       "growth": 2289.37,
       "individualAccounts": [
         {
-          "balance": 23329.76,
+          "balance": 23329.77,
           "category": "brokerage",
           "contribution": 0,
           "employerMatch": 0,
@@ -2917,13 +2917,13 @@ exports[`brokerage goals integration > fixture 4: goals with parentCategoryFilte
     {
       "contribution": 0,
       "employerMatch": 0,
-      "endBalance": 37444.26,
+      "endBalance": 37444.27,
       "endBasis": 18000,
       "goalWithdrawals": [],
       "growth": 2449.62,
       "individualAccounts": [
         {
-          "balance": 24962.84,
+          "balance": 24962.85,
           "category": "brokerage",
           "contribution": 0,
           "employerMatch": 0,
@@ -2948,7 +2948,7 @@ exports[`brokerage goals integration > fixture 4: goals with parentCategoryFilte
       "returnRate": 0.07,
       "totalTaxCost": 0,
       "totalWithdrawal": 0,
-      "unrealizedGain": 19444.26,
+      "unrealizedGain": 19444.27,
       "year": 2029,
     },
     {

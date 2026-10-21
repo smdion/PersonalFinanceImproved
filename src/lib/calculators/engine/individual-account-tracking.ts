@@ -1237,19 +1237,41 @@ export function reconcileIndividualToAggregate(
 /** One (category, tax-slice) group's reconciliation — see
  *  `reconcileIndividualToAggregate`'s docblock for the full contract. */
 function reconcileGroup(
-  accts: IndividualAccountInput[],
+  groupAccts: IndividualAccountInput[],
   indKey: IndKeyFn,
   indBal: Map<string, number>,
   target: number,
   label: string,
   diagnostics: string[],
 ): void {
-  if (accts.length === 0) return;
-  const sumInd = accts.reduce(
+  if (groupAccts.length === 0) return;
+  const sumInd = groupAccts.reduce(
     (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
     0,
   );
   const delta = roundToCents(target - sumInd);
+  // The drift is absorbed by retirement money. Portfolio-parented accounts
+  // change only through their own per-account flows (contributions,
+  // growth, goal draws), so the aggregate-only operations that drift
+  // (withdrawals, RMDs, conversions, overflow) are retirement-side;
+  // spreading the correction over Portfolio accounts too would move
+  // retirement money into them. Every account when the group has no
+  // retirement money.
+  const retirementAccts = groupAccts.filter(
+    (ia) =>
+      !isPortfolioParent(ia.parentCategory) &&
+      (indBal.get(indKey(ia)) ?? 0) > 0,
+  );
+  const retirementSum = retirementAccts.reduce(
+    (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+    0,
+  );
+  // …unless retirement money can't absorb a shortfall of this size.
+  const accts =
+    retirementAccts.length > 0 && retirementSum + delta >= 0
+      ? retirementAccts
+      : groupAccts;
+  const sumAbsorbing = accts === groupAccts ? sumInd : retirementSum;
   if (delta === 0) return;
 
   if (Math.abs(delta) > 1) {
@@ -1258,7 +1280,7 @@ function reconcileGroup(
     );
   }
 
-  if (sumInd <= 0) {
+  if (sumAbsorbing <= 0) {
     // No weight to distribute by — inventing one would be a second
     // allocation policy. Leave indBal alone; the diagnostic above (for
     // >$1 drift) already surfaces this if it's material.
@@ -1280,7 +1302,7 @@ function reconcileGroup(
       largestBal = bal;
       largestKey = k;
     }
-    const share = roundToCents(delta * (bal / sumInd));
+    const share = roundToCents(delta * (bal / sumAbsorbing));
     const newBal = Math.max(0, roundToCents(bal + share));
     indBal.set(k, newBal);
     distributed += roundToCents(newBal - bal);

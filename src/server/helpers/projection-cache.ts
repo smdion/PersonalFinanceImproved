@@ -265,8 +265,11 @@ import { log } from "@/lib/logger";
  *  contribution ramp and unnamed lump sums likewise.
  *
  *  35: brokerage goals draw only from Portfolio-parented brokerages (they
- *  drew from every brokerage, retirement ones included). */
-export const PROJECTION_CACHE_ENGINE_VERSION = 35;
+ *  drew from every brokerage, retirement ones included).
+ *
+ *  36: the yearly per-account reconciliation absorbs drift in retirement
+ *  money, not Portfolio-parented accounts. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 36;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;
