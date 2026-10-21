@@ -11,7 +11,7 @@ import {
   addRoth,
   addBalance,
   addBasis,
-  isPortfolioParent,
+  isRetirementMoney,
 } from "../../../config/account-types";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 import {
@@ -98,7 +98,7 @@ export function resolveLumpSumTarget(
         : "afterTax");
   const parentOf = (ia: IndividualAccountInput) => ia.parentCategory;
   const byParent = (accts: readonly IndividualAccountInput[]) => {
-    if (!isPortfolioParent(ls.targetParentCategory))
+    if (isRetirementMoney(ls.targetParentCategory))
       return retirementFirst(accts, parentOf);
     // Portfolio savings never go to the projection-only account unless
     // there's nowhere else for them.

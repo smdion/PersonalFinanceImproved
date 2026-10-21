@@ -19,7 +19,7 @@ import {
   getAllCategories,
   getAccountTypeConfig,
   isOverflowTarget,
-  isPortfolioParent,
+  isRetirementMoney,
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
@@ -195,8 +195,7 @@ export function reinvestRmdExcess(
           // that's all there is). Never a Portfolio account — with no
           // retirement brokerage it stays in the aggregate only.
           const retirementAccts = indAccts.filter(
-            (ia) =>
-              ia.category === cat && !isPortfolioParent(ia.parentCategory),
+            (ia) => ia.category === cat && isRetirementMoney(ia.parentCategory),
           );
           const chosen = retirementAccts.filter((ia) => ia.rmdExcessTarget);
           const target = chosen.length > 0 ? chosen : retirementAccts;

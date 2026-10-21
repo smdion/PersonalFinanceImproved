@@ -8,7 +8,7 @@
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import {
   isOverflowTarget,
-  isPortfolioParent,
+  isRetirementMoney,
 } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type {
@@ -140,8 +140,8 @@ export function calculateBrokerageGoals(
     let afterTax: number;
     let afterTaxBasis: number;
     if (yr.individualAccountBalances.length > 0) {
-      const filtered = yr.individualAccountBalances.filter((ia) =>
-        isPortfolioParent(ia.parentCategory),
+      const filtered = yr.individualAccountBalances.filter(
+        (ia) => !isRetirementMoney(ia.parentCategory),
       );
       if (filtered.length === 0 && i === 0) {
         warnings.push(
@@ -176,8 +176,8 @@ export function calculateBrokerageGoals(
 
       if (yr.individualAccountBalances.length > 0) {
         // Derive contribution/overflow from Portfolio-category individual accounts.
-        const filtered = yr.individualAccountBalances.filter((ia) =>
-          isPortfolioParent(ia.parentCategory),
+        const filtered = yr.individualAccountBalances.filter(
+          (ia) => !isRetirementMoney(ia.parentCategory),
         );
         contribution = roundToCents(
           sumBy(
@@ -236,8 +236,8 @@ export function calculateBrokerageGoals(
       const decYr = yr as EngineDecumulationYear;
       contribution = roundToCents(decYr.brokerageContribution);
       if (yr.individualAccountBalances.length > 0) {
-        const filtered = yr.individualAccountBalances.filter((ia) =>
-          isPortfolioParent(ia.parentCategory),
+        const filtered = yr.individualAccountBalances.filter(
+          (ia) => !isRetirementMoney(ia.parentCategory),
         );
         employerMatch = roundToCents(sumBy(filtered, (ia) => ia.employerMatch));
       }
@@ -247,8 +247,8 @@ export function calculateBrokerageGoals(
     // when available; otherwise derive from net inflow.
     let growth: number;
     if (yr.individualAccountBalances.length > 0) {
-      const filtered = yr.individualAccountBalances.filter((ia) =>
-        isPortfolioParent(ia.parentCategory),
+      const filtered = yr.individualAccountBalances.filter(
+        (ia) => !isRetirementMoney(ia.parentCategory),
       );
       growth = roundToCents(sumBy(filtered, (ia) => ia.growth));
     } else {
@@ -259,8 +259,8 @@ export function calculateBrokerageGoals(
     // Build per-account breakdown for tooltips — Portfolio accounts only
     const filteredAccounts =
       yr.individualAccountBalances.length > 0
-        ? yr.individualAccountBalances.filter((ia) =>
-            isPortfolioParent(ia.parentCategory),
+        ? yr.individualAccountBalances.filter(
+            (ia) => !isRetirementMoney(ia.parentCategory),
           )
         : yr.individualAccountBalances;
 

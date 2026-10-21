@@ -314,8 +314,12 @@ import { log } from "@/lib/logger";
  *
  *  48: Simple tax mode simulates retirement money only (it collapsed every
  *  account, Portfolio included, and fed in Portfolio savings, match,
- *  goals and lump sums). */
-export const PROJECTION_CACHE_ENGINE_VERSION = 48;
+ *  goals and lump sums).
+ *
+ *  49: one scope predicate (isRetirementMoney) across the engine; a
+ *  household contributing only to Portfolio money has a 0% retirement rate
+ *  (the 25% fallback invented contributions in Simple). */
+export const PROJECTION_CACHE_ENGINE_VERSION = 49;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

@@ -2066,7 +2066,6 @@ describe("engine invariants", () => {
           },
           taxSplits: {},
         },
-        switches: [],
       };
       const endBalances = (input: ProjectionInput) =>
         calculateProjection(toSimpleTaxMode(input, parts)).projectionByYear.map(
@@ -2094,6 +2093,11 @@ describe("engine invariants", () => {
               baseYearContributions: zero,
               baseYearEmployerMatch: zero,
               contributionRate: 0.5,
+              retirementOnly: {
+                baseYearContributions: zero,
+                baseYearEmployerMatch: zero,
+                employerMatchRateByCategory: zero,
+              },
             },
           ],
         });
@@ -2178,6 +2182,47 @@ describe("engine invariants", () => {
             ] as ProjectionInput["accumulationOverrides"],
           }),
         ).toBeGreaterThan(last(noPortfolio));
+      });
+
+      it("only Portfolio savings: Simple adds no retirement contributions", () => {
+        const base = overflowInput();
+        const onlyPortfolio: ProjectionInput = {
+          ...base,
+          // What the payload sets for such a household (no retirement
+          // contributions, real pay): a 0% retirement rate.
+          accumulationDefaults: {
+            ...base.accumulationDefaults,
+            contributionRate: 0,
+          },
+          contributionSpecs: [portfolioSpec],
+        };
+        const noSavings: ProjectionInput = {
+          ...onlyPortfolio,
+          contributionSpecs: [],
+        };
+        expect(endBalances(onlyPortfolio)).toEqual(endBalances(noSavings));
+      });
+
+      it("a profile switch without its retirement-only amounts fails loudly", () => {
+        const base = overflowInput();
+        expect(() =>
+          toSimpleTaxMode(
+            {
+              ...base,
+              profileSwitches: [
+                {
+                  year: base.asOfDate.getFullYear() + 2,
+                  contributionSpecs: [],
+                  employerMatchRateByCategory: zero,
+                  baseYearContributions: zero,
+                  baseYearEmployerMatch: zero,
+                  contributionRate: 0,
+                },
+              ],
+            },
+            parts,
+          ),
+        ).toThrow(/retirement-only amounts/);
       });
 
       it("collapses only retirement money into one tax-free pot", () => {

@@ -20,7 +20,7 @@
 import { roundToCents } from "../../utils/math";
 import {
   getAccountTypeConfig,
-  isPortfolioParent,
+  isRetirementMoney,
   setBasis,
 } from "../../config/account-types";
 import type {
@@ -256,8 +256,8 @@ export function retirementBrokerageBasisRatio(
   indBal: Map<string, number>,
   basis: BrokerageBasis,
 ): number | undefined {
-  const accts = basisTrackedAccounts(indAccts).filter(
-    (ia) => !isPortfolioParent(ia.parentCategory),
+  const accts = basisTrackedAccounts(indAccts).filter((ia) =>
+    isRetirementMoney(ia.parentCategory),
   );
   return accts.length > 0
     ? groupBasisRatio(accts, indKey, indBal, basis)

@@ -44,7 +44,7 @@ import {
   isHsaCategory,
   isIraCategory,
   isRuleOf55EligibleCategory,
-  isRetirementParent,
+  isRetirementMoney,
   getAllCategories,
   getAccountTypeConfig,
 } from "@/lib/config/account-types";
@@ -413,10 +413,7 @@ export function computeWithdrawalEligibility(input: {
     // per-account `byKey` entry above is NOT gated — it still gets a
     // normal, informative reason string for the UI regardless of
     // parentCategory.
-    if (
-      penaltyExposedAmount > 0 &&
-      isRetirementParent(ia.parentCategory ?? "Retirement")
-    ) {
+    if (penaltyExposedAmount > 0 && isRetirementMoney(ia.parentCategory)) {
       totalPenaltyExposed += penaltyExposedAmount;
       penaltyExposedTotal[ia.category] += penaltyExposedAmount;
       if (isTaxFreeBucket(ia.taxType)) {
@@ -491,7 +488,7 @@ export function computeNonRetirementExclusion(
   let grandTotal = 0;
 
   for (const ia of indAccts) {
-    if (isRetirementParent(ia.parentCategory ?? "Retirement")) continue;
+    if (isRetirementMoney(ia.parentCategory)) continue;
     const balance = Math.max(0, indBal.get(indKey(ia)) ?? 0);
     if (balance <= 0) continue;
     total[ia.category] += balance;

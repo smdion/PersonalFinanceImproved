@@ -22,7 +22,7 @@ import {
   setRoth,
   setBalance,
   setBasis,
-  isPortfolioParent,
+  isRetirementMoney,
 } from "../../config/account-types";
 import type { AccountBalances, IndividualAccountInput } from "../types";
 import {
@@ -529,7 +529,7 @@ export function performRothConversion(
     for (const [cat, amount] of categoryShare) {
       if (amount <= 0) continue;
       const catAccts = indAccts.filter(
-        (ia) => ia.category === cat && !isPortfolioParent(ia.parentCategory),
+        (ia) => ia.category === cat && isRetirementMoney(ia.parentCategory),
       );
       const catTotal = catAccts.reduce(
         (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
@@ -577,7 +577,7 @@ export function performRothConversion(
       // proportional to their own balance.
       if (hasIndTracking) {
         const catAccts = indAccts.filter(
-          (ia) => ia.category === cat && !isPortfolioParent(ia.parentCategory),
+          (ia) => ia.category === cat && isRetirementMoney(ia.parentCategory),
         );
         const catTotal = catAccts.reduce(
           (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),

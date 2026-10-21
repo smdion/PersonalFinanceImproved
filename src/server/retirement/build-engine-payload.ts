@@ -1179,7 +1179,6 @@ export async function buildEnginePayload(
   });
 
   const profileSwitches: ProfileSwitch[] = [];
-  const simpleSwitchSlices: SimpleTaxModeParts["switches"] = [];
 
   /** Each person's effective annual raise rate, keyed by personId. Derived
    *  from `perPersonSettings` (built above), whose `salaryAnnualIncrease`
@@ -1414,10 +1413,6 @@ export async function buildEnginePayload(
           ? 0
           : FALLBACK_CONTRIBUTION_RATE;
 
-    simpleSwitchSlices.push({
-      year: override.projectionYear,
-      slice: data.retirementOnly,
-    });
     profileSwitches.push({
       year: override.projectionYear,
       contributionSpecs: data.contributionSpecs,
@@ -1426,6 +1421,7 @@ export async function buildEnginePayload(
       baseYearEmployerMatch: data.baseYearEmployerMatch,
       employerMatchByParentCat: data.employerMatchByParentCat,
       contributionRate: rateForSwitch,
+      retirementOnly: data.retirementOnly,
     });
   }
 
@@ -1469,9 +1465,17 @@ export async function buildEnginePayload(
   const realSplits = splitsOf(contribByCategory);
   const realAccountSplits = realSplits.accountSplits;
 
+  // Same rule as a profile switch's rate: a household that contributes but
+  // not to retirement money has a 0% retirement rate (the fallback would
+  // invent 25% of salary wherever the rate path runs — Simple tax mode with
+  // only Portfolio specs); only missing data falls back.
   const derivedAccumulationDefaults = {
     contributionRate:
-      displayContribRate > 0 ? displayContribRate : FALLBACK_CONTRIBUTION_RATE,
+      displayContribRate > 0
+        ? displayContribRate
+        : contributionSpecs.length > 0 && totalCompensation > 0
+          ? 0
+          : FALLBACK_CONTRIBUTION_RATE,
     routingMode: "waterfall" as const,
     accountOrder: getDefaultAccumulationOrder(),
     accountSplits: realAccountSplits,
@@ -1496,7 +1500,6 @@ export async function buildEnginePayload(
       ...defaultContribData.retirementOnly,
       ...splitsOf(retirementContrib.contribByCategory),
     },
-    switches: simpleSwitchSlices,
   };
 
   // Distribution tax rates (shared between engine and MC)

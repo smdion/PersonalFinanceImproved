@@ -10,8 +10,8 @@ import type {
   ContributionAccountInput,
   ContributionSpec,
   AccountCategory,
+  RetirementContribSlice,
 } from "@/lib/calculators/types";
-import type { RetirementContribSlice } from "@/lib/calculators/simple-tax-mode";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
 import {
   buildCategoryRecord,

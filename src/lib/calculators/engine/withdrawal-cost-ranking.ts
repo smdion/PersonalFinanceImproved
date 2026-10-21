@@ -32,10 +32,7 @@ import {
   ltcgRateForNextDollar,
   toLtcgTaxableIncome,
 } from "../../config/tax-tables";
-import {
-  isRetirementParent,
-  isTaxFreeBucket,
-} from "../../config/account-types";
+import { isRetirementMoney, isTaxFreeBucket } from "../../config/account-types";
 import { NIIT_RATE, NIIT_THRESHOLDS } from "../../config/niit";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
 import type { IndKeyFn } from "@/lib/pure/withdrawal-eligibility";
@@ -95,7 +92,7 @@ export function deriveBasisRankingInputs(params: {
     if (indAccts && indKey) {
       rothBasisAvailable = indAccts.reduce((s, ia) => {
         if (!isTaxFreeBucket(ia.taxType)) return s;
-        if (!isRetirementParent(ia.parentCategory ?? "Retirement")) return s;
+        if (!isRetirementMoney(ia.parentCategory)) return s;
         const state = indBasis.get(indKey(ia));
         return state ? s + state.contributionBasis + state.conversionBasis : s;
       }, 0);

@@ -27,8 +27,7 @@ import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
-  isRetirementParent,
-  isPortfolioParent,
+  isRetirementMoney,
 } from "../../config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/display-labels";
 import { projectSpecAmount } from "./contribution-projection";
@@ -62,7 +61,7 @@ export function portfolioFirst<T>(
   items: readonly T[],
   parentOf: (item: T) => string | undefined,
 ): T[] {
-  const portfolio = items.filter((x) => isPortfolioParent(parentOf(x)));
+  const portfolio = items.filter((x) => !isRetirementMoney(parentOf(x)));
   return portfolio.length > 0 ? portfolio : [...items];
 }
 
@@ -70,7 +69,7 @@ export function retirementFirst<T>(
   items: readonly T[],
   parentOf: (item: T) => string | undefined,
 ): T[] {
-  const retirement = items.filter((x) => !isPortfolioParent(parentOf(x)));
+  const retirement = items.filter((x) => isRetirementMoney(parentOf(x)));
   return retirement.length > 0 ? retirement : [...items];
 }
 
@@ -283,7 +282,7 @@ export function distributeContributions(
       // Unscaled, every spec gets its raw amount either way.
       let remaining = slotAmount;
       for (const sp of allSpecs) {
-        if (!isPortfolioParent(sp.parentCategory)) continue;
+        if (isRetirementMoney(sp.parentCategory)) continue;
         const sk = specKeyOf(sp);
         const acctName = specAcct.get(sk);
         if (!acctName) continue;
@@ -293,8 +292,8 @@ export function distributeContributions(
         indBal.set(acctName, (indBal.get(acctName) ?? 0) + portion);
         remaining -= portion;
       }
-      const specs = allSpecs.filter(
-        (sp) => !isPortfolioParent(sp.parentCategory),
+      const specs = allSpecs.filter((sp) =>
+        isRetirementMoney(sp.parentCategory),
       );
       // Separate fixed-amount specs from scaling specs
       const fixedSpecs = specs.filter(
@@ -616,7 +615,7 @@ export function goalFundingAccounts(
 ): IndividualAccountInput[] {
   return indAccts.filter(
     (ia) =>
-      isOverflowTarget(ia.category) && isPortfolioParent(ia.parentCategory),
+      isOverflowTarget(ia.category) && !isRetirementMoney(ia.parentCategory),
   );
 }
 
@@ -716,8 +715,7 @@ export function distributeWithdrawals(
     // "should never happen if the upstream math is right."
     const catAccts = indAccts.filter(
       (ia) =>
-        ia.category === slot.category &&
-        isRetirementParent(ia.parentCategory ?? "Retirement"),
+        ia.category === slot.category && isRetirementMoney(ia.parentCategory),
     );
     const bs = getAccountTypeConfig(slot.category).balanceStructure;
 
@@ -1332,11 +1330,11 @@ function reconcileGroup(
     );
   }
 
-  const retirement = groupAccts.filter(
-    (ia) => !isPortfolioParent(ia.parentCategory),
+  const retirement = groupAccts.filter((ia) =>
+    isRetirementMoney(ia.parentCategory),
   );
-  const portfolio = groupAccts.filter((ia) =>
-    isPortfolioParent(ia.parentCategory),
+  const portfolio = groupAccts.filter(
+    (ia) => !isRetirementMoney(ia.parentCategory),
   );
 
   // Spread `amount` over `accts` by balance (equally when they hold

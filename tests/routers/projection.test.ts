@@ -607,15 +607,15 @@ describe("projection router — computeProjection", () => {
       })
       .returning()
       .get();
-    const profile = (withPortfolio: boolean) =>
+    const profile = (withPortfolio: boolean, retirementPct = "10") =>
       seedContributionProfile(db, {
-        name: withPortfolio ? "With Portfolio savings" : "Retirement only",
+        name: `${withPortfolio ? "With Portfolio savings" : "Retirement only"} ${retirementPct}%`,
         isActive: false,
         contributionActiveFields: {
           contributionAccounts: {
             [String(retirement401k.id)]: {
               contributionMethod: "percent_of_salary",
-              contributionValue: "10",
+              contributionValue: retirementPct,
             },
             ...(withPortfolio
               ? {
@@ -635,5 +635,9 @@ describe("projection router — computeProjection", () => {
     // isn't a retirement contribution.
     expect(retirementOnly).toBeCloseTo(0.1, 2);
     expect(withPortfolio).toBeCloseTo(retirementOnly, 6);
+    // Saving only into Portfolio money is a 0% retirement rate — not the
+    // 25% fallback for missing data (it invented retirement contributions
+    // wherever the rate path runs, e.g. Simple tax mode).
+    expect(await rate(profile(true, "0"))).toBe(0);
   });
 });

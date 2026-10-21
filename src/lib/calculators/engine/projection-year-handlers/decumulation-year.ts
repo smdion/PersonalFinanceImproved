@@ -18,7 +18,7 @@ import { ageInYear } from "../../../utils/date";
 import {
   getAllCategories,
   isOverflowTarget,
-  isPortfolioParent,
+  isRetirementMoney,
   isPreTaxType,
   isIraCategory,
   addTraditional,
@@ -307,7 +307,7 @@ export function runDecumulationYear(
         isPreTaxType(ia.taxType) &&
         // A Portfolio-parented IRA (nothing prevents one existing)
         // isn't retirement money -- must not inflate QCD-eligible capacity.
-        !isPortfolioParent(ia.parentCategory)
+        isRetirementMoney(ia.parentCategory)
       ) {
         const bal = indBal.get(indKey(ia)) ?? 0;
         iraTradByPerson.set(
@@ -348,7 +348,7 @@ export function runDecumulationYear(
             isIraCategory(ia.category) &&
             ia.ownerPersonId === personId &&
             isPreTaxType(ia.taxType) &&
-            !isPortfolioParent(ia.parentCategory),
+            isRetirementMoney(ia.parentCategory),
         );
         const personIraTotal = personIraAccts.reduce(
           (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
@@ -1259,7 +1259,7 @@ export function runDecumulationYear(
   if (state.contributionSpecs) {
     const portfolioSpecs = state.contributionSpecs.filter(
       (s) =>
-        isPortfolioParent(s.parentCategory) &&
+        !isRetirementMoney(s.parentCategory) &&
         s.retirementBehavior === "continues_after_retirement" &&
         s.method !== "percent_of_salary",
     );
@@ -1311,11 +1311,14 @@ export function runDecumulationYear(
     // weighted by balance, so the per-account breakdown sums to the total.
     // Mirrors accumulation-year.ts's ramp attribution — report-only here,
     // matching the rest of this block (must NOT affect balances).
-    // Portfolio-parented brokerages first, like the accumulation ramp.
-    const rampAccts = portfolioFirst(
-      indAccts.filter((ia) => isOverflowTarget(ia.category)),
-      (ia) => ia.parentCategory,
-    );
+    // Same parent rule as the accumulation ramp: Portfolio brokerages
+    // first; the projection-only one only with no real brokerage.
+    const brokerages = indAccts.filter((ia) => isOverflowTarget(ia.category));
+    const realBrokerages = brokerages.filter((ia) => !ia.projectedOnly);
+    const rampAccts =
+      realBrokerages.length > 0
+        ? portfolioFirst(realBrokerages, (ia) => ia.parentCategory)
+        : brokerages;
     const rampTotal = rampAccts.reduce(
       (s, ia) => s + (indBal.get(indKey(ia)) ?? 0),
       0,

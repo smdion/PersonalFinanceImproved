@@ -13,7 +13,6 @@
 import {
   getAllCategories,
   isOverflowTarget,
-  isPortfolioParent,
   isRetirementMoney,
   zeroBalance,
 } from "../config/account-types";
@@ -26,16 +25,11 @@ import type {
   IndividualAccountInput,
   LumpSum,
   ProjectionInput,
+  RetirementContribSlice,
   TaxBuckets,
 } from "./types";
 
-/** A contribution profile's base-year amounts and match over retirement
- *  money only (built from paycheck data next to the all-accounts ones). */
-export type RetirementContribSlice = {
-  baseYearContributions: Record<AccountCategory, number>;
-  baseYearEmployerMatch: Record<AccountCategory, number>;
-  employerMatchRateByCategory: Record<AccountCategory, number>;
-};
+export type { RetirementContribSlice };
 
 export type SimpleTaxModeParts = {
   /** Starting balances of retirement money (by tax type). */
@@ -46,8 +40,6 @@ export type SimpleTaxModeParts = {
     accountSplits: AccumulationDefaults["accountSplits"];
     taxSplits: AccumulationDefaults["taxSplits"];
   };
-  /** Each profile switch's retirement slice, by switch year. */
-  switches: { year: number; slice: RetirementContribSlice }[];
 };
 
 /** Lump sums that stay retirement money: the account they'd land in is
@@ -64,7 +56,7 @@ function withRetirementLumpSums<T extends { lumpSums?: LumpSum[] }>(
       const target = resolveLumpSumTarget(ls, indAccts);
       return target
         ? isRetirementMoney(target.parentCategory)
-        : !isPortfolioParent(ls.targetParentCategory);
+        : isRetirementMoney(ls.targetParentCategory);
     }),
   };
 }
@@ -78,7 +70,6 @@ export function toSimpleTaxMode(
   const total = roundToCents(b.preTax + b.taxFree + b.hsa + b.afterTax);
   const isRetirementSpec = (s: { parentCategory?: string }) =>
     isRetirementMoney(s.parentCategory);
-  const sliceByYear = new Map(parts.switches.map((s) => [s.year, s.slice]));
   // The ramp is Portfolio savings whenever there's a real Portfolio
   // brokerage to hold it (the engine's rule); otherwise retirement money.
   const hasPortfolioBrokerage = indAccts.some(
@@ -131,11 +122,16 @@ export function toSimpleTaxMode(
     baseYearEmployerMatch: parts.defaults.baseYearEmployerMatch,
     employerMatchRateByCategory: parts.defaults.employerMatchRateByCategory,
     profileSwitches: input.profileSwitches?.map((sw) => {
-      const slice = sliceByYear.get(sw.year);
+      // Without its slice a switch would carry all-accounts amounts into
+      // Simple — fail loudly rather than simulate Portfolio money.
+      if (!sw.retirementOnly)
+        throw new Error(
+          `Simple tax mode: the ${sw.year} contribution profile switch has no retirement-only amounts`,
+        );
       return {
         ...sw,
         contributionSpecs: sw.contributionSpecs.filter(isRetirementSpec),
-        ...(slice ?? {}),
+        ...sw.retirementOnly,
       };
     }),
     brokerageGoals: [],

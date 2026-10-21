@@ -24,7 +24,7 @@ import {
   isOverflowTarget,
   categoriesWithIrsLimit,
   buildCategoryRecord,
-  isPortfolioParent,
+  isRetirementMoney,
   isTaxFree,
 } from "../../config/account-types";
 import { OVERFLOW_TOLERANCE } from "../../constants";
@@ -415,7 +415,7 @@ export function routeFromSpecs(
       method: spec.method,
     });
     byCategory[spec.category].employee += projected;
-    if (isPortfolioParent(spec.parentCategory))
+    if (!isRetirementMoney(spec.parentCategory))
       portfolioByCategory[spec.category] += projected;
   }
 
