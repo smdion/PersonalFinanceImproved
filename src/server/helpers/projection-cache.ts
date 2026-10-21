@@ -297,8 +297,11 @@ import { log } from "@/lib/logger";
  *
  *  44: reinvested RMD money goes to the chosen Retirement brokerage, else
  *  every Retirement brokerage — never Portfolio (a projection-only
- *  retirement brokerage when there is none). */
-export const PROJECTION_CACHE_ENGINE_VERSION = 44;
+ *  retirement brokerage when there is none).
+ *
+ *  45: the year-end basis sync keeps the aggregate basis when accounts
+ *  don't hold all the brokerage money (it zeroed it). */
+export const PROJECTION_CACHE_ENGINE_VERSION = 45;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

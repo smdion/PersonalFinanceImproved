@@ -190,8 +190,9 @@ export function followReconciliation<T>(
 /**
  * Year end: basis never exceeds an account's balance, and the aggregate
  * basis (`balances.afterTaxBasis`, the brokerage `acctBal`) is the sum of
- * the accounts'. A drift over $1 between the year's aggregate bookkeeping
- * and the accounts is surfaced as a diagnostic, like balance drift.
+ * the accounts' — when the accounts hold all the brokerage money. A drift
+ * over $1 between the year's aggregate bookkeeping and the accounts is
+ * surfaced as a diagnostic, like balance drift.
  */
 export function syncAggregateBasis(
   indAccts: readonly IndividualAccountInput[],
@@ -204,6 +205,20 @@ export function syncAggregateBasis(
 ): void {
   const accts = basisTrackedAccounts(indAccts);
   if (accts.length === 0) return;
+  // The accounts' sum is the truth only when they hold all the brokerage
+  // money; when some lives only in the aggregate (reconciliation had no
+  // account to put it in — e.g. overflow with only a projection-only
+  // account at $0), keep the aggregate's basis and say so.
+  const held = accts.reduce(
+    (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+    0,
+  );
+  if (Math.abs(held - balances.afterTax) > 1) {
+    diagnostics.push(
+      `[DIAG] brokerage basis: accounts hold $${held.toFixed(2)} of $${balances.afterTax.toFixed(2)} brokerage — aggregate basis kept`,
+    );
+    return;
+  }
   let total = 0;
   const byCategory = new Map<string, number>();
   for (const ia of accts) {
