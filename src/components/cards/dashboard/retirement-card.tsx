@@ -1,5 +1,6 @@
 "use client";
 
+import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { memo } from "react";
 
 import { trpc } from "@/lib/trpc";
@@ -127,9 +128,8 @@ function RetirementCardImpl() {
     }
     return total;
   })();
-  const runsOutYear = result.projectionByYear.find(
-    (y) => y.retirementBalance <= 0,
-  );
+  // The plan judge: retirement money runs out, or a year falls short.
+  const outcome = assessPlan(result);
   // Deflate sustainable withdrawal to today's dollars
   const yearsToRet = Math.max(0, retAge - currentAge);
   const sustainableWdNominal = result.sustainableWithdrawal;
@@ -352,14 +352,16 @@ function RetirementCardImpl() {
               <span className="text-muted">Duration</span>
               <span
                 className={
-                  runsOutYear
+                  !outcome.succeeded
                     ? "font-medium text-red-600"
                     : "font-medium text-green-600"
                 }
               >
-                {runsOutYear
-                  ? `Runs out age ${runsOutYear.age}`
-                  : `Lasts to ${endAge}+`}
+                {outcome.succeeded
+                  ? `Lasts to ${endAge}+`
+                  : outcome.failureReason === "depleted"
+                    ? `Runs out age ${outcome.failureAge}`
+                    : `Falls short age ${outcome.failureAge}`}
               </span>
             </div>
           </div>

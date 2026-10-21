@@ -8,6 +8,7 @@
  * comparison table, and (when moveYear is provided) a blended projection
  * that switches from the current path to the relocation path at moveYear.
  */
+import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { z } from "zod/v4";
 import { eq, desc } from "drizzle-orm";
 import {
@@ -457,9 +458,7 @@ export const relocationProjectionRouter = createTRPCRouter({
         0,
       );
 
-      const relocLastRow =
-        relocResult.projectionByYear[relocResult.projectionByYear.length - 1];
-      const isViableNow = (relocLastRow?.retirementBalance ?? 0) > 0;
+      const isViableNow = assessPlan(relocResult).succeeded;
 
       // --- Build year-by-year comparison rows for the two-column table ---
       const currentAccRowsByYear = new Map(
@@ -501,11 +500,7 @@ export const relocationProjectionRouter = createTRPCRouter({
       // --- Binary search for earliest safe relocation year ---
       const probeViable = (rowIdx: number): boolean => {
         const probeResult = runMovingIn(currentAccRows[rowIdx]!.year);
-        const probeLast =
-          probeResult?.projectionByYear[
-            probeResult.projectionByYear.length - 1
-          ];
-        return (probeLast?.retirementBalance ?? 0) > 0;
+        return probeResult != null && assessPlan(probeResult).succeeded;
       };
 
       let earliestRelocateYear: number | null = null;

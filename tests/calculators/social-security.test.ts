@@ -481,7 +481,7 @@ describe("sweepClaimingAges", () => {
     const recommended = result.candidates.find(
       (c) => c.claimingAge === result.recommendedAge,
     );
-    expect(recommended?.depleted).toBe(false);
+    expect(recommended?.fails).toBe(false);
   });
 
   it("a caller-supplied buildCandidateInput can vary a SPOUSE's entry per candidate age (the mechanism the multi-person router relies on)", () => {

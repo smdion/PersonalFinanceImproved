@@ -40,6 +40,7 @@ import type {
   FilingStatusType,
   IndividualAccountInput,
 } from "../types";
+import { computeNiit } from "../../config/niit";
 import { roundToCents } from "../../utils/math";
 import { cloneAccountBalances } from "./balance-utils";
 import {
@@ -290,16 +291,29 @@ function evaluateCost(
     rothTaxableGrowth,
     penaltyCost: iterPenaltyCost,
   });
+  // NIIT, priced as the year handler charges it (decumulation-year.ts):
+  // left out, a household above the threshold came up short by exactly the
+  // surtax every year. Roth conversions run later and stay out of MAGI here.
+  const niit = filingStatus
+    ? computeNiit(
+        taxResult.totalTraditionalWithdrawal +
+          taxResult.rothTaxableGrowth +
+          taxResult.brokerageGainsPortion +
+          taxableSS,
+        taxResult.brokerageGainsPortion,
+        filingStatus,
+      )
+    : 0;
+  const taxCost = roundToCents(taxResult.taxCost + niit);
   return {
-    taxCost: taxResult.taxCost,
+    taxCost,
     penaltyCost: taxResult.penaltyCost,
-    totalCost: roundToCents(taxResult.taxCost + taxResult.penaltyCost),
+    totalCost: roundToCents(taxCost + taxResult.penaltyCost),
     totalTraditionalWithdrawal: taxResult.totalTraditionalWithdrawal,
-    // A trial can't be improved on by withdrawing more if the router
-    // already couldn't deliver the full trial amount (account caps,
-    // exclusion, or genuine balance exhaustion) — the clamp guard below
-    // uses this to stop iterating instead of chasing an unreachable W.
-    routedShort: (routeResult.unmetNeed ?? 0) > 0.01,
+    // What the router couldn't deliver of this trial amount (account caps,
+    // exclusion, or genuine balance exhaustion). The loop below grosses up
+    // what IS delivered and stops once a larger trial delivers no more.
+    routedUnmet: roundToCents(routeResult.unmetNeed ?? 0),
   };
 }
 
@@ -363,9 +377,24 @@ export function estimateWithdrawalTaxCost(
   let prevCost: number | null = null;
   let evaluations = 1;
 
+  // What a trial actually delivers: the router can come up short of W.
+  const deliveredOf = (w: number, e: typeof evalResult) =>
+    roundToCents(w - e.routedUnmet);
+  let prevDelivered: number | null = null;
+
   while (shouldGrossUp && evaluations < MAX_EVALUATIONS) {
-    const clamped = W >= totalBalance - 0.01 || evalResult.routedShort;
-    const proceeds = W - evalResult.totalCost;
+    const delivered = deliveredOf(W, evalResult);
+    // Clamped: the balance is all asked for, or the router delivered no
+    // more than at the previous (smaller) trial — the reachable money is
+    // exhausted. A router that falls short of the NEED alone (W = need)
+    // still gets its delivered money grossed up: stopping there left the
+    // whole tax bill unfunded over a cents-scale routing residual.
+    const clamped =
+      W >= totalBalance - 0.01 ||
+      (evalResult.routedUnmet > 0.01 &&
+        prevDelivered != null &&
+        delivered <= prevDelivered + 0.01);
+    const proceeds = delivered - evalResult.totalCost;
     const residual = afterTaxNeed - proceeds;
     if (Math.abs(residual) <= RESIDUAL_TOLERANCE || clamped) break;
 
@@ -386,6 +415,7 @@ export function estimateWithdrawalTaxCost(
 
     prevW = W;
     prevCost = evalResult.totalCost;
+    prevDelivered = delivered;
     W = nextW;
     if (filingStatus && ssIncome > 0) {
       taxableSS = computeTaxableSS(

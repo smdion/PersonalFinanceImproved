@@ -199,7 +199,7 @@ describe("projection router — compareWithdrawalStrategies", () => {
       for (const s of res.strategies) {
         expect(s.lifetimeTax).toBeGreaterThanOrEqual(0);
         expect(s).toHaveProperty("terminalByTaxType");
-        expect(s).toHaveProperty("depletedYear");
+        expect(s).toHaveProperty("failureYear");
       }
       const cheapest = res.strategies
         .slice()

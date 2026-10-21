@@ -6,6 +6,7 @@
  * pages use, run with that Plan's profiles (a Plan slot left empty uses the
  * active profile of that kind, as applying it would).
  */
+import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
@@ -149,9 +150,14 @@ function PlanColumn({
         <FieldRow label="Money lasts">
           <span>
             {result
-              ? result.retirementDepletionAge != null
-                ? `to age ${Math.round(result.retirementDepletionAge)}`
-                : "through the plan"
+              ? (() => {
+                  const outcome = assessPlan(result);
+                  return outcome.succeeded
+                    ? "through the plan"
+                    : outcome.failureReason === "depleted"
+                      ? `to age ${outcome.failureAge}`
+                      : `falls short at ${outcome.failureAge}`;
+                })()
               : projection.isLoading
                 ? "…"
                 : "—"}

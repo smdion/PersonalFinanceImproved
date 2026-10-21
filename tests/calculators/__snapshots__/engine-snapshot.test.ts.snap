@@ -20,7 +20,7 @@ exports[`engine snapshot parity > fixture 1: standard dual-income household 1`] 
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 243340.46,
     "phase": "accumulation",
@@ -84,7 +84,7 @@ exports[`engine snapshot parity > fixture 3: all accounts maxed, overflow to bro
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 346495.65,
     "phase": "accumulation",
@@ -141,7 +141,7 @@ exports[`engine snapshot parity > fixture 4: retirement phase only (age > retire
   },
   "sustainableWithdrawal": 30769.23,
   "totalYears": 23,
-  "warningCount": 1,
+  "warningCount": 3,
   "year0": {
     "allAccountsBalance": 930076.92,
     "phase": "decumulation",
@@ -265,7 +265,7 @@ exports[`engine snapshot parity > fixture 6: with contribution specs (per-accoun
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 246681.98,
     "phase": "accumulation",
@@ -297,7 +297,7 @@ exports[`engine snapshot parity > fixture 7: bracket filling routing mode 1`] = 
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 661251.24,
     "phase": "accumulation",
@@ -329,7 +329,7 @@ exports[`engine snapshot parity > fixture 8: life change overrides — salary an
   },
   "sustainableWithdrawal": 178252.08,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 243340.46,
     "phase": "accumulation",
@@ -361,7 +361,7 @@ exports[`engine snapshot parity > fixture 9: decumulation override with reset:tr
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 243340.46,
     "phase": "accumulation",
@@ -393,7 +393,7 @@ exports[`engine snapshot parity > fixture 10: bracket-filling withdrawal with ro
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 682411.28,
     "phase": "accumulation",
@@ -486,7 +486,7 @@ exports[`engine snapshot parity > fixture 12: percentage withdrawal mode 1`] = `
   ],
   "finalYear": {
     "age": 89,
-    "allAccountsBalance": 25921712.64,
+    "allAccountsBalance": 25821721.61,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -501,7 +501,7 @@ exports[`engine snapshot parity > fixture 12: percentage withdrawal mode 1`] = `
   },
   "sustainableWithdrawal": 189573.24,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 243340.46,
     "phase": "accumulation",
@@ -552,7 +552,7 @@ exports[`engine snapshot parity > fixture 13: asymmetric retirement ages — ear
   },
   "sustainableWithdrawal": 148543.4,
   "totalYears": 50,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 679237.28,
     "phase": "accumulation",
@@ -733,7 +733,7 @@ exports[`engine snapshot parity > fixture 16: RMD forces withdrawal above bracke
   },
   "sustainableWithdrawal": 17948.72,
   "totalYears": 20,
-  "warningCount": 1,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 1361094.87,
     "phase": "decumulation",
@@ -782,7 +782,7 @@ exports[`engine snapshot parity > fixture 17: RMD + Roth conversion targeting 1`
   },
   "sustainableWithdrawal": 32051.28,
   "totalYears": 20,
-  "warningCount": 1,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 1078505.13,
     "phase": "decumulation",
@@ -861,7 +861,7 @@ exports[`engine snapshot parity > fixture 18: portfolio depletion — very low b
   },
   "sustainableWithdrawal": 100620.84,
   "totalYears": 25,
-  "warningCount": 1,
+  "warningCount": 3,
   "year0": {
     "allAccountsBalance": 142830.27,
     "phase": "accumulation",
@@ -945,7 +945,7 @@ exports[`engine snapshot parity > fixture 20: catch-up contributions — age 50,
   },
   "sustainableWithdrawal": 137031.28,
   "totalYears": 41,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 245809.13,
     "phase": "accumulation",
@@ -1002,7 +1002,7 @@ exports[`engine snapshot parity > fixture 21: SS torpedo — MFJ filing status 1
   },
   "sustainableWithdrawal": 101536.63,
   "totalYears": 30,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 856981.61,
     "phase": "accumulation",
@@ -1083,7 +1083,7 @@ exports[`engine snapshot parity > fixture 22: SS torpedo — Single filing statu
   },
   "sustainableWithdrawal": 79778.79,
   "totalYears": 30,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 550161.03,
     "phase": "accumulation",
@@ -1115,7 +1115,7 @@ exports[`engine snapshot parity > fixture 23: SS income = 0 (no Social Security)
   },
   "sustainableWithdrawal": 174797.29,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 243340.46,
     "phase": "accumulation",
@@ -1147,7 +1147,7 @@ exports[`engine snapshot parity > fixture 24: filing status absent — falls bac
   },
   "sustainableWithdrawal": 161351.35,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 243340.46,
     "phase": "accumulation",
@@ -1588,7 +1588,7 @@ exports[`engine snapshot parity > fixture 31: RMD + Roth conversion + IRMAA — 
   },
   "sustainableWithdrawal": 28000,
   "totalYears": 23,
-  "warningCount": 1,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 1634858.35,
     "phase": "decumulation",
@@ -1643,7 +1643,7 @@ exports[`engine snapshot parity > fixture 32: Guyton-Klinger — upper guardrail
   },
   "sustainableWithdrawal": 63829.79,
   "totalYears": 29,
-  "warningCount": 1,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 1392787.23,
     "phase": "decumulation",
@@ -1698,7 +1698,7 @@ exports[`engine snapshot parity > fixture 33: Guyton-Klinger — lower guardrail
   },
   "sustainableWithdrawal": 85106.38,
   "totalYears": 29,
-  "warningCount": 1,
+  "warningCount": 3,
   "year0": {
     "allAccountsBalance": 749591.49,
     "phase": "decumulation",
@@ -1747,7 +1747,7 @@ exports[`engine snapshot parity > fixture 34: Guyton-Klinger — prosperity rule
   },
   "sustainableWithdrawal": 20132.45,
   "totalYears": 23,
-  "warningCount": 1,
+  "warningCount": 3,
   "year0": {
     "allAccountsBalance": 686666.23,
     "phase": "decumulation",
@@ -1802,7 +1802,7 @@ exports[`engine snapshot parity > fixture 35: G-K with budget override in a loss
   },
   "sustainableWithdrawal": 25430.46,
   "totalYears": 22,
-  "warningCount": 1,
+  "warningCount": 3,
   "year0": {
     "allAccountsBalance": 586656.63,
     "phase": "decumulation",
@@ -1832,7 +1832,7 @@ exports[`engine snapshot parity > fixture 36: Year-0 with real YTD contributions
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 244398.46,
     "phase": "accumulation",
@@ -1877,7 +1877,7 @@ exports[`engine snapshot parity > fixture 37: routeFromSpecs with ContributionSp
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 243340.46,
     "phase": "accumulation",
@@ -1922,7 +1922,7 @@ exports[`engine snapshot parity > fixture 38: routeFromSpecs with salary-fractio
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 234700.1,
     "phase": "accumulation",
@@ -1954,7 +1954,7 @@ exports[`engine snapshot parity > fixture 39: Individual account tracking throug
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
-  "warningCount": 2,
+  "warningCount": 4,
   "year0": {
     "allAccountsBalance": 243340.46,
     "phase": "accumulation",
@@ -1986,7 +1986,7 @@ exports[`engine snapshot parity > fixture 40: Simple mode — collapsed single-b
   },
   "sustainableWithdrawal": 114088.87,
   "totalYears": 50,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 229196.64,
     "phase": "accumulation",
@@ -2043,7 +2043,7 @@ exports[`engine snapshot parity > fixture 41: rothConversionTarget override via 
   },
   "sustainableWithdrawal": 60000,
   "totalYears": 24,
-  "warningCount": 1,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 1020938.36,
     "phase": "decumulation",
@@ -2080,7 +2080,7 @@ exports[`engine snapshot parity > fixture 42: Multiple saving + withdrawal + lif
   },
   "sustainableWithdrawal": 98468.03,
   "totalYears": 45,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 255683.81,
     "phase": "accumulation",
@@ -2125,7 +2125,7 @@ exports[`engine snapshot parity > fixture 43: High-income: RMD + SS + LTCG + Rot
   },
   "sustainableWithdrawal": 83777.38,
   "totalYears": 22,
-  "warningCount": 1,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 4044227.55,
     "phase": "decumulation",
@@ -2162,7 +2162,7 @@ exports[`engine snapshot parity > fixture 44: Brokerage ramp contribution across
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 60,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 235934.44,
     "phase": "accumulation",
@@ -2201,7 +2201,7 @@ exports[`engine snapshot parity > fixture 45: perPersonSalaryOverrides with asym
   },
   "sustainableWithdrawal": 171133.31,
   "totalYears": 50,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 268027.17,
     "phase": "accumulation",
@@ -2276,7 +2276,7 @@ exports[`engine snapshot parity > fixture 46: Catch-up: super catch-up ages 60-6
   },
   "sustainableWithdrawal": 69125.81,
   "totalYears": 32,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 250746.47,
     "phase": "accumulation",
@@ -2345,7 +2345,7 @@ exports[`engine snapshot parity > fixture 47: Waterfall withdrawal with rothBrac
   },
   "sustainableWithdrawal": 79018.18,
   "totalYears": 24,
-  "warningCount": 1,
+  "warningCount": 3,
   "year0": {
     "allAccountsBalance": 964050.55,
     "phase": "decumulation",
@@ -2382,7 +2382,7 @@ exports[`engine snapshot parity > fixture 48: Override: accountCaps + taxTypeCap
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 255683.81,
     "phase": "accumulation",
@@ -2414,7 +2414,7 @@ exports[`engine snapshot parity > fixture 49: Override: reset: true followed by 
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 243340.46,
     "phase": "accumulation",
@@ -2446,7 +2446,7 @@ exports[`engine snapshot parity > fixture 50: HSA with employer match 1`] = `
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 236992.44,
     "phase": "accumulation",
@@ -2551,7 +2551,7 @@ exports[`engine snapshot parity > fixture 52: 3+ individual accounts with unequa
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
-  "warningCount": 2,
+  "warningCount": 4,
   "year0": {
     "allAccountsBalance": 243340.46,
     "phase": "accumulation",
@@ -2626,7 +2626,7 @@ exports[`engine snapshot parity > fixture 53: Waterfall withdrawal with explicit
   },
   "sustainableWithdrawal": 65000,
   "totalYears": 24,
-  "warningCount": 1,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 813200,
     "phase": "decumulation",
@@ -2687,7 +2687,7 @@ exports[`engine snapshot parity > fixture 54: IRMAA awareness enabled, income ne
   },
   "sustainableWithdrawal": 46000,
   "totalYears": 24,
-  "warningCount": 1,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 1456793.23,
     "phase": "decumulation",
@@ -2748,7 +2748,7 @@ exports[`engine snapshot parity > fixture 55: IRMAA awareness disabled, income n
   },
   "sustainableWithdrawal": 46000,
   "totalYears": 24,
-  "warningCount": 1,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 1454839.41,
     "phase": "decumulation",
@@ -2907,7 +2907,7 @@ exports[`engine snapshot parity > fixture 58: Convergence loop with withdrawalAc
   },
   "sustainableWithdrawal": 46808.51,
   "totalYears": 23,
-  "warningCount": 1,
+  "warningCount": 3,
   "year0": {
     "allAccountsBalance": 945014.89,
     "phase": "decumulation",
@@ -2986,7 +2986,7 @@ exports[`engine snapshot parity > fixture 59: decumulationAnnualExpenses + postR
   },
   "sustainableWithdrawal": 157827.36,
   "totalYears": 45,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 250746.47,
     "phase": "accumulation",
@@ -3031,7 +3031,7 @@ exports[`engine snapshot parity > fixture 60: traditionalFallbackRate with diffe
   },
   "sustainableWithdrawal": 71769.68,
   "totalYears": 35,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 245809.13,
     "phase": "accumulation",
@@ -3088,7 +3088,7 @@ exports[`engine snapshot parity > fixture 61: Two-person household with age gap 
   },
   "sustainableWithdrawal": 75645,
   "totalYears": 32,
-  "warningCount": 0,
+  "warningCount": 1,
   "year0": {
     "allAccountsBalance": 1096442.72,
     "phase": "accumulation",
@@ -3133,7 +3133,7 @@ exports[`engine snapshot parity > fixture 62: Negative salaryGrowthRate with mul
   },
   "sustainableWithdrawal": 133689.06,
   "totalYears": 40,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 280370.52,
     "phase": "accumulation",
@@ -3172,7 +3172,7 @@ exports[`engine snapshot parity > fixture 63: high-income single earner $250k (s
   },
   "sustainableWithdrawal": 285222.17,
   "totalYears": 50,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 537817.67,
     "phase": "accumulation",

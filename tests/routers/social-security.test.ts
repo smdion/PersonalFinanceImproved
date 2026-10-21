@@ -334,7 +334,7 @@ describe("projection router — sweepSocialSecurityClaimingAges", () => {
         expect(c).toHaveProperty("claimingAge");
         expect(c).toHaveProperty("adjustedAnnualBenefit");
         expect(c).toHaveProperty("finalNetWorth");
-        expect(c).toHaveProperty("depleted");
+        expect(c).toHaveProperty("fails");
       }
     } finally {
       cleanup();

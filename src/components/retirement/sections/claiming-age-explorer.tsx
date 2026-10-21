@@ -114,8 +114,8 @@ export function ClaimingAgeExplorer({
                         {formatCurrency(c.adjustedAnnualBenefit)}/yr
                       </td>
                       <td className="py-0.5 pr-3">
-                        {c.depleted
-                          ? "Retirement money runs out"
+                        {c.fails
+                          ? "Plan falls short"
                           : formatCurrency(c.finalNetWorth)}
                       </td>
                       <td className="text-accent py-0.5">

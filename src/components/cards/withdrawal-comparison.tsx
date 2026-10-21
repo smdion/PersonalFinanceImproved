@@ -1,5 +1,6 @@
 "use client";
 
+import type { PlanFailureReason } from "@/lib/calculators/plan-outcome";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
@@ -26,7 +27,8 @@ type StrategyResult = {
   strategy: string;
   label: string;
   shortLabel: string;
-  retirementDepletionAge: number | null;
+  failureAge: number | null;
+  failureReason: PlanFailureReason | null;
   year1Withdrawal: number;
   avgAnnualWithdrawal: number;
   minAnnualWithdrawal: number;
@@ -158,7 +160,7 @@ export function WithdrawalComparisonCard({
               <tr className="text-faint border-b">
                 <th className="py-1.5 pr-2 text-left font-medium">Strategy</th>
                 <th className="px-2 py-1.5 text-right font-medium">
-                  Depletion Age
+                  Falls Short
                 </th>
                 <th className="px-2 py-1.5 text-right font-medium">
                   <span title="Portfolio survives to end of plan — balance stays above $0 in every year (200 simulations)">
@@ -214,7 +216,19 @@ export function WithdrawalComparisonCard({
                       </div>
                     </td>
                     <td className="text-faint px-2 py-1.5 text-right tabular-nums">
-                      {s.retirementDepletionAge ?? (
+                      {s.failureAge != null ? (
+                        <span
+                          title={
+                            s.failureReason === "depleted"
+                              ? "Retirement money runs out"
+                              : s.failureReason === "penaltyGap"
+                                ? "Money locked by early-withdrawal penalties"
+                                : "Spending can't be fully funded"
+                          }
+                        >
+                          {s.failureAge}
+                        </span>
+                      ) : (
                         <span className="text-green-400">Never</span>
                       )}
                     </td>

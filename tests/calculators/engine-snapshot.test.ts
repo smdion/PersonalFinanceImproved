@@ -708,7 +708,10 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(189573.24);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(25921712.64);
+    // Age 73 was $24.7k short of spending: the tax gross-up now funds what
+    // routing delivers, and the percentage router places the excess of an
+    // emptied account instead of dropping it — no year falls short.
+    expect(metrics.finalYear?.allAccountsBalance).toBe(25821721.61);
     expect(metrics).toMatchSnapshot();
   });
 

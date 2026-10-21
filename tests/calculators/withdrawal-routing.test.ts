@@ -331,6 +331,31 @@ describe("routeWithdrawalsBracketFilling", () => {
     expect(totalTrad).toBeLessThanOrEqual(result.traditionalCap! + 1); // +1 for rounding
   });
 
+  it("with Roth, brokerage and HSA empty, Traditional pays the rest above the bracket target", () => {
+    const config = makeDecumulationConfig();
+    const balances = makeAccountBalances({
+      preTax: 2_000_000,
+      taxFree: 0,
+      afterTax: 0,
+      afterTaxBasis: 0,
+      hsa: 0,
+    });
+    const result = routeWithdrawalsBracketFilling(150000, config, balances, {
+      taxBrackets: TEST_BRACKETS,
+      rothBracketTarget: 0.12,
+      taxableSS: 0,
+    });
+    const totalTrad = result.slots.reduce(
+      (s, sl) => s + sl.traditionalWithdrawal,
+      0,
+    );
+    expect(result.traditionalCap!).toBeLessThan(150000);
+    expect(totalTrad).toBeCloseTo(150000, 2);
+    expect(result.unmetNeed).toBeUndefined();
+    // The bracket target didn't cap it in the end.
+    expect(result.slots.some((sl) => sl.cappedByTaxType)).toBe(false);
+  });
+
   it("fills Roth after traditional cap is reached", () => {
     const config = makeDecumulationConfig();
     const balances = makeAccountBalances({

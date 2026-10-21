@@ -1749,7 +1749,7 @@ describe("projection router — computeStressTest", () => {
       for (const scenario of response.scenarios) {
         expect(scenario).toHaveProperty("label");
         expect(scenario).toHaveProperty("nestEggAtRetirement");
-        expect(scenario).toHaveProperty("retirementDepletionAge");
+        expect(scenario).toHaveProperty("failureAge");
       }
     } finally {
       cleanup();

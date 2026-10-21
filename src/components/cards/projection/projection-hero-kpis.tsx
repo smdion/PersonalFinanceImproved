@@ -3,6 +3,7 @@
 /** Hero KPI cards — MC-adaptive 5-card grid. Unified card chrome across
  *  all metrics so the row reads as a single design language. Uses the same
  *  visual pattern as the MC summary bar in projection-mc-results.tsx. */
+import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { rowTotal } from "./utils";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency } from "@/lib/utils/format";
@@ -180,12 +181,15 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
   );
   const terminalYear =
     baseYear + (engineSettings.endAge - (result.projectionByYear[0]?.age ?? 0));
+  // The plan judge: retirement money runs out, or a year falls short.
+  const outcome = assessPlan(result);
   const depl = isPersonFiltered
     ? personDepletionInfo
-    : result.retirementDepletionAge
+    : !outcome.succeeded
       ? {
-          age: result.retirementDepletionAge,
-          year: result.retirementDepletionYear,
+          age: outcome.failureAge,
+          year: outcome.failureYear,
+          reason: outcome.failureReason,
         }
       : null;
 
@@ -421,7 +425,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
         </div>
         <div className="text-caption text-faint mt-1">
           {depl
-            ? `Runs out ${depl.year}`
+            ? `${"reason" in depl && depl.reason !== "depleted" ? "Falls short" : "Runs out"} ${depl.year}`
             : `Through age ${engineSettings?.endAge ?? "?"}`}
         </div>
       </KpiCard>

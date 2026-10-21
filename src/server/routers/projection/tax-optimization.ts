@@ -26,6 +26,7 @@
  * below only needs to say WHICH profile / budget / snapshot to read. This
  * mirrors `computeProjection`'s input (`scenarios.ts`) field-for-field.
  */
+import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { calculateProjection } from "@/lib/calculators/engine";
@@ -375,7 +376,7 @@ export const taxOptimizationRouter = createTRPCRouter({
         isCurrentPlan: true as const,
         lifetimeTax: lifetimeTax(baselineDecum),
         terminalByTaxType: baselineFinalYear?.balanceByTaxType ?? null,
-        depletedYear: baseline.result.retirementDepletionYear ?? null,
+        failureYear: assessPlan(baseline.result).failureYear,
       };
 
       const scored = [];
@@ -396,16 +397,16 @@ export const taxOptimizationRouter = createTRPCRouter({
           mode: strategy.mode,
           lifetimeTax: lifetimeTax(years),
           terminalByTaxType: finalYear?.balanceByTaxType ?? null,
-          depletedYear: run?.result.retirementDepletionYear ?? null,
+          failureYear: run ? assessPlan(run.result).failureYear : null,
         });
       }
 
-      // The cheapest lifetime tax among non-depleting strategies (any
-      // strategy — fall back to overall cheapest if all deplete). Includes
+      // The cheapest lifetime tax among strategies whose plan holds
+      // (assessPlan; fall back to overall cheapest if none does). Includes
       // "Your current plan" in the ranking — it's a real, comparably-scored
       // candidate, not just a reference row.
       const allScored = [currentPlan, ...scored];
-      const viable = allScored.filter((s) => s.depletedYear === null);
+      const viable = allScored.filter((s) => s.failureYear === null);
       const ranked = (viable.length ? viable : allScored)
         .slice()
         .sort((a, b) => a.lifetimeTax - b.lifetimeTax);

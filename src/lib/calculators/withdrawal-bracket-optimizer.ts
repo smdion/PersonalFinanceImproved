@@ -60,7 +60,10 @@ export type BracketOptimizerCandidate = {
    *  the same shortfall. */
   shortfallScore: number;
   /** `retirementDepletionAge !== null` for this candidate — a hard
-   *  exclusion, never ranked in regardless of its `netCost`. */
+   *  exclusion, never ranked in regardless of its `netCost`. Deliberately
+   *  depletion only, not the plan judge's verdict (assessPlan): a candidate
+   *  with unmet spending is ranked by `shortfallScore`, not excluded, so a
+   *  household where every candidate falls short still gets a ranking. */
   depleted: boolean;
 };
 

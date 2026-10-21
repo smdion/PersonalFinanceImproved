@@ -25,6 +25,27 @@ function projectionResult(
   } as unknown as ProjectionResult;
 }
 
+/** A plan whose retirement money runs out at `age` (the engine's rows:
+ *  funded through the year before, $0 left that year and after). */
+function depletedAt(age: number, year: number): Partial<ProjectionResult> {
+  const row = (a: number, balance: number) => ({
+    phase: "decumulation",
+    age: a,
+    year: year + (a - age),
+    retirementBalance: balance,
+    afterTaxNeed: 60000,
+  });
+  return {
+    retirementDepletionYear: year,
+    retirementDepletionAge: age,
+    projectionByYear: [
+      row(age - 1, 40000),
+      row(age, 0),
+      row(age + 1, 0),
+    ] as unknown as ProjectionResult["projectionByYear"],
+  };
+}
+
 function mcResult(overrides: Partial<MonteCarloResult> = {}): MonteCarloResult {
   return {
     successRate: 0.9,
@@ -94,7 +115,7 @@ describe("buildVerdict", () => {
 
   it("is NOT on track when the deterministic projection depletes, even with a high success rate", () => {
     const v = buildVerdict(
-      projectionResult({ retirementDepletionYear: 2065 }),
+      projectionResult(depletedAt(80, 2065)),
       mcResult({ successRate: 0.95 }),
     );
     expect(v.onTrack).toBe(false);
@@ -127,15 +148,15 @@ describe("buildExecutiveSummary", () => {
 
   it("does not read as falsely reassuring for a depleted plan", () => {
     const summary = buildExecutiveSummary(
-      projectionResult({
-        retirementDepletionYear: 2060,
-        retirementDepletionAge: 78,
-      }),
+      projectionResult(depletedAt(78, 2060)),
       mcResult({ successRate: 0.4 }),
       {},
     );
     expect(summary.verdict.onTrack).toBe(false);
-    expect(summary.narrative).toMatch(/78/);
+    expect(summary.narrative).toMatch(/runs out at age 78/);
+    expect(
+      summary.keyNumbers.find((k) => /runs out/i.test(k.label))?.value,
+    ).toBe("78");
   });
 
   it("includes a Coast FIRE one-liner only when an age is supplied", () => {
@@ -165,8 +186,8 @@ describe("buildExecutiveSummary", () => {
       mcResult(),
       {},
     );
-    expect(summary.keyNumbers.some((k) => /depletion age/i.test(k.label))).toBe(
-      false,
-    );
+    expect(
+      summary.keyNumbers.some((k) => /runs out|falls short/i.test(k.label)),
+    ).toBe(false);
   });
 });

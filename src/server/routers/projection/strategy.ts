@@ -24,6 +24,7 @@
  * configured — fixed alongside a related cache-key bug (see
  * `computeStrategyComparison`'s `inputHash` comment).
  */
+import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
@@ -273,7 +274,11 @@ export const strategyRouter = createTRPCRouter({
               strategy: strategyKey,
               label: meta.label,
               shortLabel: meta.shortLabel,
-              retirementDepletionAge: result.retirementDepletionAge,
+              // The plan judge's verdict for this strategy's baseline.
+              ...(({ failureAge, failureReason }) => ({
+                failureAge,
+                failureReason,
+              }))(assessPlan(result)),
               // sustainableWithdrawal dropped from
               // this comparison — it's never rendered by
               // withdrawal-comparison.tsx (year1Withdrawal/avgAnnualWithdrawal/

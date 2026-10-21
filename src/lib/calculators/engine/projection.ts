@@ -52,9 +52,27 @@ function validateEngineInputs(
   // Setup notes the caller resolved while building the input (e.g. a
   // chosen account that no longer qualifies) — shown with the result's.
   warnings.push(...(input.inputWarnings ?? []));
-  // The aggregate buckets and the individual accounts must describe the
-  // same money: a gap is charged wholly to retirement money (it isn't in
-  // any Portfolio account) and can shift withdrawals and depletion.
+  // The aggregate buckets, the per-category balances (what withdrawal
+  // routing draws from) and the individual accounts must describe the same
+  // money: a gap is counted as retirement money the router may never
+  // reach, which moves withdrawals, depletion and the plan's verdict.
+  if (input.startingAccountBalances) {
+    const byBucket = { preTax: 0, taxFree: 0, hsa: 0, afterTax: 0 };
+    for (const bal of Object.values(input.startingAccountBalances)) {
+      if (bal.structure === "roth_traditional") {
+        byBucket.preTax += bal.traditional;
+        byBucket.taxFree += bal.roth;
+      } else if (bal.structure === "single_bucket") byBucket.hsa += bal.balance;
+      else byBucket.afterTax += bal.balance;
+    }
+    for (const [key, sum] of Object.entries(byBucket)) {
+      const start = input.startingBalances[key as keyof typeof byBucket];
+      if (Math.abs(sum - start) > 1)
+        warnings.push(
+          `[DIAG] starting balances: ${key} is $${start.toFixed(2)} but the account categories hold $${sum.toFixed(2)}`,
+        );
+    }
+  }
   if (input.individualAccounts?.length) {
     const byBucket = { preTax: 0, taxFree: 0, hsa: 0, afterTax: 0 };
     for (const ia of input.individualAccounts) {

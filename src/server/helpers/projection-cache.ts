@@ -322,8 +322,13 @@ import { log } from "@/lib/logger";
  *
  *  50: rows carry retirementBalance + allAccountsBalance (endBalance
  *  removed); depletion is retirement money running out
- *  (retirementDepletionYear/Age, was all accounts). */
-export const PROJECTION_CACHE_ENGINE_VERSION = 50;
+ *  (retirementDepletionYear/Age, was all accounts).
+ *
+ *  51: one plan judge (assessPlan) for simulation success; bracket-filling
+ *  draws Traditional above the target once other money is gone; the
+ *  percentage router places an emptied account's share instead of dropping
+ *  it; the tax gross-up funds what routing delivers and prices NIIT. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 51;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

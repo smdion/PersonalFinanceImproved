@@ -42,6 +42,7 @@
  * need" — but it means their Coast FIRE result rests entirely on those other
  * two checks, same as before this fix.
  */
+import { assessPlan } from "./plan-outcome";
 import { calculateProjection } from "./engine";
 import type {
   AccountCategory,
@@ -96,52 +97,17 @@ function resultFrom(
   };
 }
 
-/** Returns true iff the projection funds expenses through end of plan.
- *
- *  A plan can fail to fund a
- *  specific year (money went unreached because it was penalty-exposed —
- *  see `penaltyAvoidedShortfall` on `EngineDecumulationYear`) while still
- *  passing both checks below, since neither one looks at individual years
- *  -- `retirementDepletionAge` only fires on a genuine zero-out, and
- *  `sustainableWithdrawal` is an aggregate rate that a shortfall year the
- *  household never spent (because it legally couldn't reach the money)
- *  doesn't move. Same class of bug `monte-carlo.ts`'s penalty-exclusion
- *  fix addressed for the simulated success rate; this is the
- *  deterministic-baseline half of
- *  the same fix. Without it, the baseline can say "already coast" for a
- *  plan whose 55→59½ gap Monte Carlo correctly reports as failing. */
+/** Returns true iff the projection funds expenses through end of plan
+ *  (assessPlan) AND the strategy's first-year spending meets the
+ *  household's stated need — Coast FIRE's own check on top of survival. */
 function passes(projection: ProjectionResult): boolean {
-  if (projection.retirementDepletionAge !== null) return false;
+  // Survival: the one plan judge (retirement money lasts, every year's
+  // spending funded — penalty-locked and Portfolio-only money included).
+  if (!assessPlan(projection).succeeded) return false;
   const retirementYear = projection.projectionByYear.find(
     (y) => y.phase === "decumulation",
   );
   if (!retirementYear) return false;
-  // Materiality floor, matching
-  // decumulation-year.ts's identically-reasoned `finalUnmetNeed` floor: a
-  // rounding-scale penaltyAvoidedShortfall in any single one of ~40 years
-  // shouldn't flip an entire plan from "already coast" to "not coast" —
-  // reserve that verdict for a shortfall material enough to actually
-  // matter to the household.
-  const hadPenaltyAvoidedShortfall = projection.projectionByYear.some(
-    (y) =>
-      y.phase === "decumulation" &&
-      (y.penaltyAvoidedShortfall ?? 0) >
-        Math.max(50, (y.afterTaxNeed ?? 0) * 0.01),
-  );
-  if (hadPenaltyAvoidedShortfall) return false;
-  // `nonRetirementShortfall` is
-  // structurally identical to `penaltyAvoidedShortfall` above — a real
-  // household shortfall (money in a Portfolio-parented account
-  // routing unconditionally excludes) that neither `retirementDepletionAge`
-  // nor `sustainableWithdrawal` would ever notice, for the same reason the
-  // comment above `passes()` explains for the penalty-exclusion case.
-  const hadNonRetirementShortfall = projection.projectionByYear.some(
-    (y) =>
-      y.phase === "decumulation" &&
-      (y.nonRetirementShortfall ?? 0) >
-        Math.max(50, (y.afterTaxNeed ?? 0) * 0.01),
-  );
-  if (hadNonRetirementShortfall) return false;
   // Compare the strategy's actual first-year spending against the
   // household's stated need — NOT against `sustainableWithdrawal` (see the
   // strategy-real fix note above). When no retirement budget is set

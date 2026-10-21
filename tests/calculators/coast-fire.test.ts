@@ -493,7 +493,42 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
       socialSecurityAnnual: 0,
       ssStartAge: 67,
       asOfDate: AS_OF_2,
+      // Every account tracked, so the 401(k) (locked until 59½ — no Rule of
+      // 55 separation) and the HSA (non-medical penalty until 65) are
+      // penalty-exposed like the Roth growth: only the brokerage and the
+      // Roth basis are reachable before 59½ — the real gap.
       individualAccounts: [
+        {
+          name: "401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 900000,
+          ownerName: "Owner",
+          ownerPersonId: 1,
+          ownerBirthYear: 1990,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "HSA",
+          category: "hsa",
+          taxType: "hsa",
+          startingBalance: 260000,
+          ownerName: "Owner",
+          ownerPersonId: 1,
+          ownerBirthYear: 1990,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 30000,
+          startingBasis: 20000,
+          ownerName: "Owner",
+          ownerPersonId: 1,
+          ownerBirthYear: 1990,
+          parentCategory: "Retirement",
+        },
         {
           name: "Roth IRA",
           category: "ira",

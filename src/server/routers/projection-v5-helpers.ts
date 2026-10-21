@@ -11,6 +11,7 @@
  *     optimistic). Called from projection.computeStressTest.
  */
 
+import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { asc, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { db } from "@/lib/db";
@@ -196,7 +197,8 @@ export interface StressTestScenarioResult {
   withdrawalRate: number;
   nestEggAtRetirement: number;
   sustainableWithdrawal: number;
-  retirementDepletionAge: number | null;
+  /** First age the plan falls short (assessPlan), null if it holds. */
+  failureAge: number | null;
 }
 
 /**
@@ -251,7 +253,7 @@ export function runStressTestScenarios(
       withdrawalRate: scenario.withdrawalRate,
       nestEggAtRetirement: roundToCents(nestEgg),
       sustainableWithdrawal: result.sustainableWithdrawal,
-      retirementDepletionAge: result.retirementDepletionAge,
+      failureAge: assessPlan(result).failureAge,
     };
   });
 }

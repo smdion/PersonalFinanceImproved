@@ -76,9 +76,11 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       ira: 0,
       brokerage: 0,
     },
+    // Buckets match the per-account balances below (they were $10k off,
+    // leaving money the router could never reach).
     startingBalances: {
-      preTax: 100000,
-      taxFree: 50000,
+      preTax: 110000,
+      taxFree: 40000,
       afterTax: 30000,
       afterTaxBasis: 20000,
       hsa: 15000,
@@ -172,7 +174,7 @@ describe("monte carlo integration", () => {
     // uses for financial content that otherwise relies on
     // toMatchSnapshot() alone).
     expect(result.successRate).toBe(1);
-    expect(result.medianEndBalance).toBeCloseTo(25352863.62, 1);
+    expect(result.medianEndBalance).toBeCloseTo(25352864.05, 1);
 
     expect(extractSummary(result)).toMatchSnapshot();
   });
@@ -202,8 +204,9 @@ describe("monte carlo integration", () => {
     const result = calculateMonteCarlo(mcInput);
 
     expect(result.numTrials).toBe(50);
-    expect(result.successRate).toBe(1);
-    expect(result.medianEndBalance).toBe(22504931.93);
+    // Two inflation-heavy trials run out of retirement money at 87–88.
+    expect(result.successRate).toBe(0.96);
+    expect(result.medianEndBalance).toBe(22504932.2);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 
@@ -232,7 +235,7 @@ describe("monte carlo integration", () => {
 
     expect(result.numTrials).toBe(50);
     expect(result.successRate).toBe(1);
-    expect(result.medianEndBalance).toBe(8880321.81);
+    expect(result.medianEndBalance).toBe(8880321.45);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 
