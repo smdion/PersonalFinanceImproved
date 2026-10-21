@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { simulatedOrBaseline } from "@/lib/pure/nest-egg-display";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { memo } from "react";
@@ -192,11 +191,10 @@ function RetirementCardImpl() {
                 value={formatCurrency(nestEggDisplay.baseline)}
                 label={`Nest egg at age ${nestEggAge} (today's $, baseline — fixed returns)`}
               />
+              {/* The whole card links to /retirement — no nested link. */}
               <div className="text-caption text-faint mt-1 leading-tight">
-                <Link href="/retirement" className="underline">
-                  Run a simulation on the Retirement page
-                </Link>{" "}
-                to see the simulated range.
+                Run a simulation on the Retirement page to see the simulated
+                range.
               </div>
             </>
           )}
