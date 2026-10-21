@@ -258,8 +258,12 @@ import { log } from "@/lib/logger";
  *
  *  33: spending strategies and the Rate-Seeded seed size spending from
  *  retirement money only (Portfolio-parented accounts excluded) — the same
- *  input now gives different spending. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 33;
+ *  input now gives different spending.
+ *
+ *  34: IRS overflow reaches brokerage accounts once (it was added up to
+ *  three times per account), Retirement-parented accounts first; the
+ *  contribution ramp and unnamed lump sums likewise. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 34;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

@@ -13,6 +13,7 @@ import {
   addBasis,
 } from "../../../config/account-types";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
+import { retirementFirst } from "../individual-account-tracking";
 
 /**
  * Apply one-time lump-sum injections for the current year.
@@ -72,9 +73,19 @@ export function applyLumpSums(
               )
             : undefined) ??
           indAccts.find((ia) => ia.name === ls.targetAccountName))
-        : (indAccts.find(
-            (ia) => ia.category === ls.targetAccount && ia.taxType === taxType,
-          ) ?? indAccts.find((ia) => ia.category === ls.targetAccount));
+        : // No named account: Retirement money first (a lump sum in the
+          // retirement projection must stay spendable in retirement).
+          (retirementFirst(
+            indAccts.filter(
+              (ia) =>
+                ia.category === ls.targetAccount && ia.taxType === taxType,
+            ),
+            (ia) => ia.parentCategory,
+          )[0] ??
+          retirementFirst(
+            indAccts.filter((ia) => ia.category === ls.targetAccount),
+            (ia) => ia.parentCategory,
+          )[0]);
       if (target) {
         const key = indKey(target);
         indBal.set(key, (indBal.get(key) ?? 0) + ls.amount);

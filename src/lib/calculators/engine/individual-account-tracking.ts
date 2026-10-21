@@ -28,6 +28,7 @@ import {
   getRothBalance,
   getTotalBalance,
   isRetirementParent,
+  isPortfolioParent,
 } from "../../config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/display-labels";
 import { projectSpecAmount } from "./contribution-projection";
@@ -46,6 +47,22 @@ import {
 // ---------------------------------------------------------------------------
 
 /** Composite key function for individual accounts. */
+
+/**
+ * Retirement money first: the items that aren't Portfolio-parented, or every
+ * item when there are none. Money the retirement plan routes (IRS overflow,
+ * the contribution ramp, lump sums with no named account) must land where
+ * retirement can spend it — Portfolio-parented accounts are never withdrawn
+ * from for retirement spending.
+ */
+export function retirementFirst<T>(
+  items: readonly T[],
+  parentOf: (item: T) => string | undefined,
+): T[] {
+  const retirement = items.filter((x) => !isPortfolioParent(parentOf(x)));
+  return retirement.length > 0 ? retirement : [...items];
+}
+
 export type IndKeyFn = (ia: {
   name: string;
   category: string;
@@ -317,7 +334,19 @@ export function distributeContributions(
         distributeSpecs(typeSpecs, slotAmount);
       }
     } else {
-      distributeSpecs(catSpecs, slot.employeeContrib);
+      // The overflow target's slot also carries this year's IRS overflow
+      // (routeFromSpecs adds it there); Step 4 routes that part, so only the
+      // specs' own contributions are spread here — distributing the whole
+      // slot counted the overflow twice.
+      distributeSpecs(
+        catSpecs,
+        isOverflowTarget(slot.category)
+          ? Math.max(
+              0,
+              roundToCents(slot.employeeContrib - overflowToBrokerage),
+            )
+          : slot.employeeContrib,
+      );
     }
   }
 
@@ -387,12 +416,16 @@ export function distributeContributions(
 
   // --- Step 4: Distribute overflow to brokerage accounts by allocationPriority ---
   if (overflowToBrokerage > 0) {
-    const overflowSpecs = contributionSpecs
-      .filter((s) => isOverflowTarget(s.category))
-      .sort(
-        (a, b) => (a.allocationPriority ?? 0) - (b.allocationPriority ?? 0),
-      );
-    const brokAccts = indAccts.filter((ia) => isOverflowTarget(ia.category));
+    // Overflow is retirement money (contributions past the IRS limits):
+    // Retirement-parented brokerage specs/accounts first.
+    const overflowSpecs = retirementFirst(
+      contributionSpecs.filter((s) => isOverflowTarget(s.category)),
+      (s) => s.parentCategory,
+    ).sort((a, b) => (a.allocationPriority ?? 0) - (b.allocationPriority ?? 0));
+    const brokAccts = retirementFirst(
+      indAccts.filter((ia) => isOverflowTarget(ia.category)),
+      (ia) => indParentCat.get(indKey(ia)) ?? ia.parentCategory,
+    );
 
     if (brokAccts.length > 0) {
       let remaining = overflowToBrokerage;
@@ -431,6 +464,8 @@ export function distributeContributions(
               (indOverflow.get(acctName) ?? 0) + perAccount,
             );
           }
+          // Routed in full — the fallback below must not hand it out again.
+          remaining = 0;
         } else {
           const lastSpec = overflowSpecs[overflowSpecs.length - 1];
           if (lastSpec) {
@@ -445,6 +480,7 @@ export function distributeContributions(
                 acctName,
                 (indOverflow.get(acctName) ?? 0) + remaining,
               );
+              remaining = 0;
             }
           }
         }
@@ -487,14 +523,24 @@ export function distributeContributions(
 
   // --- Step 6: Distribute ramp to brokerage accounts ---
   if (rampAmount > 0) {
-    const brokWithSpecs = indAccts.filter(
-      (ia) =>
-        isOverflowTarget(ia.category) && accountsWithSpecs.has(indKey(ia)),
+    // The ramp is a retirement-plan contribution: Retirement-parented
+    // brokerages first.
+    const parentOf = (ia: IndividualAccountInput) =>
+      indParentCat.get(indKey(ia)) ?? ia.parentCategory;
+    const brokWithSpecs = retirementFirst(
+      indAccts.filter(
+        (ia) =>
+          isOverflowTarget(ia.category) && accountsWithSpecs.has(indKey(ia)),
+      ),
+      parentOf,
     );
     const brokAccts =
       brokWithSpecs.length > 0
         ? brokWithSpecs
-        : indAccts.filter((ia) => isOverflowTarget(ia.category));
+        : retirementFirst(
+            indAccts.filter((ia) => isOverflowTarget(ia.category)),
+            parentOf,
+          );
     const brokTotal = brokAccts.reduce(
       (s, ia) => s + (indBal.get(indKey(ia)) ?? 0),
       0,

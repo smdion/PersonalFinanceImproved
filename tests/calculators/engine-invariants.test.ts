@@ -1609,4 +1609,156 @@ describe("engine invariants", () => {
       expect(seeded(1_000_000)).toBeCloseTo(seeded(0)!, 0);
     });
   });
+
+  describe("retirement money stays retirement money", () => {
+    // $40k to a 401(k) (over the IRS limit → overflow), $5k each to a
+    // Retirement and a Portfolio brokerage, no targets; no growth so the
+    // balances are pure contributions.
+    const overflowInput = (): ProjectionInput => ({
+      ...makeInput({
+        currentAge: 40,
+        retirementAge: 65,
+        currentSalary: 200000,
+        salaryGrowthRate: 0,
+        limitGrowthRate: 0,
+        returnRates: [{ label: "0%", rate: 0 }],
+        accumulationDefaults: {
+          ...makeInput().accumulationDefaults,
+          contributionRate: 0.5,
+        },
+        startingBalances: {
+          preTax: 100000,
+          taxFree: 0,
+          afterTax: 20000,
+          afterTaxBasis: 20000,
+          hsa: 0,
+        },
+        startingAccountBalances: {
+          "401k": {
+            structure: "roth_traditional",
+            traditional: 100000,
+            roth: 0,
+          },
+          "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+          hsa: { structure: "single_bucket", balance: 0 },
+          ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+          brokerage: {
+            structure: "basis_tracking",
+            balance: 20000,
+            basis: 20000,
+          },
+        },
+      }),
+      contributionSpecs: (
+        [
+          ["401k", "401k", 40000, "pre_tax", "Retirement"],
+          [
+            "Retirement brokerage",
+            "brokerage",
+            5000,
+            "after_tax",
+            "Retirement",
+          ],
+          ["Long-term brokerage", "brokerage", 5000, "after_tax", "Portfolio"],
+        ] as const
+      ).map(([name, category, annual, taxTreatment, parentCategory]) => ({
+        name,
+        category,
+        method: "fixed_monthly" as const,
+        value: annual / 12,
+        salaryFraction: 1,
+        baseAnnual: annual,
+        taxTreatment,
+        parentCategory,
+      })),
+      baseYearContributions: {
+        "401k": 40000,
+        "403b": 0,
+        hsa: 0,
+        ira: 0,
+        brokerage: 10000,
+      } as ProjectionInput["baseYearContributions"],
+      individualAccounts: [
+        {
+          name: "401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 100000,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "Retirement brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 10000,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "Long-term brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 10000,
+          parentCategory: "Portfolio",
+        },
+      ],
+    });
+
+    it("IRS overflow is added once, to Retirement accounts, and per-account balances add up", () => {
+      const years = calculateProjection(overflowInput()).projectionByYear.slice(
+        0,
+        5,
+      );
+      let portfolioPrev = 10000;
+      for (const y of years) {
+        const accts = y.individualAccountBalances ?? [];
+        const brokerage = accts.filter((a) => a.category === "brokerage");
+        expect(y.overflowToBrokerage, `${y.year} overflow`).toBeGreaterThan(0);
+        expect(
+          brokerage.reduce((s, a) => s + a.balance, 0),
+          `${y.year} brokerage accounts = brokerage total`,
+        ).toBeCloseTo(y.balanceByTaxType.afterTax, 0);
+        expect(
+          (y.warnings ?? []).filter((w) => w.includes("reconciliation")),
+        ).toEqual([]);
+        // The Portfolio brokerage grows only by its own contribution.
+        const portfolio = brokerage.find(
+          (a) => a.parentCategory === "Portfolio",
+        )!;
+        expect(portfolio.balance - portfolioPrev).toBeLessThanOrEqual(5000.01);
+        portfolioPrev = portfolio.balance;
+      }
+    });
+
+    it("a lump sum with no named account goes to a Retirement account", () => {
+      const base = overflowInput();
+      const year = base.asOfDate.getFullYear() + 1;
+      const input: ProjectionInput = {
+        ...base,
+        // Portfolio brokerage listed first: the old first-match picked it.
+        individualAccounts: [...base.individualAccounts!].reverse(),
+        accumulationOverrides: [
+          { year, lumpSums: [{ amount: 50000, targetAccount: "brokerage" }] },
+        ] as ProjectionInput["accumulationOverrides"],
+      };
+      const without = calculateProjection(base).projectionByYear.find(
+        (y) => y.year === year,
+      )!;
+      const withLump = calculateProjection(input).projectionByYear.find(
+        (y) => y.year === year,
+      )!;
+      const bal = (y: typeof without, parent: string) =>
+        (y.individualAccountBalances ?? [])
+          .filter(
+            (a) => a.category === "brokerage" && a.parentCategory === parent,
+          )
+          .reduce((t, a) => t + a.balance, 0);
+      expect(bal(withLump, "Portfolio")).toBeCloseTo(
+        bal(without, "Portfolio"),
+        0,
+      );
+      expect(
+        bal(withLump, "Retirement") - bal(without, "Retirement"),
+      ).toBeCloseTo(50000, 0);
+    });
+  });
 });
