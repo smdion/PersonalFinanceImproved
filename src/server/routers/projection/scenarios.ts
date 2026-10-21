@@ -43,6 +43,7 @@ import {
   decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
+  resolveProjectionOverrides,
 } from "./_shared";
 
 export const scenariosRouter = createTRPCRouter({
@@ -210,10 +211,11 @@ export const scenariosRouter = createTRPCRouter({
             input.decumulationDefaults,
             distributionTaxRates,
           ),
-          accumulationOverrides:
-            input.accumulationOverrides as AccumulationOverride[],
-          decumulationOverrides:
-            input.decumulationOverrides as DecumulationOverride[],
+          // Omitted "Changes by year" = the household's saved rows.
+          ...((await resolveProjectionOverrides(ctx.db, input)) as {
+            accumulationOverrides: AccumulationOverride[];
+            decumulationOverrides: DecumulationOverride[];
+          }),
         };
         const inputHash = hashEngineInput("deterministic", engineInput);
 

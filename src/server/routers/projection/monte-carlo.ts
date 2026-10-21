@@ -48,6 +48,7 @@ import {
   decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildMcInputs,
+  resolveProjectionOverrides,
 } from "./_shared";
 import {
   hashEngineInput,
@@ -225,10 +226,11 @@ export const monteCarloRouter = createTRPCRouter({
           input.decumulationDefaults,
           distributionTaxRates,
         ),
-        accumulationOverrides:
-          input.accumulationOverrides as AccumulationOverride[],
-        decumulationOverrides:
-          input.decumulationOverrides as DecumulationOverride[],
+        // Omitted "Changes by year" = the household's saved rows.
+        ...((await resolveProjectionOverrides(ctx.db, input)) as {
+          accumulationOverrides: AccumulationOverride[];
+          decumulationOverrides: DecumulationOverride[];
+        }),
         rateSeededDecumulationYear1: input.rateSeededDecumulationYear1,
       };
 

@@ -51,6 +51,7 @@ import {
   decumulationOverrideSchema,
   decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
+  resolveProjectionOverrides,
 } from "./_shared";
 
 /**
@@ -161,6 +162,8 @@ async function runProjection(
   if (!payload) return null;
 
   const { settings, distributionTaxRates, baseEngineInput } = payload;
+  // Omitted "Changes by year" = the household's saved rows.
+  const overrides = await resolveProjectionOverrides(db, input);
 
   const engineInput = {
     ...baseEngineInput,
@@ -170,9 +173,9 @@ async function runProjection(
       distributionTaxRates,
     ),
     accumulationOverrides:
-      input.accumulationOverrides as AccumulationOverride[],
+      overrides.accumulationOverrides as AccumulationOverride[],
     decumulationOverrides: [
-      ...(input.decumulationOverrides as DecumulationOverride[]),
+      ...(overrides.decumulationOverrides as DecumulationOverride[]),
       ...extraDecumulationOverrides,
     ],
   };

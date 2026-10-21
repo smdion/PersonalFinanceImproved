@@ -60,8 +60,13 @@ import {
   buildStrategyParams,
   buildMcInputs,
   buildDecumulationDefaults,
+  resolveProjectionOverrides,
   resolveSsStartAgeBaseline,
 } from "./_shared";
+import type {
+  AccumulationOverride,
+  DecumulationOverride,
+} from "@/lib/calculators/types";
 import {
   hashEngineInput,
   readProjectionCache,
@@ -97,6 +102,12 @@ export const strategyRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
+      // The household's saved "Changes by year" apply to every strategy
+      // (D6) — a comparison without them describes a different plan.
+      const saved = (await resolveProjectionOverrides(ctx.db, {})) as {
+        accumulationOverrides: AccumulationOverride[];
+        decumulationOverrides: DecumulationOverride[];
+      };
       const [
         data,
         { mcAssetClasses, mcCorrelations, mcGlidePath, effectiveInflationRisk },
@@ -230,8 +241,7 @@ export const strategyRouter = createTRPCRouter({
             const result = calculateProjection({
               ...baseEngineInput,
               decumulationDefaults,
-              accumulationOverrides: [],
-              decumulationOverrides: [],
+              ...saved,
             });
 
             // Extract decumulation years for year-by-year data
@@ -255,8 +265,7 @@ export const strategyRouter = createTRPCRouter({
                 engineInput: {
                   ...mcBaseEngineInput,
                   decumulationDefaults,
-                  accumulationOverrides: [],
-                  decumulationOverrides: [],
+                  ...saved,
                 },
                 numTrials: 200,
                 seed: 42,
@@ -350,6 +359,12 @@ export const strategyRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
+      // The household's saved "Changes by year" apply to every strategy
+      // (D6) — a comparison without them describes a different plan.
+      const saved = (await resolveProjectionOverrides(ctx.db, {})) as {
+        accumulationOverrides: AccumulationOverride[];
+        decumulationOverrides: DecumulationOverride[];
+      };
       const [
         data,
         { mcAssetClasses, mcCorrelations, mcGlidePath, effectiveInflationRisk },
@@ -421,8 +436,7 @@ export const strategyRouter = createTRPCRouter({
       const mcBaseEngineInput = {
         ...baseEngineInput,
         returnRates: mcReturnRates,
-        accumulationOverrides: [] as [],
-        decumulationOverrides: [] as [],
+        ...saved,
         // buildDecumulationDefaults already resolves withdrawalStrategy to
         // settings.withdrawalStrategy (= activeStrategy) and strategyParams
         // to buildStrategyParams(settings) (= userStrategyParams) — a pure

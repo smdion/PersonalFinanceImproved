@@ -70,36 +70,36 @@ export const lumpSumSchema = z
   )
   .optional();
 
-// Shared Zod schemas for accumulation/decumulation overrides — used by
-// computeProjection and computeMonteCarloProjection inputs.
-export const accumulationOverrideSchema = z
-  .array(
-    z.object({
-      year: z.number().int(),
-      contributionRate: z.number().min(0).max(1).optional(),
-      routingMode: z.enum(["waterfall", "percentage"]).optional(),
-      accountOrder: z.array(z.enum(accountCategoryEnum())).optional(),
-      accountSplits: z
-        .record(z.enum(accountCategoryEnum()), z.number())
-        .optional(),
-      taxSplits: z
-        .record(z.enum(accountCategoryEnum()), z.number().min(0).max(1))
-        .optional(),
-      accountCaps: z
-        .record(z.enum(accountCategoryEnum()), z.number())
-        .optional(),
-      taxTypeCaps: z
-        .object({
-          traditional: z.number().optional(),
-          roth: z.number().optional(),
-        })
-        .optional(),
-      lumpSums: lumpSumSchema,
-      reset: z.boolean().optional(),
-      notes: z.string().optional(),
-    }),
-  )
-  .default([]);
+// Shared Zod schemas for accumulation/decumulation overrides ("Changes by
+// year") — used by every projection procedure's input. OMITTED means the
+// household's saved rows (resolveProjectionOverrides): every surface — the
+// dashboard, the Retirement page, strategy comparison, stress tests — gets
+// the same baseline without each client loading them, and only an editor
+// with unsaved changes sends its own.
+const accumulationOverrideArraySchema = z.array(
+  z.object({
+    year: z.number().int(),
+    contributionRate: z.number().min(0).max(1).optional(),
+    routingMode: z.enum(["waterfall", "percentage"]).optional(),
+    accountOrder: z.array(z.enum(accountCategoryEnum())).optional(),
+    accountSplits: z
+      .record(z.enum(accountCategoryEnum()), z.number())
+      .optional(),
+    taxSplits: z
+      .record(z.enum(accountCategoryEnum()), z.number().min(0).max(1))
+      .optional(),
+    accountCaps: z.record(z.enum(accountCategoryEnum()), z.number()).optional(),
+    taxTypeCaps: z
+      .object({
+        traditional: z.number().optional(),
+        roth: z.number().optional(),
+      })
+      .optional(),
+    lumpSums: lumpSumSchema,
+    reset: z.boolean().optional(),
+    notes: z.string().optional(),
+  }),
+);
 
 /**
  * Top-level `decumulationDefaults` query input — the live withdrawal-strategy
@@ -149,44 +149,89 @@ export const decumulationDefaultsInputSchema = z
     withdrawalTaxPreference: {},
   });
 
-export const decumulationOverrideSchema = z
-  .array(
-    // No per-year `withdrawalRate`: none of the spending strategies reads
-    // it, so an override could only ever change nothing.
-    z.object({
-      year: z.number().int(),
-      withdrawalRoutingMode: z
-        .enum(["bracket_filling", "waterfall", "percentage"])
-        .optional(),
-      withdrawalOrder: z.array(z.enum(accountCategoryEnum())).optional(),
-      withdrawalSplits: z
-        .record(z.enum(accountCategoryEnum()), z.number())
-        .optional(),
-      withdrawalTaxPreference: z
-        .record(z.enum(accountCategoryEnum()), z.enum(["traditional", "roth"]))
-        .optional(),
-      withdrawalAccountCaps: z
-        .record(z.enum(accountCategoryEnum()), z.number())
-        .optional(),
-      withdrawalTaxTypeCaps: z
-        .object({
-          traditional: z.number().optional(),
-          roth: z.number().optional(),
-        })
-        .optional(),
-      rothConversionTarget: z.number().min(0).max(1).optional(),
-      // See DecumulationOverride's docblock in
-      // engine-config.ts. Without these two, zod silently strips both
-      // fields at this boundary regardless of what the engine/type layer
-      // supports underneath.
-      rothBracketTarget: z.number().min(0).max(1).optional(),
-      rmdSmoothingMaxBracketTarget: z.number().min(0).max(1).optional(),
-      lumpSums: lumpSumSchema,
-      reset: z.boolean().optional(),
-      notes: z.string().optional(),
-    }),
-  )
-  .default([]);
+const decumulationOverrideArraySchema = z.array(
+  // No per-year `withdrawalRate`: none of the spending strategies reads
+  // it, so an override could only ever change nothing.
+  z.object({
+    year: z.number().int(),
+    withdrawalRoutingMode: z
+      .enum(["bracket_filling", "waterfall", "percentage"])
+      .optional(),
+    withdrawalOrder: z.array(z.enum(accountCategoryEnum())).optional(),
+    withdrawalSplits: z
+      .record(z.enum(accountCategoryEnum()), z.number())
+      .optional(),
+    withdrawalTaxPreference: z
+      .record(z.enum(accountCategoryEnum()), z.enum(["traditional", "roth"]))
+      .optional(),
+    withdrawalAccountCaps: z
+      .record(z.enum(accountCategoryEnum()), z.number())
+      .optional(),
+    withdrawalTaxTypeCaps: z
+      .object({
+        traditional: z.number().optional(),
+        roth: z.number().optional(),
+      })
+      .optional(),
+    rothConversionTarget: z.number().min(0).max(1).optional(),
+    // See DecumulationOverride's docblock in
+    // engine-config.ts. Without these two, zod silently strips both
+    // fields at this boundary regardless of what the engine/type layer
+    // supports underneath.
+    rothBracketTarget: z.number().min(0).max(1).optional(),
+    rmdSmoothingMaxBracketTarget: z.number().min(0).max(1).optional(),
+    lumpSums: lumpSumSchema,
+    reset: z.boolean().optional(),
+    notes: z.string().optional(),
+  }),
+);
+
+export const accumulationOverrideSchema =
+  accumulationOverrideArraySchema.optional();
+export const decumulationOverrideSchema =
+  decumulationOverrideArraySchema.optional();
+
+export type ResolvedProjectionOverrides = {
+  accumulationOverrides: z.infer<typeof accumulationOverrideArraySchema>;
+  decumulationOverrides: z.infer<typeof decumulationOverrideArraySchema>;
+};
+
+/** The "Changes by year" a projection runs with: what the caller sent, or
+ *  — when it sent none — the household's saved rows (validated through the
+ *  same schemas; an unreadable saved row set counts as none). */
+export async function resolveProjectionOverrides(
+  db: Db,
+  input: {
+    accumulationOverrides?: ResolvedProjectionOverrides["accumulationOverrides"];
+    decumulationOverrides?: ResolvedProjectionOverrides["decumulationOverrides"];
+  },
+): Promise<ResolvedProjectionOverrides> {
+  const saved = async <T>(
+    overrideType: "accumulation" | "decumulation",
+    parse: (v: unknown) => { success: boolean; data?: T },
+  ): Promise<T | undefined> => {
+    const rows = await db
+      .select({ overrides: schema.projectionOverrides.overrides })
+      .from(schema.projectionOverrides)
+      .where(eq(schema.projectionOverrides.overrideType, overrideType));
+    const parsed = parse(rows[0]?.overrides ?? []);
+    return parsed.success ? parsed.data : undefined;
+  };
+  const [accumulationOverrides, decumulationOverrides] = await Promise.all([
+    input.accumulationOverrides ??
+      saved("accumulation", (v) =>
+        accumulationOverrideArraySchema.safeParse(v),
+      ),
+    input.decumulationOverrides ??
+      saved("decumulation", (v) =>
+        decumulationOverrideArraySchema.safeParse(v),
+      ),
+  ]);
+  return {
+    accumulationOverrides: accumulationOverrides ?? [],
+    decumulationOverrides: decumulationOverrides ?? [],
+  };
+}
 
 /** Build strategyParams from DB settings columns. */
 export function buildStrategyParams(settings: {

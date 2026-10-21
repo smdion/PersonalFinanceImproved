@@ -172,6 +172,10 @@ interface StressTestRunInput {
     ProjectionInput,
     "decumulationDefaults" | "accumulationOverrides" | "decumulationOverrides"
   >;
+  /** The household's saved "Changes by year" (resolved by the caller);
+   *  omitted = none. */
+  accumulationOverrides?: ProjectionInput["accumulationOverrides"];
+  decumulationOverrides?: ProjectionInput["decumulationOverrides"];
   /** Fully resolved by the caller (stress-test.ts) via the shared
    *  `buildDecumulationDefaults` (_shared.ts) — the household's real
    *  routing mode, RMD/QCD handling, discretionary order, and active
@@ -234,8 +238,9 @@ export function runStressTestScenarios(
       inflationRate: scenario.inflationRate,
       salaryGrowthRate: scenario.salaryGrowthRate,
       decumulationDefaults: scenarioDecumulationDefaults,
-      accumulationOverrides: [],
-      decumulationOverrides: [],
+      // The household's saved "Changes by year" (D6).
+      accumulationOverrides: input.accumulationOverrides ?? [],
+      decumulationOverrides: input.decumulationOverrides ?? [],
     } as ProjectionInput);
 
     const retirementYear =

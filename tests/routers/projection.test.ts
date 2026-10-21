@@ -519,6 +519,34 @@ describe("projection router — computeProjection", () => {
     expect(response.result!.projectionByYear.length).toBeGreaterThan(0);
   });
 
+  it("omitted Changes by year = the saved rows; an explicit list replaces them", async () => {
+    const endOf = async (input: Record<string, unknown>) =>
+      (
+        await caller.projection.computeProjection(input)
+      ).result!.projectionByYear.at(-1)!.retirementBalance;
+    const before = await endOf({});
+    const year = new Date().getFullYear() + 2;
+    const saved = [{ year, contributionRate: 0 }];
+    await caller.retirement.projectionOverrides.save({
+      overrideType: "accumulation",
+      overrides: saved,
+    });
+    try {
+      const omitted = await endOf({});
+      expect(omitted).not.toBeCloseTo(before, 0);
+      expect(omitted).toBeCloseTo(
+        await endOf({ accumulationOverrides: saved }),
+        2,
+      );
+      expect(await endOf({ accumulationOverrides: [] })).toBeCloseTo(before, 2);
+    } finally {
+      await caller.retirement.projectionOverrides.save({
+        overrideType: "accumulation",
+        overrides: [],
+      });
+    }
+  });
+
   it("echoes the saved unspent-RMD account (the Retirement settings picker reads it)", async () => {
     const brokerage = seedPerformanceAccount(db, {
       name: "Echo brokerage",
