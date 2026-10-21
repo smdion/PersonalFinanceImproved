@@ -9,6 +9,7 @@
  * under ~500 lines (Composed Router convention, RULES.md §8). Shared
  * schemas + helpers remain in `_shared.ts`.
  */
+import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { eq, asc, sql } from "drizzle-orm";
 import { queryRaw } from "@/lib/db/compat";
 import { z } from "zod/v4";
@@ -378,7 +379,7 @@ export const coastFireRouter = createTRPCRouter({
       }
 
       const CONFIDENCE = MC_CONFIDENCE_THRESHOLD;
-      const NUM_TRIALS = 1000;
+      const NUM_TRIALS = DEFAULT_SIMULATION.coastFireTrials;
       const SEED = 42;
 
       // Probe helper: run MC with a profile switch at `coastAge` that zeros

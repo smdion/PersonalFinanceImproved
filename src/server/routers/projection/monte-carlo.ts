@@ -5,6 +5,7 @@
  * projection engine) and the scenario-scoped mutations that edit the MC
  * input tables: `updateGlidePathAllocations` and `updateClampBounds`.
  */
+import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { queryRaw } from "@/lib/db/compat";
@@ -72,14 +73,21 @@ export const monteCarloRouter = createTRPCRouter({
     .use(expensiveRateLimitMiddleware)
     .input(
       z.object({
-        numTrials: z.number().int().min(100).max(10000).default(1000),
+        numTrials: z
+          .number()
+          .int()
+          .min(100)
+          .max(10000)
+          .default(DEFAULT_SIMULATION.numTrials),
         seed: z.number().int().optional(),
         /** Simulation preset: controls return assumptions, volatility, inflation risk, and trial count. */
         preset: z
           .enum(["aggressive", "default", "conservative", "custom"])
-          .default("default"),
+          .default(DEFAULT_SIMULATION.preset),
         /** Tax mode: 'simple' collapses to single tax-free balance (cFIREsim-comparable), 'advanced' uses full multi-account tax engine. */
-        taxMode: z.enum(["simple", "advanced"]).default("simple"),
+        taxMode: z
+          .enum(["simple", "advanced"])
+          .default(DEFAULT_SIMULATION.taxMode),
         // --- Optional contribution profile (overrides contribution accounts + salary) ---
         contributionProfileId: z.number().int().optional(),
         /** Optional Salary Profile — the independent "what if I earned X" axis. */

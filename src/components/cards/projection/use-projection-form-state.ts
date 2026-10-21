@@ -1,4 +1,5 @@
 /** Form and UI state for the projection card — withdrawal config, override forms, view toggles, and MC settings. Overrides are loaded from DB on mount. */
+import { DEFAULT_SIMULATION } from "@/lib/constants";
 import {
   useCallback,
   useState,
@@ -144,7 +145,7 @@ export function useProjectionFormState() {
   const [mcTrials, setMcTrials] = useState(MC_DEFAULT_TRIALS);
   const [mcPreset, setMcPreset] = useState<
     "aggressive" | "default" | "conservative" | "custom"
-  >("default");
+  >(DEFAULT_SIMULATION.preset);
   // Default to Advanced (real per-account tax tracking) rather than
   // Simple (cFIREsim-style single-bucket comparison) — most households
   // have real Traditional/Roth/HSA/brokerage splits they care about
@@ -152,7 +153,9 @@ export function useProjectionFormState() {
   // when displayed as if it were a real account breakdown. Simple stays
   // available for anyone who specifically wants the cFIREsim-comparable
   // view.
-  const [mcTaxMode, setMcTaxMode] = useState<"simple" | "advanced">("advanced");
+  const [mcTaxMode, setMcTaxMode] = useState<"simple" | "advanced">(
+    DEFAULT_SIMULATION.taxMode,
+  );
   const [mcAssetClassOverrides, setMcAssetClassOverrides] = useState<
     AssetClassOverride[]
   >([]);

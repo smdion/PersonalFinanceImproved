@@ -1,6 +1,7 @@
 "use client";
 
 /** General settings tab containing the living-cost category mapping editor, which assigns budget categories to Dave Ramsey spending ranges. */
+import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { DataSourcesSettings } from "./data-sources";
 import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
@@ -178,8 +179,9 @@ function RetirementSettings() {
               Auto-load simulations
             </div>
             <div className="text-muted mt-0.5 text-xs">
-              Prefetches 1,000 simulation trials in the background after the
-              engine completes. Disable on slow connections or to run manually.
+              Prefetches {DEFAULT_SIMULATION.numTrials.toLocaleString()}{" "}
+              simulation trials in the background after the engine completes.
+              Disable on slow connections or to run manually.
             </div>
           </div>
           <Toggle

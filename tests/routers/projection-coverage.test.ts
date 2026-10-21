@@ -20,6 +20,8 @@ import {
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
+import { DEFAULT_SIMULATION } from "@/lib/constants";
+import { defaultDecumulationConfig } from "@/lib/config/account-types";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -959,6 +961,54 @@ describe("projection router — computeMonteCarloProjection cache", () => {
    * contract is "report what's cached, never compute." peekOnly must win:
    * it always reads the real cache, regardless of forceRefresh.
    */
+  it("the dashboard's peek finds the Retirement page's default run, with and without saved Changes by year", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      seedDefaultMcPreset(db);
+      // Both build from usePlanEngineInput; the page adds the default
+      // simulation's settings, the dashboard sends none of them.
+      const plan = {
+        decumulationDefaults: {
+          withdrawalTaxPreference:
+            defaultDecumulationConfig().withdrawalTaxPreference,
+        },
+      };
+      const page = {
+        ...plan,
+        numTrials: DEFAULT_SIMULATION.numTrials,
+        preset: DEFAULT_SIMULATION.preset,
+        taxMode: DEFAULT_SIMULATION.taxMode,
+      };
+      const dashboardPeek = () =>
+        caller.projection.computeMonteCarloProjection({
+          ...plan,
+          peekOnly: true,
+        });
+
+      const run = await caller.projection.computeMonteCarloProjection(page);
+      expect((await dashboardPeek()).result).toEqual(run.result);
+
+      // Saved Changes by year: the page leaves them out until edited (the
+      // server applies the saved rows) — the peek still hits, and it
+      // reflects them.
+      const year = new Date().getFullYear() + 2;
+      await caller.retirement.projectionOverrides.save({
+        overrideType: "accumulation",
+        overrides: [{ year, contributionRate: 0 }],
+      });
+      const withSaved =
+        await caller.projection.computeMonteCarloProjection(page);
+      expect(withSaved.result).not.toEqual(run.result);
+      expect((await dashboardPeek()).result).toEqual(withSaved.result);
+    } finally {
+      cleanup();
+    }
+  });
+
   it("peekOnly still returns the cached result even when forceRefresh is also set", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {

@@ -11,6 +11,7 @@
  * bands. Single MC run, no duplication.
  */
 
+import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { trpc } from "@/lib/trpc";
 import {
   formatCurrency,
@@ -107,9 +108,9 @@ export function CoastFireCard({
       label="Coast FIRE"
       tooltip={[
         "The earliest age at which you can stop contributing and still fund your plan through end of plan.",
-        "Success criterion: portfolio survives end-of-plan AND sustainable withdrawal at retirement covers projected expenses.",
-        "Headline combines the Baseline answer (at expected returns) and the Simulated answer (90% confidence across 1,000 random market outcomes) — only shows 'Already ✓' when BOTH agree.",
-        "Baseline is a single expected-return path (same math as Active Plan) — it can't see that real returns vary, so it can't detect a case that only breaks under variance. Simulated (1,000 randomized sequences) is the one actually answering whether this works in practice.",
+        "Success criterion: every retirement year is funded from retirement money (it doesn't run out or fall short) AND the first year's spending covers your retirement budget.",
+        `Headline combines the Baseline answer (at expected returns) and the Simulated answer (90% confidence across ${DEFAULT_SIMULATION.coastFireTrials.toLocaleString()} random market outcomes) — only shows 'Already ✓' when BOTH agree.`,
+        `Baseline is a single expected-return path (same math as Active Plan) — it can't see that real returns vary, so it can't detect a case that only breaks under variance. Simulated (${DEFAULT_SIMULATION.coastFireTrials.toLocaleString()} randomized sequences) is the one actually answering whether this works in practice.`,
         ...(hasGapAmount
           ? [
               `Why stopping today fails: in ${formatPercent(coastFireMcResult.stopNowPenaltyAvoidedShortfallRate, 0)} of simulated outcomes, retiring today leaves about ${formatCurrency(coastFireMcResult.stopNowMedianPenaltyAvoidedShortfallPV)} (today's $) short in the years before 59½ — money you'd have, but can't reach without a penalty. Building that much more in brokerage or Roth basis by then would close it.`,

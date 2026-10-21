@@ -4,7 +4,7 @@
  *
  *  The optional `phase` prop controls the overlay label:
  *    "engine"     → "Running projection engine..."  (blue, initial load)
- *    "simulation" → "Simulating 1,000 scenarios..." (purple, MC prefetch)
+ *    "simulation" → "Simulating scenarios..." (purple, MC prefetch)
  *    undefined    → no overlay (used as dynamic import fallback only)
  */
 

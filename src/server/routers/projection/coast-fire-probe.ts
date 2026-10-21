@@ -11,6 +11,7 @@
  * already at 521 lines, over RULES.md §8's ~500-line Composed Router
  * guideline.
  */
+import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { eq, asc, sql } from "drizzle-orm";
 import { queryRaw } from "@/lib/db/compat";
 import { z } from "zod/v4";
@@ -213,7 +214,7 @@ export const coastFireProbeRouter = createTRPCRouter({
         stdDev: toNumber(preset.inflationStdDev),
       };
 
-      const NUM_TRIALS = 1000;
+      const NUM_TRIALS = DEFAULT_SIMULATION.coastFireTrials;
       const SEED = 42;
 
       // Own hashEngineInput `kind` -- "coastFireProbe", never
