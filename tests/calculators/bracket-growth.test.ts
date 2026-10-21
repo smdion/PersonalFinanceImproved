@@ -773,7 +773,7 @@ function makeIrmaaHouseholdInput(): ProjectionInput {
     },
     startingBalances: {
       preTax: 1000000,
-      taxFree: 100000,
+      taxFree: 0,
       afterTax: 500000,
       afterTaxBasis: 300000,
       hsa: 0,
@@ -928,7 +928,7 @@ function makeAcaHouseholdInput(): ProjectionInput {
     },
     startingBalances: {
       preTax: 900000,
-      taxFree: 50000,
+      taxFree: 0,
       afterTax: 100000,
       afterTaxBasis: 80000,
       hsa: 0,

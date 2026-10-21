@@ -80,8 +80,8 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       brokerage: 0,
     },
     startingBalances: {
-      preTax: 100000,
-      taxFree: 30000,
+      preTax: 80000,
+      taxFree: 150000,
       afterTax: 30000,
       afterTaxBasis: 20000,
       hsa: 15000,
@@ -107,6 +107,41 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   };
 }
 
+/** The fixture's other money, tracked as accounts so they and the
+ *  per-category balances describe the same household. */
+function otherAccounts(ownerBirthYear: number) {
+  const owner = {
+    ownerName: "Alice",
+    ownerPersonId: 1,
+    ownerBirthYear,
+    parentCategory: "Retirement",
+  };
+  return [
+    {
+      name: "401k",
+      category: "401k" as const,
+      taxType: "preTax",
+      startingBalance: 80000,
+      ...owner,
+    },
+    {
+      name: "HSA",
+      category: "hsa" as const,
+      taxType: "hsa",
+      startingBalance: 15000,
+      ...owner,
+    },
+    {
+      name: "Brokerage",
+      category: "brokerage" as const,
+      taxType: "afterTax",
+      startingBalance: 30000,
+      startingBasis: 20000,
+      ...owner,
+    },
+  ];
+}
+
 describe("Tracked Roth basis draw-down — full pipeline", () => {
   it("flips eligibilityLocked from false to true once tracked basis is exhausted, and it stays locked", () => {
     // Owner born 1980: at retirement (age 50, year 2030) through end of
@@ -115,6 +150,7 @@ describe("Tracked Roth basis draw-down — full pipeline", () => {
     // the age gate.
     const input = makeInput({
       individualAccounts: [
+        ...otherAccounts(1980),
         {
           name: "Roth IRA",
           category: "ira",
@@ -198,6 +234,7 @@ describe("Tracked Roth basis draw-down — full pipeline", () => {
   it("conservation: rothBasisDrawn never exceeds that year's withdrawal, and basis book-keeping is monotonically non-increasing absent new contributions", () => {
     const input = makeInput({
       individualAccounts: [
+        ...otherAccounts(1980),
         {
           name: "Roth IRA",
           category: "ira",

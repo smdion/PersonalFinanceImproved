@@ -78,8 +78,8 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       brokerage: 0,
     },
     startingBalances: {
-      preTax: 100000,
-      taxFree: 50000,
+      preTax: 110000,
+      taxFree: 40000,
       afterTax: 30000,
       afterTaxBasis: 20000,
       hsa: 15000,
@@ -270,11 +270,46 @@ describe("brokerage goals integration", () => {
     ];
 
     const input = makeInput({
-      // Balances sum to startingAccountBalances.brokerage.balance (30000,
-      // set in makeInput() below) -- a mismatch here
-      // is no longer invisible drift, it's a real correction the engine
-      // applies at end of year, and this fixture isn't testing that.
+      // Every account makeInput()'s balances hold, so the two agree; the
+      // brokerages sum to its brokerage balance (30000) -- a mismatch there
+      // is a real correction the engine applies at end of year, and this
+      // fixture isn't testing that.
       individualAccounts: [
+        {
+          name: "401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 80000,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "401k",
+          category: "401k",
+          taxType: "taxFree",
+          startingBalance: 20000,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "IRA",
+          category: "ira",
+          taxType: "preTax",
+          startingBalance: 30000,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "IRA",
+          category: "ira",
+          taxType: "taxFree",
+          startingBalance: 20000,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "HSA",
+          category: "hsa",
+          taxType: "hsa",
+          startingBalance: 15000,
+          parentCategory: "Retirement",
+        },
         {
           name: "Taxable Brokerage",
           category: "brokerage",

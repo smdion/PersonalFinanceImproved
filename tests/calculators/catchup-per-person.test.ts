@@ -80,8 +80,8 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       brokerage: 0,
     },
     startingBalances: {
-      preTax: 100000,
-      taxFree: 50000,
+      preTax: 110000,
+      taxFree: 40000,
       afterTax: 30000,
       afterTaxBasis: 20000,
       hsa: 15000,

@@ -93,8 +93,8 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       brokerage: 0,
     },
     startingBalances: {
-      preTax: 100000,
-      taxFree: 30000,
+      preTax: 80000,
+      taxFree: 150000,
       afterTax: 30000,
       afterTaxBasis: 20000,
       hsa: 15000,
@@ -116,8 +116,46 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   };
 }
 
+/** The fixture's other money, tracked as accounts so they and the
+ *  per-category balances describe the same household. A second person
+ *  owns it, the same in every case, so only the Roth owner's age differs
+ *  between the qualified and non-qualified runs. */
+function otherAccounts() {
+  const owner = {
+    ownerName: "Bob",
+    ownerPersonId: 2,
+    ownerBirthYear: 1980,
+    parentCategory: "Retirement",
+  };
+  return [
+    {
+      name: "401k",
+      category: "401k" as const,
+      taxType: "preTax",
+      startingBalance: 80000,
+      ...owner,
+    },
+    {
+      name: "HSA",
+      category: "hsa" as const,
+      taxType: "hsa",
+      startingBalance: 15000,
+      ...owner,
+    },
+    {
+      name: "Brokerage",
+      category: "brokerage" as const,
+      taxType: "afterTax",
+      startingBalance: 30000,
+      startingBasis: 20000,
+      ...owner,
+    },
+  ];
+}
+
 function makeRothIndividualAccounts(ownerBirthYear: number) {
   return [
+    ...otherAccounts(),
     {
       name: "Roth IRA",
       category: "ira" as const,

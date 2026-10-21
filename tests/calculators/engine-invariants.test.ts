@@ -7,6 +7,7 @@
  * Run time defaults to 20 runs per invariant (CI-friendly). Override with
  * FAST_CHECK_NUM_RUNS=200 for deeper stress testing (see `pnpm test:stress`).
  */
+import { withConsistentStart } from "./fixtures/engine-fixtures";
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import { calculateProjection } from "@/lib/calculators/engine";
@@ -37,91 +38,103 @@ const EPSILON = 0.011; // $0.011 rounding tolerance (cent + tiny float)
 
 /** Build a minimal valid engine input with sensible defaults. */
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
-  return {
-    accumulationDefaults: {
-      contributionRate: 0.15,
-      routingMode: "waterfall",
-      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
-      accountSplits: {
-        "401k": 0.4,
-        "403b": 0,
-        hsa: 0.1,
-        ira: 0.15,
-        brokerage: 0.35,
+  return withConsistentStart(
+    {
+      accumulationDefaults: {
+        contributionRate: 0.15,
+        routingMode: "waterfall",
+        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+        accountSplits: {
+          "401k": 0.4,
+          "403b": 0,
+          hsa: 0.1,
+          ira: 0.15,
+          brokerage: 0.35,
+        },
+        taxSplits: { "401k": 0.5, ira: 1.0 },
       },
-      taxSplits: { "401k": 0.5, ira: 1.0 },
-    },
-    decumulationDefaults: {
-      withdrawalRate: 0.04,
-      withdrawalRoutingMode: "waterfall",
-      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
-      withdrawalSplits: {
-        "401k": 0.35,
-        "403b": 0,
-        ira: 0.25,
-        brokerage: 0.3,
-        hsa: 0.1,
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        distributionTaxRates: {
+          traditionalFallbackRate: 0.22,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+        },
       },
-      withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
-      distributionTaxRates: {
-        traditionalFallbackRate: 0.22,
-        roth: 0,
+      accumulationOverrides: [],
+      decumulationOverrides: [],
+      currentAge: 35,
+      retirementAge: 65,
+      projectionEndAge: 90,
+      currentSalary: 150000,
+      salaryGrowthRate: 0.03,
+      salaryCap: null,
+      salaryOverrides: [],
+      budgetOverrides: [],
+      baseLimits: {
+        "401k": 23500,
+        "403b": 23500,
+        hsa: 4300,
+        ira: 7000,
+        brokerage: 0,
+      },
+      limitGrowthRate: 0.02,
+      catchupLimits: {
+        "401k": 7500,
+        ira: 1000,
+        hsa: 1000,
+        "401k_super": 11250,
+      },
+      employerMatchRateByCategory: {
+        "401k": 0.03,
+        "403b": 0,
         hsa: 0,
-        brokerage: 0.15,
+        ira: 0,
+        brokerage: 0,
       },
-    },
-    accumulationOverrides: [],
-    decumulationOverrides: [],
-    currentAge: 35,
-    retirementAge: 65,
-    projectionEndAge: 90,
-    currentSalary: 150000,
-    salaryGrowthRate: 0.03,
-    salaryCap: null,
-    salaryOverrides: [],
-    budgetOverrides: [],
-    baseLimits: {
-      "401k": 23500,
-      "403b": 23500,
-      hsa: 4300,
-      ira: 7000,
-      brokerage: 0,
-    },
-    limitGrowthRate: 0.02,
-    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
-    employerMatchRateByCategory: {
-      "401k": 0.03,
-      "403b": 0,
-      hsa: 0,
-      ira: 0,
-      brokerage: 0,
-    },
-    startingBalances: {
-      preTax: 100000,
-      taxFree: 50000,
-      afterTax: 30000,
-      afterTaxBasis: 20000,
-      hsa: 15000,
-    },
-    startingAccountBalances: {
-      "401k": {
-        structure: "roth_traditional",
-        traditional: 80000,
-        roth: 20000,
+      startingBalances: {
+        preTax: 110000,
+        taxFree: 40000,
+        afterTax: 30000,
+        afterTaxBasis: 20000,
+        hsa: 15000,
       },
-      "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
-      hsa: { structure: "single_bucket", balance: 15000 },
-      ira: { structure: "roth_traditional", traditional: 30000, roth: 20000 },
-      brokerage: { structure: "basis_tracking", balance: 30000, basis: 20000 },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 80000,
+          roth: 20000,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 15000 },
+        ira: { structure: "roth_traditional", traditional: 30000, roth: 20000 },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 30000,
+          basis: 20000,
+        },
+      },
+      annualExpenses: 72000,
+      inflationRate: 0.025,
+      returnRates: [{ label: "7%", rate: 0.07 }],
+      socialSecurityAnnual: 36000,
+      ssStartAge: 67,
+      asOfDate: AS_OF,
+      ...overrides,
     },
-    annualExpenses: 72000,
-    inflationRate: 0.025,
-    returnRates: [{ label: "7%", rate: 0.07 }],
-    socialSecurityAnnual: 36000,
-    ssStartAge: 67,
-    asOfDate: AS_OF,
-    ...overrides,
-  };
+    overrides,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -185,14 +198,14 @@ function arbitraryInput(): fc.Arbitrary<ProjectionInput> {
           "401k": {
             structure: "roth_traditional",
             traditional: Math.floor(r.preTaxBalance * 0.7),
-            roth: Math.floor(r.preTaxBalance * 0.3),
+            roth: Math.floor(r.rothBalance * 0.3),
           },
           "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
           hsa: { structure: "single_bucket", balance: r.hsaBalance },
           ira: {
             structure: "roth_traditional",
-            traditional: Math.floor(r.rothBalance * 0.5),
-            roth: Math.floor(r.rothBalance * 0.5),
+            traditional: r.preTaxBalance - Math.floor(r.preTaxBalance * 0.7),
+            roth: r.rothBalance - Math.floor(r.rothBalance * 0.3),
           },
           brokerage: {
             structure: "basis_tracking",
@@ -240,14 +253,14 @@ function arbitraryRetiredInput(): fc.Arbitrary<ProjectionInput> {
           "401k": {
             structure: "roth_traditional",
             traditional: Math.floor(r.preTaxBalance * 0.8),
-            roth: Math.floor(r.preTaxBalance * 0.2),
+            roth: Math.floor(r.rothBalance * 0.2),
           },
           "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
           hsa: { structure: "single_bucket", balance: r.hsaBalance },
           ira: {
             structure: "roth_traditional",
-            traditional: Math.floor(r.rothBalance * 0.6),
-            roth: Math.floor(r.rothBalance * 0.4),
+            traditional: r.preTaxBalance - Math.floor(r.preTaxBalance * 0.8),
+            roth: r.rothBalance - Math.floor(r.rothBalance * 0.2),
           },
           brokerage: {
             structure: "basis_tracking",
@@ -289,8 +302,8 @@ function arbitraryRmdInput(): fc.Arbitrary<ProjectionInput> {
         startingAccountBalances: {
           "401k": {
             structure: "roth_traditional",
-            traditional: Math.floor(r.preTaxBalance * 0.8),
-            roth: Math.floor(r.preTaxBalance * 0.2),
+            traditional: r.preTaxBalance - 30000,
+            roth: 30000,
           },
           "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
           hsa: { structure: "single_bucket", balance: 10000 },
@@ -1072,8 +1085,8 @@ describe("engine invariants", () => {
         currentSalary: 0,
         enableIrmaaAwareness: true,
         startingBalances: {
-          preTax: 800000,
-          taxFree: 100000,
+          preTax: 780000,
+          taxFree: 120000,
           afterTax: 50000,
           afterTaxBasis: 25000,
           hsa: 20000,
@@ -1127,8 +1140,8 @@ describe("engine invariants", () => {
         annualExpenses: 80000,
         returnRates: [{ label: "5%", rate: 0.05 }], // modest returns to trigger guardrails
         startingBalances: {
-          preTax: 600000,
-          taxFree: 100000,
+          preTax: 550000,
+          taxFree: 150000,
           afterTax: 50000,
           afterTaxBasis: 30000,
           hsa: 20000,
