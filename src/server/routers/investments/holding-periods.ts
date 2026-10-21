@@ -2,14 +2,22 @@
  * Holding history per tracked account (portfolioProcedure — fund names and
  * shares of each account): observed periods derived from daily holdings,
  * plus periods the household enters for the years before them (or for an
- * account with no feed). Rules live in lib/pure/holding-periods.ts.
+ * account with no feed). An account whose feeds are linked per part (a
+ * joint IRA, one feed per person and tax type) keeps one history per part;
+ * every other account one for the whole account. Rules live in
+ * lib/pure/holding-periods.ts.
  */
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { validateHoldingPeriod } from "@/lib/pure/holding-periods";
+import {
+  historyHolders,
+  holderKey,
+  isOrphaned,
+  validateHoldingPeriod,
+} from "@/lib/pure/holding-periods";
 import { fetchFundTickers } from "@/lib/sec/client";
 import { getSecContact } from "@/lib/sec/connection";
 import { syncSecurityFacts } from "@/lib/sec/facts-sync";
@@ -18,13 +26,20 @@ import { loadTrackedAccountNames } from "@/server/helpers/account-names";
 import { toFactRows } from "@/server/helpers/fund-facts";
 import { effectiveFacts } from "@/lib/pure/fund-facts";
 import { localDateStr } from "@/lib/utils/date";
-import { loadEnteredPeriods, loadObservedPeriods } from "./_shared";
+import {
+  loadEnteredPeriods,
+  loadHoldingSplits,
+  loadObservedPeriods,
+} from "./_shared";
+
+type Db = typeof import("@/lib/db").db;
 
 const PROBLEM_TEXT: Record<string, string> = {
   weightsDontSum: "The funds' shares must add up to 100%",
   badWeight: "Each fund's share must be above 0% and at most 100%",
   endBeforeStart: "The end date is before the start date",
   overlapsEntered: "This overlaps another period you entered for the account",
+  overlapsEnteredPart: "This overlaps another period you entered for this part",
   noFunds: "Add at least one fund",
   duplicateFund: "A fund is listed twice",
 };
@@ -32,6 +47,8 @@ const PROBLEM_TEXT: Record<string, string> = {
 const periodInput = z.object({
   id: z.number().int().nullable(),
   performanceAccountId: z.number().int(),
+  /** The part, for an account kept per part; null = the whole account. */
+  subKey: z.string().min(1).max(200).nullable().default(null),
   start: z.iso.date(),
   end: z.iso.date().nullable(),
   notes: z.string().trim().max(500).nullable(),
@@ -45,15 +62,57 @@ const periodInput = z.object({
     .min(1),
 });
 
+/** Who an account's history is kept for (historyHolders), with labels. */
+async function loadHolders(
+  db: Db,
+  entered: readonly { performanceAccountId: number; subKey: string | null }[],
+) {
+  const [{ splits, parts }, names] = await Promise.all([
+    loadHoldingSplits(db, entered),
+    loadTrackedAccountNames(db),
+  ]);
+  const holders = historyHolders(
+    [...names.keys()],
+    splits,
+    // Each split account's parts in name order (owner, then kind).
+    new Map(
+      [...parts].map(([id, p]) => [
+        id,
+        [...p.labels].sort((a, b) => a[1].localeCompare(b[1])).map(([k]) => k),
+      ]),
+    ),
+  ).map((h) => ({
+    ...h,
+    label:
+      h.subKey === null
+        ? splits.has(h.performanceAccountId)
+          ? "Whole account"
+          : names.get(h.performanceAccountId)!
+        : (parts.get(h.performanceAccountId)?.labels.get(h.subKey) ?? h.subKey),
+  }));
+  return { splits, names, holders };
+}
+
 export const investmentHoldingPeriodsRouter = createTRPCRouter({
-  /** Periods (observed + entered) per account, and the funds they name. */
+  /**
+   * Periods (observed + entered) per holder — the account, or each part of
+   * an account kept per part — and the funds they name. A stored period
+   * with no holder (its part is gone, or it no longer fits how the
+   * account's feeds are linked) is marked orphaned: shown, never counted.
+   */
   listHoldingPeriods: portfolioProcedure.query(async ({ ctx }) => {
-    const [observed, entered, names] = await Promise.all([
+    const [observed, entered] = await Promise.all([
       loadObservedPeriods(ctx.db),
       loadEnteredPeriods(ctx.db),
-      loadTrackedAccountNames(ctx.db),
     ]);
-    const periods = [...observed, ...entered];
+    const { splits, names, holders } = await loadHolders(ctx.db, entered);
+    const held = new Set(
+      holders.map((h) => holderKey(h.performanceAccountId, h.subKey)),
+    );
+    const periods = [...observed, ...entered].map((p) => ({
+      ...p,
+      orphaned: isOrphaned(p, held, splits),
+    }));
     const ids = [
       ...new Set(periods.flatMap((x) => Object.keys(x.weights).map(Number))),
     ];
@@ -74,10 +133,19 @@ export const investmentHoldingPeriodsRouter = createTRPCRouter({
     ]);
     const today = localDateStr();
     return {
-      accounts: [...names.entries()].map(([id, label]) => ({ id, label })),
+      accounts: [...names.entries()].map(([id, label]) => ({
+        id,
+        label,
+        /** Kept per part. */
+        split: splits.has(id),
+        /** Feeds linked both per part and to the whole account. */
+        conflict: splits.get(id)?.conflict ?? false,
+      })),
+      holders,
       periods: periods.sort(
         (a, b) =>
           a.performanceAccountId - b.performanceAccountId ||
+          (a.subKey ?? "").localeCompare(b.subKey ?? "") ||
           a.start.localeCompare(b.start),
       ),
       /** Every known fund — for picking; ones in a period first. */
@@ -106,21 +174,51 @@ export const investmentHoldingPeriodsRouter = createTRPCRouter({
   saveHoldingPeriod: portfolioProcedure
     .input(periodInput)
     .mutation(async ({ ctx, input }) => {
+      const { splits, holders } = await loadHolders(
+        ctx.db,
+        await loadEnteredPeriods(ctx.db),
+      );
+      const split = splits.get(input.performanceAccountId);
+      if (split && input.subKey === null)
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "This account's history is entered per part — pick the part",
+        });
+      if (
+        !holders.some(
+          (h) =>
+            h.performanceAccountId === input.performanceAccountId &&
+            h.subKey === input.subKey,
+        )
+      )
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: split
+            ? "That isn't one of this account's parts"
+            : "This account's history is kept for the whole account",
+        });
       return ctx.db.transaction(async (tx) => {
-        // Validated inside the transaction, so two saves at once can't
-        // both pass the overlap check.
+        // Overlaps are checked inside the transaction, so two saves at
+        // once can't both pass.
         const others = (
           await loadEnteredPeriods(tx, input.performanceAccountId)
-        ).filter((x) => x.basis === "user");
+        ).filter((x) => x.basis === "user" && x.subKey === input.subKey);
         const problems = validateHoldingPeriod(input, others);
         if (problems.length > 0)
           throw new TRPCError({
             code: "BAD_REQUEST",
-            message: problems.map((p) => PROBLEM_TEXT[p] ?? p).join("; "),
+            message: problems
+              .map((p) =>
+                p === "overlapsEntered" && input.subKey !== null
+                  ? PROBLEM_TEXT.overlapsEnteredPart
+                  : (PROBLEM_TEXT[p] ?? p),
+              )
+              .join("; "),
           });
         const p = schema.holdingPeriods;
         const values = {
           performanceAccountId: input.performanceAccountId,
+          subKey: input.subKey,
           startDate: input.start,
           endDate: input.end,
           basis: "user" as const,

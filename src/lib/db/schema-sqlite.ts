@@ -2214,6 +2214,9 @@ export const holdingPeriods = sqliteTable(
     performanceAccountId: integer("performance_account_id")
       .notNull()
       .references(() => performanceAccounts.id, { onDelete: "restrict" }),
+    /** The part of the account (snapshotAccountKey) for an account whose
+     *  feeds are linked per part; null = the whole account. */
+    subKey: text("sub_key"),
     startDate: text("start_date").notNull(),
     endDate: text("end_date"),
     basis: text("basis").$type<HoldingPeriodBasis>().notNull(),
@@ -2228,10 +2231,12 @@ export const holdingPeriods = sqliteTable(
       .default(sql`(unixepoch())`),
   },
   (table) => [
-    index("holding_periods_account_start_idx").on(
+    index("holding_periods_account_part_start_idx").on(
       table.performanceAccountId,
+      table.subKey,
       table.startDate,
     ),
+    // A part key names its own account (snapshotAccountKey starts "<id>_").
   ],
 );
 

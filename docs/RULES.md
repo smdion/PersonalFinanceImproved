@@ -247,7 +247,7 @@ Portfolio Snapshots + Performance Data + Settings
 | Household annual income            | `computeAnnualEarnings()`                | `lib/pure/household-income.ts` — salary + the resolved bonus, pre-tax money (incl. bonus-check contributions), FICA wages; the annual tax, Income card, Living Costs and MAGI all read it (never re-sum `salary`)                                           |
 | Household tax                      | `calculateHouseholdTax()`                | `lib/calculators/tax.ts` — federal on combined income, SS per person, Additional Medicare on the household above the liability row                                                                                                                          |
 | Roth IRA eligibility               | `buildRothIraView()`                     | `lib/pure/roth-ira.ts` — the Income card panel and the Roth / pro-rata recommendations read it                                                                                                                                                              |
-| Holding periods                    | `deriveObservedPeriods()` / `periodOn()` | `lib/pure/holding-periods.ts` — observed periods derived from `holding_observations` on read; entered ones in `holding_periods`                                                                                                                             |
+| Holding periods                    | `deriveObservedPeriods()` / `periodOn()` | `lib/pure/holding-periods.ts` — observed periods derived from `holding_observations` on read; entered ones in `holding_periods`; per part (`accountSplits` / `partSharesOn`) only for an account whose feeds are linked per part                            |
 
 ### Rules
 

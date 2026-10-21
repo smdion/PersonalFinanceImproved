@@ -2444,6 +2444,9 @@ export const holdingPeriods = pgTable(
     performanceAccountId: integer("performance_account_id")
       .notNull()
       .references(() => performanceAccounts.id, { onDelete: "restrict" }),
+    /** The part of the account (snapshotAccountKey) for an account whose
+     *  feeds are linked per part; null = the whole account. */
+    subKey: text("sub_key"),
     startDate: date("start_date").notNull(),
     endDate: date("end_date"),
     basis: text("basis").$type<HoldingPeriodBasis>().notNull(),
@@ -2458,13 +2461,19 @@ export const holdingPeriods = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index("holding_periods_account_start_idx").on(
+    index("holding_periods_account_part_start_idx").on(
       table.performanceAccountId,
+      table.subKey,
       table.startDate,
     ),
     check(
       "holding_periods_dates_check",
       sql`${table.endDate} IS NULL OR ${table.endDate} >= ${table.startDate}`,
+    ),
+    // A part key names its own account (snapshotAccountKey starts "<id>_").
+    check(
+      "holding_periods_sub_key_check",
+      sql`${table.subKey} IS NULL OR left(${table.subKey}, length(${table.performanceAccountId}::text) + 1) = ${table.performanceAccountId}::text || '_'`,
     ),
   ],
 );

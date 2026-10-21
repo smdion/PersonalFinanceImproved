@@ -699,6 +699,9 @@ const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.8.10: Plans are sets of profiles; per-account fromBonus; unique Plan names.
   "79acc58519aec1a6bbb497fca3bd5691f987ae6f4351b3eca06174db040571e8":
     "0009_v0810_profile_sets",
+  // v0.8.10: holding history per part (holding_periods.sub_key).
+  "63fc76f959fa22a150d4f8227fe4cdd898f2cc8eee5ecf11a049659dd67ad92d":
+    "0010_v0810_holding_period_parts",
 };
 
 /**

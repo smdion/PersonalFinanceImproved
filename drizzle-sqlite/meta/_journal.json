@@ -71,6 +71,13 @@
       "when": 1792520393852,
       "tag": "0009_v0810_profile_sets",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1792547485974,
+      "tag": "0010_v0810_holding_period_parts",
+      "breakpoints": true
     }
   ]
 }

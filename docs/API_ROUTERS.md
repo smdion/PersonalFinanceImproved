@@ -155,13 +155,13 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `investments/holding-periods`
 
-| Procedure             | Kind     | Auth                 | Description                                                                                                                                                                  |
-| --------------------- | -------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `addFundByName`       | mutation | `portfolioProcedure` | A fund with no public ticker (a workplace plan's own fund), by name. Its fee and mix are entered by hand (setUserFacts).                                                     |
-| `addFundByTicker`     | mutation | `portfolioProcedure` | A fund by its public ticker: checked against SEC's fund ticker list (no guessing — an unknown ticker is refused), reusing a row that already has it, then its facts fetched. |
-| `deleteHoldingPeriod` | mutation | `portfolioProcedure` | (no description)                                                                                                                                                             |
-| `listHoldingPeriods`  | query    | `portfolioProcedure` | Periods (observed + entered) per account, and the funds they name.                                                                                                           |
-| `saveHoldingPeriod`   | mutation | `portfolioProcedure` | Create or update an entered period with its funds, in one transaction.                                                                                                       |
+| Procedure             | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| --------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `addFundByName`       | mutation | `portfolioProcedure` | A fund with no public ticker (a workplace plan's own fund), by name. Its fee and mix are entered by hand (setUserFacts).                                                                                 |
+| `addFundByTicker`     | mutation | `portfolioProcedure` | A fund by its public ticker: checked against SEC's fund ticker list (no guessing — an unknown ticker is refused), reusing a row that already has it, then its facts fetched.                             |
+| `deleteHoldingPeriod` | mutation | `portfolioProcedure` | (no description)                                                                                                                                                                                         |
+| `listHoldingPeriods`  | query    | `portfolioProcedure` | Periods (observed + entered) per holder — the account, or each part of an account kept per part — and the funds they name. A stored period with no holder (its part is gone, or it no longer fits how th |
+| `saveHoldingPeriod`   | mutation | `portfolioProcedure` | Create or update an entered period with its funds, in one transaction.                                                                                                                                   |
 
 ## `investments/snapshot-flows`
 

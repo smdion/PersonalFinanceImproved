@@ -32,6 +32,7 @@ import {
   type TransferMatch,
 } from "@/lib/pure/internal-transfers";
 import {
+  loadAccountPartHistory,
   loadLatestSubAccounts,
   type SubAccount,
 } from "@/server/helpers/sub-accounts";
@@ -44,7 +45,9 @@ import {
 } from "@/lib/pure/snapshot-suggestions";
 import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
 import {
+  accountSplits,
   deriveObservedPeriods,
+  partKeyOf,
   type DailyPosition,
   type HoldingPeriod,
 } from "@/lib/pure/holding-periods";
@@ -73,6 +76,10 @@ export type AccountInfo = {
   balance: number | null;
   balanceDay: string | null;
   performanceAccountId: number | null;
+  /** The part it's linked to, as linked (snapshotAccountKey) — even when
+   *  that part is missing from the latest snapshot. null for a
+   *  whole-account link or a feed that counts toward nothing. */
+  subKey: string | null;
   /** From a sub-account link (null for a whole-account link or a joint sub-account). */
   ownerPersonId: number | null;
   taxType: PortfolioTaxType | null;
@@ -247,6 +254,10 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
           balance: r.lastBalance === null ? null : toNumber(r.lastBalance),
           balanceDay: r.lastBalanceDate ? utcDayOf(r.lastBalanceDate) : null,
           performanceAccountId: feeds ? r.performanceAccountId : null,
+          subKey:
+            feeds && r.performanceAccountId != null
+              ? partKeyOf(r.performanceAccountId, r.linkedSubKey)
+              : null,
           ownerPersonId: sub?.ownerPersonId ?? null,
           taxType: sub?.taxType ?? null,
         },
@@ -499,10 +510,12 @@ export async function loadDailyPositions(
   const positions: DailyPosition[] = [];
   const latest = new Map<number, string>();
   for (const r of rows) {
-    const perf = accounts.get(r.simplefinAccountId!)?.performanceAccountId;
+    const feed = accounts.get(r.simplefinAccountId!);
+    const perf = feed?.performanceAccountId;
     if (perf == null || toNumber(r.shares) === 0) continue;
     positions.push({
       performanceAccountId: perf,
+      subKey: feed!.subKey,
       feedId: r.simplefinAccountId!,
       day: r.asOf,
       securityId: r.securityId,
@@ -518,6 +531,46 @@ export async function loadDailyPositions(
 export async function loadObservedPeriods(db: Db): Promise<HoldingPeriod[]> {
   const { positions, latest } = await loadDailyPositions(db);
   return deriveObservedPeriods(positions, latest);
+}
+
+/**
+ * Which accounts keep holding history per part (accountSplits — from the
+ * counted feeds' links and the stored periods), and for those, every part
+ * they've had in any snapshot: amounts per snapshot and labels.
+ */
+export async function loadHoldingSplits(
+  db: Db,
+  entered: readonly { performanceAccountId: number; subKey: string | null }[],
+) {
+  const f = schema.simplefinAccounts;
+  const feeds = await db
+    .select({
+      performanceAccountId: f.linkedPerformanceAccountId,
+      subKey: f.linkedSubKey,
+      feedName: sql<string>`${f.orgName} || ' ' || ${f.accountName}`,
+    })
+    .from(f)
+    .where(countedFeed);
+  const splits = accountSplits(
+    feeds.map((x) => ({
+      performanceAccountId: x.performanceAccountId!,
+      subKey: partKeyOf(x.performanceAccountId!, x.subKey),
+    })),
+    entered,
+  );
+  const parts = await loadAccountPartHistory(db, [...splits.keys()]);
+  // A feed's part that no snapshot has (yet) is still a part.
+  for (const x of feeds) {
+    const key = partKeyOf(x.performanceAccountId!, x.subKey);
+    if (!key || !splits.has(x.performanceAccountId!)) continue;
+    const entry = parts.get(x.performanceAccountId!) ?? {
+      snapshots: [],
+      labels: new Map<string, string>(),
+    };
+    if (!entry.labels.has(key)) entry.labels.set(key, x.feedName);
+    parts.set(x.performanceAccountId!, entry);
+  }
+  return { splits, parts };
 }
 
 /** Stored (entered / inferred) periods with their weights. */
@@ -547,6 +600,7 @@ export async function loadEnteredPeriods(
   return periods.map((x) => ({
     id: x.id,
     performanceAccountId: x.performanceAccountId,
+    subKey: x.subKey,
     start: x.startDate,
     end: x.endDate,
     basis: x.basis,

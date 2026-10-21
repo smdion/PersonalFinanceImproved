@@ -221,6 +221,27 @@ if [[ "${SWITCHES_ON:-0}" != "0" && "$FROM_BONUS" == "0" ]]; then
 fi
 ok "Bonus switches converted ($SWITCHES_ON entries on before; $FROM_BONUS account entries taken from bonus checks)"
 
+# ── 7. Verify v0.8.10 (0010_v0810_holding_period_parts) ──────────────
+
+step "Verifying holding history per part"
+
+HAS_SUB_KEY=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='holding_periods' AND column_name='sub_key'")
+HAS_SUB_CHECK=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM pg_constraint WHERE conname='holding_periods_sub_key_check'")
+if [[ "$HAS_SUB_KEY" != "1" || "$HAS_SUB_CHECK" != "1" ]]; then
+  err "holding_periods.sub_key or its check is missing"
+  exit 1
+fi
+# A part key naming another account must be refused (e.g. account 5 with "51_…").
+if [[ "$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM performance_accounts")" != "0" ]]; then
+  BAD_INSERT=$(psql "$TEMP_URL" -tAc "INSERT INTO holding_periods (performance_account_id, sub_key, start_date, basis) SELECT id, id::text || '1_x', '2020-01-01', 'user' FROM performance_accounts ORDER BY id LIMIT 1" 2>&1 || true)
+  if ! grep -q "holding_periods_sub_key_check" <<<"$BAD_INSERT"; then
+    err "holding_periods_sub_key_check accepted another account's part key"
+    exit 1
+  fi
+fi
+WHOLE_PERIODS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM holding_periods WHERE sub_key IS NULL")
+ok "holding_periods.sub_key + check present ($WHOLE_PERIODS existing periods stay whole-account)"
+
 echo ""
 echo -e "${GREEN}${BOLD}MIGRATION TEST PASSED${NC}"
 echo "The throwaway PG container is being torn down via the trap."

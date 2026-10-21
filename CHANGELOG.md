@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- **Holding history follows each part of an account the institution reports per part.** The joint IRA's daily holdings were pooled into one mix nobody holds (e.g. 65% one person's 2055 fund / 35% the other's 2060). Now each person's Roth and Traditional part has its own history, you enter old statements per part, and the "Your mix, in index funds" benchmark combines the parts by their snapshot balances. Accounts whose parts share one feed, like a 401(k), are unchanged.
 - **Plan salaries are back.** v0.8.9 stopped reading the salaries an older Plan carried. Upgrading turns each such Plan's salaries into a Salary Profile of its own ("‹Plan› salary") and the Plan uses it.
 - Two quick edits on the Paycheck page could save over each other; each edit now saves only the field it changes.
 - **Relocation** compared contributions on base salary only. It now counts what the bonus check takes for accounts taken from bonus checks, and figures the employer match the same way as the Contributions page.
@@ -32,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Upgrading
 
 - The upgrade converts your data: each person's "Bonus goes to" choice into their Salary Profile entries; the Salary Profile bonus switches into each payroll account's "Also taken from bonus checks" in every Contribution Profile (each follows the Salary Profile its Plans use it with, else the active one; where Salary Profiles disagreed, the upgrade log says which it used); duplicate Plan names get a number. It then removes what v0.8.10 no longer uses (Plans' stored salaries, Budget columns' own profiles). Going back to v0.8.9 afterwards needs the backup taken before the upgrade — restore it together with the v0.8.9 image.
+- Holding history periods entered before this version are whole-account. On an account now kept per part, each shows under the account as needing a part — move it to the right part or delete it; it isn't counted until then.
 
 ---
 
