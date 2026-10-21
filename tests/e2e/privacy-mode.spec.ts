@@ -55,6 +55,16 @@ async function visibleText(page: Page): Promise<string> {
   });
 }
 
+/** Amounts arrive via client queries after hydration — slow CI runners
+ *  need more than expect.poll's 5 s default. */
+async function expectAmountsShown(page: Page, shown: boolean) {
+  await expect
+    .poll(async () => DOLLAR_AMOUNT.test(await visibleText(page)), {
+      timeout: 30_000,
+    })
+    .toBe(shown);
+}
+
 async function waitForContent(page: Page) {
   await page.waitForLoadState("networkidle");
   await expect
@@ -106,28 +116,19 @@ test.describe("Privacy mode", () => {
     page,
     context,
   }) => {
+    // Several waits of up to 30 s each (content, then amounts, three times
+    // over) — the 30 s default test timeout cut a slow CI run off mid-wait.
+    test.setTimeout(3 * 60_000);
     // Not the dashboard: on a fresh install (CI's SQLite demo database has
     // no household) "/" opens the first-run wizard as a full-screen modal
     // that intercepts clicks on the sidebar toggle. Net Worth always renders
     // amounts ($0.00 on an empty database) and has no wizard.
     await page.goto("/networth");
     await waitForContent(page);
-    await expect
-      .poll(async () => DOLLAR_AMOUNT.test(await visibleText(page)), {
-        // Amounts arrive via client queries after hydration — slow CI runners
-        // need more than expect.poll's 5 s default.
-        timeout: 30_000,
-      })
-      .toBe(true);
+    await expectAmountsShown(page, true);
 
     await page.getByRole("button", { name: "Hide amounts" }).first().click();
-    await expect
-      .poll(async () => DOLLAR_AMOUNT.test(await visibleText(page)), {
-        // Amounts arrive via client queries after hydration — slow CI runners
-        // need more than expect.poll's 5 s default.
-        timeout: 30_000,
-      })
-      .toBe(false);
+    await expectAmountsShown(page, false);
     const cookies = await context.cookies();
     expect(cookies.find((c) => c.name === PRIVACY_COOKIE)?.value).toBe("1");
 
@@ -137,13 +138,7 @@ test.describe("Privacy mode", () => {
     expect(DOLLAR_AMOUNT.test(await visibleText(page))).toBe(false);
 
     await page.getByRole("button", { name: "Show amounts" }).first().click();
-    await expect
-      .poll(async () => DOLLAR_AMOUNT.test(await visibleText(page)), {
-        // Amounts arrive via client queries after hydration — slow CI runners
-        // need more than expect.poll's 5 s default.
-        timeout: 30_000,
-      })
-      .toBe(true);
+    await expectAmountsShown(page, true);
     expect(
       (await context.cookies()).find((c) => c.name === PRIVACY_COOKIE),
     ).toBeUndefined();
