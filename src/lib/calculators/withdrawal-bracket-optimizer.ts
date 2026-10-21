@@ -22,6 +22,7 @@
  * answer "what's the earliest coast age" without becoming part of the
  * engine itself.
  */
+import { withControlledOverrides } from "@/lib/pure/controlled-overrides";
 import { calculateProjection } from "./engine";
 import type {
   ProjectionInput,
@@ -141,7 +142,12 @@ function buildCandidateInput(
   };
   return {
     ...input,
-    decumulationOverrides: [...input.decumulationOverrides, override],
+    // The candidate's fields win over the saved rows' — a saved later-year
+    // row must not quietly undo the target being scored.
+    decumulationOverrides: withControlledOverrides(
+      input.decumulationOverrides,
+      [override],
+    ),
   };
 }
 

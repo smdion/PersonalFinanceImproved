@@ -123,13 +123,19 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
       };
 
       if (writeVia) {
-        writeVia(newValue).then(settle, (err) => {
-          settle();
-          revert();
-          if (process.env.NODE_ENV !== "production") {
-            console.warn(`usePersistedSetting(${key}) write failed`, err);
-          }
-        });
+        // Refresh the settings list before the guard clears (the default
+        // path's onSuccess does the same): the hook reads the DB value as
+        // soon as no write is pending, so a stale list would show the old
+        // value right after a successful write.
+        writeVia(newValue)
+          .then(() => utils.settings.appSettings.list.invalidate())
+          .then(settle, (err) => {
+            settle();
+            revert();
+            if (process.env.NODE_ENV !== "production") {
+              console.warn(`usePersistedSetting(${key}) write failed`, err);
+            }
+          });
         return;
       }
 
@@ -146,14 +152,20 @@ export function usePersistedSetting<T extends string | number | boolean | null>(
         },
       );
     },
-    [key, upsert, writeVia],
+    [key, upsert, writeVia, utils],
   );
 
   // The DB value as soon as it's loaded (unless a write is in flight) —
   // the effect above only keeps localValue/localStorage in step with it.
+  // A key the DB doesn't have is its default — never a stale localStorage
+  // value from an older session (the DB is the source of truth).
   const dbEntry = settings?.find((s) => s.key === key);
   const value =
-    !writing && dbEntry !== undefined ? (dbEntry.value as T) : localValue;
+    writing || settings === undefined
+      ? localValue
+      : dbEntry !== undefined
+        ? (dbEntry.value as T)
+        : defaultValue;
   return [value, setValue, settings !== undefined];
 }
 

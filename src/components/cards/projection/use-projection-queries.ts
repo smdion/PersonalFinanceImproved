@@ -12,7 +12,7 @@ import {
 import {
   PROJECTION_STALE_TIME_MS,
   PROJECTION_DEBOUNCE_MS,
-  MC_DEFAULT_TRIALS,
+  DEFAULT_SIMULATION,
 } from "@/lib/constants";
 import type {
   MonteCarloPercentileBand,
@@ -241,8 +241,11 @@ export function useProjectionQueries(
 
   // --- Mutations ---
   const utils = trpc.useUtils();
-  const invalidateEngine = () =>
-    utils.projection.computeProjection.invalidate();
+  // Saved Changes by year / salary / budget overrides are read server-side
+  // by every projection procedure (omitted inputs = the saved rows), so a
+  // save refreshes all of them — not just computeProjection — or stress
+  // tests, Coast FIRE, tax optimization and peeks keep pre-save results.
+  const invalidateEngine = () => utils.projection.invalidate();
   const createSalaryOverride =
     trpc.retirement.retirementSalaryOverrides.create.useMutation({
       onSuccess: invalidateEngine,
@@ -499,8 +502,8 @@ export function useProjectionQueries(
   // server-side run instead of resetting to indeterminate.
   const mcPrefetchQueryInput = useMemo(
     () => ({
-      numTrials: MC_DEFAULT_TRIALS,
-      preset: "default" as const,
+      numTrials: DEFAULT_SIMULATION.numTrials,
+      preset: DEFAULT_SIMULATION.preset,
       taxMode: mcTaxMode,
       ...debouncedBaseInput,
     }),
@@ -703,8 +706,8 @@ export function useProjectionQueries(
   // cost for a scenario most households won't open every visit.
   const rateSeededMcQueryInput = useMemo(
     () => ({
-      numTrials: MC_DEFAULT_TRIALS,
-      preset: "default" as const,
+      numTrials: DEFAULT_SIMULATION.numTrials,
+      preset: DEFAULT_SIMULATION.preset,
       taxMode: mcTaxMode,
       ...debouncedBaseInput,
       rateSeededDecumulationYear1: true,

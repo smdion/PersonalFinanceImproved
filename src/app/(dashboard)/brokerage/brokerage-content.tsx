@@ -132,9 +132,28 @@ export function BrokerageContent() {
     return Array.from(byYear.values()).sort((a, b) => a.year - b.year);
   }, [brokerageLumpSums]);
 
+  // The household's saved Changes by year still apply: sending only the
+  // lump sums would replace them (an omitted list = the saved rows, a sent
+  // one = exactly that list). Merge by year — the saved row keeps its
+  // fields, and the year's lump sums are both lists'.
+  const savedAccumQuery = trpc.retirement.projectionOverrides.get.useQuery({
+    overrideType: "accumulation",
+  });
+  const mergedAccumOverrides: AccumOverride[] | null = React.useMemo(() => {
+    if (accumOverridesFromLumpSums.length === 0) return null;
+    const byYear = new Map<number, AccumOverride>();
+    for (const o of (savedAccumQuery.data ?? []) as AccumOverride[])
+      byYear.set(o.year, { ...o, lumpSums: [...(o.lumpSums ?? [])] });
+    for (const o of accumOverridesFromLumpSums) {
+      const row = byYear.get(o.year);
+      if (row) row.lumpSums = [...(row.lumpSums ?? []), ...(o.lumpSums ?? [])];
+      else byYear.set(o.year, o);
+    }
+    return Array.from(byYear.values()).sort((a, b) => a.year - b.year);
+  }, [accumOverridesFromLumpSums, savedAccumQuery.data]);
   const engineInput = {
-    ...(accumOverridesFromLumpSums.length > 0
-      ? { accumulationOverrides: accumOverridesFromLumpSums }
+    ...(mergedAccumOverrides
+      ? { accumulationOverrides: mergedAccumOverrides }
       : {}),
     ...(activeProfileId != null
       ? { contributionProfileId: activeProfileId }
@@ -148,8 +167,16 @@ export function BrokerageContent() {
     ...salaryProfileInput,
   } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
 
-  const { data, isLoading, error } =
-    trpc.projection.computeProjection.useQuery(engineInput);
+  // With lump sums, wait for the saved rows they're merged into.
+  const engineReady =
+    !mergedAccumOverrides || savedAccumQuery.data !== undefined;
+  const projectionQuery = trpc.projection.computeProjection.useQuery(
+    engineInput,
+    { enabled: engineReady },
+  );
+  const { data, error } = projectionQuery;
+  const isLoading =
+    projectionQuery.isLoading || (!engineReady && !projectionQuery.data);
   const { data: contribData } =
     trpc.contribution.computeSummary.useQuery(contribInput);
   const { data: brokerageData } = trpc.brokerage.computeSummary.useQuery();

@@ -26,6 +26,7 @@
  * below only needs to say WHICH profile / budget / snapshot to read. This
  * mirrors `computeProjection`'s input (`scenarios.ts`) field-for-field.
  */
+import { withControlledOverrides } from "@/lib/pure/controlled-overrides";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
@@ -174,10 +175,12 @@ async function runProjection(
     ),
     accumulationOverrides:
       overrides.accumulationOverrides as AccumulationOverride[],
-    decumulationOverrides: [
-      ...(overrides.decumulationOverrides as DecumulationOverride[]),
-      ...extraDecumulationOverrides,
-    ],
+    // The what-if's fields win over the saved rows' (a saved later-year
+    // row must not quietly undo the comparison).
+    decumulationOverrides: withControlledOverrides(
+      overrides.decumulationOverrides as DecumulationOverride[],
+      extraDecumulationOverrides,
+    ),
   };
 
   return {

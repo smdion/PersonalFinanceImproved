@@ -87,13 +87,18 @@ export function RetirementContent() {
     [baseInput],
   );
   const debouncedEngineInput = useDebouncedValue(engineInput, 600);
+  const queryEnabled = plan.ready && debouncedEngineInput === engineInput;
   const projectionQuery = trpc.projection.computeProjection.useQuery(
     debouncedEngineInput,
-    { placeholderData: (prev) => prev, enabled: plan.ready },
+    // Ready, and the debounce has caught up with it — the debounced value
+    // can still be the input from before settings loaded.
+    { placeholderData: (prev) => prev, enabled: queryEnabled },
   );
   const { data, isFetching, error } = projectionQuery;
-  // Not ready = still loading (a disabled query reports isLoading false).
-  const isLoading = projectionQuery.isLoading || !plan.ready;
+  // Waiting to run = still loading (a disabled query reports isLoading
+  // false, which would read as "no projection").
+  const isLoading =
+    projectionQuery.isLoading || (!queryEnabled && !projectionQuery.data);
   // Lazy-load strategy comparison only when expanded
   const [comparisonExpanded, setComparisonExpanded] =
     usePersistedSetting<boolean>("retirement_comparison_expanded", false);
@@ -101,6 +106,7 @@ export function RetirementContent() {
   const { data: comparisonData, isLoading: comparisonLoading } =
     trpc.projection.computeStrategyComparison.useQuery(comparisonInput, {
       enabled:
+        plan.ready &&
         (comparisonExpanded || pageTab === "comparison") &&
         !isLoading &&
         !isFetching,

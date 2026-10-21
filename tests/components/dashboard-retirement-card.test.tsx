@@ -171,7 +171,9 @@ describe("RetirementCard nest egg: simulated or baseline", () => {
     coastFireMcPeekData = { result: null };
     render(<RetirementCard />);
     expect(screen.getByText(/baseline — fixed returns/)).toBeInTheDocument();
-    expect(screen.getByText("Open the Retirement page")).toBeInTheDocument();
+    expect(
+      screen.getByText("Run a simulation on the Retirement page"),
+    ).toBeInTheDocument();
   });
 });
 

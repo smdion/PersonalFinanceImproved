@@ -56,9 +56,7 @@ function RetirementCardImpl() {
   );
   const { data: coastFireData } = trpc.projection.computeCoastFire.useQuery(
     engineInput,
-    {
-      staleTime: 60_000,
-    },
+    { staleTime: 60_000, enabled: ready },
   );
   // Peek-only reads of the persistent projection cache — never trigger a
   // fresh Monte Carlo run (that's a multi-second, rate-limited operation),
@@ -152,13 +150,15 @@ function RetirementCardImpl() {
     yearsToRet > 0 && inflRate > 0
       ? nestEggNominal / Math.pow(1 + inflRate, yearsToRet)
       : nestEggNominal;
+  // Already retired: the figure is today's, so the label says today's age.
+  const nestEggAge = Math.max(retAge, currentAge);
   // Simulated when the Retirement page has run one for these inputs, else
   // the baseline — the same rule the page's hero uses.
   const firstYear = result.projectionByYear[0]?.year ?? 0;
   const nestEggDisplay = simulatedOrBaseline({
     bands: mcPeek?.result?.percentileBands,
     baseline: nestEgg,
-    targetAge: Math.max(retAge, currentAge),
+    targetAge: nestEggAge,
     toDisplay: (value, year) =>
       inflRate > 0 ? value / Math.pow(1 + inflRate, year - firstYear) : value,
     personFiltered: false,
@@ -178,7 +178,7 @@ function RetirementCardImpl() {
             <>
               <Metric
                 value={formatCurrency(nestEggDisplay.median)}
-                label={`Nest egg at age ${retAge} (today's $, simulated median)`}
+                label={`Nest egg at age ${nestEggAge} (today's $, simulated median)`}
               />
               <div className="text-caption text-faint mt-1 leading-tight">
                 Range {formatCurrency(nestEggDisplay.low)} –{" "}
@@ -190,13 +190,13 @@ function RetirementCardImpl() {
             <>
               <Metric
                 value={formatCurrency(nestEggDisplay.baseline)}
-                label={`Nest egg at age ${retAge} (today's $, baseline — fixed returns)`}
+                label={`Nest egg at age ${nestEggAge} (today's $, baseline — fixed returns)`}
               />
               <div className="text-caption text-faint mt-1 leading-tight">
                 <Link href="/retirement" className="underline">
-                  Open the Retirement page
+                  Run a simulation on the Retirement page
                 </Link>{" "}
-                to update the simulation.
+                to see the simulated range.
               </div>
             </>
           )}

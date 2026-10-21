@@ -205,6 +205,9 @@ export const strategyRouter = createTRPCRouter({
       const inputHash = hashEngineInput("strategyComparison", {
         baseEngineInput,
         mcBaseEngineInput,
+        // The saved Changes by year every strategy runs with — a new saved
+        // row must miss the cache, not serve the comparison without it.
+        savedOverrides: saved,
         decumulationDefaults: baseDecumulationDefaults,
         hasMcData,
         mcAssetClasses,

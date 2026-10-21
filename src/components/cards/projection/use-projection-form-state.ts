@@ -2,6 +2,7 @@
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import {
   useCallback,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
@@ -115,17 +116,35 @@ export function useProjectionFormState() {
     : decumQuery.data && decumQuery.data.length > 0
       ? (decumQuery.data as DecumOverride[])
       : decumOverridesLocal;
+  // The first edit applies to the saved rows the section is showing, not
+  // the empty local list — otherwise deleting one saved row after a reload
+  // saved [] (all gone) and adding one saved only the new row. The refs
+  // flip at once, so two edits in one tick don't both start from the DB.
+  const accumTouchedRef = useRef(false);
+  const decumTouchedRef = useRef(false);
   const setAccumOverrides: React.Dispatch<
     React.SetStateAction<AccumOverride[]>
   > = (updater) => {
+    const wasTouched = accumTouchedRef.current;
+    accumTouchedRef.current = true;
+    const saved = (accumQuery.data as AccumOverride[] | undefined) ?? [];
     setAccumTouched(true);
-    setAccumOverridesRaw(updater);
+    setAccumOverridesRaw((local) => {
+      const prev = wasTouched ? local : saved;
+      return typeof updater === "function" ? updater(prev) : updater;
+    });
   };
   const setDecumOverrides: React.Dispatch<
     React.SetStateAction<DecumOverride[]>
   > = (updater) => {
+    const wasTouched = decumTouchedRef.current;
+    decumTouchedRef.current = true;
+    const saved = (decumQuery.data as DecumOverride[] | undefined) ?? [];
     setDecumTouched(true);
-    setDecumOverridesRaw(updater);
+    setDecumOverridesRaw((local) => {
+      const prev = wasTouched ? local : saved;
+      return typeof updater === "function" ? updater(prev) : updater;
+    });
   };
 
   // --- Override form UI state ---

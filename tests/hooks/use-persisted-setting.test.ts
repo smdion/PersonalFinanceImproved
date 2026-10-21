@@ -44,6 +44,16 @@ beforeEach(() => {
 });
 
 describe("usePersistedSetting", () => {
+  it("a key the loaded DB doesn't have reads as the default, not a stale local value", () => {
+    localStorage.setItem("setting:my_key", JSON.stringify("stale"));
+    listQuery.mockReturnValue({ data: [{ key: "other", value: 1 }] });
+    const { result } = renderHook(() =>
+      usePersistedSetting("my_key", "default"),
+    );
+    expect(result.current[0]).toBe("default");
+    expect(result.current[2]).toBe(true);
+  });
+
   it("returns the DB value in the same render it loads, and says it's loaded", () => {
     // A query input built from this setting must not fire once with the
     // default first ($0 contributions, the wrong profile).

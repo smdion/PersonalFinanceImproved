@@ -1155,6 +1155,27 @@ describe("projection router — computeStrategyComparison", () => {
     }
   });
 
+  it("a newly saved Changes by year row reaches the comparison (no stale cache hit)", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      const fixedEnd = async () =>
+        (await caller.projection.computeStrategyComparison()).strategies.find(
+          (st) => st.strategy === "fixed",
+        )!.endRetirementBalance;
+      const before = await fixedEnd();
+      await caller.retirement.projectionOverrides.save({
+        overrideType: "accumulation",
+        overrides: [
+          { year: new Date().getFullYear() + 2, contributionRate: 0 },
+        ],
+      });
+      expect(await fixedEnd()).toBeLessThan(before);
+    } finally {
+      cleanup();
+    }
+  });
+
   it("year-by-year data is populated for decumulation years", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
