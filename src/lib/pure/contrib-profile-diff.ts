@@ -9,6 +9,8 @@
  * doesn't. This computes the human-readable diff shown before that swap.
  */
 
+import { takesFromBonusCheck } from "@/lib/calculators/paycheck";
+
 export type ContribFieldSet = {
   contributionValue?: string | number | null;
   contributionMethod?: string | null;
@@ -17,6 +19,8 @@ export type ContribFieldSet = {
   employerMaxMatchPct?: string | number | null;
   autoMaximize?: boolean | null;
   isActive?: boolean | null;
+  /** Also taken from bonus checks — absent means no. */
+  fromBonus?: boolean | null;
   /** Cosmetic only — deliberately excluded from the comparison below. */
   displayNameCustom?: string | null;
   /** @deprecated legacy key. */
@@ -26,6 +30,9 @@ export type ContribFieldSet = {
 export type DiffAccount = {
   id: number;
   accountName: string;
+  /** Paid through payroll — only then does `fromBonus` mean anything
+   *  (takesFromBonusCheck). Absent = yes. */
+  isPayroll?: boolean;
   live: ContribFieldSet;
 };
 
@@ -42,16 +49,37 @@ const COMPARED_FIELDS = [
   "isActive",
 ] as const;
 
-function fieldsDiffer(a: ContribFieldSet, b: ContribFieldSet): boolean {
-  return COMPARED_FIELDS.some((field) => a[field] !== b[field]);
+function fieldsDiffer(
+  a: ContribFieldSet,
+  b: ContribFieldSet,
+  isPayroll: boolean,
+): boolean {
+  return (
+    COMPARED_FIELDS.some((field) => a[field] !== b[field]) ||
+    // Absent means no, so absent and false are the same election.
+    takesFromBonusCheck({
+      isPayrollDeducted: isPayroll,
+      fromBonus: a.fromBonus ?? undefined,
+    }) !==
+      takesFromBonusCheck({
+        isPayrollDeducted: isPayroll,
+        fromBonus: b.fromBonus ?? undefined,
+      })
+  );
 }
 
-function formatValue(fields: ContribFieldSet): string {
+function formatValue(fields: ContribFieldSet, isPayroll: boolean): string {
   if (fields.isActive === false) return "excluded";
   const isPercent = fields.contributionMethod === "percent_of_salary";
   const value = fields.contributionValue;
   if (value == null) return "using account's own value";
-  return isPercent ? `${value}%` : String(value);
+  const amount = isPercent ? `${value}%` : String(value);
+  return takesFromBonusCheck({
+    isPayrollDeducted: isPayroll,
+    fromBonus: fields.fromBonus ?? undefined,
+  })
+    ? `${amount} + bonus checks`
+    : amount;
 }
 
 /**
@@ -77,13 +105,14 @@ export function diffContribProfileSwap(
         ? incomingFields
         : account.live;
 
-    if (!fieldsDiffer(outgoingFields, effectiveIncoming)) continue;
+    const isPayroll = account.isPayroll !== false;
+    if (!fieldsDiffer(outgoingFields, effectiveIncoming, isPayroll)) continue;
 
-    const from = formatValue(outgoingFields);
+    const from = formatValue(outgoingFields, isPayroll);
     const to =
       incomingFields && Object.keys(incomingFields).length > 0
-        ? formatValue(incomingFields)
-        : `using account's own value (currently ${formatValue(account.live)})`;
+        ? formatValue(incomingFields, isPayroll)
+        : `using account's own value (currently ${formatValue(account.live, isPayroll)})`;
     lines.push(`${account.accountName}: ${from} → ${to}`);
   }
   return lines;

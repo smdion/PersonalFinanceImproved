@@ -375,7 +375,7 @@ describe("UpdatePerformanceForm", () => {
     // Click the override ("edit") button next to account 1's computed
     // gain/loss — it seeds the manual field with the current computed value.
     // Both rows render this button; account 1 (Fidelity) is first.
-    fireEvent.click(screen.getAllByTitle("Override with manual value")[0]);
+    fireEvent.click(screen.getAllByTitle("Enter the value yourself")[0]);
     expect(screen.getByText("manual")).toBeInTheDocument();
 
     // Change the manual override input to a different value.

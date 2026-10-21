@@ -5,13 +5,13 @@
  *  expensive query before rendering this. */
 
 import { SinceSnapshotBanner } from "@/components/portfolio/account-live-data";
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { HoldingHistorySection } from "@/components/investments/holding-history-section";
 import { HOLDING_HISTORY_ANCHOR } from "@/lib/config/page-links";
-import { Card } from "@/components/ui/card";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import {
   formatCurrency,
   formatPercent,
@@ -204,6 +204,18 @@ export function PortfolioContent() {
     EDIT_LOCK_KEYS.portfolioSnapshotEditLocked,
   );
   const [showHistory, setShowHistory] = useState(false);
+  // Holding history is collapsed like the other sections, and opens when
+  // a link lands on it (Benchmarks → "#holding-history").
+  const [showHoldings, setShowHoldings] = useState(false);
+  useEffect(() => {
+    const openOnHash = () => {
+      if (window.location.hash === `#${HOLDING_HISTORY_ANCHOR}`)
+        setShowHoldings(true);
+    };
+    openOnHash();
+    window.addEventListener("hashchange", openOnHash);
+    return () => window.removeEventListener("hashchange", openOnHash);
+  }, []);
   const [showChart, setShowChart] = useState(false);
   const [showQuickLook, setShowQuickLook] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -494,449 +506,419 @@ export function PortfolioContent() {
       {/* Snapshot history (paginated, collapsed by default) */}
       <CardBoundary title="Snapshot History">
         {paginatedSnapshots && paginatedSnapshots.totalCount > 0 && (
-          <div className="mt-6">
-            <button
-              type="button"
-              onClick={() => setShowHistory(!showHistory)}
-              className="bg-surface-primary hover:bg-surface-sunken flex w-full items-center justify-between rounded-lg border px-5 py-3 shadow-sm transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <span
-                  className={`text-faint text-xs transition-transform ${showHistory ? "rotate-90" : ""}`}
-                >
-                  &#9654;
-                </span>
-                <span className="text-primary font-semibold">
-                  Snapshot History
-                </span>
-                <span className="text-faint text-xs">
-                  ({paginatedSnapshots.totalCount} snapshot
-                  {paginatedSnapshots.totalCount !== 1 ? "s" : ""})
-                </span>
+          <CollapsibleSection
+            className="mt-6"
+            title="Snapshot History"
+            meta={`(${paginatedSnapshots.totalCount} snapshot${paginatedSnapshots.totalCount !== 1 ? "s" : ""})`}
+            open={showHistory}
+            onToggle={() => setShowHistory(!showHistory)}
+          >
+            {/* Date range filter + Show All toggle */}
+            <div className="mb-4 flex flex-wrap items-end gap-3">
+              <div>
+                <label className="text-muted mb-1 block text-xs font-medium">
+                  From
+                </label>
+                <input
+                  type="date"
+                  value={snapshotDateFrom}
+                  onChange={(e) => {
+                    setSnapshotDateFrom(e.target.value);
+                    setSnapshotPage(1);
+                  }}
+                  className="border-strong rounded border px-2 py-1 text-sm"
+                />
               </div>
-              <span className="text-faint text-xs">
-                {showHistory ? "Click to collapse" : "Click to expand"}
+              <div>
+                <label className="text-muted mb-1 block text-xs font-medium">
+                  To
+                </label>
+                <input
+                  type="date"
+                  value={snapshotDateTo}
+                  onChange={(e) => {
+                    setSnapshotDateTo(e.target.value);
+                    setSnapshotPage(1);
+                  }}
+                  className="border-strong rounded border px-2 py-1 text-sm"
+                />
+              </div>
+              {(snapshotDateFrom || snapshotDateTo) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSnapshotDateFrom("");
+                    setSnapshotDateTo("");
+                    setSnapshotPage(1);
+                  }}
+                  className="pb-1 text-xs font-medium text-indigo-600 hover:text-indigo-800"
+                >
+                  Clear filters
+                </button>
+              )}
+              <div className="flex-1" />
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAll(!showAll);
+                  setSnapshotPage(1);
+                }}
+                className={`pb-1 text-xs font-medium ${showAll ? "text-indigo-600 hover:text-indigo-800" : "text-muted hover:text-secondary"}`}
+              >
+                {showAll ? "Paginate (52/page)" : "Show all"}
+              </button>
+              <span className="text-faint pb-1 text-xs">
+                {paginatedSnapshots.totalCount} snapshot
+                {paginatedSnapshots.totalCount !== 1 ? "s" : ""}
               </span>
-            </button>
+            </div>
 
-            {showHistory && (
-              <Card className="mt-0 rounded-t-none border-t-0">
-                {/* Date range filter + Show All toggle */}
-                <div className="mb-4 flex flex-wrap items-end gap-3">
-                  <div>
-                    <label className="text-muted mb-1 block text-xs font-medium">
-                      From
-                    </label>
-                    <input
-                      type="date"
-                      value={snapshotDateFrom}
-                      onChange={(e) => {
-                        setSnapshotDateFrom(e.target.value);
-                        setSnapshotPage(1);
-                      }}
-                      className="border-strong rounded border px-2 py-1 text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-muted mb-1 block text-xs font-medium">
-                      To
-                    </label>
-                    <input
-                      type="date"
-                      value={snapshotDateTo}
-                      onChange={(e) => {
-                        setSnapshotDateTo(e.target.value);
-                        setSnapshotPage(1);
-                      }}
-                      className="border-strong rounded border px-2 py-1 text-sm"
-                    />
-                  </div>
-                  {(snapshotDateFrom || snapshotDateTo) && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSnapshotDateFrom("");
-                        setSnapshotDateTo("");
-                        setSnapshotPage(1);
-                      }}
-                      className="pb-1 text-xs font-medium text-indigo-600 hover:text-indigo-800"
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th
+                      className="text-muted hover:text-primary cursor-pointer py-2 pr-4 text-left font-medium select-none"
+                      onClick={() => toggleSort("date")}
                     >
-                      Clear filters
-                    </button>
-                  )}
-                  <div className="flex-1" />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowAll(!showAll);
-                      setSnapshotPage(1);
-                    }}
-                    className={`pb-1 text-xs font-medium ${showAll ? "text-indigo-600 hover:text-indigo-800" : "text-muted hover:text-secondary"}`}
-                  >
-                    {showAll ? "Paginate (52/page)" : "Show all"}
-                  </button>
-                  <span className="text-faint pb-1 text-xs">
-                    {paginatedSnapshots.totalCount} snapshot
-                    {paginatedSnapshots.totalCount !== 1 ? "s" : ""}
-                  </span>
-                </div>
-
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b">
-                        <th
-                          className="text-muted hover:text-primary cursor-pointer py-2 pr-4 text-left font-medium select-none"
-                          onClick={() => toggleSort("date")}
+                      Date{sortIndicator("date")}
+                    </th>
+                    <th
+                      className="text-muted hover:text-primary cursor-pointer px-4 py-2 text-right font-medium select-none"
+                      onClick={() => toggleSort("total")}
+                    >
+                      Total{sortIndicator("total")}
+                    </th>
+                    <th
+                      className="text-muted hover:text-primary cursor-pointer px-4 py-2 text-right font-medium select-none"
+                      onClick={() => toggleSort("accounts")}
+                    >
+                      Accounts{sortIndicator("accounts")}
+                    </th>
+                    <th
+                      className="text-muted hover:text-primary cursor-pointer px-4 py-2 text-right font-medium select-none"
+                      onClick={() => toggleSort("change")}
+                    >
+                      Change{sortIndicator("change")}
+                    </th>
+                    <th
+                      className="text-muted hover:text-primary cursor-pointer px-4 py-2 text-right font-medium select-none"
+                      onClick={() => toggleSort("changePct")}
+                    >
+                      Change %{sortIndicator("changePct")}
+                    </th>
+                    <th className="text-muted px-4 py-2 text-right font-medium">
+                      Gap
+                    </th>
+                    <th className="text-muted px-4 py-2 text-left font-medium">
+                      Notes
+                    </th>
+                    <th className="py-2 pl-4" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedSnapshots.map((snap, _i) => {
+                    const delta = snap.delta;
+                    const isExpanded = expandedSnapshot === snap.id;
+                    // Compare against the globally-latest snapshot date
+                    // (from computeSummary) rather than array position —
+                    // rawSnapshots[0] is only the latest when sorted by
+                    // date, and sortCol can be Total/Change/etc.
+                    const isLatest =
+                      !!snapshotDate && snap.snapshotDate === snapshotDate;
+                    return (
+                      <React.Fragment key={snap.id}>
+                        <tr
+                          className={`border-subtle hover:bg-surface-sunken cursor-pointer border-b ${isExpanded ? "bg-surface-sunken" : ""}`}
+                          onClick={() =>
+                            setExpandedSnapshot(isExpanded ? null : snap.id)
+                          }
                         >
-                          Date{sortIndicator("date")}
-                        </th>
-                        <th
-                          className="text-muted hover:text-primary cursor-pointer px-4 py-2 text-right font-medium select-none"
-                          onClick={() => toggleSort("total")}
-                        >
-                          Total{sortIndicator("total")}
-                        </th>
-                        <th
-                          className="text-muted hover:text-primary cursor-pointer px-4 py-2 text-right font-medium select-none"
-                          onClick={() => toggleSort("accounts")}
-                        >
-                          Accounts{sortIndicator("accounts")}
-                        </th>
-                        <th
-                          className="text-muted hover:text-primary cursor-pointer px-4 py-2 text-right font-medium select-none"
-                          onClick={() => toggleSort("change")}
-                        >
-                          Change{sortIndicator("change")}
-                        </th>
-                        <th
-                          className="text-muted hover:text-primary cursor-pointer px-4 py-2 text-right font-medium select-none"
-                          onClick={() => toggleSort("changePct")}
-                        >
-                          Change %{sortIndicator("changePct")}
-                        </th>
-                        <th className="text-muted px-4 py-2 text-right font-medium">
-                          Gap
-                        </th>
-                        <th className="text-muted px-4 py-2 text-left font-medium">
-                          Notes
-                        </th>
-                        <th className="py-2 pl-4" />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedSnapshots.map((snap, _i) => {
-                        const delta = snap.delta;
-                        const isExpanded = expandedSnapshot === snap.id;
-                        // Compare against the globally-latest snapshot date
-                        // (from computeSummary) rather than array position —
-                        // rawSnapshots[0] is only the latest when sorted by
-                        // date, and sortCol can be Total/Change/etc.
-                        const isLatest =
-                          !!snapshotDate && snap.snapshotDate === snapshotDate;
-                        return (
-                          <React.Fragment key={snap.id}>
-                            <tr
-                              className={`border-subtle hover:bg-surface-sunken cursor-pointer border-b ${isExpanded ? "bg-surface-sunken" : ""}`}
-                              onClick={() =>
-                                setExpandedSnapshot(isExpanded ? null : snap.id)
-                              }
-                            >
-                              <td className="py-2 pr-4 font-medium">
-                                <span className="inline-flex items-center gap-1">
-                                  <span
-                                    className={`text-caption text-faint transition-transform ${isExpanded ? "rotate-90" : ""}`}
-                                  >
-                                    &#9654;
-                                  </span>
-                                  {formatDate(snap.snapshotDate, "medium")}
-                                  {syncPending?.snapshotId === snap.id && (
-                                    <span
-                                      className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800"
-                                      title={`${syncPending.count} balance change(s) not pushed to ${syncServiceLabel} yet`}
-                                    >
-                                      unsynced
-                                    </span>
-                                  )}
+                          <td className="py-2 pr-4 font-medium">
+                            <span className="inline-flex items-center gap-1">
+                              <span
+                                className={`text-caption text-faint transition-transform ${isExpanded ? "rotate-90" : ""}`}
+                              >
+                                &#9654;
+                              </span>
+                              {formatDate(snap.snapshotDate, "medium")}
+                              {syncPending?.snapshotId === snap.id && (
+                                <span
+                                  className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800"
+                                  title={`${syncPending.count} balance change(s) not pushed to ${syncServiceLabel} yet`}
+                                >
+                                  unsynced
                                 </span>
-                              </td>
-                              <td className="px-4 py-2 text-right font-medium">
-                                {formatCurrency(snap.total)}
-                              </td>
-                              <td className="text-muted px-4 py-2 text-right">
-                                {snap.accountCount}
-                              </td>
-                              <td
-                                className={`px-4 py-2 text-right text-xs ${delta !== null ? gainLossTextColor(delta) : "text-faint"}`}
-                              >
-                                {delta !== null ? (
-                                  <>
-                                    <span aria-hidden="true">
-                                      {delta > 0
-                                        ? "\u25b2 "
-                                        : delta < 0
-                                          ? "\u25bc "
-                                          : ""}
-                                    </span>
-                                    {`${delta >= 0 ? "+" : ""}${formatCurrency(delta)}`}
-                                    <span className="sr-only">
-                                      {delta > 0
-                                        ? " increase from previous snapshot"
-                                        : delta < 0
-                                          ? " decrease from previous snapshot"
-                                          : " no change from previous snapshot"}
-                                    </span>
-                                  </>
-                                ) : (
-                                  "\u2014"
-                                )}
-                              </td>
-                              <td
-                                className={`px-4 py-2 text-right text-xs ${snap.deltaPct !== null ? gainLossTextColor(snap.deltaPct) : "text-faint"}`}
-                              >
-                                {snap.deltaPct !== null
-                                  ? `${snap.deltaPct >= 0 ? "+" : ""}${formatPercent(snap.deltaPct / 100, 2)}`
-                                  : "\u2014"}
-                              </td>
-                              <td className="text-faint px-4 py-2 text-right text-xs">
-                                {snap.daysSincePrev != null
-                                  ? `${snap.daysSincePrev}d`
-                                  : "\u2014"}
-                              </td>
-                              <td className="text-muted max-w-[200px] truncate px-4 py-2 text-xs">
-                                {snap.notes ?? ""}
-                              </td>
-                              <td
-                                className="py-2 pl-4"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <div className="flex items-center justify-end gap-3">
-                                  {canEdit && (
-                                    <button
-                                      disabled={resyncPush.isPending}
-                                      onClick={async () => {
-                                        if (!isLatest) {
-                                          const confirmed = await confirm(
-                                            `Resync snapshot from ${snap.snapshotDate}? This is NOT the latest snapshot — resyncing it will leave later snapshots inconsistent in YNAB. Continue?`,
-                                          );
-                                          if (!confirmed) return;
-                                        }
-                                        try {
-                                          const result =
-                                            await resyncPush.mutateAsync({
-                                              snapshotId: snap.id,
-                                              confirmNonLatest: !isLatest,
-                                            });
-                                          alert(
-                                            `Resync complete: posted ${result.posted}, cleaned ${result.cleaned}.`,
-                                          );
-                                        } catch (e) {
-                                          alert(
-                                            `Resync failed: ${e instanceof Error ? e.message : "Unknown error"}`,
-                                          );
-                                        }
-                                      }}
-                                      className="text-muted hover:text-primary text-xs disabled:opacity-50"
-                                    >
-                                      {resyncPush.isPending &&
-                                      resyncPush.variables?.snapshotId ===
-                                        snap.id
-                                        ? "Resyncing…"
-                                        : "Resync"}
-                                    </button>
-                                  )}
-                                  {canEdit && !isLatest && (
-                                    <button
-                                      onClick={async () => {
-                                        if (
-                                          await confirm(
-                                            `Delete snapshot from ${snap.snapshotDate}?`,
-                                          )
-                                        ) {
-                                          deleteSnapshot.mutate({
-                                            id: snap.id,
-                                          });
-                                        }
-                                      }}
-                                      className="text-xs text-red-400 hover:text-red-600"
-                                    >
-                                      Delete
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                            {isExpanded && snap.accounts && (
-                              <tr>
-                                <td colSpan={6} className="px-0 py-0">
-                                  <div className="bg-surface-sunken px-8 py-2">
-                                    {isLatest && canEdit && (
-                                      <div
-                                        className="mb-2 space-y-2"
-                                        onClick={(e) => e.stopPropagation()}
-                                      >
-                                        {/* One padlock for the whole panel — no
+                              )}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-right font-medium">
+                            {formatCurrency(snap.total)}
+                          </td>
+                          <td className="text-muted px-4 py-2 text-right">
+                            {snap.accountCount}
+                          </td>
+                          <td
+                            className={`px-4 py-2 text-right text-xs ${delta !== null ? gainLossTextColor(delta) : "text-faint"}`}
+                          >
+                            {delta !== null ? (
+                              <>
+                                <span aria-hidden="true">
+                                  {delta > 0
+                                    ? "\u25b2 "
+                                    : delta < 0
+                                      ? "\u25bc "
+                                      : ""}
+                                </span>
+                                {`${delta >= 0 ? "+" : ""}${formatCurrency(delta)}`}
+                                <span className="sr-only">
+                                  {delta > 0
+                                    ? " increase from previous snapshot"
+                                    : delta < 0
+                                      ? " decrease from previous snapshot"
+                                      : " no change from previous snapshot"}
+                                </span>
+                              </>
+                            ) : (
+                              "\u2014"
+                            )}
+                          </td>
+                          <td
+                            className={`px-4 py-2 text-right text-xs ${snap.deltaPct !== null ? gainLossTextColor(snap.deltaPct) : "text-faint"}`}
+                          >
+                            {snap.deltaPct !== null
+                              ? `${snap.deltaPct >= 0 ? "+" : ""}${formatPercent(snap.deltaPct / 100, 2)}`
+                              : "\u2014"}
+                          </td>
+                          <td className="text-faint px-4 py-2 text-right text-xs">
+                            {snap.daysSincePrev != null
+                              ? `${snap.daysSincePrev}d`
+                              : "\u2014"}
+                          </td>
+                          <td className="text-muted max-w-[200px] truncate px-4 py-2 text-xs">
+                            {snap.notes ?? ""}
+                          </td>
+                          <td
+                            className="py-2 pl-4"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="flex items-center justify-end gap-3">
+                              {canEdit && (
+                                <button
+                                  disabled={resyncPush.isPending}
+                                  onClick={async () => {
+                                    if (!isLatest) {
+                                      const confirmed = await confirm(
+                                        `Resync snapshot from ${snap.snapshotDate}? This is NOT the latest snapshot — resyncing it will leave later snapshots inconsistent in YNAB. Continue?`,
+                                      );
+                                      if (!confirmed) return;
+                                    }
+                                    try {
+                                      const result =
+                                        await resyncPush.mutateAsync({
+                                          snapshotId: snap.id,
+                                          confirmNonLatest: !isLatest,
+                                        });
+                                      alert(
+                                        `Resync complete: posted ${result.posted}, cleaned ${result.cleaned}.`,
+                                      );
+                                    } catch (e) {
+                                      alert(
+                                        `Resync failed: ${e instanceof Error ? e.message : "Unknown error"}`,
+                                      );
+                                    }
+                                  }}
+                                  className="text-muted hover:text-primary text-xs disabled:opacity-50"
+                                >
+                                  {resyncPush.isPending &&
+                                  resyncPush.variables?.snapshotId === snap.id
+                                    ? "Resyncing…"
+                                    : "Resync"}
+                                </button>
+                              )}
+                              {canEdit && !isLatest && (
+                                <button
+                                  onClick={async () => {
+                                    if (
+                                      await confirm(
+                                        `Delete snapshot from ${snap.snapshotDate}?`,
+                                      )
+                                    ) {
+                                      deleteSnapshot.mutate({
+                                        id: snap.id,
+                                      });
+                                    }
+                                  }}
+                                  className="text-xs text-red-400 hover:text-red-600"
+                                >
+                                  Delete
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                        {isExpanded && snap.accounts && (
+                          <tr>
+                            <td colSpan={6} className="px-0 py-0">
+                              <div className="bg-surface-sunken px-8 py-2">
+                                {isLatest && canEdit && (
+                                  <div
+                                    className="mb-2 space-y-2"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {/* One padlock for the whole panel — no
                                             per-value pencils. Locked by default. */}
-                                        <div className="flex items-center gap-2 text-xs">
-                                          <EditLockToggle
-                                            locked={snapshotEditLocked}
-                                            onToggle={toggleSnapshotEditLock}
-                                          />
-                                          <span className="text-muted">
-                                            {snapshotEditLocked
-                                              ? "Balances are locked. Unlock to fix a wrong balance in this snapshot."
-                                              : `Click a balance to fix it — changes save immediately.${
-                                                  budgetApiConnected
-                                                    ? ` A "Sync to ${syncServiceLabel}" button appears here after an edit.`
-                                                    : ""
-                                                }`}
-                                          </span>
-                                        </div>
-                                        {syncPending?.snapshotId ===
-                                          snap.id && (
-                                          <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
-                                            <span className="text-xs font-medium text-amber-900">
-                                              {syncPending.count} balance change
-                                              {syncPending.count === 1
-                                                ? ""
-                                                : "s"}{" "}
-                                              not pushed to {syncServiceLabel}{" "}
-                                              yet.
-                                            </span>
-                                            <button
-                                              type="button"
-                                              disabled={resyncPush.isPending}
-                                              onClick={(e) => {
-                                                e.stopPropagation();
-                                                void syncPendingSnapshot(
-                                                  snap.id,
-                                                );
-                                              }}
-                                              className="shrink-0 rounded bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
-                                            >
-                                              {resyncPush.isPending
-                                                ? "Syncing…"
-                                                : `Sync to ${syncServiceLabel}`}
-                                            </button>
-                                          </div>
-                                        )}
+                                    <div className="flex items-center gap-2 text-xs">
+                                      <EditLockToggle
+                                        locked={snapshotEditLocked}
+                                        onToggle={toggleSnapshotEditLock}
+                                      />
+                                      <span className="text-muted">
+                                        {snapshotEditLocked
+                                          ? "Balances are locked. Unlock to fix a wrong balance in this snapshot."
+                                          : `Click a balance to fix it — changes save immediately.${
+                                              budgetApiConnected
+                                                ? ` A "Sync to ${syncServiceLabel}" button appears here after an edit.`
+                                                : ""
+                                            }`}
+                                      </span>
+                                    </div>
+                                    {syncPending?.snapshotId === snap.id && (
+                                      <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2">
+                                        <span className="text-xs font-medium text-amber-900">
+                                          {syncPending.count} balance change
+                                          {syncPending.count === 1
+                                            ? ""
+                                            : "s"}{" "}
+                                          not pushed to {syncServiceLabel} yet.
+                                        </span>
+                                        <button
+                                          type="button"
+                                          disabled={resyncPush.isPending}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            void syncPendingSnapshot(snap.id);
+                                          }}
+                                          className="shrink-0 rounded bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
+                                        >
+                                          {resyncPush.isPending
+                                            ? "Syncing…"
+                                            : `Sync to ${syncServiceLabel}`}
+                                        </button>
                                       </div>
                                     )}
-                                    {groupByPerformanceAccount(
-                                      snap.accounts,
-                                    ).map((group) => (
-                                      <div
-                                        key={group.key}
-                                        className="mb-2 last:mb-0"
-                                      >
-                                        {/* Group header — performance account name + subtotal */}
-                                        <div className="flex items-baseline justify-between border-b py-1">
-                                          <span className="text-primary text-xs font-semibold">
-                                            {group.perfName}
-                                          </span>
-                                          <span className="text-primary text-xs font-semibold">
-                                            {formatCurrency(group.total)}
-                                          </span>
-                                        </div>
-                                        {/* Sub-rows */}
-                                        {group.accounts.map((a) => {
-                                          const subLabel = buildSubRowLabel(
-                                            a,
-                                            group,
-                                          );
-                                          return (
-                                            <div
-                                              key={a.id}
-                                              className="border-subtle flex items-baseline justify-between border-b py-0.5 pl-4"
-                                            >
-                                              <span className="text-muted text-xs">
-                                                {subLabel}
-                                              </span>
-                                              {isLatest &&
-                                              canEdit &&
-                                              !snapshotEditLocked ? (
-                                                <span
-                                                  onClick={(e) =>
-                                                    e.stopPropagation()
-                                                  }
-                                                >
-                                                  <InlineEdit
-                                                    value={String(a.amount)}
-                                                    type="number"
-                                                    hideEditIcon
-                                                    className="text-secondary text-xs"
-                                                    formatDisplay={(v) =>
-                                                      formatCurrency(Number(v))
-                                                    }
-                                                    parseInput={(raw) =>
-                                                      raw.replace(
-                                                        /[^0-9.]/g,
-                                                        "",
-                                                      )
-                                                    }
-                                                    onSave={(v) =>
-                                                      handleBalanceEdit(
-                                                        a.id,
-                                                        snap.id,
-                                                        snap.snapshotDate,
-                                                        v,
-                                                      )
-                                                    }
-                                                  />
-                                                </span>
-                                              ) : (
-                                                <span className="text-secondary text-xs">
-                                                  {formatCurrency(a.amount)}
-                                                </span>
-                                              )}
-                                            </div>
-                                          );
-                                        })}
-                                      </div>
-                                    ))}
                                   </div>
-                                </td>
-                              </tr>
-                            )}
-                          </React.Fragment>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                                )}
+                                {groupByPerformanceAccount(snap.accounts).map(
+                                  (group) => (
+                                    <div
+                                      key={group.key}
+                                      className="mb-2 last:mb-0"
+                                    >
+                                      {/* Group header — performance account name + subtotal */}
+                                      <div className="flex items-baseline justify-between border-b py-1">
+                                        <span className="text-primary text-xs font-semibold">
+                                          {group.perfName}
+                                        </span>
+                                        <span className="text-primary text-xs font-semibold">
+                                          {formatCurrency(group.total)}
+                                        </span>
+                                      </div>
+                                      {/* Sub-rows */}
+                                      {group.accounts.map((a) => {
+                                        const subLabel = buildSubRowLabel(
+                                          a,
+                                          group,
+                                        );
+                                        return (
+                                          <div
+                                            key={a.id}
+                                            className="border-subtle flex items-baseline justify-between border-b py-0.5 pl-4"
+                                          >
+                                            <span className="text-muted text-xs">
+                                              {subLabel}
+                                            </span>
+                                            {isLatest &&
+                                            canEdit &&
+                                            !snapshotEditLocked ? (
+                                              <span
+                                                onClick={(e) =>
+                                                  e.stopPropagation()
+                                                }
+                                              >
+                                                <InlineEdit
+                                                  value={String(a.amount)}
+                                                  type="number"
+                                                  hideEditIcon
+                                                  className="text-secondary text-xs"
+                                                  formatDisplay={(v) =>
+                                                    formatCurrency(Number(v))
+                                                  }
+                                                  parseInput={(raw) =>
+                                                    raw.replace(/[^0-9.]/g, "")
+                                                  }
+                                                  onSave={(v) =>
+                                                    handleBalanceEdit(
+                                                      a.id,
+                                                      snap.id,
+                                                      snap.snapshotDate,
+                                                      v,
+                                                    )
+                                                  }
+                                                />
+                                              </span>
+                                            ) : (
+                                              <span className="text-secondary text-xs">
+                                                {formatCurrency(a.amount)}
+                                              </span>
+                                            )}
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  ),
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-                {/* Pagination controls (hidden when showing all) */}
-                {!showAll && paginatedSnapshots.totalPages > 1 && (
-                  <div className="mt-4 flex items-center justify-between border-t pt-3">
-                    <button
-                      type="button"
-                      onClick={() => setSnapshotPage((p) => Math.max(1, p - 1))}
-                      disabled={snapshotPage <= 1}
-                      className="text-muted hover:text-primary border-strong rounded border px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      Prev
-                    </button>
-                    <span className="text-muted text-sm">
-                      Page {paginatedSnapshots.page} of{" "}
-                      {paginatedSnapshots.totalPages}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setSnapshotPage((p) =>
-                          Math.min(paginatedSnapshots.totalPages, p + 1),
-                        )
-                      }
-                      disabled={snapshotPage >= paginatedSnapshots.totalPages}
-                      className="text-muted hover:text-primary border-strong rounded border px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      Next
-                    </button>
-                  </div>
-                )}
-              </Card>
+            {/* Pagination controls (hidden when showing all) */}
+            {!showAll && paginatedSnapshots.totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-between border-t pt-3">
+                <button
+                  type="button"
+                  onClick={() => setSnapshotPage((p) => Math.max(1, p - 1))}
+                  disabled={snapshotPage <= 1}
+                  className="text-muted hover:text-primary border-strong rounded border px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Prev
+                </button>
+                <span className="text-muted text-sm">
+                  Page {paginatedSnapshots.page} of{" "}
+                  {paginatedSnapshots.totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSnapshotPage((p) =>
+                      Math.min(paginatedSnapshots.totalPages, p + 1),
+                    )
+                  }
+                  disabled={snapshotPage >= paginatedSnapshots.totalPages}
+                  className="text-muted hover:text-primary border-strong rounded border px-3 py-1 text-sm disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
             )}
-          </div>
+          </CollapsibleSection>
         )}
       </CardBoundary>
       {/* Account & Contribution Settings — unified table for goal/owner/contributions */}
@@ -950,7 +932,13 @@ export function PortfolioContent() {
       {hasPermission(user, "portfolio") && (
         <CardBoundary title="Holding history">
           <div id={HOLDING_HISTORY_ANCHOR} className="mt-8 scroll-mt-4">
-            <HoldingHistorySection />
+            <CollapsibleSection
+              title="Holding history"
+              open={showHoldings}
+              onToggle={() => setShowHoldings(!showHoldings)}
+            >
+              <HoldingHistorySection />
+            </CollapsibleSection>
           </div>
         </CardBoundary>
       )}

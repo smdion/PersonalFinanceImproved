@@ -14,8 +14,10 @@ import {
   w4FilingStatusSchema,
   payPeriodSchema,
   payWeekSchema,
+  bonusDestinationSchema,
   zDecimal,
 } from "@/lib/config/enum-values";
+import { isCalendarDate } from "@/lib/utils/date";
 
 // ── Primitives & re-usable fragments ────────────────────────────
 
@@ -39,16 +41,6 @@ export const columnLabelsSchema = z.array(z.string().min(1)).min(1);
 
 /** budget_profiles.column_months — per-column month counts (nullable) */
 export const columnMonthsSchema = z.array(z.number().min(0)).nullable();
-
-/** budget_profiles.column_contribution_profile_ids — per-column profile refs (nullable) */
-export const columnContributionProfileIdsSchema = z
-  .array(z.number().int().nullable())
-  .nullable();
-
-/** budget_profiles.column_salary_profile_ids — per-column profile refs (nullable) */
-export const columnSalaryProfileIdsSchema = z
-  .array(z.number().int().nullable())
-  .nullable();
 
 // ── budget_items ────────────────────────────────────────────────
 
@@ -134,17 +126,6 @@ export const accountMappingsSchema = z.array(accountMappingSchema).nullable();
 /** api_connections.skipped_category_ids (nullable) */
 export const skippedCategoryIdsSchema = z.array(z.string()).nullable();
 
-// ── scenarios ───────────────────────────────────────────────────
-
-/**
- * scenarios.overrides — nested map: { entityType: { recordId: { field: value } } }
- * Also used by contribution_profiles.contribution_active_fields.
- */
-export const scenarioOverridesSchema = z.record(
-  z.string(),
-  z.record(z.string(), z.record(z.string(), settingValueSchema)),
-);
-
 // ── relocation_scenarios ────────────────────────────────────────
 
 const yearAdjustmentSchema = z.object({
@@ -214,9 +195,8 @@ const yearlyGrowthEntrySchema = z.object({
  * A Salary Profile entry's `extraPaycheckRouting` field — see
  * ExtraPaycheckRoutingData in schema-pg.ts for the full field-by-field
  * rationale (this schema mirrors that type exactly). Moved here from
- * `jobs.extra_paycheck_routing` because it's the same category of fact as
- * `include401kInBonus`/`includeBonusInContributions` above: a comp-layer
- * decision about how this job's pay gets treated, not a job identity fact.
+ * `jobs.extra_paycheck_routing` because it's a comp-layer decision about how
+ * this job's pay gets treated, not a job identity fact.
  * `.strict()` for the same reason as salaryEntrySchema itself.
  */
 export const extraPaycheckRoutingSchema = z
@@ -237,7 +217,7 @@ export const extraPaycheckRoutingSchema = z
 /**
  * salary_profiles.salaries — jobId → salary entry.
  *
- * A job either has a COMPLETE entry (all seventeen fields, a real
+ * A job either has a COMPLETE entry (every required field, a real
  * self-contained set of numbers/elections for this profile) or no key at
  * all (this profile says nothing about that job, which resolves to
  * $0/no bonus/incomplete — never a fallback to some other value). There is
@@ -261,32 +241,38 @@ export const extraPaycheckRoutingSchema = z
  */
 export const salaryEntrySchema = z
   .object({
-    salary: z.number(),
+    salary: z.number().nonnegative(),
     /** Fraction, not percent: 0.12 = 12%. Matches the bonus % shown in the UI. */
-    bonusPercent: z.number(),
-    bonusMultiplier: z.number(),
-    monthsInBonusYear: z.number(),
+    bonusPercent: z.number().nonnegative(),
+    bonusMultiplier: z.number().nonnegative(),
+    monthsInBonusYear: z.number().min(0).max(12),
     /** This year's actual paid-out bonus, pinned once known — orthogonal to
      *  the formula fields above, which growth/projection math always uses
      *  untouched. Only the live Paycheck display reads this. */
-    bonusOverride: z.number().nullable(),
+    bonusOverride: z.number().nonnegative().nullable(),
     payPeriod: payPeriodSchema,
     payWeek: payWeekSchema,
     /** `null` is a real, complete value ("no anchor, use start date"). */
-    anchorPayDate: z.string().nullable(),
-    budgetPeriodsPerMonth: z.number().nullable(),
+    anchorPayDate: z
+      .string()
+      .refine(isCalendarDate, "Not a date (YYYY-MM-DD, 1900-2100)")
+      .nullable(),
+    /** null = the pay schedule's usual number. */
+    budgetPeriodsPerMonth: z.number().positive().nullable(),
     w4FilingStatus: w4FilingStatusSchema,
     w4Box2cChecked: z.boolean(),
-    additionalFedWithholding: z.number(),
+    additionalFedWithholding: z.number().nonnegative(),
     /** 1-12, month when bonus is typically paid (null = unknown/spread). */
-    bonusMonth: z.number().nullable(),
+    bonusMonth: z.number().int().min(1).max(12).nullable(),
     /** 1-31, day of month when bonus is paid (null = first period of month). */
-    bonusDayOfMonth: z.number().nullable(),
-    include401kInBonus: z.boolean(),
-    includeBonusInContributions: z.boolean(),
+    bonusDayOfMonth: z.number().int().min(1).max(31).nullable(),
     /** `null` is a real, complete value ("no extra-paycheck routing
      *  configured for this job"). See extraPaycheckRoutingSchema above. */
     extraPaycheckRouting: extraPaycheckRoutingSchema.nullable(),
+    /** Where this job's bonus goes: into the budget (absent) or extra
+     *  spending outside it — Living Costs shows its take-home as its own
+     *  bar. */
+    bonusDestination: bonusDestinationSchema.optional(),
     /** Other pay per check, by paycheck_earnings id (amount ≥ 0). Absent =
      *  none — the same as `{}`, so older entries need no backfill. */
     otherEarnings: z
@@ -313,9 +299,8 @@ export const salaryEntriesSchema = z.record(z.string(), salaryEntrySchema);
  * surfaced by getIncompleteContribAccountIds. Every other field here stays
  * genuinely optional — those describe account behavior a profile MAY
  * customize, not "the" value.
- * contribution_profiles.contribution_active_fields uses
- * scenarioOverridesSchema at the structural level but the leaf objects have
- * a known shape.
+ * contribution_profiles.contribution_active_fields is an EntityFieldMap
+ * (schema-pg.ts) whose leaf objects have this known shape.
  */
 /**
  * Base shape, all fields optional — used directly (without the refine
@@ -336,6 +321,9 @@ export const contribAccountActiveFieldsPatchSchema = z
     employerMaxMatchPct: z.union([z.string(), z.number()]).optional(),
     autoMaximize: z.boolean().optional(),
     isActive: z.boolean().optional(),
+    /** Also taken from bonus checks (bonusCheckContribution — the one
+     *  gate). Absent = no. */
+    fromBonus: z.boolean().optional(),
     /** A custom display label for this account within this profile —
      *  cosmetic, not financial (was `displayNameActive`, whose `Active`
      *  suffix falsely implied it behaves like `isActive` for swap-safety —

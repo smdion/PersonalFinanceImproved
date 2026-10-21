@@ -38,6 +38,9 @@ export type RawContrib = {
   targetAnnual: string | null;
   allocationPriority: number;
   notes: string | null;
+  isPayrollDeducted?: boolean | null;
+  /** Also taken from bonus checks (a Contribution Profile election). */
+  fromBonus?: boolean;
   displayNameCustom?: string;
   /** @deprecated legacy key — see json-schemas.ts. */
   displayNameActive?: string;

@@ -9,7 +9,11 @@
  * month's first observed day (shares drift with prices — the daily data
  * says where they really were); otherwise the entered period covering the
  * month's first day (constant weights, i.e. rebalanced monthly). Accounts
- * are weighted by their beginning-of-year balance. A month counts only
+ * are weighted by their beginning-of-year balance. An account kept per part
+ * (accountSplits — a joint IRA with one feed per person) is built per part
+ * the same way and the parts combined by their snapshot shares
+ * (partSharesOn); when every part with money has daily data that month,
+ * that is the account's pooled daily mix. A month counts only
  * when every account with money that year is covered and the share with a
  * known mix and an index proxy reaches HOLDINGS_MIN_COVERAGE; the rest is
  * reported as excluded. Fund mixes are today's facts — a target-date fund
@@ -30,7 +34,13 @@ import {
 } from "@/lib/pure/benchmark-yearly";
 import { portfolioBuckets, type EffectiveFacts } from "@/lib/pure/fund-facts";
 import { sumBy } from "@/lib/utils/math";
-import { periodOn, type HoldingPeriod } from "@/lib/pure/holding-periods";
+import {
+  holderKey,
+  partSharesOn,
+  periodOn,
+  type HoldingPeriod,
+  type SnapshotParts,
+} from "@/lib/pure/holding-periods";
 
 export type MatchedMixInput = {
   /** Calendar years to build (ascending). */
@@ -44,6 +54,15 @@ export type MatchedMixInput = {
     number,
     readonly { day: string; weights: Record<number, number> }[]
   >;
+  /** Accounts kept per part (accountSplits); absent = whole account. */
+  splits: ReadonlyMap<number, { conflict: boolean }>;
+  /** holderKey → daily fund weights of that part (split accounts). */
+  observedDailyByPart: ReadonlyMap<
+    string,
+    readonly { day: string; weights: Record<number, number> }[]
+  >;
+  /** Split account → its snapshots' part amounts, ascending by date. */
+  partSnapshots: ReadonlyMap<number, readonly SnapshotParts[]>;
   facts: ReadonlyMap<number, EffectiveFacts>;
   /** Month-end prices per bucket's proxy (null = not priced). */
   proxyPrices: Readonly<Record<CompositionBucket, MonthlyPrices | null>>;
@@ -57,16 +76,27 @@ export type MatchedMixLevels = {
   excludedShare: number;
 };
 
-/** account → "YYYY-MM" → weights on the month's first observed day. */
+type Observed = Map<
+  number | string,
+  Map<string, { day: string; weights: Record<number, number> }>
+>;
+
+/** account (or holderKey) → "YYYY-MM" → the month's first observed day and its weights. */
 function firstObservedByMonth(
-  observedDaily: MatchedMixInput["observedDaily"],
-): Map<number, Map<string, Record<number, number>>> {
-  const out = new Map<number, Map<string, Record<number, number>>>();
+  observedDaily: ReadonlyMap<
+    number | string,
+    readonly { day: string; weights: Record<number, number> }[]
+  >,
+): Observed {
+  const out: Observed = new Map();
   for (const [accountId, days] of observedDaily) {
-    const byMonth = new Map<string, Record<number, number>>();
+    const byMonth = new Map<
+      string,
+      { day: string; weights: Record<number, number> }
+    >();
     for (const d of days) {
       const key = d.day.slice(0, 7);
-      if (!byMonth.has(key)) byMonth.set(key, d.weights);
+      if (!byMonth.has(key)) byMonth.set(key, d);
     }
     out.set(accountId, byMonth);
   }
@@ -75,22 +105,59 @@ function firstObservedByMonth(
 
 function fundWeightsFor(
   input: MatchedMixInput,
-  observed: Map<number, Map<string, Record<number, number>>>,
+  observed: Observed,
+  observedByPart: Observed,
   accountId: number,
   year: number,
   month: number,
 ): Record<number, number> | null {
   const key = monthKey(year, month);
+  const firstDay = `${key}-01`;
   const firstObserved = observed.get(accountId)?.get(key);
-  if (firstObserved) return firstObserved;
-  const p = periodOn(input.periods, accountId, `${key}-01`);
-  return p ? p.weights : null;
+  const split = input.splits.get(accountId);
+  if (!split) {
+    if (firstObserved) return firstObserved.weights;
+    const p = periodOn(input.periods, accountId, null, firstDay);
+    return p ? p.weights : null;
+  }
+  // Part feeds and a whole-account feed at once: not guessed.
+  if (split.conflict) return null;
+  const shares = partSharesOn(
+    input.partSnapshots.get(accountId) ?? [],
+    firstDay,
+  );
+  if (shares.size === 0) return null;
+  const partWeights = [...shares].map(([part, share]) => {
+    const seen = observedByPart.get(holderKey(accountId, part))?.get(key);
+    return {
+      share,
+      seen,
+      weights:
+        seen?.weights ??
+        periodOn(input.periods, accountId, part, firstDay)?.weights,
+    };
+  });
+  // Every part with money first reported on the account's first observed
+  // day of the month: that day's pooled holdings are the account's real
+  // mix. (A part that starts later in the month isn't in that day.)
+  if (
+    firstObserved &&
+    partWeights.every((x) => x.seen?.day === firstObserved.day)
+  )
+    return firstObserved.weights;
+  if (partWeights.some((x) => !x.weights)) return null;
+  const out: Record<number, number> = {};
+  for (const { share, weights } of partWeights)
+    for (const [id, w] of Object.entries(weights!))
+      out[Number(id)] = (out[Number(id)] ?? 0) + share * w;
+  return out;
 }
 
 /** Bucket weights for a month (renormalized over priced buckets), or null when not covered. */
 function monthBuckets(
   input: MatchedMixInput,
-  observed: Map<number, Map<string, Record<number, number>>>,
+  observed: Observed,
+  observedByPart: Observed,
   year: number,
   month: number,
 ): {
@@ -104,7 +171,14 @@ function monthBuckets(
   const holdings: { value: number; facts: EffectiveFacts }[] = [];
   for (const [accountId, value] of values) {
     if (value <= 0) continue;
-    const w = fundWeightsFor(input, observed, accountId, year, month);
+    const w = fundWeightsFor(
+      input,
+      observed,
+      observedByPart,
+      accountId,
+      year,
+      month,
+    );
     if (!w) return null;
     for (const [id, share] of Object.entries(w)) {
       const facts = input.facts.get(Number(id));
@@ -134,10 +208,11 @@ export function matchedMixLevels(input: MatchedMixInput): MatchedMixLevels {
   let firstMonth: string | null = null;
   let excludedShare = 0;
   const observed = firstObservedByMonth(input.observedDaily);
+  const observedByPart = firstObservedByMonth(input.observedDailyByPart);
   for (const year of input.years)
     for (let month = 1; month <= 12; month++) {
       const [py, pm] = previousMonth(year, month);
-      const mix = monthBuckets(input, observed, year, month);
+      const mix = monthBuckets(input, observed, observedByPart, year, month);
       let ret: number | null = mix ? 0 : null;
       if (mix)
         for (const [b, w] of Object.entries(mix.weights) as [

@@ -17,18 +17,18 @@ Framework: [Vitest](https://vitest.dev/) with globals enabled. E2E: [Playwright]
 
 | Suite             | Files | Tests | Purpose                                                                                          |
 | ----------------- | ----- | ----- | ------------------------------------------------------------------------------------------------ |
-| **Calculators**   | 52    | 934   | Unit tests for every calculator module + logic gaps + spending strategies + invariants/snapshots |
+| **Calculators**   | 51    | 934   | Unit tests for every calculator module + logic gaps + spending strategies + invariants/snapshots |
 | **Benchmarks**    | 11    | 88    | Validates engine against published research and institutional data                               |
 | **Config**        | 15    | 308   | Account types, IRS limits, RMD tables, tax parameter freshness + key completeness                |
 | **Edge Cases**    | 1     | 56    | Boundary and extreme inputs across all calculators                                               |
-| **Components**    | 85    | 748   | UI component behavior + dashboard cards + error boundary + sidebar                               |
+| **Components**    | 86    | 748   | UI component behavior + dashboard cards + error boundary + sidebar                               |
 | **Hooks**         | 15    | 85    | React hook unit tests (renderHook)                                                               |
 | **Accessibility** | 1     | 13    | axe-core ARIA/a11y checks on UI components                                                       |
 | **Integration**   | 2     | 70    | Zod schema validation for tRPC inputs and JSONB columns                                          |
-| **Routers**       | 68    | 1574  | tRPC router integration tests (all routers + auth enforcement)                                   |
-| **Helpers**       | 23    | 328   | Server helper unit tests (budget, contribution, salary, snapshot, transforms, settings)          |
+| **Routers**       | 69    | 1574  | tRPC router integration tests (all routers + auth enforcement)                                   |
+| **Helpers**       | 24    | 328   | Server helper unit tests (budget, contribution, salary, snapshot, transforms, settings)          |
 | **Pure**          | 84    | 1034  | Business logic extracted per RULES.md's DB-transaction-free pure-function rule                   |
-| **DB**            | 13    | 353   | Schema/migration/dialect-compat unit tests (SQLite + PostgreSQL)                                 |
+| **DB**            | 15    | 353   | Schema/migration/dialect-compat unit tests (SQLite + PostgreSQL)                                 |
 | **Server**        | 7     | 65    | Auth callback + server-only helper unit tests                                                    |
 | **Budget API**    | 6     | 151   | Budget API provider abstraction (Actual/YNAB clients, factory, conversions, resilience)          |
 | **SimpleFIN**     | 5     | 64    | SimpleFIN client, ingest + sync logic                                                            |
@@ -38,7 +38,7 @@ Framework: [Vitest](https://vitest.dev/) with globals enabled. E2E: [Playwright]
 | **Lint**          | 3     | 64    | RULES.md rule sweeps + repo-convention checks                                                    |
 | **E2E**           | 14    | 42    | Playwright smoke tests (health, navigation, page flows)                                          |
 
-Total: **<!-- AUTO-GEN:totalTests -->5978<!-- /AUTO-GEN --> tests** across **<!-- AUTO-GEN:vitestFiles -->407<!-- /AUTO-GEN --> vitest files** + **42 Playwright E2E tests** (<!-- AUTO-GEN:e2eFiles -->14<!-- /AUTO-GEN --> files).
+Total: **<!-- AUTO-GEN:totalTests -->5978<!-- /AUTO-GEN --> tests** across **<!-- AUTO-GEN:vitestFiles -->414<!-- /AUTO-GEN --> vitest files** + **42 Playwright E2E tests** (<!-- AUTO-GEN:e2eFiles -->14<!-- /AUTO-GEN --> files).
 
 _Note: `totalTests` above is not auto-verified by `pnpm docs:verify` (only `vitestFiles`/`e2eFiles` are) — update it by hand from `pnpm test:coverage` + `pnpm test:benchmarks` output when the per-suite table changes._
 
@@ -542,7 +542,7 @@ Validates Zod schemas from `src/lib/db/json-schemas.ts` used by tRPC routers.
 
 - Budget: `createItem` input, `columnLabelsSchema`, `columnMonthsSchema`, `budgetAmountsSchema`
 - Settings: `settingValueSchema` (all union variants)
-- Contributions: `salaryOverridesSchema`, `contribAccountOverrideSchema`, `jobOverrideSchema`, `contributionOverridesSchema`
+- Salary Profiles: `salaryEntriesSchema` / `salaryEntrySchema` (complete entries, limits, `bonusDestination`, the removed bonus switches refused)
 - Tax: `taxBracketsSchema`
 - Sync: `accountMappingSchema`
 - Scenarios: `relocationScenarioParamsSchema`
@@ -558,29 +558,29 @@ Validates Zod schemas from `src/lib/db/json-schemas.ts` used by tRPC routers.
 
 **Session factories:** `adminSession` (full access), `viewerSession` (read-only), `createViewerSessionWithPermissions([...])` (viewer + specific mutation grants).
 
-**64 test files** covering all routers:
+**72 test files** covering all routers (main ones below):
 
-| Router           | Test files                                                                                                                                     | Coverage                                    |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| **Budget**       | budget.test.ts, budget-coverage.test.ts                                                                                                        | Profile CRUD, auth, column operations       |
-| **Contribution** | contribution.test.ts, contribution-profiles.test.ts                                                                                            | Computation pipeline, profile management    |
-| **Mortgage**     | mortgage.test.ts                                                                                                                               | Active summary, what-if scenarios           |
-| **Version**      | version.test.ts, version-extended.test.ts                                                                                                      | List/query, changelog                       |
-| **Auth**         | auth-enforcement.test.ts                                                                                                                       | Cross-router permission validation          |
-| **Assets**       | assets.test.ts                                                                                                                                 | Asset CRUD, categories                      |
-| **Brokerage**    | brokerage.test.ts                                                                                                                              | Brokerage account management                |
-| **Historical**   | historical.test.ts                                                                                                                             | Historical data queries                     |
-| **Net Worth**    | networth.test.ts                                                                                                                               | Net worth aggregation                       |
-| **Paycheck**     | paycheck.test.ts                                                                                                                               | Paycheck simulation                         |
-| **Performance**  | performance.test.ts                                                                                                                            | Portfolio performance metrics               |
-| **Projection**   | projection.test.ts, projection-coverage.test.ts                                                                                                | Monte Carlo projections                     |
-| **Retirement**   | retirement.test.ts                                                                                                                             | Readiness analysis                          |
-| **Savings**      | savings.test.ts, savings-router-coverage.test.ts                                                                                               | Savings goals                               |
-| **Settings**     | settings-admin.test.ts, settings-coverage.test.ts, settings-mortgage.test.ts, settings-retirement.test.ts                                      | Admin settings, mortgage, retirement config |
-| **Onboarding**   | onboarding.test.ts                                                                                                                             | Onboarding wizard                           |
-| **Shared**       | shared-coverage.test.ts, shared-rollups.test.ts                                                                                                | Shared procedures, rollup queries           |
-| **Sync**         | sync-config.test.ts, sync-connections.test.ts, sync-connections-coverage.test.ts, sync-core.test.ts, sync-mappings.test.ts, sync-names.test.ts | Full sync pipeline                          |
-| **Tax Limits**   | tax-limits.test.ts                                                                                                                             | IRS limit CRUD                              |
+| Router           | Test files                                                                                                                                     | Coverage                                                            |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| **Budget**       | budget.test.ts, budget-coverage.test.ts                                                                                                        | Profile CRUD, auth, column operations                               |
+| **Contribution** | contribution.test.ts, contribution-profiles.test.ts                                                                                            | Computation pipeline, profile management                            |
+| **Mortgage**     | mortgage.test.ts                                                                                                                               | Active summary, what-if scenarios                                   |
+| **Version**      | version.test.ts, version-extended.test.ts                                                                                                      | List/query, changelog                                               |
+| **Auth**         | auth-enforcement.test.ts                                                                                                                       | Cross-router permission validation                                  |
+| **Assets**       | assets.test.ts                                                                                                                                 | Asset CRUD, categories                                              |
+| **Brokerage**    | brokerage.test.ts                                                                                                                              | Brokerage account management                                        |
+| **Historical**   | historical.test.ts                                                                                                                             | Historical data queries                                             |
+| **Net Worth**    | networth.test.ts                                                                                                                               | Net worth aggregation                                               |
+| **Paycheck**     | paycheck.test.ts, paycheck-from-bonus.test.ts                                                                                                  | Paycheck simulation; per-account bonus checks, where the bonus goes |
+| **Performance**  | performance.test.ts                                                                                                                            | Portfolio performance metrics                                       |
+| **Projection**   | projection.test.ts, projection-coverage.test.ts                                                                                                | Monte Carlo projections                                             |
+| **Retirement**   | retirement.test.ts                                                                                                                             | Readiness analysis                                                  |
+| **Savings**      | savings.test.ts, savings-router-coverage.test.ts                                                                                               | Savings goals                                                       |
+| **Settings**     | settings-admin.test.ts, settings-coverage.test.ts, settings-mortgage.test.ts, settings-retirement.test.ts                                      | Admin settings, mortgage, retirement config                         |
+| **Onboarding**   | onboarding.test.ts                                                                                                                             | Onboarding wizard                                                   |
+| **Shared**       | shared-coverage.test.ts, shared-rollups.test.ts                                                                                                | Shared procedures, rollup queries                                   |
+| **Sync**         | sync-config.test.ts, sync-connections.test.ts, sync-connections-coverage.test.ts, sync-core.test.ts, sync-mappings.test.ts, sync-names.test.ts | Full sync pipeline                                                  |
+| **Tax Limits**   | tax-limits.test.ts                                                                                                                             | IRS limit CRUD                                                      |
 
 ---
 
@@ -588,18 +588,18 @@ Validates Zod schemas from `src/lib/db/json-schemas.ts` used by tRPC routers.
 
 `tests/helpers/` — Server helper unit tests.
 
-**10 test files** covering all server helpers:
+**24 test files** covering the server helpers (main ones below):
 
-| Helper           | Test files                                          | Coverage                                       |
-| ---------------- | --------------------------------------------------- | ---------------------------------------------- |
-| **Budget**       | budget.test.ts, budget-helper-coverage.test.ts      | Budget aggregation, profile calculations       |
-| **Contribution** | contribution.test.ts, contribution-extended.test.ts | Limit resolution, accumulation logic           |
-| **Salary**       | salary.test.ts                                      | Salary queries, transformations                |
-| **Mortgage**     | mortgage.test.ts                                    | Amortization, payment calculations             |
-| **Settings**     | settings.test.ts                                    | Settings helpers                               |
-| **Snapshot**     | snapshot.test.ts                                    | Account snapshot aggregation, balance rollups  |
-| **Transforms**   | transforms.test.ts                                  | toNumber, getPrimaryPerson, tax type breakdown |
-| **Date**         | date.test.ts                                        | Date utilities                                 |
+| Helper           | Test files                                                                           | Coverage                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- |
+| **Budget**       | budget.test.ts, budget-helper-coverage.test.ts                                       | Budget aggregation, profile calculations                                    |
+| **Contribution** | contribution.test.ts, contribution-extended.test.ts, contribution-from-bonus.test.ts | Limit resolution, accumulation logic, bonus-check contributions + match pay |
+| **Salary**       | salary.test.ts                                                                       | Salary queries, transformations                                             |
+| **Mortgage**     | mortgage.test.ts                                                                     | Amortization, payment calculations                                          |
+| **Settings**     | settings.test.ts                                                                     | Settings helpers                                                            |
+| **Snapshot**     | snapshot.test.ts                                                                     | Account snapshot aggregation, balance rollups                               |
+| **Transforms**   | transforms.test.ts                                                                   | toNumber, getPrimaryPerson, tax type breakdown                              |
+| **Date**         | date.test.ts                                                                         | Date utilities                                                              |
 
 ---
 

@@ -337,7 +337,7 @@ export function ProjectionTable({
                   )}
                   <th className="text-faint border-subtle border-l py-1.5 pl-2 text-left font-medium whitespace-nowrap">
                     Info
-                    <HelpTip text="Year-specific events: phase transitions, brokerage goal withdrawals, overrides, and milestone markers" />
+                    <HelpTip text="Year-specific events: phase transitions, brokerage goal withdrawals, changes by year, and milestone markers" />
                   </th>
                 </tr>
               </thead>

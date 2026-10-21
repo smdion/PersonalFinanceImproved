@@ -7,10 +7,10 @@ export type RawItem = {
   amounts: number[];
   /** Linked contribution account's monthly amount for the SELECTED column
    *  (displayed instead of DB amounts). Prefer contribAmounts when rendering
-   *  a specific column — columns can pin different Contribution Profiles. */
+   *  a specific column. */
   contribAmount?: number | null;
-  /** Per-column linked contribution amounts — index i is column i resolved
-   *  under column i's own Contribution/Salary Profile. Null when unlinked. */
+  /** Per-column linked contribution amounts — index i is column i, all
+   *  from the active Contribution/Salary profiles. Null when unlinked. */
   contribAmounts?: number[] | null;
   isEssential: boolean;
   /** Linked budget API category ID (YNAB UUID, etc.) */
@@ -21,10 +21,8 @@ export type RawItem = {
   apiSyncDirection?: "pull" | "push" | "both" | null;
   /** Linked contribution account ID */
   contributionAccountId?: number | null;
-  /** Per-column reason a linked item's amount is $0 for that column — see
-   *  ContribResolutionStatus. Null when unlinked. Index i is column i's own
-   *  reason; never flatten this across columns (a status true only under a
-   *  different column's profile must not show while viewing this one). */
+  /** Per-column reason a linked item's amount is $0 — see
+   *  ContribResolutionStatus. Null when unlinked. Index i is column i. */
   contribStatus?: ContribResolutionStatus[] | null;
 };
 

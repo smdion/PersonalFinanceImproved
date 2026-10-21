@@ -281,7 +281,7 @@ export async function computeJobNetPayPerCheck(
       jobPerson?.dateOfBirth ?? null,
       resolvedTax.resolvedYear,
     ),
-    contributionPay(salaryEntry, currentSalary, bonusTerms).bonusGross,
+    contributionPay(currentSalary, bonusTerms).bonusGross,
   );
 
   // Intentionally does not pass a bonusOverride — this value gets persisted
@@ -2512,7 +2512,7 @@ export const savingsRouter = createTRPCRouter({
           if (Math.abs(total - 100) > 0.01) {
             throw new TRPCError({
               code: "BAD_REQUEST",
-              message: `Override splits must sum to 100% (got ${total.toFixed(1)}%)`,
+              message: `A month's split must add up to 100% (got ${total.toFixed(1)}%)`,
             });
           }
         }

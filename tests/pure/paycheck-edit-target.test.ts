@@ -75,6 +75,7 @@ describe("profile field kinds come from the profile schemas", () => {
       "contribution",
     );
     expect(contributionAccountFieldKind("autoMaximize")).toBe("contribution");
+    expect(contributionAccountFieldKind("fromBonus")).toBe("contribution");
     expect(contributionAccountFieldKind("accountType")).toBe("setup");
     expect(contributionAccountFieldKind("performanceAccountId")).toBe("setup");
   });

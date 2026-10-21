@@ -34,7 +34,6 @@ function row(
     hsaCoverageType: "family",
     isRoth: false,
     accountLabel: "HSA",
-    include401kInBonus: false,
     ...overrides,
     // eslint-disable-next-line no-restricted-syntax -- test-only stub; only the fields the builder reads
   } as unknown as ContribRowWithActiveFields;
@@ -72,5 +71,45 @@ describe("buildContribAccounts — ficaExemptAnnualCap", () => {
         }),
       ).ficaExemptAnnualCap,
     ).toBeNull();
+  });
+});
+
+describe("buildContribAccounts — employer match on bonus checks", () => {
+  // 6% deferral, 100% match up to 4% of pay. $100,000 salary, $20,000 bonus.
+  const k401 = (fromBonus: boolean) =>
+    row({
+      accountType: "401k",
+      parentCategory: "Retirement",
+      contributionMethod: "percent_of_salary",
+      contributionValue: 6,
+      employerMatchType: "percent_of_contribution",
+      employerMatchValue: 100,
+      employerMaxMatchPct: 0.04,
+      hsaCoverageType: null,
+      fromBonus,
+    });
+  const buildWithBonus = (r: ContribRowWithActiveFields) =>
+    buildContribAccounts(
+      [r],
+      [],
+      100000,
+      26,
+      { limits, ageAtYearEnd: 40 },
+      20000,
+    )[0]!;
+
+  it("taken from bonus checks: the bonus check's deferral and its match count", () => {
+    const a = buildWithBonus(k401(true));
+    expect(a.fromBonus).toBe(true);
+    // Match cap 4% of $120,000 pay.
+    expect(a.employerMatch).toBeCloseTo(4800, 2);
+    expect(a.employerMatchOnBonus).toBeCloseTo(800, 2);
+  });
+
+  it("not taken from bonus checks: the match is on base salary alone", () => {
+    const a = buildWithBonus(k401(false));
+    expect(a.fromBonus).toBe(false);
+    expect(a.employerMatch).toBeCloseTo(4000, 2);
+    expect(a.employerMatchOnBonus).toBe(0);
   });
 });

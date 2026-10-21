@@ -154,7 +154,7 @@ export function TaxesSection({
           <option value="HOH">HOH</option>
         </select>
         <span className="text-caption text-faint">brackets</span>
-        <HelpTip text="Tax filing status used for retirement tax estimates — affects federal brackets, LTCG rates, IRMAA thresholds, and Social Security taxation. 'Auto' inherits from your primary job's W-4. Override it here if your filing status will change in retirement." />
+        <HelpTip text="Tax filing status used for retirement tax estimates — affects federal brackets, LTCG rates, IRMAA thresholds, and Social Security taxation. 'Auto' inherits from your primary job's W-4. Change it here if your filing status will change in retirement." />
         <Badge color="indigo">Baseline + Simulation</Badge>
         <div className="flex-1 border-t" />
       </div>
@@ -430,7 +430,7 @@ export function TaxesSection({
           <span className="text-muted text-xs font-medium tracking-wide uppercase">
             Withdrawal Order
           </span>
-          <HelpTip text="Your saved default account draw order. Waterfall mode drains accounts in exactly this sequence; Bracket Filling uses the 401k/403b/IRA part of it to decide which Traditional account fills the bracket first. RMDs are enforced regardless of order. The Retirement page's Configure toggle can customize this for one session without changing what's saved here." />
+          <HelpTip text="Your saved default account draw order. Waterfall mode drains accounts in exactly this sequence; Bracket Filling uses the 401k/403b/IRA part of it to decide which Traditional account fills the bracket first. RMDs are enforced regardless of order. The Retirement page's Configure toggle can change this for one session without changing what's saved here." />
         </div>
         <WithdrawalOrderEditor
           order={persistedOrder}

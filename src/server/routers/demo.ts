@@ -1,4 +1,5 @@
 /** Demo router for creating, listing, activating, and destroying isolated demo schemas seeded with predefined financial profiles. */
+import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
 import {
   DEMO_SCHEMA_MARKER_PREFIX,
   MIGRATION_COUNT_SQL,
@@ -89,31 +90,18 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
       })
       .returning({ id: schema.jobs.id });
     if (!createdJob) continue;
+    // The persona's own figures over the blank entry (the fields no demo
+    // persona models: extra withholding, box 2c, extra-paycheck routing…).
     salaryPinsByJobId[String(createdJob.id)] = {
+      ...BLANK_SALARY_ENTRY,
       salary: Number(j.annualSalary),
       bonusPercent: Number(j.bonusPercent),
-      bonusMultiplier: 1,
-      monthsInBonusYear: 12,
-      bonusOverride: null,
       payPeriod: j.payPeriod,
       payWeek: j.payWeek,
       anchorPayDate: j.anchorPayDate ?? null,
-      // Not modeled by DemoProfile.jobs — null defers to the payPeriod's
-      // standard periods/month, same as an unset real Salary Profile entry.
-      budgetPeriodsPerMonth: null,
       w4FilingStatus: j.w4FilingStatus,
-      // Reasonable demo defaults — no demo persona needs box 2c checked or
-      // extra withholding to look realistic.
-      w4Box2cChecked: false,
-      additionalFedWithholding: 0,
       bonusMonth: j.bonusMonth,
       bonusDayOfMonth: j.bonusDayOfMonth ?? null,
-      // Matches speculativeJobValues' defaults for the same two flags.
-      include401kInBonus: false,
-      includeBonusInContributions: false,
-      // Not modeled by DemoProfile.jobs — no demo persona needs a
-      // preconfigured extra-paycheck routing to look realistic.
-      extraPaycheckRouting: null,
     };
   }
   if (Object.keys(salaryPinsByJobId).length > 0) {

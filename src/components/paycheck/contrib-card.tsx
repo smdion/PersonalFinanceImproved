@@ -1,5 +1,6 @@
 "use client";
 
+import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { Toggle } from "@/components/ui/toggle";
@@ -298,6 +299,22 @@ export function ContribCard({
             <option value="dollar_match">Add $ match</option>
             <option value="fixed_annual">Add fixed annual match</option>
           </select>
+        </div>
+      )}
+
+      {/* This account's own Contribution Profile election — the one gate
+          for money taken from bonus checks (bonusCheckContribution).
+          Payroll accounts only: nothing else is on a check. */}
+      {isPaidThroughPayroll(c) && (
+        <div className="mt-1">
+          <Toggle
+            isChecked={c.fromBonus === true}
+            onChange={(v) => onUpdateContrib(c.id, "fromBonus", String(v))}
+            label="Also taken from bonus checks"
+            size="xs"
+            title="The bonus check takes this contribution too: a percent of pay at its rate of the bonus, a fixed amount once more. The employer match follows."
+            disabled={!valueEditable}
+          />
         </div>
       )}
 

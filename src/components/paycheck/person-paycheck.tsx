@@ -2,11 +2,17 @@
 
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
-import { formatCurrency, maskAmountsInText } from "@/lib/utils/format";
+import {
+  accountDisplayName,
+  formatCurrency,
+  maskAmountsInText,
+} from "@/lib/utils/format";
 import { PAY_PERIOD_LABELS } from "@/lib/config/display-labels";
 import { PayStub } from "./pay-stub";
 import { AnnualSummary } from "./annual-summary";
 import { BonusSection } from "./bonus-section";
+import { splitLineLabel } from "./deduction-row";
+import { isPreTax } from "@/lib/calculators/paycheck";
 import { TaxWithholdingSection } from "./tax-withholding-section";
 import { ContributionsSection } from "./contributions-section";
 import { AddDeductionForm } from "./add-deduction-form";
@@ -15,6 +21,7 @@ import { ExtraPaycheckDestinationToggle } from "@/components/savings/extra-paych
 import { SectionHeader } from "./section-header";
 import { OtherPaySection } from "./other-pay-section";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
+import type { BonusDestination } from "@/lib/config/enum-values";
 import type {
   PaycheckResult,
   ViewMode,
@@ -26,6 +33,8 @@ import type {
   EarningRow,
 } from "./types";
 import type { ContribAccountFormValues } from "./contrib-account-form";
+import { PaystubCheck } from "./paystub-check";
+import type { FicaRates } from "@/lib/pure/paystub-check";
 import type { PerContribView } from "@/lib/hooks/use-paycheck-person-views";
 import type {
   BlendedAnnualTotals,
@@ -66,6 +75,23 @@ export type PersonPaycheckInteraction =
 
 const NOOP = () => {};
 
+/** An account's name in the Bonus section: its own name, and — like the
+ *  pay stub — which one it is when the stub has the same name before and
+ *  after tax (splitLineLabel). */
+function bonusAccountName(
+  raw: RawContrib,
+  lines: Parameters<typeof splitLineLabel>[2],
+): string {
+  const custom = raw.displayNameCustom ?? raw.displayNameActive;
+  if (custom) return custom;
+  // The account's line on the pay stub is named this (buildContribAccounts).
+  const lineName = raw.subType || raw.label || raw.accountType;
+  return (
+    splitLineLabel(lineName, isPreTax(raw.taxTreatment), lines) ??
+    accountDisplayName(raw)
+  );
+}
+
 export function PersonPaycheck({
   person,
   job,
@@ -79,6 +105,9 @@ export function PersonPaycheck({
   contribValueReadOnly,
   rawDeductions,
   rawContribs,
+  bonusCheckAccounts,
+  bonusDestination,
+  ficaRates,
   perContribData,
   alignedPreTax,
   alignedPostTax,
@@ -107,17 +136,16 @@ export function PersonPaycheck({
      *  (the same pattern use-paycheck-person-views.ts's `job: any` and
      *  household-income-card.tsx already rely on), so they're read the
      *  same way here as before the migration — only their write path
-     *  changed (paycheck/page.tsx now routes them to salaryProfile.update
-     *  instead of settings.jobs.update). */
+     *  changed (paycheck/page.tsx saves them with salaryProfile.patchEntry). */
     bonusMonth: number | null;
     bonusDayOfMonth: number | null;
-    include401kInBonus: boolean;
-    includeBonusInContributions: boolean;
     personId: number;
     w4FilingStatus: string;
     w4Box2cChecked: boolean;
     additionalFedWithholding: number;
     payPeriod: string;
+    anchorPayDate?: string | null;
+    startDate: string;
     extraPaycheckRouting: ExtraPaycheckRoutingData | null;
   };
   salary: number;
@@ -149,6 +177,12 @@ export function PersonPaycheck({
   setupReadOnly?: boolean;
   rawDeductions: RawDeduction[];
   rawContribs: RawContrib[];
+  /** The accounts the bonus check takes, and how much (fromBonus). */
+  bonusCheckAccounts: { id: number; amount: number }[];
+  /** Where this job's bonus goes (its Salary Profile entry). */
+  bonusDestination: BonusDestination;
+  /** The year's FICA figures (tax data) for "Check against a pay stub". */
+  ficaRates: FicaRates | null;
   /** Contribution annual/limit figures, resolved ONCE by the caller's shared
    *  hook. This card and its children never query for them. */
   perContribData: PerContribView[];
@@ -307,11 +341,24 @@ export function PersonPaycheck({
             blendedAnnual={blendedAnnual}
           />
           <BonusSection
-            personId={person.id}
             paycheck={paycheck}
             fullFormulaBonusEstimate={fullFormulaBonusEstimate}
             job={job}
             resolvedBonusTerms={resolvedBonusTerms}
+            bonusAccounts={bonusCheckAccounts.map((a) => {
+              const raw = rawContribs.find((c) => c.id === a.id);
+              return {
+                id: a.id,
+                name: raw
+                  ? bonusAccountName(raw, {
+                      preTax: alignedPreTax ?? paycheck.preTaxDeductions,
+                      postTax: alignedPostTax ?? paycheck.postTaxDeductions,
+                    })
+                  : "Contribution",
+                amount: a.amount,
+              };
+            })}
+            bonusDestination={bonusDestination}
             onUpdateJob={onUpdateJob}
             readOnly={readOnly}
             salaryReadOnly={salaryReadOnly}
@@ -334,6 +381,14 @@ export function PersonPaycheck({
 
       {/* Contributions + extras */}
       <div className="border-subtle space-y-4 border-t px-5 pt-4 pb-5">
+        {ficaRates && (
+          <PaystubCheck
+            paycheck={paycheck}
+            rates={ficaRates}
+            payPeriod={job.payPeriod}
+            anchor={job.anchorPayDate ?? job.startDate}
+          />
+        )}
         <ContributionsSection
           rawContribs={rawContribs}
           perContribData={perContribData}

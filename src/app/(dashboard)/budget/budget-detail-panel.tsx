@@ -41,12 +41,6 @@ type ColumnMutations = {
   renameColumn: { mutate: (args: { colIndex: number; label: string }) => void };
   removeColumn: { mutate: (args: { colIndex: number }) => void };
   addColumn: { mutate: (args: { label: string }) => void; isPending: boolean };
-  updateColumnContribProfiles: {
-    mutate: (args: { columnContributionProfileIds: (number | null)[] }) => void;
-  };
-  updateColumnSalaryProfiles: {
-    mutate: (args: { columnSalaryProfileIds: (number | null)[] }) => void;
-  };
   updateColumnMonths: {
     mutate: (args: { columnMonths: number[] | null }) => void;
   };
@@ -78,11 +72,7 @@ type Props = {
   profile: {
     id?: number;
     name?: string;
-    columnContributionProfileIds?: (number | null)[] | null;
-    columnSalaryProfileIds?: (number | null)[] | null;
   } | null;
-  contribProfiles: Array<{ id: number; name: string }>;
-  salaryProfiles: Array<{ id: number; name: string }>;
   columnMutations: ColumnMutations;
   layout: TableLayout;
   visibleCategories: [string, RawItem[]][];
@@ -104,8 +94,6 @@ export function BudgetDetailPanel({
   columnMonths,
   sinkingFunds,
   profile,
-  contribProfiles,
-  salaryProfiles,
   columnMutations,
   layout,
   visibleCategories,
@@ -154,28 +142,6 @@ export function BudgetDetailPanel({
             })
           }
           addColumnPending={columnMutations.addColumn.isPending}
-          contributionProfiles={contribProfiles}
-          columnContributionProfileIds={
-            (profile?.columnContributionProfileIds as
-              (number | null)[] | null) ?? null
-          }
-          onUpdateContributionProfiles={(ids) =>
-            columnMutations.updateColumnContribProfiles.mutate({
-              columnContributionProfileIds: ids,
-              ...(profile?.id != null ? { profileId: profile.id } : {}),
-            })
-          }
-          salaryProfiles={salaryProfiles}
-          columnSalaryProfileIds={
-            (profile?.columnSalaryProfileIds as (number | null)[] | null) ??
-            null
-          }
-          onUpdateSalaryProfiles={(ids) =>
-            columnMutations.updateColumnSalaryProfiles.mutate({
-              columnSalaryProfileIds: ids,
-              ...(profile?.id != null ? { profileId: profile.id } : {}),
-            })
-          }
           columnMonths={columnMonths}
           onUpdateColumnMonths={(months) =>
             columnMutations.updateColumnMonths.mutate({

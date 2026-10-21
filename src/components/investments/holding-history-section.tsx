@@ -1,7 +1,9 @@
 "use client";
 
 /**
- * Holding history (Portfolio): what each account held over time. Observed
+ * Holding history (Portfolio): what each account held over time — per part
+ * for an account whose feeds report each part separately (a joint IRA:
+ * each person's Roth and Traditional), else for the whole account. Observed
  * periods come from daily SimpleFIN holdings and are read-only; for the
  * years before them — or an account with no feed — the household enters
  * periods (funds and %). The matched-mix comparison prices these. Shows
@@ -9,15 +11,29 @@
  */
 import { useState } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatNumber } from "@/lib/utils/format";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import { STATUS_COLORS } from "@/lib/utils/colors";
 import { FactsForm } from "./fund-holding-row";
+import { LINK_CLASS, SettingsLink } from "@/components/ui/settings-link";
 
 type Data = RouterOutputs["investments"]["listHoldingPeriods"];
 type Period = Data["periods"][number];
+type Holder = Data["holders"][number];
+
+const keyOf = (h: { performanceAccountId: number; subKey: string | null }) =>
+  `${h.performanceAccountId}|${h.subKey ?? ""}`;
+
+const draftOf = (p: Period): Draft => ({
+  id: p.id,
+  start: p.start,
+  end: p.end ?? "",
+  notes: "notes" in p && typeof p.notes === "string" ? p.notes : "",
+  rows: Object.entries(p.weights).map(([id, w]) =>
+    row(Number(id), String(roundToCents(w * 100))),
+  ),
+});
 type Draft = {
   id: number | null;
   start: string;
@@ -49,41 +65,78 @@ const BASIS_LABEL: Record<Period["basis"], string> = {
 
 export function HoldingHistorySection() {
   const { data } = trpc.investments.listHoldingPeriods.useQuery();
-  const [accountId, setAccountId] = useState<number | null>(null);
+  const [holderId, setHolderId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   if (!data) return null;
-  const account = accountId ?? data.accounts[0]?.id ?? null;
-  const periods = data.periods.filter(
-    (p) => p.performanceAccountId === account,
+  const holder =
+    data.holders.find((h) => keyOf(h) === holderId) ?? data.holders[0] ?? null;
+  const account = data.accounts.find(
+    (a) => a.id === holder?.performanceAccountId,
   );
+  const periods = data.periods.filter(
+    (p) => holder && !p.orphaned && keyOf(p) === keyOf(holder),
+  );
+  const orphans = data.periods.filter(
+    (p) => p.orphaned && p.performanceAccountId === account?.id,
+  );
+  // A split account's whole-account entry (conflict only) is view-only.
+  const canEnter = holder !== null && !(account?.split && !holder.subKey);
 
   return (
-    <Card title="Holding history">
+    <>
       <p className="text-caption text-faint mb-2">
-        What each account held over time. Daily holdings fill this in from when
-        your SimpleFIN feed started; enter the funds you held before then (from
-        old statements) so comparisons can use your real mix.
+        What each account held over time — for each part, where your institution
+        reports parts separately (like each person&apos;s IRA). Daily holdings
+        fill this in from when your SimpleFIN feed started; enter the funds you
+        held before then (from old statements) so comparisons can use your real
+        mix.
       </p>
       <label className="mb-3 flex items-center gap-2 text-sm">
         <span className="text-muted">Account</span>
         <select
-          value={account ?? ""}
+          value={holder ? keyOf(holder) : ""}
           onChange={(e) => {
-            setAccountId(Number(e.target.value));
+            setHolderId(e.target.value);
             setDraft(null);
           }}
           className="border-strong bg-surface-primary rounded border px-2 py-1"
         >
-          {data.accounts.map((a) => (
-            <option key={a.id} value={a.id}>
-              {a.label}
-            </option>
-          ))}
+          {data.accounts.map((a) => {
+            const own = data.holders.filter(
+              (h) => h.performanceAccountId === a.id,
+            );
+            return a.split ? (
+              <optgroup key={a.id} label={a.label}>
+                {own.map((h) => (
+                  <option key={keyOf(h)} value={keyOf(h)}>
+                    {a.label} · {h.label}
+                  </option>
+                ))}
+              </optgroup>
+            ) : (
+              own.map((h) => (
+                <option key={keyOf(h)} value={keyOf(h)}>
+                  {h.label}
+                </option>
+              ))
+            );
+          })}
         </select>
       </label>
 
+      {account?.conflict && (
+        <p className={`mb-2 text-xs ${STATUS_COLORS.amber.text}`}>
+          This account has SimpleFIN feeds for its parts and for the whole
+          account. Link them one way in{" "}
+          <SettingsLink tab="integrations" className={LINK_CLASS} /> so its
+          history is kept one way.
+        </p>
+      )}
+
       {periods.length === 0 && (
-        <p className="text-faint text-sm">No history for this account yet.</p>
+        <p className="text-faint text-sm">
+          No history for this {holder?.subKey ? "part" : "account"} yet.
+        </p>
       )}
       <div className="space-y-2">
         {periods.map((p) => (
@@ -91,26 +144,16 @@ export function HoldingHistorySection() {
             key={`${p.basis}:${p.id ?? p.start}`}
             p={p}
             funds={data.funds}
-            onEdit={() =>
-              setDraft({
-                id: p.id,
-                start: p.start,
-                end: p.end ?? "",
-                notes:
-                  "notes" in p && typeof p.notes === "string" ? p.notes : "",
-                rows: Object.entries(p.weights).map(([id, w]) =>
-                  row(Number(id), String(roundToCents(w * 100))),
-                ),
-              })
-            }
+            onEdit={() => setDraft(draftOf(p))}
           />
         ))}
       </div>
 
-      {account !== null &&
+      {holder !== null &&
+        canEnter &&
         (draft ? (
           <PeriodForm
-            accountId={account}
+            holder={holder}
             draft={draft}
             setDraft={setDraft}
             funds={data.funds}
@@ -125,7 +168,75 @@ export function HoldingHistorySection() {
             Add a period
           </Button>
         ))}
-    </Card>
+
+      {orphans.length > 0 && (
+        <div className="mt-4 space-y-2">
+          <p className={`text-xs ${STATUS_COLORS.amber.text}`}>
+            Entered for a part this account no longer has (or that no longer
+            fits how its feeds are linked) — move it or delete it. It isn&apos;t
+            counted until then.
+          </p>
+          {orphans.map((p) => (
+            <div key={`orphan:${p.id}`}>
+              <PeriodRow p={p} funds={data.funds} onEdit={null} />
+              <MovePeriod
+                p={p}
+                targets={data.holders.filter(
+                  (h) =>
+                    h.performanceAccountId === p.performanceAccountId &&
+                    !(account?.split && !h.subKey),
+                )}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+/** Move an orphaned period to one of its account's holders (re-validated). */
+function MovePeriod({ p, targets }: { p: Period; targets: Holder[] }) {
+  const utils = trpc.useUtils();
+  const move = trpc.investments.saveHoldingPeriod.useMutation({
+    onSuccess: () => utils.investments.invalidate(),
+  });
+  if (p.id === null || targets.length === 0) return null;
+  return (
+    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
+      <select
+        defaultValue=""
+        aria-label="Move this period to"
+        disabled={move.isPending}
+        onChange={(e) => {
+          const to = targets.find((h) => keyOf(h) === e.target.value);
+          if (!to) return;
+          move.mutate({
+            id: p.id,
+            performanceAccountId: p.performanceAccountId,
+            subKey: to.subKey,
+            start: p.start,
+            end: p.end,
+            notes: "notes" in p && typeof p.notes === "string" ? p.notes : null,
+            weights: Object.entries(p.weights).map(([id, weight]) => ({
+              securityId: Number(id),
+              weight,
+            })),
+          });
+        }}
+        className="border-strong bg-surface-primary rounded border px-1.5 py-0.5"
+      >
+        <option value="">Move to…</option>
+        {targets.map((h) => (
+          <option key={keyOf(h)} value={keyOf(h)}>
+            {h.label}
+          </option>
+        ))}
+      </select>
+      {move.isError && (
+        <span className={STATUS_COLORS.red.text}>{move.error.message}</span>
+      )}
+    </div>
   );
 }
 
@@ -136,7 +247,8 @@ function PeriodRow({
 }: {
   p: Period;
   funds: Data["funds"];
-  onEdit: () => void;
+  /** null: not editable here (an orphaned period is moved instead). */
+  onEdit: (() => void) | null;
 }) {
   const utils = trpc.useUtils();
   const remove = trpc.investments.deleteHoldingPeriod.useMutation({
@@ -154,9 +266,11 @@ function PeriodRow({
         <span className="text-faint">{BASIS_LABEL[p.basis]}</span>
         {p.basis === "user" && p.id !== null && (
           <span className="flex gap-1">
-            <Button size="xs" variant="ghost" onClick={onEdit}>
-              Edit
-            </Button>
+            {onEdit && (
+              <Button size="xs" variant="ghost" onClick={onEdit}>
+                Edit
+              </Button>
+            )}
             <Button
               size="xs"
               variant="ghost"
@@ -209,12 +323,12 @@ function PeriodRow({
 }
 
 function PeriodForm({
-  accountId,
+  holder,
   draft,
   setDraft,
   funds,
 }: {
-  accountId: number;
+  holder: Holder;
   draft: Draft;
   setDraft: (d: Draft | null) => void;
   funds: Data["funds"];
@@ -303,7 +417,9 @@ function PeriodForm({
             }}
             inputMode="decimal"
             className={`${input} w-16`}
-            aria-label="Share of the account"
+            aria-label={
+              holder.subKey ? "Share of this part" : "Share of the account"
+            }
           />
           %
           <Button
@@ -380,7 +496,8 @@ function PeriodForm({
           onClick={() =>
             save.mutate({
               id: draft.id,
-              performanceAccountId: accountId,
+              performanceAccountId: holder.performanceAccountId,
+              subKey: holder.subKey,
               start: draft.start,
               end: draft.end || null,
               notes: draft.notes.trim() || null,

@@ -341,7 +341,7 @@ export function MonthOverrideModal({
                 onClick={handleReset}
                 disabled={!thisMonthHasOverrides}
                 className="text-muted text-xs transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"
-                title="Remove all overrides for this month"
+                title="Remove this month's changes"
               >
                 Reset this month
               </button>
@@ -349,7 +349,7 @@ export function MonthOverrideModal({
                 onClick={handleResetForward}
                 disabled={!hasOverridesFromHere}
                 className="text-muted text-xs transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-30"
-                title="Remove all overrides from this month to the end of projections"
+                title="Remove the changes from this month on"
               >
                 Reset this month forward
               </button>

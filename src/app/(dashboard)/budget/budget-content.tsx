@@ -105,15 +105,12 @@ export function BudgetContent({
     SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
-  const { data: contribProfiles } = trpc.contributionProfile.list.useQuery();
-  // [per-column profile] -> active contribution / salary profile.
   const [activeSalaryProfileIdSetting] = usePersistedSetting<number | null>(
     SK_ACTIVE_SALARY_PROFILE_ID,
     null,
   );
-  const { data: salaryProfiles } = trpc.salaryProfile.list.useQuery();
   // One shared tier object per axis, fed to BOTH the server query and the
-  // client-side per-column resolution so they cannot resolve differently.
+  // client-side payroll breakdown so they cannot resolve differently.
   const contributionProfileTiers = useMemo(
     () => ({
       localSelectionId: null,
@@ -166,14 +163,8 @@ export function BudgetContent({
   const handleActivateBudgetProfile = (id: number) => {
     setActiveProfile.mutate({ id });
   };
-  const {
-    addColumn,
-    removeColumn,
-    renameColumn,
-    updateColumnMonths,
-    updateColumnContribProfiles,
-    updateColumnSalaryProfiles,
-  } = useColumnMutations();
+  const { addColumn, removeColumn, renameColumn, updateColumnMonths } =
+    useColumnMutations();
   const { syncFromApi, syncToApi } = useSyncMutations();
 
   // selectedColumnRef lives here to break the circular dep between
@@ -519,23 +510,12 @@ export function BudgetContent({
                 profiles={(allProfiles ?? []) as BudgetProfileListEntry[]}
                 displayProfileId={displayProfileId}
                 canEdit={canEdit}
-                contribProfiles={
-                  (contribProfiles ?? []) as Array<{
-                    id: number;
-                    name: string;
-                  }>
-                }
                 onRename={(id, name) => renameProfile.mutate({ id, name })}
                 apiService={apiService}
                 apiLinkedProfileId={apiLinkedProfileId}
                 apiLinkedColumnIndex={apiLinkedColumnIndex ?? 0}
                 onSelectProfile={setViewingProfileId}
-                onCreateProfile={(name, contributionProfileId) =>
-                  createProfile.mutate({
-                    name,
-                    contributionProfileId,
-                  })
-                }
+                onCreateProfile={(name) => createProfile.mutate({ name })}
                 onSetActiveProfile={handleActivateBudgetProfile}
                 onDeleteProfile={(id) => deleteProfile.mutate({ id })}
                 onCloneProfile={cloneProfile}
@@ -550,21 +530,10 @@ export function BudgetContent({
                 columnMonths={columnMonths}
                 sinkingFunds={sinkingFunds}
                 profile={profile}
-                contribProfiles={
-                  (contribProfiles ?? []) as Array<{
-                    id: number;
-                    name: string;
-                  }>
-                }
-                salaryProfiles={
-                  (salaryProfiles ?? []) as Array<{ id: number; name: string }>
-                }
                 columnMutations={{
                   renameColumn,
                   removeColumn,
                   addColumn,
-                  updateColumnContribProfiles,
-                  updateColumnSalaryProfiles,
                   updateColumnMonths,
                 }}
                 layout={{ effectiveNameColWidth, onResizeStart, sentinelRef }}

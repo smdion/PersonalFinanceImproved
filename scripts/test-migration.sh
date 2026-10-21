@@ -126,6 +126,10 @@ if ! psql "$TEMP_URL" -v ON_ERROR_STOP=1 < "$DUMP_FILE" >/tmp/ledgr-restore.log 
 fi
 ok "Snapshot restored"
 
+# v0.8.10: how many active Salary Profile entries have a bonus switch on
+# before the upgrade (0 once already upgraded — the columns are gone).
+SWITCHES_ON=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM salary_profiles p, jsonb_each(p.salaries) e WHERE p.id::text = (SELECT value #>> '{}' FROM app_settings WHERE key = 'active_salary_profile_id') AND ((e.value->>'include401kInBonus')::boolean OR (e.value->>'includeBonusInContributions')::boolean)" 2>/dev/null || echo 0)
+
 # ── 4. Run db:migrate against the throwaway ──────────────────────────
 
 step "Running pnpm db:migrate against the throwaway"
@@ -181,6 +185,62 @@ if [[ "$NOT_BACKFILLED" != "0" ]]; then
   exit 1
 fi
 ok "is_immutable backfill verified ($NOT_BACKFILLED rows would have leaked through)"
+
+# ── 6. Verify v0.8.10 (0009_v0810_profile_sets) ──────────────────────
+
+step "Verifying v0.8.10 profile sets"
+
+HAS_PLAN_NAME_IDX=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM pg_indexes WHERE indexname='scenarios_name_unique'")
+if [[ "$HAS_PLAN_NAME_IDX" != "1" ]]; then
+  err "scenarios_name_unique missing (two Plans may still share a name)"
+  exit 1
+fi
+ok "Plan names unique"
+
+LEFT_COLS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM information_schema.columns WHERE (table_name='scenarios' AND column_name IN ('overrides','is_baseline')) OR (table_name='budget_profiles' AND column_name IN ('column_contribution_profile_ids','column_salary_profile_ids'))")
+if [[ "$LEFT_COLS" != "0" ]]; then
+  err "$LEFT_COLS dropped column(s) still present"
+  exit 1
+fi
+ok "Plan overrides and Budget column profile ids dropped"
+
+OLD_FLAGS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM salary_profiles, jsonb_each(salaries) e WHERE e.value ? 'include401kInBonus' OR e.value ? 'includeBonusInContributions'")
+if [[ "$OLD_FLAGS" != "0" ]]; then
+  err "$OLD_FLAGS Salary Profile entries still carry the old bonus switches"
+  exit 1
+fi
+OLD_SETTING=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM app_settings WHERE key='bonus_destinations'")
+if [[ "$OLD_SETTING" != "0" ]]; then
+  err "bonus_destinations setting not converted"
+  exit 1
+fi
+FROM_BONUS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM contribution_profiles, jsonb_each(contribution_active_fields->'contributionAccounts') a WHERE a.value->>'fromBonus' = 'true'")
+if [[ "${SWITCHES_ON:-0}" != "0" && "$FROM_BONUS" == "0" ]]; then
+  err "$SWITCHES_ON active Salary Profile entries had a bonus switch on, but no account is taken from bonus checks"
+  exit 1
+fi
+ok "Bonus switches converted ($SWITCHES_ON entries on before; $FROM_BONUS account entries taken from bonus checks)"
+
+# ── 7. Verify v0.8.10 (0010_v0810_holding_period_parts) ──────────────
+
+step "Verifying holding history per part"
+
+HAS_SUB_KEY=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='holding_periods' AND column_name='sub_key'")
+HAS_SUB_CHECK=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM pg_constraint WHERE conname='holding_periods_sub_key_check'")
+if [[ "$HAS_SUB_KEY" != "1" || "$HAS_SUB_CHECK" != "1" ]]; then
+  err "holding_periods.sub_key or its check is missing"
+  exit 1
+fi
+# A part key naming another account must be refused (e.g. account 5 with "51_…").
+if [[ "$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM performance_accounts")" != "0" ]]; then
+  BAD_INSERT=$(psql "$TEMP_URL" -tAc "INSERT INTO holding_periods (performance_account_id, sub_key, start_date, basis) SELECT id, id::text || '1_x', '2020-01-01', 'user' FROM performance_accounts ORDER BY id LIMIT 1" 2>&1 || true)
+  if ! grep -q "holding_periods_sub_key_check" <<<"$BAD_INSERT"; then
+    err "holding_periods_sub_key_check accepted another account's part key"
+    exit 1
+  fi
+fi
+WHOLE_PERIODS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM holding_periods WHERE sub_key IS NULL")
+ok "holding_periods.sub_key + check present ($WHOLE_PERIODS existing periods stay whole-account)"
 
 echo ""
 echo -e "${GREEN}${BOLD}MIGRATION TEST PASSED${NC}"

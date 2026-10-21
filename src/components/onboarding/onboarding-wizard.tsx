@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  BLANK_SALARY_ENTRY,
+  type SalaryEntry,
+} from "@/lib/db/salary-entry-defaults";
 import { useState, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { FormError } from "@/components/ui/form-error";
@@ -799,45 +803,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         if (baseline) {
           const salaries = { ...baseline.salaries } as Record<
             string,
-            {
-              salary: number;
-              bonusPercent: number;
-              bonusMultiplier: number;
-              monthsInBonusYear: number;
-              bonusOverride: number | null;
-              payPeriod: JobDraft["payPeriod"];
-              payWeek: "na";
-              anchorPayDate: string | null;
-              budgetPeriodsPerMonth: number | null;
-              w4FilingStatus: "MFJ";
-              w4Box2cChecked: boolean;
-              additionalFedWithholding: number;
-              bonusMonth: number | null;
-              bonusDayOfMonth: number | null;
-              include401kInBonus: boolean;
-              includeBonusInContributions: boolean;
-              extraPaycheckRouting: null;
-            }
+            SalaryEntry
           >;
           for (const [jobId, entry] of Object.entries(jobEntries)) {
             salaries[jobId] = {
+              ...BLANK_SALARY_ENTRY,
               salary: entry.salary,
-              bonusPercent: 0,
-              bonusMultiplier: 1,
-              monthsInBonusYear: 12,
-              bonusOverride: null,
               payPeriod: entry.payPeriod,
-              payWeek: "na",
-              anchorPayDate: null,
-              budgetPeriodsPerMonth: null,
-              w4FilingStatus: "MFJ",
-              w4Box2cChecked: false,
-              additionalFedWithholding: 0,
-              bonusMonth: null,
-              bonusDayOfMonth: null,
-              include401kInBonus: false,
-              includeBonusInContributions: false,
-              extraPaycheckRouting: null,
             };
           }
           await updateSalaryProfile.mutateAsync({

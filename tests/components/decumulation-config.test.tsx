@@ -401,7 +401,7 @@ describe("DecumulationConfig — untouched display falls back to the plan's pers
     ).not.toContain("bg-indigo-600");
   });
 
-  it("does not claim the session is customizing anything when untouched", () => {
+  it("does not claim the session changes anything when untouched", () => {
     render(
       <DecumulationConfig
         {...baseProps({
@@ -413,11 +413,11 @@ describe("DecumulationConfig — untouched display falls back to the plan's pers
       />,
     );
     expect(
-      screen.queryByText(/customizes it for this session/),
+      screen.queryByText(/changes it for this session/),
     ).not.toBeInTheDocument();
   });
 
-  it("shows the customizing-for-this-session note once the user actually picks a different mode", () => {
+  it("shows the for-this-session note once the user actually picks a different mode", () => {
     render(
       <DecumulationConfig
         {...baseProps({
@@ -428,9 +428,7 @@ describe("DecumulationConfig — untouched display falls back to the plan's pers
         })}
       />,
     );
-    expect(
-      screen.getByText(/customizes it for this session/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/changes it for this session/)).toBeInTheDocument();
   });
 
   it("renders the persisted withdrawal ORDER, not the local config-default seed, when the order is untouched", () => {

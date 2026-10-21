@@ -272,11 +272,7 @@ function SimpleGrowthEditor({
           onClick={() => setShowDetail((v) => !v)}
           className="text-caption text-blue-600 hover:text-blue-700"
         >
-          {showDetail
-            ? "hide detail"
-            : isUniform
-              ? "customize by year"
-              : "edit"}
+          {showDetail ? "hide detail" : isUniform ? "set by year" : "edit"}
         </button>
       </div>
       {showDetail && (
@@ -773,7 +769,7 @@ export function ExtraPaycheckJobPanel({
           <div className="border-subtle/50 space-y-2 border-t pt-3">
             <div className="flex items-center justify-between">
               <span className="text-caption text-faint font-medium tracking-wide uppercase">
-                Month overrides
+                Specific months
               </span>
               {overrideMonth === null &&
                 extraPaycheckMonthOptions.length > 0 && (
@@ -781,7 +777,7 @@ export function ExtraPaycheckJobPanel({
                     onClick={openAddOverride}
                     className="text-label border-surface-strong bg-surface-elevated text-faint hover:text-primary hover:bg-surface-strong rounded border px-2.5 py-1 transition-colors"
                   >
-                    + Add override
+                    + Add a month
                   </button>
                 )}
             </div>
@@ -942,9 +938,7 @@ export function ExtraPaycheckJobPanel({
                       !overrideForm.every((s) => s.goalId > 0)
                     }
                   >
-                    {saveOverrideMutation.isPending
-                      ? "Saving…"
-                      : "Save override"}
+                    {saveOverrideMutation.isPending ? "Saving…" : "Save month"}
                   </Button>
                   <Button
                     variant="ghost"

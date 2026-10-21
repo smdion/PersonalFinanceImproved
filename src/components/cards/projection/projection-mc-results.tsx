@@ -1,6 +1,7 @@
 "use client";
 
 /** Monte Carlo results — loading spinner, errors, warnings, depletion callout, and compact summary bar. */
+import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
@@ -256,10 +257,10 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                       )}
                       {si.hasAssetClassOverrides && (
                         <Badge color="amber" size="sm" case="normal">
-                          Overrides
+                          Your figures
                           <HelpTip
                             maxWidth={260}
-                            text="One or more asset classes are using custom return/volatility figures instead of this preset's own values — the return, volatility, and asset-mix figures below already reflect the overridden numbers."
+                            text="One or more asset classes are using custom return/volatility figures instead of this preset's own values — the return, volatility, and asset-mix figures below already reflect your numbers."
                           />
                         </Badge>
                       )}
@@ -357,7 +358,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                             )}
                             <HelpTip
                               maxWidth={260}
-                              text={`Your ${firstDecumYear.year} retirement year's actual spending, as computed by your ACTIVE withdrawal strategy (${si.withdrawalStrategy.replace(/_/g, " ")}) and any customizations in effect that year -- not a flat rate applied to today's balance. Shown in ${dollarMode === "nominal" ? "future" : "today's"} dollars, matching the Dollars toggle above the chart.`}
+                              text={`Your ${firstDecumYear.year} retirement year's actual spending, as computed by your ACTIVE withdrawal strategy (${WITHDRAWAL_STRATEGY_LABELS[si.withdrawalStrategy as keyof typeof WITHDRAWAL_STRATEGY_LABELS] ?? si.withdrawalStrategy}) and any changes you set for that year -- not a flat rate applied to today's balance. Shown in ${dollarMode === "nominal" ? "future" : "today's"} dollars, matching the Dollars toggle above the chart.`}
                             />
                           </div>
                           <div className="text-micro text-faint">

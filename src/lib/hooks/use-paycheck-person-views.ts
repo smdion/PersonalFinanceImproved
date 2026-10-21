@@ -24,6 +24,8 @@
  * household query instead.
  */
 
+import type { FicaRates } from "@/lib/pure/paystub-check";
+import type { BonusDestination } from "@/lib/config/enum-values";
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import {
@@ -91,6 +93,12 @@ export type PaycheckPersonView = {
   /** This job's other-pay lines with their per-check amounts. */
   earningRows: EarningRow[];
   rawContribs: RawContrib[];
+  /** The accounts the bonus check takes, and how much (fromBonus). */
+  bonusCheckAccounts: { id: number; amount: number }[];
+  /** Where this job's bonus goes (its Salary Profile entry). */
+  bonusDestination: BonusDestination;
+  /** The year's FICA figures (tax data) for the pay-stub check. */
+  ficaRates: FicaRates | null;
   alignedPreTax?: DeductionRowData[];
   alignedPostTax?: DeductionRowData[];
   coverageNote?: string;
@@ -352,6 +360,11 @@ export function usePaycheckPersonViews({
           rawDeductions: d.rawDeductions as RawDeduction[],
           earningRows: "earningRows" in d ? d.earningRows : [],
           rawContribs: d.rawContribs as RawContrib[],
+          bonusCheckAccounts:
+            "bonusCheckAccounts" in d ? d.bonusCheckAccounts : [],
+          bonusDestination:
+            "bonusDestination" in d ? d.bonusDestination : "budget",
+          ficaRates: "ficaRates" in d ? d.ficaRates : null,
           alignedPreTax: alignedData?.preTax[index as 0 | 1],
           alignedPostTax: alignedData?.postTax[index as 0 | 1],
           coverageNote: alignedData?.coverageNotes[index as 0 | 1]?.note,

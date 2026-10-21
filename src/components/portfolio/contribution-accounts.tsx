@@ -12,8 +12,8 @@ import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
-import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import {
   PERF_CATEGORY_RETIREMENT,
   PERF_CATEGORY_PORTFOLIO,
@@ -223,21 +223,9 @@ export function ContributionAccountsSettings() {
       ref={sectionRef}
       className="scroll-mt-4"
     >
-      <button
-        type="button"
-        onClick={() => setExpanded(!expanded)}
-        className="bg-surface-primary hover:bg-surface-sunken flex w-full items-center justify-between rounded-lg border px-5 py-3 shadow-sm transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          {" "}
-          <span
-            className={`text-faint text-xs transition-transform ${expanded ? "rotate-90" : ""}`}
-          >
-            &#9654;
-          </span>
-          <span className="text-primary font-semibold">
-            Account &amp; Contribution Settings
-          </span>
+      <CollapsibleSection
+        title="Account & Contribution Settings"
+        help={
           <HelpTip
             maxWidth={360}
             lines={[
@@ -263,188 +251,176 @@ export function ContributionAccountsSettings() {
               </>,
             ]}
           />
-          <span className="text-faint text-xs">
-            ({activeAccounts.length} account
-            {activeAccounts.length !== 1 ? "s" : ""})
-          </span>
-        </div>
-        <span className="text-faint text-xs">
-          {expanded ? "Click to collapse" : "Click to expand"}
-        </span>
-      </button>
+        }
+        meta={`(${activeAccounts.length} account${activeAccounts.length !== 1 ? "s" : ""})`}
+        open={expanded}
+        onToggle={() => setExpanded(!expanded)}
+      >
+        <UnlinkedContribsBanner
+          unlinkedContribs={unlinkedContribs}
+          activeAccounts={activeAccounts}
+          contribsByPerfId={contribsByPerfId}
+          personOptions={personOptions}
+          jobLabel={jobLabel}
+          admin={admin}
+          onContribOwnerChange={(c, update) => {
+            const full = allContribs.find((x) => x.id === c.id);
+            if (full) handleContribUpdate(full, update);
+          }}
+          onLinkContrib={handleLinkContrib}
+        />
 
-      {expanded && (
-        <>
-          <UnlinkedContribsBanner
-            unlinkedContribs={unlinkedContribs}
-            activeAccounts={activeAccounts}
-            contribsByPerfId={contribsByPerfId}
-            personOptions={personOptions}
-            jobLabel={jobLabel}
-            admin={admin}
-            onContribOwnerChange={(c, update) => {
-              const full = allContribs.find((x) => x.id === c.id);
-              if (full) handleContribUpdate(full, update);
-            }}
-            onLinkContrib={handleLinkContrib}
-          />
-
-          <Card className="mt-0 rounded-t-none border-t-0 p-4">
-            {admin && (
-              <div className="mb-3 flex items-center justify-end gap-1">
-                <HelpTip
-                  maxWidth={360}
-                  lines={[
-                    <>
-                      <strong>+ Add Account</strong> creates a new
-                      portfolio-level account (e.g. a 401k at Fidelity).
-                    </>,
-                    "",
-                    "Once created, expand the account to:",
-                    <>
-                      <strong>Add Sub-Accounts</strong> — Use &quot;+ Add
-                      Sub-Account&quot; inside the Sub-Accounts section
-                      (tax-type breakdowns like Roth, Traditional).
-                    </>,
-                    <>
-                      <strong>Add Contributions</strong> — Use &quot;+ Add
-                      Contribution&quot; inside the Contributions section
-                      (paycheck rules for how much you contribute).
-                    </>,
-                  ]}
-                />
-                <button
-                  onClick={() => setCreatingAccount(true)}
-                  className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-                >
-                  + Add Account
-                </button>
-              </div>
-            )}
-
-            {creatingAccount && (
-              <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50/50 p-4">
-                <CreateAccountForm
-                  people={peopleList}
-                  onSubmit={(vals) =>
-                    createPerfMut.mutate(
-                      {
-                        ...vals,
-                        accountType:
-                          vals.accountType as import("@/lib/config/account-types").AccountCategory,
-                      },
-                      { onSuccess: () => setCreatingAccount(false) },
-                    )
-                  }
-                  onCancel={() => setCreatingAccount(false)}
-                  isPending={createPerfMut.isPending}
-                />
-              </div>
-            )}
-
-            <div className="space-y-3">
-              {visibleAccounts.map((pa) => (
-                <AccountCard
-                  key={pa.id}
-                  account={pa}
-                  contributions={contribsByPerfId.get(pa.id) ?? []}
-                  balance={balanceByPerfId.get(pa.id) ?? null}
-                  insight={insightByPerfId.get(pa.id)}
-                  holdings={holdingsByPerfId.get(pa.id) ?? []}
-                  showLive={insights !== undefined}
-                  portfolioSubs={portfolioSubsByPerfId.get(pa.id) ?? []}
-                  people={peopleList}
-                  jobs={jobsList}
-                  personOptions={personOptions}
-                  categoryOptions={categoryOptions}
-                  accountTypeOptions={accountTypeOptions}
-                  activeProfileName={activeProfileName}
-                  activeProfileFields={activeProfileFields}
-                  isExpanded={expandedAcctId === pa.id}
-                  onToggleExpand={() =>
-                    setExpandedAcctId(expandedAcctId === pa.id ? null : pa.id)
-                  }
-                  onPerfUpdate={
-                    admin
-                      ? (updates) => handlePerfUpdate(pa, updates)
-                      : undefined
-                  }
-                  onContribUpdate={admin ? handleContribUpdate : undefined}
-                  onDelete={
-                    admin
-                      ? () => {
-                          if (
-                            confirm(
-                              "Delete this account? Linked contributions will be unlinked.",
-                            )
-                          ) {
-                            deletePerfMut.mutate({ id: pa.id });
-                          }
-                        }
-                      : undefined
-                  }
-                  activeAccounts={activeAccounts}
-                  onLinkContrib={admin ? handleLinkContrib : undefined}
-                  onCreateContrib={
-                    admin
-                      ? (data: Record<string, unknown>) =>
-                          createContribMut.mutate(
-                            data as Parameters<
-                              typeof createContribMut.mutate
-                            >[0],
-                          )
-                      : undefined
-                  }
-                  onSubAccountUpdate={
-                    admin
-                      ? (id, updates) =>
-                          updatePortfolioAccountMut.mutate({
-                            id,
-                            ...updates,
-                            taxType: updates.taxType as
-                              | "preTax"
-                              | "taxFree"
-                              | "afterTax"
-                              | "hsa"
-                              | undefined,
-                          })
-                      : undefined
-                  }
-                  onCreateSubAccount={
-                    admin && latestSnap
-                      ? (data) =>
-                          createPortfolioAccountMut.mutate({
-                            ...data,
-                            accountType:
-                              data.accountType as import("@/lib/config/account-types").AccountCategory,
-                            taxType: data.taxType as
-                              "preTax" | "taxFree" | "hsa" | "afterTax",
-                            parentCategory: data.parentCategory as
-                              "Retirement" | "Portfolio" | undefined,
-                            snapshotId: latestSnap.snapshot.id,
-                            performanceAccountId: pa.id,
-                          })
-                      : undefined
-                  }
-                />
-              ))}
+        <div>
+          {admin && (
+            <div className="mb-3 flex items-center justify-end gap-1">
+              <HelpTip
+                maxWidth={360}
+                lines={[
+                  <>
+                    <strong>+ Add Account</strong> creates a new portfolio-level
+                    account (e.g. a 401k at Fidelity).
+                  </>,
+                  "",
+                  "Once created, expand the account to:",
+                  <>
+                    <strong>Add Sub-Accounts</strong> — Use &quot;+ Add
+                    Sub-Account&quot; inside the Sub-Accounts section (tax-type
+                    breakdowns like Roth, Traditional).
+                  </>,
+                  <>
+                    <strong>Add Contributions</strong> — Use &quot;+ Add
+                    Contribution&quot; inside the Contributions section
+                    (paycheck rules for how much you contribute).
+                  </>,
+                ]}
+              />
+              <button
+                onClick={() => setCreatingAccount(true)}
+                className="rounded bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
+              >
+                + Add Account
+              </button>
             </div>
+          )}
 
-            {closedAccounts.length > 0 && (
-              <div className="mt-3 border-t pt-2">
-                <button
-                  onClick={() => setShowClosed(!showClosed)}
-                  className="text-muted hover:text-secondary text-xs"
-                >
-                  {showClosed ? "Hide" : "Show"} {closedAccounts.length} closed
-                  account
-                  {closedAccounts.length > 1 ? "s" : ""}
-                </button>
-              </div>
-            )}
-          </Card>
-        </>
-      )}
+          {creatingAccount && (
+            <div className="mb-4 rounded-lg border border-blue-200 bg-blue-50/50 p-4">
+              <CreateAccountForm
+                people={peopleList}
+                onSubmit={(vals) =>
+                  createPerfMut.mutate(
+                    {
+                      ...vals,
+                      accountType:
+                        vals.accountType as import("@/lib/config/account-types").AccountCategory,
+                    },
+                    { onSuccess: () => setCreatingAccount(false) },
+                  )
+                }
+                onCancel={() => setCreatingAccount(false)}
+                isPending={createPerfMut.isPending}
+              />
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {visibleAccounts.map((pa) => (
+              <AccountCard
+                key={pa.id}
+                account={pa}
+                contributions={contribsByPerfId.get(pa.id) ?? []}
+                balance={balanceByPerfId.get(pa.id) ?? null}
+                insight={insightByPerfId.get(pa.id)}
+                holdings={holdingsByPerfId.get(pa.id) ?? []}
+                showLive={insights !== undefined}
+                portfolioSubs={portfolioSubsByPerfId.get(pa.id) ?? []}
+                people={peopleList}
+                jobs={jobsList}
+                personOptions={personOptions}
+                categoryOptions={categoryOptions}
+                accountTypeOptions={accountTypeOptions}
+                activeProfileName={activeProfileName}
+                activeProfileFields={activeProfileFields}
+                isExpanded={expandedAcctId === pa.id}
+                onToggleExpand={() =>
+                  setExpandedAcctId(expandedAcctId === pa.id ? null : pa.id)
+                }
+                onPerfUpdate={
+                  admin ? (updates) => handlePerfUpdate(pa, updates) : undefined
+                }
+                onContribUpdate={admin ? handleContribUpdate : undefined}
+                onDelete={
+                  admin
+                    ? () => {
+                        if (
+                          confirm(
+                            "Delete this account? Linked contributions will be unlinked.",
+                          )
+                        ) {
+                          deletePerfMut.mutate({ id: pa.id });
+                        }
+                      }
+                    : undefined
+                }
+                activeAccounts={activeAccounts}
+                onLinkContrib={admin ? handleLinkContrib : undefined}
+                onCreateContrib={
+                  admin
+                    ? (data: Record<string, unknown>) =>
+                        createContribMut.mutate(
+                          data as Parameters<typeof createContribMut.mutate>[0],
+                        )
+                    : undefined
+                }
+                onSubAccountUpdate={
+                  admin
+                    ? (id, updates) =>
+                        updatePortfolioAccountMut.mutate({
+                          id,
+                          ...updates,
+                          taxType: updates.taxType as
+                            | "preTax"
+                            | "taxFree"
+                            | "afterTax"
+                            | "hsa"
+                            | undefined,
+                        })
+                    : undefined
+                }
+                onCreateSubAccount={
+                  admin && latestSnap
+                    ? (data) =>
+                        createPortfolioAccountMut.mutate({
+                          ...data,
+                          accountType:
+                            data.accountType as import("@/lib/config/account-types").AccountCategory,
+                          taxType: data.taxType as
+                            "preTax" | "taxFree" | "hsa" | "afterTax",
+                          parentCategory: data.parentCategory as
+                            "Retirement" | "Portfolio" | undefined,
+                          snapshotId: latestSnap.snapshot.id,
+                          performanceAccountId: pa.id,
+                        })
+                    : undefined
+                }
+              />
+            ))}
+          </div>
+
+          {closedAccounts.length > 0 && (
+            <div className="mt-3 border-t pt-2">
+              <button
+                onClick={() => setShowClosed(!showClosed)}
+                className="text-muted hover:text-secondary text-xs"
+              >
+                {showClosed ? "Hide" : "Show"} {closedAccounts.length} closed
+                account
+                {closedAccounts.length > 1 ? "s" : ""}
+              </button>
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
     </div>
   );
 }

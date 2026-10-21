@@ -8,6 +8,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.10] - 2026-10-20
+
+### Added
+
+- **Check against a pay stub** (Paycheck page, under each person's paycheck): type any figures from one real stub — gross, federal taxable wages, Social Security and Medicare wages or tax, federal withholding, net pay — and see which match Ledgr's and, where one doesn't, the likely reason: a deduction taxed differently than on the stub (named), a taxable benefit Ledgr doesn't have, or the W-4. Social Security is skipped once the year's pay passes the wage base. Nothing is saved.
+
+### Changed
+
+- **Contributions taken from bonus checks are set per account.** Each payroll contribution has its own "Also taken from bonus checks" switch, in the Contribution Profile (on the account under Contributions on the Paycheck page, or Profiles → Contributions) — so a 401(k) can come out of the bonus while an HSA doesn't, and switching Contribution Profiles can change it. This replaces the two bonus switches on the Salary Profile. The Paycheck page's Bonus section lists what the bonus check takes, account by account. An account's employer match counts the bonus when that account is taken from bonus checks.
+- **"Bonus goes to" is part of the Salary Profile** (per job), like the extra-paycheck choice — so it follows the active Salary Profile, and anyone who can edit profiles can set it (it was admin-only).
+- **One salary editor:** Profiles → Salary shows each job with the Paycheck page's own sections — Pay schedule, Withholding, Bonus, Other pay, Extra paycheck — and both save the same way. The table above keeps salary, bonus and total.
+- **Budget columns are spending levels.** Every column uses the active Salary and Contribution profiles; a column no longer has profiles of its own (the What-If tab's "columns with their own profiles" note is gone).
+- **Plan names are unique.**
+- **A simpler header:** "Profiles [Manage ▾]" opens one panel with the active profile of each kind, your Plans and "Edit profiles →" (it shows the Plan's name when the active profiles match one), and "View [Projected | Year-end | YTD]" is labelled — two controls instead of six.
+- **What the savings rate counts is set next to it.** "Employer match" and "Portfolio" are small on/off chips on the savings-rate line of the Contributions page and the Dashboard's checkup card, showing their state — they used to sit with the page's filters and looked like they changed the whole page. The Contributions page's profile picker is labelled and marks the active profile.
+- **Portfolio:** Holding history collapses like Snapshot History and Account & Contribution Settings; links to it open it.
+- **Plainer words:** the year-by-year changes on the Retirement projection are "Changes by year", Savings' one-month amounts are "Month changes", the extra paycheck's are "Specific months", and Retirement's own spending amount is a "Set amount" (no more "override").
+
+### Fixed
+
+- **Holding history follows each part of an account the institution reports per part.** The joint IRA's daily holdings were pooled into one mix nobody holds (e.g. 65% one person's 2055 fund / 35% the other's 2060). Now each person's Roth and Traditional part has its own history, you enter old statements per part, and the "Your mix, in index funds" benchmark combines the parts by their snapshot balances. Accounts whose parts share one feed, like a 401(k), are unchanged.
+- **Plan salaries are back.** v0.8.9 stopped reading the salaries an older Plan carried. Upgrading turns each such Plan's salaries into a Salary Profile of its own ("‹Plan› salary") and the Plan uses it.
+- Two quick edits on the Paycheck page could save over each other; each edit now saves only the field it changes.
+- **Relocation** compared contributions on base salary only. It now counts what the bonus check takes for accounts taken from bonus checks, and figures the employer match the same way as the Contributions page.
+
+### Upgrading
+
+- The upgrade converts your data: each person's "Bonus goes to" choice into their Salary Profile entries; the Salary Profile bonus switches into each payroll account's "Also taken from bonus checks" in every Contribution Profile (each follows the Salary Profile its Plans use it with, else the active one; where Salary Profiles disagreed, the upgrade log says which it used); duplicate Plan names get a number. It then removes what v0.8.10 no longer uses (Plans' stored salaries, Budget columns' own profiles). Going back to v0.8.9 afterwards needs the backup taken before the upgrade — restore it together with the v0.8.9 image.
+- Holding history periods entered before this version are whole-account. On an account now kept per part, each shows under the account as needing a part — move it to the right part or delete it; it isn't counted until then.
+
+---
+
 ## [0.8.9] - 2026-10-20
 
 ### Changed

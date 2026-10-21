@@ -32,14 +32,17 @@ vi.mock("@/components/ui/toggle", () => ({
     isChecked,
     onChange,
     label,
+    disabled,
   }: {
     isChecked: boolean;
     onChange: (v: boolean) => void;
     label: string;
+    disabled?: boolean;
   }) => (
     <button
       role="switch"
       aria-checked={isChecked}
+      disabled={disabled}
       onClick={() => onChange(!isChecked)}
     >
       {label}
@@ -178,5 +181,39 @@ describe("ContribCard", () => {
     render(<ContribCard {...defaultProps} onDeleteContrib={onDeleteContrib} />);
     fireEvent.click(screen.getByTitle("Delete contribution account"));
     await vi.waitFor(() => expect(onDeleteContrib).toHaveBeenCalledWith(1));
+  });
+
+  describe("Also taken from bonus checks", () => {
+    const toggle = () =>
+      screen.queryByRole("switch", { name: "Also taken from bonus checks" });
+
+    it("shows for a payroll account and saves fromBonus", () => {
+      const onUpdateContrib = vi.fn();
+      render(
+        <ContribCard
+          {...defaultProps}
+          contrib={{ ...baseContrib, fromBonus: true }}
+          onUpdateContrib={onUpdateContrib}
+        />,
+      );
+      expect(toggle()).toHaveAttribute("aria-checked", "true");
+      fireEvent.click(toggle()!);
+      expect(onUpdateContrib).toHaveBeenCalledWith(1, "fromBonus", "false");
+    });
+
+    it("isn't offered for an account not paid through payroll", () => {
+      render(
+        <ContribCard
+          {...defaultProps}
+          contrib={{ ...baseContrib, jobId: null, isPayrollDeducted: null }}
+        />,
+      );
+      expect(toggle()).toBeNull();
+    });
+
+    it("is read-only without permission to edit profiles", () => {
+      render(<ContribCard {...defaultProps} contribValueReadOnly />);
+      expect(toggle()).toBeDisabled();
+    });
   });
 });

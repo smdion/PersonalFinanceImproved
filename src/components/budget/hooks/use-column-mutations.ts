@@ -2,10 +2,9 @@
 
 /**
  * Column-level mutations for the budget page: add, remove, rename,
- * update months, update per-column contribution/salary profile ids.
+ * update months.
  *
- * All are simple-invalidate; updateColumnMonths and
- * updateColumnContributionProfileIds additionally invalidate
+ * All are simple-invalidate; updateColumnMonths additionally invalidates
  * listProfiles because their side effect flows into the profile list
  * sidebar's weighted-annual-total column.
  */
@@ -29,22 +28,12 @@ export function useColumnMutations() {
   const updateColumnMonths = trpc.budget.updateColumnMonths.useMutation({
     onSuccess: invalidateSummaryAndProfiles,
   });
-  const updateColumnContribProfiles =
-    trpc.budget.updateColumnContributionProfileIds.useMutation({
-      onSuccess: invalidateSummaryAndProfiles,
-    });
-  const updateColumnSalaryProfiles =
-    trpc.budget.updateColumnSalaryProfileIds.useMutation({
-      onSuccess: invalidateSummaryAndProfiles,
-    });
 
   return {
     addColumn,
     removeColumn,
     renameColumn,
     updateColumnMonths,
-    updateColumnContribProfiles,
-    updateColumnSalaryProfiles,
   };
 }
 

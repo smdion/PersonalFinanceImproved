@@ -447,13 +447,13 @@ describe("PerPhaseBudgetSection smoke", () => {
       />,
     );
     expect(screen.getByText("Budget Source")).toBeInTheDocument();
-    expect(screen.getByText("Salary Override")).toBeInTheDocument();
+    expect(screen.getByText("Set amount")).toBeInTheDocument();
     expect(
       screen.getByRole("option", { name: /Baseline/ }),
     ).toBeInTheDocument();
   });
 
-  it("shows 'Using manual override' and hides the picker when decExpenseOverride is set", () => {
+  it("shows 'Using the amount you set' and hides the picker when decExpenseOverride is set", () => {
     render(
       <PerPhaseBudgetSection
         {...baseProps}
@@ -471,7 +471,7 @@ describe("PerPhaseBudgetSection smoke", () => {
         ]}
       />,
     );
-    expect(screen.getByText("Using manual override")).toBeInTheDocument();
+    expect(screen.getByText("Using the amount you set")).toBeInTheDocument();
   });
 });
 

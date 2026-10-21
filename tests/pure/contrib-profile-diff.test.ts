@@ -104,3 +104,26 @@ describe("diffContribProfileSwap", () => {
     expect(lines).toEqual([]);
   });
 });
+
+describe("diffContribProfileSwap — taken from bonus checks", () => {
+  it("a fromBonus difference is a line; absent and false are the same", () => {
+    const value = {
+      contributionValue: "8",
+      contributionMethod: "percent_of_salary",
+    };
+    expect(
+      diffContribProfileSwap(
+        { "1": { ...value, fromBonus: true } },
+        { "1": value },
+        [account()],
+      ),
+    ).toEqual(["Alex 401k: 8% + bonus checks → 8%"]);
+    expect(
+      diffContribProfileSwap(
+        { "1": { ...value, fromBonus: false } },
+        { "1": value },
+        [account()],
+      ),
+    ).toEqual([]);
+  });
+});

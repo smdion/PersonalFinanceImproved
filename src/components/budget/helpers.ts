@@ -1,14 +1,15 @@
 /**
  * Pure helper functions shared by the budget page.
  *
- * These reshape the per-column paycheck data returned by
- * `usePerColumnPaycheck` into the payroll + non-payroll breakdowns the
+ * These reshape the paycheck data (one copy per budget column — see
+ * use-budget-derived-data.ts) into the payroll + non-payroll breakdowns the
  * budget summary table and contribution matching rely on. The hand-rolled
  * local casts are intentional: narrowing against `@/server/*` types would
  * violate the `no-restricted-imports` rule at eslint.config.mjs lines
  * 44-64.
  */
 
+import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
 import type { PayrollBreakdown, SinkingFundLine } from "./types";
 
 export function buildPayrollBreakdown(
@@ -151,7 +152,7 @@ export function buildNonPayrollContribs(
       // to this employer," not "deducted from that employer's paycheck." A
       // job-tied account the user explicitly funds from take-home (box
       // unchecked) must still land in this non-payroll pool.
-      if (c.isPayrollDeducted ?? c.jobId !== null) continue;
+      if (isPaidThroughPayroll(c)) continue;
       if (linkedAccountIds.has(c.id)) continue;
       const val = Number(c.contributionValue) || 0;
       const periodsPerYear = d.paycheck.periodsPerYear;

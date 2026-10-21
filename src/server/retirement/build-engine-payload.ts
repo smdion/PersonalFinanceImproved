@@ -515,8 +515,10 @@ export async function buildEnginePayload(
         db,
         items,
         numColumns,
-        new Array(numColumns).fill(opts.contributionProfileId ?? null),
-        new Array(numColumns).fill(opts.salaryProfileId ?? null),
+        {
+          contribProfileId: opts.contributionProfileId ?? null,
+          salaryProfileId: opts.salaryProfileId ?? null,
+        },
       );
       const totals = labels.map((_: string, colIdx: number) =>
         sumBy(resolvedItems, (item) => item.amounts[colIdx] ?? 0),
@@ -564,13 +566,12 @@ export async function buildEnginePayload(
     const totalComp = getTotalCompensation(salary, bonusTerms);
     return {
       job,
-      // Base salary + the bonus whose check carries contributions (the
-      // formula bonus — the projection grows it forward).
-      ...contributionPay(job, salary, bonusTerms),
+      // Base salary + the bonus (each account takes from it only when set
+      // to, fromBonus; the formula bonus — the projection grows it forward).
+      ...contributionPay(salary, bonusTerms),
       // This year's — the pinned bonus when there is one — for this year's
       // contribution lines (display specs), never for growth.
       bonusGrossThisYear: contributionPay(
-        job,
         salary,
         bonusTerms,
         comp.bonusOverride,
@@ -1021,22 +1022,16 @@ export async function buildEnginePayload(
     (decProfile?.columnLabels as string[] | null)?.length ?? 1;
   const resolvedAccItems = opts.accumulationExpenseOverride
     ? accItems
-    : await resolveLinkedBudgetItemAmounts(
-        db,
-        accItems,
-        accNumColumns,
-        new Array(accNumColumns).fill(opts.contributionProfileId ?? null),
-        new Array(accNumColumns).fill(opts.salaryProfileId ?? null),
-      );
+    : await resolveLinkedBudgetItemAmounts(db, accItems, accNumColumns, {
+        contribProfileId: opts.contributionProfileId ?? null,
+        salaryProfileId: opts.salaryProfileId ?? null,
+      });
   const resolvedDecItems = opts.decumulationExpenseOverride
     ? decItems
-    : await resolveLinkedBudgetItemAmounts(
-        db,
-        decItems,
-        decNumColumns,
-        new Array(decNumColumns).fill(opts.contributionProfileId ?? null),
-        new Array(decNumColumns).fill(opts.salaryProfileId ?? null),
-      );
+    : await resolveLinkedBudgetItemAmounts(db, decItems, decNumColumns, {
+        contribProfileId: opts.contributionProfileId ?? null,
+        salaryProfileId: opts.salaryProfileId ?? null,
+      });
   const accumulationExpenses =
     opts.accumulationExpenseOverride ??
     computeBudgetAnnualTotal(resolvedAccItems, accCol, accMonths);
@@ -1090,6 +1085,8 @@ export async function buildEnginePayload(
       employerMatchType: c.employerMatchType,
       employerMatchValue: c.employerMatchValue,
       employerMaxMatchPct: c.employerMaxMatchPct,
+      isPayrollDeducted: c.isPayrollDeducted,
+      fromBonus: c.fromBonus,
       performanceAccountId: c.performanceAccountId,
       targetAnnual: c.targetAnnual,
       allocationPriority: c.allocationPriority,
@@ -1135,7 +1132,7 @@ export async function buildEnginePayload(
     const comp = resolveCompensation(salaryProfileActiveMap, j.id);
     return {
       job: { id: j.id, personId: j.personId },
-      ...contributionPay(j, comp.salary, comp.terms),
+      ...contributionPay(comp.salary, comp.terms),
       baseSalary: comp.salary,
       totalComp: getTotalCompensation(comp.salary, comp.terms),
     };
@@ -1285,8 +1282,6 @@ export async function buildEnginePayload(
       "additionalFedWithholding",
       "bonusMonth",
       "bonusDayOfMonth",
-      "include401kInBonus",
-      "includeBonusInContributions",
     ] as const satisfies readonly (keyof SalaryProfileEntry)[];
     const nonCompFields: Record<string, unknown> = {};
     let allNonCompFieldsResolved = true;
@@ -1325,7 +1320,7 @@ export async function buildEnginePayload(
           );
           return {
             job: { id: j.id, personId: j.personId },
-            ...contributionPay(j, comp.salary, comp.terms),
+            ...contributionPay(comp.salary, comp.terms),
             baseSalary: comp.salary,
             totalComp: getTotalCompensation(comp.salary, comp.terms),
           };

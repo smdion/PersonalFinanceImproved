@@ -25,14 +25,15 @@
  * current active one.
  *
  * Bonus terms live here rather than on a Contribution Profile: "how big is
- * the bonus" is the same category of fact as "how big is the salary". A
- * Contribution Profile still owns include401kInBonus /
- * includeBonusInContributions, which describe how contributions are computed
- * FROM a bonus.
+ * the bonus" is the same category of fact as "how big is the salary".
+ * Whether a contribution is also taken from bonus checks is a per-account
+ * Contribution Profile election (`fromBonus`), not a Salary Profile fact.
  *
  * Permissions intentionally mirror contributionProfile (no new gate): reads on
  * protectedProcedure, writes on contributionProfileProcedure.
  */
+import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
+import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
 import { assertNoPlanUses } from "@/server/helpers/plans";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
@@ -231,9 +232,10 @@ export const salaryProfileRouter = createTRPCRouter({
           entry,
         ]),
       );
-      const [people, allJobs] = await Promise.all([
+      const [people, allJobs, allEarnings] = await Promise.all([
         ctx.db.select().from(schema.people),
         ctx.db.select().from(schema.jobs),
+        ctx.db.select().from(schema.paycheckEarnings),
       ]);
 
       /** Full per-job detail — computed once per job so both the selected
@@ -253,38 +255,60 @@ export const salaryProfileRouter = createTRPCRouter({
            *  the whole encoding. No entry means $0/no bonus, not a fallback
            *  to some other value. */
           hasEntry: entry !== null,
-          salary: entry?.salary ?? 0,
-          bonusPercent: entry?.bonusPercent ?? 0,
-          bonusMultiplier: entry?.bonusMultiplier ?? 1,
-          monthsInBonusYear: entry?.monthsInBonusYear ?? 12,
+          salary: entry?.salary ?? BLANK_SALARY_ENTRY.salary,
+          bonusPercent: entry?.bonusPercent ?? BLANK_SALARY_ENTRY.bonusPercent,
+          bonusMultiplier:
+            entry?.bonusMultiplier ?? BLANK_SALARY_ENTRY.bonusMultiplier,
+          monthsInBonusYear:
+            entry?.monthsInBonusYear ?? BLANK_SALARY_ENTRY.monthsInBonusYear,
           /** This year's actual paid-out bonus, pinned on the same entry —
            *  see SalaryProfileEntry.bonusOverride's docblock. */
-          bonusOverride: entry?.bonusOverride ?? null,
-          /** Pay schedule, W-4 elections, and bonus pay date/flags — the 11
-           *  fields that moved off `jobs` in Stage B. Defaults below match
-           *  onboarding-wizard.tsx's defaults for a brand-new entry, purely
-           *  a visible starting point for the editor when this job has no
-           *  entry yet — never used in any live calculation (a job with no
-           *  entry resolves to $0/incomplete everywhere else). */
-          payPeriod: entry?.payPeriod ?? "biweekly",
-          payWeek: entry?.payWeek ?? "na",
-          anchorPayDate: entry?.anchorPayDate ?? null,
-          budgetPeriodsPerMonth: entry?.budgetPeriodsPerMonth ?? null,
-          w4FilingStatus: entry?.w4FilingStatus ?? "MFJ",
-          w4Box2cChecked: entry?.w4Box2cChecked ?? false,
-          additionalFedWithholding: entry?.additionalFedWithholding ?? 0,
-          bonusMonth: entry?.bonusMonth ?? null,
-          bonusDayOfMonth: entry?.bonusDayOfMonth ?? null,
-          include401kInBonus: entry?.include401kInBonus ?? false,
-          includeBonusInContributions:
-            entry?.includeBonusInContributions ?? false,
+          bonusOverride:
+            entry?.bonusOverride ?? BLANK_SALARY_ENTRY.bonusOverride,
+          /** Pay schedule, W-4 elections and bonus pay date — fields that
+           *  moved off `jobs` in Stage B. With no entry yet, the blank
+           *  entry's values (BLANK_SALARY_ENTRY) — purely a visible starting
+           *  point for the editor, never used in any live calculation (a job
+           *  with no entry resolves to $0/incomplete everywhere else). */
+          payPeriod: entry?.payPeriod ?? BLANK_SALARY_ENTRY.payPeriod,
+          payWeek: entry?.payWeek ?? BLANK_SALARY_ENTRY.payWeek,
+          anchorPayDate:
+            entry?.anchorPayDate ?? BLANK_SALARY_ENTRY.anchorPayDate,
+          budgetPeriodsPerMonth:
+            entry?.budgetPeriodsPerMonth ??
+            BLANK_SALARY_ENTRY.budgetPeriodsPerMonth,
+          w4FilingStatus:
+            entry?.w4FilingStatus ?? BLANK_SALARY_ENTRY.w4FilingStatus,
+          w4Box2cChecked:
+            entry?.w4Box2cChecked ?? BLANK_SALARY_ENTRY.w4Box2cChecked,
+          additionalFedWithholding:
+            entry?.additionalFedWithholding ??
+            BLANK_SALARY_ENTRY.additionalFedWithholding,
+          bonusMonth: entry?.bonusMonth ?? BLANK_SALARY_ENTRY.bonusMonth,
+          bonusDayOfMonth:
+            entry?.bonusDayOfMonth ?? BLANK_SALARY_ENTRY.bonusDayOfMonth,
           /** Where this job's extra (3rd biweekly) paycheck routes, if
            *  configured — see extraPaycheckRoutingSchema (json-schemas.ts). */
-          extraPaycheckRouting: entry?.extraPaycheckRouting ?? null,
+          extraPaycheckRouting:
+            entry?.extraPaycheckRouting ??
+            BLANK_SALARY_ENTRY.extraPaycheckRouting,
+          /** Where this job's bonus goes; absent = the budget. */
+          bonusDestination:
+            entry?.bonusDestination ?? DEFAULT_BONUS_DESTINATION,
+          /** This job's other-pay lines with their per-check amount in this
+           *  profile (0 when it sets none) — same as the Paycheck page. */
+          earningRows: allEarnings
+            .filter((e) => e.jobId === job.id)
+            .map((e) => ({
+              ...e,
+              amount: entry?.otherEarnings?.[String(e.id)] ?? 0,
+            })),
           /** What this profile actually produces for this job — the pinned
            *  actual when set, else the formula estimate. */
           effectiveSalary: comp.salary,
           estimatedBonus: comp.bonusOverride ?? comp.bonus,
+          /** The formula's bonus, ignoring this year's actual. */
+          formulaBonus: comp.bonus,
         };
       };
 
@@ -318,27 +342,42 @@ export const salaryProfileRouter = createTRPCRouter({
           jobOptions,
           employerName: selected?.employerName ?? null,
           hasEntry: selected?.hasEntry ?? false,
-          salary: selected?.salary ?? 0,
-          bonusPercent: selected?.bonusPercent ?? 0,
-          bonusMultiplier: selected?.bonusMultiplier ?? 1,
-          monthsInBonusYear: selected?.monthsInBonusYear ?? 12,
-          bonusOverride: selected?.bonusOverride ?? null,
-          payPeriod: selected?.payPeriod ?? "biweekly",
-          payWeek: selected?.payWeek ?? "na",
-          anchorPayDate: selected?.anchorPayDate ?? null,
-          budgetPeriodsPerMonth: selected?.budgetPeriodsPerMonth ?? null,
-          w4FilingStatus: selected?.w4FilingStatus ?? "MFJ",
-          w4Box2cChecked: selected?.w4Box2cChecked ?? false,
-          additionalFedWithholding: selected?.additionalFedWithholding ?? 0,
-          bonusMonth: selected?.bonusMonth ?? null,
-          bonusDayOfMonth: selected?.bonusDayOfMonth ?? null,
-          include401kInBonus: selected?.include401kInBonus ?? false,
-          includeBonusInContributions:
-            selected?.includeBonusInContributions ?? false,
-          extraPaycheckRouting: selected?.extraPaycheckRouting ?? null,
+          salary: selected?.salary ?? BLANK_SALARY_ENTRY.salary,
+          bonusPercent:
+            selected?.bonusPercent ?? BLANK_SALARY_ENTRY.bonusPercent,
+          bonusMultiplier:
+            selected?.bonusMultiplier ?? BLANK_SALARY_ENTRY.bonusMultiplier,
+          monthsInBonusYear:
+            selected?.monthsInBonusYear ?? BLANK_SALARY_ENTRY.monthsInBonusYear,
+          bonusOverride:
+            selected?.bonusOverride ?? BLANK_SALARY_ENTRY.bonusOverride,
+          payPeriod: selected?.payPeriod ?? BLANK_SALARY_ENTRY.payPeriod,
+          payWeek: selected?.payWeek ?? BLANK_SALARY_ENTRY.payWeek,
+          anchorPayDate:
+            selected?.anchorPayDate ?? BLANK_SALARY_ENTRY.anchorPayDate,
+          budgetPeriodsPerMonth:
+            selected?.budgetPeriodsPerMonth ??
+            BLANK_SALARY_ENTRY.budgetPeriodsPerMonth,
+          w4FilingStatus:
+            selected?.w4FilingStatus ?? BLANK_SALARY_ENTRY.w4FilingStatus,
+          w4Box2cChecked:
+            selected?.w4Box2cChecked ?? BLANK_SALARY_ENTRY.w4Box2cChecked,
+          additionalFedWithholding:
+            selected?.additionalFedWithholding ??
+            BLANK_SALARY_ENTRY.additionalFedWithholding,
+          bonusMonth: selected?.bonusMonth ?? BLANK_SALARY_ENTRY.bonusMonth,
+          bonusDayOfMonth:
+            selected?.bonusDayOfMonth ?? BLANK_SALARY_ENTRY.bonusDayOfMonth,
+          extraPaycheckRouting:
+            selected?.extraPaycheckRouting ??
+            BLANK_SALARY_ENTRY.extraPaycheckRouting,
+          bonusDestination:
+            selected?.bonusDestination ?? DEFAULT_BONUS_DESTINATION,
+          earningRows: selected?.earningRows ?? [],
           /** What this profile actually produces for this person. */
           effectiveSalary: selected?.effectiveSalary ?? 0,
           estimatedBonus: selected?.estimatedBonus ?? 0,
+          formulaBonus: selected?.formulaBonus ?? 0,
         };
       });
 

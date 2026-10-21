@@ -29,7 +29,10 @@ import {
 } from "@/lib/config/enum-values";
 import { localDateStr } from "@/lib/utils/date";
 import { effectiveFacts } from "@/lib/pure/fund-facts";
-import { dailyWeightsByAccount } from "@/lib/pure/holding-periods";
+import {
+  dailyWeightsByAccount,
+  dailyWeightsByHolder,
+} from "@/lib/pure/holding-periods";
 import {
   accountValuesByYear,
   matchedMixDescription,
@@ -38,7 +41,11 @@ import {
 } from "@/lib/pure/matched-mix";
 import { toNumber } from "@/server/helpers/transforms";
 import { toFactRows } from "@/server/helpers/fund-facts";
-import { loadDailyPositions, loadEnteredPeriods } from "./_shared";
+import {
+  loadDailyPositions,
+  loadEnteredPeriods,
+  loadHoldingSplits,
+} from "./_shared";
 
 type Db = typeof import("@/lib/db").db;
 
@@ -62,6 +69,7 @@ async function matchedMixBenchmark(
     loadEnteredPeriods(db),
   ]);
   if (positions.length === 0 && entered.length === 0) return null;
+  const { splits, parts } = await loadHoldingSplits(db, entered);
   const accountValues = accountValuesByYear(
     rows.map((r) => ({
       year: r.year,
@@ -111,6 +119,11 @@ async function matchedMixBenchmark(
     accountValues,
     periods: entered,
     observedDaily,
+    splits,
+    observedDailyByPart: dailyWeightsByHolder(positions),
+    partSnapshots: new Map(
+      [...parts].map(([id, p]) => [id, p.snapshots] as const),
+    ),
     facts,
     proxyPrices,
   });

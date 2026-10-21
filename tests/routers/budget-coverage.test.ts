@@ -2,10 +2,10 @@
  * Budget router coverage tests — covers procedures and branches not exercised
  * by the primary budget.test.ts suite.
  *
- * Covers: updateItemAmounts, updateCategoryEssential, updateColumnContributionProfileIds,
+ * Covers: updateItemAmounts, updateCategoryEssential,
  * linkContributionAccount, unlinkContributionAccount, listContribAccountsForLinking,
  * listApiCategories, syncBudgetFromApi, syncBudgetToApi, listApiActuals,
- * addColumn/removeColumn with columnMonths + contribProfileIds,
+ * addColumn/removeColumn with columnMonths,
  * computeActiveSummary with contribution-linked items,
  * listProfiles with weighted columnMonths.
  */
@@ -302,79 +302,6 @@ describe("budget router — updateCategoryEssential", () => {
       const result = await caller.budget.updateCategoryEssential({
         category: "NonExistentCategory",
         isEssential: false,
-      });
-      expect(result.ok).toBe(true);
-    } finally {
-      cleanup();
-    }
-  });
-});
-
-// ---------------------------------------------------------------------------
-// updateColumnContributionProfileIds
-// ---------------------------------------------------------------------------
-
-describe("budget router — updateColumnContributionProfileIds", () => {
-  it("sets column contribution profile IDs on the active profile", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
-    try {
-      seedStandardDataset(db);
-      const contribProfileId = seedContributionProfile(db);
-      const result = await caller.budget.updateColumnContributionProfileIds({
-        columnContributionProfileIds: [contribProfileId],
-      });
-      expect(result.ok).toBe(true);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("cleans up to null when all entries are null", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
-    try {
-      seedStandardDataset(db);
-      const result = await caller.budget.updateColumnContributionProfileIds({
-        columnContributionProfileIds: [null],
-      });
-      expect(result.ok).toBe(true);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("throws when length does not match column count", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
-    try {
-      seedStandardDataset(db);
-      await expect(
-        caller.budget.updateColumnContributionProfileIds({
-          columnContributionProfileIds: [null, null],
-        }),
-      ).rejects.toThrow(/columns changed/);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("throws when no active profile exists", async () => {
-    const { caller, cleanup } = await createTestCaller(adminSession);
-    try {
-      await expect(
-        caller.budget.updateColumnContributionProfileIds({
-          columnContributionProfileIds: [null],
-        }),
-      ).rejects.toThrow("No active profile");
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("accepts null to clear contribution profile IDs", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
-    try {
-      seedStandardDataset(db);
-      const result = await caller.budget.updateColumnContributionProfileIds({
-        columnContributionProfileIds: null,
       });
       expect(result.ok).toBe(true);
     } finally {
@@ -1436,24 +1363,6 @@ describe("budget router — addColumn with columnMonths set", () => {
       cleanup();
     }
   });
-
-  it("extends columnContributionProfileIds when adding a column", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
-    try {
-      seedStandardDataset(db);
-      const contribProfileId = seedContributionProfile(db);
-      await caller.budget.updateColumnContributionProfileIds({
-        columnContributionProfileIds: [contribProfileId],
-      });
-
-      await caller.budget.addColumn({ label: "Extra" });
-
-      // We can't directly read contribProfileIds from listProfiles,
-      // but the operation should not throw
-    } finally {
-      cleanup();
-    }
-  });
 });
 
 describe("budget router — removeColumn with columnMonths set", () => {
@@ -1472,23 +1381,6 @@ describe("budget router — removeColumn with columnMonths set", () => {
       const profiles = await caller.budget.listProfiles();
       const main = profiles.find((p) => p.isActive);
       expect(main!.columnMonths).toEqual([8]);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("shrinks columnContributionProfileIds when removing a column", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
-    try {
-      seedStandardDataset(db);
-      await caller.budget.addColumn({ label: "To Remove" });
-      const contribProfileId = seedContributionProfile(db);
-      await caller.budget.updateColumnContributionProfileIds({
-        columnContributionProfileIds: [contribProfileId, null],
-      });
-
-      // Should not throw
-      await caller.budget.removeColumn({ colIndex: 1 });
     } finally {
       cleanup();
     }
@@ -1677,57 +1569,6 @@ describe("budget router — computeActiveSummary with contribution-linked items"
       cleanup();
     }
   });
-
-  it("prefers a per-column override over the globally-active Contribution Profile when both are set", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
-    try {
-      const seed = seedStandardDataset(db);
-      const contrib = await seedContribAccount(db, seed.personId, {
-        jobId: null,
-      });
-      await caller.budget.linkContributionAccount({
-        budgetItemId: seed.itemIds[0]!,
-        contributionAccountId: contrib.id,
-      });
-
-      const columnProfileId = seedContributionProfile(db, {
-        name: "Column Profile",
-        contributionActiveFields: {
-          contributionAccounts: {
-            [String(contrib.id)]: {
-              contributionValue: "750",
-              contributionMethod: "fixed_annual",
-            },
-          },
-        },
-      });
-      const globalProfileId = seedContributionProfile(db, {
-        name: "Global Profile",
-        contributionActiveFields: {
-          contributionAccounts: {
-            [String(contrib.id)]: {
-              contributionValue: "900",
-              contributionMethod: "fixed_annual",
-            },
-          },
-        },
-      });
-      await caller.budget.updateColumnContributionProfileIds({
-        columnContributionProfileIds: [columnProfileId],
-      });
-
-      const summary = await caller.budget.computeActiveSummary({
-        contributionProfile: {
-          localSelectionId: null,
-          globalDefaultId: globalProfileId,
-        },
-      });
-      const item = summary.rawItems!.find((i) => i.id === seed.itemIds[0]!);
-      expect(item!.contribAmount).toBe(62.5);
-    } finally {
-      cleanup();
-    }
-  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1845,152 +1686,6 @@ describe("budget router — computeActiveSummary sandbox support", () => {
         baseline.netMonthlyIncome!,
         2,
       );
-    } finally {
-      cleanup();
-    }
-  });
-});
-
-// ---------------------------------------------------------------------------
-// REGRESSION (pre-existing bug): computeActiveSummary resolved ONE
-// contribution/salary profile from `selectedColumn` and wrote that single
-// monthly figure into every column's amounts, then derived allColumnResults
-// from that flattened data. So on a profile whose columns pin DIFFERENT
-// Contribution Profiles:
-//   - every column's linked-item $ showed the selected column's profile, and
-//   - the totals changed depending on which column you happened to be
-//     viewing, while the client's own per-column payroll breakdown
-//     (use-budget-derived-data.ts → usePerColumnPaycheck) resolved each
-//     column independently and disagreed.
-// ---------------------------------------------------------------------------
-describe("budget router — computeActiveSummary resolves a profile PER COLUMN", () => {
-  /** Two columns pinning contribution profiles worth $100/mo and $200/mo. */
-  async function seedTwoColumnsWithDifferentPins() {
-    const ctx = await createTestCaller(adminSession);
-    const { caller, db } = ctx;
-    const seed = seedStandardDataset(db);
-    const contrib = await seedContribAccount(db, seed.personId, {
-      contributionMethod: "dollar_amount",
-      contributionValue: "600", // $50/mo with no profile applied
-      jobId: null,
-    });
-    await caller.budget.linkContributionAccount({
-      budgetItemId: seed.itemIds[0]!,
-      contributionAccountId: contrib.id,
-    });
-
-    const profileA = seedContributionProfile(db, {
-      name: "Column A Profile",
-      contributionActiveFields: {
-        contributionAccounts: {
-          [String(contrib.id)]: {
-            contributionValue: "1200", // $100/mo
-            contributionMethod: "fixed_annual",
-          },
-        },
-      },
-    });
-    const profileB = seedContributionProfile(db, {
-      name: "Column B Profile",
-      contributionActiveFields: {
-        contributionAccounts: {
-          [String(contrib.id)]: {
-            contributionValue: "2400", // $200/mo
-            contributionMethod: "fixed_annual",
-          },
-        },
-      },
-    });
-
-    await caller.budget.addColumn({ label: "Travel" });
-    await caller.budget.updateColumnContributionProfileIds({
-      columnContributionProfileIds: [profileA, profileB],
-    });
-
-    return { ...ctx, seed, contrib, profileA, profileB };
-  }
-
-  it("gives each column its own linked-item amount instead of broadcasting one", async () => {
-    const { caller, seed, cleanup } = await seedTwoColumnsWithDifferentPins();
-    try {
-      const summary = await caller.budget.computeActiveSummary({
-        selectedColumn: 0,
-      });
-      const item = summary.rawItems!.find((i) => i.id === seed.itemIds[0]!);
-      // OLD behavior: [100, 100] — column 1 silently used column 0's profile.
-      expect(item!.contribAmounts).toEqual([100, 200]);
-      expect(summary.contribProfileIdByColumn).toHaveLength(2);
-      expect(summary.contribProfileIdByColumn![0]).not.toBe(
-        summary.contribProfileIdByColumn![1],
-      );
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("allColumnResults no longer change with the column you happen to be viewing", async () => {
-    const { caller, cleanup } = await seedTwoColumnsWithDifferentPins();
-    try {
-      const fromColumn0 = await caller.budget.computeActiveSummary({
-        selectedColumn: 0,
-      });
-      const fromColumn1 = await caller.budget.computeActiveSummary({
-        selectedColumn: 1,
-      });
-      // OLD behavior: viewing column 0 made BOTH columns report the $100
-      // profile and viewing column 1 made both report $200, so these two
-      // arrays disagreed.
-      expect(fromColumn1.allColumnResults).toEqual(
-        fromColumn0.allColumnResults,
-      );
-
-      const col0 = fromColumn0.allColumnResults![0]!;
-      const col1 = fromColumn0.allColumnResults![1]!;
-      // seedStandardDataset's unlinked items (600 + 200) only exist in
-      // column 0; addColumn appends 0 for them. So each column's total is
-      // its own linked-item amount plus its own unlinked items:
-      //   col0 = 100 (profile A) + 600 + 200 = 900
-      //   col1 = 200 (profile B) + 0   + 0   = 200
-      // The $100 gap between the two pinned Contribution Profiles is what
-      // makes the linked portions differ at all.
-      expect(col0.totalMonthly).toBeCloseTo(900, 6);
-      expect(col1.totalMonthly).toBeCloseTo(200, 6);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("each column's amount matches what that column's OWN profile computes on its own", async () => {
-    const { caller, seed, profileA, profileB, cleanup } =
-      await seedTwoColumnsWithDifferentPins();
-    try {
-      const perColumn = await caller.budget.computeActiveSummary({
-        selectedColumn: 0,
-      });
-      const item = perColumn.rawItems!.find((i) => i.id === seed.itemIds[0]!);
-
-      // The reference values: what a single-column profile pinned to A (or
-      // B) resolves — i.e. what the client's own per-column paycheck query
-      // for that pin would produce.
-      for (const [colIdx, profileId] of [
-        [0, profileA],
-        [1, profileB],
-      ] as const) {
-        const reference = await caller.budget.computeActiveSummary({
-          selectedColumn: colIdx,
-          contributionProfile: {
-            localSelectionId: profileId,
-            globalDefaultId: null,
-          },
-        });
-        const refItem = reference.rawItems!.find(
-          (i) => i.id === seed.itemIds[0]!,
-        );
-        expect(item!.contribAmounts![colIdx]).toBeCloseTo(
-          refItem!.contribAmounts![colIdx]!,
-          6,
-        );
-      }
     } finally {
       cleanup();
     }
@@ -2127,12 +1822,8 @@ describe("budget router — duplicateProfile", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       const seed = seedStandardDataset(db);
-      const contribProfileId = seedContributionProfile(db, { name: "Pinned" });
       await caller.budget.addColumn({ label: "Travel" });
       await caller.budget.updateColumnMonths({ columnMonths: [9, 3] });
-      await caller.budget.updateColumnContributionProfileIds({
-        columnContributionProfileIds: [contribProfileId, null],
-      });
       // An API-linked + contribution-linked item on the source.
       const contrib = await seedContribAccount(db, seed.personId, {
         contributionMethod: "dollar_amount",
@@ -2163,11 +1854,6 @@ describe("budget router — duplicateProfile", () => {
       expect(copy.isActive).toBe(false);
       expect(copy.columnLabels).toEqual(["Standard", "Travel"]);
       expect(copy.columnMonths).toEqual([9, 3]);
-      // Column pins ARE copied — the duplicate should resolve like its source.
-      expect(copy.columnContributionProfileIds).toEqual([
-        contribProfileId,
-        null,
-      ]);
 
       const copiedItems = await db
         .select()
@@ -2449,7 +2135,7 @@ describe("budget router — syncBudgetToApi no profile", () => {
 // targeting the globally-active profile. A client viewing (not activating) a
 // non-active profile passes its id explicitly — before this fix, createItem/
 // addColumn/removeColumn/renameColumn/updateColumnMonths/
-// updateColumnContributionProfileIds/updateCategoryEssential all silently
+// updateCategoryEssential all silently
 // redirected the edit onto the active profile instead.
 // ---------------------------------------------------------------------------
 

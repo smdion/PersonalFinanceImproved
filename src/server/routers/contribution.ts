@@ -19,6 +19,7 @@ import {
   monthsElapsedYtd,
   periodsElapsedYtd,
   bonusCheckContribution,
+  isPaidThroughPayroll,
 } from "@/lib/calculators/paycheck";
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
 import {
@@ -541,16 +542,12 @@ export const contributionRouter = createTRPCRouter({
             effectiveSalaryMap,
           );
           const bonusTerms = applyActiveBonusTerms(personEntry, comp.terms);
-          // Base salary + the bonus whose check carries contributions —
+          // Base salary + the bonus (each account takes from it only when
+          // set to, fromBonus) —
           // the paycheck's way (contributionPay / bonusCheckContribution).
           // This year's figures: the pinned bonus when there is one, like
           // the paycheck (SalaryProfileEntry.bonusOverride).
-          const pay = contributionPay(
-            activeJob,
-            dbSalary,
-            bonusTerms,
-            comp.bonusOverride,
-          );
+          const pay = contributionPay(dbSalary, bonusTerms, comp.bonusOverride);
           const salary = pay.salary;
           // Total compensation this year (salary + this year's bonus) — the
           // savings rate denominator.
@@ -925,7 +922,7 @@ export const contributionRouter = createTRPCRouter({
             // Same isPayrollDeducted resolution paycheck.ts's calculator
             // input uses (buildContribAccounts) — independent of the tax
             // treatment split above.
-            if (rawContrib.isPayrollDeducted ?? rawContrib.jobId !== null) {
+            if (isPaidThroughPayroll(rawContrib)) {
               entry.payrollDeducted += withBonus;
             } else {
               entry.nonPayroll += acct.annualContribution;
@@ -1320,14 +1317,10 @@ export const contributionRouter = createTRPCRouter({
             : 0,
           hsaContrib: isHsaTreatment(c.taxTreatment) ? roundToCents(annual) : 0,
           // Same isPayrollDeducted resolution as the per-person loop above.
-          nonPayrollContrib:
-            (c.isPayrollDeducted ?? c.jobId !== null)
-              ? 0
-              : roundToCents(annual),
-          payrollDeductedContrib:
-            (c.isPayrollDeducted ?? c.jobId !== null)
-              ? roundToCents(annual)
-              : 0,
+          nonPayrollContrib: isPaidThroughPayroll(c) ? 0 : roundToCents(annual),
+          payrollDeductedContrib: isPaidThroughPayroll(c)
+            ? roundToCents(annual)
+            : 0,
           bonusContrib: 0,
           isJoint: true,
           hasDiscountBar: jDisplay.hasDiscountBar,

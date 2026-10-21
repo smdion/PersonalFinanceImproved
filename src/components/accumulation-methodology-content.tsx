@@ -48,7 +48,7 @@ export function AccumulationMethodologyContent() {
     <div className="space-y-6">
       <p className="text-muted text-sm">
         How the accumulation engine routes contributions across accounts, grows
-        balances, and handles year-over-year overrides during working years.
+        balances, and applies your changes by year during working years.
       </p>
 
       <Section title="How It Works">
@@ -138,8 +138,9 @@ export function AccumulationMethodologyContent() {
 
       <Section title="Defaults" defaultOpen={false}>
         <p>
-          These are the page-level defaults that apply every year unless
-          overridden. They are loaded from your saved settings in the database.
+          These are the page-level defaults that apply every year unless a
+          change by year sets something else. They are loaded from your saved
+          settings in the database.
         </p>
 
         <div className="overflow-x-auto">
@@ -226,13 +227,12 @@ export function AccumulationMethodologyContent() {
         </ul>
       </Section>
 
-      <Section title="Overrides (Sticky-Forward)" defaultOpen={false}>
+      <Section title="Changes by year (carry forward)" defaultOpen={false}>
         <p>
-          Overrides let you change any accumulation setting starting at a
-          specific calendar year. They use <strong>sticky-forward</strong>{" "}
-          semantics: once set, a field stays at the overridden value until a
-          later override changes it again. Each field is independent —
-          overriding
+          A change by year sets any accumulation setting starting at a specific
+          calendar year. It <strong>carries forward</strong>: once set, a field
+          keeps that value until a later change sets it again. Each field is
+          independent — changing
           <code className="text-label bg-surface-elevated rounded px-1">
             contributionRate
           </code>{" "}
@@ -240,10 +240,12 @@ export function AccumulationMethodologyContent() {
           <code className="text-label bg-surface-elevated rounded px-1">
             taxSplits
           </code>{" "}
-          from a 2028 override.
+          from a 2028 change.
         </p>
 
-        <h4 className="text-secondary mt-4 font-semibold">Override fields</h4>
+        <h4 className="text-secondary mt-4 font-semibold">
+          Fields you can change
+        </h4>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
             <thead>
@@ -366,7 +368,7 @@ export function AccumulationMethodologyContent() {
           When the sum of all per-account contributions exceeds this ceiling,
           every account is scaled down proportionally to fit. This prevents the
           projection from assuming you&apos;ll save more than you currently do.
-          You can override this rate for any future year in the Saving overrides
+          You can change this rate for any future year in the Changes by year
           panel.
         </p>
 
@@ -387,7 +389,7 @@ export function AccumulationMethodologyContent() {
           accounts in a year. For example, setting a Roth cap of $15,000 means
           your combined Roth contributions across 401k + IRA can&apos;t exceed
           $15,000 — any excess converts to Traditional within the same account.
-          These caps are checked during routing and can be overridden per-year.
+          These caps are checked during routing and can be changed for any year.
         </p>
 
         <h4 className="text-secondary mt-4 font-semibold">

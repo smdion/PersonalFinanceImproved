@@ -10,7 +10,6 @@ import { describe, it, expect } from "vitest";
 import {
   columnLabelsSchema,
   columnMonthsSchema,
-  columnContributionProfileIdsSchema,
   budgetAmountsSchema,
   settingValueSchema,
   salaryEntriesSchema,
@@ -68,25 +67,6 @@ describe("columnMonthsSchema", () => {
 
   it("rejects non-number elements", () => {
     const result = columnMonthsSchema.safeParse([6, "three"]);
-    expect(result.success).toBe(false);
-  });
-});
-
-// ── Column Contribution Profile IDs Schema ───────────────────────
-
-describe("columnContributionProfileIdsSchema", () => {
-  it("accepts array of nullable integers", () => {
-    const result = columnContributionProfileIdsSchema.safeParse([1, null, 3]);
-    expect(result.success).toBe(true);
-  });
-
-  it("accepts null", () => {
-    const result = columnContributionProfileIdsSchema.safeParse(null);
-    expect(result.success).toBe(true);
-  });
-
-  it("rejects non-integer numbers", () => {
-    const result = columnContributionProfileIdsSchema.safeParse([1.5]);
     expect(result.success).toBe(false);
   });
 });
@@ -156,18 +136,35 @@ describe("salaryEntriesSchema", () => {
     additionalFedWithholding: 0,
     bonusMonth: null,
     bonusDayOfMonth: null,
-    include401kInBonus: false,
-    includeBonusInContributions: true,
     extraPaycheckRouting: null,
     ...overrides,
   });
 
-  it("accepts a complete entry — all seventeen fields required", () => {
+  it("accepts a complete entry — every required field", () => {
     const result = salaryEntriesSchema.safeParse({
       "1": complete(),
       "4": complete({ salary: 200000, bonusPercent: 0.2 }),
     });
     expect(result.success).toBe(true);
+  });
+
+  it("bonusDestination is optional; the old bonus switches are gone", () => {
+    expect(
+      salaryEntriesSchema.safeParse({
+        "1": complete({ bonusDestination: "spending" }),
+      }).success,
+    ).toBe(true);
+    expect(
+      salaryEntriesSchema.safeParse({
+        "1": complete({ bonusDestination: "vacation" }),
+      }).success,
+    ).toBe(false);
+    // A contribution taken from bonus checks is a per-account fromBonus.
+    expect(
+      salaryEntriesSchema.safeParse({
+        "1": complete({ include401kInBonus: true }),
+      }).success,
+    ).toBe(false);
   });
 
   it("accepts empty object — a profile that mentions no jobs", () => {

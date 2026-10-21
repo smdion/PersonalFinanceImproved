@@ -1851,8 +1851,6 @@ describe("savings.extraPaycheckRouting", () => {
             additionalFedWithholding: 0,
             bonusMonth: null,
             bonusDayOfMonth: null,
-            include401kInBonus: false,
-            includeBonusInContributions: true,
             extraPaycheckRouting: {
               rules: [
                 { from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] },
@@ -1883,8 +1881,6 @@ describe("savings.extraPaycheckRouting", () => {
           additionalFedWithholding: 750,
           bonusMonth: null,
           bonusDayOfMonth: null,
-          include401kInBonus: false,
-          includeBonusInContributions: true,
           extraPaycheckRouting: {
             rules: [
               { from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] },

@@ -48,7 +48,11 @@ export function OtherPaySection({
   canRemove?: boolean;
 }) {
   const utils = trpc.useUtils();
-  const refresh = () => utils.paycheck.invalidate();
+  // Lines show on the Paycheck page and in Profiles → Salary.
+  const refresh = () => {
+    void utils.paycheck.invalidate();
+    void utils.salaryProfile.invalidate();
+  };
   const create = trpc.settings.earnings.create.useMutation({
     onSuccess: refresh,
   });

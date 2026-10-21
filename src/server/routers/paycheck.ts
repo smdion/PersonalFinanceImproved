@@ -1,10 +1,12 @@
 /** Paycheck router for gross-to-net pay calculations including federal/state tax withholding, pre-tax deductions, and per-period contribution breakdowns. */
+import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import {
+  bonusCheckContribution,
   calculatePaycheck,
   calculateBlendedAnnual,
 } from "@/lib/calculators/paycheck";
@@ -437,8 +439,7 @@ export const paycheckRouter = createTRPCRouter({
             salary,
             periodsPerYear,
             ficaCapContext(limitsRecord, person.dateOfBirth, taxYear),
-            contributionPay(activeJob, salary, bonusTerms, comp.bonusOverride)
-              .bonusGross,
+            contributionPay(salary, bonusTerms, comp.bonusOverride).bonusGross,
           );
 
           // This year's actual paid-out bonus, if pinned on the Salary
@@ -538,7 +539,6 @@ export const paycheckRouter = createTRPCRouter({
             paycheck,
             contributionAccounts: contribAccounts,
             deductions,
-            includeContribInBonus: paycheckInput.includeContribInBonus,
           });
 
           const rawContribs = [...jobContribs, ...personalContribs];
@@ -582,6 +582,33 @@ export const paycheckRouter = createTRPCRouter({
                   ] ?? 0,
               })),
             rawContribs,
+            /** The year's Social Security / Medicare rates, wage base and
+             *  Additional Medicare withholding threshold — what
+             *  "Check against your pay stub" works back from (tax data,
+             *  never hard-coded). */
+            ficaRates: {
+              socialSecurity: taxBracketInput.socialSecurityRate,
+              medicare: taxBracketInput.medicareRate,
+              socialSecurityWageBase: taxBracketInput.socialSecurityWageBase,
+              medicareWithholdingThreshold:
+                taxBracketInput.medicareAdditionalThreshold,
+            },
+            /** Where this job's bonus goes (its Salary Profile entry;
+             *  absent = the budget). */
+            bonusDestination:
+              salaryProfileActiveMap.get(activeJob.id)?.bonusDestination ??
+              DEFAULT_BONUS_DESTINATION,
+            /** The accounts the bonus check takes, and how much — the
+             *  accounts set to be taken from bonus checks (fromBonus). */
+            bonusCheckAccounts: contribAccounts.flatMap((a) => {
+              const amount = bonusCheckContribution(
+                a,
+                paycheck.bonusEstimate.bonusGross,
+              );
+              return a.id !== undefined && amount > 0
+                ? [{ id: a.id, amount }]
+                : [];
+            }),
             budgetPerMonth: getRegularPeriodsPerMonth(
               periodsPerYear,
               budgetOverride,

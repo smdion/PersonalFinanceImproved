@@ -641,7 +641,7 @@ function AccountFormRow({
                   onFieldChange(id, "gainLossOverride", true);
                 }}
                 className="text-faint hover:text-muted"
-                title="Override with manual value"
+                title="Enter the value yourself"
               >
                 <svg
                   aria-hidden="true"

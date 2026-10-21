@@ -18,8 +18,8 @@
  *     when `isPayrollDeducted` is true. IRA and brokerage contributions flow outside the paycheck.
  *   - Extra paycheck months: for biweekly pay, some months have 3 paydays instead of 2. The
  *     calculator uses `anchorPayDate` (a known real payday) to derive which months get 3 checks.
- *   - Bonus estimate uses the IRS supplemental flat rate (from input, not hardcoded) and optionally
- *     deducts payroll contributions if `includeContribInBonus` is set.
+ *   - Bonus estimate uses the IRS supplemental flat rate (from input, not hardcoded) and deducts
+ *     the contributions each account takes from bonus checks (`fromBonus`).
  */
 import type {
   PaycheckInput,
@@ -468,26 +468,66 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
  * FICA is applied to the bonus's FICA wages; SS only on the wage-base room the year's regular
  * FICA wages leave.
  *
- * If `includeContribInBonus` is true, payroll-deducted contributions (e.g. 401k) are subtracted
- * from the bonus net. This matches employers who withhold retirement contributions from bonuses.
+ * The bonus check takes each contribution account's bonus-check amount
+ * (bonusCheckContribution) — only accounts set to be taken from bonus checks.
  */
+/**
+ * Whether a contribution account is paid through payroll: its own
+ * `isPayrollDeducted`, or — when that's unset — whether it belongs to a job.
+ * The one definition; everything that asks uses it.
+ */
+export function isPaidThroughPayroll(account: {
+  isPayrollDeducted?: boolean | null;
+  jobId: number | null;
+}): boolean {
+  return account.isPayrollDeducted ?? account.jobId !== null;
+}
+
+/** takesFromBonusCheck for a contribution account row (payroll resolved
+ *  with isPaidThroughPayroll). */
+export function rowTakesFromBonusCheck(row: {
+  isPayrollDeducted?: boolean | null;
+  jobId: number | null;
+  fromBonus?: boolean | null;
+}): boolean {
+  return takesFromBonusCheck({
+    isPayrollDeducted: isPaidThroughPayroll(row),
+    fromBonus: row.fromBonus === true,
+  });
+}
+
+/**
+ * Whether the bonus check takes this account: paid through payroll and set
+ * to be taken from bonus checks (`fromBonus`). The one rule — the bonus-check
+ * amount, the employer match's pay and every label use it.
+ */
+export function takesFromBonusCheck(account: {
+  isPayrollDeducted: boolean;
+  fromBonus: boolean | undefined;
+}): boolean {
+  return account.isPayrollDeducted && account.fromBonus === true;
+}
+
 /**
  * What a bonus check takes for one contribution account: a percent-of-pay
  * account its rate of the bonus, a fixed-amount account its regular
- * per-period dollars, an account not paid through payroll nothing. The one
- * rule for money contributed from bonus checks — the paycheck, the
- * contribution summary and the retirement projection all use it (when the
- * job's "Contributions from bonus check" switch is on).
+ * per-period dollars, an account not paid through payroll — or not set to be
+ * taken from bonus checks (`fromBonus`, a Contribution Profile election) —
+ * nothing. The one rule, and the one gate, for money contributed from bonus
+ * checks: the paycheck, the contribution summary and the retirement
+ * projection all use it.
  */
 export function bonusCheckContribution(
   account: {
     isPayrollDeducted: boolean;
+    /** Also taken from bonus checks. */
+    fromBonus: boolean | undefined;
     rateOfGross: number | null;
     perPeriodContribution: number;
   },
   bonusGross: number,
 ): number {
-  if (!account.isPayrollDeducted || bonusGross <= 0) return 0;
+  if (!takesFromBonusCheck(account) || bonusGross <= 0) return 0;
   return account.rateOfGross !== null
     ? roundToCents(account.rateOfGross * bonusGross)
     : account.perPeriodContribution;
@@ -535,19 +575,17 @@ function calculateBonus(
   const medRate = input.taxBrackets.medicareRate;
   const ssWageBase = input.taxBrackets.socialSecurityWageBase;
   const periodsPerYear = getPeriodsPerYear(input.payPeriod);
-  const bonusFicaExempt = input.includeContribInBonus
-    ? sumBy(input.contributionAccounts, (ca) => {
-        const cap = ca.ficaExemptAnnualCap;
-        if (cap === null || cap === undefined) return 0;
-        if (!isPreTax(ca.taxTreatment)) return 0;
-        const capLeft =
-          cap - regularFicaExemptPerPeriod(ca, periodsPerYear) * periodsPerYear;
-        return Math.min(
-          bonusCheckContribution(ca, bonusGross),
-          Math.max(0, capLeft),
-        );
-      })
-    : 0;
+  const bonusFicaExempt = sumBy(input.contributionAccounts, (ca) => {
+    const cap = ca.ficaExemptAnnualCap;
+    if (cap === null || cap === undefined) return 0;
+    if (!isPreTax(ca.taxTreatment)) return 0;
+    const capLeft =
+      cap - regularFicaExemptPerPeriod(ca, periodsPerYear) * periodsPerYear;
+    return Math.min(
+      bonusCheckContribution(ca, bonusGross),
+      Math.max(0, capLeft),
+    );
+  });
   const bonusFicaWages = Math.max(0, bonusGross - bonusFicaExempt);
   const ssCapRoom = Math.max(
     0,
@@ -558,14 +596,12 @@ function calculateBonus(
   const bonusFicaMed = roundToCents(bonusFicaWages * medRate);
   const bonusFica = bonusFicaSS + bonusFicaMed;
 
-  // Optionally deduct payroll contributions (e.g. 401k) from bonus paycheck.
-  // Percent-of-salary accounts scale against bonusGross; fixed-amount accounts
-  // use their regular per-period dollar amount unchanged.
-  const bonusContributions = input.includeContribInBonus
-    ? sumBy(input.contributionAccounts, (ca) =>
-        bonusCheckContribution(ca, bonusGross),
-      )
-    : 0;
+  // What the bonus check takes for contributions (accounts set to be taken
+  // from bonus checks). Percent-of-salary accounts scale against bonusGross;
+  // fixed-amount accounts take their regular per-period dollars.
+  const bonusContributions = sumBy(input.contributionAccounts, (ca) =>
+    bonusCheckContribution(ca, bonusGross),
+  );
 
   const bonusNet = roundToCents(
     bonusGross - bonusFederalWithholding - bonusFica - bonusContributions,

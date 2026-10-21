@@ -15,6 +15,7 @@
  * profile is an ordinary, renamable, editable row, and one with empty
  * contributionActiveFields is simply a profile with nothing customized.
  */
+import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
 import { assertNoPlanUses } from "@/server/helpers/plans";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
@@ -316,6 +317,8 @@ export const contributionProfileRouter = createTRPCRouter({
         id: row.id,
         accountName:
           sameName.length > 0 ? `${accountName} — ${taxLabel}` : accountName,
+        /** Only a payroll account can be taken from bonus checks. */
+        isPayroll: isPaidThroughPayroll(row),
         live: {
           // No contributionValue/contributionMethod here — accounts carry
           // no value of their own anymore (see applyContribActiveFields);
@@ -495,6 +498,8 @@ export const contributionProfileRouter = createTRPCRouter({
           liveMatchValue: row.employerMatchValue,
           liveMaxMatchPct: row.employerMaxMatchPct,
           liveIsActive: row.isActive,
+          /** Paid through payroll — only these can be taken from bonus checks. */
+          liveIsPayroll: isPaidThroughPayroll(row),
           // Active values — null means this profile has no value at all for
           // this account (isIncomplete), not "falls back to a live value".
           activeFields: activeFields ?? null,

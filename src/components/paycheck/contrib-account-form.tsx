@@ -21,6 +21,7 @@
  * creation path at all.
  */
 
+import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { FormField, FormInput, FormSelect } from "@/components/forms";
@@ -521,7 +522,7 @@ export function ContribAccountForm({
           <input
             type="checkbox"
             id="contrib-account-form-payroll"
-            checked={v.isPayrollDeducted ?? v.jobId !== null}
+            checked={isPaidThroughPayroll(v)}
             onChange={(e) => set("isPayrollDeducted", e.target.checked)}
             className="border-strong rounded"
           />

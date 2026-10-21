@@ -118,8 +118,7 @@ export function RbacGroupsSettings() {
         </div>
         <ul className="mt-1 ml-2 list-inside list-disc space-y-0.5 text-xs text-blue-700">
           <li>
-            <strong>Plan</strong> &mdash; Create, edit, delete plans and
-            overrides
+            <strong>Plan</strong> &mdash; Create, edit, delete and apply Plans
           </li>
           <li>
             <strong>Portfolio</strong> &mdash; Create and delete portfolio

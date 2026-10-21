@@ -7,7 +7,6 @@ import { calculatePaycheck } from "@/lib/calculators/paycheck";
 import {
   bonusSpendingNet,
   computeAnnualEarnings,
-  parseBonusDestinations,
   sumHouseholdIncome,
 } from "@/lib/pure/household-income";
 import type {
@@ -25,6 +24,7 @@ const account = (
   rateOfGross: null,
   taxTreatment: "pre_tax",
   isPayrollDeducted: true,
+  fromBonus: false,
   group: "retirement",
   employerMatch: 0,
   employerMatchTaxTreatment: "pre_tax",
@@ -51,7 +51,6 @@ function earningsFor(over: Partial<PaycheckInput>) {
       paycheck,
       contributionAccounts: input.contributionAccounts,
       deductions: input.deductions,
-      includeContribInBonus: input.includeContribInBonus,
     }),
   };
 }
@@ -79,6 +78,9 @@ const hsa = account({
   group: "portfolio",
   ficaExemptAnnualCap: Infinity,
 });
+/** The same accounts, each also taken from bonus checks. */
+const fromBonus = (accounts: ContributionAccountInput[]) =>
+  accounts.map((a) => ({ ...a, fromBonus: true }));
 const medical = {
   name: "Medical",
   amount: 50,
@@ -102,9 +104,8 @@ describe("computeAnnualEarnings", () => {
 
   it("a set bonus is the bonus, and the bonus check's contributions count when it takes them", () => {
     const { earnings } = earningsFor({
-      contributionAccounts: [trad, roth, hsa],
+      contributionAccounts: fromBonus([trad, roth, hsa]),
       bonusOverride: 10_000,
-      includeContribInBonus: true,
     });
     expect(earnings.bonus).toBe(10_000);
     expect(earnings.gross).toBe(114_000);
@@ -118,7 +119,6 @@ describe("computeAnnualEarnings", () => {
     const { earnings } = earningsFor({
       contributionAccounts: [trad, hsa],
       bonusOverride: 10_000,
-      includeContribInBonus: false,
     });
     expect(earnings.preTaxFederal).toBeCloseTo(10_400 + 4_160, 2);
     expect(earnings.ficaWages).toBeCloseTo(104_000 - 4_160 + 10_000, 0);
@@ -131,10 +131,9 @@ describe("computeAnnualEarnings", () => {
 
   it("FICA wages = per-check FICA wages × checks + the bonus's FICA wages (drift guard)", () => {
     const { paycheck, earnings } = earningsFor({
-      contributionAccounts: [trad, hsa],
+      contributionAccounts: fromBonus([trad, hsa]),
       deductions: [medical],
       bonusOverride: 8_000,
-      includeContribInBonus: true,
     });
     expect(earnings.ficaWages).toBeCloseTo(
       paycheck.ficaWages * 26 + paycheck.bonusEstimate.bonusFicaWages,
@@ -165,17 +164,15 @@ describe("sumHouseholdIncome", () => {
 });
 
 describe("bonus destinations", () => {
-  it("only bonuses set to extra spending count; unreadable settings mean budget", () => {
-    const people = [
-      { personId: 1, netBonus: 6900.2 },
-      { personId: 2, netBonus: 11857.22 },
-    ];
-    expect(bonusSpendingNet(people, { "2": "spending", "1": "budget" })).toBe(
-      11857.22,
-    );
-    expect(bonusSpendingNet(people, parseBonusDestinations("junk"))).toBe(0);
-    expect(parseBonusDestinations({ "1": "spending" })).toEqual({
-      "1": "spending",
-    });
+  it("only bonuses set to extra spending count", () => {
+    expect(
+      bonusSpendingNet([
+        { netBonus: 6900.2, bonusDestination: "budget" },
+        { netBonus: 11857.22, bonusDestination: "spending" },
+      ]),
+    ).toBe(11857.22);
+    expect(
+      bonusSpendingNet([{ netBonus: 6900.2, bonusDestination: "budget" }]),
+    ).toBe(0);
   });
 });

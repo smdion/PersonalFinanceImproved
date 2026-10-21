@@ -64,6 +64,20 @@
       "when": 1792459104126,
       "tag": "0008_v088_paycheck_earnings",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792520390630,
+      "tag": "0009_v0810_profile_sets",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792547484959,
+      "tag": "0010_v0810_holding_period_parts",
+      "breakpoints": true
     }
   ]
 }

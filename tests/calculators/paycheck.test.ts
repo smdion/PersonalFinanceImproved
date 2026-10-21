@@ -120,9 +120,9 @@ describe("calculatePaycheck", () => {
       expect(result.postTaxDeductions).toHaveLength(2);
     });
 
-    it("does not deduct 401k from bonus when includeContribInBonus=false", () => {
+    it("does not deduct 401k from bonus when no account is taken from bonus checks", () => {
       // Bonus: $110,000 × 15% = $16,500
-      // No 401k deducted from bonus (includeContribInBonus=false)
+      // No 401k deducted from bonus (every account fromBonus: false)
       const bonusNet = result.bonusEstimate.bonusNet;
       const bonusGross = result.bonusEstimate.bonusGross;
       const fedWH = result.bonusEstimate.bonusFederalWithholding;
@@ -249,6 +249,7 @@ describe("calculatePaycheck", () => {
       rateOfGross: null,
       taxTreatment: "hsa",
       isPayrollDeducted: true,
+      fromBonus: false,
       group: "portfolio",
       employerMatch: 0,
       employerMatchTaxTreatment: "pre_tax",
@@ -367,7 +368,6 @@ describe("calculatePaycheck", () => {
         ...base,
         annualSalary: salary,
         contributionAccounts: [hsa(200, Infinity)],
-        includeContribInBonus: false,
         bonusOverride: 20_000,
       });
       const regularFicaWages = r.ficaWages * 26;
@@ -384,8 +384,7 @@ describe("calculatePaycheck", () => {
       const pct = hsa(80, 26 * 80 + 150, { rateOfGross: 0.02 });
       const r = calculatePaycheck({
         ...base,
-        contributionAccounts: [pct],
-        includeContribInBonus: true,
+        contributionAccounts: [{ ...pct, fromBonus: true }],
         bonusOverride: 20_000,
       });
       // Regular checks use 26 × $80 of the cap; $150 is left for the bonus.
@@ -395,8 +394,9 @@ describe("calculatePaycheck", () => {
     it("the bonus period in the year schedule uses the bonus's FICA wages", () => {
       const r = calculatePaycheck({
         ...base,
-        contributionAccounts: [hsa(80, Infinity, { rateOfGross: 0.02 })],
-        includeContribInBonus: true,
+        contributionAccounts: [
+          hsa(80, Infinity, { rateOfGross: 0.02, fromBonus: true }),
+        ],
         bonusOverride: 20_000,
         bonusMonth: 3,
       });

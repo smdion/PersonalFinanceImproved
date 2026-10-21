@@ -180,7 +180,7 @@ export function PoolDistributionEditor({
                   </span>
                   {!isDefault && (
                     <span className="text-caption font-medium text-blue-600">
-                      OVERRIDE
+                      CHANGED
                     </span>
                   )}
                 </div>

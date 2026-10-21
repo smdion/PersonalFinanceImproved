@@ -288,7 +288,7 @@ export function DecumulationConfig({
               <span className="font-medium">{persistedModeLabel}</span> (Taxes
               in Retirement).
               {isOverridingPlanDefault
-                ? " The selection above only customizes it for this session — it isn't saved."
+                ? " The selection above only changes it for this session — it isn't saved."
                 : ""}
             </p>
           )}
@@ -306,8 +306,8 @@ export function DecumulationConfig({
               />
               {withdrawalOrderTouched && (
                 <p className="text-caption text-faint mt-1.5">
-                  This order only customizes your plan for this session — save
-                  it in Taxes in Retirement to make it your default.
+                  This order only changes your plan for this session — save it
+                  in Taxes in Retirement to make it your default.
                 </p>
               )}
             </div>
@@ -330,8 +330,8 @@ export function DecumulationConfig({
               />
               {withdrawalOrderTouched && (
                 <p className="text-caption text-faint mt-1.5">
-                  This order only customizes your plan for this session — save
-                  it in Taxes in Retirement to make it your default.
+                  This order only changes your plan for this session — save it
+                  in Taxes in Retirement to make it your default.
                 </p>
               )}
               <div className="mt-3 border-t pt-3">
@@ -416,7 +416,7 @@ export function DecumulationConfig({
               })()}
               {withdrawalSplitsTouched && (
                 <p className="text-caption text-faint mt-1.5">
-                  These splits only customize your plan for this session — save
+                  These splits only change your plan for this session — save
                   them in Taxes in Retirement to make them your default.
                 </p>
               )}

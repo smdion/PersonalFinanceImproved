@@ -788,7 +788,7 @@ function SeparationDateForm({
         <span className="text-faint">
           Separation date{" "}
           {source === "derived" &&
-            "(derived from job history — override if wrong)"}
+            "(from job history — change it if it's wrong)"}
         </span>
         <input
           type="date"

@@ -180,11 +180,11 @@ export function SimulationAssumptions({
     activeOverrides.push("Asset class return/vol manually adjusted");
   if (inputs.accumulationExpenseOverride != null)
     activeOverrides.push(
-      `Pre-retirement expense override: ${formatCurrency(inputs.accumulationExpenseOverride)}/yr`,
+      `Pre-retirement spending set to ${formatCurrency(inputs.accumulationExpenseOverride)}/yr`,
     );
   if (inputs.decumulationExpenseOverride != null)
     activeOverrides.push(
-      `Retirement expense override: ${formatCurrency(inputs.decumulationExpenseOverride)}/yr`,
+      `Retirement spending set to ${formatCurrency(inputs.decumulationExpenseOverride)}/yr`,
     );
 
   const presetColors: Record<string, string> = {
@@ -205,8 +205,7 @@ export function SimulationAssumptions({
           Simulation Assumptions
           {activeOverrides.length > 0 && (
             <span className="ml-1 text-amber-600">
-              ({activeOverrides.length} override
-              {activeOverrides.length > 1 ? "s" : ""} active)
+              ({activeOverrides.length} set by you)
             </span>
           )}
         </span>
@@ -286,7 +285,7 @@ export function SimulationAssumptions({
           {/* Active overrides callout */}
           {activeOverrides.length > 0 && (
             <div className="text-label rounded border border-amber-200 bg-amber-50 px-2.5 py-2 text-amber-700">
-              <span className="font-semibold">Active customizations:</span>
+              <span className="font-semibold">Set by you:</span>
               <ul className="mt-0.5 ml-3 list-disc space-y-0">
                 {activeOverrides.map((o) => (
                   <li key={o}>{o}</li>

@@ -84,9 +84,9 @@ export function DecumulationMethodologyContent() {
             applies guardrail raises/cuts on top); Spending Decline compounds it
             by inflation minus its own decline rate instead, never reading the
             raise rate; Forgo Inflation After Loss grows it like Fixed except
-            skips the raise the year after a loss. Budget overrides
-            (sticky-forward by year) can change the base amount at any point for
-            all four.
+            skips the raise the year after a loss. A budget change by year
+            (carries forward) can change the base amount at any point for all
+            four.
           </li>
           <li>
             <strong>
@@ -309,7 +309,7 @@ export function DecumulationMethodologyContent() {
       <Section title="Defaults" defaultOpen={false}>
         <p>
           These are the page-level defaults that apply every retirement year
-          unless overridden.
+          unless a change by year sets something else.
         </p>
 
         <div className="overflow-x-auto">
@@ -617,16 +617,16 @@ export function DecumulationMethodologyContent() {
         </div>
       </Section>
 
-      <Section title="Overrides (Sticky-Forward)" defaultOpen={false}>
+      <Section title="Changes by year (carry forward)" defaultOpen={false}>
         <p>
-          Overrides let you change any decumulation setting starting at a
-          specific calendar year. They use the same{" "}
-          <strong>sticky-forward</strong> semantics as accumulation: once set, a
-          field stays at the overridden value until a later override changes it
-          again.
+          A change by year sets any decumulation setting starting at a specific
+          calendar year. Like accumulation, it <strong>carries forward</strong>:
+          once set, a field keeps that value until a later change sets it again.
         </p>
 
-        <h4 className="text-secondary mt-4 font-semibold">Override fields</h4>
+        <h4 className="text-secondary mt-4 font-semibold">
+          Fields you can change
+        </h4>
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-xs">
             <thead>
@@ -689,8 +689,8 @@ export function DecumulationMethodologyContent() {
                   rothConversionTarget
                 </td>
                 <td>
-                  Override the Roth conversion target bracket (set to 0 to
-                  disable conversions)
+                  The Roth conversion target bracket for that year (set to 0 to
+                  turn conversions off)
                 </td>
               </tr>
               <tr>
@@ -822,8 +822,8 @@ export function DecumulationMethodologyContent() {
           Federal Poverty Level eliminates premium tax credits entirely. The
           engine warns when early-retiree income approaches this cliff, but —
           unlike IRMAA — never caps a conversion or withdrawal to avoid it;
-          it&apos;s reporting-only. Use the warning to manually adjust via
-          overrides.
+          it&apos;s reporting-only. Use the warning to adjust by hand with a
+          change by year.
         </p>
         <p className="text-faint mt-1 text-xs">
           IRMAA&apos;s cliff is looked up two years ahead of the income that

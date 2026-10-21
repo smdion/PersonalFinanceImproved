@@ -5,13 +5,9 @@ import { eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "./transforms";
-import type { Db } from "./transforms";
+import type { Db, DbOrTx } from "./transforms";
 import { parseAppSettings } from "./settings";
 import type { ActiveBudgetApi } from "@/lib/budget-api/types";
-import {
-  resolveContributionProfileIdsForAllColumns,
-  resolveSalaryProfileIdsForAllColumns,
-} from "@/lib/calculators/contribution-profile-resolution";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_SALARY_PROFILE_ID,
@@ -24,8 +20,6 @@ import {
   loadEffectiveSalaryProfile,
   resolveCompensation,
   applyActiveSalary,
-  applyActiveBonusTerms,
-  contributionPay,
   applySandboxSalaryEntries,
 } from "./salary";
 import type { SalaryActiveMap, SalaryOverrideEntry } from "./salary";
@@ -71,10 +65,10 @@ export async function getActiveBudgetProfile(
 
 /**
  * Resolve "the profile a mutation should target" — explicit `profileId` when
- * given (a client editing a Plan-pinned or manually-viewed non-active
- * profile), else the globally-active profile. The single place profile
- * item/column mutations (createItem, addColumn, removeColumn, renameColumn,
- * updateColumnMonths, updateColumnContributionProfileIds, reorderCategory)
+ * given (a client editing a profile it is viewing but hasn't made active),
+ * else the active profile. The single place profile item/column mutations
+ * (createItem, addColumn, removeColumn, renameColumn, updateColumnMonths,
+ * reorderCategory)
  * should resolve their target profile — a bare `getActiveBudgetProfile(db)`
  * in one of those procedures silently redirects an edit made while viewing a
  * non-active profile onto the active one instead.
@@ -366,30 +360,18 @@ export function computeBudgetAnnualTotal(
   return computeBudgetColumnTotal(items, columnIndex);
 }
 
-/**
- * Resolves the (Contribution Profile, Salary Profile) id every column of
- * `budgetProfile` should use, for a caller with no page context of its own —
- * a budget-API sync, a background expense rollup, a retirement readiness
- * check. Uses the household's active profile settings (`app_settings`) plus
- * `budgetProfile`'s own per-column profiles — the same state every page
- * shows, since applying a Plan writes those settings.
- *
- * Feed the result straight into `resolveLinkedBudgetItemAmounts` below.
- */
-export async function resolveBudgetProfileColumnProfileIds(
-  db: Db,
-  budgetProfile: {
-    columnLabels: unknown;
-    columnContributionProfileIds: unknown;
-    columnSalaryProfileIds: unknown;
-  },
-): Promise<{
-  contribProfileIdByColumn: (number | null)[];
-  salaryProfileIdByColumn: (number | null)[];
-  numColumns: number;
-}> {
-  const numColumns =
-    (budgetProfile.columnLabels as string[] | null)?.length ?? 0;
+/** The active (Contribution Profile, Salary Profile) pair — what a caller
+ *  with no page context of its own (a budget-API sync, an expense rollup, a
+ *  retirement readiness check) uses. The same state every page shows, since
+ *  applying a Plan writes these settings. */
+export type ProfilePair = {
+  contribProfileId: number | null;
+  salaryProfileId: number | null;
+};
+
+export async function resolveActiveProfilePair(
+  db: DbOrTx,
+): Promise<ProfilePair> {
   const settingRows = await db
     .select()
     .from(schema.appSettings)
@@ -404,21 +386,10 @@ export async function resolveBudgetProfileColumnProfileIds(
     const num = Number(raw);
     return raw == null || Number.isNaN(num) ? null : num;
   };
-  const contribProfileIdByColumn = resolveContributionProfileIdsForAllColumns({
-    localSelectionId: null,
-    globalDefaultId: settingValue(SK_ACTIVE_CONTRIB_PROFILE_ID),
-    columnPinIds: budgetProfile.columnContributionProfileIds as
-      (number | null)[] | null,
-    numColumns,
-  });
-  const salaryProfileIdByColumn = resolveSalaryProfileIdsForAllColumns({
-    localSelectionId: null,
-    globalDefaultId: settingValue(SK_ACTIVE_SALARY_PROFILE_ID),
-    columnPinIds: budgetProfile.columnSalaryProfileIds as
-      (number | null)[] | null,
-    numColumns,
-  });
-  return { contribProfileIdByColumn, salaryProfileIdByColumn, numColumns };
+  return {
+    contribProfileId: settingValue(SK_ACTIVE_CONTRIB_PROFILE_ID),
+    salaryProfileId: settingValue(SK_ACTIVE_SALARY_PROFILE_ID),
+  };
 }
 
 /**
@@ -431,15 +402,16 @@ export async function resolveBudgetProfileColumnProfileIds(
  * inputs, net-worth year-end snapshots) silently undercounts every linked
  * item, since its raw amount is never written past its `0` template value.
  *
- * `contribProfileIdByColumn`/`salaryProfileIdByColumn` must already reflect
- * the caller's own Plan-pin/column-pin resolution for each column — this
- * function does no tier resolution of its own, so a linked item's dollar
- * figure can never disagree between the Budget tab and any other consumer.
+ * `profiles` is the (Contribution, Salary) Profile pair the caller already
+ * resolved — this function does no resolution of its own, so a linked
+ * item's dollar figure can never disagree between the Budget tab and any
+ * other consumer. A budget column is a spending level, not a different pay
+ * or contribution world, so a linked item's amount is the same in every
+ * column.
  *
  * `opts.sandboxContribActiveFields`/`sandboxSalaryEntries` are the What-If
  * sandbox's own hand-edited values — the highest-precedence tier, layered
- * on top of `planSalaryActiveMap`/the Contribution Profile's resolved
- * values exactly the way `budget.computeActiveSummary` needs them to be
+ * on top of the Contribution Profile's resolved values exactly the way `budget.computeActiveSummary` needs them to be
  * for its own linked items, so that endpoint can call this helper directly
  * instead of maintaining its own copy of this resolution.
  */
@@ -453,10 +425,8 @@ export async function resolveLinkedBudgetItemAmounts<
   db: Db,
   items: T[],
   numColumns: number,
-  contribProfileIdByColumn: (number | null)[],
-  salaryProfileIdByColumn: (number | null)[],
+  profiles: ProfilePair,
   opts?: {
-    planSalaryActiveMap?: SalaryActiveMap;
     sandboxContribActiveFields?: Record<string, { contributionValue: string }>;
     sandboxSalaryEntries?: Record<string, SalaryOverrideEntry> | null;
   },
@@ -484,125 +454,89 @@ export async function resolveLinkedBudgetItemAmounts<
   const allJobs = await db.select().from(schema.jobs);
   const effectiveSalaryMap: SalaryActiveMap = applySandboxSalaryEntries(
     opts?.sandboxSalaryEntries,
-    opts?.planSalaryActiveMap ?? new Map(),
+    new Map(),
   );
 
-  const computeContribMonthlyForPair = async (
-    contribProfileId: number | null,
-    salaryProfileId: number | null,
-  ): Promise<{
-    contribMonthlyById: Map<number, number>;
-    statusById: Map<number, ContribResolutionStatus>;
-  }> => {
-    const contribMonthlyById = new Map<number, number>();
-    const incompleteIds = new Set<number>();
-    const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
-      db,
-      salaryProfileId,
-    );
-    const profileResult = await loadAndApplyContribProfile(
-      db,
-      contribProfileId,
-      rawContribs,
-      allJobs,
-      salaryProfileActiveMap,
-    );
-    const activeContribs = applyContribActiveFields(
-      profileResult.contribs,
-      opts?.sandboxContribActiveFields ?? {},
-      true,
-    );
-    const activeContribIds = new Set(activeContribs.map((c) => c.id));
-    const activeJobs = filterActiveJobs(profileResult.jobs);
-    const {
-      periodsPerYear: defaultPeriodsPerYear,
-      incomplete: joblessIncomplete,
-    } = resolveJoblessPeriodsPerYear(activeJobs);
+  // The active pair, computed once — every column shows the same figure.
+  // (`amounts`/`contribStatus` below repeat it per column for the API shape.)
+  const contribMonthlyById = new Map<number, number>();
+  const incompleteIds = new Set<number>();
+  const salaryProfileActiveMap = await loadEffectiveSalaryProfile(
+    db,
+    profiles.salaryProfileId,
+  );
+  const profileResult = await loadAndApplyContribProfile(
+    db,
+    profiles.contribProfileId,
+    rawContribs,
+    allJobs,
+    salaryProfileActiveMap,
+  );
+  const activeContribs = applyContribActiveFields(
+    profileResult.contribs,
+    opts?.sandboxContribActiveFields ?? {},
+    true,
+  );
+  const activeContribIds = new Set(activeContribs.map((c) => c.id));
+  const activeJobs = filterActiveJobs(profileResult.jobs);
+  const {
+    periodsPerYear: defaultPeriodsPerYear,
+    incomplete: joblessIncomplete,
+  } = resolveJoblessPeriodsPerYear(activeJobs);
 
-    const salaryByJobId = new Map<number, number>();
-    for (const j of activeJobs) {
-      const comp = resolveCompensation(salaryProfileActiveMap, j.id);
-      const sandboxEntry = effectiveSalaryMap.get(j.personId);
-      const salary = applyActiveSalary(
-        j.personId,
-        comp.salary,
-        effectiveSalaryMap,
-      );
-      const bonusTerms = applyActiveBonusTerms(sandboxEntry, comp.terms);
-      // Regular paychecks only: what a bonus check carries isn't monthly
-      // cash flow (contributionPay — base salary).
-      salaryByJobId.set(j.id, contributionPay(j, salary, bonusTerms).salary);
+  const salaryByJobId = new Map<number, number>();
+  for (const j of activeJobs) {
+    const comp = resolveCompensation(salaryProfileActiveMap, j.id);
+    // Regular paychecks only (base salary): what a bonus check takes isn't
+    // monthly cash flow.
+    salaryByJobId.set(
+      j.id,
+      applyActiveSalary(j.personId, comp.salary, effectiveSalaryMap),
+    );
+  }
+
+  for (const c of activeContribs) {
+    if (!linkedContribIds.has(c.id)) continue;
+    const val = Number(c.contributionValue);
+    const isFixedPerPeriod = c.contributionMethod === "fixed_per_period";
+    let jobPeriodsPerYear: number;
+    let incomplete: boolean;
+    if (c.jobId) {
+      const job = activeJobs.find((j) => j.id === c.jobId);
+      const resolved = resolveContribPeriods(c.contributionMethod, job);
+      jobPeriodsPerYear = resolved.periodsPerYear;
+      incomplete = resolved.incomplete;
+    } else {
+      jobPeriodsPerYear = defaultPeriodsPerYear;
+      incomplete = isFixedPerPeriod && joblessIncomplete;
     }
-
-    for (const c of activeContribs) {
-      if (!linkedContribIds.has(c.id)) continue;
-      const val = Number(c.contributionValue);
-      const isFixedPerPeriod = c.contributionMethod === "fixed_per_period";
-      let jobPeriodsPerYear: number;
-      let incomplete: boolean;
-      if (c.jobId) {
-        const job = activeJobs.find((j) => j.id === c.jobId);
-        const resolved = resolveContribPeriods(c.contributionMethod, job);
-        jobPeriodsPerYear = resolved.periodsPerYear;
-        incomplete = resolved.incomplete;
-      } else {
-        jobPeriodsPerYear = defaultPeriodsPerYear;
-        incomplete = isFixedPerPeriod && joblessIncomplete;
-      }
-      if (incomplete) {
-        incompleteIds.add(c.id);
-        contribMonthlyById.set(c.id, 0);
-        continue;
-      }
-      const salary = c.jobId ? (salaryByJobId.get(c.jobId) ?? 0) : 0;
-      const annual = computeAnnualContribution(
-        c.contributionMethod,
-        val,
-        salary,
-        jobPeriodsPerYear,
-      );
-      contribMonthlyById.set(c.id, annual / 12);
+    if (incomplete) {
+      incompleteIds.add(c.id);
+      contribMonthlyById.set(c.id, 0);
+      continue;
     }
+    const salary = c.jobId ? (salaryByJobId.get(c.jobId) ?? 0) : 0;
+    const annual = computeAnnualContribution(
+      c.contributionMethod,
+      val,
+      salary,
+      jobPeriodsPerYear,
+    );
+    contribMonthlyById.set(c.id, annual / 12);
+  }
 
-    const statusById = new Map<number, ContribResolutionStatus>();
-    for (const accountId of linkedContribIds) {
-      statusById.set(
+  const statusById = new Map<number, ContribResolutionStatus>();
+  for (const accountId of linkedContribIds) {
+    statusById.set(
+      accountId,
+      classifyContribResolution(
         accountId,
-        classifyContribResolution(
-          accountId,
-          rawContribIds,
-          profileResult.contribActiveFields,
-          activeContribIds,
-          incompleteIds,
-        ),
-      );
-    }
-    return { contribMonthlyById, statusById };
-  };
-
-  const contribMonthlyByPair = new Map<
-    string,
-    {
-      contribMonthlyById: Map<number, number>;
-      statusById: Map<number, ContribResolutionStatus>;
-    }
-  >();
-  const contribMonthlyByColumn: Map<number, number>[] = [];
-  const statusByColumn: Map<number, ContribResolutionStatus>[] = [];
-  for (let col = 0; col < numColumns; col++) {
-    const contribProfileId = contribProfileIdByColumn[col] ?? null;
-    const salaryProfileId = salaryProfileIdByColumn[col] ?? null;
-    const key = `${contribProfileId}:${salaryProfileId}`;
-    let resolved = contribMonthlyByPair.get(key);
-    if (!resolved) {
-      resolved = await computeContribMonthlyForPair(
-        contribProfileId,
-        salaryProfileId,
-      );
-      contribMonthlyByPair.set(key, resolved);
-    }
-    contribMonthlyByColumn.push(resolved.contribMonthlyById);
-    statusByColumn.push(resolved.statusById);
+        rawContribIds,
+        profileResult.contribActiveFields,
+        activeContribIds,
+        incompleteIds,
+      ),
+    );
   }
 
   return items.map((i) => {
@@ -612,11 +546,11 @@ export async function resolveLinkedBudgetItemAmounts<
     const accountId = i.contributionAccountId;
     const amounts = Array.from(
       { length: numColumns },
-      (_, col) => contribMonthlyByColumn[col]?.get(accountId) ?? 0,
+      () => contribMonthlyById.get(accountId) ?? 0,
     );
     const contribStatus = Array.from(
       { length: numColumns },
-      (_, col) => statusByColumn[col]?.get(accountId) ?? "ok",
+      () => statusById.get(accountId) ?? "ok",
     );
     return { ...i, amounts, contribStatus };
   });
@@ -659,14 +593,11 @@ export async function getAnnualExpensesFromBudget(
     .from(schema.budgetItems)
     .where(eq(schema.budgetItems.profileId, profile.id));
 
-  const { contribProfileIdByColumn, salaryProfileIdByColumn, numColumns } =
-    await resolveBudgetProfileColumnProfileIds(db, profile);
   const resolvedItems = await resolveLinkedBudgetItemAmounts(
     db,
     items,
-    numColumns,
-    contribProfileIdByColumn,
-    salaryProfileIdByColumn,
+    (profile.columnLabels as string[] | null)?.length ?? 0,
+    await resolveActiveProfilePair(db),
   );
 
   return computeBudgetAnnualTotal(

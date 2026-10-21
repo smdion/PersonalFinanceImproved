@@ -54,6 +54,8 @@ export type TaxBracketInput = {
 };
 
 export type ContributionAccountInput = {
+  /** The contribution_accounts row it came from, when there is one. */
+  id?: number;
   name: string;
   annualContribution: number;
   perPeriodContribution: number;
@@ -63,6 +65,8 @@ export type ContributionAccountInput = {
   rateOfGross: number | null;
   taxTreatment: TaxTreatmentType;
   isPayrollDeducted: boolean;
+  /** Also taken from bonus checks (bonusCheckContribution). */
+  fromBonus: boolean;
   group: string; // e.g. 'retirement', 'portfolio' — driven by account data, not hardcoded
   employerMatch: number;
   /** Of employerMatch, the part that matches what the bonus check takes. */

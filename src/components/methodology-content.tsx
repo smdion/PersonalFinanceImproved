@@ -267,7 +267,7 @@ export function MethodologyContent() {
         <p className="text-faint mt-1 text-xs">
           Actual values come from your database (asset_class_params table).
           Presets apply multipliers to these base values. The Conservative
-          preset overrides with forward-looking estimates.
+          preset uses forward-looking estimates instead.
         </p>
 
         <h4 className="text-secondary mt-4 font-semibold">
@@ -344,9 +344,9 @@ export function MethodologyContent() {
                 <td className="pr-2">Historical sequences</td>
                 <td className="pr-2">Historical sequences</td>
                 <td className="pr-2">Historical sequences</td>
-                <td className="pr-2">MC (proprietary)</td>
-                <td className="pr-2">MC + historical</td>
-                <td className="pr-2">MC (proprietary)</td>
+                <td className="pr-2">Simulation (proprietary)</td>
+                <td className="pr-2">Simulation + historical</td>
+                <td className="pr-2">Simulation (proprietary)</td>
                 <td>Historical sequences</td>
               </tr>
               <tr>
@@ -533,7 +533,7 @@ export function MethodologyContent() {
             engine fills remaining bracket room with Traditional-to-Roth
             conversions each year, paying tax from brokerage. It does not yet
             optimize conversion timing across years or consider the interaction
-            between conversion amount and future RMDs. Manual overrides can be
+            between conversion amount and future RMDs. Changes by year can be
             used to fine-tune.
           </li>
           <li>
@@ -553,8 +553,9 @@ export function MethodologyContent() {
             proximity, but only IRMAA actually changes a number: when IRMAA
             awareness is on (the default once enabled), Roth conversions are
             automatically capped to stay under the next IRMAA cliff. ACA never
-            caps a conversion or withdrawal — use its warning to manually adjust
-            via overrides. Neither ever reduces a Traditional withdrawal amount.
+            caps a conversion or withdrawal — use its warning to adjust by hand
+            with a change by year. Neither ever reduces a Traditional withdrawal
+            amount.
           </li>
           <li>
             <strong>Parametric vs historical.</strong> Log-normal returns can

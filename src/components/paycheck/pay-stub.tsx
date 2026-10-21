@@ -4,11 +4,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { HelpTip } from "@/components/ui/help-tip";
 import { FieldRow } from "@/components/ui/field-row";
 import { SectionHeader } from "./section-header";
-import {
-  ActionSlot,
-  DeductionRow,
-  deductionDisplayName,
-} from "./deduction-row";
+import { ActionSlot, DeductionRow, splitLineLabel } from "./deduction-row";
 import type {
   PaycheckResult,
   RawDeduction,
@@ -116,14 +112,8 @@ export function PayStub({
       raw: findRaw(d.name),
     }));
 
-  // The same name before and after tax (a 401(k) split between traditional
-  // and Roth) is ambiguous — say which is which.
-  const preNames = new Set(preTaxRows.map((r) => r.name.toLowerCase()));
-  const postNames = new Set(postTaxRows.map((r) => r.name.toLowerCase()));
   const labelFor = (name: string, pretax: boolean) =>
-    preNames.has(name.toLowerCase()) && postNames.has(name.toLowerCase())
-      ? `${deductionDisplayName(name)} (${pretax ? "Traditional" : "Roth"})`
-      : undefined;
+    splitLineLabel(name, pretax, { preTax: preTaxRows, postTax: postTaxRows });
 
   const rowsFor = (rows: DeductionRowData[], pretax: boolean) =>
     rows.length === 0 ? (

@@ -235,7 +235,7 @@ describe("BudgetCategoryRow — contribStatus badge for linked items", () => {
     expect(screen.queryByText("PC")).toBeNull();
     const badge = screen.getByText("Off");
     expect(badge.title).toContain(
-      "Turned off in this column's Contribution Profile",
+      "Turned off in the Contribution Profile in use",
     );
   });
 

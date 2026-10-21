@@ -159,7 +159,7 @@ function DataFreshnessSection() {
         Data Freshness Dates
       </h3>
       <p className="text-muted mb-4 text-xs">
-        Override the &ldquo;last updated&rdquo; dates shown in the sidebar
+        Set the &ldquo;last updated&rdquo; dates shown in the sidebar
         &ldquo;Data Updated&rdquo; tooltip. Leave a field blank to keep its
         current value.
       </p>

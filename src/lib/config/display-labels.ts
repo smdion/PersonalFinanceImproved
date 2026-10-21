@@ -15,6 +15,19 @@ export const PAY_PERIOD_LABELS: Record<string, string> = {
   monthly: "Monthly",
 };
 
+/** "Bonus goes to" choices (Salary Profile entry `bonusDestination`). */
+export const BONUS_DESTINATION_OPTIONS = [
+  { value: "budget", label: "Budget" },
+  { value: "spending", label: "Extra spending" },
+] as const;
+
+/** Which biweekly payday week a job is on. */
+export const PAY_WEEK_LABELS: Record<string, string> = {
+  even: "Even weeks",
+  odd: "Odd weeks",
+  na: "—",
+};
+
 export const CONTRIBUTION_METHOD_LABELS: Record<string, string> = {
   percent_of_salary: "% of Salary",
   fixed_per_period: "Fixed/Period",
@@ -89,11 +102,10 @@ export const CONTRIB_RESOLUTION_TOOLTIPS: Record<
 > = {
   ok: "",
   not_in_profile:
-    "This column's Contribution Profile has no value set for this account — resolves to $0 here, not a guessed amount.",
+    "The Contribution Profile in use has no value set for this account — $0 here, not a guessed amount.",
   inactive_in_profile:
-    "Turned off in this column's Contribution Profile — resolves to $0 here, not a guessed amount.",
-  inactive_in_sandbox:
-    "Turned off by a What-If override — resolves to $0 in this sandbox only.",
+    "Turned off in the Contribution Profile in use — $0 here, not a guessed amount.",
+  inactive_in_sandbox: "Turned off in What-If — $0 in this sandbox only.",
   no_pay_period:
     "Linked contribution account has no resolvable pay period (missing/ended job) — excluded from this total, not defaulted.",
   account_unavailable:

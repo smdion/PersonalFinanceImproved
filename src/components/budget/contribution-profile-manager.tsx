@@ -1,5 +1,7 @@
 "use client";
 
+import { Toggle } from "@/components/ui/toggle";
+import { takesFromBonusCheck } from "@/lib/calculators/paycheck";
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
@@ -549,6 +551,14 @@ function ProfileDetailPanel({ profileId }: { profileId: number }) {
                             title="This account isn't a funding target — any value set for it here has no effect. Restore it from the profile editor."
                           >
                             not a funding target
+                          </span>
+                        )}
+                        {takesFromBonusCheck({
+                          isPayrollDeducted: ad.liveIsPayroll,
+                          fromBonus: af?.fromBonus,
+                        }) && (
+                          <span className="text-micro text-faint shrink-0">
+                            also from bonus checks
                           </span>
                         )}
                       </span>
@@ -1205,11 +1215,10 @@ function ProfileEditor({
         )}
         {/* The old "Employer & Bonus Handling" jobs active-fields section
             was removed in the Stage B migration — that bucket
-            (contributionActiveFields.jobs) is retired entirely.
-            include401kInBonus/includeBonusInContributions/employerName now
-            live on the Salary Profile entry (employerName has no
-            profile-override mechanism at all any more), edited on the
-            Salary Profile tab instead. */}
+            (contributionActiveFields.jobs) is retired entirely. Whether a
+            contribution is taken from bonus checks is each account's own
+            `fromBonus` (the row's checkbox above); employerName has no
+            profile-override mechanism at all any more. */}
       </div>
     </div>
   );
@@ -1625,6 +1634,22 @@ function ProfileInlineEditor({
                             className="text-caption bg-surface-primary text-primary mt-0.5 w-full rounded border px-1.5 py-0.5"
                           />
                         )}
+                        {/* This account's election (takesFromBonusCheck) —
+                            payroll accounts only; the same switch as Paycheck. */}
+                        {!isDisabled && ad.liveIsPayroll && (
+                          <div className="mt-1">
+                            <Toggle
+                              isChecked={af.fromBonus === true}
+                              onChange={(v) =>
+                                patchAccount(ad.id, {
+                                  fromBonus: v || undefined,
+                                })
+                              }
+                              label="Also taken from bonus checks"
+                              size="xs"
+                            />
+                          </div>
+                        )}
                       </td>
                       <td className="px-3 py-1.5">
                         <select
@@ -1751,7 +1776,7 @@ function ProfileInlineEditor({
                               title={
                                 af.employerMatchValue === undefined &&
                                 storedMatch !== ""
-                                  ? "Inherited from the account's own settings — editing this sets a customization for this profile only"
+                                  ? "The account's own match — editing saves a value in this profile only"
                                   : undefined
                               }
                               placeholder="—"
@@ -1802,7 +1827,7 @@ function ProfileInlineEditor({
                               title={
                                 af.employerMaxMatchPct === undefined &&
                                 storedCap !== ""
-                                  ? "Inherited from the account's own settings — editing this sets a customization for this profile only"
+                                  ? "The account's own match — editing saves a value in this profile only"
                                   : undefined
                               }
                               placeholder="—"

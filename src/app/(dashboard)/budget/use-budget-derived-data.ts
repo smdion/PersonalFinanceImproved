@@ -3,7 +3,7 @@
 /**
  * useBudgetDerivedData — extracted from budget-content.tsx.
  *
- * Owns: per-column contribution resolution, payroll breakdowns,
+ * Owns: the payroll breakdown (one per column, same pay in each),
  * category/item derivation, sinking-fund list, API-actuals map,
  * matchContrib, and getCatTotals.
  *
@@ -11,12 +11,8 @@
  * When `data` is null/undefined, outputs default to safe empty values.
  */
 
+import { trpc } from "@/lib/trpc";
 import { useMemo, useCallback } from "react";
-import { usePerColumnPaycheck } from "@/lib/hooks/use-per-column-paycheck";
-import {
-  resolveContributionProfileIdsForAllColumns,
-  resolveSalaryProfileIdsForAllColumns,
-} from "@/lib/calculators/contribution-profile-resolution";
 import {
   buildPayrollBreakdown,
   buildNonPayrollContribs,
@@ -66,8 +62,6 @@ type DataShape =
       profile?: {
         id?: number;
         name?: string;
-        columnContributionProfileIds?: (number | null)[] | null;
-        columnSalaryProfileIds?: (number | null)[] | null;
         columnMonths?: number[] | null;
       } | null;
       columnLabels?: unknown;
@@ -90,7 +84,7 @@ export function useBudgetDerivedData({
   data: DataShape;
   savingsGoals: SavingsGoalEntry[] | undefined;
   apiActualsData: ApiActualsData;
-  /** The non-column tiers of the profile precedence — must be the SAME
+  /** The profile tiers (local selection → active) — must be the SAME
    *  values sent to budget.computeActiveSummary, or server totals and this
    *  page's payroll breakdown resolve different profiles. */
   contributionProfileTiers: ProfileResolutionTiers;
@@ -111,39 +105,25 @@ export function useBudgetDerivedData({
   const columnMonths = (profile?.columnMonths as number[] | null) ?? null;
   const isWeighted = columnMonths !== null && columnMonths.length > 0;
 
-  // ---- Per-column contribution profile resolution ----
-
-  const columnContribProfileIds = useMemo(() => {
-    if (numCols === 0) return [];
-    const stored =
-      (profile?.columnContributionProfileIds as (number | null)[] | null) ??
-      null;
-    return resolveContributionProfileIdsForAllColumns({
-      ...contributionProfileTiers,
-      columnPinIds: stored,
-      numColumns: numCols,
-    });
-  }, [profile, numCols, contributionProfileTiers]);
-
-  // ---- Per-column salary profile resolution ----
-  // MUST match routers/budget.ts's computeActiveSummary resolution exactly
-  // (it calls the same resolver with the same tiers), or budget item $
-  // amounts and the payroll breakdown on this page silently disagree about
-  // which salary reality is in effect.
-  const columnSalaryProfileIds = useMemo(() => {
-    if (numCols === 0) return [];
-    const stored =
-      (profile?.columnSalaryProfileIds as (number | null)[] | null) ?? null;
-    return resolveSalaryProfileIdsForAllColumns({
-      ...salaryProfileTiers,
-      columnPinIds: stored,
-      numColumns: numCols,
-    });
-  }, [profile, numCols, salaryProfileTiers]);
-
-  const perColumnPaycheckData = usePerColumnPaycheck(
-    columnContribProfileIds,
-    columnSalaryProfileIds,
+  // ---- Pay under the profiles this page shows ----
+  // A budget column is a spending level, not a different pay world, so one
+  // paycheck query (the page's local selection — What-If — else the active
+  // profiles; the SAME tiers sent to budget.computeActiveSummary) serves
+  // every column.
+  const contribProfileId =
+    contributionProfileTiers.localSelectionId ??
+    contributionProfileTiers.globalDefaultId;
+  const salaryProfileId =
+    salaryProfileTiers.localSelectionId ?? salaryProfileTiers.globalDefaultId;
+  const { data: paycheckData } = trpc.paycheck.computeSummary.useQuery({
+    ...(contribProfileId != null
+      ? { contributionProfileId: contribProfileId }
+      : {}),
+    ...(salaryProfileId != null ? { salaryProfileId } : {}),
+  });
+  const perColumnPaycheckData = useMemo(
+    () => Array.from({ length: numCols }, () => paycheckData ?? null),
+    [numCols, paycheckData],
   );
 
   const payrollBreakdowns: (PayrollBreakdown | null)[] = useMemo(
@@ -261,8 +241,8 @@ export function useBudgetDerivedData({
     (items: RawItem[]) =>
       Array.from({ length: numCols }, (_, col) =>
         items.reduce((s, it) => {
-          // contribAmounts is the server's own per-column figure (column i
-          // resolved with column i's profiles); contribAmount is only the
+          // contribAmounts is the server's own per-column figure (every
+          // column from the active profiles); contribAmount is only the
           // selected column's value and is the last resort before raw
           // amounts. Fuzzy name-matching (matchContrib) never contributes
           // here — it's a badge/tooltip-only estimate for UNLINKED items,
@@ -393,8 +373,6 @@ export function useBudgetDerivedData({
     numCols,
     columnMonths,
     isWeighted,
-    columnContribProfileIds,
-    columnSalaryProfileIds,
     perColumnPaycheckData,
     payrollBreakdowns,
     matchContrib,

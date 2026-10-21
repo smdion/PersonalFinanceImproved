@@ -3,6 +3,7 @@
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { FieldRow } from "@/components/ui/field-row";
 import { formatCurrency } from "@/lib/utils/format";
+import { taxTypeLabel } from "@/lib/utils/colors";
 import type { DeductionRowData, CreateDeductionData } from "./types";
 import {
   DEDUCTION_PRESETS,
@@ -12,6 +13,28 @@ import {
 const ACRONYMS: Record<string, string> = { hsa: "HSA", ira: "IRA", fsa: "FSA" };
 export const deductionDisplayName = (name: string) =>
   ACRONYMS[name.toLowerCase()] ?? name;
+
+/**
+ * A line name used both before and after tax (a 401(k) split between
+ * traditional and Roth) is ambiguous — this says which one a line is.
+ * Undefined when the name is used once. The pay stub and the Bonus
+ * section's account list both name lines with it.
+ */
+export function splitLineLabel(
+  name: string,
+  pretax: boolean,
+  lines: {
+    preTax: readonly { name: string }[];
+    postTax: readonly { name: string }[];
+  },
+): string | undefined {
+  const key = name.toLowerCase();
+  const inPre = lines.preTax.some((l) => l.name.toLowerCase() === key);
+  const inPost = lines.postTax.some((l) => l.name.toLowerCase() === key);
+  return inPre && inPost
+    ? `${deductionDisplayName(name)} (${taxTypeLabel(pretax ? "preTax" : "taxFree")})`
+    : undefined;
+}
 
 const numeric = (v: string) => v.replace(/[^0-9.]/g, "");
 

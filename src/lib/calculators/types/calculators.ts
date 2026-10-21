@@ -54,7 +54,6 @@ export type PaycheckInput = {
   bonusMultiplier: number;
   bonusOverride: number | null; // if set, use this value as gross bonus instead of calculating
   monthsInBonusYear: number;
-  includeContribInBonus: boolean; // whether 401k is deducted from bonus paycheck
   bonusMonth: number | null; // 1-12, month when bonus is paid (null = unknown/not modeled)
   bonusDayOfMonth: number | null; // 1-31, day of month when bonus is paid (null = first period of month)
   asOfDate: Date;

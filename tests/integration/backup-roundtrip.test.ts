@@ -52,6 +52,30 @@ async function seedHousehold(db: TestCtx["db"]) {
       value: [{ id: "g1", label: "Fixture goal", amount: 100000 }],
     })
     .run();
+  // Holding history for one part of an account (sub_key) and its fund.
+  const perf = db
+    .select({ id: sqliteSchema.performanceAccounts.id })
+    .from(sqliteSchema.performanceAccounts)
+    .limit(1)
+    .get()!.id;
+  const fund = db
+    .insert(sqliteSchema.securities)
+    .values({ name: "Fixture Fund", ticker: "FXFND", kind: "mutual_fund" })
+    .returning()
+    .get().id;
+  const period = db
+    .insert(sqliteSchema.holdingPeriods)
+    .values({
+      performanceAccountId: perf,
+      subKey: `${perf}_taxFree__1`,
+      startDate: "2020-01-01",
+      basis: "user",
+    })
+    .returning()
+    .get().id;
+  db.insert(sqliteSchema.holdingPeriodWeights)
+    .values({ holdingPeriodId: period, securityId: fund, weight: "1" })
+    .run();
 }
 
 describe("Backup Round-Trip (real version-logic)", () => {
