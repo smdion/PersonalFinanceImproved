@@ -48,6 +48,7 @@ const engineData = {
     projectionByYear: [
       {
         age: 40,
+        year: 2026,
         retirementBalance: 500000,
         allAccountsBalance: 500000,
         individualAccountBalances: [],
@@ -140,6 +141,37 @@ describe("RetirementCard dashboard cache-peek features", () => {
     };
     render(<RetirementCard />);
     expect(screen.getByText("(simulated: age 55)")).toBeInTheDocument();
+  });
+});
+
+describe("RetirementCard nest egg: simulated or baseline", () => {
+  it("shows the Retirement page's simulated median and range, baseline alongside", () => {
+    // Inflation 0 so today's $ = nominal: the figures read straight.
+    engineData.settings.annualInflation = "0";
+    mcPeekData = {
+      result: {
+        successRate: 0.9,
+        percentileBands: [
+          { age: 65, year: 2051, p25: 400000, p50: 620000, p75: 900000 },
+        ],
+      },
+      simulationInputs: { computedAt: new Date().toISOString() },
+    };
+    coastFireMcPeekData = { result: null };
+    render(<RetirementCard />);
+    expect(screen.getByText("$620,000.00")).toBeInTheDocument();
+    expect(screen.getByText(/simulated median/)).toBeInTheDocument();
+    expect(screen.getByText(/Range \$400,000\.00/)).toBeInTheDocument();
+    expect(screen.getByText(/\(fixed returns\)/)).toBeInTheDocument();
+    engineData.settings.annualInflation = "0.03";
+  });
+
+  it("without a simulation: the labelled baseline and a pointer to run one", () => {
+    mcPeekData = { result: null };
+    coastFireMcPeekData = { result: null };
+    render(<RetirementCard />);
+    expect(screen.getByText(/baseline — fixed returns/)).toBeInTheDocument();
+    expect(screen.getByText("Open the Retirement page")).toBeInTheDocument();
   });
 });
 

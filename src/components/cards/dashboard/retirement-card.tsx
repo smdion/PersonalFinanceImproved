@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { simulatedOrBaseline } from "@/lib/pure/nest-egg-display";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { memo } from "react";
 
@@ -64,11 +66,13 @@ function RetirementCardImpl() {
   // computed, if the inputs still match. Null result = nothing cached yet.
   const { data: mcPeek } = trpc.projection.computeMonteCarloProjection.useQuery(
     { ...engineInput, peekOnly: true },
-    { staleTime: 60_000, enabled: ready },
+    // Always re-read: a run made on the Retirement page should show here
+    // as soon as the dashboard is opened again.
+    { staleTime: 0, enabled: ready },
   );
   const { data: coastFireMcPeek } = trpc.projection.computeCoastFireMC.useQuery(
     { ...engineInput, peekOnly: true },
-    { staleTime: 60_000, enabled: ready },
+    { staleTime: 0, enabled: ready },
   );
   if (isLoading) return <LoadingCard title="Retirement" />;
   if (error) return <ErrorCard title="Retirement" message="Failed to load" />;
@@ -148,6 +152,17 @@ function RetirementCardImpl() {
     yearsToRet > 0 && inflRate > 0
       ? nestEggNominal / Math.pow(1 + inflRate, yearsToRet)
       : nestEggNominal;
+  // Simulated when the Retirement page has run one for these inputs, else
+  // the baseline — the same rule the page's hero uses.
+  const firstYear = result.projectionByYear[0]?.year ?? 0;
+  const nestEggDisplay = simulatedOrBaseline({
+    bands: mcPeek?.result?.percentileBands,
+    baseline: nestEgg,
+    targetAge: Math.max(retAge, currentAge),
+    toDisplay: (value, year) =>
+      inflRate > 0 ? value / Math.pow(1 + inflRate, year - firstYear) : value,
+    personFiltered: false,
+  });
   const totalWithMatch = annualContributions + employerContributions;
   const retirementBudget = data.decumulationExpenses ?? 0;
   const taxAdvSpace =
@@ -159,10 +174,32 @@ function RetirementCardImpl() {
     <Card title="Retirement" href="/retirement">
       <div className="grid gap-x-8 gap-y-4 md:grid-cols-2">
         <div>
-          <Metric
-            value={formatCurrency(nestEgg)}
-            label={`Nest egg at age ${retAge} (today's $)`}
-          />
+          {nestEggDisplay.kind === "simulated" ? (
+            <>
+              <Metric
+                value={formatCurrency(nestEggDisplay.median)}
+                label={`Nest egg at age ${retAge} (today's $, simulated median)`}
+              />
+              <div className="text-caption text-faint mt-1 leading-tight">
+                Range {formatCurrency(nestEggDisplay.low)} –{" "}
+                {formatCurrency(nestEggDisplay.high)} · Baseline:{" "}
+                {formatCurrency(nestEggDisplay.baseline)} (fixed returns)
+              </div>
+            </>
+          ) : (
+            <>
+              <Metric
+                value={formatCurrency(nestEggDisplay.baseline)}
+                label={`Nest egg at age ${retAge} (today's $, baseline — fixed returns)`}
+              />
+              <div className="text-caption text-faint mt-1 leading-tight">
+                <Link href="/retirement" className="underline">
+                  Open the Retirement page
+                </Link>{" "}
+                to update the simulation.
+              </div>
+            </>
+          )}
           <div className="mt-3 space-y-1 text-sm">
             <div className="flex justify-between">
               <span className="text-muted">Years to retirement</span>
@@ -253,7 +290,7 @@ function RetirementCardImpl() {
                 return (
                   <div className="flex justify-between">
                     <span className="text-muted">
-                      Est. Withdrawal
+                      Est. Withdrawal (baseline)
                       <HelpTip
                         text={
                           isDynamic

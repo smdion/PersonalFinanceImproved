@@ -587,6 +587,13 @@ Each account type has a default `parentCategory` in `ACCOUNT_TYPE_CONFIG` (broke
 - **`allAccountsBalance` (Portfolio included) is for net-worth views only** — FI milestones (liquid net worth = every account plus cash) and the Money Guy benchmark. The `local/no-all-accounts-balance` lint rule enforces the allow-list; `tests/calculators/retirement-scope-invariance.test.ts` proves +$1M of Portfolio money changes no retirement answer.
 - **The one coupling: RMDs.** Required minimum distributions on Portfolio-parented Traditional accounts are real (the IRS doesn't care how accounts are categorized), so they still raise taxable income and RMD amounts.
 
+**Simulated vs baseline (one display rule, v0.8.11).** A nest egg (or end balance) is shown through `simulatedOrBaseline` (`lib/pure/nest-egg-display.ts`) everywhere it appears — the dashboard's Retirement card and the Retirement page's hero:
+
+- With a simulation for the current inputs: the simulated median at the target age (retirement age, or today when already retired), "Range p25 – p75", and "Baseline: $X (fixed returns)". Today's dollars for a simulated figure = the nominal band value deflated by the plan's inflation rate to the band's year, the same conversion the baseline uses.
+- Without one: the baseline, labelled "baseline (fixed returns)", with a pointer to the Retirement page to run the simulation. The dashboard never runs a simulation; it reads the page's cached run.
+- A person filter always shows the baseline — the simulation is the whole household's.
+- Every surface builds its projection input with `usePlanEngineInput` (and the default simulation is `DEFAULT_SIMULATION`), so the dashboard reads exactly the run the Retirement page made. Cached runs key on the full built input with dates truncated to the calendar day, and expire after 36 h.
+
 **Single source of truth:** `getParentCategory()` from `src/lib/config/account-types.ts`. It reads the `parentCategory` config property for each account type. Contribution and retirement routers use this for page-level filtering (which page owns the account).
 
 #### Performance page display categories

@@ -3,6 +3,8 @@
 /** Hero KPI cards — MC-adaptive 5-card grid. Unified card chrome across
  *  all metrics so the row reads as a single design language. Uses the same
  *  visual pattern as the MC summary bar in projection-mc-results.tsx. */
+import { DEFAULT_SIMULATION } from "@/lib/constants";
+import { simulatedOrBaseline } from "@/lib/pure/nest-egg-display";
 import { dominantFailureReason } from "@/lib/calculators/plan-outcome";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { rowTotal } from "./utils";
@@ -126,7 +128,6 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     personDepletionInfo,
     getPersonYearTotals,
     deflate,
-    baseYear,
     mcQuery,
     mcLoading,
     debouncedBaseInput,
@@ -175,13 +176,38 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
         ? mcQuery.data.result
         : null;
   const mcBands = mc?.percentileBands ?? null;
-  const mcRetBand = mcBands?.find((b) =>
-    alreadyRetired
-      ? b.age === currentAge
-      : b.age === engineSettings?.retirementAge,
-  );
-  const terminalYear =
-    baseYear + (engineSettings.endAge - (result.projectionByYear[0]?.age ?? 0));
+  // One rule for simulated vs baseline (nest-egg-display.ts, shared with
+  // the dashboard): a person filter shows the baseline — the simulation is
+  // the whole household's.
+  const nestEggDisplay = simulatedOrBaseline({
+    bands: mcBands,
+    baseline: nestEgg,
+    targetAge: alreadyRetired
+      ? currentAge
+      : (engineSettings?.retirementAge ?? currentAge),
+    toDisplay: deflate,
+    personFiltered: isPersonFiltered,
+  });
+  // A non-default simulation preset is named next to the range.
+  const simInputs =
+    mcQuery.data && "simulationInputs" in mcQuery.data
+      ? mcQuery.data.simulationInputs
+      : undefined;
+  const presetNote =
+    simInputs && simInputs.preset !== DEFAULT_SIMULATION.preset
+      ? ` · ${simInputs.presetLabel} preset`
+      : "";
+  const lastYear = result.projectionByYear.at(-1);
+  const lastPt = lastYear ? getPersonYearTotals(lastYear) : null;
+  const endDisplay = simulatedOrBaseline({
+    bands: mcBands,
+    baseline: lastYear
+      ? deflate(lastPt ? lastPt.balance : rowTotal(lastYear), lastYear.year)
+      : 0,
+    targetAge: engineSettings?.endAge ?? lastYear?.age ?? 0,
+    toDisplay: deflate,
+    personFiltered: isPersonFiltered,
+  });
   // The plan judge: retirement money runs out, or a year falls short.
   const outcome = assessPlan(result);
   const depl = isPersonFiltered
@@ -327,43 +353,51 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
           }
         >
           <div className="text-primary text-xl font-bold tabular-nums">
-            {mcRetBand
-              ? formatCurrency(deflate(mcRetBand.p50, mcRetBand.year))
-              : formatCurrency(nestEgg)}
+            {formatCurrency(
+              nestEggDisplay.kind === "simulated"
+                ? nestEggDisplay.median
+                : nestEggDisplay.baseline,
+            )}
           </div>
-          {mcRetBand && (
+          {nestEggDisplay.kind === "simulated" ? (
+            <>
+              <div className="text-caption text-faint mt-1 leading-tight">
+                Range {formatCurrency(nestEggDisplay.low)} –{" "}
+                {formatCurrency(nestEggDisplay.high)}
+                {presetNote}
+              </div>
+              <div className="text-caption text-faint leading-tight">
+                Baseline: {formatCurrency(nestEggDisplay.baseline)} (fixed
+                returns)
+              </div>
+            </>
+          ) : (
             <div className="text-caption text-faint mt-1 leading-tight">
-              Range {formatCurrency(deflate(mcRetBand.p25, mcRetBand.year))} –{" "}
-              {formatCurrency(deflate(mcRetBand.p75, mcRetBand.year))}
+              Baseline (fixed returns)
+              {isPersonFiltered ? " — the simulation is household-wide" : ""}
             </div>
           )}
-          <div className="text-caption text-faint leading-tight">
-            Baseline: {formatCurrency(nestEgg)}
-          </div>
         </KpiCard>
 
         {/* Card 4: End Balance */}
         <KpiCard label="End Balance">
           <div className="text-primary text-xl font-bold tabular-nums">
-            {formatCurrency(deflate(mc.medianEndBalance, terminalYear))}
+            {formatCurrency(
+              endDisplay.kind === "simulated"
+                ? endDisplay.median
+                : endDisplay.baseline,
+            )}
           </div>
           <div className="text-caption text-faint mt-1 leading-tight">
-            Sim. median at age {engineSettings?.endAge ?? "?"}
+            {endDisplay.kind === "simulated"
+              ? `Sim. median at age ${engineSettings?.endAge ?? "?"}`
+              : `Baseline (fixed returns) at age ${engineSettings?.endAge ?? "?"}`}
           </div>
-          <div className="text-caption text-faint leading-tight">
-            {(() => {
-              if (!result || result.projectionByYear.length === 0)
-                return "Baseline: $0";
-              const last =
-                result.projectionByYear[result.projectionByYear.length - 1]!;
-              const lastPt = getPersonYearTotals(last);
-              const detEndBalance = deflate(
-                lastPt ? lastPt.balance : rowTotal(last),
-                last.year,
-              );
-              return `Baseline: ${formatCurrency(detEndBalance)}`;
-            })()}
-          </div>
+          {endDisplay.kind === "simulated" && (
+            <div className="text-caption text-faint leading-tight">
+              Baseline: {formatCurrency(endDisplay.baseline)} (fixed returns)
+            </div>
+          )}
         </KpiCard>
 
         {/* Card 5: Coast FIRE */}
