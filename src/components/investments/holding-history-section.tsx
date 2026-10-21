@@ -9,7 +9,6 @@
  */
 import { useState } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatNumber } from "@/lib/utils/format";
 import { roundToCents, sumBy } from "@/lib/utils/math";
@@ -58,7 +57,7 @@ export function HoldingHistorySection() {
   );
 
   return (
-    <Card title="Holding history">
+    <>
       <p className="text-caption text-faint mb-2">
         What each account held over time. Daily holdings fill this in from when
         your SimpleFIN feed started; enter the funds you held before then (from
@@ -125,7 +124,7 @@ export function HoldingHistorySection() {
             Add a period
           </Button>
         ))}
-    </Card>
+    </>
   );
 }
 
