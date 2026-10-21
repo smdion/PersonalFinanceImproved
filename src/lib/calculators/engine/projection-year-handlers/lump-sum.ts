@@ -11,9 +11,13 @@ import {
   addRoth,
   addBalance,
   addBasis,
+  isPortfolioParent,
 } from "../../../config/account-types";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
-import { retirementFirst } from "../individual-account-tracking";
+import {
+  portfolioFirst,
+  retirementFirst,
+} from "../individual-account-tracking";
 
 /**
  * Apply one-time lump-sum injections for the current year.
@@ -64,6 +68,10 @@ export function applyLumpSums(
       // identically-named account (e.g. both "Long Term Brokerage") used to
       // silently collide here, always landing on whichever account
       // `indAccts` happened to list first.
+      const byParent = (accts: typeof indAccts) =>
+        isPortfolioParent(ls.targetParentCategory)
+          ? portfolioFirst(accts, (ia) => ia.parentCategory)
+          : retirementFirst(accts, (ia) => ia.parentCategory);
       const target = ls.targetAccountName
         ? ((ls.targetOwnerName
             ? indAccts.find(
@@ -73,18 +81,17 @@ export function applyLumpSums(
               )
             : undefined) ??
           indAccts.find((ia) => ia.name === ls.targetAccountName))
-        : // No named account: Retirement money first (a lump sum in the
-          // retirement projection must stay spendable in retirement).
-          (retirementFirst(
+        : // No named account: by whose money it is — the Brokerage page's
+          // are Portfolio savings, the retirement projection's stay
+          // retirement money.
+          (byParent(
             indAccts.filter(
               (ia) =>
                 ia.category === ls.targetAccount && ia.taxType === taxType,
             ),
-            (ia) => ia.parentCategory,
           )[0] ??
-          retirementFirst(
+          byParent(
             indAccts.filter((ia) => ia.category === ls.targetAccount),
-            (ia) => ia.parentCategory,
           )[0]);
       if (target) {
         const key = indKey(target);

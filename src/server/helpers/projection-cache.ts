@@ -275,8 +275,11 @@ import { log } from "@/lib/logger";
  *
  *  38: A2 review — the Portfolio part pro-rates in year 0; overflow left
  *  after the ceiling scales is still routed (and reported) as overflow;
- *  overflow follows Retirement accounts even without a Retirement spec. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 38;
+ *  overflow follows Retirement accounts even without a Retirement spec.
+ *
+ *  39: the contribution ramp and Brokerage-page lump sums (Portfolio
+ *  savings) go to Portfolio-parented accounts first. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 39;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

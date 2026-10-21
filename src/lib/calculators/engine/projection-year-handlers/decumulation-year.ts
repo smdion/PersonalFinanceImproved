@@ -62,6 +62,7 @@ import {
   clampIndividualBasis,
   reconcileIndividualToAggregate,
   specKeyOf,
+  portfolioFirst,
 } from "../individual-account-tracking";
 import { computeWithdrawalEligibility } from "@/lib/pure/withdrawal-eligibility";
 import type { BasisDraw } from "@/lib/pure/roth-basis-tracking";
@@ -1269,7 +1270,11 @@ export function runDecumulationYear(
     // weighted by balance, so the per-account breakdown sums to the total.
     // Mirrors accumulation-year.ts's ramp attribution — report-only here,
     // matching the rest of this block (must NOT affect balances).
-    const rampAccts = indAccts.filter((ia) => isOverflowTarget(ia.category));
+    // Portfolio-parented brokerages first, like the accumulation ramp.
+    const rampAccts = portfolioFirst(
+      indAccts.filter((ia) => isOverflowTarget(ia.category)),
+      (ia) => ia.parentCategory,
+    );
     const rampTotal = rampAccts.reduce(
       (s, ia) => s + (indBal.get(indKey(ia)) ?? 0),
       0,

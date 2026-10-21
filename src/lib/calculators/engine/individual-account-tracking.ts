@@ -55,6 +55,17 @@ import {
  * retirement can spend it — Portfolio-parented accounts are never withdrawn
  * from for retirement spending.
  */
+/** The inverse of retirementFirst: Portfolio-parented items first, every
+ *  item when there are none — for Portfolio money (the Brokerage page's
+ *  contribution ramp and lump sums). */
+export function portfolioFirst<T>(
+  items: readonly T[],
+  parentOf: (item: T) => string | undefined,
+): T[] {
+  const portfolio = items.filter((x) => isPortfolioParent(parentOf(x)));
+  return portfolio.length > 0 ? portfolio : [...items];
+}
+
 export function retirementFirst<T>(
   items: readonly T[],
   parentOf: (item: T) => string | undefined,
@@ -550,11 +561,11 @@ export function distributeContributions(
 
   // --- Step 6: Distribute ramp to brokerage accounts ---
   if (rampAmount > 0) {
-    // The ramp is a retirement-plan contribution: Retirement-parented
-    // brokerages first.
+    // The ramp (the Brokerage page's yearly increase) is Portfolio
+    // savings: Portfolio-parented brokerages first.
     const parentOf = (ia: IndividualAccountInput) =>
       indParentCat.get(indKey(ia)) ?? ia.parentCategory;
-    const brokWithSpecs = retirementFirst(
+    const brokWithSpecs = portfolioFirst(
       indAccts.filter(
         (ia) =>
           isOverflowTarget(ia.category) && accountsWithSpecs.has(indKey(ia)),
@@ -564,7 +575,7 @@ export function distributeContributions(
     const brokAccts =
       brokWithSpecs.length > 0
         ? brokWithSpecs
-        : retirementFirst(
+        : portfolioFirst(
             indAccts.filter((ia) => isOverflowTarget(ia.category)),
             parentOf,
           );

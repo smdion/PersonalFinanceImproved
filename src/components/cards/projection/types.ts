@@ -278,6 +278,8 @@ export type AccumOverride = {
     targetAccountName?: string;
     targetOwnerName?: string;
     taxType?: "traditional" | "roth";
+    /** See LumpSum.targetParentCategory. */
+    targetParentCategory?: "Retirement" | "Portfolio";
     label?: string;
   }>;
   reset?: boolean;

@@ -121,6 +121,8 @@ export function BrokerageContent() {
         id: ls.id,
         amount: Math.abs(amt),
         targetAccount: ls.targetAccount,
+        // Brokerage-page lump sums are Portfolio savings.
+        targetParentCategory: "Portfolio" as const,
         ...(ls.targetAccountName
           ? { targetAccountName: ls.targetAccountName }
           : {}),

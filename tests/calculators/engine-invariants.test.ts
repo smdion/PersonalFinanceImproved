@@ -1907,5 +1907,41 @@ describe("engine invariants", () => {
       }
       brokerageAddsUp(input);
     });
+
+    it("Portfolio money stays Portfolio: the ramp and a Brokerage-page lump sum", () => {
+      const base = overflowInput();
+      const year = base.asOfDate.getFullYear() + 1;
+      const portfolioBal = (input: ProjectionInput) =>
+        (
+          calculateProjection(input).projectionByYear.find(
+            (y) => y.year === year,
+          )!.individualAccountBalances ?? []
+        )
+          .filter((a) => a.parentCategory === "Portfolio")
+          .reduce((t, a) => t + a.balance, 0);
+      const without = portfolioBal(base);
+      // The Brokerage page's yearly contribution increase.
+      expect(
+        portfolioBal({ ...base, brokerageContributionRamp: 1000 }) - without,
+      ).toBeCloseTo(1000, 0);
+      // A Brokerage-page lump sum with no account named.
+      expect(
+        portfolioBal({
+          ...base,
+          accumulationOverrides: [
+            {
+              year,
+              lumpSums: [
+                {
+                  amount: 20000,
+                  targetAccount: "brokerage",
+                  targetParentCategory: "Portfolio",
+                },
+              ],
+            },
+          ] as ProjectionInput["accumulationOverrides"],
+        }) - without,
+      ).toBeCloseTo(20000, 0);
+    });
   });
 });

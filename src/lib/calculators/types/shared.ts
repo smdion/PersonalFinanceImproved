@@ -103,6 +103,11 @@ export type LumpSum = {
    *  Undefined ⇒ name-only match, unchanged behavior for every lump sum
    *  saved before this field existed. */
   targetOwnerName?: string;
+  /** Whose money it is when no account is named: "Portfolio" for the
+   *  Brokerage page's lump sums (Portfolio savings), otherwise retirement
+   *  money (the retirement projection's own). Picks Portfolio- or
+   *  Retirement-parented accounts first. */
+  targetParentCategory?: "Retirement" | "Portfolio";
   label?: string;
 };
 

@@ -27,6 +27,7 @@ import {
   getAllCategories,
   getDefaultDecumulationOrder,
   DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
+  PARENT_CATEGORY_VALUES,
 } from "@/lib/config/account-types";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 
@@ -64,6 +65,9 @@ export const lumpSumSchema = z
       // accounts — see LumpSum.targetOwnerName's docblock (calculators/types/shared.ts).
       // Optional so lump sums saved before this field existed keep parsing.
       targetOwnerName: z.string().max(200).optional(),
+      // Whose money a lump sum with no named account is (the Brokerage
+      // page's are Portfolio savings) — see LumpSum.targetParentCategory.
+      targetParentCategory: z.enum(PARENT_CATEGORY_VALUES).optional(),
       label: z.string().max(100).optional(),
     }),
   )
