@@ -302,6 +302,12 @@ export function runAccumulationYear(
     if (proRate < 1) {
       for (const slot of slots) {
         slot.employeeContrib = roundToCents(slot.employeeContrib * proRate);
+        // The Portfolio part pro-rates with the slot (the ceiling below
+        // scales the rest; left full-year it would exceed the slot).
+        if (slot.portfolioContrib != null)
+          slot.portfolioContrib = roundToCents(
+            Math.min(slot.portfolioContrib * proRate, slot.employeeContrib),
+          );
         slot.rothContrib = roundToCents(slot.rothContrib * proRate);
         slot.traditionalContrib = roundToCents(
           slot.traditionalContrib * proRate,
@@ -349,11 +355,10 @@ export function runAccumulationYear(
           ? 0
           : roundToCents(Math.max(0, slot.effectiveLimit - newEmployee));
       }
-      // Recompute overflow -- scaling down may eliminate it. What remains
-      // in the overflow target's slot is spread over its specs, Portfolio
-      // specs taking only their own amount (distributeContributions), so
-      // it stays retirement money.
-      specOverflow = 0;
+      // The IRS overflow inside the overflow target's slot scaled with
+      // the rest; it is still overflow — Step 2 leaves it out of the specs'
+      // share and Step 4 routes it to retirement money.
+      specOverflow = roundToCents(specOverflow * scale);
     }
   } else {
     // Fallback: Route contributions based on mode (blended rate)

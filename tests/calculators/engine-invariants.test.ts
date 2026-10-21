@@ -1830,5 +1830,82 @@ describe("engine invariants", () => {
       expect(big.portfolio).toBeCloseTo(50000, 0);
       expect(big.retirement).toBeCloseTo(small.retirement, 0);
     });
+
+    // Shared checks: per-account brokerage = brokerage total, no
+    // reconciliation warning, every year in the window.
+    const brokerageAddsUp = (input: ProjectionInput, years = 4) => {
+      for (const y of calculateProjection(input).projectionByYear.slice(
+        0,
+        years,
+      )) {
+        const brokerage = (y.individualAccountBalances ?? []).filter(
+          (a) => a.category === "brokerage",
+        );
+        expect(
+          brokerage.reduce((t, a) => t + a.balance, 0),
+          `${y.year} brokerage accounts = brokerage total`,
+        ).toBeCloseTo(y.balanceByTaxType.afterTax, 0);
+        expect(
+          (y.warnings ?? []).filter((w) => w.includes("reconciliation")),
+          `${y.year} reconciliation`,
+        ).toEqual([]);
+      }
+    };
+
+    it("the first (pro-rated) year: the ceiling keeps the Portfolio part and adds nothing", () => {
+      const base = overflowInput();
+      const input: ProjectionInput = {
+        ...base,
+        accumulationDefaults: {
+          ...base.accumulationDefaults,
+          contributionRate: 0.05,
+        },
+      };
+      const y0 = calculateProjection(input).projectionByYear[0]!;
+      const proRate = y0.proRateFraction ?? 1;
+      const contrib = (parent: string) =>
+        (y0.individualAccountBalances ?? [])
+          .filter((a) => a.parentCategory === parent)
+          .reduce((t, a) => t + (a.contribution ?? 0), 0);
+      expect(contrib("Portfolio")).toBeCloseTo(5000 * proRate, 0);
+      expect(contrib("Retirement")).toBeCloseTo(200000 * 0.05 * proRate, 0);
+      brokerageAddsUp(input);
+    });
+
+    it("overflow under a binding ceiling with only a Portfolio brokerage spec is still routed", () => {
+      const base = overflowInput();
+      brokerageAddsUp({
+        ...base,
+        accumulationDefaults: {
+          ...base.accumulationDefaults,
+          contributionRate: 0.15,
+        },
+        contributionSpecs: base.contributionSpecs!.filter(
+          (sp) => sp.name !== "Retirement brokerage",
+        ),
+      });
+    });
+
+    it("a Retirement brokerage with no spec of its own takes the overflow, not a Portfolio spec", () => {
+      const base = overflowInput();
+      const input: ProjectionInput = {
+        ...base,
+        contributionSpecs: base.contributionSpecs!.filter(
+          (sp) => sp.name !== "Retirement brokerage",
+        ),
+      };
+      let portfolioPrev = 10000;
+      for (const y of calculateProjection(input).projectionByYear.slice(0, 4)) {
+        const portfolio = (y.individualAccountBalances ?? []).find(
+          (a) => a.parentCategory === "Portfolio",
+        )!;
+        expect(
+          portfolio.balance - portfolioPrev,
+          `${y.year}`,
+        ).toBeLessThanOrEqual(5000.01);
+        portfolioPrev = portfolio.balance;
+      }
+      brokerageAddsUp(input);
+    });
   });
 });

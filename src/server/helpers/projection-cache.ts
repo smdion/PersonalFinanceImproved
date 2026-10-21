@@ -271,8 +271,12 @@ import { log } from "@/lib/logger";
  *  money, not Portfolio-parented accounts.
  *
  *  37: the contribution rate (and its ceiling) covers retirement
- *  contributions only — Portfolio-parented specs keep their amounts. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 37;
+ *  contributions only — Portfolio-parented specs keep their amounts.
+ *
+ *  38: A2 review — the Portfolio part pro-rates in year 0; overflow left
+ *  after the ceiling scales is still routed (and reported) as overflow;
+ *  overflow follows Retirement accounts even without a Retirement spec. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 38;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

@@ -436,14 +436,23 @@ export function distributeContributions(
   if (overflowToBrokerage > 0) {
     // Overflow is retirement money (contributions past the IRS limits):
     // Retirement-parented brokerage specs/accounts first.
-    const overflowSpecs = retirementFirst(
-      contributionSpecs.filter((s) => isOverflowTarget(s.category)),
-      (s) => s.parentCategory,
-    ).sort((a, b) => (a.allocationPriority ?? 0) - (b.allocationPriority ?? 0));
+    // The accounts decide (a Retirement brokerage with no spec of its own
+    // still takes overflow before any Portfolio one); specs only order and
+    // cap it within those accounts.
     const brokAccts = retirementFirst(
       indAccts.filter((ia) => isOverflowTarget(ia.category)),
       (ia) => indParentCat.get(indKey(ia)) ?? ia.parentCategory,
     );
+    const brokKeys = new Set(brokAccts.map((ia) => indKey(ia)));
+    const overflowSpecs = contributionSpecs
+      .filter(
+        (s) =>
+          isOverflowTarget(s.category) &&
+          brokKeys.has(specToAccount.get(specKeyOf(s)) ?? ""),
+      )
+      .sort(
+        (a, b) => (a.allocationPriority ?? 0) - (b.allocationPriority ?? 0),
+      );
 
     if (brokAccts.length > 0) {
       let remaining = overflowToBrokerage;
