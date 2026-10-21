@@ -156,9 +156,10 @@ export type IndividualAccountInput = {
   /** A retirement brokerage that exists only in the projection — added when
    *  the household has no Retirement brokerage, so retirement money that
    *  needs a brokerage home (contribution overflow, reinvested RMD money)
-   *  never lands in a Portfolio account. Takes no contributions of its own,
-   *  ramp, lump sums or goal draws; spent in retirement like any retirement
-   *  account. */
+   *  never lands in a Portfolio account. It also takes retirement lump sums
+   *  with no account named, and the Brokerage page's ramp only when the
+   *  household has no brokerage at all; never contributions of its own or
+   *  goal draws. Spent in retirement like any retirement account. */
   projectedOnly?: boolean;
   /** Starting cost basis (brokerage-type accounts), from the account's own
    *  `cost_basis`. Absent: the engine shares the aggregate basis out by

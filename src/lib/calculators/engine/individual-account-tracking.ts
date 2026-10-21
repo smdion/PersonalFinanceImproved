@@ -571,25 +571,19 @@ export function distributeContributions(
   // --- Step 6: Distribute ramp to brokerage accounts ---
   if (rampAmount > 0) {
     // The ramp (the Brokerage page's yearly increase) is Portfolio
-    // savings: Portfolio-parented brokerages first.
+    // savings: the parent is chosen first (Portfolio brokerages when there
+    // are any), then within it the brokerages with specs of their own. The
+    // projection-only retirement brokerage takes it only when the household
+    // has no brokerage at all.
     const parentOf = (ia: IndividualAccountInput) =>
       indParentCat.get(indKey(ia)) ?? ia.parentCategory;
-    const brokWithSpecs = portfolioFirst(
-      indAccts.filter(
-        (ia) =>
-          isOverflowTarget(ia.category) && accountsWithSpecs.has(indKey(ia)),
-      ),
-      parentOf,
+    const brokerages = indAccts.filter((ia) => isOverflowTarget(ia.category));
+    const real = brokerages.filter((ia) => !ia.projectedOnly);
+    const group = real.length > 0 ? portfolioFirst(real, parentOf) : brokerages;
+    const groupWithSpecs = group.filter((ia) =>
+      accountsWithSpecs.has(indKey(ia)),
     );
-    const brokAccts =
-      brokWithSpecs.length > 0
-        ? brokWithSpecs
-        : portfolioFirst(
-            indAccts.filter(
-              (ia) => isOverflowTarget(ia.category) && !ia.projectedOnly,
-            ),
-            parentOf,
-          );
+    const brokAccts = groupWithSpecs.length > 0 ? groupWithSpecs : group;
     const brokTotal = brokAccts.reduce(
       (s, ia) => s + (indBal.get(indKey(ia)) ?? 0),
       0,

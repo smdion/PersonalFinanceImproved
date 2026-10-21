@@ -305,8 +305,13 @@ import { log } from "@/lib/logger";
  *  46: with no Retirement brokerage, overflow lands in the projection-only
  *  retirement brokerage (it went to a Portfolio brokerage or stayed
  *  aggregate-only); that account is added whatever the RMD setting and
- *  hidden from yearly rows while empty. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 46;
+ *  hidden from yearly rows while empty.
+ *
+ *  47: the ramp picks its parent before preferring accounts with specs
+ *  (a Retirement brokerage's spec drew Portfolio savings in); retirement
+ *  lump sums with no account named can land in the projection-only
+ *  retirement brokerage instead of a Portfolio one. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 47;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

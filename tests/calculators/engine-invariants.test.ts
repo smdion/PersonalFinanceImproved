@@ -1991,11 +1991,53 @@ describe("engine invariants", () => {
         noDiagnostics(input);
       });
 
+      it("a retirement lump sum lands in the projection-only one, not Portfolio", () => {
+        const base = withoutRetirementBrokerage(true);
+        const year = base.asOfDate.getFullYear() + 1;
+        const portfolioIn = (input: ProjectionInput) =>
+          calculateProjection(input)
+            .projectionByYear.find((y) => y.year === year)!
+            .individualAccountBalances!.find(
+              (a) => a.parentCategory === "Portfolio",
+            )!.balance;
+        const input: ProjectionInput = {
+          ...base,
+          accumulationOverrides: [
+            { year, lumpSums: [{ amount: 50000, targetAccount: "brokerage" }] },
+          ] as ProjectionInput["accumulationOverrides"],
+        };
+        expect(portfolioIn(input)).toBeCloseTo(portfolioIn(base), 0);
+        brokerageAddsUp(input);
+        noDiagnostics(input);
+      });
+
       it("no brokerage at all: the projection-only one holds all of it", () => {
         const input = withoutRetirementBrokerage(false);
         brokerageAddsUp(input);
         noDiagnostics(input);
       });
+    });
+
+    it("the ramp stays Portfolio money when only a Retirement brokerage has a spec", () => {
+      const base = overflowInput();
+      const input = {
+        ...base,
+        contributionSpecs: base.contributionSpecs!.filter(
+          (sp) => sp.name !== "Long-term brokerage",
+        ),
+      };
+      const year = base.asOfDate.getFullYear() + 2;
+      const portfolio = (i: ProjectionInput) =>
+        calculateProjection(i)
+          .projectionByYear.find((y) => y.year === year)!
+          .individualAccountBalances!.find(
+            (a) => a.parentCategory === "Portfolio",
+          )!.balance;
+      expect(
+        portfolio({ ...input, brokerageContributionRamp: 1000 }) -
+          portfolio(input),
+      ).toBeCloseTo(2000 + 1000, 0); // two ramp years: +$1k, +$2k
+      brokerageAddsUp({ ...input, brokerageContributionRamp: 1000 });
     });
 
     it("Portfolio money stays Portfolio: the ramp and a Brokerage-page lump sum", () => {
