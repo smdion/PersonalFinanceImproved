@@ -47,6 +47,7 @@ import {
   matchFracOf,
   computeColumnChange,
   computeAccountSplits,
+  rowTotal,
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
 import {
@@ -964,7 +965,7 @@ export function AccumulationRow({
           .filter((t) => visibleColumns.balanceTaxTypes.has(t))
           .map((bucket) => {
             const bal = pt ? pt.byTaxType[bucket] : yr.balanceByTaxType[bucket];
-            const totalBal = pt ? pt.balance : yr.allAccountsBalance;
+            const totalBal = pt ? pt.balance : rowTotal(yr);
             const pct = percentOf(bal, totalBal);
             // Compute authoritative total change from engine's year-over-year balance
             const prevYr = result.projectionByYear.find(
@@ -1100,7 +1101,7 @@ export function AccumulationRow({
             .map((col) => {
               const catKey = colKeyParts(col.key).category;
               const bal = pt ? (pt.byAccount[col.key] ?? 0) : col.val;
-              const totalBal = pt ? pt.balance : yr.allAccountsBalance;
+              const totalBal = pt ? pt.balance : rowTotal(yr);
               const pct = percentOf(bal, totalBal);
               // Filter by the exact taxType this column represents
               const colTaxType = colEngineTaxType(col.key);
@@ -1247,9 +1248,9 @@ export function AccumulationRow({
       )}
       <Tooltip
         content={
-          yr.allAccountsBalance > 0
+          rowTotal(yr) > 0
             ? (() => {
-                const ptBal = pt ? pt.balance : yr.allAccountsBalance;
+                const ptBal = pt ? pt.balance : rowTotal(yr);
                 const items: TooltipLineItem[] = (
                   ["preTax", "taxFree", "hsa", "afterTax"] as const
                 ).map((b) => {
@@ -1291,14 +1292,12 @@ export function AccumulationRow({
         side="top"
       >
         <td className="px-2 py-1.5 text-right font-semibold">
-          {formatCurrency(
-            deflate(pt ? pt.balance : yr.allAccountsBalance, yr.year),
-          )}
+          {formatCurrency(deflate(pt ? pt.balance : rowTotal(yr), yr.year))}
         </td>
       </Tooltip>
       {renderMcCell(
         yr,
-        deflate(pt ? pt.balance : yr.allAccountsBalance, yr.year),
+        deflate(pt ? pt.balance : rowTotal(yr), yr.year),
         mcCellOpts,
       )}
       <td className="text-caption text-faint border-subtle border-l py-1.5 pl-2 whitespace-nowrap">

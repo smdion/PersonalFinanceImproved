@@ -1,6 +1,7 @@
 "use client";
 
 /** Monte Carlo results — loading spinner, errors, warnings, depletion callout, and compact summary bar. */
+import { rowTotal } from "./utils";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -166,8 +167,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                   const y = years[i]!;
                   if (y.phase === "decumulation") {
                     firstDecumYear = y;
-                    priorAccumEnd =
-                      i > 0 ? years[i - 1]!.allAccountsBalance : null;
+                    priorAccumEnd = i > 0 ? rowTotal(years[i - 1]!) : null;
                     break;
                   }
                 }

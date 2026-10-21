@@ -29,6 +29,7 @@ import {
   computeColumnChange,
   computeAccountSplits,
   filterYearByParentCategory,
+  rowTotal,
   lumpSumTaxBucket,
   lumpSumsForBucket,
   lumpSumsForCategory,
@@ -591,9 +592,12 @@ describe("filterYearByParentCategory", () => {
     expect(result.balanceByTaxType.afterTax).toBe(0);
   });
 
-  it("recomputes allAccountsBalance to match the filtered totals", () => {
-    const result = filterYearByParentCategory(makeYear(), "Retirement");
-    expect(result.allAccountsBalance).toBe(10000);
+  it("the row total is the view's; the engine's two balances are left alone", () => {
+    const yr = makeYear();
+    const result = filterYearByParentCategory(yr, "Retirement");
+    expect(rowTotal(result)).toBe(10000);
+    expect(result.allAccountsBalance).toBe(yr.allAccountsBalance);
+    expect(result.retirementBalance).toBe(yr.retirementBalance);
   });
 
   it("rescopes an accumulation year's contributions to the filtered accounts", () => {

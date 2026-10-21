@@ -1,4 +1,5 @@
 /** Renders a single Monte Carlo median cell with p5-p95 percentile tooltip and delta-vs-deterministic indicator. */
+import { rowTotal } from "./utils";
 import React from "react";
 import { Tooltip } from "@/components/ui/tooltip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
@@ -51,7 +52,7 @@ export function renderMcCell(
   if (mcDetYr) {
     const parts: string[] = [];
     parts.push(
-      `Simulation det. bal: ${formatCurrency(deflate(mcDetYr.allAccountsBalance, yr.year))}`,
+      `Simulation det. bal: ${formatCurrency(deflate(rowTotal(mcDetYr), yr.year))}`,
     );
     parts.push(`Standalone: ${formatCurrency(detBal)}`);
     parts.push(

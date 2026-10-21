@@ -17,7 +17,6 @@ import {
   isRothType,
   isTaxFreeBucket,
   isPreTaxType,
-  isRetirementMoney,
 } from "@/lib/config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
 import {
@@ -179,9 +178,25 @@ export const _singleBucketCategories = new Set<string>(
 // Year-level parentCategory filter (reused by both standalone and MC det memos)
 // ---------------------------------------------------------------------------
 
+/** What a projection-card row shows as its balance: the row's tax buckets,
+ *  which a parent-filtered row (filterYearByParentCategory) scopes to that
+ *  view. Not a retirement answer — those read `retirementBalance`. */
+export function rowTotal(yr: {
+  balanceByTaxType: {
+    preTax: number;
+    taxFree: number;
+    hsa: number;
+    afterTax: number;
+  };
+}): number {
+  const b = yr.balanceByTaxType;
+  return roundToCents(b.preTax + b.taxFree + b.hsa + b.afterTax);
+}
+
 /** A year narrowed to one parent category's accounts: balances,
- *  contributions and withdrawals are that view's, and `allAccountsBalance`
- *  is the view's total (what the projection card shows). */
+ *  contributions and withdrawals are that view's. The engine's
+ *  retirementBalance / allAccountsBalance are left as the engine reported
+ *  them (they describe the plan, not the view). */
 export function filterYearByParentCategory(
   yr: EngineYearProjection,
   parentCategory: string,
@@ -269,17 +284,6 @@ export function filterYearByParentCategory(
       };
     }
   }
-  // The view's own total, and the engine's retirement balance when the view
-  // is retirement money (one path — never rebuilt here).
-  const scoped = {
-    allAccountsBalance: roundToCents(
-      byTax.preTax + byTax.taxFree + byTax.hsa + byTax.afterTax,
-    ),
-    retirementBalance: isRetirementMoney(parentCategory)
-      ? yr.retirementBalance
-      : 0,
-  };
-
   if (yr.phase !== "decumulation") {
     // Contributions rescoped to the same accounts as the balances: the
     // engine routes per category (a household-wide brokerage slot holds a
@@ -317,7 +321,6 @@ export function filterYearByParentCategory(
       individualAccountBalances: filtered,
       balanceByTaxType: byTax,
       balanceByAccount: byAcct,
-      ...scoped,
       ...(accumSlots
         ? {
             slots: accumSlots,
@@ -432,7 +435,6 @@ export function filterYearByParentCategory(
     individualAccountBalances: filtered,
     balanceByTaxType: byTax,
     balanceByAccount: byAcct,
-    ...scoped,
     slots: filteredSlots,
     totalWithdrawal,
     totalTraditionalWithdrawal,

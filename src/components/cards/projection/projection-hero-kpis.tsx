@@ -3,6 +3,7 @@
 /** Hero KPI cards — MC-adaptive 5-card grid. Unified card chrome across
  *  all metrics so the row reads as a single design language. Uses the same
  *  visual pattern as the MC summary bar in projection-mc-results.tsx. */
+import { rowTotal } from "./utils";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency } from "@/lib/utils/format";
 import type { ProjectionState } from "./projection-table-types";
@@ -141,16 +142,16 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
       );
   const retPt = retYear ? getPersonYearTotals(retYear) : null;
   const nestEgg = retYear
-    ? deflate(retPt ? retPt.balance : retYear.allAccountsBalance, retYear.year)
+    ? deflate(retPt ? retPt.balance : rowTotal(retYear), retYear.year)
     : 0;
   const peakYear = result.projectionByYear.reduce((best, yr) => {
-    const yrB = getPersonYearTotals(yr)?.balance ?? yr.allAccountsBalance;
-    const bestB = getPersonYearTotals(best)?.balance ?? best.allAccountsBalance;
+    const yrB = getPersonYearTotals(yr)?.balance ?? rowTotal(yr);
+    const bestB = getPersonYearTotals(best)?.balance ?? rowTotal(best);
     return deflate(yrB, yr.year) > deflate(bestB, best.year) ? yr : best;
   });
   const peakPt = getPersonYearTotals(peakYear);
   const peakBalance = deflate(
-    peakPt ? peakPt.balance : peakYear.allAccountsBalance,
+    peakPt ? peakPt.balance : rowTotal(peakYear),
     peakYear.year,
   );
   // When scenarioView is a Coast FIRE variant OR Rate-Seeded, swap the MC
@@ -352,7 +353,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
                 result.projectionByYear[result.projectionByYear.length - 1]!;
               const lastPt = getPersonYearTotals(last);
               const detEndBalance = deflate(
-                lastPt ? lastPt.balance : last.allAccountsBalance,
+                lastPt ? lastPt.balance : rowTotal(last),
                 last.year,
               );
               return `Baseline: ${formatCurrency(detEndBalance)}`;

@@ -20,6 +20,10 @@ import type { ProjectionInput, ProjectionResult } from "../types";
 import { formatPercent } from "../../utils/format";
 import { roundToCents } from "../../utils/math";
 import { MAX_INFLATION_RATE, MIN_INFLATION_RATE } from "../../constants";
+import {
+  getAccountTypeConfig,
+  isTaxFreeBucket,
+} from "../../config/account-types";
 import { resolveDecumulationConfig } from "./override-resolution";
 import {
   buildProjectionContext,
@@ -48,6 +52,26 @@ function validateEngineInputs(
   // Setup notes the caller resolved while building the input (e.g. a
   // chosen account that no longer qualifies) — shown with the result's.
   warnings.push(...(input.inputWarnings ?? []));
+  // The aggregate buckets and the individual accounts must describe the
+  // same money: a gap is charged wholly to retirement money (it isn't in
+  // any Portfolio account) and can shift withdrawals and depletion.
+  if (input.individualAccounts?.length) {
+    const byBucket = { preTax: 0, taxFree: 0, hsa: 0, afterTax: 0 };
+    for (const ia of input.individualAccounts) {
+      const key = isTaxFreeBucket(ia.taxType)
+        ? "taxFree"
+        : getAccountTypeConfig(ia.category).taxBucketKey;
+      if (key in byBucket)
+        byBucket[key as keyof typeof byBucket] += ia.startingBalance;
+    }
+    for (const [key, sum] of Object.entries(byBucket)) {
+      const start = input.startingBalances[key as keyof typeof byBucket];
+      if (Math.abs(sum - start) > 1)
+        warnings.push(
+          `[DIAG] starting balances: ${key} is $${start.toFixed(2)} but the accounts hold $${sum.toFixed(2)}`,
+        );
+    }
+  }
   let { salaryGrowthRate, inflationRate } = input;
   let postRetirementInflationRate =
     input.postRetirementInflationRate ?? inflationRate;

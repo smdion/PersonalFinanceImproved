@@ -1954,7 +1954,7 @@ exports[`engine snapshot parity > fixture 39: Individual account tracking throug
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 243340.46,
     "phase": "accumulation",
@@ -2551,7 +2551,7 @@ exports[`engine snapshot parity > fixture 52: 3+ individual accounts with unequa
   },
   "sustainableWithdrawal": 193621.63,
   "totalYears": 55,
-  "warningCount": 0,
+  "warningCount": 2,
   "year0": {
     "allAccountsBalance": 243340.46,
     "phase": "accumulation",

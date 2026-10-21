@@ -302,7 +302,8 @@ export function calculateMonteCarlo(
     // Run the engine
     const result = calculateProjection(trialInput);
 
-    // Collect per-year end balances
+    // Collect per-year end balances.
+    // TODO(A6): bands and terminal balances on retirementBalance.
     for (
       let yearIdx = 0;
       yearIdx < numYears && yearIdx < result.projectionByYear.length;
