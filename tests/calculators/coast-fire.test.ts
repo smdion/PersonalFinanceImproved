@@ -5,7 +5,11 @@
  * already-retired) and the binary-search earliest-age guarantee.
  */
 import { describe, it, expect } from "vitest";
-import { findCoastFireAge } from "@/lib/calculators/coast-fire";
+import {
+  buildCoastFireProfileSwitches,
+  findCoastFireAge,
+} from "@/lib/calculators/coast-fire";
+import { calculateProjection } from "@/lib/calculators/engine";
 import type { ProjectionInput } from "@/lib/calculators/types";
 
 const AS_OF = new Date("2025-03-07");
@@ -813,5 +817,65 @@ describe("findCoastFireAge — net/gross unit fix for the no-stated-need fallbac
     // would have wrongly reported this plan as not sustainable.
     const result = findCoastFireAge(makeSsHeavyInput());
     expect(result.status).toBe("already_coast");
+  });
+});
+
+describe("findCoastFireAge — contributions stop on the per-account (spec) path", () => {
+  // Real households route contributions from per-account specs. A rate of 0
+  // in an accumulation override is treated as "unset" there, so the
+  // baseline used to keep contributing after the "stop".
+  const specInput = (): ProjectionInput =>
+    makeInput({
+      startingBalances: {
+        preTax: 10000,
+        taxFree: 0,
+        afterTax: 0,
+        afterTaxBasis: 0,
+        hsa: 0,
+      },
+      startingAccountBalances: {
+        "401k": { structure: "roth_traditional", traditional: 10000, roth: 0 },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 0 },
+        ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+        brokerage: { structure: "basis_tracking", balance: 0, basis: 0 },
+      },
+      contributionSpecs: [
+        {
+          name: "401k",
+          category: "401k",
+          method: "fixed_monthly",
+          value: 2000,
+          salaryFraction: 1,
+          baseAnnual: 24000,
+          taxTreatment: "pre_tax",
+          parentCategory: "Retirement",
+        },
+      ],
+      baseYearContributions: {
+        "401k": 24000,
+        "403b": 0,
+        hsa: 0,
+        ira: 0,
+        brokerage: 0,
+      },
+    });
+
+  it("the stop zeroes every later year's contributions", () => {
+    const input = specInput();
+    const result = calculateProjection({
+      ...input,
+      profileSwitches: buildCoastFireProfileSwitches(input, input.currentAge),
+    });
+    for (const y of result.projectionByYear.filter(
+      (r) =>
+        r.phase === "accumulation" && r.year > input.asOfDate.getFullYear(),
+    ))
+      expect(y.totalEmployee + y.totalEmployer, `${y.year}`).toBe(0);
+  });
+
+  it("a household that can't stop today isn't reported as already coasting", () => {
+    // $10k saved and a $72k/yr need: only the contributions make it work.
+    expect(findCoastFireAge(specInput()).status).not.toBe("already_coast");
   });
 });

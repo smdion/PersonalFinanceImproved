@@ -19,12 +19,9 @@ import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing
 import type {
   AccountCategory,
   DecumulationDefaults,
-  ProfileSwitch,
-  ProjectionInput,
 } from "@/lib/calculators/types";
 import {
   accountCategoryEnum,
-  getAllCategories,
   getDefaultDecumulationOrder,
   DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
   PARENT_CATEGORY_VALUES,
@@ -311,52 +308,10 @@ export function buildDecumulationDefaults(
   };
 }
 
-/**
- * Build a merged `profileSwitches` array that zeros contributions + employer
- * match from the Coast FIRE age onward.
- *
- * Injects a synthetic `ProfileSwitch` at `coastYear = currentYear + (coastAge
- * - currentAge)` with empty contribution specs, zero employer match rates,
- * zero base-year contributions/match, and contribution rate 0. The engine at
- * projection-year-handlers.ts:582-611 processes switches sticky-forward, so
- * every year from coastYear onward sees zero contributions AND zero employer
- * match — which fixes the bug where `contributionRate: 0` in an
- * accumulation override was silently ignored (engine line 985 has
- * `rateCeiling > 0` which treats zero rate as "unset, use specs").
- *
- * Merges with the user's own `profileSwitches`: keeps any user-authored
- * switches strictly before the coast year (so pre-coast years still reflect
- * the user's configured future), and drops user switches at or after the
- * coast year (those are moot — everything's zero from coast year forward).
- *
- * Used by computeProjection, computeMonteCarloProjection (when rendering
- * the coast scenario chart), and computeCoastFireMC (when probing inside
- * the binary search).
- */
-export function buildCoastFireProfileSwitches(
-  baseEngineInput: Pick<
-    ProjectionInput,
-    "asOfDate" | "currentAge" | "profileSwitches"
-  >,
-  coastAge: number,
-): ProfileSwitch[] {
-  const coastYear =
-    baseEngineInput.asOfDate.getFullYear() +
-    (coastAge - baseEngineInput.currentAge);
-  const zeroRecord = Object.fromEntries(
-    getAllCategories().map((c) => [c, 0]),
-  ) as Record<AccountCategory, number>;
-  const coastSwitch: ProfileSwitch = {
-    year: coastYear,
-    contributionSpecs: [],
-    employerMatchRateByCategory: zeroRecord,
-    baseYearContributions: zeroRecord,
-    baseYearEmployerMatch: zeroRecord,
-    contributionRate: 0,
-  };
-  const userSwitches = baseEngineInput.profileSwitches ?? [];
-  return [...userSwitches.filter((s) => s.year < coastYear), coastSwitch];
-}
+// Coast FIRE's "stop contributing at age N" lives with the calculator
+// (lib/calculators/coast-fire.ts) so the baseline finder and every
+// router probe stop contributions the same way.
+export { buildCoastFireProfileSwitches } from "@/lib/calculators/coast-fire";
 
 type Db = typeof _db;
 

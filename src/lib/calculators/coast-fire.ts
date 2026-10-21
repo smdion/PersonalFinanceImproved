@@ -43,8 +43,14 @@
  * two checks, same as before this fix.
  */
 import { calculateProjection } from "./engine";
-import type { ProjectionInput, ProjectionResult } from "./types";
+import type {
+  AccountCategory,
+  ProfileSwitch,
+  ProjectionInput,
+  ProjectionResult,
+} from "./types";
 import { roundToCents } from "../utils/math";
+import { getAllCategories } from "../config/account-types";
 
 export type CoastFireStatus = "already_coast" | "found" | "unreachable";
 
@@ -182,7 +188,7 @@ function passes(projection: ProjectionResult): boolean {
  * Cost: ~log₂(retirementAge - currentAge) engine calls.
  */
 export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
-  const { currentAge, retirementAge, asOfDate } = input;
+  const { currentAge, retirementAge } = input;
 
   // Edge case: user is already at or past retirement age. Coast FIRE is
   // undefined in this case — just return the current projection's outcome.
@@ -190,19 +196,13 @@ export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
     return resultFrom(currentAge, "already_coast", calculateProjection(input));
   }
 
-  const currentYear = asOfDate.getFullYear();
-
-  // Helper: run the projection with contributions zeroed from coastAge onward.
-  const probeAt = (coastAge: number): ProjectionResult => {
-    const yearOffset = coastAge - currentAge;
-    return calculateProjection({
+  // Helper: run the projection with contributions and employer match
+  // zeroed from coastAge onward — the same mechanism as every router probe.
+  const probeAt = (coastAge: number): ProjectionResult =>
+    calculateProjection({
       ...input,
-      accumulationOverrides: [
-        ...input.accumulationOverrides,
-        { year: currentYear + yearOffset, contributionRate: 0 },
-      ],
+      profileSwitches: buildCoastFireProfileSwitches(input, coastAge),
     });
-  };
 
   // If stopping today passes, user is already Coast FIRE.
   const stopNow = probeAt(currentAge);
@@ -230,4 +230,51 @@ export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
   }
 
   return resultFrom(lo, "found", probeAt(lo));
+}
+
+/**
+ * Build a merged `profileSwitches` array that zeros contributions + employer
+ * match from the Coast FIRE age onward.
+ *
+ * Injects a synthetic `ProfileSwitch` at `coastYear = currentYear + (coastAge
+ * - currentAge)` with empty contribution specs, zero employer match rates,
+ * zero base-year contributions/match, and contribution rate 0. The engine at
+ * projection-year-handlers.ts:582-611 processes switches sticky-forward, so
+ * every year from coastYear onward sees zero contributions AND zero employer
+ * match. An accumulation override of `contributionRate: 0` would NOT do
+ * this — the engine's rate ceiling treats a zero rate as "unset" — so every
+ * Coast FIRE probe (this file's baseline finder included) uses this.
+ *
+ * Merges with the user's own `profileSwitches`: keeps any user-authored
+ * switches strictly before the coast year (so pre-coast years still reflect
+ * the user's configured future), and drops user switches at or after the
+ * coast year (those are moot — everything's zero from coast year forward).
+ *
+ * Used by findCoastFireAge (the baseline), computeProjection,
+ * computeMonteCarloProjection (when rendering the coast scenario chart),
+ * and computeCoastFireMC (when probing inside the binary search).
+ */
+export function buildCoastFireProfileSwitches(
+  baseEngineInput: Pick<
+    ProjectionInput,
+    "asOfDate" | "currentAge" | "profileSwitches"
+  >,
+  coastAge: number,
+): ProfileSwitch[] {
+  const coastYear =
+    baseEngineInput.asOfDate.getFullYear() +
+    (coastAge - baseEngineInput.currentAge);
+  const zeroRecord = Object.fromEntries(
+    getAllCategories().map((c) => [c, 0]),
+  ) as Record<AccountCategory, number>;
+  const coastSwitch: ProfileSwitch = {
+    year: coastYear,
+    contributionSpecs: [],
+    employerMatchRateByCategory: zeroRecord,
+    baseYearContributions: zeroRecord,
+    baseYearEmployerMatch: zeroRecord,
+    contributionRate: 0,
+  };
+  const userSwitches = baseEngineInput.profileSwitches ?? [];
+  return [...userSwitches.filter((s) => s.year < coastYear), coastSwitch];
 }

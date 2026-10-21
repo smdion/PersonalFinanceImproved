@@ -281,8 +281,11 @@ import { log } from "@/lib/logger";
  *  savings) go to Portfolio-parented accounts first.
  *
  *  40: reconciliation reaches $0 retirement accounts before Portfolio and
- *  takes a shortfall from retirement money first (waterfall). */
-export const PROJECTION_CACHE_ENGINE_VERSION = 40;
+ *  takes a shortfall from retirement money first (waterfall).
+ *
+ *  41: the baseline Coast FIRE finder stops contributions the way every
+ *  other probe does (a rate of 0 was ignored on the per-account path). */
+export const PROJECTION_CACHE_ENGINE_VERSION = 41;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;
