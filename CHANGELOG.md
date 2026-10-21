@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.11] - 2026-10-21
+
+### Fixed
+
+- **Retirement projections use only retirement money.** Accounts tagged Portfolio (savings outside the retirement plan) are never spent in retirement, but they still shaped the plan. Now:
+  - Balance-based spending strategies (Guyton-Klinger, Constant %, Endowment, Vanguard Dynamic, RMD-based) and the rate-seeded first year size spending from retirement accounts only. A large Portfolio account made the withdrawal rate look low, granting raises the retirement money couldn't support.
+  - Contributions over the IRS limits go to a Retirement brokerage (a Portfolio one only when you have none). They also no longer show up two or three times in the per-account balances.
+  - Brokerage goals draw only from Portfolio brokerages, never retirement money.
+  - The yearly per-account balance correction takes from or adds to retirement accounts, not Portfolio ones.
+  - The Brokerage page's yearly increase and lump sums stay in Portfolio accounts.
+- **The contribution rate is a retirement rate.** It counts contributions to retirement accounts only, and its cap never shrinks a 401(k) because you also save into a Portfolio account.
+
+### Upgrading
+
+- A "Contribution Rate" saved under Changes by year now caps retirement contributions only; Portfolio savings come on top of it. If you set one to cap everything you save, lower it by your Portfolio savings rate.
+- A Portfolio brokerage with a target no longer receives contributions over the IRS limits while you have a Retirement brokerage.
+
+---
+
 ## [0.8.10] - 2026-10-20
 
 ### Added

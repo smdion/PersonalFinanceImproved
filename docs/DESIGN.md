@@ -338,7 +338,7 @@ The relocation decision tool (`lib/calculators/relocation.ts`) compares two budg
 
 - **Core**: Computes expense delta, savings rate impact, FI target under each scenario, FI age under each scenario, recommended portfolio before relocating, and earliest safe relocation age.
 - **Year adjustments**: Override relocation expenses for specific years (phase-in, cost cuts). Client-side state, not persisted.
-- **Contribution overrides**: Override contribution rate (% of salary) for specific years. Sticky forward — each applies until the next override.
+- **Contribution overrides**: Override the retirement contribution rate (% of salary; Portfolio savings come on top) for specific years. Sticky forward — each applies until the next override.
 - **Large purchases** (`RelocationLargePurchase`): Generic one-time/financed purchases tied to relocation (home, car, furniture). ONE data shape, ONE calculation path:
 
 | Field                | Purpose                                            | Default        |

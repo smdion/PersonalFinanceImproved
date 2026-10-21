@@ -529,11 +529,17 @@ function FundingSources({
       amount: directContrib,
       help: "Employee + employer contributions to Portfolio-category accounts",
     },
-    {
-      label: "Retirement overflow",
-      amount: overflow,
-      help: "Excess contributions that exceed IRS limits on retirement accounts, redirected here",
-    },
+    // Contributions over the IRS limits go to retirement accounts; they
+    // reach a Portfolio account only when there's no retirement brokerage.
+    ...(overflow > 0
+      ? [
+          {
+            label: "Retirement overflow",
+            amount: overflow,
+            help: "Contributions over the IRS limits on retirement accounts. They normally go to a Retirement brokerage; they land here because you have none.",
+          },
+        ]
+      : []),
   ];
 
   return (

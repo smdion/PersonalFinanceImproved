@@ -39,7 +39,8 @@ const OVERRIDE_OPTIONS: {
   {
     key: "contribution_rate",
     label: "Retirement Contribution Rate",
-    description: "Change how much you save for retirement",
+    description:
+      "Change how much you save for retirement (Portfolio savings come on top)",
     icon: "📈",
     phase: "pre",
   },

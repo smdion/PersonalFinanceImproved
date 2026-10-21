@@ -158,7 +158,10 @@ export function AccumulationMethodologyContent() {
                   contributionRate
                 </td>
                 <td className="pr-3">Decimal</td>
-                <td>Fraction of gross salary to save (e.g. 0.25 = 25%)</td>
+                <td>
+                  Fraction of gross salary to save for retirement (e.g. 0.25 =
+                  25%) — Portfolio-account savings come on top
+                </td>
               </tr>
               <tr>
                 <td className="text-label py-1.5 pr-3 font-mono">
@@ -259,7 +262,7 @@ export function AccumulationMethodologyContent() {
                 <td className="text-label py-1.5 pr-3 font-mono">
                   contributionRate
                 </td>
-                <td>New contribution rate from this year onward</td>
+                <td>New retirement contribution rate from this year onward</td>
               </tr>
               <tr>
                 <td className="text-label py-1.5 pr-3 font-mono">
@@ -380,6 +383,10 @@ export function AccumulationMethodologyContent() {
           to the next account in waterfall mode, or redistributes proportionally
           in percentage mode. Brokerage is always the final unlimited overflow
           target — any contribution that can&apos;t fit elsewhere lands here.
+          Overflow is retirement money, so it goes to a Retirement brokerage (a
+          Portfolio brokerage only when you have none). Portfolio savings — the
+          Brokerage page&apos;s contributions, yearly increase and lump sums —
+          stay in Portfolio accounts.
         </p>
 
         <h4 className="text-secondary mt-4 font-semibold">

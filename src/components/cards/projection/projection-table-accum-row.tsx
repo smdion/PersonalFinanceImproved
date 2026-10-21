@@ -290,10 +290,13 @@ export function AccumulationRow({
                     style: "meta",
                   });
                 }
+                // The ceiling scales retirement contributions only, so the
+                // uncapped figure is meaningful on the Retirement view.
                 if (
                   yr.rateCeilingScale != null &&
                   yr.rateCeilingScale < 1 &&
-                  yr.rateCeilingScale > 0
+                  yr.rateCeilingScale > 0 &&
+                  parentCategoryFilter === PERF_CATEGORY_RETIREMENT
                 ) {
                   lines.push({
                     text: `Uncapped rate: ${formatPercent(safeDivide(yr.totalEmployee, effectiveSalary * yr.rateCeilingScale), 1)} → ${formatPercent(employeeRate, 1)} (ceiling applied)`,
