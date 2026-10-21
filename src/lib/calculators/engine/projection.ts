@@ -45,6 +45,9 @@ function validateEngineInputs(
   inflationRate: number;
   postRetirementInflationRate: number;
 } {
+  // Setup notes the caller resolved while building the input (e.g. a
+  // chosen account that no longer qualifies) — shown with the result's.
+  warnings.push(...(input.inputWarnings ?? []));
   let { salaryGrowthRate, inflationRate } = input;
   let postRetirementInflationRate =
     input.postRetirementInflationRate ?? inflationRate;

@@ -16,6 +16,7 @@ import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import {
   createTestCaller,
+  seedPerformanceAccount,
   seedPerson,
   seedRetirementProfile,
   seedRetirementProfilePerson,
@@ -98,6 +99,42 @@ describe("retirement.retirementSettings", () => {
     it("still only one row after update", async () => {
       const rows = await caller.retirement.retirementSettings.list();
       expect(rows).toHaveLength(1);
+    });
+  });
+
+  describe("where unspent RMD money goes", () => {
+    it("takes an active Retirement brokerage and refuses anything else", async () => {
+      const brokerage = (parentCategory: string) =>
+        seedPerformanceAccount(db, {
+          name: `${parentCategory} brokerage`,
+          accountType: "brokerage",
+          parentCategory,
+        });
+      const retirementBrokerage = brokerage("Retirement");
+      const saved = await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        rmdExcessTargetPerformanceAccountId: retirementBrokerage,
+      });
+      expect(saved!.rmdExcessTargetPerformanceAccountId).toBe(
+        retirementBrokerage,
+      );
+      for (const id of [
+        brokerage("Portfolio"),
+        seedPerformanceAccount(db),
+        99999,
+      ])
+        await expect(
+          caller.retirement.retirementSettings.upsert({
+            ...baseSettings(),
+            rmdExcessTargetPerformanceAccountId: id,
+          }),
+        ).rejects.toThrow(/active Retirement brokerage/);
+      // Back to the default spread.
+      const cleared = await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        rmdExcessTargetPerformanceAccountId: null,
+      });
+      expect(cleared!.rmdExcessTargetPerformanceAccountId).toBeNull();
     });
   });
 

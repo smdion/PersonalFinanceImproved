@@ -190,12 +190,16 @@ export function reinvestRmdExcess(
         addBalance(acctBal[cat], excess);
         addBasis(acctBal[cat], excess);
         if (indAccts && indBal && indKey) {
-          const overflowAccts = indAccts.filter((ia) => ia.category === cat);
-          const retirementAccts = overflowAccts.filter(
-            (ia) => !isPortfolioParent(ia.parentCategory),
+          // Retirement money: the household's chosen account, else every
+          // Retirement brokerage by balance (the projection-only one when
+          // that's all there is). Never a Portfolio account — with no
+          // retirement brokerage it stays in the aggregate only.
+          const retirementAccts = indAccts.filter(
+            (ia) =>
+              ia.category === cat && !isPortfolioParent(ia.parentCategory),
           );
-          const target =
-            retirementAccts.length > 0 ? retirementAccts : overflowAccts;
+          const chosen = retirementAccts.filter((ia) => ia.rmdExcessTarget);
+          const target = chosen.length > 0 ? chosen : retirementAccts;
           const targetTotal = target.reduce(
             (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
             0,

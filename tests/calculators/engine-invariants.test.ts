@@ -11,6 +11,7 @@ import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import { calculateProjection } from "@/lib/calculators/engine";
 import type {
+  IndividualAccountInput,
   ProjectionInput,
   EngineDecumulationYear,
   EngineAccumulationYear,
@@ -2214,6 +2215,140 @@ describe("engine invariants", () => {
             ],
           }),
         ).toBeCloseTo(retirementBasis(base), 0);
+      });
+    });
+
+    describe("unspent RMD money stays retirement money", () => {
+      // Age 75 with a $3.2M Traditional 401(k) and a $40k budget: the RMD
+      // far exceeds spending; the rest is reinvested.
+      const rmdHousehold = (
+        brokerages: IndividualAccountInput[],
+        handling: "reinvest" | "spend" = "reinvest",
+      ): ProjectionInput => {
+        const base = makeInput({
+          currentAge: 75,
+          retirementAge: 65,
+          projectionEndAge: 78,
+          birthYear: 1950,
+          currentSalary: 0,
+          annualExpenses: 40000,
+          socialSecurityAnnual: 30000,
+          ssStartAge: 70,
+        });
+        const brok = brokerages.reduce((t, b) => t + b.startingBalance, 0);
+        const brokBasis = brokerages.reduce(
+          (t, b) => t + (b.startingBasis ?? 0),
+          0,
+        );
+        return {
+          ...base,
+          individualAccounts: [
+            {
+              name: "401k",
+              category: "401k",
+              taxType: "preTax",
+              startingBalance: 3200000,
+              ownerPersonId: 1,
+              ownerName: "Alex",
+              parentCategory: "Retirement",
+            },
+            ...brokerages,
+          ],
+          startingBalances: {
+            preTax: 3200000,
+            taxFree: 0,
+            afterTax: brok,
+            afterTaxBasis: brokBasis,
+            hsa: 0,
+          },
+          startingAccountBalances: {
+            ...base.startingAccountBalances,
+            "401k": {
+              structure: "roth_traditional",
+              traditional: 3200000,
+              roth: 0,
+            },
+            ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+            hsa: { structure: "single_bucket", balance: 0 },
+            brokerage: {
+              structure: "basis_tracking",
+              balance: brok,
+              basis: brokBasis,
+            },
+          },
+          decumulationDefaults: {
+            ...base.decumulationDefaults,
+            withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+            rmdExcessHandling: handling,
+          },
+        };
+      };
+      const brok = (
+        name: string,
+        bal: number,
+        parentCategory: string,
+        extra: Partial<IndividualAccountInput> = {},
+      ): IndividualAccountInput => ({
+        name,
+        category: "brokerage",
+        taxType: "afterTax",
+        startingBalance: bal,
+        startingBasis: bal / 2,
+        parentCategory,
+        ...extra,
+      });
+      const firstYear = (input: ProjectionInput) => {
+        const y = calculateProjection(input).projectionByYear.find(
+          (r): r is EngineDecumulationYear => r.phase === "decumulation",
+        )!;
+        return {
+          excess: y.rmdExcessAmount,
+          bal: (name: string) =>
+            y.individualAccountBalances!.find((a) => a.name === name)!.balance,
+        };
+      };
+
+      it("by default it's spread over the Retirement brokerages; Portfolio gets none", () => {
+        const accts = [
+          brok("A", 30000, "Retirement"),
+          brok("B", 10000, "Retirement"),
+          brok("P", 50000, "Portfolio"),
+        ];
+        const reinvest = firstYear(rmdHousehold(accts));
+        const spend = firstYear(rmdHousehold(accts, "spend"));
+        expect(reinvest.excess).toBeGreaterThan(0);
+        expect(reinvest.bal("P")).toBeCloseTo(spend.bal("P"), 0);
+        expect(reinvest.bal("A") - spend.bal("A")).toBeGreaterThan(
+          reinvest.bal("B") - spend.bal("B"),
+        );
+      });
+
+      it("the chosen account receives all of it", () => {
+        const accts = [
+          brok("A", 30000, "Retirement"),
+          brok("B", 10000, "Retirement", { rmdExcessTarget: true }),
+          brok("P", 50000, "Portfolio"),
+        ];
+        const reinvest = firstYear(rmdHousehold(accts));
+        const spend = firstYear(rmdHousehold(accts, "spend"));
+        expect(reinvest.bal("A")).toBeCloseTo(spend.bal("A"), 0);
+        expect(reinvest.bal("P")).toBeCloseTo(spend.bal("P"), 0);
+        expect(reinvest.bal("B") - spend.bal("B")).toBeGreaterThan(0);
+      });
+
+      it("with no Retirement brokerage, the projection-only one takes it and nothing else", () => {
+        const accts = [
+          brok("P", 50000, "Portfolio"),
+          brok("Projected", 0, "Retirement", {
+            projectedOnly: true,
+            startingBasis: 0,
+          }),
+        ];
+        const reinvest = firstYear(rmdHousehold(accts));
+        const spend = firstYear(rmdHousehold(accts, "spend"));
+        expect(reinvest.bal("P")).toBeCloseTo(spend.bal("P"), 0);
+        expect(reinvest.bal("Projected")).toBeGreaterThan(0);
+        expect(spend.bal("Projected")).toBe(0);
       });
     });
   });

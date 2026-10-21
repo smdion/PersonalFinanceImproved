@@ -1415,6 +1415,16 @@ export const retirementSettings = sqliteTable(
     rmdExcessHandling: text("rmd_excess_handling")
       .notNull()
       .default("reinvest"),
+    /** Where reinvested RMD money goes: a Retirement-parented brokerage
+     *  account. Null = spread across the household's Retirement brokerages
+     *  by balance (the default); an account that is gone or no longer a
+     *  Retirement brokerage falls back to that with a warning. Never a
+     *  Portfolio account — retirement money stays retirement money.
+     *  Household-grain like rmdExcessHandling (every person's row carries
+     *  it), per Retirement Profile. */
+    rmdExcessTargetPerformanceAccountId: integer(
+      "rmd_excess_target_performance_account_id",
+    ).references(() => performanceAccounts.id, { onDelete: "set null" }),
     /** Automatically apply the largest Qualified Charitable
      *  Distribution the household's RMD situation allows each year
      *  (capped by QCD_ANNUAL_CAP_PER_PERSON and the person's IRA-only

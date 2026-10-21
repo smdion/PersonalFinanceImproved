@@ -242,6 +242,18 @@ fi
 WHOLE_PERIODS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM holding_periods WHERE sub_key IS NULL")
 ok "holding_periods.sub_key + check present ($WHOLE_PERIODS existing periods stay whole-account)"
 
+# ── 8. Verify v0.8.11 (0011_v0811_rmd_excess_target) ─────────────────
+
+step "Verifying the unspent-RMD account setting"
+
+HAS_RMD_TARGET=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='retirement_settings' AND column_name='rmd_excess_target_performance_account_id'")
+if [[ "$HAS_RMD_TARGET" != "1" ]]; then
+  err "retirement_settings.rmd_excess_target_performance_account_id is missing"
+  exit 1
+fi
+SET_TARGETS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM retirement_settings WHERE rmd_excess_target_performance_account_id IS NOT NULL")
+ok "unspent-RMD account column present ($SET_TARGETS rows set; the rest spread across Retirement brokerages)"
+
 echo ""
 echo -e "${GREEN}${BOLD}MIGRATION TEST PASSED${NC}"
 echo "The throwaway PG container is being torn down via the trap."

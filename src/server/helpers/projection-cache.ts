@@ -293,8 +293,12 @@ import { log } from "@/lib/logger";
  *  43: A2b review — a $0 basis is a known basis (one unentered account no
  *  longer sends every account to the estimate); retirement lump sums and
  *  conversion tax follow per-account basis; reconciliation carries the
- *  aggregate's basis into raised accounts. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 43;
+ *  aggregate's basis into raised accounts.
+ *
+ *  44: reinvested RMD money goes to the chosen Retirement brokerage, else
+ *  every Retirement brokerage — never Portfolio (a projection-only
+ *  retirement brokerage when there is none). */
+export const PROJECTION_CACHE_ENGINE_VERSION = 44;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

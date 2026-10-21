@@ -40,6 +40,8 @@ import type {
  *    and routes money accordingly.
  */
 export type ProjectionInput = {
+  /** Notes from building this input (shown with the result's warnings). */
+  inputWarnings?: string[];
   // --- Defaults (from Projection Assumptions) ---
   accumulationDefaults: AccumulationDefaults;
   decumulationDefaults: DecumulationDefaults;

@@ -327,3 +327,8 @@ export const COMPOSITION_BUCKET_LABELS: Record<CompositionBucket, string> = {
   cash: "Cash",
   other: "Other",
 };
+
+/** The projection-only retirement brokerage that receives reinvested RMD
+ *  money when the household has no Retirement brokerage (rmd-excess-target). */
+export const PROJECTED_RETIREMENT_BROKERAGE_LABEL =
+  "Retirement brokerage (projected)";

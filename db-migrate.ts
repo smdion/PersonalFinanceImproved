@@ -702,6 +702,9 @@ const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.8.10: holding history per part (holding_periods.sub_key).
   "63fc76f959fa22a150d4f8227fe4cdd898f2cc8eee5ecf11a049659dd67ad92d":
     "0010_v0810_holding_period_parts",
+  // v0.8.11: where reinvested RMD money goes (per Retirement Profile).
+  "19060174a64756401fdf43ba6ac09c906594da547f20dc94f54e98b5370b12a9":
+    "0011_v0811_rmd_excess_target",
 };
 
 /**

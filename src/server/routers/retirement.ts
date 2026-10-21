@@ -36,6 +36,7 @@ import {
 } from "@/server/helpers/contribution";
 import {
   isRetirementParent,
+  tracksCostBasis,
   accountCategoryEnum,
   type AccountCategory,
 } from "@/lib/config/account-types";
@@ -171,6 +172,14 @@ const retirementSettingsInput = z.object({
   vdFloorPercent: zDecimal.optional(),
   rmdMultiplier: zDecimal.optional(),
   rmdExcessHandling: z.enum(["reinvest", "spend"]).optional(),
+  /** Where reinvested RMD money goes — a Retirement brokerage's performance
+   *  account; null = spread across the Retirement brokerages. */
+  rmdExcessTargetPerformanceAccountId: z
+    .number()
+    .int()
+    .positive()
+    .nullable()
+    .optional(),
   qcdMaximize: z.boolean().optional(),
   rmdSmoothingEnabled: z.boolean().optional(),
   rmdSmoothingMaxBracketTarget: zDecimal.nullable().optional(),
@@ -803,6 +812,29 @@ export const retirementRouter = createTRPCRouter({
     upsert: adminProcedure
       .input(retirementSettingsInput)
       .mutation(async ({ ctx, input }) => {
+        // Unspent RMD money is retirement money: only an active Retirement
+        // brokerage may receive it.
+        if (input.rmdExcessTargetPerformanceAccountId != null) {
+          const [target] = await ctx.db
+            .select()
+            .from(schema.performanceAccounts)
+            .where(
+              eq(
+                schema.performanceAccounts.id,
+                input.rmdExcessTargetPerformanceAccountId,
+              ),
+            );
+          if (
+            !target?.isActive ||
+            !tracksCostBasis(target.accountType) ||
+            !isRetirementParent(target.parentCategory)
+          )
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "Unspent required withdrawals can only go to an active Retirement brokerage",
+            });
+        }
         const profileIdGiven = Object.prototype.hasOwnProperty.call(
           input,
           "profileId",

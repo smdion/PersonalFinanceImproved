@@ -150,6 +150,14 @@ export type IndividualAccountInput = {
   accountType?: string;
   /** Starting balance from portfolio snapshot. */
   startingBalance: number;
+  /** The household's chosen account for reinvested RMD money (Retirement
+   *  settings) — resolved by the payload; at most one account. */
+  rmdExcessTarget?: boolean;
+  /** A retirement brokerage that exists only in the projection — added when
+   *  RMD money is reinvested and the household has no Retirement brokerage.
+   *  Receives only that money (no contributions, overflow, ramp, lump sums
+   *  or goal draws); spent in retirement like any retirement account. */
+  projectedOnly?: boolean;
   /** Starting cost basis (brokerage-type accounts), from the account's own
    *  `cost_basis`. Absent: the engine shares the aggregate basis out by
    *  balance. */

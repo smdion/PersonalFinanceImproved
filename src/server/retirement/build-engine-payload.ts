@@ -45,8 +45,15 @@ import {
   getLimitGroup,
   getAccountTypeConfig,
   getDefaultAccumulationOrder,
+  isOverflowTarget,
   isPortfolioParent,
+  tracksCostBasis,
 } from "@/lib/config/account-types";
+import {
+  PERF_CATEGORY_RETIREMENT,
+  PROJECTED_RETIREMENT_BROKERAGE_LABEL,
+} from "@/lib/config/display-labels";
+import { resolveRmdExcessTarget } from "@/lib/pure/rmd-excess-target";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import {
   IRS_LIMIT_GROWTH_RATE,
@@ -622,6 +629,20 @@ export async function buildEnginePayload(
     ownershipByPerson,
     accountBreakdownByCategory,
   } = taxBucketBreakdown;
+
+  // Where reinvested RMD money goes (Retirement settings): the chosen
+  // Retirement brokerage, else every Retirement brokerage, else a
+  // projection-only one — never a Portfolio account.
+  const rmdTarget = resolveRmdExcessTarget({
+    targetPerformanceAccountId:
+      settings.rmdExcessTargetPerformanceAccountId ?? null,
+    reinvest: settings.rmdExcessHandling !== "spend",
+    entries: Object.entries(accountBreakdownByCategory).flatMap(
+      ([category, accts]) => accts.map((a) => ({ ...a, category })),
+    ),
+    perfAccounts,
+  });
+  const OVERFLOW_TARGET_CATEGORY = getAllCategories().find(isOverflowTarget)!;
   const personNameById = new Map(people.map((p) => [p.id, p.name]));
 
   // Per-account withdrawal-ordering eligibility — reuses computeTaxBucketAnalysis
@@ -1687,8 +1708,8 @@ export async function buildEnginePayload(
     })),
     startingBalances: portfolioByTaxType,
     startingAccountBalances: portfolioByAccount,
-    individualAccounts: Object.entries(accountBreakdownByCategory).flatMap(
-      ([cat, accts]) =>
+    individualAccounts: [
+      ...Object.entries(accountBreakdownByCategory).flatMap(([cat, accts]) =>
         accts.map((a) => {
           const eligibility = a.ownerPersonId
             ? eligibilityByJoinKey.get(
@@ -1724,9 +1745,31 @@ export async function buildEnginePayload(
                 a.ownerPersonId ?? null,
               ),
             ),
+            ...(rmdTarget.targetPerformanceAccountId != null &&
+            tracksCostBasis(cat) &&
+            a.performanceAccountIds?.includes(
+              rmdTarget.targetPerformanceAccountId,
+            )
+              ? { rmdExcessTarget: true }
+              : {}),
           };
         }),
-    ),
+      ),
+      ...(rmdTarget.addProjectedBrokerage
+        ? [
+            {
+              name: PROJECTED_RETIREMENT_BROKERAGE_LABEL,
+              category: OVERFLOW_TARGET_CATEGORY,
+              taxType: "afterTax",
+              startingBalance: 0,
+              startingBasis: 0,
+              parentCategory: PERF_CATEGORY_RETIREMENT,
+              projectedOnly: true,
+            },
+          ]
+        : []),
+    ],
+    ...(rmdTarget.warning ? { inputWarnings: [rmdTarget.warning] } : {}),
     annualExpenses: annualExpensesVal,
     // Always pass when user explicitly set a decumulation override, or when
     // the computed decumulation budget differs from accumulation budget.

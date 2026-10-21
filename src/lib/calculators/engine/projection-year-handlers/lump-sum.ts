@@ -68,10 +68,13 @@ export function applyLumpSums(
       // identically-named account (e.g. both "Long Term Brokerage") used to
       // silently collide here, always landing on whichever account
       // `indAccts` happened to list first.
-      const byParent = (accts: typeof indAccts) =>
-        isPortfolioParent(ls.targetParentCategory)
-          ? portfolioFirst(accts, (ia) => ia.parentCategory)
-          : retirementFirst(accts, (ia) => ia.parentCategory);
+      // (The projection-only retirement brokerage takes RMD money only.)
+      const byParent = (accts: typeof indAccts) => {
+        const real = accts.filter((ia) => !ia.projectedOnly);
+        return isPortfolioParent(ls.targetParentCategory)
+          ? portfolioFirst(real, (ia) => ia.parentCategory)
+          : retirementFirst(real, (ia) => ia.parentCategory);
+      };
       const target = ls.targetAccountName
         ? ((ls.targetOwnerName
             ? indAccts.find(

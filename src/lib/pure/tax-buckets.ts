@@ -87,6 +87,8 @@ export type AccountBreakdownEntry = {
   /** Cost basis (brokerage-type accounts): this entry's rows' share of
    *  their performance accounts' `cost_basis`. */
   costBasis?: number;
+  /** The performance accounts this entry's rows belong to. */
+  performanceAccountIds?: number[];
 };
 
 export type TaxBucketBreakdown = {
@@ -243,6 +245,14 @@ export function computeTaxBucketBreakdown(
       );
       if (existing) {
         existing.amount += a.amount;
+        if (
+          a.performanceAccountId != null &&
+          !existing.performanceAccountIds?.includes(a.performanceAccountId)
+        )
+          existing.performanceAccountIds = [
+            ...(existing.performanceAccountIds ?? []),
+            a.performanceAccountId,
+          ];
         if (knownBasis != null)
           existing.costBasis = roundToCents((existing.costBasis ?? 0) + basis);
       } else {
@@ -255,6 +265,9 @@ export function computeTaxBucketBreakdown(
           accountType: cat,
           parentCategory: a.parentCategory ?? undefined,
           ...(knownBasis != null ? { costBasis: basis } : {}),
+          ...(a.performanceAccountId != null
+            ? { performanceAccountIds: [a.performanceAccountId] }
+            : {}),
         });
       }
 
