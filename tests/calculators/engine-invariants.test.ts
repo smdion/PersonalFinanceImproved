@@ -1797,5 +1797,38 @@ describe("engine invariants", () => {
       );
       expect(parentBal(big, "Portfolio")).toBeLessThan(1);
     });
+
+    it("the contribution-rate ceiling caps retirement contributions only", () => {
+      const base = overflowInput();
+      // A 10% retirement rate on $200k = $20k a year; the 401(k) spec wants
+      // $40k and the Retirement brokerage $5k, the Portfolio brokerage $5k.
+      const capped = (portfolioSpec: number): ProjectionInput => ({
+        ...base,
+        accumulationDefaults: {
+          ...base.accumulationDefaults,
+          contributionRate: 0.1,
+        },
+        contributionSpecs: base.contributionSpecs!.map((sp) =>
+          sp.parentCategory === "Portfolio"
+            ? { ...sp, value: portfolioSpec / 12, baseAnnual: portfolioSpec }
+            : sp,
+        ),
+      });
+      const contribs = (input: ProjectionInput) => {
+        const y = calculateProjection(input).projectionByYear[1]!;
+        const by = (parent: string) =>
+          (y.individualAccountBalances ?? [])
+            .filter((a) => a.parentCategory === parent)
+            .reduce((t, a) => t + (a.contribution ?? 0), 0);
+        return { retirement: by("Retirement"), portfolio: by("Portfolio") };
+      };
+      const small = contribs(capped(5000));
+      expect(small.portfolio).toBeCloseTo(5000, 0);
+      expect(small.retirement).toBeCloseTo(20000, 0);
+      // More Portfolio savings never shrinks retirement contributions.
+      const big = contribs(capped(50000));
+      expect(big.portfolio).toBeCloseTo(50000, 0);
+      expect(big.retirement).toBeCloseTo(small.retirement, 0);
+    });
   });
 });

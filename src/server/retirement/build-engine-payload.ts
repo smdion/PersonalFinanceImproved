@@ -45,6 +45,7 @@ import {
   getLimitGroup,
   getAccountTypeConfig,
   getDefaultAccumulationOrder,
+  isPortfolioParent,
 } from "@/lib/config/account-types";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import {
@@ -73,6 +74,19 @@ type Db = typeof _db;
  * Fetch all DB tables needed by the contribution engine / Monte Carlo projection.
  * Returns the raw query results — callers can destructure what they need.
  */
+
+/** A year's employee contributions to retirement money — every spec but the
+ *  Portfolio-parented ones (savings outside the retirement plan). The
+ *  contribution rate is this over total compensation. */
+function retirementContributions(
+  specs: readonly { baseAnnual: number; parentCategory?: string }[],
+): number {
+  return sumBy(
+    specs.filter((s) => !isPortfolioParent(s.parentCategory)),
+    (s) => s.baseAnnual,
+  );
+}
+
 export async function fetchRetirementData(
   db: Db,
   opts?: {
@@ -1349,14 +1363,11 @@ export async function buildEnginePayload(
       profileContribCtx,
     );
 
-    // Compute per-profile contribution rate ceiling
+    // Compute per-profile contribution rate ceiling (retirement
+    // contributions only — see retirementContributions)
     const switchedTotalComp = sumBy(resolved.jobSalaries, (js) => js.totalComp);
-    const switchedTotalContrib = sumBy(
-      Object.values(data.baseYearContributions),
-      (v) => v,
-    );
     const switchedContribRate = safeDivide(
-      switchedTotalContrib,
+      retirementContributions(data.contributionSpecs),
       switchedTotalComp,
       0,
     );
@@ -1395,8 +1406,15 @@ export async function buildEnginePayload(
     Object.values(contribByCategory),
     (c) => c.annual,
   );
-  // Rate based on total compensation (always includes bonus)
-  const displayContribRate = safeDivide(totalRealContrib, totalCompensation, 0);
+  // Retirement contribution rate on total compensation (always includes
+  // bonus). Retirement contributions only: the engine's rate ceiling caps
+  // retirement contributions and leaves Portfolio savings alone, so the
+  // rate it caps against must not count them either.
+  const displayContribRate = safeDivide(
+    retirementContributions(contributionSpecs),
+    totalCompensation,
+    0,
+  );
 
   // Account splits derived from actual contribution amounts
   const noContribData = totalRealContrib <= 0;

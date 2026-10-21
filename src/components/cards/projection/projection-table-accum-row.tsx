@@ -26,6 +26,7 @@ import {
   isPreTaxType,
 } from "@/lib/config/account-types";
 import type { TipColor, TooltipLineItem } from "./types";
+import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import {
   catDisplayLabel,
   bucketSlotMap,
@@ -279,7 +280,7 @@ export function AccumulationRow({
                     style: "header",
                   },
                   {
-                    text: `Household target (all accounts, your money): ${formatPercent(yr.config.contributionRate, 1)}`,
+                    text: `Retirement target (retirement accounts, your money): ${formatPercent(yr.config.contributionRate, 1)}`,
                     style: "meta",
                   },
                 ];
@@ -300,9 +301,12 @@ export function AccumulationRow({
                     color: "amber",
                   });
                 }
-                // Comparable with the household target only when it's the
-                // same measure: every account, your money only.
-                if (yr.rateCeilingScale == null && !parentCategoryFilter) {
+                // Comparable with the retirement target only when it's the
+                // same measure: retirement accounts, your money only.
+                if (
+                  yr.rateCeilingScale == null &&
+                  parentCategoryFilter === PERF_CATEGORY_RETIREMENT
+                ) {
                   const diff = employeeRate - yr.config.contributionRate;
                   if (Math.abs(diff) > 0.001) {
                     lines.push({

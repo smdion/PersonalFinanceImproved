@@ -263,7 +263,26 @@ export function distributeContributions(
       (s) => s.category === slot.category,
     );
 
-    const distributeSpecs = (specs: typeof catSpecs, slotAmount: number) => {
+    const distributeSpecs = (allSpecs: typeof catSpecs, slotAmount: number) => {
+      // Portfolio-parented specs get their own amount first: the retirement
+      // rate ceiling never scales them (AccumulationSlot.portfolioContrib),
+      // so a scaled-down slot comes out of the retirement specs only.
+      // Unscaled, every spec gets its raw amount either way.
+      let remaining = slotAmount;
+      for (const sp of allSpecs) {
+        if (!isPortfolioParent(sp.parentCategory)) continue;
+        const sk = specKeyOf(sp);
+        const acctName = specAcct.get(sk);
+        if (!acctName) continue;
+        const portion = roundToCents(Math.min(specRaw.get(sk) ?? 0, remaining));
+        if (portion <= 0) continue;
+        indContribs.set(acctName, (indContribs.get(acctName) ?? 0) + portion);
+        indBal.set(acctName, (indBal.get(acctName) ?? 0) + portion);
+        remaining -= portion;
+      }
+      const specs = allSpecs.filter(
+        (sp) => !isPortfolioParent(sp.parentCategory),
+      );
       // Separate fixed-amount specs from scaling specs
       const fixedSpecs = specs.filter(
         (s) => s.contributionScaling === "fixed_amount",
@@ -273,7 +292,6 @@ export function distributeContributions(
       );
 
       // Pre-allocate fixed specs their raw amount (capped at slot total)
-      let remaining = slotAmount;
       for (const sp of fixedSpecs) {
         const sk = specKeyOf(sp);
         const acctName = specAcct.get(sk);
@@ -316,7 +334,7 @@ export function distributeContributions(
           if (!acctName) continue;
           const weight =
             rawTotal > 0 ? (specRaw.get(sk) ?? 0) / rawTotal : 1 / specs.length;
-          const portion = roundToCents(slotAmount * weight);
+          const portion = roundToCents(remaining * weight);
           indContribs.set(acctName, (indContribs.get(acctName) ?? 0) + portion);
           indBal.set(acctName, (indBal.get(acctName) ?? 0) + portion);
         }

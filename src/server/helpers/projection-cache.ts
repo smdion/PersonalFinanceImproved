@@ -268,8 +268,11 @@ import { log } from "@/lib/logger";
  *  drew from every brokerage, retirement ones included).
  *
  *  36: the yearly per-account reconciliation absorbs drift in retirement
- *  money, not Portfolio-parented accounts. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 36;
+ *  money, not Portfolio-parented accounts.
+ *
+ *  37: the contribution rate (and its ceiling) covers retirement
+ *  contributions only — Portfolio-parented specs keep their amounts. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 37;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

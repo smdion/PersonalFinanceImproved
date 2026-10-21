@@ -38,8 +38,8 @@ const OVERRIDE_OPTIONS: {
 }[] = [
   {
     key: "contribution_rate",
-    label: "Contribution Rate",
-    description: "Change how much you save",
+    label: "Retirement Contribution Rate",
+    description: "Change how much you save for retirement",
     icon: "📈",
     phase: "pre",
   },
@@ -302,7 +302,7 @@ export function OverridesPanelV2({
       case "contribution_rate":
         return (
           <SimpleNumberForm
-            label="New Contribution Rate (%)"
+            label="New Retirement Contribution Rate (%)"
             placeholder="15"
             initialValue={editingOverride?.initialValue}
             onSubmit={(val, notes) => {

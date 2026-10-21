@@ -354,11 +354,12 @@ export function AccumulationMethodologyContent() {
           Contribution ceiling
         </h4>
         <p>
-          The engine derives a contribution rate from your current total
-          contributions divided by total compensation. For example, if you
-          contribute $81k on a $280k salary, your rate is ~29%. This becomes a
-          ceiling: each projected year, total contributions across all accounts
-          cannot exceed{" "}
+          The engine derives a retirement contribution rate from your current
+          contributions to retirement accounts divided by total compensation —
+          savings into Portfolio accounts don&apos;t count and are never scaled.
+          For example, if you contribute $81k to retirement accounts on a $280k
+          salary, your rate is ~29%. This becomes a ceiling: each projected
+          year, retirement contributions cannot exceed{" "}
           <code className="text-label bg-surface-elevated rounded px-1">
             salary × contributionRate
           </code>

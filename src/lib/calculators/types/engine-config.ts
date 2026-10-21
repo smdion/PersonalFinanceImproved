@@ -817,6 +817,10 @@ export type AccumulationSlot = {
   cappedByTaxType: boolean;
   /** Amount that couldn't fit here and was sent to the next account. */
   overflowAmount: number;
+  /** Part of `employeeContrib` from Portfolio-parented specs — savings
+   *  outside the retirement plan, so the retirement contribution-rate
+   *  ceiling never scales it. Spec routing only. */
+  portfolioContrib?: number;
 };
 
 /**

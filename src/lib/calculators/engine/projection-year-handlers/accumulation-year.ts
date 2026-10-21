@@ -316,27 +316,43 @@ export function runAccumulationYear(
       specOverflow = roundToCents(specOverflow * proRate);
     }
 
-    // Apply contributionRate ceiling to per-account spec output.
+    // Apply the contributionRate ceiling to per-account spec output.
     // The rate ceiling is authoritative -- overrides always take effect.
-    const specTotal = roundToCents(sumBy(slots, (s) => s.employeeContrib));
+    // It caps retirement contributions only: Portfolio-parented specs
+    // (slot.portfolioContrib) are savings outside the retirement plan and
+    // keep their amounts, so adding Portfolio savings never shrinks a
+    // 401(k). The rate itself is a retirement rate (build-engine-payload).
+    const portfolioPart = (s: AccumulationSlot) => s.portfolioContrib ?? 0;
+    const retirementTotal = roundToCents(
+      sumBy(slots, (s) => s.employeeContrib - portfolioPart(s)),
+    );
     const rateCeiling = roundToCents(
       projectedSalary * Math.max(0, config.contributionRate) * proRate,
     );
-    if (specTotal > rateCeiling && rateCeiling > 0) {
-      const scale = rateCeiling / specTotal;
+    if (retirementTotal > rateCeiling && rateCeiling > 0) {
+      const scale = rateCeiling / retirementTotal;
       rateCeilingScale = scale;
       for (const slot of slots) {
-        const newEmployee = roundToCents(slot.employeeContrib * scale);
-        const newRoth = roundToCents(slot.rothContrib * scale);
-        const newTrad = roundToCents(slot.traditionalContrib * scale);
+        const portfolio = portfolioPart(slot);
+        // Retirement part scaled, Portfolio part kept; each tax part scaled
+        // on its own (no Portfolio part: exactly the old arithmetic).
+        const ratio =
+          portfolio > 0 && slot.employeeContrib > 0
+            ? (portfolio + (slot.employeeContrib - portfolio) * scale) /
+              slot.employeeContrib
+            : scale;
+        const newEmployee = roundToCents(slot.employeeContrib * ratio);
+        slot.rothContrib = roundToCents(slot.rothContrib * ratio);
+        slot.traditionalContrib = roundToCents(slot.traditionalContrib * ratio);
         slot.employeeContrib = newEmployee;
-        slot.rothContrib = newRoth;
-        slot.traditionalContrib = newTrad;
         slot.remainingSpace = isOverflowTarget(slot.category)
           ? 0
           : roundToCents(Math.max(0, slot.effectiveLimit - newEmployee));
       }
-      // Recompute overflow -- scaling down may eliminate it
+      // Recompute overflow -- scaling down may eliminate it. What remains
+      // in the overflow target's slot is spread over its specs, Portfolio
+      // specs taking only their own amount (distributeContributions), so
+      // it stays retirement money.
       specOverflow = 0;
     }
   } else {
