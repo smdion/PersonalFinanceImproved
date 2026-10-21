@@ -89,7 +89,10 @@ export function FinancialIndependenceCard({
           <span className="font-medium">{formatCurrency(fiTarget)}</span>
         </div>
         <div className="border-subtle flex justify-between border-b py-2">
-          <span className="text-muted">Portfolio + Cash</span>
+          <span className="text-muted">
+            Investments + cash{" "}
+            <HelpTip text="Liquid net worth: all your investments — retirement and other (Portfolio) — plus cash. FI is about everything you could live on; the Retirement page's projections count retirement accounts only." />
+          </span>
           <span className="font-medium">
             {formatCurrency(portfolioTotal + cash)}
           </span>
@@ -106,7 +109,7 @@ export function FinancialIndependenceCard({
           <div className="flex justify-between">
             <span>
               Projected FI Year{" "}
-              <HelpTip text="The year your investments plus cash reach the FI target in your retirement plan's projection. The target grows with inflation, since the projection is in future dollars." />
+              <HelpTip text="The year your liquid net worth — all your investments, retirement and other, plus cash — reaches the FI target in your retirement plan's projection. The target grows with inflation, since the projection is in future dollars." />
             </span>
             <span className="text-primary font-medium">
               {fiProgress >= 1
