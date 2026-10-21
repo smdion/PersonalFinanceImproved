@@ -704,17 +704,25 @@ describe("distributeWithdrawals", () => {
 describe("distributeGoalWithdrawal", () => {
   const indKey = makeIndKey();
 
-  it("distributes proportionally across brokerage accounts", () => {
+  it("distributes proportionally across Portfolio brokerages only", () => {
     const accounts: IndividualAccountInput[] = [
       makeIndividualAccount({
         name: "Brok A",
         category: "brokerage",
         taxType: "afterTax",
+        parentCategory: "Portfolio",
       }),
       makeIndividualAccount({
         name: "Brok B",
         category: "brokerage",
         taxType: "afterTax",
+        parentCategory: "Portfolio",
+      }),
+      makeIndividualAccount({
+        name: "Retirement brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        parentCategory: "Retirement",
       }),
       makeIndividualAccount({
         name: "401k",
@@ -725,14 +733,16 @@ describe("distributeGoalWithdrawal", () => {
     const indBal = new Map<string, number>();
     indBal.set(indKey(accounts[0]!), 30000);
     indBal.set(indKey(accounts[1]!), 70000);
-    indBal.set(indKey(accounts[2]!), 200000);
+    indBal.set(indKey(accounts[2]!), 50000);
+    indBal.set(indKey(accounts[3]!), 200000);
 
     distributeGoalWithdrawal(10000, accounts, indKey, indBal);
-    // Should only touch brokerage accounts (30% and 70%)
+    // Only the Portfolio brokerages (30% and 70%)
     expect(indBal.get(indKey(accounts[0]!))!).toBeCloseTo(27000, -1);
     expect(indBal.get(indKey(accounts[1]!))!).toBeCloseTo(63000, -1);
-    // 401k unchanged
-    expect(indBal.get(indKey(accounts[2]!))!).toBe(200000);
+    // Retirement money untouched
+    expect(indBal.get(indKey(accounts[2]!))!).toBe(50000);
+    expect(indBal.get(indKey(accounts[3]!))!).toBe(200000);
   });
 });
 

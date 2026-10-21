@@ -39,6 +39,7 @@ import { applyGrowth } from "../growth-application";
 import {
   distributeContributions,
   distributeGoalWithdrawal,
+  goalFundingBalance,
   applyIndividualGrowth,
   buildIndividualYearBalances,
   accrueIndividualBasis,
@@ -495,8 +496,16 @@ export function runAccumulationYear(
   const goalWithdrawals: EngineAccumulationYear["brokerageGoalWithdrawals"] =
     [];
   for (const goal of yearGoals) {
+    // Goals are Portfolio money: with individual accounts, the most a goal
+    // can draw is what the Portfolio-parented brokerages hold.
     const drawAmount = roundToCents(
-      Math.min(goal.targetAmount, balances.afterTax),
+      Math.min(
+        goal.targetAmount,
+        balances.afterTax,
+        hasIndividualAccounts
+          ? goalFundingBalance(indAccts, indKey, indBal)
+          : balances.afterTax,
+      ),
     );
     if (drawAmount <= 0) {
       goalWithdrawals.push({

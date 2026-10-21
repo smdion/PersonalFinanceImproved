@@ -262,8 +262,11 @@ import { log } from "@/lib/logger";
  *
  *  34: IRS overflow reaches brokerage accounts once (it was added up to
  *  three times per account), Retirement-parented accounts first; the
- *  contribution ramp and unnamed lump sums likewise. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 34;
+ *  contribution ramp and unnamed lump sums likewise.
+ *
+ *  35: brokerage goals draw only from Portfolio-parented brokerages (they
+ *  drew from every brokerage, retirement ones included). */
+export const PROJECTION_CACHE_ENGINE_VERSION = 35;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

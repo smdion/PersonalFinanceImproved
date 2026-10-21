@@ -290,11 +290,12 @@ describe("brokerage goals integration", () => {
           parentCategory: "Portfolio",
         },
         {
-          name: "Savings Brokerage",
+          // A retirement brokerage: goals (Portfolio money) never draw it.
+          name: "Retirement Brokerage",
           category: "brokerage",
           taxType: "afterTax",
           startingBalance: 3000,
-          parentCategory: "Savings",
+          parentCategory: "Retirement",
         },
       ],
       brokerageGoals: goals.map((g) => ({
@@ -318,7 +319,9 @@ describe("brokerage goals integration", () => {
     // Explicit value assertions.
     expect(bgResult.goals[0]!.funded).toBe(true);
     expect(bgResult.goals[0]!.actualWithdrawal).toBe(40000);
-    expect(bgResult.goals[0]!.projectedBalance).toBe(44065.36);
+    // Portfolio accounts only ($27,000 grown to 2030); the goal no longer
+    // draws part of its $40,000 from the retirement brokerage.
+    expect(bgResult.goals[0]!.projectedBalance).toBe(40065.37);
     expect(roundDeep(bgResult)).toMatchSnapshot();
   });
 });

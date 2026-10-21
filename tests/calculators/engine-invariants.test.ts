@@ -1760,5 +1760,42 @@ describe("engine invariants", () => {
         bal(withLump, "Retirement") - bal(without, "Retirement"),
       ).toBeCloseTo(50000, 0);
     });
+
+    it("a brokerage goal draws only Portfolio money, capped at what it holds", () => {
+      const base = overflowInput();
+      const year = base.asOfDate.getFullYear() + 2;
+      const withGoal = (targetAmount: number): ProjectionInput => ({
+        ...base,
+        brokerageGoals: [
+          { id: 1, name: "Car", targetAmount, targetYear: year, priority: 1 },
+        ],
+      });
+      const at = (input: ProjectionInput) =>
+        calculateProjection(input).projectionByYear.find(
+          (y) => y.year === year,
+        )!;
+      const parentBal = (y: ReturnType<typeof at>, parent: string) =>
+        (y.individualAccountBalances ?? [])
+          .filter((a) => a.parentCategory === parent)
+          .reduce((t, a) => t + a.balance, 0);
+      const without = at(base);
+      // A goal smaller than the Portfolio brokerage: Retirement untouched.
+      const small = at(withGoal(10000));
+      expect(parentBal(small, "Retirement")).toBeCloseTo(
+        parentBal(without, "Retirement"),
+        0,
+      );
+      expect(
+        parentBal(without, "Portfolio") - parentBal(small, "Portfolio"),
+      ).toBeCloseTo(10000, 0);
+      // A goal bigger than the Portfolio brokerage: draws what it holds,
+      // never the Retirement brokerage.
+      const big = at(withGoal(1_000_000));
+      expect(parentBal(big, "Retirement")).toBeCloseTo(
+        parentBal(without, "Retirement"),
+        0,
+      );
+      expect(parentBal(big, "Portfolio")).toBeLessThan(1);
+    });
   });
 });

@@ -564,8 +564,36 @@ export function distributeContributions(
 // ---------------------------------------------------------------------------
 
 /**
- * Distribute brokerage goal withdrawal across individual brokerage accounts.
- * Mutates `indBal` in place.
+ * The accounts brokerage goals draw from: Portfolio-parented brokerages.
+ * Goals are Portfolio money (the Brokerage page's goals); retirement
+ * brokerages fund retirement and are never drawn for them.
+ */
+export function goalFundingAccounts(
+  indAccts: IndividualAccountInput[],
+): IndividualAccountInput[] {
+  return indAccts.filter(
+    (ia) =>
+      isOverflowTarget(ia.category) && isPortfolioParent(ia.parentCategory),
+  );
+}
+
+/** What the goal-funding accounts hold now (the most a goal can draw). */
+export function goalFundingBalance(
+  indAccts: IndividualAccountInput[],
+  indKey: IndKeyFn,
+  indBal: Map<string, number>,
+): number {
+  return roundToCents(
+    goalFundingAccounts(indAccts).reduce(
+      (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+      0,
+    ),
+  );
+}
+
+/**
+ * Distribute a brokerage goal withdrawal across the goal-funding
+ * (Portfolio-parented) brokerages, by balance. Mutates `indBal` in place.
  */
 export function distributeGoalWithdrawal(
   drawAmount: number,
@@ -573,15 +601,17 @@ export function distributeGoalWithdrawal(
   indKey: IndKeyFn,
   indBal: Map<string, number>,
 ): void {
-  const brokAccts = indAccts.filter((ia) => isOverflowTarget(ia.category));
+  const brokAccts = goalFundingAccounts(indAccts);
   const brokTotal = brokAccts.reduce(
-    (s, ia) => s + (indBal.get(indKey(ia)) ?? 0),
+    (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
     0,
   );
   for (const ia of brokAccts) {
     const k = indKey(ia);
     const weight =
-      brokTotal > 0 ? (indBal.get(k) ?? 0) / brokTotal : 1 / brokAccts.length;
+      brokTotal > 0
+        ? Math.max(0, indBal.get(k) ?? 0) / brokTotal
+        : 1 / brokAccts.length;
     indBal.set(k, roundToCents((indBal.get(k) ?? 0) - drawAmount * weight));
   }
 }
