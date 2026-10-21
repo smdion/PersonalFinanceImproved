@@ -303,21 +303,22 @@ export function calculateMonteCarlo(
     const result = calculateProjection(trialInput);
 
     // Collect per-year end balances.
-    // TODO(A6): bands and terminal balances on retirementBalance.
+    // Retirement money (A6): Portfolio balances never fund retirement, so
+    // the bands, median and terminal balances leave them out.
     for (
       let yearIdx = 0;
       yearIdx < numYears && yearIdx < result.projectionByYear.length;
       yearIdx++
     ) {
       balancesByYear[yearIdx]!.push(
-        roundToCents(result.projectionByYear[yearIdx]!.allAccountsBalance),
+        roundToCents(result.projectionByYear[yearIdx]!.retirementBalance),
       );
     }
 
     // Terminal balance
     const lastYear =
       result.projectionByYear[result.projectionByYear.length - 1];
-    terminalBalances.push(roundToCents(lastYear?.allAccountsBalance ?? 0));
+    terminalBalances.push(roundToCents(lastYear?.retirementBalance ?? 0));
 
     // One judge (plan-outcome.ts): the trial fails when retirement money
     // runs out or a year's spending goes unmet (money penalty-locked, only
