@@ -88,6 +88,7 @@ export const taxBucketsRouter = createTRPCRouter({
       snapshotData,
       people.map((p) => ({ id: p.id, name: p.name })),
       perfAccounts.map((p) => ({
+        id: p.id,
         isActive: p.isActive,
         accountType: p.accountType,
         costBasis: p.costBasis,

@@ -45,6 +45,7 @@ export type TaxBucketSnapshotAccount = {
 };
 
 export type TaxBucketPerfAccount = {
+  id: number;
   isActive: boolean;
   accountType: string;
   costBasis: string | null;
@@ -83,6 +84,9 @@ export type AccountBreakdownEntry = {
   ownerPersonId?: number;
   accountType?: string;
   parentCategory?: string;
+  /** Cost basis (brokerage-type accounts): this entry's rows' share of
+   *  their performance accounts' `cost_basis`. */
+  costBasis?: number;
 };
 
 export type TaxBucketBreakdown = {
@@ -135,11 +139,38 @@ export function computeTaxBucketBreakdown(
       }
     }
 
+    // Cost basis is kept per performance account (cost_basis); each of its
+    // snapshot rows (sub-type rows share the account) gets its share by
+    // amount. An account with no row in the snapshot contributes nothing.
+    const perfById = new Map(perfAccounts.map((p) => [p.id, p]));
+    const rowsTotalByPerf = new Map<number, number>();
+    for (const a of snapshotData.accounts) {
+      if (a.parentCategory && !ENGINE_CATEGORIES.has(a.parentCategory))
+        continue;
+      if (a.performanceAccountId == null) continue;
+      rowsTotalByPerf.set(
+        a.performanceAccountId,
+        (rowsTotalByPerf.get(a.performanceAccountId) ?? 0) + a.amount,
+      );
+    }
+    const rowBasis = (a: TaxBucketSnapshotAccount): number => {
+      if (a.performanceAccountId == null) return 0;
+      const perf = perfById.get(a.performanceAccountId);
+      if (!perf?.isActive || !tracksCostBasis(perf.accountType)) return 0;
+      const total = rowsTotalByPerf.get(a.performanceAccountId) ?? 0;
+      return total > 0
+        ? roundToCents(
+            toNumber(String(perf.costBasis ?? "0")) * (a.amount / total),
+          )
+        : 0;
+    };
+
     for (const a of snapshotData.accounts) {
       // Only engine-relevant categories (Retirement + Portfolio) — pages
       // filter engine output by parentCategory for the correct subset.
       if (a.parentCategory && !ENGINE_CATEGORIES.has(a.parentCategory))
         continue;
+      const basis = rowBasis(a);
       const ownerName = a.ownerPersonId
         ? personNameById.get(a.ownerPersonId)
         : undefined;
@@ -162,6 +193,8 @@ export function computeTaxBucketBreakdown(
         };
       }
       portfolioByTaxTypeByParentCat[pCat][key] += a.amount;
+      portfolioByTaxType.afterTaxBasis += basis;
+      portfolioByTaxTypeByParentCat[pCat].afterTaxBasis += basis;
 
       const catAsBal = cat as AccountCategory;
       const bal = portfolioByAccount[catAsBal];
@@ -170,6 +203,7 @@ export function computeTaxBucketBreakdown(
         else addTraditional(bal, a.amount);
       } else {
         addBalance(bal, a.amount);
+        if (basis > 0) addBasis(bal, basis);
       }
 
       if (ownerName) {
@@ -207,6 +241,8 @@ export function computeTaxBucketBreakdown(
       );
       if (existing) {
         existing.amount += a.amount;
+        if (basis > 0)
+          existing.costBasis = roundToCents((existing.costBasis ?? 0) + basis);
       } else {
         accountBreakdownByCategory[cat].push({
           name: displayName,
@@ -216,6 +252,7 @@ export function computeTaxBucketBreakdown(
           ownerPersonId: a.ownerPersonId ?? undefined,
           accountType: cat,
           parentCategory: a.parentCategory ?? undefined,
+          ...(basis > 0 ? { costBasis: basis } : {}),
         });
       }
 
@@ -281,22 +318,11 @@ export function computeTaxBucketBreakdown(
     );
   }
 
-  // Cost basis from performance_accounts (per-account, user-maintained
-  // alongside portfolio updates).
-  const costBasisVal = sumBy(
-    perfAccounts.filter((p) => p.isActive && tracksCostBasis(p.accountType)),
-    (p) => toNumber(String(p.costBasis ?? "0")),
+  portfolioByTaxType.afterTaxBasis = roundToCents(
+    portfolioByTaxType.afterTaxBasis,
   );
-  portfolioByTaxType.afterTaxBasis = costBasisVal;
-  const totalAfterTax = portfolioByTaxType.afterTax;
-  for (const pCat of Object.keys(portfolioByTaxTypeByParentCat)) {
-    const catBucket = portfolioByTaxTypeByParentCat[pCat]!;
-    catBucket.afterTaxBasis =
-      totalAfterTax > 0
-        ? roundToCents(costBasisVal * (catBucket.afterTax / totalAfterTax))
-        : 0;
-  }
-  addBasis(portfolioByAccount.brokerage, costBasisVal);
+  for (const bucket of Object.values(portfolioByTaxTypeByParentCat))
+    bucket.afterTaxBasis = roundToCents(bucket.afterTaxBasis);
 
   return {
     portfolioByTaxType,

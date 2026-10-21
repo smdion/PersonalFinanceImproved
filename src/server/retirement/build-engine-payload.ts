@@ -1701,6 +1701,7 @@ export async function buildEnginePayload(
             taxType: a.taxType,
             accountType: a.accountType,
             startingBalance: a.amount,
+            ...(a.costBasis != null ? { startingBasis: a.costBasis } : {}),
             ownerName: a.ownerName,
             ownerPersonId: a.ownerPersonId,
             parentCategory: a.parentCategory,

@@ -150,6 +150,10 @@ export type IndividualAccountInput = {
   accountType?: string;
   /** Starting balance from portfolio snapshot. */
   startingBalance: number;
+  /** Starting cost basis (brokerage-type accounts), from the account's own
+   *  `cost_basis`. Absent: the engine shares the aggregate basis out by
+   *  balance. */
+  startingBasis?: number;
   /** Owner person name (from DB lookup). */
   ownerName?: string;
   /** Owner person ID (from DB). Used for ID-based matching to contribution specs. */
