@@ -543,6 +543,32 @@ describe("projection router — computeProjection", () => {
     }
   });
 
+  it("a saved unspent-RMD account that's no longer a Retirement brokerage falls back with a warning", async () => {
+    const moved = seedPerformanceAccount(db, {
+      name: "Moved brokerage",
+      accountType: "brokerage",
+      parentCategory: "Portfolio",
+    });
+    db.update(schema.retirementSettings)
+      .set({ rmdExcessTargetPerformanceAccountId: moved })
+      .run();
+    try {
+      const response = await caller.projection.computeProjection({
+        accumulationOverrides: [],
+        decumulationOverrides: [],
+      });
+      expect(
+        response.result!.warnings.filter((w) =>
+          w.includes("no longer a Retirement brokerage"),
+        ),
+      ).toHaveLength(1);
+    } finally {
+      db.update(schema.retirementSettings)
+        .set({ rmdExcessTargetPerformanceAccountId: null })
+        .run();
+    }
+  });
+
   it("the contribution rate counts retirement contributions only", async () => {
     const rate = async (contributionProfileId: number) => {
       const r = await caller.projection.computeProjection({
