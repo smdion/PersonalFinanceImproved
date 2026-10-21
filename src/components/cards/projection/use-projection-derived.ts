@@ -551,8 +551,8 @@ export function useProjectionDerived(
       for (const o of accumOverrides) milestones.add(o.year);
       for (const o of decumOverrides) milestones.add(o.year);
       if (result?.firstOverflowYear) milestones.add(result.firstOverflowYear);
-      if (result?.portfolioDepletionYear)
-        milestones.add(result.portfolioDepletionYear);
+      if (result?.retirementDepletionYear)
+        milestones.add(result.retirementDepletionYear);
       return years.filter((yr) => milestones.has(yr.year));
     },
     [showAllYears, accumOverrides, decumOverrides, result],

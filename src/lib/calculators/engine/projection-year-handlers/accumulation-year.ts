@@ -53,7 +53,8 @@ import {
   accrueIndividualBasis,
   reconcileIndividualToAggregate,
 } from "../individual-account-tracking";
-import { cloneAccountBalances } from "../balance-utils";
+import { cloneAccountBalances, scopedBalances } from "../balance-utils";
+import { computeNonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
 import type {
   PreYearSetup,
   ProjectionContext,
@@ -655,8 +656,11 @@ export function runAccumulationYear(
     );
   }
 
-  const endBalance = roundToCents(
-    balances.preTax + balances.taxFree + balances.hsa + balances.afterTax,
+  const { allAccountsBalance, retirementBalance } = scopedBalances(
+    balances,
+    hasIndividualAccounts
+      ? computeNonRetirementExclusion(indAccts, indBal, indKey)
+      : undefined,
   );
 
   // Divergence check: last accumulation year
@@ -704,7 +708,8 @@ export function runAccumulationYear(
     brokerageRampContribution: rampAmount,
     totalTaxAdvSpace,
     brokerageGoalWithdrawals: goalWithdrawals,
-    endBalance,
+    retirementBalance,
+    allAccountsBalance,
     balanceByTaxType: { ...balances },
     balanceByAccount: cloneAccountBalances(acctBal),
     individualAccountBalances: indYearBalances,

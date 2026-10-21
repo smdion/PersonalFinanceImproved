@@ -196,7 +196,7 @@ export interface StressTestScenarioResult {
   withdrawalRate: number;
   nestEggAtRetirement: number;
   sustainableWithdrawal: number;
-  portfolioDepletionAge: number | null;
+  retirementDepletionAge: number | null;
 }
 
 /**
@@ -240,7 +240,7 @@ export function runStressTestScenarios(
       baseEngineInput.currentAge >= avgRetirementAge
         ? result.projectionByYear[0]
         : result.projectionByYear.find((p) => p.age === avgRetirementAge);
-    const nestEgg = retirementYear?.endBalance ?? 0;
+    const nestEgg = retirementYear?.retirementBalance ?? 0;
 
     return {
       label: scenario.label,
@@ -251,7 +251,7 @@ export function runStressTestScenarios(
       withdrawalRate: scenario.withdrawalRate,
       nestEggAtRetirement: roundToCents(nestEgg),
       sustainableWithdrawal: result.sustainableWithdrawal,
-      portfolioDepletionAge: result.portfolioDepletionAge,
+      retirementDepletionAge: result.retirementDepletionAge,
     };
   });
 }

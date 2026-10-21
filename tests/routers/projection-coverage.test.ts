@@ -170,7 +170,7 @@ async function projectionRows(
 
 /** Year-end balances of a deterministic projection. */
 async function balances(caller: Caller, input: Partial<ProjectionInput> = {}) {
-  return (await projectionRows(caller, input)).map((y) => y.endBalance);
+  return (await projectionRows(caller, input)).map((y) => y.allAccountsBalance);
 }
 
 /** The resolved decumulation config the engine used in `year`. */
@@ -382,7 +382,7 @@ describe("projection router — computeProjection edge cases (continued)", () =>
       // is the total-savings ceiling, so 15% from 2030 saves less — and
       // leaves earlier years alone.
       const at = (rows: typeof base, year: number) =>
-        rows.find((r) => r.year === year)!.endBalance;
+        rows.find((r) => r.year === year)!.allAccountsBalance;
       expect(at(capped, 2029)).toBe(at(base, 2029));
       expect(at(capped, 2030)).toBeLessThan(at(base, 2030));
     } finally {
@@ -431,7 +431,7 @@ describe("projection router — computeProjection edge cases (continued)", () =>
 
       expect(response.result).not.toBeNull();
       expect(
-        response.result!.projectionByYear.map((y) => y.endBalance),
+        response.result!.projectionByYear.map((y) => y.allAccountsBalance),
       ).not.toEqual(base);
     } finally {
       cleanup();
@@ -1097,8 +1097,8 @@ describe("projection router — computeStrategyComparison", () => {
         snapshotId: snapId,
       });
 
-      expect(fixedOf(older).endBalance).toBeLessThan(
-        fixedOf(latest).endBalance,
+      expect(fixedOf(older).endRetirementBalance).toBeLessThan(
+        fixedOf(latest).endRetirementBalance,
       );
     } finally {
       cleanup();
@@ -1113,11 +1113,11 @@ describe("projection router — computeStrategyComparison", () => {
       const response = await caller.projection.computeStrategyComparison();
 
       for (const strat of response.strategies) {
-        // If there are yearByYear entries, they should have age, withdrawal, endBalance
+        // If there are yearByYear entries, they should have age, withdrawal, retirementBalance
         if (strat.yearByYear.length > 0) {
           expect(strat.yearByYear[0]).toHaveProperty("age");
           expect(strat.yearByYear[0]).toHaveProperty("withdrawal");
-          expect(strat.yearByYear[0]).toHaveProperty("endBalance");
+          expect(strat.yearByYear[0]).toHaveProperty("retirementBalance");
         }
       }
     } finally {
@@ -1749,7 +1749,7 @@ describe("projection router — computeStressTest", () => {
       for (const scenario of response.scenarios) {
         expect(scenario).toHaveProperty("label");
         expect(scenario).toHaveProperty("nestEggAtRetirement");
-        expect(scenario).toHaveProperty("portfolioDepletionAge");
+        expect(scenario).toHaveProperty("retirementDepletionAge");
       }
     } finally {
       cleanup();

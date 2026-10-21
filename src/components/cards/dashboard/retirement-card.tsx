@@ -127,7 +127,9 @@ function RetirementCardImpl() {
     }
     return total;
   })();
-  const runsOutYear = result.projectionByYear.find((y) => y.endBalance <= 0);
+  const runsOutYear = result.projectionByYear.find(
+    (y) => y.retirementBalance <= 0,
+  );
   // Deflate sustainable withdrawal to today's dollars
   const yearsToRet = Math.max(0, retAge - currentAge);
   const sustainableWdNominal = result.sustainableWithdrawal;
@@ -137,7 +139,7 @@ function RetirementCardImpl() {
         Math.pow(1 + Number(settings.annualInflation), yearsToRet)
       : sustainableWdNominal;
   const nestEggNominal =
-    result.projectionByYear.find((y) => y.age === retAge)?.endBalance ??
+    result.projectionByYear.find((y) => y.age === retAge)?.retirementBalance ??
     portfolioTotal;
   // Deflate nest egg to today's dollars (same approach as sustainable withdrawal)
   const inflRate = Number(settings.annualInflation) || 0;

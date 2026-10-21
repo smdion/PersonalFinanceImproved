@@ -89,7 +89,7 @@ function makeAccumYear(
     brokerageRampContribution: 0,
     totalTaxAdvSpace: 23000,
     brokerageGoalWithdrawals: [],
-    endBalance: 10000,
+    allAccountsBalance: 10000,
     balanceByTaxType: buckets,
     balanceByAccount: accountBalancesFromTaxBuckets(buckets),
     individualAccountBalances: [makeIndividualAccount()],
@@ -119,7 +119,7 @@ function makeDecumYear(
     brokerageContribution: 0,
     brokerageRampContribution: 0,
     targetWithdrawal: 4000,
-    endBalance: 5000,
+    allAccountsBalance: 5000,
     balanceByTaxType: buckets,
     balanceByAccount: accountBalancesFromTaxBuckets(buckets),
     individualAccountBalances: [

@@ -755,7 +755,7 @@ describe("retirement projection edge cases", () => {
     expect(result.projectionByYear).toHaveLength(55); // 90 - 35
     // No money in, no money out — all end balances should be zero
     for (const year of result.projectionByYear) {
-      expect(year.endBalance).toBeCloseTo(0, 2);
+      expect(year.allAccountsBalance).toBeCloseTo(0, 2);
     }
     // With zero balance and zero expenses, depletion may or may not trigger
     // (engine may flag $0 as depleted) — just verify it doesn't crash
@@ -790,7 +790,7 @@ describe("retirement projection edge cases", () => {
     expect(result.projectionByYear).toHaveLength(25);
     expect(result.projectionByYear[0]!.phase).toBe("decumulation");
     // With 7% return, 4% withdrawal on $1M, portfolio should survive
-    expect(result.portfolioDepletionYear).toBeNull();
+    expect(result.retirementDepletionYear).toBeNull();
   });
 
   it("handles currentAge > retirementAge (past retirement)", () => {
@@ -834,7 +834,7 @@ describe("retirement projection edge cases", () => {
       }),
     );
     expect(result.projectionByYear).toHaveLength(0);
-    expect(result.portfolioDepletionYear).toBeNull();
+    expect(result.retirementDepletionYear).toBeNull();
   });
 
   it("detects portfolio depletion with high withdrawal rate", () => {
@@ -862,9 +862,9 @@ describe("retirement projection edge cases", () => {
         inflationRate: 0.03,
       }),
     );
-    expect(result.portfolioDepletionYear).not.toBeNull();
-    expect(result.portfolioDepletionAge).not.toBeNull();
-    expect(result.portfolioDepletionAge!).toBeLessThan(95);
+    expect(result.retirementDepletionYear).not.toBeNull();
+    expect(result.retirementDepletionAge).not.toBeNull();
+    expect(result.retirementDepletionAge!).toBeLessThan(95);
   });
 
   it("throws with empty returnRates array", () => {
@@ -1117,10 +1117,12 @@ describe("retirement projection edge cases", () => {
     // With no contributions/withdrawals, balance should grow each year
     const firstYear = result.projectionByYear[0]!;
     const lastYear = result.projectionByYear[9]!;
-    expect(lastYear.endBalance).toBeGreaterThan(firstYear.endBalance);
+    expect(lastYear.allAccountsBalance).toBeGreaterThan(
+      firstYear.allAccountsBalance,
+    );
     // Should be roughly in the right ballpark (compound growth)
-    expect(lastYear.endBalance).toBeGreaterThan(150_000);
-    expect(lastYear.endBalance).toBeLessThan(250_000);
+    expect(lastYear.allAccountsBalance).toBeGreaterThan(150_000);
+    expect(lastYear.allAccountsBalance).toBeLessThan(250_000);
   });
 
   it("handles salary override (sticky-forward)", () => {

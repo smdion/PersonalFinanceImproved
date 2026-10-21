@@ -387,7 +387,7 @@ describe("findCoastFireAge", () => {
 describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", () => {
   // Same class of bug monte-carlo.ts's C3 fix addressed, but for the
   // deterministic baseline's passes() function: neither
-  // portfolioDepletionAge nor the aggregate sustainableWithdrawal rate
+  // retirementDepletionAge nor the aggregate sustainableWithdrawal rate
   // notices a specific year going unfunded because penalty-exposed money
   // was excluded. A household coasting too early (age 37, well before
   // their real coast age) doesn't accumulate enough penalty-free
@@ -555,8 +555,8 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
   // balance exhausts by year 3, nonRetirementShortfall becomes the FULL
   // need from then on). Before this fix, passes() never looked at
   // nonRetirementShortfall and could say "already coast" anyway --
-  // portfolioDepletionAge stays null forever (the excluded $150k sits
-  // there, untouched, keeping aggregate endBalance positive) and
+  // retirementDepletionAge stays null forever (the excluded $150k sits
+  // there, untouched, keeping aggregate allAccountsBalance positive) and
   // sustainableWithdrawal's net-of-tax/plus-SS figure clears
   // projectedExpenses in year 1 alone, so neither existing check would
   // ever catch this.

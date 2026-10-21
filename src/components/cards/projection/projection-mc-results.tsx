@@ -166,7 +166,8 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                   const y = years[i]!;
                   if (y.phase === "decumulation") {
                     firstDecumYear = y;
-                    priorAccumEnd = i > 0 ? years[i - 1]!.endBalance : null;
+                    priorAccumEnd =
+                      i > 0 ? years[i - 1]!.allAccountsBalance : null;
                     break;
                   }
                 }

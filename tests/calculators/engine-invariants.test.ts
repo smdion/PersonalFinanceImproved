@@ -411,8 +411,8 @@ describe("engine invariants", () => {
 
     it("5 — year N ending balances equal year N+1 starting balances (within rounding)", () => {
       // The engine does not expose "startBalance" directly, but the first year's
-      // endBalance feeds the next year's computation. We verify that endBalance
-      // is monotonically consistent: the sum of balanceByTaxType equals endBalance.
+      // allAccountsBalance feeds the next year's computation. We verify that allAccountsBalance
+      // is monotonically consistent: the sum of balanceByTaxType equals allAccountsBalance.
       fc.assert(
         fc.property(arbitraryInput(), (input) => {
           const result = calculateProjection(input);
@@ -420,18 +420,18 @@ describe("engine invariants", () => {
           for (let i = 0; i < years.length - 1; i++) {
             const cur = years[i]!;
             const next = years[i + 1]!;
-            // endBalance must equal sum of tax-bucket balances
+            // allAccountsBalance must equal sum of tax-bucket balances
             const bucketSum =
               cur.balanceByTaxType.preTax +
               cur.balanceByTaxType.taxFree +
               cur.balanceByTaxType.afterTax +
               cur.balanceByTaxType.hsa;
-            expect(Math.abs(cur.endBalance - bucketSum)).toBeLessThan(
+            expect(Math.abs(cur.allAccountsBalance - bucketSum)).toBeLessThan(
               EPSILON + 1,
             );
-            // endBalance of year N must be positive if next year has a non-zero balance
-            if (next.endBalance > 1) {
-              expect(cur.endBalance).toBeGreaterThanOrEqual(-EPSILON);
+            // allAccountsBalance of year N must be positive if next year has a non-zero balance
+            if (next.allAccountsBalance > 1) {
+              expect(cur.allAccountsBalance).toBeGreaterThanOrEqual(-EPSILON);
             }
           }
         }),
@@ -591,9 +591,9 @@ describe("engine invariants", () => {
           for (const year of result.projectionByYear) {
             if (year.phase !== "decumulation") continue;
             // Withdrawals cannot exceed what was in the portfolio at start of year.
-            // We check: endBalance >= 0 (within tolerance) — the engine already
+            // We check: allAccountsBalance >= 0 (within tolerance) — the engine already
             // enforces this by capping withdrawals at available balance.
-            expect(year.endBalance).toBeGreaterThanOrEqual(-EPSILON);
+            expect(year.allAccountsBalance).toBeGreaterThanOrEqual(-EPSILON);
           }
         }),
         { numRuns: NUM_RUNS },
@@ -739,8 +739,8 @@ describe("engine invariants", () => {
             result2.projectionByYear.length,
           );
           for (let i = 0; i < result1.projectionByYear.length; i++) {
-            expect(result1.projectionByYear[i]!.endBalance).toBe(
-              result2.projectionByYear[i]!.endBalance,
+            expect(result1.projectionByYear[i]!.allAccountsBalance).toBe(
+              result2.projectionByYear[i]!.allAccountsBalance,
             );
           }
         }),
@@ -1379,9 +1379,9 @@ describe("engine invariants", () => {
             `${strategy} year ${decA[i].year}: projectedExpenses should be identical regardless of post-retirement raise`,
           ).toBeCloseTo(decB[i].projectedExpenses, 2);
           expect(
-            decA[i].endBalance,
-            `${strategy} year ${decA[i].year}: endBalance should be identical regardless of post-retirement raise`,
-          ).toBeCloseTo(decB[i].endBalance, 0);
+            decA[i].allAccountsBalance,
+            `${strategy} year ${decA[i].year}: allAccountsBalance should be identical regardless of post-retirement raise`,
+          ).toBeCloseTo(decB[i].allAccountsBalance, 0);
         }
       }
     });
@@ -1441,7 +1441,7 @@ describe("engine invariants", () => {
             // brokerageContribution reports Portfolio-category post-retirement
             // contributions for the brokerage page.  It must NOT be applied to
             // retirement balances.  Verify it's non-negative (valid report
-            // value) and that endBalance = sum of tax buckets (no hidden
+            // value) and that allAccountsBalance = sum of tax buckets (no hidden
             // contribution injection).
             expect(decYr.brokerageContribution).toBeGreaterThanOrEqual(0);
             const bucketSum =
@@ -1449,7 +1449,7 @@ describe("engine invariants", () => {
               decYr.balanceByTaxType.taxFree +
               decYr.balanceByTaxType.hsa +
               decYr.balanceByTaxType.afterTax;
-            expect(decYr.endBalance).toBeCloseTo(bucketSum, 0);
+            expect(decYr.allAccountsBalance).toBeCloseTo(bucketSum, 0);
           }
         }),
         { numRuns: NUM_RUNS },
@@ -1534,6 +1534,59 @@ describe("engine invariants", () => {
         .projectionByYear.filter((y) => y.phase === "decumulation")
         .slice(0, 10)
         .map((y) => y.projectedExpenses);
+
+    it("the two balances: retirement money is every account minus the Portfolio ones", () => {
+      for (const y of calculateProjection(retired(1_000_000))
+        .projectionByYear) {
+        const portfolio = y.individualAccountBalances
+          .filter((a) => a.parentCategory === "Portfolio")
+          .reduce((t, a) => t + a.balance, 0);
+        expect(y.retirementBalance, `${y.year}`).toBeCloseTo(
+          Math.max(0, y.allAccountsBalance - portfolio),
+          0,
+        );
+      }
+    });
+
+    it("running out means retirement money running out, whatever Portfolio holds", () => {
+      // No HSA: it isn't drawn for general spending here, so it would keep
+      // the balance above $1 (unmet need is the plan judge's business).
+      const spendy = (portfolio: number): ProjectionInput => {
+        const input = retired(portfolio);
+        return {
+          ...input,
+          annualExpenses: 150000,
+          decumulationAnnualExpenses: 150000,
+          individualAccounts: input.individualAccounts!.filter(
+            (a) => a.category !== "hsa",
+          ),
+          // Buckets that match the accounts (makeInput's are $10k off in
+          // both pre-tax and tax-free).
+          startingBalances: {
+            ...input.startingBalances,
+            hsa: 0,
+            preTax: 110000,
+            taxFree: 40000,
+          },
+          startingAccountBalances: {
+            ...input.startingAccountBalances!,
+            hsa: { structure: "single_bucket", balance: 0 },
+          },
+        };
+      };
+      const without = calculateProjection(spendy(0));
+      const withPortfolio = calculateProjection(spendy(1_000_000));
+      expect(without.retirementDepletionAge).not.toBeNull();
+      expect(withPortfolio.retirementDepletionAge).toBe(
+        without.retirementDepletionAge,
+      );
+      // The Portfolio money is still there (it's never spent in retirement).
+      const depleted = withPortfolio.projectionByYear.find(
+        (y) => y.age === withPortfolio.retirementDepletionAge,
+      )!;
+      expect(depleted.retirementBalance).toBeLessThan(1);
+      expect(depleted.allAccountsBalance).toBeGreaterThan(1_000_000);
+    });
 
     it("every strategy sizes spending from retirement money only", () => {
       for (const strategy of WITHDRAWAL_STRATEGY_VALUES) {
@@ -2069,7 +2122,7 @@ describe("engine invariants", () => {
       };
       const endBalances = (input: ProjectionInput) =>
         calculateProjection(toSimpleTaxMode(input, parts)).projectionByYear.map(
-          (y) => Math.round(y.endBalance),
+          (y) => Math.round(y.allAccountsBalance),
         );
       const portfolioSpec = overflowInput().contributionSpecs!.find(
         (sp) => sp.parentCategory === "Portfolio",

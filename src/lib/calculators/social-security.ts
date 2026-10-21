@@ -104,7 +104,7 @@ export type ClaimingAgeSweepCandidate = {
   adjustedAnnualBenefit: number;
   /** Total net worth (all tax buckets) at end of plan for this candidate. */
   finalNetWorth: number;
-  /** `portfolioDepletionAge !== null` for this candidate — a hard
+  /** `retirementDepletionAge !== null` for this candidate — a hard
    *  exclusion, never ranked in regardless of `finalNetWorth`, same
    *  convention as `withdrawal-bracket-optimizer.ts`'s `depleted`. */
   depleted: boolean;
@@ -252,7 +252,7 @@ export function sweepClaimingAges(
         claimingAge,
         adjustedAnnualBenefit,
         finalNetWorth: finalNetWorth(result),
-        depleted: result.portfolioDepletionAge !== null,
+        depleted: result.retirementDepletionAge !== null,
       };
     })
     .sort(compareCandidates);

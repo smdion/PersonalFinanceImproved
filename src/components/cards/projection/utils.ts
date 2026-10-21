@@ -17,6 +17,7 @@ import {
   isRothType,
   isTaxFreeBucket,
   isPreTaxType,
+  isRetirementMoney,
 } from "@/lib/config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
 import {
@@ -178,6 +179,9 @@ export const _singleBucketCategories = new Set<string>(
 // Year-level parentCategory filter (reused by both standalone and MC det memos)
 // ---------------------------------------------------------------------------
 
+/** A year narrowed to one parent category's accounts: balances,
+ *  contributions and withdrawals are that view's, and `allAccountsBalance`
+ *  is the view's total (what the projection card shows). */
 export function filterYearByParentCategory(
   yr: EngineYearProjection,
   parentCategory: string,
@@ -265,9 +269,16 @@ export function filterYearByParentCategory(
       };
     }
   }
-  const endBalance = roundToCents(
-    byTax.preTax + byTax.taxFree + byTax.hsa + byTax.afterTax,
-  );
+  // The view's own total, and the engine's retirement balance when the view
+  // is retirement money (one path — never rebuilt here).
+  const scoped = {
+    allAccountsBalance: roundToCents(
+      byTax.preTax + byTax.taxFree + byTax.hsa + byTax.afterTax,
+    ),
+    retirementBalance: isRetirementMoney(parentCategory)
+      ? yr.retirementBalance
+      : 0,
+  };
 
   if (yr.phase !== "decumulation") {
     // Contributions rescoped to the same accounts as the balances: the
@@ -306,7 +317,7 @@ export function filterYearByParentCategory(
       individualAccountBalances: filtered,
       balanceByTaxType: byTax,
       balanceByAccount: byAcct,
-      endBalance,
+      ...scoped,
       ...(accumSlots
         ? {
             slots: accumSlots,
@@ -421,7 +432,7 @@ export function filterYearByParentCategory(
     individualAccountBalances: filtered,
     balanceByTaxType: byTax,
     balanceByAccount: byAcct,
-    endBalance,
+    ...scoped,
     slots: filteredSlots,
     totalWithdrawal,
     totalTraditionalWithdrawal,

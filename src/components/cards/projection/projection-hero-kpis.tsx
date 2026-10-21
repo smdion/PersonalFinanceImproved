@@ -141,16 +141,16 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
       );
   const retPt = retYear ? getPersonYearTotals(retYear) : null;
   const nestEgg = retYear
-    ? deflate(retPt ? retPt.balance : retYear.endBalance, retYear.year)
+    ? deflate(retPt ? retPt.balance : retYear.allAccountsBalance, retYear.year)
     : 0;
   const peakYear = result.projectionByYear.reduce((best, yr) => {
-    const yrB = getPersonYearTotals(yr)?.balance ?? yr.endBalance;
-    const bestB = getPersonYearTotals(best)?.balance ?? best.endBalance;
+    const yrB = getPersonYearTotals(yr)?.balance ?? yr.allAccountsBalance;
+    const bestB = getPersonYearTotals(best)?.balance ?? best.allAccountsBalance;
     return deflate(yrB, yr.year) > deflate(bestB, best.year) ? yr : best;
   });
   const peakPt = getPersonYearTotals(peakYear);
   const peakBalance = deflate(
-    peakPt ? peakPt.balance : peakYear.endBalance,
+    peakPt ? peakPt.balance : peakYear.allAccountsBalance,
     peakYear.year,
   );
   // When scenarioView is a Coast FIRE variant OR Rate-Seeded, swap the MC
@@ -181,10 +181,10 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     baseYear + (engineSettings.endAge - (result.projectionByYear[0]?.age ?? 0));
   const depl = isPersonFiltered
     ? personDepletionInfo
-    : result.portfolioDepletionAge
+    : result.retirementDepletionAge
       ? {
-          age: result.portfolioDepletionAge,
-          year: result.portfolioDepletionYear,
+          age: result.retirementDepletionAge,
+          year: result.retirementDepletionYear,
         }
       : null;
 
@@ -352,7 +352,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
                 result.projectionByYear[result.projectionByYear.length - 1]!;
               const lastPt = getPersonYearTotals(last);
               const detEndBalance = deflate(
-                lastPt ? lastPt.balance : last.endBalance,
+                lastPt ? lastPt.balance : last.allAccountsBalance,
                 last.year,
               );
               return `Baseline: ${formatCurrency(detEndBalance)}`;

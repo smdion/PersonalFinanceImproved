@@ -429,9 +429,9 @@ export const relocationProjectionRouter = createTRPCRouter({
         (r) => r.phase === "accumulation",
       );
       const currentBalanceAtRetirement =
-        currentAccRows[currentAccRows.length - 1]?.endBalance ?? 0;
+        currentAccRows[currentAccRows.length - 1]?.retirementBalance ?? 0;
       const relocationBalanceAtRetirement =
-        relocAccRows[relocAccRows.length - 1]?.endBalance ?? 0;
+        relocAccRows[relocAccRows.length - 1]?.retirementBalance ?? 0;
 
       // Delegates to lib/calculators/relocation.ts's real formula (Single
       // Computation Path — this endpoint used to reimplement it and drop
@@ -459,7 +459,7 @@ export const relocationProjectionRouter = createTRPCRouter({
 
       const relocLastRow =
         relocResult.projectionByYear[relocResult.projectionByYear.length - 1];
-      const isViableNow = (relocLastRow?.endBalance ?? 0) > 0;
+      const isViableNow = (relocLastRow?.retirementBalance ?? 0) > 0;
 
       // --- Build year-by-year comparison rows for the two-column table ---
       const currentAccRowsByYear = new Map(
@@ -485,11 +485,11 @@ export const relocationProjectionRouter = createTRPCRouter({
             age: Math.floor(relocRow.age),
             currentContribution:
               currentRow.totalEmployee + currentRow.totalEmployer,
-            currentBalance: currentRow.endBalance,
+            currentBalance: currentRow.retirementBalance,
             relocationContribution:
               relocRow.totalEmployee + relocRow.totalEmployer,
-            relocationBalance: relocRow.endBalance,
-            delta: relocRow.endBalance - currentRow.endBalance,
+            relocationBalance: relocRow.retirementBalance,
+            delta: relocRow.retirementBalance - currentRow.retirementBalance,
             relocationExpenses: relocRow.projectedExpenses,
             hasAdjustment: adjustmentYears.has(relocRow.year),
             largePurchaseImpact:
@@ -505,7 +505,7 @@ export const relocationProjectionRouter = createTRPCRouter({
           probeResult?.projectionByYear[
             probeResult.projectionByYear.length - 1
           ];
-        return (probeLast?.endBalance ?? 0) > 0;
+        return (probeLast?.retirementBalance ?? 0) > 0;
       };
 
       let earliestRelocateYear: number | null = null;
@@ -537,7 +537,7 @@ export const relocationProjectionRouter = createTRPCRouter({
         // is the balance going into it: the prior year's end (or today's).
         recommendedPortfolioToRelocate =
           lo > 0
-            ? currentAccRows[lo - 1]!.endBalance
+            ? currentAccRows[lo - 1]!.retirementBalance
             : currentPayload.portfolioTotal;
       }
 
@@ -568,7 +568,7 @@ export const relocationProjectionRouter = createTRPCRouter({
           blendedRows = relocAccRows.map((row) => ({
             year: row.year,
             age: Math.floor(row.age),
-            balance: row.endBalance,
+            balance: row.retirementBalance,
             contribution: row.totalEmployee + row.totalEmployer,
             expenses: row.projectedExpenses,
             phase: "relocation" as const,
@@ -582,13 +582,13 @@ export const relocationProjectionRouter = createTRPCRouter({
             const accRows = blended.projectionByYear.filter(
               (r) => r.phase === "accumulation",
             );
-            blendedBalanceAtRetirement = accRows.at(-1)?.endBalance ?? 0;
+            blendedBalanceAtRetirement = accRows.at(-1)?.retirementBalance ?? 0;
             blendedRows = accRows.map((row) => {
               const moved = row.year >= moveYear;
               return {
                 year: row.year,
                 age: Math.floor(row.age),
-                balance: row.endBalance,
+                balance: row.retirementBalance,
                 contribution: row.totalEmployee + row.totalEmployer,
                 expenses: row.projectedExpenses,
                 phase: moved ? ("relocation" as const) : ("current" as const),

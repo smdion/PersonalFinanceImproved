@@ -115,7 +115,7 @@ export function ClaimingAgeExplorer({
                       </td>
                       <td className="py-0.5 pr-3">
                         {c.depleted
-                          ? "Portfolio depleted"
+                          ? "Retirement money runs out"
                           : formatCurrency(c.finalNetWorth)}
                       </td>
                       <td className="text-accent py-0.5">

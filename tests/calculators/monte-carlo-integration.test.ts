@@ -547,10 +547,10 @@ describe("monte carlo integration", () => {
     }
 
     // The aggregate (the only representation left) stays internally
-    // consistent with itself year over year -- endBalance tracks the real
+    // consistent with itself year over year -- allAccountsBalance tracks the real
     // starting total, not a phantom inflated/deflated figure.
-    expect(year1.endBalance).toBeGreaterThan(totalBalance * 0.9);
-    expect(year1.endBalance).toBeLessThan(totalBalance * 1.3);
+    expect(year1.allAccountsBalance).toBeGreaterThan(totalBalance * 0.9);
+    expect(year1.allAccountsBalance).toBeLessThan(totalBalance * 1.3);
 
     // Regression guard: WITHOUT the fix (real individualAccounts left in
     // place under a collapsed aggregate -- i.e. monte-carlo.ts's Simple-mode

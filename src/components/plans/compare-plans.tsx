@@ -149,8 +149,8 @@ function PlanColumn({
         <FieldRow label="Money lasts">
           <span>
             {result
-              ? result.portfolioDepletionAge != null
-                ? `to age ${Math.round(result.portfolioDepletionAge)}`
+              ? result.retirementDepletionAge != null
+                ? `to age ${Math.round(result.retirementDepletionAge)}`
                 : "through the plan"
               : projection.isLoading
                 ? "…"

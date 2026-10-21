@@ -426,7 +426,7 @@ export function DecumulationRow({
           ? "bg-blue-50 font-medium"
           : hasOverride
             ? "bg-amber-50"
-            : yr.endBalance < 1
+            : yr.allAccountsBalance < 1
               ? "bg-red-50"
               : isSsStartRow
                 ? "bg-teal-50"
@@ -1074,7 +1074,7 @@ export function DecumulationRow({
                 ? "text-amber-500"
                 : dyr.totalWithdrawal > 0
                   ? "text-red-600"
-                  : dyr.endBalance < 1 && dyr.projectedExpenses > 0
+                  : dyr.allAccountsBalance < 1 && dyr.projectedExpenses > 0
                     ? "text-red-400 italic"
                     : "text-muted"
           }`}
@@ -1092,7 +1092,7 @@ export function DecumulationRow({
             if (dyr.totalWithdrawal > 0) {
               return `-${formatCurrency(deflate(dyr.totalWithdrawal, yr.year))}`;
             }
-            return dyr.endBalance < 1 && dyr.projectedExpenses > 0
+            return dyr.allAccountsBalance < 1 && dyr.projectedExpenses > 0
               ? "depleted"
               : "---";
           })()}
@@ -1105,7 +1105,7 @@ export function DecumulationRow({
             const bal = dpt
               ? dpt.byTaxType[bucket]
               : yr.balanceByTaxType[bucket];
-            const dptTotal = dpt ? dpt.balance : yr.endBalance;
+            const dptTotal = dpt ? dpt.balance : yr.allAccountsBalance;
             const pct = percentOf(bal, dptTotal);
             // Compute growth for this tax bucket from individualAccountBalances
             const bucketIabs = yr.individualAccountBalances ?? [];
@@ -1246,7 +1246,7 @@ export function DecumulationRow({
             .map((col) => {
               const catKey = colKeyParts(col.key).category;
               const bal = dpt ? (dpt.byAccount[col.key] ?? 0) : col.val;
-              const dptTotalBal = dpt ? dpt.balance : yr.endBalance;
+              const dptTotalBal = dpt ? dpt.balance : yr.allAccountsBalance;
               const pct = percentOf(bal, dptTotalBal);
               // Compute authoritative total change from engine
               const decPrevYr = result.projectionByYear.find(
@@ -1431,7 +1431,7 @@ export function DecumulationRow({
       )}
       <Tooltip
         content={(() => {
-          const tb = dpt ? dpt.balance : yr.endBalance;
+          const tb = dpt ? dpt.balance : yr.allAccountsBalance;
           const iabs = yr.individualAccountBalances ?? [];
           const totalGrowth = (
             dpt ? iabs.filter((ia) => ia.ownerPersonId === personFilter) : iabs
@@ -1441,7 +1441,7 @@ export function DecumulationRow({
               kind: "info",
               lines: [
                 {
-                  text: "Portfolio depleted",
+                  text: "Balance depleted",
                   style: "note",
                   color: "gray",
                 },
@@ -1473,13 +1473,16 @@ export function DecumulationRow({
       >
         <td className="px-2 py-1.5 text-right font-semibold">
           {formatCurrency(
-            Math.max(0, deflate(dpt ? dpt.balance : yr.endBalance, yr.year)),
+            Math.max(
+              0,
+              deflate(dpt ? dpt.balance : yr.allAccountsBalance, yr.year),
+            ),
           )}
         </td>
       </Tooltip>
       {renderMcCell(
         yr,
-        deflate(dpt ? dpt.balance : yr.endBalance, yr.year),
+        deflate(dpt ? dpt.balance : yr.allAccountsBalance, yr.year),
         mcCellOpts,
       )}
       <td className="text-caption text-faint border-subtle border-l py-1.5 pl-2 whitespace-nowrap">

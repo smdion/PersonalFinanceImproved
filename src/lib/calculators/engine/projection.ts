@@ -175,7 +175,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
       // falls back to $0 rather than erroring.
       roundToCents(
         (state.projectionByYear.find((p) => p.age === input.retirementAge)
-          ?.endBalance ?? 0) *
+          ?.retirementBalance ?? 0) *
           resolveDecumulationConfig(
             input.asOfDate.getFullYear() +
               (input.retirementAge - input.currentAge),
@@ -229,8 +229,8 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
     firstOverflowYear: state.firstOverflowYear,
     firstOverflowAge: state.firstOverflowAge,
     firstOverflowAmount: state.firstOverflowAmount,
-    portfolioDepletionYear: state.portfolioDepletionYear,
-    portfolioDepletionAge: state.portfolioDepletionAge,
+    retirementDepletionYear: state.retirementDepletionYear,
+    retirementDepletionAge: state.retirementDepletionAge,
     sustainableWithdrawal,
     firstDecumulationYearStatedNeed,
     accountDepletions: state.accountDepletions,

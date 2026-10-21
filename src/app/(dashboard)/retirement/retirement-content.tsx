@@ -312,7 +312,7 @@ export function RetirementContent() {
           deterministicNestEgg={
             data.result?.projectionByYear.find(
               (p: { age: number }) => p.age === settings.retirementAge,
-            )?.endBalance
+            )?.retirementBalance
           }
           accumulationOrder={data.planHealth?.accumulationOrder}
           currentAge={data.planHealth?.currentAge}

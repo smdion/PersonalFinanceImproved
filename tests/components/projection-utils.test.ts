@@ -575,7 +575,7 @@ describe("filterYearByParentCategory", () => {
         afterTax: 5000,
         afterTaxBasis: 3000,
       }),
-      endBalance: 15000,
+      allAccountsBalance: 15000,
     } as unknown as EngineYearProjection;
   }
 
@@ -591,9 +591,9 @@ describe("filterYearByParentCategory", () => {
     expect(result.balanceByTaxType.afterTax).toBe(0);
   });
 
-  it("recomputes endBalance to match the filtered totals", () => {
+  it("recomputes allAccountsBalance to match the filtered totals", () => {
     const result = filterYearByParentCategory(makeYear(), "Retirement");
-    expect(result.endBalance).toBe(10000);
+    expect(result.allAccountsBalance).toBe(10000);
   });
 
   it("rescopes an accumulation year's contributions to the filtered accounts", () => {
@@ -666,14 +666,14 @@ describe("filterYearByParentCategory", () => {
     // Rate-Seeded) supplies a year with individualAccountBalances=[] (no
     // per-account structure left after the collapse), filtering "down to
     // the accounts matching this parent category" must not zero out
-    // endBalance/balanceByTaxType for accounts it can't see at all --
+    // allAccountsBalance/balanceByTaxType for accounts it can't see at all --
     // that's what caused every balance in the table to silently render
     // $0.00 while Sim. Median (a different, unaffected field) stayed
     // healthy.
     const yr = { ...makeYear(), individualAccountBalances: [] };
     const result = filterYearByParentCategory(yr, "Retirement");
     expect(result).toBe(yr);
-    expect(result.endBalance).toBe(15000);
+    expect(result.allAccountsBalance).toBe(15000);
     expect(result.balanceByTaxType.afterTax).toBe(5000);
   });
 
@@ -725,7 +725,7 @@ describe("filterYearByParentCategory", () => {
         afterTax: 1681797.94,
         afterTaxBasis: 117901.77,
       }),
-      endBalance: 1681797.94,
+      allAccountsBalance: 1681797.94,
       slots: [
         {
           category: "brokerage",

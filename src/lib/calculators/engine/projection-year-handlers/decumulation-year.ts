@@ -31,7 +31,7 @@ import {
   QCD_MIN_ELIGIBILITY_AGE,
   ADDITIONAL_STANDARD_DEDUCTION_AGE,
 } from "../../../constants";
-import { cloneAccountBalances } from "../balance-utils";
+import { cloneAccountBalances, scopedBalances } from "../balance-utils";
 import {
   getLtcgRate,
   computeLtcgTax,
@@ -71,7 +71,10 @@ import {
   specKeyOf,
   portfolioFirst,
 } from "../individual-account-tracking";
-import { computeWithdrawalEligibility } from "@/lib/pure/withdrawal-eligibility";
+import {
+  computeNonRetirementExclusion,
+  computeWithdrawalEligibility,
+} from "@/lib/pure/withdrawal-eligibility";
 import type { BasisDraw } from "@/lib/pure/roth-basis-tracking";
 import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
@@ -1425,14 +1428,18 @@ export function runDecumulationYear(
   if (hasIndividualAccounts) {
     clampIndividualBasis(indAccts, indKey, indBasis, indBal);
   }
-  const endBalance = roundToCents(
-    balances.preTax + balances.taxFree + balances.hsa + balances.afterTax,
+  const yearEnd = scopedBalances(
+    balances,
+    hasIndividualAccounts
+      ? computeNonRetirementExclusion(indAccts, indBal, indKey)
+      : undefined,
   );
 
-  // Track depletion
-  if (endBalance < 1 && state.portfolioDepletionYear === null) {
-    state.portfolioDepletionYear = year;
-    state.portfolioDepletionAge = age;
+  // Track depletion: retirement money running out (Portfolio money is
+  // never spent in retirement, so it can't keep a plan alive).
+  if (yearEnd.retirementBalance < 1 && state.retirementDepletionYear === null) {
+    state.retirementDepletionYear = year;
+    state.retirementDepletionAge = age;
   }
 
   const yearProjection: EngineDecumulationYear = {
@@ -1468,7 +1475,8 @@ export function runDecumulationYear(
     nonRetirementShortfall,
     penaltyCost,
     preWithdrawalAcctBal,
-    endBalance,
+    retirementBalance: yearEnd.retirementBalance,
+    allAccountsBalance: yearEnd.allAccountsBalance,
     balanceByTaxType: { ...balances },
     balanceByAccount: cloneAccountBalances(acctBal),
     individualAccountBalances: decIndYearBalances,

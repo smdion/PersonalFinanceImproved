@@ -244,7 +244,7 @@ describe("ProjectionHeroKpis", () => {
       {
         year: 2026,
         age: 36,
-        endBalance: 500000,
+        allAccountsBalance: 500000,
         balanceByTaxType: {
           preTax: 300000,
           taxFree: 150000,
@@ -258,7 +258,7 @@ describe("ProjectionHeroKpis", () => {
       {
         year: 2055,
         age: 65,
-        endBalance: 2000000,
+        allAccountsBalance: 2000000,
         balanceByTaxType: {
           preTax: 1000000,
           taxFree: 700000,
@@ -270,8 +270,8 @@ describe("ProjectionHeroKpis", () => {
         phase: "decumulation",
       },
     ],
-    portfolioDepletionAge: null,
-    portfolioDepletionYear: null,
+    retirementDepletionAge: null,
+    retirementDepletionYear: null,
     sustainableWithdrawal: 80000,
     firstOverflowAge: null,
   };
@@ -361,7 +361,7 @@ describe("ProjectionChart", () => {
     projectionByYear: Array.from({ length: 10 }, (_, i) => ({
       year: 2026 + i,
       age: 36 + i,
-      endBalance: 500000 + i * 50000,
+      allAccountsBalance: 500000 + i * 50000,
       balanceByTaxType: {
         preTax: 300000 + i * 30000,
         taxFree: 150000 + i * 15000,
@@ -372,8 +372,8 @@ describe("ProjectionChart", () => {
       balanceByAccount: {},
       phase: "accumulation",
     })),
-    portfolioDepletionAge: null,
-    portfolioDepletionYear: null,
+    retirementDepletionAge: null,
+    retirementDepletionYear: null,
   };
 
   it("returns null when result is null", async () => {

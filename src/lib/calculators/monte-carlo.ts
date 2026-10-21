@@ -309,14 +309,14 @@ export function calculateMonteCarlo(
       yearIdx++
     ) {
       balancesByYear[yearIdx]!.push(
-        roundToCents(result.projectionByYear[yearIdx]!.endBalance),
+        roundToCents(result.projectionByYear[yearIdx]!.allAccountsBalance),
       );
     }
 
     // Terminal balance
     const lastYear =
       result.projectionByYear[result.projectionByYear.length - 1];
-    terminalBalances.push(roundToCents(lastYear?.endBalance ?? 0));
+    terminalBalances.push(roundToCents(lastYear?.allAccountsBalance ?? 0));
 
     // Penalty-avoided shortfall -- any decumulation year whose
     // spending need went unfunded because penalty-exposed money was
@@ -344,8 +344,8 @@ export function calculateMonteCarlo(
     );
 
     // Depletion age
-    if (result.portfolioDepletionAge !== null) {
-      depletionAges.push(result.portfolioDepletionAge);
+    if (result.retirementDepletionAge !== null) {
+      depletionAges.push(result.retirementDepletionAge);
     }
 
     // Spending stability: did withdrawals stay ≥75% of baseline every decumulation year?

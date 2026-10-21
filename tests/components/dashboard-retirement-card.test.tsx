@@ -34,7 +34,12 @@ vi.mock("@/lib/context/scenario-context", () => ({
 const engineData = {
   result: {
     projectionByYear: [
-      { age: 40, endBalance: 500000, individualAccountBalances: [] },
+      {
+        age: 40,
+        retirementBalance: 500000,
+        allAccountsBalance: 500000,
+        individualAccountBalances: [],
+      },
     ] as unknown[],
     sustainableWithdrawal: 20000,
     warnings: [],
@@ -138,7 +143,9 @@ describe("RetirementCard scope", () => {
       {
         age: 65,
         phase: "accumulation",
-        endBalance: 400000,
+        // As the engine reports it: the Portfolio brokerage isn't retirement money.
+        retirementBalance: 300000,
+        allAccountsBalance: 400000,
         individualAccountBalances: [
           {
             category: "401k",

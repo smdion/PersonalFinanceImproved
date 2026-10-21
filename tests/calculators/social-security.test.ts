@@ -615,6 +615,6 @@ describe("PIA wiring equivalence (plan §8) — engine level", () => {
     const resultB = calculateProjection(viaPiaWiring);
 
     expect(resultB.projectionByYear).toEqual(resultA.projectionByYear);
-    expect(resultB.portfolioDepletionAge).toBe(resultA.portfolioDepletionAge);
+    expect(resultB.retirementDepletionAge).toBe(resultA.retirementDepletionAge);
   });
 });

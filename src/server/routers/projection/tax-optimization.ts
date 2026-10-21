@@ -238,7 +238,7 @@ export type TaxYearRow = {
   effectiveTaxRate: number;
   /** Running Σ of federalTax + niit + irmaaSurcharge + rothConversionTax. */
   cumulativeTax: number;
-  endingBalance: number;
+  retirementBalance: number;
   balanceByTaxType: EngineDecumulationYear["balanceByTaxType"];
   qcdAmount: number;
   rmdShortfall: number;
@@ -278,7 +278,7 @@ function toTaxYearRow(
     ltcgRate: y.ltcgRate,
     effectiveTaxRate: y.effectiveTaxRate,
     cumulativeTax,
-    endingBalance: y.endBalance,
+    retirementBalance: y.retirementBalance,
     balanceByTaxType: y.balanceByTaxType,
     qcdAmount: y.qcdAmount,
     rmdShortfall: y.rmdShortfallAmount,
@@ -320,7 +320,7 @@ export const taxOptimizationRouter = createTRPCRouter({
           bracketsThroughYear: run.taxDataYear,
           taxParamsVersion: run.taxParamsVersion,
           projectedFromYear: run.result.projectionByYear[0]?.year ?? null,
-          portfolioDepletionYear: run.result.portfolioDepletionYear,
+          retirementDepletionYear: run.result.retirementDepletionYear,
         },
       };
     }),
@@ -375,7 +375,7 @@ export const taxOptimizationRouter = createTRPCRouter({
         isCurrentPlan: true as const,
         lifetimeTax: lifetimeTax(baselineDecum),
         terminalByTaxType: baselineFinalYear?.balanceByTaxType ?? null,
-        depletedYear: baseline.result.portfolioDepletionYear ?? null,
+        depletedYear: baseline.result.retirementDepletionYear ?? null,
       };
 
       const scored = [];
@@ -396,7 +396,7 @@ export const taxOptimizationRouter = createTRPCRouter({
           mode: strategy.mode,
           lifetimeTax: lifetimeTax(years),
           terminalByTaxType: finalYear?.balanceByTaxType ?? null,
-          depletedYear: run?.result.portfolioDepletionYear ?? null,
+          depletedYear: run?.result.retirementDepletionYear ?? null,
         });
       }
 

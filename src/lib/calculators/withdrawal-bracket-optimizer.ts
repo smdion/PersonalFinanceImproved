@@ -59,7 +59,7 @@ export type BracketOptimizerCandidate = {
    *  independent dollars, so summing all three would double/triple-count
    *  the same shortfall. */
   shortfallScore: number;
-  /** `portfolioDepletionAge !== null` for this candidate — a hard
+  /** `retirementDepletionAge !== null` for this candidate — a hard
    *  exclusion, never ranked in regardless of its `netCost`. */
   depleted: boolean;
 };
@@ -195,7 +195,7 @@ function scoreCandidate(
     lifetimeTax,
     traditionalEnd,
     shortfallScore,
-    depleted: result.portfolioDepletionAge !== null,
+    depleted: result.retirementDepletionAge !== null,
   };
 }
 

@@ -273,7 +273,7 @@ export const strategyRouter = createTRPCRouter({
               strategy: strategyKey,
               label: meta.label,
               shortLabel: meta.shortLabel,
-              portfolioDepletionAge: result.portfolioDepletionAge,
+              retirementDepletionAge: result.retirementDepletionAge,
               // sustainableWithdrawal dropped from
               // this comparison — it's never rendered by
               // withdrawal-comparison.tsx (year1Withdrawal/avgAnnualWithdrawal/
@@ -295,13 +295,13 @@ export const strategyRouter = createTRPCRouter({
                 withdrawals.length > 0
                   ? roundToCents(Math.max(...withdrawals))
                   : 0,
-              endBalance:
+              endRetirementBalance:
                 decYears.length > 0
-                  ? decYears[decYears.length - 1]!.endBalance
+                  ? decYears[decYears.length - 1]!.retirementBalance
                   : 0,
               legacyAmount:
                 decYears.length > 0
-                  ? decYears[decYears.length - 1]!.endBalance
+                  ? decYears[decYears.length - 1]!.retirementBalance
                   : 0,
               successRate,
               spendingStabilityRate,
@@ -309,7 +309,7 @@ export const strategyRouter = createTRPCRouter({
               yearByYear: decYears.map((y) => ({
                 age: y.age,
                 withdrawal: roundToCents(y.totalWithdrawal),
-                endBalance: roundToCents(y.endBalance),
+                retirementBalance: roundToCents(y.retirementBalance),
               })),
             };
           }),

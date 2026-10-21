@@ -39,7 +39,7 @@ const stop = (e: React.SyntheticEvent) => {
 export type ReadinessCheckpoint = {
   source: CheckpointSource;
   now: MilestoneYear | null;
-  allAccountsByYear: { age: number; endBalance: number }[];
+  allAccountsByYear: { age: number; allAccountsBalance: number }[];
 };
 
 /**
@@ -74,8 +74,8 @@ function Readiness({
   const projectedBalance =
     source === "moneyGuy"
       ? (checkpoint.allAccountsByYear.find((y) => y.age === projectedAge)
-          ?.endBalance ?? 0) + (now?.cash ?? 0)
-      : yearData?.endBalance;
+          ?.allAccountsBalance ?? 0) + (now?.cash ?? 0)
+      : yearData?.retirementBalance;
   const portfolio = projecting
     ? (projectedBalance ?? 0)
     : now

@@ -17,7 +17,8 @@ export function buildVerdict(
   projectionResult: ProjectionResult,
   mcResult: MonteCarloResult,
 ): ReportVerdict {
-  const deterministicOnTrack = projectionResult.portfolioDepletionYear === null;
+  const deterministicOnTrack =
+    projectionResult.retirementDepletionYear === null;
   const mcOnTrack = mcResult.successRate >= SUCCESS_RATE_ON_TRACK_THRESHOLD;
   const onTrack = deterministicOnTrack && mcOnTrack;
   return {
@@ -48,10 +49,10 @@ export function buildExecutiveSummary(
     },
   ];
 
-  if (projectionResult.portfolioDepletionAge != null) {
+  if (projectionResult.retirementDepletionAge != null) {
     keyNumbers.push({
-      label: "Projected portfolio depletion age",
-      value: String(projectionResult.portfolioDepletionAge),
+      label: "Age retirement money runs out",
+      value: String(projectionResult.retirementDepletionAge),
     });
   }
 
@@ -59,14 +60,14 @@ export function buildExecutiveSummary(
   if (verdict.onTrack) {
     narrative =
       `Based on your current savings and spending plan, your simulation succeeds ${successPct} of the time — ` +
-      `your portfolio is not projected to run out in the deterministic projection, and a sustainable annual ` +
+      `your retirement money is not projected to run out in the deterministic projection, and a sustainable annual ` +
       `spending level of about ${sustainablePV} (in today's dollars) holds up across most of the market ` +
       `conditions this report tested.`;
-  } else if (projectionResult.portfolioDepletionAge != null) {
+  } else if (projectionResult.retirementDepletionAge != null) {
     narrative =
       `Your simulation succeeds ${successPct} of the time. In the deterministic projection — a single, ` +
-      `middle-of-the-road path — your portfolio is projected to be depleted at age ` +
-      `${projectionResult.portfolioDepletionAge}. This is worth addressing before you rely on this plan.`;
+      `middle-of-the-road path — your retirement money is projected to run out at age ` +
+      `${projectionResult.retirementDepletionAge}. This is worth addressing before you rely on this plan.`;
   } else {
     narrative =
       `Your deterministic projection does not deplete your portfolio, but your simulation only succeeds ` +

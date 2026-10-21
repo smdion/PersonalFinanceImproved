@@ -83,7 +83,7 @@ describe("ComparePlans", () => {
     });
     projectionQuery.mockReturnValue({
       data: {
-        result: { sustainableWithdrawal: 80000, portfolioDepletionAge: null },
+        result: { sustainableWithdrawal: 80000, retirementDepletionAge: null },
       },
       isLoading: false,
     });

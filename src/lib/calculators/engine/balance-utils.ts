@@ -21,6 +21,29 @@ import type {
   NonRetirementExclusion,
 } from "@/lib/pure/withdrawal-eligibility";
 
+/**
+ * A balance in its two scopes: every account (net-worth views), and
+ * retirement money — the aggregate minus the Portfolio-parented accounts
+ * (`computeNonRetirementExclusion`, the same exclusion spending and routing
+ * use; clamped at 0). Without individual accounts every dollar is
+ * retirement money.
+ */
+export function scopedBalances(
+  balances: TaxBuckets,
+  exclusion: NonRetirementExclusion | undefined,
+): { allAccountsBalance: number; retirementBalance: number } {
+  const allAccountsBalance = roundToCents(
+    balances.preTax + balances.taxFree + balances.hsa + balances.afterTax,
+  );
+  return {
+    allAccountsBalance,
+    retirementBalance: Math.max(
+      0,
+      roundToCents(allAccountsBalance - (exclusion?.grandTotal ?? 0)),
+    ),
+  };
+}
+
 /** Derive AccountBalances from TaxBuckets using a config-derived split (fallback). */
 export function accountBalancesFromTaxBuckets(b: TaxBuckets): AccountBalances {
   // Without real per-account data, split preTax/taxFree proportionally across

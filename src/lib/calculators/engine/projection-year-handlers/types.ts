@@ -99,8 +99,8 @@ export type ProjectionLoopState = {
   firstOverflowYear: number | null;
   firstOverflowAge: number | null;
   firstOverflowAmount: number | null;
-  portfolioDepletionYear: number | null;
-  portfolioDepletionAge: number | null;
+  retirementDepletionYear: number | null;
+  retirementDepletionAge: number | null;
 
   // Depletion tracking
   accountDepletions: ProjectionResult["accountDepletions"];

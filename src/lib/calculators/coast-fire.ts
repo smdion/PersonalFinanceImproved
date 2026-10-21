@@ -8,7 +8,7 @@
  * engine with an accumulationOverride that zeros contributionRate at a
  * candidate "coast age" and binary-searches for the earliest passing age.
  *
- * Success criterion: `portfolioDepletionAge === null` AND the strategy's
+ * Success criterion: `retirementDepletionAge === null` AND the strategy's
  * actual first-decumulation-year spending
  * (`projectionByYear[firstDecumYear].projectedExpenses` — already the real
  * per-strategy output, not a generic rate) covers the household's stated
@@ -37,7 +37,7 @@
  * the same stated-need value on the first decumulation year — so
  * `projectedExpenses >= firstDecumulationYearStatedNeed` is `X >= X` by
  * construction for those 4, and this check contributes nothing beyond the
- * `portfolioDepletionAge`/penalty-shortfall checks above. That's correct,
+ * `retirementDepletionAge`/penalty-shortfall checks above. That's correct,
  * not a bug — those strategies' entire premise is "spend what you said you
  * need" — but it means their Coast FIRE result rests entirely on those other
  * two checks, same as before this fix.
@@ -58,8 +58,8 @@ export type CoastFireResult = {
   /** The earliest age at which contributions can stop. Null if unreachable. */
   coastFireAge: number | null;
   status: CoastFireStatus;
-  /** Portfolio balance at end of plan under the coast scenario. */
-  endBalance: number;
+  /** Retirement money at the end of the plan under the coast scenario. */
+  endRetirementBalance: number;
   /** Sustainable annual withdrawal at retirement under the coast scenario. */
   sustainableWithdrawal: number;
   /** Projected expenses at the first decumulation year (nominal, inflated). */
@@ -72,7 +72,7 @@ const NET_WITHDRAWAL_ROUNDING_TOLERANCE = 1;
 const UNREACHABLE: CoastFireResult = {
   coastFireAge: null,
   status: "unreachable",
-  endBalance: 0,
+  endRetirementBalance: 0,
   sustainableWithdrawal: 0,
   projectedExpensesAtRetirement: 0,
 };
@@ -90,7 +90,7 @@ function resultFrom(
   return {
     coastFireAge,
     status,
-    endBalance: finalYear?.endBalance ?? 0,
+    endRetirementBalance: finalYear?.retirementBalance ?? 0,
     sustainableWithdrawal: projection.sustainableWithdrawal,
     projectedExpensesAtRetirement: retirementYear?.projectedExpenses ?? 0,
   };
@@ -102,7 +102,7 @@ function resultFrom(
  *  specific year (money went unreached because it was penalty-exposed —
  *  see `penaltyAvoidedShortfall` on `EngineDecumulationYear`) while still
  *  passing both checks below, since neither one looks at individual years
- *  -- `portfolioDepletionAge` only fires on a genuine zero-out, and
+ *  -- `retirementDepletionAge` only fires on a genuine zero-out, and
  *  `sustainableWithdrawal` is an aggregate rate that a shortfall year the
  *  household never spent (because it legally couldn't reach the money)
  *  doesn't move. Same class of bug `monte-carlo.ts`'s penalty-exclusion
@@ -111,7 +111,7 @@ function resultFrom(
  *  the same fix. Without it, the baseline can say "already coast" for a
  *  plan whose 55→59½ gap Monte Carlo correctly reports as failing. */
 function passes(projection: ProjectionResult): boolean {
-  if (projection.portfolioDepletionAge !== null) return false;
+  if (projection.retirementDepletionAge !== null) return false;
   const retirementYear = projection.projectionByYear.find(
     (y) => y.phase === "decumulation",
   );
@@ -132,7 +132,7 @@ function passes(projection: ProjectionResult): boolean {
   // `nonRetirementShortfall` is
   // structurally identical to `penaltyAvoidedShortfall` above — a real
   // household shortfall (money in a Portfolio-parented account
-  // routing unconditionally excludes) that neither `portfolioDepletionAge`
+  // routing unconditionally excludes) that neither `retirementDepletionAge`
   // nor `sustainableWithdrawal` would ever notice, for the same reason the
   // comment above `passes()` explains for the penalty-exclusion case.
   const hadNonRetirementShortfall = projection.projectionByYear.some(

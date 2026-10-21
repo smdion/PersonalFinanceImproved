@@ -241,10 +241,11 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                 >
                   Full methodology &rarr;
                 </button>
-                {result.portfolioDepletionYear && (
+                {result.retirementDepletionYear && (
                   <div className="mt-2 border-t border-amber-100 pt-1.5 font-medium text-red-600">
-                    Portfolio depleted at age {result.portfolioDepletionAge} (
-                    {result.portfolioDepletionYear})
+                    Retirement money runs out at age{" "}
+                    {result.retirementDepletionAge} (
+                    {result.retirementDepletionYear})
                   </div>
                 )}
               </div>

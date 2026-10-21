@@ -51,7 +51,7 @@ export function renderMcCell(
   if (mcDetYr) {
     const parts: string[] = [];
     parts.push(
-      `Simulation det. bal: ${formatCurrency(deflate(mcDetYr.endBalance, yr.year))}`,
+      `Simulation det. bal: ${formatCurrency(deflate(mcDetYr.allAccountsBalance, yr.year))}`,
     );
     parts.push(`Standalone: ${formatCurrency(detBal)}`);
     parts.push(

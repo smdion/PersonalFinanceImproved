@@ -9,6 +9,7 @@ import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import { applySpendingStrategy } from "../spending-strategy";
 import { buildSpecToAccountMapping } from "../individual-account-tracking";
 import { resolveReturnRateForAge } from "../growth-application";
+import { scopedBalances } from "../balance-utils";
 import { computeNonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
 import type {
   PreYearSetup,
@@ -188,11 +189,6 @@ export function runPreYearSetup(
   // only: Portfolio-parented accounts never fund retirement spending, so a
   // balance-sized strategy (Guyton-Klinger, Constant %, Endowment, …) or the
   // rate seed must not size spending from them.
-  const totalBalance =
-    state.balances.preTax +
-    state.balances.taxFree +
-    state.balances.hsa +
-    state.balances.afterTax;
   // Computed once per decumulation year and handed to the year handler
   // (PreYearSetup.nonRetirement), so the spending size, the routing
   // exclusion and the estimate below all read the same figure. Nothing in
@@ -201,10 +197,8 @@ export function runPreYearSetup(
     !isAccumulation && hasIndividualAccounts
       ? computeNonRetirementExclusion(indAccts, state.indBal, indKey)
       : undefined;
-  const retirementBalance = Math.max(
-    0,
-    roundToCents(totalBalance - (nonRetirement?.grandTotal ?? 0)),
-  );
+  const { allAccountsBalance: totalBalance, retirementBalance } =
+    scopedBalances(state.balances, nonRetirement);
 
   // Reset expenses to decumulation budget on the FIRST decumulation year.
   // Do NOT key on `age === retirementAge`: that check fails in the mid-year

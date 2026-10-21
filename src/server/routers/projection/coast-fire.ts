@@ -84,7 +84,7 @@ export const coastFireRouter = createTRPCRouter({
    * as computeProjection, then binary-searches candidate "coast ages" via
    * ~log₂(retirementAge - currentAge) engine runs.
    *
-   * Success criterion: `portfolioDepletionAge === null` AND
+   * Success criterion: `retirementDepletionAge === null` AND
    * `sustainableWithdrawal >= projectedExpenses` at the first decumulation
    * year. See `findCoastFireAge` for the full algorithm.
    */
@@ -173,7 +173,7 @@ export const coastFireRouter = createTRPCRouter({
             result.sustainableWithdrawal / retirementDeflator,
           projectedExpensesAtRetirementToday:
             result.projectedExpensesAtRetirement / retirementDeflator,
-          endBalanceToday: result.endBalance / endDeflator,
+          endRetirementBalanceToday: result.endRetirementBalance / endDeflator,
         },
       };
     }),
