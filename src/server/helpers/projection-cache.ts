@@ -278,8 +278,11 @@ import { log } from "@/lib/logger";
  *  overflow follows Retirement accounts even without a Retirement spec.
  *
  *  39: the contribution ramp and Brokerage-page lump sums (Portfolio
- *  savings) go to Portfolio-parented accounts first. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 39;
+ *  savings) go to Portfolio-parented accounts first.
+ *
+ *  40: reconciliation reaches $0 retirement accounts before Portfolio and
+ *  takes a shortfall from retirement money first (waterfall). */
+export const PROJECTION_CACHE_ENGINE_VERSION = 40;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

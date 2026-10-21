@@ -1273,7 +1273,16 @@ export function reconcileIndividualToAggregate(
 }
 
 /** One (category, tax-slice) group's reconciliation — see
- *  `reconcileIndividualToAggregate`'s docblock for the full contract. */
+ *  `reconcileIndividualToAggregate`'s docblock for the full contract.
+ *
+ *  The drift is absorbed by retirement money. Portfolio-parented accounts
+ *  change only through their own per-account flows (contributions,
+ *  growth, goal draws, the ramp), so the aggregate-only operations that
+ *  drift (withdrawals, RMDs, conversions, overflow) are retirement-side;
+ *  spreading the correction over Portfolio accounts too would move money
+ *  between the two. A shortfall empties retirement money first and takes
+ *  only what's left from Portfolio. A group with no Portfolio account
+ *  reconciles exactly as before (by balance; no weight → left alone). */
 function reconcileGroup(
   groupAccts: IndividualAccountInput[],
   indKey: IndKeyFn,
@@ -1283,33 +1292,12 @@ function reconcileGroup(
   diagnostics: string[],
 ): void {
   if (groupAccts.length === 0) return;
-  const sumInd = groupAccts.reduce(
-    (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
-    0,
-  );
+  const bal = (ia: IndividualAccountInput) =>
+    Math.max(0, indBal.get(indKey(ia)) ?? 0);
+  const sumOf = (accts: IndividualAccountInput[]) =>
+    accts.reduce((s, ia) => s + bal(ia), 0);
+  const sumInd = sumOf(groupAccts);
   const delta = roundToCents(target - sumInd);
-  // The drift is absorbed by retirement money. Portfolio-parented accounts
-  // change only through their own per-account flows (contributions,
-  // growth, goal draws), so the aggregate-only operations that drift
-  // (withdrawals, RMDs, conversions, overflow) are retirement-side;
-  // spreading the correction over Portfolio accounts too would move
-  // retirement money into them. Every account when the group has no
-  // retirement money.
-  const retirementAccts = groupAccts.filter(
-    (ia) =>
-      !isPortfolioParent(ia.parentCategory) &&
-      (indBal.get(indKey(ia)) ?? 0) > 0,
-  );
-  const retirementSum = retirementAccts.reduce(
-    (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
-    0,
-  );
-  // …unless retirement money can't absorb a shortfall of this size.
-  const accts =
-    retirementAccts.length > 0 && retirementSum + delta >= 0
-      ? retirementAccts
-      : groupAccts;
-  const sumAbsorbing = accts === groupAccts ? sumInd : retirementSum;
   if (delta === 0) return;
 
   if (Math.abs(delta) > 1) {
@@ -1318,37 +1306,75 @@ function reconcileGroup(
     );
   }
 
-  if (sumAbsorbing <= 0) {
+  const retirement = groupAccts.filter(
+    (ia) => !isPortfolioParent(ia.parentCategory),
+  );
+  const portfolio = groupAccts.filter((ia) =>
+    isPortfolioParent(ia.parentCategory),
+  );
+
+  // Spread `amount` over `accts` by balance (equally when they hold
+  // nothing and `equalWhenEmpty`); returns what couldn't be placed.
+  const spread = (
+    accts: IndividualAccountInput[],
+    amount: number,
+    equalWhenEmpty: boolean,
+  ): number => {
+    if (accts.length === 0 || amount === 0) return amount;
+    const total = sumOf(accts);
+    if (total <= 0 && !equalWhenEmpty) return amount;
+    let distributed = 0;
+    let largestKey: string | null = null;
+    let largestBal = -Infinity;
+    for (const ia of accts) {
+      const k = indKey(ia);
+      const b = bal(ia);
+      if (b > largestBal) {
+        largestBal = b;
+        largestKey = k;
+      }
+      const share = roundToCents(
+        amount * (total > 0 ? b / total : 1 / accts.length),
+      );
+      const newBal = Math.max(0, roundToCents(b + share));
+      indBal.set(k, newBal);
+      distributed += roundToCents(newBal - b);
+    }
+    const residual = roundToCents(amount - distributed);
+    if (residual !== 0 && largestKey) {
+      const b = Math.max(0, indBal.get(largestKey) ?? 0);
+      const newBal = Math.max(0, roundToCents(b + residual));
+      indBal.set(largestKey, newBal);
+      return roundToCents(residual - (newBal - b));
+    }
+    return 0;
+  };
+
+  let unplaced: number;
+  if (portfolio.length === 0 || retirement.length === 0) {
+    unplaced = spread(groupAccts, delta, false);
+  } else if (delta > 0) {
+    unplaced = spread(retirement, delta, true);
+  } else {
+    // Retirement money first, the remainder from Portfolio.
+    const fromRetirement = Math.max(delta, -sumOf(retirement));
+    const left = spread(retirement, fromRetirement, false);
+    unplaced = spread(
+      portfolio,
+      roundToCents(delta - fromRetirement + left),
+      false,
+    );
+  }
+
+  if (unplaced !== 0 && sumOf(groupAccts) <= 0 && target > 0) {
     // No weight to distribute by — inventing one would be a second
     // allocation policy. Leave indBal alone; the diagnostic above (for
     // >$1 drift) already surfaces this if it's material.
-    if (target > 0 && Math.abs(delta) <= 1) {
+    if (Math.abs(delta) <= 1) {
       diagnostics.push(
         `[DIAG] indBal/acctBal reconciliation: ${label} has $${target.toFixed(2)} in acctBal but no individual-account balance to distribute it across — left unreconciled`,
       );
     }
-    return;
-  }
-
-  let distributed = 0;
-  let largestKey: string | null = null;
-  let largestBal = -Infinity;
-  for (const ia of accts) {
-    const k = indKey(ia);
-    const bal = Math.max(0, indBal.get(k) ?? 0);
-    if (bal > largestBal) {
-      largestBal = bal;
-      largestKey = k;
-    }
-    const share = roundToCents(delta * (bal / sumAbsorbing));
-    const newBal = Math.max(0, roundToCents(bal + share));
-    indBal.set(k, newBal);
-    distributed += roundToCents(newBal - bal);
-  }
-  const residual = roundToCents(delta - distributed);
-  if (residual !== 0 && largestKey) {
-    const bal = Math.max(0, indBal.get(largestKey) ?? 0);
-    indBal.set(largestKey, Math.max(0, roundToCents(bal + residual)));
   }
 }
 

@@ -860,11 +860,29 @@ describe("reconcileIndividualToAggregate (v0.7.8 follow-up, DESIGN-DECISION-v0.7
       expect(run(35000)).toEqual([25000, 10000]);
     });
 
-    it("a shortfall bigger than retirement money spreads over every account", () => {
+    it("a shortfall bigger than retirement money empties it first, then takes the rest from Portfolio", () => {
       // $35,000 short; retirement money holds $30,000.
-      const [ret, port] = run(5000);
-      expect(ret + port).toBeCloseTo(5000, 2);
-      expect(port).toBeLessThan(10000);
+      expect(run(5000)).toEqual([0, 5000]);
+    });
+
+    it("a correction reaches a Retirement account holding $0 before any Portfolio one", () => {
+      const accounts = brokerages();
+      const indBal = new Map<string, number>([
+        [indKey(accounts[0]!), 0],
+        [indKey(accounts[1]!), 10000],
+      ]);
+      reconcileIndividualToAggregate(
+        accounts,
+        indKey,
+        indBal,
+        baseBalances({
+          brokerage: { structure: "basis_tracking", balance: 12000, basis: 0 },
+        }),
+      );
+      expect([
+        indBal.get(indKey(accounts[0]!)),
+        indBal.get(indKey(accounts[1]!)),
+      ]).toEqual([2000, 10000]);
     });
   });
 
