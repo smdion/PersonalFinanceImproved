@@ -10,6 +10,10 @@
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import { calculateProjection } from "@/lib/calculators/engine";
+import {
+  toSimpleTaxMode,
+  type SimpleTaxModeParts,
+} from "@/lib/calculators/simple-tax-mode";
 import type {
   IndividualAccountInput,
   ProjectionInput,
@@ -2038,6 +2042,155 @@ describe("engine invariants", () => {
           portfolio(input),
       ).toBeCloseTo(2000 + 1000, 0); // two ramp years: +$1k, +$2k
       brokerageAddsUp({ ...input, brokerageContributionRamp: 1000 });
+    });
+
+    describe("Simple tax mode: the retirement side, collapsed", () => {
+      const zero = { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 0 };
+      // What the payload derives for overflowInput's retirement money.
+      const parts: SimpleTaxModeParts = {
+        retirementBuckets: {
+          preTax: 100000,
+          taxFree: 0,
+          hsa: 0,
+          afterTax: 10000,
+          afterTaxBasis: 10000,
+        },
+        defaults: {
+          baseYearContributions: { ...zero, "401k": 40000, brokerage: 5000 },
+          baseYearEmployerMatch: zero,
+          employerMatchRateByCategory: zero,
+          accountSplits: {
+            ...zero,
+            "401k": 40000 / 45000,
+            brokerage: 5000 / 45000,
+          },
+          taxSplits: {},
+        },
+        switches: [],
+      };
+      const endBalances = (input: ProjectionInput) =>
+        calculateProjection(toSimpleTaxMode(input, parts)).projectionByYear.map(
+          (y) => Math.round(y.endBalance),
+        );
+      const portfolioSpec = overflowInput().contributionSpecs!.find(
+        (sp) => sp.parentCategory === "Portfolio",
+      )!;
+
+      it("Portfolio balances, savings, goals, lump sums, ramp and switches change nothing", () => {
+        const base = overflowInput();
+        const y1 = base.asOfDate.getFullYear() + 1;
+        const y30 = base.asOfDate.getFullYear() + 30;
+        const switchSpecs = base.contributionSpecs!.filter(
+          (sp) => sp.parentCategory !== "Portfolio",
+        );
+        const withSwitch = (specs: typeof switchSpecs): ProjectionInput => ({
+          ...base,
+          contributionSpecs: switchSpecs,
+          profileSwitches: [
+            {
+              year: y1 + 2,
+              contributionSpecs: specs,
+              employerMatchRateByCategory: zero,
+              baseYearContributions: zero,
+              baseYearEmployerMatch: zero,
+              contributionRate: 0.5,
+            },
+          ],
+        });
+        const plain = withSwitch(switchSpecs);
+        const withPortfolio: ProjectionInput = {
+          ...withSwitch([...switchSpecs, portfolioSpec]),
+          contributionSpecs: base.contributionSpecs,
+          individualAccounts: base.individualAccounts!.map((ia) =>
+            ia.parentCategory === "Portfolio"
+              ? { ...ia, startingBalance: 1010000 }
+              : ia,
+          ),
+          brokerageGoals: [
+            {
+              id: 1,
+              name: "Car",
+              targetAmount: 40000,
+              targetYear: y1 + 1,
+              priority: 1,
+            },
+          ],
+          brokerageContributionRamp: 1000,
+          accumulationOverrides: [
+            {
+              year: y1,
+              lumpSums: [
+                {
+                  amount: 50000,
+                  targetAccount: "brokerage",
+                  targetParentCategory: "Portfolio",
+                },
+                // Named: lands in the Portfolio account.
+                {
+                  amount: 25000,
+                  targetAccount: "brokerage",
+                  targetAccountName: "Long-term brokerage",
+                },
+              ],
+            },
+          ] as ProjectionInput["accumulationOverrides"],
+          decumulationOverrides: [
+            {
+              year: y30,
+              lumpSums: [
+                {
+                  amount: 70000,
+                  targetAccount: "brokerage",
+                  targetParentCategory: "Portfolio",
+                },
+              ],
+            },
+          ] as ProjectionInput["decumulationOverrides"],
+        };
+        expect(endBalances(withPortfolio)).toEqual(endBalances(plain));
+      });
+
+      it("keeps what is retirement money: retirement lump sums, and the ramp with no Portfolio brokerage", () => {
+        const base = overflowInput();
+        const y1 = base.asOfDate.getFullYear() + 1;
+        const noPortfolio: ProjectionInput = {
+          ...base,
+          contributionSpecs: base.contributionSpecs!.filter(
+            (sp) => sp.parentCategory !== "Portfolio",
+          ),
+          individualAccounts: base.individualAccounts!.filter(
+            (ia) => ia.parentCategory !== "Portfolio",
+          ),
+        };
+        // Year 5 (the 0%-growth fixture is spent down by the end).
+        const last = (input: ProjectionInput) => endBalances(input)[5]!;
+        expect(
+          last({ ...noPortfolio, brokerageContributionRamp: 1000 }),
+        ).toBeGreaterThan(last(noPortfolio));
+        expect(
+          last({
+            ...noPortfolio,
+            accumulationOverrides: [
+              {
+                year: y1,
+                lumpSums: [{ amount: 50000, targetAccount: "brokerage" }],
+              },
+            ] as ProjectionInput["accumulationOverrides"],
+          }),
+        ).toBeGreaterThan(last(noPortfolio));
+      });
+
+      it("collapses only retirement money into one tax-free pot", () => {
+        const simple = toSimpleTaxMode(overflowInput(), parts);
+        expect(simple.startingBalances.afterTax).toBe(110000);
+        expect(simple.individualAccounts).toEqual([]);
+        expect(simple.brokerageGoals).toEqual([]);
+        expect(
+          simple.contributionSpecs!.some(
+            (sp) => sp.parentCategory === "Portfolio",
+          ),
+        ).toBe(false);
+      });
     });
 
     it("Portfolio money stays Portfolio: the ramp and a Brokerage-page lump sum", () => {

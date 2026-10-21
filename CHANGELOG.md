@@ -18,10 +18,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **Retirement projections use only retirement money.** Accounts tagged Portfolio (savings outside the retirement plan) are never spent in retirement, but they still shaped the plan. Now:
   - Balance-based spending strategies (Guyton-Klinger, Constant %, Endowment, Vanguard Dynamic, RMD-based) and the rate-seeded first year size spending from retirement accounts only. A large Portfolio account made the withdrawal rate look low, granting raises the retirement money couldn't support.
-  - Contributions over the IRS limits go to a Retirement brokerage (a Portfolio one only when you have none). They also no longer show up two or three times in the per-account balances.
+  - Contributions over the IRS limits go to a Retirement brokerage (with none, a projected one — never a Portfolio account). They also no longer show up two or three times in the per-account balances. Retirement lump sums with no account named do the same.
   - Brokerage goals draw only from Portfolio brokerages, never retirement money.
   - The yearly per-account balance correction takes from or adds to retirement accounts, not Portfolio ones.
-  - The Brokerage page's yearly increase and lump sums stay in Portfolio accounts.
+  - The Brokerage page's yearly increase and lump sums stay in Portfolio accounts, even when only a Retirement brokerage has a contribution set up.
+  - Simulations in Simple tax mode start from retirement money only. Simple pooled every account, Portfolio included, and added Portfolio savings, brokerage goals and Portfolio lump sums. The simulation assumptions' starting balance and yearly contributions now show retirement money in both modes.
 - **Brokerage cost basis is each account's own.** Ledgr shared your total brokerage basis between Retirement and Portfolio by balance (and counted accounts missing from the latest snapshot); a retirement brokerage withdrawal was taxed at that blended ratio. Basis now follows each account through the projection, so a withdrawal's capital gains use the basis of the account it comes from.
 - **Coast FIRE (baseline) really stops contributions.** It stopped them by setting the contribution rate to 0, which the per-account path ignored, so contributions and the employer match kept going after the "stop" and some households were told they could already coast when they couldn't. It now stops them the same way the simulated Coast FIRE does.
 - **The contribution rate is a retirement rate.** It counts contributions to retirement accounts only, and its cap never shrinks a 401(k) because you also save into a Portfolio account.

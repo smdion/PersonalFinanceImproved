@@ -46,9 +46,10 @@ import {
   getAccountTypeConfig,
   getDefaultAccumulationOrder,
   isOverflowTarget,
-  isPortfolioParent,
+  isRetirementMoney,
   tracksCostBasis,
 } from "@/lib/config/account-types";
+import type { SimpleTaxModeParts } from "@/lib/calculators/simple-tax-mode";
 import {
   PERF_CATEGORY_RETIREMENT,
   PROJECTED_RETIREMENT_BROKERAGE_LABEL,
@@ -89,7 +90,7 @@ function retirementContributions(
   specs: readonly { baseAnnual: number; parentCategory?: string }[],
 ): number {
   return sumBy(
-    specs.filter((s) => !isPortfolioParent(s.parentCategory)),
+    specs.filter((s) => isRetirementMoney(s.parentCategory)),
     (s) => s.baseAnnual,
   );
 }
@@ -918,8 +919,11 @@ export async function buildEnginePayload(
     }
   }
   // Aggregate contributions and employer match by category (shared helper — single pass)
-  const { contribByCategory, employerMatchByCategory } =
-    aggregateContributionsByCategory(activeContribs, activeJobs, jobSalaries);
+  const {
+    contribByCategory,
+    employerMatchByCategory,
+    retirementOnly: retirementContrib,
+  } = aggregateContributionsByCategory(activeContribs, activeJobs, jobSalaries);
 
   // Build per-person salary map from job salaries — the engine's compounding
   // baseline, so full-formula bonus (see totalCompFullFormula's docblock
@@ -1175,6 +1179,7 @@ export async function buildEnginePayload(
   });
 
   const profileSwitches: ProfileSwitch[] = [];
+  const simpleSwitchSlices: SimpleTaxModeParts["switches"] = [];
 
   /** Each person's effective annual raise rate, keyed by personId. Derived
    *  from `perPersonSettings` (built above), whose `salaryAnnualIncrease`
@@ -1409,6 +1414,10 @@ export async function buildEnginePayload(
           ? 0
           : FALLBACK_CONTRIBUTION_RATE;
 
+    simpleSwitchSlices.push({
+      year: override.projectionYear,
+      slice: data.retirementOnly,
+    });
     profileSwitches.push({
       year: override.projectionYear,
       contributionSpecs: data.contributionSpecs,
@@ -1440,12 +1449,25 @@ export async function buildEnginePayload(
 
   // Account splits derived from actual contribution amounts
   const noContribData = totalRealContrib <= 0;
-  const realAccountSplits = Object.fromEntries(
-    getAllCategories().map((cat) => [
-      cat,
-      noContribData ? 0 : contribByCategory[cat].annual / totalRealContrib,
-    ]),
-  ) as Record<AccountCategory, number>;
+  const splitsOf = (summaries: typeof contribByCategory) => {
+    const total = sumBy(Object.values(summaries), (c) => c.annual);
+    return {
+      accountSplits: Object.fromEntries(
+        getAllCategories().map((cat) => [
+          cat,
+          total > 0 ? summaries[cat].annual / total : 0,
+        ]),
+      ) as Record<AccountCategory, number>,
+      taxSplits: Object.fromEntries(
+        categoriesWithTaxPreference().map((cat) => [
+          cat,
+          summaries[cat].rothFraction,
+        ]),
+      ) as Partial<Record<AccountCategory, number>>,
+    };
+  };
+  const realSplits = splitsOf(contribByCategory);
+  const realAccountSplits = realSplits.accountSplits;
 
   const derivedAccumulationDefaults = {
     contributionRate:
@@ -1453,12 +1475,28 @@ export async function buildEnginePayload(
     routingMode: "waterfall" as const,
     accountOrder: getDefaultAccumulationOrder(),
     accountSplits: realAccountSplits,
-    taxSplits: Object.fromEntries(
-      categoriesWithTaxPreference().map((cat) => [
-        cat,
-        contribByCategory[cat].rothFraction,
-      ]),
-    ) as Partial<Record<AccountCategory, number>>,
+    taxSplits: realSplits.taxSplits,
+  };
+
+  // Simple tax mode's retirement-only inputs (lib/calculators/simple-tax-mode.ts).
+  const simpleTaxMode: SimpleTaxModeParts = {
+    retirementBuckets: Object.entries(portfolioByTaxTypeByParentCat)
+      .filter(([parent]) => isRetirementMoney(parent))
+      .reduce(
+        (t, [, b]) => ({
+          preTax: t.preTax + b.preTax,
+          taxFree: t.taxFree + b.taxFree,
+          hsa: t.hsa + b.hsa,
+          afterTax: t.afterTax + b.afterTax,
+          afterTaxBasis: t.afterTaxBasis + b.afterTaxBasis,
+        }),
+        { preTax: 0, taxFree: 0, hsa: 0, afterTax: 0, afterTaxBasis: 0 },
+      ),
+    defaults: {
+      ...defaultContribData.retirementOnly,
+      ...splitsOf(retirementContrib.contribByCategory),
+    },
+    switches: simpleSwitchSlices,
   };
 
   // Distribution tax rates (shared between engine and MC)
@@ -1894,6 +1932,7 @@ export async function buildEnginePayload(
     totalRealContrib,
     contributionSpecs,
     derivedAccumulationDefaults,
+    simpleTaxMode,
     distributionTaxRates,
     annualExpensesVal,
     accumulationExpenses,

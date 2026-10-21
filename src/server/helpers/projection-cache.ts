@@ -310,8 +310,12 @@ import { log } from "@/lib/logger";
  *  47: the ramp picks its parent before preferring accounts with specs
  *  (a Retirement brokerage's spec drew Portfolio savings in); retirement
  *  lump sums with no account named can land in the projection-only
- *  retirement brokerage instead of a Portfolio one. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 47;
+ *  retirement brokerage instead of a Portfolio one.
+ *
+ *  48: Simple tax mode simulates retirement money only (it collapsed every
+ *  account, Portfolio included, and fed in Portfolio savings, match,
+ *  goals and lump sums). */
+export const PROJECTION_CACHE_ENGINE_VERSION = 48;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

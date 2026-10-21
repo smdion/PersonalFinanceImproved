@@ -532,6 +532,83 @@ describe("projection router — computeMonteCarloProjection", () => {
     }
   });
 
+  it("Simple tax mode counts retirement money only: a Portfolio brokerage changes nothing", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const { personId, snapId } = seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      const run = (taxMode: "simple" | "advanced") =>
+        caller.projection.computeMonteCarloProjection({
+          numTrials: 100,
+          preset: "custom",
+          taxMode,
+          seed: 42,
+          forceRefresh: true,
+        });
+      const before = await run("simple");
+
+      // $1M Portfolio brokerage, saving into it every year.
+      const [perf] = db
+        .insert(schema.performanceAccounts)
+        .values({
+          institution: "Vanguard",
+          accountType: "brokerage",
+          accountLabel: "Vanguard Brokerage",
+          ownershipType: "individual",
+          ownerPersonId: personId,
+          parentCategory: "Portfolio",
+        })
+        .returning()
+        .all();
+      db.insert(schema.portfolioAccounts)
+        .values({
+          snapshotId: snapId,
+          performanceAccountId: perf!.id,
+          amount: "1000000",
+          taxType: "afterTax",
+          institution: "Vanguard",
+          accountType: "brokerage",
+          ownerPersonId: personId,
+          parentCategory: "Portfolio",
+        })
+        .run();
+      db.insert(schema.contributionAccounts)
+        .values({
+          accountType: "brokerage",
+          contributionMethod: "percent_of_salary",
+          contributionValue: "0.05",
+          taxTreatment: "after_tax",
+          employerMatchType: "none",
+          isActive: true,
+          personId,
+          performanceAccountId: perf!.id,
+          parentCategory: "Portfolio",
+        })
+        .run();
+
+      const after = await run("simple");
+      expect(after.simulationInputs.startingBalance).toBe(
+        before.simulationInputs.startingBalance,
+      );
+      expect(after.simulationInputs.annualContributions).toBeCloseTo(
+        before.simulationInputs.annualContributions,
+        2,
+      );
+      expect(after.result!.successRate).toBe(before.result!.successRate);
+      expect(after.result!.percentileBands).toEqual(
+        before.result!.percentileBands,
+      );
+      // The assumptions panel shows retirement money in Advanced too.
+      expect((await run("advanced")).simulationInputs.startingBalance).toBe(
+        before.simulationInputs.startingBalance,
+      );
+    } finally {
+      cleanup();
+    }
+  });
+
   it("runs a named preset from mc_presets", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {

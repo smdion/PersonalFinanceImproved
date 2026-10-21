@@ -652,6 +652,15 @@ export function isRetirementParent(
   return parentCategory === "Retirement";
 }
 
+/** Whether money with this parent category is retirement money in the
+ *  projection: Retirement, or no parent at all (unset/empty — the engine's
+ *  default). The scope rule for what retirement answers count. */
+export function isRetirementMoney(
+  parentCategory: string | null | undefined,
+): boolean {
+  return isRetirementParent(parentCategory || "Retirement");
+}
+
 /**
  * Whether an account counts toward the synthesized "Retirement"
  * parent-category performance rollup: either a fully-retirement performance

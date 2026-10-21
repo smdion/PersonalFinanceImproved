@@ -5,12 +5,13 @@ import { and, eq, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { EntityFieldMap } from "@/lib/db/schema";
 import { roundToCents, safeDivide, sumBy } from "@/lib/utils/math";
-import { isTaxFree } from "@/lib/config/account-types";
+import { isRetirementMoney, isTaxFree } from "@/lib/config/account-types";
 import type {
   ContributionAccountInput,
   ContributionSpec,
   AccountCategory,
 } from "@/lib/calculators/types";
+import type { RetirementContribSlice } from "@/lib/calculators/simple-tax-mode";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
 import {
   buildCategoryRecord,
@@ -638,18 +639,28 @@ export function aggregateContributionsByCategory(
   employerMatchByCategory: Record<AccountCategory, number>;
   /** Employer match broken down by category → parentCategory → amount. */
   employerMatchByParentCat: Map<AccountCategory, Map<string, number>>;
+  /** The same totals over retirement money only (`isRetirementMoney`):
+   *  what Simple tax mode simulates. */
+  retirementOnly: {
+    contribByCategory: Record<AccountCategory, ContribCategorySummary>;
+    employerMatchByCategory: Record<AccountCategory, number>;
+  };
   /** Ids of `fixed_per_period` accounts with no resolvable job/pay period —
    *  excluded from the totals above (annual treated as 0) rather than
    *  defaulted to a guessed pay period. See resolveContribPeriods. */
   incompleteAccountIds: number[];
 } {
-  const contribByCategory = buildCategoryRecord((): ContribCategorySummary => ({
-    annual: 0,
-    rothFraction: 0,
-    rothAnnual: 0,
-    tradAnnual: 0,
-  }));
+  const emptySummaries = () =>
+    buildCategoryRecord((): ContribCategorySummary => ({
+      annual: 0,
+      rothFraction: 0,
+      rothAnnual: 0,
+      tradAnnual: 0,
+    }));
+  const contribByCategory = emptySummaries();
+  const retirementContribByCategory = emptySummaries();
   const employerMatchByCategory = buildCategoryRecord(() => 0);
+  const retirementMatchByCategory = buildCategoryRecord(() => 0);
   const employerMatchByParentCat = new Map<
     AccountCategory,
     Map<string, number>
@@ -686,11 +697,15 @@ export function aggregateContributionsByCategory(
     );
     annualById.set(c.id, annual);
 
-    contribByCategory[c.accountType].annual += annual;
-    if (isTaxFree(c.taxTreatment)) {
-      contribByCategory[c.accountType].rothAnnual += annual;
-    } else {
-      contribByCategory[c.accountType].tradAnnual += annual;
+    for (const summaries of isRetirementMoney(c.parentCategory)
+      ? [contribByCategory, retirementContribByCategory]
+      : [contribByCategory]) {
+      summaries[c.accountType].annual += annual;
+      if (isTaxFree(c.taxTreatment)) {
+        summaries[c.accountType].rothAnnual += annual;
+      } else {
+        summaries[c.accountType].tradAnnual += annual;
+      }
     }
   }
 
@@ -714,6 +729,8 @@ export function aggregateContributionsByCategory(
     const cat = c.accountType;
     const matchAmount = matchByRow.get(c.id)!.matchAnnual;
     employerMatchByCategory[cat] += matchAmount;
+    if (isRetirementMoney(c.parentCategory))
+      retirementMatchByCategory[cat] += matchAmount;
 
     // Track match by parentCategory for correct per-account distribution
     if (matchAmount > 0 && c.parentCategory) {
@@ -728,20 +745,24 @@ export function aggregateContributionsByCategory(
   }
 
   // Compute Roth fractions from actual account data
-  for (const cat of categoriesWithTaxPreference()) {
-    const total =
-      contribByCategory[cat].rothAnnual + contribByCategory[cat].tradAnnual;
-    contribByCategory[cat].rothFraction = safeDivide(
-      contribByCategory[cat].rothAnnual,
-      total,
-      1,
-    );
-  }
+  for (const summaries of [contribByCategory, retirementContribByCategory])
+    for (const cat of categoriesWithTaxPreference()) {
+      const total = summaries[cat].rothAnnual + summaries[cat].tradAnnual;
+      summaries[cat].rothFraction = safeDivide(
+        summaries[cat].rothAnnual,
+        total,
+        1,
+      );
+    }
 
   return {
     contribByCategory,
     employerMatchByCategory,
     employerMatchByParentCat,
+    retirementOnly: {
+      contribByCategory: retirementContribByCategory,
+      employerMatchByCategory: retirementMatchByCategory,
+    },
     incompleteAccountIds,
   };
 }
@@ -1532,6 +1553,8 @@ export type ProfileContribData = {
   baseYearEmployerMatch: Record<AccountCategory, number>;
   employerMatchRateByCategory: Record<AccountCategory, number>;
   employerMatchByParentCat: Map<AccountCategory, Map<string, number>>;
+  /** Base-year amounts and match rates over retirement money only. */
+  retirementOnly: RetirementContribSlice;
   salaryByPerson: Record<number, number>;
   combinedSalary: number;
   /** Ids of `fixed_per_period` accounts with no resolvable job/pay period —
@@ -1617,6 +1640,7 @@ export function buildProfileContribData(
     contribByCategory,
     employerMatchByCategory,
     employerMatchByParentCat,
+    retirementOnly,
     incompleteAccountIds: aggregationIncompleteIds,
   } = aggregateContributionsByCategory(
     contribRows,
@@ -1629,14 +1653,14 @@ export function buildProfileContribData(
   );
 
   // Employer match rates (fraction of total compensation)
-  const employerMatchRateByCategory = Object.fromEntries(
-    getAllCategories().map((cat) => [
-      cat,
-      totalCompensation > 0
-        ? employerMatchByCategory[cat] / totalCompensation
-        : 0,
-    ]),
-  ) as Record<AccountCategory, number>;
+  const matchRates = (match: Record<AccountCategory, number>) =>
+    Object.fromEntries(
+      getAllCategories().map((cat) => [
+        cat,
+        totalCompensation > 0 ? match[cat] / totalCompensation : 0,
+      ]),
+    ) as Record<AccountCategory, number>;
+  const employerMatchRateByCategory = matchRates(employerMatchByCategory);
 
   // Build per-account contribution specs. A `fixed_per_period` account with
   // no resolvable job/pay period can't produce a real spec (periodsPerYear
@@ -1759,9 +1783,11 @@ export function buildProfileContribData(
     .filter((spec): spec is ContributionSpec => spec !== null);
 
   // Base year contributions
-  const baseYearContributions = Object.fromEntries(
-    getAllCategories().map((cat) => [cat, contribByCategory[cat].annual]),
-  ) as Record<AccountCategory, number>;
+  const annuals = (summaries: typeof contribByCategory) =>
+    Object.fromEntries(
+      getAllCategories().map((cat) => [cat, summaries[cat].annual]),
+    ) as Record<AccountCategory, number>;
+  const baseYearContributions = annuals(contribByCategory);
 
   // Per-person salary map (totalComp for display / rate consistency)
   const salaryByPerson: Record<number, number> = {};
@@ -1776,6 +1802,13 @@ export function buildProfileContribData(
     baseYearEmployerMatch: employerMatchByCategory,
     employerMatchRateByCategory,
     employerMatchByParentCat,
+    retirementOnly: {
+      baseYearContributions: annuals(retirementOnly.contribByCategory),
+      baseYearEmployerMatch: retirementOnly.employerMatchByCategory,
+      employerMatchRateByCategory: matchRates(
+        retirementOnly.employerMatchByCategory,
+      ),
+    },
     salaryByPerson,
     combinedSalary: totalCompensation,
     incompleteAccountIds: Array.from(
