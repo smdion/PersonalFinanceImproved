@@ -1943,5 +1943,156 @@ describe("engine invariants", () => {
         }) - without,
       ).toBeCloseTo(20000, 0);
     });
+
+    describe("brokerage basis per account", () => {
+      // Retired; a Retirement brokerage at 28% basis and a Portfolio one at
+      // 55%; withdrawals take brokerage first.
+      const twoBrokerages = (): ProjectionInput => {
+        const base = makeInput({ currentAge: 66, retirementAge: 66 });
+        return {
+          ...base,
+          decumulationDefaults: {
+            ...base.decumulationDefaults,
+            withdrawalOrder: ["brokerage", "401k", "403b", "ira", "hsa"],
+          },
+          startingBalances: {
+            ...base.startingBalances,
+            afterTax: 40000,
+            afterTaxBasis: 13900,
+          },
+          startingAccountBalances: {
+            ...base.startingAccountBalances,
+            brokerage: {
+              structure: "basis_tracking",
+              balance: 40000,
+              basis: 13900,
+            },
+          },
+          individualAccounts: [
+            {
+              name: "401k",
+              category: "401k",
+              taxType: "preTax",
+              startingBalance: 80000,
+              parentCategory: "Retirement",
+            },
+            {
+              name: "401k",
+              category: "401k",
+              taxType: "taxFree",
+              startingBalance: 20000,
+              parentCategory: "Retirement",
+            },
+            {
+              name: "IRA",
+              category: "ira",
+              taxType: "preTax",
+              startingBalance: 30000,
+              parentCategory: "Retirement",
+            },
+            {
+              name: "IRA",
+              category: "ira",
+              taxType: "taxFree",
+              startingBalance: 20000,
+              parentCategory: "Retirement",
+            },
+            {
+              name: "HSA",
+              category: "hsa",
+              taxType: "hsa",
+              startingBalance: 15000,
+              parentCategory: "Retirement",
+            },
+            {
+              name: "Retirement brokerage",
+              category: "brokerage",
+              taxType: "afterTax",
+              startingBalance: 30000,
+              startingBasis: 8400,
+              parentCategory: "Retirement",
+            },
+            {
+              name: "Long-term brokerage",
+              category: "brokerage",
+              taxType: "afterTax",
+              startingBalance: 10000,
+              startingBasis: 5500,
+              parentCategory: "Portfolio",
+            },
+          ],
+        };
+      };
+
+      it("a retirement brokerage withdrawal is priced at the Retirement brokerage's own basis", () => {
+        const first = calculateProjection(
+          twoBrokerages(),
+        ).projectionByYear.find(
+          (y): y is EngineDecumulationYear => y.phase === "decumulation",
+        )!;
+        const slot = first.slots.find((sl) => sl.category === "brokerage")!;
+        expect(slot.withdrawal).toBeGreaterThan(0);
+        // Start of that year: 8,400 / the account's balance then (grown from
+        // 30,000 by the partial first year) — well under the 13,900/40,000
+        // blended ratio (34.75%).
+        expect(slot.basisPortion! / slot.withdrawal).toBeLessThan(0.3);
+      });
+
+      it("Portfolio basis never moves in retirement; accounts add up to the total; no basis drift", () => {
+        const years = calculateProjection(twoBrokerages()).projectionByYear;
+        for (const y of years) {
+          const brokerage = (y.individualAccountBalances ?? []).filter(
+            (a) => a.category === "brokerage",
+          );
+          const portfolio = brokerage.find(
+            (a) => a.parentCategory === "Portfolio",
+          )!;
+          if (y.phase === "decumulation")
+            expect(
+              portfolio.costBasis,
+              `${y.year} Portfolio basis`,
+            ).toBeCloseTo(5500, 0);
+          expect(
+            (y.warnings ?? []).filter((w) => w.includes("brokerage basis")),
+            `${y.year}`,
+          ).toEqual([]);
+        }
+      });
+
+      it("a goal's draw never touches Retirement basis", () => {
+        const base = overflowInput();
+        const year = base.asOfDate.getFullYear() + 2;
+        const withBasis = (input: ProjectionInput): ProjectionInput => ({
+          ...input,
+          individualAccounts: input.individualAccounts!.map((ia) =>
+            ia.category === "brokerage"
+              ? { ...ia, startingBasis: ia.startingBalance / 2 }
+              : ia,
+          ),
+        });
+        const retirementBasis = (input: ProjectionInput) =>
+          calculateProjection(withBasis(input))
+            .projectionByYear.find((y) => y.year === year)!
+            .individualAccountBalances!.filter(
+              (a) =>
+                a.category === "brokerage" && a.parentCategory === "Retirement",
+            )
+            .reduce((t, a) => t + (a.costBasis ?? 0), 0);
+        expect(
+          retirementBasis({
+            ...base,
+            brokerageGoals: [
+              {
+                id: 1,
+                name: "Car",
+                targetAmount: 10000,
+                targetYear: year,
+                priority: 1,
+              },
+            ],
+          }),
+        ).toBeCloseTo(retirementBasis(base), 0);
+      });
+    });
   });
 });

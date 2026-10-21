@@ -275,6 +275,10 @@ export interface ComputeTaxFromSlotsInput {
   /** Current balances by tax bucket — only afterTax/afterTaxBasis are read,
    *  for the brokerage basis-ratio split. */
   balances: Pick<TaxBuckets, "afterTax" | "afterTaxBasis">;
+  /** The basis ratio of the brokerage money withdrawn (the Retirement
+   *  brokerages' own, brokerage-basis.ts) — one ratio per year shared with
+   *  the ranking. Omitted: the aggregate ratio from `balances`. */
+  brokerageBasisRatio?: number;
   /** Authoritative totals when the caller already has them (e.g. post-RMD
    *  in decumulation-year.ts, where rmd-enforcement.ts tracks the total
    *  incrementally via its own running `+=` + roundToCents, which is not
@@ -410,7 +414,9 @@ export function computeTaxFromSlots(
   let brokerageBasisPortion = 0;
   let brokerageGainsPortion = 0;
   if (brokerageWithdrawal > 0 && balances.afterTax > 0) {
-    const basisRatio = Math.min(1, balances.afterTaxBasis / balances.afterTax);
+    const basisRatio =
+      input.brokerageBasisRatio ??
+      Math.min(1, balances.afterTaxBasis / balances.afterTax);
     brokerageBasisPortion = roundToCents(brokerageWithdrawal * basisRatio);
     brokerageGainsPortion = roundToCents(
       brokerageWithdrawal - brokerageBasisPortion,

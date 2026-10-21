@@ -228,6 +228,9 @@ export type IndividualAccountYearBalance = {
   /** Parent category from contribution account config (e.g. "Retirement", "Portfolio"). */
   parentCategory?: string;
   balance: number;
+  /** Cost basis (brokerage-type accounts), tracked per account by the
+   *  engine (brokerage-basis.ts). */
+  costBasis?: number;
   contribution: number;
   employerMatch: number;
   growth: number;

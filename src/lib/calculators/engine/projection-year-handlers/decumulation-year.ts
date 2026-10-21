@@ -2,6 +2,12 @@
  * runDecumulationYear — single-year decumulation-phase logic. Mutates state in
  * place and pushes a year projection to `state.projectionByYear`.
  */
+import {
+  followDraws,
+  followInflows,
+  retirementBrokerageBasisRatio,
+  syncAggregateBasis,
+} from "../brokerage-basis";
 import type {
   EngineDecumulationYear,
   IndividualAccountYearBalance,
@@ -126,6 +132,7 @@ export function runDecumulationYear(
     priorYearEndTradByPerson,
     indBal,
     indBasis,
+    brokBasis,
     spendingState,
     magiHistory,
     depletionTracked,
@@ -369,6 +376,13 @@ export function runDecumulationYear(
     }
   }
 
+  // The brokerage basis ratio of this year's retirement withdrawals: the
+  // Retirement brokerages' own (start of year). One ratio for the
+  // estimate, the ranking and the real tax.
+  const retirementBasisRatio = hasIndividualAccounts
+    ? retirementBrokerageBasisRatio(indAccts, indKey, indBal, brokBasis)
+    : undefined;
+
   // Tax gross-up: estimate tax from expected withdrawal routing, then
   // increase withdrawal so after-tax proceeds cover the expense need.
   const taxRates = decumulationDefaults.distributionTaxRates;
@@ -549,6 +563,7 @@ export function runDecumulationYear(
     balances,
     acctBal,
     totalBalance,
+    brokerageBasisRatio: retirementBasisRatio,
     eligibility,
     nonRetirement,
     indAccts: hasIndividualAccounts ? indAccts : undefined,
@@ -595,6 +610,7 @@ export function runDecumulationYear(
   // can no longer disagree on this number.
   const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
     balances,
+    brokerageBasisRatio: retirementBasisRatio,
     indBasis: hasIndividualAccounts ? indBasis : undefined,
     indAccts: hasIndividualAccounts ? indAccts : undefined,
     indKey: hasIndividualAccounts ? indKey : undefined,
@@ -736,7 +752,9 @@ export function runDecumulationYear(
   // pro-rata ratio.
   const preWithdrawalIndBal = new Map(indBal);
   const distributeResult = hasIndividualAccounts
-    ? distributeWithdrawals(slots, indAccts, indKey, indBal, eligibility)
+    ? followDraws(indAccts, indKey, indBal, brokBasis, () =>
+        distributeWithdrawals(slots, indAccts, indKey, indBal, eligibility),
+      )
     : { decIndWithdrawal: new Map<string, number>(), warnings: [] };
   const decIndWithdrawal = distributeResult.decIndWithdrawal;
   routeWarnings.push(...distributeResult.warnings);
@@ -802,6 +820,7 @@ export function runDecumulationYear(
     totalRothWithdrawal,
     rothTaxableGrowth: rothTaxSplit.taxableGrowth,
     penaltyCost: earlyWithdrawalPenalty.penaltyCost,
+    brokerageBasisRatio,
   });
   let brokerageTaxCost = taxFromSlots.brokerageTaxCost;
   const brokerageBasisPortion = taxFromSlots.brokerageBasisPortion;
@@ -865,22 +884,32 @@ export function runDecumulationYear(
   // by the RMD floor regardless of what the strategy needed, with no prior
   // UI trace. What happens to it depends on the household's
   // rmdExcessHandling setting (reinvest into brokerage, or spend it).
-  const rmdExcessAmount = reinvestRmdExcess(
-    config.rmdExcessHandling,
-    rmdOverrodeRouting,
-    totalWithdrawal,
-    afterTaxNeed,
-    taxCost,
-    balances,
-    acctBal,
-    hasIndividualAccounts ? indAccts : undefined,
-    hasIndividualAccounts ? indBal : undefined,
-    hasIndividualAccounts ? indKey : undefined,
+  // Reinvested RMD money is cash in: new basis where it lands.
+  const rmdExcessAmount = followInflows(
+    indAccts,
+    indKey,
+    indBal,
+    brokBasis,
+    () =>
+      reinvestRmdExcess(
+        config.rmdExcessHandling,
+        rmdOverrodeRouting,
+        totalWithdrawal,
+        afterTaxNeed,
+        taxCost,
+        balances,
+        acctBal,
+        hasIndividualAccounts ? indAccts : undefined,
+        hasIndividualAccounts ? indBal : undefined,
+        hasIndividualAccounts ? indKey : undefined,
+      ),
   );
 
   // Clamp individual account balances -- extracted to individual-account-tracking.ts
   if (hasIndividualAccounts) {
-    clampIndividualBalances(indAccts, indKey, indBal);
+    followDraws(indAccts, indKey, indBal, brokBasis, () =>
+      clampIndividualBalances(indAccts, indKey, indBal),
+    );
   }
 
   // Track per-account depletions -- extracted to balance-deduction.ts
@@ -932,6 +961,10 @@ export function runDecumulationYear(
   // --- Roth Conversions (Phase 4) ---
   // Extracted to post-withdrawal-optimizer.ts -- Roth conversion + IRMAA + ACA chain.
   const rothResult = performRothConversion({
+    // The conversion's tax comes out of retirement brokerage money.
+    brokerageBasisRatio: hasIndividualAccounts
+      ? retirementBrokerageBasisRatio(indAccts, indKey, indBal, brokBasis)
+      : undefined,
     enableRothConversions: taxRates.enableRothConversions,
     taxBrackets: grownTaxBrackets,
     taxMultiplier: taxRates.taxMultiplier,
@@ -1333,13 +1366,16 @@ export function runDecumulationYear(
             withdrawal: decIndWithdrawal,
             basis: indBasis,
             draws: basisDraws,
+            brokerageBasis: brokBasis,
           },
           eligibility,
         )
       : [];
 
   // Zero out rounding dust -- extracted to balance-deduction.ts
-  cleanupDust(balances, acctBal, indAccts, indKey, indBal);
+  followDraws(indAccts, indKey, indBal, brokBasis, () =>
+    cleanupDust(balances, acctBal, indAccts, indKey, indBal),
+  );
 
   // Reconcile indBal to acctBal once per year -- the two tracks are
   // "known to drift" (see withdrawal-eligibility.ts's module docblock);
@@ -1350,7 +1386,19 @@ export function runDecumulationYear(
   // tracked basis clamps to the reconciled (not pre-reconciliation) balance.
   if (hasIndividualAccounts) {
     routeWarnings.push(
-      ...reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
+      ...followDraws(indAccts, indKey, indBal, brokBasis, () =>
+        reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
+      ),
+    );
+    // The aggregate basis is the accounts' sum.
+    syncAggregateBasis(
+      indAccts,
+      indKey,
+      indBal,
+      brokBasis,
+      balances,
+      acctBal,
+      routeWarnings,
     );
   }
 

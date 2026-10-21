@@ -21,6 +21,7 @@ import {
 import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
 import {
   roundToCents,
+  sumBy,
   safeDivide as canonicalSafeDivide,
 } from "@/lib/utils/math";
 import { formatPercent } from "@/lib/utils/format";
@@ -216,11 +217,18 @@ export function filterYearByParentCategory(
       }
     }
   }
-  const origAfterTax = yr.balanceByTaxType.afterTax;
-  const origBasis = yr.balanceByTaxType.afterTaxBasis;
-  byTax.afterTaxBasis = roundToCents(
-    origBasis * safeDivide(byTax.afterTax, origAfterTax),
+  // The engine tracks brokerage basis per account; an older result without
+  // it falls back to a proportional estimate.
+  const basisAccts = filtered.filter(
+    (ia) =>
+      getAccountTypeConfig(ia.category).balanceStructure === "basis_tracking",
   );
+  byTax.afterTaxBasis = basisAccts.every((ia) => ia.costBasis != null)
+    ? roundToCents(sumBy(basisAccts, (ia) => ia.costBasis!))
+    : roundToCents(
+        yr.balanceByTaxType.afterTaxBasis *
+          safeDivide(byTax.afterTax, yr.balanceByTaxType.afterTax),
+      );
   const byAcct = { ...yr.balanceByAccount };
   for (const cat of getAllCategories()) {
     const catIabs = filtered.filter((ia) => ia.category === cat);

@@ -1,6 +1,7 @@
 /**
  * buildProjectionState — initializes mutable projection state.
  */
+import { seedBrokerageBasis } from "../brokerage-basis";
 import type { ProjectionInput, AccountBalances, TaxBuckets } from "../../types";
 import { isPreTaxType, isTaxFreeBucket } from "../../../config/account-types";
 import {
@@ -85,6 +86,13 @@ export function buildProjectionState(
     );
   }
 
+  // Brokerage cost basis per account (each account's own starting basis).
+  const brokBasis = seedBrokerageBasis(
+    ctx.indAccts,
+    ctx.indKey,
+    input.startingBalances.afterTaxBasis,
+  );
+
   const { specToAccount, accountsWithSpecs } =
     ctx.hasIndividualAccounts && contributionSpecs
       ? buildSpecToAccountMapping(
@@ -117,6 +125,7 @@ export function buildProjectionState(
     projectedSalaryByPerson,
     indBal,
     indBasis,
+    brokBasis,
     specToAccount,
     accountsWithSpecs,
     contributionSpecs,

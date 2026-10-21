@@ -1096,6 +1096,8 @@ export function buildIndividualYearBalances(
     ramp?: Map<string, number>;
     basis?: Map<string, RothBasisState>;
     draws?: Map<string, BasisDraw>;
+    /** Brokerage cost basis per account (brokerage-basis.ts). */
+    brokerageBasis?: Map<string, number>;
   },
   eligibility?: EligibilityRecord,
 ): IndividualAccountYearBalance[] {
@@ -1113,6 +1115,11 @@ export function buildIndividualYearBalances(
           rothBasisUncertain: basisState.stale || basisState.isSeeded,
         }
       : {};
+    const brokerageBasis = maps.brokerageBasis?.get(k);
+    const costBasisFields =
+      brokerageBasis != null
+        ? { costBasis: roundToCents(Math.min(brokerageBasis, balance)) }
+        : {};
     const draw = maps.draws?.get(k);
     const drawnFields =
       draw != null
@@ -1143,6 +1150,7 @@ export function buildIndividualYearBalances(
             }
           : {}),
         ...basisFields,
+        ...costBasisFields,
       };
     }
 
@@ -1174,6 +1182,7 @@ export function buildIndividualYearBalances(
           }
         : {}),
       ...basisFields,
+      ...costBasisFields,
       ...drawnFields,
     };
   });

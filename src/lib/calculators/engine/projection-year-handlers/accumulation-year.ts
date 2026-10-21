@@ -2,6 +2,12 @@
  * runAccumulationYear — single-year accumulation-phase logic. Mutates state in
  * place and pushes a year projection to `state.projectionByYear`.
  */
+import {
+  followDraws,
+  followInflows,
+  groupBasisRatio,
+  syncAggregateBasis,
+} from "../brokerage-basis";
 import type {
   AccountCategory,
   AccumulationSlot,
@@ -39,6 +45,7 @@ import { applyGrowth } from "../growth-application";
 import {
   distributeContributions,
   distributeGoalWithdrawal,
+  goalFundingAccounts,
   goalFundingBalance,
   applyIndividualGrowth,
   buildIndividualYearBalances,
@@ -105,6 +112,7 @@ export function runAccumulationYear(
     accumulationDefaults,
     indBal,
     indBasis,
+    brokBasis,
     specToAccount,
     accountsWithSpecs,
   } = state;
@@ -460,7 +468,10 @@ export function runAccumulationYear(
   }
 
   // Apply lump sums (one-time injections, NOT subject to IRS limits)
-  applyLumpSums(config.lumpSums, ctx, state);
+  // Lump sums are cash in: new basis in the brokerage account they land in.
+  followInflows(indAccts, indKey, indBal, brokBasis, () =>
+    applyLumpSums(config.lumpSums, ctx, state),
+  );
 
   // Route contributions, match, overflow, and ramp to individual accounts
   // Extracted to individual-account-tracking.ts
@@ -470,24 +481,27 @@ export function runAccumulationYear(
   let indOverflow = new Map<string, number>();
   let indRamp = new Map<string, number>();
   if (hasIndividualAccounts && contributionSpecs) {
-    const distResult = distributeContributions({
-      slots,
-      contributionSpecs,
-      indAccts,
-      indKey,
-      indBal,
-      indParentCat,
-      specToAccount,
-      accountsWithSpecs,
-      projectedSalary,
-      currentSalary,
-      limitGrowthRate,
-      yearIndex,
-      proRate,
-      overflowToBrokerage,
-      rampAmount,
-      employerMatchByParentCat: activeEmployerMatchByParentCat,
-    });
+    // Contributions, match, overflow and the ramp are cash in: new basis.
+    const distResult = followInflows(indAccts, indKey, indBal, brokBasis, () =>
+      distributeContributions({
+        slots,
+        contributionSpecs,
+        indAccts,
+        indKey,
+        indBal,
+        indParentCat,
+        specToAccount,
+        accountsWithSpecs,
+        projectedSalary,
+        currentSalary,
+        limitGrowthRate,
+        yearIndex,
+        proRate,
+        overflowToBrokerage,
+        rampAmount,
+        employerMatchByParentCat: activeEmployerMatchByParentCat,
+      }),
+    );
     indContribs = distResult.indContribs;
     indMatch = distResult.indMatch;
     indIntentional = distResult.indIntentional;
@@ -542,8 +556,15 @@ export function runAccumulationYear(
       );
       continue;
     }
-    const basisRatio =
-      balances.afterTax > 0
+    // Goals draw Portfolio brokerages, so their own basis prices the gain.
+    const basisRatio = hasIndividualAccounts
+      ? groupBasisRatio(
+          goalFundingAccounts(indAccts),
+          indKey,
+          indBal,
+          brokBasis,
+        )
+      : balances.afterTax > 0
         ? Math.min(1, balances.afterTaxBasis / balances.afterTax)
         : 0;
     const basisPortion = roundToCents(drawAmount * basisRatio);
@@ -566,7 +587,9 @@ export function runAccumulationYear(
     );
     // Distribute brokerage goal withdrawal -- extracted to individual-account-tracking.ts
     if (hasIndividualAccounts) {
-      distributeGoalWithdrawal(drawAmount, indAccts, indKey, indBal);
+      followDraws(indAccts, indKey, indBal, brokBasis, () =>
+        distributeGoalWithdrawal(drawAmount, indAccts, indKey, indBal),
+      );
     }
     goalWithdrawals.push({
       goalId: goal.id,
@@ -594,6 +617,7 @@ export function runAccumulationYear(
           overflow: indOverflow,
           ramp: indRamp,
           basis: indBasis,
+          brokerageBasis: brokBasis,
         },
       )
     : [];
@@ -606,7 +630,19 @@ export function runAccumulationYear(
   // same two tracks this closes the gap between.
   if (hasIndividualAccounts) {
     routeWarnings.push(
-      ...reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
+      ...followDraws(indAccts, indKey, indBal, brokBasis, () =>
+        reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
+      ),
+    );
+    // The aggregate basis is the accounts' sum.
+    syncAggregateBasis(
+      indAccts,
+      indKey,
+      indBal,
+      brokBasis,
+      balances,
+      acctBal,
+      routeWarnings,
     );
   }
 

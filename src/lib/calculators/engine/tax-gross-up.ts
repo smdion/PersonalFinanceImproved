@@ -100,6 +100,10 @@ export interface TaxEstimationInput {
   acctBal: AccountBalances;
   /** Total portfolio balance */
   totalBalance: number;
+  /** The year's brokerage basis ratio for retirement withdrawals
+   *  (brokerage-basis.ts) — the same one the real execution prices with.
+   *  Omitted: the aggregate ratio. */
+  brokerageBasisRatio?: number;
   /** Withdrawal-ordering eligibility for this year — passed straight
    *  through to `routeForMode`. MUST be the
    *  same record `decumulation-year.ts`'s real execution passes to its own
@@ -198,6 +202,7 @@ function evaluateCost(
   // for a convergence-loop trial, not final pricing).
   const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
     balances,
+    brokerageBasisRatio: input.brokerageBasisRatio,
     indBasis: hasIndTracking ? indBasis : undefined,
     indAccts: hasIndTracking ? indAccts : undefined,
     indKey: hasIndTracking ? indKey : undefined,
@@ -279,6 +284,7 @@ function evaluateCost(
     slots: routeResult.slots,
     taxableSS,
     balances,
+    brokerageBasisRatio,
     taxRates,
     filingStatus,
     rothTaxableGrowth,
