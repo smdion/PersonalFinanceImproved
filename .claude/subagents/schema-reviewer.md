@@ -158,7 +158,7 @@ The auto-gen markers in `DESIGN.md` (table counts, migration counts) must stay a
 Before deploying any release with schema changes, run the migration test against a prod snapshot:
 
 ```bash
-# See OPS.md § "Migration Safety Test" for full procedure
+# See OPS.md § "Release Process" (step 5: test the migration against prod data)
 ./scripts/test-migration.sh "$PROD_DATABASE_URL"
 ```
 
