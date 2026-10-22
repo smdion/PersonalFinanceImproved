@@ -76,25 +76,15 @@ All account-type behavior is defined in `src/lib/config/account-types.ts` (`ACCO
 
 ### Key Files
 
-| File                                      | Role                                                                                         |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------- |
-| `src/lib/config/account-types.ts`         | Central config record + all derived helpers                                                  |
-| `src/lib/config/account-types.types.ts`   | TypeScript types for account config structure                                                |
-| `src/lib/config/account-balance.ts`       | Balance structure helpers (traditional, Roth, basis access)                                  |
-| `src/lib/config/display-labels.ts`        | Consolidated label maps (tax treatment, method, match, coverage)                             |
-| `src/lib/config/tax-tables.ts`            | Federal tax brackets, FICA rates, LTCG graduated brackets                                    |
-| `src/lib/config/rmd-tables.ts`            | IRS Uniform Lifetime Table, SECURE 2.0 start ages                                            |
-| `src/lib/config/irmaa-tables.ts`          | Medicare Part B+D cliff-based surcharge thresholds                                           |
-| `src/lib/config/aca-tables.ts`            | ACA subsidy FPL lookup tables                                                                |
-| `src/lib/config/niit.ts`                  | Net Investment Income Tax thresholds                                                         |
-| `src/lib/config/budget-template.ts`       | Default budget category structure                                                            |
-| `src/lib/config/enum-values.ts`           | Shared enum value arrays for Zod validators                                                  |
-| `src/lib/config/glossary.ts`              | Financial term definitions for help tooltips                                                 |
-| `src/lib/config/living-costs.ts`          | Cost-of-living data for relocation calculator                                                |
-| `src/lib/config/pay-periods.ts`           | Pay frequency definitions and conversion helpers                                             |
-| `src/lib/config/withdrawal-strategies.ts` | Spending strategy definitions and metadata                                                   |
-| `src/lib/calculators/types.ts`            | `AccountCategory` type (auto-derived from config keys), `AccountBalance` discriminated union |
-| `src/lib/constants.ts`                    | App-wide constants (withdrawal rate, wealth score thresholds, FI tolerances)                 |
+| File                                | Role                                                                 |
+| ----------------------------------- | -------------------------------------------------------------------- |
+| `src/lib/config/account-types.ts`   | `ACCOUNT_TYPE_CONFIG` + every derived helper and predicate           |
+| `src/lib/config/account-balance.ts` | Balance-structure helpers (Traditional, Roth, basis)                 |
+| `src/lib/config/display-labels.ts`  | Label maps and performance-category constants                        |
+| `src/lib/calculators/types.ts`      | `AccountCategory` (derived from config keys), `AccountBalance` union |
+| `src/lib/constants.ts`              | App-wide defaults and thresholds                                     |
+
+The rest of `src/lib/config/` holds the other data tables (tax, RMD, IRMAA, ACA, NIIT, Social Security, milestones, recommendations, withdrawal strategies, glossary, …) — one module per subject.
 
 ### Fixing a violation: add the predicate first
 
@@ -112,9 +102,8 @@ correct workflow:
 
 This keeps the data-driven boundary intact: call sites stay generic, and the
 config file remains the only place that knows what each field means.
-Examples added during the 2026-04 RULES audit: `isInLimit401kGroup` (reads
-`irsLimitGroup === "401k"`), `tracksCostBasis` (reads
-`balanceStructure === "basis_tracking"`).
+Examples: `isInLimit401kGroup` (reads `irsLimitGroup === "401k"`),
+`tracksCostBasis` (reads `balanceStructure === "basis_tracking"`).
 
 ### Contribution Stubs
 
@@ -124,37 +113,9 @@ When a contribution account is created linked to a performance account, inactive
 
 ## Engine Modularity
 
-> **Each engine concern lives in its own module.** The projection engine (`lib/calculators/engine/`) is decomposed into 26 focused modules (plus the `projection-year-handlers/` sub-package). Never add new logic inline in the orchestrator — extract it into a dedicated module with a clear interface.
+> **Each engine concern lives in its own module.** The projection engine (`lib/calculators/engine/`) is a set of focused modules plus the `projection-year-handlers/` package (per-year setup, accumulation and decumulation steps). Never add logic inline in the orchestrator — extract it into a module with a clear interface.
 
-The engine was refactored from a single ~3100-line file into a modular architecture. The orchestrator (`projection.ts`) calls modules in an explicit pipeline order. Each module is a pure function with typed inputs and outputs.
-
-### Modules
-
-**Core pipeline** (called by orchestrator in sequence):
-
-- `projection.ts` — Orchestrator: year loop, phase transitions, delegation
-- `projection-year-handlers.ts` — Per-year accumulation/decumulation step logic
-- `override-resolution.ts` — Sticky-forward config resolution per year
-- `contribution-routing.ts` — Accumulation allocation + IRS limits
-- `growth-application.ts` — Return rate on all balance structures
-- `withdrawal-routing.ts` — Bracket-filling / waterfall / percentage
-- `rmd-enforcement.ts` — RMD factor lookup + shortfall distribution
-- `post-withdrawal-optimizer.ts` — Roth conversions + IRMAA + ACA
-- `tax-estimation.ts` — SS torpedo convergence + gross-up
-- `balance-deduction.ts` — Withdrawal deduction, clamping, depletion, dust cleanup
-- `balance-utils.ts` — Cloning, conversion helpers
-- `individual-account-tracking.ts` — Per-account bookkeeping (contributions, withdrawals, growth)
-
-**Spending strategies** (pluggable via `spending-strategy.ts` dispatcher):
-
-- `spending-strategy.ts` — Strategy dispatcher (selects strategy by name)
-- `guyton-klinger.ts` — Dynamic spending guardrails
-- `vanguard-dynamic.ts` — Vanguard dynamic spending
-- `constant-percentage.ts` — Fixed percentage of portfolio
-- `endowment.ts` — Endowment-style spending
-- `spending-decline.ts` — Age-based spending decline
-- `forgo-inflation.ts` — Skip inflation adjustments
-- `rmd-spending.ts` — RMD-based spending floor
+The orchestrator (`projection.ts`) calls modules in an explicit pipeline order; each module is a pure function with typed inputs and outputs. **The module map — what each one does and how they depend on each other — lives in `src/lib/calculators/engine/ARCHITECTURE.md`.** Keep it current when adding or removing a module.
 
 ### Rules
 
@@ -166,14 +127,7 @@ The engine was refactored from a single ~3100-line file into a modular architect
 
 ### Public API
 
-Four function exports + one type from `engine/index.ts`:
-
-- `calculateProjection()` — Full accumulation + decumulation
-- `estimateEffectiveTaxRate()` — Effective tax rate for a given income
-- `incomeCapForMarginalRate()` — Income cap for a target marginal bracket
-- `computeTaxableSS()` — Taxable portion of Social Security benefits
-
-All other modules are internal — not imported outside `engine/`.
+`engine/index.ts` is the only entry point: `calculateProjection()`, the tax helpers `estimateEffectiveTaxRate()`, `incomeCapForMarginalRate()`, `marginalRateAboveTarget()`, `computeTaxableSS()`, and `rankWithdrawalTiers()` (withdrawal cost ranking), plus their types. Everything else is internal to `engine/`.
 
 ---
 
@@ -414,7 +368,7 @@ a Contribution Profile's `deductions` active-field entry
 - An engine module importing from another engine module's internals instead of using the barrel export
 - Override logic implemented inline in a module instead of using `override-resolution.ts`
 - Balance manipulation without using `balance-utils.ts` / `balance-deduction.ts` utilities
-- `parentCategory === "Retirement"` instead of `isRetirementCategory()`
+- `parentCategory === "Retirement"` / `=== "Portfolio"` instead of `isRetirementMoney()` / `isRetirementParent()` / `isPortfolioParent()`
 - `taxType === "preTax"` or `=== "roth"` instead of config predicates (`isTaxFree()`, etc.)
 - Hardcoded performance category strings (`"401k/IRA"`, `"HSA"`, `"Brokerage"`) instead of constants from `display-labels.ts`
 - A hardcoded category sort order in a component instead of importing from config
@@ -535,8 +489,8 @@ active one rather than erroring.
    - **`net_worth_annual`** — finalized year-end records capture point-in-time state (tax location breakdown from a Dec 31 snapshot that may later be pruned). Class (a).
    - **`annualReturnPct`** — stored on finalized `annual_performance` and `account_performance` rows. Immutable after finalization. Recomputed on-read for non-finalized years. Class (a).
    - **`lifetimeGains`, `lifetimeContributions`, `lifetimeMatch`** — cumulative fields on `annual_performance`. Computed at finalization from previous year's baseline. **Cascade rule:** when `account_performance` rows on a finalized year are edited, lifetime fields on the annual row and all subsequent years must be recomputed. Without cascade, corrections to historical data create silent drift in all forward lifetime totals. Class (a).
-   - **The Salary Profile entry's `extraPaycheckRouting.baseNetPayPerCheck`** (was `jobs.extra_paycheck_routing`; plus its `payPeriod`/`anchorPayDate` snapshot) — snapshotted by `computeJobNetPayPerCheck` (savings.ts) only when an extra-paycheck routing rule or its growth rates are saved, resolved against whichever Contribution/Salary Profile was globally active at that moment. Class (b): inputs are preserved and recomputation is deterministic, but this value feeds a materializer that generates real future `savings_planned_transactions` — re-resolving it on every read would mean a routine profile switch silently rewrites a plan the user already committed to. **Cascades on active-profile edits, not on profile switches:** the no-recompute rule protects against _browsing_ a different profile (a what-if comparison must never retroactively rewrite a real plan) — it was never meant to protect against _correcting_ the one real profile that's already active. `salaryProfile.update`/`patchEntry`/`removeEntry` refresh this snapshot automatically (`refreshExtraPaycheckRoutingIfActive`) (best-effort — a refresh failure never blocks the user's actual edit) whenever the edit targets the globally-active profile and the affected job already has routing configured; editing a non-active profile never triggers it. Recorded at save time (explicit routing save, or an active-profile edit) under whatever was active then, never re-resolved on plain reads. `payPeriod`/`anchorPayDate` are snapshotted alongside `baseNetPayPerCheck` (both optional, materializer/`extraPaycheckRouting.list` fall back to the job's live Salary Profile entry when absent — `jobs` itself has no such columns any more) so the materializer always generates transaction dates against the SAME schedule the net-pay figure was computed under — this is what makes the value internally coherent, replacing the earlier design's save-time mismatch check (removed; a later correction to the job's real pay period/anchor date no longer needs blocking, since it can no longer retroactively desync an already-saved schedule from an already-saved amount — it just doesn't apply until routing is explicitly re-saved, the same way `baseNetPayPerCheck` itself already behaved). **`enabled`** (optional, defaults to true) lets a user pause routing without deleting the configured rules — the Savings/Budget toggle in `extra-paycheck-rules-editor.tsx` (`savings.extraPaycheckRouting.setEnabled`) flips this in place; `enabled: false` (or no `rules` at all) means the extra paycheck stays as regular income, same as an unrouted job. The Budget page's `ExtraPaycheckBudgetNote` shows which months/amounts to expect for jobs in this state, plus the real materialized figure for the current month (see the next entry).
-   - **`budget_income_adjustments`** (`schema-pg.ts`) — the Budget-mode counterpart of the `savings_planned_transactions` entry above, written by `budget-income-materializer.ts`. `isExtraPaycheckBudgetMode(routing)` (no `rules`, or `enabled: false`) and the Savings materializer's own filter are mutually exclusive per job — every job matches exactly one of the two at any given time, so the pair of materializers covers every job exactly once under its current mode. One row per (job, month) — no split/goal fan-out, since Budget mode has no split concept. Class (b) for the same reason as `baseNetPayPerCheck`: inputs are preserved and recomputation is deterministic, but re-resolving on every read would silently rewrite an already-materialized month. Same delete-and-reinsert-future-rows regeneration semantics as the Savings materializer, minus the settlement-preservation logic — nothing FK-references these rows, so a plain delete-all-future-`source='rule'`-rows-and-reinsert is safe. `budget.computeActiveSummary`'s `budgetIncomeAdjustmentThisMonth` field sums this table for the REAL current calendar month only, deliberately independent of `selectedColumn`/`profileId` — folding it into `netMonthlyIncome` (which IS `selectedColumn`-parameterized) would let a What-If scenario comparison silently disagree with itself about which reality produced the number. Surfaced as a separate, additively-labeled line in `ExtraPaycheckBudgetNote` and the What-If tab's leftover-income line — never merged into `netMonthlyIncome` or any total derived from it.
+   - **A Salary Profile entry's `extraPaycheckRouting.baseNetPayPerCheck`** (with the `payPeriod`/`anchorPayDate` it was computed under) — snapshotted by `computeJobNetPayPerCheck` when an extra-paycheck routing rule is saved, under the profiles active at that moment. Class (b): it feeds a materializer that writes real future `savings_planned_transactions`, so browsing another profile must never rewrite it. Editing the **active** profile does refresh it (`refreshExtraPaycheckRoutingIfActive`, best-effort — never blocks the edit); editing any other profile doesn't. Storing the schedule with the amount keeps the generated dates and the net-pay figure from the same moment. `enabled: false` (or no `rules`) pauses routing: the extra paycheck stays regular income.
+   - **`budget_income_adjustments`** — the Budget-mode twin of the entry above, written by `budget-income-materializer.ts`. A job is in exactly one mode (`isExtraPaycheckBudgetMode`), so the two materializers cover every job once. One row per (job, month); regenerated by deleting and reinserting future rule rows (nothing references them). Class (b) for the same reason. `budget.computeActiveSummary` reports the real current month's total separately (`budgetIncomeAdjustmentThisMonth`) and never folds it into `netMonthlyIncome` — that figure follows the selected column, so mixing them would let a What-If disagree with itself.
 
    If the inputs are preserved, the computation is deterministic, AND nothing downstream treats the value as a settled point-in-time commitment, compute at read time — unless the computation is expensive enough to justify a class (c) performance cache, in which case store it keyed by a hash of every input that affects the result, with an explicit invalidation path (TTL, version bump, or explicit force-refresh). If the inputs may not survive (snapshots pruned, accounts restructured) — class (a) — or the value is itself a deliberate "recorded as of when this was saved" commitment — class (b) — store at finalization/save time, but document the sync/cascade mechanism (or the explicit absence of one, and why, for class (b)).
 
@@ -607,7 +561,7 @@ The Performance page uses a **separate grouping** based on `accountType` from th
 | **Retirement**   | 401k, 403b, IRA                                      | Everything else             |
 | **Portfolio**    | All accounts combined                                | Sum of all categories       |
 
-This mapping is defined in `accountTypeToCategory()` in `performance.ts`. Annual rollup rows (`annual_performance.category`) and account filtering both use this grouping. For `account_performance` rows without a `performanceAccountId`, the system falls back to matching by `institution + accountLabel` against the master table, then to the stored `parentCategory`.
+This mapping is `accountTypeToPerformanceCategory()` (`lib/config/display-labels.ts`). Annual rollup rows (`annual_performance.category`) and account filtering both use this grouping. For `account_performance` rows without a `performanceAccountId`, the system falls back to matching by `institution + accountLabel` against the master table, then to the stored `parentCategory`.
 
 **Where numbers appear:**
 
@@ -626,7 +580,7 @@ This mapping is defined in `accountTypeToCategory()` in `performance.ts`. Annual
   between `decimal(8,6)` and `decimal(12,6)` depending on the table — both
   safely hold values in `[-1,1]`; there is no single documented convention
   to match, so don't infer one from a neighboring column's comment
-- **Enums:** All enum fields use `pgEnum()` for DB-level validation
+- **Enums:** enum-like columns are `text` typed with `.$type<T>()` and validated by Zod at the app layer — no `pgEnum`, so adding a value needs no migration
 - **JSONB:** Use `.$type<T>()` for type inference
 - **ON DELETE:** Default `RESTRICT`; `CASCADE` only for tightly coupled parent-child
 - **Indexes:** Explicit indexes on all FK columns (PostgreSQL doesn't auto-create them)
@@ -664,18 +618,18 @@ These are true cross-cutting reference data that no single page owns.
 
 ## Coding Conventions
 
-- **Pure calculators.** `lib/calculators/` contains pure functions only — no DB, no tRPC, no React. Given the same inputs, always the same outputs. The engine is a modular subdirectory (`lib/calculators/engine/`) with 26 focused modules — see § "Engine Modularity".
+- **Pure calculators.** `lib/calculators/` contains pure functions only — no DB, no tRPC, no React. Given the same inputs, always the same outputs. The engine is a modular subdirectory (`lib/calculators/engine/`) — see § "Engine Modularity".
 - **tRPC routers are the bridge.** They fetch from Drizzle, convert decimal strings to numbers via `toNumber()`, call calculators, return results.
 - **tRPC verb prefixes:** `get*` — single stored item or current state; `list*` — collection/array result; `compute*` — derived calculation or aggregation. Never use `get*` for procedures that aggregate or compute.
 - **Variable naming — no abbreviations.** Use full names: `percent` not `pct`, `amount` not `amt`, `account` not `acct`, `year` not `yr`, `index` not `idx`, `month` not `mo`. Existing abbreviations are migrated incrementally when files are touched for other reasons.
 - **Type suffix conventions:** `*Props` for React component props; `*Input` / `*Result` for procedure/calculator I/O types; `*Config` / `*Options` for settings and configuration objects; domain nouns (no suffix) for data shapes (e.g. `DeductionLine`, `BudgetMatch`).
 - **Components never import from `server/`.** They consume data via tRPC hooks.
-- **Three state layers:** Server state (React Query via tRPC), Form state (React Hook Form), UI state (`useState`).
+- **Two state layers:** server state (React Query via tRPC) and local component state (`useState`, which also holds form state — no form library).
 - **Formatting — zero exceptions.** Use `formatCurrency()`, `formatPercent()`, `compactCurrency()`, `formatDate()` from `@/lib/utils/format`. **Never** inline formatting — this includes chart axis tick formatters, tooltip renderers, and input display formatters. If the canonical function doesn't support your precision needs, extend the function (e.g., `formatPercent(value, decimals)` already accepts a decimals argument) — don't bypass it. Inline `.toFixed(N) + '%'` and `'$${n/1000}k'` are violations. Every dollar amount must go through `formatCurrency()` / `compactCurrency()` — or `maskAmountsInText()` for a sentence the engine or a router already built — so Privacy Mode can hide it (see DESIGN.md § Privacy Mode). A hand-rolled `Intl.NumberFormat` or `$${n.toLocaleString()}` in a component shows the real amount while privacy is on.
 - **Colors:** Use centralized helpers from `@/lib/utils/colors.ts` for **every** color that carries meaning — not just account/tax types. This includes chart-series colors, status/severity colors (success/warning/danger/info), and MC-band colors. Two components rendering the same category/status must import the same constant, never re-derive their own hex/Tailwind values inline — this is exactly how the net-worth bar chart and pie chart once showed different colors for the identical category, and how Badge/toast/banner each drifted to a different shade for the same severity.
   - **Account types** (401k, 403b, IRA, HSA, Brokerage): `accountColor()` (bg fill), `accountMatchColor()` (light fill), `accountBorderColor()` (left border), `accountTextColor()` (text)
   - **Tax treatments** (preTax, taxFree, hsa, afterTax): `taxTypeColor()` (bg fill for bars), `taxTypeTextColor()` (text for labels/cells)
-  - **Status/severity** (success, warning, danger, info): `STATUS_COLORS` — consumed by `Badge`, `toast`, `ScenarioBanner`, `CalloutLine`. Do not add a new local shade map for the same 4 semantic colors.
+  - **Status/severity** (success, warning, danger, info): `STATUS_COLORS` — consumed by `Badge`, `toast`, `CalloutLine` and status rows. Do not add a new local shade map for the same 4 semantic colors.
   - **Chart series**: named exports from `colors.ts` (`CHART_COLORS`, `EXPENSE_PIE_COLORS`, `mcBandOuter`/`mcBandInner`/`mcMedian`/etc.) — never a local color array or hardcoded hex per chart file.
   - UI badges (BG, PC, etc.) must NOT use account-type colors — use indigo or gray to avoid overlap.
 - **Math:** Use `safeDivide()`, `roundToCents()`, `sumBy()` from `@/lib/utils/math.ts`.
@@ -787,7 +741,7 @@ These are true cross-cutting reference data that no single page owns.
 
 ### Source documents
 
-Raw provider inputs (withheld, market value, gross proceeds, commission, dividends) are preserved in `.scratch/docs/reviews/ESPP_calculations.md`. Verify DB values against that file before editing ESPP rows.
+Raw provider inputs (withheld, market value, gross proceeds, commission, dividends) are kept in a local audit file (`.scratch/docs/ops/ESPP_calculations.md`, not in the repo). Verify DB values against it before editing ESPP rows.
 
 ---
 

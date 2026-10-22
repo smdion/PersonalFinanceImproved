@@ -2,60 +2,27 @@
 
 ## Tech Stack
 
-| Layer     | Technology                             | Notes                                                                         |
-| --------- | -------------------------------------- | ----------------------------------------------------------------------------- |
-| Framework | Next.js 14+ (App Router), TypeScript   | Full-stack, `pnpm` package manager                                            |
-| Styling   | Tailwind CSS + custom components       | shadcn/ui available but mostly custom Tailwind                                |
-| Charts    | Custom Tailwind bar charts             | Recharts available for future enhancement                                     |
-| Database  | SQLite (default) or PostgreSQL         | `DATABASE_URL` controls dialect; SQLite zero-config, PG for shared/production |
-| ORM       | Drizzle ORM                            | Returns decimals as strings; `toNumber()` converts                            |
-| API       | tRPC                                   | End-to-end type safety, Zod validation                                        |
-| Auth      | Auth.js (NextAuth v5) + Authentik OIDC | Admin + Viewer roles                                                          |
-| Hosting   | Self-hosted Docker on homelab          | SWAG reverse proxy, hardened compose (read-only fs, cap_drop ALL)             |
+| Layer     | Technology                                    | Notes                                                |
+| --------- | --------------------------------------------- | ---------------------------------------------------- |
+| Framework | Next.js 16 (App Router), React 19, TypeScript | `pnpm`                                               |
+| Styling   | Tailwind CSS 4 + design tokens                | Custom components in `src/components/ui/`            |
+| Charts    | Recharts                                      | Loaded with `next/dynamic`                           |
+| Database  | SQLite (default) or PostgreSQL                | `DATABASE_URL` picks the dialect                     |
+| ORM       | Drizzle                                       | Decimals come back as strings; `toNumber()` converts |
+| API       | tRPC 11 + Zod 4                               | End-to-end types and validation                      |
+| Auth      | Auth.js (NextAuth v5) + OIDC (Authentik)      | Admin / viewer roles + permission add-ons            |
+| Tests     | Vitest, Playwright                            | See `docs/TESTING.md`                                |
+| Hosting   | Self-hosted Docker                            | Hardened compose behind a reverse proxy              |
 
----
+## What's Built
 
-## Implementation Status
+- **<!-- AUTO-GEN:pages -->36<!-- /AUTO-GEN --> pages** — Dashboard, Paycheck, Budget, Savings, Portfolio, Performance, Brokerage, Benchmarks, Net Worth, Historical, Mortgage, Liabilities, Assets, Retirement (+ methodology pages), Tax Buckets, Taxes, Milestones, Recommendations, Profiles, Tools (ESPP, Relocation), Settings, Versions and more.
+- **<!-- AUTO-GEN:calculators -->19<!-- /AUTO-GEN --> calculators** in `lib/calculators/` — paycheck, tax, budget, contribution, mortgage, net worth, savings, emergency fund, brokerage goals, Monte Carlo simulation, relocation, Coast FIRE, Social Security, Simple tax mode, the plan judge (`assessPlan`) and more.
+- **The projection engine** — `lib/calculators/engine/`, <!-- AUTO-GEN:engineModules -->27<!-- /AUTO-GEN --> modules; map in `engine/ARCHITECTURE.md`.
+- **<!-- AUTO-GEN:primaryRouters -->26<!-- /AUTO-GEN --> primary tRPC routers + <!-- AUTO-GEN:settingsSubRouters -->4<!-- /AUTO-GEN --> settings sub-routers**, <!-- AUTO-GEN:tables -->81<!-- /AUTO-GEN -->+ tables, <!-- AUTO-GEN:migrations -->12<!-- /AUTO-GEN --> migrations (PG + SQLite).
+- **Integrations** — YNAB and Actual Budget (two-way budget sync, cash, assets, savings categories), SimpleFIN (balances, holdings, transactions), Tiingo prices, SEC fund facts.
 
-| Phase                                 | Status          | Notes                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Phase 1: Skeleton + Data Model + Seed | **COMPLETE**    | Schema (<!-- AUTO-GEN:migrations -->12<!-- /AUTO-GEN --> squashed baseline per release with dialect-specific PG/SQLite SQL, <!-- AUTO-GEN:tables -->81<!-- /AUTO-GEN -->+ tables), seed script, <!-- AUTO-GEN:settingsComponents -->26<!-- /AUTO-GEN --> settings tabs                                                                                                                                 |
-| Phase 2: Calculation Engine           | **COMPLETE**    | <!-- AUTO-GEN:calculators -->19<!-- /AUTO-GEN --> calculators + modular engine (<!-- AUTO-GEN:engineModules -->27<!-- /AUTO-GEN --> modules)                                                                                                                                                                                                                                                           |
-| Phase 3: Dashboard + Core Pages       | **COMPLETE**    | Dashboard (<!-- AUTO-GEN:dashboardCards -->20<!-- /AUTO-GEN --> dashboard card components), Paycheck, Budget, Portfolio                                                                                                                                                                                                                                                                                |
-| Phase 4: Budget API Integration       | **COMPLETE**    | YNAB + Actual Budget clients, sync router, cache, factory. Cash integration (API owns cash when active), budget 2-way sync, savings category sync, portfolio auto-push on snapshot, asset pull on sync, account mappings, expense YoY comparison, API category picker UI.                                                                                                                              |
-| Phase 5: Remaining Pages              | **COMPLETE**    | Performance, Net Worth, Retirement (+ 3 methodology sub-pages), Mortgage, Savings, Historical, Settings, Tools                                                                                                                                                                                                                                                                                         |
-| Phase 6: Polish + Deployment          | **IN PROGRESS** | UI review complete: shared primitives (Button, Badge, Skeleton, EmptyState), projection decomposition (8.3K→1.8K lines), responsive grids, Button adoption, Skeleton adoption, color standardization, design system docs. Docker/SWAG/monitoring/CI are built and operational (see § Deployment below) — remaining work is human ops cutover tasks (DNS, vault secrets, Semaphore template), not code. |
-
-### What's Built
-
-- **<!-- AUTO-GEN:pages -->36<!-- /AUTO-GEN --> pages:** Dashboard, Paycheck, Budget, Portfolio, Performance, Net Worth, Retirement (+ Methodology, Accumulation Methodology, Decumulation Methodology), Mortgage, Assets, Savings, Historical, Settings, Tools (ESPP calculator, Relocation calculator), Contributions, Data Browser, Expenses, Help, House, Liabilities, Versions, Brokerage, Benchmarks (+ Methodology; /analytics redirects here)
-- **<!-- AUTO-GEN:calculators -->19<!-- /AUTO-GEN --> calculators:** paycheck, tax, budget, contribution, mortgage, net-worth, savings, savings-capacity, efund, brokerage-goals, monte-carlo, random (distributions), relocation, coast-fire, social-security, simple-tax-mode (Simple tax mode: retirement money as one pot), plan-outcome (assessPlan — the one plan judge)
-- **Modular engine:** `lib/calculators/engine/` — <!-- AUTO-GEN:engineModules -->27<!-- /AUTO-GEN --> modules (projection orchestrator, year handlers, contribution routing, withdrawal routing, tax estimation, override resolution, balance utils/deduction, individual account tracking, growth application, RMD enforcement, post-withdrawal optimizer, spending strategies: Guyton-Klinger, Vanguard Dynamic, Constant Percentage, Endowment, Spending Decline, Forgo Inflation, RMD Spending)
-- **<!-- AUTO-GEN:primaryRouters -->26<!-- /AUTO-GEN --> primary tRPC routers + <!-- AUTO-GEN:settingsSubRouters -->4<!-- /AUTO-GEN --> settings sub-routers** + shared helpers
-- **<!-- AUTO-GEN:settingsComponents -->26<!-- /AUTO-GEN --> settings components**
-- **<!-- AUTO-GEN:dashboardCards -->20<!-- /AUTO-GEN --> dashboard card components**
-
----
-
-## Major Refactors
-
-Two foundational refactors shaped the current architecture. All new code must follow the patterns they established.
-
-### Refactor 1: Data-Driven Architecture (Overall Refactor)
-
-**Intent:** Eliminate all hardcoded account type knowledge from the codebase. Before this refactor, 150+ locations across 25+ files contained `if (category === '401k')` checks, duplicated label maps, hardcoded `['401k', '403b', 'hsa', 'ira', 'brokerage']` arrays, literal type unions, and heuristic matchers.
-
-**Result:** All account-type behavior is now declared in a single config record (`ACCOUNT_TYPE_CONFIG` in `src/lib/config/account-types.ts`). The codebase is generic infrastructure that reads config properties. Adding a new account type requires adding one config entry — zero code changes elsewhere.
-
-See RULES.md § Data-Driven Architecture for the full rules. The refactoring established config-driven behavior via `ACCOUNT_TYPE_CONFIG`.
-
-### Refactor 2: Engine Decomposition (Engine Refactor)
-
-**Intent:** The retirement engine grew to ~3100 lines in a single file with an implicit ordering contract between 7 sequential post-withdrawal operations. The refactor extracted each concern into a focused module while preserving identical behavior.
-
-**Result:** `lib/calculators/engine/` now contains <!-- AUTO-GEN:engineModules -->27<!-- /AUTO-GEN --> modules with explicit interfaces. Each module has a single responsibility and clear inputs/outputs. The orchestrator (`projection.ts`) calls modules in a defined pipeline order. The public API surface is minimal (`calculateProjection()` + `calculateContributionEngine()` + tax helpers).
-
-See RULES.md § Engine Modularity for the full module list (<!-- AUTO-GEN:engineModules -->27<!-- /AUTO-GEN --> modules) and rules. The orchestrator calls modules in an explicit pipeline order.
+Two patterns shape everything (rules in RULES.md): account-type behavior is **declared in config** (`ACCOUNT_TYPE_CONFIG` — a new account type is one entry), and the engine is **one pure module per concern** behind an orchestrator.
 
 ---
 
@@ -148,7 +115,7 @@ An eye button in the sidebar hides every dollar amount (Actual Budget's "hide" m
 
 See RULES.md § Settings Belong on Their Pages for the full domain-to-page mapping.
 
-Each page owns its domain's settings inline. The central Settings page only holds cross-cutting reference data (People, Jobs, IRS Limits, Tax Brackets, etc.).
+Each page owns its domain's settings inline. The central Settings page holds only cross-cutting data: people and household, reference data (IRS limits, tax/LTCG brackets, IRMAA, ACA/FPL, return rates), integrations, access control.
 
 ---
 
@@ -207,7 +174,7 @@ Performance: annual_performance (computed sums)
 
 ### Performance Accounts
 
-Master registry of 17 investment accounts (`performance_accounts` table). Each is self-describing with `accountType`, `subType`, `label`, and `ownerPersonId` columns. Each spans all years and links to both `account_performance` (historical tracking) and `portfolio_accounts` (snapshot rows) via FK.
+Master registry of investment accounts (`performance_accounts` table). Each is self-describing with `accountType`, `subType`, `label`, and `ownerPersonId` columns. Each spans all years and links to both `account_performance` (historical tracking) and `portfolio_accounts` (snapshot rows) via FK.
 
 Portfolio snapshots are more granular than performance accounts — multiple snapshot rows map to one performance account (e.g., 401k Roth + 401k Trad + Employer Match → one "Alice 401k (Fidelity)" performance account).
 
@@ -264,8 +231,8 @@ IRA (Vanguard)                                    $260,000.00
 
 ### Current Year vs Finalized Years
 
-- **Finalized years** (2012–2025): Stored as-is, trusted as source data
-- **Current year** (2026): `ending_balance` auto-updated from latest snapshot; other fields manually entered; "In Progress" badge displayed
+- **Finalized years:** stored as-is, trusted as source data
+- **Current year:** `ending_balance` follows the latest snapshot; other fields are entered (or filled from SimpleFIN); shown "In Progress"
 
 ### Row Synthesis
 
@@ -359,74 +326,35 @@ The relocation decision tool (`lib/calculators/relocation.ts`) compares two budg
 3. **Ongoing costs**: Added to relocation expenses from `purchaseYear` onward (permanent).
 4. **FI target**: Increased by ongoing costs (they're retirement expenses too). Loan payments do NOT increase FI target (they end).
 
-### Contribution/Distribution Engine
+### The Projection Engine
 
-The unified engine (`lib/calculators/engine/`) is decomposed into 24 focused modules (plus `projection-year-handlers/`, its own sub-decomposition of the per-year loop) with a clean public API exported from `engine/index.ts`. The engine was originally a single ~3100-line file; the engine refactor extracted each concern into its own module while preserving identical behavior.
+`lib/calculators/engine/` runs accumulation and retirement in one pass, year by year. Module map and per-year order: `engine/ARCHITECTURE.md`. Public API: `engine/index.ts`.
 
-**Public API** (from `engine/index.ts`):
+1. **Accumulation** (today → retirement): contributions routed per account from the contribution specs (or waterfall / percentage), IRS limits with overflow to a Retirement brokerage, employer match, salary growth with a cap, Roth/Traditional splits, lump sums, brokerage goals.
+2. **Retirement** — three withdrawal routing modes:
+   - **Bracket filling** (default): Traditional up to a target bracket, then the rest ranked by each year's real cost — free basis and 0% LTCG room first, then whichever of Roth growth or brokerage gains is cheaper (NIIT-aware), HSA on the same footing (`withdrawal-cost-ranking.ts`). Once Roth, brokerage and HSA are gone, Traditional above the target. Needs a `rothBracketTarget` and brackets; otherwise waterfall.
+   - **Waterfall:** accounts in priority order with per-account and per-tax-type caps.
+   - **Percentage:** fixed shares, with an emptied or capped account's share placed on the others.
+   - The withdrawal is grossed up to cover its own tax: brackets from W-4 withholding tables (with a tax multiplier), Social Security taxation (provisional income), NIIT, early-withdrawal penalties.
+   - Spending follows the household's strategy (fixed, Guyton-Klinger and five others).
+3. **Tax-aware features** (data in `lib/config/`): RMDs (Uniform Lifetime Table, SECURE 2.0 start ages), QCDs, graduated LTCG, Roth conversions into bracket room (and RMD smoothing), IRMAA and ACA cliffs, the OBBBA senior deduction, inflation-indexed thresholds.
 
-- `calculateProjection()` — Full accumulation + decumulation projection
-- `calculateContributionEngine()` — Contribution routing only (used by paycheck/contribution pages)
-- Tax estimation helpers
+Every setting can change by year ("Changes by year", resolved in `override-resolution.ts`).
 
-**Module responsibilities:**
+**Retirement scope and the plan judge.** Every year row carries two balances from one helper (`scopedBalances`, `balance-utils.ts`): `retirementBalance` — the aggregate minus Portfolio-parented accounts (`computeNonRetirementExclusion`, the same exclusion routing uses) — and `allAccountsBalance` (net-worth views only, lint-guarded). Depletion is retirement money running out. Whether a plan works is decided once, by `assessPlan` (`lib/calculators/plan-outcome.ts`): the first retirement year with material unmet spending (the engine's `unmetNeedMaterial`, floor `shortfallMaterialityFloor`) or with retirement money gone while later years still need withdrawals, with a reason (`depleted` / `penaltyGap` / `shortfall`). Simulation trials, Coast FIRE, the optimizers, tax optimization, relocation, stress tests and the report all read it. Routing guarantees that make the verdict meaningful: bracket filling draws Traditional above the target once Roth/brokerage/HSA are gone; percentage mode places an emptied or capped account's share on the others; the gross-up funds what routing actually delivers and prices NIIT; penalty-locked categories are capped at what their tracked accounts can give (`reachableByCategory`). The full contract is RULES.md § Account Categories. Showing simulated vs baseline figures follows one rule (`simulatedOrBaseline`, `usePlanEngineInput`, `DEFAULT_SIMULATION`) — RULES.md § Account Categories, "Simulated vs baseline".
 
-| Module                           | Responsibility                                                                                         |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `projection.ts`                  | Orchestrator — accumulation loop, decumulation loop, phase transition                                  |
-| `contribution-routing.ts`        | Per-account contribution allocation, IRS limit enforcement, overflow to brokerage, employer match      |
-| `withdrawal-routing.ts`          | Bracket-filling, waterfall, and percentage withdrawal modes                                            |
-| `withdrawal-cost-ranking.ts`     | Cost-aware ranking of post-bracket-cap sources (Roth/brokerage/HSA) by real marginal rate (v0.7.9 R40) |
-| `tax-estimation.ts`              | SS torpedo convergence (3-tier, 2-iteration), effective tax rate gross-up                              |
-| `override-resolution.ts`         | Sticky-forward per-year config resolution                                                              |
-| `balance-utils.ts`               | Balance cloning, type conversion helpers                                                               |
-| `balance-deduction.ts`           | Withdrawal deduction, clamping, depletion tracking                                                     |
-| `individual-account-tracking.ts` | Per-account bookkeeping (contributions, growth, withdrawals)                                           |
-| `growth-application.ts`          | Return rate application on all balance structures                                                      |
-| `rmd-enforcement.ts`             | IRS Uniform Lifetime Table lookup, forced Traditional distributions                                    |
-| `rmd-smoothing.ts`               | Proactive Roth-conversion sizing to shrink a future forced RMD toward stated need (v0.7.9 R47)         |
-| `qcd.ts`                         | Qualified Charitable Distribution amounts (IRC §408(d)(8), age 70+, not capped by RMD size)            |
-| `post-withdrawal-optimizer.ts`   | Roth conversions, IRMAA awareness, ACA subsidy awareness                                               |
-| `guyton-klinger.ts`              | Dynamic spending guardrails (upper/lower rails, prosperity rule)                                       |
+**Tax-year resolution:** every tax-figure consumer (the projection engine, the paycheck calculator, `savings.ts`) resolves its year through one function, `resolveTaxParams()` (`lib/config/tax-params.ts`), instead of each maintaining its own `WHERE tax_year = …` query. It picks a year — `tax_params` is an optional per-year vintage marker, not a value store; the existing `contribution_limits`/`tax_brackets`/`ltcg_brackets`/`irmaa_brackets`/`fpl_by_household` tables remain the only value store — and returns that year's slices in the shapes each engine module already consumed. A retirement profile can pin its resolved year via `retirement_profiles.tax_params_year` (NULL = track the latest enacted year, the default for every profile); re-opening a pinned profile reproduces its numbers instead of silently re-pricing when a newer tax year is seeded. The pin is set through `retirement.retirementProfiles.update` (`taxParamsYear`); there's no UI control for it yet. `irmaa_brackets` and `fpl_by_household` feed the engine's IRMAA and ACA checks.
 
-The engine handles both phases in a single pass:
+### Projection Card
 
-1. **Accumulation** (current age → retirement): per-account contribution routing (waterfall or percentage mode), IRS limit enforcement with overflow to brokerage, employer match, salary growth with cap, tax splits (Roth/Traditional)
-2. **Distribution** (retirement → end): tax-optimal bracket-filling withdrawals by default. Three routing modes:
-   - **Bracket filling** (default): fill traditional withdrawals up to a target marginal bracket cap, then rank the remainder (Roth/brokerage/HSA) by real marginal cost for that year — free basis/0%-LTCG room first, then whichever of Roth growth or brokerage LTCG (NIIT-aware above its MAGI threshold) is genuinely cheaper, HSA competing on the same real rate rather than an assumed-worst fixed position (`withdrawal-cost-ranking.ts`, v0.7.9 R40 — replaces the old fixed Roth→brokerage→HSA order, which is still what waterfall/percentage modes use). Requires `rothBracketTarget` + tax brackets; falls back to waterfall if missing.
-   - **Waterfall mode**: drain accounts in priority order with per-account and per-tax-type caps. Roth bracket optimization can overlay via `rothBracketTarget`.
-   - **Percentage mode**: split withdrawals by fixed % across accounts with proportional redistribution
-   - **Tax bracket estimation**: `estimateEffectiveTaxRate()` uses actual W-4 withholding brackets, with configurable tax multiplier for future rate scenarios
-   - **Withdrawal strategies**: Fixed (inflation-adjusted, 4% rule) or Guyton-Klinger guardrails (dynamic spending adjustment based on portfolio performance — configurable upper/lower guardrails, increase/decrease percentages, prosperity rule)
-   - Social Security offset with IRS provisional income formula (3-tier SS taxation, 2-iteration convergence), inflation-adjusted expenses, per-year sticky-forward overrides
-3. **Tax-aware features** (config-driven lookup tables in `lib/config/`):
-   - **RMDs** (`rmd-tables.ts`): IRS Uniform Lifetime Table, SECURE 2.0 start ages (72/73/75 by birth year). Post-routing enforcement forces additional Traditional withdrawals when needed.
-   - **LTCG brackets** (`tax-tables.ts`): Graduated 0%/15%/20% rates by filing status and total taxable income.
-   - **Roth conversions**: Automatic Traditional→Roth conversion to fill remaining bracket room after withdrawals. Tax paid from brokerage. Configurable target bracket.
-   - **IRMAA awareness** (`irmaa-tables.ts`): Medicare Part B+D cliff-based surcharges (age 65+). Reports cost and warns when conversions push MAGI over a cliff.
-   - **ACA subsidy awareness** (`aca-tables.ts`): Pre-65 health insurance subsidy cliff (400% FPL). Reports MAGI headroom and warns when subsidy is lost.
+The Retirement page's projection (`components/cards/projection/`) reads `projection.computeProjection` plus the simulation queries (`use-projection-queries.ts`); the dashboard reads the same cached runs through `usePlanEngineInput`.
 
-All settings (routing mode, withdrawal order, tax splits, caps, Roth conversions, G-K params, IRMAA/ACA awareness) can be overridden per-year.
+- **Per-person view:** Joint / per-person toggle scales the chart, table and hero figures by each person's share of the contribution specs.
+- **"How contributions are projected":** per-account specs with employer match inline (`+m`, hover for the breakdown).
+- **Withdrawal routing** panel: bracket filling / waterfall / percentage, with the order and tax-preference editors shown only where they apply.
+- **Tooltips:** every balance cell breaks down by tax bucket, source and match; In/Out breaks retirement draws into Traditional / Roth / brokerage / HSA / tax.
 
-**Retirement scope and the plan judge (v0.8.11).** Every year row carries two balances from one helper (`scopedBalances`, `balance-utils.ts`): `retirementBalance` — the aggregate minus Portfolio-parented accounts (`computeNonRetirementExclusion`, the same exclusion routing uses) — and `allAccountsBalance` (net-worth views only, lint-guarded). Depletion is retirement money running out. Whether a plan works is decided once, by `assessPlan` (`lib/calculators/plan-outcome.ts`): the first retirement year with material unmet spending (the engine's `unmetNeedMaterial`, floor `shortfallMaterialityFloor`) or with retirement money gone while later years still need withdrawals, with a reason (`depleted` / `penaltyGap` / `shortfall`). Simulation trials, Coast FIRE, the optimizers, tax optimization, relocation, stress tests and the report all read it. Routing guarantees that make the verdict meaningful: bracket filling draws Traditional above the target once Roth/brokerage/HSA are gone; percentage mode places an emptied or capped account's share on the others; the gross-up funds what routing actually delivers and prices NIIT; penalty-locked categories are capped at what their tracked accounts can give (`reachableByCategory`). The full contract is RULES.md § Account Categories. Showing simulated vs baseline figures follows one rule (`simulatedOrBaseline`, `usePlanEngineInput`, `DEFAULT_SIMULATION`) — RULES.md § Account Categories, "Simulated vs baseline".
-
-**Tax-year resolution (R43):** every tax-figure consumer (the projection engine, the paycheck calculator, `savings.ts`) resolves its year through one function, `resolveTaxParams()` (`lib/config/tax-params.ts`), instead of each maintaining its own `WHERE tax_year = …` query. It picks a year — `tax_params` is an optional per-year vintage marker, not a value store; the existing `contribution_limits`/`tax_brackets`/`ltcg_brackets`/`irmaa_brackets`/`fpl_by_household` tables remain the only value store — and returns that year's slices in the shapes each engine module already consumed. A retirement profile can pin its resolved year via `retirement_profiles.tax_params_year` (NULL = track the latest enacted year, the default for every profile); re-opening a pinned profile reproduces its numbers instead of silently re-pricing when a newer tax year is seeded. The pin is reachable via `retirement.retirementProfiles.update`'s `taxParamsYear` field; there is no dedicated UI control for it yet (deliberately deferred, same as R43's test-fixture-migration scope-down — real value, separate follow-up). Also as of R43: `irmaa_brackets` is now actually read by the engine (previously the table and its Settings editor existed but nothing consumed them), and `fpl_by_household` gives the ACA subsidy cliff a DB home for the first time.
-
-### Contribution Engine (UI Card)
-
-The contribution engine card (`components/cards/contribution-engine.tsx`) unifies contribution data with the engine projection into a single interactive view. Both the dashboard summary card and the retirement page use the same `getContributionEngine` endpoint.
-
-- **Per-person filtering:** Joint/Person toggle scales the balance projection graph, year-by-year table, and hero KPIs by estimated person share (computed from `contribSpecs` proportions).
-- **Contribution specs:** "How Contributions Are Projected" section shows per-account details with employer match displayed inline (`+m` indicator with hover breakdown). Match is redistributed proportionally when a person has both Roth and Traditional accounts in the same category.
-- **Column group headers:** Year-by-year table uses "Contributions" and "Balances" group headers for visual clarity.
-- **Withdrawal Strategy panel:** 3-way toggle (Bracket Filling / Waterfall / Percentage) with contextual help text. Bracket filling is default; waterfall order editor and tax preference dropdowns conditionally hidden when bracket filling is active.
-- **Balance hover tooltips:** All balance columns (per-tax-type and total) show contextual tooltips — tax bucket breakdown ($ and %), contribution/withdrawal sources per slot, employer match attribution by tax treatment, and pro-rate note for current year. In/Out column shows match with `+m` indicator in both phases; decumulation In/Out shows Traditional/Roth/Brokerage/HSA/Tax cost breakdown.
-
-Shared helpers power the data:
-
-- `getAccountTypeConfig()` — central config for all account-type behavior (from `src/lib/config/account-types.ts`)
-- `aggregateContributionsByCategory()` — single-pass aggregation of contributions + employer match per category (in `helpers.ts`)
-- `buildContributionDisplaySpecs()` — per-record specs with match redistribution, used by both retirement and contribution routers (in `helpers.ts`)
+Shared helpers: `getAccountTypeConfig()`, `aggregateContributionsByCategory()` and `buildContributionDisplaySpecs()` (`server/helpers/`).
 
 ### Tooltip System
 
@@ -489,24 +417,22 @@ Monthly-contribution goals for near-term purchases. Managed via `savings` calcul
 
 Yearly brokerage-funded goals (e.g., new car in 2030). Unlike sinking funds held in cash, these are invested and subject to capital gains tax on the gains portion.
 
-**Engine-integrated architecture:** Long-term goals are processed inside the contribution engine's accumulation loop — not a standalone calculator. This ensures:
+**Engine-integrated:** long-term goals are drawn inside the engine's accumulation years, not by a separate calculator, so:
 
-- Goal withdrawals reduce the brokerage balance before retirement decumulation sees it (holistic rule)
-- Cost basis is tracked accurately (contributions increase basis 1:1, growth does not, withdrawals reduce basis proportionally via average basis method)
-- Tax on withdrawals is computed on gains only (`withdrawal - basisPortion`) at the `distributionTaxRateBrokerage` rate
-
-**Data flow:**
+- goal draws come only from **Portfolio** brokerages and reduce them before retirement sees anything (holistic rule);
+- cost basis is tracked **per brokerage account** (`brokerage-basis.ts`): contributions add basis 1:1, growth doesn't, draws take basis in proportion;
+- tax is on the gain only, at the brokerage distribution rate.
 
 ```
-brokerage_goals table → retirement router → engine input (brokerageGoals)
-    → engine accumulation loop processes withdrawals by target year + priority
-    → engine output (brokerageGoalWithdrawals per year)
-    → brokerage-goals calculator (view enricher) maps to per-goal status
+brokerage_goals → engine input (brokerageGoals)
+  → accumulation years draw by target year + priority (Portfolio brokerages)
+  → brokerageGoalWithdrawals per year
+  → brokerage-goals calculator (view enricher) → per-goal status
 ```
 
-**Schema:** `brokerage_goals` table (id, name, target_amount, target_year, priority, is_active, notes). Cost basis tracked in `app_settings` as `brokerage_cost_basis`.
+**Schema:** `brokerage_goals` (name, target amount, year, priority, active, notes). Basis lives on `performance_accounts.cost_basis`.
 
-**UI:** CRUD cards in `components/cards/brokerage-goals.tsx` with summary KPIs (total commitments, active goals count).
+**UI:** `components/cards/brokerage-goals.tsx` (cards + summary figures).
 
 ---
 
@@ -556,32 +482,18 @@ Documented deviations from general architectural rules, kept for pragmatic reaso
 
 ---
 
-## Deployment (Phase 6 — Not Started)
+## Deployment
 
-| Concern          | Implementation                                                                                                                                                                    |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Dockerfile       | 3-stage build (deps → builder → runner), `node:24-alpine` pinned to digest, standalone output                                                                                     |
-| Compose          | Hardened: `read_only`, `cap_drop: ALL`, `no-new-privileges`, `127.0.0.1` port binding, CPU+memory limits                                                                          |
-| Proxy            | SWAG reverse proxy via `homelab.proxy.*` container labels                                                                                                                         |
-| Health           | `GET /api/health` — simple probe (status + version). `GET /api/health/detailed` — authenticated (pool stats, budget API, sync timestamps)                                         |
-| Security headers | CSP (no `unsafe-eval`), HSTS, X-Frame-Options DENY, Permissions-Policy                                                                                                            |
-| Monitoring       | Structured JSON logging, Grafana dashboard, Discord alerting                                                                                                                      |
-| Migrations       | `db-migrate.ts` compiled on its own with `tsc` (no `src/` imports), runs as `node db-migrate.js` in entrypoint; data-converting migrations: RULES.md "Data-converting migrations" |
-| Secrets          | All in `vars/secrets.yaml`, rendered via Ansible `env.j2` template                                                                                                                |
+Live in production (self-hosted Docker). Procedures — deploy, release, rollback, backups — are in the maintainers' ops notes.
 
-### Human Actions Required
-
-| Task                          | Status                    |
-| ----------------------------- | ------------------------- |
-| PostgreSQL database           | Done                      |
-| Authentik app registration    | Partial (dev-mode bypass) |
-| `app_definitions.yaml` entry  | Pending                   |
-| YNAB API token                | Pending                   |
-| Vault secrets                 | Pending                   |
-| SWAG proxy labels             | Pending                   |
-| Semaphore template            | Pending                   |
-| DNS record                    | Pending                   |
-| Fresh xlsx export for cutover | Pending                   |
+| Concern          | Implementation                                                                                                                                                                                       |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Image            | 3-stage Dockerfile (deps → builder → runner), digest-pinned `node` Alpine base, Next standalone output                                                                                               |
+| Compose          | `read_only`, `cap_drop: ALL`, `no-new-privileges`, localhost port binding, CPU + memory limits                                                                                                       |
+| Health           | `GET /api/health` (status + version); `GET /api/health/detailed` (authenticated: pool, budget API, sync times)                                                                                       |
+| Security headers | CSP without `unsafe-eval`, HSTS, `X-Frame-Options: DENY`, Permissions-Policy                                                                                                                         |
+| Migrations       | `db-migrate.ts`, compiled standalone, runs from the entrypoint before the server: pending migrations (with a pre-upgrade backup), then the reference-data seed. Data-converting migrations: RULES.md |
+| Monitoring       | Structured JSON logs                                                                                                                                                                                 |
 
 ---
 
@@ -617,7 +529,7 @@ Defined in `src/app/globals.css` as CSS custom properties with light/dark overri
 **Status colors** — sourced from `STATUS_COLORS` in `lib/utils/colors.ts`
 (one literal-Record lookup, not hardcoded per call site). Amber uses
 `text-amber-800` rather than `-700` because `-700` fails WCAG AA 4.5:1
-contrast on `bg-amber-100` (v0.5 expert-review M14) — this applies to
+contrast on `bg-amber-100` — this applies to
 plain status text too, not just filled badges/alerts, so there is only
 one canonical shade per color rather than a lighter "text-only" variant:
 
@@ -629,8 +541,8 @@ one canonical shade per color rather than a lighter "text-only" variant:
 | Info/link    | `text-blue-700 hover:text-blue-800`, `bg-blue-100 border-blue-300` |
 | Danger hover | `hover:text-red-700`                                               |
 
-Consumers: `Badge`, `toast.tsx`, `scenario-indicator.tsx`'s
-`ScenarioBanner`, `plan-health.tsx`'s `CalloutLine`.
+Consumers include `Badge`, `toast.tsx`, `plan-health.tsx`'s `CalloutLine`
+and the status rows on Milestones, Recommendations and Settings.
 
 ### Component Catalog
 

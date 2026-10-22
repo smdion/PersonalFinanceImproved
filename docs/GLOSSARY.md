@@ -7,6 +7,19 @@ Personal finance has a lot of acronyms. This glossary defines the ones
 that show up in the codebase + UI. For canonical definitions, follow
 the linked IRS / SSA / CMS publications.
 
+## Ledgr terms
+
+| Term                              | Meaning                                                                                                                                                                                |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Profile**                       | A complete, named set of one kind of assumption: Salary, Contribution, Budget or Retirement. Only the **active** profile of each kind counts; there is no default or baseline profile. |
+| **Plan**                          | A saved set of profiles, one of each kind. Applying it makes them the active ones.                                                                                                     |
+| **What-If**                       | The Budget page's sandbox; it never changes the active profiles.                                                                                                                       |
+| **Retirement vs Portfolio money** | Every account has a parent category. Retirement accounts fund retirement; Portfolio accounts (savings outside the retirement plan) never do — retirement answers ignore them.          |
+| **Baseline vs Simulation**        | Baseline = the projection with fixed returns. Simulation = many trials with random returns (Monte Carlo); shown as a median and a middle range.                                        |
+| **Changes by year**               | Settings that change from a given year onward (contribution rate, spending, salary, …), "sticky" until the next change.                                                                |
+| **Coast FIRE**                    | The age after which you could stop contributing and still reach your retirement need.                                                                                                  |
+| **Sinking fund**                  | Cash saved monthly toward a known future expense.                                                                                                                                      |
+
 ## Account types
 
 | Term          | Meaning                                                                                                                                             |
@@ -85,19 +98,19 @@ are IRS-level categories independent of the account type that holds them.
 
 ## Budget API integrations
 
-| Term               | Meaning                                                                               |
-| ------------------ | ------------------------------------------------------------------------------------- |
-| **YNAB**           | You Need a Budget. SaaS budgeting tool. Ledgr integrates as a read-mostly client.     |
-| **Actual**         | Actual Budget. Open-source self-hosted budgeting tool. Ledgr integrates the same way. |
-| **Milliunits**     | YNAB stores amounts as integers in 1000ths of a dollar ($1.00 = 1000).                |
-| **Sync direction** | `pull` (read API → update local), `push` (write local → API), or `both`.              |
+| Term               | Meaning                                                                                      |
+| ------------------ | -------------------------------------------------------------------------------------------- |
+| **YNAB**           | You Need a Budget. SaaS budgeting tool. Ledgr syncs both ways (categories, cash, snapshots). |
+| **Actual**         | Actual Budget. Open-source self-hosted budgeting tool. Ledgr integrates the same way.        |
+| **Milliunits**     | YNAB stores amounts as integers in 1000ths of a dollar ($1.00 = 1000).                       |
+| **Sync direction** | `pull` (read API → update local), `push` (write local → API), or `both`.                     |
 
 ## Architecture / dev
 
-| Term                   | Meaning                                                                                                                                                                |
-| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **tRPC**               | End-to-end typesafe RPC for the API layer. No REST routes.                                                                                                             |
-| **Drizzle**            | TypeScript ORM with a SQL-like query builder. Used for both PG and SQLite.                                                                                             |
-| **Authentik**          | OIDC identity provider used in production. Dev mode has a bypass via `ALLOW_DEV_MODE=true`.                                                                            |
-| **Squash migration**   | Consolidating multiple incremental migrations into a single fresh schema dump. v0.3 squashed earlier history; v0.5 squashed v0.3 + 2 follow-ups into a clean baseline. |
-| **`AUTO-GEN` markers** | HTML comments in DESIGN.md / TESTING.md that get rewritten by `pnpm docs:verify --update` based on counts read from the filesystem (e.g., number of tRPC routers).     |
+| Term                   | Meaning                                                                                                                                                                        |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **tRPC**               | End-to-end typesafe RPC for the API layer. No REST routes.                                                                                                                     |
+| **Drizzle**            | TypeScript ORM with a SQL-like query builder. Used for both PG and SQLite.                                                                                                     |
+| **Authentik**          | OIDC identity provider used in production. Dev mode has a bypass via `ALLOW_DEV_MODE=true`.                                                                                    |
+| **Squash migration**   | Consolidating a release line's migrations into one fresh baseline (`0000_v<N>_initial_schema`); later migrations are incremental.                                              |
+| **`AUTO-GEN` markers** | HTML comments in DESIGN.md / TESTING.md that `pnpm docs:update` rewrites from counts read from the filesystem (`pnpm docs:verify` checks them) (e.g., number of tRPC routers). |

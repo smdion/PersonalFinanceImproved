@@ -16,9 +16,10 @@ Thanks for your interest in contributing! Here's how to get started.
 2. Make your changes
 3. Ensure all checks pass:
    ```bash
-   pnpm test        # Run all tests
-   pnpm lint        # Check code style
-   pnpm build       # Verify production build
+   pnpm test        # Unit + integration tests
+   pnpm lint        # ESLint + Prettier
+   pnpm build       # Production build
+   pnpm docs:verify # Doc counts and generated docs are current
    ```
 4. Submit a pull request
 
@@ -30,50 +31,28 @@ Thanks for your interest in contributing! Here's how to get started.
 - Component files use kebab-case (`my-component.tsx`)
 - Database columns use snake_case, TypeScript properties use camelCase
 
-## Data-Driven Design
+## Before you write code
 
-Ledgr follows a data-driven architecture. When adding new features:
+Read the relevant parts of [`docs/RULES.md`](docs/RULES.md) (the rules), [`docs/DESIGN.md`](docs/DESIGN.md) (how things are built) and [`docs/TESTING.md`](docs/TESTING.md). The ones that matter most:
 
-- Define data shapes as the source of truth
-- Write generic renderers that read fields and render what's present
-- Use config/lookup tables instead of if-statements for category-specific behavior
-- Display rules live in data presence, not in call-site decisions
-
-## Pure Business Logic Boundary
-
-**All business logic must live in `src/lib/pure/` — never inside database transactions, API handlers, or router procedures.** This is a hard architectural rule; the authoritative version (why, and how to tell if logic is in the wrong place) lives in `docs/RULES.md` § Pure Business Logic Boundary. The rest of this section is the existing-module reference for contributors.
+- **Config declares, code executes.** Account-type behavior comes from `ACCOUNT_TYPE_CONFIG` (`src/lib/config/account-types.ts`) through its helpers — never `if (category === "401k")` or a hardcoded list of categories.
+- **Business logic lives in `src/lib/pure/`** (or `src/lib/calculators/` for calculators) — never inside a DB transaction, router procedure or API handler. Routers fetch, call pure functions, and persist. Every pure function gets a unit test in `tests/pure/` with no database.
+- **One computation per figure.** Before writing a formula, label map or display rule, look for the existing one and reuse it.
+- **Format through the helpers** (`formatCurrency`, `formatPercent`, …) so privacy mode can hide amounts.
 
 ### Import discipline for pure modules
 
-Pure modules in `src/lib/pure/` must never import from barrel re-exports that transitively pull in database code. Use direct submodule imports:
+Pure modules must not import barrel files that pull in database code — import the submodule directly:
 
 ```typescript
-// WRONG — barrel pulls in DB schema via transitive re-exports
+// WRONG — the barrel pulls in DB schema
 import { toNumber } from "@/server/helpers";
 
-// RIGHT — direct import from the pure submodule
+// RIGHT — the pure submodule
 import { toNumber } from "@/server/helpers/transforms";
 ```
 
-### Existing pure modules
-
-| Module                                      | Domain                    | Key exports                                                                                     |
-| ------------------------------------------- | ------------------------- | ----------------------------------------------------------------------------------------------- |
-| `pure/performance.ts`                       | Year-end finalization     | `resolveCategoryValues`, `filterAccountsForNextYear`, `assembleNetWorthValues`, `computeReturn` |
-| `pure/contributions.ts`                     | IRS limits                | `resolveIrsLimit`, `computeSiblingTotal`, `isEligibleForPriorYear`                              |
-| `pure/portfolio.ts`                         | Snapshot carry-forward    | `buildPrevInactiveKeys`, `resolveAccountActiveStatus`, `computeSnapshotEndingBalances`          |
-| `pure/household-income.ts`                  | Household annual income   | `computeAnnualEarnings`, `sumHouseholdIncome`                                                   |
-| `pure/roth-ira.ts`                          | Roth IRA eligibility      | `buildRothIraView`, `judgeRothIra`, `rothIraAllowed`, `preTaxIraByPerson`, `rothIraSummary`     |
-| `pure/investment-income.ts`                 | Taxable investment income | `estimateTaxableInvestmentIncome`, `estimateFeedIncome`, `investmentIncomeGaps`                 |
-| `pure/cash-positions.ts`                    | Uninvested cash           | `judgeCashDrag`, `judgeHsaCash`, `resolveHsaCashBuffer`, `currentCashClass`, `hsaCashBuffers`   |
-| `pure/fund-findings.ts`                     | Per-fund findings         | `judgeTaxLossHarvest`, `judgeCheaperFunds`                                                      |
-| `pure/holding-periods.ts`                   | Holding history           | `deriveObservedPeriods`, `holdingsByAccountDay`, `validateHoldingPeriod`, `periodOn`            |
-| `pure/matched-mix.ts`                       | Matched-mix benchmark     | `matchedMixLevels`, `matchedMixRun`, `accountValuesByYear`                                      |
-| `pure/recent-change.ts`                     | Recent balance change     | `recentChanges`                                                                                 |
-| `pure/recommendations-{roth,cash,funds}.ts` | Recommendation adapters   | `recommendationsFromRothIra`, `recommendationsFromCash`, `recommendationsFromFunds`             |
-| `pure/historical.ts`                        | Temporal resolution       | `resolveSalaryForYear`, `buildSalaryByYear`, `resolveCarryForwardAssetValue`                    |
-| `pure/projection.ts`                        | MC blending               | `interpolateAllocations`, `blendDeterministicRates`, `blendedPortfolioStats`                    |
-| `pure/profiles.ts`                          | Deletion guards           | `canDeleteBudgetProfile`, `canDeleteContribProfile`, `findActiveJob`, `resolveLinkedProfile`    |
+See `ls src/lib/pure/` for the existing modules — check there before adding one.
 
 ## Reporting Issues
 
