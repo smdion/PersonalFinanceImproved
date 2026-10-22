@@ -7,7 +7,10 @@
  * Run time defaults to 20 runs per invariant (CI-friendly). Override with
  * FAST_CHECK_NUM_RUNS=200 for deeper stress testing (see `pnpm test:stress`).
  */
-import { withConsistentStart } from "./fixtures/engine-fixtures";
+import {
+  startingBalanceGaps,
+  withConsistentStart,
+} from "./fixtures/engine-fixtures";
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import { calculateProjection } from "@/lib/calculators/engine";
@@ -741,6 +744,20 @@ describe("engine invariants", () => {
         }),
         { numRuns: NUM_RUNS },
       );
+    });
+
+    it("generated inputs describe their starting money the same way in every form", () => {
+      for (const arb of [
+        arbitraryInput(),
+        arbitraryRetiredInput(),
+        arbitraryRmdInput(),
+      ])
+        fc.assert(
+          fc.property(arb, (input) => {
+            expect(startingBalanceGaps(calculateProjection(input))).toEqual([]);
+          }),
+          { numRuns: NUM_RUNS },
+        );
     });
 
     it("28 — engine is deterministic: running twice produces identical output", () => {

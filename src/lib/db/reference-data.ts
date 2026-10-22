@@ -13,6 +13,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { sql } from "drizzle-orm";
 import { execRaw } from "./compat";
+import { log } from "@/lib/logger";
 
 function readSeed(): string {
   return fs.readFileSync(path.resolve("./seed-reference-data.sql"), "utf-8");
@@ -33,17 +34,29 @@ export function seedStatements(seedSql: string): string[] {
 /** The tables the seed writes. */
 export function referenceTableNames(seedSql: string = readSeed()): string[] {
   const names = new Set<string>();
-  const re = /INSERT\s+INTO\s+"?([A-Za-z_][A-Za-z0-9_]*)"?/gi;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(seedSql)) !== null) names.add(m[1]!);
+  for (const statement of seedStatements(seedSql)) {
+    const m = /^INSERT\s+INTO\s+"?([A-Za-z_][A-Za-z0-9_]*)"?/i.exec(statement);
+    if (m) names.add(m[1]!);
+  }
   return [...names];
 }
 
 /** Re-apply the reference seed (additive) — run after anything that
- *  replaced or emptied the reference tables. */
+ *  replaced or emptied the reference tables. Never throws: it runs after
+ *  that change has committed, so a failure here is logged (the next
+ *  start's migrate reconciles anyway) rather than reported as the restore
+ *  failing. Returns whether it applied. */
 export async function reconcileReferenceData(
   db: Parameters<typeof execRaw>[0],
-): Promise<void> {
-  for (const statement of seedStatements(readSeed()))
-    await execRaw(db, sql.raw(statement));
+): Promise<boolean> {
+  try {
+    for (const statement of seedStatements(readSeed()))
+      await execRaw(db, sql.raw(statement));
+    return true;
+  } catch (err) {
+    log("warn", "reference_data_reconcile_failed", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return false;
+  }
 }

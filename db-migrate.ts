@@ -525,9 +525,14 @@ export const REFERENCE_SEED_TABLES = new Set([
 
 function parseSeedTableNames(seedSql: string): string[] {
   const names = new Set<string>();
+  // Comment lines can mention a table without writing to it.
+  const code = seedSql
+    .split("\n")
+    .filter((line) => !line.trimStart().startsWith("--"))
+    .join("\n");
   const re = /INSERT\s+INTO\s+"?([A-Za-z_][A-Za-z0-9_]*)"?/gi;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(seedSql)) !== null) names.add(m[1]!);
+  while ((m = re.exec(code)) !== null) names.add(m[1]!);
   const unexpected = [...names].filter((n) => !REFERENCE_SEED_TABLES.has(n));
   if (unexpected.length > 0) {
     throw new Error(
@@ -1529,17 +1534,34 @@ async function runPostgres() {
       });
       // Live demo schemas copied these tables when they were built and are
       // only rebuilt when the migration count changes — so a new tax year
-      // in the seed would never reach them. Add public's missing rows
-      // (stale schemas were dropped above, so the tables still match).
+      // or a seed correction would never reach them. Apply the seed in each
+      // (inserts + its guarded corrections), then add any other rows public
+      // has. Stale schemas were dropped above, so the tables still match.
       const { rows: demos } = await seedClient.query<{ nspname: string }>(
         `SELECT nspname FROM pg_namespace WHERE nspname LIKE 'demo\\_%'`,
       );
       for (const { nspname } of demos) {
         const schemaIdent = `"${nspname.replace(/"/g, '""')}"`;
-        for (const table of seedTables)
-          await seedClient.query(
-            `INSERT INTO ${schemaIdent}."${table}" SELECT * FROM public."${table}" ON CONFLICT DO NOTHING`,
+        try {
+          await seedClient.query(`SET search_path TO ${schemaIdent}`);
+          await seedClient.query(seedSql);
+        } finally {
+          await seedClient.query("SET search_path TO public");
+        }
+        for (const table of seedTables) {
+          const { rows: cols } = await seedClient.query<{
+            column_name: string;
+          }>(
+            `SELECT column_name FROM information_schema.columns
+              WHERE table_schema = 'public' AND table_name = $1
+              ORDER BY ordinal_position`,
+            [table],
           );
+          const list = cols.map((c) => `"${c.column_name}"`).join(", ");
+          await seedClient.query(
+            `INSERT INTO ${schemaIdent}."${table}" (${list}) SELECT ${list} FROM public."${table}" ON CONFLICT DO NOTHING`,
+          );
+        }
       }
       if (demos.length > 0)
         log("info", "demo_reference_data_reconciled", {

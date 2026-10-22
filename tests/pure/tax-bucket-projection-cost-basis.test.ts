@@ -61,4 +61,14 @@ describe("computeTaxBucketProjection — brokerage cost basis", () => {
   it("falls back to start + contributions when the row has no basis", () => {
     expect(project(years()).costBasis).toBe(16000);
   });
+
+  it("caps the fallback at the balance, as the engine caps its own", () => {
+    // $40k basis + $6k contributed, but the account holds $30k.
+    const entry = computeTaxBucketProjection({
+      nowEntries: [{ ...now, costBasis: 40000 }],
+      projectionByYear: years(),
+      people: [{ id: 1, name: "Alex", birthYear: 1980 }],
+    }).entries[0]!;
+    expect(entry.costBasis).toBe(30000);
+  });
 });

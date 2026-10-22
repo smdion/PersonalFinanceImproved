@@ -371,6 +371,8 @@ function rescaleAccountBalances(
  * `overrides` what the test set: buckets set alone rescale the fixture's
  * per-category balances to them; per-category balances set alone set the
  * buckets. Setting both keeps both — the test's own choice.
+ * `individualAccounts` are left as given; `startingBalanceGaps` (asserted
+ * by the engine suites) catches any that disagree.
  */
 export function withConsistentStart<
   T extends {
@@ -402,4 +404,13 @@ export function withConsistentStart<
       ),
     };
   return input;
+}
+
+/** The engine's starting-balance gap warnings (`[DIAG] starting
+ *  balances`): a fixture whose money disagrees with itself. Engine suites
+ *  assert none, so a gap can't creep back into a fixture. */
+export function startingBalanceGaps(result: { warnings: string[] }): string[] {
+  return result.warnings.filter((w) =>
+    w.startsWith("[DIAG] starting balances"),
+  );
 }

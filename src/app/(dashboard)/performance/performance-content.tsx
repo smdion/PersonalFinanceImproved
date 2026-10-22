@@ -457,22 +457,25 @@ export function PerformanceContent() {
           })),
     ),
   );
-  // Active brokerages holding money with no cost basis this year: the
-  // projection taxes all of it as gains (0 also means "not entered").
+  // Active brokerages holding money with no cost basis: the projection
+  // taxes all of it as gains (0 also means "not entered"). Balance from
+  // each account's latest year, so it holds before this year's row exists.
   const missingCostBasis = findMissingCostBasis(
     typedMasterAccounts
       .filter((m) => m.isActive)
-      .map((m) => ({
-        account: m,
-        category: m.accountType,
-        balance: sumBy(
-          accountRows.filter(
-            (r) => r.performanceAccountId === m.id && r.year === currentYear,
+      .map((m) => {
+        const rows = accountRows.filter((r) => r.performanceAccountId === m.id);
+        const latest = Math.max(...rows.map((r) => r.year));
+        return {
+          account: m,
+          category: m.accountType,
+          balance: sumBy(
+            rows.filter((r) => r.year === latest),
+            (r) => r.endingBalance,
           ),
-          (r) => r.endingBalance,
-        ),
-        costBasis: Number(m.costBasis ?? 0),
-      })),
+          costBasis: Number(m.costBasis ?? 0),
+        };
+      }),
   );
   const basisGapLabel = (g: (typeof basisGaps)[number]) => {
     const a = accountRows.find(

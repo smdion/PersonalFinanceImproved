@@ -20,7 +20,10 @@
  *   2. Update LAST_REVIEWED_AT below to today (YYYY-MM-DD)
  *   3. Document what was checked and against what source
  */
-import { withConsistentStart } from "./fixtures/engine-fixtures";
+import {
+  startingBalanceGaps,
+  withConsistentStart,
+} from "./fixtures/engine-fixtures";
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/calculators/engine";
 
@@ -157,6 +160,8 @@ function roundDeep(obj: unknown, decimals = 2): any {
 
 /** Extract key metrics from engine result for snapshot comparison. */
 function extractMetrics(result: ReturnType<typeof calculateProjection>) {
+  // Every fixture's starting money agrees with itself.
+  expect(startingBalanceGaps(result)).toEqual([]);
   const years = result.projectionByYear;
   const firstYear = years[0];
   const retirementYear = years.find((y) => y.phase === "decumulation");
