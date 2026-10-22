@@ -16,7 +16,10 @@ import {
   formatCurrency,
   formatDate,
 } from "@/lib/utils/format";
-import { findBasisGaps } from "@/lib/pure/basis-consistency";
+import {
+  findBasisGaps,
+  findMissingCostBasis,
+} from "@/lib/pure/basis-consistency";
 import { parseBasisEditField } from "@/components/performance/basis-cell";
 import {
   PERF_CATEGORY_PORTFOLIO,
@@ -28,6 +31,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SlidePanel } from "@/components/ui/slide-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
+import { sumBy } from "@/lib/utils/math";
 import { RealizedVsAssumedCard } from "@/components/performance/realized-vs-assumed-card";
 import {
   LifetimeSummaryCards,
@@ -453,6 +457,23 @@ export function PerformanceContent() {
           })),
     ),
   );
+  // Active brokerages holding money with no cost basis this year: the
+  // projection taxes all of it as gains (0 also means "not entered").
+  const missingCostBasis = findMissingCostBasis(
+    typedMasterAccounts
+      .filter((m) => m.isActive)
+      .map((m) => ({
+        account: m,
+        category: m.accountType,
+        balance: sumBy(
+          accountRows.filter(
+            (r) => r.performanceAccountId === m.id && r.year === currentYear,
+          ),
+          (r) => r.endingBalance,
+        ),
+        costBasis: Number(m.costBasis ?? 0),
+      })),
+  );
   const basisGapLabel = (g: (typeof basisGaps)[number]) => {
     const a = accountRows.find(
       (r) => r.performanceAccountId === g.performanceAccountId,
@@ -541,6 +562,20 @@ export function PerformanceContent() {
               conversion was in {g.year} with {formatCurrency(g.expected)} —{" "}
               {g.year}&apos;s row is probably missing it. Turn on the Basis
               columns and fix their line on the {g.year} row.
+            </p>
+          ))}
+        </div>
+      )}
+
+      {/* Brokerages with money and no cost basis entered */}
+      {missingCostBasis.length > 0 && (
+        <div className="mb-3 rounded-md border border-amber-400/60 bg-amber-50/40 px-3 py-2 text-xs text-amber-800 dark:bg-amber-950/20 dark:text-amber-300">
+          {missingCostBasis.map(({ account, balance }) => (
+            <p key={account.id}>
+              {accountDisplayName(account)} holds {formatCurrency(balance)} with
+              no cost basis entered, so projections tax everything drawn from it
+              as capital gains. Turn on the Basis columns and enter what you
+              paid on its {currentYear} row.
             </p>
           ))}
         </div>

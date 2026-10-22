@@ -55,6 +55,10 @@ import {
   PROJECTED_RETIREMENT_BROKERAGE_LABEL,
 } from "@/lib/config/display-labels";
 import { resolveRmdExcessTarget } from "@/lib/pure/rmd-excess-target";
+import {
+  findMissingCostBasis,
+  missingCostBasisWarning,
+} from "@/lib/pure/basis-consistency";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import {
   IRS_LIMIT_GROWTH_RATE,
@@ -644,6 +648,29 @@ export async function buildEnginePayload(
     ),
     perfAccounts,
   });
+  // Brokerages holding money with no cost basis: the projection taxes every
+  // dollar drawn from them as a gain — say so (0 also means "not entered").
+  const basisWarnings = [
+    ...new Set(
+      findMissingCostBasis(
+        Object.entries(accountBreakdownByCategory).flatMap(
+          ([category, accts]) =>
+            accts
+              .filter((a) => a.costBasis != null)
+              .map((a) => ({
+                category,
+                name: a.name,
+                balance: a.amount,
+                costBasis: a.costBasis!,
+              })),
+        ),
+      ).map((a) => missingCostBasisWarning(a.name)),
+    ),
+  ];
+  const inputWarnings = [
+    ...(rmdTarget.warning ? [rmdTarget.warning] : []),
+    ...basisWarnings,
+  ];
   const OVERFLOW_TARGET_CATEGORY = getAllCategories().find(isOverflowTarget)!;
   const personNameById = new Map(people.map((p) => [p.id, p.name]));
 
@@ -1811,7 +1838,7 @@ export async function buildEnginePayload(
           ]
         : []),
     ],
-    ...(rmdTarget.warning ? { inputWarnings: [rmdTarget.warning] } : {}),
+    ...(inputWarnings.length > 0 ? { inputWarnings } : {}),
     annualExpenses: annualExpensesVal,
     // Always pass when user explicitly set a decumulation override, or when
     // the computed decumulation budget differs from accumulation budget.

@@ -1,6 +1,10 @@
-/** Roth conversion basis consistency across years. Invented figures only. */
+/** Missing and inconsistent basis. Invented figures only. */
 import { describe, it, expect } from "vitest";
-import { findBasisGaps } from "@/lib/pure/basis-consistency";
+import {
+  findBasisGaps,
+  findMissingCostBasis,
+  missingCostBasisWarning,
+} from "@/lib/pure/basis-consistency";
 
 const row = (
   year: number,
@@ -44,5 +48,36 @@ describe("findBasisGaps", () => {
         row(2026, 0, null, 2),
       ]),
     ).toEqual([]);
+  });
+});
+
+describe("findMissingCostBasis", () => {
+  const acct = (category: string, balance: number, costBasis: number) => ({
+    category,
+    balance,
+    costBasis,
+  });
+
+  it("flags a brokerage holding money with no basis", () => {
+    const a = acct("brokerage", 25000, 0);
+    expect(findMissingCostBasis([a])).toEqual([a]);
+  });
+
+  it("leaves alone a brokerage with basis, an empty one, and non-brokerage accounts", () => {
+    expect(
+      findMissingCostBasis([
+        acct("brokerage", 25000, 1),
+        acct("brokerage", 0, 0),
+        acct("brokerage", 0.4, 0),
+        acct("401k", 90000, 0),
+        acct("hsa", 5000, 0),
+      ]),
+    ).toEqual([]);
+  });
+
+  it("names the account and where to fix it", () => {
+    const w = missingCostBasisWarning("Joint Brokerage");
+    expect(w).toContain("Joint Brokerage has no cost basis entered");
+    expect(w).toContain("Basis columns");
   });
 });
