@@ -8,6 +8,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.12] - 2026-10-21
+
+### Changed
+
+- **"Why trust these numbers?"** on the Retirement page and the validation page describe the testing behind the projection without quoting test counts that had gone out of date.
+
+### Internals (no user-facing changes)
+
+- Runs on Node 26.12; a development type package updated.
+- Developer documentation brought up to date with the code (rules, design, testing, engine architecture, README).
+
+---
+
 ## [0.8.11] - 2026-10-21
 
 ### Added

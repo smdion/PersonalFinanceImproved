@@ -6,13 +6,14 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 
 ### Planning & projections
 
-- **Retirement planning** — A full accumulation-and-decumulation projection engine with Monte Carlo simulation (labeled **Simulation** in the app), validated against Trinity Study benchmarks. Per-person retirement ages, Social Security amounts and start ages, and pre-retirement raise rates. Eight withdrawal strategies (Fixed, Forgo Inflation After Loss, Spending Decline, Constant Percentage, Endowment, Vanguard Dynamic, Guyton-Klinger, RMD Spending) and two withdrawal-routing modes (**Bracket Filling** — fill Traditional withdrawals up to a target tax bracket; **Waterfall** — drain accounts in a configured priority order, with an optional Roth-bracket overlay). Models RMDs and RMD smoothing, Qualified Charitable Distributions, the age-65+ standard deduction and the temporary OBBBA senior deduction, IRMAA cliff detection with a two-year MAGI lookback, ACA premium-subsidy cliffs, Rule-of-55 and early-withdrawal-penalty rules, lump-sum injections and withdrawals, and a multi-year Roth-conversion bracket-target optimizer.
-- **Retirement Profiles** — Save, name, and duplicate whole sets of retirement assumptions to compare plans side by side. Each profile can pin itself to a specific tax year's tables so an old projection reproduces exactly.
+- **Retirement planning** — A full accumulation-and-decumulation projection engine with Monte Carlo simulation (labeled **Simulation** in the app), validated against Trinity Study benchmarks. Per-person retirement ages, Social Security amounts and start ages, and pre-retirement raise rates. Eight withdrawal strategies (Fixed, Forgo Inflation After Loss, Spending Decline, Constant Percentage, Endowment, Vanguard Dynamic, Guyton-Klinger, RMD Spending) and three withdrawal-routing modes (**Bracket Filling** — Traditional up to a target tax bracket, then the cheapest remaining source each year; **Waterfall** — accounts in a set priority order; **Percentage** — fixed shares). Retirement answers count retirement accounts only — savings tagged Portfolio never prop up the plan. Models RMDs and RMD smoothing, Qualified Charitable Distributions, the age-65+ standard deduction and the temporary OBBBA senior deduction, IRMAA cliff detection with a two-year MAGI lookback, ACA premium-subsidy cliffs, Rule-of-55 and early-withdrawal-penalty rules, lump-sum injections and withdrawals, and a multi-year Roth-conversion bracket-target optimizer.
+- **Profiles and Plans** — Salary, Contribution, Budget and Retirement profiles, each its own complete set of assumptions; a **Plan** is a saved set of one of each, applied in one step. A Retirement Profile can keep a specific tax year's tables so an old projection reproduces exactly.
 - **Plan Health** — A card that surfaces contribution-order warnings, glide-path mismatches, rosy-assumption flags, and a recommended withdrawal strategy in context.
 - **Print Advisor Report** — A purpose-built multi-page document: executive summary, Monte Carlo risk analysis with worst-case framing, a withdrawal-strategy narrative, an ACA/IRMAA watchlist, action items, and a condensed year-by-year table.
 - **Coast FIRE** — Automatic Coast FIRE age plus a custom-age check for any age between now and your planned retirement.
 - **Tax Buckets** — Per-account analysis of how much of each balance is reachable now, split into penalty-free and tax-free portions, with Roth ordering rules and Rule-of-55 eligibility applied.
-- **What-If Scenarios** — Compare financial outcomes across different life scenarios without disturbing your baseline.
+- **What-If** — Try changes in a sandbox that never touches your active profiles; save the result as profiles when you want to keep it.
+- **Milestones & Recommendations** — Money Guy, Bogleheads and Fidelity rules and your own goals judged once (reached, on track, behind), plus a ranked list of what to do next.
 
 ### Core modules
 
@@ -26,9 +27,10 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 - **Expenses** — Expense tracking and categorization across accounts.
 - **Assets & Liabilities** — Detailed tracking of real estate, vehicles, and other assets alongside debts and obligations.
 - **Performance & Historical** — Investment performance analytics and historical data views.
-- **Analytics** — Cross-module trends and summaries.
+- **Investments & Benchmarks** — Holdings and fund facts from SimpleFIN, allocation vs your target glide path, costs, and how the same money would have done in an index.
+- **Taxes** — This year's household tax, Roth IRA eligibility (MAGI), and a tax-optimization view of retirement withdrawals.
 - **Tools** — Relocation analysis: compare projected cost of living, taxes, and net outcome across locations.
-- **Utilities** — Track utility services and meter readings over time.
+- **Upkeep** — Track utility services and meter readings over time.
 
 ### Platform
 
@@ -38,7 +40,7 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 - **RBAC** — Role-based access control via Authentik OIDC with granular viewer permissions, plus a standalone local-admin table for deployments without an identity provider.
 - **Onboarding wizard & demo mode** — Guided first-run setup with demo profiles to explore before entering real data; a separate read-only `DEMO_ONLY` mode with a profile chooser and no login.
 - **Dark mode & accessibility** — Full dark/light theming with semantic design tokens and a CI-enforced theme audit. WCAG AA-aligned contrast, `prefers-reduced-motion` support, keyboard skip-to-content, focus trapping in dialogs, screen-reader error announcements, and ARIA coverage on inline icons and table semantics.
-- **Versioning & backup** — Automatic database snapshots on startup as pre-migration recovery points. Cross-version backup import transforms data from any older schema era (v0.2 onward) to the current shape. `pnpm backup:export` / `pnpm backup:import` for headless use, and `scripts/backup.sh` wraps `pg_dump` in AES-256 encryption for off-site backups.
+- **Versioning & backup** — Automatic database snapshots on startup as pre-migration recovery points. Cross-version backup import transforms data from any older schema era (v0.2 onward) to the current shape. `pnpm backup:export` / `pnpm backup:import` for headless use, and `scripts/encrypted-backup.sh` wraps `pg_dump` in AES-256 encryption for off-site backups.
 - **Raw Data Browser** — Admin-only live database table viewer with row counts, column metadata, pagination, and JSON export.
 - **Help & Guide** — A walkthrough of every feature by section, plus an in-app glossary for finance jargon.
 - **Health checks** — `/api/health` for container orchestration; an authenticated `/api/health/detailed` (gated by `CRON_SECRET`) exposes pool stats and integration status.
@@ -137,8 +139,8 @@ YNAB, Actual Budget, and SimpleFIN credentials are **not** configured via enviro
 **Key design decisions:**
 
 - **End-to-end type safety** — TypeScript strict mode from the database schema (Drizzle) through the API (tRPC) to the UI (React).
-- **Data-driven design** — Data shapes are the source of truth. Renderers are category-agnostic and read fields to render what's present; display logic lives in data presence, not in call-site decisions.
-- **Single source of truth for schema** — `src/lib/db/schema-pg.ts` defines the model; `schema-sqlite.ts` is generated from it. Migrations are squashed to a single baseline on each minor release.
+- **Data-driven design** — Account-type behavior is declared in one config record; adding an account type is one entry, not code changes. Tax tables and limits are data, versioned by year.
+- **Single source of truth for schema** — `src/lib/db/schema-pg.ts` defines the model; `schema-sqlite.ts` is generated from it. Each release line starts from a squashed baseline; later migrations are incremental.
 - **Self-hosted** — No external SaaS dependencies. SQLite by default, PostgreSQL supported. Budget-provider sync is optional.
 
 ## Development
@@ -220,7 +222,7 @@ docker compose restart ledgr
 
 ### Schema migrations
 
-Migrations are managed by Drizzle Kit and squashed to a single baseline (`0000_v<N>_initial_schema`) on each minor release. On upgrade, `db-migrate.ts` detects the applied-vs-journal count mismatch, writes a pre-upgrade JSON backup (tagged with the detected schema era), clears the old journal, and re-applies the squashed schema idempotently. Existing installs upgrade with no data loss.
+Migrations are managed by Drizzle Kit: each release line starts from a squashed baseline (`0000_v<N>_initial_schema`) and adds incremental migrations. On startup `db-migrate.ts` writes a pre-upgrade JSON backup, applies pending migrations, then reconciles the reference tax data. An install from an older release line is recognised by its baseline and re-baselined without data loss.
 
 ### Authentik OIDC setup
 
@@ -235,13 +237,13 @@ All three are configured from **Settings → Integrations** — there are no cre
 
 - **YNAB (You Need A Budget)** — Generate a personal access token at [YNAB Developer Settings](https://app.ynab.com/settings/developer), paste it in, and pick a budget. Syncs accounts, categories, monthly summaries, and transactions with delta sync for fast incremental updates. Two-way: category-goal targets and portfolio snapshots can be pushed back.
 - **Actual Budget** — Requires a running [Actual Budget HTTP API](https://github.com/jhonderson/actual-http-api) wrapper in front of your Actual server. Enter the server URL, API key, and budget sync ID. Outbound requests to private IP ranges are blocked unless the host is in `ALLOWED_ACTUAL_HOSTS`.
-- **SimpleFIN Bridge** — A read-only daily balance pulse. Provide a SimpleFIN access URL; Ledgr records a dated balance snapshot per linked account. No transaction, category, or budget sync.
+- **SimpleFIN Bridge** — Read-only daily data per linked account: balances, holdings and investment transactions (used for live balances, benchmarks, holdings history and suggested Performance fills). No budget sync.
 
 The integration layer hardens every outbound call: typed error classification, exponential backoff with `Retry-After` support on rate limits, deterministic idempotency keys so retries don't create duplicate transactions, and drift detection after every sync that surfaces broken account mappings in the UI.
 
 ## Testing
 
-5,200+ tests across 300+ Vitest files plus 13 Playwright end-to-end specs — covering the financial calculators, retirement benchmarks, server and router logic, UI components, database migrations and backup transforms, theme-token regressions, and full browser flows. CI enforces coverage thresholds of 85% statements / 70% branches / 80% functions / 85% lines, and also runs the lint/type-check, a file-size guard, a tax-parameter freshness check, a migration safety check, and a documentation-freshness check.
+6,000+ tests across 420+ Vitest files plus 14 Playwright end-to-end specs — covering the financial calculators, retirement benchmarks, server and router logic, UI components, database migrations and backup transforms, theme-token regressions, and full browser flows. CI enforces coverage thresholds of 85% statements / 70% branches / 80% functions / 85% lines, and also runs the lint/type-check, a file-size guard, a tax-parameter freshness check, a migration safety check, and a documentation-freshness check.
 
 ```bash
 pnpm test          # Run once

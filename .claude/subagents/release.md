@@ -73,8 +73,10 @@ git commit -m "release: vX.Y.Z"
 
 ### Step 4 — Deploy
 
+**If a migration is pending:** first test it against prod data (refresh dev from prod and run `pnpm db:migrate` there), then `pg_dump -Fc` prod to `/workspace/dev/code-server/ledgr-backups/ledgr-pre-<ver>-<UTC>.dump` and check it lists its tables. Rollback = that dump + the previous image, never the image alone.
+
 ```bash
-pnpm deploy X.Y.Z
+pnpm run deploy X.Y.Z   # NOT `pnpm deploy` — that's a pnpm built-in
 ```
 
 This builds `ledgr:X.Y.Z` + `ledgr:latest`, restarts demo (canary) first, health-checks it, then restarts prod and health-checks it. If demo fails, prod is NOT updated.
@@ -87,21 +89,13 @@ Wait for the script to complete. Read its output. If the health check fails, sto
 
 Manually verify the changed feature works against real prod data. This is a required gate — not optional.
 
-If anything is wrong: fix it on the feature branch, run `pnpm test && pnpm lint && pnpm build`, commit the fix, and re-run `pnpm deploy X.Y.Z` (the deploy is idempotent — it just rebuilds and restarts). Do NOT bump the version again for the same release.
+If anything is wrong: fix it on the feature branch, run `pnpm test && pnpm lint && pnpm build`, commit the fix, and re-run `pnpm run deploy X.Y.Z` (the deploy is idempotent — it just rebuilds and restarts). Do NOT bump the version again for the same release.
 
 Only proceed when the browser smoke test passes.
 
 ### Step 6 — Push and open PR
 
-If the branch name matches the version tag (e.g., `v0.5.3`), rename the branch BEFORE pushing — git cannot have a branch and tag with the same name, and you cannot delete the branch you currently have checked out:
-
-```bash
-# Only if branch name = version tag
-git branch -m release-0.5.3   # rename current branch in place
-git push -u origin release-0.5.3
-```
-
-Otherwise just push:
+If `main` moved since the branch was cut, `git merge origin/main`, re-test, and redeploy first (branch protection requires the branch to be up to date). Then:
 
 ```bash
 git push -u origin <branch-name>
@@ -118,8 +112,13 @@ If CI fails on something introduced by this release, fix it on the feature branc
 
 ### Step 8 — Merge the PR
 
+**Only after the user's explicit OK for this merge.**
+
 ```bash
-gh pr merge <number> --squash   # or --merge, depending on preference
+gh pr merge <number> --merge          # merge commit, as every release
+gh pr view <number> --json state      # must be MERGED before going on
+git checkout main && git pull
+git branch -d vX.Y.Z && git push origin --delete vX.Y.Z   # the tag needs the name
 ```
 
 ---
@@ -147,6 +146,9 @@ ssh -i /tmp/ansible_ssh_key ansible@10.10.10.52 \
 
 # Clean up dangling image layers
 ssh -i /tmp/ansible_ssh_key ansible@10.10.10.52 "docker image prune -f"
+
+# Delete the SSH key
+rm -f /tmp/ansible_ssh_key
 ```
 
 The health check should return `{ "status": "ok", "version": "X.Y.Z" }`. If it shows the wrong version, something went wrong with the deploy — investigate before calling the release complete.
@@ -164,7 +166,7 @@ ssh -i /tmp/ansible_ssh_key ansible@10.10.10.52 \
   "cd /opt/stacks/dev && sudo docker compose up -d ledgr ledgrdemo"
 ```
 
-Fix the bug on the feature branch, redeploy with the same version number (`pnpm deploy X.Y.Z` is idempotent), smoke test again.
+Fix the bug on the feature branch, redeploy with the same version number (`pnpm run deploy X.Y.Z` is idempotent), smoke test again.
 
 ### Release script fails
 
@@ -195,14 +197,17 @@ ansible-vault view vars/secrets.yaml \
 [ ] CHANGELOG.md updated  (dated entry, user-focused language)
 [ ] npm version X.Y.Z --no-git-tag-version
 [ ] git commit "release: vX.Y.Z"
-[ ] pnpm deploy X.Y.Z     (canary → prod → health check)
+[ ] migration pending? tested on prod data + prod pg_dump taken
+[ ] pnpm run deploy X.Y.Z (canary → prod → health check)
 [ ] Smoke test in browser  (required gate)
 [ ] git push + gh pr create
 [ ] CI passes
-[ ] Merge PR
+[ ] Merge PR (user's explicit OK; --merge; state MERGED)
+[ ] Delete the version branch
 [ ] git checkout main && git pull
 [ ] pnpm release X.Y.Z --dry-run
 [ ] pnpm release X.Y.Z
 [ ] Verify health endpoint shows correct version
 [ ] docker image prune -f
+[ ] rm /tmp/ansible_ssh_key
 ```

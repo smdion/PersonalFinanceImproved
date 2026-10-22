@@ -1,6 +1,6 @@
 {
   "name": "ledgr",
-  "version": "0.8.11",
+  "version": "0.8.12",
   "private": true,
   "packageManager": "pnpm@10.32.1",
   "scripts": {
@@ -65,7 +65,7 @@
     "@tailwindcss/postcss": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
-    "@types/better-sqlite3": "^7.6.13",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
     "@types/react": "^19.3.0",

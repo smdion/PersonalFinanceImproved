@@ -1,7 +1,7 @@
 /**
  * Property-based invariant tests for the retirement projection engine.
  *
- * These 29 invariants must hold for ANY valid input. Uses fast-check to
+ * These invariants must hold for ANY valid input. Uses fast-check to
  * generate random inputs and assert mathematical/logical correctness.
  *
  * Run time defaults to 20 runs per invariant (CI-friendly). Override with

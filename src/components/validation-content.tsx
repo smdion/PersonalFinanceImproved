@@ -595,7 +595,7 @@ export function ValidationContent() {
               </tr>
               <tr>
                 <td className="py-1.5 pr-3">No impossible states</td>
-                <td className="pr-3">29 invariants (any input)</td>
+                <td className="pr-3">Invariants (random inputs)</td>
                 <td>Within rounding</td>
               </tr>
               <tr>
