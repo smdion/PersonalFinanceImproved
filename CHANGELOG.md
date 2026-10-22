@@ -44,6 +44,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Brokerage cost basis is each account's own.** Ledgr shared your total brokerage basis between Retirement and Portfolio by balance (and counted accounts missing from the latest snapshot); a retirement brokerage withdrawal was taxed at that blended ratio. Basis now follows each account through the projection, so a withdrawal's capital gains use the basis of the account it comes from. Tax Buckets' "at retirement" view reads the same per-account basis instead of its own estimate (which missed lump sums and contributions over the IRS limits).
 - **Coast FIRE (baseline) really stops contributions.** It stopped them by setting the contribution rate to 0, which the per-account path ignored, so contributions and the employer match kept going after the "stop" and some households were told they could already coast when they couldn't. It now stops them the same way the simulated Coast FIRE does.
 - **The contribution rate is a retirement rate.** It counts contributions to retirement accounts only, and its cap never shrinks a 401(k) because you also save into a Portfolio account.
+- **Relocation's "earliest you could move" names a year the projection has.** When the move works right away, it reported this calendar year, while the projection starts from your latest snapshot's year (the two differ until the first snapshot of a new year).
 
 ### Upgrading
 

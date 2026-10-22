@@ -132,10 +132,6 @@ export const relocationProjectionRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      // Resolve asOfDate once — all downstream year/age calculations use this.
-      const asOfDate = new Date();
-      const currentYear = asOfDate.getFullYear();
-
       // Fetch all DB tables once — both scenarios share the same base data.
       // Pre-fetch: batches the Salary Profile row alongside everything
       // else when an id is known, same as scenarios.ts/monte-carlo.ts/
@@ -507,8 +503,10 @@ export const relocationProjectionRouter = createTRPCRouter({
       let earliestRelocateAge: number | null = null;
       let recommendedPortfolioToRelocate = relocationFiTarget;
 
+      // "Now" is the projection's year 0 — the snapshot's year — like
+      // every row the search below can return.
       if (isViableNow) {
-        earliestRelocateYear = currentYear;
+        earliestRelocateYear = engineBaseYear;
         earliestRelocateAge = Math.floor(currentAge);
         recommendedPortfolioToRelocate = currentPayload.portfolioTotal;
       } else if (
@@ -610,7 +608,9 @@ export const relocationProjectionRouter = createTRPCRouter({
         blendedRows,
         blendedBalanceAtRetirement,
         inflationRate: toNumber(currentPayload.settings.annualInflation ?? 0),
-        baseYear: currentYear,
+        // The year "today's dollars" deflate to: the calendar year, as on
+        // the Retirement page (use-projection-state), so the two agree.
+        baseYear: new Date().getFullYear(),
       };
     }),
 

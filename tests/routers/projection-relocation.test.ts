@@ -200,6 +200,35 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
     }
   });
 
+  it("viable now: the earliest move year is the projection's first year (the snapshot's), not the calendar's", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const { currentProfileId, relocProfileId } =
+        await seedRelocationDataset(db);
+
+      const result = await caller.projection.computeRelocationFiProjection({
+        currentProfileId,
+        currentBudgetColumn: 0,
+        currentExpenseOverride: 1,
+        currentContributionProfileId: null,
+        relocationProfileId: relocProfileId,
+        relocationBudgetColumn: 0,
+        relocationExpenseOverride: 1,
+        relocationContributionProfileId: null,
+        yearAdjustments: [],
+        largePurchases: [],
+        moveYear: null,
+      });
+
+      expect(result!.isViableNow).toBe(true);
+      expect(result!.earliestRelocateYear).toBe(
+        result!.projectionRows[0]!.year,
+      );
+    } finally {
+      cleanup();
+    }
+  });
+
   it("returns blended rows when moveYear is set", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
