@@ -262,9 +262,9 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                 </h5>
                 <p className="text-muted mb-2">
                   Calibrated against the Trinity Study, cFIREsim backtesting,
-                  IRS 2025 tax tables, and institutional asset data. Backed by
-                  362 automated tests including 29 mathematical invariants
-                  proven for any input.
+                  the IRS&apos;s published tax tables, and institutional asset
+                  data. Backed by thousands of automated tests, including
+                  mathematical invariants checked against random inputs.
                 </p>
                 <button
                   type="button"
