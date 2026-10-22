@@ -100,6 +100,24 @@ function projectContributionBasis(
   return sum;
 }
 
+/** The brokerage's cost basis at the transition: the engine's own
+ *  per-account basis (brokerage-basis.ts — contributions, overflow, ramp
+ *  and lump sums, exactly as the projection moves them), so this page and
+ *  the projection's capital-gains tax read one figure. A row without it
+ *  (no per-account basis tracked) falls back to `projectCostBasis`. */
+function transitionCostBasis(
+  costBasis: number,
+  projectedCostBasis: number | undefined,
+  contributionByYear: Map<number, number> | undefined,
+  currentYear: number,
+  transitionYear: number,
+): number {
+  return (
+    projectedCostBasis ??
+    projectCostBasis(costBasis, contributionByYear, currentYear, transitionYear)
+  );
+}
+
 /** Brokerage cost basis + every dollar contributed from the current year
  *  (year 0 — a live "as of today" snapshot, unlike Roth's dated basis row)
  *  through the transition year, inclusive. Year 0's `contribution` is the
@@ -304,8 +322,9 @@ export function computeTaxBucketProjection(input: {
       // branch below does.
       let projectedCostBasis: number | null = now.costBasis;
       if (now.costBasis != null) {
-        projectedCostBasis = projectCostBasis(
+        projectedCostBasis = transitionCostBasis(
           now.costBasis,
+          projected.costBasis,
           contributionsByKey.get(key),
           currentYear,
           transitionYear,
@@ -405,12 +424,11 @@ export function computeTaxBucketProjection(input: {
 
     let costBasis = now.costBasis;
     if (costBasis != null && tracksCostBasis(now.category)) {
-      // Brokerage — every dollar contributed between now and the
-      // transition is real cost basis (see projectCostBasis), so this
-      // grows the same way Roth contribution basis does rather than
-      // holding flat.
-      costBasis = projectCostBasis(
-        now.costBasis,
+      // Brokerage — basis grows with every dollar put in before the
+      // transition, as the projection tracks it (see transitionCostBasis).
+      costBasis = transitionCostBasis(
+        costBasis,
+        projected.costBasis,
         contributionsByKey.get(key),
         currentYear,
         transitionYear,
