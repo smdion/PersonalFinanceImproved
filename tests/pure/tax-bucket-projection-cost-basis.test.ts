@@ -38,7 +38,7 @@ function years(costBasis?: number): EngineYearProjection[] {
             ...(i === 1 && costBasis != null ? { costBasis } : {}),
           },
         ],
-      }) as unknown as EngineYearProjection,
+      }) as EngineYearProjection,
   );
 }
 
