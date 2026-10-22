@@ -45,6 +45,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Coast FIRE (baseline) really stops contributions.** It stopped them by setting the contribution rate to 0, which the per-account path ignored, so contributions and the employer match kept going after the "stop" and some households were told they could already coast when they couldn't. It now stops them the same way the simulated Coast FIRE does.
 - **The contribution rate is a retirement rate.** It counts contributions to retirement accounts only, and its cap never shrinks a 401(k) because you also save into a Portfolio account.
 - **Relocation's "earliest you could move" names a year the projection has.** When the move works right away, it reported this calendar year, while the projection starts from your latest snapshot's year (the two differ until the first snapshot of a new year).
+- **Tax tables stay current after a restore, an import or a reset.** Restoring a version or importing a backup put back that copy's contribution limits and tax tables, and "Reset all data" emptied them, until the app next restarted. They're brought current right away now. Demo profiles copy every tax table (they had only limits and income-tax brackets, missing capital-gains, Medicare-surcharge, poverty-line and tax-parameter data), and a new tax year reaches demos already in use.
 
 ### Upgrading
 

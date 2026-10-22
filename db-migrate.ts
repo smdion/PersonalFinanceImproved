@@ -513,7 +513,8 @@ function getDialect(): "postgresql" | "sqlite" {
  * If you need to seed non-year-keyed reference data, do it through a
  * separate mechanism — not this file.
  */
-const REFERENCE_SEED_TABLES = new Set([
+/** Kept equal to the seed file's tables (a test checks; see src/lib/db/reference-data.ts). */
+export const REFERENCE_SEED_TABLES = new Set([
   "contribution_limits",
   "tax_brackets",
   "ltcg_brackets",
@@ -1526,6 +1527,24 @@ async function runPostgres() {
       log("info", "reference_data_reconciled", {
         tables: seedTables.join(", "),
       });
+      // Live demo schemas copied these tables when they were built and are
+      // only rebuilt when the migration count changes — so a new tax year
+      // in the seed would never reach them. Add public's missing rows
+      // (stale schemas were dropped above, so the tables still match).
+      const { rows: demos } = await seedClient.query<{ nspname: string }>(
+        `SELECT nspname FROM pg_namespace WHERE nspname LIKE 'demo\\_%'`,
+      );
+      for (const { nspname } of demos) {
+        const schemaIdent = `"${nspname.replace(/"/g, '""')}"`;
+        for (const table of seedTables)
+          await seedClient.query(
+            `INSERT INTO ${schemaIdent}."${table}" SELECT * FROM public."${table}" ON CONFLICT DO NOTHING`,
+          );
+      }
+      if (demos.length > 0)
+        log("info", "demo_reference_data_reconciled", {
+          schemas: demos.map((d) => d.nspname).join(", "),
+        });
     } finally {
       seedClient.release();
     }

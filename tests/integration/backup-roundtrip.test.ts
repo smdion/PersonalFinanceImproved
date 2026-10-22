@@ -116,6 +116,29 @@ describe("Backup Round-Trip (real version-logic)", () => {
     expect(await snapshotTables(b.rawDb)).toEqual(before);
   });
 
+  it("import brings back reference rows the backup predates (a newer tax year)", async () => {
+    const backup = await exportBackup(a.rawDb);
+    const years = (backup.tables.tax_params as { tax_year: number }[]).map(
+      (r) => r.tax_year,
+    );
+    const newest = Math.max(...years);
+    // A backup taken before the newest tax year was seeded.
+    for (const table of ["contribution_limits", "tax_params"])
+      backup.tables[table] = (
+        backup.tables[table] as { tax_year: number }[]
+      ).filter((r) => r.tax_year !== newest);
+
+    await importBackup(b.rawDb, backup);
+    const after = await exportBackup(b.rawDb);
+    for (const table of ["contribution_limits", "tax_params"])
+      expect(
+        (after.tables[table] as { tax_year: number }[]).some(
+          (r) => r.tax_year === newest,
+        ),
+        table,
+      ).toBe(true);
+  });
+
   it("import replaces existing data rather than merging into it", async () => {
     await seedPerson(b.db, "Stale Person", "1980-01-01");
     const backup = await exportBackup(a.rawDb);
