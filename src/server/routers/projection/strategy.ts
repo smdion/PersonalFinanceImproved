@@ -24,6 +24,7 @@
  * configured — fixed alongside a related cache-key bug (see
  * `computeStrategyComparison`'s `inputHash` comment).
  */
+import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
@@ -59,8 +60,13 @@ import {
   buildStrategyParams,
   buildMcInputs,
   buildDecumulationDefaults,
+  resolveProjectionOverrides,
   resolveSsStartAgeBaseline,
 } from "./_shared";
+import type {
+  AccumulationOverride,
+  DecumulationOverride,
+} from "@/lib/calculators/types";
 import {
   hashEngineInput,
   readProjectionCache,
@@ -96,6 +102,12 @@ export const strategyRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
+      // The household's saved "Changes by year" apply to every strategy
+      // (D6) — a comparison without them describes a different plan.
+      const saved = (await resolveProjectionOverrides(ctx.db, {})) as {
+        accumulationOverrides: AccumulationOverride[];
+        decumulationOverrides: DecumulationOverride[];
+      };
       const [
         data,
         { mcAssetClasses, mcCorrelations, mcGlidePath, effectiveInflationRisk },
@@ -193,6 +205,9 @@ export const strategyRouter = createTRPCRouter({
       const inputHash = hashEngineInput("strategyComparison", {
         baseEngineInput,
         mcBaseEngineInput,
+        // The saved Changes by year every strategy runs with — a new saved
+        // row must miss the cache, not serve the comparison without it.
+        savedOverrides: saved,
         decumulationDefaults: baseDecumulationDefaults,
         hasMcData,
         mcAssetClasses,
@@ -229,8 +244,7 @@ export const strategyRouter = createTRPCRouter({
             const result = calculateProjection({
               ...baseEngineInput,
               decumulationDefaults,
-              accumulationOverrides: [],
-              decumulationOverrides: [],
+              ...saved,
             });
 
             // Extract decumulation years for year-by-year data
@@ -254,8 +268,7 @@ export const strategyRouter = createTRPCRouter({
                 engineInput: {
                   ...mcBaseEngineInput,
                   decumulationDefaults,
-                  accumulationOverrides: [],
-                  decumulationOverrides: [],
+                  ...saved,
                 },
                 numTrials: 200,
                 seed: 42,
@@ -273,7 +286,11 @@ export const strategyRouter = createTRPCRouter({
               strategy: strategyKey,
               label: meta.label,
               shortLabel: meta.shortLabel,
-              portfolioDepletionAge: result.portfolioDepletionAge,
+              // The plan judge's verdict for this strategy's baseline.
+              ...(({ failureAge, failureReason }) => ({
+                failureAge,
+                failureReason,
+              }))(assessPlan(result)),
               // sustainableWithdrawal dropped from
               // this comparison — it's never rendered by
               // withdrawal-comparison.tsx (year1Withdrawal/avgAnnualWithdrawal/
@@ -295,13 +312,13 @@ export const strategyRouter = createTRPCRouter({
                 withdrawals.length > 0
                   ? roundToCents(Math.max(...withdrawals))
                   : 0,
-              endBalance:
+              endRetirementBalance:
                 decYears.length > 0
-                  ? decYears[decYears.length - 1]!.endBalance
+                  ? decYears[decYears.length - 1]!.retirementBalance
                   : 0,
               legacyAmount:
                 decYears.length > 0
-                  ? decYears[decYears.length - 1]!.endBalance
+                  ? decYears[decYears.length - 1]!.retirementBalance
                   : 0,
               successRate,
               spendingStabilityRate,
@@ -309,7 +326,7 @@ export const strategyRouter = createTRPCRouter({
               yearByYear: decYears.map((y) => ({
                 age: y.age,
                 withdrawal: roundToCents(y.totalWithdrawal),
-                endBalance: roundToCents(y.endBalance),
+                retirementBalance: roundToCents(y.retirementBalance),
               })),
             };
           }),
@@ -345,6 +362,12 @@ export const strategyRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
+      // The household's saved "Changes by year" apply to every strategy
+      // (D6) — a comparison without them describes a different plan.
+      const saved = (await resolveProjectionOverrides(ctx.db, {})) as {
+        accumulationOverrides: AccumulationOverride[];
+        decumulationOverrides: DecumulationOverride[];
+      };
       const [
         data,
         { mcAssetClasses, mcCorrelations, mcGlidePath, effectiveInflationRisk },
@@ -416,8 +439,7 @@ export const strategyRouter = createTRPCRouter({
       const mcBaseEngineInput = {
         ...baseEngineInput,
         returnRates: mcReturnRates,
-        accumulationOverrides: [] as [],
-        decumulationOverrides: [] as [],
+        ...saved,
         // buildDecumulationDefaults already resolves withdrawalStrategy to
         // settings.withdrawalStrategy (= activeStrategy) and strategyParams
         // to buildStrategyParams(settings) (= userStrategyParams) — a pure

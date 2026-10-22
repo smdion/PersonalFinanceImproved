@@ -5,6 +5,7 @@
  * projection engine) and the scenario-scoped mutations that edit the MC
  * input tables: `updateGlidePathAllocations` and `updateClampBounds`.
  */
+import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { queryRaw } from "@/lib/db/compat";
@@ -34,16 +35,10 @@ import {
   MC_RETURN_CLAMP_MAX,
 } from "@/lib/constants";
 import type {
-  AccountBalance,
-  AccountCategory,
   AccumulationOverride,
   DecumulationOverride,
 } from "@/lib/calculators/types";
-import {
-  getAllCategories,
-  isOverflowTarget,
-  zeroBalance,
-} from "@/lib/config/account-types";
+import { toSimpleTaxMode } from "@/lib/calculators/simple-tax-mode";
 import {
   fetchRetirementData,
   buildEnginePayload,
@@ -54,6 +49,7 @@ import {
   decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildMcInputs,
+  resolveProjectionOverrides,
 } from "./_shared";
 import {
   hashEngineInput,
@@ -77,14 +73,21 @@ export const monteCarloRouter = createTRPCRouter({
     .use(expensiveRateLimitMiddleware)
     .input(
       z.object({
-        numTrials: z.number().int().min(100).max(10000).default(1000),
+        numTrials: z
+          .number()
+          .int()
+          .min(100)
+          .max(10000)
+          .default(DEFAULT_SIMULATION.numTrials),
         seed: z.number().int().optional(),
         /** Simulation preset: controls return assumptions, volatility, inflation risk, and trial count. */
         preset: z
           .enum(["aggressive", "default", "conservative", "custom"])
-          .default("default"),
+          .default(DEFAULT_SIMULATION.preset),
         /** Tax mode: 'simple' collapses to single tax-free balance (cFIREsim-comparable), 'advanced' uses full multi-account tax engine. */
-        taxMode: z.enum(["simple", "advanced"]).default("simple"),
+        taxMode: z
+          .enum(["simple", "advanced"])
+          .default(DEFAULT_SIMULATION.taxMode),
         // --- Optional contribution profile (overrides contribution accounts + salary) ---
         contributionProfileId: z.number().int().optional(),
         /** Optional Salary Profile — the independent "what if I earned X" axis. */
@@ -215,10 +218,7 @@ export const monteCarloRouter = createTRPCRouter({
         avgRetirementAge,
         maxEndAge,
         totalCompensation,
-        portfolioByTaxType,
-        employerMatchByCategory,
         selectedScenario: _selectedScenario,
-        totalRealContrib,
         distributionTaxRates,
         annualExpensesVal,
         baseEngineInput,
@@ -234,77 +234,22 @@ export const monteCarloRouter = createTRPCRouter({
           input.decumulationDefaults,
           distributionTaxRates,
         ),
-        accumulationOverrides:
-          input.accumulationOverrides as AccumulationOverride[],
-        decumulationOverrides:
-          input.decumulationOverrides as DecumulationOverride[],
+        // Omitted "Changes by year" = the household's saved rows.
+        ...((await resolveProjectionOverrides(ctx.db, input)) as {
+          accumulationOverrides: AccumulationOverride[];
+          decumulationOverrides: DecumulationOverride[];
+        }),
         rateSeededDecumulationYear1: input.rateSeededDecumulationYear1,
       };
 
-      // Simple tax mode: collapse all balances into a single tax-free portfolio (cFIREsim-comparable)
-      if (input.taxMode === "simple") {
-        const totalBalance =
-          portfolioByTaxType.preTax +
-          portfolioByTaxType.taxFree +
-          portfolioByTaxType.hsa +
-          portfolioByTaxType.afterTax;
+      const retirementBuckets = payload.simpleTaxMode.retirementBuckets;
 
-        engineInput.startingBalances = {
-          preTax: 0,
-          taxFree: 0,
-          hsa: 0,
-          afterTax: totalBalance,
-          afterTaxBasis: totalBalance,
-        };
-
-        // Zero all account balances, put totalBalance in the overflow target (brokerage)
-        const simplifiedBalances = Object.fromEntries(
-          getAllCategories().map((cat) => {
-            if (isOverflowTarget(cat)) {
-              return [
-                cat,
-                {
-                  structure: "basis_tracking" as const,
-                  balance: totalBalance,
-                  basis: totalBalance,
-                },
-              ];
-            }
-            return [cat, zeroBalance(cat)];
-          }),
-        ) as Record<AccountCategory, AccountBalance>;
-        engineInput.startingAccountBalances = simplifiedBalances;
-
-        engineInput.decumulationDefaults.distributionTaxRates = {
-          ...engineInput.decumulationDefaults.distributionTaxRates,
-          traditionalFallbackRate: 0,
-          roth: 0,
-          hsa: 0,
-          brokerage: 0,
-          grossUpForTaxes: false,
-        };
-
-        // Simple mode discards tax-type/account identity for the AGGREGATE
-        // math above — `individualAccounts` must follow suit rather than
-        // keeping each account's real balance around. Leaving it real
-        // while the aggregate is fictional doesn't just risk a stale
-        // display: withdrawals only ever route against the collapsed
-        // brokerage category, so a real Traditional/IRA account never gets
-        // drawn down in decumulation while the real brokerage account gets
-        // exhausted, and the per-account total silently overstates the
-        // real portfolio. An earlier partial fix that only skipped the
-        // yearly indBal/acctBal reconciliation stopped the correction but
-        // not this divergence. Dropping individualAccounts to empty makes
-        // Simple
-        // mode's ONE fictional bucket the only representation, so nothing
-        // downstream can disagree with it. The per-account table/chart and
-        // the person-filtered ("Alex"/"Sam") view both already degrade
-        // gracefully when there's no individual data (see
-        // ProjectionCard's disabled-pill guard + reconcileIndividualToAggregate's
-        // existing `hasIndividualAccounts` gate) — no engine-level flag
-        // needed.
-        engineInput.individualAccounts = [];
-      }
+      // Simple tax mode: retirement money as one tax-free pot
+      // (cFIREsim-comparable) — never Portfolio money (simple-tax-mode.ts).
+      const simInput =
+        input.taxMode === "simple"
+          ? toSimpleTaxMode(engineInput, payload.simpleTaxMode)
+          : engineInput;
 
       // ----- Monte Carlo: Fetch preset from DB -----
       const isCustom = input.preset === "custom";
@@ -468,7 +413,7 @@ export const monteCarloRouter = createTRPCRouter({
         mcDeterministicRates.push({ label: `Age ${a}`, rate: blended });
       }
       const mcEngineInput = {
-        ...engineInput,
+        ...simInput,
         returnRates: mcDeterministicRates,
       };
 
@@ -568,14 +513,25 @@ export const monteCarloRouter = createTRPCRouter({
           currentAge: age,
           retirementAge: avgRetirementAge,
           endAge: maxEndAge,
+          // Retirement money only: what the simulation's answers count.
           startingBalance:
-            portfolioByTaxType.preTax +
-            portfolioByTaxType.taxFree +
-            portfolioByTaxType.hsa +
-            portfolioByTaxType.afterTax,
+            retirementBuckets.preTax +
+            retirementBuckets.taxFree +
+            retirementBuckets.hsa +
+            retirementBuckets.afterTax,
           annualContributions:
-            totalRealContrib +
-            sumBy(Object.values(employerMatchByCategory), (v) => v),
+            sumBy(
+              Object.values(
+                payload.simpleTaxMode.defaults.baseYearContributions,
+              ),
+              (v) => v,
+            ) +
+            sumBy(
+              Object.values(
+                payload.simpleTaxMode.defaults.baseYearEmployerMatch,
+              ),
+              (v) => v,
+            ),
           annualExpenses: annualExpensesVal,
           inflationRate: toNumber(settings.annualInflation),
           salary: totalCompensation,

@@ -17,6 +17,7 @@ import type {
 } from "@/lib/calculators/types";
 import { accountBalancesFromTaxBuckets } from "@/lib/calculators/engine/balance-utils";
 import { buildCategoryRecord } from "@/lib/config/account-types";
+import { roundToCents } from "@/lib/utils/math";
 import type { WithholdingBracket } from "@/lib/calculators/engine/tax-estimation";
 
 // ---------------------------------------------------------------------------
@@ -272,4 +273,144 @@ export function makeIndividualAccount(
     startingBalance: 100000,
     ...overrides,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Starting money that agrees with itself
+// ---------------------------------------------------------------------------
+
+/** The tax buckets a set of per-category balances adds up to. */
+export function taxBucketsFromAccountBalances(a: AccountBalances): TaxBuckets {
+  const b: TaxBuckets = {
+    preTax: 0,
+    taxFree: 0,
+    hsa: 0,
+    afterTax: 0,
+    afterTaxBasis: 0,
+  };
+  for (const bal of Object.values(a)) {
+    if (bal.structure === "roth_traditional") {
+      b.preTax += bal.traditional;
+      b.taxFree += bal.roth;
+    } else if (bal.structure === "single_bucket") b.hsa += bal.balance;
+    else {
+      b.afterTax += bal.balance;
+      b.afterTaxBasis += bal.basis;
+    }
+  }
+  return b;
+}
+
+/** `a` rescaled to `b`'s totals, keeping its mix across categories (all of
+ *  a bucket in one category stays there). A bucket `a` holds nothing of
+ *  falls back to the engine's config-derived split. */
+function rescaleAccountBalances(
+  a: AccountBalances,
+  b: TaxBuckets,
+): AccountBalances {
+  const have = taxBucketsFromAccountBalances(a);
+  const fallback = accountBalancesFromTaxBuckets(b);
+  const scale = (value: number, from: number, to: number) =>
+    from > 0 ? roundToCents((value * to) / from) : 0;
+  return Object.fromEntries(
+    (Object.keys(a) as AccountCategory[]).map((cat) => {
+      const bal = a[cat];
+      const fb = fallback[cat];
+      if (
+        bal.structure === "roth_traditional" &&
+        fb.structure === bal.structure
+      )
+        return [
+          cat,
+          {
+            ...bal,
+            traditional:
+              have.preTax > 0
+                ? scale(bal.traditional, have.preTax, b.preTax)
+                : fb.traditional,
+            roth:
+              have.taxFree > 0
+                ? scale(bal.roth, have.taxFree, b.taxFree)
+                : fb.roth,
+          },
+        ];
+      if (bal.structure === "single_bucket" && fb.structure === bal.structure)
+        return [
+          cat,
+          {
+            ...bal,
+            balance:
+              have.hsa > 0 ? scale(bal.balance, have.hsa, b.hsa) : fb.balance,
+          },
+        ];
+      if (bal.structure === "basis_tracking" && fb.structure === bal.structure)
+        return [
+          cat,
+          {
+            ...bal,
+            balance:
+              have.afterTax > 0
+                ? scale(bal.balance, have.afterTax, b.afterTax)
+                : fb.balance,
+            basis:
+              have.afterTax > 0
+                ? scale(bal.balance, have.afterTax, b.afterTaxBasis)
+                : fb.basis,
+          },
+        ];
+      return [cat, bal];
+    }),
+  ) as AccountBalances;
+}
+
+/**
+ * A test input whose starting money says the same thing in each form the
+ * engine reads — the tax buckets and the per-category balances (the engine
+ * flags any gap with a `[DIAG] starting balances` warning, and routing
+ * treats it as money it may never reach). `input` is the merged fixture,
+ * `overrides` what the test set: buckets set alone rescale the fixture's
+ * per-category balances to them; per-category balances set alone set the
+ * buckets. Setting both keeps both — the test's own choice.
+ * `individualAccounts` are left as given; `startingBalanceGaps` (asserted
+ * by the engine suites) catches any that disagree.
+ */
+export function withConsistentStart<
+  T extends {
+    startingBalances: TaxBuckets;
+    startingAccountBalances?: AccountBalances;
+  },
+>(
+  input: T,
+  overrides: {
+    startingBalances?: TaxBuckets;
+    startingAccountBalances?: AccountBalances;
+  },
+): T {
+  if (overrides.startingBalances && !overrides.startingAccountBalances)
+    return input.startingAccountBalances
+      ? {
+          ...input,
+          startingAccountBalances: rescaleAccountBalances(
+            input.startingAccountBalances,
+            input.startingBalances,
+          ),
+        }
+      : input;
+  if (overrides.startingAccountBalances && !overrides.startingBalances)
+    return {
+      ...input,
+      startingBalances: taxBucketsFromAccountBalances(
+        overrides.startingAccountBalances,
+      ),
+    };
+  return input;
+}
+
+/** The engine's starting-balance gap warnings (`[DIAG] starting
+ *  balances`): a fixture whose money disagrees with itself. Engine suites
+ *  assert none, so a gap can't creep back into a fixture. */
+export function startingBalanceGaps(result: { warnings: string[] }): string[] {
+  return result.warnings.filter((w) =>
+    w.startsWith("[DIAG] starting balances"),
+  );
 }

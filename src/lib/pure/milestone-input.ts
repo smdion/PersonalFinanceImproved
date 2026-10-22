@@ -115,7 +115,7 @@ export function milestoneProjectionYears(
     year: number;
     age: number;
     phase: string;
-    endBalance: number;
+    allAccountsBalance: number;
     projectedSalary?: number;
     totalEmployee?: number;
     totalEmployer?: number;
@@ -127,7 +127,9 @@ export function milestoneProjectionYears(
     return {
       year: y.year,
       age: y.age,
-      liquid: y.endBalance + cashToday,
+      // FI milestones are liquid net worth: every account (Portfolio
+      // included) plus cash.
+      liquid: y.allAccountsBalance + cashToday,
       salary: working ? (y.projectedSalary ?? 0) : null,
       contributions: working
         ? (y.totalEmployee ?? 0) + (y.totalEmployer ?? 0)

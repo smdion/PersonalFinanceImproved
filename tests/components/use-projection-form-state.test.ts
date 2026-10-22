@@ -49,6 +49,34 @@ async function importHook() {
 }
 
 describe("useProjectionFormState", () => {
+  it("the first edit after a load works on the saved rows (deleting one keeps the others)", async () => {
+    accumQueryData = [
+      { year: 2030, contributionRate: 0.1 },
+      { year: 2035, contributionRate: 0.2 },
+      { year: 2040, contributionRate: 0 },
+    ];
+    const useProjectionFormState = await importHook();
+    const { result } = renderHook(() => useProjectionFormState());
+    act(() =>
+      result.current.setAccumOverrides((prev) =>
+        prev.filter((o) => o.year !== 2035),
+      ),
+    );
+    expect(result.current.accumOverrides.map((o) => o.year)).toEqual([
+      2030, 2040,
+    ]);
+    // A second edit builds on the first, not on the saved rows again.
+    act(() =>
+      result.current.setAccumOverrides(
+        (prev) =>
+          [...prev, { year: 2045, contributionRate: 0.05 }] as typeof prev,
+      ),
+    );
+    expect(result.current.accumOverrides.map((o) => o.year)).toEqual([
+      2030, 2040, 2045,
+    ]);
+  });
+
   it("initializes withdrawalOrder to the config-driven default decumulation order", async () => {
     const useProjectionFormState = await importHook();
     const { result } = renderHook(() => useProjectionFormState());

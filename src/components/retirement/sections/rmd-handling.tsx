@@ -1,7 +1,10 @@
 /**
  * RMD Handling panel — what happens to Required Minimum Distribution
  * money beyond stated spending need. Two independent settings:
- * - rmdExcessHandling: reinvest into brokerage (default) or spend it.
+ * - rmdExcessHandling: reinvest into brokerage (default) or spend it, and
+ *   rmdExcessTargetPerformanceAccountId: which Retirement brokerage the
+ *   reinvested money goes to (default: spread across them; never a
+ *   Portfolio account).
  * - qcdMaximize: automatically apply Qualified Charitable Distributions
  *   against the RMD each year (a proactive election on the RMD itself,
  *   not a rule for leftover money).
@@ -19,6 +22,13 @@
 "use client";
 
 import { HelpTip } from "@/components/ui/help-tip";
+import { trpc } from "@/lib/trpc";
+import { accountDisplayName } from "@/lib/utils/format";
+import {
+  isRetirementParent,
+  tracksCostBasis,
+} from "@/lib/config/account-types";
+import { PROJECTED_RETIREMENT_BROKERAGE_LABEL } from "@/lib/config/display-labels";
 import { Badge } from "@/components/ui/badge";
 import type { Settings, UpsertSettingsMutation, IsEditable } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
@@ -35,6 +45,17 @@ export function RmdHandlingSection({
   isEditable,
 }: Props) {
   const rmdExcessHandling = settings?.rmdExcessHandling ?? "reinvest";
+  const rmdExcessTarget = settings?.rmdExcessTargetPerformanceAccountId ?? null;
+  // Unspent RMD money is retirement money: only active Retirement
+  // brokerages can receive it.
+  const { data: perfAccounts } =
+    trpc.performance.performanceAccounts.list.useQuery();
+  const retirementBrokerages = (perfAccounts ?? []).filter(
+    (p) =>
+      p.isActive &&
+      tracksCostBasis(p.accountType) &&
+      isRetirementParent(p.parentCategory),
+  );
   const qcdMaximize = settings?.qcdMaximize ?? false;
   const rmdSmoothingEnabled = settings?.rmdSmoothingEnabled ?? false;
   const rmdSmoothingMaxBracketTarget = String(
@@ -86,6 +107,51 @@ export function RmdHandlingSection({
               <option value="reinvest">Reinvest into brokerage</option>
               <option value="spend">Spend it</option>
             </select>
+          </div>
+        </div>
+        <div>
+          <span className="text-muted">
+            Reinvested into
+            <HelpTip
+              text={
+                "Which retirement brokerage receives reinvested RMD money. It " +
+                "stays retirement money, so it never goes to a Portfolio " +
+                "account. By default it's spread across your Retirement " +
+                "brokerages by balance."
+              }
+            />
+          </span>
+          <div className="font-medium">
+            {retirementBrokerages.length === 0 ? (
+              <span className="text-faint text-xs">
+                No Retirement brokerage — the projection adds &ldquo;
+                {PROJECTED_RETIREMENT_BROKERAGE_LABEL}&rdquo; for it.
+              </span>
+            ) : (
+              <select
+                value={rmdExcessTarget ?? ""}
+                aria-label="Reinvested RMD money goes to"
+                onChange={(e) => {
+                  if (!settings) return;
+                  upsertSettings.mutate(
+                    buildSettingsPatch(settings, {
+                      rmdExcessTargetPerformanceAccountId: e.target.value
+                        ? Number(e.target.value)
+                        : null,
+                    }),
+                  );
+                }}
+                disabled={!isEditable || rmdExcessHandling === "spend"}
+                className="rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Spread across Retirement brokerages</option>
+                {retirementBrokerages.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {accountDisplayName(p)}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         </div>
         <div>

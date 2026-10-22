@@ -8,6 +8,52 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.11] - 2026-10-21
+
+### Added
+
+- **The dashboard shows the simulated nest egg** when the Retirement page has run a simulation for your current plan: the simulated median, its middle range, and the fixed-return baseline alongside. Without a simulation it shows the baseline, labelled as such, with a link to the Retirement page to run one. The Retirement page's hero follows the same rule, and a person filter shows the baseline (the simulation covers the whole household).
+- **Choose where unspent required withdrawals go** (Retirement settings → RMD Handling → Reinvested into): when your RMDs are more than you spend and you reinvest the rest, pick which Retirement brokerage receives it, or leave it spread across them. It stays retirement money — never a Portfolio account; with no Retirement brokerage the projection adds a "Retirement brokerage (projected)" that holds it, along with any 401(k)/IRA contributions past the IRS limits (shown once it holds money). Set per Retirement Profile; deactivating the chosen account or moving it to Portfolio clears the choice.
+- **A note when a brokerage has no cost basis.** Each brokerage now carries its own cost basis through the projection, and a basis of $0 means everything drawn from it is taxed as a capital gain. When an active brokerage holds money with no basis entered, the Performance page says so (with where to enter it), and so does the projection's warnings list.
+
+### Changed
+
+- **"Realized vs assumed returns" moved to the Performance page,** next to the returns it reads. The Retirement page is for the plan; how past years compare with the plan's assumed return is a performance question.
+
+### Fixed
+
+- **Retirement projections use only retirement money.** Accounts tagged Portfolio (savings outside the retirement plan) are never spent in retirement, but they still shaped the plan. Now:
+  - Balance-based spending strategies (Guyton-Klinger, Constant %, Endowment, Vanguard Dynamic, RMD-based) and the rate-seeded first year size spending from retirement accounts only. A large Portfolio account made the withdrawal rate look low, granting raises the retirement money couldn't support.
+  - Contributions over the IRS limits go to a Retirement brokerage (with none, a projected one — never a Portfolio account). They also no longer show up two or three times in the per-account balances. Retirement lump sums with no account named do the same.
+  - Brokerage goals draw only from Portfolio brokerages, never retirement money.
+  - The yearly per-account balance correction takes from or adds to retirement accounts, not Portfolio ones.
+  - The Brokerage page's yearly increase and lump sums stay in Portfolio accounts, even when only a Retirement brokerage has a contribution set up.
+  - Simulation balance bands, the median and ending balances count retirement money only — a Portfolio account no longer widens the "nest egg" a simulation shows.
+  - Simulations in Simple tax mode start from retirement money only. Simple pooled every account, Portfolio included, and added Portfolio savings, brokerage goals and Portfolio lump sums. The simulation assumptions' starting balance and yearly contributions now show retirement money in both modes.
+  - "Runs out" means your retirement money runs out. A Portfolio account that's never spent in retirement kept the plan from ever running out; depletion ages (projection, strategy comparison, Social Security and withdrawal-bracket optimizers, stress tests, report) now follow retirement money, and nest eggs at retirement (dashboard, Plan Health, relocation, stress tests, Coast FIRE, tax optimization) count retirement money. FI milestones and net-worth benchmarks still count every account plus cash (liquid net worth).
+- **One verdict for "does this plan work."** Simulation success, Coast FIRE, Social Security claiming, tax optimization, relocation, strategy comparison, stress tests, the report and every "runs out" display now use the same rule: a plan fails in the first retirement year that leaves spending unmet or runs retirement money out. Simulation success no longer counts a trial as a success because accounts it can't spend (Portfolio money, penalty-locked money) still hold a balance. Where a plan fails, Ledgr says how: runs out, falls short because money is locked behind early-withdrawal penalties, or can't fully fund spending.
+- **Withdrawals reach money that was left untouched.**
+  - Bracket filling now draws Traditional money above your target bracket once Roth, brokerage and HSA money is gone, instead of leaving spending unmet beside a full 401(k).
+  - Percentage withdrawals place an emptied account's share on the other accounts instead of dropping it.
+  - The tax gross-up covers the tax on what can be withdrawn when an account runs short, and includes the 3.8% Net Investment Income Tax.
+  - Money held before 59½ that no tracked account accounts for (for example Roth 401(k) contributions before that account has a balance) is no longer drawn as if penalty-free — the projection only draws what your tracked accounts can give without a penalty.
+- **The dashboard and the Retirement page describe the same plan.** They built their projection inputs separately: the dashboard ignored the snapshot you picked and your saved withdrawal routing (it sent the defaults), and both fired their first projection before settings loaded (briefly showing $0 contributions). One shared input now waits for your settings, so the dashboard reads the Retirement page's own runs.
+- **End Balance shows the simulation again.** With a simulation run, the Retirement page's End Balance showed only the fixed-return baseline: it looked for the simulation's figure one year past the last projected year. It now shows the simulated median and its middle range at the end age, with the baseline alongside, the same way Nest Egg at Retirement does.
+- **Editing "Changes by year" right after opening the Retirement page no longer wipes the saved ones.** The first edit started from an empty list instead of your saved changes: deleting one row removed all of them, and adding one saved only the new row.
+- **Saved "Changes by year" apply everywhere.** The dashboard, strategy comparison and stress tests ignored them (only the Retirement page sent them), so they described a different plan for any household with saved changes. Every projection now uses your saved changes unless the Retirement page is showing unsaved edits.
+- **Brokerage cost basis is each account's own.** Ledgr shared your total brokerage basis between Retirement and Portfolio by balance (and counted accounts missing from the latest snapshot); a retirement brokerage withdrawal was taxed at that blended ratio. Basis now follows each account through the projection, so a withdrawal's capital gains use the basis of the account it comes from. Tax Buckets' "at retirement" view reads the same per-account basis instead of its own estimate (which missed lump sums and contributions over the IRS limits).
+- **Coast FIRE (baseline) really stops contributions.** It stopped them by setting the contribution rate to 0, which the per-account path ignored, so contributions and the employer match kept going after the "stop" and some households were told they could already coast when they couldn't. It now stops them the same way the simulated Coast FIRE does.
+- **The contribution rate is a retirement rate.** It counts contributions to retirement accounts only, and its cap never shrinks a 401(k) because you also save into a Portfolio account.
+- **Relocation's "earliest you could move" names a year the projection has.** When the move works right away, it reported this calendar year, while the projection starts from your latest snapshot's year (the two differ until the first snapshot of a new year).
+- **Tax tables stay current after a restore, an import or a reset.** Restoring a version or importing a backup put back that copy's contribution limits and tax tables, and "Reset all data" emptied them, until the app next restarted. They're brought current right away now. Demo profiles copy every tax table (they had only limits and income-tax brackets, missing capital-gains, Medicare-surcharge, poverty-line and tax-parameter data), and a new tax year reaches demos already in use.
+
+### Upgrading
+
+- A "Contribution Rate" saved under Changes by year now caps retirement contributions only; Portfolio savings come on top of it. If you set one to cap everything you save, lower it by your Portfolio savings rate.
+- A Portfolio brokerage with a target no longer receives contributions over the IRS limits while you have a Retirement brokerage.
+
+---
+
 ## [0.8.10] - 2026-10-20
 
 ### Added

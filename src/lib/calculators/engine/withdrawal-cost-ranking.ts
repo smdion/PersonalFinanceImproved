@@ -32,10 +32,7 @@ import {
   ltcgRateForNextDollar,
   toLtcgTaxableIncome,
 } from "../../config/tax-tables";
-import {
-  isRetirementParent,
-  isTaxFreeBucket,
-} from "../../config/account-types";
+import { isRetirementMoney, isTaxFreeBucket } from "../../config/account-types";
 import { NIIT_RATE, NIIT_THRESHOLDS } from "../../config/niit";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
 import type { IndKeyFn } from "@/lib/pure/withdrawal-eligibility";
@@ -55,6 +52,9 @@ export type WithdrawalSourceKind = "roth" | "brokerage" | "hsa";
  */
 export function deriveBasisRankingInputs(params: {
   balances: Pick<TaxBuckets, "afterTax" | "afterTaxBasis">;
+  /** Retirement brokerages' own basis ratio (brokerage-basis.ts), when
+   *  basis is tracked per account; otherwise the aggregate ratio. */
+  brokerageBasisRatio?: number;
   indBasis?: Map<string, RothBasisState>;
   /** `indBasis`'s basis totals are
    *  tracked per Roth ACCOUNT, but a Portfolio-parented account is
@@ -92,7 +92,7 @@ export function deriveBasisRankingInputs(params: {
     if (indAccts && indKey) {
       rothBasisAvailable = indAccts.reduce((s, ia) => {
         if (!isTaxFreeBucket(ia.taxType)) return s;
-        if (!isRetirementParent(ia.parentCategory ?? "Retirement")) return s;
+        if (!isRetirementMoney(ia.parentCategory)) return s;
         const state = indBasis.get(indKey(ia));
         return state ? s + state.contributionBasis + state.conversionBasis : s;
       }, 0);
@@ -104,9 +104,10 @@ export function deriveBasisRankingInputs(params: {
     }
   }
   const brokerageBasisRatio =
-    balances.afterTax > 0
+    params.brokerageBasisRatio ??
+    (balances.afterTax > 0
       ? Math.min(1, balances.afterTaxBasis / balances.afterTax)
-      : 0;
+      : 0);
   return { rothBasisAvailable, brokerageBasisRatio };
 }
 

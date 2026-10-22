@@ -19,14 +19,12 @@ import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing
 import type {
   AccountCategory,
   DecumulationDefaults,
-  ProfileSwitch,
-  ProjectionInput,
 } from "@/lib/calculators/types";
 import {
   accountCategoryEnum,
-  getAllCategories,
   getDefaultDecumulationOrder,
   DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
+  PARENT_CATEGORY_VALUES,
 } from "@/lib/config/account-types";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 
@@ -64,41 +62,44 @@ export const lumpSumSchema = z
       // accounts — see LumpSum.targetOwnerName's docblock (calculators/types/shared.ts).
       // Optional so lump sums saved before this field existed keep parsing.
       targetOwnerName: z.string().max(200).optional(),
+      // Whose money a lump sum with no named account is (the Brokerage
+      // page's are Portfolio savings) — see LumpSum.targetParentCategory.
+      targetParentCategory: z.enum(PARENT_CATEGORY_VALUES).optional(),
       label: z.string().max(100).optional(),
     }),
   )
   .optional();
 
-// Shared Zod schemas for accumulation/decumulation overrides — used by
-// computeProjection and computeMonteCarloProjection inputs.
-export const accumulationOverrideSchema = z
-  .array(
-    z.object({
-      year: z.number().int(),
-      contributionRate: z.number().min(0).max(1).optional(),
-      routingMode: z.enum(["waterfall", "percentage"]).optional(),
-      accountOrder: z.array(z.enum(accountCategoryEnum())).optional(),
-      accountSplits: z
-        .record(z.enum(accountCategoryEnum()), z.number())
-        .optional(),
-      taxSplits: z
-        .record(z.enum(accountCategoryEnum()), z.number().min(0).max(1))
-        .optional(),
-      accountCaps: z
-        .record(z.enum(accountCategoryEnum()), z.number())
-        .optional(),
-      taxTypeCaps: z
-        .object({
-          traditional: z.number().optional(),
-          roth: z.number().optional(),
-        })
-        .optional(),
-      lumpSums: lumpSumSchema,
-      reset: z.boolean().optional(),
-      notes: z.string().optional(),
-    }),
-  )
-  .default([]);
+// Shared Zod schemas for accumulation/decumulation overrides ("Changes by
+// year") — used by every projection procedure's input. OMITTED means the
+// household's saved rows (resolveProjectionOverrides): every surface — the
+// dashboard, the Retirement page, strategy comparison, stress tests — gets
+// the same baseline without each client loading them, and only an editor
+// with unsaved changes sends its own.
+const accumulationOverrideArraySchema = z.array(
+  z.object({
+    year: z.number().int(),
+    contributionRate: z.number().min(0).max(1).optional(),
+    routingMode: z.enum(["waterfall", "percentage"]).optional(),
+    accountOrder: z.array(z.enum(accountCategoryEnum())).optional(),
+    accountSplits: z
+      .record(z.enum(accountCategoryEnum()), z.number())
+      .optional(),
+    taxSplits: z
+      .record(z.enum(accountCategoryEnum()), z.number().min(0).max(1))
+      .optional(),
+    accountCaps: z.record(z.enum(accountCategoryEnum()), z.number()).optional(),
+    taxTypeCaps: z
+      .object({
+        traditional: z.number().optional(),
+        roth: z.number().optional(),
+      })
+      .optional(),
+    lumpSums: lumpSumSchema,
+    reset: z.boolean().optional(),
+    notes: z.string().optional(),
+  }),
+);
 
 /**
  * Top-level `decumulationDefaults` query input — the live withdrawal-strategy
@@ -148,44 +149,89 @@ export const decumulationDefaultsInputSchema = z
     withdrawalTaxPreference: {},
   });
 
-export const decumulationOverrideSchema = z
-  .array(
-    // No per-year `withdrawalRate`: none of the spending strategies reads
-    // it, so an override could only ever change nothing.
-    z.object({
-      year: z.number().int(),
-      withdrawalRoutingMode: z
-        .enum(["bracket_filling", "waterfall", "percentage"])
-        .optional(),
-      withdrawalOrder: z.array(z.enum(accountCategoryEnum())).optional(),
-      withdrawalSplits: z
-        .record(z.enum(accountCategoryEnum()), z.number())
-        .optional(),
-      withdrawalTaxPreference: z
-        .record(z.enum(accountCategoryEnum()), z.enum(["traditional", "roth"]))
-        .optional(),
-      withdrawalAccountCaps: z
-        .record(z.enum(accountCategoryEnum()), z.number())
-        .optional(),
-      withdrawalTaxTypeCaps: z
-        .object({
-          traditional: z.number().optional(),
-          roth: z.number().optional(),
-        })
-        .optional(),
-      rothConversionTarget: z.number().min(0).max(1).optional(),
-      // See DecumulationOverride's docblock in
-      // engine-config.ts. Without these two, zod silently strips both
-      // fields at this boundary regardless of what the engine/type layer
-      // supports underneath.
-      rothBracketTarget: z.number().min(0).max(1).optional(),
-      rmdSmoothingMaxBracketTarget: z.number().min(0).max(1).optional(),
-      lumpSums: lumpSumSchema,
-      reset: z.boolean().optional(),
-      notes: z.string().optional(),
-    }),
-  )
-  .default([]);
+const decumulationOverrideArraySchema = z.array(
+  // No per-year `withdrawalRate`: none of the spending strategies reads
+  // it, so an override could only ever change nothing.
+  z.object({
+    year: z.number().int(),
+    withdrawalRoutingMode: z
+      .enum(["bracket_filling", "waterfall", "percentage"])
+      .optional(),
+    withdrawalOrder: z.array(z.enum(accountCategoryEnum())).optional(),
+    withdrawalSplits: z
+      .record(z.enum(accountCategoryEnum()), z.number())
+      .optional(),
+    withdrawalTaxPreference: z
+      .record(z.enum(accountCategoryEnum()), z.enum(["traditional", "roth"]))
+      .optional(),
+    withdrawalAccountCaps: z
+      .record(z.enum(accountCategoryEnum()), z.number())
+      .optional(),
+    withdrawalTaxTypeCaps: z
+      .object({
+        traditional: z.number().optional(),
+        roth: z.number().optional(),
+      })
+      .optional(),
+    rothConversionTarget: z.number().min(0).max(1).optional(),
+    // See DecumulationOverride's docblock in
+    // engine-config.ts. Without these two, zod silently strips both
+    // fields at this boundary regardless of what the engine/type layer
+    // supports underneath.
+    rothBracketTarget: z.number().min(0).max(1).optional(),
+    rmdSmoothingMaxBracketTarget: z.number().min(0).max(1).optional(),
+    lumpSums: lumpSumSchema,
+    reset: z.boolean().optional(),
+    notes: z.string().optional(),
+  }),
+);
+
+export const accumulationOverrideSchema =
+  accumulationOverrideArraySchema.optional();
+export const decumulationOverrideSchema =
+  decumulationOverrideArraySchema.optional();
+
+export type ResolvedProjectionOverrides = {
+  accumulationOverrides: z.infer<typeof accumulationOverrideArraySchema>;
+  decumulationOverrides: z.infer<typeof decumulationOverrideArraySchema>;
+};
+
+/** The "Changes by year" a projection runs with: what the caller sent, or
+ *  — when it sent none — the household's saved rows (validated through the
+ *  same schemas; an unreadable saved row set counts as none). */
+export async function resolveProjectionOverrides(
+  db: Db,
+  input: {
+    accumulationOverrides?: ResolvedProjectionOverrides["accumulationOverrides"];
+    decumulationOverrides?: ResolvedProjectionOverrides["decumulationOverrides"];
+  },
+): Promise<ResolvedProjectionOverrides> {
+  const saved = async <T>(
+    overrideType: "accumulation" | "decumulation",
+    parse: (v: unknown) => { success: boolean; data?: T },
+  ): Promise<T | undefined> => {
+    const rows = await db
+      .select({ overrides: schema.projectionOverrides.overrides })
+      .from(schema.projectionOverrides)
+      .where(eq(schema.projectionOverrides.overrideType, overrideType));
+    const parsed = parse(rows[0]?.overrides ?? []);
+    return parsed.success ? parsed.data : undefined;
+  };
+  const [accumulationOverrides, decumulationOverrides] = await Promise.all([
+    input.accumulationOverrides ??
+      saved("accumulation", (v) =>
+        accumulationOverrideArraySchema.safeParse(v),
+      ),
+    input.decumulationOverrides ??
+      saved("decumulation", (v) =>
+        decumulationOverrideArraySchema.safeParse(v),
+      ),
+  ]);
+  return {
+    accumulationOverrides: accumulationOverrides ?? [],
+    decumulationOverrides: decumulationOverrides ?? [],
+  };
+}
 
 /** Build strategyParams from DB settings columns. */
 export function buildStrategyParams(settings: {
@@ -307,52 +353,10 @@ export function buildDecumulationDefaults(
   };
 }
 
-/**
- * Build a merged `profileSwitches` array that zeros contributions + employer
- * match from the Coast FIRE age onward.
- *
- * Injects a synthetic `ProfileSwitch` at `coastYear = currentYear + (coastAge
- * - currentAge)` with empty contribution specs, zero employer match rates,
- * zero base-year contributions/match, and contribution rate 0. The engine at
- * projection-year-handlers.ts:582-611 processes switches sticky-forward, so
- * every year from coastYear onward sees zero contributions AND zero employer
- * match — which fixes the bug where `contributionRate: 0` in an
- * accumulation override was silently ignored (engine line 985 has
- * `rateCeiling > 0` which treats zero rate as "unset, use specs").
- *
- * Merges with the user's own `profileSwitches`: keeps any user-authored
- * switches strictly before the coast year (so pre-coast years still reflect
- * the user's configured future), and drops user switches at or after the
- * coast year (those are moot — everything's zero from coast year forward).
- *
- * Used by computeProjection, computeMonteCarloProjection (when rendering
- * the coast scenario chart), and computeCoastFireMC (when probing inside
- * the binary search).
- */
-export function buildCoastFireProfileSwitches(
-  baseEngineInput: Pick<
-    ProjectionInput,
-    "asOfDate" | "currentAge" | "profileSwitches"
-  >,
-  coastAge: number,
-): ProfileSwitch[] {
-  const coastYear =
-    baseEngineInput.asOfDate.getFullYear() +
-    (coastAge - baseEngineInput.currentAge);
-  const zeroRecord = Object.fromEntries(
-    getAllCategories().map((c) => [c, 0]),
-  ) as Record<AccountCategory, number>;
-  const coastSwitch: ProfileSwitch = {
-    year: coastYear,
-    contributionSpecs: [],
-    employerMatchRateByCategory: zeroRecord,
-    baseYearContributions: zeroRecord,
-    baseYearEmployerMatch: zeroRecord,
-    contributionRate: 0,
-  };
-  const userSwitches = baseEngineInput.profileSwitches ?? [];
-  return [...userSwitches.filter((s) => s.year < coastYear), coastSwitch];
-}
+// Coast FIRE's "stop contributing at age N" lives with the calculator
+// (lib/calculators/coast-fire.ts) so the baseline finder and every
+// router probe stop contributions the same way.
+export { buildCoastFireProfileSwitches } from "@/lib/calculators/coast-fire";
 
 type Db = typeof _db;
 

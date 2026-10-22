@@ -7,10 +7,17 @@
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createTestCaller, seedStandardDataset } from "./setup";
+import { eq } from "drizzle-orm";
+import {
+  createTestCaller,
+  seedContributionProfile,
+  seedPerformanceAccount,
+  seedStandardDataset,
+} from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
+import { startingBalanceGaps } from "../calculators/fixtures/engine-fixtures";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -511,5 +518,158 @@ describe("projection router — computeProjection", () => {
     expect(response.primaryPersonId).toBe(response.people[0]!.id);
     expect(response.annualExpenses).toBeGreaterThan(0);
     expect(response.result!.projectionByYear.length).toBeGreaterThan(0);
+    // The payload's buckets, per-category balances and accounts describe
+    // the same money.
+    expect(startingBalanceGaps(response.result!)).toEqual([]);
+  });
+
+  it("omitted Changes by year = the saved rows; an explicit list replaces them", async () => {
+    const endOf = async (input: Record<string, unknown>) =>
+      (
+        await caller.projection.computeProjection(input)
+      ).result!.projectionByYear.at(-1)!.retirementBalance;
+    const before = await endOf({});
+    const year = new Date().getFullYear() + 2;
+    const saved = [{ year, contributionRate: 0 }];
+    await caller.retirement.projectionOverrides.save({
+      overrideType: "accumulation",
+      overrides: saved,
+    });
+    try {
+      const omitted = await endOf({});
+      expect(omitted).not.toBeCloseTo(before, 0);
+      expect(omitted).toBeCloseTo(
+        await endOf({ accumulationOverrides: saved }),
+        2,
+      );
+      expect(await endOf({ accumulationOverrides: [] })).toBeCloseTo(before, 2);
+    } finally {
+      await caller.retirement.projectionOverrides.save({
+        overrideType: "accumulation",
+        overrides: [],
+      });
+    }
+  });
+
+  it("echoes the saved unspent-RMD account (the Retirement settings picker reads it)", async () => {
+    const brokerage = seedPerformanceAccount(db, {
+      name: "Echo brokerage",
+      accountType: "brokerage",
+      parentCategory: "Retirement",
+    });
+    db.update(schema.retirementSettings)
+      .set({ rmdExcessTargetPerformanceAccountId: brokerage })
+      .run();
+    try {
+      const response = await caller.projection.computeProjection({
+        accumulationOverrides: [],
+        decumulationOverrides: [],
+      });
+      expect(response.settings?.rmdExcessTargetPerformanceAccountId).toBe(
+        brokerage,
+      );
+    } finally {
+      db.update(schema.retirementSettings)
+        .set({ rmdExcessTargetPerformanceAccountId: null })
+        .run();
+    }
+  });
+
+  it("a saved unspent-RMD account that's no longer a Retirement brokerage falls back with a warning", async () => {
+    const moved = seedPerformanceAccount(db, {
+      name: "Moved brokerage",
+      accountType: "brokerage",
+      parentCategory: "Portfolio",
+    });
+    db.update(schema.retirementSettings)
+      .set({ rmdExcessTargetPerformanceAccountId: moved })
+      .run();
+    try {
+      const response = await caller.projection.computeProjection({
+        accumulationOverrides: [],
+        decumulationOverrides: [],
+      });
+      expect(
+        response.result!.warnings.filter((w) =>
+          w.includes("no longer a Retirement brokerage"),
+        ),
+      ).toHaveLength(1);
+    } finally {
+      db.update(schema.retirementSettings)
+        .set({ rmdExcessTargetPerformanceAccountId: null })
+        .run();
+    }
+  });
+
+  it("the contribution rate counts retirement contributions only", async () => {
+    const rate = async (contributionProfileId: number) => {
+      const r = await caller.projection.computeProjection({
+        accumulationOverrides: [],
+        decumulationOverrides: [],
+        contributionProfileId,
+      });
+      return r.result!.projectionByYear.find((y) => y.phase === "accumulation")!
+        .config.contributionRate;
+    };
+    // Contributions count through the active Contribution Profile.
+    const person = db.select().from(schema.people).get()!;
+    const job = db.select().from(schema.jobs).get()!;
+    const retirement401k = db.select().from(schema.contributionAccounts).get()!;
+    // A percent-of-salary contribution is measured against its job's pay.
+    db.update(schema.contributionAccounts)
+      .set({ jobId: job.id })
+      .where(eq(schema.contributionAccounts.id, retirement401k.id))
+      .run();
+    const portfolioPerf = seedPerformanceAccount(db, {
+      name: "Long-term brokerage",
+      accountType: "brokerage",
+      parentCategory: "Portfolio",
+    });
+    const portfolioBrokerage = db
+      .insert(schema.contributionAccounts)
+      .values({
+        accountType: "brokerage",
+        taxTreatment: "after_tax",
+        employerMatchType: "none",
+        isActive: true,
+        personId: person.id,
+        jobId: job.id,
+        performanceAccountId: portfolioPerf,
+        parentCategory: "Portfolio",
+      })
+      .returning()
+      .get();
+    const profile = (withPortfolio: boolean, retirementPct = "10") =>
+      seedContributionProfile(db, {
+        name: `${withPortfolio ? "With Portfolio savings" : "Retirement only"} ${retirementPct}%`,
+        isActive: false,
+        contributionActiveFields: {
+          contributionAccounts: {
+            [String(retirement401k.id)]: {
+              contributionMethod: "percent_of_salary",
+              contributionValue: retirementPct,
+            },
+            ...(withPortfolio
+              ? {
+                  [String(portfolioBrokerage.id)]: {
+                    contributionMethod: "fixed_monthly",
+                    contributionValue: "1000",
+                  },
+                }
+              : {}),
+          },
+          deductions: {},
+        },
+      });
+    const retirementOnly = await rate(profile(false));
+    const withPortfolio = await rate(profile(true));
+    // 10% of salary either way; the $12,000 a year of Portfolio savings
+    // isn't a retirement contribution.
+    expect(retirementOnly).toBeCloseTo(0.1, 2);
+    expect(withPortfolio).toBeCloseTo(retirementOnly, 6);
+    // Saving only into Portfolio money is a 0% retirement rate — not the
+    // 25% fallback for missing data (it invented retirement contributions
+    // wherever the rate path runs, e.g. Simple tax mode).
+    expect(await rate(profile(true, "0"))).toBe(0);
   });
 });

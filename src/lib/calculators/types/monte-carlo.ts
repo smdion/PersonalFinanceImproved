@@ -1,5 +1,6 @@
 // Monte Carlo simulation types.
 
+import type { PlanFailureReason } from "../plan-outcome";
 import type { ProjectionInput, ProjectionResult } from "./engine-projection";
 
 /** Per-year percentile band for fan chart rendering. */
@@ -120,15 +121,21 @@ export type MonteCarloResult = {
   /** Distribution of key outcomes. */
   distributions: {
     terminalBalance: DistributionSummary;
-    depletionAge: DistributionSummary | null;
+    /** Age each failing trial first fell short (assessPlan); null when
+     *  fewer than 5% of trials fail. */
+    failureAge: DistributionSummary | null;
     sustainableWithdrawal: DistributionSummary;
     /** Sustainable withdrawal deflated to today's dollars. */
     sustainableWithdrawalPV: DistributionSummary;
   };
 
+  /** Share of all trials failing for each reason (sums to 1 − successRate). */
+  failureReasonRates: Record<PlanFailureReason, number>;
+
   /** Worst-case analysis. */
   worstCase: {
-    p5DepletionAge: number | null;
+    /** 5th-percentile failure age among failing trials. */
+    p5FailureAge: number | null;
     p5EndBalance: number;
   };
 

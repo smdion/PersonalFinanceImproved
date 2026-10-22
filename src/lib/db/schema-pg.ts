@@ -1587,6 +1587,17 @@ export const retirementSettings = pgTable(
     rmdExcessHandling: varchar("rmd_excess_handling", { length: 20 })
       .notNull()
       .default("reinvest"),
+    /** Where reinvested RMD money goes: a Retirement-parented brokerage
+     *  account. Null = spread across the household's Retirement brokerages
+     *  by balance (the default); an account that is gone or no longer a
+     *  Retirement brokerage falls back to that with a warning. Never a
+     *  Portfolio account — retirement money stays retirement money.
+     *  Household-grain like rmdExcessHandling (stored on the primary
+     *  person's row, which pickProfileSettingsRow reads), per Retirement
+     *  Profile. */
+    rmdExcessTargetPerformanceAccountId: integer(
+      "rmd_excess_target_performance_account_id",
+    ).references(() => performanceAccounts.id, { onDelete: "set null" }),
     /** Automatically apply the largest Qualified Charitable
      *  Distribution the household's RMD situation allows each year
      *  (capped by QCD_ANNUAL_CAP_PER_PERSON and the person's IRA-only
@@ -1702,6 +1713,9 @@ export const retirementSettings = pgTable(
   (table) => [
     index("retirement_settings_person_id_idx").on(table.personId),
     index("retirement_settings_profile_id_idx").on(table.profileId),
+    index("retirement_settings_rmd_excess_target_idx").on(
+      table.rmdExcessTargetPerformanceAccountId,
+    ),
     // Replaces the old bare unique(person_id). profile_id stays nullable
     // (Postgres/SQLite both treat NULL as non-equal in a unique index, so
     // this can't be weakened by a null profile_id — every write path sets

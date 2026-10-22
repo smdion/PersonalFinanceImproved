@@ -76,9 +76,11 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       ira: 0,
       brokerage: 0,
     },
+    // Buckets match the per-account balances below (they were $10k off,
+    // leaving money the router could never reach).
     startingBalances: {
-      preTax: 100000,
-      taxFree: 50000,
+      preTax: 110000,
+      taxFree: 40000,
       afterTax: 30000,
       afterTaxBasis: 20000,
       hsa: 15000,
@@ -172,7 +174,7 @@ describe("monte carlo integration", () => {
     // uses for financial content that otherwise relies on
     // toMatchSnapshot() alone).
     expect(result.successRate).toBe(1);
-    expect(result.medianEndBalance).toBeCloseTo(25352863.62, 1);
+    expect(result.medianEndBalance).toBeCloseTo(25352864.05, 1);
 
     expect(extractSummary(result)).toMatchSnapshot();
   });
@@ -202,8 +204,9 @@ describe("monte carlo integration", () => {
     const result = calculateMonteCarlo(mcInput);
 
     expect(result.numTrials).toBe(50);
-    expect(result.successRate).toBe(1);
-    expect(result.medianEndBalance).toBe(22504931.93);
+    // Two inflation-heavy trials run out of retirement money at 87–88.
+    expect(result.successRate).toBe(0.96);
+    expect(result.medianEndBalance).toBe(22504932.2);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 
@@ -232,7 +235,7 @@ describe("monte carlo integration", () => {
 
     expect(result.numTrials).toBe(50);
     expect(result.successRate).toBe(1);
-    expect(result.medianEndBalance).toBe(8880321.81);
+    expect(result.medianEndBalance).toBe(8880321.45);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 
@@ -547,10 +550,10 @@ describe("monte carlo integration", () => {
     }
 
     // The aggregate (the only representation left) stays internally
-    // consistent with itself year over year -- endBalance tracks the real
+    // consistent with itself year over year -- allAccountsBalance tracks the real
     // starting total, not a phantom inflated/deflated figure.
-    expect(year1.endBalance).toBeGreaterThan(totalBalance * 0.9);
-    expect(year1.endBalance).toBeLessThan(totalBalance * 1.3);
+    expect(year1.allAccountsBalance).toBeGreaterThan(totalBalance * 0.9);
+    expect(year1.allAccountsBalance).toBeLessThan(totalBalance * 1.3);
 
     // Regression guard: WITHOUT the fix (real individualAccounts left in
     // place under a collapsed aggregate -- i.e. monte-carlo.ts's Simple-mode

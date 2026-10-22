@@ -6,6 +6,7 @@
  * pages use, run with that Plan's profiles (a Plan slot left empty uses the
  * active profile of that kind, as applying it would).
  */
+import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
@@ -21,7 +22,7 @@ import {
   type PlanProfileKind,
 } from "@/lib/config/plans";
 import { planProfileIds } from "@/lib/pure/plans";
-import { useDashboardEngineInput } from "@/lib/hooks/use-dashboard-projection";
+import { usePlanEngineInput } from "@/lib/hooks/use-plan-engine-input";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 
 const MAX_COMPARED = 3;
@@ -61,21 +62,26 @@ function PlanColumn({
   // Plan in use hits the same cached run), changing only the kinds where
   // this Plan differs from the active profiles. The household's chosen
   // retirement-budget settings stay as they are; a Plan's Budget profile
-  // stands in for the working-years budget only when none is chosen.
-  const engineInput = useDashboardEngineInput();
+  // stands in for the working-years budget.
+  const { input: engineInput, ready } = usePlanEngineInput();
   const differs = (k: PlanProfileKind) =>
     ids[k] != null && ids[k] !== activeIds[k];
-  const projection = trpc.projection.computeProjection.useQuery({
-    ...engineInput,
-    ...(differs("contribution")
-      ? { contributionProfileId: ids.contribution! }
-      : {}),
-    ...(differs("salary") ? { salaryProfileId: ids.salary! } : {}),
-    ...(differs("retirement") ? { retirementProfileId: ids.retirement! } : {}),
-    ...(differs("budget") && engineInput.accumulationBudgetProfileId == null
-      ? { accumulationBudgetProfileId: ids.budget! }
-      : {}),
-  });
+  const projection = trpc.projection.computeProjection.useQuery(
+    {
+      ...engineInput,
+      ...(differs("contribution")
+        ? { contributionProfileId: ids.contribution! }
+        : {}),
+      ...(differs("salary") ? { salaryProfileId: ids.salary! } : {}),
+      ...(differs("retirement")
+        ? { retirementProfileId: ids.retirement! }
+        : {}),
+      ...(differs("budget")
+        ? { accumulationBudgetProfileId: ids.budget! }
+        : {}),
+    },
+    { enabled: ready },
+  );
 
   // The union's "no profile" branch carries neither figure. Take-home is the
   // same in every budget column (columns are spending levels).
@@ -149,9 +155,14 @@ function PlanColumn({
         <FieldRow label="Money lasts">
           <span>
             {result
-              ? result.portfolioDepletionAge != null
-                ? `to age ${Math.round(result.portfolioDepletionAge)}`
-                : "through the plan"
+              ? (() => {
+                  const outcome = assessPlan(result);
+                  return outcome.succeeded
+                    ? "through the plan"
+                    : outcome.failureReason === "depleted"
+                      ? `to age ${outcome.failureAge}`
+                      : `falls short at ${outcome.failureAge}`;
+                })()
               : projection.isLoading
                 ? "…"
                 : "—"}

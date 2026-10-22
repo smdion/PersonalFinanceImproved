@@ -20,6 +20,8 @@ import {
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
+import { DEFAULT_SIMULATION } from "@/lib/constants";
+import { defaultDecumulationConfig } from "@/lib/config/account-types";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -170,7 +172,7 @@ async function projectionRows(
 
 /** Year-end balances of a deterministic projection. */
 async function balances(caller: Caller, input: Partial<ProjectionInput> = {}) {
-  return (await projectionRows(caller, input)).map((y) => y.endBalance);
+  return (await projectionRows(caller, input)).map((y) => y.allAccountsBalance);
 }
 
 /** The resolved decumulation config the engine used in `year`. */
@@ -382,7 +384,7 @@ describe("projection router — computeProjection edge cases (continued)", () =>
       // is the total-savings ceiling, so 15% from 2030 saves less — and
       // leaves earlier years alone.
       const at = (rows: typeof base, year: number) =>
-        rows.find((r) => r.year === year)!.endBalance;
+        rows.find((r) => r.year === year)!.allAccountsBalance;
       expect(at(capped, 2029)).toBe(at(base, 2029));
       expect(at(capped, 2030)).toBeLessThan(at(base, 2030));
     } finally {
@@ -431,7 +433,7 @@ describe("projection router — computeProjection edge cases (continued)", () =>
 
       expect(response.result).not.toBeNull();
       expect(
-        response.result!.projectionByYear.map((y) => y.endBalance),
+        response.result!.projectionByYear.map((y) => y.allAccountsBalance),
       ).not.toEqual(base);
     } finally {
       cleanup();
@@ -527,6 +529,83 @@ describe("projection router — computeMonteCarloProjection", () => {
 
       expect(response.result).not.toBeNull();
       expect(response.simulationInputs.taxMode).toBe("advanced");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("Simple tax mode counts retirement money only: a Portfolio brokerage changes nothing", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const { personId, snapId } = seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      const run = (taxMode: "simple" | "advanced") =>
+        caller.projection.computeMonteCarloProjection({
+          numTrials: 100,
+          preset: "custom",
+          taxMode,
+          seed: 42,
+          forceRefresh: true,
+        });
+      const before = await run("simple");
+
+      // $1M Portfolio brokerage, saving into it every year.
+      const [perf] = db
+        .insert(schema.performanceAccounts)
+        .values({
+          institution: "Vanguard",
+          accountType: "brokerage",
+          accountLabel: "Vanguard Brokerage",
+          ownershipType: "individual",
+          ownerPersonId: personId,
+          parentCategory: "Portfolio",
+        })
+        .returning()
+        .all();
+      db.insert(schema.portfolioAccounts)
+        .values({
+          snapshotId: snapId,
+          performanceAccountId: perf!.id,
+          amount: "1000000",
+          taxType: "afterTax",
+          institution: "Vanguard",
+          accountType: "brokerage",
+          ownerPersonId: personId,
+          parentCategory: "Portfolio",
+        })
+        .run();
+      db.insert(schema.contributionAccounts)
+        .values({
+          accountType: "brokerage",
+          contributionMethod: "percent_of_salary",
+          contributionValue: "0.05",
+          taxTreatment: "after_tax",
+          employerMatchType: "none",
+          isActive: true,
+          personId,
+          performanceAccountId: perf!.id,
+          parentCategory: "Portfolio",
+        })
+        .run();
+
+      const after = await run("simple");
+      expect(after.simulationInputs.startingBalance).toBe(
+        before.simulationInputs.startingBalance,
+      );
+      expect(after.simulationInputs.annualContributions).toBeCloseTo(
+        before.simulationInputs.annualContributions,
+        2,
+      );
+      expect(after.result!.successRate).toBe(before.result!.successRate);
+      expect(after.result!.percentileBands).toEqual(
+        before.result!.percentileBands,
+      );
+      // The assumptions panel shows retirement money in Advanced too.
+      expect((await run("advanced")).simulationInputs.startingBalance).toBe(
+        before.simulationInputs.startingBalance,
+      );
     } finally {
       cleanup();
     }
@@ -882,6 +961,54 @@ describe("projection router — computeMonteCarloProjection cache", () => {
    * contract is "report what's cached, never compute." peekOnly must win:
    * it always reads the real cache, regardless of forceRefresh.
    */
+  it("the dashboard's peek finds the Retirement page's default run, with and without saved Changes by year", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      seedDefaultMcPreset(db);
+      // Both build from usePlanEngineInput; the page adds the default
+      // simulation's settings, the dashboard sends none of them.
+      const plan = {
+        decumulationDefaults: {
+          withdrawalTaxPreference:
+            defaultDecumulationConfig().withdrawalTaxPreference,
+        },
+      };
+      const page = {
+        ...plan,
+        numTrials: DEFAULT_SIMULATION.numTrials,
+        preset: DEFAULT_SIMULATION.preset,
+        taxMode: DEFAULT_SIMULATION.taxMode,
+      };
+      const dashboardPeek = () =>
+        caller.projection.computeMonteCarloProjection({
+          ...plan,
+          peekOnly: true,
+        });
+
+      const run = await caller.projection.computeMonteCarloProjection(page);
+      expect((await dashboardPeek()).result).toEqual(run.result);
+
+      // Saved Changes by year: the page leaves them out until edited (the
+      // server applies the saved rows) — the peek still hits, and it
+      // reflects them.
+      const year = new Date().getFullYear() + 2;
+      await caller.retirement.projectionOverrides.save({
+        overrideType: "accumulation",
+        overrides: [{ year, contributionRate: 0 }],
+      });
+      const withSaved =
+        await caller.projection.computeMonteCarloProjection(page);
+      expect(withSaved.result).not.toEqual(run.result);
+      expect((await dashboardPeek()).result).toEqual(withSaved.result);
+    } finally {
+      cleanup();
+    }
+  });
+
   it("peekOnly still returns the cached result even when forceRefresh is also set", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -1020,9 +1147,30 @@ describe("projection router — computeStrategyComparison", () => {
         snapshotId: snapId,
       });
 
-      expect(fixedOf(older).endBalance).toBeLessThan(
-        fixedOf(latest).endBalance,
+      expect(fixedOf(older).endRetirementBalance).toBeLessThan(
+        fixedOf(latest).endRetirementBalance,
       );
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("a newly saved Changes by year row reaches the comparison (no stale cache hit)", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      const fixedEnd = async () =>
+        (await caller.projection.computeStrategyComparison()).strategies.find(
+          (st) => st.strategy === "fixed",
+        )!.endRetirementBalance;
+      const before = await fixedEnd();
+      await caller.retirement.projectionOverrides.save({
+        overrideType: "accumulation",
+        overrides: [
+          { year: new Date().getFullYear() + 2, contributionRate: 0 },
+        ],
+      });
+      expect(await fixedEnd()).toBeLessThan(before);
     } finally {
       cleanup();
     }
@@ -1036,11 +1184,11 @@ describe("projection router — computeStrategyComparison", () => {
       const response = await caller.projection.computeStrategyComparison();
 
       for (const strat of response.strategies) {
-        // If there are yearByYear entries, they should have age, withdrawal, endBalance
+        // If there are yearByYear entries, they should have age, withdrawal, retirementBalance
         if (strat.yearByYear.length > 0) {
           expect(strat.yearByYear[0]).toHaveProperty("age");
           expect(strat.yearByYear[0]).toHaveProperty("withdrawal");
-          expect(strat.yearByYear[0]).toHaveProperty("endBalance");
+          expect(strat.yearByYear[0]).toHaveProperty("retirementBalance");
         }
       }
     } finally {
@@ -1672,7 +1820,7 @@ describe("projection router — computeStressTest", () => {
       for (const scenario of response.scenarios) {
         expect(scenario).toHaveProperty("label");
         expect(scenario).toHaveProperty("nestEggAtRetirement");
-        expect(scenario).toHaveProperty("portfolioDepletionAge");
+        expect(scenario).toHaveProperty("failureAge");
       }
     } finally {
       cleanup();

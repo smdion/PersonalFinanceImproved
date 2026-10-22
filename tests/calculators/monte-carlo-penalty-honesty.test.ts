@@ -110,8 +110,42 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   } as ProjectionInput;
 }
 
+/** Every account tracked, so the 401(k) (locked until 59½) and the HSA
+ *  (non-medical penalty until 65) are penalty-exposed like the Roth growth:
+ *  only the brokerage and the Roth basis are reachable before 59½ — a real
+ *  gap. (Untracked, the aggregate 401(k)/HSA read as reachable money.) */
 function makeRothIndividualAccounts(ownerBirthYear: number) {
+  const owner = {
+    ownerName: "Owner",
+    ownerPersonId: 1,
+    ownerBirthYear,
+    parentCategory: "Retirement",
+  };
   return [
+    {
+      name: "401k",
+      category: "401k" as const,
+      taxType: "preTax",
+      startingBalance: 900000,
+      ...owner,
+      // Left the employer before 55: no Rule of 55.
+      ruleOf55ForceIneligible: true,
+    },
+    {
+      name: "HSA",
+      category: "hsa" as const,
+      taxType: "hsa",
+      startingBalance: 260000,
+      ...owner,
+    },
+    {
+      name: "Brokerage",
+      category: "brokerage" as const,
+      taxType: "afterTax",
+      startingBalance: 30000,
+      startingBasis: 20000,
+      ...owner,
+    },
     {
       name: "Roth IRA",
       category: "ira" as const,
@@ -136,7 +170,10 @@ function makeRothIndividualAccounts(ownerBirthYear: number) {
 describe("Monte Carlo honesty (acceptance criterion 11)", () => {
   it("successRate falls when the exclusion is on for a household with a real 55->59½ penalty-free funding gap, even though trials still end with money left over", () => {
     const base = makeInput({
-      individualAccounts: makeRothIndividualAccounts(1990),
+      // 54 today, retiring at 55: little time to build reachable money, so
+      // the 55→59½ gap is real (the brokerage and Roth basis can't cover it).
+      currentAge: 54,
+      individualAccounts: makeRothIndividualAccounts(1971),
     });
     const mcOpts = {
       numTrials: 300,

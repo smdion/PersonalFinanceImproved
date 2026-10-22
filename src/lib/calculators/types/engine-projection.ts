@@ -40,6 +40,8 @@ import type {
  *    and routes money accordingly.
  */
 export type ProjectionInput = {
+  /** Notes from building this input (shown with the result's warnings). */
+  inputWarnings?: string[];
   // --- Defaults (from Projection Assumptions) ---
   accumulationDefaults: AccumulationDefaults;
   decumulationDefaults: DecumulationDefaults;
@@ -312,8 +314,15 @@ export type EngineAccumulationYear = {
     gainsPortion: number;
     taxCost: number;
   }[];
-  /** Portfolio balance at end of year (all buckets combined). */
-  endBalance: number;
+  /** Retirement money at end of year: every account minus the
+   *  Portfolio-parented ones (savings outside the retirement plan) — what
+   *  retirement answers count (depletion, success, nest egg). */
+  retirementBalance: number;
+  /** Every account at end of year, Portfolio included — for net-worth
+   *  views only (FI milestones = liquid net worth, benchmarks). In a row
+   *  narrowed to one parent (filterYearByParentCategory) it is that view's
+   *  accounts, which the projection card displays. */
+  allAccountsBalance: number;
   /** Balance breakdown by tax bucket. */
   balanceByTaxType: TaxBuckets;
   /** Balance breakdown by account category (401k/IRA split tracked separately). */
@@ -437,6 +446,10 @@ export type EngineDecumulationYear = {
    *  own materiality threshold — see decumulation-year.ts's
    *  `shortfallMaterialityFloor` for why $50-or-1%-of-need is the bar. */
   unmetNeedMaterial?: boolean;
+  /** The bar `unmetNeedMaterial` uses: $50 or 1% of the year's need,
+   *  whichever is greater. Also what counts as "no money left" for the
+   *  plan judge (plan-outcome.ts) — one threshold, set here. */
+  shortfallMaterialityFloor?: number;
   /** Portion of `unmetNeed` attributable specifically to excluding
    *  penalty-exposed money, not to the household being broke —
    *  see `RouteResult`'s docblock in `withdrawal-routing.ts` for the exact
@@ -460,8 +473,15 @@ export type EngineDecumulationYear = {
   penaltyCost?: number;
   /** Debug: pre-withdrawal per-account balances (what the router sees). */
   preWithdrawalAcctBal?: AccountBalances;
-  /** Portfolio balance at end of year (all buckets combined). */
-  endBalance: number;
+  /** Retirement money at end of year: every account minus the
+   *  Portfolio-parented ones (savings outside the retirement plan) — what
+   *  retirement answers count (depletion, success, nest egg). */
+  retirementBalance: number;
+  /** Every account at end of year, Portfolio included — for net-worth
+   *  views only (FI milestones = liquid net worth, benchmarks). In a row
+   *  narrowed to one parent (filterYearByParentCategory) it is that view's
+   *  accounts, which the projection card displays. */
+  allAccountsBalance: number;
   /** Balance breakdown by tax bucket. */
   balanceByTaxType: TaxBuckets;
   /** Balance breakdown by account category (401k/IRA split tracked separately). */
@@ -586,9 +606,11 @@ export type ProjectionResult = {
   firstOverflowYear: number | null;
   firstOverflowAge: number | null;
   firstOverflowAmount: number | null;
-  /** The year the portfolio is projected to run out (null if it never does). */
-  portfolioDepletionYear: number | null;
-  portfolioDepletionAge: number | null;
+  /** The first year retirement money runs out (retirementBalance < $1;
+   *  null if it never does). A balance fact — unmet spending while money
+   *  remains is a shortfall, not depletion. */
+  retirementDepletionYear: number | null;
+  retirementDepletionAge: number | null;
   /** Sustainable annual withdrawal at retirement (portfolio × withdrawal rate).
    *  Not what any strategy actually spends — a reference "4%-rule-style" figure. */
   sustainableWithdrawal: number;

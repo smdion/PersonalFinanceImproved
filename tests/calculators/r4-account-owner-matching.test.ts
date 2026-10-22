@@ -27,6 +27,33 @@ const AS_OF = new Date("2025-03-07");
 function makeInput(): ProjectionInput {
   const individualAccounts: IndividualAccountInput[] = [
     {
+      name: "401k",
+      category: "401k",
+      taxType: "preTax",
+      startingBalance: 900000,
+      ownerName: "Alex",
+      ownerPersonId: 1,
+      parentCategory: "Retirement",
+    },
+    {
+      name: "401k",
+      category: "401k",
+      taxType: "taxFree",
+      startingBalance: 100000,
+      ownerName: "Alex",
+      ownerPersonId: 1,
+      parentCategory: "Retirement",
+    },
+    {
+      name: "HSA",
+      category: "hsa",
+      taxType: "hsa",
+      startingBalance: 30000,
+      ownerName: "Alex",
+      ownerPersonId: 1,
+      parentCategory: "Retirement",
+    },
+    {
       name: "Long Term Brokerage",
       category: "brokerage",
       taxType: "afterTax",

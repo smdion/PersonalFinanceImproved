@@ -10,6 +10,7 @@
  * correlated log-normal distributions based on asset class parameters and a
  * glide path that shifts allocations over time.
  */
+import { assessPlan, type PlanFailureReason } from "./plan-outcome";
 import { calculateProjection } from "./engine";
 import {
   createPRNG,
@@ -186,12 +187,11 @@ export function calculateMonteCarlo(
 
   // Per-trial outcome tracking
   const terminalBalances: number[] = [];
-  // A trial whose spending need went unfunded specifically because
-  // penalty-exposed money was excluded (not because the household was
-  // broke) must NOT count as a success just because it kept a larger
-  // terminal balance from money it never spent. Parallel array to
-  // terminalBalances, indexed by trial.
+  // Trials that failed on a penalty gap (money there but locked behind
+  // early-withdrawal penalties), and every trial's verdict. Parallel arrays
+  // to terminalBalances, indexed by trial.
   const hadPenaltyAvoidedShortfall: boolean[] = [];
+  const trialSucceeded: boolean[] = [];
   // Dollar magnitude alongside the boolean above -- per trial, the sum of
   // every decumulation year's penaltyAvoidedShortfall, in TODAY's dollars
   // (deflated by pvDeflator, same convention as sustainableWithdrawalsPV
@@ -200,7 +200,12 @@ export function calculateMonteCarlo(
   // what to actually go build. Only meaningful for trials where the
   // boolean above is true; 0 otherwise.
   const penaltyAvoidedShortfallAmountsPV: number[] = [];
-  const depletionAges: number[] = [];
+  const failureAges: number[] = [];
+  const failureReasonCounts: Record<PlanFailureReason, number> = {
+    depleted: 0,
+    penaltyGap: 0,
+    shortfall: 0,
+  };
   const sustainableWithdrawals: number[] = [];
   const sustainableWithdrawalsPV: number[] = [];
   let spendingStableCount = 0;
@@ -302,38 +307,32 @@ export function calculateMonteCarlo(
     // Run the engine
     const result = calculateProjection(trialInput);
 
-    // Collect per-year end balances
+    // Collect per-year end balances.
+    // Retirement money (A6): Portfolio balances never fund retirement, so
+    // the bands, median and terminal balances leave them out.
     for (
       let yearIdx = 0;
       yearIdx < numYears && yearIdx < result.projectionByYear.length;
       yearIdx++
     ) {
       balancesByYear[yearIdx]!.push(
-        roundToCents(result.projectionByYear[yearIdx]!.endBalance),
+        roundToCents(result.projectionByYear[yearIdx]!.retirementBalance),
       );
     }
 
     // Terminal balance
     const lastYear =
       result.projectionByYear[result.projectionByYear.length - 1];
-    terminalBalances.push(roundToCents(lastYear?.endBalance ?? 0));
+    terminalBalances.push(roundToCents(lastYear?.retirementBalance ?? 0));
 
-    // Penalty-avoided shortfall -- any decumulation year whose
-    // spending need went unfunded because penalty-exposed money was
-    // excluded disqualifies this trial from counting as a success below,
-    // regardless of its terminal balance. Materiality floor (matching
-    // coast-fire.ts's identically-reasoned
-    // `passes()` floor): a rounding-scale shortfall in one of many
-    // decumulation years shouldn't disqualify an otherwise-successful
-    // trial.
-    hadPenaltyAvoidedShortfall.push(
-      result.projectionByYear.some(
-        (y) =>
-          y.phase === "decumulation" &&
-          (y.penaltyAvoidedShortfall ?? 0) >
-            Math.max(50, (y.afterTaxNeed ?? 0) * 0.01),
-      ),
-    );
+    // One judge (plan-outcome.ts): the trial fails when retirement money
+    // runs out or a year's spending goes unmet (money penalty-locked, only
+    // in Portfolio accounts, or past what routing can reach) — never kept
+    // alive by a terminal balance it couldn't spend. A penalty gap is also
+    // tallied on its own below.
+    const outcome = assessPlan(result);
+    trialSucceeded.push(outcome.succeeded);
+    hadPenaltyAvoidedShortfall.push(outcome.failureReason === "penaltyGap");
     const totalPenaltyAvoidedShortfallNominal = sumBy(
       result.projectionByYear,
       (y) =>
@@ -343,9 +342,10 @@ export function calculateMonteCarlo(
       safeDivide(totalPenaltyAvoidedShortfallNominal, pvDeflator, 0),
     );
 
-    // Depletion age
-    if (result.portfolioDepletionAge !== null) {
-      depletionAges.push(result.portfolioDepletionAge);
+    // Failure age and reason (the plan judge's, not depletion alone).
+    if (!outcome.succeeded) {
+      failureAges.push(outcome.failureAge);
+      failureReasonCounts[outcome.failureReason]++;
     }
 
     // Spending stability: did withdrawals stay ≥75% of baseline every decumulation year?
@@ -507,19 +507,11 @@ export function calculateMonteCarlo(
         }
       : null;
 
-  // Success rate: % of trials where portfolio balance stays above $0 AND
-  // no year's spending need went unfunded specifically because penalty-
-  // exposed money was excluded -- without the second condition, a trial that
-  // under-spent every year (because its only remaining money was
-  // penalty-exposed and off-limits) would keep a LARGER terminal balance
-  // and score as MORE successful, exactly backwards.
-  const successCount = terminalBalances.filter(
-    (b, i) => b > 0 && !hadPenaltyAvoidedShortfall[i],
-  ).length;
+  // Success rate: % of trials the plan judge passes (assessPlan).
+  const successCount = trialSucceeded.filter(Boolean).length;
   const successRate = safeDivide(successCount, numTrials, 0);
 
-  // Diagnostic split for the same signal: what fraction of trials hit a
-  // penalty-avoided shortfall at all (regardless of terminal balance) --
+  // Diagnostic split: what fraction of trials failed on a penalty gap --
   // lets a caller distinguish "can't legally reach the money before 59½"
   // from "genuinely ran out," which successRate alone conflates.
   const penaltyAvoidedShortfallCount =
@@ -557,17 +549,22 @@ export function calculateMonteCarlo(
   const meanEndBalance =
     sumBy(terminalBalances, (v) => v) / Math.max(terminalBalances.length, 1);
 
-  // Depletion age distribution (null if fewer than 5% of trials deplete)
-  const depletionDist =
-    depletionAges.length >= numTrials * 0.05
-      ? computeDistribution(depletionAges)
+  // Failure age distribution (null if fewer than 5% of trials fail)
+  const failureAgeDist =
+    failureAges.length >= numTrials * 0.05
+      ? computeDistribution(failureAges)
       : null;
 
   // P5 worst-case
   const p5EndBalance = percentile(sortedTerminal, 5);
-  const sortedDepletions = [...depletionAges].sort((a, b) => a - b);
-  const p5DepletionAge =
-    sortedDepletions.length > 0 ? percentile(sortedDepletions, 5) : null;
+  const sortedFailures = [...failureAges].sort((a, b) => a - b);
+  const p5FailureAge =
+    sortedFailures.length > 0 ? percentile(sortedFailures, 5) : null;
+  const failureReasonRates = {
+    depleted: safeDivide(failureReasonCounts.depleted, numTrials, 0),
+    penaltyGap: safeDivide(failureReasonCounts.penaltyGap, numTrials, 0),
+    shortfall: safeDivide(failureReasonCounts.shortfall, numTrials, 0),
+  };
 
   const computeTimeMs = Math.round(performance.now() - startTime);
 
@@ -584,12 +581,13 @@ export function calculateMonteCarlo(
     deterministicProjection,
     distributions: {
       terminalBalance: computeDistribution(terminalBalances),
-      depletionAge: depletionDist,
+      failureAge: failureAgeDist,
       sustainableWithdrawal: computeDistribution(sustainableWithdrawals),
       sustainableWithdrawalPV: computeDistribution(sustainableWithdrawalsPV),
     },
+    failureReasonRates,
     worstCase: {
-      p5DepletionAge,
+      p5FailureAge,
       p5EndBalance,
     },
     numTrials,

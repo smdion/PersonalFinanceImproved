@@ -75,7 +75,7 @@ export type OutcomeDistribution = {
     p90: number;
   };
   sustainableWithdrawalPV: { p25: number; p75: number };
-  depletionAge?: { median: number };
+  failureAge?: { median: number };
   computeTimeMs: number;
 };
 

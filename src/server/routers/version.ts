@@ -254,6 +254,11 @@ export const versionRouter = createTRPCRouter({
       if (toTruncate.length > 0) {
         await truncateTables(ctx.db, toTruncate);
       }
+      // Reference data (tax tables, limits) isn't user data: put it back
+      // rather than leave it empty until the next start.
+      const { reconcileReferenceData } =
+        await import("@/lib/db/reference-data");
+      await reconcileReferenceData(ctx.db);
 
       return { ok: true, tablesCleared: toTruncate.length };
     }),

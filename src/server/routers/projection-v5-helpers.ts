@@ -11,6 +11,7 @@
  *     optimistic). Called from projection.computeStressTest.
  */
 
+import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { asc, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { db } from "@/lib/db";
@@ -171,6 +172,10 @@ interface StressTestRunInput {
     ProjectionInput,
     "decumulationDefaults" | "accumulationOverrides" | "decumulationOverrides"
   >;
+  /** The household's saved "Changes by year" (resolved by the caller);
+   *  omitted = none. */
+  accumulationOverrides?: ProjectionInput["accumulationOverrides"];
+  decumulationOverrides?: ProjectionInput["decumulationOverrides"];
   /** Fully resolved by the caller (stress-test.ts) via the shared
    *  `buildDecumulationDefaults` (_shared.ts) — the household's real
    *  routing mode, RMD/QCD handling, discretionary order, and active
@@ -196,7 +201,8 @@ export interface StressTestScenarioResult {
   withdrawalRate: number;
   nestEggAtRetirement: number;
   sustainableWithdrawal: number;
-  portfolioDepletionAge: number | null;
+  /** First age the plan falls short (assessPlan), null if it holds. */
+  failureAge: number | null;
 }
 
 /**
@@ -232,15 +238,16 @@ export function runStressTestScenarios(
       inflationRate: scenario.inflationRate,
       salaryGrowthRate: scenario.salaryGrowthRate,
       decumulationDefaults: scenarioDecumulationDefaults,
-      accumulationOverrides: [],
-      decumulationOverrides: [],
+      // The household's saved "Changes by year" (D6).
+      accumulationOverrides: input.accumulationOverrides ?? [],
+      decumulationOverrides: input.decumulationOverrides ?? [],
     } as ProjectionInput);
 
     const retirementYear =
       baseEngineInput.currentAge >= avgRetirementAge
         ? result.projectionByYear[0]
         : result.projectionByYear.find((p) => p.age === avgRetirementAge);
-    const nestEgg = retirementYear?.endBalance ?? 0;
+    const nestEgg = retirementYear?.retirementBalance ?? 0;
 
     return {
       label: scenario.label,
@@ -251,7 +258,7 @@ export function runStressTestScenarios(
       withdrawalRate: scenario.withdrawalRate,
       nestEggAtRetirement: roundToCents(nestEgg),
       sustainableWithdrawal: result.sustainableWithdrawal,
-      portfolioDepletionAge: result.portfolioDepletionAge,
+      failureAge: assessPlan(result).failureAge,
     };
   });
 }

@@ -240,6 +240,18 @@ export const DEFAULT_MC_INFLATION_RISK = { meanRate: 0.025, stdDev: 0.012 };
  *  percentage points anyway. */
 export const MC_DEFAULT_TRIALS = 500;
 
+/** The default simulation — one definition for the router's input
+ *  defaults, the Retirement page's form + prefetch, and the dashboard's
+ *  peeks (which send none of these and so hit the page's run only when the
+ *  defaults agree). Coast FIRE's probes run more trials (each probe is a
+ *  yes/no at a 90% bar, so its noise matters more). */
+export const DEFAULT_SIMULATION = {
+  numTrials: MC_DEFAULT_TRIALS,
+  coastFireTrials: 1000,
+  preset: "default",
+  taxMode: "advanced",
+} as const;
+
 /** React Query staleTime for projection queries (1 minute). */
 export const PROJECTION_STALE_TIME_MS = 60_000;
 

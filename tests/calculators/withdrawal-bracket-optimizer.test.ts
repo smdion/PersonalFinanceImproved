@@ -180,6 +180,27 @@ function makeMainHousehold(
         ownerBirthYear: 1963,
         parentCategory: "Retirement",
       },
+      {
+        name: "HSA",
+        category: "hsa",
+        taxType: "hsa",
+        startingBalance: 20000,
+        ownerName: "Owner",
+        ownerPersonId: 1,
+        ownerBirthYear: 1963,
+        parentCategory: "Retirement",
+      },
+      {
+        name: "Brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        startingBalance: 150000,
+        startingBasis: 100000,
+        ownerName: "Owner",
+        ownerPersonId: 1,
+        ownerBirthYear: 1963,
+        parentCategory: "Retirement",
+      },
     ],
   };
 }

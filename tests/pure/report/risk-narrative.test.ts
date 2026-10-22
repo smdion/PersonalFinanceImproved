@@ -61,11 +61,11 @@ function mcResult(overrides: Partial<MonteCarloResult> = {}): MonteCarloResult {
     ],
     distributions: {
       terminalBalance: distribution(500000),
-      depletionAge: null,
+      failureAge: null,
       sustainableWithdrawal: distribution(45000),
       sustainableWithdrawalPV: distribution(42000),
     },
-    worstCase: { p5DepletionAge: null, p5EndBalance: 100000 },
+    worstCase: { p5FailureAge: null, p5EndBalance: 100000 },
     ...overrides,
   } as unknown as MonteCarloResult;
 }
@@ -90,7 +90,7 @@ describe("buildRiskNarrative", () => {
 
   it("describes a real worst-case depletion age when one exists", () => {
     const r = buildRiskNarrative(
-      mcResult({ worstCase: { p5DepletionAge: 80, p5EndBalance: 0 } }),
+      mcResult({ worstCase: { p5FailureAge: 80, p5EndBalance: 0 } }),
       { deflate: noopDeflate, baseYear: 2026 },
     );
     expect(r.worstCaseNarrative).toMatch(/80/);
@@ -99,7 +99,7 @@ describe("buildRiskNarrative", () => {
 
   it("does not claim depletion when the worst case never depletes — reports the balance instead", () => {
     const r = buildRiskNarrative(
-      mcResult({ worstCase: { p5DepletionAge: null, p5EndBalance: 250000 } }),
+      mcResult({ worstCase: { p5FailureAge: null, p5EndBalance: 250000 } }),
       { deflate: noopDeflate, baseYear: 2026 },
     );
     expect(r.worstCaseNarrative).not.toMatch(/depleted/i);

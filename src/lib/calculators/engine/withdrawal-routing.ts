@@ -212,7 +212,13 @@ export function routeWithdrawalsPercentage(
   const cappedAccounts = new Set<AccountCategory>();
   for (const cat of ACCOUNT_CATEGORIES) {
     const accountCap = config.withdrawalAccountCaps[cat];
-    if (accountCap !== null) targets[cat] = Math.min(targets[cat], accountCap);
+    // A cap moves the cut-off share to other accounts like an emptied
+    // account's does (it was dropped: delivered short with no unmet need).
+    if (accountCap !== null && targets[cat] > accountCap) {
+      excess += roundToCents(targets[cat] - accountCap);
+      targets[cat] = accountCap;
+      cappedAccounts.add(cat);
+    }
     if (targets[cat] > available[cat]) {
       excess += roundToCents(targets[cat] - available[cat]);
       targets[cat] = available[cat];
@@ -220,30 +226,44 @@ export function routeWithdrawalsPercentage(
     }
   }
 
-  // Redistribute excess proportionally to uncapped accounts with remaining capacity
-  if (excess > 0) {
-    const uncapped = ACCOUNT_CATEGORIES.filter(
-      (c) => !cappedAccounts.has(c) && available[c] > targets[c],
+  // Redistribute the excess to accounts with room left, by split — repeated
+  // until it's placed, since an account taking extra can run dry in turn
+  // (one pass left that remainder "unmet" beside full accounts). Accounts
+  // with a 0% split take what's left after the split ones are full: the
+  // split is the mix the household prefers, not a ban on other money.
+  const roomOf = (c: AccountCategory) => {
+    const cap = config.withdrawalAccountCaps[c];
+    const limit = cap !== null ? Math.min(available[c], cap) : available[c];
+    return roundToCents(Math.max(0, limit - targets[c]));
+  };
+  for (
+    let pass = 0;
+    excess > 0.01 && pass < ACCOUNT_CATEGORIES.length * 2;
+    pass++
+  ) {
+    const withRoom = ACCOUNT_CATEGORIES.filter((c) => roomOf(c) > 0);
+    if (withRoom.length === 0) break;
+    const splitWeighted = withRoom.filter(
+      (c) => (config.withdrawalSplits[c] ?? 0) > 0,
     );
-    const uncappedTotal = uncapped.reduce(
-      (s, c) => s + (config.withdrawalSplits[c] ?? 0),
-      0,
-    );
-    if (uncappedTotal > 0) {
-      for (const cat of uncapped) {
-        const share = (config.withdrawalSplits[cat] ?? 0) / uncappedTotal;
-        const extra = roundToCents(
-          Math.min(excess * share, available[cat] - targets[cat]),
-        );
-        targets[cat] += extra;
-        excess = roundToCents(excess - extra);
-      }
-    }
-    if (excess > 0) {
-      warnings.push(
-        `$${excess.toLocaleString()} withdrawal need unmet — insufficient funds across all accounts`,
+    const pool = splitWeighted.length > 0 ? splitWeighted : withRoom;
+    const weightOf = (c: AccountCategory) =>
+      splitWeighted.length > 0 ? (config.withdrawalSplits[c] ?? 0) : roomOf(c);
+    const totalWeight = pool.reduce((t, c) => t + weightOf(c), 0);
+    if (totalWeight <= 0) break;
+    const toPlace = excess;
+    for (const cat of pool) {
+      const extra = roundToCents(
+        Math.min(toPlace * (weightOf(cat) / totalWeight), roomOf(cat)),
       );
+      targets[cat] = roundToCents(targets[cat] + extra);
+      excess = roundToCents(excess - extra);
     }
+  }
+  if (excess > 0) {
+    warnings.push(
+      `$${excess.toLocaleString()} withdrawal need unmet — insufficient funds across all accounts`,
+    );
   }
   const unmetNeed = excess > 0 ? roundToCents(excess) : undefined;
 
@@ -717,6 +737,63 @@ export function routeWithdrawalsBracketFilling(
         source: tier.source,
         costRate: tier.costRate,
         amount: drawn,
+      });
+    }
+  }
+
+  // --- Phase 5: Traditional above the bracket target ---
+  // The target bracket is a preference for the order money comes out in,
+  // not a limit on spending: once Roth, brokerage and HSA can't cover the
+  // rest, Traditional money pays it at a higher bracket rather than the
+  // need going unmet while Traditional balances sit untouched. The user's
+  // own per-account and Traditional caps still hold.
+  for (const category of phase1Order) {
+    if (remaining <= 0) break;
+    const accountCap = config.withdrawalAccountCaps[category];
+    const catDrawn = categoryWithdrawn.get(category) ?? 0;
+    const accountRoom =
+      accountCap !== null ? Math.max(0, accountCap - catDrawn) : Infinity;
+    const tradDrawnHere =
+      slots.find((sl) => sl.category === category)?.traditionalWithdrawal ?? 0;
+    const tradAvailable = Math.max(
+      0,
+      getTraditionalBalance(balances[category]) - tradDrawnHere,
+    );
+    const tradTypeRoom =
+      tradTypeCap !== null
+        ? Math.max(0, tradTypeCap - totalTradWithdrawn)
+        : Infinity;
+    const tradDraw = roundToCents(
+      Math.min(remaining, tradAvailable, accountRoom, tradTypeRoom),
+    );
+    if (tradDraw <= 0) continue;
+    remaining = roundToCents(remaining - tradDraw);
+    totalTradWithdrawn += tradDraw;
+    categoryWithdrawn.set(category, catDrawn + tradDraw);
+    const existing = slots.find((sl) => sl.category === category);
+    if (existing) {
+      existing.traditionalWithdrawal = roundToCents(
+        existing.traditionalWithdrawal + tradDraw,
+      );
+      existing.withdrawal = roundToCents(existing.withdrawal + tradDraw);
+      existing.cappedByAccount =
+        existing.cappedByAccount ||
+        (accountCap !== null && tradDraw >= accountRoom);
+      // Phase 1 marked the bracket target as this slot's cap; it didn't
+      // hold. Only the user's own Roth/Traditional caps still can.
+      existing.cappedByTaxType =
+        (tradTypeCap !== null && tradDraw >= tradTypeRoom) ||
+        (rothTypeCap !== null && totalRothWithdrawn >= rothTypeCap);
+      existing.remainingNeed = remaining > 0 ? remaining : 0;
+    } else {
+      slots.push({
+        category,
+        withdrawal: tradDraw,
+        rothWithdrawal: 0,
+        traditionalWithdrawal: tradDraw,
+        cappedByAccount: accountCap !== null && tradDraw >= accountRoom,
+        cappedByTaxType: tradTypeCap !== null && tradDraw >= tradTypeRoom,
+        remainingNeed: remaining > 0 ? remaining : 0,
       });
     }
   }

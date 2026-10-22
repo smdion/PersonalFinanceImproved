@@ -254,8 +254,92 @@ import { log } from "@/lib/logger";
  *  personPayShare and the engine re-derives salaryFraction from it each year
  *  when it tracks salary per person (it used to apply the rate to the
  *  person's total pay, bonus included, whatever the bonus switch said).
- *  Engine logic changed for the same input, so cached rows must not serve. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 32;
+ *  Engine logic changed for the same input, so cached rows must not serve.
+ *
+ *  33: spending strategies and the Rate-Seeded seed size spending from
+ *  retirement money only (Portfolio-parented accounts excluded) — the same
+ *  input now gives different spending.
+ *
+ *  34: IRS overflow reaches brokerage accounts once (it was added up to
+ *  three times per account), Retirement-parented accounts first; the
+ *  contribution ramp and unnamed lump sums likewise.
+ *
+ *  35: brokerage goals draw only from Portfolio-parented brokerages (they
+ *  drew from every brokerage, retirement ones included).
+ *
+ *  36: the yearly per-account reconciliation absorbs drift in retirement
+ *  money, not Portfolio-parented accounts.
+ *
+ *  37: the contribution rate (and its ceiling) covers retirement
+ *  contributions only — Portfolio-parented specs keep their amounts.
+ *
+ *  38: A2 review — the Portfolio part pro-rates in year 0; overflow left
+ *  after the ceiling scales is still routed (and reported) as overflow;
+ *  overflow follows Retirement accounts even without a Retirement spec.
+ *
+ *  39: the contribution ramp and Brokerage-page lump sums (Portfolio
+ *  savings) go to Portfolio-parented accounts first.
+ *
+ *  40: reconciliation reaches $0 retirement accounts before Portfolio and
+ *  takes a shortfall from retirement money first (waterfall).
+ *
+ *  41: the baseline Coast FIRE finder stops contributions the way every
+ *  other probe does (a rate of 0 was ignored on the per-account path).
+ *
+ *  42: brokerage cost basis tracked per account; retirement brokerage
+ *  withdrawals priced at the Retirement brokerages' own basis ratio, goal
+ *  draws at the Portfolio ones'.
+ *
+ *  43: A2b review — a $0 basis is a known basis (one unentered account no
+ *  longer sends every account to the estimate); retirement lump sums and
+ *  conversion tax follow per-account basis; reconciliation carries the
+ *  aggregate's basis into raised accounts.
+ *
+ *  44: reinvested RMD money goes to the chosen Retirement brokerage, else
+ *  every Retirement brokerage — never Portfolio (a projection-only
+ *  retirement brokerage when there is none).
+ *
+ *  45: the year-end basis sync keeps the aggregate basis when accounts
+ *  don't hold all the brokerage money (it zeroed it).
+ *
+ *  46: with no Retirement brokerage, overflow lands in the projection-only
+ *  retirement brokerage (it went to a Portfolio brokerage or stayed
+ *  aggregate-only); that account is added whatever the RMD setting and
+ *  hidden from yearly rows while empty.
+ *
+ *  47: the ramp picks its parent before preferring accounts with specs
+ *  (a Retirement brokerage's spec drew Portfolio savings in); retirement
+ *  lump sums with no account named can land in the projection-only
+ *  retirement brokerage instead of a Portfolio one.
+ *
+ *  48: Simple tax mode simulates retirement money only (it collapsed every
+ *  account, Portfolio included, and fed in Portfolio savings, match,
+ *  goals and lump sums).
+ *
+ *  49: one scope predicate (isRetirementMoney) across the engine; a
+ *  household contributing only to Portfolio money has a 0% retirement rate
+ *  (the 25% fallback invented contributions in Simple).
+ *
+ *  50: rows carry retirementBalance + allAccountsBalance (endBalance
+ *  removed); depletion is retirement money running out
+ *  (retirementDepletionYear/Age, was all accounts).
+ *
+ *  51: one plan judge (assessPlan) for simulation success; bracket-filling
+ *  draws Traditional above the target once other money is gone; the
+ *  percentage router places an emptied account's share instead of dropping
+ *  it; the tax gross-up funds what routing delivers and prices NIIT.
+ *
+ *  52: simulation bands, median and terminal balances count retirement
+ *  money only (A6).
+ *
+ *  53: percentage routing moves a capped account's cut-off share instead of
+ *  dropping it; simulation results carry failure ages and reasons
+ *  (distributions.failureAge, failureReasonRates); year rows carry
+ *  shortfallMaterialityFloor.
+ *
+ *  54: penalty-locked categories are capped at what their tracked accounts
+ *  can give penalty-free — untracked money in them was drawn as reachable. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 54;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

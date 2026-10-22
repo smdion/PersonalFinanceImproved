@@ -9,6 +9,7 @@
  * under ~500 lines (Composed Router convention, RULES.md §8). Shared
  * schemas + helpers remain in `_shared.ts`.
  */
+import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { eq, asc, sql } from "drizzle-orm";
 import { queryRaw } from "@/lib/db/compat";
 import { z } from "zod/v4";
@@ -37,6 +38,7 @@ import {
   decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
+  resolveProjectionOverrides,
 } from "./_shared";
 import {
   hashEngineInput,
@@ -84,9 +86,9 @@ export const coastFireRouter = createTRPCRouter({
    * as computeProjection, then binary-searches candidate "coast ages" via
    * ~log₂(retirementAge - currentAge) engine runs.
    *
-   * Success criterion: `portfolioDepletionAge === null` AND
-   * `sustainableWithdrawal >= projectedExpenses` at the first decumulation
-   * year. See `findCoastFireAge` for the full algorithm.
+   * Success criterion: the plan judge passes it (`assessPlan`) AND the
+   * strategy's first-year spending covers the stated need. See
+   * `findCoastFireAge` for the full algorithm.
    */
   computeCoastFire: protectedProcedure
     .input(
@@ -139,10 +141,11 @@ export const coastFireRouter = createTRPCRouter({
           input.decumulationDefaults,
           distributionTaxRates,
         ),
-        accumulationOverrides:
-          input.accumulationOverrides as AccumulationOverride[],
-        decumulationOverrides:
-          input.decumulationOverrides as DecumulationOverride[],
+        // Omitted "Changes by year" = the household's saved rows.
+        ...((await resolveProjectionOverrides(ctx.db, input)) as {
+          accumulationOverrides: AccumulationOverride[];
+          decumulationOverrides: DecumulationOverride[];
+        }),
       };
 
       const result = findCoastFireAge(engineInput);
@@ -173,7 +176,7 @@ export const coastFireRouter = createTRPCRouter({
             result.sustainableWithdrawal / retirementDeflator,
           projectedExpensesAtRetirementToday:
             result.projectedExpensesAtRetirement / retirementDeflator,
-          endBalanceToday: result.endBalance / endDeflator,
+          endRetirementBalanceToday: result.endRetirementBalance / endDeflator,
         },
       };
     }),
@@ -290,10 +293,11 @@ export const coastFireRouter = createTRPCRouter({
           input.decumulationDefaults,
           distributionTaxRates,
         ),
-        accumulationOverrides:
-          input.accumulationOverrides as AccumulationOverride[],
-        decumulationOverrides:
-          input.decumulationOverrides as DecumulationOverride[],
+        // Omitted "Changes by year" = the household's saved rows.
+        ...((await resolveProjectionOverrides(ctx.db, input)) as {
+          accumulationOverrides: AccumulationOverride[];
+          decumulationOverrides: DecumulationOverride[];
+        }),
       };
 
       const preset = presetRows[0];
@@ -375,7 +379,7 @@ export const coastFireRouter = createTRPCRouter({
       }
 
       const CONFIDENCE = MC_CONFIDENCE_THRESHOLD;
-      const NUM_TRIALS = 1000;
+      const NUM_TRIALS = DEFAULT_SIMULATION.coastFireTrials;
       const SEED = 42;
 
       // Probe helper: run MC with a profile switch at `coastAge` that zeros

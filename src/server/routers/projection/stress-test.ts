@@ -13,7 +13,11 @@ import {
   buildEnginePayload,
 } from "@/server/retirement/build-engine-payload";
 import { runStressTestScenarios } from "../projection-v5-helpers";
-import { buildDecumulationDefaults } from "./_shared";
+import {
+  buildDecumulationDefaults,
+  resolveProjectionOverrides,
+} from "./_shared";
+import type { ProjectionInput } from "@/lib/calculators/types";
 
 export const stressTestRouter = createTRPCRouter({
   /**
@@ -89,6 +93,11 @@ export const stressTestRouter = createTRPCRouter({
         baseEngineInput,
         decumulationDefaults,
         avgRetirementAge,
+        // The household's saved "Changes by year" (D6).
+        ...((await resolveProjectionOverrides(ctx.db, {})) as {
+          accumulationOverrides: ProjectionInput["accumulationOverrides"];
+          decumulationOverrides: ProjectionInput["decumulationOverrides"];
+        }),
       });
 
       return {

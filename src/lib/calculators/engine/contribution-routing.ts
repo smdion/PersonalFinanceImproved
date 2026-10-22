@@ -24,6 +24,7 @@ import {
   isOverflowTarget,
   categoriesWithIrsLimit,
   buildCategoryRecord,
+  isRetirementMoney,
   isTaxFree,
 } from "../../config/account-types";
 import { OVERFLOW_TOLERANCE } from "../../constants";
@@ -394,6 +395,10 @@ export function routeFromSpecs(
     specs: [] as { name: string; amount: number; method: string }[],
   }));
 
+  // Portfolio-parented specs' part of each category (see
+  // AccumulationSlot.portfolioContrib).
+  const portfolioByCategory = buildCategoryRecord(() => 0);
+
   // Compute each account's projected contribution
   for (const spec of specs) {
     // Use salaryFraction so multi-job households don't inflate per-account contributions
@@ -410,6 +415,8 @@ export function routeFromSpecs(
       method: spec.method,
     });
     byCategory[spec.category].employee += projected;
+    if (!isRetirementMoney(spec.parentCategory))
+      portfolioByCategory[spec.category] += projected;
   }
 
   // Apply IRS limits to tax-advantaged accounts, overflow to brokerage
@@ -495,6 +502,9 @@ export function routeFromSpecs(
       cappedByAccount: accountCap !== null && accountCap < irsLimit,
       cappedByTaxType: false,
       overflowAmount: byCategory[cat].overflow,
+      portfolioContrib: roundToCents(
+        Math.min(portfolioByCategory[cat], employee),
+      ),
     });
   }
 

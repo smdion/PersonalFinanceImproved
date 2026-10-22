@@ -8,12 +8,13 @@
  * engine with an accumulationOverride that zeros contributionRate at a
  * candidate "coast age" and binary-searches for the earliest passing age.
  *
- * Success criterion: `portfolioDepletionAge === null` AND the strategy's
+ * Success criterion: the plan judge passes it (`assessPlan` — every
+ * retirement year funded, retirement money lasting) AND the strategy's
  * actual first-decumulation-year spending
  * (`projectionByYear[firstDecumYear].projectedExpenses` — already the real
  * per-strategy output, not a generic rate) covers the household's stated
  * need (`firstDecumulationYearStatedNeed`, the inflated retirement budget).
- * The first check ensures the portfolio survives through end-of-plan; the
+ * The first check ensures retirement money funds every year; the
  * second ensures the strategy's actual withdrawal covers what the household
  * said they need. Together they answer "funds annual expenses through end
  * of plan".
@@ -37,14 +38,21 @@
  * the same stated-need value on the first decumulation year — so
  * `projectedExpenses >= firstDecumulationYearStatedNeed` is `X >= X` by
  * construction for those 4, and this check contributes nothing beyond the
- * `portfolioDepletionAge`/penalty-shortfall checks above. That's correct,
+ * `assessPlan` check above. That's correct,
  * not a bug — those strategies' entire premise is "spend what you said you
- * need" — but it means their Coast FIRE result rests entirely on those other
- * two checks, same as before this fix.
+ * need" — but it means their Coast FIRE result rests entirely on the plan
+ * judge.
  */
+import { assessPlan } from "./plan-outcome";
 import { calculateProjection } from "./engine";
-import type { ProjectionInput, ProjectionResult } from "./types";
+import type {
+  AccountCategory,
+  ProfileSwitch,
+  ProjectionInput,
+  ProjectionResult,
+} from "./types";
 import { roundToCents } from "../utils/math";
+import { getAllCategories } from "../config/account-types";
 
 export type CoastFireStatus = "already_coast" | "found" | "unreachable";
 
@@ -52,8 +60,8 @@ export type CoastFireResult = {
   /** The earliest age at which contributions can stop. Null if unreachable. */
   coastFireAge: number | null;
   status: CoastFireStatus;
-  /** Portfolio balance at end of plan under the coast scenario. */
-  endBalance: number;
+  /** Retirement money at the end of the plan under the coast scenario. */
+  endRetirementBalance: number;
   /** Sustainable annual withdrawal at retirement under the coast scenario. */
   sustainableWithdrawal: number;
   /** Projected expenses at the first decumulation year (nominal, inflated). */
@@ -66,7 +74,7 @@ const NET_WITHDRAWAL_ROUNDING_TOLERANCE = 1;
 const UNREACHABLE: CoastFireResult = {
   coastFireAge: null,
   status: "unreachable",
-  endBalance: 0,
+  endRetirementBalance: 0,
   sustainableWithdrawal: 0,
   projectedExpensesAtRetirement: 0,
 };
@@ -84,58 +92,23 @@ function resultFrom(
   return {
     coastFireAge,
     status,
-    endBalance: finalYear?.endBalance ?? 0,
+    endRetirementBalance: finalYear?.retirementBalance ?? 0,
     sustainableWithdrawal: projection.sustainableWithdrawal,
     projectedExpensesAtRetirement: retirementYear?.projectedExpenses ?? 0,
   };
 }
 
-/** Returns true iff the projection funds expenses through end of plan.
- *
- *  A plan can fail to fund a
- *  specific year (money went unreached because it was penalty-exposed —
- *  see `penaltyAvoidedShortfall` on `EngineDecumulationYear`) while still
- *  passing both checks below, since neither one looks at individual years
- *  -- `portfolioDepletionAge` only fires on a genuine zero-out, and
- *  `sustainableWithdrawal` is an aggregate rate that a shortfall year the
- *  household never spent (because it legally couldn't reach the money)
- *  doesn't move. Same class of bug `monte-carlo.ts`'s penalty-exclusion
- *  fix addressed for the simulated success rate; this is the
- *  deterministic-baseline half of
- *  the same fix. Without it, the baseline can say "already coast" for a
- *  plan whose 55→59½ gap Monte Carlo correctly reports as failing. */
+/** Returns true iff the projection funds expenses through end of plan
+ *  (assessPlan) AND the strategy's first-year spending meets the
+ *  household's stated need — Coast FIRE's own check on top of survival. */
 function passes(projection: ProjectionResult): boolean {
-  if (projection.portfolioDepletionAge !== null) return false;
+  // Survival: the one plan judge (retirement money lasts, every year's
+  // spending funded — penalty-locked and Portfolio-only money included).
+  if (!assessPlan(projection).succeeded) return false;
   const retirementYear = projection.projectionByYear.find(
     (y) => y.phase === "decumulation",
   );
   if (!retirementYear) return false;
-  // Materiality floor, matching
-  // decumulation-year.ts's identically-reasoned `finalUnmetNeed` floor: a
-  // rounding-scale penaltyAvoidedShortfall in any single one of ~40 years
-  // shouldn't flip an entire plan from "already coast" to "not coast" —
-  // reserve that verdict for a shortfall material enough to actually
-  // matter to the household.
-  const hadPenaltyAvoidedShortfall = projection.projectionByYear.some(
-    (y) =>
-      y.phase === "decumulation" &&
-      (y.penaltyAvoidedShortfall ?? 0) >
-        Math.max(50, (y.afterTaxNeed ?? 0) * 0.01),
-  );
-  if (hadPenaltyAvoidedShortfall) return false;
-  // `nonRetirementShortfall` is
-  // structurally identical to `penaltyAvoidedShortfall` above — a real
-  // household shortfall (money in a Portfolio-parented account
-  // routing unconditionally excludes) that neither `portfolioDepletionAge`
-  // nor `sustainableWithdrawal` would ever notice, for the same reason the
-  // comment above `passes()` explains for the penalty-exclusion case.
-  const hadNonRetirementShortfall = projection.projectionByYear.some(
-    (y) =>
-      y.phase === "decumulation" &&
-      (y.nonRetirementShortfall ?? 0) >
-        Math.max(50, (y.afterTaxNeed ?? 0) * 0.01),
-  );
-  if (hadNonRetirementShortfall) return false;
   // Compare the strategy's actual first-year spending against the
   // household's stated need — NOT against `sustainableWithdrawal` (see the
   // strategy-real fix note above). When no retirement budget is set
@@ -182,7 +155,7 @@ function passes(projection: ProjectionResult): boolean {
  * Cost: ~log₂(retirementAge - currentAge) engine calls.
  */
 export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
-  const { currentAge, retirementAge, asOfDate } = input;
+  const { currentAge, retirementAge } = input;
 
   // Edge case: user is already at or past retirement age. Coast FIRE is
   // undefined in this case — just return the current projection's outcome.
@@ -190,19 +163,13 @@ export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
     return resultFrom(currentAge, "already_coast", calculateProjection(input));
   }
 
-  const currentYear = asOfDate.getFullYear();
-
-  // Helper: run the projection with contributions zeroed from coastAge onward.
-  const probeAt = (coastAge: number): ProjectionResult => {
-    const yearOffset = coastAge - currentAge;
-    return calculateProjection({
+  // Helper: run the projection with contributions and employer match
+  // zeroed from coastAge onward — the same mechanism as every router probe.
+  const probeAt = (coastAge: number): ProjectionResult =>
+    calculateProjection({
       ...input,
-      accumulationOverrides: [
-        ...input.accumulationOverrides,
-        { year: currentYear + yearOffset, contributionRate: 0 },
-      ],
+      profileSwitches: buildCoastFireProfileSwitches(input, coastAge),
     });
-  };
 
   // If stopping today passes, user is already Coast FIRE.
   const stopNow = probeAt(currentAge);
@@ -230,4 +197,51 @@ export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
   }
 
   return resultFrom(lo, "found", probeAt(lo));
+}
+
+/**
+ * Build a merged `profileSwitches` array that zeros contributions + employer
+ * match from the Coast FIRE age onward.
+ *
+ * Injects a synthetic `ProfileSwitch` at `coastYear = currentYear + (coastAge
+ * - currentAge)` with empty contribution specs, zero employer match rates,
+ * zero base-year contributions/match, and contribution rate 0. The engine at
+ * projection-year-handlers.ts:582-611 processes switches sticky-forward, so
+ * every year from coastYear onward sees zero contributions AND zero employer
+ * match. An accumulation override of `contributionRate: 0` would NOT do
+ * this — the engine's rate ceiling treats a zero rate as "unset" — so every
+ * Coast FIRE probe (this file's baseline finder included) uses this.
+ *
+ * Merges with the user's own `profileSwitches`: keeps any user-authored
+ * switches strictly before the coast year (so pre-coast years still reflect
+ * the user's configured future), and drops user switches at or after the
+ * coast year (those are moot — everything's zero from coast year forward).
+ *
+ * Used by findCoastFireAge (the baseline), computeProjection,
+ * computeMonteCarloProjection (when rendering the coast scenario chart),
+ * and computeCoastFireMC (when probing inside the binary search).
+ */
+export function buildCoastFireProfileSwitches(
+  baseEngineInput: Pick<
+    ProjectionInput,
+    "asOfDate" | "currentAge" | "profileSwitches"
+  >,
+  coastAge: number,
+): ProfileSwitch[] {
+  const coastYear =
+    baseEngineInput.asOfDate.getFullYear() +
+    (coastAge - baseEngineInput.currentAge);
+  const zeroRecord = Object.fromEntries(
+    getAllCategories().map((c) => [c, 0]),
+  ) as Record<AccountCategory, number>;
+  const coastSwitch: ProfileSwitch = {
+    year: coastYear,
+    contributionSpecs: [],
+    employerMatchRateByCategory: zeroRecord,
+    baseYearContributions: zeroRecord,
+    baseYearEmployerMatch: zeroRecord,
+    contributionRate: 0,
+  };
+  const userSwitches = baseEngineInput.profileSwitches ?? [];
+  return [...userSwitches.filter((s) => s.year < coastYear), coastSwitch];
 }

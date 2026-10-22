@@ -24,6 +24,18 @@ vi.mock("@/lib/context/user-context", () => ({
   isAdmin: (u: { role: string }) => u.role === "admin",
   hasPermission: () => true,
 }));
+vi.mock("@/lib/hooks/use-plan-engine-input", () => ({
+  usePlanEngineInput: () => ({
+    input: { decumulationDefaults: { withdrawalTaxPreference: {} } },
+    ready: true,
+    ids: {
+      contributionProfileId: null,
+      salaryProfileId: null,
+      retirementProfileId: null,
+      snapshotId: null,
+    },
+  }),
+}));
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   usePersistedSetting: () => [null, vi.fn()],
 }));
@@ -34,7 +46,13 @@ vi.mock("@/lib/context/scenario-context", () => ({
 const engineData = {
   result: {
     projectionByYear: [
-      { age: 40, endBalance: 500000, individualAccountBalances: [] },
+      {
+        age: 40,
+        year: 2026,
+        retirementBalance: 500000,
+        allAccountsBalance: 500000,
+        individualAccountBalances: [],
+      },
     ] as unknown[],
     sustainableWithdrawal: 20000,
     warnings: [],
@@ -126,6 +144,40 @@ describe("RetirementCard dashboard cache-peek features", () => {
   });
 });
 
+describe("RetirementCard nest egg: simulated or baseline", () => {
+  it("shows the Retirement page's simulated median and range, baseline alongside", () => {
+    // Inflation 0 so today's $ = nominal: the figures read straight.
+    engineData.settings.annualInflation = "0";
+    mcPeekData = {
+      result: {
+        successRate: 0.9,
+        percentileBands: [
+          { age: 65, year: 2051, p25: 400000, p50: 620000, p75: 900000 },
+        ],
+      },
+      simulationInputs: { computedAt: new Date().toISOString() },
+    };
+    coastFireMcPeekData = { result: null };
+    render(<RetirementCard />);
+    expect(screen.getByText("$620,000.00")).toBeInTheDocument();
+    expect(screen.getByText(/simulated median/)).toBeInTheDocument();
+    expect(screen.getByText(/Range \$400,000\.00/)).toBeInTheDocument();
+    expect(screen.getByText(/\(fixed returns\)/)).toBeInTheDocument();
+    engineData.settings.annualInflation = "0.03";
+  });
+
+  it("without a simulation: the labelled baseline and a pointer to run one", () => {
+    mcPeekData = { result: null };
+    coastFireMcPeekData = { result: null };
+    render(<RetirementCard />);
+    expect(screen.getByText(/baseline — fixed returns/)).toBeInTheDocument();
+    const prompt = screen.getByText(/Run a simulation on the Retirement page/);
+    // Plain text: the card itself is the link, and <a> can't nest.
+    expect(prompt.closest("a")?.getAttribute("href")).toBe("/retirement");
+    expect(prompt.querySelector("a")).toBeNull();
+  });
+});
+
 describe("RetirementCard scope", () => {
   it("counts Retirement accounts only, like the Retirement page", () => {
     mcPeekData = { result: null };
@@ -138,7 +190,9 @@ describe("RetirementCard scope", () => {
       {
         age: 65,
         phase: "accumulation",
-        endBalance: 400000,
+        // As the engine reports it: the Portfolio brokerage isn't retirement money.
+        retirementBalance: 300000,
+        allAccountsBalance: 400000,
         individualAccountBalances: [
           {
             category: "401k",

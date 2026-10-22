@@ -21,6 +21,7 @@ import {
 import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
 import {
   roundToCents,
+  sumBy,
   safeDivide as canonicalSafeDivide,
 } from "@/lib/utils/math";
 import { formatPercent } from "@/lib/utils/format";
@@ -177,6 +178,25 @@ export const _singleBucketCategories = new Set<string>(
 // Year-level parentCategory filter (reused by both standalone and MC det memos)
 // ---------------------------------------------------------------------------
 
+/** What a projection-card row shows as its balance: the row's tax buckets,
+ *  which a parent-filtered row (filterYearByParentCategory) scopes to that
+ *  view. Not a retirement answer — those read `retirementBalance`. */
+export function rowTotal(yr: {
+  balanceByTaxType: {
+    preTax: number;
+    taxFree: number;
+    hsa: number;
+    afterTax: number;
+  };
+}): number {
+  const b = yr.balanceByTaxType;
+  return roundToCents(b.preTax + b.taxFree + b.hsa + b.afterTax);
+}
+
+/** A year narrowed to one parent category's accounts: balances,
+ *  contributions and withdrawals are that view's. The engine's
+ *  retirementBalance / allAccountsBalance are left as the engine reported
+ *  them (they describe the plan, not the view). */
 export function filterYearByParentCategory(
   yr: EngineYearProjection,
   parentCategory: string,
@@ -216,11 +236,18 @@ export function filterYearByParentCategory(
       }
     }
   }
-  const origAfterTax = yr.balanceByTaxType.afterTax;
-  const origBasis = yr.balanceByTaxType.afterTaxBasis;
-  byTax.afterTaxBasis = roundToCents(
-    origBasis * safeDivide(byTax.afterTax, origAfterTax),
+  // The engine tracks brokerage basis per account; an older result without
+  // it falls back to a proportional estimate.
+  const basisAccts = filtered.filter(
+    (ia) =>
+      getAccountTypeConfig(ia.category).balanceStructure === "basis_tracking",
   );
+  byTax.afterTaxBasis = basisAccts.every((ia) => ia.costBasis != null)
+    ? roundToCents(sumBy(basisAccts, (ia) => ia.costBasis!))
+    : roundToCents(
+        yr.balanceByTaxType.afterTaxBasis *
+          safeDivide(byTax.afterTax, yr.balanceByTaxType.afterTax),
+      );
   const byAcct = { ...yr.balanceByAccount };
   for (const cat of getAllCategories()) {
     const catIabs = filtered.filter((ia) => ia.category === cat);
@@ -257,10 +284,6 @@ export function filterYearByParentCategory(
       };
     }
   }
-  const endBalance = roundToCents(
-    byTax.preTax + byTax.taxFree + byTax.hsa + byTax.afterTax,
-  );
-
   if (yr.phase !== "decumulation") {
     // Contributions rescoped to the same accounts as the balances: the
     // engine routes per category (a household-wide brokerage slot holds a
@@ -298,7 +321,6 @@ export function filterYearByParentCategory(
       individualAccountBalances: filtered,
       balanceByTaxType: byTax,
       balanceByAccount: byAcct,
-      endBalance,
       ...(accumSlots
         ? {
             slots: accumSlots,
@@ -413,7 +435,6 @@ export function filterYearByParentCategory(
     individualAccountBalances: filtered,
     balanceByTaxType: byTax,
     balanceByAccount: byAcct,
-    endBalance,
     slots: filteredSlots,
     totalWithdrawal,
     totalTraditionalWithdrawal,

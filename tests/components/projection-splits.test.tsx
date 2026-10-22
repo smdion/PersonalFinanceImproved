@@ -244,7 +244,7 @@ describe("ProjectionHeroKpis", () => {
       {
         year: 2026,
         age: 36,
-        endBalance: 500000,
+        allAccountsBalance: 500000,
         balanceByTaxType: {
           preTax: 300000,
           taxFree: 150000,
@@ -258,7 +258,7 @@ describe("ProjectionHeroKpis", () => {
       {
         year: 2055,
         age: 65,
-        endBalance: 2000000,
+        allAccountsBalance: 2000000,
         balanceByTaxType: {
           preTax: 1000000,
           taxFree: 700000,
@@ -270,8 +270,8 @@ describe("ProjectionHeroKpis", () => {
         phase: "decumulation",
       },
     ],
-    portfolioDepletionAge: null,
-    portfolioDepletionYear: null,
+    retirementDepletionAge: null,
+    retirementDepletionYear: null,
     sustainableWithdrawal: 80000,
     firstOverflowAge: null,
   };
@@ -316,7 +316,7 @@ describe("ProjectionHeroKpis", () => {
           },
         ],
         distributions: {
-          depletionAge: null,
+          failureAge: null,
           terminalBalance: { median: 1500000 },
         },
         medianEndBalance: 1500000,
@@ -361,7 +361,7 @@ describe("ProjectionChart", () => {
     projectionByYear: Array.from({ length: 10 }, (_, i) => ({
       year: 2026 + i,
       age: 36 + i,
-      endBalance: 500000 + i * 50000,
+      allAccountsBalance: 500000 + i * 50000,
       balanceByTaxType: {
         preTax: 300000 + i * 30000,
         taxFree: 150000 + i * 15000,
@@ -372,8 +372,8 @@ describe("ProjectionChart", () => {
       balanceByAccount: {},
       phase: "accumulation",
     })),
-    portfolioDepletionAge: null,
-    portfolioDepletionYear: null,
+    retirementDepletionAge: null,
+    retirementDepletionYear: null,
   };
 
   it("returns null when result is null", async () => {
@@ -429,7 +429,7 @@ describe("McDepletionCallout", () => {
           result: {
             successRate: 0.95,
             distributions: {
-              depletionAge: null,
+              failureAge: null,
               terminalBalance: { median: 1000000 },
             },
           },
@@ -450,8 +450,13 @@ describe("McDepletionCallout", () => {
         data: {
           result: {
             successRate: 0.72,
+            failureReasonRates: {
+              depleted: 0.2,
+              penaltyGap: 0.08,
+              shortfall: 0,
+            },
             distributions: {
-              depletionAge: { median: 88, p10: 82, p25: 85, p75: 92, p90: 95 },
+              failureAge: { median: 88, p10: 82, p25: 85, p75: 92, p90: 95 },
               terminalBalance: {
                 median: 50000,
                 p10: 0,
@@ -466,8 +471,9 @@ describe("McDepletionCallout", () => {
       },
     });
     render(<McDepletionCallout state={s} />);
-    expect(screen.getByText(/28% of futures/)).toBeInTheDocument();
-    expect(screen.getByText(/age 88/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/28% of futures, money runs out around age 88/),
+    ).toBeInTheDocument();
   });
 });
 

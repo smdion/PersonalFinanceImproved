@@ -26,6 +26,7 @@ import {
   isPreTaxType,
 } from "@/lib/config/account-types";
 import type { TipColor, TooltipLineItem } from "./types";
+import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import {
   catDisplayLabel,
   bucketSlotMap,
@@ -46,6 +47,7 @@ import {
   matchFracOf,
   computeColumnChange,
   computeAccountSplits,
+  rowTotal,
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
 import {
@@ -279,7 +281,7 @@ export function AccumulationRow({
                     style: "header",
                   },
                   {
-                    text: `Household target (all accounts, your money): ${formatPercent(yr.config.contributionRate, 1)}`,
+                    text: `Retirement target (retirement accounts, your money): ${formatPercent(yr.config.contributionRate, 1)}`,
                     style: "meta",
                   },
                 ];
@@ -289,10 +291,13 @@ export function AccumulationRow({
                     style: "meta",
                   });
                 }
+                // The ceiling scales retirement contributions only, so the
+                // uncapped figure is meaningful on the Retirement view.
                 if (
                   yr.rateCeilingScale != null &&
                   yr.rateCeilingScale < 1 &&
-                  yr.rateCeilingScale > 0
+                  yr.rateCeilingScale > 0 &&
+                  parentCategoryFilter === PERF_CATEGORY_RETIREMENT
                 ) {
                   lines.push({
                     text: `Uncapped rate: ${formatPercent(safeDivide(yr.totalEmployee, effectiveSalary * yr.rateCeilingScale), 1)} → ${formatPercent(employeeRate, 1)} (ceiling applied)`,
@@ -300,9 +305,12 @@ export function AccumulationRow({
                     color: "amber",
                   });
                 }
-                // Comparable with the household target only when it's the
-                // same measure: every account, your money only.
-                if (yr.rateCeilingScale == null && !parentCategoryFilter) {
+                // Comparable with the retirement target only when it's the
+                // same measure: retirement accounts, your money only.
+                if (
+                  yr.rateCeilingScale == null &&
+                  parentCategoryFilter === PERF_CATEGORY_RETIREMENT
+                ) {
                   const diff = employeeRate - yr.config.contributionRate;
                   if (Math.abs(diff) > 0.001) {
                     lines.push({
@@ -957,7 +965,7 @@ export function AccumulationRow({
           .filter((t) => visibleColumns.balanceTaxTypes.has(t))
           .map((bucket) => {
             const bal = pt ? pt.byTaxType[bucket] : yr.balanceByTaxType[bucket];
-            const totalBal = pt ? pt.balance : yr.endBalance;
+            const totalBal = pt ? pt.balance : rowTotal(yr);
             const pct = percentOf(bal, totalBal);
             // Compute authoritative total change from engine's year-over-year balance
             const prevYr = result.projectionByYear.find(
@@ -1093,7 +1101,7 @@ export function AccumulationRow({
             .map((col) => {
               const catKey = colKeyParts(col.key).category;
               const bal = pt ? (pt.byAccount[col.key] ?? 0) : col.val;
-              const totalBal = pt ? pt.balance : yr.endBalance;
+              const totalBal = pt ? pt.balance : rowTotal(yr);
               const pct = percentOf(bal, totalBal);
               // Filter by the exact taxType this column represents
               const colTaxType = colEngineTaxType(col.key);
@@ -1240,9 +1248,9 @@ export function AccumulationRow({
       )}
       <Tooltip
         content={
-          yr.endBalance > 0
+          rowTotal(yr) > 0
             ? (() => {
-                const ptBal = pt ? pt.balance : yr.endBalance;
+                const ptBal = pt ? pt.balance : rowTotal(yr);
                 const items: TooltipLineItem[] = (
                   ["preTax", "taxFree", "hsa", "afterTax"] as const
                 ).map((b) => {
@@ -1284,12 +1292,12 @@ export function AccumulationRow({
         side="top"
       >
         <td className="px-2 py-1.5 text-right font-semibold">
-          {formatCurrency(deflate(pt ? pt.balance : yr.endBalance, yr.year))}
+          {formatCurrency(deflate(pt ? pt.balance : rowTotal(yr), yr.year))}
         </td>
       </Tooltip>
       {renderMcCell(
         yr,
-        deflate(pt ? pt.balance : yr.endBalance, yr.year),
+        deflate(pt ? pt.balance : rowTotal(yr), yr.year),
         mcCellOpts,
       )}
       <td className="text-caption text-faint border-subtle border-l py-1.5 pl-2 whitespace-nowrap">

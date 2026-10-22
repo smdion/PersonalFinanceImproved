@@ -817,6 +817,10 @@ export type AccumulationSlot = {
   cappedByTaxType: boolean;
   /** Amount that couldn't fit here and was sent to the next account. */
   overflowAmount: number;
+  /** Part of `employeeContrib` from Portfolio-parented specs — savings
+   *  outside the retirement plan, so the retirement contribution-rate
+   *  ceiling never scales it. Spec routing only. */
+  portfolioContrib?: number;
 };
 
 /**
@@ -856,4 +860,16 @@ export type ProfileSwitch = {
   employerMatchByParentCat?: Map<AccountCategory, Map<string, number>>;
   /** Contribution rate ceiling derived from this profile's total contributions / compensation. */
   contributionRate: number;
+  /** This profile's base-year amounts and match over retirement money only
+   *  — what Simple tax mode swaps in (simple-tax-mode.ts). Set by the
+   *  payload; switches built elsewhere never reach Simple. */
+  retirementOnly?: RetirementContribSlice;
+};
+
+/** A contribution profile's base-year amounts and match over retirement
+ *  money only (built from paycheck data next to the all-accounts ones). */
+export type RetirementContribSlice = {
+  baseYearContributions: Record<AccountCategory, number>;
+  baseYearEmployerMatch: Record<AccountCategory, number>;
+  employerMatchRateByCategory: Record<AccountCategory, number>;
 };

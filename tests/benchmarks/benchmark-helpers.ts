@@ -4,6 +4,7 @@
  * Provides input builders for deterministic engine and Monte Carlo tests,
  * plus tolerance constants calibrated against known platforms.
  */
+import { withConsistentStart } from "../calculators/fixtures/engine-fixtures";
 import type { ProjectionInput, MonteCarloInput } from "@/lib/calculators/types";
 
 const AS_OF = new Date("2026-03-01");
@@ -82,59 +83,62 @@ const DEFAULT_DECUMULATION = {
 export function makePureGrowthInput(
   overrides: Partial<ProjectionInput> = {},
 ): ProjectionInput {
-  return {
-    accumulationDefaults: {
-      contributionRate: 0,
-      routingMode: "waterfall",
-      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
-      accountSplits: { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 1 },
-      taxSplits: {},
-    },
-    decumulationDefaults: {
-      ...DEFAULT_DECUMULATION,
-      distributionTaxRates: {
-        traditionalFallbackRate: 0,
-        roth: 0,
+  return withConsistentStart(
+    {
+      accumulationDefaults: {
+        contributionRate: 0,
+        routingMode: "waterfall",
+        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+        accountSplits: { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 1 },
+        taxSplits: {},
+      },
+      decumulationDefaults: {
+        ...DEFAULT_DECUMULATION,
+        distributionTaxRates: {
+          traditionalFallbackRate: 0,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0,
+        },
+      },
+      accumulationOverrides: [],
+      decumulationOverrides: [],
+      currentAge: 35,
+      retirementAge: 65,
+      projectionEndAge: 90,
+      currentSalary: 0,
+      salaryGrowthRate: 0,
+      salaryCap: null,
+      salaryOverrides: [],
+      budgetOverrides: [],
+      baseLimits: ZERO_LIMITS,
+      limitGrowthRate: 0,
+      employerMatchRateByCategory: ZERO_MATCH,
+      startingBalances: {
+        preTax: 0,
+        taxFree: 0,
         hsa: 0,
-        brokerage: 0,
+        afterTax: 100000,
+        afterTaxBasis: 100000,
       },
-    },
-    accumulationOverrides: [],
-    decumulationOverrides: [],
-    currentAge: 35,
-    retirementAge: 65,
-    projectionEndAge: 90,
-    currentSalary: 0,
-    salaryGrowthRate: 0,
-    salaryCap: null,
-    salaryOverrides: [],
-    budgetOverrides: [],
-    baseLimits: ZERO_LIMITS,
-    limitGrowthRate: 0,
-    employerMatchRateByCategory: ZERO_MATCH,
-    startingBalances: {
-      preTax: 0,
-      taxFree: 0,
-      hsa: 0,
-      afterTax: 100000,
-      afterTaxBasis: 100000,
-    },
-    startingAccountBalances: {
-      ...EMPTY_ACCOUNT_BALANCES,
-      brokerage: {
-        structure: "basis_tracking",
-        balance: 100000,
-        basis: 100000,
+      startingAccountBalances: {
+        ...EMPTY_ACCOUNT_BALANCES,
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 100000,
+          basis: 100000,
+        },
       },
+      annualExpenses: 0,
+      inflationRate: 0,
+      returnRates: [{ label: "7%", rate: 0.07 }],
+      socialSecurityAnnual: 0,
+      ssStartAge: 67,
+      asOfDate: AS_OF,
+      ...overrides,
     },
-    annualExpenses: 0,
-    inflationRate: 0,
-    returnRates: [{ label: "7%", rate: 0.07 }],
-    socialSecurityAnnual: 0,
-    ssStartAge: 67,
-    asOfDate: AS_OF,
-    ...overrides,
-  };
+    overrides,
+  );
 }
 
 /**
@@ -209,73 +213,85 @@ export function makeTrinityInput(
 export function makeStandardInput(
   overrides: Partial<ProjectionInput> = {},
 ): ProjectionInput {
-  return {
-    accumulationDefaults: {
-      contributionRate: 0.25,
-      routingMode: "waterfall",
-      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
-      accountSplits: {
-        "401k": 0.4,
+  return withConsistentStart(
+    {
+      accumulationDefaults: {
+        contributionRate: 0.25,
+        routingMode: "waterfall",
+        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+        accountSplits: {
+          "401k": 0.4,
+          "403b": 0,
+          hsa: 0.1,
+          ira: 0.15,
+          brokerage: 0.35,
+        },
+        taxSplits: { "401k": 0.5, ira: 1.0 },
+      },
+      decumulationDefaults: DEFAULT_DECUMULATION,
+      accumulationOverrides: [],
+      decumulationOverrides: [],
+      currentAge: 35,
+      retirementAge: 65,
+      projectionEndAge: 90,
+      currentSalary: 150000,
+      salaryGrowthRate: 0.03,
+      salaryCap: null,
+      salaryOverrides: [],
+      budgetOverrides: [],
+      baseLimits: {
+        "401k": 23500,
+        "403b": 23500,
+        hsa: 4300,
+        ira: 7000,
+        brokerage: 0,
+      },
+      limitGrowthRate: 0.02,
+      catchupLimits: {
+        "401k": 7500,
+        ira: 1000,
+        hsa: 1000,
+        "401k_super": 11250,
+      },
+      employerMatchRateByCategory: {
+        "401k": 0.03,
         "403b": 0,
-        hsa: 0.1,
-        ira: 0.15,
-        brokerage: 0.35,
+        hsa: 0,
+        ira: 0,
+        brokerage: 0,
       },
-      taxSplits: { "401k": 0.5, ira: 1.0 },
-    },
-    decumulationDefaults: DEFAULT_DECUMULATION,
-    accumulationOverrides: [],
-    decumulationOverrides: [],
-    currentAge: 35,
-    retirementAge: 65,
-    projectionEndAge: 90,
-    currentSalary: 150000,
-    salaryGrowthRate: 0.03,
-    salaryCap: null,
-    salaryOverrides: [],
-    budgetOverrides: [],
-    baseLimits: {
-      "401k": 23500,
-      "403b": 23500,
-      hsa: 4300,
-      ira: 7000,
-      brokerage: 0,
-    },
-    limitGrowthRate: 0.02,
-    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
-    employerMatchRateByCategory: {
-      "401k": 0.03,
-      "403b": 0,
-      hsa: 0,
-      ira: 0,
-      brokerage: 0,
-    },
-    startingBalances: {
-      preTax: 100000,
-      taxFree: 50000,
-      hsa: 15000,
-      afterTax: 30000,
-      afterTaxBasis: 20000,
-    },
-    startingAccountBalances: {
-      "401k": {
-        structure: "roth_traditional",
-        traditional: 80000,
-        roth: 20000,
+      startingBalances: {
+        preTax: 110000,
+        taxFree: 40000,
+        hsa: 15000,
+        afterTax: 30000,
+        afterTaxBasis: 20000,
       },
-      "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
-      hsa: { structure: "single_bucket", balance: 15000 },
-      ira: { structure: "roth_traditional", traditional: 30000, roth: 20000 },
-      brokerage: { structure: "basis_tracking", balance: 30000, basis: 20000 },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 80000,
+          roth: 20000,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 15000 },
+        ira: { structure: "roth_traditional", traditional: 30000, roth: 20000 },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 30000,
+          basis: 20000,
+        },
+      },
+      annualExpenses: 72000,
+      inflationRate: 0.025,
+      returnRates: [{ label: "7%", rate: 0.07 }],
+      socialSecurityAnnual: 36000,
+      ssStartAge: 67,
+      asOfDate: AS_OF,
+      ...overrides,
     },
-    annualExpenses: 72000,
-    inflationRate: 0.025,
-    returnRates: [{ label: "7%", rate: 0.07 }],
-    socialSecurityAnnual: 36000,
-    ssStartAge: 67,
-    asOfDate: AS_OF,
-    ...overrides,
-  };
+    overrides,
+  );
 }
 
 // ---------------------------------------------------------------------------

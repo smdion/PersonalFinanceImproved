@@ -22,7 +22,7 @@ import {
   setRoth,
   setBalance,
   setBasis,
-  isPortfolioParent,
+  isRetirementMoney,
 } from "../../config/account-types";
 import type { AccountBalances, IndividualAccountInput } from "../types";
 import {
@@ -87,6 +87,9 @@ export interface RothConversionInput {
   filingStatus?: FilingStatusType | null;
   /** Current balances (mutated in place). */
   balances: TaxBuckets;
+  /** Basis ratio of the brokerage money that pays the conversion's tax (the
+   *  Retirement brokerages' own, brokerage-basis.ts). Omitted: aggregate. */
+  brokerageBasisRatio?: number;
   /** Per-account balances (mutated in place). */
   acctBal: AccountBalances;
   /** Portfolio-parented ("non-retirement") exclusion for this year —
@@ -451,10 +454,12 @@ export function performRothConversion(
   balances.afterTax = roundToCents(balances.afterTax - taxCostOfConversion);
   // Reduce basis proportionally
   if (balances.afterTax > 0 && balances.afterTaxBasis > 0) {
-    const basisRatio = Math.min(
-      1,
-      balances.afterTaxBasis / (balances.afterTax + taxCostOfConversion),
-    );
+    const basisRatio =
+      input.brokerageBasisRatio ??
+      Math.min(
+        1,
+        balances.afterTaxBasis / (balances.afterTax + taxCostOfConversion),
+      );
     balances.afterTaxBasis = roundToCents(
       Math.max(0, balances.afterTaxBasis - taxCostOfConversion * basisRatio),
     );
@@ -524,7 +529,7 @@ export function performRothConversion(
     for (const [cat, amount] of categoryShare) {
       if (amount <= 0) continue;
       const catAccts = indAccts.filter(
-        (ia) => ia.category === cat && !isPortfolioParent(ia.parentCategory),
+        (ia) => ia.category === cat && isRetirementMoney(ia.parentCategory),
       );
       const catTotal = catAccts.reduce(
         (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
@@ -572,7 +577,7 @@ export function performRothConversion(
       // proportional to their own balance.
       if (hasIndTracking) {
         const catAccts = indAccts.filter(
-          (ia) => ia.category === cat && !isPortfolioParent(ia.parentCategory),
+          (ia) => ia.category === cat && isRetirementMoney(ia.parentCategory),
         );
         const catTotal = catAccts.reduce(
           (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),

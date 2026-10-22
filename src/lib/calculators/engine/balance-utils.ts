@@ -21,6 +21,29 @@ import type {
   NonRetirementExclusion,
 } from "@/lib/pure/withdrawal-eligibility";
 
+/**
+ * A balance in its two scopes: every account (net-worth views), and
+ * retirement money — the aggregate minus the Portfolio-parented accounts
+ * (`computeNonRetirementExclusion`, the same exclusion spending and routing
+ * use; clamped at 0). Without individual accounts every dollar is
+ * retirement money.
+ */
+export function scopedBalances(
+  balances: TaxBuckets,
+  exclusion: NonRetirementExclusion | undefined,
+): { allAccountsBalance: number; retirementBalance: number } {
+  const allAccountsBalance = roundToCents(
+    balances.preTax + balances.taxFree + balances.hsa + balances.afterTax,
+  );
+  return {
+    allAccountsBalance,
+    retirementBalance: Math.max(
+      0,
+      roundToCents(allAccountsBalance - (exclusion?.grandTotal ?? 0)),
+    ),
+  };
+}
+
 /** Derive AccountBalances from TaxBuckets using a config-derived split (fallback). */
 export function accountBalancesFromTaxBuckets(b: TaxBuckets): AccountBalances {
   // Without real per-account data, split preTax/taxFree proportionally across
@@ -158,6 +181,18 @@ export function subtractExcluded(
         (exposure?.penaltyExposedTotalStillExcluded[cat] ?? 0) +
         (nonRetirement?.total[cat] ?? 0);
       setBalance(bal, Math.max(0, getTotalBalance(bal) - totalExcl));
+    }
+    // Never more than the category's tracked accounts can give: money no
+    // tracked account holds is not penalty-free by default
+    // (EligibilityRecord.reachableByCategory).
+    const reachable = exposure?.reachableByCategory?.[cat];
+    const total = getTotalBalance(bal);
+    if (reachable != null && total > reachable) {
+      const keep = total > 0 ? Math.max(0, reachable) / total : 0;
+      if (bal.structure === "roth_traditional") {
+        setTraditional(bal, roundToCents(bal.traditional * keep));
+        setRoth(bal, roundToCents(bal.roth * keep));
+      } else setBalance(bal, roundToCents(total * keep));
     }
   }
   return result;

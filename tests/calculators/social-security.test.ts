@@ -141,10 +141,41 @@ function makeSingleHousehold(): ProjectionInput {
         parentCategory: "Retirement",
       },
       {
+        name: "401k",
+        category: "401k",
+        taxType: "taxFree",
+        startingBalance: 80000,
+        ownerName: "Owner",
+        ownerPersonId: 1,
+        ownerBirthYear: 1963,
+        parentCategory: "Retirement",
+      },
+      {
         name: "IRA",
         category: "ira",
         taxType: "preTax",
         startingBalance: 200000,
+        ownerName: "Owner",
+        ownerPersonId: 1,
+        ownerBirthYear: 1963,
+        parentCategory: "Retirement",
+      },
+      {
+        name: "HSA",
+        category: "hsa",
+        taxType: "hsa",
+        startingBalance: 20000,
+        ownerName: "Owner",
+        ownerPersonId: 1,
+        ownerBirthYear: 1963,
+        parentCategory: "Retirement",
+      },
+      {
+        name: "Brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        startingBalance: 150000,
+        startingBasis: 100000,
         ownerName: "Owner",
         ownerPersonId: 1,
         ownerBirthYear: 1963,
@@ -337,6 +368,14 @@ describe("sweepClaimingAges", () => {
         ...base.startingBalances,
         preTax: base.startingBalances.preTax + 200000,
       },
+      startingAccountBalances: {
+        ...base.startingAccountBalances!,
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 1400000 + 200000,
+          roth: 80000,
+        },
+      },
       individualAccounts: [
         ...(base.individualAccounts ?? []),
         {
@@ -481,7 +520,7 @@ describe("sweepClaimingAges", () => {
     const recommended = result.candidates.find(
       (c) => c.claimingAge === result.recommendedAge,
     );
-    expect(recommended?.depleted).toBe(false);
+    expect(recommended?.fails).toBe(false);
   });
 
   it("a caller-supplied buildCandidateInput can vary a SPOUSE's entry per candidate age (the mechanism the multi-person router relies on)", () => {
@@ -615,6 +654,6 @@ describe("PIA wiring equivalence (plan §8) — engine level", () => {
     const resultB = calculateProjection(viaPiaWiring);
 
     expect(resultB.projectionByYear).toEqual(resultA.projectionByYear);
-    expect(resultB.portfolioDepletionAge).toBe(resultA.portfolioDepletionAge);
+    expect(resultB.retirementDepletionAge).toBe(resultA.retirementDepletionAge);
   });
 });

@@ -16,6 +16,7 @@ import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import {
   createTestCaller,
+  seedPerformanceAccount,
   seedPerson,
   seedRetirementProfile,
   seedRetirementProfilePerson,
@@ -98,6 +99,83 @@ describe("retirement.retirementSettings", () => {
     it("still only one row after update", async () => {
       const rows = await caller.retirement.retirementSettings.list();
       expect(rows).toHaveLength(1);
+    });
+  });
+
+  describe("where unspent RMD money goes", () => {
+    it("takes an active Retirement brokerage and refuses anything else", async () => {
+      const brokerage = (parentCategory: string) =>
+        seedPerformanceAccount(db, {
+          name: `${parentCategory} brokerage`,
+          accountType: "brokerage",
+          parentCategory,
+        });
+      const retirementBrokerage = brokerage("Retirement");
+      const saved = await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        rmdExcessTargetPerformanceAccountId: retirementBrokerage,
+      });
+      expect(saved!.rmdExcessTargetPerformanceAccountId).toBe(
+        retirementBrokerage,
+      );
+      for (const id of [
+        brokerage("Portfolio"),
+        seedPerformanceAccount(db),
+        99999,
+      ])
+        await expect(
+          caller.retirement.retirementSettings.upsert({
+            ...baseSettings(),
+            rmdExcessTargetPerformanceAccountId: id,
+          }),
+        ).rejects.toThrow(/active Retirement brokerage/);
+      // Back to the default spread.
+      const cleared = await caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        rmdExcessTargetPerformanceAccountId: null,
+      });
+      expect(cleared!.rmdExcessTargetPerformanceAccountId).toBeNull();
+    });
+  });
+
+  describe("the unspent-RMD account when its account changes", () => {
+    const update = (id: number, over: Record<string, unknown> = {}) =>
+      caller.performance.performanceAccounts.update({
+        id,
+        institution: "Fidelity",
+        accountType: "brokerage",
+        ownershipType: "joint",
+        parentCategory: "Retirement",
+        isActive: true,
+        displayOrder: 0,
+        ...over,
+      });
+    const picked = async () =>
+      (await caller.retirement.retirementSettings.list())[0]!
+        .rmdExcessTargetPerformanceAccountId;
+    const pick = async (id: number) =>
+      caller.retirement.retirementSettings.upsert({
+        ...baseSettings(),
+        rmdExcessTargetPerformanceAccountId: id,
+      });
+
+    it("an unrelated edit keeps it; deactivating or moving it to Portfolio clears it", async () => {
+      const id = seedPerformanceAccount(db, {
+        name: "Changing brokerage",
+        accountType: "brokerage",
+        parentCategory: "Retirement",
+      });
+      await pick(id);
+      await update(id, { label: "Renamed" });
+      expect(await picked()).toBe(id);
+
+      await update(id, { parentCategory: "Portfolio" });
+      expect(await picked()).toBeNull();
+
+      await update(id);
+      await pick(id);
+      await update(id, { isActive: false });
+      expect(await picked()).toBeNull();
     });
   });
 

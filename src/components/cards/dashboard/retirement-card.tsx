@@ -1,5 +1,7 @@
 "use client";
 
+import { simulatedOrBaseline } from "@/lib/pure/nest-egg-display";
+import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { memo } from "react";
 
 import { trpc } from "@/lib/trpc";
@@ -33,7 +35,8 @@ import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
 import { isHighIncomeHousehold } from "@/lib/pure/contributions";
 
 function RetirementCardImpl() {
-  const { engineInput, data, isLoading, error } = useDashboardProjection();
+  const { engineInput, ready, data, isLoading, error } =
+    useDashboardProjection();
   // The household's checkpoint table and today's figures for Readiness —
   // the same query (and input) the Milestones engine reads.
   const milestoneInputs = trpc.milestones.computeInputs.useQuery(
@@ -52,9 +55,7 @@ function RetirementCardImpl() {
   );
   const { data: coastFireData } = trpc.projection.computeCoastFire.useQuery(
     engineInput,
-    {
-      staleTime: 60_000,
-    },
+    { staleTime: 60_000, enabled: ready },
   );
   // Peek-only reads of the persistent projection cache — never trigger a
   // fresh Monte Carlo run (that's a multi-second, rate-limited operation),
@@ -62,11 +63,13 @@ function RetirementCardImpl() {
   // computed, if the inputs still match. Null result = nothing cached yet.
   const { data: mcPeek } = trpc.projection.computeMonteCarloProjection.useQuery(
     { ...engineInput, peekOnly: true },
-    { staleTime: 60_000 },
+    // Always re-read: a run made on the Retirement page should show here
+    // as soon as the dashboard is opened again.
+    { staleTime: 0, enabled: ready },
   );
   const { data: coastFireMcPeek } = trpc.projection.computeCoastFireMC.useQuery(
     { ...engineInput, peekOnly: true },
-    { staleTime: 60_000 },
+    { staleTime: 0, enabled: ready },
   );
   if (isLoading) return <LoadingCard title="Retirement" />;
   if (error) return <ErrorCard title="Retirement" message="Failed to load" />;
@@ -127,7 +130,8 @@ function RetirementCardImpl() {
     }
     return total;
   })();
-  const runsOutYear = result.projectionByYear.find((y) => y.endBalance <= 0);
+  // The plan judge: retirement money runs out, or a year falls short.
+  const outcome = assessPlan(result);
   // Deflate sustainable withdrawal to today's dollars
   const yearsToRet = Math.max(0, retAge - currentAge);
   const sustainableWdNominal = result.sustainableWithdrawal;
@@ -137,7 +141,7 @@ function RetirementCardImpl() {
         Math.pow(1 + Number(settings.annualInflation), yearsToRet)
       : sustainableWdNominal;
   const nestEggNominal =
-    result.projectionByYear.find((y) => y.age === retAge)?.endBalance ??
+    result.projectionByYear.find((y) => y.age === retAge)?.retirementBalance ??
     portfolioTotal;
   // Deflate nest egg to today's dollars (same approach as sustainable withdrawal)
   const inflRate = Number(settings.annualInflation) || 0;
@@ -145,6 +149,19 @@ function RetirementCardImpl() {
     yearsToRet > 0 && inflRate > 0
       ? nestEggNominal / Math.pow(1 + inflRate, yearsToRet)
       : nestEggNominal;
+  // Already retired: the figure is today's, so the label says today's age.
+  const nestEggAge = Math.max(retAge, currentAge);
+  // Simulated when the Retirement page has run one for these inputs, else
+  // the baseline — the same rule the page's hero uses.
+  const firstYear = result.projectionByYear[0]?.year ?? 0;
+  const nestEggDisplay = simulatedOrBaseline({
+    bands: mcPeek?.result?.percentileBands,
+    baseline: nestEgg,
+    targetAge: nestEggAge,
+    toDisplay: (value, year) =>
+      inflRate > 0 ? value / Math.pow(1 + inflRate, year - firstYear) : value,
+    personFiltered: false,
+  });
   const totalWithMatch = annualContributions + employerContributions;
   const retirementBudget = data.decumulationExpenses ?? 0;
   const taxAdvSpace =
@@ -156,10 +173,31 @@ function RetirementCardImpl() {
     <Card title="Retirement" href="/retirement">
       <div className="grid gap-x-8 gap-y-4 md:grid-cols-2">
         <div>
-          <Metric
-            value={formatCurrency(nestEgg)}
-            label={`Nest egg at age ${retAge} (today's $)`}
-          />
+          {nestEggDisplay.kind === "simulated" ? (
+            <>
+              <Metric
+                value={formatCurrency(nestEggDisplay.median)}
+                label={`Nest egg at age ${nestEggAge} (today's $, simulated median)`}
+              />
+              <div className="text-caption text-faint mt-1 leading-tight">
+                Range {formatCurrency(nestEggDisplay.low)} –{" "}
+                {formatCurrency(nestEggDisplay.high)} · Baseline:{" "}
+                {formatCurrency(nestEggDisplay.baseline)} (fixed returns)
+              </div>
+            </>
+          ) : (
+            <>
+              <Metric
+                value={formatCurrency(nestEggDisplay.baseline)}
+                label={`Nest egg at age ${nestEggAge} (today's $, baseline — fixed returns)`}
+              />
+              {/* The whole card links to /retirement — no nested link. */}
+              <div className="text-caption text-faint mt-1 leading-tight">
+                Run a simulation on the Retirement page to see the simulated
+                range.
+              </div>
+            </>
+          )}
           <div className="mt-3 space-y-1 text-sm">
             <div className="flex justify-between">
               <span className="text-muted">Years to retirement</span>
@@ -250,7 +288,7 @@ function RetirementCardImpl() {
                 return (
                   <div className="flex justify-between">
                     <span className="text-muted">
-                      Est. Withdrawal
+                      Est. Withdrawal (baseline)
                       <HelpTip
                         text={
                           isDynamic
@@ -350,14 +388,16 @@ function RetirementCardImpl() {
               <span className="text-muted">Duration</span>
               <span
                 className={
-                  runsOutYear
+                  !outcome.succeeded
                     ? "font-medium text-red-600"
                     : "font-medium text-green-600"
                 }
               >
-                {runsOutYear
-                  ? `Runs out age ${runsOutYear.age}`
-                  : `Lasts to ${endAge}+`}
+                {outcome.succeeded
+                  ? `Lasts to ${endAge}+`
+                  : outcome.failureReason === "depleted"
+                    ? `Runs out age ${outcome.failureAge}`
+                    : `Falls short age ${outcome.failureAge}`}
               </span>
             </div>
           </div>

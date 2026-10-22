@@ -15,14 +15,35 @@ function projectionResult(
     firstOverflowYear: null,
     firstOverflowAge: null,
     firstOverflowAmount: null,
-    portfolioDepletionYear: null,
-    portfolioDepletionAge: null,
+    retirementDepletionYear: null,
+    retirementDepletionAge: null,
     sustainableWithdrawal: 50000,
     firstDecumulationYearStatedNeed: 48000,
     accountDepletions: [],
     warnings: [],
     ...overrides,
   } as unknown as ProjectionResult;
+}
+
+/** A plan whose retirement money runs out at `age` (the engine's rows:
+ *  funded through the year before, $0 left that year and after). */
+function depletedAt(age: number, year: number): Partial<ProjectionResult> {
+  const row = (a: number, balance: number) => ({
+    phase: "decumulation",
+    age: a,
+    year: year + (a - age),
+    retirementBalance: balance,
+    afterTaxNeed: 60000,
+  });
+  return {
+    retirementDepletionYear: year,
+    retirementDepletionAge: age,
+    projectionByYear: [
+      row(age - 1, 40000),
+      row(age, 0),
+      row(age + 1, 0),
+    ] as unknown as ProjectionResult["projectionByYear"],
+  };
 }
 
 function mcResult(overrides: Partial<MonteCarloResult> = {}): MonteCarloResult {
@@ -49,7 +70,7 @@ function mcResult(overrides: Partial<MonteCarloResult> = {}): MonteCarloResult {
         mean: 0,
         stdDev: 0,
       },
-      depletionAge: null,
+      failureAge: null,
       sustainableWithdrawal: {
         min: 0,
         p5: 0,
@@ -77,7 +98,7 @@ function mcResult(overrides: Partial<MonteCarloResult> = {}): MonteCarloResult {
         stdDev: 0,
       },
     },
-    worstCase: { p5DepletionAge: null, p5EndBalance: 100000 },
+    worstCase: { p5FailureAge: null, p5EndBalance: 100000 },
     ...overrides,
   } as unknown as MonteCarloResult;
 }
@@ -85,7 +106,7 @@ function mcResult(overrides: Partial<MonteCarloResult> = {}): MonteCarloResult {
 describe("buildVerdict", () => {
   it("is on track when the portfolio never depletes AND the success rate clears the bar", () => {
     const v = buildVerdict(
-      projectionResult({ portfolioDepletionYear: null }),
+      projectionResult({ retirementDepletionYear: null }),
       mcResult({ successRate: 0.9 }),
     );
     expect(v.onTrack).toBe(true);
@@ -94,7 +115,7 @@ describe("buildVerdict", () => {
 
   it("is NOT on track when the deterministic projection depletes, even with a high success rate", () => {
     const v = buildVerdict(
-      projectionResult({ portfolioDepletionYear: 2065 }),
+      projectionResult(depletedAt(80, 2065)),
       mcResult({ successRate: 0.95 }),
     );
     expect(v.onTrack).toBe(false);
@@ -103,7 +124,7 @@ describe("buildVerdict", () => {
 
   it("is NOT on track when the success rate is below the threshold, even with no deterministic depletion", () => {
     const v = buildVerdict(
-      projectionResult({ portfolioDepletionYear: null }),
+      projectionResult({ retirementDepletionYear: null }),
       mcResult({ successRate: 0.5 }),
     );
     expect(v.onTrack).toBe(false);
@@ -113,7 +134,7 @@ describe("buildVerdict", () => {
 describe("buildExecutiveSummary", () => {
   it("does not read as alarmist for a genuinely on-track plan", () => {
     const summary = buildExecutiveSummary(
-      projectionResult({ portfolioDepletionYear: null }),
+      projectionResult({ retirementDepletionYear: null }),
       mcResult({ successRate: 0.92 }),
       {},
     );
@@ -127,15 +148,15 @@ describe("buildExecutiveSummary", () => {
 
   it("does not read as falsely reassuring for a depleted plan", () => {
     const summary = buildExecutiveSummary(
-      projectionResult({
-        portfolioDepletionYear: 2060,
-        portfolioDepletionAge: 78,
-      }),
+      projectionResult(depletedAt(78, 2060)),
       mcResult({ successRate: 0.4 }),
       {},
     );
     expect(summary.verdict.onTrack).toBe(false);
-    expect(summary.narrative).toMatch(/78/);
+    expect(summary.narrative).toMatch(/runs out at age 78/);
+    expect(
+      summary.keyNumbers.find((k) => /runs out/i.test(k.label))?.value,
+    ).toBe("78");
   });
 
   it("includes a Coast FIRE one-liner only when an age is supplied", () => {
@@ -161,12 +182,12 @@ describe("buildExecutiveSummary", () => {
 
   it("omits the depletion-age key number when the portfolio never depletes", () => {
     const summary = buildExecutiveSummary(
-      projectionResult({ portfolioDepletionAge: null }),
+      projectionResult({ retirementDepletionAge: null }),
       mcResult(),
       {},
     );
-    expect(summary.keyNumbers.some((k) => /depletion age/i.test(k.label))).toBe(
-      false,
-    );
+    expect(
+      summary.keyNumbers.some((k) => /runs out|falls short/i.test(k.label)),
+    ).toBe(false);
   });
 });

@@ -22,6 +22,7 @@
  * answer "what's the earliest coast age" without becoming part of the
  * engine itself.
  */
+import { withControlledOverrides } from "@/lib/pure/controlled-overrides";
 import { calculateProjection } from "./engine";
 import type {
   ProjectionInput,
@@ -59,8 +60,11 @@ export type BracketOptimizerCandidate = {
    *  independent dollars, so summing all three would double/triple-count
    *  the same shortfall. */
   shortfallScore: number;
-  /** `portfolioDepletionAge !== null` for this candidate — a hard
-   *  exclusion, never ranked in regardless of its `netCost`. */
+  /** `retirementDepletionAge !== null` for this candidate — a hard
+   *  exclusion, never ranked in regardless of its `netCost`. Deliberately
+   *  depletion only, not the plan judge's verdict (assessPlan): a candidate
+   *  with unmet spending is ranked by `shortfallScore`, not excluded, so a
+   *  household where every candidate falls short still gets a ranking. */
   depleted: boolean;
 };
 
@@ -138,7 +142,12 @@ function buildCandidateInput(
   };
   return {
     ...input,
-    decumulationOverrides: [...input.decumulationOverrides, override],
+    // The candidate's fields win over the saved rows' — a saved later-year
+    // row must not quietly undo the target being scored.
+    decumulationOverrides: withControlledOverrides(
+      input.decumulationOverrides,
+      [override],
+    ),
   };
 }
 
@@ -195,7 +204,7 @@ function scoreCandidate(
     lifetimeTax,
     traditionalEnd,
     shortfallScore,
-    depleted: result.portfolioDepletionAge !== null,
+    depleted: result.retirementDepletionAge !== null,
   };
 }
 

@@ -78,8 +78,8 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       brokerage: 0,
     },
     startingBalances: {
-      preTax: 100000,
-      taxFree: 50000,
+      preTax: 110000,
+      taxFree: 40000,
       afterTax: 30000,
       afterTaxBasis: 20000,
       hsa: 15000,
@@ -270,11 +270,46 @@ describe("brokerage goals integration", () => {
     ];
 
     const input = makeInput({
-      // Balances sum to startingAccountBalances.brokerage.balance (30000,
-      // set in makeInput() below) -- a mismatch here
-      // is no longer invisible drift, it's a real correction the engine
-      // applies at end of year, and this fixture isn't testing that.
+      // Every account makeInput()'s balances hold, so the two agree; the
+      // brokerages sum to its brokerage balance (30000) -- a mismatch there
+      // is a real correction the engine applies at end of year, and this
+      // fixture isn't testing that.
       individualAccounts: [
+        {
+          name: "401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 80000,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "401k",
+          category: "401k",
+          taxType: "taxFree",
+          startingBalance: 20000,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "IRA",
+          category: "ira",
+          taxType: "preTax",
+          startingBalance: 30000,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "IRA",
+          category: "ira",
+          taxType: "taxFree",
+          startingBalance: 20000,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "HSA",
+          category: "hsa",
+          taxType: "hsa",
+          startingBalance: 15000,
+          parentCategory: "Retirement",
+        },
         {
           name: "Taxable Brokerage",
           category: "brokerage",
@@ -290,11 +325,12 @@ describe("brokerage goals integration", () => {
           parentCategory: "Portfolio",
         },
         {
-          name: "Savings Brokerage",
+          // A retirement brokerage: goals (Portfolio money) never draw it.
+          name: "Retirement Brokerage",
           category: "brokerage",
           taxType: "afterTax",
           startingBalance: 3000,
-          parentCategory: "Savings",
+          parentCategory: "Retirement",
         },
       ],
       brokerageGoals: goals.map((g) => ({
@@ -318,7 +354,9 @@ describe("brokerage goals integration", () => {
     // Explicit value assertions.
     expect(bgResult.goals[0]!.funded).toBe(true);
     expect(bgResult.goals[0]!.actualWithdrawal).toBe(40000);
-    expect(bgResult.goals[0]!.projectedBalance).toBe(44065.36);
+    // Portfolio accounts only ($27,000 grown to 2030); the goal no longer
+    // draws part of its $40,000 from the retirement brokerage.
+    expect(bgResult.goals[0]!.projectedBalance).toBe(40065.37);
     expect(roundDeep(bgResult)).toMatchSnapshot();
   });
 });

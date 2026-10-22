@@ -49,6 +49,7 @@ import { accountDisplayName, buildAccountLabel } from "@/lib/utils/format";
 import {
   isRetirementParent,
   isPortfolioParent,
+  tracksCostBasis,
   accountCategoryEnum,
   parentCategoryEnum,
 } from "@/lib/config/account-types";
@@ -1724,7 +1725,25 @@ export const performanceRouter = createTRPCRouter({
             .set({ parentCategory: updated.parentCategory })
             .where(eq(schema.portfolioAccounts.performanceAccountId, id));
 
-          // 5. Recompute annual rollups for all affected years
+          // 5. An account that stops being an active Retirement brokerage
+          // stops being the unspent-RMD account in every Retirement Profile
+          // (left set, the old pick would quietly return if it changed back).
+          if (
+            !updated.isActive ||
+            !tracksCostBasis(updated.accountType) ||
+            !isRetirementParent(updated.parentCategory)
+          )
+            await tx
+              .update(schema.retirementSettings)
+              .set({ rmdExcessTargetPerformanceAccountId: null })
+              .where(
+                eq(
+                  schema.retirementSettings.rmdExcessTargetPerformanceAccountId,
+                  id,
+                ),
+              );
+
+          // 6. Recompute annual rollups for all affected years
           const affectedYears = await tx
             .select({ year: schema.accountPerformance.year })
             .from(schema.accountPerformance)
@@ -1736,7 +1755,7 @@ export const performanceRouter = createTRPCRouter({
             await recomputeAnnualRollups(tx, yr);
           }
 
-          // 6. Stamp performance_last_updated for cache invalidation
+          // 7. Stamp performance_last_updated for cache invalidation
           await stampPerformanceUpdated(tx);
 
           return updated;

@@ -27,7 +27,7 @@ import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
-  isRetirementParent,
+  isRetirementMoney,
 } from "../../config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/display-labels";
 import { projectSpecAmount } from "./contribution-projection";
@@ -46,6 +46,33 @@ import {
 // ---------------------------------------------------------------------------
 
 /** Composite key function for individual accounts. */
+
+/**
+ * Retirement money first: the items that aren't Portfolio-parented, or every
+ * item when there are none. Money the retirement plan routes (IRS overflow,
+ * the contribution ramp, lump sums with no named account) must land where
+ * retirement can spend it — Portfolio-parented accounts are never withdrawn
+ * from for retirement spending.
+ */
+/** The inverse of retirementFirst: Portfolio-parented items first, every
+ *  item when there are none — for Portfolio money (the Brokerage page's
+ *  contribution ramp and lump sums). */
+export function portfolioFirst<T>(
+  items: readonly T[],
+  parentOf: (item: T) => string | undefined,
+): T[] {
+  const portfolio = items.filter((x) => !isRetirementMoney(parentOf(x)));
+  return portfolio.length > 0 ? portfolio : [...items];
+}
+
+export function retirementFirst<T>(
+  items: readonly T[],
+  parentOf: (item: T) => string | undefined,
+): T[] {
+  const retirement = items.filter((x) => isRetirementMoney(parentOf(x)));
+  return retirement.length > 0 ? retirement : [...items];
+}
+
 export type IndKeyFn = (ia: {
   name: string;
   category: string;
@@ -95,6 +122,8 @@ export function buildSpecToAccountMapping(
 ): { specToAccount: Map<string, string>; accountsWithSpecs: Set<string> } {
   const taxTreatmentToTaxType = TAX_TREATMENT_TO_TAX_TYPE;
   const specToAccount = new Map<string, string>();
+  // The projection-only retirement brokerage has no contributions of its own.
+  const accts = indAccts.filter((ia) => !ia.projectedOnly);
 
   for (const spec of contributionSpecs) {
     const specTaxType =
@@ -117,14 +146,14 @@ export function buildSpecToAccountMapping(
       (ia.ownerPersonId === undefined && ia.ownerName === undefined);
 
     const match =
-      indAccts.find(
+      accts.find(
         (ia) =>
           ia.category === spec.category &&
           exactOwner(ia) &&
           ia.taxType === specTaxType &&
           parentCatMatch(ia),
       ) ??
-      indAccts.find(
+      accts.find(
         (ia) =>
           ia.category === spec.category &&
           ia.ownerPersonId === undefined &&
@@ -132,18 +161,18 @@ export function buildSpecToAccountMapping(
           ia.taxType === specTaxType &&
           parentCatMatch(ia),
       ) ??
-      indAccts.find(
+      accts.find(
         (ia) =>
           ia.category === spec.category && exactOwner(ia) && parentCatMatch(ia),
       ) ??
-      indAccts.find(
+      accts.find(
         (ia) =>
           ia.category === spec.category &&
           ia.ownerPersonId === undefined &&
           ia.ownerName === undefined &&
           parentCatMatch(ia),
       ) ??
-      indAccts.find((ia) => ia.category === spec.category && ownerMatch(ia));
+      accts.find((ia) => ia.category === spec.category && ownerMatch(ia));
     if (match) specToAccount.set(specKeyOf(spec), indKey(match));
   }
 
@@ -246,7 +275,26 @@ export function distributeContributions(
       (s) => s.category === slot.category,
     );
 
-    const distributeSpecs = (specs: typeof catSpecs, slotAmount: number) => {
+    const distributeSpecs = (allSpecs: typeof catSpecs, slotAmount: number) => {
+      // Portfolio-parented specs get their own amount first: the retirement
+      // rate ceiling never scales them (AccumulationSlot.portfolioContrib),
+      // so a scaled-down slot comes out of the retirement specs only.
+      // Unscaled, every spec gets its raw amount either way.
+      let remaining = slotAmount;
+      for (const sp of allSpecs) {
+        if (isRetirementMoney(sp.parentCategory)) continue;
+        const sk = specKeyOf(sp);
+        const acctName = specAcct.get(sk);
+        if (!acctName) continue;
+        const portion = roundToCents(Math.min(specRaw.get(sk) ?? 0, remaining));
+        if (portion <= 0) continue;
+        indContribs.set(acctName, (indContribs.get(acctName) ?? 0) + portion);
+        indBal.set(acctName, (indBal.get(acctName) ?? 0) + portion);
+        remaining -= portion;
+      }
+      const specs = allSpecs.filter((sp) =>
+        isRetirementMoney(sp.parentCategory),
+      );
       // Separate fixed-amount specs from scaling specs
       const fixedSpecs = specs.filter(
         (s) => s.contributionScaling === "fixed_amount",
@@ -256,7 +304,6 @@ export function distributeContributions(
       );
 
       // Pre-allocate fixed specs their raw amount (capped at slot total)
-      let remaining = slotAmount;
       for (const sp of fixedSpecs) {
         const sk = specKeyOf(sp);
         const acctName = specAcct.get(sk);
@@ -299,7 +346,7 @@ export function distributeContributions(
           if (!acctName) continue;
           const weight =
             rawTotal > 0 ? (specRaw.get(sk) ?? 0) / rawTotal : 1 / specs.length;
-          const portion = roundToCents(slotAmount * weight);
+          const portion = roundToCents(remaining * weight);
           indContribs.set(acctName, (indContribs.get(acctName) ?? 0) + portion);
           indBal.set(acctName, (indBal.get(acctName) ?? 0) + portion);
         }
@@ -317,7 +364,19 @@ export function distributeContributions(
         distributeSpecs(typeSpecs, slotAmount);
       }
     } else {
-      distributeSpecs(catSpecs, slot.employeeContrib);
+      // The overflow target's slot also carries this year's IRS overflow
+      // (routeFromSpecs adds it there); Step 4 routes that part, so only the
+      // specs' own contributions are spread here — distributing the whole
+      // slot counted the overflow twice.
+      distributeSpecs(
+        catSpecs,
+        isOverflowTarget(slot.category)
+          ? Math.max(
+              0,
+              roundToCents(slot.employeeContrib - overflowToBrokerage),
+            )
+          : slot.employeeContrib,
+      );
     }
   }
 
@@ -334,7 +393,10 @@ export function distributeContributions(
       parentCatMatchData.forEach((baseMatch, pCat) => {
         const scaledMatch = roundToCents(catMatch * (baseMatch / totalMatch));
         const allPCatAccts = indAccts.filter(
-          (ia) => ia.category === cat && indParentCat.get(indKey(ia)) === pCat,
+          (ia) =>
+            ia.category === cat &&
+            !ia.projectedOnly &&
+            indParentCat.get(indKey(ia)) === pCat,
         );
         if (allPCatAccts.length === 0) return;
         const preTaxPCatAccts = allPCatAccts.filter((ia) =>
@@ -363,7 +425,9 @@ export function distributeContributions(
         }
       });
     } else {
-      const catAll = indAccts.filter((ia) => ia.category === cat);
+      const catAll = indAccts.filter(
+        (ia) => ia.category === cat && !ia.projectedOnly,
+      );
       const catPreTax = catAll.filter((ia) => isPreTaxType(ia.taxType));
       const catMatchPool = catPreTax.length > 0 ? catPreTax : catAll;
       const catWithSpecs = catMatchPool.filter((ia) =>
@@ -387,12 +451,27 @@ export function distributeContributions(
 
   // --- Step 4: Distribute overflow to brokerage accounts by allocationPriority ---
   if (overflowToBrokerage > 0) {
+    // Overflow is retirement money (contributions past the IRS limits):
+    // Retirement-parented brokerage specs/accounts first.
+    // The accounts decide (a Retirement brokerage with no spec of its own
+    // still takes overflow before any Portfolio one); specs only order and
+    // cap it within those accounts. The projection-only retirement
+    // brokerage counts: with no real Retirement brokerage it's where
+    // retirement money lands, so overflow never becomes Portfolio money.
+    const brokAccts = retirementFirst(
+      indAccts.filter((ia) => isOverflowTarget(ia.category)),
+      (ia) => indParentCat.get(indKey(ia)) ?? ia.parentCategory,
+    );
+    const brokKeys = new Set(brokAccts.map((ia) => indKey(ia)));
     const overflowSpecs = contributionSpecs
-      .filter((s) => isOverflowTarget(s.category))
+      .filter(
+        (s) =>
+          isOverflowTarget(s.category) &&
+          brokKeys.has(specToAccount.get(specKeyOf(s)) ?? ""),
+      )
       .sort(
         (a, b) => (a.allocationPriority ?? 0) - (b.allocationPriority ?? 0),
       );
-    const brokAccts = indAccts.filter((ia) => isOverflowTarget(ia.category));
 
     if (brokAccts.length > 0) {
       let remaining = overflowToBrokerage;
@@ -431,6 +510,8 @@ export function distributeContributions(
               (indOverflow.get(acctName) ?? 0) + perAccount,
             );
           }
+          // Routed in full — the fallback below must not hand it out again.
+          remaining = 0;
         } else {
           const lastSpec = overflowSpecs[overflowSpecs.length - 1];
           if (lastSpec) {
@@ -445,6 +526,7 @@ export function distributeContributions(
                 acctName,
                 (indOverflow.get(acctName) ?? 0) + remaining,
               );
+              remaining = 0;
             }
           }
         }
@@ -487,14 +569,20 @@ export function distributeContributions(
 
   // --- Step 6: Distribute ramp to brokerage accounts ---
   if (rampAmount > 0) {
-    const brokWithSpecs = indAccts.filter(
-      (ia) =>
-        isOverflowTarget(ia.category) && accountsWithSpecs.has(indKey(ia)),
+    // The ramp (the Brokerage page's yearly increase) is Portfolio
+    // savings: the parent is chosen first (Portfolio brokerages when there
+    // are any), then within it the brokerages with specs of their own. The
+    // projection-only retirement brokerage takes it only when the household
+    // has no brokerage at all.
+    const parentOf = (ia: IndividualAccountInput) =>
+      indParentCat.get(indKey(ia)) ?? ia.parentCategory;
+    const brokerages = indAccts.filter((ia) => isOverflowTarget(ia.category));
+    const real = brokerages.filter((ia) => !ia.projectedOnly);
+    const group = real.length > 0 ? portfolioFirst(real, parentOf) : brokerages;
+    const groupWithSpecs = group.filter((ia) =>
+      accountsWithSpecs.has(indKey(ia)),
     );
-    const brokAccts =
-      brokWithSpecs.length > 0
-        ? brokWithSpecs
-        : indAccts.filter((ia) => isOverflowTarget(ia.category));
+    const brokAccts = groupWithSpecs.length > 0 ? groupWithSpecs : group;
     const brokTotal = brokAccts.reduce(
       (s, ia) => s + (indBal.get(indKey(ia)) ?? 0),
       0,
@@ -518,8 +606,36 @@ export function distributeContributions(
 // ---------------------------------------------------------------------------
 
 /**
- * Distribute brokerage goal withdrawal across individual brokerage accounts.
- * Mutates `indBal` in place.
+ * The accounts brokerage goals draw from: Portfolio-parented brokerages.
+ * Goals are Portfolio money (the Brokerage page's goals); retirement
+ * brokerages fund retirement and are never drawn for them.
+ */
+export function goalFundingAccounts(
+  indAccts: IndividualAccountInput[],
+): IndividualAccountInput[] {
+  return indAccts.filter(
+    (ia) =>
+      isOverflowTarget(ia.category) && !isRetirementMoney(ia.parentCategory),
+  );
+}
+
+/** What the goal-funding accounts hold now (the most a goal can draw). */
+export function goalFundingBalance(
+  indAccts: IndividualAccountInput[],
+  indKey: IndKeyFn,
+  indBal: Map<string, number>,
+): number {
+  return roundToCents(
+    goalFundingAccounts(indAccts).reduce(
+      (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
+      0,
+    ),
+  );
+}
+
+/**
+ * Distribute a brokerage goal withdrawal across the goal-funding
+ * (Portfolio-parented) brokerages, by balance. Mutates `indBal` in place.
  */
 export function distributeGoalWithdrawal(
   drawAmount: number,
@@ -527,15 +643,17 @@ export function distributeGoalWithdrawal(
   indKey: IndKeyFn,
   indBal: Map<string, number>,
 ): void {
-  const brokAccts = indAccts.filter((ia) => isOverflowTarget(ia.category));
+  const brokAccts = goalFundingAccounts(indAccts);
   const brokTotal = brokAccts.reduce(
-    (s, ia) => s + (indBal.get(indKey(ia)) ?? 0),
+    (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
     0,
   );
   for (const ia of brokAccts) {
     const k = indKey(ia);
     const weight =
-      brokTotal > 0 ? (indBal.get(k) ?? 0) / brokTotal : 1 / brokAccts.length;
+      brokTotal > 0
+        ? Math.max(0, indBal.get(k) ?? 0) / brokTotal
+        : 1 / brokAccts.length;
     indBal.set(k, roundToCents((indBal.get(k) ?? 0) - drawAmount * weight));
   }
 }
@@ -597,8 +715,7 @@ export function distributeWithdrawals(
     // "should never happen if the upstream math is right."
     const catAccts = indAccts.filter(
       (ia) =>
-        ia.category === slot.category &&
-        isRetirementParent(ia.parentCategory ?? "Retirement"),
+        ia.category === slot.category && isRetirementMoney(ia.parentCategory),
     );
     const bs = getAccountTypeConfig(slot.category).balanceStructure;
 
@@ -982,12 +1099,15 @@ export function buildIndividualYearBalances(
     ramp?: Map<string, number>;
     basis?: Map<string, RothBasisState>;
     draws?: Map<string, BasisDraw>;
+    /** Brokerage cost basis per account (brokerage-basis.ts). */
+    brokerageBasis?: Map<string, number>;
   },
   eligibility?: EligibilityRecord,
 ): IndividualAccountYearBalance[] {
-  return indAccts.map((ia) => {
+  const rows = indAccts.map((ia): IndividualAccountYearBalance => {
     const k = indKey(ia);
     const isOverflow = isOverflowTarget(ia.category);
+    const projectedFields = ia.projectedOnly ? { projectedOnly: true } : {};
     const balance =
       Math.abs(indBal.get(k) ?? 0) < 1 ? 0 : roundToCents(indBal.get(k) ?? 0);
     const basisState = maps.basis?.get(k);
@@ -999,6 +1119,11 @@ export function buildIndividualYearBalances(
           rothBasisUncertain: basisState.stale || basisState.isSeeded,
         }
       : {};
+    const brokerageBasis = maps.brokerageBasis?.get(k);
+    const costBasisFields =
+      brokerageBasis != null
+        ? { costBasis: roundToCents(Math.min(brokerageBasis, balance)) }
+        : {};
     const draw = maps.draws?.get(k);
     const drawnFields =
       draw != null
@@ -1029,6 +1154,8 @@ export function buildIndividualYearBalances(
             }
           : {}),
         ...basisFields,
+        ...costBasisFields,
+        ...projectedFields,
       };
     }
 
@@ -1060,9 +1187,20 @@ export function buildIndividualYearBalances(
           }
         : {}),
       ...basisFields,
+      ...costBasisFields,
       ...drawnFields,
+      ...projectedFields,
     };
   });
+  // The projection-only retirement brokerage shows up once it holds money
+  // (an empty "projected" account would be noise in every table).
+  return rows.filter(
+    (r) =>
+      !r.projectedOnly ||
+      r.balance !== 0 ||
+      r.contribution !== 0 ||
+      (r.withdrawal ?? 0) !== 0,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -1159,20 +1297,30 @@ export function reconcileIndividualToAggregate(
 }
 
 /** One (category, tax-slice) group's reconciliation — see
- *  `reconcileIndividualToAggregate`'s docblock for the full contract. */
+ *  `reconcileIndividualToAggregate`'s docblock for the full contract.
+ *
+ *  The drift is absorbed by retirement money. Portfolio-parented accounts
+ *  change only through their own per-account flows (contributions,
+ *  growth, goal draws, the ramp), so the aggregate-only operations that
+ *  drift (withdrawals, RMDs, conversions, overflow) are retirement-side;
+ *  spreading the correction over Portfolio accounts too would move money
+ *  between the two. A shortfall empties retirement money first and takes
+ *  only what's left from Portfolio. A group with no Portfolio account
+ *  reconciles exactly as before (by balance; no weight → left alone). */
 function reconcileGroup(
-  accts: IndividualAccountInput[],
+  groupAccts: IndividualAccountInput[],
   indKey: IndKeyFn,
   indBal: Map<string, number>,
   target: number,
   label: string,
   diagnostics: string[],
 ): void {
-  if (accts.length === 0) return;
-  const sumInd = accts.reduce(
-    (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
-    0,
-  );
+  if (groupAccts.length === 0) return;
+  const bal = (ia: IndividualAccountInput) =>
+    Math.max(0, indBal.get(indKey(ia)) ?? 0);
+  const sumOf = (accts: IndividualAccountInput[]) =>
+    accts.reduce((s, ia) => s + bal(ia), 0);
+  const sumInd = sumOf(groupAccts);
   const delta = roundToCents(target - sumInd);
   if (delta === 0) return;
 
@@ -1182,37 +1330,75 @@ function reconcileGroup(
     );
   }
 
-  if (sumInd <= 0) {
+  const retirement = groupAccts.filter((ia) =>
+    isRetirementMoney(ia.parentCategory),
+  );
+  const portfolio = groupAccts.filter(
+    (ia) => !isRetirementMoney(ia.parentCategory),
+  );
+
+  // Spread `amount` over `accts` by balance (equally when they hold
+  // nothing and `equalWhenEmpty`); returns what couldn't be placed.
+  const spread = (
+    accts: IndividualAccountInput[],
+    amount: number,
+    equalWhenEmpty: boolean,
+  ): number => {
+    if (accts.length === 0 || amount === 0) return amount;
+    const total = sumOf(accts);
+    if (total <= 0 && !equalWhenEmpty) return amount;
+    let distributed = 0;
+    let largestKey: string | null = null;
+    let largestBal = -Infinity;
+    for (const ia of accts) {
+      const k = indKey(ia);
+      const b = bal(ia);
+      if (b > largestBal) {
+        largestBal = b;
+        largestKey = k;
+      }
+      const share = roundToCents(
+        amount * (total > 0 ? b / total : 1 / accts.length),
+      );
+      const newBal = Math.max(0, roundToCents(b + share));
+      indBal.set(k, newBal);
+      distributed += roundToCents(newBal - b);
+    }
+    const residual = roundToCents(amount - distributed);
+    if (residual !== 0 && largestKey) {
+      const b = Math.max(0, indBal.get(largestKey) ?? 0);
+      const newBal = Math.max(0, roundToCents(b + residual));
+      indBal.set(largestKey, newBal);
+      return roundToCents(residual - (newBal - b));
+    }
+    return 0;
+  };
+
+  let unplaced: number;
+  if (portfolio.length === 0 || retirement.length === 0) {
+    unplaced = spread(groupAccts, delta, false);
+  } else if (delta > 0) {
+    unplaced = spread(retirement, delta, true);
+  } else {
+    // Retirement money first, the remainder from Portfolio.
+    const fromRetirement = Math.max(delta, -sumOf(retirement));
+    const left = spread(retirement, fromRetirement, false);
+    unplaced = spread(
+      portfolio,
+      roundToCents(delta - fromRetirement + left),
+      false,
+    );
+  }
+
+  if (unplaced !== 0 && sumOf(groupAccts) <= 0 && target > 0) {
     // No weight to distribute by — inventing one would be a second
     // allocation policy. Leave indBal alone; the diagnostic above (for
     // >$1 drift) already surfaces this if it's material.
-    if (target > 0 && Math.abs(delta) <= 1) {
+    if (Math.abs(delta) <= 1) {
       diagnostics.push(
         `[DIAG] indBal/acctBal reconciliation: ${label} has $${target.toFixed(2)} in acctBal but no individual-account balance to distribute it across — left unreconciled`,
       );
     }
-    return;
-  }
-
-  let distributed = 0;
-  let largestKey: string | null = null;
-  let largestBal = -Infinity;
-  for (const ia of accts) {
-    const k = indKey(ia);
-    const bal = Math.max(0, indBal.get(k) ?? 0);
-    if (bal > largestBal) {
-      largestBal = bal;
-      largestKey = k;
-    }
-    const share = roundToCents(delta * (bal / sumInd));
-    const newBal = Math.max(0, roundToCents(bal + share));
-    indBal.set(k, newBal);
-    distributed += roundToCents(newBal - bal);
-  }
-  const residual = roundToCents(delta - distributed);
-  if (residual !== 0 && largestKey) {
-    const bal = Math.max(0, indBal.get(largestKey) ?? 0);
-    indBal.set(largestKey, Math.max(0, roundToCents(bal + residual)));
   }
 }
 

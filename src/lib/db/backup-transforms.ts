@@ -79,6 +79,7 @@ const V08_SCHEMA_TAGS = [
   "0007_v088_drop_account_holdings", // PG + SQLite: drop legacy account_holdings (replaced by holding_periods) — no longer in VERSION_TABLES, so an older backup's rows are skipped on restore
   "0009_v0810_profile_sets", // PG + SQLite: Plan salaries → Salary Profiles, bonus destinations → entries, bonus switches → per-account fromBonus, unique Plan names; scenarios.overrides/is_baseline and budget column profile ids dropped (transformV0810ProfileSets)
   "0010_v0810_holding_period_parts", // PG + SQLite: holding_periods.sub_key (the part of an account whose feeds are linked per part; null = whole account) — nullable, older backups restore as whole-account periods
+  "0011_v0811_rmd_excess_target", // PG + SQLite: retirement_settings.rmd_excess_target_performance_account_id (nullable FK, SET NULL) — older backups restore as "spread across Retirement brokerages"
 ] as const;
 
 /** First tags whose backups carry asset_class_buckets (PG, SQLite). */

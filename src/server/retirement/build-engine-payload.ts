@@ -45,7 +45,20 @@ import {
   getLimitGroup,
   getAccountTypeConfig,
   getDefaultAccumulationOrder,
+  isOverflowTarget,
+  isRetirementMoney,
+  tracksCostBasis,
 } from "@/lib/config/account-types";
+import type { SimpleTaxModeParts } from "@/lib/calculators/simple-tax-mode";
+import {
+  PERF_CATEGORY_RETIREMENT,
+  PROJECTED_RETIREMENT_BROKERAGE_LABEL,
+} from "@/lib/config/display-labels";
+import { resolveRmdExcessTarget } from "@/lib/pure/rmd-excess-target";
+import {
+  findMissingCostBasis,
+  missingCostBasisWarning,
+} from "@/lib/pure/basis-consistency";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 import {
   IRS_LIMIT_GROWTH_RATE,
@@ -73,6 +86,19 @@ type Db = typeof _db;
  * Fetch all DB tables needed by the contribution engine / Monte Carlo projection.
  * Returns the raw query results — callers can destructure what they need.
  */
+
+/** A year's employee contributions to retirement money — every spec but the
+ *  Portfolio-parented ones (savings outside the retirement plan). The
+ *  contribution rate is this over total compensation. */
+function retirementContributions(
+  specs: readonly { baseAnnual: number; parentCategory?: string }[],
+): number {
+  return sumBy(
+    specs.filter((s) => isRetirementMoney(s.parentCategory)),
+    (s) => s.baseAnnual,
+  );
+}
+
 export async function fetchRetirementData(
   db: Db,
   opts?: {
@@ -608,6 +634,44 @@ export async function buildEnginePayload(
     ownershipByPerson,
     accountBreakdownByCategory,
   } = taxBucketBreakdown;
+
+  // Where reinvested RMD money goes (Retirement settings): the chosen
+  // Retirement brokerage, else every Retirement brokerage — never a
+  // Portfolio account. With no Retirement brokerage, a projection-only one
+  // holds that money and contribution overflow.
+  const rmdTarget = resolveRmdExcessTarget({
+    targetPerformanceAccountId:
+      settings.rmdExcessTargetPerformanceAccountId ?? null,
+    reinvest: settings.rmdExcessHandling !== "spend",
+    entries: Object.entries(accountBreakdownByCategory).flatMap(
+      ([category, accts]) => accts.map((a) => ({ ...a, category })),
+    ),
+    perfAccounts,
+  });
+  // Brokerages holding money with no cost basis: the projection taxes every
+  // dollar drawn from them as a gain — say so (0 also means "not entered").
+  const basisWarnings = [
+    ...new Set(
+      findMissingCostBasis(
+        Object.entries(accountBreakdownByCategory).flatMap(
+          ([category, accts]) =>
+            accts
+              .filter((a) => a.costBasis != null)
+              .map((a) => ({
+                category,
+                name: a.name,
+                balance: a.amount,
+                costBasis: a.costBasis!,
+              })),
+        ),
+      ).map((a) => missingCostBasisWarning(a.name)),
+    ),
+  ];
+  const inputWarnings = [
+    ...(rmdTarget.warning ? [rmdTarget.warning] : []),
+    ...basisWarnings,
+  ];
+  const OVERFLOW_TARGET_CATEGORY = getAllCategories().find(isOverflowTarget)!;
   const personNameById = new Map(people.map((p) => [p.id, p.name]));
 
   // Per-account withdrawal-ordering eligibility — reuses computeTaxBucketAnalysis
@@ -882,8 +946,11 @@ export async function buildEnginePayload(
     }
   }
   // Aggregate contributions and employer match by category (shared helper — single pass)
-  const { contribByCategory, employerMatchByCategory } =
-    aggregateContributionsByCategory(activeContribs, activeJobs, jobSalaries);
+  const {
+    contribByCategory,
+    employerMatchByCategory,
+    retirementOnly: retirementContrib,
+  } = aggregateContributionsByCategory(activeContribs, activeJobs, jobSalaries);
 
   // Build per-person salary map from job salaries — the engine's compounding
   // baseline, so full-formula bonus (see totalCompFullFormula's docblock
@@ -1349,14 +1416,11 @@ export async function buildEnginePayload(
       profileContribCtx,
     );
 
-    // Compute per-profile contribution rate ceiling
+    // Compute per-profile contribution rate ceiling (retirement
+    // contributions only — see retirementContributions)
     const switchedTotalComp = sumBy(resolved.jobSalaries, (js) => js.totalComp);
-    const switchedTotalContrib = sumBy(
-      Object.values(data.baseYearContributions),
-      (v) => v,
-    );
     const switchedContribRate = safeDivide(
-      switchedTotalContrib,
+      retirementContributions(data.contributionSpecs),
       switchedTotalComp,
       0,
     );
@@ -1384,6 +1448,7 @@ export async function buildEnginePayload(
       baseYearEmployerMatch: data.baseYearEmployerMatch,
       employerMatchByParentCat: data.employerMatchByParentCat,
       contributionRate: rateForSwitch,
+      retirementOnly: data.retirementOnly,
     });
   }
 
@@ -1395,30 +1460,73 @@ export async function buildEnginePayload(
     Object.values(contribByCategory),
     (c) => c.annual,
   );
-  // Rate based on total compensation (always includes bonus)
-  const displayContribRate = safeDivide(totalRealContrib, totalCompensation, 0);
+  // Retirement contribution rate on total compensation (always includes
+  // bonus). Retirement contributions only: the engine's rate ceiling caps
+  // retirement contributions and leaves Portfolio savings alone, so the
+  // rate it caps against must not count them either.
+  const displayContribRate = safeDivide(
+    retirementContributions(contributionSpecs),
+    totalCompensation,
+    0,
+  );
 
   // Account splits derived from actual contribution amounts
   const noContribData = totalRealContrib <= 0;
-  const realAccountSplits = Object.fromEntries(
-    getAllCategories().map((cat) => [
-      cat,
-      noContribData ? 0 : contribByCategory[cat].annual / totalRealContrib,
-    ]),
-  ) as Record<AccountCategory, number>;
+  const splitsOf = (summaries: typeof contribByCategory) => {
+    const total = sumBy(Object.values(summaries), (c) => c.annual);
+    return {
+      accountSplits: Object.fromEntries(
+        getAllCategories().map((cat) => [
+          cat,
+          total > 0 ? summaries[cat].annual / total : 0,
+        ]),
+      ) as Record<AccountCategory, number>,
+      taxSplits: Object.fromEntries(
+        categoriesWithTaxPreference().map((cat) => [
+          cat,
+          summaries[cat].rothFraction,
+        ]),
+      ) as Partial<Record<AccountCategory, number>>,
+    };
+  };
+  const realSplits = splitsOf(contribByCategory);
+  const realAccountSplits = realSplits.accountSplits;
 
+  // Same rule as a profile switch's rate: a household that contributes but
+  // not to retirement money has a 0% retirement rate (the fallback would
+  // invent 25% of salary wherever the rate path runs — Simple tax mode with
+  // only Portfolio specs); only missing data falls back.
   const derivedAccumulationDefaults = {
     contributionRate:
-      displayContribRate > 0 ? displayContribRate : FALLBACK_CONTRIBUTION_RATE,
+      displayContribRate > 0
+        ? displayContribRate
+        : contributionSpecs.length > 0 && totalCompensation > 0
+          ? 0
+          : FALLBACK_CONTRIBUTION_RATE,
     routingMode: "waterfall" as const,
     accountOrder: getDefaultAccumulationOrder(),
     accountSplits: realAccountSplits,
-    taxSplits: Object.fromEntries(
-      categoriesWithTaxPreference().map((cat) => [
-        cat,
-        contribByCategory[cat].rothFraction,
-      ]),
-    ) as Partial<Record<AccountCategory, number>>,
+    taxSplits: realSplits.taxSplits,
+  };
+
+  // Simple tax mode's retirement-only inputs (lib/calculators/simple-tax-mode.ts).
+  const simpleTaxMode: SimpleTaxModeParts = {
+    retirementBuckets: Object.entries(portfolioByTaxTypeByParentCat)
+      .filter(([parent]) => isRetirementMoney(parent))
+      .reduce(
+        (t, [, b]) => ({
+          preTax: t.preTax + b.preTax,
+          taxFree: t.taxFree + b.taxFree,
+          hsa: t.hsa + b.hsa,
+          afterTax: t.afterTax + b.afterTax,
+          afterTaxBasis: t.afterTaxBasis + b.afterTaxBasis,
+        }),
+        { preTax: 0, taxFree: 0, hsa: 0, afterTax: 0, afterTaxBasis: 0 },
+      ),
+    defaults: {
+      ...defaultContribData.retirementOnly,
+      ...splitsOf(retirementContrib.contribByCategory),
+    },
   };
 
   // Distribution tax rates (shared between engine and MC)
@@ -1669,8 +1777,8 @@ export async function buildEnginePayload(
     })),
     startingBalances: portfolioByTaxType,
     startingAccountBalances: portfolioByAccount,
-    individualAccounts: Object.entries(accountBreakdownByCategory).flatMap(
-      ([cat, accts]) =>
+    individualAccounts: [
+      ...Object.entries(accountBreakdownByCategory).flatMap(([cat, accts]) =>
         accts.map((a) => {
           const eligibility = a.ownerPersonId
             ? eligibilityByJoinKey.get(
@@ -1683,6 +1791,7 @@ export async function buildEnginePayload(
             taxType: a.taxType,
             accountType: a.accountType,
             startingBalance: a.amount,
+            ...(a.costBasis != null ? { startingBasis: a.costBasis } : {}),
             ownerName: a.ownerName,
             ownerPersonId: a.ownerPersonId,
             parentCategory: a.parentCategory,
@@ -1705,9 +1814,31 @@ export async function buildEnginePayload(
                 a.ownerPersonId ?? null,
               ),
             ),
+            ...(rmdTarget.targetPerformanceAccountId != null &&
+            tracksCostBasis(cat) &&
+            a.performanceAccountIds?.includes(
+              rmdTarget.targetPerformanceAccountId,
+            )
+              ? { rmdExcessTarget: true }
+              : {}),
           };
         }),
-    ),
+      ),
+      ...(rmdTarget.addProjectedBrokerage
+        ? [
+            {
+              name: PROJECTED_RETIREMENT_BROKERAGE_LABEL,
+              category: OVERFLOW_TARGET_CATEGORY,
+              taxType: "afterTax",
+              startingBalance: 0,
+              startingBasis: 0,
+              parentCategory: PERF_CATEGORY_RETIREMENT,
+              projectedOnly: true,
+            },
+          ]
+        : []),
+    ],
+    ...(inputWarnings.length > 0 ? { inputWarnings } : {}),
     annualExpenses: annualExpensesVal,
     // Always pass when user explicitly set a decumulation override, or when
     // the computed decumulation budget differs from accumulation budget.
@@ -1831,6 +1962,7 @@ export async function buildEnginePayload(
     totalRealContrib,
     contributionSpecs,
     derivedAccumulationDefaults,
+    simpleTaxMode,
     distributionTaxRates,
     annualExpensesVal,
     accumulationExpenses,

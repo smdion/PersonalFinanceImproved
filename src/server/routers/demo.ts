@@ -4,6 +4,7 @@ import {
   DEMO_SCHEMA_MARKER_PREFIX,
   MIGRATION_COUNT_SQL,
 } from "@/lib/db/demo-schema-marker";
+import { referenceTableNames } from "@/lib/db/reference-data";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
@@ -649,9 +650,10 @@ export const demoRouter = createTRPCRouter({
         // Switch search_path and seed demo data + reference tables
         await client.query(`SET search_path TO ${quotedSchema}, public`);
 
-        // Copy reference/shared data that calculators depend on
-        const refTables = ["contribution_limits", "tax_brackets"];
-        for (const table of refTables) {
+        // Copy every reference table calculators read (limits, brackets,
+        // LTCG / IRMAA, poverty lines, tax parameters) — public's are
+        // current (the migrator reconciles them on every start).
+        for (const table of referenceTableNames()) {
           const quotedTable = quoteIdent(table);
           await cdb.execute(
             sql.raw(

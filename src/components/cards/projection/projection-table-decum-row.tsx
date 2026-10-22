@@ -53,6 +53,7 @@ import {
   buildStrategyEventStyle,
   formatDiscretionaryTierBreakdown,
   formatRmdDivisorDetail,
+  rowTotal,
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
 import {
@@ -426,7 +427,7 @@ export function DecumulationRow({
           ? "bg-blue-50 font-medium"
           : hasOverride
             ? "bg-amber-50"
-            : yr.endBalance < 1
+            : yr.retirementBalance < 1
               ? "bg-red-50"
               : isSsStartRow
                 ? "bg-teal-50"
@@ -1074,7 +1075,7 @@ export function DecumulationRow({
                 ? "text-amber-500"
                 : dyr.totalWithdrawal > 0
                   ? "text-red-600"
-                  : dyr.endBalance < 1 && dyr.projectedExpenses > 0
+                  : dyr.retirementBalance < 1 && dyr.projectedExpenses > 0
                     ? "text-red-400 italic"
                     : "text-muted"
           }`}
@@ -1092,7 +1093,7 @@ export function DecumulationRow({
             if (dyr.totalWithdrawal > 0) {
               return `-${formatCurrency(deflate(dyr.totalWithdrawal, yr.year))}`;
             }
-            return dyr.endBalance < 1 && dyr.projectedExpenses > 0
+            return dyr.retirementBalance < 1 && dyr.projectedExpenses > 0
               ? "depleted"
               : "---";
           })()}
@@ -1105,7 +1106,7 @@ export function DecumulationRow({
             const bal = dpt
               ? dpt.byTaxType[bucket]
               : yr.balanceByTaxType[bucket];
-            const dptTotal = dpt ? dpt.balance : yr.endBalance;
+            const dptTotal = dpt ? dpt.balance : rowTotal(yr);
             const pct = percentOf(bal, dptTotal);
             // Compute growth for this tax bucket from individualAccountBalances
             const bucketIabs = yr.individualAccountBalances ?? [];
@@ -1246,7 +1247,7 @@ export function DecumulationRow({
             .map((col) => {
               const catKey = colKeyParts(col.key).category;
               const bal = dpt ? (dpt.byAccount[col.key] ?? 0) : col.val;
-              const dptTotalBal = dpt ? dpt.balance : yr.endBalance;
+              const dptTotalBal = dpt ? dpt.balance : rowTotal(yr);
               const pct = percentOf(bal, dptTotalBal);
               // Compute authoritative total change from engine
               const decPrevYr = result.projectionByYear.find(
@@ -1431,7 +1432,7 @@ export function DecumulationRow({
       )}
       <Tooltip
         content={(() => {
-          const tb = dpt ? dpt.balance : yr.endBalance;
+          const tb = dpt ? dpt.balance : rowTotal(yr);
           const iabs = yr.individualAccountBalances ?? [];
           const totalGrowth = (
             dpt ? iabs.filter((ia) => ia.ownerPersonId === personFilter) : iabs
@@ -1441,7 +1442,7 @@ export function DecumulationRow({
               kind: "info",
               lines: [
                 {
-                  text: "Portfolio depleted",
+                  text: "Balance depleted",
                   style: "note",
                   color: "gray",
                 },
@@ -1473,13 +1474,13 @@ export function DecumulationRow({
       >
         <td className="px-2 py-1.5 text-right font-semibold">
           {formatCurrency(
-            Math.max(0, deflate(dpt ? dpt.balance : yr.endBalance, yr.year)),
+            Math.max(0, deflate(dpt ? dpt.balance : rowTotal(yr), yr.year)),
           )}
         </td>
       </Tooltip>
       {renderMcCell(
         yr,
-        deflate(dpt ? dpt.balance : yr.endBalance, yr.year),
+        deflate(dpt ? dpt.balance : rowTotal(yr), yr.year),
         mcCellOpts,
       )}
       <td className="text-caption text-faint border-subtle border-l py-1.5 pl-2 whitespace-nowrap">
@@ -1501,7 +1502,7 @@ export function DecumulationRow({
               `Expenses: ${formatCurrency(deflate(dyr.projectedExpenses, yr.year))}`,
               `SS Income: ${formatCurrency(deflate(dyr.ssIncome ?? 0, yr.year))}`,
               `After-tax need: ${formatCurrency(deflate(dyr.afterTaxNeed ?? 0, yr.year))}`,
-              `Tax rate: ${formatPercent(dyr.effectiveTaxRate, 2)} (trad ${formatPercent(dyr.estTraditionalPortion ?? 0, 0)} of portfolio)`,
+              `Tax rate: ${formatPercent(dyr.effectiveTaxRate, 2)} (trad ${formatPercent(dyr.estTraditionalPortion ?? 0, 0)} of retirement money)`,
               `Gross-up: ×${(dyr.grossUpFactor ?? 1).toFixed(3)}`,
               `Target withdrawal: ${formatCurrency(deflate(dyr.targetWithdrawal, yr.year))}`,
               `Actual withdrawal: ${formatCurrency(deflate(dyr.totalWithdrawal, yr.year))}`,

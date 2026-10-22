@@ -5,11 +5,6 @@ import { render, screen, fireEvent } from "@testing-library/react";
 // appear (rendered via the mocked ProjectionCard), and tab switching works.
 // Child components are stubbed so we don't pull in recharts or hit the engine.
 
-// The realized-vs-assumed card has its own queries; out of scope here.
-vi.mock("@/components/retirement/realized-vs-assumed-card", () => ({
-  RealizedVsAssumedCard: () => null,
-}));
-
 vi.mock("@/components/cards/projection", () => ({
   ProjectionCard: () => <div data-testid="projection-card" />,
 }));
@@ -85,6 +80,18 @@ vi.mock("@/components/ui/skeleton", () => ({
 
 vi.mock("@/lib/hooks/use-debounced-value", () => ({
   useDebouncedValue: <T,>(v: T) => v,
+}));
+vi.mock("@/lib/hooks/use-plan-engine-input", () => ({
+  usePlanEngineInput: () => ({
+    input: { decumulationDefaults: { withdrawalTaxPreference: {} } },
+    ready: true,
+    ids: {
+      contributionProfileId: null,
+      salaryProfileId: null,
+      retirementProfileId: null,
+      snapshotId: null,
+    },
+  }),
 }));
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
   usePersistedSetting: <T,>(_key: string, initial: T) => [initial, vi.fn()],

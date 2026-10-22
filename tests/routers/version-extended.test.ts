@@ -627,6 +627,13 @@ describe("resetAllData", () => {
       expect(result.tablesCleared).toBeGreaterThan(0);
 
       expect(ctx.db.select().from(sqliteSchema.people).all()).toHaveLength(0);
+      // Reference data (tax tables, limits) isn't user data: it comes back.
+      expect(
+        ctx.db.select().from(sqliteSchema.contributionLimits).all().length,
+      ).toBeGreaterThan(0);
+      expect(
+        ctx.db.select().from(sqliteSchema.taxParams).all().length,
+      ).toBeGreaterThan(0);
       expect(ctx.db.select().from(sqliteSchema.localAdmins).all()).toHaveLength(
         1,
       );

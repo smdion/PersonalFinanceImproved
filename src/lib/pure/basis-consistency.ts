@@ -1,5 +1,7 @@
 /**
- * Year-to-year consistency of Roth conversion basis. Pure.
+ * Basis that is missing or inconsistent. Pure.
+ *
+ * Year-to-year consistency of Roth conversion basis:
  *
  * Basis is cumulative: a row's conversion basis includes every conversion
  * up to its year. So when a later row says the latest conversion was in
@@ -10,6 +12,7 @@
  */
 import { HALF_CENT } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
+import { tracksCostBasis } from "@/lib/config/account-types";
 
 export type BasisHistoryRow = {
   performanceAccountId: number;
@@ -58,4 +61,25 @@ export function findBasisGaps(rows: readonly BasisHistoryRow[]): BasisGap[] {
     }
   }
   return gaps;
+}
+
+/**
+ * Brokerage accounts holding money with no cost basis. Cost basis defaults
+ * to 0, so 0 can't tell "not entered" from a real zero — and the
+ * projection taxes every dollar drawn from such an account as a capital
+ * gain. `category` is the account type (brokerage-style types track cost
+ * basis; others are ignored).
+ */
+export function findMissingCostBasis<
+  T extends { category: string; balance: number; costBasis: number },
+>(accounts: readonly T[]): T[] {
+  return accounts.filter(
+    (a) =>
+      tracksCostBasis(a.category) && a.balance >= 1 && a.costBasis < HALF_CENT,
+  );
+}
+
+/** The projection's note for one such account. */
+export function missingCostBasisWarning(name: string): string {
+  return `${name} has no cost basis entered, so the projection taxes everything drawn from it as capital gains. Enter what you paid in the Performance page's Basis columns (Brokerage page for Portfolio accounts).`;
 }

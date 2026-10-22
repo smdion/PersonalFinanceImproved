@@ -282,6 +282,7 @@ erDiagram
   property_taxes }o--|| mortgage_loans : references
   utility_reading }o--|| utility_service : references
   retirement_settings }o--|| people : references
+  retirement_settings }o--|| performance_accounts : references
   retirement_settings }o--|| retirement_profiles : references
   retirement_profile_people }o--|| retirement_profiles : references
   retirement_profile_people }o--|| people : references
@@ -364,7 +365,7 @@ erDiagram
 - **retirement_profiles**
 - **retirement_salary_overrides** → people
 - **retirement_scenarios**
-- **retirement_settings** → people, retirement_profiles
+- **retirement_settings** → people, performance_accounts, retirement_profiles
 - **return_rate_table**
 - **salary_profiles**
 - **savings_allocation_overrides** → savings_goals

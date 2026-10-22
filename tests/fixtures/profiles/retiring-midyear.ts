@@ -35,7 +35,7 @@
  *   growth on starting balance     ≈ 500 000 × 0.052222 = 26 111
  *   growth on mid-year contribs    ≈ small (contributions land mid-year)
  *
- *   Expected year-0 endBalance ≈ 500 000 + 7 500 + 26 111 ≈ 533 611
+ *   Expected year-0 allAccountsBalance ≈ 500 000 + 7 500 + 26 111 ≈ 533 611
  *
  * The exact number is locked by the snapshot test (B1c) after B1b is
  * implemented. Here we only assert PHASE and first-decumulation AGE.

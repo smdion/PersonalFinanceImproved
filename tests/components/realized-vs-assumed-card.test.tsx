@@ -1,4 +1,4 @@
-/** Retirement → realized vs assumed card. Invented data only. */
+/** Performance → realized vs assumed card. Invented data only. */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
@@ -24,18 +24,13 @@ vi.mock("@/lib/trpc", () => ({
 }));
 
 const { RealizedVsAssumedCard } =
-  await import("@/components/retirement/realized-vs-assumed-card");
+  await import("@/components/performance/realized-vs-assumed-card");
 
 describe("RealizedVsAssumedCard", () => {
   it("compares the Portfolio's compounded return with the assumed rate", () => {
-    render(<RealizedVsAssumedCard profileId={1} />);
+    render(<RealizedVsAssumedCard />);
     // √(1.1 × 1.2) − 1 ≈ 14.9% vs 8.0% → +6.9 points.
     expect(screen.getByText("14.9%")).toBeInTheDocument();
     expect(screen.getByText("+6.9 points")).toBeInTheDocument();
-  });
-
-  it("renders nothing while no retirement profile resolves", () => {
-    const { container } = render(<RealizedVsAssumedCard profileId={null} />);
-    expect(container).toBeEmptyDOMElement();
   });
 });

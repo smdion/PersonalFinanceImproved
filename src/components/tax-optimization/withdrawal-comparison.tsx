@@ -113,7 +113,7 @@ export function WithdrawalComparison({ selection }: { selection: Selection }) {
     }
     return (
       Math.abs(s.lifetimeTax - currentPlan.lifetimeTax) < 1 &&
-      s.depletedYear === currentPlan.depletedYear
+      s.failureYear === currentPlan.failureYear
     );
   };
 
@@ -132,7 +132,7 @@ export function WithdrawalComparison({ selection }: { selection: Selection }) {
               <th className="px-2 py-2">Ending pre-tax</th>
               <th className="px-2 py-2">Ending Roth</th>
               <th className="px-2 py-2">Ending taxable</th>
-              <th className="px-2 py-2">Runs out?</th>
+              <th className="px-2 py-2">Falls short?</th>
             </tr>
           </thead>
           <tbody>
@@ -182,8 +182,8 @@ export function WithdrawalComparison({ selection }: { selection: Selection }) {
                     : "—"}
                 </td>
                 <td className="px-2 py-1.5">
-                  {s.depletedYear ? (
-                    <span className="text-red-700">yes — {s.depletedYear}</span>
+                  {s.failureYear ? (
+                    <span className="text-red-700">yes — {s.failureYear}</span>
                   ) : (
                     <span className="text-faint">no</span>
                   )}

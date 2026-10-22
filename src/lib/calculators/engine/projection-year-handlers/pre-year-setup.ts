@@ -9,6 +9,8 @@ import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import { applySpendingStrategy } from "../spending-strategy";
 import { buildSpecToAccountMapping } from "../individual-account-tracking";
 import { resolveReturnRateForAge } from "../growth-application";
+import { scopedBalances } from "../balance-utils";
+import { computeNonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
 import type {
   PreYearSetup,
   ProjectionContext,
@@ -183,12 +185,20 @@ export function runPreYearSetup(
 
   // Hoisted above the expenses block (was originally computed just before
   // the strategy dispatch below) — the Rate-Seeded year-1 seed needs the
-  // starting balance available at seed time, not after.
-  const preTotalBalance =
-    state.balances.preTax +
-    state.balances.taxFree +
-    state.balances.hsa +
-    state.balances.afterTax;
+  // starting balance available at seed time, not after. Retirement money
+  // only: Portfolio-parented accounts never fund retirement spending, so a
+  // balance-sized strategy (Guyton-Klinger, Constant %, Endowment, …) or the
+  // rate seed must not size spending from them.
+  // Computed once per decumulation year and handed to the year handler
+  // (PreYearSetup.nonRetirement), so the spending size, the routing
+  // exclusion and the estimate below all read the same figure. Nothing in
+  // accumulation reads it.
+  const nonRetirement =
+    !isAccumulation && hasIndividualAccounts
+      ? computeNonRetirementExclusion(indAccts, state.indBal, indKey)
+      : undefined;
+  const { allAccountsBalance: totalBalance, retirementBalance } =
+    scopedBalances(state.balances, nonRetirement);
 
   // Reset expenses to decumulation budget on the FIRST decumulation year.
   // Do NOT key on `age === retirementAge`: that check fails in the mid-year
@@ -211,7 +221,7 @@ export function runPreYearSetup(
     // only changes where the number starts.
     state.projectedExpenses = input.rateSeededDecumulationYear1
       ? roundToCents(
-          input.decumulationDefaults.withdrawalRate * preTotalBalance,
+          input.decumulationDefaults.withdrawalRate * retirementBalance,
         )
       : input.decumulationAnnualExpenses! *
         Math.pow(1 + inflationRate, yearIndex);
@@ -267,7 +277,7 @@ export function runPreYearSetup(
       input.birthYear != null ? ageInYear(input.birthYear, year) : undefined;
     const result = applySpendingStrategy(activeStrategy, activeStrategyParams, {
       projectedExpenses: state.projectedExpenses,
-      portfolioBalance: preTotalBalance,
+      portfolioBalance: retirementBalance,
       effectiveInflation,
       cpiInflation: inflationRate,
       hasBudgetOverride: budgetOverrideMap.has(year),
@@ -287,15 +297,15 @@ export function runPreYearSetup(
     state.spendingState.decumulationYearCount++;
   }
 
-  const totalBalance = preTotalBalance;
-
   return {
     age,
     year,
     isAccumulation,
     returnRate,
     strategyAction,
+    retirementBalance,
     totalBalance,
+    nonRetirement,
     effectiveSalary,
     effectiveSalaryByPerson,
     hasBonusAdjustment,

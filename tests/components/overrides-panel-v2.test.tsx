@@ -360,8 +360,10 @@ describe("OverridesPanelV2", () => {
     render(<OverridesPanelV2 state={baseMockState()} />);
     openWizardToTypeStep(String(RET_YEAR - 5));
     fireEvent.click(screen.getByText(/Contribution Rate/));
-    // Fields step shows "New Contribution Rate (%)" — confirm we left Type step.
-    expect(screen.getByText("New Contribution Rate (%)")).toBeInTheDocument();
+    // Fields step shows "New Retirement Contribution Rate (%)" — confirm we left Type step.
+    expect(
+      screen.getByText("New Retirement Contribution Rate (%)"),
+    ).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("← Back"));
     // Back on the Type step: the option grid is visible again and the Fields

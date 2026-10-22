@@ -704,17 +704,25 @@ describe("distributeWithdrawals", () => {
 describe("distributeGoalWithdrawal", () => {
   const indKey = makeIndKey();
 
-  it("distributes proportionally across brokerage accounts", () => {
+  it("distributes proportionally across Portfolio brokerages only", () => {
     const accounts: IndividualAccountInput[] = [
       makeIndividualAccount({
         name: "Brok A",
         category: "brokerage",
         taxType: "afterTax",
+        parentCategory: "Portfolio",
       }),
       makeIndividualAccount({
         name: "Brok B",
         category: "brokerage",
         taxType: "afterTax",
+        parentCategory: "Portfolio",
+      }),
+      makeIndividualAccount({
+        name: "Retirement brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        parentCategory: "Retirement",
       }),
       makeIndividualAccount({
         name: "401k",
@@ -725,14 +733,16 @@ describe("distributeGoalWithdrawal", () => {
     const indBal = new Map<string, number>();
     indBal.set(indKey(accounts[0]!), 30000);
     indBal.set(indKey(accounts[1]!), 70000);
-    indBal.set(indKey(accounts[2]!), 200000);
+    indBal.set(indKey(accounts[2]!), 50000);
+    indBal.set(indKey(accounts[3]!), 200000);
 
     distributeGoalWithdrawal(10000, accounts, indKey, indBal);
-    // Should only touch brokerage accounts (30% and 70%)
+    // Only the Portfolio brokerages (30% and 70%)
     expect(indBal.get(indKey(accounts[0]!))!).toBeCloseTo(27000, -1);
     expect(indBal.get(indKey(accounts[1]!))!).toBeCloseTo(63000, -1);
-    // 401k unchanged
-    expect(indBal.get(indKey(accounts[2]!))!).toBe(200000);
+    // Retirement money untouched
+    expect(indBal.get(indKey(accounts[2]!))!).toBe(50000);
+    expect(indBal.get(indKey(accounts[3]!))!).toBe(200000);
   });
 });
 
@@ -809,6 +819,72 @@ describe("reconcileIndividualToAggregate (v0.7.8 follow-up, DESIGN-DECISION-v0.7
       ...overrides,
     };
   }
+
+  describe("retirement money absorbs the drift", () => {
+    const brokerages = () => [
+      makeIndividualAccount({
+        name: "Retirement brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        parentCategory: "Retirement",
+      }),
+      makeIndividualAccount({
+        name: "Long-term brokerage",
+        category: "brokerage",
+        taxType: "afterTax",
+        parentCategory: "Portfolio",
+      }),
+    ];
+    const run = (target: number) => {
+      const accounts = brokerages();
+      const indBal = new Map<string, number>([
+        [indKey(accounts[0]!), 30000],
+        [indKey(accounts[1]!), 10000],
+      ]);
+      reconcileIndividualToAggregate(
+        accounts,
+        indKey,
+        indBal,
+        baseBalances({
+          brokerage: { structure: "basis_tracking", balance: target, basis: 0 },
+        }),
+      );
+      return [
+        indBal.get(indKey(accounts[0]!))!,
+        indBal.get(indKey(accounts[1]!))!,
+      ];
+    };
+
+    it("a correction moves only the Retirement accounts", () => {
+      expect(run(45000)).toEqual([35000, 10000]);
+      expect(run(35000)).toEqual([25000, 10000]);
+    });
+
+    it("a shortfall bigger than retirement money empties it first, then takes the rest from Portfolio", () => {
+      // $35,000 short; retirement money holds $30,000.
+      expect(run(5000)).toEqual([0, 5000]);
+    });
+
+    it("a correction reaches a Retirement account holding $0 before any Portfolio one", () => {
+      const accounts = brokerages();
+      const indBal = new Map<string, number>([
+        [indKey(accounts[0]!), 0],
+        [indKey(accounts[1]!), 10000],
+      ]);
+      reconcileIndividualToAggregate(
+        accounts,
+        indKey,
+        indBal,
+        baseBalances({
+          brokerage: { structure: "basis_tracking", balance: 12000, basis: 0 },
+        }),
+      );
+      expect([
+        indBal.get(indKey(accounts[0]!)),
+        indBal.get(indKey(accounts[1]!)),
+      ]).toEqual([2000, 10000]);
+    });
+  });
 
   it("performs zero writes when every group already matches (byte-identity guard)", () => {
     const accounts = [

@@ -127,32 +127,109 @@ describe("computeTaxBucketBreakdown", () => {
     expect(result.ownershipByPerson.Sam?.brokerage).toBeCloseTo(0.5, 5);
   });
 
-  it("fills afterTaxBasis from active performance accounts that track cost basis", () => {
-    const accounts: TaxBucketSnapshotAccount[] = [
+  describe("cost basis — each account's own", () => {
+    const brokerage = (
+      id: number,
+      amount: number,
+      parentCategory: string,
+      extra: Partial<TaxBucketSnapshotAccount> = {},
+    ) =>
       account({
         accountType: "brokerage",
         taxType: "afterTax",
-        performanceAccountId: 7,
-        amount: 12009.11,
-      }),
-    ];
-    const perfAccounts = [
-      { isActive: true, accountType: "brokerage", costBasis: "5177.68" },
-      // Inactive accounts don't count toward basis.
-      { isActive: false, accountType: "brokerage", costBasis: "999" },
-      // Non-basis-tracking category doesn't count either.
-      { isActive: true, accountType: "401k", costBasis: "111" },
-    ];
-    const result = computeTaxBucketBreakdown(
-      { accounts },
-      people,
-      perfAccounts,
-    );
+        performanceAccountId: id,
+        amount,
+        parentCategory,
+        ownerPersonId: null,
+        accountLabel: `Brokerage ${id}`,
+        ...extra,
+      });
+    const perf = (id: number, costBasis: string, isActive = true) => ({
+      id,
+      isActive,
+      accountType: "brokerage",
+      costBasis,
+    });
 
-    expect(result.portfolioByTaxType.afterTaxBasis).toBeCloseTo(5177.68, 2);
-    expect(result.portfolioByAccount.brokerage.structure).toBe(
-      "basis_tracking",
-    );
+    it("totals and by-category basis are the accounts' own, not shared out by balance", () => {
+      // A Retirement brokerage (28% basis) and a Portfolio one (55%).
+      const result = computeTaxBucketBreakdown(
+        {
+          accounts: [
+            brokerage(7, 18174.42, "Retirement"),
+            brokerage(6, 8931.21, "Portfolio"),
+          ],
+        },
+        people,
+        [
+          perf(7, "5177.68"),
+          perf(6, "4942.56"),
+          // Inactive and non-basis-tracking accounts don't count.
+          perf(8, "999", false),
+          { id: 9, isActive: true, accountType: "401k", costBasis: "111" },
+        ],
+      );
+      expect(result.portfolioByTaxType.afterTaxBasis).toBeCloseTo(10120.24, 2);
+      expect(
+        result.portfolioByTaxTypeByParentCat.Retirement!.afterTaxBasis,
+      ).toBeCloseTo(5177.68, 2);
+      expect(
+        result.portfolioByTaxTypeByParentCat.Portfolio!.afterTaxBasis,
+      ).toBeCloseTo(4942.56, 2);
+      expect(
+        result.accountBreakdownByCategory.brokerage!.map((e) => e.costBasis),
+      ).toEqual([5177.68, 4942.56]);
+      const brok = result.portfolioByAccount.brokerage;
+      expect(brok.structure).toBe("basis_tracking");
+      expect(brok.structure === "basis_tracking" && brok.basis).toBeCloseTo(
+        10120.24,
+        2,
+      );
+    });
+
+    it("a $0 basis is a known basis (it doesn't send the household to the estimate)", () => {
+      const result = computeTaxBucketBreakdown(
+        {
+          accounts: [
+            brokerage(7, 18174.42, "Retirement"),
+            brokerage(8, 0, "Retirement", { accountLabel: "ESPP" }),
+          ],
+        },
+        people,
+        [perf(7, "5177.68"), perf(8, "0")],
+      );
+      expect(
+        result.accountBreakdownByCategory.brokerage!.map((e) => e.costBasis),
+      ).toEqual([5177.68, 0]);
+    });
+
+    it("an account's basis is split over its sub-type rows by amount", () => {
+      const result = computeTaxBucketBreakdown(
+        {
+          accounts: [
+            brokerage(7, 3000, "Retirement", { accountLabel: "A" }),
+            brokerage(7, 1000, "Retirement", {
+              subType: "ESPP",
+              accountLabel: "B",
+            }),
+          ],
+        },
+        people,
+        [perf(7, "2000")],
+      );
+      expect(
+        result.accountBreakdownByCategory.brokerage!.map((e) => e.costBasis),
+      ).toEqual([1500, 500]);
+    });
+
+    it("an account with no row in the snapshot contributes no basis", () => {
+      const result = computeTaxBucketBreakdown(
+        { accounts: [brokerage(7, 1000, "Retirement")] },
+        people,
+        [perf(7, "400"), perf(12, "5000")],
+      );
+      expect(result.portfolioByTaxType.afterTaxBasis).toBeCloseTo(400, 2);
+    });
   });
 
   it("excludes accounts outside the engine-relevant parentCategory set", () => {

@@ -513,7 +513,8 @@ function getDialect(): "postgresql" | "sqlite" {
  * If you need to seed non-year-keyed reference data, do it through a
  * separate mechanism — not this file.
  */
-const REFERENCE_SEED_TABLES = new Set([
+/** Kept equal to the seed file's tables (a test checks; see src/lib/db/reference-data.ts). */
+export const REFERENCE_SEED_TABLES = new Set([
   "contribution_limits",
   "tax_brackets",
   "ltcg_brackets",
@@ -524,9 +525,14 @@ const REFERENCE_SEED_TABLES = new Set([
 
 function parseSeedTableNames(seedSql: string): string[] {
   const names = new Set<string>();
+  // Comment lines can mention a table without writing to it.
+  const code = seedSql
+    .split("\n")
+    .filter((line) => !line.trimStart().startsWith("--"))
+    .join("\n");
   const re = /INSERT\s+INTO\s+"?([A-Za-z_][A-Za-z0-9_]*)"?/gi;
   let m: RegExpExecArray | null;
-  while ((m = re.exec(seedSql)) !== null) names.add(m[1]!);
+  while ((m = re.exec(code)) !== null) names.add(m[1]!);
   const unexpected = [...names].filter((n) => !REFERENCE_SEED_TABLES.has(n));
   if (unexpected.length > 0) {
     throw new Error(
@@ -702,6 +708,9 @@ const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.8.10: holding history per part (holding_periods.sub_key).
   "63fc76f959fa22a150d4f8227fe4cdd898f2cc8eee5ecf11a049659dd67ad92d":
     "0010_v0810_holding_period_parts",
+  // v0.8.11: where reinvested RMD money goes (per Retirement Profile).
+  "0366e7ae1b9763c3f54b88688d82045f70e204c8817fbad10ce68c9d9e4e975c":
+    "0011_v0811_rmd_excess_target",
 };
 
 /**
@@ -1523,6 +1532,41 @@ async function runPostgres() {
       log("info", "reference_data_reconciled", {
         tables: seedTables.join(", "),
       });
+      // Live demo schemas copied these tables when they were built and are
+      // only rebuilt when the migration count changes — so a new tax year
+      // or a seed correction would never reach them. Apply the seed in each
+      // (inserts + its guarded corrections), then add any other rows public
+      // has. Stale schemas were dropped above, so the tables still match.
+      const { rows: demos } = await seedClient.query<{ nspname: string }>(
+        `SELECT nspname FROM pg_namespace WHERE nspname LIKE 'demo\\_%'`,
+      );
+      for (const { nspname } of demos) {
+        const schemaIdent = `"${nspname.replace(/"/g, '""')}"`;
+        try {
+          await seedClient.query(`SET search_path TO ${schemaIdent}`);
+          await seedClient.query(seedSql);
+        } finally {
+          await seedClient.query("SET search_path TO public");
+        }
+        for (const table of seedTables) {
+          const { rows: cols } = await seedClient.query<{
+            column_name: string;
+          }>(
+            `SELECT column_name FROM information_schema.columns
+              WHERE table_schema = 'public' AND table_name = $1
+              ORDER BY ordinal_position`,
+            [table],
+          );
+          const list = cols.map((c) => `"${c.column_name}"`).join(", ");
+          await seedClient.query(
+            `INSERT INTO ${schemaIdent}."${table}" (${list}) SELECT ${list} FROM public."${table}" ON CONFLICT DO NOTHING`,
+          );
+        }
+      }
+      if (demos.length > 0)
+        log("info", "demo_reference_data_reconciled", {
+          schemas: demos.map((d) => d.nspname).join(", "),
+        });
     } finally {
       seedClient.release();
     }

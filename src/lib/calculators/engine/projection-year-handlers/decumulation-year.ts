@@ -2,6 +2,13 @@
  * runDecumulationYear — single-year decumulation-phase logic. Mutates state in
  * place and pushes a year projection to `state.projectionByYear`.
  */
+import {
+  followDraws,
+  followInflows,
+  followReconciliation,
+  retirementBrokerageBasisRatio,
+  syncAggregateBasis,
+} from "../brokerage-basis";
 import type {
   EngineDecumulationYear,
   IndividualAccountYearBalance,
@@ -11,7 +18,7 @@ import { ageInYear } from "../../../utils/date";
 import {
   getAllCategories,
   isOverflowTarget,
-  isPortfolioParent,
+  isRetirementMoney,
   isPreTaxType,
   isIraCategory,
   addTraditional,
@@ -24,7 +31,7 @@ import {
   QCD_MIN_ELIGIBILITY_AGE,
   ADDITIONAL_STANDARD_DEDUCTION_AGE,
 } from "../../../constants";
-import { cloneAccountBalances } from "../balance-utils";
+import { cloneAccountBalances, scopedBalances } from "../balance-utils";
 import {
   getLtcgRate,
   computeLtcgTax,
@@ -62,10 +69,11 @@ import {
   clampIndividualBasis,
   reconcileIndividualToAggregate,
   specKeyOf,
+  portfolioFirst,
 } from "../individual-account-tracking";
 import {
-  computeWithdrawalEligibility,
   computeNonRetirementExclusion,
+  computeWithdrawalEligibility,
 } from "@/lib/pure/withdrawal-eligibility";
 import type { BasisDraw } from "@/lib/pure/roth-basis-tracking";
 import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
@@ -102,7 +110,14 @@ export function runDecumulationYear(
   yearIndex: number,
   setup: PreYearSetup,
 ): void {
-  const { age, year, returnRate, strategyAction, totalBalance } = setup;
+  const {
+    age,
+    year,
+    returnRate,
+    strategyAction,
+    retirementBalance,
+    totalBalance,
+  } = setup;
   const {
     input,
     budgetOverrideMap,
@@ -121,6 +136,7 @@ export function runDecumulationYear(
     priorYearEndTradByPerson,
     indBal,
     indBasis,
+    brokBasis,
     spendingState,
     magiHistory,
     depletionTracked,
@@ -172,9 +188,7 @@ export function runDecumulationYear(
   // every consumer that decides how much money is "available"
   // (routeForMode's two call sites, performRothConversion, enforceRmd, and
   // QCD's capacity/debit below) so they can't disagree with each other.
-  const nonRetirement = hasIndividualAccounts
-    ? computeNonRetirementExclusion(indAccts, indBal, indKey)
-    : undefined;
+  const { nonRetirement } = setup;
 
   // Reconciliation check: acctBal Roth total should match balances.taxFree
   const acctBalRothTotal = getAllCategories().reduce((s, cat) => {
@@ -296,7 +310,7 @@ export function runDecumulationYear(
         isPreTaxType(ia.taxType) &&
         // A Portfolio-parented IRA (nothing prevents one existing)
         // isn't retirement money -- must not inflate QCD-eligible capacity.
-        !isPortfolioParent(ia.parentCategory)
+        isRetirementMoney(ia.parentCategory)
       ) {
         const bal = indBal.get(indKey(ia)) ?? 0;
         iraTradByPerson.set(
@@ -337,7 +351,7 @@ export function runDecumulationYear(
             isIraCategory(ia.category) &&
             ia.ownerPersonId === personId &&
             isPreTaxType(ia.taxType) &&
-            !isPortfolioParent(ia.parentCategory),
+            isRetirementMoney(ia.parentCategory),
         );
         const personIraTotal = personIraAccts.reduce(
           (s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0),
@@ -366,11 +380,26 @@ export function runDecumulationYear(
     }
   }
 
+  // The brokerage basis ratio of this year's retirement withdrawals: the
+  // Retirement brokerages' own (start of year). One ratio for the
+  // estimate, the ranking and the real tax.
+  const retirementBasisRatio = hasIndividualAccounts
+    ? retirementBrokerageBasisRatio(indAccts, indKey, indBal, brokBasis)
+    : undefined;
+
   // Tax gross-up: estimate tax from expected withdrawal routing, then
   // increase withdrawal so after-tax proceeds cover the expense need.
   const taxRates = decumulationDefaults.distributionTaxRates;
+  // Retirement money only (PreYearSetup.retirementBalance): Portfolio-
+  // parented Traditional money is never withdrawn for spending, so it can't
+  // be part of the estimate.
+  const retirementPreTax =
+    balances.preTax -
+    (nonRetirement ? sumBy(Object.values(nonRetirement.trad), (v) => v) : 0);
   const estTraditionalPortion =
-    totalBalance > 0 ? balances.preTax / totalBalance : 0;
+    retirementBalance > 0
+      ? Math.max(0, retirementPreTax) / retirementBalance
+      : 0;
 
   // Grow the ordinary tax brackets + standard deduction forward from their
   // own DB vintage:
@@ -538,6 +567,7 @@ export function runDecumulationYear(
     balances,
     acctBal,
     totalBalance,
+    brokerageBasisRatio: retirementBasisRatio,
     eligibility,
     nonRetirement,
     indAccts: hasIndividualAccounts ? indAccts : undefined,
@@ -584,6 +614,7 @@ export function runDecumulationYear(
   // can no longer disagree on this number.
   const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
     balances,
+    brokerageBasisRatio: retirementBasisRatio,
     indBasis: hasIndividualAccounts ? indBasis : undefined,
     indAccts: hasIndividualAccounts ? indAccts : undefined,
     indKey: hasIndividualAccounts ? indKey : undefined,
@@ -725,7 +756,9 @@ export function runDecumulationYear(
   // pro-rata ratio.
   const preWithdrawalIndBal = new Map(indBal);
   const distributeResult = hasIndividualAccounts
-    ? distributeWithdrawals(slots, indAccts, indKey, indBal, eligibility)
+    ? followDraws(indAccts, indKey, indBal, brokBasis, () =>
+        distributeWithdrawals(slots, indAccts, indKey, indBal, eligibility),
+      )
     : { decIndWithdrawal: new Map<string, number>(), warnings: [] };
   const decIndWithdrawal = distributeResult.decIndWithdrawal;
   routeWarnings.push(...distributeResult.warnings);
@@ -791,6 +824,7 @@ export function runDecumulationYear(
     totalRothWithdrawal,
     rothTaxableGrowth: rothTaxSplit.taxableGrowth,
     penaltyCost: earlyWithdrawalPenalty.penaltyCost,
+    brokerageBasisRatio,
   });
   let brokerageTaxCost = taxFromSlots.brokerageTaxCost;
   const brokerageBasisPortion = taxFromSlots.brokerageBasisPortion;
@@ -846,7 +880,10 @@ export function runDecumulationYear(
   clampBalances(balances, acctBal);
 
   // Apply decumulation lump sums (one-time injections/windfalls, NOT subject to limits)
-  applyLumpSums(config.lumpSums, ctx, state);
+  // Lump sums are cash in: new basis in the brokerage account they land in.
+  followInflows(indAccts, indKey, indBal, brokBasis, () =>
+    applyLumpSums(config.lumpSums, ctx, state),
+  );
 
   // Handle RMD-forced excess (mode-aware) -- extracted to balance-deduction.ts
   // Capture the excess amount (previously discarded) so it can
@@ -854,22 +891,32 @@ export function runDecumulationYear(
   // by the RMD floor regardless of what the strategy needed, with no prior
   // UI trace. What happens to it depends on the household's
   // rmdExcessHandling setting (reinvest into brokerage, or spend it).
-  const rmdExcessAmount = reinvestRmdExcess(
-    config.rmdExcessHandling,
-    rmdOverrodeRouting,
-    totalWithdrawal,
-    afterTaxNeed,
-    taxCost,
-    balances,
-    acctBal,
-    hasIndividualAccounts ? indAccts : undefined,
-    hasIndividualAccounts ? indBal : undefined,
-    hasIndividualAccounts ? indKey : undefined,
+  // Reinvested RMD money is cash in: new basis where it lands.
+  const rmdExcessAmount = followInflows(
+    indAccts,
+    indKey,
+    indBal,
+    brokBasis,
+    () =>
+      reinvestRmdExcess(
+        config.rmdExcessHandling,
+        rmdOverrodeRouting,
+        totalWithdrawal,
+        afterTaxNeed,
+        taxCost,
+        balances,
+        acctBal,
+        hasIndividualAccounts ? indAccts : undefined,
+        hasIndividualAccounts ? indBal : undefined,
+        hasIndividualAccounts ? indKey : undefined,
+      ),
   );
 
   // Clamp individual account balances -- extracted to individual-account-tracking.ts
   if (hasIndividualAccounts) {
-    clampIndividualBalances(indAccts, indKey, indBal);
+    followDraws(indAccts, indKey, indBal, brokBasis, () =>
+      clampIndividualBalances(indAccts, indKey, indBal),
+    );
   }
 
   // Track per-account depletions -- extracted to balance-deduction.ts
@@ -920,69 +967,77 @@ export function runDecumulationYear(
 
   // --- Roth Conversions (Phase 4) ---
   // Extracted to post-withdrawal-optimizer.ts -- Roth conversion + IRMAA + ACA chain.
-  const rothResult = performRothConversion({
-    enableRothConversions: taxRates.enableRothConversions,
-    taxBrackets: grownTaxBrackets,
-    taxMultiplier: taxRates.taxMultiplier,
-    standardDeduction: grownStandardDeduction,
-    rothConversionTarget: config.rothConversionTarget,
-    // This param is performRothConversion's fallback, consulted ONLY when
-    // config.rothConversionTarget (above) is undefined. Priority (most to
-    // least specific):
-    //   1. taxRates.rothConversionTarget -- an explicit plan-level
-    //      conversion target the household set deliberately, separate
-    //      from (and possibly more conservative than) their withdrawal
-    //      bracket target.
-    //   2. config.rothBracketTarget -- a per-year WITHDRAWAL-routing
-    //      override. An earlier version put
-    //      this FIRST, ahead of taxRates.rothConversionTarget -- a
-    //      household with an explicit plan-level rothConversionTarget
-    //      (say 12%, deliberately below their rothBracketTarget) whose
-    //      per-year override bumps rothBracketTarget to 32% for one year
-    //      would have had that override silently retarget CONVERSIONS to
-    //      32% too, even though nothing about a withdrawal-routing
-    //      override should touch the conversion target. Never shipped
-    //      wrong numbers (buildCandidateInput always pairs an explicit
-    //      rothConversionTarget when conversions are on, bypassing this
-    //      fallback), but was a real, reachable bug for any household
-    //      that later creates that override combination by hand.
-    //   3. taxRates.rothBracketTarget -- final fallback when nothing else
-    //      is set, same as before.
-    // See fixtures 31/41/54/55/61 (engine-snapshot.test.ts) and the Bug-B
-    // MAGI test (roth-growth-magi-tax-fix.test.ts) for why
-    // taxRates.rothConversionTarget can't simply be dropped from this
-    // chain -- and the priority-ordering regression test alongside them
-    // for why it can't come second either.
-    //
-    // Reuses resolvedConversionTarget (computed once, above, before
-    // routeForMode) instead of re-deriving the identical chain a second
-    // time here -- the routing reservation and the conversion that
-    // actually runs must agree on this value, or the two silently drift
-    // (see resolvedConversionTarget's own
-    // comment).
-    rothBracketTarget: resolvedConversionTarget,
-    totalTraditionalWithdrawal,
-    taxableSS,
-    rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
-    brokerageGainsPortion,
-    irmaaAwareRothConversions:
-      input.irmaaAwareRothConversions ??
-      (enableIrmaaAwareness ? true : undefined),
-    irmaaBrackets: grownIrmaaBracketsForCap,
-    filingStatus,
-    balances,
-    acctBal,
-    // Without this, performRothConversion's own
-    // fixes above are fully implemented and fully unit-tested but never
-    // execute in production, since "params omitted" is deliberately the
-    // unchanged-behavior fallback.
-    nonRetirement,
-    indAccts: hasIndividualAccounts ? indAccts : undefined,
-    indBal: hasIndividualAccounts ? indBal : undefined,
-    indKey: hasIndividualAccounts ? indKey : undefined,
-    rmdSmoothingTarget,
-    rmdSmoothingMaxBracketTarget: config.rmdSmoothingMaxBracketTarget,
-  });
+  // The conversion's tax is paid from retirement brokerage money (money
+  // out: basis leaves at the account's own ratio).
+  const rothResult = followDraws(indAccts, indKey, indBal, brokBasis, () =>
+    performRothConversion({
+      // The conversion's tax comes out of retirement brokerage money.
+      brokerageBasisRatio: hasIndividualAccounts
+        ? retirementBrokerageBasisRatio(indAccts, indKey, indBal, brokBasis)
+        : undefined,
+      enableRothConversions: taxRates.enableRothConversions,
+      taxBrackets: grownTaxBrackets,
+      taxMultiplier: taxRates.taxMultiplier,
+      standardDeduction: grownStandardDeduction,
+      rothConversionTarget: config.rothConversionTarget,
+      // This param is performRothConversion's fallback, consulted ONLY when
+      // config.rothConversionTarget (above) is undefined. Priority (most to
+      // least specific):
+      //   1. taxRates.rothConversionTarget -- an explicit plan-level
+      //      conversion target the household set deliberately, separate
+      //      from (and possibly more conservative than) their withdrawal
+      //      bracket target.
+      //   2. config.rothBracketTarget -- a per-year WITHDRAWAL-routing
+      //      override. An earlier version put
+      //      this FIRST, ahead of taxRates.rothConversionTarget -- a
+      //      household with an explicit plan-level rothConversionTarget
+      //      (say 12%, deliberately below their rothBracketTarget) whose
+      //      per-year override bumps rothBracketTarget to 32% for one year
+      //      would have had that override silently retarget CONVERSIONS to
+      //      32% too, even though nothing about a withdrawal-routing
+      //      override should touch the conversion target. Never shipped
+      //      wrong numbers (buildCandidateInput always pairs an explicit
+      //      rothConversionTarget when conversions are on, bypassing this
+      //      fallback), but was a real, reachable bug for any household
+      //      that later creates that override combination by hand.
+      //   3. taxRates.rothBracketTarget -- final fallback when nothing else
+      //      is set, same as before.
+      // See fixtures 31/41/54/55/61 (engine-snapshot.test.ts) and the Bug-B
+      // MAGI test (roth-growth-magi-tax-fix.test.ts) for why
+      // taxRates.rothConversionTarget can't simply be dropped from this
+      // chain -- and the priority-ordering regression test alongside them
+      // for why it can't come second either.
+      //
+      // Reuses resolvedConversionTarget (computed once, above, before
+      // routeForMode) instead of re-deriving the identical chain a second
+      // time here -- the routing reservation and the conversion that
+      // actually runs must agree on this value, or the two silently drift
+      // (see resolvedConversionTarget's own
+      // comment).
+      rothBracketTarget: resolvedConversionTarget,
+      totalTraditionalWithdrawal,
+      taxableSS,
+      rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
+      brokerageGainsPortion,
+      irmaaAwareRothConversions:
+        input.irmaaAwareRothConversions ??
+        (enableIrmaaAwareness ? true : undefined),
+      irmaaBrackets: grownIrmaaBracketsForCap,
+      filingStatus,
+      balances,
+      acctBal,
+      // Without this, performRothConversion's own
+      // fixes above are fully implemented and fully unit-tested but never
+      // execute in production, since "params omitted" is deliberately the
+      // unchanged-behavior fallback.
+      nonRetirement,
+      indAccts: hasIndividualAccounts ? indAccts : undefined,
+      indBal: hasIndividualAccounts ? indBal : undefined,
+      indKey: hasIndividualAccounts ? indKey : undefined,
+      rmdSmoothingTarget,
+      rmdSmoothingMaxBracketTarget: config.rmdSmoothingMaxBracketTarget,
+    }),
+  );
   const {
     rothConversionAmount,
     rothConversionTaxCost,
@@ -1207,7 +1262,7 @@ export function runDecumulationYear(
   if (state.contributionSpecs) {
     const portfolioSpecs = state.contributionSpecs.filter(
       (s) =>
-        isPortfolioParent(s.parentCategory) &&
+        !isRetirementMoney(s.parentCategory) &&
         s.retirementBehavior === "continues_after_retirement" &&
         s.method !== "percent_of_salary",
     );
@@ -1259,7 +1314,14 @@ export function runDecumulationYear(
     // weighted by balance, so the per-account breakdown sums to the total.
     // Mirrors accumulation-year.ts's ramp attribution — report-only here,
     // matching the rest of this block (must NOT affect balances).
-    const rampAccts = indAccts.filter((ia) => isOverflowTarget(ia.category));
+    // Same parent rule as the accumulation ramp: Portfolio brokerages
+    // first; the projection-only one only with no real brokerage.
+    const brokerages = indAccts.filter((ia) => isOverflowTarget(ia.category));
+    const realBrokerages = brokerages.filter((ia) => !ia.projectedOnly);
+    const rampAccts =
+      realBrokerages.length > 0
+        ? portfolioFirst(realBrokerages, (ia) => ia.parentCategory)
+        : brokerages;
     const rampTotal = rampAccts.reduce(
       (s, ia) => s + (indBal.get(indKey(ia)) ?? 0),
       0,
@@ -1318,13 +1380,16 @@ export function runDecumulationYear(
             withdrawal: decIndWithdrawal,
             basis: indBasis,
             draws: basisDraws,
+            brokerageBasis: brokBasis,
           },
           eligibility,
         )
       : [];
 
   // Zero out rounding dust -- extracted to balance-deduction.ts
-  cleanupDust(balances, acctBal, indAccts, indKey, indBal);
+  followDraws(indAccts, indKey, indBal, brokBasis, () =>
+    cleanupDust(balances, acctBal, indAccts, indKey, indBal),
+  );
 
   // Reconcile indBal to acctBal once per year -- the two tracks are
   // "known to drift" (see withdrawal-eligibility.ts's module docblock);
@@ -1335,7 +1400,24 @@ export function runDecumulationYear(
   // tracked basis clamps to the reconciled (not pre-reconciliation) balance.
   if (hasIndividualAccounts) {
     routeWarnings.push(
-      ...reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
+      ...followReconciliation(
+        indAccts,
+        indKey,
+        indBal,
+        brokBasis,
+        balances.afterTaxBasis,
+        () => reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
+      ),
+    );
+    // The aggregate basis is the accounts' sum.
+    syncAggregateBasis(
+      indAccts,
+      indKey,
+      indBal,
+      brokBasis,
+      balances,
+      acctBal,
+      routeWarnings,
     );
   }
 
@@ -1346,14 +1428,18 @@ export function runDecumulationYear(
   if (hasIndividualAccounts) {
     clampIndividualBasis(indAccts, indKey, indBasis, indBal);
   }
-  const endBalance = roundToCents(
-    balances.preTax + balances.taxFree + balances.hsa + balances.afterTax,
+  const yearEnd = scopedBalances(
+    balances,
+    hasIndividualAccounts
+      ? computeNonRetirementExclusion(indAccts, indBal, indKey)
+      : undefined,
   );
 
-  // Track depletion
-  if (endBalance < 1 && state.portfolioDepletionYear === null) {
-    state.portfolioDepletionYear = year;
-    state.portfolioDepletionAge = age;
+  // Track depletion: retirement money running out (Portfolio money is
+  // never spent in retirement, so it can't keep a plan alive).
+  if (yearEnd.retirementBalance < 1 && state.retirementDepletionYear === null) {
+    state.retirementDepletionYear = year;
+    state.retirementDepletionAge = age;
   }
 
   const yearProjection: EngineDecumulationYear = {
@@ -1385,11 +1471,13 @@ export function runDecumulationYear(
     brokerageZeroLtcgCapacity: routeResult.brokerageZeroLtcgCapacity,
     unmetNeed: finalUnmetNeed,
     unmetNeedMaterial,
+    shortfallMaterialityFloor,
     penaltyAvoidedShortfall,
     nonRetirementShortfall,
     penaltyCost,
     preWithdrawalAcctBal,
-    endBalance,
+    retirementBalance: yearEnd.retirementBalance,
+    allAccountsBalance: yearEnd.allAccountsBalance,
     balanceByTaxType: { ...balances },
     balanceByAccount: cloneAccountBalances(acctBal),
     individualAccountBalances: decIndYearBalances,

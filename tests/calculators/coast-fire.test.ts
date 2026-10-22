@@ -4,102 +4,115 @@
  * Verifies the four status branches (already_coast, found, unreachable,
  * already-retired) and the binary-search earliest-age guarantee.
  */
+import { withConsistentStart } from "./fixtures/engine-fixtures";
 import { describe, it, expect } from "vitest";
-import { findCoastFireAge } from "@/lib/calculators/coast-fire";
+import {
+  buildCoastFireProfileSwitches,
+  findCoastFireAge,
+} from "@/lib/calculators/coast-fire";
+import { calculateProjection } from "@/lib/calculators/engine";
 import type { ProjectionInput } from "@/lib/calculators/types";
 
 const AS_OF = new Date("2025-03-07");
 
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
-  return {
-    accumulationDefaults: {
-      contributionRate: 0.25,
-      routingMode: "waterfall",
-      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
-      accountSplits: {
-        "401k": 0.4,
-        "403b": 0,
-        hsa: 0.1,
-        ira: 0.15,
-        brokerage: 0.35,
+  return withConsistentStart(
+    {
+      accumulationDefaults: {
+        contributionRate: 0.25,
+        routingMode: "waterfall",
+        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+        accountSplits: {
+          "401k": 0.4,
+          "403b": 0,
+          hsa: 0.1,
+          ira: 0.15,
+          brokerage: 0.35,
+        },
+        taxSplits: { "401k": 0.5, ira: 1.0 },
       },
-      taxSplits: { "401k": 0.5, ira: 1.0 },
-    },
-    decumulationDefaults: {
-      withdrawalRate: 0.04,
-      withdrawalRoutingMode: "waterfall",
-      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
-      withdrawalSplits: {
-        "401k": 0.35,
-        "403b": 0,
-        ira: 0.25,
-        brokerage: 0.3,
-        hsa: 0.1,
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        distributionTaxRates: {
+          traditionalFallbackRate: 0.22,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+        },
       },
-      withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
-      distributionTaxRates: {
-        traditionalFallbackRate: 0.22,
-        roth: 0,
+      accumulationOverrides: [],
+      decumulationOverrides: [],
+      currentAge: 35,
+      retirementAge: 65,
+      projectionEndAge: 90,
+      currentSalary: 150000,
+      salaryGrowthRate: 0.03,
+      salaryCap: null,
+      salaryOverrides: [],
+      budgetOverrides: [],
+      baseLimits: {
+        "401k": 23500,
+        "403b": 23500,
+        hsa: 4300,
+        ira: 7000,
+        brokerage: 0,
+      },
+      limitGrowthRate: 0.02,
+      catchupLimits: {
+        "401k": 7500,
+        ira: 1000,
+        hsa: 1000,
+        "401k_super": 11250,
+      },
+      employerMatchRateByCategory: {
+        "401k": 0.03,
+        "403b": 0,
         hsa: 0,
-        brokerage: 0.15,
+        ira: 0,
+        brokerage: 0,
       },
-    },
-    accumulationOverrides: [],
-    decumulationOverrides: [],
-    currentAge: 35,
-    retirementAge: 65,
-    projectionEndAge: 90,
-    currentSalary: 150000,
-    salaryGrowthRate: 0.03,
-    salaryCap: null,
-    salaryOverrides: [],
-    budgetOverrides: [],
-    baseLimits: {
-      "401k": 23500,
-      "403b": 23500,
-      hsa: 4300,
-      ira: 7000,
-      brokerage: 0,
-    },
-    limitGrowthRate: 0.02,
-    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
-    employerMatchRateByCategory: {
-      "401k": 0.03,
-      "403b": 0,
-      hsa: 0,
-      ira: 0,
-      brokerage: 0,
-    },
-    startingBalances: {
-      preTax: 100000,
-      taxFree: 50000,
-      afterTax: 30000,
-      afterTaxBasis: 20000,
-      hsa: 15000,
-    },
-    startingAccountBalances: {
-      "401k": {
-        structure: "roth_traditional",
-        traditional: 80000,
-        roth: 20000,
+      startingBalances: {
+        preTax: 110000,
+        taxFree: 40000,
+        afterTax: 30000,
+        afterTaxBasis: 20000,
+        hsa: 15000,
       },
-      "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
-      hsa: { structure: "single_bucket", balance: 15000 },
-      ira: { structure: "roth_traditional", traditional: 30000, roth: 20000 },
-      brokerage: {
-        structure: "basis_tracking",
-        balance: 30000,
-        basis: 20000,
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 80000,
+          roth: 20000,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 15000 },
+        ira: { structure: "roth_traditional", traditional: 30000, roth: 20000 },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 30000,
+          basis: 20000,
+        },
       },
+      annualExpenses: 72000,
+      inflationRate: 0.025,
+      returnRates: [{ label: "7%", rate: 0.07 }],
+      socialSecurityAnnual: 36000,
+      ssStartAge: 67,
+      asOfDate: AS_OF,
+      ...overrides,
     },
-    annualExpenses: 72000,
-    inflationRate: 0.025,
-    returnRates: [{ label: "7%", rate: 0.07 }],
-    socialSecurityAnnual: 36000,
-    ssStartAge: 67,
-    asOfDate: AS_OF,
-    ...overrides,
-  };
+    overrides,
+  );
 }
 
 describe("findCoastFireAge", () => {
@@ -107,8 +120,8 @@ describe("findCoastFireAge", () => {
     // Huge starting balance, modest expenses — no contributions needed to pass.
     const input = makeInput({
       startingBalances: {
-        preTax: 3_000_000,
-        taxFree: 1_000_000,
+        preTax: 3100000,
+        taxFree: 900000,
         afterTax: 500_000,
         afterTaxBasis: 400_000,
         hsa: 50_000,
@@ -185,8 +198,8 @@ describe("findCoastFireAge", () => {
       currentSalary: 150_000,
       annualExpenses: 72_000,
       startingBalances: {
-        preTax: 250_000,
-        taxFree: 100_000,
+        preTax: 270000,
+        taxFree: 80000,
         afterTax: 50_000,
         afterTaxBasis: 40_000,
         hsa: 20_000,
@@ -237,8 +250,8 @@ describe("findCoastFireAge", () => {
       retirementAge: 65,
       currentSalary: 0,
       startingBalances: {
-        preTax: 800_000,
-        taxFree: 200_000,
+        preTax: 780000,
+        taxFree: 220000,
         afterTax: 100_000,
         afterTaxBasis: 80_000,
         hsa: 30_000,
@@ -321,8 +334,8 @@ describe("findCoastFireAge", () => {
       currentSalary: 200_000,
       annualExpenses: 80_000,
       startingBalances: {
-        preTax: 400_000,
-        taxFree: 150_000,
+        preTax: 425000,
+        taxFree: 125000,
         afterTax: 100_000,
         afterTaxBasis: 80_000,
         hsa: 25_000,
@@ -383,7 +396,7 @@ describe("findCoastFireAge", () => {
 describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", () => {
   // Same class of bug monte-carlo.ts's C3 fix addressed, but for the
   // deterministic baseline's passes() function: neither
-  // portfolioDepletionAge nor the aggregate sustainableWithdrawal rate
+  // retirementDepletionAge nor the aggregate sustainableWithdrawal rate
   // notices a specific year going unfunded because penalty-exposed money
   // was excluded. A household coasting too early (age 37, well before
   // their real coast age) doesn't accumulate enough penalty-free
@@ -489,7 +502,42 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
       socialSecurityAnnual: 0,
       ssStartAge: 67,
       asOfDate: AS_OF_2,
+      // Every account tracked, so the 401(k) (locked until 59½ — no Rule of
+      // 55 separation) and the HSA (non-medical penalty until 65) are
+      // penalty-exposed like the Roth growth: only the brokerage and the
+      // Roth basis are reachable before 59½ — the real gap.
       individualAccounts: [
+        {
+          name: "401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 900000,
+          ownerName: "Owner",
+          ownerPersonId: 1,
+          ownerBirthYear: 1990,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "HSA",
+          category: "hsa",
+          taxType: "hsa",
+          startingBalance: 260000,
+          ownerName: "Owner",
+          ownerPersonId: 1,
+          ownerBirthYear: 1990,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 30000,
+          startingBasis: 20000,
+          ownerName: "Owner",
+          ownerPersonId: 1,
+          ownerBirthYear: 1990,
+          parentCategory: "Retirement",
+        },
         {
           name: "Roth IRA",
           category: "ira",
@@ -551,8 +599,8 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
   // balance exhausts by year 3, nonRetirementShortfall becomes the FULL
   // need from then on). Before this fix, passes() never looked at
   // nonRetirementShortfall and could say "already coast" anyway --
-  // portfolioDepletionAge stays null forever (the excluded $150k sits
-  // there, untouched, keeping aggregate endBalance positive) and
+  // retirementDepletionAge stays null forever (the excluded $150k sits
+  // there, untouched, keeping aggregate allAccountsBalance positive) and
   // sustainableWithdrawal's net-of-tax/plus-SS figure clears
   // projectedExpenses in year 1 alone, so neither existing check would
   // ever catch this.
@@ -649,6 +697,37 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
       asOfDate: AS_OF_3,
       individualAccounts: [
         {
+          name: "401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 80000,
+          ownerName: "Owner",
+          ownerPersonId: 1,
+          ownerBirthYear: 1958,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "HSA",
+          category: "hsa",
+          taxType: "hsa",
+          startingBalance: 20000,
+          ownerName: "Owner",
+          ownerPersonId: 1,
+          ownerBirthYear: 1958,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 40000,
+          startingBasis: 32000,
+          ownerName: "Owner",
+          ownerPersonId: 1,
+          ownerBirthYear: 1958,
+          parentCategory: "Retirement",
+        },
+        {
           name: "Roth IRA",
           category: "ira",
           taxType: "taxFree",
@@ -671,6 +750,37 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
   it("Retirement-parented (not excluded), the SAME household DOES pass stopping today -- isolates the fix to the exclusion's effect", () => {
     const input = makePortfolioParentedGapInput({
       individualAccounts: [
+        {
+          name: "401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 80000,
+          ownerName: "Owner",
+          ownerPersonId: 1,
+          ownerBirthYear: 1958,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "HSA",
+          category: "hsa",
+          taxType: "hsa",
+          startingBalance: 20000,
+          ownerName: "Owner",
+          ownerPersonId: 1,
+          ownerBirthYear: 1958,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "Brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 40000,
+          startingBasis: 32000,
+          ownerName: "Owner",
+          ownerPersonId: 1,
+          ownerBirthYear: 1958,
+          parentCategory: "Retirement",
+        },
         {
           name: "Roth IRA",
           category: "ira",
@@ -813,5 +923,65 @@ describe("findCoastFireAge — net/gross unit fix for the no-stated-need fallbac
     // would have wrongly reported this plan as not sustainable.
     const result = findCoastFireAge(makeSsHeavyInput());
     expect(result.status).toBe("already_coast");
+  });
+});
+
+describe("findCoastFireAge — contributions stop on the per-account (spec) path", () => {
+  // Real households route contributions from per-account specs. A rate of 0
+  // in an accumulation override is treated as "unset" there, so the
+  // baseline used to keep contributing after the "stop".
+  const specInput = (): ProjectionInput =>
+    makeInput({
+      startingBalances: {
+        preTax: 10000,
+        taxFree: 0,
+        afterTax: 0,
+        afterTaxBasis: 0,
+        hsa: 0,
+      },
+      startingAccountBalances: {
+        "401k": { structure: "roth_traditional", traditional: 10000, roth: 0 },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 0 },
+        ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+        brokerage: { structure: "basis_tracking", balance: 0, basis: 0 },
+      },
+      contributionSpecs: [
+        {
+          name: "401k",
+          category: "401k",
+          method: "fixed_monthly",
+          value: 2000,
+          salaryFraction: 1,
+          baseAnnual: 24000,
+          taxTreatment: "pre_tax",
+          parentCategory: "Retirement",
+        },
+      ],
+      baseYearContributions: {
+        "401k": 24000,
+        "403b": 0,
+        hsa: 0,
+        ira: 0,
+        brokerage: 0,
+      },
+    });
+
+  it("the stop zeroes every later year's contributions", () => {
+    const input = specInput();
+    const result = calculateProjection({
+      ...input,
+      profileSwitches: buildCoastFireProfileSwitches(input, input.currentAge),
+    });
+    for (const y of result.projectionByYear.filter(
+      (r) =>
+        r.phase === "accumulation" && r.year > input.asOfDate.getFullYear(),
+    ))
+      expect(y.totalEmployee + y.totalEmployer, `${y.year}`).toBe(0);
+  });
+
+  it("a household that can't stop today isn't reported as already coasting", () => {
+    // $10k saved and a $72k/yr need: only the contributions make it work.
+    expect(findCoastFireAge(specInput()).status).not.toBe("already_coast");
   });
 });

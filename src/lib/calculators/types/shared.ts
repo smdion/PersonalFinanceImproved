@@ -103,6 +103,11 @@ export type LumpSum = {
    *  Undefined ⇒ name-only match, unchanged behavior for every lump sum
    *  saved before this field existed. */
   targetOwnerName?: string;
+  /** Whose money it is when no account is named: "Portfolio" for the
+   *  Brokerage page's lump sums (Portfolio savings), otherwise retirement
+   *  money (the retirement projection's own). Picks Portfolio- or
+   *  Retirement-parented accounts first. */
+  targetParentCategory?: "Retirement" | "Portfolio";
   label?: string;
 };
 
@@ -145,6 +150,21 @@ export type IndividualAccountInput = {
   accountType?: string;
   /** Starting balance from portfolio snapshot. */
   startingBalance: number;
+  /** The household's chosen account for reinvested RMD money (Retirement
+   *  settings) — resolved by the payload; at most one account. */
+  rmdExcessTarget?: boolean;
+  /** A retirement brokerage that exists only in the projection — added when
+   *  the household has no Retirement brokerage, so retirement money that
+   *  needs a brokerage home (contribution overflow, reinvested RMD money)
+   *  never lands in a Portfolio account. It also takes retirement lump sums
+   *  with no account named, and the Brokerage page's ramp only when the
+   *  household has no brokerage at all; never contributions of its own or
+   *  goal draws. Spent in retirement like any retirement account. */
+  projectedOnly?: boolean;
+  /** Starting cost basis (brokerage-type accounts), from the account's own
+   *  `cost_basis`. Absent: the engine shares the aggregate basis out by
+   *  balance. */
+  startingBasis?: number;
   /** Owner person name (from DB lookup). */
   ownerName?: string;
   /** Owner person ID (from DB). Used for ID-based matching to contribution specs. */
@@ -218,7 +238,13 @@ export type IndividualAccountYearBalance = {
   ownerPersonId?: number;
   /** Parent category from contribution account config (e.g. "Retirement", "Portfolio"). */
   parentCategory?: string;
+  /** The projection-only retirement brokerage (IndividualAccountInput.projectedOnly);
+   *  rows appear only once it holds money. */
+  projectedOnly?: boolean;
   balance: number;
+  /** Cost basis (brokerage-type accounts), tracked per account by the
+   *  engine (brokerage-basis.ts). */
+  costBasis?: number;
   contribution: number;
   employerMatch: number;
   growth: number;

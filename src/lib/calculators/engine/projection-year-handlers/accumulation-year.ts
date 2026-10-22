@@ -2,6 +2,13 @@
  * runAccumulationYear — single-year accumulation-phase logic. Mutates state in
  * place and pushes a year projection to `state.projectionByYear`.
  */
+import {
+  followDraws,
+  followInflows,
+  followReconciliation,
+  groupBasisRatio,
+  syncAggregateBasis,
+} from "../brokerage-basis";
 import type {
   AccountCategory,
   AccumulationSlot,
@@ -39,12 +46,15 @@ import { applyGrowth } from "../growth-application";
 import {
   distributeContributions,
   distributeGoalWithdrawal,
+  goalFundingAccounts,
+  goalFundingBalance,
   applyIndividualGrowth,
   buildIndividualYearBalances,
   accrueIndividualBasis,
   reconcileIndividualToAggregate,
 } from "../individual-account-tracking";
-import { cloneAccountBalances } from "../balance-utils";
+import { cloneAccountBalances, scopedBalances } from "../balance-utils";
+import { computeNonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
 import type {
   PreYearSetup,
   ProjectionContext,
@@ -104,6 +114,7 @@ export function runAccumulationYear(
     accumulationDefaults,
     indBal,
     indBasis,
+    brokBasis,
     specToAccount,
     accountsWithSpecs,
   } = state;
@@ -301,6 +312,12 @@ export function runAccumulationYear(
     if (proRate < 1) {
       for (const slot of slots) {
         slot.employeeContrib = roundToCents(slot.employeeContrib * proRate);
+        // The Portfolio part pro-rates with the slot (the ceiling below
+        // scales the rest; left full-year it would exceed the slot).
+        if (slot.portfolioContrib != null)
+          slot.portfolioContrib = roundToCents(
+            Math.min(slot.portfolioContrib * proRate, slot.employeeContrib),
+          );
         slot.rothContrib = roundToCents(slot.rothContrib * proRate);
         slot.traditionalContrib = roundToCents(
           slot.traditionalContrib * proRate,
@@ -315,28 +332,43 @@ export function runAccumulationYear(
       specOverflow = roundToCents(specOverflow * proRate);
     }
 
-    // Apply contributionRate ceiling to per-account spec output.
+    // Apply the contributionRate ceiling to per-account spec output.
     // The rate ceiling is authoritative -- overrides always take effect.
-    const specTotal = roundToCents(sumBy(slots, (s) => s.employeeContrib));
+    // It caps retirement contributions only: Portfolio-parented specs
+    // (slot.portfolioContrib) are savings outside the retirement plan and
+    // keep their amounts, so adding Portfolio savings never shrinks a
+    // 401(k). The rate itself is a retirement rate (build-engine-payload).
+    const portfolioPart = (s: AccumulationSlot) => s.portfolioContrib ?? 0;
+    const retirementTotal = roundToCents(
+      sumBy(slots, (s) => s.employeeContrib - portfolioPart(s)),
+    );
     const rateCeiling = roundToCents(
       projectedSalary * Math.max(0, config.contributionRate) * proRate,
     );
-    if (specTotal > rateCeiling && rateCeiling > 0) {
-      const scale = rateCeiling / specTotal;
+    if (retirementTotal > rateCeiling && rateCeiling > 0) {
+      const scale = rateCeiling / retirementTotal;
       rateCeilingScale = scale;
       for (const slot of slots) {
-        const newEmployee = roundToCents(slot.employeeContrib * scale);
-        const newRoth = roundToCents(slot.rothContrib * scale);
-        const newTrad = roundToCents(slot.traditionalContrib * scale);
+        const portfolio = portfolioPart(slot);
+        // Retirement part scaled, Portfolio part kept; each tax part scaled
+        // on its own (no Portfolio part: exactly the old arithmetic).
+        const ratio =
+          portfolio > 0 && slot.employeeContrib > 0
+            ? (portfolio + (slot.employeeContrib - portfolio) * scale) /
+              slot.employeeContrib
+            : scale;
+        const newEmployee = roundToCents(slot.employeeContrib * ratio);
+        slot.rothContrib = roundToCents(slot.rothContrib * ratio);
+        slot.traditionalContrib = roundToCents(slot.traditionalContrib * ratio);
         slot.employeeContrib = newEmployee;
-        slot.rothContrib = newRoth;
-        slot.traditionalContrib = newTrad;
         slot.remainingSpace = isOverflowTarget(slot.category)
           ? 0
           : roundToCents(Math.max(0, slot.effectiveLimit - newEmployee));
       }
-      // Recompute overflow -- scaling down may eliminate it
-      specOverflow = 0;
+      // The IRS overflow inside the overflow target's slot scaled with
+      // the rest; it is still overflow — Step 2 leaves it out of the specs'
+      // share and Step 4 routes it to retirement money.
+      specOverflow = roundToCents(specOverflow * scale);
     }
   } else {
     // Fallback: Route contributions based on mode (blended rate)
@@ -438,7 +470,10 @@ export function runAccumulationYear(
   }
 
   // Apply lump sums (one-time injections, NOT subject to IRS limits)
-  applyLumpSums(config.lumpSums, ctx, state);
+  // Lump sums are cash in: new basis in the brokerage account they land in.
+  followInflows(indAccts, indKey, indBal, brokBasis, () =>
+    applyLumpSums(config.lumpSums, ctx, state),
+  );
 
   // Route contributions, match, overflow, and ramp to individual accounts
   // Extracted to individual-account-tracking.ts
@@ -448,24 +483,27 @@ export function runAccumulationYear(
   let indOverflow = new Map<string, number>();
   let indRamp = new Map<string, number>();
   if (hasIndividualAccounts && contributionSpecs) {
-    const distResult = distributeContributions({
-      slots,
-      contributionSpecs,
-      indAccts,
-      indKey,
-      indBal,
-      indParentCat,
-      specToAccount,
-      accountsWithSpecs,
-      projectedSalary,
-      currentSalary,
-      limitGrowthRate,
-      yearIndex,
-      proRate,
-      overflowToBrokerage,
-      rampAmount,
-      employerMatchByParentCat: activeEmployerMatchByParentCat,
-    });
+    // Contributions, match, overflow and the ramp are cash in: new basis.
+    const distResult = followInflows(indAccts, indKey, indBal, brokBasis, () =>
+      distributeContributions({
+        slots,
+        contributionSpecs,
+        indAccts,
+        indKey,
+        indBal,
+        indParentCat,
+        specToAccount,
+        accountsWithSpecs,
+        projectedSalary,
+        currentSalary,
+        limitGrowthRate,
+        yearIndex,
+        proRate,
+        overflowToBrokerage,
+        rampAmount,
+        employerMatchByParentCat: activeEmployerMatchByParentCat,
+      }),
+    );
     indContribs = distResult.indContribs;
     indMatch = distResult.indMatch;
     indIntentional = distResult.indIntentional;
@@ -495,8 +533,16 @@ export function runAccumulationYear(
   const goalWithdrawals: EngineAccumulationYear["brokerageGoalWithdrawals"] =
     [];
   for (const goal of yearGoals) {
+    // Goals are Portfolio money: with individual accounts, the most a goal
+    // can draw is what the Portfolio-parented brokerages hold.
     const drawAmount = roundToCents(
-      Math.min(goal.targetAmount, balances.afterTax),
+      Math.min(
+        goal.targetAmount,
+        balances.afterTax,
+        hasIndividualAccounts
+          ? goalFundingBalance(indAccts, indKey, indBal)
+          : balances.afterTax,
+      ),
     );
     if (drawAmount <= 0) {
       goalWithdrawals.push({
@@ -512,10 +558,20 @@ export function runAccumulationYear(
       );
       continue;
     }
+    // Goals draw Portfolio brokerages, so their own basis prices the gain
+    // (the aggregate ratio when they hold nothing per account).
     const basisRatio =
-      balances.afterTax > 0
+      (hasIndividualAccounts
+        ? groupBasisRatio(
+            goalFundingAccounts(indAccts),
+            indKey,
+            indBal,
+            brokBasis,
+          )
+        : undefined) ??
+      (balances.afterTax > 0
         ? Math.min(1, balances.afterTaxBasis / balances.afterTax)
-        : 0;
+        : 0);
     const basisPortion = roundToCents(drawAmount * basisRatio);
     const gainsPortion = roundToCents(drawAmount - basisPortion);
     const taxCost = roundToCents(
@@ -536,7 +592,9 @@ export function runAccumulationYear(
     );
     // Distribute brokerage goal withdrawal -- extracted to individual-account-tracking.ts
     if (hasIndividualAccounts) {
-      distributeGoalWithdrawal(drawAmount, indAccts, indKey, indBal);
+      followDraws(indAccts, indKey, indBal, brokBasis, () =>
+        distributeGoalWithdrawal(drawAmount, indAccts, indKey, indBal),
+      );
     }
     goalWithdrawals.push({
       goalId: goal.id,
@@ -564,6 +622,7 @@ export function runAccumulationYear(
           overflow: indOverflow,
           ramp: indRamp,
           basis: indBasis,
+          brokerageBasis: brokBasis,
         },
       )
     : [];
@@ -576,12 +635,32 @@ export function runAccumulationYear(
   // same two tracks this closes the gap between.
   if (hasIndividualAccounts) {
     routeWarnings.push(
-      ...reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
+      ...followReconciliation(
+        indAccts,
+        indKey,
+        indBal,
+        brokBasis,
+        balances.afterTaxBasis,
+        () => reconcileIndividualToAggregate(indAccts, indKey, indBal, acctBal),
+      ),
+    );
+    // The aggregate basis is the accounts' sum.
+    syncAggregateBasis(
+      indAccts,
+      indKey,
+      indBal,
+      brokBasis,
+      balances,
+      acctBal,
+      routeWarnings,
     );
   }
 
-  const endBalance = roundToCents(
-    balances.preTax + balances.taxFree + balances.hsa + balances.afterTax,
+  const { allAccountsBalance, retirementBalance } = scopedBalances(
+    balances,
+    hasIndividualAccounts
+      ? computeNonRetirementExclusion(indAccts, indBal, indKey)
+      : undefined,
   );
 
   // Divergence check: last accumulation year
@@ -629,7 +708,8 @@ export function runAccumulationYear(
     brokerageRampContribution: rampAmount,
     totalTaxAdvSpace,
     brokerageGoalWithdrawals: goalWithdrawals,
-    endBalance,
+    retirementBalance,
+    allAccountsBalance,
     balanceByTaxType: { ...balances },
     balanceByAccount: cloneAccountBalances(acctBal),
     individualAccountBalances: indYearBalances,

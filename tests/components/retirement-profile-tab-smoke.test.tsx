@@ -106,6 +106,10 @@ vi.mock("@/lib/trpc", () => ({
         useQuery: () => ({ data: undefined }),
       },
     },
+    // RMD Handling's "Reinvested into" picker lists Retirement brokerages.
+    performance: {
+      performanceAccounts: { list: { useQuery: () => ({ data: [] }) } },
+    },
     retirement: {
       retirementSettings: {
         upsert: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },

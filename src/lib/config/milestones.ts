@@ -316,7 +316,7 @@ export const MILESTONES = [
     group: "journey",
     source: "moneyGuy",
     title: "Financial independence",
-    rule: "Investments and cash reach your FI number: yearly expenses ÷ your withdrawal rate.",
+    rule: "Your liquid net worth reaches your FI number (yearly expenses ÷ your withdrawal rate). It counts all your investments — retirement and other — plus cash.",
     adaptedNote:
       "Money Guy confirms FI with a stress test, not the 4% rule alone — check the Retirement page's simulation too.",
     href: "/retirement",

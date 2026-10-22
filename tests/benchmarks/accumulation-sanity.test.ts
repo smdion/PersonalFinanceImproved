@@ -31,8 +31,8 @@ describe("Accumulation sanity — deterministic math", () => {
       const expected = 100000 * Math.pow(1.07, 10);
 
       // ±5% tolerance (engine may pro-rate first year based on asOfDate)
-      expect(lastYear!.endBalance).toBeGreaterThan(expected * 0.95);
-      expect(lastYear!.endBalance).toBeLessThan(expected * 1.05);
+      expect(lastYear!.allAccountsBalance).toBeGreaterThan(expected * 0.95);
+      expect(lastYear!.allAccountsBalance).toBeLessThan(expected * 1.05);
     });
 
     it("$100k at 10% for ~7.2 years doubles (Rule of 72)", () => {
@@ -47,8 +47,8 @@ describe("Accumulation sanity — deterministic math", () => {
         result.projectionByYear[result.projectionByYear.length - 1];
 
       // Should approximately double in ~7 years
-      expect(lastYear!.endBalance).toBeGreaterThan(180000);
-      expect(lastYear!.endBalance).toBeLessThan(220000);
+      expect(lastYear!.allAccountsBalance).toBeGreaterThan(180000);
+      expect(lastYear!.allAccountsBalance).toBeLessThan(220000);
     });
   });
 
@@ -128,9 +128,9 @@ describe("Accumulation sanity — deterministic math", () => {
       const result = calculateProjection(input);
 
       // $1M / $40k = 25 years → depletion at age 90
-      expect(result.portfolioDepletionAge).not.toBeNull();
-      expect(result.portfolioDepletionAge).toBeGreaterThanOrEqual(88);
-      expect(result.portfolioDepletionAge).toBeLessThanOrEqual(92);
+      expect(result.retirementDepletionAge).not.toBeNull();
+      expect(result.retirementDepletionAge).toBeGreaterThanOrEqual(88);
+      expect(result.retirementDepletionAge).toBeLessThanOrEqual(92);
     });
   });
 
@@ -147,8 +147,8 @@ describe("Accumulation sanity — deterministic math", () => {
       // Starting $195k + ~$37k/yr contributions at ~7% for 30 years
       // Conservative: should be at least $1.5M
       // Generous: shouldn't exceed $8M
-      expect(retYear!.endBalance).toBeGreaterThan(1_500_000);
-      expect(retYear!.endBalance).toBeLessThan(8_000_000);
+      expect(retYear!.allAccountsBalance).toBeGreaterThan(1_500_000);
+      expect(retYear!.allAccountsBalance).toBeLessThan(8_000_000);
     });
 
     it("higher salary with higher contributions produces larger balance", () => {
@@ -165,7 +165,9 @@ describe("Accumulation sanity — deterministic math", () => {
         (y) => y.phase === "decumulation",
       );
 
-      expect(highRet!.endBalance).toBeGreaterThan(lowRet!.endBalance);
+      expect(highRet!.allAccountsBalance).toBeGreaterThan(
+        lowRet!.allAccountsBalance,
+      );
     });
   });
 
@@ -207,10 +209,10 @@ describe("Accumulation sanity — deterministic math", () => {
 
       const lowEnd =
         lowResult.projectionByYear[lowResult.projectionByYear.length - 1]!
-          .endBalance;
+          .allAccountsBalance;
       const highEnd =
         highResult.projectionByYear[highResult.projectionByYear.length - 1]!
-          .endBalance;
+          .allAccountsBalance;
 
       expect(highEnd).toBeGreaterThan(lowEnd);
     });

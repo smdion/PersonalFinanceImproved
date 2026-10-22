@@ -1,5 +1,6 @@
 "use client";
 
+import type { PlanFailureReason } from "@/lib/calculators/plan-outcome";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
@@ -26,17 +27,18 @@ type StrategyResult = {
   strategy: string;
   label: string;
   shortLabel: string;
-  portfolioDepletionAge: number | null;
+  failureAge: number | null;
+  failureReason: PlanFailureReason | null;
   year1Withdrawal: number;
   avgAnnualWithdrawal: number;
   minAnnualWithdrawal: number;
   maxAnnualWithdrawal: number;
-  endBalance: number;
+  endRetirementBalance: number;
   legacyAmount: number;
   successRate: number | null;
   spendingStabilityRate: number | null;
   budgetStabilityRate: number | null;
-  yearByYear: { age: number; withdrawal: number; endBalance: number }[];
+  yearByYear: { age: number; withdrawal: number; retirementBalance: number }[];
 };
 
 type AnalyzerInput = {
@@ -61,7 +63,7 @@ type Props = {
   analyzerInput?: AnalyzerInput;
 };
 
-type ChartMetric = "endBalance" | "withdrawal";
+type ChartMetric = "retirementBalance" | "withdrawal";
 
 export function WithdrawalComparisonCard({
   strategies,
@@ -73,7 +75,8 @@ export function WithdrawalComparisonCard({
   currentAge,
   analyzerInput,
 }: Props) {
-  const [chartMetric, setChartMetric] = useState<ChartMetric>("endBalance");
+  const [chartMetric, setChartMetric] =
+    useState<ChartMetric>("retirementBalance");
   const [analyzerEnabled, setAnalyzerEnabled] = useState(false);
 
   // Analyzer query — only runs when user opts in
@@ -101,7 +104,9 @@ export function WithdrawalComparisonCard({
       for (const pt of s.yearByYear) {
         if (!ageMap.has(pt.age)) ageMap.set(pt.age, { age: pt.age });
         const raw =
-          chartMetric === "endBalance" ? pt.endBalance : pt.withdrawal;
+          chartMetric === "retirementBalance"
+            ? pt.retirementBalance
+            : pt.withdrawal;
         ageMap.get(pt.age)![s.strategy] = deflate(raw, pt.age);
       }
     }
@@ -155,7 +160,7 @@ export function WithdrawalComparisonCard({
               <tr className="text-faint border-b">
                 <th className="py-1.5 pr-2 text-left font-medium">Strategy</th>
                 <th className="px-2 py-1.5 text-right font-medium">
-                  Depletion Age
+                  Falls Short
                 </th>
                 <th className="px-2 py-1.5 text-right font-medium">
                   <span title="Portfolio survives to end of plan — balance stays above $0 in every year (200 simulations)">
@@ -211,7 +216,19 @@ export function WithdrawalComparisonCard({
                       </div>
                     </td>
                     <td className="text-faint px-2 py-1.5 text-right tabular-nums">
-                      {s.portfolioDepletionAge ?? (
+                      {s.failureAge != null ? (
+                        <span
+                          title={
+                            s.failureReason === "depleted"
+                              ? "Retirement money runs out"
+                              : s.failureReason === "penaltyGap"
+                                ? "Money locked by early-withdrawal penalties"
+                                : "Spending can't be fully funded"
+                          }
+                        >
+                          {s.failureAge}
+                        </span>
+                      ) : (
                         <span className="text-green-400">Never</span>
                       )}
                     </td>
@@ -294,8 +311,8 @@ export function WithdrawalComparisonCard({
         <div className="mt-6 border-t pt-4">
           <div className="mb-3 flex justify-end gap-1">
             <button
-              onClick={() => setChartMetric("endBalance")}
-              className={`text-caption rounded px-2 py-0.5 ${chartMetric === "endBalance" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
+              onClick={() => setChartMetric("retirementBalance")}
+              className={`text-caption rounded px-2 py-0.5 ${chartMetric === "retirementBalance" ? "bg-blue-600 text-white" : "bg-surface-elevated text-faint"}`}
             >
               Portfolio Balance
             </button>

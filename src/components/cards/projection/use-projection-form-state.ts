@@ -1,6 +1,8 @@
 /** Form and UI state for the projection card — withdrawal config, override forms, view toggles, and MC settings. Overrides are loaded from DB on mount. */
+import { DEFAULT_SIMULATION } from "@/lib/constants";
 import {
   useCallback,
+  useRef,
   useState,
   type Dispatch,
   type SetStateAction,
@@ -114,17 +116,35 @@ export function useProjectionFormState() {
     : decumQuery.data && decumQuery.data.length > 0
       ? (decumQuery.data as DecumOverride[])
       : decumOverridesLocal;
+  // The first edit applies to the saved rows the section is showing, not
+  // the empty local list — otherwise deleting one saved row after a reload
+  // saved [] (all gone) and adding one saved only the new row. The refs
+  // flip at once, so two edits in one tick don't both start from the DB.
+  const accumTouchedRef = useRef(false);
+  const decumTouchedRef = useRef(false);
   const setAccumOverrides: React.Dispatch<
     React.SetStateAction<AccumOverride[]>
   > = (updater) => {
+    const wasTouched = accumTouchedRef.current;
+    accumTouchedRef.current = true;
+    const saved = (accumQuery.data as AccumOverride[] | undefined) ?? [];
     setAccumTouched(true);
-    setAccumOverridesRaw(updater);
+    setAccumOverridesRaw((local) => {
+      const prev = wasTouched ? local : saved;
+      return typeof updater === "function" ? updater(prev) : updater;
+    });
   };
   const setDecumOverrides: React.Dispatch<
     React.SetStateAction<DecumOverride[]>
   > = (updater) => {
+    const wasTouched = decumTouchedRef.current;
+    decumTouchedRef.current = true;
+    const saved = (decumQuery.data as DecumOverride[] | undefined) ?? [];
     setDecumTouched(true);
-    setDecumOverridesRaw(updater);
+    setDecumOverridesRaw((local) => {
+      const prev = wasTouched ? local : saved;
+      return typeof updater === "function" ? updater(prev) : updater;
+    });
   };
 
   // --- Override form UI state ---
@@ -144,7 +164,7 @@ export function useProjectionFormState() {
   const [mcTrials, setMcTrials] = useState(MC_DEFAULT_TRIALS);
   const [mcPreset, setMcPreset] = useState<
     "aggressive" | "default" | "conservative" | "custom"
-  >("default");
+  >(DEFAULT_SIMULATION.preset);
   // Default to Advanced (real per-account tax tracking) rather than
   // Simple (cFIREsim-style single-bucket comparison) — most households
   // have real Traditional/Roth/HSA/brokerage splits they care about
@@ -152,7 +172,9 @@ export function useProjectionFormState() {
   // when displayed as if it were a real account breakdown. Simple stays
   // available for anyone who specifically wants the cFIREsim-comparable
   // view.
-  const [mcTaxMode, setMcTaxMode] = useState<"simple" | "advanced">("advanced");
+  const [mcTaxMode, setMcTaxMode] = useState<"simple" | "advanced">(
+    DEFAULT_SIMULATION.taxMode,
+  );
   const [mcAssetClassOverrides, setMcAssetClassOverrides] = useState<
     AssetClassOverride[]
   >([]);
@@ -269,6 +291,8 @@ export function useProjectionFormState() {
     withdrawalTaxPref,
     setWithdrawalTaxPref,
     accumOverrides,
+    accumOverridesTouched: accumTouched,
+    decumOverridesTouched: decumTouched,
     setAccumOverrides,
     decumOverrides,
     setDecumOverrides,

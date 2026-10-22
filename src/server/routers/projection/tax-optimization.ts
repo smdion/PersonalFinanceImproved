@@ -26,6 +26,8 @@
  * below only needs to say WHICH profile / budget / snapshot to read. This
  * mirrors `computeProjection`'s input (`scenarios.ts`) field-for-field.
  */
+import { withControlledOverrides } from "@/lib/pure/controlled-overrides";
+import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { calculateProjection } from "@/lib/calculators/engine";
@@ -50,6 +52,7 @@ import {
   decumulationOverrideSchema,
   decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
+  resolveProjectionOverrides,
 } from "./_shared";
 
 /**
@@ -160,6 +163,8 @@ async function runProjection(
   if (!payload) return null;
 
   const { settings, distributionTaxRates, baseEngineInput } = payload;
+  // Omitted "Changes by year" = the household's saved rows.
+  const overrides = await resolveProjectionOverrides(db, input);
 
   const engineInput = {
     ...baseEngineInput,
@@ -169,11 +174,13 @@ async function runProjection(
       distributionTaxRates,
     ),
     accumulationOverrides:
-      input.accumulationOverrides as AccumulationOverride[],
-    decumulationOverrides: [
-      ...(input.decumulationOverrides as DecumulationOverride[]),
-      ...extraDecumulationOverrides,
-    ],
+      overrides.accumulationOverrides as AccumulationOverride[],
+    // The what-if's fields win over the saved rows' (a saved later-year
+    // row must not quietly undo the comparison).
+    decumulationOverrides: withControlledOverrides(
+      overrides.decumulationOverrides as DecumulationOverride[],
+      extraDecumulationOverrides,
+    ),
   };
 
   return {
@@ -238,7 +245,7 @@ export type TaxYearRow = {
   effectiveTaxRate: number;
   /** Running Σ of federalTax + niit + irmaaSurcharge + rothConversionTax. */
   cumulativeTax: number;
-  endingBalance: number;
+  retirementBalance: number;
   balanceByTaxType: EngineDecumulationYear["balanceByTaxType"];
   qcdAmount: number;
   rmdShortfall: number;
@@ -278,7 +285,7 @@ function toTaxYearRow(
     ltcgRate: y.ltcgRate,
     effectiveTaxRate: y.effectiveTaxRate,
     cumulativeTax,
-    endingBalance: y.endBalance,
+    retirementBalance: y.retirementBalance,
     balanceByTaxType: y.balanceByTaxType,
     qcdAmount: y.qcdAmount,
     rmdShortfall: y.rmdShortfallAmount,
@@ -320,7 +327,7 @@ export const taxOptimizationRouter = createTRPCRouter({
           bracketsThroughYear: run.taxDataYear,
           taxParamsVersion: run.taxParamsVersion,
           projectedFromYear: run.result.projectionByYear[0]?.year ?? null,
-          portfolioDepletionYear: run.result.portfolioDepletionYear,
+          retirementDepletionYear: run.result.retirementDepletionYear,
         },
       };
     }),
@@ -375,7 +382,7 @@ export const taxOptimizationRouter = createTRPCRouter({
         isCurrentPlan: true as const,
         lifetimeTax: lifetimeTax(baselineDecum),
         terminalByTaxType: baselineFinalYear?.balanceByTaxType ?? null,
-        depletedYear: baseline.result.portfolioDepletionYear ?? null,
+        failureYear: assessPlan(baseline.result).failureYear,
       };
 
       const scored = [];
@@ -396,16 +403,16 @@ export const taxOptimizationRouter = createTRPCRouter({
           mode: strategy.mode,
           lifetimeTax: lifetimeTax(years),
           terminalByTaxType: finalYear?.balanceByTaxType ?? null,
-          depletedYear: run?.result.portfolioDepletionYear ?? null,
+          failureYear: run ? assessPlan(run.result).failureYear : null,
         });
       }
 
-      // The cheapest lifetime tax among non-depleting strategies (any
-      // strategy — fall back to overall cheapest if all deplete). Includes
+      // The cheapest lifetime tax among strategies whose plan holds
+      // (assessPlan; fall back to overall cheapest if none does). Includes
       // "Your current plan" in the ranking — it's a real, comparably-scored
       // candidate, not just a reference row.
       const allScored = [currentPlan, ...scored];
-      const viable = allScored.filter((s) => s.depletedYear === null);
+      const viable = allScored.filter((s) => s.failureYear === null);
       const ranked = (viable.length ? viable : allScored)
         .slice()
         .sort((a, b) => a.lifetimeTax - b.lifetimeTax);

@@ -26,6 +26,7 @@ import {
   queryRaw,
   execRaw,
 } from "./compat";
+import { reconcileReferenceData } from "./reference-data";
 import { VERSION_TABLE_NAMES, VERSION_TABLES } from "./version-tables";
 import { log } from "@/lib/logger";
 import {
@@ -349,6 +350,10 @@ export async function restoreVersion(
     }
   });
 
+  // The version's reference rows replaced today's: re-add any the seed has
+  // that it lacks (a newer tax year), as the next start would.
+  await reconcileReferenceData(database);
+
   return { restoredTables: tableDatas.length, restoredRows };
 }
 
@@ -423,10 +428,12 @@ export async function importBackup(
     }
   }
 
-  if (isPostgres()) {
-    return importBackupPg(database, transformedBackup);
-  }
-  return importBackupSqlite(database, transformedBackup);
+  const result = isPostgres()
+    ? await importBackupPg(database, transformedBackup)
+    : await importBackupSqlite(database, transformedBackup);
+  // The backup's reference rows replaced today's (see restoreVersion).
+  await reconcileReferenceData(database);
+  return result;
 }
 
 async function importBackupPg(

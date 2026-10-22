@@ -11,6 +11,7 @@
  * already at 521 lines, over RULES.md §8's ~500-line Composed Router
  * guideline.
  */
+import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { eq, asc, sql } from "drizzle-orm";
 import { queryRaw } from "@/lib/db/compat";
 import { z } from "zod/v4";
@@ -39,6 +40,7 @@ import {
   decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
+  resolveProjectionOverrides,
 } from "./_shared";
 import {
   hashEngineInput,
@@ -161,10 +163,11 @@ export const coastFireProbeRouter = createTRPCRouter({
           input.decumulationDefaults,
           distributionTaxRates,
         ),
-        accumulationOverrides:
-          input.accumulationOverrides as AccumulationOverride[],
-        decumulationOverrides:
-          input.decumulationOverrides as DecumulationOverride[],
+        // Omitted "Changes by year" = the household's saved rows.
+        ...((await resolveProjectionOverrides(ctx.db, input)) as {
+          accumulationOverrides: AccumulationOverride[];
+          decumulationOverrides: DecumulationOverride[];
+        }),
       };
 
       // Server-side range check against the RESOLVED engine input, not
@@ -211,7 +214,7 @@ export const coastFireProbeRouter = createTRPCRouter({
         stdDev: toNumber(preset.inflationStdDev),
       };
 
-      const NUM_TRIALS = 1000;
+      const NUM_TRIALS = DEFAULT_SIMULATION.coastFireTrials;
       const SEED = 42;
 
       // Own hashEngineInput `kind` -- "coastFireProbe", never

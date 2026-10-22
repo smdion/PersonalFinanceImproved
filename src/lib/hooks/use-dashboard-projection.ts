@@ -7,81 +7,20 @@
  * the cache hashes the full built input, so a near-copy would always miss.
  */
 import { trpc } from "@/lib/trpc";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
-import { defaultDecumulationConfig } from "@/lib/config/account-types";
+import { usePlanEngineInput } from "@/lib/hooks/use-plan-engine-input";
 import { projectedFiYear } from "@/lib/pure/milestones";
 import { milestoneProjectionYears } from "@/lib/pure/milestone-input";
 
-export function useDashboardEngineInput() {
-  // Contribution/Salary Profile axes — every other dashboard card resolves
-  // these before querying (this card
-  // used to omit both, which the engine treats as "no profile" = $0
-  // contributions, not "the active profile" — silently zeroing out
-  // Contributions/Coast FIRE/nest egg on this card alone).
-  const { queryInput: contribProfileInput } = useEffectiveContribProfileId();
-  const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
-  const [accBudgetProfileId] = usePersistedSetting<number | null>(
-    "retirement_acc_budget_profile_id",
-    null,
-  );
-  const [accBudgetCol] = usePersistedSetting<number | null>(
-    "retirement_accumulation_budget_column",
-    null,
-  );
-  const [decBudgetProfileId] = usePersistedSetting<number | null>(
-    "retirement_dec_budget_profile_id",
-    null,
-  );
-  const [decBudgetCol] = usePersistedSetting<number | null>(
-    "retirement_decumulation_budget_column",
-    null,
-  );
-  const [accExpenseOverride] = usePersistedSetting<string | null>(
-    "retirement_acc_expense_override",
-    null,
-  );
-  const [decExpenseOverride] = usePersistedSetting<string | null>(
-    "retirement_dec_expense_override",
-    null,
-  );
-  // Must exactly match the Retirement page's own default (un-customized)
-  // decumulation form state (use-projection-form-state.ts) — the
-  // deterministic computeProjection query below doesn't care
-  // (buildDecumulationDefaults always uses settings.withdrawalRate
-  // regardless of client input), but the persistent projection cache
-  // hashes the FULL built engine input, so a mismatch here would silently
-  // guarantee the peek queries below always miss the page's real cached
-  // run, even on default settings. Shared via defaultDecumulationConfig()
-  // (account-types.ts) so the two call sites can't independently drift.
-  const decumulationDefaults = defaultDecumulationConfig();
-  const engineInput = {
-    ...contribProfileInput,
-    ...salaryProfileInput,
-    decumulationDefaults,
-    ...(accBudgetProfileId != null
-      ? { accumulationBudgetProfileId: accBudgetProfileId }
-      : {}),
-    ...(accBudgetCol != null ? { accumulationBudgetColumn: accBudgetCol } : {}),
-    ...(decBudgetProfileId != null
-      ? { decumulationBudgetProfileId: decBudgetProfileId }
-      : {}),
-    ...(decBudgetCol != null ? { decumulationBudgetColumn: decBudgetCol } : {}),
-    ...(accExpenseOverride
-      ? { accumulationExpenseOverride: parseFloat(accExpenseOverride) }
-      : {}),
-    ...(decExpenseOverride
-      ? { decumulationExpenseOverride: parseFloat(decExpenseOverride) }
-      : {}),
-  };
-  return engineInput;
-}
-
+/** The plan's projection (usePlanEngineInput — the same input the
+ *  Retirement page sends, so the dashboard reads the page's cached runs). */
 export function useDashboardProjection() {
-  const engineInput = useDashboardEngineInput();
-  const query = trpc.projection.computeProjection.useQuery(engineInput);
-  return { engineInput, ...query };
+  const { input: engineInput, ready } = usePlanEngineInput();
+  const query = trpc.projection.computeProjection.useQuery(engineInput, {
+    enabled: ready,
+  });
+  // Not ready = still loading (a disabled query reports isLoading false,
+  // which would read as "no projection" for a moment).
+  return { engineInput, ready, ...query, isLoading: query.isLoading || !ready };
 }
 
 /**

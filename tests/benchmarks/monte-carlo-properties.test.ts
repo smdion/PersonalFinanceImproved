@@ -185,7 +185,7 @@ describe("Monte Carlo statistical properties", () => {
         ];
       const detLast =
         detResult.projectionByYear[detResult.projectionByYear.length - 1];
-      expect(mcLast!.endBalance).toBe(detLast!.endBalance);
+      expect(mcLast!.allAccountsBalance).toBe(detLast!.allAccountsBalance);
     });
   });
 

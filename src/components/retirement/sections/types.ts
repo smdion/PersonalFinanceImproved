@@ -78,6 +78,9 @@ export type Settings = {
   /** What to do with RMD-forced withdrawal beyond stated spending
    *  need — "reinvest" (default) or "spend". */
   rmdExcessHandling?: string | null;
+  /** Where reinvested RMD money goes — a Retirement brokerage's performance
+   *  account; null = spread across the Retirement brokerages. */
+  rmdExcessTargetPerformanceAccountId?: number | null;
   /** Automatically maximize Qualified Charitable Distributions
    *  against the RMD each year (IRA-only, capped, approximation). */
   qcdMaximize?: boolean;

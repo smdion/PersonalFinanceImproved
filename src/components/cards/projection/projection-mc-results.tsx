@@ -1,6 +1,11 @@
 "use client";
 
 /** Monte Carlo results — loading spinner, errors, warnings, depletion callout, and compact summary bar. */
+import {
+  dominantFailureReason,
+  planFailurePhrase,
+} from "@/lib/calculators/plan-outcome";
+import { rowTotal } from "./utils";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -25,7 +30,7 @@ export function McDepletionCallout({ state }: { state: ProjectionState }) {
     state;
 
   if (!mcQuery.data?.result || mcLoading) return null;
-  if (!mcQuery.data.result.distributions.depletionAge) return null;
+  if (!mcQuery.data.result.distributions.failureAge) return null;
 
   const mc = mcQuery.data.result;
   const terminalYear =
@@ -33,6 +38,9 @@ export function McDepletionCallout({ state }: { state: ProjectionState }) {
   const tb = mc.distributions.terminalBalance;
   const deplPct = Math.round((1 - mc.successRate) * 100);
   const isLowRisk = mc.successRate >= 0.9;
+  // Named by the most common way failing futures fail (plan judge).
+  const reason = dominantFailureReason(mc.failureReasonRates);
+  const failurePhrase = reason ? planFailurePhrase(reason) : "money runs out";
   return (
     <div
       className={`flex items-center gap-2 rounded-lg px-3 py-2 text-xs ${isLowRisk ? "bg-surface-elevated text-muted" : "bg-red-50 text-red-700"}`}
@@ -40,8 +48,8 @@ export function McDepletionCallout({ state }: { state: ProjectionState }) {
       <span className="shrink-0 font-medium">
         {isLowRisk ? "\u2139\uFE0F" : "\u26A0"}{" "}
         {isLowRisk
-          ? `In rare scenarios (${deplPct}%), money runs out around age ${Math.round(mc.distributions.depletionAge!.median)}.`
-          : `In ${deplPct}% of futures, money runs out around age ${Math.round(mc.distributions.depletionAge!.median)}.`}
+          ? `In rare scenarios (${deplPct}%), ${failurePhrase} around age ${Math.round(mc.distributions.failureAge!.median)}.`
+          : `In ${deplPct}% of futures, ${failurePhrase} around age ${Math.round(mc.distributions.failureAge!.median)}.`}
       </span>
       <span className={isLowRisk ? "text-muted" : "text-red-600"}>
         Typical end balance: {formatCurrency(deflate(tb.median, terminalYear))}
@@ -166,7 +174,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                   const y = years[i]!;
                   if (y.phase === "decumulation") {
                     firstDecumYear = y;
-                    priorAccumEnd = i > 0 ? years[i - 1]!.endBalance : null;
+                    priorAccumEnd = i > 0 ? rowTotal(years[i - 1]!) : null;
                     break;
                   }
                 }

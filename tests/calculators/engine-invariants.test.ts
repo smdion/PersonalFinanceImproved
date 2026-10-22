@@ -7,10 +7,19 @@
  * Run time defaults to 20 runs per invariant (CI-friendly). Override with
  * FAST_CHECK_NUM_RUNS=200 for deeper stress testing (see `pnpm test:stress`).
  */
+import {
+  startingBalanceGaps,
+  withConsistentStart,
+} from "./fixtures/engine-fixtures";
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import { calculateProjection } from "@/lib/calculators/engine";
+import {
+  toSimpleTaxMode,
+  type SimpleTaxModeParts,
+} from "@/lib/calculators/simple-tax-mode";
 import type {
+  IndividualAccountInput,
   ProjectionInput,
   EngineDecumulationYear,
   EngineAccumulationYear,
@@ -20,6 +29,7 @@ import {
   getTotalBalance,
   getTraditionalBalance,
 } from "@/lib/config/account-types";
+import { WITHDRAWAL_STRATEGY_VALUES } from "@/lib/config/withdrawal-strategies";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -31,91 +41,103 @@ const EPSILON = 0.011; // $0.011 rounding tolerance (cent + tiny float)
 
 /** Build a minimal valid engine input with sensible defaults. */
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
-  return {
-    accumulationDefaults: {
-      contributionRate: 0.15,
-      routingMode: "waterfall",
-      accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
-      accountSplits: {
-        "401k": 0.4,
-        "403b": 0,
-        hsa: 0.1,
-        ira: 0.15,
-        brokerage: 0.35,
+  return withConsistentStart(
+    {
+      accumulationDefaults: {
+        contributionRate: 0.15,
+        routingMode: "waterfall",
+        accountOrder: ["401k", "403b", "hsa", "ira", "brokerage"],
+        accountSplits: {
+          "401k": 0.4,
+          "403b": 0,
+          hsa: 0.1,
+          ira: 0.15,
+          brokerage: 0.35,
+        },
+        taxSplits: { "401k": 0.5, ira: 1.0 },
       },
-      taxSplits: { "401k": 0.5, ira: 1.0 },
-    },
-    decumulationDefaults: {
-      withdrawalRate: 0.04,
-      withdrawalRoutingMode: "waterfall",
-      withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
-      withdrawalSplits: {
-        "401k": 0.35,
-        "403b": 0,
-        ira: 0.25,
-        brokerage: 0.3,
-        hsa: 0.1,
+      decumulationDefaults: {
+        withdrawalRate: 0.04,
+        withdrawalRoutingMode: "waterfall",
+        withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+        withdrawalSplits: {
+          "401k": 0.35,
+          "403b": 0,
+          ira: 0.25,
+          brokerage: 0.3,
+          hsa: 0.1,
+        },
+        withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
+        distributionTaxRates: {
+          traditionalFallbackRate: 0.22,
+          roth: 0,
+          hsa: 0,
+          brokerage: 0.15,
+        },
       },
-      withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
-      distributionTaxRates: {
-        traditionalFallbackRate: 0.22,
-        roth: 0,
+      accumulationOverrides: [],
+      decumulationOverrides: [],
+      currentAge: 35,
+      retirementAge: 65,
+      projectionEndAge: 90,
+      currentSalary: 150000,
+      salaryGrowthRate: 0.03,
+      salaryCap: null,
+      salaryOverrides: [],
+      budgetOverrides: [],
+      baseLimits: {
+        "401k": 23500,
+        "403b": 23500,
+        hsa: 4300,
+        ira: 7000,
+        brokerage: 0,
+      },
+      limitGrowthRate: 0.02,
+      catchupLimits: {
+        "401k": 7500,
+        ira: 1000,
+        hsa: 1000,
+        "401k_super": 11250,
+      },
+      employerMatchRateByCategory: {
+        "401k": 0.03,
+        "403b": 0,
         hsa: 0,
-        brokerage: 0.15,
+        ira: 0,
+        brokerage: 0,
       },
-    },
-    accumulationOverrides: [],
-    decumulationOverrides: [],
-    currentAge: 35,
-    retirementAge: 65,
-    projectionEndAge: 90,
-    currentSalary: 150000,
-    salaryGrowthRate: 0.03,
-    salaryCap: null,
-    salaryOverrides: [],
-    budgetOverrides: [],
-    baseLimits: {
-      "401k": 23500,
-      "403b": 23500,
-      hsa: 4300,
-      ira: 7000,
-      brokerage: 0,
-    },
-    limitGrowthRate: 0.02,
-    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
-    employerMatchRateByCategory: {
-      "401k": 0.03,
-      "403b": 0,
-      hsa: 0,
-      ira: 0,
-      brokerage: 0,
-    },
-    startingBalances: {
-      preTax: 100000,
-      taxFree: 50000,
-      afterTax: 30000,
-      afterTaxBasis: 20000,
-      hsa: 15000,
-    },
-    startingAccountBalances: {
-      "401k": {
-        structure: "roth_traditional",
-        traditional: 80000,
-        roth: 20000,
+      startingBalances: {
+        preTax: 110000,
+        taxFree: 40000,
+        afterTax: 30000,
+        afterTaxBasis: 20000,
+        hsa: 15000,
       },
-      "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
-      hsa: { structure: "single_bucket", balance: 15000 },
-      ira: { structure: "roth_traditional", traditional: 30000, roth: 20000 },
-      brokerage: { structure: "basis_tracking", balance: 30000, basis: 20000 },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 80000,
+          roth: 20000,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 15000 },
+        ira: { structure: "roth_traditional", traditional: 30000, roth: 20000 },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 30000,
+          basis: 20000,
+        },
+      },
+      annualExpenses: 72000,
+      inflationRate: 0.025,
+      returnRates: [{ label: "7%", rate: 0.07 }],
+      socialSecurityAnnual: 36000,
+      ssStartAge: 67,
+      asOfDate: AS_OF,
+      ...overrides,
     },
-    annualExpenses: 72000,
-    inflationRate: 0.025,
-    returnRates: [{ label: "7%", rate: 0.07 }],
-    socialSecurityAnnual: 36000,
-    ssStartAge: 67,
-    asOfDate: AS_OF,
-    ...overrides,
-  };
+    overrides,
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -179,14 +201,14 @@ function arbitraryInput(): fc.Arbitrary<ProjectionInput> {
           "401k": {
             structure: "roth_traditional",
             traditional: Math.floor(r.preTaxBalance * 0.7),
-            roth: Math.floor(r.preTaxBalance * 0.3),
+            roth: Math.floor(r.rothBalance * 0.3),
           },
           "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
           hsa: { structure: "single_bucket", balance: r.hsaBalance },
           ira: {
             structure: "roth_traditional",
-            traditional: Math.floor(r.rothBalance * 0.5),
-            roth: Math.floor(r.rothBalance * 0.5),
+            traditional: r.preTaxBalance - Math.floor(r.preTaxBalance * 0.7),
+            roth: r.rothBalance - Math.floor(r.rothBalance * 0.3),
           },
           brokerage: {
             structure: "basis_tracking",
@@ -234,14 +256,14 @@ function arbitraryRetiredInput(): fc.Arbitrary<ProjectionInput> {
           "401k": {
             structure: "roth_traditional",
             traditional: Math.floor(r.preTaxBalance * 0.8),
-            roth: Math.floor(r.preTaxBalance * 0.2),
+            roth: Math.floor(r.rothBalance * 0.2),
           },
           "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
           hsa: { structure: "single_bucket", balance: r.hsaBalance },
           ira: {
             structure: "roth_traditional",
-            traditional: Math.floor(r.rothBalance * 0.6),
-            roth: Math.floor(r.rothBalance * 0.4),
+            traditional: r.preTaxBalance - Math.floor(r.preTaxBalance * 0.8),
+            roth: r.rothBalance - Math.floor(r.rothBalance * 0.2),
           },
           brokerage: {
             structure: "basis_tracking",
@@ -283,8 +305,8 @@ function arbitraryRmdInput(): fc.Arbitrary<ProjectionInput> {
         startingAccountBalances: {
           "401k": {
             structure: "roth_traditional",
-            traditional: Math.floor(r.preTaxBalance * 0.8),
-            roth: Math.floor(r.preTaxBalance * 0.2),
+            traditional: r.preTaxBalance - 30000,
+            roth: 30000,
           },
           "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
           hsa: { structure: "single_bucket", balance: 10000 },
@@ -405,8 +427,8 @@ describe("engine invariants", () => {
 
     it("5 — year N ending balances equal year N+1 starting balances (within rounding)", () => {
       // The engine does not expose "startBalance" directly, but the first year's
-      // endBalance feeds the next year's computation. We verify that endBalance
-      // is monotonically consistent: the sum of balanceByTaxType equals endBalance.
+      // allAccountsBalance feeds the next year's computation. We verify that allAccountsBalance
+      // is monotonically consistent: the sum of balanceByTaxType equals allAccountsBalance.
       fc.assert(
         fc.property(arbitraryInput(), (input) => {
           const result = calculateProjection(input);
@@ -414,18 +436,18 @@ describe("engine invariants", () => {
           for (let i = 0; i < years.length - 1; i++) {
             const cur = years[i]!;
             const next = years[i + 1]!;
-            // endBalance must equal sum of tax-bucket balances
+            // allAccountsBalance must equal sum of tax-bucket balances
             const bucketSum =
               cur.balanceByTaxType.preTax +
               cur.balanceByTaxType.taxFree +
               cur.balanceByTaxType.afterTax +
               cur.balanceByTaxType.hsa;
-            expect(Math.abs(cur.endBalance - bucketSum)).toBeLessThan(
+            expect(Math.abs(cur.allAccountsBalance - bucketSum)).toBeLessThan(
               EPSILON + 1,
             );
-            // endBalance of year N must be positive if next year has a non-zero balance
-            if (next.endBalance > 1) {
-              expect(cur.endBalance).toBeGreaterThanOrEqual(-EPSILON);
+            // allAccountsBalance of year N must be positive if next year has a non-zero balance
+            if (next.allAccountsBalance > 1) {
+              expect(cur.allAccountsBalance).toBeGreaterThanOrEqual(-EPSILON);
             }
           }
         }),
@@ -585,9 +607,9 @@ describe("engine invariants", () => {
           for (const year of result.projectionByYear) {
             if (year.phase !== "decumulation") continue;
             // Withdrawals cannot exceed what was in the portfolio at start of year.
-            // We check: endBalance >= 0 (within tolerance) — the engine already
+            // We check: allAccountsBalance >= 0 (within tolerance) — the engine already
             // enforces this by capping withdrawals at available balance.
-            expect(year.endBalance).toBeGreaterThanOrEqual(-EPSILON);
+            expect(year.allAccountsBalance).toBeGreaterThanOrEqual(-EPSILON);
           }
         }),
         { numRuns: NUM_RUNS },
@@ -724,6 +746,20 @@ describe("engine invariants", () => {
       );
     });
 
+    it("generated inputs describe their starting money the same way in every form", () => {
+      for (const arb of [
+        arbitraryInput(),
+        arbitraryRetiredInput(),
+        arbitraryRmdInput(),
+      ])
+        fc.assert(
+          fc.property(arb, (input) => {
+            expect(startingBalanceGaps(calculateProjection(input))).toEqual([]);
+          }),
+          { numRuns: NUM_RUNS },
+        );
+    });
+
     it("28 — engine is deterministic: running twice produces identical output", () => {
       fc.assert(
         fc.property(arbitraryInput(), (input) => {
@@ -733,8 +769,8 @@ describe("engine invariants", () => {
             result2.projectionByYear.length,
           );
           for (let i = 0; i < result1.projectionByYear.length; i++) {
-            expect(result1.projectionByYear[i]!.endBalance).toBe(
-              result2.projectionByYear[i]!.endBalance,
+            expect(result1.projectionByYear[i]!.allAccountsBalance).toBe(
+              result2.projectionByYear[i]!.allAccountsBalance,
             );
           }
         }),
@@ -1066,8 +1102,8 @@ describe("engine invariants", () => {
         currentSalary: 0,
         enableIrmaaAwareness: true,
         startingBalances: {
-          preTax: 800000,
-          taxFree: 100000,
+          preTax: 780000,
+          taxFree: 120000,
           afterTax: 50000,
           afterTaxBasis: 25000,
           hsa: 20000,
@@ -1121,8 +1157,8 @@ describe("engine invariants", () => {
         annualExpenses: 80000,
         returnRates: [{ label: "5%", rate: 0.05 }], // modest returns to trigger guardrails
         startingBalances: {
-          preTax: 600000,
-          taxFree: 100000,
+          preTax: 550000,
+          taxFree: 150000,
           afterTax: 50000,
           afterTaxBasis: 30000,
           hsa: 20000,
@@ -1373,9 +1409,9 @@ describe("engine invariants", () => {
             `${strategy} year ${decA[i].year}: projectedExpenses should be identical regardless of post-retirement raise`,
           ).toBeCloseTo(decB[i].projectedExpenses, 2);
           expect(
-            decA[i].endBalance,
-            `${strategy} year ${decA[i].year}: endBalance should be identical regardless of post-retirement raise`,
-          ).toBeCloseTo(decB[i].endBalance, 0);
+            decA[i].allAccountsBalance,
+            `${strategy} year ${decA[i].year}: allAccountsBalance should be identical regardless of post-retirement raise`,
+          ).toBeCloseTo(decB[i].allAccountsBalance, 0);
         }
       }
     });
@@ -1435,7 +1471,7 @@ describe("engine invariants", () => {
             // brokerageContribution reports Portfolio-category post-retirement
             // contributions for the brokerage page.  It must NOT be applied to
             // retirement balances.  Verify it's non-negative (valid report
-            // value) and that endBalance = sum of tax buckets (no hidden
+            // value) and that allAccountsBalance = sum of tax buckets (no hidden
             // contribution injection).
             expect(decYr.brokerageContribution).toBeGreaterThanOrEqual(0);
             const bucketSum =
@@ -1443,11 +1479,1364 @@ describe("engine invariants", () => {
               decYr.balanceByTaxType.taxFree +
               decYr.balanceByTaxType.hsa +
               decYr.balanceByTaxType.afterTax;
-            expect(decYr.endBalance).toBeCloseTo(bucketSum, 0);
+            expect(decYr.allAccountsBalance).toBeCloseTo(bucketSum, 0);
           }
         }),
         { numRuns: NUM_RUNS },
       );
+    });
+  });
+
+  describe("retirement spending ignores Portfolio money", () => {
+    // Already retired (no contributions — only spending-sizing paths
+    // involved). The extra $1M sits in a Portfolio-parented brokerage at the
+    // same basis ratio as the household's brokerage, so nothing but the
+    // Portfolio balance itself differs.
+    const retired = (portfolio: number): ProjectionInput => {
+      const base = makeInput({ currentAge: 66, retirementAge: 66 });
+      const individualAccounts = [
+        {
+          name: "401k",
+          category: "401k" as const,
+          taxType: "preTax",
+          startingBalance: 80000,
+        },
+        {
+          name: "401k",
+          category: "401k" as const,
+          taxType: "taxFree",
+          startingBalance: 20000,
+        },
+        {
+          name: "IRA",
+          category: "ira" as const,
+          taxType: "preTax",
+          startingBalance: 30000,
+        },
+        {
+          name: "IRA",
+          category: "ira" as const,
+          taxType: "taxFree",
+          startingBalance: 20000,
+        },
+        {
+          name: "HSA",
+          category: "hsa" as const,
+          taxType: "hsa",
+          startingBalance: 15000,
+        },
+        {
+          name: "Retirement brokerage",
+          category: "brokerage" as const,
+          taxType: "afterTax",
+          startingBalance: 30000,
+        },
+      ].map((a) => ({ ...a, parentCategory: "Retirement" }));
+      if (portfolio > 0)
+        individualAccounts.push({
+          name: "Long-term brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: portfolio,
+          parentCategory: "Portfolio",
+        });
+      const basisRatio = 20000 / 30000;
+      return {
+        ...base,
+        individualAccounts,
+        startingBalances: {
+          ...base.startingBalances,
+          afterTax: 30000 + portfolio,
+          afterTaxBasis: (30000 + portfolio) * basisRatio,
+        },
+        startingAccountBalances: {
+          ...base.startingAccountBalances,
+          brokerage: {
+            structure: "basis_tracking",
+            balance: 30000 + portfolio,
+            basis: (30000 + portfolio) * basisRatio,
+          },
+        },
+      };
+    };
+    const spending = (input: ProjectionInput) =>
+      calculateProjection(input)
+        .projectionByYear.filter((y) => y.phase === "decumulation")
+        .slice(0, 10)
+        .map((y) => y.projectedExpenses);
+
+    it("the two balances: retirement money is every account minus the Portfolio ones", () => {
+      for (const y of calculateProjection(retired(1_000_000))
+        .projectionByYear) {
+        const portfolio = y.individualAccountBalances
+          .filter((a) => a.parentCategory === "Portfolio")
+          .reduce((t, a) => t + a.balance, 0);
+        expect(y.retirementBalance, `${y.year}`).toBeCloseTo(
+          Math.max(0, y.allAccountsBalance - portfolio),
+          0,
+        );
+      }
+    });
+
+    it("running out means retirement money running out, whatever Portfolio holds", () => {
+      // No HSA: it isn't drawn for general spending here, so it would keep
+      // the balance above $1 (unmet need is the plan judge's business).
+      const spendy = (portfolio: number): ProjectionInput => {
+        const input = retired(portfolio);
+        return {
+          ...input,
+          annualExpenses: 150000,
+          decumulationAnnualExpenses: 150000,
+          individualAccounts: input.individualAccounts!.filter(
+            (a) => a.category !== "hsa",
+          ),
+          // Buckets that match the accounts (makeInput's are $10k off in
+          // both pre-tax and tax-free).
+          startingBalances: {
+            ...input.startingBalances,
+            hsa: 0,
+            preTax: 110000,
+            taxFree: 40000,
+          },
+          startingAccountBalances: {
+            ...input.startingAccountBalances!,
+            hsa: { structure: "single_bucket", balance: 0 },
+          },
+        };
+      };
+      const without = calculateProjection(spendy(0));
+      const withPortfolio = calculateProjection(spendy(1_000_000));
+      expect(without.retirementDepletionAge).not.toBeNull();
+      expect(withPortfolio.retirementDepletionAge).toBe(
+        without.retirementDepletionAge,
+      );
+      // The Portfolio money is still there (it's never spent in retirement).
+      const depleted = withPortfolio.projectionByYear.find(
+        (y) => y.age === withPortfolio.retirementDepletionAge,
+      )!;
+      expect(depleted.retirementBalance).toBeLessThan(1);
+      expect(depleted.allAccountsBalance).toBeGreaterThan(1_000_000);
+    });
+
+    it("every strategy sizes spending from retirement money only", () => {
+      for (const strategy of WITHDRAWAL_STRATEGY_VALUES) {
+        const withStrategy = (portfolio: number) => {
+          const input = retired(portfolio);
+          return {
+            ...input,
+            decumulationDefaults: {
+              ...input.decumulationDefaults,
+              withdrawalStrategy: strategy,
+            },
+          };
+        };
+        const without = spending(withStrategy(0));
+        const withPortfolio = spending(withStrategy(1_000_000));
+        without.forEach((v, i) =>
+          expect
+            .soft(withPortfolio[i], `${strategy}, year ${i + 1}`)
+            .toBeCloseTo(v, 0),
+        );
+      }
+    });
+
+    it("Portfolio Traditional money isn't part of the Traditional share or the year-1 withdrawal", () => {
+      // +$1M Traditional IRA tagged Portfolio (before RMD age, so RMDs —
+      // which do count it — don't enter the first years).
+      const withPortfolioIra = (): ProjectionInput => {
+        const input = retired(0);
+        return {
+          ...input,
+          individualAccounts: [
+            ...input.individualAccounts!,
+            {
+              name: "Portfolio IRA",
+              category: "ira",
+              taxType: "preTax",
+              startingBalance: 1_000_000,
+              parentCategory: "Portfolio",
+            },
+          ],
+          startingBalances: {
+            ...input.startingBalances,
+            preTax: input.startingBalances.preTax + 1_000_000,
+          },
+          startingAccountBalances: {
+            ...input.startingAccountBalances,
+            ira: {
+              structure: "roth_traditional",
+              traditional: 1_030_000,
+              roth: 20000,
+            },
+          },
+        };
+      };
+      const firstYear = (input: ProjectionInput) =>
+        calculateProjection(input).projectionByYear.find(
+          (y): y is EngineDecumulationYear => y.phase === "decumulation",
+        )!;
+      const without = firstYear(retired(0));
+      const withIra = firstYear(withPortfolioIra());
+      expect(withIra.estTraditionalPortion).toBeGreaterThan(0);
+      expect(withIra.estTraditionalPortion).toBeCloseTo(
+        without.estTraditionalPortion!,
+        6,
+      );
+      expect(withIra.targetWithdrawal).toBeCloseTo(
+        without.targetWithdrawal!,
+        0,
+      );
+    });
+
+    it("the Rate-Seeded first year seeds from retirement money only", () => {
+      const seeded = (portfolio: number) =>
+        spending({
+          ...retired(portfolio),
+          rateSeededDecumulationYear1: true,
+        })[0];
+      expect(seeded(1_000_000)).toBeCloseTo(seeded(0)!, 0);
+    });
+  });
+
+  describe("penalty-locked money stays locked", () => {
+    it("money in a category no tracked account holds isn't drawn before 59½", () => {
+      // Retired at 55; the 401(k) account (Traditional) is locked until
+      // 59½ (no Rule of 55). The category also holds $50k of Roth 401(k)
+      // money no account tracks — it was drawn penalty-free as if reachable.
+      const birthYear = AS_OF.getFullYear() - 55;
+      const base = makeInput({ currentAge: 55, retirementAge: 55 });
+      const input: ProjectionInput = {
+        ...base,
+        decumulationDefaults: {
+          ...base.decumulationDefaults,
+          avoidPenalizedWithdrawals: true,
+        },
+        startingBalances: {
+          preTax: 500000,
+          taxFree: 50000,
+          hsa: 0,
+          afterTax: 400000,
+          afterTaxBasis: 300000,
+        },
+        startingAccountBalances: {
+          "401k": {
+            structure: "roth_traditional",
+            traditional: 500000,
+            roth: 50000,
+          },
+          "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+          hsa: { structure: "single_bucket", balance: 0 },
+          ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+          brokerage: {
+            structure: "basis_tracking",
+            balance: 400000,
+            basis: 300000,
+          },
+        },
+        individualAccounts: [
+          {
+            name: "401k",
+            category: "401k",
+            taxType: "preTax",
+            startingBalance: 500000,
+            ownerPersonId: 1,
+            ownerName: "Alex",
+            ownerBirthYear: birthYear,
+            ruleOf55ForceIneligible: true,
+            parentCategory: "Retirement",
+          },
+          {
+            name: "Brokerage",
+            category: "brokerage",
+            taxType: "afterTax",
+            startingBalance: 400000,
+            startingBasis: 300000,
+            parentCategory: "Retirement",
+          },
+        ],
+      };
+      const firstYear = calculateProjection(input).projectionByYear.find(
+        (y): y is EngineDecumulationYear => y.phase === "decumulation",
+      )!;
+      expect(
+        firstYear.slots.find((sl) => sl.category === "401k")!.withdrawal,
+      ).toBe(0);
+      expect(firstYear.penaltyCost ?? 0).toBe(0);
+      expect(firstYear.totalWithdrawal).toBeGreaterThan(0);
+    });
+  });
+
+  describe("retirement money stays retirement money", () => {
+    // $40k to a 401(k) (over the IRS limit → overflow), $5k each to a
+    // Retirement and a Portfolio brokerage, no targets; no growth so the
+    // balances are pure contributions.
+    const overflowInput = (): ProjectionInput => ({
+      ...makeInput({
+        currentAge: 40,
+        retirementAge: 65,
+        currentSalary: 200000,
+        salaryGrowthRate: 0,
+        limitGrowthRate: 0,
+        returnRates: [{ label: "0%", rate: 0 }],
+        accumulationDefaults: {
+          ...makeInput().accumulationDefaults,
+          contributionRate: 0.5,
+        },
+        startingBalances: {
+          preTax: 100000,
+          taxFree: 0,
+          afterTax: 20000,
+          afterTaxBasis: 20000,
+          hsa: 0,
+        },
+        startingAccountBalances: {
+          "401k": {
+            structure: "roth_traditional",
+            traditional: 100000,
+            roth: 0,
+          },
+          "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+          hsa: { structure: "single_bucket", balance: 0 },
+          ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+          brokerage: {
+            structure: "basis_tracking",
+            balance: 20000,
+            basis: 20000,
+          },
+        },
+      }),
+      contributionSpecs: (
+        [
+          ["401k", "401k", 40000, "pre_tax", "Retirement"],
+          [
+            "Retirement brokerage",
+            "brokerage",
+            5000,
+            "after_tax",
+            "Retirement",
+          ],
+          ["Long-term brokerage", "brokerage", 5000, "after_tax", "Portfolio"],
+        ] as const
+      ).map(([name, category, annual, taxTreatment, parentCategory]) => ({
+        name,
+        category,
+        method: "fixed_monthly" as const,
+        value: annual / 12,
+        salaryFraction: 1,
+        baseAnnual: annual,
+        taxTreatment,
+        parentCategory,
+      })),
+      baseYearContributions: {
+        "401k": 40000,
+        "403b": 0,
+        hsa: 0,
+        ira: 0,
+        brokerage: 10000,
+      } as ProjectionInput["baseYearContributions"],
+      individualAccounts: [
+        {
+          name: "401k",
+          category: "401k",
+          taxType: "preTax",
+          startingBalance: 100000,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "Retirement brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 10000,
+          parentCategory: "Retirement",
+        },
+        {
+          name: "Long-term brokerage",
+          category: "brokerage",
+          taxType: "afterTax",
+          startingBalance: 10000,
+          parentCategory: "Portfolio",
+        },
+      ],
+    });
+
+    it("IRS overflow is added once, to Retirement accounts, and per-account balances add up", () => {
+      const years = calculateProjection(overflowInput()).projectionByYear.slice(
+        0,
+        5,
+      );
+      let portfolioPrev = 10000;
+      for (const y of years) {
+        const accts = y.individualAccountBalances ?? [];
+        const brokerage = accts.filter((a) => a.category === "brokerage");
+        expect(y.overflowToBrokerage, `${y.year} overflow`).toBeGreaterThan(0);
+        expect(
+          brokerage.reduce((s, a) => s + a.balance, 0),
+          `${y.year} brokerage accounts = brokerage total`,
+        ).toBeCloseTo(y.balanceByTaxType.afterTax, 0);
+        expect(
+          (y.warnings ?? []).filter((w) => w.includes("reconciliation")),
+        ).toEqual([]);
+        // The Portfolio brokerage grows only by its own contribution.
+        const portfolio = brokerage.find(
+          (a) => a.parentCategory === "Portfolio",
+        )!;
+        expect(portfolio.balance - portfolioPrev).toBeLessThanOrEqual(5000.01);
+        portfolioPrev = portfolio.balance;
+      }
+    });
+
+    it("a lump sum with no named account goes to a Retirement account", () => {
+      const base = overflowInput();
+      const year = base.asOfDate.getFullYear() + 1;
+      const input: ProjectionInput = {
+        ...base,
+        // Portfolio brokerage listed first: the old first-match picked it.
+        individualAccounts: [...base.individualAccounts!].reverse(),
+        accumulationOverrides: [
+          { year, lumpSums: [{ amount: 50000, targetAccount: "brokerage" }] },
+        ] as ProjectionInput["accumulationOverrides"],
+      };
+      const without = calculateProjection(base).projectionByYear.find(
+        (y) => y.year === year,
+      )!;
+      const withLump = calculateProjection(input).projectionByYear.find(
+        (y) => y.year === year,
+      )!;
+      const bal = (y: typeof without, parent: string) =>
+        (y.individualAccountBalances ?? [])
+          .filter(
+            (a) => a.category === "brokerage" && a.parentCategory === parent,
+          )
+          .reduce((t, a) => t + a.balance, 0);
+      expect(bal(withLump, "Portfolio")).toBeCloseTo(
+        bal(without, "Portfolio"),
+        0,
+      );
+      expect(
+        bal(withLump, "Retirement") - bal(without, "Retirement"),
+      ).toBeCloseTo(50000, 0);
+    });
+
+    it("a brokerage goal draws only Portfolio money, capped at what it holds", () => {
+      const base = overflowInput();
+      const year = base.asOfDate.getFullYear() + 2;
+      const withGoal = (targetAmount: number): ProjectionInput => ({
+        ...base,
+        brokerageGoals: [
+          { id: 1, name: "Car", targetAmount, targetYear: year, priority: 1 },
+        ],
+      });
+      const at = (input: ProjectionInput) =>
+        calculateProjection(input).projectionByYear.find(
+          (y) => y.year === year,
+        )!;
+      const parentBal = (y: ReturnType<typeof at>, parent: string) =>
+        (y.individualAccountBalances ?? [])
+          .filter((a) => a.parentCategory === parent)
+          .reduce((t, a) => t + a.balance, 0);
+      const without = at(base);
+      // A goal smaller than the Portfolio brokerage: Retirement untouched.
+      const small = at(withGoal(10000));
+      expect(parentBal(small, "Retirement")).toBeCloseTo(
+        parentBal(without, "Retirement"),
+        0,
+      );
+      expect(
+        parentBal(without, "Portfolio") - parentBal(small, "Portfolio"),
+      ).toBeCloseTo(10000, 0);
+      // A goal bigger than the Portfolio brokerage: draws what it holds,
+      // never the Retirement brokerage.
+      const big = at(withGoal(1_000_000));
+      expect(parentBal(big, "Retirement")).toBeCloseTo(
+        parentBal(without, "Retirement"),
+        0,
+      );
+      expect(parentBal(big, "Portfolio")).toBeLessThan(1);
+    });
+
+    it("the contribution-rate ceiling caps retirement contributions only", () => {
+      const base = overflowInput();
+      // A 10% retirement rate on $200k = $20k a year; the 401(k) spec wants
+      // $40k and the Retirement brokerage $5k, the Portfolio brokerage $5k.
+      const capped = (portfolioSpec: number): ProjectionInput => ({
+        ...base,
+        accumulationDefaults: {
+          ...base.accumulationDefaults,
+          contributionRate: 0.1,
+        },
+        contributionSpecs: base.contributionSpecs!.map((sp) =>
+          sp.parentCategory === "Portfolio"
+            ? { ...sp, value: portfolioSpec / 12, baseAnnual: portfolioSpec }
+            : sp,
+        ),
+      });
+      const contribs = (input: ProjectionInput) => {
+        const y = calculateProjection(input).projectionByYear[1]!;
+        const by = (parent: string) =>
+          (y.individualAccountBalances ?? [])
+            .filter((a) => a.parentCategory === parent)
+            .reduce((t, a) => t + (a.contribution ?? 0), 0);
+        return { retirement: by("Retirement"), portfolio: by("Portfolio") };
+      };
+      const small = contribs(capped(5000));
+      expect(small.portfolio).toBeCloseTo(5000, 0);
+      expect(small.retirement).toBeCloseTo(20000, 0);
+      // More Portfolio savings never shrinks retirement contributions.
+      const big = contribs(capped(50000));
+      expect(big.portfolio).toBeCloseTo(50000, 0);
+      expect(big.retirement).toBeCloseTo(small.retirement, 0);
+    });
+
+    // Shared checks: per-account brokerage = brokerage total, no
+    // reconciliation warning, every year in the window.
+    const brokerageAddsUp = (input: ProjectionInput, years = 4) => {
+      for (const y of calculateProjection(input).projectionByYear.slice(
+        0,
+        years,
+      )) {
+        const brokerage = (y.individualAccountBalances ?? []).filter(
+          (a) => a.category === "brokerage",
+        );
+        expect(
+          brokerage.reduce((t, a) => t + a.balance, 0),
+          `${y.year} brokerage accounts = brokerage total`,
+        ).toBeCloseTo(y.balanceByTaxType.afterTax, 0);
+        expect(
+          (y.warnings ?? []).filter((w) => w.includes("reconciliation")),
+          `${y.year} reconciliation`,
+        ).toEqual([]);
+      }
+    };
+
+    it("the first (pro-rated) year: the ceiling keeps the Portfolio part and adds nothing", () => {
+      const base = overflowInput();
+      const input: ProjectionInput = {
+        ...base,
+        accumulationDefaults: {
+          ...base.accumulationDefaults,
+          contributionRate: 0.05,
+        },
+      };
+      const y0 = calculateProjection(input).projectionByYear[0]!;
+      const proRate = y0.proRateFraction ?? 1;
+      const contrib = (parent: string) =>
+        (y0.individualAccountBalances ?? [])
+          .filter((a) => a.parentCategory === parent)
+          .reduce((t, a) => t + (a.contribution ?? 0), 0);
+      expect(contrib("Portfolio")).toBeCloseTo(5000 * proRate, 0);
+      expect(contrib("Retirement")).toBeCloseTo(200000 * 0.05 * proRate, 0);
+      brokerageAddsUp(input);
+    });
+
+    it("overflow under a binding ceiling with only a Portfolio brokerage spec is still routed", () => {
+      const base = overflowInput();
+      brokerageAddsUp({
+        ...base,
+        accumulationDefaults: {
+          ...base.accumulationDefaults,
+          contributionRate: 0.15,
+        },
+        contributionSpecs: base.contributionSpecs!.filter(
+          (sp) => sp.name !== "Retirement brokerage",
+        ),
+      });
+    });
+
+    it("a Retirement brokerage with no spec of its own takes the overflow, not a Portfolio spec", () => {
+      const base = overflowInput();
+      const input: ProjectionInput = {
+        ...base,
+        contributionSpecs: base.contributionSpecs!.filter(
+          (sp) => sp.name !== "Retirement brokerage",
+        ),
+      };
+      let portfolioPrev = 10000;
+      for (const y of calculateProjection(input).projectionByYear.slice(0, 4)) {
+        const portfolio = (y.individualAccountBalances ?? []).find(
+          (a) => a.parentCategory === "Portfolio",
+        )!;
+        expect(
+          portfolio.balance - portfolioPrev,
+          `${y.year}`,
+        ).toBeLessThanOrEqual(5000.01);
+        portfolioPrev = portfolio.balance;
+      }
+      brokerageAddsUp(input);
+    });
+
+    describe("no Retirement brokerage: overflow lands in the projection-only one", () => {
+      const projected: IndividualAccountInput = {
+        name: "Retirement brokerage (projected)",
+        category: "brokerage",
+        taxType: "afterTax",
+        startingBalance: 0,
+        startingBasis: 0,
+        parentCategory: "Retirement",
+        projectedOnly: true,
+      };
+      // No account holds money the aggregate doesn't know about, so neither
+      // reconciliation nor the basis sync has anything to report.
+      const noDiagnostics = (input: ProjectionInput) => {
+        for (const y of calculateProjection(input).projectionByYear.slice(0, 4))
+          expect(
+            (y.warnings ?? []).filter((w) => w.startsWith("[DIAG]")),
+            `${y.year}`,
+          ).toEqual([]);
+      };
+      const withoutRetirementBrokerage = (
+        keepPortfolio: boolean,
+      ): ProjectionInput => {
+        const base = overflowInput();
+        const afterTax = keepPortfolio ? 10000 : 0;
+        return {
+          ...base,
+          startingBalances: {
+            ...base.startingBalances,
+            afterTax,
+            afterTaxBasis: afterTax,
+          },
+          startingAccountBalances: {
+            ...base.startingAccountBalances,
+            brokerage: {
+              structure: "basis_tracking",
+              balance: afterTax,
+              basis: afterTax,
+            },
+          },
+          contributionSpecs: base.contributionSpecs!.filter(
+            (sp) =>
+              sp.name === "401k" ||
+              (keepPortfolio && sp.name === "Long-term brokerage"),
+          ),
+          baseYearContributions: {
+            ...base.baseYearContributions!,
+            brokerage: keepPortfolio ? 5000 : 0,
+          },
+          individualAccounts: [
+            ...base.individualAccounts!.filter(
+              (ia) =>
+                ia.name === "401k" ||
+                (keepPortfolio && ia.name === "Long-term brokerage"),
+            ),
+            projected,
+          ],
+        };
+      };
+
+      it("only a Portfolio brokerage: the Portfolio one gets none of it", () => {
+        const input = withoutRetirementBrokerage(true);
+        let portfolioPrev = 10000;
+        const years = calculateProjection(input).projectionByYear.slice(0, 4);
+        for (const y of years) {
+          const accts = y.individualAccountBalances ?? [];
+          const portfolio = accts.find(
+            (a) => a.parentCategory === "Portfolio",
+          )!;
+          expect(
+            portfolio.balance - portfolioPrev,
+            `${y.year}`,
+          ).toBeLessThanOrEqual(5000.01);
+          portfolioPrev = portfolio.balance;
+        }
+        expect(
+          years[3]!.individualAccountBalances!.find((a) => a.projectedOnly)
+            ?.balance,
+        ).toBeGreaterThan(0);
+        brokerageAddsUp(input);
+        noDiagnostics(input);
+      });
+
+      it("a retirement lump sum lands in the projection-only one, not Portfolio", () => {
+        const base = withoutRetirementBrokerage(true);
+        const year = base.asOfDate.getFullYear() + 1;
+        const portfolioIn = (input: ProjectionInput) =>
+          calculateProjection(input)
+            .projectionByYear.find((y) => y.year === year)!
+            .individualAccountBalances!.find(
+              (a) => a.parentCategory === "Portfolio",
+            )!.balance;
+        const input: ProjectionInput = {
+          ...base,
+          accumulationOverrides: [
+            { year, lumpSums: [{ amount: 50000, targetAccount: "brokerage" }] },
+          ] as ProjectionInput["accumulationOverrides"],
+        };
+        expect(portfolioIn(input)).toBeCloseTo(portfolioIn(base), 0);
+        brokerageAddsUp(input);
+        noDiagnostics(input);
+      });
+
+      it("no brokerage at all: the projection-only one holds all of it", () => {
+        const input = withoutRetirementBrokerage(false);
+        brokerageAddsUp(input);
+        noDiagnostics(input);
+      });
+    });
+
+    it("the ramp stays Portfolio money when only a Retirement brokerage has a spec", () => {
+      const base = overflowInput();
+      const input = {
+        ...base,
+        contributionSpecs: base.contributionSpecs!.filter(
+          (sp) => sp.name !== "Long-term brokerage",
+        ),
+      };
+      const year = base.asOfDate.getFullYear() + 2;
+      const portfolio = (i: ProjectionInput) =>
+        calculateProjection(i)
+          .projectionByYear.find((y) => y.year === year)!
+          .individualAccountBalances!.find(
+            (a) => a.parentCategory === "Portfolio",
+          )!.balance;
+      expect(
+        portfolio({ ...input, brokerageContributionRamp: 1000 }) -
+          portfolio(input),
+      ).toBeCloseTo(2000 + 1000, 0); // two ramp years: +$1k, +$2k
+      brokerageAddsUp({ ...input, brokerageContributionRamp: 1000 });
+    });
+
+    describe("Simple tax mode: the retirement side, collapsed", () => {
+      const zero = { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 0 };
+      // What the payload derives for overflowInput's retirement money.
+      const parts: SimpleTaxModeParts = {
+        retirementBuckets: {
+          preTax: 100000,
+          taxFree: 0,
+          hsa: 0,
+          afterTax: 10000,
+          afterTaxBasis: 10000,
+        },
+        defaults: {
+          baseYearContributions: { ...zero, "401k": 40000, brokerage: 5000 },
+          baseYearEmployerMatch: zero,
+          employerMatchRateByCategory: zero,
+          accountSplits: {
+            ...zero,
+            "401k": 40000 / 45000,
+            brokerage: 5000 / 45000,
+          },
+          taxSplits: {},
+        },
+      };
+      const endBalances = (input: ProjectionInput) =>
+        calculateProjection(toSimpleTaxMode(input, parts)).projectionByYear.map(
+          (y) => Math.round(y.allAccountsBalance),
+        );
+      const portfolioSpec = overflowInput().contributionSpecs!.find(
+        (sp) => sp.parentCategory === "Portfolio",
+      )!;
+
+      it("Portfolio balances, savings, goals, lump sums, ramp and switches change nothing", () => {
+        const base = overflowInput();
+        const y1 = base.asOfDate.getFullYear() + 1;
+        const y30 = base.asOfDate.getFullYear() + 30;
+        const switchSpecs = base.contributionSpecs!.filter(
+          (sp) => sp.parentCategory !== "Portfolio",
+        );
+        const withSwitch = (specs: typeof switchSpecs): ProjectionInput => ({
+          ...base,
+          contributionSpecs: switchSpecs,
+          profileSwitches: [
+            {
+              year: y1 + 2,
+              contributionSpecs: specs,
+              employerMatchRateByCategory: zero,
+              baseYearContributions: zero,
+              baseYearEmployerMatch: zero,
+              contributionRate: 0.5,
+              retirementOnly: {
+                baseYearContributions: zero,
+                baseYearEmployerMatch: zero,
+                employerMatchRateByCategory: zero,
+              },
+            },
+          ],
+        });
+        const plain = withSwitch(switchSpecs);
+        const withPortfolio: ProjectionInput = {
+          ...withSwitch([...switchSpecs, portfolioSpec]),
+          contributionSpecs: base.contributionSpecs,
+          individualAccounts: base.individualAccounts!.map((ia) =>
+            ia.parentCategory === "Portfolio"
+              ? { ...ia, startingBalance: 1010000 }
+              : ia,
+          ),
+          brokerageGoals: [
+            {
+              id: 1,
+              name: "Car",
+              targetAmount: 40000,
+              targetYear: y1 + 1,
+              priority: 1,
+            },
+          ],
+          brokerageContributionRamp: 1000,
+          accumulationOverrides: [
+            {
+              year: y1,
+              lumpSums: [
+                {
+                  amount: 50000,
+                  targetAccount: "brokerage",
+                  targetParentCategory: "Portfolio",
+                },
+                // Named: lands in the Portfolio account.
+                {
+                  amount: 25000,
+                  targetAccount: "brokerage",
+                  targetAccountName: "Long-term brokerage",
+                },
+              ],
+            },
+          ] as ProjectionInput["accumulationOverrides"],
+          decumulationOverrides: [
+            {
+              year: y30,
+              lumpSums: [
+                {
+                  amount: 70000,
+                  targetAccount: "brokerage",
+                  targetParentCategory: "Portfolio",
+                },
+              ],
+            },
+          ] as ProjectionInput["decumulationOverrides"],
+        };
+        expect(endBalances(withPortfolio)).toEqual(endBalances(plain));
+      });
+
+      it("keeps what is retirement money: retirement lump sums, and the ramp with no Portfolio brokerage", () => {
+        const base = overflowInput();
+        const y1 = base.asOfDate.getFullYear() + 1;
+        const noPortfolio: ProjectionInput = {
+          ...base,
+          contributionSpecs: base.contributionSpecs!.filter(
+            (sp) => sp.parentCategory !== "Portfolio",
+          ),
+          individualAccounts: base.individualAccounts!.filter(
+            (ia) => ia.parentCategory !== "Portfolio",
+          ),
+        };
+        // Year 5 (the 0%-growth fixture is spent down by the end).
+        const last = (input: ProjectionInput) => endBalances(input)[5]!;
+        expect(
+          last({ ...noPortfolio, brokerageContributionRamp: 1000 }),
+        ).toBeGreaterThan(last(noPortfolio));
+        expect(
+          last({
+            ...noPortfolio,
+            accumulationOverrides: [
+              {
+                year: y1,
+                lumpSums: [{ amount: 50000, targetAccount: "brokerage" }],
+              },
+            ] as ProjectionInput["accumulationOverrides"],
+          }),
+        ).toBeGreaterThan(last(noPortfolio));
+      });
+
+      it("only Portfolio savings: Simple adds no retirement contributions", () => {
+        const base = overflowInput();
+        const onlyPortfolio: ProjectionInput = {
+          ...base,
+          // What the payload sets for such a household (no retirement
+          // contributions, real pay): a 0% retirement rate.
+          accumulationDefaults: {
+            ...base.accumulationDefaults,
+            contributionRate: 0,
+          },
+          contributionSpecs: [portfolioSpec],
+        };
+        const noSavings: ProjectionInput = {
+          ...onlyPortfolio,
+          contributionSpecs: [],
+        };
+        expect(endBalances(onlyPortfolio)).toEqual(endBalances(noSavings));
+      });
+
+      it("a profile switch without its retirement-only amounts fails loudly", () => {
+        const base = overflowInput();
+        expect(() =>
+          toSimpleTaxMode(
+            {
+              ...base,
+              profileSwitches: [
+                {
+                  year: base.asOfDate.getFullYear() + 2,
+                  contributionSpecs: [],
+                  employerMatchRateByCategory: zero,
+                  baseYearContributions: zero,
+                  baseYearEmployerMatch: zero,
+                  contributionRate: 0,
+                },
+              ],
+            },
+            parts,
+          ),
+        ).toThrow(/retirement-only amounts/);
+      });
+
+      it("collapses only retirement money into one tax-free pot", () => {
+        const simple = toSimpleTaxMode(overflowInput(), parts);
+        expect(simple.startingBalances.afterTax).toBe(110000);
+        expect(simple.individualAccounts).toEqual([]);
+        expect(simple.brokerageGoals).toEqual([]);
+        expect(
+          simple.contributionSpecs!.some(
+            (sp) => sp.parentCategory === "Portfolio",
+          ),
+        ).toBe(false);
+      });
+    });
+
+    it("Portfolio money stays Portfolio: the ramp and a Brokerage-page lump sum", () => {
+      const base = overflowInput();
+      const year = base.asOfDate.getFullYear() + 1;
+      const portfolioBal = (input: ProjectionInput) =>
+        (
+          calculateProjection(input).projectionByYear.find(
+            (y) => y.year === year,
+          )!.individualAccountBalances ?? []
+        )
+          .filter((a) => a.parentCategory === "Portfolio")
+          .reduce((t, a) => t + a.balance, 0);
+      const without = portfolioBal(base);
+      // The Brokerage page's yearly contribution increase.
+      expect(
+        portfolioBal({ ...base, brokerageContributionRamp: 1000 }) - without,
+      ).toBeCloseTo(1000, 0);
+      // A Brokerage-page lump sum with no account named.
+      expect(
+        portfolioBal({
+          ...base,
+          accumulationOverrides: [
+            {
+              year,
+              lumpSums: [
+                {
+                  amount: 20000,
+                  targetAccount: "brokerage",
+                  targetParentCategory: "Portfolio",
+                },
+              ],
+            },
+          ] as ProjectionInput["accumulationOverrides"],
+        }) - without,
+      ).toBeCloseTo(20000, 0);
+    });
+
+    describe("brokerage basis per account", () => {
+      // Retired; a Retirement brokerage at 28% basis and a Portfolio one at
+      // 55%; withdrawals take brokerage first.
+      const twoBrokerages = (): ProjectionInput => {
+        const base = makeInput({ currentAge: 66, retirementAge: 66 });
+        return {
+          ...base,
+          decumulationDefaults: {
+            ...base.decumulationDefaults,
+            withdrawalOrder: ["brokerage", "401k", "403b", "ira", "hsa"],
+          },
+          startingBalances: {
+            ...base.startingBalances,
+            afterTax: 40000,
+            afterTaxBasis: 13900,
+          },
+          startingAccountBalances: {
+            ...base.startingAccountBalances,
+            brokerage: {
+              structure: "basis_tracking",
+              balance: 40000,
+              basis: 13900,
+            },
+          },
+          individualAccounts: [
+            {
+              name: "401k",
+              category: "401k",
+              taxType: "preTax",
+              startingBalance: 80000,
+              parentCategory: "Retirement",
+            },
+            {
+              name: "401k",
+              category: "401k",
+              taxType: "taxFree",
+              startingBalance: 20000,
+              parentCategory: "Retirement",
+            },
+            {
+              name: "IRA",
+              category: "ira",
+              taxType: "preTax",
+              startingBalance: 30000,
+              parentCategory: "Retirement",
+            },
+            {
+              name: "IRA",
+              category: "ira",
+              taxType: "taxFree",
+              startingBalance: 20000,
+              parentCategory: "Retirement",
+            },
+            {
+              name: "HSA",
+              category: "hsa",
+              taxType: "hsa",
+              startingBalance: 15000,
+              parentCategory: "Retirement",
+            },
+            {
+              name: "Retirement brokerage",
+              category: "brokerage",
+              taxType: "afterTax",
+              startingBalance: 30000,
+              startingBasis: 8400,
+              parentCategory: "Retirement",
+            },
+            {
+              name: "Long-term brokerage",
+              category: "brokerage",
+              taxType: "afterTax",
+              startingBalance: 10000,
+              startingBasis: 5500,
+              parentCategory: "Portfolio",
+            },
+          ],
+        };
+      };
+
+      it("a retirement brokerage withdrawal is priced at the Retirement brokerage's own basis", () => {
+        const first = calculateProjection(
+          twoBrokerages(),
+        ).projectionByYear.find(
+          (y): y is EngineDecumulationYear => y.phase === "decumulation",
+        )!;
+        const slot = first.slots.find((sl) => sl.category === "brokerage")!;
+        expect(slot.withdrawal).toBeGreaterThan(0);
+        // Start of that year: 8,400 / the account's balance then (grown from
+        // 30,000 by the partial first year) — well under the 13,900/40,000
+        // blended ratio (34.75%).
+        expect(slot.basisPortion! / slot.withdrawal).toBeLessThan(0.3);
+      });
+
+      it("Portfolio basis never moves in retirement; accounts add up to the total; no basis drift", () => {
+        const years = calculateProjection(twoBrokerages()).projectionByYear;
+        for (const y of years) {
+          const brokerage = (y.individualAccountBalances ?? []).filter(
+            (a) => a.category === "brokerage",
+          );
+          const portfolio = brokerage.find(
+            (a) => a.parentCategory === "Portfolio",
+          )!;
+          if (y.phase === "decumulation")
+            expect(
+              portfolio.costBasis,
+              `${y.year} Portfolio basis`,
+            ).toBeCloseTo(5500, 0);
+          expect(
+            (y.warnings ?? []).filter((w) => w.includes("brokerage basis")),
+            `${y.year}`,
+          ).toEqual([]);
+        }
+      });
+
+      const noBasisDrift = (input: ProjectionInput) => {
+        const years = calculateProjection(input).projectionByYear;
+        for (const y of years)
+          expect(
+            (y.warnings ?? []).filter((w) => w.includes("brokerage basis")),
+            `${y.year}`,
+          ).toEqual([]);
+        return years;
+      };
+
+      it("each year's brokerage withdrawal uses exactly the Retirement brokerage's ratio", () => {
+        const years = calculateProjection(twoBrokerages()).projectionByYear;
+        const i = years.findIndex((y) => y.phase === "decumulation");
+        const prev = years[i - 1]!.individualAccountBalances!.find(
+          (a) => a.name === "Retirement brokerage",
+        )!;
+        const slot = (years[i] as EngineDecumulationYear).slots.find(
+          (sl) => sl.category === "brokerage",
+        )!;
+        expect(slot.basisPortion! / slot.withdrawal).toBeCloseTo(
+          prev.costBasis! / prev.balance,
+          3,
+        );
+      });
+
+      it("Roth conversions paid from brokerage leave no basis drift", () => {
+        // A Retirement brokerage big enough to keep paying conversion tax,
+        // and Traditional money worth converting.
+        const small = twoBrokerages();
+        const base: ProjectionInput = {
+          ...small,
+          startingBalances: {
+            ...small.startingBalances,
+            preTax: 600000,
+            afterTax: 410000,
+            afterTaxBasis: 120000,
+          },
+          startingAccountBalances: {
+            ...small.startingAccountBalances,
+            "401k": {
+              structure: "roth_traditional",
+              traditional: 570000,
+              roth: 20000,
+            },
+            brokerage: {
+              structure: "basis_tracking",
+              balance: 410000,
+              basis: 120000,
+            },
+          },
+          individualAccounts: small.individualAccounts!.map((ia) =>
+            ia.name === "Retirement brokerage"
+              ? { ...ia, startingBalance: 400000, startingBasis: 114500 }
+              : ia.name === "401k" && ia.taxType === "preTax"
+                ? { ...ia, startingBalance: 570000 }
+                : ia,
+          ),
+        };
+        const years = noBasisDrift({
+          ...base,
+          decumulationDefaults: {
+            ...base.decumulationDefaults,
+            distributionTaxRates: {
+              ...base.decumulationDefaults.distributionTaxRates,
+              enableRothConversions: true,
+              rothConversionTarget: 0.22,
+              taxBrackets: [
+                { threshold: 0, baseWithholding: 0, rate: 0.1 },
+                { threshold: 23200, baseWithholding: 2320, rate: 0.12 },
+                { threshold: 94300, baseWithholding: 10852, rate: 0.22 },
+              ],
+              grossUpForTaxes: true,
+              taxMultiplier: 1.0,
+            },
+          },
+        });
+        expect(
+          years.some(
+            (y) =>
+              y.phase === "decumulation" &&
+              (y as EngineDecumulationYear).rothConversionAmount > 0,
+          ),
+        ).toBe(true);
+      });
+
+      it("a lump sum in retirement brings its basis with it", () => {
+        const base = twoBrokerages();
+        const year = base.asOfDate.getFullYear() + 3;
+        noBasisDrift({
+          ...base,
+          decumulationOverrides: [
+            {
+              year,
+              lumpSums: [{ amount: 50000, targetAccount: "brokerage" }],
+            },
+          ] as ProjectionInput["decumulationOverrides"],
+        });
+      });
+
+      it("without contribution specs, brokerage contributions keep their basis", () => {
+        const base = overflowInput();
+        noBasisDrift({
+          ...base,
+          contributionSpecs: undefined,
+          individualAccounts: base.individualAccounts!.map((ia) =>
+            ia.category === "brokerage"
+              ? { ...ia, startingBasis: ia.startingBalance }
+              : ia,
+          ),
+          accumulationDefaults: {
+            ...base.accumulationDefaults,
+            accountSplits: {
+              "401k": 0.5,
+              "403b": 0,
+              hsa: 0,
+              ira: 0,
+              brokerage: 0.5,
+            },
+          },
+        });
+      });
+
+      it("a goal's draw never touches Retirement basis", () => {
+        const base = overflowInput();
+        const year = base.asOfDate.getFullYear() + 2;
+        const withBasis = (input: ProjectionInput): ProjectionInput => ({
+          ...input,
+          individualAccounts: input.individualAccounts!.map((ia) =>
+            ia.category === "brokerage"
+              ? { ...ia, startingBasis: ia.startingBalance / 2 }
+              : ia,
+          ),
+        });
+        const retirementBasis = (input: ProjectionInput) =>
+          calculateProjection(withBasis(input))
+            .projectionByYear.find((y) => y.year === year)!
+            .individualAccountBalances!.filter(
+              (a) =>
+                a.category === "brokerage" && a.parentCategory === "Retirement",
+            )
+            .reduce((t, a) => t + (a.costBasis ?? 0), 0);
+        expect(
+          retirementBasis({
+            ...base,
+            brokerageGoals: [
+              {
+                id: 1,
+                name: "Car",
+                targetAmount: 10000,
+                targetYear: year,
+                priority: 1,
+              },
+            ],
+          }),
+        ).toBeCloseTo(retirementBasis(base), 0);
+      });
+    });
+
+    describe("unspent RMD money stays retirement money", () => {
+      // Age 75 with a $3.2M Traditional 401(k) and a $40k budget: the RMD
+      // far exceeds spending; the rest is reinvested.
+      const rmdHousehold = (
+        brokerages: IndividualAccountInput[],
+        handling: "reinvest" | "spend" = "reinvest",
+      ): ProjectionInput => {
+        const base = makeInput({
+          currentAge: 75,
+          retirementAge: 65,
+          projectionEndAge: 78,
+          birthYear: 1950,
+          currentSalary: 0,
+          annualExpenses: 40000,
+          socialSecurityAnnual: 30000,
+          ssStartAge: 70,
+        });
+        const brok = brokerages.reduce((t, b) => t + b.startingBalance, 0);
+        const brokBasis = brokerages.reduce(
+          (t, b) => t + (b.startingBasis ?? 0),
+          0,
+        );
+        return {
+          ...base,
+          individualAccounts: [
+            {
+              name: "401k",
+              category: "401k",
+              taxType: "preTax",
+              startingBalance: 3200000,
+              ownerPersonId: 1,
+              ownerName: "Alex",
+              parentCategory: "Retirement",
+            },
+            ...brokerages,
+          ],
+          startingBalances: {
+            preTax: 3200000,
+            taxFree: 0,
+            afterTax: brok,
+            afterTaxBasis: brokBasis,
+            hsa: 0,
+          },
+          startingAccountBalances: {
+            ...base.startingAccountBalances,
+            "401k": {
+              structure: "roth_traditional",
+              traditional: 3200000,
+              roth: 0,
+            },
+            ira: { structure: "roth_traditional", traditional: 0, roth: 0 },
+            hsa: { structure: "single_bucket", balance: 0 },
+            brokerage: {
+              structure: "basis_tracking",
+              balance: brok,
+              basis: brokBasis,
+            },
+          },
+          decumulationDefaults: {
+            ...base.decumulationDefaults,
+            withdrawalOrder: ["401k", "403b", "ira", "brokerage", "hsa"],
+            rmdExcessHandling: handling,
+          },
+        };
+      };
+      const brok = (
+        name: string,
+        bal: number,
+        parentCategory: string,
+        extra: Partial<IndividualAccountInput> = {},
+      ): IndividualAccountInput => ({
+        name,
+        category: "brokerage",
+        taxType: "afterTax",
+        startingBalance: bal,
+        startingBasis: bal / 2,
+        parentCategory,
+        ...extra,
+      });
+      const firstYear = (input: ProjectionInput) => {
+        const y = calculateProjection(input).projectionByYear.find(
+          (r): r is EngineDecumulationYear => r.phase === "decumulation",
+        )!;
+        return {
+          excess: y.rmdExcessAmount,
+          // An account with no row (the projection-only one while empty) holds $0.
+          bal: (name: string) =>
+            y.individualAccountBalances!.find((a) => a.name === name)
+              ?.balance ?? 0,
+          hasRow: (name: string) =>
+            y.individualAccountBalances!.some((a) => a.name === name),
+        };
+      };
+
+      it("by default it's spread over the Retirement brokerages; Portfolio gets none", () => {
+        const accts = [
+          brok("A", 30000, "Retirement"),
+          brok("B", 10000, "Retirement"),
+          brok("P", 50000, "Portfolio"),
+        ];
+        const reinvest = firstYear(rmdHousehold(accts));
+        const spend = firstYear(rmdHousehold(accts, "spend"));
+        expect(reinvest.excess).toBeGreaterThan(0);
+        expect(reinvest.bal("P")).toBeCloseTo(spend.bal("P"), 0);
+        expect(reinvest.bal("A") - spend.bal("A")).toBeGreaterThan(
+          reinvest.bal("B") - spend.bal("B"),
+        );
+      });
+
+      it("the chosen account receives all of it", () => {
+        const accts = [
+          brok("A", 30000, "Retirement"),
+          brok("B", 10000, "Retirement", { rmdExcessTarget: true }),
+          brok("P", 50000, "Portfolio"),
+        ];
+        const reinvest = firstYear(rmdHousehold(accts));
+        const spend = firstYear(rmdHousehold(accts, "spend"));
+        expect(reinvest.bal("A")).toBeCloseTo(spend.bal("A"), 0);
+        expect(reinvest.bal("P")).toBeCloseTo(spend.bal("P"), 0);
+        expect(reinvest.bal("B") - spend.bal("B")).toBeGreaterThan(0);
+      });
+
+      it("with no Retirement brokerage, the projection-only one takes it and nothing else", () => {
+        const accts = [
+          brok("P", 50000, "Portfolio"),
+          brok("Projected", 0, "Retirement", {
+            projectedOnly: true,
+            startingBasis: 0,
+          }),
+        ];
+        const reinvest = firstYear(rmdHousehold(accts));
+        const spend = firstYear(rmdHousehold(accts, "spend"));
+        expect(reinvest.bal("P")).toBeCloseTo(spend.bal("P"), 0);
+        expect(reinvest.bal("Projected")).toBeGreaterThan(0);
+        expect(spend.bal("Projected")).toBe(0);
+        // Shown once it holds money, hidden while empty.
+        expect(reinvest.hasRow("Projected")).toBe(true);
+        expect(spend.hasRow("Projected")).toBe(false);
+      });
     });
   });
 });

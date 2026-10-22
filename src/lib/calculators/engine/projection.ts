@@ -20,6 +20,10 @@ import type { ProjectionInput, ProjectionResult } from "../types";
 import { formatPercent } from "../../utils/format";
 import { roundToCents } from "../../utils/math";
 import { MAX_INFLATION_RATE, MIN_INFLATION_RATE } from "../../constants";
+import {
+  getAccountTypeConfig,
+  isTaxFreeBucket,
+} from "../../config/account-types";
 import { resolveDecumulationConfig } from "./override-resolution";
 import {
   buildProjectionContext,
@@ -45,6 +49,47 @@ function validateEngineInputs(
   inflationRate: number;
   postRetirementInflationRate: number;
 } {
+  // Setup notes the caller resolved while building the input (e.g. a
+  // chosen account that no longer qualifies) — shown with the result's.
+  warnings.push(...(input.inputWarnings ?? []));
+  // The aggregate buckets, the per-category balances (what withdrawal
+  // routing draws from) and the individual accounts must describe the same
+  // money: a gap is counted as retirement money the router may never
+  // reach, which moves withdrawals, depletion and the plan's verdict.
+  if (input.startingAccountBalances) {
+    const byBucket = { preTax: 0, taxFree: 0, hsa: 0, afterTax: 0 };
+    for (const bal of Object.values(input.startingAccountBalances)) {
+      if (bal.structure === "roth_traditional") {
+        byBucket.preTax += bal.traditional;
+        byBucket.taxFree += bal.roth;
+      } else if (bal.structure === "single_bucket") byBucket.hsa += bal.balance;
+      else byBucket.afterTax += bal.balance;
+    }
+    for (const [key, sum] of Object.entries(byBucket)) {
+      const start = input.startingBalances[key as keyof typeof byBucket];
+      if (Math.abs(sum - start) > 1)
+        warnings.push(
+          `[DIAG] starting balances: ${key} is $${start.toFixed(2)} but the account categories hold $${sum.toFixed(2)}`,
+        );
+    }
+  }
+  if (input.individualAccounts?.length) {
+    const byBucket = { preTax: 0, taxFree: 0, hsa: 0, afterTax: 0 };
+    for (const ia of input.individualAccounts) {
+      const key = isTaxFreeBucket(ia.taxType)
+        ? "taxFree"
+        : getAccountTypeConfig(ia.category).taxBucketKey;
+      if (key in byBucket)
+        byBucket[key as keyof typeof byBucket] += ia.startingBalance;
+    }
+    for (const [key, sum] of Object.entries(byBucket)) {
+      const start = input.startingBalances[key as keyof typeof byBucket];
+      if (Math.abs(sum - start) > 1)
+        warnings.push(
+          `[DIAG] starting balances: ${key} is $${start.toFixed(2)} but the accounts hold $${sum.toFixed(2)}`,
+        );
+    }
+  }
   let { salaryGrowthRate, inflationRate } = input;
   let postRetirementInflationRate =
     input.postRetirementInflationRate ?? inflationRate;
@@ -172,7 +217,7 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
       // falls back to $0 rather than erroring.
       roundToCents(
         (state.projectionByYear.find((p) => p.age === input.retirementAge)
-          ?.endBalance ?? 0) *
+          ?.retirementBalance ?? 0) *
           resolveDecumulationConfig(
             input.asOfDate.getFullYear() +
               (input.retirementAge - input.currentAge),
@@ -226,8 +271,8 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
     firstOverflowYear: state.firstOverflowYear,
     firstOverflowAge: state.firstOverflowAge,
     firstOverflowAmount: state.firstOverflowAmount,
-    portfolioDepletionYear: state.portfolioDepletionYear,
-    portfolioDepletionAge: state.portfolioDepletionAge,
+    retirementDepletionYear: state.retirementDepletionYear,
+    retirementDepletionAge: state.retirementDepletionAge,
     sustainableWithdrawal,
     firstDecumulationYearStatedNeed,
     accountDepletions: state.accountDepletions,

@@ -15,6 +15,7 @@
  * that applies it to a household's actual `ProjectionInput` and searches
  * across claiming ages.
  */
+import { assessPlan } from "./plan-outcome";
 import { calculateProjection } from "./engine";
 import type { ProjectionInput } from "./types";
 import {
@@ -104,15 +105,16 @@ export type ClaimingAgeSweepCandidate = {
   adjustedAnnualBenefit: number;
   /** Total net worth (all tax buckets) at end of plan for this candidate. */
   finalNetWorth: number;
-  /** `portfolioDepletionAge !== null` for this candidate — a hard
-   *  exclusion, never ranked in regardless of `finalNetWorth`, same
-   *  convention as `withdrawal-bracket-optimizer.ts`'s `depleted`. */
-  depleted: boolean;
+  /** The plan fails for this candidate (assessPlan: retirement money runs
+   *  out or a year goes unfunded) — a hard exclusion, never ranked in
+   *  regardless of `finalNetWorth`, same convention as
+   *  `withdrawal-bracket-optimizer.ts`'s `fails`. */
+  fails: boolean;
 };
 
 export type ClaimingAgeSweepResult = {
   /** The claiming age that scores best among the candidates. `null` when
-   *  every candidate is depleted (nothing safe to recommend). */
+   *  every candidate fails (nothing safe to recommend). */
   recommendedAge: number | null;
   /** Sorted by RANK (best first, via `compareCandidates` — depletion
    *  exclusion, then descending final net worth), NOT by claiming age. A
@@ -205,7 +207,7 @@ function finalNetWorth(result: ReturnType<typeof calculateProjection>): number {
 }
 
 /**
- * Lexicographic rank: `depleted` first (a candidate whose portfolio runs
+ * Lexicographic rank: `fails` first (a candidate whose portfolio runs
  * out is a hard exclusion, never ranked in on `finalNetWorth` alone — same
  * convention as `withdrawal-bracket-optimizer.ts`'s `compareCandidates`),
  * then `finalNetWorth` descending (higher is better — unlike the bracket
@@ -216,7 +218,7 @@ function compareCandidates(
   a: ClaimingAgeSweepCandidate,
   b: ClaimingAgeSweepCandidate,
 ): number {
-  if (a.depleted !== b.depleted) return a.depleted ? 1 : -1;
+  if (a.fails !== b.fails) return a.fails ? 1 : -1;
   return b.finalNetWorth - a.finalNetWorth;
 }
 
@@ -252,14 +254,14 @@ export function sweepClaimingAges(
         claimingAge,
         adjustedAnnualBenefit,
         finalNetWorth: finalNetWorth(result),
-        depleted: result.portfolioDepletionAge !== null,
+        fails: !assessPlan(result).succeeded,
       };
     })
     .sort(compareCandidates);
 
   const best = candidates[0];
   const recommendedAge =
-    best === undefined || best.depleted ? null : best.claimingAge;
+    best === undefined || best.fails ? null : best.claimingAge;
 
   return { recommendedAge, candidates };
 }
