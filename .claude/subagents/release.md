@@ -166,7 +166,7 @@ ssh -i /tmp/ansible_ssh_key ansible@10.10.10.52 \
   "cd /opt/stacks/dev && sudo docker compose up -d ledgr ledgrdemo"
 ```
 
-Fix the bug on the feature branch, redeploy with the same version number (`pnpm deploy X.Y.Z` is idempotent), smoke test again.
+Fix the bug on the feature branch, redeploy with the same version number (`pnpm run deploy X.Y.Z` is idempotent), smoke test again.
 
 ### Release script fails
 
@@ -197,14 +197,17 @@ ansible-vault view vars/secrets.yaml \
 [ ] CHANGELOG.md updated  (dated entry, user-focused language)
 [ ] npm version X.Y.Z --no-git-tag-version
 [ ] git commit "release: vX.Y.Z"
-[ ] pnpm deploy X.Y.Z     (canary → prod → health check)
+[ ] migration pending? tested on prod data + prod pg_dump taken
+[ ] pnpm run deploy X.Y.Z (canary → prod → health check)
 [ ] Smoke test in browser  (required gate)
 [ ] git push + gh pr create
 [ ] CI passes
-[ ] Merge PR
+[ ] Merge PR (user's explicit OK; --merge; state MERGED)
+[ ] Delete the version branch
 [ ] git checkout main && git pull
 [ ] pnpm release X.Y.Z --dry-run
 [ ] pnpm release X.Y.Z
 [ ] Verify health endpoint shows correct version
 [ ] docker image prune -f
+[ ] rm /tmp/ansible_ssh_key
 ```
