@@ -8,6 +8,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.13] - 2026-10-23
+
+### Security
+
+- **Runs on Node.js 26.12.1**, the October 2026 security release. It fixes high-severity issues in certificate hostname checks (IP addresses written with leading zeros or fullwidth digits could pass as a different address), DNS lookups that cut a name short at a hidden character, and a Brotli decompression flaw that could crash the server or worse; plus updated root certificates and dependencies.
+
+---
+
 ## [0.8.12] - 2026-10-21
 
 ### Changed
