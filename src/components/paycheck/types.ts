@@ -32,6 +32,9 @@ export type RawContrib = {
   cappedValue?: number;
   /** The cap pass's verdict — over the limit, or a missing owner/coverage. */
   cap?: CappedContribution;
+  /** The most this row can be set to on its own, in its own terms. */
+  maxValue?: number;
+  othersInGroup?: number;
   employerMatchType: string;
   employerMatchValue: string | null;
   employerMaxMatchPct: string | null;
@@ -120,6 +123,8 @@ export type JointContrib = {
   ownerName: string;
   cappedValue?: number;
   cap?: CappedContribution;
+  maxValue?: number;
+  othersInGroup?: number;
 };
 
 /** Account category options for dropdowns — derived from config */

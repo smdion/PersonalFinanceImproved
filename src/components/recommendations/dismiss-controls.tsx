@@ -12,7 +12,8 @@ export function DismissControls({
 }: {
   disabled: boolean;
   onSnooze: (note: string) => void;
-  onDismiss: (note: string) => void;
+  /** Absent: snooze only (an error to fix). */
+  onDismiss?: (note: string) => void;
 }) {
   const [mode, setMode] = useState<"snooze" | "dismiss" | null>(null);
   const [note, setNote] = useState("");
@@ -28,19 +29,22 @@ export function DismissControls({
         >
           Snooze
         </button>
-        <button
-          type="button"
-          className="text-muted hover:text-primary"
-          disabled={disabled}
-          onClick={() => setMode("dismiss")}
-          title="Hide unless it becomes urgent"
-        >
-          Dismiss
-        </button>
+        {onDismiss && (
+          <button
+            type="button"
+            className="text-muted hover:text-primary"
+            disabled={disabled}
+            onClick={() => setMode("dismiss")}
+            title="Hide unless it becomes urgent"
+          >
+            Dismiss
+          </button>
+        )}
       </span>
     );
   const confirm = () => {
-    (mode === "snooze" ? onSnooze : onDismiss)(note);
+    if (mode === "snooze") onSnooze(note);
+    else onDismiss?.(note);
     setMode(null);
     setNote("");
   };

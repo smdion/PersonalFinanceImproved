@@ -14,6 +14,8 @@ import {
 } from "@/lib/pure/contribution-caps";
 import { TRPCError } from "@trpc/server";
 import { getAllPeople } from "./people";
+import { accountDisplayName } from "@/lib/utils/format";
+import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {
   getLimitGroup,
   isPreTaxTreatment,
@@ -175,15 +177,33 @@ export function capEffectiveContribs<R extends CapPassRow>(
     },
   );
 
+  // A row's own most: the person's room in the group less their other
+  // rows there as configured — what the row can be set to on its own.
+  const groupKey = (c: R) =>
+    `${c.personId ?? "joint"}:${getLimitGroup(c.accountType)}`;
+  const configuredByGroup = new Map<string, number>();
+  for (const c of configured)
+    if (getLimitGroup(c.accountType))
+      configuredByGroup.set(
+        groupKey(c),
+        (configuredByGroup.get(groupKey(c)) ?? 0) + byRow.get(c.id)!.annual,
+      );
   return configured.map((c) => {
     const cap = byRow.get(c.id)!;
     if (!getLimitGroup(c.accountType)) return { ...c, capPassed: true };
+    const value = Number(c.contributionValue ?? 0);
     const factor = cap.annual > 0 ? cap.cappedAnnual / cap.annual : 1;
+    const others = configuredByGroup.get(groupKey(c))! - cap.annual;
+    const rowMost =
+      cap.maxEmployee === null ? null : Math.max(0, cap.maxEmployee - others);
     return {
       ...c,
       capPassed: true,
       cap,
-      cappedValue: Number(c.contributionValue ?? 0) * factor,
+      cappedValue: value * factor,
+      ...(rowMost !== null && cap.annual > 0
+        ? { maxValue: (value * rowMost) / cap.annual, othersInGroup: others }
+        : {}),
     };
   });
 }
@@ -284,45 +304,129 @@ export function capResolvedProfile<
   });
 }
 
+type AccountFields = Record<string, Record<string, unknown>>;
+export type ContribRowPatch = Partial<
+  typeof schema.contributionAccounts.$inferSelect
+>;
+
+/** What a contribution save changes, before and after. */
+export type ContribSaveCheck = {
+  /** The Contribution Profile the fields belong to; null = an account edit,
+   *  judged under the active profile. */
+  profileId: number | null;
+  /** The profile's account fields before and after (absent: unchanged). */
+  before?: AccountFields;
+  after?: AccountFields;
+  /** Account rows as they'd be after the save (account edits). */
+  rowsAfter?: ReadonlyMap<number, ContribRowPatch>;
+  /** The accounts the save sets something on. */
+  touched: readonly number[];
+};
+
 /**
- * Refuse a save that leaves a contribution it sets over its IRS limit (the
- * household's rule: over the limit is an error to fix, never modelled). The
- * proposed account fields are applied to the household's rows and run
- * through the same cap pass; only the rows this save touches are judged,
- * so an unrelated edit still saves while an over-limit row shows its
- * error. The message carries the most each row can be.
+ * Refuse a save that makes a contribution over its IRS limit, or more over
+ * it — the household's rule: over the limit is an error to fix, never
+ * modelled. Before and after go through the same cap pass; a save is
+ * refused when a person's limit group it touches ends up further over than
+ * it was (so lowering an over-limit row always saves, and an unrelated edit
+ * leaves the row showing its error). Only the active Contribution Profile
+ * is judged: any other one is checked where it's used (a switch year's ages
+ * and pay). The message carries the most each row can be.
  */
 export async function assertWithinIrsLimits(
   db: Db,
-  accountFields: Record<string, Record<string, unknown>>,
-  touched: readonly number[],
+  check: ContribSaveCheck,
 ): Promise<void> {
-  if (touched.length === 0) return;
-  const [allContribs, allJobs, people, salaryMap] = await Promise.all([
-    db
-      .select()
-      .from(schema.contributionAccounts)
-      .where(eq(schema.contributionAccounts.isActive, true)),
-    db.select().from(schema.jobs),
-    getAllPeople(db),
-    loadEffectiveSalaryProfile(db, null),
-  ]);
-  const capped = capForRequest(
-    applyContribActiveFields(allContribs, accountFields),
-    await loadCapHousehold(db, people, null, new Date().getFullYear()),
-    mergeSalaryProfileJobFields(allJobs, salaryMap),
-    salaryMap,
-    new Map(),
-  );
+  if (check.touched.length === 0) return;
+  const [allContribs, allJobs, people, salaryMap, activeSetting] =
+    await Promise.all([
+      db.select().from(schema.contributionAccounts),
+      db.select().from(schema.jobs),
+      getAllPeople(db),
+      loadEffectiveSalaryProfile(db, null),
+      db
+        .select({ value: schema.appSettings.value })
+        .from(schema.appSettings)
+        .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID)),
+    ]);
+  const activeId = Number(activeSetting[0]?.value ?? NaN);
+  if (check.profileId !== null && check.profileId !== activeId) return;
+  let profileFields: AccountFields = {};
+  if (check.before === undefined || check.after === undefined) {
+    const [active] = Number.isFinite(activeId)
+      ? await db
+          .select()
+          .from(schema.contributionProfiles)
+          .where(eq(schema.contributionProfiles.id, activeId))
+      : [];
+    profileFields =
+      (
+        active?.contributionActiveFields as
+          { contributionAccounts?: AccountFields } | undefined
+      )?.contributionAccounts ?? {};
+  }
+  const taxYear = new Date().getFullYear();
+  const household = await loadCapHousehold(db, people, null, taxYear);
+  if (Object.keys(household.limits).length === 0)
+    throw new TRPCError({
+      code: "PRECONDITION_FAILED",
+      message: `The ${taxYear} IRS contribution limits aren't in the tax data yet, so this contribution can't be checked against them.`,
+    });
+  const jobs = mergeSalaryProfileJobFields(allJobs, salaryMap);
+  const passFor = (
+    fields: AccountFields,
+    rowsAfter?: ReadonlyMap<number, ContribRowPatch>,
+  ) =>
+    capForRequest(
+      applyContribActiveFields(
+        allContribs
+          .map((c) => ({ ...c, ...rowsAfter?.get(c.id) }))
+          .filter((c) => c.isActive),
+        fields,
+      ),
+      household,
+      jobs,
+      salaryMap,
+      new Map(),
+    );
+  const before = passFor(check.before ?? profileFields);
+  const after = passFor(check.after ?? profileFields, check.rowsAfter);
+  const keyOf = (c: (typeof after)[number]) =>
+    `${c.personId ?? "joint"}:${getLimitGroup(c.accountType)}`;
+  const overBy = (rows: typeof after) => {
+    const m = new Map<string, number>();
+    for (const c of rows)
+      if (c.cap) m.set(keyOf(c), (m.get(keyOf(c)) ?? 0) + c.cap.overBy);
+    return m;
+  };
+  const was = overBy(before);
+  const now = overBy(after);
   const nameOf = new Map(people.map((p) => [p.id, p.name]));
-  const problems = capped.flatMap((c) => {
-    if (!touched.includes(c.id) || !c.cap || c.cap.overBy < 0.01) return [];
-    const who = c.personId != null ? `${nameOf.get(c.personId)}'s ` : "";
-    return [`${who}${c.subType ?? c.accountType}: ${capMessage(c)}`];
+  const problems = after.flatMap((c) => {
+    if (!check.touched.includes(c.id) || !c.cap) return [];
+    if ((now.get(keyOf(c)) ?? 0) <= (was.get(keyOf(c)) ?? 0) + 0.01) return [];
+    const owner = c.personId != null ? nameOf.get(c.personId) : undefined;
+    const name = accountDisplayName(
+      {
+        accountType: c.accountType,
+        subType: c.subType,
+        label: c.label,
+        ownershipType: c.ownership,
+      },
+      owner,
+    );
+    return [`${name}: ${capMessage(c)}`];
   });
   if (problems.length > 0)
     throw new TRPCError({ code: "BAD_REQUEST", message: problems.join(" ") });
 }
+
+/** A ContribSaveCheck for helpers that can't import this module (it
+ *  imports theirs) — they take it as a required argument. */
+export type ContribSaveChecker = (
+  db: Db,
+  check: ContribSaveCheck,
+) => Promise<void>;
 
 /** The account ids a contribution-fields change sets a value on (value,
  *  method or active flag differ from before). */

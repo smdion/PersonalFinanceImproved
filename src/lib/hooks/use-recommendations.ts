@@ -41,16 +41,21 @@ export function useRecommendations(): ReturnType<typeof useMilestones> & {
     useContributionSummaryInput(),
   );
   const ranked = rankRecommendations([
-    ...recommendationsFromCaps([
-      ...(contribs.data?.people ?? []).map((p) => ({
-        personName: p.person.name,
-        accountTypes: p.accountTypes,
-      })),
-      {
-        personName: null,
-        accountTypes: contribs.data?.jointAccountTypes ?? [],
-      },
-    ]),
+    ...recommendationsFromCaps(
+      [
+        ...(contribs.data?.people ?? []).map((p) => ({
+          personId: p.person.id,
+          personName: p.person.name,
+          accountTypes: p.accountTypes,
+        })),
+        {
+          personId: null,
+          personName: null,
+          accountTypes: contribs.data?.jointAccountTypes ?? [],
+        },
+      ],
+      Number(today.slice(0, 4)),
+    ),
     ...recommendationsFromMilestones(milestones.results),
     ...recommendationsFromDataSources(data.statuses, (s) =>
       s.source.key === "budgetApi"

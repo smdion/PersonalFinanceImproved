@@ -1,3 +1,7 @@
+import {
+  assertWithinIrsLimits,
+  type ContribRowPatch,
+} from "@/server/helpers/contribution-caps";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq, asc, and } from "drizzle-orm";
@@ -491,6 +495,14 @@ export const paycheckProcedures = {
               "Retirement" | "Portfolio";
         }
 
+        // A change to the account itself (type, owner, coverage, job,
+        // bonus or payroll election) can push its contribution over the
+        // IRS limit — refused like a value change.
+        await assertWithinIrsLimits(ctx.db, {
+          profileId: null,
+          rowsAfter: new Map([[id, resolvedData as ContribRowPatch]]),
+          touched: [id],
+        });
         return ctx.db
           .update(schema.contributionAccounts)
           .set(resolvedData)
@@ -511,14 +523,22 @@ export const paycheckProcedures = {
      */
     setActive: adminProcedure
       .input(z.object({ id: z.number().int(), isActive: z.boolean() }))
-      .mutation(({ ctx, input }) =>
-        ctx.db
+      .mutation(async ({ ctx, input }) => {
+        // Turning an account back on brings its contribution back — refused
+        // if that puts it over its IRS limit.
+        if (input.isActive)
+          await assertWithinIrsLimits(ctx.db, {
+            profileId: null,
+            rowsAfter: new Map([[input.id, { isActive: true }]]),
+            touched: [input.id],
+          });
+        return ctx.db
           .update(schema.contributionAccounts)
           .set({ isActive: input.isActive })
           .where(eq(schema.contributionAccounts.id, input.id))
           .returning()
-          .then((r) => r[0]),
-      ),
+          .then((r) => r[0]);
+      }),
     setPriorYearAmount: adminProcedure
       .input(
         z.object({

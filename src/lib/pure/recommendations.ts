@@ -27,6 +27,8 @@ export type Recommendation = {
   impact: MilestoneImpact | null;
   href: string;
   source: MilestoneSource | "ledgr";
+  /** An error to fix: it can be snoozed but never dismissed for good. */
+  snoozeOnly?: boolean;
 };
 
 /** Behind (or alerting) milestones with a next step, in their configured

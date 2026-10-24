@@ -23,6 +23,9 @@ import {
 } from "@/server/retirement/build-engine-payload";
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
+import { applyContributionAccountEdit } from "@/server/helpers/contribution";
+import { assertWithinIrsLimits } from "@/server/helpers/contribution-caps";
+import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
 import type { Db } from "@/server/helpers/transforms";
 
@@ -36,6 +39,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
   let perfAcctId: number;
   let profileId: number;
   let accountId: number;
+  let jobId: number;
 
   beforeAll(async () => {
     vi.useFakeTimers();
@@ -44,6 +48,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
     const seeded = seedStandardDataset(t.db);
     personId = seeded.personId;
     perfAcctId = seeded.perfAcctId;
+    jobId = seeded.jobId;
     const acct = t.db
       .insert(schema.contributionAccounts)
       .values({
@@ -158,33 +163,26 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
   });
 
   describe("over the limit is an error to fix: saving one is refused", () => {
-    it("refuses a value over the limit, with the most it can be", async () => {
-      // 24,500 / 120,000 = 20.4166…% → at most 20.41%.
-      await expect(
-        t.caller.contributionProfile.setAccountActiveFields({
-          profileId,
-          accountId,
-          fields: {
-            contributionValue: "25",
-            contributionMethod: "percent_of_salary",
-          },
-        }),
-      ).rejects.toThrow(
-        /over the IRS limit — set it to at most 20\.41% of pay/,
-      );
+    const setValue = (contributionValue: string) =>
+      t.caller.contributionProfile.setAccountActiveFields({
+        profileId,
+        accountId,
+        fields: { contributionValue, contributionMethod: "percent_of_salary" },
+      });
+
+    it("lowering an over-limit contribution saves, even while it's still over", async () => {
+      await expect(setValue("25")).resolves.toBeDefined();
     });
 
     it("the most it can be saves", async () => {
-      await expect(
-        t.caller.contributionProfile.setAccountActiveFields({
-          profileId,
-          accountId,
-          fields: {
-            contributionValue: "20.41",
-            contributionMethod: "percent_of_salary",
-          },
-        }),
-      ).resolves.toBeDefined();
+      await expect(setValue("20.41")).resolves.toBeDefined();
+    });
+
+    it("raising it over the limit is refused, with the most it can be", async () => {
+      // 24,500 / 120,000 = 20.4166…% → at most 20.41%.
+      await expect(setValue("25")).rejects.toThrow(
+        /over the IRS limit — set it to at most 20\.41% of pay/,
+      );
     });
 
     it("an edit that doesn't set a value still saves (the row keeps showing its error)", async () => {
@@ -206,6 +204,105 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
           isActive: true,
         } as never),
       ).rejects.toThrow(/choose who owns this account/);
+    });
+  });
+
+  describe("every write path is checked", () => {
+    let rothId: number;
+    let iraId: number;
+    let b403Id: number;
+    const addAccount = (
+      values: Partial<typeof schema.contributionAccounts.$inferInsert>,
+      fields: Record<string, string>,
+    ) => {
+      const { id } = t.db
+        .insert(schema.contributionAccounts)
+        .values({
+          personId,
+          accountType: "401k",
+          parentCategory: "Retirement",
+          taxTreatment: "pre_tax",
+          employerMatchType: "none",
+          isActive: true,
+          ownership: "individual",
+          ...values,
+        })
+        .returning({ id: schema.contributionAccounts.id })
+        .get();
+      const profile = t.db
+        .select()
+        .from(schema.contributionProfiles)
+        .where(eq(schema.contributionProfiles.id, profileId))
+        .get()!;
+      const af = profile.contributionActiveFields as {
+        contributionAccounts: Record<string, unknown>;
+      };
+      af.contributionAccounts[String(id)] = fields;
+      t.db
+        .update(schema.contributionProfiles)
+        .set({ contributionActiveFields: af })
+        .where(eq(schema.contributionProfiles.id, profileId))
+        .run();
+      return id;
+    };
+
+    beforeAll(() => {
+      // The Traditional 401(k) sits at its most (20.41%) from above.
+      rothId = addAccount(
+        { taxTreatment: "tax_free", jobId },
+        { contributionValue: "0", contributionMethod: "percent_of_salary" },
+      );
+      iraId = addAccount(
+        { accountType: "ira", jobId: null },
+        { contributionValue: "100", contributionMethod: "fixed_monthly" },
+      );
+      b403Id = addAccount(
+        { accountType: "403b", isActive: false, jobId },
+        { contributionValue: "5", contributionMethod: "percent_of_salary" },
+      );
+    });
+
+    it("a second row in a full group: lower the other one first", async () => {
+      await expect(
+        t.caller.contributionProfile.setAccountActiveFields({
+          profileId,
+          accountId: rothId,
+          fields: {
+            contributionValue: "5",
+            contributionMethod: "percent_of_salary",
+          },
+        }),
+      ).rejects.toThrow(/already fill it: lower those first/);
+    });
+
+    it("a budget edit can't push a contribution over its limit", async () => {
+      await expect(
+        applyContributionAccountEdit(
+          t.db as never,
+          iraId,
+          1000, // 12,000 a year against a 7,500 IRA limit
+          profileId,
+          assertWithinIrsLimits,
+        ),
+      ).rejects.toThrow(/over the IRS limit/);
+    });
+
+    it("turning an account back on can't push the group over", async () => {
+      await expect(
+        t.caller.settings.contributionAccounts.setActive({
+          id: b403Id,
+          isActive: true,
+        }),
+      ).rejects.toThrow(/over the IRS limit/);
+    });
+
+    it("the refusal names the account the way the app does (owner + display label)", async () => {
+      await expect(
+        t.caller.settings.contributionAccounts.setActive({
+          id: b403Id,
+          isActive: true,
+        }),
+      ).rejects.toThrow(/^Test Person 403b: \$[\d,]+ over the IRS limit/);
     });
   });
 });

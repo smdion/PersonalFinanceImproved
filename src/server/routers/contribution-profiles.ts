@@ -112,8 +112,12 @@ async function patchProfileSubEntry<T extends Record<string, unknown>>(
   unset: string[] | undefined,
   entrySchema: z.ZodType<T>,
   errorLabel: string,
-  /** Runs on the merged sub-map before it's written (throws to refuse). */
-  check?: (nextSub: Record<string, Record<string, unknown>>) => Promise<void>,
+  /** Runs on the sub-map before and after the patch, before it's written
+   *  (throws to refuse). */
+  check?: (
+    before: Record<string, Record<string, unknown>>,
+    after: Record<string, Record<string, unknown>>,
+  ) => Promise<void>,
 ): Promise<typeof schema.contributionProfiles.$inferSelect> {
   const existing = await tx
     .select()
@@ -152,7 +156,10 @@ async function patchProfileSubEntry<T extends Record<string, unknown>>(
   } else {
     nextSub[String(entryId)] = parsed.data;
   }
-  await check?.(nextSub as Record<string, Record<string, unknown>>);
+  await check?.(
+    (root[subKey] ?? {}) as Record<string, Record<string, unknown>>,
+    nextSub as Record<string, Record<string, unknown>>,
+  );
   const nextActiveFields = { ...root, [subKey]: nextSub };
 
   const rows = await tx
@@ -572,13 +579,6 @@ export const contributionProfileRouter = createTRPCRouter({
         ctx.db,
         input.contributionActiveFields,
       );
-      const accounts =
-        input.contributionActiveFields.contributionAccounts ?? {};
-      await assertWithinIrsLimits(
-        ctx.db,
-        accounts,
-        touchedContribAccounts(undefined, accounts),
-      );
 
       const rows = await ctx.db
         .insert(schema.contributionProfiles)
@@ -670,20 +670,19 @@ export const contributionProfileRouter = createTRPCRouter({
         input.contributionActiveFields,
       );
       if (input.contributionActiveFields) {
-        const accounts =
-          input.contributionActiveFields.contributionAccounts ?? {};
-        await assertWithinIrsLimits(
-          ctx.db,
-          accounts,
-          touchedContribAccounts(
-            (
-              existing[0].contributionActiveFields as {
-                contributionAccounts?: Record<string, Record<string, unknown>>;
-              }
-            ).contributionAccounts,
-            accounts,
-          ),
-        );
+        const before =
+          (
+            existing[0].contributionActiveFields as {
+              contributionAccounts?: Record<string, Record<string, unknown>>;
+            }
+          ).contributionAccounts ?? {};
+        const after = input.contributionActiveFields.contributionAccounts ?? {};
+        await assertWithinIrsLimits(ctx.db, {
+          profileId: input.id,
+          before,
+          after,
+          touched: touchedContribAccounts(before, after),
+        });
       }
 
       const updates: Partial<typeof schema.contributionProfiles.$inferInsert> =
@@ -761,16 +760,13 @@ export const contributionProfileRouter = createTRPCRouter({
           contribAccountActiveFieldsSchema,
           "contribution account fields",
           // A value that leaves this account over its IRS limit is refused.
-          (next) =>
-            assertWithinIrsLimits(
-              tx,
-              next,
-              ["contributionValue", "contributionMethod", "isActive"].some(
-                (k) => k in input.fields || (input.unset ?? []).includes(k),
-              )
-                ? [input.accountId]
-                : [],
-            ),
+          (before, after) =>
+            assertWithinIrsLimits(tx, {
+              profileId: input.profileId,
+              before,
+              after,
+              touched: touchedContribAccounts(before, after),
+            }),
         ),
       );
     }),

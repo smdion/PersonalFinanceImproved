@@ -27,6 +27,7 @@ import type {
   ContributionMethod,
 } from "@/lib/config/enum-values";
 import { computeValue, type CapPassed } from "@/lib/pure/contribution-caps";
+import type { ContribSaveChecker } from "./contribution-caps";
 import { toNumber, getPeriodsPerYear } from "./transforms";
 import type { Db, DbOrTx } from "./transforms";
 import {
@@ -265,6 +266,9 @@ export async function applyContributionAccountEdit(
   contributionAccountId: number,
   monthlyAmount: number,
   contributionProfileId: number,
+  /** The IRS-limit save check (assertWithinIrsLimits) — required, so no
+   *  budget edit can save a contribution over its limit. */
+  check: ContribSaveChecker,
 ): Promise<void> {
   const { periodsPerYear, incomplete } =
     await resolveActiveJobPeriodsPerYear(db);
@@ -285,6 +289,12 @@ export async function applyContributionAccountEdit(
     incomplete,
   );
   if (nextActiveFields === null) return;
+  await check(db as Db, {
+    profileId: contributionProfileId,
+    before: activeFields.contributionAccounts ?? {},
+    after: nextActiveFields.contributionAccounts ?? {},
+    touched: [contributionAccountId],
+  });
 
   await db
     .update(schema.contributionProfiles)
@@ -317,6 +327,8 @@ export async function applyContributionAccountEditsBatch(
     monthlyAmount: number;
     contributionProfileId: number;
   }[],
+  /** The IRS-limit save check (assertWithinIrsLimits) — required. */
+  check: ContribSaveChecker,
 ): Promise<void> {
   if (edits.length === 0) return;
 
@@ -337,8 +349,8 @@ export async function applyContributionAccountEditsBatch(
       .where(eq(schema.contributionProfiles.id, contributionProfileId));
     if (!profile) continue; // stale FK — nothing to update
 
-    let activeFields = (profile.contributionActiveFields ??
-      {}) as EntityFieldMap;
+    const original = (profile.contributionActiveFields ?? {}) as EntityFieldMap;
+    let activeFields = original;
     let changed = false;
     for (const edit of profileEdits) {
       const next = mergeContributionAccountEdit(
@@ -354,6 +366,12 @@ export async function applyContributionAccountEditsBatch(
       }
     }
     if (!changed) continue;
+    await check(db as Db, {
+      profileId: contributionProfileId,
+      before: original.contributionAccounts ?? {},
+      after: activeFields.contributionAccounts ?? {},
+      touched: profileEdits.map((e) => e.contributionAccountId),
+    });
 
     await db
       .update(schema.contributionProfiles)

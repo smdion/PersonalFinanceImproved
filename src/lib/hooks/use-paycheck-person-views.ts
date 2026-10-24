@@ -336,6 +336,8 @@ export function usePaycheckPersonViews({
         ownerName: "Joint",
         cappedValue: c.cappedValue,
         cap: c.cap,
+        maxValue: c.maxValue,
+        othersInGroup: c.othersInGroup,
       })),
     [rawData?.jointContribs],
   );

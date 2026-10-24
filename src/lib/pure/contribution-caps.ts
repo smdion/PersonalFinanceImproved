@@ -573,6 +573,11 @@ export type CapPassed = {
   cappedValue?: number;
   /** The module's verdict for a row of a limited type. */
   cap?: CappedContribution;
+  /** The most this row can be set to on its own (the person's room less
+   *  their other rows in the group, as configured), in its own terms. */
+  maxValue?: number;
+  /** The person's other rows in the group, yearly, as configured. */
+  othersInGroup?: number;
 };
 
 /**
@@ -615,14 +620,19 @@ export function capMaxLabel(
  *  words on the page and in a refused save. null = nothing to fix. */
 export function capMessage(row: {
   contributionMethod: string | null;
-  cappedValue?: number;
   cap?: CappedContribution;
+  maxValue?: number;
+  othersInGroup?: number;
 }): string | null {
   const cap = row.cap;
   if (!cap) return null;
   const at = (v: number) => `$${Math.ceil(v).toLocaleString("en-US")}`;
-  if (cap.overBy >= 0.01 && row.cappedValue !== undefined) {
-    const most = capMaxLabel(row.contributionMethod, row.cappedValue);
+  if (cap.overBy >= 0.01) {
+    if (row.maxValue === undefined || floorTo2(row.maxValue) <= 0)
+      return (row.othersInGroup ?? 0) > 0
+        ? `${at(cap.overBy)} over the IRS limit — the other contributions that share this limit already fill it: lower those first.`
+        : `${at(cap.overBy)} over the IRS limit — set it to 0.`;
+    const most = capMaxLabel(row.contributionMethod, row.maxValue);
     if (cap.reason === "over-compensation")
       return `${at(cap.overBy)} more than taxable pay allows — set it to at most ${most}.`;
     if (cap.reason === "employer-over-limit")
