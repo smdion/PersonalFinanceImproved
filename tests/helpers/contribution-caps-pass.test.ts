@@ -9,6 +9,7 @@ import { capEffectiveContribs } from "@/server/helpers/contribution-caps";
 import {
   aggregateContributionsByCategory,
   annualContributionWithBonus,
+  buildContribAccounts,
   type ContribRow,
 } from "@/server/helpers/contribution";
 
@@ -142,5 +143,30 @@ describe("capEffectiveContribs", () => {
     const [out] = capEffectiveContribs([b], ctx);
     expect(out!.cap).toBeUndefined();
     expect(out!.cappedValue).toBeUndefined();
+  });
+
+  it("an over-limit HSA's FICA-exempt amount is its capped contribution", () => {
+    const hsa = row({
+      personId: 2,
+      jobId: 20,
+      accountType: "hsa",
+      taxTreatment: "hsa",
+      hsaCoverageType: "self_only",
+      contributionMethod: "fixed_per_period",
+      contributionValue: "500", // 6,000/yr, over 4,000
+      employerMatchType: "fixed_annual",
+      employerMatchValue: "1000",
+    });
+    const [out] = capEffectiveContribs([hsa], ctx);
+    const [acct] = buildContribAccounts(
+      [{ ...out!, isActive: true } as never],
+      [],
+      60000,
+      12,
+      { limits, ageAtYearEnd: 40 },
+      0,
+    );
+    expect(acct!.annualContribution).toBeCloseTo(3000, 2); // 4,000 − 1,000
+    expect(acct!.ficaExemptAnnualCap).toBeCloseTo(3000, 2);
   });
 });

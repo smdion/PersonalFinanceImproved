@@ -20,6 +20,7 @@ import {
   getDisplayGroup,
   getParentCategory,
   getDefaultTaxTreatment,
+  isPayrollFicaExemptCategory,
 } from "@/lib/config/account-types";
 import type {
   TaxTreatment,
@@ -37,11 +38,7 @@ import {
   bonusCheckContribution,
   isPaidThroughPayroll,
 } from "@/lib/calculators/paycheck";
-import {
-  irsLimitOrNull,
-  payrollFicaExemptCap,
-  shareFicaExemptCaps,
-} from "@/lib/pure/contributions";
+import { payrollFicaExemptCap } from "@/lib/pure/contributions";
 import {
   contributionPay,
   getTotalCompensation,
@@ -483,41 +480,22 @@ export function buildContribAccounts(
       ),
       employerMatchAvailable: roundToCents(match.matchAvailableAnnual),
       employerMatchTaxTreatment: match.employerMatchTaxTreatment,
-      ficaExemptAnnualCap: isPayrollDeducted
-        ? payrollFicaExemptCap(
-            c.accountType,
-            ficaContext.ageAtYearEnd,
-            c.hsaCoverageType ?? null,
-            ficaContext.limits,
-            match.matchAnnual,
-          )
-        : null,
-    };
-  });
-  // One FICA-exempt cap per person and account type, across their rows.
-  const shared = shareFicaExemptCaps(
-    allContribs.map((c, k) => ({
-      personId: c.personId,
-      accountType: c.accountType,
-      cap: accounts[k]!.ficaExemptAnnualCap,
-      limit:
-        ficaContext.ageAtYearEnd === null
-          ? null
-          : irsLimitOrNull(
+      // A capped row's payroll money is already within the IRS limit less
+      // employer money, so all of it is exempt (one split: the cap pass).
+      ficaExemptAnnualCap: !isPayrollDeducted
+        ? null
+        : c.cap && isPayrollFicaExemptCategory(c.accountType)
+          ? c.cap.cappedAnnual
+          : payrollFicaExemptCap(
               c.accountType,
               ficaContext.ageAtYearEnd,
               c.hsaCoverageType ?? null,
               ficaContext.limits,
+              match.matchAnnual,
             ),
-      employerAnnual: matchByRow.get(c.id)!.matchAnnual,
-      annualPayroll: annualContributionWithBonus(
-        c,
-        { salary, bonusGross },
-        periodsPerYear,
-      ),
-    })),
-  );
-  return accounts.map((a, k) => ({ ...a, ficaExemptAnnualCap: shared[k]! }));
+    };
+  });
+  return accounts;
 }
 
 // ---------------------------------------------------------------------------

@@ -566,7 +566,14 @@ export function accountGroupLimits(
  * contribution rows into yearly figures take only these, so the compiler
  * finds any set of rows that skipped the pass.
  */
-export type CapPassed = { readonly capPassed: true };
+export type CapPassed = {
+  readonly capPassed: true;
+  /** The value calculations use: the configured value scaled to the IRS
+   *  limit. Full precision — never rounded or stored. */
+  cappedValue?: number;
+  /** The module's verdict for a row of a limited type. */
+  cap?: CappedContribution;
+};
 
 /**
  * The value a contribution's yearly money is figured from: the IRS-capped

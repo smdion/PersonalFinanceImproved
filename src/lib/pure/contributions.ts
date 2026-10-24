@@ -132,53 +132,6 @@ export function ficaCapContext(
 }
 
 /**
- * One FICA-exempt cap per person and account type, shared across that
- * person's rows (two HSA payroll rows — a base and a catch-up — share one
- * IRS limit). Each row's own cap is the limit less ITS employer money;
- * the shared cap is the limit less ALL the group's employer money, used up
- * in row order by each row's yearly payroll contribution. Rows whose cap
- * is null (FICA wages) or Infinity (can't be sized) are left as they are.
- */
-export function shareFicaExemptCaps<
-  T extends {
-    personId: number | null;
-    accountType: string;
-    cap: number | null;
-    /** The person's IRS limit for the account type (null = unknown). */
-    limit: number | null;
-    employerAnnual: number;
-    annualPayroll: number;
-  },
->(rows: readonly T[]): (number | null)[] {
-  const out = rows.map((r) => r.cap);
-  const groups = new Map<string, number[]>();
-  rows.forEach((r, i) => {
-    if (
-      r.cap === null ||
-      !Number.isFinite(r.cap) ||
-      r.limit === null ||
-      r.personId === null
-    )
-      return;
-    const key = `${r.personId}:${r.accountType}`;
-    groups.set(key, [...(groups.get(key) ?? []), i]);
-  });
-  for (const idx of groups.values()) {
-    if (idx.length < 2) continue;
-    const limit = rows[idx[0]!]!.limit!;
-    let remaining = Math.max(
-      0,
-      limit - idx.reduce((s, i) => s + rows[i]!.employerAnnual, 0),
-    );
-    for (const i of idx) {
-      out[i] = remaining;
-      remaining = Math.max(0, remaining - rows[i]!.annualPayroll);
-    }
-  }
-  return out;
-}
-
-/**
  * The yearly cap on an account's payroll contributions that are not FICA
  * wages (account-type config `payrollFicaExempt` — HSA via a §125
  * cafeteria plan, IRS Pub 15 / 15-B): the IRS limit for the person's

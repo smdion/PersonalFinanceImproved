@@ -10,7 +10,6 @@
 import {
   capContributionsByLimitGroup,
   type CapPassed,
-  type CappedContribution,
 } from "@/lib/pure/contribution-caps";
 import {
   getLimitGroup,
@@ -40,12 +39,7 @@ import {
   type SalaryProfileActiveMap,
 } from "./salary";
 
-export type CappedRowFields = CapPassed & {
-  /** The value calculations use: the configured value scaled to the IRS
-   *  limit. Full precision — never rounded or stored. */
-  cappedValue?: number;
-  cap?: CappedContribution;
-};
+export type CappedRowFields = CapPassed;
 
 export type CapPassContext = {
   activeJobs: readonly JobRef[];
