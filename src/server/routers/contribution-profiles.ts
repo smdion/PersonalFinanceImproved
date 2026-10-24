@@ -647,7 +647,11 @@ export const contributionProfileRouter = createTRPCRouter({
         id: z.number(),
         name: z.string().min(1).max(100).optional(),
         description: z.string().max(500).nullish(),
-        contributionActiveFields: ContributionActiveFieldsSchema.optional(),
+        // Without the schema's own default: absent means "unchanged" — a
+        // rename or description edit must never replace the profile's
+        // values with the empty default.
+        contributionActiveFields:
+          ContributionActiveFieldsSchema.unwrap().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

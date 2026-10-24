@@ -896,6 +896,36 @@ describe("contributionProfiles coverage", () => {
       }
     });
 
+    it("a rename or description edit keeps the profile's contribution values", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const fields = {
+          contributionAccounts: {
+            "1": {
+              contributionValue: "7",
+              contributionMethod: "percent_of_salary",
+            },
+          },
+          deductions: { "3": { amountPerPeriod: "12" } },
+        };
+        const profileId = seedContribProfile(db, {
+          name: "Keep my values",
+          contributionActiveFields: fields,
+        });
+        await caller.contributionProfile.update({
+          id: profileId,
+          name: "Renamed",
+        });
+        const after = await caller.contributionProfile.update({
+          id: profileId,
+          description: "still mine",
+        });
+        expect(after.contributionActiveFields).toEqual(fields);
+      } finally {
+        cleanup();
+      }
+    });
+
     it("renames the migration-seeded baseline", async () => {
       const { caller, cleanup } = await createTestCaller(adminSession);
       try {
