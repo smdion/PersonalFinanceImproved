@@ -1,5 +1,6 @@
 "use client";
 
+import { capMessage } from "@/lib/pure/contribution-caps";
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
@@ -336,6 +337,11 @@ export function ContributionsSection({
                         <p className="text-caption text-faint mt-1">
                           Joint household contribution
                         </p>
+                        {capMessage(jc) && (
+                          <p className="text-caption mt-1 text-amber-600">
+                            {capMessage(jc)}
+                          </p>
+                        )}
                       </div>
                     );
                   })}

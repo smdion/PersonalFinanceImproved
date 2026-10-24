@@ -334,6 +334,8 @@ export function usePaycheckPersonViews({
         contributionMethod: c.contributionMethod,
         taxTreatment: c.taxTreatment,
         ownerName: "Joint",
+        cappedValue: c.cappedValue,
+        cap: c.cap,
       })),
     [rawData?.jointContribs],
   );

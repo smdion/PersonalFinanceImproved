@@ -44,7 +44,7 @@ import {
   zSandboxContribActiveFields,
   zSandboxContribAdditions,
 } from "./_shared";
-import { roundToCents, safeDivide } from "@/lib/utils/math";
+import { roundToCents, safeDivide, sumBy } from "@/lib/utils/math";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { getAge, isPriorYearContribWindow } from "@/lib/utils/date";
 import { ficaCapContext } from "@/lib/pure/contributions";
@@ -61,7 +61,7 @@ import type {
   ViewAwareTotals,
 } from "@/lib/pure/contributions";
 import { findActiveJob } from "@/lib/pure/profiles";
-import { computeValue } from "@/lib/pure/contribution-caps";
+import { capMessage, computeValue } from "@/lib/pure/contribution-caps";
 import {
   capForRequest,
   loadCapHousehold,
@@ -96,6 +96,11 @@ type AccountTypeSnapshot = {
   categoryKey: string; // base config key for color lookup (e.g. 'brokerage' for all brokerage sub-types, 'espp' for ESPP)
   parentCategory: string; // 'Retirement' or 'Portfolio' — from DB parentCategory column
   limit: number;
+  /** How much the configured contributions are over the IRS limit (the
+   *  figures above already show the capped amounts). */
+  overBy: number;
+  /** What to fix on this type's contributions (capMessage), if anything. */
+  capMessages: string[];
   employeeContrib: number;
   employerMatch: number;
   /** The full match at the plan's cap — employerMatch when nothing is left
@@ -1023,12 +1028,20 @@ export const contributionRouter = createTRPCRouter({
               }
             }
 
+            const typeRows = rawContribs.filter(
+              (c) => c.accountType === data.categoryKey,
+            );
             accountTypes.push({
               accountType: cat,
               categoryKey: data.categoryKey,
               performanceAccountIds: [...data.performanceAccountIds],
               parentCategory: data.parentCategory,
               limit,
+              overBy: roundToCents(sumBy(typeRows, (c) => c.cap?.overBy ?? 0)),
+              capMessages: typeRows.flatMap((c) => {
+                const m = capMessage(c);
+                return m ? [m] : [];
+              }),
               employeeContrib: totalEmployee,
               employerMatch,
               employerMatchAvailable: Math.max(
@@ -1291,10 +1304,13 @@ export const contributionRouter = createTRPCRouter({
               : null,
           ),
         });
+        const jointCapMessage = capMessage(c);
         jointAccountTypes.push({
           accountType: displayCat,
           categoryKey: jColorKey,
           parentCategory: c.parentCategory,
+          overBy: roundToCents(c.cap?.overBy ?? 0),
+          capMessages: jointCapMessage ? [jointCapMessage] : [],
           limit: resolveIrsLimit(
             c.accountType,
             householdAge,

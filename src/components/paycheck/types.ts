@@ -1,3 +1,4 @@
+import type { CappedContribution } from "@/lib/pure/contribution-caps";
 import type { ViewMode } from "@/lib/context/scenario-context";
 import type { PaycheckResult } from "@/lib/calculators/types";
 import type { AccountCategory } from "@/lib/config/account-types";
@@ -27,6 +28,10 @@ export type RawContrib = {
   taxTreatment: string;
   contributionMethod: string;
   contributionValue: string;
+  /** The IRS-capped value the figures use, when the cap pass set one. */
+  cappedValue?: number;
+  /** The cap pass's verdict — over the limit, or a missing owner/coverage. */
+  cap?: CappedContribution;
   employerMatchType: string;
   employerMatchValue: string | null;
   employerMaxMatchPct: string | null;
@@ -113,6 +118,8 @@ export type JointContrib = {
   contributionMethod: string;
   taxTreatment: string;
   ownerName: string;
+  cappedValue?: number;
+  cap?: CappedContribution;
 };
 
 /** Account category options for dropdowns — derived from config */

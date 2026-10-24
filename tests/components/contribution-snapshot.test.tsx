@@ -73,6 +73,8 @@ function makeAccountType(overrides: Partial<Record<string, unknown>> = {}) {
   return {
     accountType: "401k",
     categoryKey: "401k",
+    overBy: 0,
+    capMessages: [],
     parentCategory: "Retirement",
     hasDiscountBar: false,
     employerMatchLabel: "match",
@@ -177,6 +179,23 @@ describe("ContributionSnapshot", () => {
     expect(screen.getAllByText("$5,000.00").length).toBeGreaterThan(0);
   });
 
+  it("shows Over limit and what to fix from the cap pass", () => {
+    const msg = "$11,500 over the IRS limit — set it to at most 20.41% of pay.";
+    queryData = makeData({
+      people: [
+        {
+          ...makeData().people[0]!,
+          accountTypes: [
+            makeAccountType({ overBy: 11500, capMessages: [msg] }),
+          ],
+        },
+      ],
+    });
+    render(<ContributionSnapshot />);
+    expect(screen.getByText("Over limit")).toBeInTheDocument();
+    expect(screen.getByText(msg)).toBeInTheDocument();
+  });
+
   it("renders household totals section", () => {
     queryData = makeData();
     render(<ContributionSnapshot />);
@@ -210,6 +229,8 @@ describe("ContributionSnapshot", () => {
         {
           accountType: "brokerage",
           categoryKey: "brokerage",
+          overBy: 0,
+          capMessages: [],
           parentCategory: "Portfolio",
           hasDiscountBar: false,
           employerMatchLabel: "match",

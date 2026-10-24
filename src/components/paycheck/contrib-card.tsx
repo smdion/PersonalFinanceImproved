@@ -1,5 +1,6 @@
 "use client";
 
+import { capMessage } from "@/lib/pure/contribution-caps";
 import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
@@ -153,6 +154,15 @@ export function ContribCard({
         </div>
       </div>
 
+      {/* What to fix: over the IRS limit (the figures show the capped
+          amount), or a missing owner / HSA coverage type. */}
+      {capMessage(c) && (
+        <p
+          className={`text-caption mt-1 ${(c.cap?.overBy ?? 0) > 0 ? "font-medium text-red-600" : "text-amber-600"}`}
+        >
+          {capMessage(c)}
+        </p>
+      )}
       {/* Joint account clarification */}
       {c.ownership === "joint" && (
         <p className="text-caption text-faint mt-1">
