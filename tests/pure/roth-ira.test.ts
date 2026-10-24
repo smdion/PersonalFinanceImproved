@@ -100,6 +100,34 @@ describe("judgeRothIra", () => {
     expect(r.people.map((p) => p.maxDirect)).toEqual([7000, 1000]);
   });
 
+  it("reads the cap pass's IRA room when given: the spouse's actual IRA money counts (IRC 219(c))", () => {
+    // A puts 2,000 into an IRA, so of the couple's 8,000 compensation B can
+    // use 6,000 — what the cap pass reports, not a higher-earner-first split.
+    const r = judgeRothIra({
+      magi: 50_000,
+      phaseOut: MFJ,
+      marginOverride: null,
+      combinedCompensation: true,
+      people: [
+        {
+          personId: 1,
+          name: "A",
+          compensation: 8000,
+          iraLimit: 7000,
+          iraRoom: 2000,
+        },
+        {
+          personId: 2,
+          name: "B",
+          compensation: 0,
+          iraLimit: 7000,
+          iraRoom: 6000,
+        },
+      ],
+    })!;
+    expect(r.people.map((p) => p.maxDirect)).toEqual([2000, 6000]);
+  });
+
   it("no phase-out data → no verdict", () => {
     expect(judge(150_000, { phaseOut: null })).toBeNull();
   });
@@ -198,6 +226,7 @@ describe("rothIraSummary", () => {
         compensation: 100_000,
         iraLimit: 8000,
         hasEmployerPlan: true,
+        iraRoom: null,
       },
       // An HSA isn't a plan that takes IRA roll-ins.
       {
@@ -206,6 +235,7 @@ describe("rothIraSummary", () => {
         compensation: 0,
         iraLimit: 7000,
         hasEmployerPlan: false,
+        iraRoom: null,
       },
     ]);
   });

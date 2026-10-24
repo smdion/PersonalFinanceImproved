@@ -58,7 +58,7 @@ import { rothIraSummary } from "@/lib/pure/roth-ira";
 import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
 import { medicareLiabilityKey } from "@/lib/config/tax-params";
 import { hsaCashBuffers } from "@/lib/pure/cash-positions";
-import { isHsaCategory } from "@/lib/config/account-types";
+import { isHsaCategory, isIraCategory } from "@/lib/config/account-types";
 import { findActiveJob } from "@/lib/pure/profiles";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions";
@@ -701,6 +701,9 @@ export const paycheckRouter = createTRPCRouter({
           jobAccountTypes: r.rawContribs
             .filter((c) => c.jobId !== null)
             .map((c) => c.accountType),
+          iraRoom:
+            r.rawContribs.find((c) => isIraCategory(c.accountType) && c.cap)
+              ?.cap?.maxEmployee ?? null,
         })),
       });
 

@@ -42,6 +42,10 @@ export type RothIraPersonInput = {
   compensation: number;
   /** The person's IRA limit for the year (catch-up by age included). */
   iraLimit: number;
+  /** The most this person can put into an IRA this year from the IRS-limit
+   *  cap pass (limit, compensation, the spouse's IRA money — IRC 219(c));
+   *  absent = sized here from compensation. */
+  iraRoom?: number | null;
 };
 
 export type RothIraPersonResult = {
@@ -117,7 +121,8 @@ export function judgeRothIra(args: {
     (a, b) => b.compensation - a.compensation,
   )) {
     const own = Math.max(0, p.compensation);
-    const usable = args.combinedCompensation ? compensationLeft : own;
+    const usable =
+      p.iraRoom ?? (args.combinedCompensation ? compensationLeft : own);
     const allowed = rothIraAllowed(
       magi,
       phaseOut,
@@ -249,6 +254,7 @@ export function buildRothIraView(args: {
                 name: p.name,
                 compensation: p.compensation,
                 iraLimit: p.iraLimit,
+                iraRoom: p.iraRoom,
               },
             ],
       ),
@@ -287,6 +293,9 @@ export type RothIraSummary = {
     iraLimit: number | null;
     /** Has a workplace plan that could take a pre-tax IRA roll-in. */
     hasEmployerPlan: boolean;
+    /** The cap pass's most this person can put into an IRA (null: no IRA
+     *  contribution to size it from). */
+    iraRoom: number | null;
   }[];
 };
 
@@ -315,6 +324,8 @@ export function rothIraSummary(args: {
     earnings: { gross: number; preTaxFederal: number } | null;
     /** Account types of the person's job-linked contribution accounts. */
     jobAccountTypes: readonly string[];
+    /** The cap pass's most this person can put into an IRA (null: none). */
+    iraRoom?: number | null;
   }[];
 }): RothIraSummary | null {
   const iraCategory = getAllCategories().find(isIraCategory);
@@ -338,6 +349,7 @@ export function rothIraSummary(args: {
         args.limits,
       ),
       hasEmployerPlan: p.jobAccountTypes.some(isEmployerPlanType),
+      iraRoom: p.iraRoom ?? null,
     })),
   };
 }
