@@ -6,7 +6,12 @@
  * Recommendations page and the dashboard Checkup both read this, so their
  * counts agree.
  */
-import { useMilestones } from "@/lib/hooks/use-milestones";
+import {
+  useContributionSummaryInput,
+  useMilestones,
+} from "@/lib/hooks/use-milestones";
+import { trpc } from "@/lib/trpc";
+import { recommendationsFromCaps } from "@/lib/pure/recommendations-caps";
 import { useRecommendationDismissals } from "@/lib/hooks/use-recommendation-dismissals";
 import { applyDismissals } from "@/lib/pure/recommendation-dismissals";
 import { useDataSourceStatuses } from "@/lib/hooks/use-data-source-statuses";
@@ -32,7 +37,20 @@ export function useRecommendations(): ReturnType<typeof useMilestones> & {
   const data = useDataSourceStatuses();
   const roth = useRothIra();
   const cash = useInvestingFindings();
+  const contribs = trpc.contribution.computeSummary.useQuery(
+    useContributionSummaryInput(),
+  );
   const ranked = rankRecommendations([
+    ...recommendationsFromCaps([
+      ...(contribs.data?.people ?? []).map((p) => ({
+        personName: p.person.name,
+        accountTypes: p.accountTypes,
+      })),
+      {
+        personName: null,
+        accountTypes: contribs.data?.jointAccountTypes ?? [],
+      },
+    ]),
     ...recommendationsFromMilestones(milestones.results),
     ...recommendationsFromDataSources(data.statuses, (s) =>
       s.source.key === "budgetApi"
@@ -53,7 +71,11 @@ export function useRecommendations(): ReturnType<typeof useMilestones> & {
     // Wait for the data-source checks too, or "Nothing to do" flashes
     // before the "Keep data current" items arrive.
     isLoading:
-      milestones.isLoading || !data.loaded || roth.isLoading || cash.isLoading,
+      milestones.isLoading ||
+      !data.loaded ||
+      roth.isLoading ||
+      cash.isLoading ||
+      contribs.isLoading,
     recommendations: shown,
     dismissed,
   };

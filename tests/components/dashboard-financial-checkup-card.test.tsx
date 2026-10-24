@@ -88,8 +88,12 @@ const withData = (data: unknown) => ({ data, isLoading: false, error: null });
 const baseContribs = {
   people: [
     {
+      person: { id: 1, name: "Alice" },
       accountTypes: [
         {
+          accountType: "401k",
+          overBy: 0,
+          capMessages: [] as string[],
           employerMatch: 3000,
           parentCategory: "Retirement",
           employeeContrib: 30000,
