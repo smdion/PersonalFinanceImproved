@@ -68,6 +68,10 @@ type SnapshotDraft = {
     institution: string;
     accountType: string;
     taxType: PortfolioTaxType;
+    /** Absent in drafts saved before v0.8.14 — see draftRowKey. */
+    subType?: string | null;
+    label?: string | null;
+    ownerPersonId?: number | null;
     amount: string;
   }[];
 };
@@ -103,33 +107,48 @@ function clearDraft(date: string): void {
   }
 }
 
+type DraftRowIdentity = Pick<
+  AccountRow,
+  "performanceAccountId" | "institution" | "accountType" | "taxType"
+> &
+  Partial<Pick<AccountRow, "subType" | "label" | "ownerPersonId">>;
+
+/** A row's identity within a snapshot. One account holds several rows
+ *  (Traditional / Roth parts, one per owner), so the account id alone
+ *  isn't enough. `legacy` = the identity a pre-v0.8.14 draft carries. */
+function draftRowKey(r: DraftRowIdentity, legacy: boolean): string {
+  // A linked row is its account's; only an unlinked row needs institution.
+  const base = [
+    r.performanceAccountId ?? r.institution,
+    r.accountType,
+    r.taxType,
+  ];
+  return JSON.stringify(
+    legacy
+      ? base
+      : [...base, r.subType ?? null, r.label ?? null, r.ownerPersonId ?? null],
+  );
+}
+
 /** Overlay a draft's typed amounts onto a freshly-built row set — keeps
  *  the CURRENT account set (added masters appear, removed ones are gone)
- *  and only carries the draft's amounts + notes forward. */
+ *  and only carries the draft's amounts + notes forward. Rows that share
+ *  an identity are matched in order. */
 function reconcileDraft(
   base: AccountRow[],
   draft: SnapshotDraft,
 ): AccountRow[] {
-  const byPerf = new Map<number, string>();
-  const byUnlinked = new Map<string, string>();
+  const amounts = new Map<string, string[]>();
+  let legacy = false;
   for (const r of draft.rows) {
-    if (r.performanceAccountId != null) {
-      byPerf.set(r.performanceAccountId, r.amount);
-    } else {
-      byUnlinked.set(
-        `${r.institution}|${r.accountType}|${r.taxType}`,
-        r.amount,
-      );
-    }
+    const isLegacy = !("ownerPersonId" in r);
+    legacy ||= isLegacy;
+    const key = draftRowKey(r, isLegacy);
+    amounts.set(key, [...(amounts.get(key) ?? []), r.amount]);
   }
   return base.map((row) => {
     if (row.isClosedAccount) return row; // server zeroes these regardless
-    const draftAmount =
-      row.performanceAccountId != null
-        ? byPerf.get(row.performanceAccountId)
-        : byUnlinked.get(
-            `${row.institution}|${row.accountType}|${row.taxType}`,
-          );
+    const draftAmount = amounts.get(draftRowKey(row, legacy))?.shift();
     return draftAmount === undefined ? row : { ...row, amount: draftAmount };
   });
 }
@@ -391,6 +410,9 @@ export function NewSnapshotForm({
           institution: r.institution,
           accountType: r.accountType,
           taxType: r.taxType,
+          subType: r.subType,
+          label: r.label,
+          ownerPersonId: r.ownerPersonId,
           amount: r.amount,
         })),
       });
