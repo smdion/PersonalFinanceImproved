@@ -560,3 +560,16 @@ export function accountGroupLimits(
     ctx,
   ).groupLimits;
 }
+
+/**
+ * The value a contribution's yearly money is figured from: the IRS-capped
+ * value when the cap pass set one, else the configured value. Every
+ * calculation reads this; editors, saves and diffs read the configured
+ * `contributionValue` itself.
+ */
+export function computeValue(c: {
+  contributionValue: string | number | null | undefined;
+  cappedValue?: number;
+}): number {
+  return c.cappedValue ?? Number(c.contributionValue ?? 0);
+}
