@@ -297,6 +297,11 @@ export const HDHP_MIN_DEDUCTIBLE_KEY: Record<HsaCoverageType, string> = {
  *  combined compensation (spousal IRA, IRC 219(c)). */
 export const SPOUSAL_IRA_FILING_STATUSES: readonly W4FilingStatus[] = ["MFJ"];
 
+/** Filing statuses of a married couple: if either spouse has family HSA
+ *  coverage, both are treated as having it and share one family limit, each
+ *  spouse's catch-up on top (IRS Pub 969). The app has no MFS status. */
+export const MARRIED_FILING_STATUSES: readonly W4FilingStatus[] = ["MFJ"];
+
 /** All filing statuses the engine expects a bracket set for. */
 export const REQUIRED_FILING_STATUSES: W4FilingStatus[] = [
   "MFJ",

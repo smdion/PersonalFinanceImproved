@@ -10,6 +10,7 @@ import {
   isPayrollFicaExemptCategory,
   isRetirementParent,
 } from "@/lib/config/account-types";
+import { HSA_FAMILY_COVERAGE } from "@/lib/config/enum-values";
 import { requireLimit } from "@/server/helpers/settings";
 import { safeDivide, roundToCents } from "@/lib/utils/math";
 import { ageInYear } from "@/lib/utils/date";
@@ -49,7 +50,7 @@ export function irsLimitBaseKey(
   keys: { base: string; coverageVariant?: string | null },
   hsaCoverageType: string | null,
 ): string {
-  return keys.coverageVariant && hsaCoverageType === "family"
+  return keys.coverageVariant && hsaCoverageType === HSA_FAMILY_COVERAGE
     ? keys.coverageVariant
     : keys.base;
 }

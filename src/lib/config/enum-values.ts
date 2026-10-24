@@ -183,6 +183,8 @@ export const employerMatchTypeSchema = z.enum(EMPLOYER_MATCH_TYPE_VALUES);
 export const HSA_COVERAGE_TYPE_VALUES = ["self_only", "family"] as const;
 export type HsaCoverageType = (typeof HSA_COVERAGE_TYPE_VALUES)[number];
 export const hsaCoverageTypeSchema = z.enum(HSA_COVERAGE_TYPE_VALUES);
+/** The coverage type whose limit is the family variant (IRS Pub 969). */
+export const HSA_FAMILY_COVERAGE: HsaCoverageType = "family";
 
 // ── Account Ownership ──
 
