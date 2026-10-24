@@ -51,8 +51,9 @@ export type CapRow = {
   regularAnnual: number;
   /** Employee money from bonus checks over the tax year. */
   bonusAnnual: number;
-  /** Employer money over the tax year (counts toward the limit when the
-   *  account type's `matchCountsTowardLimit`). */
+  /** Employer money over the tax year at the configured contribution
+   *  (counts toward the limit when the type's `matchCountsTowardLimit`);
+   *  CapContext.employerAt, when given, says how it changes with a cut. */
   employerAnnual: number;
   /** Pre-tax payroll money — comes off the person's taxable compensation
    *  (W-2 box 1), which bounds an IRA. */
@@ -76,6 +77,12 @@ export type CapContext = {
    *  coverage variants) — for a projected year, the grown figures. */
   limits: Record<string, number>;
   people: readonly CapPerson[];
+  /**
+   * Employer money for these rows when their employee money is scaled by
+   * `factor` (a match figured on the contribution moves with it). Must not
+   * fall as the factor grows. Absent = each row's fixed `employerAnnual`.
+   */
+  employerAt?: (rowIds: readonly number[], factor: number) => number;
 };
 
 export type CapReason =
@@ -123,40 +130,83 @@ export type CappedContribution = {
 };
 
 /** One person's share of a limit group. `ownRoom` is limit only their own
- *  rows may fill (a spouse's catch-up in a shared family group). */
+ *  rows may fill (a spouse's catch-up in a shared family group);
+ *  `employerAt(f)` is their employer money that counts when their employee
+ *  money is `employee × f`. */
 type Participant = {
   personId: number;
   rowIdx: number[];
   employee: number;
-  employer: number;
+  employerAt: (factor: number) => number;
   ownRoom: number;
 };
 
-const sharedNeed = (p: Participant, employee = p.employee) =>
-  Math.max(0, employee + p.employer - p.ownRoom);
+/** Money a participant puts against the shared limit at factor `f`. */
+const sharedNeed = (p: Participant, f: number) =>
+  Math.max(0, p.employee * f + p.employerAt(f) - p.ownRoom);
+
+const BISECT_STEPS = 60;
+
+/** Smallest x in [lo, hi] with ok(x), for ok false→true as x grows
+ *  (returns hi when only hi is ok). */
+function bisect(lo: number, hi: number, ok: (x: number) => boolean): number {
+  for (let k = 0; k < BISECT_STEPS; k++) {
+    const mid = (lo + hi) / 2;
+    if (ok(mid)) hi = mid;
+    else lo = mid;
+  }
+  return hi;
+}
 
 /**
- * Employee money each participant keeps when the group shares `sharedLimit`.
- * Each participant's money first fills their own room; what's over is cut
- * from the employee money that uses the shared limit, proportionally.
+ * Each participant's factor on their employee money when the group shares
+ * `sharedLimit`: each one's money first fills their own room; what's over
+ * is cut from the employee money that uses the shared limit, one share of
+ * it for everyone, the smallest share that fits (employer money that moves
+ * with the cut included). Employer money that alone fills the limit
+ * leaves the employee nothing.
  */
 function capParticipants(
   participants: readonly Participant[],
   sharedLimit: number,
 ): Map<number, number> {
-  const out = new Map(participants.map((p) => [p.personId, p.employee]));
-  const excess = sumBy(participants, (p) => sharedNeed(p)) - sharedLimit;
-  if (excess <= 0) return out;
-  // Only employee money in the shared part can be cut; employer money that
-  // alone fills the limit leaves the employee nothing.
-  const cuttable = participants.map((p) => Math.min(p.employee, sharedNeed(p)));
-  const total = sumBy(cuttable, (c) => c);
-  if (total <= 0) return out;
-  const share = Math.min(1, excess / total);
-  participants.forEach((p, i) =>
-    out.set(p.personId, p.employee - cuttable[i]! * share),
+  const total = (fs: readonly number[]) =>
+    participants.reduce((sum, p, k) => sum + sharedNeed(p, fs[k]!), 0);
+  const ones = participants.map(() => 1);
+  if (total(ones) <= sharedLimit)
+    return new Map(participants.map((p) => [p.personId, 1]));
+  // Employee money in the shared part at the configured amounts.
+  const cuttable = participants.map((p) =>
+    Math.min(p.employee, sharedNeed(p, 1)),
   );
-  return out;
+  const factorsAt = (share: number) =>
+    participants.map((p, k) =>
+      p.employee > 0 ? 1 - (cuttable[k]! * share) / p.employee : 1,
+    );
+  const share = bisect(0, 1, (x) => total(factorsAt(x)) <= sharedLimit);
+  const fs = factorsAt(share);
+  return new Map(participants.map((p, k) => [p.personId, fs[k]!]));
+}
+
+/** The most employee money `p` can put in when the shared part has `room`
+ *  left for them (others' shares taken off). */
+function maxEmployeeFor(p: Participant, room: number): number {
+  const fits = (e: number) => {
+    const f = p.employee > 0 ? e / p.employee : 0;
+    const employer = p.employee > 0 ? p.employerAt(f) : p.employerAt(0);
+    return Math.max(0, e + employer - p.ownRoom) <= room;
+  };
+  if (!fits(0)) return 0;
+  let hi = Math.max(1, room + p.ownRoom);
+  while (fits(hi)) hi *= 2;
+  // Largest e that fits = just under the smallest that doesn't.
+  let lo = 0;
+  for (let k = 0; k < BISECT_STEPS; k++) {
+    const mid = (lo + hi) / 2;
+    if (fits(mid)) lo = mid;
+    else hi = mid;
+  }
+  return lo;
 }
 
 /** Family if any of the rows has it, else the first coverage given. */
@@ -222,6 +272,9 @@ export function capContributionsByLimitGroup(
   const employeeOf = (r: CapRow) =>
     Math.max(0, r.regularAnnual) + Math.max(0, r.bonusAnnual);
   const kept = rows.map(employeeOf);
+  /** Each row's factor on its configured employee money, for employer
+   *  money that moves with it. */
+  const factorOf = rows.map(() => 1);
   const limitOf: (number | null)[] = rows.map(() => null);
   const maxOf: (number | null)[] = rows.map(() => null);
   const reasonOf: (CapReason | null)[] = rows.map(() => null);
@@ -274,41 +327,49 @@ export function capContributionsByLimitGroup(
 
     const sizeFor = (pid: number, cov: string | null) =>
       sizeLimit(type, ageOf.get(pid) ?? null, cov, ctx.limits);
-    const employerOf = (idx: readonly number[]) =>
-      cfg.matchCountsTowardLimit
-        ? sumBy(idx, (i) => Math.max(0, rows[i]!.employerAnnual))
-        : 0;
-    const participant = (pid: number, idx: number[], ownRoom: number) => ({
+    /** Employer money that counts for these rows at `factor`. */
+    const employerOf = (idx: readonly number[], factor = 1) =>
+      !cfg.matchCountsTowardLimit
+        ? 0
+        : ctx.employerAt
+          ? Math.max(
+              0,
+              ctx.employerAt(
+                idx.map((i) => rows[i]!.id),
+                factor,
+              ),
+            )
+          : sumBy(idx, (i) => Math.max(0, rows[i]!.employerAnnual));
+    const participant = (
+      pid: number,
+      idx: number[],
+      ownRoom: number,
+    ): Participant => ({
       personId: pid,
       rowIdx: idx,
       employee: sumBy(idx, (i) => kept[i]!),
-      employer: employerOf(idx),
+      employerAt: (f) => employerOf(idx, f),
       ownRoom,
     });
     const apply = (parts: readonly Participant[], sharedLimit: number) => {
-      const keptBy = capParticipants(parts, sharedLimit);
-      const capped = parts.map((p) => ({
-        ...p,
-        employee: keptBy.get(p.personId)!,
-      }));
+      const factors = capParticipants(parts, sharedLimit);
       const employerOver = sumBy(parts, (p) => sharedNeed(p, 0)) > sharedLimit;
-      capped.forEach((p, k) => {
-        const factor =
-          parts[k]!.employee > 0 ? p.employee / parts[k]!.employee : 1;
-        const othersNeed = sumBy(capped, (o) =>
-          o.personId === p.personId ? 0 : sharedNeed(o),
+      for (const p of parts) {
+        const othersNeed = sumBy(parts, (o) =>
+          o.personId === p.personId
+            ? 0
+            : sharedNeed(o, factors.get(o.personId)!),
         );
-        const max = Math.max(
-          0,
-          sharedLimit - othersNeed + p.ownRoom - p.employer,
-        );
+        const max = maxEmployeeFor(p, sharedLimit - othersNeed);
+        const factor = factors.get(p.personId)!;
         for (const i of p.rowIdx) {
           kept[i] = kept[i]! * factor;
+          factorOf[i] = factor;
           limitOf[i] = sharedLimit + p.ownRoom;
           maxOf[i] = max;
         }
         if (employerOver) flag(p.rowIdx, "employer-over-limit");
-      });
+      }
     };
 
     if (sharedFamily) {
@@ -366,14 +427,15 @@ export function capContributionsByLimitGroup(
     if (householdSizes.some((z) => typeof z === "string")) continue;
     const household = householdOf(householdSizes as Size[], sharedFamily);
     groupLimits.set(group, household);
-    const ownedIdx = [...byPerson.values()].flat();
-    const room = Math.max(
-      0,
+    const ownedRoom =
       household -
-        sumBy(ownedIdx, (i) => kept[i]!) -
-        employerOf(ownedIdx) -
-        employerOf(joint),
-    );
+      sumBy(
+        [...byPerson.values()],
+        (idx) =>
+          sumBy(idx, (i) => kept[i]!) + employerOf(idx, factorOf[idx[0]!]!),
+      );
+    const jointPart = participant(-1, joint, 0);
+    const room = maxEmployeeFor(jointPart, Math.max(0, ownedRoom));
     const total = sumBy(joint, (i) => kept[i]!);
     const factor = total > room ? room / total : 1;
     for (const i of joint) {

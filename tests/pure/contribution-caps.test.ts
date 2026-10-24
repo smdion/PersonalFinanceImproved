@@ -552,3 +552,50 @@ describe("group limits — every shared limit counted once", () => {
     expect(out.has("ira")).toBe(false); // nobody holds one
   });
 });
+
+describe("capContributionsByLimitGroup — an HSA match that moves with the contribution", () => {
+  /** k × min(employee, M): a match of k per dollar, up to M of employee money. */
+  const solve = (k: number, M: number, employee: number) => {
+    const r = row({
+      personId: 1,
+      accountType: "hsa",
+      hsaCoverageType: "self_only",
+      regularAnnual: employee,
+      employerAnnual: k * Math.min(employee, M),
+    });
+    const out = capContributionsByLimitGroup([r], {
+      taxYear: TAX_YEAR,
+      filingStatus: "Single",
+      limits,
+      people: [person(1, 40)],
+      employerAt: (_ids, f) => k * Math.min(employee * f, M),
+    }).byRow.get(r.id)!;
+    return out;
+  };
+
+  it.each([
+    [0.5, 1e9, 4000 / 1.5],
+    [1, 1e9, 2000],
+    [2, 1e9, 4000 / 3],
+    [1, 500, 3500], // the match stops at 500: 4,000 − 500
+    [2, 500, 3000],
+  ])(
+    "match %d per dollar up to %d: employee + its match fill the 4,000 limit exactly",
+    (k, M, expected) => {
+      const out = solve(k, M, 5000);
+      expect(out.cappedAnnual).toBeCloseTo(expected, 2);
+      expect(out.maxEmployee).toBeCloseTo(expected, 2);
+      // Never over the limit once the match is figured on the capped amount.
+      expect(
+        out.cappedAnnual + k * Math.min(out.cappedAnnual, M),
+      ).toBeLessThanOrEqual(4000 + 0.01);
+    },
+  );
+
+  it("under the limit with its match: untouched, and the most it could be is solved too", () => {
+    const out = solve(1, 1e9, 1500);
+    expect(out.cappedAnnual).toBe(1500);
+    expect(out.reason).toBeNull();
+    expect(out.maxEmployee).toBeCloseTo(2000, 2);
+  });
+});
