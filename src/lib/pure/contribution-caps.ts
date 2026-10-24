@@ -587,3 +587,51 @@ export function computeValue(c: {
 }): number {
   return c.cappedValue ?? Number(c.contributionValue ?? 0);
 }
+
+/** Down to the cent / hundredth of a percent — the most that can be
+ *  entered and still be within the limit. */
+const floorTo2 = (v: number) => Math.floor(v * 100 + 1e-9) / 100;
+
+/** The most a row can be set to, in its own method's terms. */
+export function capMaxLabel(
+  method: string | null,
+  cappedValue: number,
+): string {
+  const v = floorTo2(Math.max(0, cappedValue));
+  const dollars = `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  switch (method ?? "percent_of_salary") {
+    case "percent_of_salary":
+      return `${v}% of pay`;
+    case "fixed_per_period":
+      return `${dollars} per check`;
+    case "fixed_monthly":
+      return `${dollars} a month`;
+    default:
+      return `${dollars} a year`;
+  }
+}
+
+/** What's wrong with a row's contribution and how to fix it — the same
+ *  words on the page and in a refused save. null = nothing to fix. */
+export function capMessage(row: {
+  contributionMethod: string | null;
+  cappedValue?: number;
+  cap?: CappedContribution;
+}): string | null {
+  const cap = row.cap;
+  if (!cap) return null;
+  const at = (v: number) => `$${Math.ceil(v).toLocaleString("en-US")}`;
+  if (cap.overBy >= 0.01 && row.cappedValue !== undefined) {
+    const most = capMaxLabel(row.contributionMethod, row.cappedValue);
+    if (cap.reason === "over-compensation")
+      return `${at(cap.overBy)} more than taxable pay allows — set it to at most ${most}.`;
+    if (cap.reason === "employer-over-limit")
+      return `Employer money alone fills the IRS limit — set it to ${most}.`;
+    return `${at(cap.overBy)} over the IRS limit — set it to at most ${most}.`;
+  }
+  if (cap.reason === "no-owner")
+    return "IRS limits are per person — choose who owns this account.";
+  if (cap.reason === "no-coverage")
+    return "Choose the HSA coverage (self-only or family) — sized at the self-only limit until then.";
+  return null;
+}

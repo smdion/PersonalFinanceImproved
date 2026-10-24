@@ -35,6 +35,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
   let personId: number;
   let perfAcctId: number;
   let profileId: number;
+  let accountId: number;
 
   beforeAll(async () => {
     vi.useFakeTimers();
@@ -58,6 +59,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
       })
       .returning({ id: schema.contributionAccounts.id })
       .get();
+    accountId = acct.id;
     profileId = seedContributionProfile(t.db, {
       name: "Over the limit",
       contributionActiveFields: {
@@ -153,5 +155,57 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
       )
     ).get(perfAcctId)!;
     expect(mix.employeePreTax).toBeCloseTo(LIMIT, 2);
+  });
+
+  describe("over the limit is an error to fix: saving one is refused", () => {
+    it("refuses a value over the limit, with the most it can be", async () => {
+      // 24,500 / 120,000 = 20.4166…% → at most 20.41%.
+      await expect(
+        t.caller.contributionProfile.setAccountActiveFields({
+          profileId,
+          accountId,
+          fields: {
+            contributionValue: "25",
+            contributionMethod: "percent_of_salary",
+          },
+        }),
+      ).rejects.toThrow(
+        /over the IRS limit — set it to at most 20\.41% of pay/,
+      );
+    });
+
+    it("the most it can be saves", async () => {
+      await expect(
+        t.caller.contributionProfile.setAccountActiveFields({
+          profileId,
+          accountId,
+          fields: {
+            contributionValue: "20.41",
+            contributionMethod: "percent_of_salary",
+          },
+        }),
+      ).resolves.toBeDefined();
+    });
+
+    it("an edit that doesn't set a value still saves (the row keeps showing its error)", async () => {
+      await expect(
+        t.caller.contributionProfile.update({ id: profileId, name: "Renamed" }),
+      ).resolves.toBeDefined();
+    });
+
+    it("refuses a joint 401(k): IRS limits are per person", async () => {
+      await expect(
+        t.caller.settings.contributionAccounts.create({
+          personId: null,
+          jobId: null,
+          ownership: "joint",
+          accountType: "401k",
+          parentCategory: "Retirement",
+          taxTreatment: "pre_tax",
+          employerMatchType: "none",
+          isActive: true,
+        } as never),
+      ).rejects.toThrow(/choose who owns this account/);
+    });
   });
 });

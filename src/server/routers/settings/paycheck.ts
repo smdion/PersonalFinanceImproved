@@ -130,6 +130,22 @@ const ownershipPersonIdInvariantIssue = {
   path: ["personId"],
 };
 
+// IRS contribution limits are per person, so an account type with one
+// (401(k), 403(b), IRA, HSA) can't be joint — it needs an owner.
+const limitedTypeHasOwner = (data: {
+  ownership?: string;
+  accountType: string;
+}) =>
+  !(
+    data.ownership === "joint" &&
+    getAccountTypeConfig(data.accountType as AccountCategory)?.hasIrsLimit
+  );
+const limitedTypeHasOwnerIssue = {
+  message:
+    "IRS contribution limits are per person — choose who owns this account.",
+  path: ["ownership"],
+};
+
 // amountPerPeriod is deliberately NOT here — a deduction is purely
 // structural now; its dollar amount is ALWAYS a Contribution Profile's
 // deductions active-field entry (contributionProfile.update/
@@ -356,10 +372,9 @@ export const paycheckProcedures = {
     ),
     create: adminProcedure
       .input(
-        contributionAccountInput.refine(
-          ownershipPersonIdInvariant,
-          ownershipPersonIdInvariantIssue,
-        ),
+        contributionAccountInput
+          .refine(ownershipPersonIdInvariant, ownershipPersonIdInvariantIssue)
+          .refine(limitedTypeHasOwner, limitedTypeHasOwnerIssue),
       )
       .mutation(async ({ ctx, input }) => {
         // When linked to a master account, sync parentCategory from its parentCategory
@@ -431,7 +446,8 @@ export const paycheckProcedures = {
         z
           .object({ id: z.number().int() })
           .extend(contributionAccountInput.shape)
-          .refine(ownershipPersonIdInvariant, ownershipPersonIdInvariantIssue),
+          .refine(ownershipPersonIdInvariant, ownershipPersonIdInvariantIssue)
+          .refine(limitedTypeHasOwner, limitedTypeHasOwnerIssue),
       )
       .mutation(async ({ ctx, input: { id, ...data } }) => {
         // Validate priorYearContribAmount only allowed for eligible account types

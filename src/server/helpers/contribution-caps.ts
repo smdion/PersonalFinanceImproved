@@ -9,8 +9,11 @@
  */
 import {
   capContributionsByLimitGroup,
+  capMessage,
   type CapPassed,
 } from "@/lib/pure/contribution-caps";
+import { TRPCError } from "@trpc/server";
+import { getAllPeople } from "./people";
 import {
   getLimitGroup,
   isPreTaxTreatment,
@@ -20,6 +23,7 @@ import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
 import { sumBy } from "@/lib/utils/math";
 import { computeGroupedEmployerMatch } from "./contribution-match";
 import {
+  applyContribActiveFields,
   contribRowAmounts,
   type ContribRow,
   type JobRef,
@@ -34,6 +38,8 @@ import {
   resolveRetirementProfileIdFrom,
 } from "./retirement-profile";
 import {
+  loadEffectiveSalaryProfile,
+  mergeSalaryProfileJobFields,
   thisYearJobPay,
   type SalaryActiveMap,
   type SalaryProfileActiveMap,
@@ -276,4 +282,58 @@ export function capResolvedProfile<
     activeJobs: resolved.activeJobs,
     jobSalaries: resolved.jobSalaries,
   });
+}
+
+/**
+ * Refuse a save that leaves a contribution it sets over its IRS limit (the
+ * household's rule: over the limit is an error to fix, never modelled). The
+ * proposed account fields are applied to the household's rows and run
+ * through the same cap pass; only the rows this save touches are judged,
+ * so an unrelated edit still saves while an over-limit row shows its
+ * error. The message carries the most each row can be.
+ */
+export async function assertWithinIrsLimits(
+  db: Db,
+  accountFields: Record<string, Record<string, unknown>>,
+  touched: readonly number[],
+): Promise<void> {
+  if (touched.length === 0) return;
+  const [allContribs, allJobs, people, salaryMap] = await Promise.all([
+    db
+      .select()
+      .from(schema.contributionAccounts)
+      .where(eq(schema.contributionAccounts.isActive, true)),
+    db.select().from(schema.jobs),
+    getAllPeople(db),
+    loadEffectiveSalaryProfile(db, null),
+  ]);
+  const capped = capForRequest(
+    applyContribActiveFields(allContribs, accountFields),
+    await loadCapHousehold(db, people, null, new Date().getFullYear()),
+    mergeSalaryProfileJobFields(allJobs, salaryMap),
+    salaryMap,
+    new Map(),
+  );
+  const nameOf = new Map(people.map((p) => [p.id, p.name]));
+  const problems = capped.flatMap((c) => {
+    if (!touched.includes(c.id) || !c.cap || c.cap.overBy < 0.01) return [];
+    const who = c.personId != null ? `${nameOf.get(c.personId)}'s ` : "";
+    return [`${who}${c.subType ?? c.accountType}: ${capMessage(c)}`];
+  });
+  if (problems.length > 0)
+    throw new TRPCError({ code: "BAD_REQUEST", message: problems.join(" ") });
+}
+
+/** The account ids a contribution-fields change sets a value on (value,
+ *  method or active flag differ from before). */
+export function touchedContribAccounts(
+  before: Record<string, Record<string, unknown>> | undefined,
+  after: Record<string, Record<string, unknown>>,
+): number[] {
+  const keys = ["contributionValue", "contributionMethod", "isActive"];
+  return Object.keys(after)
+    .filter((id) =>
+      keys.some((k) => String(before?.[id]?.[k]) !== String(after[id]?.[k])),
+    )
+    .map(Number);
 }
