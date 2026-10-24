@@ -19,8 +19,10 @@
  * - Compensation-bounded types (IRA) are also capped at taxable compensation
  *   — the couple's combined compensation for a spousal IRA (IRC 219(c)).
  * - A person with no birth year is capped at the most any age allows and
- *   flagged. Not capped, flagged: a coverage-variant row with no coverage
- *   type, a row with no owner, a year without the limit row.
+ *   flagged. A joint row (no owner) is held to the room the household's
+ *   limits leave after everyone's own rows, and flagged. Not capped,
+ *   flagged: a coverage-variant row with no coverage type, a year without
+ *   the limit row.
  *
  * Rows are this tax year's contributions only; prior-year IRA money stays
  * outside the pass.
@@ -87,7 +89,8 @@ export type CapReason =
   | "no-birth-date"
   /** Not capped: the limit depends on a coverage type the row doesn't have. */
   | "no-coverage"
-  /** Not capped: a joint row, no person's limit applies. */
+  /** A joint row: no one's own limit applies — held to the room the
+   *  household's limits leave after everyone's own rows; needs an owner. */
   | "no-owner"
   /** Not capped: the year's tax data lacks the limit. */
   | "no-limit-data";
@@ -184,23 +187,30 @@ export function capContributionsByLimitGroup(
   const flag = (idx: readonly number[], reason: CapReason) =>
     idx.forEach((i) => (reasonOf[i] ??= reason));
 
-  // Owned rows by limit group, then by person.
-  const groups = new Map<string, Map<number, number[]>>();
+  // Rows by limit group: owned rows by person, joint rows apart.
+  const groups = new Map<
+    string,
+    { byPerson: Map<number, number[]>; joint: number[] }
+  >();
   rows.forEach((r, i) => {
     const group = getLimitGroup(r.accountType);
     if (!group) return;
+    const g = groups.get(group) ?? {
+      byPerson: new Map<number, number[]>(),
+      joint: [] as number[],
+    };
+    groups.set(group, g);
     if (r.personId === null) {
       reasonOf[i] = "no-owner";
+      g.joint.push(i);
       return;
     }
-    const byPerson = groups.get(group) ?? new Map<number, number[]>();
-    byPerson.set(r.personId, [...(byPerson.get(r.personId) ?? []), i]);
-    groups.set(group, byPerson);
+    g.byPerson.set(r.personId, [...(g.byPerson.get(r.personId) ?? []), i]);
   });
 
-  for (const byPerson of groups.values()) {
+  for (const { byPerson, joint } of groups.values()) {
     // Types sharing a limit group share these settings (config test).
-    const type = rows[[...byPerson.values()][0]![0]!]!.accountType;
+    const type = rows[[...byPerson.values()][0]?.[0] ?? joint[0]!]!.accountType;
     const cfg = getAccountTypeConfig(type as AccountCategory);
     const keys = cfg.irsLimitKeys!;
     const coverageMatters = !!keys.coverageVariant;
@@ -210,11 +220,14 @@ export function capContributionsByLimitGroup(
         coverageMatters ? personCoverage(idx.map((i) => rows[i]!)) : null,
       ]),
     );
+    const jointCoverage = coverageMatters
+      ? personCoverage(joint.map((i) => rows[i]!))
+      : null;
     const sharedFamily =
       cfg.isHouseholdLimit &&
       coverageMatters &&
       married &&
-      [...coverage.values()].includes(HSA_FAMILY_COVERAGE);
+      [...coverage.values(), jointCoverage].includes(HSA_FAMILY_COVERAGE);
 
     /** A person's base limit and catch-up on top, or why it can't be sized.
      *  No birth year: the largest catch-up any age gets. */
@@ -237,13 +250,15 @@ export function capContributionsByLimitGroup(
         catchup: resolveIrsLimit(type, age, cov, ctx.limits) - base,
       };
     };
+    const employerOf = (idx: readonly number[]) =>
+      cfg.matchCountsTowardLimit
+        ? sumBy(idx, (i) => Math.max(0, rows[i]!.employerAnnual))
+        : 0;
     const participant = (pid: number, idx: number[], ownRoom: number) => ({
       personId: pid,
       rowIdx: idx,
       employee: sumBy(idx, (i) => kept[i]!),
-      employer: cfg.matchCountsTowardLimit
-        ? sumBy(idx, (i) => Math.max(0, rows[i]!.employerAnnual))
-        : 0,
+      employer: employerOf(idx),
       ownRoom,
     });
     const apply = (parts: readonly Participant[], sharedLimit: number) => {
@@ -283,29 +298,61 @@ export function capContributionsByLimitGroup(
       if (unsized) {
         // Only a missing limit row gets here (coverage is family).
         sized.forEach((s) => flag(s.idx, unsized.size as CapReason));
-        continue;
+      } else if (sized.length > 0) {
+        const sizes = sized.map(
+          (s) => s.size as { base: number; catchup: number },
+        );
+        sized.forEach((s) => {
+          if (ageOf.get(s.pid) == null) flag(s.idx, "no-birth-date");
+        });
+        apply(
+          sized.map((s, k) => participant(s.pid, s.idx, sizes[k]!.catchup)),
+          sizes[0]!.base,
+        );
       }
-      const sizes = sized.map(
-        (s) => s.size as { base: number; catchup: number },
-      );
-      sized.forEach((s) => {
-        if (ageOf.get(s.pid) == null) flag(s.idx, "no-birth-date");
-      });
-      apply(
-        sized.map((s, k) => participant(s.pid, s.idx, sizes[k]!.catchup)),
-        sizes[0]!.base,
-      );
-      continue;
+    } else {
+      for (const [pid, idx] of byPerson) {
+        const size = sizeFor(pid, coverage.get(pid) ?? null);
+        if (typeof size === "string") {
+          flag(idx, size);
+          continue;
+        }
+        if (ageOf.get(pid) == null) flag(idx, "no-birth-date");
+        apply([participant(pid, idx, 0)], size.base + size.catchup);
+      }
     }
 
-    for (const [pid, idx] of byPerson) {
-      const size = sizeFor(pid, coverage.get(pid) ?? null);
-      if (typeof size === "string") {
-        flag(idx, size);
-        continue;
-      }
-      if (ageOf.get(pid) == null) flag(idx, "no-birth-date");
-      apply([participant(pid, idx, 0)], size.base + size.catchup);
+    // Joint rows: no one's own limit applies, so they're held to the room
+    // the household's limits leave after everyone's own rows (and flagged
+    // to choose an owner). Unsizable household = left as they are.
+    if (joint.length === 0) continue;
+    const householdSizes = ctx.people.map((p) =>
+      sizeFor(
+        p.id,
+        sharedFamily
+          ? HSA_FAMILY_COVERAGE
+          : (coverage.get(p.id) ?? jointCoverage),
+      ),
+    );
+    if (householdSizes.some((z) => typeof z === "string")) continue;
+    const sizes = householdSizes as { base: number; catchup: number }[];
+    const household = sharedFamily
+      ? (sizes[0]?.base ?? 0) + sumBy(sizes, (z) => z.catchup)
+      : sumBy(sizes, (z) => z.base + z.catchup);
+    const ownedIdx = [...byPerson.values()].flat();
+    const room = Math.max(
+      0,
+      household -
+        sumBy(ownedIdx, (i) => kept[i]!) -
+        employerOf(ownedIdx) -
+        employerOf(joint),
+    );
+    const total = sumBy(joint, (i) => kept[i]!);
+    const factor = total > room ? room / total : 1;
+    for (const i of joint) {
+      kept[i] = kept[i]! * factor;
+      limitOf[i] = household;
+      maxOf[i] = room;
     }
   }
 

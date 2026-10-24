@@ -278,18 +278,7 @@ describe("capContributionsByLimitGroup — IRA compensation bound", () => {
 });
 
 describe("capContributionsByLimitGroup — not capped", () => {
-  it("flags a joint row and a year without the limit", () => {
-    const joint = row({
-      personId: null,
-      accountType: "401k",
-      regularAnnual: 99000,
-    });
-    const out = cap([joint], [person(2, 40)]);
-    expect(out.get(joint.id)!).toMatchObject({
-      cappedAnnual: 99000,
-      reason: "no-owner",
-    });
-
+  it("flags a year without the limit", () => {
     const r = row({ personId: 1, accountType: "401k", regularAnnual: 99000 });
     const { "401k_employee_limit": _, ...noLimit } = limits;
     expect(cap([r], [person(1, 40)], "Single", noLimit).get(r.id)!.reason).toBe(
@@ -429,5 +418,62 @@ describe("capContributionsByLimitGroup — spousal IRA and compensation", () => 
     const r = row({ personId: 2, accountType: "ira", regularAnnual: 6000 });
     const out = cap([r], [person(1, 40, null), person(2, 40, 0)], "MFJ");
     expect(out.get(r.id)!.cappedAnnual).toBe(6000);
+  });
+});
+
+describe("capContributionsByLimitGroup — joint rows", () => {
+  it("holds a joint row to the room the household's limits leave, flagged for an owner", () => {
+    const own = row({ personId: 1, accountType: "401k", regularAnnual: 15000 });
+    const joint = row({
+      personId: null,
+      accountType: "401k",
+      regularAnnual: 99000,
+    });
+    const out = cap([own, joint], [person(1, 40), person(2, 50)], "MFJ");
+    // Household 20,000 + 27,000 = 47,000, less person 1's own 15,000.
+    expect(out.get(joint.id)!).toMatchObject({
+      cappedAnnual: 32000,
+      limit: 47000,
+      maxEmployee: 32000,
+      reason: "no-owner",
+    });
+    expect(out.get(own.id)!.cappedAnnual).toBe(15000);
+  });
+
+  it("a joint row within the household's room keeps its amount but stays flagged", () => {
+    const joint = row({
+      personId: null,
+      accountType: "ira",
+      regularAnnual: 3000,
+    });
+    expect(cap([joint], [person(1, 40, null)]).get(joint.id)!).toMatchObject({
+      cappedAnnual: 3000,
+      reason: "no-owner",
+    });
+  });
+
+  it("a joint family HSA, married: the family limit plus each spouse's catch-up, less employer money", () => {
+    const joint = row({
+      personId: null,
+      accountType: "hsa",
+      hsaCoverageType: "family",
+      regularAnnual: 20000,
+      employerAnnual: 1000,
+    });
+    const out = cap([joint], [person(1, 56), person(2, 40)], "MFJ");
+    expect(out.get(joint.id)!.cappedAnnual).toBe(8000); // 8,000 + 1,000 − 1,000
+  });
+
+  it("a joint HSA with no coverage type is left as it is", () => {
+    const joint = row({
+      personId: null,
+      accountType: "hsa",
+      regularAnnual: 20000,
+    });
+    expect(cap([joint], [person(1, 40)]).get(joint.id)!).toMatchObject({
+      cappedAnnual: 20000,
+      maxEmployee: null,
+      reason: "no-owner",
+    });
   });
 });
