@@ -954,7 +954,7 @@ describe("networth.portfolioSnapshots.updateAccount — balance edit", () => {
     }
   });
 
-  it("rejects an amount edit when the snapshot's year is finalized", async () => {
+  it("a finalized year's snapshot can be corrected; its Performance figures stay", async () => {
     const ctx = await createTestCaller(adminSession);
     try {
       const schema = await import("@/lib/db/schema");
@@ -985,12 +985,24 @@ describe("networth.portfolioSnapshots.updateAccount — balance edit", () => {
         .from(schema.portfolioAccounts)
         .where(eq(schema.portfolioAccounts.snapshotId, snapId));
 
-      await expect(
-        ctx.caller.networth.portfolioSnapshots.updateAccount({
-          id: row!.id,
-          amount: "25000",
-        }),
-      ).rejects.toThrow(/finalized/i);
+      const res = await ctx.caller.networth.portfolioSnapshots.updateAccount({
+        id: row!.id,
+        amount: "25000",
+      });
+      expect(res).toEqual({
+        amountEdited: true,
+        performance: "year-finalized",
+      });
+      const [after] = await ctx.db
+        .select()
+        .from(schema.portfolioAccounts)
+        .where(eq(schema.portfolioAccounts.id, row!.id));
+      expect(after!.amount).toBe("25000");
+      const [locked] = await ctx.db
+        .select()
+        .from(schema.annualPerformance)
+        .where(eq(schema.annualPerformance.year, 2024));
+      expect(locked!.endingBalance).toBe("20000");
     } finally {
       ctx.cleanup();
     }

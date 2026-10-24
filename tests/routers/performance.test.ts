@@ -461,7 +461,7 @@ describe("performance router", () => {
       const row = db
         .insert(schema.annualPerformance)
         .values({
-          year: 2024,
+          year: 2019,
           category: "401k/IRA",
           beginningBalance: "100000",
           totalContributions: "20000",

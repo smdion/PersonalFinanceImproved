@@ -7,27 +7,35 @@
  *
  * Two concerns, both idempotent:
  *  - `refreshSnapshotYearDerivatives` — `account_performance.ending_balance`
- *    for the snapshot's year + the `annual_performance` category rollups.
+ *    for the snapshot's year + the `annual_performance` category rollups,
+ *    when the snapshot is that year's latest and the year isn't finalized.
  *  - `pushSnapshotIfConfigured` — post the snapshot's balances to the
  *    active budget API (YNAB / Actual), if one is configured with account
  *    mappings. `mode: "create"` skips groups already tagged for this
  *    snapshot; `mode: "resync"` deletes the prior tag and re-posts.
  */
-import { eq } from "drizzle-orm";
+import { and, eq, gt, lte } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { computeSnapshotEndingBalances } from "@/lib/pure/portfolio";
+import type { DbType } from "@/server/routers/settings/_shared";
 import {
-  recomputeAnnualRollups,
-  type DbType,
-} from "@/server/routers/settings/_shared";
+  captureYearRollups,
+  syncYearRollups,
+} from "@/server/helpers/performance-rollups";
 import { pushSnapshotToBudgetApi } from "@/server/helpers";
 import type { PushSnapshotMode } from "@/server/helpers/budget-api-push";
 
 /**
- * Re-derive `account_performance.ending_balance` for `snapshotYear` from
- * the snapshot's balances, then recompute that year's `annual_performance`
- * category rollups.
+ * Re-derive `account_performance.ending_balance` for the snapshot's year
+ * from the snapshot's balances, then bring that year's `annual_performance`
+ * rollups in step.
+ *
+ * Only the year's latest snapshot sets its ending balances: a back-dated
+ * snapshot (an earlier date in a year that already has a later one) is
+ * history, not the year's current figure. A finalized year is left alone —
+ * its year-end figures are settled in Performance, and a snapshot added
+ * later doesn't reopen them.
  *
  * `accounts` is the FULL resolved account set for the snapshot — every row
  * that contributes to a perf-account total, already carrying the same
@@ -38,19 +46,49 @@ import type { PushSnapshotMode } from "@/server/helpers/budget-api-push";
  * independent of performance tracking; only explicit performance edits
  * move that date.
  *
- * Must run inside the same transaction as the balance write.
+ * Must run inside the same transaction as the balance write. Says whether
+ * Performance followed the snapshot, or why not.
  */
+export type SnapshotPerformanceSync =
+  "synced" | "earlier-snapshot" | "year-finalized";
+
 export async function refreshSnapshotYearDerivatives(
   tx: DbType,
-  snapshotYear: number,
+  snapshotDate: string,
   accounts: { performanceAccountId: number | null; amount: string }[],
-): Promise<void> {
+): Promise<SnapshotPerformanceSync> {
+  const snapshotYear = parseInt(snapshotDate.substring(0, 4), 10);
+  const [later] = await tx
+    .select({ id: schema.portfolioSnapshots.id })
+    .from(schema.portfolioSnapshots)
+    .where(
+      and(
+        gt(schema.portfolioSnapshots.snapshotDate, snapshotDate),
+        lte(schema.portfolioSnapshots.snapshotDate, `${snapshotYear}-12-31`),
+      ),
+    )
+    .limit(1);
+  if (later) return "earlier-snapshot";
+  const [finalized] = await tx
+    .select({ id: schema.annualPerformance.id })
+    .from(schema.annualPerformance)
+    .where(
+      and(
+        eq(schema.annualPerformance.year, snapshotYear),
+        eq(schema.annualPerformance.isFinalized, true),
+      ),
+    )
+    .limit(1);
+  if (finalized) return "year-finalized";
+
   const currentYearAcctPerf = await tx
     .select()
     .from(schema.accountPerformance)
     .where(eq(schema.accountPerformance.year, snapshotYear));
 
   const perfTotals = computeSnapshotEndingBalances(accounts);
+  if (perfTotals.size === 0) return "synced";
+  const before = await captureYearRollups(tx, snapshotYear);
 
   const updatedPerfIds = new Set<number>();
   for (const acctPerf of currentYearAcctPerf) {
@@ -75,9 +113,8 @@ export async function refreshSnapshotYearDerivatives(
     }
   }
 
-  if (perfTotals.size > 0) {
-    await recomputeAnnualRollups(tx, snapshotYear);
-  }
+  await syncYearRollups(tx, before);
+  return "synced";
 }
 
 export type SnapshotPushResult = {

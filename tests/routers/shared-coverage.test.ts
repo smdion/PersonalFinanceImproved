@@ -3,11 +3,8 @@
  *
  * The file is declaration-only (documentation + re-exports comment).
  * There is nothing executable to test. This test file exercises the
- * settings/_shared.ts exports (zDecimal, settingValue, recomputeAnnualRollups)
- * that are actually used by routers.
- *
- * The recomputeAnnualRollups function is already tested in shared-rollups.test.ts.
- * This file covers zDecimal and settingValue validation schemas.
+ * settings/_shared.ts exports (zDecimal, settingValue) that are actually
+ * used by routers: the validation schemas.
  */
 import "./setup-mocks";
 import { vi, describe, it, expect } from "vitest";

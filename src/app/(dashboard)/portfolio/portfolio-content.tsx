@@ -292,8 +292,15 @@ export function PortfolioContent() {
         return;
       }
       try {
-        await updateAccountBalance.mutateAsync({ id: accountId, amount });
+        const res = await updateAccountBalance.mutateAsync({
+          id: accountId,
+          amount,
+        });
         markDirty(snapshotId, snapshotDate);
+        if (res.amountEdited && res.performance === "year-finalized")
+          toast.info(
+            `Balance saved. ${snapshotDate.slice(0, 4)} is finalized in Performance, so its figures there didn't change.`,
+          );
       } catch (e) {
         toast.error(
           e instanceof Error ? e.message : "Couldn't update the balance.",

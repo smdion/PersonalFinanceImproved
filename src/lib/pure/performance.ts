@@ -379,74 +379,105 @@ export function computeGainLoss(input: {
   );
 }
 
-/** Row shape for lifetime cascade recomputation. */
-export type LifetimeCascadeRow = {
-  id: number;
-  year: number;
-  category: string;
-  yearlyGainLoss: number;
-  totalContributions: number;
-  employerContributions: number;
-  lifetimeGains: number;
-  lifetimeContributions: number;
-  lifetimeMatch: number;
-};
+/** A year's money figures for one category: what `sumAccounts` returns. */
+export type Rollup = ReturnType<typeof sumAccounts>;
+
+const ROLLUP_FIELDS = [
+  "beginBal",
+  "contribs",
+  "gainLoss",
+  "endBal",
+  "employer",
+  "distributions",
+  "fees",
+  "rollovers",
+] as const satisfies readonly (keyof Rollup)[];
+
+/** Sum a year's account rows per category (`categoryOf` names each row's). */
+export function rollupByCategory<T extends AccountLike>(
+  rows: T[],
+  categoryOf: (row: T) => string,
+): Map<string, Rollup> {
+  const byCategory = new Map<string, T[]>();
+  for (const r of rows) {
+    const cat = categoryOf(r);
+    byCategory.set(cat, [...(byCategory.get(cat) ?? []), r]);
+  }
+  return new Map(
+    Array.from(byCategory, ([cat, catRows]) => [cat, sumAccounts(catRows)]),
+  );
+}
+
+/** a + b, field by field. */
+export function addRollups(a: Rollup, b: Rollup): Rollup {
+  const out = { ...a };
+  for (const f of ROLLUP_FIELDS) out[f] = a[f] + b[f];
+  return out;
+}
 
 /**
- * Recompute lifetime fields for annual_performance rows by walking forward
- * through years and accumulating gains/contributions/match.
- *
- * Returns only the rows whose lifetime fields changed (for efficient DB updates).
+ * What an edit moved, per category: after − before. A category whose every
+ * figure moved by under half a cent is left out, so an edit that changes
+ * nothing (or only a label) changes no rollup.
  */
-export function recomputeLifetimeFields(rows: LifetimeCascadeRow[]): {
-  id: number;
-  lifetimeGains: number;
-  lifetimeContributions: number;
-  lifetimeMatch: number;
-}[] {
-  const updates: {
-    id: number;
-    lifetimeGains: number;
-    lifetimeContributions: number;
-    lifetimeMatch: number;
-  }[] = [];
-
-  // Group by category
-  const byCategory = new Map<string, LifetimeCascadeRow[]>();
-  for (const r of rows) {
-    const arr = byCategory.get(r.category) ?? [];
-    arr.push(r);
-    byCategory.set(r.category, arr);
+export function rollupDeltas(
+  before: Map<string, Rollup>,
+  after: Map<string, Rollup>,
+): Map<string, Rollup> {
+  const zero = sumAccounts([]);
+  const deltas = new Map<string, Rollup>();
+  for (const cat of new Set([...before.keys(), ...after.keys()])) {
+    const b = before.get(cat) ?? zero;
+    const a = after.get(cat) ?? zero;
+    const d = { ...zero };
+    for (const f of ROLLUP_FIELDS) d[f] = a[f] - b[f];
+    if (ROLLUP_FIELDS.some((f) => Math.abs(d[f]) >= 0.005)) deltas.set(cat, d);
   }
+  return deltas;
+}
 
-  for (const catRows of byCategory.values()) {
-    const sorted = [...catRows].sort((a, b) => a.year - b.year);
-    let runningGains = 0;
-    let runningContributions = 0;
-    let runningMatch = 0;
-
-    for (const row of sorted) {
-      runningGains += row.yearlyGainLoss;
-      runningContributions += row.totalContributions;
-      runningMatch += row.employerContributions;
-
-      // Only emit update if the stored value differs
-      if (
-        Math.abs(row.lifetimeGains - runningGains) > 0.005 ||
-        Math.abs(row.lifetimeContributions - runningContributions) > 0.005 ||
-        Math.abs(row.lifetimeMatch - runningMatch) > 0.005
-      ) {
-        updates.push({
-          id: row.id,
-          lifetimeGains: runningGains,
-          lifetimeContributions: runningContributions,
-          lifetimeMatch: runningMatch,
-        });
-      }
-    }
+/**
+ * A finalized year's return after its figures move by `delta`.
+ *
+ * The stored return can't always be reproduced from the row (it may be an
+ * override entered at finalize, a provider's figure, or imported history),
+ * so its basis is kept: the capital it was measured against
+ * (gain ÷ return) moves only by the capital the edit moved, weighted the way
+ * `computeReturn` weighs it. With no stored return (or a zero one, which
+ * says nothing about its basis) the return is computed from the new figures.
+ */
+export function rebaseLockedReturn(
+  prev: {
+    beginningBalance: number;
+    totalContributions: number;
+    yearlyGainLoss: number;
+    distributions: number;
+    fees: number;
+    rollovers: number;
+    annualReturnPct: number | null;
+  },
+  delta: Rollup,
+): number | null {
+  const gain = prev.yearlyGainLoss + delta.gainLoss;
+  if (
+    prev.annualReturnPct == null ||
+    prev.annualReturnPct === 0 ||
+    prev.yearlyGainLoss === 0
+  ) {
+    return computeReturn(
+      prev.beginningBalance + delta.beginBal,
+      prev.totalContributions + delta.contribs,
+      gain,
+      prev.distributions + delta.distributions,
+      prev.fees + delta.fees,
+      prev.rollovers + delta.rollovers,
+    );
   }
-
-  return updates;
+  const capital =
+    prev.yearlyGainLoss / prev.annualReturnPct +
+    delta.beginBal +
+    (delta.contribs + delta.rollovers - delta.distributions - delta.fees) / 2;
+  return safeDivide(gain, capital, null);
 }
 
 /** Minimal account shape for next-year seeding decisions. */
