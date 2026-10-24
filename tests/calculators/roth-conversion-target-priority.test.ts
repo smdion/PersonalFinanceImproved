@@ -24,11 +24,12 @@
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/calculators/engine";
 import type { ProjectionInput } from "@/lib/calculators/types";
+import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 
 const AS_OF = new Date("2025-03-07");
 
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
-  return {
+  return withCapsAge({
     accumulationDefaults: {
       contributionRate: 0.25,
       routingMode: "waterfall",
@@ -85,15 +86,24 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     salaryCap: null,
     salaryOverrides: [],
     budgetOverrides: [],
-    baseLimits: {
-      "401k": 23500,
-      "403b": 23500,
-      hsa: 4300,
-      ira: 7000,
-      brokerage: 0,
-    },
+    irsLimitCaps: capsFromBaseLimits({
+      baseLimits: {
+        "401k": 23500,
+        "403b": 23500,
+        hsa: 4300,
+        ira: 7000,
+        brokerage: 0,
+      },
+      catchupLimits: {
+        "401k": 7500,
+        ira: 1000,
+        hsa: 1000,
+        "401k_super": 11250,
+      },
+      currentAge: 60,
+    }),
     limitGrowthRate: 0.02,
-    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
+
     employerMatchRateByCategory: {
       "401k": 0.03,
       "403b": 0,
@@ -131,7 +141,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     filingStatus: "MFJ",
     asOfDate: AS_OF,
     ...overrides,
-  };
+  });
 }
 
 describe("Roth conversion target priority (rothBracketTarget fallback in performRothConversion)", () => {

@@ -35,8 +35,8 @@ import {
 import type { AccountCategory } from "@/lib/calculators/types";
 import {
   getAllCategories,
+  getAccountTypeConfig,
   categoriesWithTaxPreference,
-  getLimitGroup,
   getDefaultAccumulationOrder,
   isRetirementMoney,
 } from "@/lib/config/account-types";
@@ -55,7 +55,7 @@ import {
 import { log } from "@/lib/logger";
 import { buildSocialSecurityEntries } from "./social-security-entries";
 import { buildDistributionTaxRates } from "@/lib/pure/distribution-tax-rates";
-import { computeIrsLimitGroups } from "@/lib/pure/irs-limit-groups";
+import { accountGroupLimits } from "@/lib/pure/contribution-caps";
 import { resolvePhaseExpenses } from "./payload/budget-expenses";
 import {
   buildProfileSwitches,
@@ -728,17 +728,28 @@ export async function buildEnginePayload(
           (c.personId === null || people.some((p) => p.id === c.personId))),
     )
     .map((c) => ({ ...c, accountType: c.accountType as AccountCategory }));
-  const {
-    limitByGroup,
-    catchupByGroup,
-    superCatchupByGroup,
-    groupParticipants,
-  } = computeIrsLimitGroups({
-    people,
-    activeContribs,
-    limitsMap,
-    birthYearByPersonId,
-  });
+  // Who holds which limited account, and each limit group's household
+  // limit from it (every shared limit counted once) — the totals the pages
+  // show, and what the engine sizes limits from without specs.
+  const irsLimitPeople = people.map((p) => ({
+    id: p.id,
+    birthYear: birthYearByPersonId.get(p.id) ?? null,
+  }));
+  const irsLimitAccounts = activeContribs
+    .filter((c) => getAccountTypeConfig(c.accountType).hasIrsLimit)
+    .map((c) => ({
+      personId: c.personId,
+      accountType: c.accountType,
+      hsaCoverageType: c.hsaCoverageType ?? null,
+    }));
+  const irsGroupLimits = Object.fromEntries(
+    accountGroupLimits(irsLimitAccounts, {
+      taxYear: currentYear,
+      filingStatus,
+      limits: limitsMap,
+      people: irsLimitPeople.map((p) => ({ ...p, wages: null })),
+    }),
+  );
   // Aggregate contributions and employer match by category (shared helper — single pass)
   const {
     contribByCategory,
@@ -1021,33 +1032,13 @@ export async function buildEnginePayload(
         ? Object.fromEntries(currentYearBonusAdjustmentByPerson)
         : undefined,
     budgetOverrides: dbBudgetOverrides,
-    baseLimits: Object.fromEntries(
-      getAllCategories().map((cat) => {
-        const group = getLimitGroup(cat);
-        return [cat, group ? (limitByGroup[group] ?? 0) : 0];
-      }),
-    ) as Record<AccountCategory, number>,
-    limitGrowthRate: irsLimitGrowthRate,
-    catchupLimits: {
-      ...Object.fromEntries(
-        Object.entries(catchupByGroup).map(([group, val]) => [group, val]),
-      ),
-      ...Object.fromEntries(
-        Object.entries(superCatchupByGroup).map(([group, val]) => [
-          `${group}_super`,
-          val,
-        ]),
-      ),
+    irsLimitCaps: {
+      limits: limitsMap,
+      people: irsLimitPeople,
+      filingStatus,
+      accounts: irsLimitAccounts,
     },
-    catchupGroupParticipants: Object.fromEntries(
-      Array.from(groupParticipants.entries()).map(([group, byPerson]) => [
-        group,
-        Array.from(byPerson.entries()).map(([personId, birthYear]) => ({
-          personId,
-          birthYear,
-        })),
-      ]),
-    ),
+    limitGrowthRate: irsLimitGrowthRate,
     employerMatchRateByCategory: defaultContribData.employerMatchRateByCategory,
     contributionSpecs,
     baseYearContributions: defaultContribData.baseYearContributions,
@@ -1198,7 +1189,7 @@ export async function buildEnginePayload(
     accCol,
     decProfile,
     decCol,
-    limitByGroup,
+    irsGroupLimits,
     perfCategoryMap,
     perfRetirementBehaviorMap,
     perfAccountMap,

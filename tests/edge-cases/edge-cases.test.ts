@@ -657,6 +657,7 @@ describe("savings edge cases", () => {
 
 import { calculateProjection } from "@/lib/calculators/engine/projection";
 import type { ProjectionInput } from "@/lib/calculators/types";
+import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 
 const EMPTY_ACCOUNT_BALANCES = {
   "401k": { structure: "roth_traditional" as const, traditional: 0, roth: 0 },
@@ -701,7 +702,7 @@ const DEFAULT_DECUMULATION = {
 function makeBaseProjection(
   overrides: Partial<ProjectionInput> = {},
 ): ProjectionInput {
-  return {
+  return withCapsAge({
     accumulationDefaults: {
       contributionRate: 0,
       routingMode: "waterfall",
@@ -728,7 +729,10 @@ function makeBaseProjection(
     salaryCap: null,
     salaryOverrides: [],
     budgetOverrides: [],
-    baseLimits: ZERO_LIMITS,
+    irsLimitCaps: capsFromBaseLimits({
+      baseLimits: ZERO_LIMITS,
+      currentAge: 35,
+    }),
     limitGrowthRate: 0,
     employerMatchRateByCategory: ZERO_MATCH,
     startingBalances: {
@@ -746,7 +750,7 @@ function makeBaseProjection(
     ssStartAge: 67,
     asOfDate: JAN_1,
     ...overrides,
-  };
+  });
 }
 
 describe("retirement projection edge cases", () => {

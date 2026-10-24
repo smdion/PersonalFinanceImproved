@@ -8,6 +8,7 @@
 import { describe, it, expect } from "vitest";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
 import type { ProjectionInput, MonteCarloInput } from "@/lib/calculators/types";
+import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 
 const AS_OF = new Date("2025-03-07");
 
@@ -17,7 +18,7 @@ const AS_OF = new Date("2025-03-07");
 
 /** Build a minimal valid engine input with sensible defaults. */
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
-  return {
+  return withCapsAge({
     accumulationDefaults: {
       contributionRate: 0.25,
       routingMode: "waterfall",
@@ -60,15 +61,24 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     salaryCap: null,
     salaryOverrides: [],
     budgetOverrides: [],
-    baseLimits: {
-      "401k": 23500,
-      "403b": 23500,
-      hsa: 4300,
-      ira: 7000,
-      brokerage: 0,
-    },
+    irsLimitCaps: capsFromBaseLimits({
+      baseLimits: {
+        "401k": 23500,
+        "403b": 23500,
+        hsa: 4300,
+        ira: 7000,
+        brokerage: 0,
+      },
+      catchupLimits: {
+        "401k": 7500,
+        ira: 1000,
+        hsa: 1000,
+        "401k_super": 11250,
+      },
+      currentAge: 35,
+    }),
     limitGrowthRate: 0.02,
-    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
+
     employerMatchRateByCategory: {
       "401k": 0.03,
       "403b": 0,
@@ -103,7 +113,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     ssStartAge: 67,
     asOfDate: AS_OF,
     ...overrides,
-  };
+  });
 }
 
 // Round all numbers in an object to avoid floating-point noise
@@ -206,7 +216,7 @@ describe("monte carlo integration", () => {
     expect(result.numTrials).toBe(50);
     // Two inflation-heavy trials run out of retirement money at 87–88.
     expect(result.successRate).toBe(0.96);
-    expect(result.medianEndBalance).toBe(22504932.2);
+    expect(result.medianEndBalance).toBe(22504932.465);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 
@@ -235,7 +245,7 @@ describe("monte carlo integration", () => {
 
     expect(result.numTrials).toBe(50);
     expect(result.successRate).toBe(1);
-    expect(result.medianEndBalance).toBe(8880321.45);
+    expect(result.medianEndBalance).toBe(8880321.895);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 
@@ -296,7 +306,7 @@ describe("monte carlo integration", () => {
     // Near-retirement with large balances should have high success rate
     expect(result.successRate).toBeGreaterThan(0);
     expect(result.successRate).toBe(0.94);
-    expect(result.medianEndBalance).toBe(3136622.95);
+    expect(result.medianEndBalance).toBe(3126610.63);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 

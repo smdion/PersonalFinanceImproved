@@ -18,17 +18,16 @@
  *   a Roth / Traditional split (and regular / bonus split) holds.
  * - Compensation-bounded types (IRA) are also capped at taxable compensation
  *   — the couple's combined compensation for a spousal IRA (IRC 219(c)).
- * - A person with no birth year is capped at the most any age allows and
- *   flagged. A joint row (no owner) is held to the room the household's
- *   limits leave after everyone's own rows, and flagged. Not capped,
- *   flagged: a coverage-variant row with no coverage type, a year without
- *   the limit row.
+ * - A person with no birth year is capped at the most any age allows, and
+ *   an HSA with no coverage type at the self-only limit (the lower
+ *   bound), both flagged. A joint row (no owner) is held to the room
+ *   the household's limits leave after everyone's own rows, and flagged.
+ *   Not capped, flagged: a year without the limit row.
  *
  * Rows are this tax year's contributions only; prior-year IRA money stays
  * outside the pass.
  */
 import {
-  categoriesWithIrsLimit,
   getAccountTypeConfig,
   getLimitGroup,
   type AccountCategory,
@@ -88,7 +87,8 @@ export type CapReason =
   | "over-compensation"
   /** Capped at the most any age allows: the owner's birth year is unknown. */
   | "no-birth-date"
-  /** Not capped: the limit depends on a coverage type the row doesn't have. */
+  /** The limit depends on a coverage type the row doesn't have — sized at
+   *  the base (self-only) limit, the lower bound, until one is chosen. */
   | "no-coverage"
   /** A joint row: no one's own limit applies — held to the room the
    *  household's limits leave after everyone's own rows; needs an owner. */
@@ -171,7 +171,8 @@ const includes = (list: readonly string[], s: string) => list.includes(s);
 type Size = { base: number; catchup: number };
 
 /** A person's base limit and catch-up on top for a limited type, or why it
- *  can't be sized. Unknown age: the largest catch-up any age gets. */
+ *  can't be sized. Unknown age: the largest catch-up any age gets; unknown
+ *  coverage: the base (self-only) limit (the caller flags it). */
 function sizeLimit(
   type: string,
   age: number | null,
@@ -179,7 +180,6 @@ function sizeLimit(
   limits: Record<string, number>,
 ): Size | CapReason {
   const keys = getAccountTypeConfig(type as AccountCategory).irsLimitKeys!;
-  if (keys.coverageVariant && cov === null) return "no-coverage";
   const base = limits[irsLimitBaseKey(keys, cov)];
   if (base === undefined) return "no-limit-data";
   if (age === null) {
@@ -205,40 +205,6 @@ const ageMap = (ctx: CapContext) =>
       p.birthYear === null ? null : ageInYear(p.birthYear, ctx.taxYear),
     ]),
   );
-
-/**
- * Each limit group's household limit when there are no contribution rows
- * to size it from (a projection that routes a household total): every
- * person's limit, a shared family HSA's base once. `hsaCoverageType` is the
- * household's coverage; a group that can't be sized is left out.
- */
-export function householdGroupLimits(
-  ctx: CapContext,
-  hsaCoverageType: string | null,
-): Map<string, number> {
-  const ageOf = ageMap(ctx);
-  const married = includes(MARRIED_FILING_STATUSES, ctx.filingStatus);
-  const out = new Map<string, number>();
-  for (const type of categoriesWithIrsLimit()) {
-    const group = getLimitGroup(type)!;
-    if (out.has(group)) continue;
-    const cfg = getAccountTypeConfig(type);
-    const coverageMatters = !!cfg.irsLimitKeys?.coverageVariant;
-    const cov = coverageMatters ? hsaCoverageType : null;
-    const sizes = ctx.people.map((p) =>
-      sizeLimit(type, ageOf.get(p.id) ?? null, cov, ctx.limits),
-    );
-    if (sizes.some((z) => typeof z === "string")) continue;
-    out.set(
-      group,
-      householdOf(
-        sizes as Size[],
-        cfg.isHouseholdLimit && married && cov === HSA_FAMILY_COVERAGE,
-      ),
-    );
-  }
-  return out;
-}
 
 export type CapResult = {
   byRow: Map<number, CappedContribution>;
@@ -375,6 +341,8 @@ export function capContributionsByLimitGroup(
           continue;
         }
         if (ageOf.get(pid) == null) flag(idx, "no-birth-date");
+        if (coverageMatters && coverage.get(pid) == null)
+          flag(idx, "no-coverage");
         apply([participant(pid, idx, 0)], size.base + size.catchup);
         groupLimits.set(
           group,
@@ -503,4 +471,30 @@ export function capContributionsByLimitGroup(
     });
   });
   return { byRow: out, groupLimits };
+}
+
+/**
+ * Each limit group's household limit from who holds which account — the
+ * same pass with no money in it (for a household-limit total, or a
+ * projection that routes a household total rather than per-account specs).
+ */
+export function accountGroupLimits(
+  accounts: readonly {
+    personId: number | null;
+    accountType: string;
+    hsaCoverageType: string | null;
+  }[],
+  ctx: CapContext,
+): Map<string, number> {
+  return capContributionsByLimitGroup(
+    accounts.map((a, i) => ({
+      ...a,
+      id: i,
+      regularAnnual: 0,
+      bonusAnnual: 0,
+      employerAnnual: 0,
+      reducesCompensation: false,
+    })),
+    ctx,
+  ).groupLimits;
 }

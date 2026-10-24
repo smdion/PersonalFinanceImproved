@@ -17,6 +17,7 @@ import { NIIT_THRESHOLDS, computeNiit } from "@/lib/config/niit";
 import { TEST_BRACKETS } from "./fixtures/engine-fixtures";
 import { calculateProjection } from "@/lib/calculators/engine";
 import type { ProjectionInput } from "@/lib/calculators/types";
+import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 
 describe("taxGrowthYears", () => {
   it("is 0 when year equals taxDataYear", () => {
@@ -248,7 +249,7 @@ function makeInput(
     inflationRate?: number;
   } = {},
 ): ProjectionInput {
-  return {
+  return withCapsAge({
     accumulationDefaults: {
       contributionRate: 0.2,
       routingMode: "waterfall",
@@ -296,15 +297,24 @@ function makeInput(
     salaryCap: null,
     salaryOverrides: [],
     budgetOverrides: [],
-    baseLimits: {
-      "401k": 23500,
-      "403b": 23500,
-      hsa: 4300,
-      ira: 7000,
-      brokerage: 0,
-    },
+    irsLimitCaps: capsFromBaseLimits({
+      baseLimits: {
+        "401k": 23500,
+        "403b": 23500,
+        hsa: 4300,
+        ira: 7000,
+        brokerage: 0,
+      },
+      catchupLimits: {
+        "401k": 7500,
+        ira: 1000,
+        hsa: 1000,
+        "401k_super": 11250,
+      },
+      currentAge: 60,
+    }),
     limitGrowthRate: 0.02,
-    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
+
     employerMatchRateByCategory: {
       "401k": 0.03,
       "403b": 0,
@@ -343,7 +353,7 @@ function makeInput(
     ssStartAge: 67,
     asOfDate: AS_OF,
     filingStatus: "MFJ",
-  } as ProjectionInput;
+  }) as ProjectionInput;
 }
 
 describe("end-to-end: bracketTraditionalCap actually grows through the real engine", () => {
@@ -413,7 +423,7 @@ function makeLtcgHeavyInput(
   afterTaxBasis = 500000,
   preTax = 200000,
 ): ProjectionInput {
-  return {
+  return withCapsAge({
     accumulationDefaults: {
       contributionRate: 0.2,
       routingMode: "waterfall",
@@ -463,15 +473,24 @@ function makeLtcgHeavyInput(
     salaryCap: null,
     salaryOverrides: [],
     budgetOverrides: [],
-    baseLimits: {
-      "401k": 23500,
-      "403b": 23500,
-      hsa: 4300,
-      ira: 7000,
-      brokerage: 0,
-    },
+    irsLimitCaps: capsFromBaseLimits({
+      baseLimits: {
+        "401k": 23500,
+        "403b": 23500,
+        hsa: 4300,
+        ira: 7000,
+        brokerage: 0,
+      },
+      catchupLimits: {
+        "401k": 7500,
+        ira: 1000,
+        hsa: 1000,
+        "401k_super": 11250,
+      },
+      currentAge: 60,
+    }),
     limitGrowthRate: 0.02,
-    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
+
     employerMatchRateByCategory: {
       "401k": 0.03,
       "403b": 0,
@@ -506,7 +525,7 @@ function makeLtcgHeavyInput(
     ssStartAge: 67,
     asOfDate: AS_OF,
     filingStatus: "MFJ",
-  } as ProjectionInput;
+  }) as ProjectionInput;
 }
 
 describe("end-to-end: LTCG brackets actually grow through the real engine", () => {
@@ -707,7 +726,7 @@ function makeIrmaaHouseholdInput(): ProjectionInput {
     { threshold: 206700, baseWithholding: 11157, rate: 0.22 },
     { threshold: 394600, baseWithholding: 35302, rate: 0.24 },
   ];
-  return {
+  return withCapsAge({
     accumulationDefaults: {
       contributionRate: 0.2,
       routingMode: "waterfall",
@@ -755,15 +774,24 @@ function makeIrmaaHouseholdInput(): ProjectionInput {
     salaryCap: null,
     salaryOverrides: [],
     budgetOverrides: [],
-    baseLimits: {
-      "401k": 23500,
-      "403b": 23500,
-      hsa: 4300,
-      ira: 7000,
-      brokerage: 0,
-    },
+    irsLimitCaps: capsFromBaseLimits({
+      baseLimits: {
+        "401k": 23500,
+        "403b": 23500,
+        hsa: 4300,
+        ira: 7000,
+        brokerage: 0,
+      },
+      catchupLimits: {
+        "401k": 7500,
+        ira: 1000,
+        hsa: 1000,
+        "401k_super": 11250,
+      },
+      currentAge: 65,
+    }),
     limitGrowthRate: 0.02,
-    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
+
     employerMatchRateByCategory: {
       "401k": 0.03,
       "403b": 0,
@@ -799,7 +827,7 @@ function makeIrmaaHouseholdInput(): ProjectionInput {
     asOfDate: new Date("2025-03-07"),
     filingStatus: "MFJ",
     enableIrmaaAwareness: true,
-  } as ProjectionInput;
+  }) as ProjectionInput;
 }
 
 describe("end-to-end: IRMAA brackets grow through both the check and Roth-conversion-cap paths", () => {
@@ -863,7 +891,7 @@ function makeAcaHouseholdInput(): ProjectionInput {
     { threshold: 206700, baseWithholding: 11157, rate: 0.22 },
     { threshold: 394600, baseWithholding: 35302, rate: 0.24 },
   ];
-  return {
+  return withCapsAge({
     accumulationDefaults: {
       contributionRate: 0.2,
       routingMode: "waterfall",
@@ -910,15 +938,24 @@ function makeAcaHouseholdInput(): ProjectionInput {
     salaryCap: null,
     salaryOverrides: [],
     budgetOverrides: [],
-    baseLimits: {
-      "401k": 23500,
-      "403b": 23500,
-      hsa: 4300,
-      ira: 7000,
-      brokerage: 0,
-    },
+    irsLimitCaps: capsFromBaseLimits({
+      baseLimits: {
+        "401k": 23500,
+        "403b": 23500,
+        hsa: 4300,
+        ira: 7000,
+        brokerage: 0,
+      },
+      catchupLimits: {
+        "401k": 7500,
+        ira: 1000,
+        hsa: 1000,
+        "401k_super": 11250,
+      },
+      currentAge: 60,
+    }),
     limitGrowthRate: 0.02,
-    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
+
     employerMatchRateByCategory: {
       "401k": 0.03,
       "403b": 0,
@@ -951,7 +988,7 @@ function makeAcaHouseholdInput(): ProjectionInput {
     filingStatus: "MFJ",
     enableAcaAwareness: true,
     householdSize: 2,
-  } as ProjectionInput;
+  }) as ProjectionInput;
 }
 
 describe("end-to-end: ACA subsidy cliff grows through checkAca", () => {

@@ -104,31 +104,29 @@ export type ProjectionInput = {
   currentYearBonusAdjustment?: Record<number, number>;
 
   // --- IRS limits ---
-  /** Per-category base IRS limits for the current year (no catchup). */
-  baseLimits: Record<AccountCategory, number>;
+  /**
+   * What the IRS-limit caps (lib/pure/contribution-caps.ts) run on each
+   * year: the base year's whole limit record (base, catch-up, super
+   * catch-up, coverage variants — the engine grows every key at
+   * limitGrowthRate), the people whose ages at Dec 31 set catch-ups, and
+   * the household's limited accounts (who holds which, HSA coverage) —
+   * what sizes the household's limits when there are no per-account specs.
+   */
+  irsLimitCaps: {
+    /** The household's filing status — married filers share a family HSA
+     *  limit and can fund a spousal IRA. Required here even where the
+     *  engine's own `filingStatus` is left out. */
+    filingStatus: string;
+    limits: Record<string, number>;
+    people: { id: number; birthYear: number | null }[];
+    accounts: {
+      personId: number | null;
+      accountType: string;
+      hsaCoverageType: string | null;
+    }[];
+  };
   /** How fast IRS limits grow annually (e.g. 0.02 = 2%/year). */
   limitGrowthRate: number;
-  /**
-   * Catchup contribution limits keyed by IRS limit group.
-   * The engine adds these to baseLimits in years where the person qualifies by age:
-   *   - Standard catchup (age >= 50): keyed by limit group (e.g. '401k', 'ira')
-   *   - HSA catchup (age >= 55): keyed by 'hsa'
-   *   - Super-catchup (SECURE 2.0, ages 60–63): keyed as '{group}_super' (e.g. '401k_super')
-   * All amounts grow at limitGrowthRate alongside base limits.
-   */
-  catchupLimits?: Record<string, number>;
-  /**
-   * Per-group list of the people who hold an account in that IRS limit
-   * group, with their birth year — used to gate `catchupLimits` by each
-   * individual's OWN projected age each year, instead of one shared
-   * household-average age. Without this, either everyone in a group gets
-   * catch-up room or nobody does, and the super-catchup age WINDOW
-   * (60-63) can't be represented at all for a multi-person household.
-   */
-  catchupGroupParticipants?: Record<
-    string,
-    { personId: number; birthYear: number }[]
-  >;
 
   // --- Employer match ---
   /** Employer match as rate of salary per category (for salary-linked growth). */

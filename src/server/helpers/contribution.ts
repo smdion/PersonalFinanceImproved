@@ -637,6 +637,8 @@ export function aggregateContributionsByCategory(
 ): {
   contribByCategory: Record<AccountCategory, ContribCategorySummary>;
   employerMatchByCategory: Record<AccountCategory, number>;
+  /** Employer money per contribution row id. */
+  employerMatchById: Map<number, number>;
   /** Employer match broken down by category → parentCategory → amount. */
   employerMatchByParentCat: Map<AccountCategory, Map<string, number>>;
   /** The same totals over retirement money only (`isRetirementMoney`):
@@ -758,6 +760,9 @@ export function aggregateContributionsByCategory(
   return {
     contribByCategory,
     employerMatchByCategory,
+    employerMatchById: new Map(
+      [...matchByRow].map(([id, m]) => [id, m.matchAnnual]),
+    ),
     employerMatchByParentCat,
     retirementOnly: {
       contribByCategory: retirementContribByCategory,
@@ -1585,6 +1590,7 @@ export type ContribInputRow = {
   targetAnnual?: string | number | null;
   allocationPriority?: number | null;
   ownership?: string | null;
+  hsaCoverageType?: string | null;
 };
 
 /**
@@ -1639,6 +1645,7 @@ export function buildProfileContribData(
   const {
     contribByCategory,
     employerMatchByCategory,
+    employerMatchById,
     employerMatchByParentCat,
     retirementOnly,
     incompleteAccountIds: aggregationIncompleteIds,
@@ -1778,6 +1785,12 @@ export function buildProfileContribData(
         contributionScaling: (c.performanceAccountId
           ? ctx.perfContributionScalingMap.get(c.performanceAccountId)
           : undefined) as ContributionSpec["contributionScaling"],
+        hsaCoverageType: c.hsaCoverageType ?? null,
+        employerShare: safeDivide(
+          employerMatchById.get(c.id) ?? 0,
+          employerMatchByCategory[cat],
+          0,
+        ),
       };
     })
     .filter((spec): spec is ContributionSpec => spec !== null);

@@ -18,10 +18,7 @@ import {
 import { sumBy } from "@/lib/utils/math";
 import { STATUS_COLORS } from "@/lib/utils/colors";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import {
-  categoriesWithIrsLimit,
-  getLimitGroup,
-} from "@/lib/config/account-types";
+import { categoriesWithIrsLimit } from "@/lib/config/account-types";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import type { AccountCategory } from "@/lib/config/account-types";
@@ -82,7 +79,7 @@ function RetirementCardImpl() {
       </Card>
     );
 
-  const { settings, baseLimits, portfolioByTaxTypeByParentCat } = data;
+  const { settings, irsGroupLimits, portfolioByTaxTypeByParentCat } = data;
   // Retirement accounts only, like the Retirement page: the engine projects
   // every account (Portfolio ones too) and pages filter by parent category.
   const result = {
@@ -117,19 +114,8 @@ function RetirementCardImpl() {
     ),
     (s) => s.baseAnnual,
   );
-  // Sum limits per unique group (401k/403b share a group — avoid double-counting)
-  const retLimits = (() => {
-    const seen = new Set<string>();
-    let total = 0;
-    for (const cat of categoriesWithIrsLimit()) {
-      const group = getLimitGroup(cat);
-      if (group && !seen.has(group)) {
-        seen.add(group);
-        total += baseLimits[cat] ?? 0;
-      }
-    }
-    return total;
-  })();
+  // The household's limits, each shared limit counted once.
+  const retLimits = sumBy(Object.values(irsGroupLimits), (v) => v);
   // The plan judge: retirement money runs out, or a year falls short.
   const outcome = assessPlan(result);
   // Deflate sustainable withdrawal to today's dollars

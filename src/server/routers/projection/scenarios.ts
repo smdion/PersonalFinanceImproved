@@ -21,15 +21,12 @@ import {
 import { buildContributionDisplaySpecs, toNumber } from "@/server/helpers";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import type {
-  AccountCategory,
   AccumulationOverride,
   DecumulationOverride,
 } from "@/lib/calculators/types";
 import {
   getAllCategories,
-  categoriesWithIrsLimit,
   categoriesWithTaxPreference,
-  getLimitGroup,
 } from "@/lib/config/account-types";
 import { TAX_TREATMENT_TO_TAX_TYPE } from "@/lib/config/display-labels";
 import { roundToCents, sumBy } from "@/lib/utils/math";
@@ -162,7 +159,7 @@ export const scenariosRouter = createTRPCRouter({
         accCol,
         decProfile,
         decCol,
-        limitByGroup,
+        irsGroupLimits,
         perfCategoryMap,
         perfAccountMap,
         rothConversionPresets,
@@ -260,12 +257,8 @@ export const scenariosRouter = createTRPCRouter({
           currentStockAllocationPercent,
         },
         combinedSalary: roundToCents(totalCompensation),
-        baseLimits: Object.fromEntries(
-          categoriesWithIrsLimit().map((cat) => {
-            const group = getLimitGroup(cat)!;
-            return [cat, limitByGroup[group] ?? 0];
-          }),
-        ) as Record<AccountCategory, number>,
+        /** Each limit group's household limit, shared limits counted once. */
+        irsGroupLimits,
         portfolioByTaxType,
         portfolioByTaxTypeByParentCat,
         portfolioByAccount,

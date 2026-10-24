@@ -12,12 +12,13 @@ import {
 } from "@/lib/calculators/coast-fire";
 import { calculateProjection } from "@/lib/calculators/engine";
 import type { ProjectionInput } from "@/lib/calculators/types";
+import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 
 const AS_OF = new Date("2025-03-07");
 
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   return withConsistentStart(
-    {
+    withCapsAge({
       accumulationDefaults: {
         contributionRate: 0.25,
         routingMode: "waterfall",
@@ -60,20 +61,24 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       salaryCap: null,
       salaryOverrides: [],
       budgetOverrides: [],
-      baseLimits: {
-        "401k": 23500,
-        "403b": 23500,
-        hsa: 4300,
-        ira: 7000,
-        brokerage: 0,
-      },
+      irsLimitCaps: capsFromBaseLimits({
+        baseLimits: {
+          "401k": 23500,
+          "403b": 23500,
+          hsa: 4300,
+          ira: 7000,
+          brokerage: 0,
+        },
+        catchupLimits: {
+          "401k": 7500,
+          ira: 1000,
+          hsa: 1000,
+          "401k_super": 11250,
+        },
+        currentAge: 35,
+      }),
       limitGrowthRate: 0.02,
-      catchupLimits: {
-        "401k": 7500,
-        ira: 1000,
-        hsa: 1000,
-        "401k_super": 11250,
-      },
+
       employerMatchRateByCategory: {
         "401k": 0.03,
         "403b": 0,
@@ -110,7 +115,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       ssStartAge: 67,
       asOfDate: AS_OF,
       ...overrides,
-    },
+    }),
     overrides,
   );
 }
@@ -409,7 +414,7 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
   function makeGapInput(
     overrides: Partial<ProjectionInput> = {},
   ): ProjectionInput {
-    return {
+    return withCapsAge({
       accumulationDefaults: {
         contributionRate: 0.29,
         routingMode: "waterfall",
@@ -453,20 +458,24 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
       salaryCap: null,
       salaryOverrides: [],
       budgetOverrides: [],
-      baseLimits: {
-        "401k": 23500,
-        "403b": 23500,
-        hsa: 4300,
-        ira: 7000,
-        brokerage: 0,
-      },
+      irsLimitCaps: capsFromBaseLimits({
+        baseLimits: {
+          "401k": 23500,
+          "403b": 23500,
+          hsa: 4300,
+          ira: 7000,
+          brokerage: 0,
+        },
+        catchupLimits: {
+          "401k": 7500,
+          ira: 1000,
+          hsa: 1000,
+          "401k_super": 11250,
+        },
+        currentAge: 37,
+      }),
       limitGrowthRate: 0.02,
-      catchupLimits: {
-        "401k": 7500,
-        ira: 1000,
-        hsa: 1000,
-        "401k_super": 11250,
-      },
+
       employerMatchRateByCategory: {
         "401k": 0.03,
         "403b": 0,
@@ -558,7 +567,7 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
         },
       ],
       ...overrides,
-    } as ProjectionInput;
+    }) as ProjectionInput;
   }
 
   it("does not report already_coast (stopping today) for a plan with a real, unfunded 55->59½ penalty-free gap", () => {
@@ -607,7 +616,7 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
   function makePortfolioParentedGapInput(
     overrides: Partial<ProjectionInput> = {},
   ): ProjectionInput {
-    return {
+    return withCapsAge({
       accumulationDefaults: {
         contributionRate: 0.25,
         routingMode: "waterfall",
@@ -650,20 +659,24 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
       salaryCap: null,
       salaryOverrides: [],
       budgetOverrides: [],
-      baseLimits: {
-        "401k": 23500,
-        "403b": 23500,
-        hsa: 4300,
-        ira: 7000,
-        brokerage: 0,
-      },
+      irsLimitCaps: capsFromBaseLimits({
+        baseLimits: {
+          "401k": 23500,
+          "403b": 23500,
+          hsa: 4300,
+          ira: 7000,
+          brokerage: 0,
+        },
+        catchupLimits: {
+          "401k": 7500,
+          ira: 1000,
+          hsa: 1000,
+          "401k_super": 11250,
+        },
+        currentAge: 66,
+      }),
       limitGrowthRate: 0.02,
-      catchupLimits: {
-        "401k": 7500,
-        ira: 1000,
-        hsa: 1000,
-        "401k_super": 11250,
-      },
+
       employerMatchRateByCategory: {
         "401k": 0.03,
         "403b": 0,
@@ -739,7 +752,7 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
         },
       ],
       ...overrides,
-    } as ProjectionInput;
+    }) as ProjectionInput;
   }
 
   it("does not report already_coast when a Portfolio-parented account leaves a real, recurring shortfall", () => {
@@ -814,7 +827,7 @@ describe("findCoastFireAge — net/gross unit fix for the no-stated-need fallbac
   function makeSsHeavyInput(
     overrides: Partial<ProjectionInput> = {},
   ): ProjectionInput {
-    return {
+    return withCapsAge({
       accumulationDefaults: {
         contributionRate: 0.25,
         routingMode: "waterfall",
@@ -857,20 +870,24 @@ describe("findCoastFireAge — net/gross unit fix for the no-stated-need fallbac
       salaryCap: null,
       salaryOverrides: [],
       budgetOverrides: [],
-      baseLimits: {
-        "401k": 23500,
-        "403b": 23500,
-        hsa: 4300,
-        ira: 7000,
-        brokerage: 0,
-      },
+      irsLimitCaps: capsFromBaseLimits({
+        baseLimits: {
+          "401k": 23500,
+          "403b": 23500,
+          hsa: 4300,
+          ira: 7000,
+          brokerage: 0,
+        },
+        catchupLimits: {
+          "401k": 7500,
+          ira: 1000,
+          hsa: 1000,
+          "401k_super": 11250,
+        },
+        currentAge: 66,
+      }),
       limitGrowthRate: 0.02,
-      catchupLimits: {
-        "401k": 7500,
-        ira: 1000,
-        hsa: 1000,
-        "401k_super": 11250,
-      },
+
       employerMatchRateByCategory: {
         "401k": 0.03,
         "403b": 0,
@@ -911,7 +928,7 @@ describe("findCoastFireAge — net/gross unit fix for the no-stated-need fallbac
       ssStartAge: 67,
       asOfDate: AS_OF_4,
       ...overrides,
-    } as ProjectionInput;
+    }) as ProjectionInput;
   }
 
   it("reports already_coast for a Social-Security-heavy household the old gross-vs-net comparison would have wrongly failed", () => {

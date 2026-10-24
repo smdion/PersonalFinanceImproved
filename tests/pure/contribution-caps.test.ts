@@ -2,7 +2,7 @@
 import { describe, it, expect } from "vitest";
 import {
   capContributionsByLimitGroup,
-  householdGroupLimits,
+  accountGroupLimits,
   type CapPerson,
   type CapRow,
 } from "@/lib/pure/contribution-caps";
@@ -241,12 +241,12 @@ describe("capContributionsByLimitGroup — HSA", () => {
     expect(out.get(b.id)!.cappedAnnual).toBe(1000);
   });
 
-  it("flags and doesn't cap an HSA with no coverage type", () => {
+  it("an HSA with no coverage type: capped at the self-only limit and flagged", () => {
     const r = row({ personId: 1, accountType: "hsa", regularAnnual: 99000 });
     const out = cap([r], [person(1, 40)]).get(r.id)!;
-    expect(out.cappedAnnual).toBe(99000);
+    expect(out.cappedAnnual).toBe(4000);
     expect(out.reason).toBe("no-coverage");
-    expect(out.limit).toBeNull();
+    expect(out.limit).toBe(4000);
   });
 });
 
@@ -465,15 +465,15 @@ describe("capContributionsByLimitGroup — joint rows", () => {
     expect(out.get(joint.id)!.cappedAnnual).toBe(8000); // 8,000 + 1,000 − 1,000
   });
 
-  it("a joint HSA with no coverage type is left as it is", () => {
+  it("a joint HSA with no coverage type: the household's self-only limits", () => {
     const joint = row({
       personId: null,
       accountType: "hsa",
       regularAnnual: 20000,
     });
     expect(cap([joint], [person(1, 40)]).get(joint.id)!).toMatchObject({
-      cappedAnnual: 20000,
-      maxEmployee: null,
+      cappedAnnual: 4000,
+      maxEmployee: 4000,
       reason: "no-owner",
     });
   });
@@ -536,16 +536,19 @@ describe("group limits — every shared limit counted once", () => {
     expect(groupLimits.get("401k")).toBe(40000);
   });
 
-  it("no rows: householdGroupLimits sizes every person, family base once", () => {
-    const out = householdGroupLimits(
+  it("from who holds which account: the same limits, no money needed", () => {
+    const out = accountGroupLimits(
+      [
+        { personId: 1, accountType: "401k", hsaCoverageType: null },
+        { personId: 2, accountType: "403b", hsaCoverageType: null },
+        { personId: 1, accountType: "hsa", hsaCoverageType: "family" },
+      ],
       ctx([person(1, 40), person(2, 55)]),
-      "family",
     );
     expect(out.get("401k")).toBe(20000 + 27000);
-    expect(out.get("ira")).toBe(6000 + 7000);
-    expect(out.get("hsa")).toBe(8000 + 1000);
-    expect(householdGroupLimits(ctx([person(1, 40)]), null).has("hsa")).toBe(
-      false,
-    );
+    // Married, family coverage: the family base once; person 2 (55) holds
+    // no HSA, so no catch-up of theirs.
+    expect(out.get("hsa")).toBe(8000);
+    expect(out.has("ira")).toBe(false); // nobody holds one
   });
 });

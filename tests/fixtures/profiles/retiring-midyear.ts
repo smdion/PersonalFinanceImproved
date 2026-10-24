@@ -48,6 +48,7 @@
  * ── THIS TEST IS INTENTIONALLY RED until B1b lands ────────────────────────
  */
 import type { ProjectionInput } from "@/lib/calculators/types";
+import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
 
 export const RETIRING_MIDYEAR_AS_OF = new Date("2026-04-14T12:00:00Z");
 
@@ -55,7 +56,7 @@ export const RETIRING_MIDYEAR_AS_OF = new Date("2026-04-14T12:00:00Z");
 export function makeRetiringMidyearInput(
   overrides: Partial<ProjectionInput> = {},
 ): ProjectionInput {
-  return {
+  return withCapsAge({
     accumulationDefaults: {
       contributionRate: 0.1,
       routingMode: "waterfall",
@@ -86,15 +87,19 @@ export function makeRetiringMidyearInput(
     salaryCap: null,
     salaryOverrides: [],
     budgetOverrides: [],
-    baseLimits: {
-      "401k": 24500,
-      "403b": 0,
-      hsa: 0,
-      ira: 0,
-      brokerage: 0,
-    },
+    irsLimitCaps: capsFromBaseLimits({
+      baseLimits: {
+        "401k": 24500,
+        "403b": 0,
+        hsa: 0,
+        ira: 0,
+        brokerage: 0,
+      },
+      catchupLimits: { "401k": 8000 },
+      currentAge: 65,
+    }),
     limitGrowthRate: 0.02,
-    catchupLimits: { "401k": 8000 },
+
     employerMatchRateByCategory: {
       "401k": 0,
       "403b": 0,
@@ -116,5 +121,5 @@ export function makeRetiringMidyearInput(
     ssStartAge: 67,
     asOfDate: RETIRING_MIDYEAR_AS_OF,
     ...overrides,
-  };
+  });
 }

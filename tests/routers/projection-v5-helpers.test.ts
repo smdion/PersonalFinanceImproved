@@ -8,6 +8,7 @@ import {
   type GlidePathRow,
   type AssetClassRow,
 } from "@/server/routers/projection-v5-helpers";
+import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 
 /**
  * Unit tests for the projection-v5-helpers module. These helpers were
@@ -148,7 +149,7 @@ describe("runStressTestScenarios (M2)", () => {
     ProjectionInput,
     "decumulationDefaults" | "accumulationOverrides" | "decumulationOverrides"
   > {
-    return {
+    return withCapsAge({
       accumulationDefaults: {
         contributionRate: 0.15,
         routingMode: "waterfall",
@@ -170,20 +171,24 @@ describe("runStressTestScenarios (M2)", () => {
       salaryCap: null,
       salaryOverrides: [],
       budgetOverrides: [],
-      baseLimits: {
-        "401k": 23500,
-        "403b": 23500,
-        hsa: 4300,
-        ira: 7000,
-        brokerage: 0,
-      },
+      irsLimitCaps: capsFromBaseLimits({
+        baseLimits: {
+          "401k": 23500,
+          "403b": 23500,
+          hsa: 4300,
+          ira: 7000,
+          brokerage: 0,
+        },
+        catchupLimits: {
+          "401k": 7500,
+          ira: 1000,
+          hsa: 1000,
+          "401k_super": 11250,
+        },
+        currentAge: 35,
+      }),
       limitGrowthRate: 0.02,
-      catchupLimits: {
-        "401k": 7500,
-        ira: 1000,
-        hsa: 1000,
-        "401k_super": 11250,
-      },
+
       employerMatchRateByCategory: {
         "401k": 0.03,
         "403b": 0,
@@ -219,7 +224,7 @@ describe("runStressTestScenarios (M2)", () => {
       socialSecurityAnnual: 36000,
       ssStartAge: 67,
       asOfDate: AS_OF,
-    };
+    });
   }
 
   const distributionTaxRates = {

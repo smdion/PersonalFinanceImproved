@@ -30,6 +30,7 @@ import {
   getTraditionalBalance,
 } from "@/lib/config/account-types";
 import { WITHDRAWAL_STRATEGY_VALUES } from "@/lib/config/withdrawal-strategies";
+import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -42,7 +43,7 @@ const EPSILON = 0.011; // $0.011 rounding tolerance (cent + tiny float)
 /** Build a minimal valid engine input with sensible defaults. */
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   return withConsistentStart(
-    {
+    withCapsAge({
       accumulationDefaults: {
         contributionRate: 0.15,
         routingMode: "waterfall",
@@ -85,20 +86,24 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       salaryCap: null,
       salaryOverrides: [],
       budgetOverrides: [],
-      baseLimits: {
-        "401k": 23500,
-        "403b": 23500,
-        hsa: 4300,
-        ira: 7000,
-        brokerage: 0,
-      },
+      irsLimitCaps: capsFromBaseLimits({
+        baseLimits: {
+          "401k": 23500,
+          "403b": 23500,
+          hsa: 4300,
+          ira: 7000,
+          brokerage: 0,
+        },
+        catchupLimits: {
+          "401k": 7500,
+          ira: 1000,
+          hsa: 1000,
+          "401k_super": 11250,
+        },
+        currentAge: 35,
+      }),
       limitGrowthRate: 0.02,
-      catchupLimits: {
-        "401k": 7500,
-        ira: 1000,
-        hsa: 1000,
-        "401k_super": 11250,
-      },
+
       employerMatchRateByCategory: {
         "401k": 0.03,
         "403b": 0,
@@ -135,7 +140,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       ssStartAge: 67,
       asOfDate: AS_OF,
       ...overrides,
-    },
+    }),
     overrides,
   );
 }
@@ -1321,23 +1326,27 @@ describe("engine invariants", () => {
             salary: fc.integer({ min: 50000, max: 200000 }),
           }),
           (r) => {
-            const input = makeInput({
-              baseLimits: {
-                "401k": 23500,
-                "403b": 23500,
-                hsa: r.hsaBase,
-                ira: 7000,
-                brokerage: 0,
-              },
-              employerMatchRateByCategory: {
-                "401k": 0,
-                "403b": 0,
-                hsa: r.empMatchRate,
-                ira: 0,
-                brokerage: 0,
-              },
-              currentSalary: r.salary,
-            });
+            const input = makeInput(
+              withCapsAge({
+                irsLimitCaps: capsFromBaseLimits({
+                  baseLimits: {
+                    "401k": 23500,
+                    "403b": 23500,
+                    hsa: r.hsaBase,
+                    ira: 7000,
+                    brokerage: 0,
+                  },
+                }),
+                employerMatchRateByCategory: {
+                  "401k": 0,
+                  "403b": 0,
+                  hsa: r.empMatchRate,
+                  ira: 0,
+                  brokerage: 0,
+                },
+                currentSalary: r.salary,
+              }),
+            );
             const result = calculateProjection(input);
             for (const year of result.projectionByYear) {
               if (year.phase !== "accumulation") continue;

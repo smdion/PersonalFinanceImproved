@@ -16,13 +16,11 @@ import type {
   IndividualAccountYearBalance,
 } from "../../types";
 import { roundToCents, sumBy, safeDivide } from "../../../utils/math";
-import { ageInYear } from "../../../utils/date";
 import {
+  buildCategoryRecord,
   getAllCategories,
   getAccountTypeConfig,
   isOverflowTarget,
-  categoriesWithIrsLimit,
-  getLimitGroup,
   getRothFraction as configGetRothFraction,
   addTraditional,
   addRoth,
@@ -41,7 +39,11 @@ import {
   routeWaterfall,
   routePercentage,
   routeFromSpecs,
+  capSpecs,
+  slotLimits,
+  remainingRoom,
 } from "../contribution-routing";
+import { accountGroupLimits } from "@/lib/pure/contribution-caps";
 import { applyGrowth } from "../growth-application";
 import {
   distributeContributions,
@@ -122,10 +124,7 @@ export function runAccumulationYear(
   const {
     currentSalary,
     limitGrowthRate,
-    baseLimits,
-    catchupLimits,
-    catchupGroupParticipants,
-    currentAge,
+    irsLimitCaps,
     brokerageContributionRamp,
     decumulationDefaults,
     retirementAge,
@@ -139,59 +138,6 @@ export function runAccumulationYear(
 
   // IRS limits grow annually
   const lgf = Math.pow(1 + limitGrowthRate, yearIndex);
-  const yearLimits: Record<AccountCategory, number> = Object.fromEntries(
-    getAllCategories().map((cat) => {
-      if (!getAccountTypeConfig(cat).hasIrsLimit) return [cat, 0];
-      // Categories in a shared limit group use the group leader's base limit
-      const limitKey = getLimitGroup(cat) ?? cat;
-      return [
-        cat,
-        roundToCents((baseLimits[limitKey as AccountCategory] ?? 0) * lgf),
-      ];
-    }),
-  ) as Record<AccountCategory, number>;
-
-  // Add age-based catchup limits (grown at the same rate as base limits).
-  // Gated per PERSON: catchupGroupParticipants (built by build-engine-payload.ts)
-  // lists who holds an account in each group, with their birth year, so each
-  // individual's own projected age this year determines their eligibility —
-  // not one shared household-average age. Without this, a group either
-  // gets catch-up room for everyone or no one, and the super-catchup AGE
-  // WINDOW (60-63) can't be represented for a multi-person household at all.
-  // Falls back to the household-average age only when catchupGroupParticipants
-  // isn't provided (hand-built EngineInput in calculator-level tests) — the
-  // same fallback shape as perPersonBirthYears elsewhere in this type.
-  if (catchupLimits) {
-    const addCatchupForAge = (cat: AccountCategory, projectedAge: number) => {
-      const cfg = getAccountTypeConfig(cat);
-      const group = getLimitGroup(cat) ?? cat;
-      const superRange = cfg.superCatchupAgeRange;
-      // Super-catchup replaces regular catchup if in the age range
-      if (
-        superRange &&
-        projectedAge >= superRange[0] &&
-        projectedAge <= superRange[1]
-      ) {
-        yearLimits[cat] += roundToCents(
-          (catchupLimits[`${group}_super`] ?? 0) * lgf,
-        );
-      } else if (cfg.catchupAge !== null && projectedAge >= cfg.catchupAge) {
-        yearLimits[cat] += roundToCents((catchupLimits[group] ?? 0) * lgf);
-      }
-    };
-
-    for (const cat of categoriesWithIrsLimit()) {
-      const group = getLimitGroup(cat) ?? cat;
-      const participants = catchupGroupParticipants?.[group];
-      if (participants) {
-        for (const participant of participants) {
-          addCatchupForAge(cat, ageInYear(participant.birthYear, year));
-        }
-      } else {
-        addCatchupForAge(cat, currentAge + yearIndex);
-      }
-    }
-  }
 
   // Year 0 with real contribution data: use actual per-account amounts
   // instead of salary x rate which can create artificial overflow
@@ -254,6 +200,59 @@ export function runAccumulationYear(
     ]),
   ) as Record<AccountCategory, number>;
 
+  // IRS limits: every key grows at the limit growth rate; the specs are
+  // capped per person (ages at Dec 31 of this year), and every path sizes
+  // its slot limits from the household's group limits, each counted once.
+  const hasSpecs = !!contributionSpecs && contributionSpecs.length > 0;
+  const capCtx = {
+    taxYear: year,
+    filingStatus: irsLimitCaps.filingStatus,
+    limits: Object.fromEntries(
+      Object.entries(irsLimitCaps.limits).map(([k, v]) => [
+        k,
+        roundToCents(v * lgf),
+      ]),
+    ),
+  };
+  const capped = hasSpecs
+    ? capSpecs(
+        contributionSpecs!,
+        {
+          projectedSalary,
+          salaryBase: currentSalary,
+          limitGrowthFactor: lgf,
+        },
+        {
+          ctx: capCtx,
+          people: irsLimitCaps.people,
+          employerMatch: yearEmployerMatch,
+          wagesByPerson:
+            hasPerPersonSalary && projectedSalaryByPerson
+              ? new Map(
+                  Object.entries(projectedSalaryByPerson).map(([id, v]) => [
+                    Number(id),
+                    v,
+                  ]),
+                )
+              : null,
+        },
+      )
+    : null;
+  const groupLimits =
+    capped?.groupLimits ??
+    accountGroupLimits(irsLimitCaps.accounts, {
+      ...capCtx,
+      people: irsLimitCaps.people.map((p) => ({ ...p, wages: null })),
+    });
+  const cappedByCategory = buildCategoryRecord(() => 0);
+  contributionSpecs?.forEach((spec, i) => {
+    cappedByCategory[spec.category] += capped!.capped[i]!.cappedAnnual;
+  });
+  const yearLimits = slotLimits(
+    groupLimits,
+    useRealContribs ? activeBaseYearContributions! : cappedByCategory,
+  );
+
   let slots: AccumulationSlot[];
   let routeWarnings: string[];
   let specOverflow = 0; // overflow from per-account routing (only IRS cap spillover)
@@ -283,9 +282,15 @@ export function runAccumulationYear(
           employeeContrib,
           rothContrib,
           traditionalContrib: tradContrib,
-          remainingSpace: isOverflowTarget(cat)
-            ? 0
-            : roundToCents(Math.max(0, irsLimit - employeeContrib)),
+          remainingSpace: remainingRoom(
+            {
+              category: cat,
+              irsLimit,
+              effectiveLimit: isOverflowTarget(cat) ? 0 : irsLimit,
+              employerMatch: yearEmployerMatch[cat],
+            },
+            employeeContrib,
+          ),
           cappedByAccount: false,
           cappedByTaxType: false,
           overflowAmount: 0,
@@ -293,15 +298,12 @@ export function runAccumulationYear(
       });
     routeWarnings = [];
   } else if (contributionSpecs && contributionSpecs.length > 0) {
-    // Per-account routing from DB specs -- respects each account's method
-    const limitGrowthFactor = Math.pow(1 + limitGrowthRate, yearIndex);
+    // Per-account routing from DB specs, capped per person above.
     const routed = routeFromSpecs(
       contributionSpecs,
-      projectedSalary,
-      currentSalary,
+      capped!,
       yearLimits,
       yearEmployerMatch,
-      limitGrowthFactor,
       config,
     );
     slots = routed.slots;
@@ -322,11 +324,7 @@ export function runAccumulationYear(
         slot.traditionalContrib = roundToCents(
           slot.traditionalContrib * proRate,
         );
-        slot.remainingSpace = isOverflowTarget(slot.category)
-          ? 0
-          : roundToCents(
-              Math.max(0, slot.effectiveLimit - slot.employeeContrib),
-            );
+        slot.remainingSpace = remainingRoom(slot, slot.employeeContrib);
       }
       // Recompute overflow -- pro-rating may reduce or eliminate it
       specOverflow = roundToCents(specOverflow * proRate);
@@ -361,9 +359,7 @@ export function runAccumulationYear(
         slot.rothContrib = roundToCents(slot.rothContrib * ratio);
         slot.traditionalContrib = roundToCents(slot.traditionalContrib * ratio);
         slot.employeeContrib = newEmployee;
-        slot.remainingSpace = isOverflowTarget(slot.category)
-          ? 0
-          : roundToCents(Math.max(0, slot.effectiveLimit - newEmployee));
+        slot.remainingSpace = remainingRoom(slot, newEmployee);
       }
       // The IRS overflow inside the overflow target's slot scaled with
       // the rest; it is still overflow — Step 2 leaves it out of the specs'

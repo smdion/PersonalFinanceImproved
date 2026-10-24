@@ -783,6 +783,12 @@ export type ContributionSpec = {
     | "continues_after_retirement";
   /** How this contribution scales during accumulation (from performance_accounts). */
   contributionScaling?: "scales_with_salary" | "fixed_amount";
+  /** HSA coverage type (sizes the HSA limit); null/absent = none given. */
+  hsaCoverageType?: string | null;
+  /** This row's share of its category's base-year employer money — the
+   *  year's employer money held against the IRS limit is this share of the
+   *  money the engine credits (yearEmployerMatch). Absent = 0. */
+  employerShare?: number;
 };
 
 // --- Engine Output Slots ---
