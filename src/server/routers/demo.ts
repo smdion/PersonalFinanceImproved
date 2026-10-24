@@ -231,6 +231,7 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
         employerMatchValue: ca.employerMatchValue,
         employerMaxMatchPct: ca.employerMaxMatchPct,
         performanceAccountId: perfId,
+        hsaCoverageType: ca.hsaCoverageType ?? null,
       })
       .returning({ id: schema.contributionAccounts.id });
     if (created) {

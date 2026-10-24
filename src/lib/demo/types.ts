@@ -1,6 +1,6 @@
 import type { PerfCategory } from "@/lib/config/display-labels";
 import type { AccountCategory } from "@/lib/config/account-types";
-import type { TaxTreatment } from "@/lib/config/enum-values";
+import type { HsaCoverageType, TaxTreatment } from "@/lib/config/enum-values";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 
 /**
@@ -91,6 +91,8 @@ export type DemoProfile = {
     /** accountLabel of the performance account to link to */
     perfAccountLabel?: string;
     parentCategory?: PerfCategory;
+    /** An HSA's coverage — what sizes its IRS limit. */
+    hsaCoverageType?: HsaCoverageType;
   }[];
 
   portfolioSnapshots: {

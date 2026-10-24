@@ -302,6 +302,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       employerMatchValue: null,
       employerMaxMatchPct: null,
       perfAccountLabel: "HSA",
+      hsaCoverageType: "family",
     },
   ],
 
