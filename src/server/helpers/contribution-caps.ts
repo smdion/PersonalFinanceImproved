@@ -9,6 +9,7 @@
  */
 import {
   capContributionsByLimitGroup,
+  type CapPassed,
   type CappedContribution,
 } from "@/lib/pure/contribution-caps";
 import {
@@ -39,7 +40,7 @@ import {
   type SalaryProfileActiveMap,
 } from "./salary";
 
-export type CappedRowFields = {
+export type CappedRowFields = CapPassed & {
   /** The value calculations use: the configured value scaled to the IRS
    *  limit. Full precision — never rounded or stored. */
   cappedValue?: number;
@@ -112,8 +113,10 @@ export function capEffectiveContribs<R extends CapPassRow>(
 ): (R & CappedRowFields)[] {
   // Always from the configured values (a re-run never compounds).
   const configured = rows.map(({ ...r }) => {
-    delete (r as CappedRowFields).cappedValue;
-    delete (r as CappedRowFields).cap;
+    const fields = r as Partial<CappedRowFields>;
+    delete fields.cappedValue;
+    delete fields.cap;
+    delete (fields as { capPassed?: true }).capPassed;
     return r as R;
   });
   const { annualById, salaryById } = contribRowAmounts(
@@ -174,10 +177,11 @@ export function capEffectiveContribs<R extends CapPassRow>(
 
   return configured.map((c) => {
     const cap = byRow.get(c.id)!;
-    if (!getLimitGroup(c.accountType)) return c;
+    if (!getLimitGroup(c.accountType)) return { ...c, capPassed: true };
     const factor = cap.annual > 0 ? cap.cappedAnnual / cap.annual : 1;
     return {
       ...c,
+      capPassed: true,
       cap,
       cappedValue: Number(c.contributionValue ?? 0) * factor,
     };
@@ -260,5 +264,22 @@ export function capForRequest<R extends CapPassRow>(
         totalComp: pay.totalComp,
       };
     }),
+  });
+}
+
+/** A resolved profile's rows capped on that profile's own jobs and pay
+ *  (resolveProfile's output). */
+export function capResolvedProfile<
+  R extends CapPassRow,
+  J extends JobRef,
+  S extends JobSalaryRef & { totalComp?: number },
+>(
+  resolved: { activeContribs: R[]; activeJobs: J[]; jobSalaries: S[] },
+  household: CapPassHousehold,
+): (R & CappedRowFields)[] {
+  return capEffectiveContribs(resolved.activeContribs, {
+    ...household,
+    activeJobs: resolved.activeJobs,
+    jobSalaries: resolved.jobSalaries,
   });
 }

@@ -902,6 +902,9 @@ export async function buildEnginePayload(
       performanceAccountId: c.performanceAccountId,
       targetAnnual: c.targetAnnual,
       allocationPriority: c.allocationPriority,
+      hsaCoverageType: c.hsaCoverageType,
+      capPassed: c.capPassed,
+      cappedValue: c.cappedValue,
     })),
     activeJobs.map((j) => ({
       id: j.id,

@@ -15,6 +15,11 @@
  * profile is an ordinary, renamable, editable row, and one with empty
  * contributionActiveFields is simply a profile with nothing customized.
  */
+import {
+  capResolvedProfile,
+  loadCapHousehold,
+} from "@/server/helpers/contribution-caps";
+import { getAllPeople } from "@/server/helpers/people";
 import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
 import { assertNoPlanUses } from "@/server/helpers/plans";
 import { z } from "zod/v4";
@@ -174,6 +179,12 @@ export const contributionProfileRouter = createTRPCRouter({
       rawContribRows,
       salaryProfileActiveMap,
     } = await loadLiveContribData(ctx.db);
+    const capHousehold = await loadCapHousehold(
+      ctx.db,
+      await getAllPeople(ctx.db),
+      null,
+      new Date().getFullYear(),
+    );
 
     const resolved = profiles.map((profile) => {
       const r = resolveProfile(
@@ -184,7 +195,7 @@ export const contributionProfileRouter = createTRPCRouter({
         salaryProfileActiveMap,
       );
       const agg = aggregateContributionsByCategory(
-        r.activeContribs,
+        capResolvedProfile(r, capHousehold),
         r.activeJobs,
         r.jobSalaries,
       );
@@ -874,7 +885,15 @@ export const contributionProfileRouter = createTRPCRouter({
         salaryProfileActiveMap,
       );
       const agg = aggregateContributionsByCategory(
-        resolved.activeContribs,
+        capResolvedProfile(
+          resolved,
+          await loadCapHousehold(
+            ctx.db,
+            await getAllPeople(ctx.db),
+            null,
+            new Date().getFullYear(),
+          ),
+        ),
         resolved.activeJobs,
         resolved.jobSalaries,
       );

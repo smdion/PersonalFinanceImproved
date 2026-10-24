@@ -25,7 +25,7 @@ import type {
   TaxTreatment,
   ContributionMethod,
 } from "@/lib/config/enum-values";
-import { computeValue } from "@/lib/pure/contribution-caps";
+import { computeValue, type CapPassed } from "@/lib/pure/contribution-caps";
 import { toNumber, getPeriodsPerYear } from "./transforms";
 import type { Db, DbOrTx } from "./transforms";
 import {
@@ -377,8 +377,8 @@ export async function applyContributionAccountEditsBatch(
  * their combined contribution — see that function's docblock.
  */
 export function buildContribAccounts(
-  jobContribs: ContribRowWithActiveFields[],
-  personalContribs: ContribRowWithActiveFields[],
+  jobContribs: (ContribRowWithActiveFields & CapPassed)[],
+  personalContribs: (ContribRowWithActiveFields & CapPassed)[],
   salary: number,
   periodsPerYear: number,
   /** The year's limits and the person's age at Dec 31 — sizes each
@@ -687,7 +687,7 @@ export function contribRowAmounts(
  * employer match totals. Used by the retirement engine and available to any consumer.
  */
 export function aggregateContributionsByCategory(
-  activeContribs: ContribRow[],
+  activeContribs: (ContribRow & CapPassed)[],
   activeJobs: JobRef[],
   jobSalaries: JobSalaryRef[],
 ): {
@@ -840,7 +840,7 @@ export type ContribDisplaySpec = {
  * Used by the retirement engine card and available to any other consumer.
  */
 export function buildContributionDisplaySpecs(
-  activeContribs: ContribRow[],
+  activeContribs: (ContribRow & CapPassed)[],
   people: PersonRef[],
   activeJobs: JobRef[],
   jobSalaries: JobSalaryRef[],
@@ -1635,7 +1635,7 @@ export type ContribInputRow = {
  * profile, extracted so it can be called for each profile-switch year.
  */
 export function buildProfileContribData(
-  activeContribs: ContribInputRow[],
+  activeContribs: (ContribInputRow & CapPassed)[],
   activeJobs: { id: number; personId: number; payPeriod: string | undefined }[],
   jobSalaries: {
     job: { id: number; personId: number };
@@ -1654,7 +1654,7 @@ export function buildProfileContribData(
   );
 
   // Aggregate contributions and employer match by category
-  const contribRows: ContribRow[] = activeContribs.map((c) => ({
+  const contribRows: (ContribRow & CapPassed)[] = activeContribs.map((c) => ({
     id: c.id,
     personId: c.personId,
     jobId: c.jobId,
@@ -1665,6 +1665,7 @@ export function buildProfileContribData(
     contributionMethod: c.contributionMethod ?? "percent_of_salary",
     contributionValue: String(c.contributionValue ?? "0"),
     cappedValue: c.cappedValue,
+    capPassed: c.capPassed,
     taxTreatment: c.taxTreatment ?? "pre_tax",
     employerMatchType: c.employerMatchType,
     employerMatchValue: c.employerMatchValue

@@ -1,4 +1,9 @@
 /** Retirement router for readiness analysis including savings rates, employer matches, tax bucket projections, relocation comparisons, profile-switching scenarios, and retirement-settings/scenario/override/return-rate CRUD. */
+import {
+  capResolvedProfile,
+  loadCapHousehold,
+} from "@/server/helpers/contribution-caps";
+import type { CapPassed } from "@/lib/pure/contribution-caps";
 import { assertNoPlanUses } from "@/server/helpers/plans";
 import { eq, ne, asc, and, isNull } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -490,7 +495,7 @@ export const retirementRouter = createTRPCRouter({
       // raw activeContribs rows, which carry no value of their own. Jobs are
       // the arm's profile-patched ones, so a profile's pay schedule counts.
       const computeContribTotals = (
-        contribs: ContribRowWithActiveFields[],
+        contribs: (ContribRowWithActiveFields & CapPassed)[],
         salaries: typeof jobSalaries,
         jobsForPeriods: {
           id: number;
@@ -529,6 +534,12 @@ export const retirementRouter = createTRPCRouter({
       // active-fields map — accounts carry no value of their own anymore,
       // so this correctly yields zero contributions rather than falling
       // back to a "live" reading of the raw account rows.
+      const capHousehold = await loadCapHousehold(
+        ctx.db,
+        people,
+        null,
+        asOfDate.getFullYear(),
+      );
       const resolveContribProfile = async (profileId: number | null) => {
         const profile = profileId
           ? await fetchContributionProfile(ctx.db, profileId)
@@ -552,7 +563,7 @@ export const retirementRouter = createTRPCRouter({
         );
 
         const totals = computeContribTotals(
-          resolved.activeContribs,
+          capResolvedProfile(resolved, capHousehold),
           resolved.jobSalaries,
           resolved.activeJobs,
         );
