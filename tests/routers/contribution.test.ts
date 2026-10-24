@@ -973,9 +973,9 @@ describe("contribution router", () => {
       const acctType = person!.accountTypes.find(
         (a) => a.categoryKey === "401k",
       );
-      // 15% of 180000 = 27000 — the old coupled-profile result, now reached
-      // by pinning both axes explicitly.
-      expect(acctType!.employeeContrib).toBe(27000);
+      // 15% of 180000 = 27000 — both axes applied — which is over the
+      // person's 401(k) limit, so the summary shows the capped 24,500.
+      expect(acctType!.employeeContrib).toBe(24500);
     });
   });
 

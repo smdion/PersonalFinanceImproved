@@ -5,6 +5,10 @@
  * `ProfileSwitch` (that profile's contribution specs, match and rate) and
  * the salary override a switched Salary Profile adds for that year.
  */
+import {
+  capEffectiveContribs,
+  type CapPassHousehold,
+} from "@/server/helpers/contribution-caps";
 import { inArray } from "drizzle-orm";
 import type { db as _db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
@@ -90,6 +94,7 @@ export function buildProfileSwitches<
   currentYear,
   hasMultiplePeople,
   profileContribCtx,
+  capHousehold,
 }: {
   profileSwitchOverrides: readonly SalaryOverrideRow[];
   switchProfileMap: Awaited<
@@ -109,6 +114,9 @@ export function buildProfileSwitches<
   currentYear: number;
   hasMultiplePeople: boolean;
   profileContribCtx: Parameters<typeof buildProfileContribData>[3];
+  /** The household's cap context — each switch's rows are capped like the
+   *  active profile's, on that profile's pay. */
+  capHousehold: CapPassHousehold;
 }) {
   const perPersonSalaryAdds: {
     personId: number;
@@ -359,10 +367,17 @@ export function buildProfileSwitches<
     );
 
     const data = buildProfileContribData(
-      resolved.activeContribs.map((c) => ({
-        ...c,
-        accountType: c.accountType as AccountCategory,
-      })),
+      capEffectiveContribs(
+        resolved.activeContribs.map((c) => ({
+          ...c,
+          accountType: c.accountType as AccountCategory,
+        })),
+        {
+          ...capHousehold,
+          activeJobs: resolved.activeJobs,
+          jobSalaries: resolved.jobSalaries,
+        },
+      ),
       resolved.activeJobs,
       resolved.jobSalaries,
       profileContribCtx,

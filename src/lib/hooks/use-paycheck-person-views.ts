@@ -87,6 +87,10 @@ export type PaycheckPersonView = {
    *  is set. Identical to paycheck.bonusEstimate when no override is set. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- router output shape
   fullFormulaBonusEstimate: any;
+  /** The paycheck on the configured contributions (null = same as
+   *  `paycheck`) — what the pay-stub check compares. */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- router output shape
+  paystubPaycheck: any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- router output shape
   blendedAnnual: any;
   rawDeductions: RawDeduction[];
@@ -354,6 +358,7 @@ export function usePaycheckPersonViews({
                   bonusOverride: null,
                 },
           paycheck: d.paycheck!,
+          paystubPaycheck: "paystubPaycheck" in d ? d.paystubPaycheck : null,
           fullFormulaBonusEstimate: (d as Record<string, unknown>)
             .fullFormulaBonusEstimate,
           blendedAnnual: (d as Record<string, unknown>).blendedAnnual,

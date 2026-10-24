@@ -1,6 +1,12 @@
 /**
  * Budget expense computation helpers.
  */
+import {
+  capForRequest,
+  loadCapHousehold,
+} from "@/server/helpers/contribution-caps";
+import { getAllPeople } from "@/server/helpers/people";
+import { computeValue } from "@/lib/pure/contribution-caps";
 import { eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
@@ -472,10 +478,22 @@ export async function resolveLinkedBudgetItemAmounts<
     allJobs,
     salaryProfileActiveMap,
   );
-  const activeContribs = applyContribActiveFields(
-    profileResult.contribs,
-    opts?.sandboxContribActiveFields ?? {},
-    true,
+  // The IRS-limit cap pass: these lines show the capped contribution.
+  const activeContribs = capForRequest(
+    applyContribActiveFields(
+      profileResult.contribs,
+      opts?.sandboxContribActiveFields ?? {},
+      true,
+    ),
+    await loadCapHousehold(
+      db,
+      await getAllPeople(db),
+      null,
+      new Date().getFullYear(),
+    ),
+    profileResult.jobs,
+    salaryProfileActiveMap,
+    effectiveSalaryMap,
   );
   const activeContribIds = new Set(activeContribs.map((c) => c.id));
   const activeJobs = filterActiveJobs(profileResult.jobs);
@@ -497,7 +515,7 @@ export async function resolveLinkedBudgetItemAmounts<
 
   for (const c of activeContribs) {
     if (!linkedContribIds.has(c.id)) continue;
-    const val = Number(c.contributionValue);
+    const val = computeValue(c);
     const isFixedPerPeriod = c.contributionMethod === "fixed_per_period";
     let jobPeriodsPerYear: number;
     let incomplete: boolean;

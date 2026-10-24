@@ -380,6 +380,7 @@ export default function PaycheckPage() {
               salary={d.salary}
               resolvedBonusTerms={d.resolvedBonusTerms}
               paycheck={d.paycheck}
+              paystubPaycheck={d.paystubPaycheck}
               fullFormulaBonusEstimate={d.fullFormulaBonusEstimate}
               mode={mode}
               blendedAnnual={d.blendedAnnual}

@@ -61,6 +61,11 @@ import type {
   ViewAwareTotals,
 } from "@/lib/pure/contributions";
 import { findActiveJob } from "@/lib/pure/profiles";
+import { computeValue } from "@/lib/pure/contribution-caps";
+import {
+  capForRequest,
+  loadCapHousehold,
+} from "@/server/helpers/contribution-caps";
 import type {
   ContributionInput,
   AccountCategory,
@@ -347,7 +352,7 @@ export const contributionRouter = createTRPCRouter({
       );
       // Sandbox edits are the highest-precedence tier, applied AFTER the
       // picked profile's own overrides via the SAME merge function.
-      const effectiveContribs = applyContribActiveFields(
+      const sandboxed = applyContribActiveFields(
         profileResult.contribs,
         input?.sandboxContribActiveFields ?? {},
         true,
@@ -355,11 +360,24 @@ export const contributionRouter = createTRPCRouter({
       for (const [i, addition] of (
         input?.sandboxContribAdditions ?? []
       ).entries()) {
-        effectiveContribs.push(buildSandboxContribRow(addition, -(i + 1)));
+        sandboxed.push(buildSandboxContribRow(addition, -(i + 1)));
       }
       const effectiveJobs = profileResult.jobs;
 
       const asOfDate = new Date();
+      // The IRS-limit cap pass: every figure below reads the capped value.
+      const effectiveContribs = capForRequest(
+        sandboxed,
+        await loadCapHousehold(
+          ctx.db,
+          people,
+          limitsRecord,
+          asOfDate.getFullYear(),
+        ),
+        effectiveJobs,
+        salaryProfileActiveMap,
+        effectiveSalaryMap,
+      );
 
       // Split YTD actuals proportionally when multiple contribs share a perf
       // account, scaled by each job's elapsed pay-period fraction. Salary is
@@ -416,7 +434,7 @@ export const contributionRouter = createTRPCRouter({
         { contribId: number; expectedYtd: number }[]
       >();
       for (const c of activeContribs) {
-        const value = toNumber(String(c.contributionValue));
+        const value = computeValue(c);
         let expectedYtd = 0;
 
         const jd = c.jobId ? jobCache.get(c.jobId) : null;

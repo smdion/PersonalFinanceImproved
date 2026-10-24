@@ -56,6 +56,10 @@ import { log } from "@/lib/logger";
 import { buildSocialSecurityEntries } from "./social-security-entries";
 import { buildDistributionTaxRates } from "@/lib/pure/distribution-tax-rates";
 import { accountGroupLimits } from "@/lib/pure/contribution-caps";
+import {
+  capEffectiveContribs,
+  type CapPassHousehold,
+} from "@/server/helpers/contribution-caps";
 import { resolvePhaseExpenses } from "./payload/budget-expenses";
 import {
   buildProfileSwitches,
@@ -720,21 +724,32 @@ export async function buildEnginePayload(
   // drop out of activeContribs entirely once their personId is cleared,
   // excluding their contribution amount from every downstream total this
   // function computes.
-  const activeContribs = allContribs
-    .filter(
-      (c) =>
-        activeJobs.some((j) => j.id === c.jobId) ||
-        (c.jobId === null &&
-          (c.personId === null || people.some((p) => p.id === c.personId))),
-    )
-    .map((c) => ({ ...c, accountType: c.accountType as AccountCategory }));
-  // Who holds which limited account, and each limit group's household
-  // limit from it (every shared limit counted once) — the totals the pages
-  // show, and what the engine sizes limits from without specs.
+  // The IRS-limit cap pass runs on every set of effective rows — these and
+  // each profile switch's — so every figure reads the capped value.
   const irsLimitPeople = people.map((p) => ({
     id: p.id,
     birthYear: birthYearByPersonId.get(p.id) ?? null,
   }));
+  const capHousehold: CapPassHousehold = {
+    people: irsLimitPeople,
+    limits: limitsMap,
+    filingStatus,
+    taxYear: currentYear,
+  };
+  const activeContribs = capEffectiveContribs(
+    allContribs
+      .filter(
+        (c) =>
+          activeJobs.some((j) => j.id === c.jobId) ||
+          (c.jobId === null &&
+            (c.personId === null || people.some((p) => p.id === c.personId))),
+      )
+      .map((c) => ({ ...c, accountType: c.accountType as AccountCategory })),
+    { ...capHousehold, activeJobs, jobSalaries },
+  );
+  // Who holds which limited account, and each limit group's household
+  // limit from it (every shared limit counted once) — the totals the pages
+  // show, and what the engine sizes limits from without specs.
   const irsLimitAccounts = activeContribs
     .filter((c) => getAccountTypeConfig(c.accountType).hasIrsLimit)
     .map((c) => ({
@@ -911,6 +926,7 @@ export async function buildEnginePayload(
       currentYear,
       hasMultiplePeople,
       profileContribCtx,
+      capHousehold,
     });
   // A switch row that pins a salary adds to the salary overrides, after
   // the plain rows — the order the engine has always received them in.
