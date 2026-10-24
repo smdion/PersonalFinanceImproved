@@ -149,11 +149,28 @@ export function runAccumulationYear(
   // Pro-rate year 0 contributions/match based on months remaining in the year
   const proRate = yearIndex === 0 ? firstYearFraction : 1;
 
+  // Late in year 0, a contribution over its IRS limit has been paid at its
+  // configured rate so far: what's left of its capped amount is
+  // max(0, capped − configured × elapsed), not capped × the rest of the
+  // year. The cut per category, off the pro-rated amount.
+  const lateYearCut = buildCategoryRecord(() => 0);
+  if (yearIndex === 0)
+    for (const s of contributionSpecs ?? []) {
+      if (s.configuredAnnual === undefined) continue;
+      const left = Math.max(
+        0,
+        s.baseAnnual - s.configuredAnnual * (1 - proRate),
+      );
+      lateYearCut[s.category] += Math.max(0, s.baseAnnual * proRate - left);
+    }
+  const totalLateYearCut = sumBy(Object.values(lateYearCut), (v) => v);
+
   let targetContribution: number;
   if (useRealContribs) {
     targetContribution = roundToCents(
       Object.values(activeBaseYearContributions!).reduce((s, v) => s + v, 0) *
-        proRate,
+        proRate -
+        totalLateYearCut,
     );
   } else if (contributionSpecs && contributionSpecs.length > 0) {
     // Sum projected per-account contributions (before IRS capping)
@@ -268,7 +285,10 @@ export function runAccumulationYear(
       )
       .map((cat) => {
         const employeeContrib = roundToCents(
-          activeBaseYearContributions![cat] * proRate,
+          Math.max(
+            0,
+            activeBaseYearContributions![cat] * proRate - lateYearCut[cat],
+          ),
         );
         const irsLimit = yearLimits[cat];
         const rothFrac = configGetRothFraction(cat, config.taxSplits);
@@ -313,16 +333,25 @@ export function runAccumulationYear(
     // Pro-rate year 0 spec-based employee contributions (routeFromSpecs computes full-year amounts)
     if (proRate < 1) {
       for (const slot of slots) {
-        slot.employeeContrib = roundToCents(slot.employeeContrib * proRate);
+        // The late-year cut comes off the slot's employee money; its tax
+        // parts follow by the same ratio.
+        const full = slot.employeeContrib;
+        slot.employeeContrib = roundToCents(
+          Math.max(0, full * proRate - lateYearCut[slot.category]),
+        );
+        const partRatio =
+          lateYearCut[slot.category] > 0 && full > 0
+            ? slot.employeeContrib / full
+            : proRate;
         // The Portfolio part pro-rates with the slot (the ceiling below
         // scales the rest; left full-year it would exceed the slot).
         if (slot.portfolioContrib != null)
           slot.portfolioContrib = roundToCents(
-            Math.min(slot.portfolioContrib * proRate, slot.employeeContrib),
+            Math.min(slot.portfolioContrib * partRatio, slot.employeeContrib),
           );
-        slot.rothContrib = roundToCents(slot.rothContrib * proRate);
+        slot.rothContrib = roundToCents(slot.rothContrib * partRatio);
         slot.traditionalContrib = roundToCents(
-          slot.traditionalContrib * proRate,
+          slot.traditionalContrib * partRatio,
         );
         slot.remainingSpace = remainingRoom(slot, slot.employeeContrib);
       }

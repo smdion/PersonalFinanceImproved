@@ -1800,6 +1800,9 @@ export function buildProfileContribData(
           ? ctx.perfContributionScalingMap.get(c.performanceAccountId)
           : undefined) as ContributionSpec["contributionScaling"],
         hsaCoverageType: c.hsaCoverageType ?? null,
+        ...(c.cap && c.cap.overBy > 0
+          ? { configuredAnnual: c.cap.annual }
+          : {}),
         employerShare: safeDivide(
           employerMatchById.get(c.id) ?? 0,
           employerMatchByCategory[cat],
