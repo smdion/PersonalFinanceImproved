@@ -905,6 +905,7 @@ export async function buildEnginePayload(
       hsaCoverageType: c.hsaCoverageType,
       capPassed: c.capPassed,
       cappedValue: c.cappedValue,
+      cap: c.cap,
     })),
     activeJobs.map((j) => ({
       id: j.id,
