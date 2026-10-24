@@ -146,7 +146,11 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
 
   it("the contribution mix", async () => {
     const mix = (
-      await loadContributionMix(t.db as unknown as Db, FIXED_NOW)
+      await loadContributionMix(
+        // eslint-disable-next-line no-restricted-syntax -- the test SQLite db stands in for the app Db type (Drizzle dialect cast)
+        t.db as unknown as Db,
+        FIXED_NOW,
+      )
     ).get(perfAcctId)!;
     expect(mix.employeePreTax).toBeCloseTo(LIMIT, 2);
   });
