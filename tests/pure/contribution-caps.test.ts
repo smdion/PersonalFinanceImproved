@@ -2,6 +2,7 @@
 import { describe, it, expect } from "vitest";
 import {
   capContributionsByLimitGroup,
+  householdGroupLimits,
   type CapPerson,
   type CapRow,
 } from "@/lib/pure/contribution-caps";
@@ -51,7 +52,7 @@ function cap(
     filingStatus,
     limits: lim,
     people,
-  });
+  }).byRow;
 }
 
 describe("capContributionsByLimitGroup — 401(k) group", () => {
@@ -475,5 +476,76 @@ describe("capContributionsByLimitGroup — joint rows", () => {
       maxEmployee: null,
       reason: "no-owner",
     });
+  });
+});
+
+describe("group limits — every shared limit counted once", () => {
+  const ctx = (people: CapPerson[], filingStatus = "MFJ") => ({
+    taxYear: TAX_YEAR,
+    filingStatus,
+    limits,
+    people,
+  });
+
+  it("one person with a 401(k) and a 403(b): their limit once", () => {
+    const { groupLimits } = capContributionsByLimitGroup(
+      [
+        row({ personId: 1, accountType: "401k", regularAnnual: 1000 }),
+        row({ personId: 1, accountType: "403b", regularAnnual: 1000 }),
+      ],
+      ctx([person(1, 40)], "Single"),
+    );
+    expect(groupLimits.get("401k")).toBe(20000);
+  });
+
+  it("two spouses: each one's own limit, catch-up by age", () => {
+    const { groupLimits } = capContributionsByLimitGroup(
+      [
+        row({ personId: 1, accountType: "401k", regularAnnual: 1000 }),
+        row({ personId: 2, accountType: "401k", regularAnnual: 1000 }),
+      ],
+      ctx([person(1, 40), person(2, 61)]),
+    );
+    expect(groupLimits.get("401k")).toBe(20000 + 30000);
+  });
+
+  it("a shared family HSA: the base once plus each spouse's catch-up", () => {
+    const { groupLimits } = capContributionsByLimitGroup(
+      [
+        row({
+          personId: 1,
+          accountType: "hsa",
+          hsaCoverageType: "family",
+          regularAnnual: 1000,
+        }),
+        row({ personId: 2, accountType: "hsa", regularAnnual: 1000 }),
+      ],
+      ctx([person(1, 56), person(2, 57)]),
+    );
+    expect(groupLimits.get("hsa")).toBe(8000 + 1000 + 1000);
+  });
+
+  it("joint rows: the whole household's limit", () => {
+    const { groupLimits } = capContributionsByLimitGroup(
+      [
+        row({ personId: 1, accountType: "401k", regularAnnual: 1000 }),
+        row({ personId: null, accountType: "401k", regularAnnual: 1000 }),
+      ],
+      ctx([person(1, 40), person(2, 40)]),
+    );
+    expect(groupLimits.get("401k")).toBe(40000);
+  });
+
+  it("no rows: householdGroupLimits sizes every person, family base once", () => {
+    const out = householdGroupLimits(
+      ctx([person(1, 40), person(2, 55)]),
+      "family",
+    );
+    expect(out.get("401k")).toBe(20000 + 27000);
+    expect(out.get("ira")).toBe(6000 + 7000);
+    expect(out.get("hsa")).toBe(8000 + 1000);
+    expect(householdGroupLimits(ctx([person(1, 40)]), null).has("hsa")).toBe(
+      false,
+    );
   });
 });
