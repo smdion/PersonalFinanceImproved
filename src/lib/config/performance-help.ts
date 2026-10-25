@@ -36,7 +36,7 @@ export const PERF_FIELD_HELP: Record<
   },
   fees: {
     label: "Fees & taxes withheld",
-    help: "Fees, and taxes taken out (e.g. foreign tax withheld on dividends). Statements sometimes list these as debits.",
+    help: "Fees charged to the account, and taxes taken out (e.g. foreign tax withheld on dividends). Statements sometimes list these as debits. Not your funds' expense ratios — those come out of the funds' prices and are already in the gain.",
   },
   endingBalance: {
     label: "Ending",
@@ -148,3 +148,21 @@ export const PERF_STORED_FIELD_LABELS: Record<string, string> = {
   lifetimeContributions: "Lifetime contributions",
   lifetimeMatch: "Lifetime employer money",
 };
+
+/**
+ * The two kinds of investment cost, named the same everywhere. Fund costs
+ * come from fund filings (Benchmarks); account fees from the Performance
+ * Fees column. Never added into each other's figures — fund costs are
+ * already inside the funds' prices, so counting them as a fee would count
+ * them twice.
+ */
+export const COST_KINDS = {
+  fundCosts: {
+    label: "Fund costs",
+    help: "What your funds charge (their expense ratio), taken out of each fund's price every day. It's already in your returns and never appears as a charge on a statement. Shown as a yearly rate on today's balance.",
+  },
+  accountFees: {
+    label: "Account fees",
+    help: "Money charged to the account itself — recordkeeping, admin fees, tax withheld on dividends. Recorded in Performance's Fees column, so these are actual amounts for each year.",
+  },
+} as const;

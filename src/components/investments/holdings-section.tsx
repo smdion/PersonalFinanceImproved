@@ -21,6 +21,7 @@ import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { isHsaCategory } from "@/lib/config/account-types";
 import { HsaCashBuffer } from "./hsa-cash-buffer";
+import { WhatItCostsCard } from "./what-it-costs-card";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import {
@@ -155,7 +156,7 @@ function AccountHeader({ a }: { a: OverviewAccount }) {
           {r.coverage < FULL_SHARE &&
             ` (mix known for ${formatPercent(r.coverage, 0)})`}
           {er !== null &&
-            ` · about ${formatCurrency(r.cost.yearlyCost)} a year in fees`}
+            ` · about ${formatCurrency(r.cost.yearlyCost)} a year in fund costs`}
         </p>
       )}
     </div>
@@ -617,32 +618,11 @@ export function HoldingsSection() {
       <div className="grid gap-4 lg:grid-cols-2">
         <AllocationCard data={data} />
         <div className="space-y-4">
-          <Card title="What it costs">
-            {cost.expenseRatio === null ? (
-              <p className="text-faint text-sm">
-                No expense ratios yet — they come from SEC filings or your own
-                entries.
-              </p>
-            ) : (
-              <>
-                <p className="text-primary text-2xl font-semibold">
-                  {formatPercent(cost.expenseRatio, 2)}
-                  <span className="text-muted ml-2 text-sm font-normal">
-                    a year
-                  </span>
-                </p>
-                <p className="text-muted mt-1 text-sm">
-                  About {formatCurrency(cost.yearlyCost)} a year in fund fees.
-                </p>
-                {cost.coveredShare < FULL_SHARE && (
-                  <p className="text-caption text-faint mt-1">
-                    Covers {formatPercent(cost.coveredShare, 0)} of your money —
-                    funds without a known expense ratio aren&apos;t included.
-                  </p>
-                )}
-              </>
-            )}
-          </Card>
+          <WhatItCostsCard
+            cost={cost}
+            accountFees={data.accountFees}
+            invested={data.accounts.reduce((t, a) => t + a.total, 0)}
+          />
           <GlidePathCard data={data} />
         </div>
       </div>

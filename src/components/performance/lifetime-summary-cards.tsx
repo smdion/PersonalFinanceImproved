@@ -1,5 +1,6 @@
 "use client";
 
+import { COST_KINDS } from "@/lib/config/performance-help";
 import React from "react";
 import { Card, Metric } from "@/components/ui/card";
 import { formatCurrency } from "@/lib/utils/format";
@@ -63,12 +64,17 @@ export function LifetimeSummaryCards({
       <Card
         title={
           <>
-            Lifetime Fees
-            <HelpTip text="Cumulative management fees, expense ratios, and other charges deducted from your accounts" />
+            Lifetime {COST_KINDS.accountFees.label}
+            <HelpTip
+              text={`${COST_KINDS.accountFees.help} ${COST_KINDS.fundCosts.label} (expense ratios) aren't included — they're inside the funds' prices; see Benchmarks.`}
+            />
           </>
         }
       >
-        <Metric value={formatCurrency(totals.fees)} label="Total fees paid" />
+        <Metric
+          value={formatCurrency(totals.fees)}
+          label="Charged to your accounts"
+        />
       </Card>
     </div>
   );

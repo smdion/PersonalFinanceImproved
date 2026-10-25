@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Update Performance speaks plainly**: fields are "You added", "Paid out to you", "Moved between accounts", "Fees & taxes withheld", each with help, plus tips for the account type (ESPP purchases at market value, IRA conversions aren't contributions, HSA refunds, statement totals at year end). The beginning balance is shown and editable, with "Last year ended at … — use that" when a year doesn't continue the last.
 - A row that added up before an edit still adds up after it: when you change a figure and not the gain, the gain follows. A row with a gain entered on purpose keeps it.
 - A finalized year's latest snapshot can be corrected; its Performance figures stay as they are.
+- **Two kinds of cost, named apart.** Benchmarks' "What it costs" now shows **fund costs** (expense ratios, taken inside the funds' prices — already in your returns) and **account fees** (charged to the accounts and recorded in Performance) on separate lines, with a year of both together. Performance's fee column and lifetime card say "account fees"; the lifetime card no longer claims to include expense ratios.
 
 ### Fixed
 

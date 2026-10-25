@@ -592,3 +592,31 @@ export function filterActiveJobsAtDate<
       (!j.endDate || parseLocalDateOnly(j.endDate) >= asOfDate),
   );
 }
+
+/**
+ * Account fees (the Performance Fees column) for `year` and the year before,
+ * summed over every account row; null for a year with no rows. Fund costs
+ * (expense ratios) are not in here — they're inside the funds' prices.
+ */
+export function accountFeesForYears(
+  rows: readonly { year: number; fees: string | null }[],
+  year: number,
+): { year: number; thisYear: number | null; lastYear: number | null } {
+  const sum = (y: number) => {
+    const ofYear = rows.filter((r) => r.year === y);
+    return ofYear.length === 0 ? null : sumBy(ofYear, (r) => toNumber(r.fees));
+  };
+  return { year, thisYear: sum(year), lastYear: sum(year - 1) };
+}
+
+/** A year of investment cost, both kinds: fund costs at today's rate plus
+ *  the last full year's account fees (this year's so far when there's no
+ *  full year yet). Null when neither is known. */
+export function allInYearlyCost(
+  fundYearlyCost: number | null,
+  fees: { thisYear: number | null; lastYear: number | null },
+): number | null {
+  const account = fees.lastYear ?? fees.thisYear;
+  if (fundYearlyCost === null && account === null) return null;
+  return (fundYearlyCost ?? 0) + (account ?? 0);
+}

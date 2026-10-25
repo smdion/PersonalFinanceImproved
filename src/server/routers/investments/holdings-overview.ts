@@ -3,6 +3,7 @@
  * for the investments routers (Benchmarks, Portfolio account insights).
  */
 import { sumBy } from "@/lib/utils/math";
+import { accountFeesForYears } from "@/lib/pure/performance";
 import { eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import {
@@ -193,6 +194,7 @@ function uninvestedCash(
 
 /** Holdings valued today, with each fund's facts; allocation vs target; blended cost. */
 export async function loadHoldingsOverview(db: Db) {
+  const year = Number(localDateStr().slice(0, 4));
   const [holdings, accounts, sec, assetClasses, target] = await Promise.all([
     loadLatestHoldings(db),
     loadAccounts(db),
@@ -314,5 +316,17 @@ export async function loadHoldingsOverview(db: Db) {
       })),
     },
     cost: blendedCost(valued),
+    /** Account fees (Performance's Fees column) — the other kind of cost,
+     *  shown beside fund costs, never added into them. */
+    accountFees: accountFeesForYears(
+      await db
+        .select({
+          year: schema.accountPerformance.year,
+          fees: schema.accountPerformance.fees,
+        })
+        .from(schema.accountPerformance)
+        .where(inArray(schema.accountPerformance.year, [year - 1, year])),
+      year,
+    ),
   };
 }
