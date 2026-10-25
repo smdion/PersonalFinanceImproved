@@ -90,3 +90,22 @@ export function calculateLoanMonthlyPayment(
   const n = termYears * 12;
   return (principal * (r * Math.pow(1 + r, n))) / (Math.pow(1 + r, n) - 1);
 }
+
+/**
+ * The top of a shared bar scale for shares (0–1): the largest share rounded
+ * up to the next `step`, at least one step and at most 100% — so bars of
+ * small shares fill the width instead of hugging the left edge.
+ */
+export function shareScaleMax(shares: readonly number[], step = 0.1): number {
+  const max = Math.max(0, ...shares.filter((s) => Number.isFinite(s)));
+  return Math.min(1, Math.max(step, Math.ceil(max / step - 1e-9) * step));
+}
+
+/** Tick marks for a shared share scale: 0 to `max`, about five labels. */
+export function shareScaleTicks(max: number): number[] {
+  const step = max <= 0.5 ? 0.1 : max <= 0.8 ? 0.2 : 0.25;
+  const ticks: number[] = [];
+  for (let t = 0; t <= max + 1e-9; t += step)
+    ticks.push(Math.round(t * 100) / 100);
+  return ticks;
+}

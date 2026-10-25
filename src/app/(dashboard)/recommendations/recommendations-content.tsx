@@ -25,7 +25,9 @@ export function RecommendationsContent() {
       <DismissControls
         disabled={dismissals.isPending}
         onSnooze={(note) => dismissals.snooze(r, note)}
-        onDismiss={(note) => dismissals.dismiss(r, note)}
+        onDismiss={
+          r.snoozeOnly ? undefined : (note) => dismissals.dismiss(r, note)
+        }
       />
     ) : undefined;
   const dismissedList =

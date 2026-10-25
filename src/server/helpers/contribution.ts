@@ -1,6 +1,7 @@
 /**
  * Contribution computation, aggregation, and profile resolution helpers.
  */
+import type { RothIraRoute } from "@/lib/config/enum-values";
 import { and, eq, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { EntityFieldMap } from "@/lib/db/schema";
@@ -20,11 +21,14 @@ import {
   getDisplayGroup,
   getParentCategory,
   getDefaultTaxTreatment,
+  isPayrollFicaExemptCategory,
 } from "@/lib/config/account-types";
 import type {
   TaxTreatment,
   ContributionMethod,
 } from "@/lib/config/enum-values";
+import { computeValue, type CapPassed } from "@/lib/pure/contribution-caps";
+import type { ContribSaveChecker } from "./contribution-caps";
 import { toNumber, getPeriodsPerYear } from "./transforms";
 import type { Db, DbOrTx } from "./transforms";
 import {
@@ -36,11 +40,7 @@ import {
   bonusCheckContribution,
   isPaidThroughPayroll,
 } from "@/lib/calculators/paycheck";
-import {
-  irsLimitOrNull,
-  payrollFicaExemptCap,
-  shareFicaExemptCaps,
-} from "@/lib/pure/contributions";
+import { payrollFicaExemptCap } from "@/lib/pure/contributions";
 import {
   contributionPay,
   getTotalCompensation,
@@ -267,6 +267,9 @@ export async function applyContributionAccountEdit(
   contributionAccountId: number,
   monthlyAmount: number,
   contributionProfileId: number,
+  /** The IRS-limit save check (assertWithinIrsLimits) — required, so no
+   *  budget edit can save a contribution over its limit. */
+  check: ContribSaveChecker,
 ): Promise<void> {
   const { periodsPerYear, incomplete } =
     await resolveActiveJobPeriodsPerYear(db);
@@ -287,6 +290,12 @@ export async function applyContributionAccountEdit(
     incomplete,
   );
   if (nextActiveFields === null) return;
+  await check(db as Db, {
+    profileId: contributionProfileId,
+    before: activeFields.contributionAccounts ?? {},
+    after: nextActiveFields.contributionAccounts ?? {},
+    touched: [contributionAccountId],
+  });
 
   await db
     .update(schema.contributionProfiles)
@@ -319,6 +328,8 @@ export async function applyContributionAccountEditsBatch(
     monthlyAmount: number;
     contributionProfileId: number;
   }[],
+  /** The IRS-limit save check (assertWithinIrsLimits) — required. */
+  check: ContribSaveChecker,
 ): Promise<void> {
   if (edits.length === 0) return;
 
@@ -339,8 +350,8 @@ export async function applyContributionAccountEditsBatch(
       .where(eq(schema.contributionProfiles.id, contributionProfileId));
     if (!profile) continue; // stale FK — nothing to update
 
-    let activeFields = (profile.contributionActiveFields ??
-      {}) as EntityFieldMap;
+    const original = (profile.contributionActiveFields ?? {}) as EntityFieldMap;
+    let activeFields = original;
     let changed = false;
     for (const edit of profileEdits) {
       const next = mergeContributionAccountEdit(
@@ -356,6 +367,12 @@ export async function applyContributionAccountEditsBatch(
       }
     }
     if (!changed) continue;
+    await check(db as Db, {
+      profileId: contributionProfileId,
+      before: original.contributionAccounts ?? {},
+      after: activeFields.contributionAccounts ?? {},
+      touched: profileEdits.map((e) => e.contributionAccountId),
+    });
 
     await db
       .update(schema.contributionProfiles)
@@ -376,8 +393,8 @@ export async function applyContributionAccountEditsBatch(
  * their combined contribution — see that function's docblock.
  */
 export function buildContribAccounts(
-  jobContribs: ContribRowWithActiveFields[],
-  personalContribs: ContribRowWithActiveFields[],
+  jobContribs: (ContribRowWithActiveFields & CapPassed)[],
+  personalContribs: (ContribRowWithActiveFields & CapPassed)[],
   salary: number,
   periodsPerYear: number,
   /** The year's limits and the person's age at Dec 31 — sizes each
@@ -396,7 +413,7 @@ export function buildContribAccounts(
 
   const annualById = new Map<number, number>();
   for (const c of allContribs) {
-    const contribValue = Number(c.contributionValue);
+    const contribValue = computeValue(c);
     annualById.set(
       c.id,
       computeAnnualContribution(
@@ -450,7 +467,7 @@ export function buildContribAccounts(
       : matchByRow;
 
   const accounts = allContribs.map((c) => {
-    const contribValue = Number(c.contributionValue);
+    const contribValue = computeValue(c);
     const annual = annualById.get(c.id)!;
     const perPeriod =
       c.contributionMethod === "fixed_per_period"
@@ -481,42 +498,24 @@ export function buildContribAccounts(
         match.matchAnnual - baseMatchByRow.get(c.id)!.matchAnnual,
       ),
       employerMatchAvailable: roundToCents(match.matchAvailableAnnual),
+      fullMatchShareOfPay: match.fullMatchShareOfPay,
       employerMatchTaxTreatment: match.employerMatchTaxTreatment,
-      ficaExemptAnnualCap: isPayrollDeducted
-        ? payrollFicaExemptCap(
-            c.accountType,
-            ficaContext.ageAtYearEnd,
-            c.hsaCoverageType ?? null,
-            ficaContext.limits,
-            match.matchAnnual,
-          )
-        : null,
-    };
-  });
-  // One FICA-exempt cap per person and account type, across their rows.
-  const shared = shareFicaExemptCaps(
-    allContribs.map((c, k) => ({
-      personId: c.personId,
-      accountType: c.accountType,
-      cap: accounts[k]!.ficaExemptAnnualCap,
-      limit:
-        ficaContext.ageAtYearEnd === null
-          ? null
-          : irsLimitOrNull(
+      // A capped row's payroll money is already within the IRS limit less
+      // employer money, so all of it is exempt (one split: the cap pass).
+      ficaExemptAnnualCap: !isPayrollDeducted
+        ? null
+        : c.cap && isPayrollFicaExemptCategory(c.accountType)
+          ? c.cap.cappedAnnual
+          : payrollFicaExemptCap(
               c.accountType,
               ficaContext.ageAtYearEnd,
               c.hsaCoverageType ?? null,
               ficaContext.limits,
+              match.matchAnnual,
             ),
-      employerAnnual: matchByRow.get(c.id)!.matchAnnual,
-      annualPayroll: annualContributionWithBonus(
-        c,
-        { salary, bonusGross },
-        periodsPerYear,
-      ),
-    })),
-  );
-  return accounts.map((a, k) => ({ ...a, ficaExemptAnnualCap: shared[k]! }));
+    };
+  });
+  return accounts;
 }
 
 // ---------------------------------------------------------------------------
@@ -532,7 +531,7 @@ export type ContribCategorySummary = {
 };
 
 /** Minimal fields needed from the DB contribution_accounts row. */
-type ContribRow = {
+export type ContribRow = {
   id: number;
   personId: number | null;
   jobId: number | null;
@@ -550,12 +549,18 @@ type ContribRow = {
   isPayrollDeducted?: boolean | null;
   /** Also taken from bonus checks (Contribution Profile election). */
   fromBonus: boolean | undefined;
+  /** Set by the IRS-limit cap pass; calculations read computeValue(c). */
+  cappedValue?: number;
 };
 
 type PersonRef = { id: number; name: string };
-type JobRef = { id: number; personId: number; payPeriod: string | undefined };
+export type JobRef = {
+  id: number;
+  personId: number;
+  payPeriod: string | undefined;
+};
 /** A job's contributionPay (server/helpers/salary.ts): base salary and the bonus. */
-type JobSalaryRef = {
+export type JobSalaryRef = {
   job: { id: number; personId: number };
   salary: number;
   bonusGross?: number;
@@ -595,12 +600,13 @@ export function annualContributionWithBonus(
     jobId: number | null;
     isPayrollDeducted?: boolean | null;
     fromBonus: boolean | undefined;
+    cappedValue?: number;
   },
   pay: { salary: number; bonusGross?: number },
   periodsPerYear: number,
 ): number {
   const method = c.contributionMethod ?? "percent_of_salary";
-  const value = Number(c.contributionValue ?? 0);
+  const value = computeValue(c);
   const regular = computeAnnualContribution(
     method,
     value,
@@ -623,6 +629,54 @@ export function annualContributionWithBonus(
 }
 
 /**
+ * Each contribution row's yearly employee money (from computeValue — the
+ * capped value when set), the pay its match is figured on, and the rows
+ * whose pay period can't be resolved (yearly money 0). One computation for
+ * the category aggregate and the cap pass.
+ */
+export function contribRowAmounts(
+  activeContribs: readonly ContribRow[],
+  activeJobs: readonly JobRef[],
+  jobSalaries: readonly JobSalaryRef[],
+): {
+  annualById: Map<number, number>;
+  salaryById: Map<number, number>;
+  incompleteAccountIds: number[];
+} {
+  const incompleteAccountIds: number[] = [];
+  const salaryById = new Map<number, number>();
+  const annualById = new Map<number, number>();
+  const bonusGroups = matchPayGroupsWithBonus([...activeContribs]);
+  for (const c of activeContribs) {
+    // Direct job link, or fall back to person's first active job when jobId is null
+    const js = jobPayFor(c, jobSalaries);
+    const job = c.jobId
+      ? activeJobs.find((j) => j.id === c.jobId)
+      : activeJobs.find((j) => j.personId === c.personId);
+    const salary = js?.salary ?? 0;
+    const { periodsPerYear: periods, incomplete } = resolveContribPeriods(
+      c.contributionMethod,
+      job,
+    );
+    if (incomplete) incompleteAccountIds.push(c.id);
+    const annual = incomplete
+      ? 0
+      : annualContributionWithBonus(
+          c,
+          { salary, bonusGross: js?.bonusGross },
+          periods,
+        );
+    // Match on the pay the deferrals came from, bonus checks included.
+    salaryById.set(
+      c.id,
+      salary + (bonusGroups.has(matchGroupKey(c)) ? (js?.bonusGross ?? 0) : 0),
+    );
+    annualById.set(c.id, annual);
+  }
+  return { annualById, salaryById, incompleteAccountIds };
+}
+
+/**
  * Aggregate contributions and employer match by waterfall category in a single pass.
  * Replaces the duplicate loops in the retirement router that separately compute
  * `employerMatchByCategory` and `contribByCategory`.
@@ -631,12 +685,14 @@ export function annualContributionWithBonus(
  * employer match totals. Used by the retirement engine and available to any consumer.
  */
 export function aggregateContributionsByCategory(
-  activeContribs: ContribRow[],
+  activeContribs: (ContribRow & CapPassed)[],
   activeJobs: JobRef[],
   jobSalaries: JobSalaryRef[],
 ): {
   contribByCategory: Record<AccountCategory, ContribCategorySummary>;
   employerMatchByCategory: Record<AccountCategory, number>;
+  /** Employer money per contribution row id. */
+  employerMatchById: Map<number, number>;
   /** Employer match broken down by category → parentCategory → amount. */
   employerMatchByParentCat: Map<AccountCategory, Map<string, number>>;
   /** The same totals over retirement money only (`isRetirementMoney`):
@@ -666,37 +722,13 @@ export function aggregateContributionsByCategory(
     Map<string, number>
   >();
 
-  const incompleteAccountIds: number[] = [];
-  const salaryById = new Map<number, number>();
-  const annualById = new Map<number, number>();
-  const bonusGroups = matchPayGroupsWithBonus(activeContribs);
+  const { annualById, salaryById, incompleteAccountIds } = contribRowAmounts(
+    activeContribs,
+    activeJobs,
+    jobSalaries,
+  );
   for (const c of activeContribs) {
-    const cv = Number(c.contributionValue);
-    // Direct job link, or fall back to person's first active job when jobId is null
-    const js = jobPayFor(c, jobSalaries);
-    const job = c.jobId
-      ? activeJobs.find((j) => j.id === c.jobId)
-      : activeJobs.find((j) => j.personId === c.personId);
-    const salary = js?.salary ?? 0;
-    const { periodsPerYear: periods, incomplete } = resolveContribPeriods(
-      c.contributionMethod,
-      job,
-    );
-    if (incomplete) incompleteAccountIds.push(c.id);
-    const annual = incomplete
-      ? 0
-      : annualContributionWithBonus(
-          { ...c, contributionValue: cv },
-          { salary, bonusGross: js?.bonusGross },
-          periods,
-        );
-    // Match on the pay the deferrals came from, bonus checks included.
-    salaryById.set(
-      c.id,
-      salary + (bonusGroups.has(matchGroupKey(c)) ? (js?.bonusGross ?? 0) : 0),
-    );
-    annualById.set(c.id, annual);
-
+    const annual = annualById.get(c.id)!;
     for (const summaries of isRetirementMoney(c.parentCategory)
       ? [contribByCategory, retirementContribByCategory]
       : [contribByCategory]) {
@@ -758,6 +790,9 @@ export function aggregateContributionsByCategory(
   return {
     contribByCategory,
     employerMatchByCategory,
+    employerMatchById: new Map(
+      [...matchByRow].map(([id, m]) => [id, m.matchAnnual]),
+    ),
     employerMatchByParentCat,
     retirementOnly: {
       contribByCategory: retirementContribByCategory,
@@ -803,7 +838,7 @@ export type ContribDisplaySpec = {
  * Used by the retirement engine card and available to any other consumer.
  */
 export function buildContributionDisplaySpecs(
-  activeContribs: ContribRow[],
+  activeContribs: (ContribRow & CapPassed)[],
   people: PersonRef[],
   activeJobs: JobRef[],
   jobSalaries: JobSalaryRef[],
@@ -826,7 +861,7 @@ export function buildContributionDisplaySpecs(
       c.contributionMethod,
       job,
     );
-    const cv = Number(c.contributionValue);
+    const cv = computeValue(c);
     salaryById.set(
       c.id,
       salary +
@@ -874,7 +909,7 @@ export function buildContributionDisplaySpecs(
 
   return filtered.map((c) => {
     const ownerPerson = people.find((p) => p.id === c.personId);
-    const cv = Number(c.contributionValue);
+    const cv = computeValue(c);
     const method = c.contributionMethod ?? "percent_of_salary";
     const value = method === "percent_of_salary" ? cv / 100 : cv;
 
@@ -1129,6 +1164,8 @@ export type ContribRowWithActiveFields =
     contributionMethod: string;
     /** Also taken from bonus checks — always set once active fields apply. */
     fromBonus: boolean | undefined;
+    /** A Roth IRA account's route — absent = direct. */
+    rothRoute?: RothIraRoute;
     displayNameCustom?: string;
     /** @deprecated legacy key. */
     displayNameActive?: string;
@@ -1585,6 +1622,9 @@ export type ContribInputRow = {
   targetAnnual?: string | number | null;
   allocationPriority?: number | null;
   ownership?: string | null;
+  hsaCoverageType?: string | null;
+  /** Set by the IRS-limit cap pass; calculations read computeValue(c). */
+  cappedValue?: number;
 };
 
 /**
@@ -1595,7 +1635,7 @@ export type ContribInputRow = {
  * profile, extracted so it can be called for each profile-switch year.
  */
 export function buildProfileContribData(
-  activeContribs: ContribInputRow[],
+  activeContribs: (ContribInputRow & CapPassed)[],
   activeJobs: { id: number; personId: number; payPeriod: string | undefined }[],
   jobSalaries: {
     job: { id: number; personId: number };
@@ -1614,7 +1654,7 @@ export function buildProfileContribData(
   );
 
   // Aggregate contributions and employer match by category
-  const contribRows: ContribRow[] = activeContribs.map((c) => ({
+  const contribRows: (ContribRow & CapPassed)[] = activeContribs.map((c) => ({
     id: c.id,
     personId: c.personId,
     jobId: c.jobId,
@@ -1624,6 +1664,8 @@ export function buildProfileContribData(
     parentCategory: c.parentCategory ?? "",
     contributionMethod: c.contributionMethod ?? "percent_of_salary",
     contributionValue: String(c.contributionValue ?? "0"),
+    cappedValue: c.cappedValue,
+    capPassed: c.capPassed,
     taxTreatment: c.taxTreatment ?? "pre_tax",
     employerMatchType: c.employerMatchType,
     employerMatchValue: c.employerMatchValue
@@ -1639,6 +1681,7 @@ export function buildProfileContribData(
   const {
     contribByCategory,
     employerMatchByCategory,
+    employerMatchById,
     employerMatchByParentCat,
     retirementOnly,
     incompleteAccountIds: aggregationIncompleteIds,
@@ -1675,7 +1718,7 @@ export function buildProfileContribData(
     })
     .map((c): ContributionSpec | null => {
       const cat = c.accountType;
-      const cv = toNumber(String(c.contributionValue ?? "0"));
+      const cv = computeValue(c);
       const method = (c.contributionMethod ??
         "percent_of_salary") as ContributionSpec["method"];
       let value: number;
@@ -1778,6 +1821,15 @@ export function buildProfileContribData(
         contributionScaling: (c.performanceAccountId
           ? ctx.perfContributionScalingMap.get(c.performanceAccountId)
           : undefined) as ContributionSpec["contributionScaling"],
+        hsaCoverageType: c.hsaCoverageType ?? null,
+        ...(c.cap && c.cap.overBy > 0
+          ? { configuredAnnual: c.cap.annual }
+          : {}),
+        employerShare: safeDivide(
+          employerMatchById.get(c.id) ?? 0,
+          employerMatchByCategory[cat],
+          0,
+        ),
       };
     })
     .filter((spec): spec is ContributionSpec => spec !== null);

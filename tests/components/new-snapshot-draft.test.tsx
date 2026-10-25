@@ -153,6 +153,50 @@ describe("NewSnapshotForm local draft", () => {
     );
   });
 
+  it("restores each row of a multi-row account — not the last-typed amount everywhere", async () => {
+    const row = (taxType: string, ownerPersonId: number, amount: string) => ({
+      institution: "Fidelity",
+      accountType: "401k",
+      subType: null,
+      label: null,
+      taxType,
+      ownerPersonId,
+      amount,
+      performanceAccountId: 11,
+    });
+    const saved = mockLatest.accounts;
+    mockLatest.accounts = [
+      row("preTax", 1, "100"),
+      row("taxFree", 1, "200"),
+      row("preTax", 2, "300"),
+    ];
+    try {
+      window.localStorage.setItem(
+        `pf-snapshot-draft:${TODAY}`,
+        JSON.stringify({
+          snapshotDate: TODAY,
+          notes: "",
+          sourceSnapshotId: 7,
+          savedAt: Date.now() - 60_000,
+          rows: [
+            row("preTax", 1, "111"),
+            row("taxFree", 1, "222"),
+            row("preTax", 2, "333"),
+          ],
+        }),
+      );
+      render(<NewSnapshotForm onClose={() => {}} onSaved={() => {}} />);
+      fireEvent.click(await screen.findByRole("button", { name: "Resume" }));
+      await waitFor(() =>
+        expect(screen.getByDisplayValue("111")).toBeInTheDocument(),
+      );
+      expect(screen.getByDisplayValue("222")).toBeInTheDocument();
+      expect(screen.getByDisplayValue("333")).toBeInTheDocument();
+    } finally {
+      mockLatest.accounts = saved;
+    }
+  });
+
   it("does not offer resume when the date already has a snapshot", async () => {
     window.localStorage.setItem(
       `pf-snapshot-draft:${TODAY}`,

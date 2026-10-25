@@ -14,6 +14,7 @@ import type {
   ProjectionInput,
   EngineDecumulationYear,
 } from "@/lib/calculators/types";
+import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 
 const isDecumulationYear = (y: {
   phase: string;
@@ -29,7 +30,7 @@ const MFJ_BRACKETS = [
 ];
 
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
-  return {
+  return withCapsAge({
     accumulationDefaults: {
       contributionRate: 0.25,
       routingMode: "waterfall",
@@ -74,15 +75,24 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     salaryCap: null,
     salaryOverrides: [],
     budgetOverrides: [],
-    baseLimits: {
-      "401k": 23500,
-      "403b": 23500,
-      hsa: 4300,
-      ira: 7000,
-      brokerage: 0,
-    },
+    irsLimitCaps: capsFromBaseLimits({
+      baseLimits: {
+        "401k": 23500,
+        "403b": 23500,
+        hsa: 4300,
+        ira: 7000,
+        brokerage: 0,
+      },
+      catchupLimits: {
+        "401k": 7500,
+        ira: 1000,
+        hsa: 1000,
+        "401k_super": 11250,
+      },
+      currentAge: 60,
+    }),
     limitGrowthRate: 0.02,
-    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
+
     employerMatchRateByCategory: {
       "401k": 0.03,
       "403b": 0,
@@ -121,7 +131,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     asOfDate: AS_OF,
     filingStatus: "MFJ",
     ...overrides,
-  };
+  });
 }
 
 describe("rothBracketTarget as a per-year decumulationOverride", () => {

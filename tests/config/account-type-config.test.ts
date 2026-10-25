@@ -67,6 +67,7 @@ describe("ACCOUNT_TYPE_CONFIG", () => {
       "irsLimitGroup",
       "irsLimitKeys",
       "matchCountsTowardLimit",
+      "limitBoundedByCompensation",
       "isOverflowTarget",
       "fixedContribScalesWithSalary",
       "generateOverflowWarnings",
@@ -529,5 +530,34 @@ describe("tax treatment predicates", () => {
     expect(isPreTaxTreatment("pre_tax")).toBe(true);
     expect(isPreTaxTreatment("tax_free")).toBe(false);
     expect(isPreTaxTreatment("after_tax")).toBe(false);
+  });
+});
+
+describe("limit groups", () => {
+  // capContributionsByLimitGroup sizes a whole group from one member's
+  // config — a setting that differed by type would change caps by row order.
+  it("types sharing an IRS limit group share the settings the group runs on", () => {
+    const fields = [
+      "irsLimitKeys",
+      "matchCountsTowardLimit",
+      "limitBoundedByCompensation",
+      "isHouseholdLimit",
+      "catchupAge",
+      "superCatchupAgeRange",
+    ] as const;
+    const byGroup = new Map<string, string[]>();
+    for (const cat of categoriesWithIrsLimit()) {
+      const group = ACCOUNT_TYPE_CONFIG[cat].irsLimitGroup!;
+      byGroup.set(group, [...(byGroup.get(group) ?? []), cat]);
+    }
+    for (const cats of byGroup.values()) {
+      const pick = (c: string) =>
+        fields.map((f) =>
+          JSON.stringify(
+            ACCOUNT_TYPE_CONFIG[c as keyof typeof ACCOUNT_TYPE_CONFIG][f],
+          ),
+        );
+      for (const c of cats.slice(1)) expect(pick(c)).toEqual(pick(cats[0]!));
+    }
   });
 });

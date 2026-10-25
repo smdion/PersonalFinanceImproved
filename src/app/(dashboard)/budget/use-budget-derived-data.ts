@@ -11,6 +11,7 @@
  * When `data` is null/undefined, outputs default to safe empty values.
  */
 
+import { computeValue } from "@/lib/pure/contribution-caps";
 import { trpc } from "@/lib/trpc";
 import { useMemo, useCallback } from "react";
 import {
@@ -183,9 +184,10 @@ export function useBudgetDerivedData({
           accountType: string;
           contributionMethod: string;
           contributionValue: string | number;
+          cappedValue?: number;
         }>) {
           if (linkedContributionAccountIds.has(c.id)) continue;
-          const val = Number(c.contributionValue) || 0;
+          const val = computeValue(c) || 0;
           const monthly =
             c.contributionMethod === "fixed_monthly" ? val : val / 12;
           const key = normalizeContribKey(c.accountType);

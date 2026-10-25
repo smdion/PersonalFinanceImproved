@@ -21,6 +21,7 @@ import {
   isRetirementMoney,
   isPreTaxType,
   isIraCategory,
+  isHsaCategory,
   addTraditional,
 } from "../../../config/account-types";
 import { computeQcdAmounts, totalQcdAmount } from "../qcd";
@@ -1475,6 +1476,20 @@ export function runDecumulationYear(
     penaltyAvoidedShortfall,
     nonRetirementShortfall,
     penaltyCost,
+    deliveredAfterTax,
+    penaltyLockedStillExcluded: eligibility
+      ? roundToCents(
+          sumBy(
+            (
+              Object.entries(eligibility.penaltyExposedTotalStillExcluded) as [
+                string,
+                number,
+              ][]
+            ).filter(([cat]) => !isHsaCategory(cat)),
+            ([, v]) => v,
+          ),
+        )
+      : undefined,
     preWithdrawalAcctBal,
     retirementBalance: yearEnd.retirementBalance,
     allAccountsBalance: yearEnd.allAccountsBalance,

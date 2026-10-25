@@ -68,6 +68,7 @@ export function applyDismissals(
     const hidden =
       d !== undefined &&
       isActive(d, today) &&
+      !(r.snoozeOnly && d.until === null) &&
       URGENCY_RANK[r.urgency] >= URGENCY_RANK[d.urgency];
     (hidden ? dismissed : shown).push(r);
   }

@@ -1,3 +1,5 @@
+import type { RothIraRoute } from "@/lib/config/enum-values";
+import type { CappedContribution } from "@/lib/pure/contribution-caps";
 import type { ViewMode } from "@/lib/context/scenario-context";
 import type { PaycheckResult } from "@/lib/calculators/types";
 import type { AccountCategory } from "@/lib/config/account-types";
@@ -27,6 +29,13 @@ export type RawContrib = {
   taxTreatment: string;
   contributionMethod: string;
   contributionValue: string;
+  /** The IRS-capped value the figures use, when the cap pass set one. */
+  cappedValue?: number;
+  /** The cap pass's verdict — over the limit, or a missing owner/coverage. */
+  cap?: CappedContribution;
+  /** The most this row can be set to on its own, in its own terms. */
+  maxValue?: number;
+  othersInGroup?: number;
   employerMatchType: string;
   employerMatchValue: string | null;
   employerMaxMatchPct: string | null;
@@ -41,6 +50,9 @@ export type RawContrib = {
   isPayrollDeducted?: boolean | null;
   /** Also taken from bonus checks (a Contribution Profile election). */
   fromBonus?: boolean;
+  /** A Roth IRA account's route (a Contribution Profile election) —
+   *  absent = direct. */
+  rothRoute?: RothIraRoute;
   displayNameCustom?: string;
   /** @deprecated legacy key — see json-schemas.ts. */
   displayNameActive?: string;
@@ -113,6 +125,10 @@ export type JointContrib = {
   contributionMethod: string;
   taxTreatment: string;
   ownerName: string;
+  cappedValue?: number;
+  cap?: CappedContribution;
+  maxValue?: number;
+  othersInGroup?: number;
 };
 
 /** Account category options for dropdowns — derived from config */

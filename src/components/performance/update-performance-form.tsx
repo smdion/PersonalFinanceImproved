@@ -14,6 +14,15 @@ import {
   combineCashBasisGainLoss,
 } from "@/lib/config/display-labels";
 import { HelpTip } from "@/components/ui/help-tip";
+import {
+  PERF_FIELD_HELP,
+  performanceTips,
+} from "@/lib/config/performance-help";
+import {
+  PERF_FIELDS,
+  PERF_NOTE_MAX,
+  type PerfField,
+} from "@/lib/pure/performance-annotations";
 import type { UpdateFormRow, UpdatePerformanceFormProps } from "./types";
 
 type EndingBalanceSource = "snapshot" | "manual";
@@ -96,7 +105,11 @@ export function UpdatePerformanceForm({
         ),
         institution: a.institution,
         parentCategory: a.parentCategory,
-        beginningBalance: a.beginningBalance,
+        beginningBalance: String(a.beginningBalance),
+        previousEnding: (() => {
+          const chain = a.checks?.find((c) => c.kind === "chain");
+          return chain?.kind === "chain" ? chain.previousEnding : null;
+        })(),
         employeeContrib: String(employeeContrib),
         employerContributions: String(a.employerContributions),
         distributions: String(a.distributions),
@@ -105,8 +118,11 @@ export function UpdatePerformanceForm({
         endingBalance: String(a.endingBalance),
         yearlyGainLoss: String(a.yearlyGainLoss),
         gainLossOverride: false,
+        note: a.note ?? "",
+        estimatedFields: a.estimatedFields ?? [],
         snapshotEndingBalance: snapBal,
         original: {
+          beginningBalance: a.beginningBalance,
           employeeContrib,
           employerContributions: a.employerContributions,
           distributions: a.distributions,
@@ -120,7 +136,11 @@ export function UpdatePerformanceForm({
   }, [loadingSnap, currentYearAccounts, currentYear]);
 
   const updateRow = useCallback(
-    (id: number, field: keyof UpdateFormRow, value: string | boolean) => {
+    (
+      id: number,
+      field: keyof UpdateFormRow,
+      value: string | boolean | PerfField[],
+    ) => {
       setRows(
         (prev) =>
           prev?.map((r) =>
@@ -153,7 +173,7 @@ export function UpdatePerformanceForm({
         (parseFloat(row.employerContributions) || 0);
       return computeGainLoss({
         endingBalance: getEndingBalance(row),
-        beginningBalance: row.beginningBalance,
+        beginningBalance: parseFloat(row.beginningBalance) || 0,
         totalContributions: totalContrib,
         distributions: parseFloat(row.distributions) || 0,
         rollovers: parseFloat(row.rollovers) || 0,
@@ -252,8 +272,18 @@ export function UpdatePerformanceForm({
             .filter(Boolean)
             .join(" "),
         );
+        // Figures worked out from the paycheck setup are estimates to
+        // confirm against a statement.
+        const estimatedNow = new Set(r.estimatedFields);
+        if (s.estimate || a.estimated) {
+          if (untouched("employeeContrib", r.employeeContrib))
+            estimatedNow.add("employeeContrib");
+          if (untouched("employerContributions", r.employerContributions))
+            estimatedNow.add("employerContributions");
+        }
         return {
           ...r,
+          estimatedFields: PERF_FIELDS.filter((f) => estimatedNow.has(f)),
           employeeContrib: fill("employeeContrib", s.suggested.employeeContrib),
           employerContributions: fill(
             "employerContributions",
@@ -288,6 +318,9 @@ export function UpdatePerformanceForm({
       ).toFixed(2);
       return {
         id: r.accountPerformanceId,
+        beginningBalance: (parseFloat(r.beginningBalance) || 0).toFixed(2),
+        estimatedFields: r.estimatedFields,
+        note: r.note,
         totalContributions,
         employerContributions: r.employerContributions,
         distributions: r.distributions,
@@ -479,7 +512,7 @@ function AccountFormRow({
   onFieldChange: (
     id: number,
     field: keyof UpdateFormRow,
-    value: string | boolean,
+    value: string | boolean | PerfField[],
   ) => void;
 }) {
   const id = row.accountPerformanceId;
@@ -488,6 +521,7 @@ function AccountFormRow({
     : computedGainLoss;
 
   const displayCfg = getDisplayConfig(row.accountType ?? "", row.subType);
+  const tips = performanceTips(row.accountType, row.subType);
   return (
     <div className="border-subtle mb-3 border-b pb-3 last:mb-0 last:border-b-0 last:pb-0">
       {/* Account name */}
@@ -500,39 +534,78 @@ function AccountFormRow({
 
       {fillNote && <p className="text-caption text-muted mb-1">{fillNote}</p>}
 
+      {tips.length > 0 && (
+        <details className="text-caption text-muted mb-2">
+          <summary className="cursor-pointer select-none">
+            Tips for this account
+          </summary>
+          <ul className="mt-1 list-disc space-y-0.5 pl-5">
+            {tips.map((t) => (
+              <li key={t}>{t}</li>
+            ))}
+          </ul>
+        </details>
+      )}
+
       {/* Flow fields — one row */}
-      <div className="mb-1 grid grid-cols-5 gap-2">
+      <div className="mb-1 grid grid-cols-3 gap-2 sm:grid-cols-6">
         <CompactCurrencyField
-          label="Employee Contrib"
+          field="beginningBalance"
+          value={row.beginningBalance}
+          originalValue={row.original.beginningBalance}
+          onChange={(v) => onFieldChange(id, "beginningBalance", v)}
+        />
+        <CompactCurrencyField
+          field="employeeContrib"
           value={row.employeeContrib}
           originalValue={row.original.employeeContrib}
           onChange={(v) => onFieldChange(id, "employeeContrib", v)}
         />
         <CompactCurrencyField
-          label="Employer Match"
+          field="employerContributions"
           value={row.employerContributions}
           originalValue={row.original.employerContributions}
           onChange={(v) => onFieldChange(id, "employerContributions", v)}
         />
         <CompactCurrencyField
-          label="Distributions"
+          field="distributions"
           value={row.distributions}
           originalValue={row.original.distributions}
           onChange={(v) => onFieldChange(id, "distributions", v)}
         />
         <CompactCurrencyField
-          label="Rollovers"
+          field="rollovers"
           value={row.rollovers}
           originalValue={row.original.rollovers}
           onChange={(v) => onFieldChange(id, "rollovers", v)}
         />
         <CompactCurrencyField
-          label="Fees"
+          field="fees"
           value={row.fees}
           originalValue={row.original.fees}
           onChange={(v) => onFieldChange(id, "fees", v)}
         />
       </div>
+      {row.previousEnding !== null &&
+        (parseFloat(row.beginningBalance) || 0) !== row.previousEnding && (
+          <p className="text-caption mb-1 text-amber-700">
+            Last year ended at {formatCurrency(row.previousEnding)} — this year
+            usually starts there.{" "}
+            <button
+              type="button"
+              onClick={() =>
+                onFieldChange(
+                  id,
+                  "beginningBalance",
+                  row.previousEnding!.toFixed(2),
+                )
+              }
+              className="text-blue-600 underline hover:text-blue-800"
+            >
+              Use that
+            </button>
+          </p>
+        )}
       {/* Total contributions read-only display */}
       <div className="text-caption text-muted mb-2">
         Total Contributions:{" "}
@@ -543,6 +616,57 @@ function AccountFormRow({
           )}
         </span>
       </div>
+
+      <details
+        className="text-caption text-muted mb-2"
+        open={row.note !== "" || row.estimatedFields.length > 0}
+      >
+        <summary className="cursor-pointer select-none">
+          Note &amp; estimates
+          {row.estimatedFields.length > 0 &&
+            ` · ${row.estimatedFields.length} estimated`}
+        </summary>
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {PERF_FIELDS.map((f) => {
+            const on = row.estimatedFields.includes(f);
+            return (
+              <button
+                key={f}
+                type="button"
+                aria-pressed={on}
+                onClick={() =>
+                  onFieldChange(
+                    id,
+                    "estimatedFields",
+                    on
+                      ? row.estimatedFields.filter((x) => x !== f)
+                      : PERF_FIELDS.filter(
+                          (x) => x === f || row.estimatedFields.includes(x),
+                        ),
+                  )
+                }
+                className={`rounded-full border px-2 py-0.5 ${
+                  on
+                    ? "border-amber-400 bg-amber-100 text-amber-800"
+                    : "border-default"
+                }`}
+              >
+                {on ? "≈ " : ""}
+                {PERF_FIELD_HELP[f].label}
+              </button>
+            );
+          })}
+        </div>
+        <textarea
+          value={row.note}
+          maxLength={PERF_NOTE_MAX}
+          rows={2}
+          aria-label={`Note for ${row.displayName}`}
+          placeholder="Where these figures came from, anything to check at year end"
+          onChange={(e) => onFieldChange(id, "note", e.target.value)}
+          className="border-default text-primary mt-1 w-full rounded border px-2 py-1 text-xs"
+        />
+      </details>
 
       {/* Ending balance + gain/loss summary */}
       <div className="flex items-center gap-4 text-sm">
@@ -678,12 +802,12 @@ function AccountFormRow({
 
 /** Small labeled currency input with $ prefix, zero-value dimming, and "was" hint. */
 function CompactCurrencyField({
-  label,
+  field,
   value,
   originalValue,
   onChange,
 }: {
-  label: string;
+  field: PerfField;
   value: string;
   originalValue: number;
   onChange: (value: string) => void;
@@ -695,7 +819,8 @@ function CompactCurrencyField({
   return (
     <div>
       <label className="text-caption text-muted mb-0.5 block font-medium">
-        {label}
+        {PERF_FIELD_HELP[field].label}
+        <HelpTip text={PERF_FIELD_HELP[field].help} />
       </label>
       <div
         className={`border-default flex items-center rounded border focus-within:ring-1 focus-within:ring-blue-500 transition-opacity${isZero ? "opacity-40 focus-within:opacity-100" : ""}`}

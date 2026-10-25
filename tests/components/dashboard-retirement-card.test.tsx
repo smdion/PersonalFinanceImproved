@@ -64,7 +64,7 @@ const engineData = {
     annualInflation: "0.03",
     withdrawalStrategy: "fixed",
   },
-  baseLimits: {},
+  irsGroupLimits: {},
   realDefaults: { annualByCategory: {}, employerMatchByCategory: {} },
   portfolioByTaxTypeByParentCat: {},
   decumulationExpenses: 40000,

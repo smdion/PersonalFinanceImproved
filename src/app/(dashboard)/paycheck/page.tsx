@@ -380,6 +380,7 @@ export default function PaycheckPage() {
               salary={d.salary}
               resolvedBonusTerms={d.resolvedBonusTerms}
               paycheck={d.paycheck}
+              paystubPaycheck={d.paystubPaycheck}
               fullFormulaBonusEstimate={d.fullFormulaBonusEstimate}
               mode={mode}
               blendedAnnual={d.blendedAnnual}
@@ -564,7 +565,12 @@ export default function PaycheckPage() {
                               // Absent means no — turning it off removes it.
                               field === "fromBonus"
                                 ? value === "true" || undefined
-                                : value,
+                                : field === "rothRoute"
+                                  ? // Absent means direct.
+                                    value === "backdoor"
+                                    ? value
+                                    : undefined
+                                  : value,
                             );
                             return;
                           }

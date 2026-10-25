@@ -157,6 +157,8 @@ export function backoffMs(attempt: number, maxMs: number = 30_000): number {
 export async function retryWithBackoff<T>(
   operation: () => Promise<T>,
   maxAttempts: number = 3,
+  /** Narrows which retryable failures are sent again (default: all). */
+  canResend: (err: BudgetApiError) => boolean = () => true,
 ): Promise<T> {
   let lastErr: unknown;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -165,7 +167,11 @@ export async function retryWithBackoff<T>(
     } catch (err) {
       lastErr = err;
       const apiErr = classifyThrown(err);
-      if (!apiErr.isRetryable || attempt === maxAttempts) {
+      if (
+        !apiErr.isRetryable ||
+        !canResend(apiErr) ||
+        attempt === maxAttempts
+      ) {
         throw apiErr;
       }
       const delayMs = apiErr.retryAfterSeconds
@@ -179,6 +185,18 @@ export async function retryWithBackoff<T>(
 }
 
 /**
+ * Whether a failed request can be sent again. A request that failed with a
+ * timeout, network or server error may still have been applied; sending a
+ * read, a set (PUT/PATCH) or a delete again is harmless, but a POST creates
+ * something and could create it twice. A POST is sent again only after a
+ * rate limit, which rejects it before it runs.
+ */
+export function isResendable(err: BudgetApiError, init?: RequestInit): boolean {
+  const method = (init?.method ?? "GET").toUpperCase();
+  return method !== "POST" || err.code === "rate-limit";
+}
+
+/**
  * Shared fetch wrapper for budget API clients (YNAB, Actual Budget).
  * Was structurally duplicated between YnabClient.request() and
  * ActualClient.request() — same timeout/AbortController/retry wiring, so a
@@ -189,7 +207,8 @@ export async function retryWithBackoff<T>(
  *   can distinguish auth/rate-limit/server/network/timeout failures.
  * - Wrapped in retryWithBackoff which honors Retry-After on 429 and does
  *   exponential backoff (1s/2s/4s capped at 30s) for retryable errors.
- *   Auth + client errors are NOT retried.
+ *   Auth + client errors are NOT retried, and a POST is retried only after
+ *   a rate limit (isResendable).
  */
 export async function budgetApiRequest<T>(
   url: string,
@@ -197,26 +216,30 @@ export async function budgetApiRequest<T>(
   init?: RequestInit,
   timeoutMs = 15_000,
 ): Promise<T> {
-  return retryWithBackoff(async () => {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const res = await fetch(url, {
-        ...init,
-        headers: { ...headers, ...init?.headers },
-        signal: controller.signal,
-      });
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        throw classifyResponse(res, body);
+  return retryWithBackoff(
+    async () => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const res = await fetch(url, {
+          ...init,
+          headers: { ...headers, ...init?.headers },
+          signal: controller.signal,
+        });
+        if (!res.ok) {
+          const body = await res.text().catch(() => "");
+          throw classifyResponse(res, body);
+        }
+        return (await res.json()) as T;
+      } catch (e) {
+        // classifyThrown preserves BudgetApiError + classifies AbortError
+        // / network errors, so the retry logic can decide whether to retry.
+        throw classifyThrown(e);
+      } finally {
+        clearTimeout(timeout);
       }
-      return (await res.json()) as T;
-    } catch (e) {
-      // classifyThrown preserves BudgetApiError + classifies AbortError
-      // / network errors, so the retry logic can decide whether to retry.
-      throw classifyThrown(e);
-    } finally {
-      clearTimeout(timeout);
-    }
-  });
+    },
+    undefined,
+    (err) => isResendable(err, init),
+  );
 }

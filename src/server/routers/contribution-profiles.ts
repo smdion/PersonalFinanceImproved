@@ -15,6 +15,13 @@
  * profile is an ordinary, renamable, editable row, and one with empty
  * contributionActiveFields is simply a profile with nothing customized.
  */
+import {
+  assertWithinIrsLimits,
+  capResolvedProfile,
+  loadCapHousehold,
+  touchedContribAccounts,
+} from "@/server/helpers/contribution-caps";
+import { getAllPeople } from "@/server/helpers/people";
 import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
 import { assertNoPlanUses } from "@/server/helpers/plans";
 import { z } from "zod/v4";
@@ -105,6 +112,12 @@ async function patchProfileSubEntry<T extends Record<string, unknown>>(
   unset: string[] | undefined,
   entrySchema: z.ZodType<T>,
   errorLabel: string,
+  /** Runs on the sub-map before and after the patch, before it's written
+   *  (throws to refuse). */
+  check?: (
+    before: Record<string, Record<string, unknown>>,
+    after: Record<string, Record<string, unknown>>,
+  ) => Promise<void>,
 ): Promise<typeof schema.contributionProfiles.$inferSelect> {
   const existing = await tx
     .select()
@@ -143,6 +156,10 @@ async function patchProfileSubEntry<T extends Record<string, unknown>>(
   } else {
     nextSub[String(entryId)] = parsed.data;
   }
+  await check?.(
+    (root[subKey] ?? {}) as Record<string, Record<string, unknown>>,
+    nextSub as Record<string, Record<string, unknown>>,
+  );
   const nextActiveFields = { ...root, [subKey]: nextSub };
 
   const rows = await tx
@@ -174,6 +191,12 @@ export const contributionProfileRouter = createTRPCRouter({
       rawContribRows,
       salaryProfileActiveMap,
     } = await loadLiveContribData(ctx.db);
+    const capHousehold = await loadCapHousehold(
+      ctx.db,
+      await getAllPeople(ctx.db),
+      null,
+      new Date().getFullYear(),
+    );
 
     const resolved = profiles.map((profile) => {
       const r = resolveProfile(
@@ -184,7 +207,7 @@ export const contributionProfileRouter = createTRPCRouter({
         salaryProfileActiveMap,
       );
       const agg = aggregateContributionsByCategory(
-        r.activeContribs,
+        capResolvedProfile(r, capHousehold),
         r.activeJobs,
         r.jobSalaries,
       );
@@ -624,7 +647,11 @@ export const contributionProfileRouter = createTRPCRouter({
         id: z.number(),
         name: z.string().min(1).max(100).optional(),
         description: z.string().max(500).nullish(),
-        contributionActiveFields: ContributionActiveFieldsSchema.optional(),
+        // Without the schema's own default: absent means "unchanged" — a
+        // rename or description edit must never replace the profile's
+        // values with the empty default.
+        contributionActiveFields:
+          ContributionActiveFieldsSchema.unwrap().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -642,6 +669,21 @@ export const contributionProfileRouter = createTRPCRouter({
         ctx.db,
         input.contributionActiveFields,
       );
+      if (input.contributionActiveFields) {
+        const before =
+          (
+            existing[0].contributionActiveFields as {
+              contributionAccounts?: Record<string, Record<string, unknown>>;
+            }
+          ).contributionAccounts ?? {};
+        const after = input.contributionActiveFields.contributionAccounts ?? {};
+        await assertWithinIrsLimits(ctx.db, {
+          profileId: input.id,
+          before,
+          after,
+          touched: touchedContribAccounts(before, after),
+        });
+      }
 
       const updates: Partial<typeof schema.contributionProfiles.$inferInsert> =
         {};
@@ -717,6 +759,14 @@ export const contributionProfileRouter = createTRPCRouter({
           input.unset,
           contribAccountActiveFieldsSchema,
           "contribution account fields",
+          // A value that leaves this account over its IRS limit is refused.
+          (before, after) =>
+            assertWithinIrsLimits(tx, {
+              profileId: input.profileId,
+              before,
+              after,
+              touched: touchedContribAccounts(before, after),
+            }),
         ),
       );
     }),
@@ -874,7 +924,15 @@ export const contributionProfileRouter = createTRPCRouter({
         salaryProfileActiveMap,
       );
       const agg = aggregateContributionsByCategory(
-        resolved.activeContribs,
+        capResolvedProfile(
+          resolved,
+          await loadCapHousehold(
+            ctx.db,
+            await getAllPeople(ctx.db),
+            null,
+            new Date().getFullYear(),
+          ),
+        ),
         resolved.activeJobs,
         resolved.jobSalaries,
       );

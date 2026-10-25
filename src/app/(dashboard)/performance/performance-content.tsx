@@ -39,6 +39,8 @@ import {
   TabGroup,
   PerformanceTable,
   FinalizeYearModal,
+  AccountNotesDialog,
+  PastYearEditDialog,
   UpdatePerformanceForm,
   UpdateBasisForm,
   AccountPicker,
@@ -116,6 +118,12 @@ export function PerformanceContent() {
       utils.taxBuckets.computeBreakdown.invalidate();
     },
   });
+  const [notesAccountId, setNotesAccountId] = useState<number | null>(null);
+  const [pastEdit, setPastEdit] = useState<{
+    account: AccountRow;
+    field: string;
+    value: string;
+  } | null>(null);
   const finalizeYear = trpc.performance.finalizeYear.useMutation({
     onSuccess: () => utils.performance.computeSummary.invalidate(),
   });
@@ -158,7 +166,13 @@ export function PerformanceContent() {
           latestConversionYear: owner.latestConversionYear,
         });
       } else {
-        updateAccount.mutate({ id, [field]: value });
+        // A past year's change can move later years: preview it first.
+        const row = (data?.accountRows as AccountRow[] | undefined)?.find(
+          (r) => r.id === id,
+        );
+        if (row && row.year !== data?.currentYear)
+          setPastEdit({ account: row, field, value: String(value) });
+        else updateAccount.mutate({ id, [field]: value });
       }
     },
   });
@@ -699,6 +713,7 @@ export function PerformanceContent() {
             onSaveEdit={saveEdit}
             onKeyDown={handleKeyDown}
             canEdit={canEdit && !tableLocked}
+            onOpenNotes={canEdit ? (a) => setNotesAccountId(a.id) : undefined}
             locked={tableLocked}
             onToggleLock={canEdit ? () => setTableLocked((l) => !l) : undefined}
           />
@@ -771,6 +786,31 @@ export function PerformanceContent() {
       {/* Actual returns vs the projections' assumption (display only) */}
       <RealizedVsAssumedCard />
 
+      {pastEdit && (
+        <PastYearEditDialog
+          account={pastEdit.account}
+          field={pastEdit.field}
+          value={pastEdit.value}
+          onClose={() => setPastEdit(null)}
+          onSaved={() => {
+            setPastEdit(null);
+            utils.performance.computeSummary.invalidate();
+          }}
+        />
+      )}
+      {notesAccountId !== null &&
+        (() => {
+          const account = (accountRows as AccountRow[]).find(
+            (a) => a.id === notesAccountId,
+          );
+          return account ? (
+            <AccountNotesDialog
+              account={account}
+              onClose={() => setNotesAccountId(null)}
+              onChanged={() => utils.performance.computeSummary.invalidate()}
+            />
+          ) : null;
+        })()}
       {showFinalizeModal && currentYear && (
         <FinalizeYearModal
           year={currentYear}
@@ -778,6 +818,7 @@ export function PerformanceContent() {
             (r) =>
               r.year === currentYear && r.category !== PERF_CATEGORY_PORTFOLIO,
           )}
+          accounts={accountRows.filter((a) => a.year === currentYear)}
           onConfirm={(overrides) => {
             // Compute Portfolio override as sum of category overrides
             const portfolioOverride = {

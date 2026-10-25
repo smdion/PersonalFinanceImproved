@@ -183,6 +183,8 @@ export const employerMatchTypeSchema = z.enum(EMPLOYER_MATCH_TYPE_VALUES);
 export const HSA_COVERAGE_TYPE_VALUES = ["self_only", "family"] as const;
 export type HsaCoverageType = (typeof HSA_COVERAGE_TYPE_VALUES)[number];
 export const hsaCoverageTypeSchema = z.enum(HSA_COVERAGE_TYPE_VALUES);
+/** The coverage type whose limit is the family variant (IRS Pub 969). */
+export const HSA_FAMILY_COVERAGE: HsaCoverageType = "family";
 
 // ── Account Ownership ──
 
@@ -284,3 +286,10 @@ export type StandInPreview = {
   /** Why the last check failed (the figures above are from the one before). */
   error?: string | null;
 };
+
+/** How a Roth IRA contribution gets there: straight into the Roth, or the
+ *  backdoor — a non-deductible traditional IRA contribution converted to
+ *  the Roth (works at any income). A Contribution Profile choice on a Roth
+ *  IRA account; absent = direct. */
+export const ROTH_IRA_ROUTE_VALUES = ["direct", "backdoor"] as const;
+export type RothIraRoute = (typeof ROTH_IRA_ROUTE_VALUES)[number];

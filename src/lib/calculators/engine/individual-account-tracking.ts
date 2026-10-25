@@ -1184,6 +1184,12 @@ export function buildIndividualYearBalances(
               acctEligibility.penaltyFreeAmount <= 0.005 &&
               acctEligibility.penaltyExposedAmount > 0,
             eligibilityReason: acctEligibility.reason,
+            // Start-of-year capacity (before this year's withdrawals and
+            // growth) — the same numbers routing used.
+            penaltyFreeAmount: acctEligibility.penaltyFreeAmount,
+            penaltyExposedAmount: acctEligibility.penaltyExposedAmount,
+            allowPenalizedWithdrawals:
+              acctEligibility.allowPenalizedWithdrawals,
           }
         : {}),
       ...basisFields,

@@ -242,6 +242,16 @@ export const MILESTONE_CHECKLIST_ITEMS = {
 
 export type MilestoneChecklistItem = keyof typeof MILESTONE_CHECKLIST_ITEMS;
 
+/** The same items as a to-do, for a milestone's next step. */
+export const MILESTONE_CHECKLIST_TODOS: Record<MilestoneChecklistItem, string> =
+  {
+    deductibles: "keep enough cash to cover your insurance deductibles",
+    prepaid: "save ahead for big known costs",
+    will: "write wills",
+    termLife: "put term life insurance in place",
+    healthDirective: "sign health-care directives",
+  };
+
 export const CUSTOM_GOAL_METRICS = {
   netWorth: "Net worth",
   liquid: "Liquid investments",

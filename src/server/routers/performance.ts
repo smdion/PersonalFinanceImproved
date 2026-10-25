@@ -1,7 +1,7 @@
 /** Performance router for portfolio time-weighted return tracking, snapshot ingestion, account-level performance history, and category rollup calculations. */
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
-import { asc, eq, and, sql } from "drizzle-orm";
+import { asc, eq, and, inArray, sql } from "drizzle-orm";
 import {
   PERF_BALANCE_MISMATCH_ABS,
   PERF_BALANCE_MISMATCH_PCT,
@@ -43,7 +43,6 @@ import {
   sumAnnualRows,
   computeReturn,
   type AnnualRowLike,
-  recomputeLifetimeFields,
 } from "@/lib/pure/performance";
 import { accountDisplayName, buildAccountLabel } from "@/lib/utils/format";
 import {
@@ -54,22 +53,41 @@ import {
   parentCategoryEnum,
 } from "@/lib/config/account-types";
 import {
-  accountTypeToPerformanceCategory,
   FULLY_RETIREMENT_PERF_CATEGORIES,
   PARENT_CATEGORY_ROLLUPS,
   PERF_CATEGORY_BROKERAGE,
   PERF_CATEGORY_PORTFOLIO,
   PERF_CATEGORY_RETIREMENT,
   PERF_CATEGORY_DISPLAY_ORDER,
-  type PerfCategory,
 } from "@/lib/config/display-labels";
 import {
   ACCOUNT_OWNERSHIP_VALUES,
   RETIREMENT_BEHAVIOR_VALUES,
   CONTRIBUTION_SCALING_VALUES,
 } from "@/lib/config/enum-values";
-import { recomputeAnnualRollups } from "./settings/_shared";
+import {
+  buildPerfAcctLookups,
+  captureYearRollups,
+  getEffectiveCategory,
+  resolveMaster,
+  syncYearRollups,
+} from "@/server/helpers/performance-rollups";
 import { finalizeRothBasisForYear } from "@/server/helpers/roth-basis";
+import { loadPerformanceChecks } from "@/server/helpers/performance-checks";
+import {
+  editAccountRow,
+  type AccountEdit,
+  type EditPreview,
+} from "@/server/helpers/performance-edit";
+import {
+  acceptedCheckSchema,
+  parseAcceptedChecks,
+  parseEstimatedFields,
+  perfCheckKindSchema,
+  perfFieldSchema,
+  PERF_NOTE_MAX,
+} from "@/lib/pure/performance-annotations";
+import { localDateStr } from "@/lib/utils/date";
 
 const performanceAccountInput = z.object({
   institution: z.string().trim().min(1),
@@ -95,11 +113,6 @@ const performanceAccountInput = z.object({
 /** Accepts both the main db instance and transaction handles. */
 type DbType =
   typeof appDb | Parameters<Parameters<typeof appDb.transaction>[0]>[0];
-type PerfAccount = typeof schema.performanceAccounts.$inferSelect;
-
-function buildPerfAcctLookups(perfAccounts: PerfAccount[]) {
-  return new Map(perfAccounts.map((pa) => [pa.id, pa]));
-}
 
 function resolveOwnerName(
   ownerPersonId: number | null,
@@ -116,85 +129,9 @@ function resolveOwnerName(
   return name;
 }
 
-function resolveMaster(
-  a: {
-    id: number;
-    performanceAccountId: number | null;
-    institution: string;
-    accountLabel: string;
-  },
-  byId: Map<number, PerfAccount>,
-): PerfAccount {
-  if (a.performanceAccountId == null) {
-    throw new Error(
-      `account_performance.id=${a.id} (${a.institution}:${a.accountLabel}) has null performanceAccountId`,
-    );
-  }
-  const master = byId.get(a.performanceAccountId);
-  if (!master) {
-    throw new Error(
-      `account_performance.id=${a.id} references missing performance_account.id=${a.performanceAccountId}`,
-    );
-  }
-  return master;
-}
-
-function getEffectiveCategory(
-  a: {
-    id: number;
-    performanceAccountId: number | null;
-    institution: string;
-    accountLabel: string;
-  },
-  byId: Map<number, PerfAccount>,
-): PerfCategory {
-  return accountTypeToPerformanceCategory(
-    resolveMaster(a, byId).accountType,
-  ) as PerfCategory;
-}
-
-/** Cascade-recompute lifetime fields on all annual_performance rows.
- *  Called after edits to account_performance on finalized years. */
-async function cascadeLifetimeFields(db: DbType) {
-  const allAnnual = await db
-    .select({
-      id: schema.annualPerformance.id,
-      year: schema.annualPerformance.year,
-      category: schema.annualPerformance.category,
-      yearlyGainLoss: schema.annualPerformance.yearlyGainLoss,
-      totalContributions: schema.annualPerformance.totalContributions,
-      employerContributions: schema.annualPerformance.employerContributions,
-      lifetimeGains: schema.annualPerformance.lifetimeGains,
-      lifetimeContributions: schema.annualPerformance.lifetimeContributions,
-      lifetimeMatch: schema.annualPerformance.lifetimeMatch,
-    })
-    .from(schema.annualPerformance)
-    .orderBy(asc(schema.annualPerformance.year));
-
-  const rows = allAnnual.map((r) => ({
-    id: r.id,
-    year: r.year,
-    category: r.category,
-    yearlyGainLoss: toNumber(r.yearlyGainLoss),
-    totalContributions: toNumber(r.totalContributions),
-    employerContributions: toNumber(r.employerContributions),
-    lifetimeGains: toNumber(r.lifetimeGains),
-    lifetimeContributions: toNumber(r.lifetimeContributions),
-    lifetimeMatch: toNumber(r.lifetimeMatch),
-  }));
-
-  const updates = recomputeLifetimeFields(rows);
-  for (const u of updates) {
-    await db
-      .update(schema.annualPerformance)
-      .set({
-        lifetimeGains: u.lifetimeGains.toFixed(2),
-        lifetimeContributions: u.lifetimeContributions.toFixed(2),
-        lifetimeMatch: u.lifetimeMatch.toFixed(2),
-      })
-      .where(eq(schema.annualPerformance.id, u.id));
-  }
-}
+/** Thrown inside a preview's transaction to roll it back; caught by the
+ *  procedure itself, never sent to the client. */
+class DryRunRollback extends Error {}
 
 /** Stamp performance_last_updated in app_settings */
 async function stampPerformanceUpdated(db: DbType) {
@@ -722,6 +659,9 @@ export const performanceRouter = createTRPCRouter({
       rowsPerAccountYear.set(k, (rowsPerAccountYear.get(k) ?? 0) + 1);
     }
 
+    // Reconciliation checks (one path: also what "accept this gap" reads).
+    const checksByRow = await loadPerformanceChecks(ctx.db, accounts);
+
     // Transform account rows — enrich with master account data + compute missing return %
     const accountRows = accounts.map((r) => {
       const master = resolveMaster(r, perfLookups);
@@ -824,6 +764,10 @@ export const performanceRouter = createTRPCRouter({
             null,
           ) ?? null,
         basisByOwner,
+        checks: checksByRow.get(r.id) ?? [],
+        note: r.note,
+        estimatedFields: parseEstimatedFields(r.estimatedFields),
+        acceptedChecks: parseAcceptedChecks(r.acceptedChecks),
       };
     });
 
@@ -937,9 +881,9 @@ export const performanceRouter = createTRPCRouter({
       if (Object.keys(updates).length === 0) return { success: true };
 
       // Block edits to lifetime_* fields on immutable rows. Lifetime totals
-      // on finalized rows are authoritative and recomputed only via the
-      // cascadeLifetimeFields() helper after upstream account_performance
-      // edits — never directly via the user-facing updateAnnual mutation.
+      // on finalized rows are authoritative and move only with edits to the
+      // year's account_performance rows (syncYearRollups carries the change
+      // forward) — never directly via the user-facing updateAnnual mutation.
       // RULES.md § Data Model Principles point 4 cascade rule.
       const LIFETIME_FIELDS = new Set([
         "lifetimeGains",
@@ -973,38 +917,122 @@ export const performanceRouter = createTRPCRouter({
       return { success: true };
     }),
 
+  /**
+   * Edit one account row (editAccountRow: a balanced row stays balanced,
+   * every affected year's rollups follow). `chainNextYear` moves next year's
+   * beginning with a changed ending; `dryRun` returns what would change and
+   * writes nothing.
+   */
   updateAccount: performanceProcedure
-    .input(accountUpdateInput)
+    .input(
+      accountUpdateInput.extend({
+        chainNextYear: z.boolean().optional(),
+        dryRun: z.boolean().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      const { id, ...fields } = input;
-      const updates: Record<string, string | null> = {};
-      for (const [key, value] of Object.entries(fields)) {
-        if (value !== undefined) {
-          updates[key] = value;
+      const { id, chainNextYear, dryRun, annualReturnPct, ...fields } = input;
+      const edit = Object.fromEntries(
+        Object.entries(fields).filter(([, v]) => v !== undefined),
+      ) as AccountEdit;
+      if (Object.keys(edit).length === 0 && annualReturnPct === undefined)
+        return { success: true, preview: null };
+      const run = async (tx: DbType) => {
+        if (annualReturnPct !== undefined)
+          await tx
+            .update(schema.accountPerformance)
+            .set({ annualReturnPct })
+            .where(eq(schema.accountPerformance.id, id));
+        return Object.keys(edit).length > 0
+          ? editAccountRow(tx, id, edit, { chainNextYear })
+          : null;
+      };
+      if (dryRun) {
+        let preview: EditPreview | null = null;
+        try {
+          await ctx.db.transaction(async (tx) => {
+            preview = await run(tx);
+            throw new DryRunRollback();
+          });
+        } catch (e) {
+          if (!(e instanceof DryRunRollback)) throw e;
         }
+        return { success: true, preview };
       }
-      if (Object.keys(updates).length === 0) return { success: true };
-      await ctx.db
-        .update(schema.accountPerformance)
-        .set(updates)
-        .where(eq(schema.accountPerformance.id, id));
-      // If the edited account is on a finalized year, cascade lifetime fields
-      const [acctRow] = await ctx.db
-        .select({ year: schema.accountPerformance.year })
-        .from(schema.accountPerformance)
-        .where(eq(schema.accountPerformance.id, id));
-      if (acctRow) {
-        const [annual] = await ctx.db
-          .select({ isFinalized: schema.annualPerformance.isFinalized })
-          .from(schema.annualPerformance)
-          .where(eq(schema.annualPerformance.year, acctRow.year))
-          .limit(1);
-        if (annual?.isFinalized) {
-          await cascadeLifetimeFields(ctx.db);
+      const preview = await ctx.db.transaction(async (tx) => {
+        const p = await run(tx);
+        await stampPerformanceUpdated(tx);
+        return p;
+      });
+      return { success: true, preview };
+    }),
+
+  /**
+   * The household's note on an account-year, which figures are still
+   * estimates, and gaps accepted as on purpose. Accepting reads the gap
+   * from the same checks the page shows, and needs its own reason; the
+   * check comes back when the gap is no longer the one accepted.
+   * Not a figure change — the performance timestamp doesn't move.
+   */
+  annotateAccount: performanceProcedure
+    .input(
+      z.object({
+        id: z.number().int(),
+        note: z.string().trim().max(PERF_NOTE_MAX).nullable().optional(),
+        estimatedFields: z.array(perfFieldSchema).optional(),
+        accept: z
+          .object({
+            kind: perfCheckKindSchema,
+            note: acceptedCheckSchema.shape.note,
+          })
+          .optional(),
+        unaccept: perfCheckKindSchema.optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.transaction(async (tx) => {
+        const [row] = await tx
+          .select()
+          .from(schema.accountPerformance)
+          .where(eq(schema.accountPerformance.id, input.id));
+        if (!row)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "That Performance row no longer exists.",
+          });
+        const accepted = parseAcceptedChecks(row.acceptedChecks);
+        if (input.unaccept) delete accepted[input.unaccept];
+        if (input.accept) {
+          const check = (await loadPerformanceChecks(tx))
+            .get(row.id)
+            ?.find((c) => c.kind === input.accept!.kind);
+          if (!check)
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "There's no such gap on this row any more — nothing to accept.",
+            });
+          accepted[input.accept.kind] = {
+            amount:
+              check.kind === "transfers"
+                ? toNumber(row.rollovers)
+                : check.amount,
+            note: input.accept.note,
+            on: localDateStr(new Date()),
+          };
         }
-      }
-      await stampPerformanceUpdated(ctx.db);
-      return { success: true };
+        await tx
+          .update(schema.accountPerformance)
+          .set({
+            ...(input.note !== undefined && { note: input.note || null }),
+            ...(input.estimatedFields && {
+              estimatedFields: parseEstimatedFields(input.estimatedFields),
+            }),
+            acceptedChecks: accepted,
+          })
+          .where(eq(schema.accountPerformance.id, row.id));
+        return { success: true };
+      });
     }),
 
   updateCostBasis: performanceProcedure
@@ -1072,6 +1100,11 @@ export const performanceRouter = createTRPCRouter({
         accounts: z.array(
           z.object({
             id: z.number().int(),
+            /** Omitted: the stored beginning stays. */
+            beginningBalance: zDecimal.optional(),
+            /** Figures still estimated; omitted: the stored marks stay. */
+            estimatedFields: z.array(perfFieldSchema).optional(),
+            note: z.string().trim().max(PERF_NOTE_MAX).nullable().optional(),
             totalContributions: zDecimal,
             employerContributions: zDecimal,
             distributions: zDecimal,
@@ -1089,10 +1122,30 @@ export const performanceRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       if (input.accounts.length === 0) return { success: true };
       await ctx.db.transaction(async (tx) => {
+        const years = await tx
+          .selectDistinct({ year: schema.accountPerformance.year })
+          .from(schema.accountPerformance)
+          .where(
+            inArray(
+              schema.accountPerformance.id,
+              input.accounts.map((a) => a.id),
+            ),
+          );
+        const before = [];
+        // One query at a time on the transaction's connection.
+        for (const { year } of years)
+          before.push(await captureYearRollups(tx, year));
         for (const acct of input.accounts) {
           await tx
             .update(schema.accountPerformance)
             .set({
+              ...(acct.beginningBalance !== undefined && {
+                beginningBalance: acct.beginningBalance,
+              }),
+              ...(acct.estimatedFields && {
+                estimatedFields: parseEstimatedFields(acct.estimatedFields),
+              }),
+              ...(acct.note !== undefined && { note: acct.note || null }),
               totalContributions: acct.totalContributions,
               employerContributions: acct.employerContributions,
               distributions: acct.distributions,
@@ -1103,23 +1156,7 @@ export const performanceRouter = createTRPCRouter({
             })
             .where(eq(schema.accountPerformance.id, acct.id));
         }
-        // If any edited account is on a finalized year, cascade lifetime fields
-        if (input.accounts.length > 0) {
-          const [sample] = await tx
-            .select({ year: schema.accountPerformance.year })
-            .from(schema.accountPerformance)
-            .where(eq(schema.accountPerformance.id, input.accounts[0]!.id));
-          if (sample) {
-            const [annual] = await tx
-              .select({ isFinalized: schema.annualPerformance.isFinalized })
-              .from(schema.annualPerformance)
-              .where(eq(schema.annualPerformance.year, sample.year))
-              .limit(1);
-            if (annual?.isFinalized) {
-              await cascadeLifetimeFields(tx);
-            }
-          }
-        }
+        for (const b of before) await syncYearRollups(tx, b);
         await stampPerformanceUpdated(tx);
         if (input.simplefinFill)
           await recordFill(tx, "performance", input.simplefinFill);
@@ -1171,7 +1208,7 @@ export const performanceRouter = createTRPCRouter({
         if (existingAnnualRows.some((r) => r.isFinalized)) {
           throw new TRPCError({
             code: "CONFLICT",
-            message: `Year ${year} is already finalized. Un-finalize it first or use the performance editor to adjust values.`,
+            message: `Year ${year} is already finalized. Adjust its figures in the Performance table instead.`,
           });
         }
 
@@ -1441,19 +1478,20 @@ export const performanceRouter = createTRPCRouter({
           mortgageExtras,
           homeImpItems,
           propTaxRows,
-        ] = await Promise.all([
-          tx.select().from(schema.appSettings),
-          tx.select().from(schema.mortgageLoans),
-          tx
+        ] = [
+          // One query at a time on the transaction's connection.
+          await tx.select().from(schema.appSettings),
+          await tx.select().from(schema.mortgageLoans),
+          await tx
             .select()
             .from(schema.mortgageExtraPayments)
             .orderBy(asc(schema.mortgageExtraPayments.paymentDate)),
-          tx.select().from(schema.homeImprovementItems),
-          tx
+          await tx.select().from(schema.homeImprovementItems),
+          await tx
             .select()
             .from(schema.propertyTaxes)
             .where(eq(schema.propertyTaxes.year, year)),
-        ]);
+        ] as const;
 
         const setting = parseAppSettings(allSettings);
         const yearEndDate = `${year}-12-31`;
@@ -1505,14 +1543,12 @@ export const performanceRouter = createTRPCRouter({
         // historical.ts's computeSummary/upsertSalary do — otherwise
         // finalizing before anyone has recorded salary permanently writes
         // a false $0 into net_worth_annual.
-        const [yearSalaryRows, allPeople, allJobs] = await Promise.all([
-          tx
-            .select()
-            .from(schema.historicalSalaries)
-            .where(eq(schema.historicalSalaries.year, year)),
-          tx.select().from(schema.people),
-          tx.select().from(schema.jobs),
-        ]);
+        const yearSalaryRows = await tx
+          .select()
+          .from(schema.historicalSalaries)
+          .where(eq(schema.historicalSalaries.year, year));
+        const allPeople = await tx.select().from(schema.people);
+        const allJobs = await tx.select().from(schema.jobs);
         const salaryRowByPerson = new Map(
           yearSalaryRows.map((r) => [r.personId, r]),
         );
@@ -1615,7 +1651,7 @@ export const performanceRouter = createTRPCRouter({
     }),
 
   // ---------------------------------------------------------------------------
-  // Pending Rollover CRUD — all performanceProcedure
+  // Performance account CRUD — mutations are performanceProcedure
   // ---------------------------------------------------------------------------
 
   performanceAccounts: createTRPCRouter({
@@ -1688,6 +1724,17 @@ export const performanceRouter = createTRPCRouter({
         });
         // Wrap entire cascade in a transaction for atomicity
         return await ctx.db.transaction(async (tx) => {
+          // Each year this account has rows in, as it stands before the
+          // change (its type decides which rollup category it counts in).
+          const affectedYears = await tx
+            .selectDistinct({ year: schema.accountPerformance.year })
+            .from(schema.accountPerformance)
+            .where(eq(schema.accountPerformance.performanceAccountId, id));
+          const before = [];
+          // One query at a time on the transaction's connection.
+          for (const { year } of affectedYears)
+            before.push(await captureYearRollups(tx, year));
+
           // 1. Update the master record
           const [updated] = await tx
             .update(schema.performanceAccounts)
@@ -1743,17 +1790,9 @@ export const performanceRouter = createTRPCRouter({
                 ),
               );
 
-          // 6. Recompute annual rollups for all affected years
-          const affectedYears = await tx
-            .select({ year: schema.accountPerformance.year })
-            .from(schema.accountPerformance)
-            .where(eq(schema.accountPerformance.performanceAccountId, id));
-          const uniqueYears = Array.from(
-            new Set(affectedYears.map((r) => r.year)),
-          );
-          for (const yr of uniqueYears) {
-            await recomputeAnnualRollups(tx, yr);
-          }
+          // 6. Keep every affected year's rollups in step (a type change
+          // moves the account's figures between categories)
+          for (const b of before) await syncYearRollups(tx, b);
 
           // 7. Stamp performance_last_updated for cache invalidation
           await stampPerformanceUpdated(tx);

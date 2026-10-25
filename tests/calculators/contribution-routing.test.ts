@@ -3,7 +3,10 @@ import {
   routeWaterfall,
   routePercentage,
   routeFromSpecs,
+  capSpecs,
+  slotLimits,
 } from "@/lib/calculators/engine/contribution-routing";
+import type { ContributionSpec } from "@/lib/calculators/types";
 import {
   makeAccumulationConfig,
   makeYearLimits,
@@ -257,6 +260,49 @@ describe("routePercentage", () => {
 // verified to produce byte-identical results.
 // ---------------------------------------------------------------------------
 
+/** Limits far above any fixture amount — the formula tests don't cap. */
+const ROOMY_LIMITS = {
+  "401k_employee_limit": 1e6,
+  "401k_catchup_limit": 0,
+  "401k_super_catchup_limit": 0,
+  ira_limit: 1e6,
+  ira_catchup_limit: 0,
+  hsa_individual_limit: 1e6,
+  hsa_family_limit: 1e6,
+  hsa_catchup_limit: 0,
+};
+
+/** Cap (capSpecs) then route one year: salary 130,000 on a 120,000 base,
+ *  limits grown 3%. */
+function route(
+  specs: ContributionSpec[],
+  config: ReturnType<typeof makeAccumulationConfig>,
+  limits: Record<string, number> = ROOMY_LIMITS,
+  filingStatus = "Single",
+) {
+  const employerMatch = makeEmployerMatch();
+  const capped = capSpecs(
+    specs,
+    { projectedSalary: 130000, salaryBase: 120000, limitGrowthFactor: 1.03 },
+    {
+      ctx: { taxYear: 2030, filingStatus, limits },
+      people: [
+        { id: 1, birthYear: 1990 },
+        { id: 2, birthYear: 1990 },
+      ],
+      employerMatch,
+      wagesByPerson: null,
+    },
+  );
+  const yearLimits = slotLimits(
+    capped.groupLimits,
+    Object.fromEntries(
+      specs.map((sp, i) => [sp.category, capped.capped[i]!.cappedAnnual]),
+    ),
+  );
+  return routeFromSpecs(specs, capped, yearLimits, employerMatch, config);
+}
+
 describe("routeFromSpecs", () => {
   const config = makeAccumulationConfig();
 
@@ -268,15 +314,7 @@ describe("routeFromSpecs", () => {
       salaryFraction: 0.5,
       taxTreatment: "pre_tax",
     });
-    const { slots } = routeFromSpecs(
-      [spec],
-      130000,
-      120000,
-      makeYearLimits(),
-      makeEmployerMatch(),
-      1.03,
-      config,
-    );
+    const { slots } = route([spec], config);
     const ira = slotFor(slots, "ira")!;
     // 130000 * 0.5 * 0.1 = 6500
     expect(ira.employeeContrib).toBe(6500);
@@ -292,15 +330,7 @@ describe("routeFromSpecs", () => {
       baseAnnual: 4000,
       taxTreatment: "hsa",
     });
-    const { slots } = routeFromSpecs(
-      [spec],
-      130000,
-      120000,
-      makeYearLimits(),
-      makeEmployerMatch(),
-      1.03,
-      config,
-    );
+    const { slots } = route([spec], config);
     const hsa = slotFor(slots, "hsa")!;
     // 4000 * 1.03 = 4120, unaffected by projectedSalary/baseSalary
     expect(hsa.employeeContrib).toBe(4120);
@@ -313,15 +343,7 @@ describe("routeFromSpecs", () => {
       baseAnnual: 10000,
       taxTreatment: "after_tax",
     });
-    const { slots } = routeFromSpecs(
-      [spec],
-      130000,
-      120000,
-      makeYearLimits(),
-      makeEmployerMatch(),
-      1.03,
-      config,
-    );
+    const { slots } = route([spec], config);
     const brok = slotFor(slots, "brokerage")!;
     // 10000 * (130000 / 120000) = 10833.33
     expect(brok.employeeContrib).toBe(10833.33);
@@ -334,17 +356,111 @@ describe("routeFromSpecs", () => {
       baseAnnual: 5000,
       taxTreatment: "pre_tax",
     });
-    const { slots } = routeFromSpecs(
-      [spec],
-      130000,
-      120000,
-      makeYearLimits(),
-      makeEmployerMatch(),
-      1.03,
-      config,
-    );
+    const { slots } = route([spec], config);
     const s403b = slotFor(slots, "403b")!;
     // 5000 * 1.03 = 5150, unaffected by projectedSalary/baseSalary
     expect(s403b.employeeContrib).toBe(5150);
+  });
+});
+
+describe("routeFromSpecs — IRS caps per person", () => {
+  const limits = { ...ROOMY_LIMITS, "401k_employee_limit": 20000 };
+
+  it("caps each person at their own limit and overflows the excess to brokerage", () => {
+    const { slots, warnings, totalOverflow } = route(
+      [
+        makeContributionSpec({
+          category: "401k",
+          method: "fixed_monthly",
+          baseAnnual: 25000 / 1.03,
+          taxTreatment: "tax_free",
+          personId: 1,
+          ownerName: "Avery",
+        }),
+        makeContributionSpec({
+          category: "401k",
+          method: "fixed_monthly",
+          baseAnnual: 10000 / 1.03,
+          taxTreatment: "pre_tax",
+          personId: 2,
+          ownerName: "Blake",
+        }),
+      ],
+      makeAccumulationConfig(),
+      limits,
+    );
+    const k = slotFor(slots, "401k")!;
+    expect(k.employeeContrib).toBe(30000); // 20,000 + 10,000
+    // The Roth share comes from the capped amounts: Avery's 20,000 Roth.
+    expect(k.rothContrib).toBe(20000);
+    expect(k.traditionalContrib).toBe(10000);
+    expect(k.irsLimit).toBe(40000); // each person's limit, once
+    expect(totalOverflow).toBe(5000);
+    expect(slotFor(slots, "brokerage")!.employeeContrib).toBe(5000);
+    expect(warnings.join(" ")).toContain("Avery");
+  });
+
+  it("applies the household's account cap after the IRS caps", () => {
+    const config = makeAccumulationConfig();
+    config.accountCaps["401k"] = 12000;
+    const { slots, totalOverflow, warnings } = route(
+      [
+        makeContributionSpec({
+          category: "401k",
+          method: "fixed_monthly",
+          baseAnnual: 15000 / 1.03,
+          taxTreatment: "pre_tax",
+          personId: 1,
+        }),
+      ],
+      config,
+      limits,
+    );
+    expect(slotFor(slots, "401k")!.employeeContrib).toBe(12000);
+    expect(totalOverflow).toBe(3000);
+    expect(warnings.join(" ")).toContain("account limit");
+  });
+});
+
+describe("slotLimits", () => {
+  it("splits a shared group's limit by employee money, room left to the leader", () => {
+    const groups = new Map([["401k", 40000]]);
+    expect(slotLimits(groups, { "401k": 10000, "403b": 5000 })).toMatchObject({
+      "401k": 35000,
+      "403b": 5000,
+    });
+    expect(slotLimits(groups, { "401k": 30000, "403b": 30000 })).toMatchObject({
+      "401k": 20000,
+      "403b": 20000,
+    });
+    expect(slotLimits(groups, {})).toMatchObject({ "401k": 40000, "403b": 0 });
+  });
+});
+
+describe("routeFromSpecs — HSA with no coverage type", () => {
+  it("is capped at the self-only limit (the lower bound), excess to brokerage", () => {
+    const limits = {
+      ...ROOMY_LIMITS,
+      hsa_individual_limit: 4000,
+      hsa_family_limit: 8000,
+    };
+    const { slots, totalOverflow } = route(
+      [
+        makeContributionSpec({
+          category: "hsa",
+          method: "fixed_monthly",
+          baseAnnual: 6000 / 1.03,
+          taxTreatment: "hsa",
+          personId: 1,
+          hsaCoverageType: null,
+        }),
+      ],
+      makeAccumulationConfig(),
+      limits,
+    );
+    const hsa = slotFor(slots, "hsa")!;
+    expect(hsa.employeeContrib).toBe(4000);
+    expect(hsa.irsLimit).toBe(4000);
+    expect(totalOverflow).toBe(2000);
   });
 });

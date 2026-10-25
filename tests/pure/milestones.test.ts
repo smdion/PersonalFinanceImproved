@@ -12,6 +12,8 @@ import {
   parseMilestoneSettings,
   projectedFiYear,
   sinceLastYear,
+  classesUnderTarget,
+  extraPrincipalToPayOffBy,
   type MilestoneInput,
   type MilestoneResult,
 } from "@/lib/pure/milestones";
@@ -20,6 +22,7 @@ import {
   milestoneHoldings,
   megaBackdoorRoom,
   milestoneLimits,
+  matchShortfalls,
   retirementUnlimitedContributions,
   milestoneProjectionYears,
   milestoneYearFromHistory,
@@ -290,7 +293,8 @@ describe("Financial Order of Operations", () => {
     expect(byId(results, "foo5").status).toBe("reached");
     expect(byId(results, "foo6")).toMatchObject({
       status: "behind",
-      nextStep: "Pat 401k: $8,500.00 of room",
+      nextStep:
+        "Pat 401k: $8,500.00 more reaches the 2026 IRS limit — contribute it this year",
     });
     expect(byId(results, "foo7").status).toBe("behind");
     expect(byId(results, "foo9")).toMatchObject({
@@ -303,8 +307,12 @@ describe("Financial Order of Operations", () => {
   it("step 6 covers every Retirement-category limit, not just the 401k", () => {
     const r = byId(run(), "foo6");
     // IRA 7,000 + HSA 8,550 + 401k 15,000 of 7,000 + 8,550 + 23,500
-    expect(r.headline).toBe("$30,550.00 of $39,050.00 a year");
-    expect(r.nextStep).toBe("Pat 401k: $8,500.00 of room");
+    expect(r.headline).toBe(
+      "$30,550.00 of $39,050.00 a year of IRS contribution limits used",
+    );
+    expect(r.nextStep).toBe(
+      "Pat 401k: $8,500.00 more reaches the 2026 IRS limit — contribute it this year",
+    );
     const portfolioIra = run({
       limits: makeInput().limits!.map((l) =>
         l.label === "IRA" ? { ...l, retirement: false, contributed: 0 } : l,
@@ -312,7 +320,7 @@ describe("Financial Order of Operations", () => {
     });
     // An IRA kept in Portfolio is step 5's business, not step 6's.
     expect(byId(portfolioIra, "foo6").nextStep).toBe(
-      "Pat 401k: $8,500.00 of room",
+      "Pat 401k: $8,500.00 more reaches the 2026 IRS limit — contribute it this year",
     );
     expect(byId(portfolioIra, "foo5").status).toBe("behind");
     expect(byId(run({ retirementUnlimited: 3_000 }), "foo6").note).toBe(
@@ -355,7 +363,7 @@ describe("Financial Order of Operations", () => {
     });
     const r = byId(run({ savings }), "savingsRate");
     expect(r.status).toBe("reached");
-    expect(r.headline).toBe("29% of gross pay");
+    expect(r.headline).toBe("Saving 29% of gross pay");
     expect(r.note).toBe(
       "25% into Retirement accounts · employer match left out (pay over $200,000.00)",
     );
@@ -427,7 +435,9 @@ describe("saving, safety and home", () => {
     const r = byId(run(), "savingsRate");
     expect(r.status).toBe("behind");
     // 25% of 150k = 37.5k; saved 33k → 375/mo
-    expect(r.nextStep).toBe("$375.00 more a month reaches 25%");
+    expect(r.nextStep).toBe(
+      "Save $375.00 more a month to reach a 25% savings rate (savings as a share of gross pay) — Pat 401k has $8,500.00 of IRS room this year",
+    );
   });
 
   it("emergency fund: reached at 3 months, alert under 1", () => {
@@ -556,7 +566,7 @@ describe("investing (Bogleheads)", () => {
     const r = byId(off, "rebalance");
     expect(r.status).toBe("behind");
     expect(r.headline).toBe(
-      "2 classes outside the band: Bonds 5.0 pts under · Cash 3.0 pts over",
+      "2 asset classes outside the rebalancing band: Bonds 5.0 pts under target · Cash 3.0 pts over target",
     );
   });
 
@@ -574,7 +584,7 @@ describe("investing (Bogleheads)", () => {
       "rebalance",
     );
     expect(r.nextStep).toBe(
-      "Move about $100k out of Stocks — $60k into Bonds and $40k into TIPS",
+      "Rebalance: move about $100k out of Stocks — $60k into Bonds and $40k into TIPS",
     );
     expect(r.impact).toEqual({ kind: "oneTime", amount: 100_000 });
     // The same mix in a $50k household scales with it.
@@ -589,7 +599,7 @@ describe("investing (Bogleheads)", () => {
       "rebalance",
     );
     expect(small.nextStep).toBe(
-      "Move about $5k out of Stocks — $5k into Bonds",
+      "Rebalance: move about $5k out of Stocks — $5k into Bonds",
     );
   });
 
@@ -609,10 +619,10 @@ describe("investing (Bogleheads)", () => {
       "rebalance",
     );
     expect(r.headline).toBe(
-      "2 classes outside the band: Stocks 10.0 pts over · Bonds 5.6 pts under",
+      "2 asset classes outside the rebalancing band: Stocks 10.0 pts over target · Bonds 5.6 pts under target",
     );
     expect(r.nextStep).toBe(
-      "Move about $100k out of Stocks — $56k into Bonds and $40k into TIPS",
+      "Rebalance: move about $100k out of Stocks — $56k into Bonds and $40k into TIPS",
     );
   });
 
@@ -632,7 +642,7 @@ describe("investing (Bogleheads)", () => {
       "rebalance",
     );
     expect(r.nextStep).toBe(
-      "Move about $120k out of A, B and C — $60k into D, $30k into E and $30k into F",
+      "Rebalance: move about $120k out of A, B and C — $60k into D, $30k into E and $30k into F",
     );
   });
 
@@ -924,6 +934,8 @@ describe("input builders", () => {
       {
         fooStep5: false,
         retirement: true,
+        payroll: null,
+        checksLeft: null,
         owner: "Pat",
         label: "401k",
         contributed: 15_000,
@@ -932,6 +944,8 @@ describe("input builders", () => {
       {
         fooStep5: true,
         retirement: true,
+        payroll: null,
+        checksLeft: null,
         owner: "Household",
         label: "HSA",
         contributed: 5_000,
@@ -940,6 +954,8 @@ describe("input builders", () => {
       {
         fooStep5: true,
         retirement: false,
+        payroll: null,
+        checksLeft: null,
         owner: "Sam",
         label: "IRA",
         contributed: 7_000,
@@ -970,6 +986,8 @@ describe("input builders", () => {
       {
         fooStep5: true,
         retirement: true,
+        payroll: null,
+        checksLeft: null,
         owner: "Household",
         label: "HSA",
         contributed: 8_500,
@@ -1029,8 +1047,20 @@ describe("input builders", () => {
       unlinkedValue: 0,
       unlinkedAccountsValue: 0,
       classes: [
-        { name: "US", share: 0.75, targetShare: 0.7 },
-        { name: "Bonds", share: 0.25, targetShare: null },
+        {
+          name: "US",
+          share: 0.75,
+          targetShare: 0.7,
+          taxableValue: 0,
+          shelteredValue: 0,
+        },
+        {
+          name: "Bonds",
+          share: 0.25,
+          targetShare: null,
+          taxableValue: 0,
+          shelteredValue: 0,
+        },
       ],
       expenseRatio: 0.001,
       costCoverage: 0.9,
@@ -1132,11 +1162,26 @@ describe("input builders", () => {
       highIncome: false,
       highIncomeThreshold: 200_000,
     });
-    expect(below.match).toEqual({ captured: 5_000, available: 7_500 });
+    expect(below.match).toEqual({
+      captured: 5_000,
+      available: 7_500,
+      shortfalls: [
+        {
+          owner: "Pat",
+          label: "401k",
+          missed: 2_500,
+          currentPct: null,
+          fullPct: null,
+        },
+      ],
+    });
     expect(below.mortgage).toEqual({
       active: true,
       monthlyHousingCost: 2_250,
       payoffYear: 2043,
+      balance: null,
+      annualRate: null,
+      principalAndInterest: 1_800,
     });
     const above = buildMilestoneInput({ ...base, highIncomeThreshold: 90_000 });
     expect(above.savings).toMatchObject({
@@ -1259,7 +1304,8 @@ describe("r/personalfinance", () => {
     expect(at([]).status).toBe("unknown");
     expect(at([{ name: "Car", targetYear: 2028 }])).toMatchObject({
       status: "behind",
-      nextStep: "Move toward savings, CDs or I bonds: Car (2028)",
+      nextStep:
+        "Money for goals due within 3 years shouldn't ride the stock market — move it toward savings, CDs or I bonds: Car (2028)",
     });
     expect(at([{ name: "Roof", targetYear: 2030 }]).status).toBe("onTrack");
     expect(at([{ name: "Cabin", targetYear: 2040 }]).status).toBe("reached");
@@ -1362,8 +1408,9 @@ describe("r/personalfinance", () => {
     const r = byId(run({ holdings }), "fundCosts");
     expect(r).toMatchObject({
       status: "behind",
-      headline: "1 of 2 funds over the bar",
-      nextStep: "BBB 0.44% (US stocks: under 0.10%)",
+      headline: "1 of 2 funds above the low-cost bar for their asset class",
+      nextStep:
+        "High fund costs: BBB costs 0.44% a year (expense ratio); under 0.10% is low-cost for US stocks — check the plan's menu for a lower-cost option",
     });
   });
 
@@ -1382,5 +1429,318 @@ describe("r/personalfinance", () => {
         savingsTargetSource: "nope",
       }).savingsTargetSource,
     ).toBe("moneyGuy");
+  });
+});
+
+describe("recommendations use what Ledgr knows", () => {
+  const underSaving = makeSavings({
+    rate: 0.22,
+    saved: 33_000,
+    compensation: 150_000,
+  });
+  const shortfall = {
+    owner: "Pat",
+    label: "401k",
+    missed: 1_500,
+    currentPct: 4,
+    fullPct: 6,
+  };
+
+  it("the match: which account, the rate that gets it, and what it's worth", () => {
+    const r = byId(
+      run({
+        match: { captured: 3_000, available: 4_500, shortfalls: [shortfall] },
+      }),
+      "foo2",
+    );
+    expect(r.nextStep).toBe(
+      "$1,500.00 a year of employer match left on the table — Pat 401k: raise to 6% of pay (now 4%) — $1,500.00 a year of match",
+    );
+  });
+
+  it("IRS room: through payroll, per paycheck left; outside it, by the filing deadline", () => {
+    const r = byId(
+      run({
+        limits: [
+          {
+            fooStep5: false,
+            retirement: true,
+            owner: "Pat",
+            label: "401k",
+            contributed: 15_000,
+            limit: 23_500,
+            payroll: true,
+            checksLeft: 4,
+          },
+          {
+            fooStep5: true,
+            retirement: true,
+            owner: "Pat",
+            label: "IRA",
+            contributed: 5_000,
+            limit: 7_000,
+            payroll: false,
+          },
+        ],
+      }),
+      "foo5",
+    );
+    expect(r.nextStep).toBe(
+      "Pat IRA: $2,000.00 more reaches the 2026 IRS limit — 2026 contributions are allowed until the tax-filing deadline",
+    );
+    const r6 = byId(
+      run({
+        limits: [
+          {
+            fooStep5: false,
+            retirement: true,
+            owner: "Pat",
+            label: "401k",
+            contributed: 15_000,
+            limit: 23_500,
+            payroll: true,
+            checksLeft: 4,
+          },
+        ],
+        savings: makeSavings({ retirementRate: 0.1 }),
+      }),
+      "foo6",
+    );
+    expect(r6.nextStep).toBe(
+      "Pat 401k: $8,500.00 more reaches the 2026 IRS limit — about $2,125.00 more a paycheck for the 4 left this year",
+    );
+  });
+
+  it("the savings rate starts with a missed match", () => {
+    const r = byId(
+      run({
+        savings: underSaving,
+        match: { captured: 3_000, available: 4_500, shortfalls: [shortfall] },
+      }),
+      "savingsRate",
+    );
+    expect(r.nextStep).toMatch(/— start with the employer match in Pat 401k$/);
+  });
+
+  it("the emergency fund in dollars", () => {
+    const r = byId(
+      run({ efundMonths: 2, efundEssentialMonthly: 4_000 }),
+      "emergencyFund",
+    );
+    expect(r.nextStep).toBe(
+      "Add about $4,000.00 to your emergency fund to reach 3 months of essential expenses ($4,000.00 a month)",
+    );
+  });
+
+  it("the mortgage: the extra principal a month that pays it off by the target age", () => {
+    expect(
+      extraPrincipalToPayOffBy(
+        {
+          active: true,
+          monthlyHousingCost: 0,
+          payoffYear: 2050,
+          balance: 100_000,
+          annualRate: 0,
+          principalAndInterest: 600,
+        },
+        100,
+      ),
+    ).toBe(400);
+    expect(
+      extraPrincipalToPayOffBy(
+        { active: true, monthlyHousingCost: 0, payoffYear: 2050 },
+        100,
+      ),
+    ).toBeNull();
+    const r = byId(
+      run({
+        mortgage: {
+          active: true,
+          monthlyHousingCost: 2_500,
+          payoffYear: 2060,
+          balance: 200_000,
+          annualRate: 0.06,
+          principalAndInterest: 1_199.1,
+        },
+      }),
+      "paidOffHome",
+    );
+    expect(r.nextStep).toMatch(
+      /about \$[\d,.]+ more principal a month pays it off by 60/,
+    );
+  });
+
+  const holdings = (sheltered: number, taxable: number) => ({
+    coverage: 1,
+    knownValue: 100_000,
+    unlinkedValue: 0,
+    classes: [
+      {
+        name: "US stocks",
+        share: 0.8,
+        targetShare: 0.6,
+        shelteredValue: sheltered,
+        taxableValue: taxable,
+      },
+      {
+        name: "Bonds",
+        share: 0.2,
+        targetShare: 0.4,
+        shelteredValue: 0,
+        taxableValue: 0,
+      },
+    ],
+    expenseRatio: 0.0005,
+    costCoverage: 1,
+    funds: [],
+  });
+
+  it("rebalancing: where a sale costs no tax", () => {
+    expect(
+      byId(run({ holdings: holdings(80_000, 0) }), "rebalance").nextStep,
+    ).toMatch(
+      /inside tax-advantaged accounts \(401\(k\), IRA, HSA\), where selling costs no tax$/,
+    );
+    expect(
+      byId(run({ holdings: holdings(0, 80_000) }), "rebalance").nextStep,
+    ).toMatch(
+      /all in taxable accounts: steer new contributions instead of selling/,
+    );
+    expect(
+      byId(run({ holdings: holdings(10_000, 70_000) }), "rebalance").nextStep,
+    ).toMatch(
+      /sell inside tax-advantaged accounts first \(about \$10k of it is there/,
+    );
+    expect(classesUnderTarget(holdings(0, 0))).toEqual(["Bonds"]);
+  });
+
+  it("fund costs: switch in an account you choose funds in; the plan's menu otherwise; names its funds", () => {
+    const r = byId(
+      run({
+        holdings: {
+          ...holdings(0, 0),
+          funds: [
+            {
+              name: "AAA",
+              bucket: "us_equity",
+              expenseRatio: 0.005,
+              switchable: true,
+            },
+            {
+              name: "BBB",
+              bucket: "us_equity",
+              expenseRatio: 0.005,
+              switchable: false,
+            },
+          ],
+        },
+      }),
+      "fundCosts",
+    );
+    expect(r.nextStep).toMatch(
+      /AAA costs .* — switch to a lower-cost index fund/,
+    );
+    expect(r.nextStep).toMatch(/BBB costs .* — check the plan's menu/);
+    expect(r.subjects).toEqual(["AAA", "BBB"]);
+  });
+});
+
+describe("input builders: the context recommendations use", () => {
+  const acct = (o: Record<string, unknown>) => ({
+    categoryKey: "401k",
+    accountType: "401k",
+    parentCategory: "Retirement",
+    limit: 23_500,
+    employeeContrib: 10_000,
+    totalContrib: 10_000,
+    ...o,
+  });
+
+  it("limits know how they're filled and the owner's paychecks left", () => {
+    const [k, ira] = milestoneLimits(
+      [
+        {
+          name: "Pat",
+          checksLeft: 5,
+          accountTypes: [
+            acct({ payrollDeductedContrib: 10_000 }),
+            acct({
+              categoryKey: "ira",
+              accountType: "ira",
+              limit: 7_000,
+              employeeContrib: 5_000,
+              totalContrib: 5_000,
+              nonPayrollContrib: 5_000,
+            }),
+          ],
+        },
+      ],
+      [],
+    );
+    expect(k).toMatchObject({ payroll: true, checksLeft: 5 });
+    expect(ira).toMatchObject({ payroll: false, checksLeft: 5 });
+  });
+
+  it("match shortfalls: accounts a dollar or more short, with the rates", () => {
+    expect(
+      matchShortfalls([
+        {
+          name: "Pat",
+          accountTypes: [
+            {
+              ...acct({}),
+              employerMatch: 3_000,
+              employerMatchAvailable: 4_500,
+              currentPctOfSalary: 4,
+              fullMatchPctOfSalary: 6,
+            } as never,
+            {
+              ...acct({}),
+              employerMatch: 1_000,
+              employerMatchAvailable: 1_000.5,
+            } as never,
+          ],
+        },
+      ]),
+    ).toEqual([
+      { owner: "Pat", label: "401k", missed: 1_500, currentPct: 4, fullPct: 6 },
+    ]);
+  });
+
+  it("holdings: each class's dollars by taxable vs tax-advantaged, and which funds can switch", () => {
+    const fund = (symbol: string, value: number) => ({
+      securityId: null,
+      name: symbol,
+      symbol,
+      value,
+      facts: {
+        expenseRatio: { value: 0.004 },
+        composition: { buckets: { us_equity: 1 } as Record<string, number> },
+      },
+    });
+    const h = milestoneHoldings({
+      allocation: {
+        total: 300,
+        unknown: 0,
+        rows: [
+          { name: "US", value: 300, targetPct: 1, buckets: ["us_equity"] },
+        ],
+      },
+      cost: { expenseRatio: 0.004, coveredShare: 1 },
+      accounts: [
+        { accountType: "brokerage", holdings: [fund("TAX", 100)] },
+        { accountType: "401k", holdings: [fund("PLAN", 200)] },
+      ],
+    } as never)!;
+    expect(h.classes[0]).toMatchObject({
+      taxableValue: 100,
+      shelteredValue: 200,
+    });
+    expect(
+      Object.fromEntries(h.funds.map((f) => [f.name, f.switchable])),
+    ).toEqual({
+      TAX: true,
+      PLAN: false,
+    });
   });
 });

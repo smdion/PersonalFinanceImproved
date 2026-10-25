@@ -9,6 +9,7 @@
  * 44-64.
  */
 
+import { computeValue } from "@/lib/pure/contribution-caps";
 import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
 import type { PayrollBreakdown, SinkingFundLine } from "./types";
 
@@ -137,6 +138,7 @@ export function buildNonPayrollContribs(
       jobId: number | null;
       isPayrollDeducted: boolean | null;
       contributionValue: string | number;
+      cappedValue?: number;
       contributionMethod: string;
       accountType: string;
     }>;
@@ -154,7 +156,7 @@ export function buildNonPayrollContribs(
       // unchecked) must still land in this non-payroll pool.
       if (isPaidThroughPayroll(c)) continue;
       if (linkedAccountIds.has(c.id)) continue;
-      const val = Number(c.contributionValue) || 0;
+      const val = computeValue(c) || 0;
       const periodsPerYear = d.paycheck.periodsPerYear;
       let monthly: number;
       if (c.contributionMethod === "percent_of_salary") {

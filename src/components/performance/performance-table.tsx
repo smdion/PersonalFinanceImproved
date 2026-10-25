@@ -1,5 +1,6 @@
 "use client";
 
+import { COST_KINDS } from "@/lib/config/performance-help";
 import React from "react";
 import { Lock, LockOpen } from "lucide-react";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -41,6 +42,7 @@ type PerformanceTableProps = {
   showBasis: boolean;
   showUnrealized: boolean;
   onlyBasis: boolean;
+  onOpenNotes?: (account: AccountRow) => void;
 };
 
 export function PerformanceTable({
@@ -57,6 +59,7 @@ export function PerformanceTable({
   onSaveEdit,
   onKeyDown,
   canEdit,
+  onOpenNotes,
   locked,
   onToggleLock,
   showBasis,
@@ -97,6 +100,9 @@ export function PerformanceTable({
                 </th>
                 <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                   Fees
+                  <HelpTip
+                    text={`${COST_KINDS.accountFees.label}: ${COST_KINDS.accountFees.help} ${COST_KINDS.fundCosts.label} (expense ratios) aren't here — they're inside the funds' prices and already in Gain/Loss; see Benchmarks.`}
+                  />
                 </th>
                 <th className="text-muted px-4 py-3 text-right font-medium whitespace-nowrap">
                   Gain/Loss
@@ -211,6 +217,7 @@ export function PerformanceTable({
                 showUnrealized={showUnrealized}
                 onlyBasis={onlyBasis}
                 canEdit={canEdit}
+                onOpenNotes={onOpenNotes}
               />
             );
           })}

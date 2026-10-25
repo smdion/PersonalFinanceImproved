@@ -9,6 +9,7 @@
  * deleted wholesale. Deductions still resolve via Contribution Profile.
  */
 import "./setup-mocks";
+import { assertWithinIrsLimits } from "@/server/helpers/contribution-caps";
 import { describe, it, expect, vi } from "vitest";
 
 vi.mock("@/lib/budget-api", () => ({
@@ -508,6 +509,7 @@ describe("applyContributionAccountEdit — periodsPerYear resolves from the glob
         accountId,
         monthlyAmount,
         profileAId,
+        assertWithinIrsLimits,
       );
       const valueA = await readContributionValue(db, profileAId, accountId);
 
@@ -516,6 +518,7 @@ describe("applyContributionAccountEdit — periodsPerYear resolves from the glob
         accountId,
         monthlyAmount,
         profileBId,
+        assertWithinIrsLimits,
       );
       const valueB = await readContributionValue(db, profileBId, accountId);
 

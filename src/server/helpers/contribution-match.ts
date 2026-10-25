@@ -71,6 +71,10 @@ export type GroupedMatchResult = {
   /** The match at the plan's cap (contributing at least the capped
    *  percent of pay) — the most the employer would put in. */
   matchAvailableAnnual: number;
+  /** The share of pay the account must get (all its splits together) for
+   *  the full match — a percent-of-contribution match's cap; null when the
+   *  match doesn't depend on how much goes in (flat or uncapped). */
+  fullMatchShareOfPay: number | null;
   employerMatchTaxTreatment: MatchTaxTreatment;
 };
 
@@ -171,6 +175,7 @@ export function computeGroupedEmployerMatch(
         result.set(m.id, {
           matchAnnual: 0,
           matchAvailableAnnual: 0,
+          fullMatchShareOfPay: null,
           employerMatchTaxTreatment: m.employerMatchTaxTreatment,
         });
       }
@@ -234,6 +239,11 @@ export function computeGroupedEmployerMatch(
       result.set(m.id, {
         matchAnnual: totalMatch * share,
         matchAvailableAnnual: availableMatch * share,
+        fullMatchShareOfPay:
+          winner.employerMatchType === "percent_of_contribution" &&
+          winner.employerMaxMatchPct > 0
+            ? winner.employerMaxMatchPct
+            : null,
         // Match tax character is a plan property, not a per-split-row one
         // — every row in the group gets the winning row's value, never its
         // own (a Roth/Trad split shift must never reclassify match dollars).

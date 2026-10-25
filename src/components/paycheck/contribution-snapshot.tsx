@@ -468,8 +468,7 @@ export function ContributionSnapshot() {
                             >
                               {formatPercent(at.views[viewMode].fundingPct)} of{" "}
                               {formatCurrency(at.limit)}
-                              {at.views[viewMode].fundingPct >
-                                OVER_LIMIT_THRESHOLD && (
+                              {at.overBy > 0 && (
                                 <Badge color="red" size="sm" className="ml-1">
                                   Over limit
                                 </Badge>
@@ -484,6 +483,18 @@ export function ContributionSnapshot() {
                               </span>
                             )}
                           </div>
+                          {/* What to fix — the configured contribution is
+                              over the limit (figures show the capped
+                              amount), or the account needs an owner or an
+                              HSA coverage type. */}
+                          {at.capMessages.map((m) => (
+                            <p
+                              key={m}
+                              className={`text-caption mt-0.5 ${at.overBy > 0 ? "text-red-600" : "text-amber-600"}`}
+                            >
+                              {m}
+                            </p>
+                          ))}
                           {/* Employer match IRS context */}
                           {at.employerMatch > 0 && (
                             <p className="text-caption text-faint mt-0.5">

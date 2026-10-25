@@ -469,3 +469,32 @@ export function computeBonusGross(
   const months = monthsInBonusYear ?? 12;
   return roundToCents(salary * pct * mult * (months / 12));
 }
+
+/**
+ * This year's pay for a person's job: the Salary Profile's compensation with
+ * the What-If sandbox's salary and bonus terms on top, the pinned bonus when
+ * there is one. One derivation for the paycheck, the contribution summary
+ * and the IRS-limit cap pass. `totalComp` = salary + this year's bonus.
+ */
+export function thisYearJobPay(
+  job: { id: number; personId: number },
+  salaryProfileActiveMap: SalaryProfileActiveMap,
+  salaryActiveMap: SalaryActiveMap,
+) {
+  const comp = resolveCompensation(salaryProfileActiveMap, job.id);
+  const salary = applyActiveSalary(job.personId, comp.salary, salaryActiveMap);
+  const bonusTerms = applyActiveBonusTerms(
+    salaryActiveMap.get(job.personId),
+    comp.terms,
+  );
+  const { bonusGross } = contributionPay(
+    salary,
+    bonusTerms,
+    comp.bonusOverride,
+  );
+  const totalComp =
+    comp.bonusOverride != null
+      ? salary + comp.bonusOverride
+      : getTotalCompensation(salary, bonusTerms);
+  return { comp, salary, bonusTerms, bonusGross, totalComp };
+}

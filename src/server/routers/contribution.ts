@@ -44,7 +44,7 @@ import {
   zSandboxContribActiveFields,
   zSandboxContribAdditions,
 } from "./_shared";
-import { roundToCents, safeDivide } from "@/lib/utils/math";
+import { roundToCents, safeDivide, sumBy } from "@/lib/utils/math";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
 import { getAge, isPriorYearContribWindow } from "@/lib/utils/date";
 import { ficaCapContext } from "@/lib/pure/contributions";
@@ -61,6 +61,11 @@ import type {
   ViewAwareTotals,
 } from "@/lib/pure/contributions";
 import { findActiveJob } from "@/lib/pure/profiles";
+import { capMessage, computeValue } from "@/lib/pure/contribution-caps";
+import {
+  capForRequest,
+  loadCapHousehold,
+} from "@/server/helpers/contribution-caps";
 import type {
   ContributionInput,
   AccountCategory,
@@ -91,6 +96,11 @@ type AccountTypeSnapshot = {
   categoryKey: string; // base config key for color lookup (e.g. 'brokerage' for all brokerage sub-types, 'espp' for ESPP)
   parentCategory: string; // 'Retirement' or 'Portfolio' — from DB parentCategory column
   limit: number;
+  /** How much the configured contributions are over the IRS limit (the
+   *  figures above already show the capped amounts). */
+  overBy: number;
+  /** What to fix on this type's contributions (capMessage), if anything. */
+  capMessages: string[];
   employeeContrib: number;
   employerMatch: number;
   /** The full match at the plan's cap — employerMatch when nothing is left
@@ -101,6 +111,9 @@ type AccountTypeSnapshot = {
   ytdDataStale: boolean; // true when YTD actual < expected — performance data may be behind
   /** The percent-of-pay election (whole number, e.g. 15); null for fixed-amount contributions. */
   currentPctOfSalary: number | null;
+  /** The percent of pay (whole number) that gets the full employer match;
+   *  null when the match doesn't depend on the contribution rate. */
+  fullMatchPctOfSalary: number | null;
   /** True pre-tax (Traditional) contributions only — hsa/afterTax are NOT
    *  folded in here; see afterTaxContrib/hsaContrib below. */
   tradContrib: number;
@@ -347,7 +360,7 @@ export const contributionRouter = createTRPCRouter({
       );
       // Sandbox edits are the highest-precedence tier, applied AFTER the
       // picked profile's own overrides via the SAME merge function.
-      const effectiveContribs = applyContribActiveFields(
+      const sandboxed = applyContribActiveFields(
         profileResult.contribs,
         input?.sandboxContribActiveFields ?? {},
         true,
@@ -355,11 +368,24 @@ export const contributionRouter = createTRPCRouter({
       for (const [i, addition] of (
         input?.sandboxContribAdditions ?? []
       ).entries()) {
-        effectiveContribs.push(buildSandboxContribRow(addition, -(i + 1)));
+        sandboxed.push(buildSandboxContribRow(addition, -(i + 1)));
       }
       const effectiveJobs = profileResult.jobs;
 
       const asOfDate = new Date();
+      // The IRS-limit cap pass: every figure below reads the capped value.
+      const effectiveContribs = capForRequest(
+        sandboxed,
+        await loadCapHousehold(
+          ctx.db,
+          people,
+          limitsRecord,
+          asOfDate.getFullYear(),
+        ),
+        effectiveJobs,
+        salaryProfileActiveMap,
+        effectiveSalaryMap,
+      );
 
       // Split YTD actuals proportionally when multiple contribs share a perf
       // account, scaled by each job's elapsed pay-period fraction. Salary is
@@ -416,7 +442,7 @@ export const contributionRouter = createTRPCRouter({
         { contribId: number; expectedYtd: number }[]
       >();
       for (const c of activeContribs) {
-        const value = toNumber(String(c.contributionValue));
+        const value = computeValue(c);
         let expectedYtd = 0;
 
         const jd = c.jobId ? jobCache.get(c.jobId) : null;
@@ -722,6 +748,7 @@ export const contributionRouter = createTRPCRouter({
               electedPct: number | null;
               /** What the bonus check takes for it (bonusCheckContribution). */
               bonus: number;
+              fullMatchShareOfPay: number | null;
             }
           >();
 
@@ -807,6 +834,7 @@ export const contributionRouter = createTRPCRouter({
               performanceAccountIds: new Set<number>(),
               electedPct: 0,
               bonus: 0,
+              fullMatchShareOfPay: null,
             };
             // What the bonus check takes, and the match on it. The Year-End
             // estimate adds them only when the year's actuals don't already
@@ -814,6 +842,8 @@ export const contributionRouter = createTRPCRouter({
             const bonusEmp = bonusCheckContribution(acct, pay.bonusGross);
             const bonusMatch = acct.employerMatchOnBonus ?? 0;
             entry.bonus += bonusEmp;
+            entry.fullMatchShareOfPay =
+              acct.fullMatchShareOfPay ?? entry.fullMatchShareOfPay;
             entry.electedPct =
               entry.electedPct !== null &&
               rawContrib.contributionMethod === "percent_of_salary"
@@ -1005,12 +1035,20 @@ export const contributionRouter = createTRPCRouter({
               }
             }
 
+            const typeRows = rawContribs.filter(
+              (c) => c.accountType === data.categoryKey,
+            );
             accountTypes.push({
               accountType: cat,
               categoryKey: data.categoryKey,
               performanceAccountIds: [...data.performanceAccountIds],
               parentCategory: data.parentCategory,
               limit,
+              overBy: roundToCents(sumBy(typeRows, (c) => c.cap?.overBy ?? 0)),
+              capMessages: typeRows.flatMap((c) => {
+                const m = capMessage(c);
+                return m ? [m] : [];
+              }),
               employeeContrib: totalEmployee,
               employerMatch,
               employerMatchAvailable: Math.max(
@@ -1021,6 +1059,10 @@ export const contributionRouter = createTRPCRouter({
               views,
               ytdDataStale: data.ytdDataStale,
               currentPctOfSalary,
+              fullMatchPctOfSalary:
+                data.fullMatchShareOfPay === null
+                  ? null
+                  : roundToCents(data.fullMatchShareOfPay * 100),
               tradContrib: roundToCents(data.trad),
               taxFreeContrib: roundToCents(data.taxFree),
               afterTaxContrib: roundToCents(data.afterTax),
@@ -1273,10 +1315,13 @@ export const contributionRouter = createTRPCRouter({
               : null,
           ),
         });
+        const jointCapMessage = capMessage(c);
         jointAccountTypes.push({
           accountType: displayCat,
           categoryKey: jColorKey,
           parentCategory: c.parentCategory,
+          overBy: roundToCents(c.cap?.overBy ?? 0),
+          capMessages: jointCapMessage ? [jointCapMessage] : [],
           limit: resolveIrsLimit(
             c.accountType,
             householdAge,
@@ -1306,6 +1351,7 @@ export const contributionRouter = createTRPCRouter({
               },
           ytdDataStale: false,
           currentPctOfSalary: null,
+          fullMatchPctOfSalary: null,
           performanceAccountIds:
             c.performanceAccountId != null ? [c.performanceAccountId] : [],
           tradContrib: isPreTaxTreatment(c.taxTreatment)

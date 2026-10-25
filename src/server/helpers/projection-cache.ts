@@ -339,7 +339,7 @@ import { log } from "@/lib/logger";
  *
  *  54: penalty-locked categories are capped at what their tracked accounts
  *  can give penalty-free — untracked money in them was drawn as reachable. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 54;
+export const PROJECTION_CACHE_ENGINE_VERSION = 55;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

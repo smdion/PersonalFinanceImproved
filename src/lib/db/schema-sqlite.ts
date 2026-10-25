@@ -991,6 +991,20 @@ export const accountPerformance = sqliteTable(
     performanceAccountId: integer("performance_account_id")
       .notNull()
       .references(() => performanceAccounts.id, { onDelete: "restrict" }),
+    /** The household's note on this account-year: where figures came
+     *  from, why a gap is fine. */
+    note: text("note"),
+    /** Figures still estimated (PerfField names — parseEstimatedFields). */
+    estimatedFields: text("estimated_fields", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default(sql`'[]'`),
+    /** Reconciliation gaps accepted as on purpose, by check kind
+     *  (parseAcceptedChecks). */
+    acceptedChecks: text("accepted_checks", { mode: "json" })
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default(sql`'{}'`),
   },
   (table) => [
     uniqueIndex("account_perf_year_inst_label_owner_idx").on(

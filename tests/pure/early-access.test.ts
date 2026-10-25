@@ -180,6 +180,22 @@ describe("computeEmployerPlanRothAccess", () => {
 });
 
 describe("computeRothIraAccess", () => {
+  it("a recent conversion is penalty-free once the owner is 59½ (the 5-year conversion penalty applies only under 59½)", () => {
+    const slices = (age: number) =>
+      computeRothIraAccess({
+        balance: 100000,
+        currentAge: age,
+        currentYear: 2050,
+        contributionBasis: 20000,
+        conversionBasis: 30000,
+        latestConversionYear: 2048,
+      });
+    const conv = (age: number) =>
+      slices(age).find((s) => s.label === "Conversion basis")!.penaltyFree;
+    expect(conv(55)).toBe(false);
+    expect(conv(60)).toBe(true);
+  });
+
   it("contribution basis is always penalty-free and tax-free, no clock", () => {
     const slices = computeRothIraAccess({
       balance: 188268.24,

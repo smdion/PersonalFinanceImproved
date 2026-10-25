@@ -11,7 +11,6 @@ import {
   validateContributionOrder,
   formatEmployerMatch,
   payrollFicaExemptCap,
-  shareFicaExemptCaps,
   ficaCapContext,
 } from "@/lib/pure/contributions";
 
@@ -571,35 +570,6 @@ describe("payrollFicaExemptCap", () => {
     expect(payrollFicaExemptCap("hsa", 40, "family", noFamily, 0)).toBe(
       Infinity,
     );
-  });
-});
-
-describe("shareFicaExemptCaps", () => {
-  const row = (
-    over: Partial<Parameters<typeof shareFicaExemptCaps>[0][number]>,
-  ) => ({
-    personId: 1,
-    accountType: "hsa",
-    cap: 4000,
-    limit: 4000,
-    employerAnnual: 0,
-    annualPayroll: 3000,
-    ...over,
-  });
-  it("one person's two HSA rows share one limit, used up in row order", () => {
-    expect(
-      shareFicaExemptCaps([row({}), row({ employerAnnual: 500, cap: 3500 })]),
-    ).toEqual([3500, 500]);
-  });
-  it("different people, null and unsizable caps are left alone", () => {
-    expect(
-      shareFicaExemptCaps([
-        row({}),
-        row({ personId: 2 }),
-        row({ cap: null, limit: null }),
-        row({ cap: Infinity }),
-      ]),
-    ).toEqual([4000, 4000, null, Infinity]);
   });
 });
 

@@ -132,9 +132,10 @@ out = out.replace(/\bdate\("([^"]+)"\)/g, 'text("$1")');
 // --- varchar("col", { length: N }) → text("col") ---
 out = out.replace(/varchar\("([^"]+)",\s*\{[^}]*\}\)/g, 'text("$1")');
 
-// --- .default({}) for json columns needs sql wrapper ---
+// --- .default({}) / .default([]) for json columns need an sql wrapper ---
 // jsonb default {} becomes text default — need to stringify
 out = out.replace(/\.default\(\{\}\)/g, ".default(sql`'{}'`)");
+out = out.replace(/\.default\(\[\]\)/g, ".default(sql`'[]'`)");
 
 // --- .defaultNow() remaining (multi-line timestamp patterns) ---
 out = out.replace(/\.defaultNow\(\)/g, ".default(sql`(unixepoch())`)");

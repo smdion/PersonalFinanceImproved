@@ -30,6 +30,7 @@ import {
   MAX_CUSTOM_GOALS,
   MILESTONE_BY_ID,
   MILESTONE_CHECKLIST_ITEMS,
+  MILESTONE_CHECKLIST_TODOS,
   MONEY_GUY_CHECKPOINTS,
   MONEY_GUY_NAPKIN_RETURN,
   MONEY_GUY_SAVINGS_RATE,
@@ -70,7 +71,7 @@ import {
   formatPercent,
   formatSavingsRate,
 } from "@/lib/utils/format";
-import { safeDivide } from "@/lib/utils/math";
+import { calculateLoanMonthlyPayment, safeDivide } from "@/lib/utils/math";
 import { type HouseholdSavings } from "@/lib/pure/contributions";
 
 // ---------------------------------------------------------------------------
@@ -125,6 +126,25 @@ export type MilestoneLimit = {
   label: string;
   contributed: number;
   limit: number;
+  /** Filled through payroll (true), outside it (false — an IRA, an HSA
+   *  funded directly: this year's room stays open until the filing
+   *  deadline), or unknown (null — nothing contributed yet). */
+  payroll?: boolean | null;
+  /** The owner's paychecks left this year (payroll rows). */
+  checksLeft?: number | null;
+};
+
+/** An account getting less than its full employer match. */
+export type MatchShortfall = {
+  owner: string;
+  label: string;
+  /** Match left on the table a year. */
+  missed: number;
+  /** Percent of pay elected now (whole number); null for a fixed amount. */
+  currentPct: number | null;
+  /** Percent of pay that gets the full match; null when it doesn't
+   *  depend on the rate. */
+  fullPct: number | null;
 };
 
 export type MilestoneChecklist = Partial<
@@ -242,16 +262,29 @@ export type MilestoneInput = {
     /** Both goal groups with the match rule applied, for the breakdown. */
     breakdown: HouseholdSavings;
   } | null;
-  match: { captured: number; available: number } | null;
+  match: {
+    captured: number;
+    available: number;
+    /** Each account getting less than its full match. */
+    shortfalls?: MatchShortfall[];
+  } | null;
   limits: MilestoneLimit[] | null;
   /** A year's employee contributions to Retirement accounts that have no
    *  IRS limit (shown next to step 6, never part of its limit test). */
   retirementUnlimited: number | null;
   efundMonths: number | null;
+  /** Essential expenses a month (the emergency-fund goal's basis); null
+   *  when unknown. */
+  efundEssentialMonthly?: number | null;
   mortgage: {
     active: boolean;
     monthlyHousingCost: number;
     payoffYear: number | null;
+    /** Today's balance, annual rate (fraction) and principal + interest a
+     *  month — sizing an extra payment; absent when unknown. */
+    balance?: number | null;
+    annualRate?: number | null;
+    principalAndInterest?: number | null;
   } | null;
   holdings: {
     /** Share of the portfolio whose asset class is known. */
@@ -262,12 +295,27 @@ export type MilestoneInput = {
     unlinkedValue: number;
     /** Dollars in SimpleFIN accounts not linked to a Ledgr account. */
     unlinkedAccountsValue?: number;
-    classes: { name: string; share: number; targetShare: number | null }[];
+    classes: {
+      name: string;
+      share: number;
+      targetShare: number | null;
+      /** Dollars of this class in taxable accounts, and in tax-advantaged
+       *  ones (where a rebalancing sale costs no tax). */
+      taxableValue?: number;
+      shelteredValue?: number;
+    }[];
     expenseRatio: number | null;
     /** Share of the portfolio with a known expense ratio. */
     costCoverage: number;
     /** Each held fund with a known expense ratio and main category. */
-    funds: { name: string; bucket: CompositionBucket; expenseRatio: number }[];
+    funds: {
+      name: string;
+      bucket: CompositionBucket;
+      expenseRatio: number;
+      /** Held in an account whose funds the household picks (an IRA,
+       *  a taxable account) — not only in fixed workplace/HSA menus. */
+      switchable?: boolean;
+    }[];
   } | null;
   checklist: MilestoneChecklist;
   customGoals: CustomGoal[];
@@ -314,6 +362,9 @@ export type MilestoneResult = MilestoneDefinition & {
   nextStep: string | null;
   /** Where the next step is done, when that isn't the milestone's own page. */
   nextStepHref?: string;
+  /** The funds (or other things) the next step is about — lets another
+   *  recommendation that already covers them stand in for this one. */
+  subjects?: string[];
   reachedYear: number | null;
   expectedYear: number | null;
   expectedAge: number | null;
@@ -875,6 +926,10 @@ function checkpoints(
         )
       : null;
   const highest = achievements[achievements.length - 1] ?? null;
+  // What the multiple counts — liquid investments (Money Guy) or retirement
+  // accounts (Fidelity) — so the line reads on its own.
+  const counted =
+    id === "fidelityCheckpoints" ? "saved for retirement" : "invested";
   const notes = [
     highest ? `${highest.label} reached ${highest.year}` : null,
     next
@@ -893,11 +948,11 @@ function checkpoints(
     value: { kind: "multiple", amount: current },
     target: { kind: "multiple", amount: target },
     progress: target > 0 ? Math.min(1, current / target) : 1,
-    headline: `${multiple(current)} of ${multiple(target)} for age ${Math.round(now.age)}`,
+    headline: `${multiple(current)} your income ${counted}; ${multiple(target)} is the target for age ${Math.round(now.age)}`,
     note: notes.length ? notes.join(" · ") : null,
     nextStep:
       current < target
-        ? `${formatCurrency((target - current) * now.grossIncome)} more to be on pace for your age`
+        ? `${formatCurrency((target - current) * now.grossIncome)} more ${counted} reaches ${multiple(target)} your income, the target for age ${Math.round(now.age)}`
         : null,
     impact:
       current < target
@@ -929,7 +984,7 @@ function savingsRate(input: MilestoneInput): MilestoneResult {
     value: { kind: "percent", amount: s.rate },
     target: { kind: "percent", amount: MONEY_GUY_SAVINGS_RATE },
     progress: Math.min(1, s.rate / MONEY_GUY_SAVINGS_RATE),
-    headline: `${formatSavingsRate(s.rate)} of gross pay`,
+    headline: `Saving ${formatSavingsRate(s.rate)} of gross pay`,
     note: [
       s.retirementRate < s.rate
         ? `${formatSavingsRate(s.retirementRate)} into Retirement accounts`
@@ -942,7 +997,10 @@ function savingsRate(input: MilestoneInput): MilestoneResult {
       .join(" · "),
     nextStep: met
       ? null
-      : `${formatCurrency(gapPerMonth)} more a month reaches ${formatSavingsRate(MONEY_GUY_SAVINGS_RATE)}`,
+      : `Save ${formatCurrency(gapPerMonth)} more a month to reach a ${formatSavingsRate(MONEY_GUY_SAVINGS_RATE)} savings rate (savings as a share of gross pay)${(() => {
+          const first = whereToSaveFirst(input);
+          return first ? ` — ${first}` : "";
+        })()}`,
     impact: met ? null : { kind: "perYear", amount: gapPerMonth * 12 },
   });
 }
@@ -965,7 +1023,7 @@ function emergencyFund(
     value: { kind: "months", amount: months },
     target: { kind: "months", amount: EMERGENCY_FUND_MONTHS.min },
     progress: Math.min(1, months / EMERGENCY_FUND_MONTHS.full),
-    headline: `${formatNumber(months, 1)} months covered`,
+    headline: `Emergency fund covers ${formatNumber(months, 1)} months of essential expenses`,
     short: `${formatNumber(months, 1)} mo covered`,
     note:
       met && months < EMERGENCY_FUND_MONTHS.full
@@ -973,7 +1031,9 @@ function emergencyFund(
         : null,
     nextStep: met
       ? null
-      : `Build to ${EMERGENCY_FUND_MONTHS.min} months of essential expenses`,
+      : input.efundEssentialMonthly
+        ? `Add about ${formatCurrency((EMERGENCY_FUND_MONTHS.min - months) * input.efundEssentialMonthly)} to your emergency fund to reach ${EMERGENCY_FUND_MONTHS.min} months of essential expenses (${formatCurrency(input.efundEssentialMonthly)} a month)`
+        : `Build your emergency fund to ${EMERGENCY_FUND_MONTHS.min} months of essential expenses`,
   });
 }
 
@@ -1060,7 +1120,7 @@ function limitStep(
     value: { kind: "currency", amount: contributed },
     target: { kind: "currency", amount: limit },
     progress: Math.min(1, safeDivide(contributed, limit, 0)),
-    headline: `${formatCurrency(contributed)} of ${formatCurrency(limit)} a year`,
+    headline: `${formatCurrency(contributed)} of ${formatCurrency(limit)} a year of IRS contribution limits used`,
     note: unlimitedNote,
     impact: open.length
       ? {
@@ -1069,14 +1129,50 @@ function limitStep(
         }
       : null,
     nextStep: open.length
-      ? open
-          .map(
-            (r) =>
-              `${r.owner} ${r.label}: ${formatCurrency(r.limit - r.contributed)} of room`,
-          )
-          .join(" · ")
+      ? open.map((r) => limitGapStep(r, input.asOfYear)).join(" · ")
       : null,
   });
+}
+
+/** How to close one IRS-limit gap: through payroll, spread over the
+ *  owner's paychecks left this year; outside it (an IRA, an HSA funded
+ *  directly), any time until the filing deadline. */
+function limitGapStep(r: MilestoneLimit, year: number): string {
+  const gap = r.limit - r.contributed;
+  const base = `${r.owner} ${r.label}: ${formatCurrency(gap)} more reaches the ${year} IRS limit`;
+  if (r.payroll === false)
+    return `${base} — ${year} contributions are allowed until the tax-filing deadline`;
+  if (r.payroll === true && r.checksLeft != null)
+    return r.checksLeft > 0
+      ? `${base} — about ${formatCurrency(gap / r.checksLeft)} more a paycheck for the ${r.checksLeft} left this year`
+      : `${base} — no paychecks left this year; raise it for next year`;
+  return `${base} — contribute it this year`;
+}
+
+/** Where a household short of its savings target should start: the
+ *  employer match it's missing, then the account with the most IRS room. */
+function whereToSaveFirst(input: MilestoneInput): string | null {
+  const shortfall = [...(input.match?.shortfalls ?? [])].sort(
+    (a, b) => b.missed - a.missed,
+  )[0];
+  if (shortfall)
+    return `start with the employer match in ${shortfall.owner} ${shortfall.label}`;
+  const room = (input.limits ?? [])
+    .map((r) => ({ r, room: r.limit - r.contributed }))
+    .filter((x) => x.room >= 1)
+    .sort((a, b) => b.room - a.room)[0];
+  return room
+    ? `${room.r.owner} ${room.r.label} has ${formatCurrency(room.room)} of IRS room this year`
+    : null;
+}
+
+/** "Raise Ann 401k to 6% of pay (now 4%) — $1,200 a year of match". */
+function matchShortfallStep(s: MatchShortfall): string {
+  const how =
+    s.fullPct !== null
+      ? `raise to ${formatNumber(s.fullPct, s.fullPct % 1 === 0 ? 0 : 1)}% of pay${s.currentPct !== null ? ` (now ${formatNumber(s.currentPct, s.currentPct % 1 === 0 ? 0 : 1)}%)` : ""}`
+      : "raise the contribution";
+  return `${s.owner} ${s.label}: ${how} — ${formatCurrency(s.missed)} a year of match`;
 }
 
 function foo(
@@ -1125,15 +1221,17 @@ function foo(
         headline:
           left < 1
             ? `Full match: ${formatCurrency(m.captured)} a year`
-            : `${formatCurrency(m.captured)} of ${formatCurrency(m.available)} a year`,
+            : `Getting ${formatCurrency(m.captured)} of ${formatCurrency(m.available)} a year of employer match`,
         short:
           left < 1
             ? `${formatCurrency(m.captured)}/yr captured`
             : `${formatCurrency(left)}/yr missed`,
         nextStep:
-          left >= 1
-            ? `${formatCurrency(left)} a year of match left on the table — raise the 401k contribution`
-            : null,
+          left < 1
+            ? null
+            : m.shortfalls?.length
+              ? `${formatCurrency(left)} a year of employer match left on the table — ${m.shortfalls.map(matchShortfallStep).join(" · ")}`
+              : `${formatCurrency(left)} a year of employer match left on the table — raise your workplace-plan contribution to get the full match`,
         impact: left >= 1 ? { kind: "perYear", amount: left } : null,
       }),
     );
@@ -1217,13 +1315,14 @@ function protection(
     value: { kind: "count", amount: done },
     target: { kind: "count", amount: items.length },
     progress: done / items.length,
-    headline: `${done} of ${items.length} done`,
+    headline: `${done} of ${items.length} done: wills, term life insurance, health-care directives`,
     nextStep:
       done < items.length
-        ? items
-            .filter((k) => input.checklist[k] !== true)
-            .map((k) => MILESTONE_CHECKLIST_ITEMS[k])
-            .join(" · ")
+        ? `Still to do: ${formatList(
+            items
+              .filter((k) => input.checklist[k] !== true)
+              .map((k) => MILESTONE_CHECKLIST_TODOS[k]),
+          )} — tick each off on Milestones once done`
         : null,
   });
 }
@@ -1257,14 +1356,14 @@ function housing(input: MilestoneInput, now: MilestoneYear): MilestoneResult[] {
               : "behind",
         value: { kind: "percent", amount: share },
         target: { kind: "percent", amount: HOUSING_COST_SHARE.max },
-        headline: `${formatPercent(share, 1)} of gross pay (${formatCurrency(mortgage.monthlyHousingCost)}/mo)`,
+        headline: `Housing costs ${formatCurrency(mortgage.monthlyHousingCost)}/mo, ${formatPercent(share, 1)} of gross pay`,
         note:
           share > HOUSING_COST_SHARE.max && share <= HOUSING_COST_SHARE.stretch
             ? `Over ${formatPercent(HOUSING_COST_SHARE.max)}, within Money Guy's high-cost-area allowance`
             : null,
         nextStep:
           share > HOUSING_COST_SHARE.max
-            ? `Raises bring this under ${formatPercent(HOUSING_COST_SHARE.max)} over time`
+            ? `Housing costs are over ${formatPercent(HOUSING_COST_SHARE.max)} of gross pay — hold them steady and raises bring them under over time`
             : null,
       }),
     );
@@ -1309,18 +1408,58 @@ function housing(input: MilestoneInput, now: MilestoneYear): MilestoneResult[] {
               ? "onTrack"
               : "behind",
         headline: payoffYear
-          ? `Paid off ${payoffYear} · age ${Math.round(payoffAge ?? 0)}`
-          : "Payoff date unknown",
+          ? `Mortgage paid off ${payoffYear}, at age ${Math.round(payoffAge ?? 0)}`
+          : "Mortgage payoff date unknown",
         expectedYear: payoffYear,
         expectedAge: payoffAge,
         nextStep:
           payoffAge !== null && payoffAge > PAID_OFF_HOME_BY_AGE
-            ? `${Math.ceil(payoffAge - PAID_OFF_HOME_BY_AGE)} years past ${PAID_OFF_HOME_BY_AGE} — extra principal or investments that could pay it off both count`
+            ? `The mortgage is on schedule to be paid off ${Math.ceil(payoffAge - PAID_OFF_HOME_BY_AGE)} years after age ${PAID_OFF_HOME_BY_AGE} — ${(() => {
+                const extra = extraPrincipalToPayOffBy(
+                  mortgage,
+                  (PAID_OFF_HOME_BY_AGE - now.age) * 12,
+                );
+                return extra !== null
+                  ? `about ${formatCurrency(extra)} more principal a month pays it off by ${PAID_OFF_HOME_BY_AGE}`
+                  : "extra principal payments close the gap";
+              })()}, and so do investments set aside that could pay it off`
             : null,
       }),
     );
   }
   return out;
+}
+
+/** Asset classes below target and outside their rebalancing band — where
+ *  new money (uninvested cash included) helps rebalance. */
+export function classesUnderTarget(
+  holdings: MilestoneInput["holdings"],
+): string[] {
+  return (holdings?.classes ?? [])
+    .filter(
+      (c) =>
+        c.targetShare !== null &&
+        c.share < c.targetShare &&
+        outsideRebalanceBand(c.share, c.targetShare),
+    )
+    .map((c) => c.name);
+}
+
+/** The extra principal a month that pays the balance off in `months`, on
+ *  top of today's principal + interest; null when it can't be sized (no
+ *  balance or rate, or no months left). */
+export function extraPrincipalToPayOffBy(
+  mortgage: MilestoneInput["mortgage"],
+  months: number,
+): number | null {
+  const balance = mortgage?.balance;
+  const rate = mortgage?.annualRate;
+  const pi = mortgage?.principalAndInterest;
+  if (balance == null || rate == null || pi == null || balance <= 0)
+    return null;
+  if (months < 1) return null;
+  const needed = calculateLoanMonthlyPayment(balance, rate, months / 12);
+  return Math.max(0, needed - pi);
 }
 
 /** The 5/25 band (REBALANCE_BANDS): off by more than 5 points, or by more
@@ -1381,18 +1520,31 @@ function investing(input: MilestoneInput): MilestoneResult[] {
     const names = (cs: typeof targeted) => formatList(cs.map((c) => c.name));
     const overTotal = over.reduce((s, c) => s + dollars(c), 0);
     const underTotal = under.reduce((s, c) => s + dollars(c), 0);
+    // Where to sell: inside tax-advantaged accounts a sale costs no tax;
+    // in a taxable account it realizes gains, so new money does it better.
+    const sheltered = over.reduce((s, c) => s + (c.shelteredValue ?? 0), 0);
+    const known = over.some(
+      (c) => c.shelteredValue !== undefined || c.taxableValue !== undefined,
+    );
+    const where = !known
+      ? ""
+      : sheltered >= overTotal
+        ? " — make the move inside tax-advantaged accounts (401(k), IRA, HSA), where selling costs no tax"
+        : sheltered > 0
+          ? ` — sell inside tax-advantaged accounts first (about ${compactCurrency(sheltered)} of it is there; no tax), and steer new contributions for the rest`
+          : " — it's all in taxable accounts: steer new contributions instead of selling, which would realize gains";
     const action =
       over.length && under.length
-        ? `Move about ${compactCurrency(overTotal)} out of ${names(over)} — ${list(under)}`
+        ? `Rebalance: move about ${compactCurrency(overTotal)} out of ${names(over)} — ${list(under)}${where}`
         : over.length
-          ? `Move about ${compactCurrency(overTotal)} out of ${names(over)} into what's under target`
+          ? `Rebalance: move about ${compactCurrency(overTotal)} out of ${names(over)} into what's under target${where}`
           : under.length
-            ? `Add about ${compactCurrency(underTotal)} — ${list(under)}`
+            ? `Rebalance: add about ${compactCurrency(underTotal)} — ${list(under)}`
             : null;
     const gaps = off
       .map((c) => {
         const gap = c.share - c.targetShare!;
-        return `${c.name} ${formatNumber(Math.abs(gap) * 100, 1)} pts ${gap > 0 ? "over" : "under"}`;
+        return `${c.name} ${formatNumber(Math.abs(gap) * 100, 1)} pts ${gap > 0 ? "over" : "under"} target`;
       })
       .join(" · ");
     out.push(
@@ -1401,7 +1553,7 @@ function investing(input: MilestoneInput): MilestoneResult[] {
         headline:
           off.length === 0
             ? "Every class within its band"
-            : `${off.length} class${off.length === 1 ? "" : "es"} outside the band: ${gaps}`,
+            : `${off.length} asset class${off.length === 1 ? "" : "es"} outside the rebalancing band: ${gaps}`,
         note:
           [
             h.unlinkedValue > 0
@@ -1430,10 +1582,10 @@ function investing(input: MilestoneInput): MilestoneResult[] {
         status: low ? "reached" : "behind",
         value: { kind: "percent", amount: h.expenseRatio },
         target: { kind: "percent", amount: LOW_COST_EXPENSE_RATIO },
-        headline: `${formatPercent(h.expenseRatio, 2)} blended expense ratio`,
+        headline: `Funds cost ${formatPercent(h.expenseRatio, 2)} a year on average (blended expense ratio)`,
         nextStep: low
           ? null
-          : "Look for index funds with lower expense ratios on the Benchmarks page",
+          : `Fund costs average ${formatPercent(h.expenseRatio, 2)} a year (expense ratio), above the ${formatPercent(LOW_COST_EXPENSE_RATIO, 2)} low-cost line — look for lower-cost index funds on the Benchmarks page`,
       }),
     );
   }
@@ -1472,7 +1624,10 @@ function pfRetirementRate(input: MilestoneInput): MilestoneResult {
     ].join(" · "),
     nextStep: met
       ? null
-      : `${formatCurrency(gapPerMonth)} more a month into retirement accounts reaches ${formatSavingsRate(PF_RETIREMENT_RATE.min)}`,
+      : `Put ${formatCurrency(gapPerMonth)} more a month into retirement accounts to reach ${formatSavingsRate(PF_RETIREMENT_RATE.min)} of pre-tax income${(() => {
+          const first = whereToSaveFirst(input);
+          return first ? ` — ${first}` : "";
+        })()}`,
     impact: met ? null : { kind: "perYear", amount: gapPerMonth * 12 },
   });
 }
@@ -1524,7 +1679,7 @@ function goalHorizon(input: MilestoneInput): MilestoneResult {
     return result("goalHorizon", {
       status: "behind",
       headline: `${soon.length} brokerage goal${soon.length === 1 ? "" : "s"} due within ${GOAL_HORIZON_YEARS.cash} years`,
-      nextStep: `Move toward savings, CDs or I bonds: ${list(soon)}`,
+      nextStep: `Money for goals due within ${GOAL_HORIZON_YEARS.cash} years shouldn't ride the stock market — move it toward savings, CDs or I bonds: ${list(soon)}`,
       note: mid.length ? `Conservative mix for: ${list(mid)}` : null,
     });
   }
@@ -1534,7 +1689,7 @@ function goalHorizon(input: MilestoneInput): MilestoneResult {
       ? `${mid.length} goal${mid.length === 1 ? "" : "s"} ${GOAL_HORIZON_YEARS.cash}–${GOAL_HORIZON_YEARS.conservative} years out`
       : `Every brokerage goal is ${GOAL_HORIZON_YEARS.conservative}+ years out`,
     nextStep: mid.length
-      ? `A conservative stock/bond mix for: ${list(mid)}`
+      ? `Shift these goals' money to a conservative stock/bond mix as they get closer: ${list(mid)}`
       : null,
   });
 }
@@ -1557,16 +1712,21 @@ function fundCosts(input: MilestoneInput): MilestoneResult {
     target: { kind: "count", amount: judged.length },
     progress: (judged.length - pricey.length) / judged.length,
     headline: pricey.length
-      ? `${pricey.length} of ${judged.length} funds over the bar`
-      : `All ${judged.length} funds under the bar`,
+      ? `${pricey.length} of ${judged.length} funds above the low-cost bar for their asset class`
+      : `All ${judged.length} funds under the low-cost bar for their asset class`,
     nextStep: pricey.length
-      ? pricey
+      ? `High fund costs: ${pricey
           .map(
             (f) =>
-              `${f.name} ${formatPercent(f.expenseRatio, 2)} (${COMPOSITION_BUCKET_LABELS[f.bucket]}: under ${formatPercent(bar(f), 2)})`,
+              `${f.name} costs ${formatPercent(f.expenseRatio, 2)} a year (expense ratio); under ${formatPercent(bar(f), 2)} is low-cost for ${COMPOSITION_BUCKET_LABELS[f.bucket]} — ${
+                f.switchable
+                  ? "switch to a lower-cost index fund"
+                  : "check the plan's menu for a lower-cost option"
+              }`,
           )
-          .join(" · ")
+          .join(" · ")}`
       : null,
+    subjects: pricey.map((f) => f.name),
   });
 }
 

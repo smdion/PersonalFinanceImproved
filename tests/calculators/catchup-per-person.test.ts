@@ -16,11 +16,12 @@ import type {
   ContributionSpec,
   AccountCategory,
 } from "@/lib/calculators/types";
+import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 
 const AS_OF = new Date("2025-01-01");
 
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
-  return {
+  return withCapsAge({
     accumulationDefaults: {
       contributionRate: 0.25,
       routingMode: "waterfall",
@@ -63,15 +64,24 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     salaryCap: null,
     salaryOverrides: [],
     budgetOverrides: [],
-    baseLimits: {
-      "401k": 23500,
-      "403b": 23500,
-      hsa: 4300,
-      ira: 7000,
-      brokerage: 0,
-    },
+    irsLimitCaps: capsFromBaseLimits({
+      baseLimits: {
+        "401k": 23500,
+        "403b": 23500,
+        hsa: 4300,
+        ira: 7000,
+        brokerage: 0,
+      },
+      catchupLimits: {
+        "401k": 7500,
+        ira: 1000,
+        hsa: 1000,
+        "401k_super": 11250,
+      },
+      currentAge: 40,
+    }),
     limitGrowthRate: 0.02,
-    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
+
     employerMatchRateByCategory: {
       "401k": 0.03,
       "403b": 0,
@@ -104,7 +114,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     ssStartAge: 67,
     asOfDate: AS_OF,
     ...overrides,
-  };
+  });
 }
 
 describe("T24 — per-person catch-up gating (H10)", () => {
@@ -137,12 +147,14 @@ describe("T24 — per-person catch-up gating (H10)", () => {
       },
     ];
 
+    const base = makeInput({ contributionSpecs: specs });
     const input = makeInput({
       contributionSpecs: specs,
-      catchupGroupParticipants: {
-        "401k": [
-          { personId: 1, birthYear: 1985 },
-          { personId: 2, birthYear: 1964 },
+      irsLimitCaps: {
+        ...base.irsLimitCaps,
+        people: [
+          { id: 1, birthYear: 1985 },
+          { id: 2, birthYear: 1964 },
         ],
       },
     });
@@ -154,16 +166,15 @@ describe("T24 — per-person catch-up gating (H10)", () => {
     const slot401k = year0.slots.find((s) => s.category === "401k");
     if (!slot401k) throw new Error("expected a 401k slot in year 0");
 
-    // baseLimits["401k"] (23500) + super-catchup (11250) only — NOT +7500 for
-    // person 1 (too young) and NOT +7500+7500 for both under the old
-    // household-average-age bug.
-    expect(slot401k.irsLimit).toBe(23500 + 11250);
+    // Each person's own limit: person 1 23,500 (too young for catch-up),
+    // person 2 23,500 + super catch-up 11,250 — never standard catch-up
+    // for both, and never one household limit shared by the two.
+    expect(slot401k.irsLimit).toBe(23500 + 23500 + 11250);
   });
 
-  it("falls back to the household-average age when catchupGroupParticipants is omitted", () => {
-    // Calculator-level callers that hand-build EngineInput without per-person
-    // data (no catchupGroupParticipants) should still get SOME catchup
-    // applied via the household-average fallback, not silently zero.
+  it("a spec with no owner is held to the household's limit, catch-up by age", () => {
+    // One person aged 55 (catch-up, not super catch-up); a joint spec has no
+    // limit of its own, so the household's applies.
     const specs: ContributionSpec[] = [
       {
         category: "401k" as AccountCategory,
@@ -180,7 +191,6 @@ describe("T24 — per-person catch-up gating (H10)", () => {
     const input = makeInput({
       contributionSpecs: specs,
       currentAge: 55, // >= catchupAge 50, < superCatchupAgeRange[0] 60
-      // catchupGroupParticipants intentionally omitted
     });
 
     const result = calculateProjection(input);
@@ -191,5 +201,43 @@ describe("T24 — per-person catch-up gating (H10)", () => {
     if (!slot401k) throw new Error("expected a 401k slot in year 0");
 
     expect(slot401k.irsLimit).toBe(23500 + 7500);
+  });
+});
+
+describe("year 0 — a contribution over its IRS limit, late in the year", () => {
+  it("has only max(0, capped − configured × elapsed) left, not capped × the rest of the year", () => {
+    const spec = (configuredAnnual?: number): ContributionSpec => ({
+      category: "401k" as AccountCategory,
+      name: "401k",
+      method: "fixed_monthly",
+      value: 23500 / 12,
+      salaryFraction: 1,
+      baseAnnual: 23500, // capped
+      taxTreatment: "pre_tax",
+      personId: 1,
+      ...(configuredAnnual !== undefined ? { configuredAnnual } : {}),
+    });
+    const zero = { "401k": 0, "403b": 0, hsa: 0, ira: 0, brokerage: 0 };
+    const run = (s: ContributionSpec) => {
+      const year0 = calculateProjection(
+        makeInput({
+          asOfDate: new Date("2025-10-01"),
+          contributionSpecs: [s],
+          baseYearContributions: { ...zero, "401k": 23500 },
+          baseYearEmployerMatch: zero,
+        }),
+      ).projectionByYear[0]!;
+      if (year0.phase !== "accumulation") throw new Error("accumulation");
+      return year0.slots.find((x) => x.category === "401k")!.employeeContrib;
+    };
+    const plain = run(spec());
+    const proRate = plain / 23500;
+    // Configured at 30,000: by October most of the limit is already used.
+    expect(run(spec(30000))).toBeCloseTo(
+      Math.max(0, 23500 - 30000 * (1 - proRate)),
+      1,
+    );
+    // So far over that the limit was reached before now: nothing left.
+    expect(run(spec(200000))).toBe(0);
   });
 });

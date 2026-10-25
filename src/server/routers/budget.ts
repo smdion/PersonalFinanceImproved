@@ -1,4 +1,5 @@
 /** Budget router for multi-profile budget management including category items, column tiers, contribution profile linking, and budget API integration. */
+import { assertWithinIrsLimits } from "@/server/helpers/contribution-caps";
 import { assertNoPlanUses } from "@/server/helpers/plans";
 import { eq, asc, inArray, and, gte, lt } from "drizzle-orm";
 import { log } from "@/lib/logger";
@@ -903,6 +904,7 @@ export const budgetRouter = createTRPCRouter({
             accountId,
             input.amount,
             contribProfileId,
+            assertWithinIrsLimits,
           );
         });
         return item;
@@ -1052,7 +1054,11 @@ export const budgetRouter = createTRPCRouter({
             .where(eq(schema.budgetItems.id, id));
         }
 
-        await applyContributionAccountEditsBatch(tx, contributionEdits);
+        await applyContributionAccountEditsBatch(
+          tx,
+          contributionEdits,
+          assertWithinIrsLimits,
+        );
       });
       const appliedCells = toApply.reduce((n, t) => n + t.changes.length, 0);
       return {

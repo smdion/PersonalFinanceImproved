@@ -27,12 +27,17 @@ export type Recommendation = {
   impact: MilestoneImpact | null;
   href: string;
   source: MilestoneSource | "ledgr";
+  /** An error to fix: it can be snoozed but never dismissed for good. */
+  snoozeOnly?: boolean;
 };
 
 /** Behind (or alerting) milestones with a next step, in their configured
  *  area. Urgency is the milestone's own: alert → now, behind → soon. */
 export function recommendationsFromMilestones(
   results: readonly MilestoneResult[],
+  /** Subjects (e.g. funds) another recommendation already covers more
+   *  precisely — a milestone about nothing else steps aside. */
+  covered: ReadonlySet<string> = new Set(),
 ): Recommendation[] {
   const byId = new Map(results.map((r) => [r.id, r]));
   const out: Recommendation[] = [];
@@ -40,6 +45,7 @@ export function recommendationsFromMilestones(
     const r = byId.get(id);
     if (!r || !r.nextStep) continue;
     if (!r.alert && r.status !== "behind") continue;
+    if (r.subjects?.length && r.subjects.every((x) => covered.has(x))) continue;
     out.push({
       id,
       area,

@@ -1,5 +1,8 @@
 "use client";
 
+import { isRothIraContribution } from "@/lib/pure/roth-ira";
+import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
+import { capMessage } from "@/lib/pure/contribution-caps";
 import { isPaidThroughPayroll } from "@/lib/calculators/paycheck";
 import { useState } from "react";
 import { InlineEdit } from "@/components/ui/inline-edit";
@@ -153,6 +156,15 @@ export function ContribCard({
         </div>
       </div>
 
+      {/* What to fix: over the IRS limit (the figures show the capped
+          amount), or a missing owner / HSA coverage type. */}
+      {capMessage(c) && (
+        <p
+          className={`text-caption mt-1 ${(c.cap?.overBy ?? 0) > 0 ? "font-medium text-red-600" : "text-amber-600"}`}
+        >
+          {capMessage(c)}
+        </p>
+      )}
       {/* Joint account clarification */}
       {c.ownership === "joint" && (
         <p className="text-caption text-faint mt-1">
@@ -314,6 +326,18 @@ export function ContribCard({
             size="xs"
             title="The bonus check takes this contribution too: a percent of pay at its rate of the bonus, a fixed amount once more. The employer match follows."
             disabled={!valueEditable}
+          />
+        </div>
+      )}
+
+      {/* A Roth IRA's route — the Contribution Profile's election; the
+          Roth IRA verdict and recommendation read it. */}
+      {isRothIraContribution(c) && (
+        <div className="mt-1">
+          <RothRouteSelect
+            value={c.rothRoute}
+            disabled={!valueEditable}
+            onChange={(v) => onUpdateContrib(c.id, "rothRoute", v)}
           />
         </div>
       )}

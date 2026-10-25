@@ -8,6 +8,56 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.14] - 2026-10-25
+
+### Added
+
+- **IRS contribution limits are enforced everywhere.** A 401(k), 403(b), IRA or HSA contribution set above its IRS limit now counts only up to the limit in this year's paycheck, budget and contribution summary. The retirement projection holds each person to the limit every year (limits grow over time); anything a percentage contribution carries past it is still saved in a Retirement brokerage, as before. Employer money that counts toward a limit is included, a married couple's family HSA limit is shared, an IRA can't exceed earned income, and a joint account is held to the household's remaining room.
+- **Over-limit contributions are an error to fix**: saving one is refused with the most it can be ("set it to at most 20.41% of pay"), the row shows how far over it is, and it's a top recommendation until fixed. An account with no owner, or an HSA with no coverage type, gets a prompt to set one.
+- **Performance checks.** Each account row flags figures that don't fit together — a gain that doesn't add up, a year that doesn't start where the last one ended, money moved between tracked accounts with one side missing, an ending that differs from the year's last snapshot — with what usually causes it. The year shows a count, and Finalize lists them before you lock a year.
+- **Notes, estimates and accepted gaps on Performance rows.** Add a note to an account's year, mark figures still estimated (a SimpleFIN fill marks the ones it worked out from your paycheck setup), and accept a gap that's on purpose with a reason — it stays quiet only while the gap is the one you accepted. Finalize lists what's still estimated; finalizing never clears it.
+- **Correct a past year with a preview.** Past years' figures (and every year's beginning balance) can be edited in the Performance table; saving shows everything the change moves — the row, next year's beginning (with the option to start next year at the new ending), and each year's totals — before it's saved.
+
+### Changed
+
+- **Update Performance speaks plainly**: fields are "You added", "Paid out to you", "Moved between accounts", "Fees & taxes withheld", each with help, plus tips for the account type (ESPP purchases at market value, IRA conversions aren't contributions, HSA refunds, statement totals at year end). The beginning balance is shown and editable, with "Last year ended at … — use that" when a year doesn't continue the last.
+- A row that added up before an edit still adds up after it: when you change a figure and not the gain, the gain follows. A row with a gain entered on purpose keeps it.
+- A finalized year's latest snapshot can be corrected; its Performance figures stay as they are.
+- **Tell Ledgr how your Roth IRA money gets there** — direct, or the backdoor (a traditional IRA contribution converted to the Roth) — on the Roth IRA account in the Contribution Profile or on Paycheck. The Roth IRA check then advises on what you actually do: nothing to decide when you use the backdoor (it works at any income); a warning to act now when you contribute directly close to or over the limit; no more "Direct now" nudge when you haven't contributed yet.
+- **Bridge to penalty-free money** on the dashboard's Retirement card, when you retire before 59½: the years until locked retirement money opens, the spending to cover after Social Security, whether the money you can reach without the 10% penalty covers it (and the tightest year), where that money sits (taxable brokerage, Roth contributions, a workplace plan under the Rule of 55), when each person's locked money opens, and — if it falls short — why and what helps. At your assumed returns.
+- **Recommendations say exactly what to do, using what Ledgr already knows:**
+  - **Employer match** names the account and the rate that gets the full match ("raise to 6% of pay (now 4%)").
+  - **IRS limits**: room filled through payroll is spread over the paychecks left this year; IRA/HSA room says it's open until the filing deadline.
+  - **Savings rates** say where to start — a missed match first, then the account with the most IRS room.
+  - **Emergency fund** shows the dollars to add.
+  - **Paid-off home** gives the extra principal a month that pays it off by the target age.
+  - **Rebalancing** says where a sale costs no tax (inside a 401(k)/IRA/HSA) or, when it's all taxable, to steer new contributions instead of selling.
+  - **Fund costs** say to switch funds where you choose them (IRA, taxable) and to check the plan's menu in a workplace plan — and don't repeat a fund the "cheaper equivalent" item already names.
+  - **Uninvested cash** says which under-target classes investing it would rebalance.
+- **Budget & Spending bars are readable.** Every bar in the card shares one scale sized to the largest share or range (e.g. 0–40%, labelled on top) instead of 0–100%, so a 13% category no longer hugs the left edge and bars compare across the card. The count reads "at or under range" (being under a spending range counts).
+- **Every recommendation says what it's about on its own** — fund costs and expense ratios named, rates say what they measure, savings checkpoints say what's counted, and rebalancing, housing, mortgage, emergency-fund and checklist items name their subject.
+- **Two kinds of cost, named apart.** Benchmarks' "What it costs" now shows **fund costs** (expense ratios, taken inside the funds' prices — already in your returns) and **account fees** (charged to the accounts and recorded in Performance) on separate lines, with a year of both together. Performance's fee column and lifetime card say "account fees"; the lifetime card no longer claims to include expense ratios.
+
+### Fixed
+
+- **Correcting a finalized year no longer resets lifetime totals.** An edit to a locked year now moves that year's totals and every later year's lifetime totals by exactly what changed; before, it could recompute lifetime totals from scratch and lose history from before tracking began.
+- Yearly Performance totals are rebuilt by account type, rollovers included; editing an account no longer rewrites a finalized year or stores a stray "Retirement" total.
+- A snapshot dated earlier in a year than its latest no longer overwrites that year's ending balances, and a snapshot in a finalized year leaves its figures alone.
+- **Actual Budget syncs recover after an Actual upgrade.** The first request after the Actual connection starts (when it upgrades and opens the budget) now runs on its own; before, several at once broke the budget's loading and every retry repeated it.
+- **Budget syncs never create a transaction twice.** A request that creates something (YNAB or Actual) is no longer sent again after a timeout or server error — it may already have gone through; the next sync picks it up instead. Reads and updates still retry.
+- **"Uninvested cash" no longer asks you to invest $0** for a nearly empty all-cash account (such as a traditional IRA emptied by a backdoor Roth conversion): it now needs at least $100 over your target mix.
+- **The Rule of 55 isn't granted to someone who retires before 55.** The projection assumed a still-active job ended in each future year, so retiring at 50 made the workplace plan penalty-free at 55; the job now ends at the person's own planned retirement. The Tax Buckets page agrees.
+- **A recent Roth conversion is penalty-free once you're 59½** — the 5-year conversion penalty applies only under 59½; the projection kept that money locked.
+- Renaming a Contribution Profile no longer wipes its contribution values.
+- A resumed portfolio snapshot draft restores every row of an account held in several parts.
+- Dividends that stay in an account are no longer counted as paid out (they're already in the balance).
+
+### Internals (no user-facing changes)
+
+- Database migration adds Performance notes, estimates and accepted gaps (runs automatically; older backups restore with none).
+
+---
+
 ## [0.8.13] - 2026-10-23
 
 ### Security

@@ -177,7 +177,9 @@ export const earlyRetirementProfile: DemoProfile = {
       accountType: "401k",
       taxTreatment: "pre_tax",
       contributionMethod: "percent_of_salary",
-      contributionValue: "23",
+      // Within the 402(g) limit; the rest of the aggressive saving goes to
+      // the taxable brokerage below.
+      contributionValue: "10",
       employerMatchType: "percent_of_contribution",
       employerMatchValue: "100",
       employerMaxMatchPct: "6",
@@ -204,13 +206,14 @@ export const earlyRetirementProfile: DemoProfile = {
       employerMatchValue: null,
       employerMaxMatchPct: null,
       perfAccountLabel: "HSA",
+      hsaCoverageType: "self_only",
     },
     {
       personName: "Morgan",
       accountType: "brokerage",
       taxTreatment: "after_tax",
       contributionMethod: "fixed_annual",
-      contributionValue: "60000",
+      contributionValue: "91200",
       employerMatchType: "none",
       employerMatchValue: null,
       employerMaxMatchPct: null,

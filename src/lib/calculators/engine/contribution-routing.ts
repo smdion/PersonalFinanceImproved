@@ -15,7 +15,7 @@ import type {
   AccountCategory,
   TaxSplitConfig,
 } from "../types";
-import { roundToCents } from "../../utils/math";
+import { roundToCents, sumBy } from "../../utils/math";
 import {
   getRothFraction as configGetRothFraction,
   getAllCategories,
@@ -26,7 +26,16 @@ import {
   buildCategoryRecord,
   isRetirementMoney,
   isTaxFree,
+  isPreTaxTreatment,
+  isHsaTreatment,
+  getLimitGroup,
 } from "../../config/account-types";
+import {
+  capContributionsByLimitGroup,
+  type CapContext,
+  type CappedContribution,
+  type CapRow,
+} from "../../pure/contribution-caps";
 import { OVERFLOW_TOLERANCE } from "../../constants";
 import { projectSpecAmount } from "./contribution-projection";
 
@@ -41,6 +50,43 @@ function getRothFraction(
   taxSplits: TaxSplitConfig,
 ): number {
   return configGetRothFraction(category, taxSplits);
+}
+
+/**
+ * The employee money that fits under a category's effective limit: employer
+ * money that counts toward the IRS limit (HSA) comes off the IRS limit
+ * first; an account cap bounds employee money only.
+ */
+function employeeRoom(
+  category: AccountCategory,
+  irsLimit: number,
+  effectiveLimit: number,
+  employerMatch: Record<AccountCategory, number>,
+): number {
+  const counted = getAccountTypeConfig(category).matchCountsTowardLimit
+    ? (employerMatch[category] ?? 0)
+    : 0;
+  return Math.max(0, Math.min(effectiveLimit, irsLimit - counted));
+}
+
+/** A slot's room left for employee money (employer money that counts
+ *  already taken off); 0 for the overflow target. */
+export function remainingRoom(
+  slot: Pick<
+    AccumulationSlot,
+    "category" | "irsLimit" | "effectiveLimit" | "employerMatch"
+  >,
+  employee: number,
+): number {
+  if (isOverflowTarget(slot.category)) return 0;
+  return roundToCents(
+    Math.max(
+      0,
+      employeeRoom(slot.category, slot.irsLimit, slot.effectiveLimit, {
+        [slot.category]: slot.employerMatch,
+      } as Record<AccountCategory, number>) - employee,
+    ),
+  );
 }
 
 /**
@@ -79,12 +125,19 @@ export function routeWaterfall(
       accountCap,
     );
 
+    const room = employeeRoom(
+      category,
+      irsLimit,
+      effectiveLimit,
+      employerMatch,
+    );
+
     let employeeContrib: number;
     if (isOverflowTarget(category)) {
       employeeContrib = roundToCents(remaining);
       remaining = 0;
     } else {
-      employeeContrib = roundToCents(Math.min(remaining, effectiveLimit));
+      employeeContrib = roundToCents(Math.min(remaining, room));
       remaining = roundToCents(remaining - employeeContrib);
     }
 
@@ -131,9 +184,7 @@ export function routeWaterfall(
     const cappedByAccount = accountCap !== null && accountCap < irsLimit;
     const overflowAmount = isOverflowTarget(category)
       ? 0
-      : roundToCents(
-          Math.max(0, targetContribution - effectiveLimit - remaining),
-        );
+      : roundToCents(Math.max(0, targetContribution - room - remaining));
 
     slots.push({
       category,
@@ -145,7 +196,7 @@ export function routeWaterfall(
       traditionalContrib: tradContrib,
       remainingSpace: isOverflowTarget(category)
         ? 0
-        : roundToCents(effectiveLimit - employeeContrib),
+        : roundToCents(room - employeeContrib),
       cappedByAccount,
       cappedByTaxType,
       overflowAmount,
@@ -220,7 +271,10 @@ export function routePercentage(
 
     const allocated = isOverflowTarget(category)
       ? requested
-      : Math.min(requested, effectiveLimit);
+      : Math.min(
+          requested,
+          employeeRoom(category, irsLimit, effectiveLimit, employerMatch),
+        );
     const overflow = roundToCents(requested - allocated);
     totalOverflow += overflow;
 
@@ -255,7 +309,10 @@ export function routePercentage(
         irsLimit,
         accountCap,
       );
-      return a.allocated < effectiveLimit;
+      return (
+        a.allocated <
+        employeeRoom(a.category, irsLimit, effectiveLimit, employerMatch)
+      );
     });
 
     const uncappedTotalPercent = uncapped.reduce((s, a) => s + a.percent, 0);
@@ -277,7 +334,10 @@ export function routePercentage(
           irsLimit,
           accountCap,
         );
-        const canAbsorb = roundToCents(effectiveLimit - a.allocated);
+        const canAbsorb = roundToCents(
+          employeeRoom(a.category, irsLimit, effectiveLimit, employerMatch) -
+            a.allocated,
+        );
         const absorbed = Math.min(share, canAbsorb);
         a.allocated = roundToCents(a.allocated + absorbed);
         redistributed += absorbed;
@@ -348,9 +408,15 @@ export function routePercentage(
       employeeContrib: roundToCents(rothContrib + tradContrib),
       rothContrib,
       traditionalContrib: tradContrib,
-      remainingSpace: isOverflowTarget(a.category)
-        ? 0
-        : roundToCents(effectiveLimit - a.allocated),
+      remainingSpace: remainingRoom(
+        {
+          category: a.category,
+          irsLimit,
+          effectiveLimit,
+          employerMatch: employerMatch[a.category],
+        },
+        a.allocated,
+      ),
       cappedByAccount: accountCap !== null && accountCap < irsLimit,
       cappedByTaxType,
       overflowAmount: a.overflow,
@@ -360,153 +426,200 @@ export function routePercentage(
   return { slots, warnings };
 }
 
+/** What the IRS-limit caps run on for one projected year. */
+export type YearCapInput = {
+  /** Limits already grown to the year; taxYear = the year (Dec-31 ages). */
+  ctx: Omit<CapContext, "people">;
+  people: readonly { id: number; birthYear: number | null }[];
+  /** The year's employer money per category — the same dollars the engine
+   *  credits; each spec holds its `employerShare` of it against the limit. */
+  employerMatch: Record<AccountCategory, number>;
+  /** Each person's projected pay for the year (bounds an IRA); null when
+   *  the engine doesn't track pay per person. */
+  wagesByPerson: ReadonlyMap<number, number> | null;
+};
+
+export type CappedSpecs = {
+  /** Per spec, in spec order. */
+  capped: CappedContribution[];
+  groupLimits: Map<string, number>;
+};
+
 /**
- * Route contributions for years 1+ using per-account specs from the DB.
- *
- * Each account computes its own contribution based on its method:
- * - percent_of_salary: projectedSalary × rate, capped at IRS limit
- * - fixed_per_period / fixed_monthly: base amount grown by IRS limit growth rate
- *
- * Tax-advantaged accounts that exceed their IRS limit overflow to brokerage.
- * Brokerage/ESPP accounts have no IRS cap.
+ * Cap one year's projected spec amounts per person through the shared
+ * contribution-caps module (spec index = row id).
+ */
+export function capSpecs(
+  specs: readonly ContributionSpec[],
+  amounts: {
+    projectedSalary: number;
+    salaryBase: number;
+    limitGrowthFactor: number;
+  },
+  year: YearCapInput,
+): CappedSpecs {
+  const rows: CapRow[] = specs.map((spec, i) => ({
+    id: i,
+    personId: spec.personId ?? null,
+    accountType: spec.category,
+    hsaCoverageType: spec.hsaCoverageType ?? null,
+    regularAnnual: roundToCents(projectSpecAmount(spec, amounts)),
+    bonusAnnual: 0,
+    employerAnnual:
+      (spec.employerShare ?? 0) * year.employerMatch[spec.category],
+    // Pre-tax and HSA payroll money is left out of W-2 wages.
+    reducesCompensation:
+      getAccountTypeConfig(spec.category).isPayrollDeductible &&
+      (isPreTaxTreatment(spec.taxTreatment) ||
+        isHsaTreatment(spec.taxTreatment)),
+  }));
+  const { byRow, groupLimits } = capContributionsByLimitGroup(rows, {
+    ...year.ctx,
+    people: year.people.map((p) => ({
+      ...p,
+      wages: year.wagesByPerson?.get(p.id) ?? null,
+    })),
+  });
+  return { capped: rows.map((r) => byRow.get(r.id)!), groupLimits };
+}
+
+/**
+ * Each category's slot limit from its group's household limit, every
+ * shared limit counted once: split across the group's categories in
+ * proportion to their employee money, room left over to the group's own
+ * category (the leader).
+ */
+export function slotLimits(
+  groupLimits: ReadonlyMap<string, number>,
+  employeeByCategory: Partial<Record<AccountCategory, number>>,
+): Record<AccountCategory, number> {
+  const out = buildCategoryRecord(() => 0);
+  const byGroup = new Map<string, AccountCategory[]>();
+  for (const cat of categoriesWithIrsLimit()) {
+    const group = getLimitGroup(cat)!;
+    byGroup.set(group, [...(byGroup.get(group) ?? []), cat]);
+  }
+  for (const [group, cats] of byGroup) {
+    const limit = groupLimits.get(group) ?? 0;
+    const leader = cats.find((c) => c === group) ?? cats[0]!;
+    const money = (c: AccountCategory) =>
+      Math.max(0, employeeByCategory[c] ?? 0);
+    const total = sumBy(cats, money);
+    for (const c of cats)
+      out[c] = roundToCents(
+        total >= limit && total > 0
+          ? (limit * money(c)) / total
+          : c === leader
+            ? limit - (total - money(leader))
+            : money(c),
+      );
+  }
+  return out;
+}
+
+/**
+ * Route one year's contributions from per-account specs already capped
+ * per person at the IRS limits (capSpecs): over-limit money overflows to
+ * brokerage, then the household's own account caps apply, also
+ * overflowing to brokerage. A category's Roth share and Portfolio part
+ * come from the capped amounts.
  */
 export function routeFromSpecs(
-  specs: ContributionSpec[],
-  projectedSalary: number,
-  baseSalary: number,
+  specs: readonly ContributionSpec[],
+  capped: CappedSpecs,
   yearLimits: Record<AccountCategory, number>,
   employerMatch: Record<AccountCategory, number>,
-  limitGrowthFactor: number,
   config: ResolvedAccumulationConfig,
 ): { slots: AccumulationSlot[]; warnings: string[]; totalOverflow: number } {
   const warnings: string[] = [];
+  const employee = buildCategoryRecord(() => 0);
+  const roth = buildCategoryRecord(() => 0);
+  const portfolio = buildCategoryRecord(() => 0);
+  const overflow = buildCategoryRecord(() => 0);
+  const overNames = buildCategoryRecord(() => new Set<string>());
 
-  // Aggregate contributions by category (multiple accounts can share a category)
-  const byCategory: Record<
-    AccountCategory,
-    {
-      employee: number;
-      overflow: number;
-      specs: { name: string; amount: number; method: string }[];
-    }
-  > = buildCategoryRecord(() => ({
-    employee: 0,
-    overflow: 0,
-    specs: [] as { name: string; amount: number; method: string }[],
-  }));
-
-  // Portfolio-parented specs' part of each category (see
-  // AccumulationSlot.portfolioContrib).
-  const portfolioByCategory = buildCategoryRecord(() => 0);
-
-  // Compute each account's projected contribution
-  for (const spec of specs) {
-    // Use salaryFraction so multi-job households don't inflate per-account contributions
-    const projected = roundToCents(
-      projectSpecAmount(spec, {
-        projectedSalary,
-        salaryBase: baseSalary,
-        limitGrowthFactor,
-      }),
-    );
-    byCategory[spec.category].specs.push({
-      name: spec.name,
-      amount: projected,
-      method: spec.method,
-    });
-    byCategory[spec.category].employee += projected;
+  specs.forEach((spec, i) => {
+    const c = capped.capped[i]!;
+    employee[spec.category] += c.cappedAnnual;
+    if (isTaxFree(spec.taxTreatment)) roth[spec.category] += c.cappedAnnual;
     if (!isRetirementMoney(spec.parentCategory))
-      portfolioByCategory[spec.category] += projected;
-  }
-
-  // Apply IRS limits to tax-advantaged accounts, overflow to brokerage
-  let totalOverflow = 0;
-  for (const cat of categoriesWithIrsLimit()) {
-    const irsLimit = yearLimits[cat];
-    const accountCap = config.accountCaps[cat];
-    const effectiveLimit = Math.min(irsLimit, accountCap ?? Infinity);
-    const raw = byCategory[cat].employee;
-
-    if (raw > effectiveLimit) {
-      const overflow = roundToCents(raw - effectiveLimit);
-      if (overflow >= OVERFLOW_TOLERANCE) {
-        byCategory[cat].employee = roundToCents(effectiveLimit);
-        byCategory[cat].overflow = overflow;
-        byCategory.brokerage.employee += overflow;
-        totalOverflow += overflow;
-
-        const specNames = byCategory[cat].specs.map((s) => s.name).join(" + ");
-        warnings.push(
-          `${getAccountTypeConfig(cat).displayLabel.toUpperCase()} contributions (${specNames}: $${raw.toLocaleString()}) ` +
-            `exceed ${irsLimit === effectiveLimit ? "IRS" : "account"} limit ` +
-            `$${effectiveLimit.toLocaleString()} — ` +
-            `$${overflow.toLocaleString()} overflow → brokerage`,
-        );
-      }
+      portfolio[spec.category] += c.cappedAnnual;
+    if (c.overBy > 0) {
+      overflow[spec.category] += c.overBy;
+      overNames[spec.category].add(spec.ownerName ?? "joint");
     }
+  });
+  // A category's Roth share is fixed before any cut below.
+  const rothFrac = Object.fromEntries(
+    ACCOUNT_CATEGORIES.map((cat) => [
+      cat,
+      employee[cat] > 0
+        ? roth[cat] / employee[cat]
+        : getRothFraction(cat, config.taxSplits),
+    ]),
+  ) as Record<AccountCategory, number>;
+
+  let totalOverflow = 0;
+  const spill = (cat: AccountCategory, amount: number) => {
+    employee.brokerage += amount;
+    totalOverflow += amount;
+    return roundToCents(amount);
+  };
+  // IRS limits, per person (already capped): every cut cent goes to
+  // brokerage; only a cut of a dollar or more is worth a warning.
+  for (const cat of categoriesWithIrsLimit()) {
+    if (overflow[cat] <= 0) continue;
+    const amount = spill(cat, overflow[cat]);
+    if (amount < OVERFLOW_TOLERANCE) continue;
+    warnings.push(
+      `${getAccountTypeConfig(cat).displayLabel.toUpperCase()} contributions over the IRS limit ` +
+        `(${[...overNames[cat]].join(", ")}) — $${amount.toLocaleString()} overflow → brokerage`,
+    );
+  }
+  // The household's own account caps.
+  for (const cat of categoriesWithIrsLimit()) {
+    const accountCap = config.accountCaps[cat];
+    if (accountCap === null || accountCap === undefined) continue;
+    const excess = roundToCents(employee[cat] - accountCap);
+    if (excess < OVERFLOW_TOLERANCE) continue;
+    employee[cat] = accountCap;
+    overflow[cat] += excess;
+    const amount = spill(cat, excess);
+    warnings.push(
+      `${getAccountTypeConfig(cat).displayLabel.toUpperCase()} contributions exceed account limit ` +
+        `$${accountCap.toLocaleString()} — $${amount.toLocaleString()} overflow → brokerage`,
+    );
   }
 
-  // Build slots
   const slots: AccumulationSlot[] = [];
   for (const cat of ACCOUNT_CATEGORIES) {
-    const employee = byCategory[cat].employee;
+    const emp = employee[cat];
     const match = employerMatch[cat];
-    if (employee <= 0 && match <= 0) continue;
-
+    if (emp <= 0 && match <= 0) continue;
     const irsLimit = yearLimits[cat];
     const accountCap = config.accountCaps[cat];
     const effectiveLimit = isOverflowTarget(cat)
       ? 0
       : configGetEffectiveLimit(cat, irsLimit, accountCap);
-
-    // Determine Roth fraction from the specs' tax treatments for this category
-    const catSpecs = specs.filter((s) => s.category === cat);
-    let rothFrac: number;
-    if (catSpecs.length > 0) {
-      const specProjection = (s: (typeof catSpecs)[number]) =>
-        projectSpecAmount(s, {
-          projectedSalary,
-          salaryBase: baseSalary,
-          limitGrowthFactor,
-        });
-      const rothAmount = catSpecs
-        .filter((s) => isTaxFree(s.taxTreatment))
-        .reduce((sum, s) => sum + specProjection(s), 0);
-      const totalAmount = catSpecs.reduce(
-        (sum, s) => sum + specProjection(s),
-        0,
-      );
-      rothFrac =
-        totalAmount > 0
-          ? rothAmount / totalAmount
-          : getRothFraction(cat, config.taxSplits);
-    } else {
-      // Category has no specs (e.g. brokerage from overflow only)
-      rothFrac = getRothFraction(cat, config.taxSplits);
-    }
-
-    const rothContrib = roundToCents(employee * rothFrac);
-    const tradContrib = roundToCents(employee - rothContrib);
-
+    const rothContrib = roundToCents(emp * rothFrac[cat]);
     slots.push({
       category: cat,
       irsLimit,
       effectiveLimit,
       employerMatch: match,
-      employeeContrib: roundToCents(employee),
+      employeeContrib: roundToCents(emp),
       rothContrib,
-      traditionalContrib: tradContrib,
-      remainingSpace: isOverflowTarget(cat)
-        ? 0
-        : roundToCents(Math.max(0, effectiveLimit - employee)),
+      traditionalContrib: roundToCents(emp - rothContrib),
+      remainingSpace: remainingRoom(
+        { category: cat, irsLimit, effectiveLimit, employerMatch: match },
+        emp,
+      ),
       cappedByAccount: accountCap !== null && accountCap < irsLimit,
       cappedByTaxType: false,
-      overflowAmount: byCategory[cat].overflow,
-      portfolioContrib: roundToCents(
-        Math.min(portfolioByCategory[cat], employee),
-      ),
+      overflowAmount: roundToCents(overflow[cat]),
+      portfolioContrib: roundToCents(Math.min(portfolio[cat], emp)),
     });
   }
 
-  return { slots, warnings, totalOverflow };
+  return { slots, warnings, totalOverflow: roundToCents(totalOverflow) };
 }

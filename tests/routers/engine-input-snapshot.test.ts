@@ -54,7 +54,7 @@ describe("engine input snapshot guard", () => {
     // assertions.
     db.update(schema.portfolioAccounts).set({ ownerPersonId: personId }).run();
 
-    // Seed a 401k contribution account so that baseLimits / catchupLimits
+    // Seed a 401k contribution account so that the IRS limits
     // are populated (limit computation iterates activeContribs per person).
     // Accounts carry no value of their own — the Contribution Profile below
     // gives it one. Correct field names: accountType (not category),
@@ -162,15 +162,12 @@ describe("engine input snapshot guard", () => {
         "accumulationDefaults",
         "annualExpenses",
         "asOfDate",
-        "baseLimits",
         "baseYearContributions",
         "baseYearEmployerMatch",
         "birthYear",
         "brokerageContributionRamp",
         "brokerageGoals",
         "budgetOverrides",
-        "catchupGroupParticipants",
-        "catchupLimits",
         "contributionSpecs",
         "currentAge",
         "currentSalary",
@@ -184,6 +181,7 @@ describe("engine input snapshot guard", () => {
         "householdSize",
         "individualAccounts",
         "inflationRate",
+        "irsLimitCaps",
         "limitGrowthRate",
         "perPersonBirthYears",
         "perPersonSalaryOverrides",
@@ -277,23 +275,14 @@ describe("engine input snapshot guard", () => {
     expect(bei.currentSalary).toBe(120000);
 
     // 2026 IRS contribution limits (seed: seed-reference-data.sql + vi.setSystemTime("2026-04-14"))
-    // baseLimits is keyed by AccountCategory. Only categories whose owners have
-    // activeContribs are populated; the rest are 0. We seeded a 401k account.
-    expect(bei.baseLimits["401k"]).toBe(24500); // 401k_employee_limit 2026
-    // catchupLimits is keyed by limit group name (not AccountCategory).
-    // Catchup requires age ≥ 50; fixture person is 36 → catchupByGroup populated
-    // from the limits table but not reflected in the effective limit. The limit
-    // TABLE value is what we assert here — application of catchup is age-gated
-    // in the engine, not in the payload.
-    expect(bei.catchupLimits["401k"]).toBe(8000); // 401k_catchup_limit 2026
-    // catchupGroupParticipants records WHO holds an account in each group
-    // (with birth year) so the engine can gate catchupLimits by each
-    // person's own projected age at runtime — fixture person id=1, born 1990.
-    // birthYear here matches bei.birthYear (both from the same
-    // new Date(dateOfBirth).getFullYear() computation, so both shift the
-    // same way with any local-timezone date parsing).
-    expect(bei.catchupGroupParticipants!["401k"]).toEqual([
-      { personId: 1, birthYear: bei.birthYear },
+    // irsLimitCaps carries the year's whole limit table (the engine grows
+    // and applies it per person, catch-up gated by each person's age) and
+    // the people — fixture person id=1; birthYear matches bei.birthYear
+    // (same new Date(dateOfBirth).getFullYear() computation).
+    expect(bei.irsLimitCaps.limits["401k_employee_limit"]).toBe(24500);
+    expect(bei.irsLimitCaps.limits["401k_catchup_limit"]).toBe(8000);
+    expect(bei.irsLimitCaps.people).toEqual([
+      { id: 1, birthYear: bei.birthYear },
     ]);
 
     // contributionSpecs — derived from the seeded 401k account

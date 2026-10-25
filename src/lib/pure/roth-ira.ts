@@ -21,7 +21,9 @@ import {
   isIraCategory,
   isPayrollDeductibleCategory,
   isPreTaxType,
+  isTaxFree,
 } from "@/lib/config/account-types";
+import type { RothIraRoute } from "@/lib/config/enum-values";
 import { irsLimitOrNull } from "@/lib/pure/contributions";
 import { ageInYear } from "@/lib/utils/date";
 import {
@@ -32,6 +34,7 @@ import {
   rothIraPhaseoutKeys,
 } from "@/lib/config/tax-params";
 import { roundToCents, sumBy } from "@/lib/utils/math";
+import { formatCurrency, formatList } from "@/lib/utils/format";
 
 export type RothIraVerdict = "direct" | "tooClose" | "backdoor";
 
@@ -42,6 +45,10 @@ export type RothIraPersonInput = {
   compensation: number;
   /** The person's IRA limit for the year (catch-up by age included). */
   iraLimit: number;
+  /** The most this person can put into an IRA this year from the IRS-limit
+   *  cap pass (limit, compensation, the spouse's IRA money — IRC 219(c));
+   *  absent = sized here from compensation. */
+  iraRoom?: number | null;
 };
 
 export type RothIraPersonResult = {
@@ -117,7 +124,8 @@ export function judgeRothIra(args: {
     (a, b) => b.compensation - a.compensation,
   )) {
     const own = Math.max(0, p.compensation);
-    const usable = args.combinedCompensation ? compensationLeft : own;
+    const usable =
+      p.iraRoom ?? (args.combinedCompensation ? compensationLeft : own);
     const allowed = rothIraAllowed(
       magi,
       phaseOut,
@@ -198,6 +206,10 @@ export type RothIraView = {
   parts: RothIraMagiParts;
   /** null when the year's phase-out rows are missing from the tax data. */
   judgement: RothIraResult | null;
+  /** How each person who contributes to a Roth IRA gets the money there
+   *  (their Contribution Profile's route); people with no Roth IRA
+   *  contribution aren't listed. */
+  routes: { personId: number; name: string; route: RothIraRoute }[];
   /** Each person's pre-tax IRA balance — the pro-rata blocker for a backdoor conversion. */
   proRata: {
     personId: number;
@@ -249,10 +261,16 @@ export function buildRothIraView(args: {
                 name: p.name,
                 compensation: p.compensation,
                 iraLimit: p.iraLimit,
+                iraRoom: p.iraRoom,
               },
             ],
       ),
     }),
+    routes: args.rothIra.people.flatMap((p) =>
+      p.rothRoute
+        ? [{ personId: p.personId, name: p.name, route: p.rothRoute }]
+        : [],
+    ),
     proRata: args.rothIra.people.flatMap((p) => {
       const amount = preTax.get(p.personId) ?? 0;
       // Only a balance that would make a real share of a conversion
@@ -287,6 +305,11 @@ export type RothIraSummary = {
     iraLimit: number | null;
     /** Has a workplace plan that could take a pre-tax IRA roll-in. */
     hasEmployerPlan: boolean;
+    /** The cap pass's most this person can put into an IRA (null: no IRA
+     *  contribution to size it from). */
+    iraRoom: number | null;
+    /** How their Roth IRA contribution gets there; null = none. */
+    rothRoute: RothIraRoute | null;
   }[];
 };
 
@@ -315,6 +338,10 @@ export function rothIraSummary(args: {
     earnings: { gross: number; preTaxFederal: number } | null;
     /** Account types of the person's job-linked contribution accounts. */
     jobAccountTypes: readonly string[];
+    /** The cap pass's most this person can put into an IRA (null: none). */
+    iraRoom?: number | null;
+    /** Their Roth IRA contribution's route (null/absent: none). */
+    rothRoute?: RothIraRoute | null;
   }[];
 }): RothIraSummary | null {
   const iraCategory = getAllCategories().find(isIraCategory);
@@ -338,12 +365,108 @@ export function rothIraSummary(args: {
         args.limits,
       ),
       hasEmployerPlan: p.jobAccountTypes.some(isEmployerPlanType),
+      iraRoom: p.iraRoom ?? null,
+      rothRoute: p.rothRoute ?? null,
     })),
   };
 }
 
-/** A backdoor Roth is the plan (verdict "backdoor") — while it is, money in
- *  a traditional IRA is in transit, not idle cash. */
+/** A contribution into a Roth IRA (an IRA account taking Roth money). */
+export function isRothIraContribution(c: {
+  accountType: string;
+  taxTreatment: string;
+}): boolean {
+  return isIraCategory(c.accountType) && isTaxFree(c.taxTreatment);
+}
+
+/** A person's Roth IRA route from their effective contribution rows: the
+ *  active Roth IRA contribution's route (absent = direct); null when they
+ *  make none. */
+export function rothIraRouteOf(
+  rows: readonly {
+    accountType: string;
+    taxTreatment: string;
+    rothRoute?: RothIraRoute;
+  }[],
+): RothIraRoute | null {
+  const roth = rows.find(isRothIraContribution);
+  return roth ? (roth.rothRoute ?? "direct") : null;
+}
+
+/** A backdoor Roth is the plan (verdict "backdoor", or someone's Roth IRA
+ *  route) — while it is, money in a traditional IRA is in transit, not
+ *  idle cash. */
 export function backdoorPlanned(view: RothIraView | null): boolean {
-  return view?.judgement?.verdict === "backdoor";
+  return (
+    view?.judgement?.verdict === "backdoor" ||
+    (view?.routes.some((r) => r.route === "backdoor") ?? false)
+  );
+}
+
+/**
+ * What the verdict means for how the household actually contributes (each
+ * person's Roth IRA route) — the one wording for the Taxes page and the
+ * recommendation. `action` is null when there's nothing to do: the backdoor
+ * works at any income, so a household already using it has nothing to
+ * decide, and direct contributions under the limit are fine.
+ * `whenAllowed` says when contributions for the year are allowed.
+ */
+export function rothIraAdvice(
+  view: RothIraView,
+  whenAllowed: string,
+): { summary: string; action: string | null } | null {
+  const j = view.judgement;
+  if (!j) return null;
+  const direct = view.routes.filter((r) => r.route === "direct");
+  const backdoor = view.routes.filter((r) => r.route === "backdoor");
+  const names = (rs: typeof direct) => formatList(rs.map((r) => r.name));
+  const howBackdoor =
+    "a non-deductible traditional IRA contribution, then converted to the Roth";
+  const range = `${formatCurrency(j.phaseOutStart, 0)}–${formatCurrency(j.phaseOutEnd, 0)}`;
+
+  if (j.verdict === "direct")
+    return {
+      summary: backdoor.length
+        ? `Direct Roth IRA contributions are OK at this income; the backdoor ${names(backdoor)} use${backdoor.length === 1 ? "s" : ""} works too.`
+        : "Direct Roth IRA contribution OK.",
+      action: null,
+    };
+
+  if (j.verdict === "backdoor") {
+    if (direct.length)
+      return {
+        summary: `Over the limit — ${names(direct)} contribute${direct.length === 1 ? "s" : ""} directly: switch to the backdoor Roth.`,
+        action: `Over the Roth IRA income limit, but ${names(direct)}'s Roth IRA contributions are set as direct — switch them to the backdoor (${howBackdoor}) in the Contribution Profile; money already put in directly this year can be recharacterized before the filing deadline`,
+      };
+    if (backdoor.length)
+      return {
+        summary:
+          "Over the limit — the backdoor Roth you use is the right route.",
+        action: null,
+      };
+    return {
+      summary: "Over the limit — use the backdoor Roth.",
+      action: `Over the Roth IRA income limit — contribute through the backdoor (${howBackdoor}), ${whenAllowed}`,
+    };
+  }
+
+  // Too close to call.
+  const allowed = j.people
+    .map((p) => `${p.name} ${formatCurrency(p.maxDirect, 0)}`)
+    .join(", ");
+  if (direct.length)
+    return {
+      summary: `Close to the limit and ${names(direct)} contribute${direct.length === 1 ? "s" : ""} directly — switching to the backdoor removes the risk.`,
+      action: `Close to the Roth IRA income limit (phase-out ${range}) and ${names(direct)} contribute${direct.length === 1 ? "s" : ""} directly — if the year's income lands in the phase-out, part becomes an excess contribution. The backdoor (${howBackdoor}) works at any income; otherwise check once the year's income is final and recharacterize what's over. Allowed directly at today's estimate: ${allowed}`,
+    };
+  if (backdoor.length)
+    return {
+      summary:
+        "Close to the limit — the backdoor you use works at any income; nothing to decide.",
+      action: null,
+    };
+  return {
+    summary: `Too close to call — wait until the year's income is final (contributions are allowed ${whenAllowed}), or use the backdoor, which works at any income. Allowed directly at today's estimate: ${allowed}.`,
+    action: `Too close to the Roth IRA income limit to be sure — wait until the year's income is final (contributions are allowed ${whenAllowed}), or use the backdoor (${howBackdoor}), which works at any income`,
+  };
 }

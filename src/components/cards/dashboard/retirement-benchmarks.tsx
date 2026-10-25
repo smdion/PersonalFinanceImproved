@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { RouterOutputs } from "@/lib/trpc";
 import { ProgressBar } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
+import { RetirementBridge } from "./retirement-bridge";
 import {
   formatCurrency,
   formatNumber,
@@ -232,6 +233,9 @@ export function RetirementBenchmarks(props: {
     <div className="space-y-4">
       <Readiness {...props} />
       <Growth data={props.data} currentAge={props.currentAge} />
+      {props.data.result && (
+        <RetirementBridge projection={props.data.result.projectionByYear} />
+      )}
     </div>
   );
 }

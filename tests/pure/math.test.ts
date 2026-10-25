@@ -137,3 +137,22 @@ describe("sumBy", () => {
     expect(sumBy([], () => 1)).toBe(0);
   });
 });
+
+describe("shareScaleMax / shareScaleTicks", () => {
+  it("rounds the largest share up to the next step, between one step and 100%", async () => {
+    const { shareScaleMax } = await import("@/lib/utils/math");
+    expect(shareScaleMax([0.13, 0.35, 0.17])).toBeCloseTo(0.4);
+    expect(shareScaleMax([0.3])).toBeCloseTo(0.3);
+    expect(shareScaleMax([0.02])).toBeCloseTo(0.1);
+    expect(shareScaleMax([])).toBeCloseTo(0.1);
+    expect(shareScaleMax([1.4])).toBe(1);
+    expect(shareScaleMax([Number.NaN, 0.21])).toBeCloseTo(0.3);
+  });
+
+  it("about five ticks from 0 to the top", async () => {
+    const { shareScaleTicks } = await import("@/lib/utils/math");
+    expect(shareScaleTicks(0.4)).toEqual([0, 0.1, 0.2, 0.3, 0.4]);
+    expect(shareScaleTicks(0.7)).toEqual([0, 0.2, 0.4, 0.6]);
+    expect(shareScaleTicks(1)).toEqual([0, 0.25, 0.5, 0.75, 1]);
+  });
+});

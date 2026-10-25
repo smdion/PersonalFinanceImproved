@@ -19,6 +19,7 @@ import {
   tracksCostBasis,
   tracksRothBasis,
 } from "@/lib/config/account-types";
+import { CheckBadge } from "./check-badge";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import type { AccountRow, YearRowProps } from "./types";
@@ -45,6 +46,7 @@ export function YearRow({
   showUnrealized,
   onlyBasis,
   canEdit = true,
+  onOpenNotes,
 }: YearRowProps) {
   const gainColor = row.yearlyGainLoss >= 0 ? "text-green-600" : "text-red-600";
   // Per-account, data-driven gate — never assume a whole category is pure
@@ -101,6 +103,10 @@ export function YearRow({
     (a) => a.conversionBasis ?? 0,
   );
   const isEditable = canEdit;
+  const openChecks = accounts.reduce(
+    (n, a) => n + (a.checks ?? []).filter((c) => !c.accepted).length,
+    0,
+  );
   const isEditingAnnual = (field: string) =>
     editingCell?.type === "annual" &&
     editingCell.id === row.id &&
@@ -138,6 +144,15 @@ export function YearRow({
             {row.isCurrentYear && (
               <Badge color="blue" className="rounded-full">
                 In Progress
+              </Badge>
+            )}
+            {!onlyBasis && openChecks > 0 && (
+              <Badge
+                color="amber"
+                className="rounded-full"
+                title="Figures that don't fit together — expand the year and hover the ⚠ on an account"
+              >
+                {openChecks} to check
               </Badge>
             )}
           </span>
@@ -352,6 +367,8 @@ export function YearRow({
       {isExpanded &&
         accounts.map((a, idx) => {
           const acctEditable = row.isCurrentYear && canEdit;
+          // Figures in any year: a past year's change is previewed first.
+          const figuresEditable = canEdit;
           const acctGainColor =
             a.yearlyGainLoss >= 0 ? "text-green-600" : "text-red-600";
           const isHistoricalDivider =
@@ -389,7 +406,7 @@ export function YearRow({
                 </tr>
               )}
               <tr
-                className={`border-subtle border-b ${isHistoricalDivider || (activeAccountCount !== undefined && idx >= activeAccountCount) ? "bg-surface-sunken/80 opacity-70" : "bg-surface-sunken/50"}`}
+                className={`group border-subtle border-b ${isHistoricalDivider || (activeAccountCount !== undefined && idx >= activeAccountCount) ? "bg-surface-sunken/80 opacity-70" : "bg-surface-sunken/50"}`}
               >
                 <td className="text-muted px-4 py-2 pl-10">
                   <span className="flex items-center gap-2">
@@ -399,14 +416,43 @@ export function YearRow({
                         accountType: a.accountType ?? undefined,
                       })}
                     </span>
+                    {!onlyBasis && (
+                      <CheckBadge
+                        checks={a.checks ?? []}
+                        note={a.note ?? null}
+                        estimatedFields={a.estimatedFields ?? []}
+                        onOpen={onOpenNotes ? () => onOpenNotes(a) : undefined}
+                      />
+                    )}
                   </span>
                 </td>
                 {!onlyBasis && (
                   <>
-                    <td className="text-muted px-4 py-2 text-right">
-                      {formatCurrency(a.beginningBalance)}
-                    </td>
-                    {acctEditable ? (
+                    {figuresEditable ? (
+                      <EditableCell
+                        value={a.beginningBalance}
+                        formatter={formatCurrency}
+                        isEditing={isEditingAccount(a.id, "beginningBalance")}
+                        editValue={editValue}
+                        onStartEdit={() =>
+                          onStartEdit(
+                            "account",
+                            a.id,
+                            "beginningBalance",
+                            a.beginningBalance,
+                          )
+                        }
+                        onEditValueChange={onEditValueChange}
+                        onSaveEdit={onSaveEdit}
+                        onKeyDown={onKeyDown}
+                        className="text-muted"
+                      />
+                    ) : (
+                      <td className="text-muted px-4 py-2 text-right">
+                        {formatCurrency(a.beginningBalance)}
+                      </td>
+                    )}
+                    {figuresEditable ? (
                       <EditableCell
                         value={a.totalContributions}
                         formatter={formatCurrency}
@@ -430,7 +476,7 @@ export function YearRow({
                         {formatCurrency(a.totalContributions)}
                       </td>
                     )}
-                    {acctEditable ? (
+                    {figuresEditable ? (
                       <EditableCell
                         value={a.employerContributions}
                         formatter={formatCurrency}
@@ -457,7 +503,7 @@ export function YearRow({
                         {formatCurrency(a.employerContributions)}
                       </td>
                     )}
-                    {acctEditable ? (
+                    {figuresEditable ? (
                       <EditableCell
                         value={a.distributions}
                         formatter={formatCurrency}
@@ -481,7 +527,7 @@ export function YearRow({
                         {formatCurrency(a.distributions)}
                       </td>
                     )}
-                    {acctEditable ? (
+                    {figuresEditable ? (
                       <EditableCell
                         value={a.rollovers}
                         formatter={formatCurrency}
@@ -500,7 +546,7 @@ export function YearRow({
                         {formatCurrency(a.rollovers)}
                       </td>
                     )}
-                    {acctEditable ? (
+                    {figuresEditable ? (
                       <EditableCell
                         value={a.fees}
                         formatter={formatCurrency}
@@ -519,7 +565,7 @@ export function YearRow({
                         {formatCurrency(a.fees)}
                       </td>
                     )}
-                    {acctEditable ? (
+                    {figuresEditable ? (
                       <EditableCell
                         value={a.yearlyGainLoss}
                         formatter={formatCurrency}
@@ -547,7 +593,7 @@ export function YearRow({
                         {cashBasisAnnotation}
                       </td>
                     )}
-                    {acctEditable ? (
+                    {figuresEditable ? (
                       <EditableCell
                         value={a.endingBalance}
                         formatter={formatCurrency}

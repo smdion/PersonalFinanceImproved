@@ -1075,13 +1075,9 @@ export const networthRouter = createTRPCRouter({
             // never drift (RULES §Single Computation Path). Same
             // `resolvedAccounts` used for the insert above, so a closed
             // account's zeroed balance is reflected consistently.
-            const snapshotYear = parseInt(
-              input.snapshotDate.substring(0, 4),
-              10,
-            );
             await refreshSnapshotYearDerivatives(
               tx,
-              snapshotYear,
+              input.snapshotDate,
               resolvedAccounts.map((a) => ({
                 performanceAccountId: a.performanceAccountId ?? null,
                 amount: a.amount,
@@ -1269,35 +1265,12 @@ export const networthRouter = createTRPCRouter({
           });
         }
 
-        const snapshotYear = parseInt(snap.snapshotDate.substring(0, 4), 10);
-
-        // A finalized year's totals are authoritative in Performance and
-        // are NOT refreshed by this edit — block rather than let the
-        // snapshot and the locked year-end figure silently diverge.
-        const [finalized] = await ctx.db
-          .select({ isFinalized: schema.annualPerformance.isFinalized })
-          .from(schema.annualPerformance)
-          .where(
-            and(
-              eq(schema.annualPerformance.year, snapshotYear),
-              eq(schema.annualPerformance.isFinalized, true),
-            ),
-          )
-          .limit(1);
-        if (finalized) {
-          throw new TRPCError({
-            code: "PRECONDITION_FAILED",
-            message:
-              `${snapshotYear} is finalized in Performance — its year-end ` +
-              `figures are locked. Un-finalize the year there first if you ` +
-              `need to change this snapshot's balances.`,
-          });
-        }
-
         // Write the balance (+ any metadata in the same call), then
         // re-derive ending balances + annual rollups from the snapshot's
         // full, post-edit row set — one shared code path with `create`.
-        await ctx.db.transaction(async (tx) => {
+        // A finalized year's Performance figures don't follow (they're
+        // settled there); the snapshot itself can still be corrected.
+        const performance = await ctx.db.transaction(async (tx) => {
           await tx
             .update(schema.portfolioAccounts)
             .set({ ...metaUpdates, amount: input.amount })
@@ -1312,7 +1285,7 @@ export const networthRouter = createTRPCRouter({
             .from(schema.portfolioAccounts)
             .where(eq(schema.portfolioAccounts.snapshotId, snap.id));
 
-          await refreshSnapshotYearDerivatives(tx, snapshotYear, allRows);
+          return refreshSnapshotYearDerivatives(tx, snap.snapshotDate, allRows);
         });
         invalidateYearEndCache();
 
@@ -1323,7 +1296,7 @@ export const networthRouter = createTRPCRouter({
         // marks the snapshot dirty and fires ONE `sync.resyncPortfolioPush`
         // when the user finishes (collapses the row / navigates away), with
         // a persistent "not synced" banner as the backstop.
-        return { amountEdited: true as const };
+        return { amountEdited: true as const, performance };
       }),
 
     /** Create a new sub-account row in the latest snapshot. */

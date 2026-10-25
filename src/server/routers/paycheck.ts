@@ -1,4 +1,8 @@
 /** Paycheck router for gross-to-net pay calculations including federal/state tax withholding, pre-tax deductions, and per-period contribution breakdowns. */
+import {
+  capForRequest,
+  loadCapHousehold,
+} from "@/server/helpers/contribution-caps";
 import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -50,11 +54,11 @@ import {
   computeAnnualEarnings,
   sumHouseholdIncome,
 } from "@/lib/pure/household-income";
-import { rothIraSummary } from "@/lib/pure/roth-ira";
+import { rothIraRouteOf, rothIraSummary } from "@/lib/pure/roth-ira";
 import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
 import { medicareLiabilityKey } from "@/lib/config/tax-params";
 import { hsaCashBuffers } from "@/lib/pure/cash-positions";
-import { isHsaCategory } from "@/lib/config/account-types";
+import { isHsaCategory, isIraCategory } from "@/lib/config/account-types";
 import { findActiveJob } from "@/lib/pure/profiles";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions";
@@ -282,7 +286,7 @@ export const paycheckRouter = createTRPCRouter({
       // The What-If tab's sandbox edits are the highest-precedence tier,
       // applied AFTER the picked profile's own overrides — same merge
       // function, one more layer, never a second resolution path.
-      const effectiveContribs = applyContribActiveFields(
+      const sandboxed = applyContribActiveFields(
         profileResult.contribs,
         input?.sandboxContribActiveFields ?? {},
         true,
@@ -293,11 +297,19 @@ export const paycheckRouter = createTRPCRouter({
       for (const [i, addition] of (
         input?.sandboxContribAdditions ?? []
       ).entries()) {
-        effectiveContribs.push(buildSandboxContribRow(addition, -(i + 1)));
+        sandboxed.push(buildSandboxContribRow(addition, -(i + 1)));
       }
       const effectiveJobs = profileResult.jobs;
 
       const asOfDate = new Date();
+      // The IRS-limit cap pass: every figure below reads the capped value.
+      const effectiveContribs = capForRequest(
+        sandboxed,
+        await loadCapHousehold(ctx.db, people, limitsRecord, taxYear),
+        effectiveJobs,
+        salaryProfileActiveMap,
+        effectiveSalaryMap,
+      );
 
       const results = await Promise.all(
         people.map(async (person) => {
@@ -460,6 +472,27 @@ export const paycheckRouter = createTRPCRouter({
           });
 
           const paycheck = calculatePaycheck(paycheckInput);
+          // The pay-stub check compares one real check — what payroll
+          // actually deducts, the configured amounts — so a person over an
+          // IRS limit gets that check figured on the configured rows.
+          const configured = <T extends { cappedValue?: number }>(rows: T[]) =>
+            rows.map(({ cappedValue: _capped, ...r }) => r);
+          const paystubPaycheck = [...jobContribs, ...personalContribs].some(
+            (c) => (c.cap?.overBy ?? 0) > 0,
+          )
+            ? calculatePaycheck({
+                ...paycheckInput,
+                contributionAccounts: buildContribAccounts(
+                  configured(jobContribs),
+                  configured(personalContribs),
+                  salary,
+                  periodsPerYear,
+                  ficaCapContext(limitsRecord, person.dateOfBirth, taxYear),
+                  contributionPay(salary, bonusTerms, comp.bonusOverride)
+                    .bonusGross,
+                ),
+              })
+            : null;
           // The nominal formula figure, ignoring any current-year pin — lets
           // the UI show "target" (formula) alongside "actual" (resolved)
           // instead of only ever showing the resolved value.
@@ -566,6 +599,10 @@ export const paycheckRouter = createTRPCRouter({
               bonusOverride: comp.bonusOverride,
             },
             paycheck,
+            /** The paycheck on the configured contributions, for the
+             *  pay-stub check — null when nothing is capped (same as
+             *  `paycheck`). */
+            paystubPaycheck,
             fullFormulaBonusEstimate,
             blendedAnnual,
             earnings,
@@ -664,6 +701,10 @@ export const paycheckRouter = createTRPCRouter({
           jobAccountTypes: r.rawContribs
             .filter((c) => c.jobId !== null)
             .map((c) => c.accountType),
+          iraRoom:
+            r.rawContribs.find((c) => isIraCategory(c.accountType) && c.cap)
+              ?.cap?.maxEmployee ?? null,
+          rothRoute: rothIraRouteOf(r.rawContribs),
         })),
       });
 

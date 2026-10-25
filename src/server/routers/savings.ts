@@ -1,4 +1,9 @@
 /** Savings router for savings goals, emergency fund calculations, planned transactions, and budget API expense integration. */
+import {
+  capForRequest,
+  loadCapHousehold,
+} from "@/server/helpers/contribution-caps";
+import { getAllPeople } from "@/server/helpers/people";
 import { eq, asc, sql, lt, isNull, and } from "drizzle-orm";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
@@ -271,9 +276,36 @@ export async function computeJobNetPayPerCheck(
     salaryEntry.otherEarnings,
   );
 
+  // A person's IRS limit spans all their accounts: cap the household's
+  // rows, then take this job's and this person's.
+  const capped = new Map(
+    capForRequest(
+      applyContribActiveFields(
+        await db
+          .select()
+          .from(schema.contributionAccounts)
+          .where(eq(schema.contributionAccounts.isActive, true)),
+        accountActiveFields,
+      ),
+      await loadCapHousehold(
+        db,
+        await getAllPeople(db),
+        limitsRecord,
+        resolvedTax.resolvedYear,
+      ),
+      mergeSalaryProfileJobFields(
+        await db.select().from(schema.jobs),
+        salaryProfileActiveMap,
+      ),
+      salaryProfileActiveMap,
+      new Map(),
+    ).map((c) => [c.id, c]),
+  );
+  const cappedRows = <T extends { id: number }>(rows: T[]) =>
+    rows.map((c) => capped.get(c.id)!);
   const contribAccounts = buildContribAccounts(
-    jobContribs,
-    personalContribs.filter((c) => c.ownership !== "joint"),
+    cappedRows(jobContribs),
+    cappedRows(personalContribs.filter((c) => c.ownership !== "joint")),
     currentSalary,
     periodsPerYear,
     ficaCapContext(

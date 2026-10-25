@@ -9,6 +9,7 @@ import { calculateProjection } from "@/lib/calculators/engine";
 import { calculateBrokerageGoals } from "@/lib/calculators/brokerage-goals";
 import type { ProjectionInput } from "@/lib/calculators/types";
 import type { BrokerageGoalInput } from "@/lib/calculators/brokerage-goals";
+import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 
 const AS_OF = new Date("2025-03-07");
 
@@ -18,7 +19,7 @@ const AS_OF = new Date("2025-03-07");
 
 /** Build a minimal valid engine input with sensible defaults. */
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
-  return {
+  return withCapsAge({
     accumulationDefaults: {
       contributionRate: 0.25,
       routingMode: "waterfall",
@@ -61,15 +62,24 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     salaryCap: null,
     salaryOverrides: [],
     budgetOverrides: [],
-    baseLimits: {
-      "401k": 23500,
-      "403b": 23500,
-      hsa: 4300,
-      ira: 7000,
-      brokerage: 0,
-    },
+    irsLimitCaps: capsFromBaseLimits({
+      baseLimits: {
+        "401k": 23500,
+        "403b": 23500,
+        hsa: 4300,
+        ira: 7000,
+        brokerage: 0,
+      },
+      catchupLimits: {
+        "401k": 7500,
+        ira: 1000,
+        hsa: 1000,
+        "401k_super": 11250,
+      },
+      currentAge: 35,
+    }),
     limitGrowthRate: 0.02,
-    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
+
     employerMatchRateByCategory: {
       "401k": 0.03,
       "403b": 0,
@@ -102,7 +112,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     ssStartAge: 67,
     asOfDate: AS_OF,
     ...overrides,
-  };
+  });
 }
 
 // Round all numbers in an object to avoid floating-point noise
@@ -168,8 +178,8 @@ describe("brokerage goals integration", () => {
     // convention engine-snapshot.test.ts uses.
     const downPayment = bgResult.goals.find((g) => g.id === 1)!;
     expect(downPayment.funded).toBe(false);
-    expect(downPayment.actualWithdrawal).toBe(15894.57);
-    expect(downPayment.shortfall).toBe(34105.43);
+    expect(downPayment.actualWithdrawal).toBe(40530.78);
+    expect(downPayment.shortfall).toBe(9469.22);
     expect(roundDeep(bgResult)).toMatchSnapshot();
   });
 

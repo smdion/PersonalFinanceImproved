@@ -99,6 +99,10 @@ export function useMilestones(): {
     efundMonths: efund
       ? (efund.monthsCoveredWithRepay ?? efund.monthsCovered)
       : null,
+    efundEssentialMonthly:
+      efund && efund.targetMonths > 0
+        ? efund.targetAmount / efund.targetMonths
+        : null,
     mortgage: mortgage.data ?? null,
     projection: projectionData?.result
       ? {

@@ -6,6 +6,11 @@
  * Uses the globally active Contribution and Salary Profiles — the setup
  * every page shows unless the household picks another.
  */
+import {
+  capForRequest,
+  loadCapHousehold,
+} from "@/server/helpers/contribution-caps";
+import { getAllPeople } from "@/server/helpers/people";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { isPreTaxTreatment, isTaxFree } from "@/lib/config/account-types";
@@ -55,17 +60,30 @@ export async function loadContributionMix(
       .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID)),
   ]);
   const profileId = Number(activeProfile[0]?.value ?? NaN);
-  const linked = contribs.filter((c) => c.performanceAccountId != null);
-  if (linked.length === 0) return new Map();
+  if (!contribs.some((c) => c.performanceAccountId != null)) return new Map();
 
   const salaryMap = await loadEffectiveSalaryProfile(db, null);
-  const { contribs: rows, jobs } = await loadAndApplyContribProfile(
+  const { contribs: effective, jobs } = await loadAndApplyContribProfile(
     db,
     Number.isFinite(profileId) ? profileId : null,
-    linked,
+    contribs,
     filterActiveJobs(allJobs),
     salaryMap,
   );
+  // Capped over all of a person's rows (a limit spans accounts), then the
+  // tracked ones.
+  const rows = capForRequest(
+    effective,
+    await loadCapHousehold(
+      db,
+      await getAllPeople(db),
+      null,
+      asOf.getFullYear(),
+    ),
+    jobs,
+    salaryMap,
+    new Map(),
+  ).filter((c) => c.performanceAccountId != null);
   const jobById = new Map(jobs.map((j) => [j.id, j]));
   const jobByPerson = new Map(jobs.map((j) => [j.personId, j]));
   // The employer matches what's deferred, on the pay it came from — the

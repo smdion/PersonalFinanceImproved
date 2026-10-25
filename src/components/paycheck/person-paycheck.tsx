@@ -98,6 +98,7 @@ export function PersonPaycheck({
   salary,
   resolvedBonusTerms,
   paycheck,
+  paystubPaycheck,
   fullFormulaBonusEstimate,
   mode,
   blendedAnnual,
@@ -159,6 +160,10 @@ export function PersonPaycheck({
     bonusOverride: number | null;
   };
   paycheck: PaycheckResult;
+  /** The paycheck on the configured contributions — what payroll actually
+   *  deducts, for the pay-stub check — when a contribution is over an IRS
+   *  limit (null/absent = same as `paycheck`). */
+  paystubPaycheck?: PaycheckResult | null;
   /** The nominal formula bonus, ignoring any current-year pin — lets
    *  BonusSection show "target" alongside "actual" when
    *  resolvedBonusTerms.bonusOverride is set. */
@@ -383,7 +388,7 @@ export function PersonPaycheck({
       <div className="border-subtle space-y-4 border-t px-5 pt-4 pb-5">
         {ficaRates && (
           <PaystubCheck
-            paycheck={paycheck}
+            paycheck={paystubPaycheck ?? paycheck}
             rates={ficaRates}
             payPeriod={job.payPeriod}
             anchor={job.anchorPayDate ?? job.startDate}

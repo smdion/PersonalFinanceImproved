@@ -10,6 +10,7 @@ import {
   isPayrollFicaExemptCategory,
   isRetirementParent,
 } from "@/lib/config/account-types";
+import { HSA_FAMILY_COVERAGE } from "@/lib/config/enum-values";
 import { requireLimit } from "@/server/helpers/settings";
 import { safeDivide, roundToCents } from "@/lib/utils/math";
 import { ageInYear } from "@/lib/utils/date";
@@ -49,7 +50,7 @@ export function irsLimitBaseKey(
   keys: { base: string; coverageVariant?: string | null },
   hsaCoverageType: string | null,
 ): string {
-  return keys.coverageVariant && hsaCoverageType === "family"
+  return keys.coverageVariant && hsaCoverageType === HSA_FAMILY_COVERAGE
     ? keys.coverageVariant
     : keys.base;
 }
@@ -128,53 +129,6 @@ export function ficaCapContext(
         ? null
         : ageInYear(Number(dateOfBirth.slice(0, 4)), taxYear),
   };
-}
-
-/**
- * One FICA-exempt cap per person and account type, shared across that
- * person's rows (two HSA payroll rows — a base and a catch-up — share one
- * IRS limit). Each row's own cap is the limit less ITS employer money;
- * the shared cap is the limit less ALL the group's employer money, used up
- * in row order by each row's yearly payroll contribution. Rows whose cap
- * is null (FICA wages) or Infinity (can't be sized) are left as they are.
- */
-export function shareFicaExemptCaps<
-  T extends {
-    personId: number | null;
-    accountType: string;
-    cap: number | null;
-    /** The person's IRS limit for the account type (null = unknown). */
-    limit: number | null;
-    employerAnnual: number;
-    annualPayroll: number;
-  },
->(rows: readonly T[]): (number | null)[] {
-  const out = rows.map((r) => r.cap);
-  const groups = new Map<string, number[]>();
-  rows.forEach((r, i) => {
-    if (
-      r.cap === null ||
-      !Number.isFinite(r.cap) ||
-      r.limit === null ||
-      r.personId === null
-    )
-      return;
-    const key = `${r.personId}:${r.accountType}`;
-    groups.set(key, [...(groups.get(key) ?? []), i]);
-  });
-  for (const idx of groups.values()) {
-    if (idx.length < 2) continue;
-    const limit = rows[idx[0]!]!.limit!;
-    let remaining = Math.max(
-      0,
-      limit - idx.reduce((s, i) => s + rows[i]!.employerAnnual, 0),
-    );
-    for (const i of idx) {
-      out[i] = remaining;
-      remaining = Math.max(0, remaining - rows[i]!.annualPayroll);
-    }
-  }
-  return out;
 }
 
 /**

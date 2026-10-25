@@ -5,7 +5,7 @@
  * single- and two-person households: currentAge/retirementAge resolution,
  * startingBalances aggregation from the latest snapshot, contributionSpecs
  * construction (incl. per-person personId — see T24/H10), and
- * catchupGroupParticipants population.
+ * the IRS-limit caps' people.
  *
  * Not exhaustive of all 1197 lines (contribution-profile batching, bracket
  * rate estimation, and profile-switch salary logic — called out in the
@@ -304,18 +304,18 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
     expect(payload.perPersonSettings.length).toBe(2);
   });
 
-  it("populates catchupGroupParticipants with both people's birth years (H10)", async () => {
+  it("sends both people's birth years for the IRS-limit caps (H10)", async () => {
     const data = await fetchRetirementData(db, { contributionProfileId });
     const payload = await buildEnginePayload(db, data, {
       contributionProfileId,
     });
 
-    const participants =
-      payload.baseEngineInput.catchupGroupParticipants?.["401k"];
-    expect(participants).toBeDefined();
-    expect(participants?.length).toBe(2);
-    const personIds = participants?.map((p) => p.personId).sort();
-    expect(personIds).toEqual([personAId, personBId].sort());
+    const people = payload.baseEngineInput.irsLimitCaps.people;
+    expect(people.length).toBe(2);
+    expect(people.every((p) => p.birthYear !== null)).toBe(true);
+    expect(people.map((p) => p.id).sort()).toEqual(
+      [personAId, personBId].sort(),
+    );
   });
 
   it("builds one contribution spec per person, each tagged with its own personId", async () => {

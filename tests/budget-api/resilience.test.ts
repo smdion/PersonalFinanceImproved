@@ -11,6 +11,7 @@ import {
   classifyThrown,
   backoffMs,
   retryWithBackoff,
+  isResendable,
 } from "@/lib/budget-api/errors";
 import { transactionIdempotencyKey } from "@/lib/budget-api/idempotency";
 import { detectDrift, hasDrift } from "@/lib/budget-api/drift-detection";
@@ -185,6 +186,39 @@ describe("retryWithBackoff", () => {
     await vi.runAllTimersAsync();
     await failed;
     expect(calls).toBe(2);
+  });
+
+  it("does not send again what canResend refuses", async () => {
+    let calls = 0;
+    const done = retryWithBackoff(
+      async () => {
+        calls++;
+        throw new BudgetApiError("server", "server", 500);
+      },
+      3,
+      () => false,
+    );
+    await expect(done).rejects.toThrow(/server/);
+    expect(calls).toBe(1);
+  });
+});
+
+describe("isResendable", () => {
+  const err = (code: "server" | "timeout" | "network" | "rate-limit") =>
+    new BudgetApiError(code, code, code === "server" ? 500 : null);
+
+  it("a POST may have been applied: sent again only after a rate limit", () => {
+    const post = { method: "POST" };
+    expect(isResendable(err("timeout"), post)).toBe(false);
+    expect(isResendable(err("server"), post)).toBe(false);
+    expect(isResendable(err("network"), { method: "post" })).toBe(false);
+    expect(isResendable(err("rate-limit"), post)).toBe(true);
+  });
+
+  it("reads, sets and deletes are harmless to repeat", () => {
+    expect(isResendable(err("timeout"))).toBe(true);
+    for (const method of ["GET", "PUT", "PATCH", "DELETE"])
+      expect(isResendable(err("server"), { method })).toBe(true);
   });
 });
 

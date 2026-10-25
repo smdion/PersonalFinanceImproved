@@ -195,8 +195,9 @@ export function computeEmployerPlanRothAccess(
 
 /** Roth IRA: real ordering rules apply — contribution basis is always
  *  penalty-free and tax-free with no clock; conversion basis is always
- *  tax-free but penalty-free only once its own 5-year clock has passed
- *  (gated conservatively on the *latest* tracked conversion year); growth
+ *  tax-free but penalty-free once its own 5-year clock has passed (gated
+ *  conservatively on the *latest* tracked conversion year) or the owner is
+ *  59½ — the conversion penalty doesn't apply past 59½; growth
  *  needs age ≥ 59½ for both flags (v1 approximates "qualified" as this age
  *  check alone — no per-conversion clock beyond latestConversionYear). */
 export function computeRothIraAccess(input: {
@@ -238,7 +239,8 @@ export function computeRothIraAccess(input: {
     slices.push({
       label: "Conversion basis",
       amount: cappedConversion,
-      penaltyFree: conversionSeasoned,
+      // The 5-year conversion penalty applies only under 59½.
+      penaltyFree: conversionSeasoned || qualified,
       taxFree: true,
     });
   }

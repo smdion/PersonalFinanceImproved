@@ -19,6 +19,7 @@ import {
   make5050GlidePath,
 } from "../benchmarks/benchmark-helpers";
 import type { ProjectionInput } from "@/lib/calculators/types";
+import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 
 const AS_OF = new Date("2025-03-07");
 const STOCK_BOND_CORRELATIONS = [
@@ -26,7 +27,7 @@ const STOCK_BOND_CORRELATIONS = [
 ];
 
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
-  return {
+  return withCapsAge({
     accumulationDefaults: {
       contributionRate: 0.29,
       routingMode: "waterfall",
@@ -70,15 +71,24 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     salaryCap: null,
     salaryOverrides: [],
     budgetOverrides: [],
-    baseLimits: {
-      "401k": 23500,
-      "403b": 23500,
-      hsa: 4300,
-      ira: 7000,
-      brokerage: 0,
-    },
+    irsLimitCaps: capsFromBaseLimits({
+      baseLimits: {
+        "401k": 23500,
+        "403b": 23500,
+        hsa: 4300,
+        ira: 7000,
+        brokerage: 0,
+      },
+      catchupLimits: {
+        "401k": 7500,
+        ira: 1000,
+        hsa: 1000,
+        "401k_super": 11250,
+      },
+      currentAge: 37,
+    }),
     limitGrowthRate: 0.02,
-    catchupLimits: { "401k": 7500, ira: 1000, hsa: 1000, "401k_super": 11250 },
+
     employerMatchRateByCategory: {
       "401k": 0.03,
       "403b": 0,
@@ -107,7 +117,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     ssStartAge: 67,
     asOfDate: AS_OF,
     ...overrides,
-  } as ProjectionInput;
+  }) as ProjectionInput;
 }
 
 /** Every account tracked, so the 401(k) (locked until 59½) and the HSA

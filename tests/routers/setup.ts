@@ -106,12 +106,26 @@ export async function createTestCaller(
   // callbacks (e.g. sync-core's C3 atomic write block) can run under the
   // better-sqlite3 test harness. Production uses Postgres which supports
   // async transactions natively; better-sqlite3 rejects them with
-  // "Transaction function cannot return a promise". This stub executes
-  // the callback against the outer db (no real atomicity) so the logic
-  // inside the transaction is still testable — atomicity itself is
-  // verified by the PG-backed deploy smoke tests, not the test suite.
+  // "Transaction function cannot return a promise". This stub runs the
+  // callback against the outer db inside a SQLite SAVEPOINT: a throw rolls
+  // back everything the callback wrote (tests run one statement at a time,
+  // so savepoints nest like Postgres transactions would), so rollback paths
+  // — a preview that writes and then rolls back — are testable here too.
+  let savepoint = 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (db as any).transaction = async (fn: (tx: unknown) => unknown) => fn(db);
+  (db as any).transaction = async (fn: (tx: unknown) => unknown) => {
+    const name = `test_tx_${++savepoint}`;
+    sqlite.exec(`SAVEPOINT ${name}`);
+    try {
+      const result = await fn(db);
+      sqlite.exec(`RELEASE ${name}`);
+      return result;
+    } catch (e) {
+      sqlite.exec(`ROLLBACK TO ${name}`);
+      sqlite.exec(`RELEASE ${name}`);
+      throw e;
+    }
+  };
 
   // Cast to PG type (same pattern as production schema.ts)
   // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM requires this cast for SQLite-to-PG type compatibility in test harness

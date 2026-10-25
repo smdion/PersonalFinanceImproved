@@ -74,6 +74,9 @@ export type ContributionAccountInput = {
   /** The match this account would get at the plan's cap — the full match.
    *  Equals employerMatch when uncapped or a flat amount. */
   employerMatchAvailable?: number;
+  /** The share of pay that gets the full employer match (the match cap);
+   *  null/absent when the match doesn't depend on the rate. */
+  fullMatchShareOfPay?: number | null;
   employerMatchTaxTreatment: TaxTreatmentType;
   /** Yearly cap on this account's payroll contributions that aren't FICA
    *  wages (payrollFicaExemptCap); null = they are FICA wages; Infinity =
@@ -194,6 +197,9 @@ export type IndividualAccountInput = {
    *  eligibility gate (Group 2) never depends on which of those partial
    *  sources happened to cover a given owner. */
   ownerBirthYear?: number;
+  /** The owner's planned retirement year (birth year + retirement age) —
+   *  when a still-active job is assumed to end, for Rule of 55. */
+  ownerRetirementYear?: number;
   /** Rule of 55 forecasting override — per-person, forces the
    *  PROJECTED (future-year) Rule of 55 verdict to ineligible for this
    *  account's owner, regardless of what the real job-separation
@@ -267,6 +273,13 @@ export type IndividualAccountYearBalance = {
    *  during accumulation. */
   eligibilityLocked?: boolean;
   eligibilityReason?: string;
+  /** Start-of-year dollars drawable this year without the early-withdrawal
+   *  penalty, and those that aren't (before this year's withdrawals and
+   *  growth — the numbers routing used; decumulation only). */
+  penaltyFreeAmount?: number;
+  penaltyExposedAmount?: number;
+  /** The household lets this account take penalized draws. */
+  allowPenalizedWithdrawals?: boolean;
   /** Tracked Roth basis remaining at END of this year, both phases
    *  (see `@/lib/pure/roth-basis-tracking`). Contribution + conversion basis
    *  combined. Present only for taxFree-bucket accounts; absent (not

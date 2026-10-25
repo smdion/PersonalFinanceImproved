@@ -21,6 +21,8 @@ export type ContribFieldSet = {
   isActive?: boolean | null;
   /** Also taken from bonus checks — absent means no. */
   fromBonus?: boolean | null;
+  /** A Roth IRA account's route — absent means direct. */
+  rothRoute?: string | null;
   /** Cosmetic only — deliberately excluded from the comparison below. */
   displayNameCustom?: string | null;
   /** @deprecated legacy key. */
@@ -56,6 +58,8 @@ function fieldsDiffer(
 ): boolean {
   return (
     COMPARED_FIELDS.some((field) => a[field] !== b[field]) ||
+    // Absent means direct, so absent and "direct" are the same route.
+    (a.rothRoute ?? "direct") !== (b.rothRoute ?? "direct") ||
     // Absent means no, so absent and false are the same election.
     takesFromBonusCheck({
       isPayrollDeducted: isPayroll,
@@ -73,7 +77,9 @@ function formatValue(fields: ContribFieldSet, isPayroll: boolean): string {
   const isPercent = fields.contributionMethod === "percent_of_salary";
   const value = fields.contributionValue;
   if (value == null) return "using account's own value";
-  const amount = isPercent ? `${value}%` : String(value);
+  const amount = `${isPercent ? `${value}%` : String(value)}${
+    fields.rothRoute === "backdoor" ? " via backdoor" : ""
+  }`;
   return takesFromBonusCheck({
     isPayrollDeducted: isPayroll,
     fromBonus: fields.fromBonus ?? undefined,

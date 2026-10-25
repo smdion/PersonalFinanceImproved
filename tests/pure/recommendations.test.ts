@@ -80,3 +80,54 @@ describe("recommendations from milestones", () => {
     expect(list.filter((r) => r.area === "paycheck")).toEqual([]);
   });
 });
+
+describe("recommendations that defer to a more precise one", () => {
+  it("a milestone whose subjects another item covers steps aside", () => {
+    const results = evaluateMilestones(
+      makeInput({
+        holdings: {
+          coverage: 1,
+          knownValue: 100_000,
+          unlinkedValue: 0,
+          classes: [],
+          expenseRatio: 0.0005,
+          costCoverage: 1,
+          funds: [
+            {
+              name: "AAA",
+              bucket: "us_equity",
+              expenseRatio: 0.005,
+              switchable: true,
+            },
+          ],
+        },
+      }),
+    );
+    const ids = (covered: string[]) =>
+      recommendationsFromMilestones(results, new Set(covered)).map((r) => r.id);
+    expect(ids([])).toContain("fundCosts");
+    expect(ids(["AAA"])).not.toContain("fundCosts");
+  });
+
+  it("uninvested cash says which under-target classes it would rebalance", async () => {
+    const { recommendationsFromCash } =
+      await import("@/lib/pure/recommendations-cash");
+    const drag = [
+      {
+        simplefinAccountId: 1,
+        label: "Brokerage",
+        excess: 5_000,
+        value: 20_000,
+      },
+    ];
+    expect(
+      recommendationsFromCash({ drag, hsa: [], underTarget: ["Bonds"] })[0]!
+        .action,
+    ).toMatch(
+      /— Bonds is under target, so investing it there also rebalances$/,
+    );
+    expect(recommendationsFromCash({ drag, hsa: [] })[0]!.action).not.toMatch(
+      /under target/,
+    );
+  });
+});

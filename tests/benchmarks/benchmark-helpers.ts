@@ -6,6 +6,7 @@
  */
 import { withConsistentStart } from "../calculators/fixtures/engine-fixtures";
 import type { ProjectionInput, MonteCarloInput } from "@/lib/calculators/types";
+import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 
 const AS_OF = new Date("2026-03-01");
 
@@ -84,7 +85,7 @@ export function makePureGrowthInput(
   overrides: Partial<ProjectionInput> = {},
 ): ProjectionInput {
   return withConsistentStart(
-    {
+    withCapsAge({
       accumulationDefaults: {
         contributionRate: 0,
         routingMode: "waterfall",
@@ -111,7 +112,10 @@ export function makePureGrowthInput(
       salaryCap: null,
       salaryOverrides: [],
       budgetOverrides: [],
-      baseLimits: ZERO_LIMITS,
+      irsLimitCaps: capsFromBaseLimits({
+        baseLimits: ZERO_LIMITS,
+        currentAge: 35,
+      }),
       limitGrowthRate: 0,
       employerMatchRateByCategory: ZERO_MATCH,
       startingBalances: {
@@ -136,7 +140,7 @@ export function makePureGrowthInput(
       ssStartAge: 67,
       asOfDate: AS_OF,
       ...overrides,
-    },
+    }),
     overrides,
   );
 }
@@ -150,7 +154,7 @@ export function makeTrinityInput(
 ): ProjectionInput {
   const withdrawalRate = overrides.decumulationDefaults?.withdrawalRate ?? 0.04;
   const startingBalance = 1_000_000;
-  return {
+  return withCapsAge({
     accumulationDefaults: {
       contributionRate: 0,
       routingMode: "waterfall",
@@ -178,7 +182,10 @@ export function makeTrinityInput(
     salaryCap: null,
     salaryOverrides: [],
     budgetOverrides: [],
-    baseLimits: ZERO_LIMITS,
+    irsLimitCaps: capsFromBaseLimits({
+      baseLimits: ZERO_LIMITS,
+      currentAge: 65,
+    }),
     limitGrowthRate: 0,
     employerMatchRateByCategory: ZERO_MATCH,
     startingBalances: {
@@ -203,7 +210,7 @@ export function makeTrinityInput(
     ssStartAge: 99,
     asOfDate: AS_OF,
     ...overrides,
-  };
+  });
 }
 
 /**
@@ -214,7 +221,7 @@ export function makeStandardInput(
   overrides: Partial<ProjectionInput> = {},
 ): ProjectionInput {
   return withConsistentStart(
-    {
+    withCapsAge({
       accumulationDefaults: {
         contributionRate: 0.25,
         routingMode: "waterfall",
@@ -239,20 +246,24 @@ export function makeStandardInput(
       salaryCap: null,
       salaryOverrides: [],
       budgetOverrides: [],
-      baseLimits: {
-        "401k": 23500,
-        "403b": 23500,
-        hsa: 4300,
-        ira: 7000,
-        brokerage: 0,
-      },
+      irsLimitCaps: capsFromBaseLimits({
+        baseLimits: {
+          "401k": 23500,
+          "403b": 23500,
+          hsa: 4300,
+          ira: 7000,
+          brokerage: 0,
+        },
+        catchupLimits: {
+          "401k": 7500,
+          ira: 1000,
+          hsa: 1000,
+          "401k_super": 11250,
+        },
+        currentAge: 35,
+      }),
       limitGrowthRate: 0.02,
-      catchupLimits: {
-        "401k": 7500,
-        ira: 1000,
-        hsa: 1000,
-        "401k_super": 11250,
-      },
+
       employerMatchRateByCategory: {
         "401k": 0.03,
         "403b": 0,
@@ -289,7 +300,7 @@ export function makeStandardInput(
       ssStartAge: 67,
       asOfDate: AS_OF,
       ...overrides,
-    },
+    }),
     overrides,
   );
 }

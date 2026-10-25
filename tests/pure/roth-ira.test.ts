@@ -100,6 +100,34 @@ describe("judgeRothIra", () => {
     expect(r.people.map((p) => p.maxDirect)).toEqual([7000, 1000]);
   });
 
+  it("reads the cap pass's IRA room when given: the spouse's actual IRA money counts (IRC 219(c))", () => {
+    // A puts 2,000 into an IRA, so of the couple's 8,000 compensation B can
+    // use 6,000 — what the cap pass reports, not a higher-earner-first split.
+    const r = judgeRothIra({
+      magi: 50_000,
+      phaseOut: MFJ,
+      marginOverride: null,
+      combinedCompensation: true,
+      people: [
+        {
+          personId: 1,
+          name: "A",
+          compensation: 8000,
+          iraLimit: 7000,
+          iraRoom: 2000,
+        },
+        {
+          personId: 2,
+          name: "B",
+          compensation: 0,
+          iraLimit: 7000,
+          iraRoom: 6000,
+        },
+      ],
+    })!;
+    expect(r.people.map((p) => p.maxDirect)).toEqual([2000, 6000]);
+  });
+
   it("no phase-out data → no verdict", () => {
     expect(judge(150_000, { phaseOut: null })).toBeNull();
   });
@@ -198,6 +226,8 @@ describe("rothIraSummary", () => {
         compensation: 100_000,
         iraLimit: 8000,
         hasEmployerPlan: true,
+        iraRoom: null,
+        rothRoute: null,
       },
       // An HSA isn't a plan that takes IRA roll-ins.
       {
@@ -206,6 +236,8 @@ describe("rothIraSummary", () => {
         compensation: 0,
         iraLimit: 7000,
         hasEmployerPlan: false,
+        iraRoom: null,
+        rothRoute: null,
       },
     ]);
   });
@@ -267,5 +299,55 @@ describe("pro-rata materiality", () => {
     expect(view(69).proRata).toEqual([]); // under 1% of the $7,000 limit
     expect(view(70).proRata).toHaveLength(1);
     expect(view(5000, null).proRata).toEqual([]); // limit unknown
+  });
+});
+
+describe("Roth IRA route", () => {
+  it("rothIraRouteOf: the Roth IRA contribution's route, absent = direct; null with none", async () => {
+    const { rothIraRouteOf } = await import("@/lib/pure/roth-ira");
+    expect(
+      rothIraRouteOf([
+        { accountType: "401k", taxTreatment: "tax_free" },
+        { accountType: "ira", taxTreatment: "tax_free" },
+      ]),
+    ).toBe("direct");
+    expect(
+      rothIraRouteOf([
+        { accountType: "ira", taxTreatment: "tax_free", rothRoute: "backdoor" },
+      ]),
+    ).toBe("backdoor");
+    // A traditional IRA contribution isn't a Roth route.
+    expect(
+      rothIraRouteOf([{ accountType: "ira", taxTreatment: "pre_tax" }]),
+    ).toBeNull();
+  });
+
+  it("backdoorPlanned: the verdict, or anyone's route", () => {
+    const v = (verdictMagi: number, route: "direct" | "backdoor" | null) =>
+      buildRothIraView({
+        rothIra: {
+          filingStatus: "MFJ",
+          phaseOut: MFJ,
+          people: [
+            {
+              personId: 1,
+              name: "A",
+              compensation: 150_000,
+              iraLimit: 7000,
+              hasEmployerPlan: true,
+              iraRoom: null,
+              rothRoute: route,
+            },
+          ],
+        },
+        wageAgi: verdictMagi,
+        hsaOutsidePayroll: 0,
+        investmentIncome: 0,
+        preTaxIraByPerson: [],
+        marginOverride: null,
+      });
+    expect(backdoorPlanned(v(150_000, "direct"))).toBe(false);
+    expect(backdoorPlanned(v(150_000, "backdoor"))).toBe(true);
+    expect(backdoorPlanned(v(220_000, null))).toBe(true);
   });
 });

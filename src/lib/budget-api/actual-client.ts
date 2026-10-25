@@ -15,7 +15,7 @@ import type {
   NewBudgetTransaction,
 } from "./types";
 import { fromCents, toCents } from "./conversions";
-import { budgetApiRequest, BudgetApiError } from "./errors";
+import { budgetApiRequest, BudgetApiError, isResendable } from "./errors";
 import {
   mergeGoalIntoNote,
   parseGoalFromNote,
@@ -203,6 +203,76 @@ function toActualMonthId(month: string): string {
   return month.slice(0, 7);
 }
 
+/**
+ * actual-http-api reloads the budget on every request through one shared,
+ * unlocked @actual-app/api client. Once the budget is loaded, concurrent
+ * requests are fine; the FIRST load after the wrapper starts is not — it
+ * runs any schema migrations (after every Actual upgrade) and logs in, and
+ * concurrent requests close the database under each other ("No budget file
+ * is open", "The database connection is not open", "startServices called
+ * while services are already running"). Every retry then repeats the race,
+ * so a sync never recovers — confirmed live on the 26.8.1 → 26.10.0 bump:
+ * one request loaded fine, the fan-out did not.
+ *
+ * So per wrapper: while it is cold, the first request runs alone and the
+ * rest wait for it. If that load fails, the waiters fail with the same
+ * error instead of piling on. A load failure on a warm wrapper (it was
+ * restarted under us) marks it cold; a request that's harmless to repeat —
+ * or any the wrapper says never ran ("No budget file is open") — is retried
+ * once through the same single-request path. A POST that timed out or hit a
+ * server error isn't: it may have been applied, and the next sync picks it
+ * up.
+ */
+type WrapperGate = { warm: boolean; pending: Promise<void> | null };
+const wrapperGates = new Map<string, WrapperGate>();
+
+function gateFor(wrapperUrl: string): WrapperGate {
+  let gate = wrapperGates.get(wrapperUrl);
+  if (!gate) {
+    gate = { warm: false, pending: null };
+    wrapperGates.set(wrapperUrl, gate);
+  }
+  return gate;
+}
+
+/** Test-only: forget every wrapper's warm state. */
+export function resetActualWrapperGates(): void {
+  wrapperGates.clear();
+}
+
+/** The wrapper had no budget open, so the request never ran. */
+function isBudgetNotOpen(err: unknown): boolean {
+  return (
+    err instanceof BudgetApiError &&
+    err.status === 404 &&
+    /no budget file is open/i.test(err.message)
+  );
+}
+
+/** True if the wrapper failed to load the budget, not the request itself. */
+function isBudgetLoadFailure(err: unknown): boolean {
+  if (!(err instanceof BudgetApiError)) return false;
+  if (
+    err.code === "server" ||
+    err.code === "network" ||
+    err.code === "timeout"
+  ) {
+    return true;
+  }
+  return isBudgetNotOpen(err);
+}
+
+/** Safe to send again after a failure: one that's harmless to repeat (the
+ *  shared rule, isResendable), or one the wrapper says never ran. A POST
+ *  that timed out or hit a server error may have been applied — sending it
+ *  again could add a transaction twice. */
+function safeToResend(err: unknown, init?: RequestInit): boolean {
+  return (
+    isBudgetNotOpen(err) ||
+    (err instanceof BudgetApiError && isResendable(err, init))
+  );
+}
+
 export class ActualClient implements BudgetAPIClient {
   readonly supportsDeltaSync = false;
 
@@ -212,6 +282,7 @@ export class ActualClient implements BudgetAPIClient {
 
   private readonly headers: Record<string, string>;
   private readonly budgetPath: string;
+  private readonly gate: WrapperGate;
 
   constructor(
     private readonly serverUrl: string,
@@ -229,12 +300,67 @@ export class ActualClient implements BudgetAPIClient {
     // Strip trailing slash
     const base = serverUrl.replace(/\/$/, "");
     this.budgetPath = `${base}/v1/budgets/${budgetSyncId}`;
+    // Keyed by wrapper, not budget: the wrapper holds one loaded budget.
+    this.gate = gateFor(base);
   }
 
   /** Internal fetch wrapper — see budgetApiRequest in ./errors. */
-  private async request<T>(path: string, init?: RequestInit): Promise<T> {
+  private send<T>(path: string, init?: RequestInit): Promise<T> {
     const url = `${this.budgetPath}${path}`;
     return budgetApiRequest<T>(url, this.headers, init);
+  }
+
+  /** send() behind the wrapper's cold-load gate — see WrapperGate above. */
+  private async request<T>(
+    path: string,
+    init?: RequestInit,
+    retried = false,
+  ): Promise<T> {
+    const gate = this.gate;
+
+    if (gate.warm) {
+      try {
+        return await this.send<T>(path, init);
+      } catch (err) {
+        if (retried || !isBudgetLoadFailure(err)) throw err;
+        log("warn", "actual_client.wrapper_went_cold", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        // The next request reloads the budget alone either way.
+        gate.warm = false;
+        if (!safeToResend(err, init)) throw err;
+        return this.request<T>(path, init, true);
+      }
+    }
+
+    if (gate.pending) {
+      // Rejects only if the first request's budget load failed.
+      await gate.pending;
+      return this.request<T>(path, init, retried);
+    }
+
+    const attempt = this.send<T>(path, init);
+    const pending = attempt.then(
+      () => undefined,
+      (err: unknown) => {
+        if (isBudgetLoadFailure(err)) throw err;
+      },
+    );
+    // Waiters see the rejection; this only stops an unhandled-rejection
+    // warning when nobody is waiting.
+    pending.catch(() => undefined);
+    gate.pending = pending;
+    try {
+      const res = await attempt;
+      gate.warm = true;
+      return res;
+    } catch (err) {
+      // Any other error means the wrapper got past loading the budget.
+      if (!isBudgetLoadFailure(err)) gate.warm = true;
+      throw err;
+    } finally {
+      gate.pending = null;
+    }
   }
 
   async testConnection(): Promise<boolean> {

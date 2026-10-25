@@ -72,6 +72,9 @@ export type AccountTypeConfig = {
   irsLimitGroup: string | null; // shared limit group (401k/403b share)
   irsLimitKeys: IrsLimitKeys | null;
   matchCountsTowardLimit: boolean;
+  /** Contributions can't exceed the person's taxable compensation (combined
+   *  compensation for a spousal IRA, IRC 219(b)/(c)) — on top of the limit. */
+  limitBoundedByCompensation: boolean;
   /** Whether this limit is per-household (counted once) vs per-person. */
   isHouseholdLimit: boolean;
   /** 5 when this account type is part of Money Guy's FOO step 5 (Roth IRA

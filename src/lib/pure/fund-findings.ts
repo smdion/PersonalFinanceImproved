@@ -88,15 +88,21 @@ function singleClass(facts: EffectiveFacts): CompositionBucket | null {
   return null;
 }
 
+/** An account whose funds the household chooses freely (an IRA, a taxable
+ *  account) — workplace-plan and HSA menus are fixed. */
+export function canSwitchFunds(accountType: string | null): boolean {
+  return (
+    accountType !== null &&
+    (isIraCategory(accountType) || isTaxableCategory(accountType))
+  );
+}
+
 export function judgeCheaperFunds(
   accounts: readonly FundAccountInput[],
 ): CheaperFundFinding[] {
   const out: CheaperFundFinding[] = [];
   for (const a of accounts) {
-    const switchable =
-      a.accountType !== null &&
-      (isIraCategory(a.accountType) || isTaxableCategory(a.accountType));
-    if (!switchable) continue;
+    if (!canSwitchFunds(a.accountType)) continue;
     for (const h of a.holdings) {
       const er = h.facts.expenseRatio?.value ?? null;
       if (er === null) continue;
