@@ -312,8 +312,12 @@ async function carryEditIntoLockedYear(
       ],
     ]),
   ).get(PERF_CATEGORY_PORTFOLIO);
-  if (net && existing.has(PERF_CATEGORY_PORTFOLIO))
+  if (!net) return;
+  if (existing.has(PERF_CATEGORY_PORTFOLIO))
     await carry(PERF_CATEGORY_PORTFOLIO, net);
+  // No stored Portfolio row this year (the page sums one on read): later
+  // years' stored Portfolio lifetime totals still include this year.
+  else await carryLifetimeForward(tx, year, PERF_CATEGORY_PORTFOLIO, net);
 }
 
 /** Later years' lifetime totals in `category` move by what the edit moved. */

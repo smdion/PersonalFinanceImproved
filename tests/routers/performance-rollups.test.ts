@@ -448,3 +448,36 @@ describe("editing a row: balance, next year, preview", () => {
     expect(stamp).toBeUndefined();
   });
 });
+
+describe("a finalized year with no stored Portfolio row", () => {
+  it("later years' Portfolio lifetime totals still carry the change", async () => {
+    const id = acctRow(2030, k401, {
+      beginningBalance: "1000",
+      totalContributions: "-500",
+      endingBalance: "500",
+    });
+    annual(2030, "401k/IRA", {
+      isFinalized: true,
+      beginningBalance: "1000",
+      totalContributions: "-500",
+      endingBalance: "500",
+      lifetimeContributions: "9500",
+    });
+    annual(2031, "401k/IRA", {
+      isFinalized: true,
+      lifetimeContributions: "9500",
+    });
+    annual(2031, "Portfolio", {
+      isFinalized: true,
+      lifetimeContributions: "12000",
+    });
+    await t.caller.performance.updateAccount({
+      id,
+      totalContributions: "0",
+      rollovers: "-500",
+    });
+    expect(row(2030, "Portfolio")).toBeUndefined();
+    expect(row(2031, "401k/IRA")!.lifetimeContributions).toBe("10000.00");
+    expect(row(2031, "Portfolio")!.lifetimeContributions).toBe("12500.00");
+  });
+});
