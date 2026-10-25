@@ -78,19 +78,23 @@ export function MilestoneRow({
         onClick={() => setOpen((o) => !o)}
       >
         <StatusIcon status={result.status} />
-        <span className="text-primary min-w-0 flex-1 text-sm">
-          {result.title}
-          <span className="text-faint ml-1.5 text-xs">
-            {MILESTONE_SOURCE_LABELS[result.source]}
-          </span>
-        </span>
-        <span className="hidden text-right sm:block">
-          <span className="text-secondary text-sm">{result.headline}</span>
-          {when && (
-            <span className="text-micro text-faint block leading-tight">
-              {when}
+        {/* The title keeps a fixed share of the row and the headline wraps
+            in the rest — a long headline never squeezes the title. */}
+        <span className="flex min-w-0 flex-1 items-center gap-3">
+          <span className="text-primary min-w-0 flex-1 text-sm sm:max-w-[40%] sm:flex-none sm:basis-2/5">
+            {result.title}
+            <span className="text-faint ml-1.5 text-xs">
+              {MILESTONE_SOURCE_LABELS[result.source]}
             </span>
-          )}
+          </span>
+          <span className="hidden min-w-0 flex-1 text-right sm:block">
+            <span className="text-secondary text-sm">{result.headline}</span>
+            {when && (
+              <span className="text-micro text-faint block leading-tight">
+                {when}
+              </span>
+            )}
+          </span>
         </span>
         <span
           className={`text-caption rounded-full px-1.5 py-0.5 font-medium whitespace-nowrap ${style.chip}`}

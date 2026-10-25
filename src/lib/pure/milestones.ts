@@ -1582,7 +1582,7 @@ function investing(input: MilestoneInput): MilestoneResult[] {
         status: low ? "reached" : "behind",
         value: { kind: "percent", amount: h.expenseRatio },
         target: { kind: "percent", amount: LOW_COST_EXPENSE_RATIO },
-        headline: `Funds cost ${formatPercent(h.expenseRatio, 2)} a year on average (blended expense ratio — fund costs, taken inside the funds' prices)`,
+        headline: `Funds cost ${formatPercent(h.expenseRatio, 2)} a year on average (blended expense ratio)`,
         nextStep: low
           ? null
           : `Fund costs average ${formatPercent(h.expenseRatio, 2)} a year (expense ratio), above the ${formatPercent(LOW_COST_EXPENSE_RATIO, 2)} low-cost line — look for lower-cost index funds on the Benchmarks page`,
@@ -1712,8 +1712,8 @@ function fundCosts(input: MilestoneInput): MilestoneResult {
     target: { kind: "count", amount: judged.length },
     progress: (judged.length - pricey.length) / judged.length,
     headline: pricey.length
-      ? `${pricey.length} of ${judged.length} funds cost more than the low-cost bar for their asset class (expense ratio)`
-      : `All ${judged.length} funds' costs are under the low-cost bar for their asset class (expense ratio)`,
+      ? `${pricey.length} of ${judged.length} funds above the low-cost bar for their asset class`
+      : `All ${judged.length} funds under the low-cost bar for their asset class`,
     nextStep: pricey.length
       ? `High fund costs: ${pricey
           .map(

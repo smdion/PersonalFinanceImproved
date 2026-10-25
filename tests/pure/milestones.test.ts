@@ -1408,8 +1408,7 @@ describe("r/personalfinance", () => {
     const r = byId(run({ holdings }), "fundCosts");
     expect(r).toMatchObject({
       status: "behind",
-      headline:
-        "1 of 2 funds cost more than the low-cost bar for their asset class (expense ratio)",
+      headline: "1 of 2 funds above the low-cost bar for their asset class",
       nextStep:
         "High fund costs: BBB costs 0.44% a year (expense ratio); under 0.10% is low-cost for US stocks — check the plan's menu for a lower-cost option",
     });
