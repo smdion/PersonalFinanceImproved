@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Update Performance speaks plainly**: fields are "You added", "Paid out to you", "Moved between accounts", "Fees & taxes withheld", each with help, plus tips for the account type (ESPP purchases at market value, IRA conversions aren't contributions, HSA refunds, statement totals at year end). The beginning balance is shown and editable, with "Last year ended at … — use that" when a year doesn't continue the last.
 - A row that added up before an edit still adds up after it: when you change a figure and not the gain, the gain follows. A row with a gain entered on purpose keeps it.
 - A finalized year's latest snapshot can be corrected; its Performance figures stay as they are.
+- **Every recommendation says what it's about on its own** — fund costs and expense ratios named, rates say what they measure, savings checkpoints say what's counted, and rebalancing, housing, mortgage, emergency-fund and checklist items name their subject.
 - **Two kinds of cost, named apart.** Benchmarks' "What it costs" now shows **fund costs** (expense ratios, taken inside the funds' prices — already in your returns) and **account fees** (charged to the accounts and recorded in Performance) on separate lines, with a year of both together. Performance's fee column and lifetime card say "account fees"; the lifetime card no longer claims to include expense ratios.
 
 ### Fixed
@@ -30,6 +31,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Correcting a finalized year no longer resets lifetime totals.** An edit to a locked year now moves that year's totals and every later year's lifetime totals by exactly what changed; before, it could recompute lifetime totals from scratch and lose history from before tracking began.
 - Yearly Performance totals are rebuilt by account type, rollovers included; editing an account no longer rewrites a finalized year or stores a stray "Retirement" total.
 - A snapshot dated earlier in a year than its latest no longer overwrites that year's ending balances, and a snapshot in a finalized year leaves its figures alone.
+- **Actual Budget syncs recover after an Actual upgrade.** The first request after the Actual connection starts (when it upgrades and opens the budget) now runs on its own; before, several at once broke the budget's loading and every retry repeated it.
+- **Budget syncs never create a transaction twice.** A request that creates something (YNAB or Actual) is no longer sent again after a timeout or server error — it may already have gone through; the next sync picks it up instead. Reads and updates still retry.
+- **"Uninvested cash" no longer asks you to invest $0** for a nearly empty all-cash account (such as a traditional IRA emptied by a backdoor Roth conversion): it now needs at least $100 over your target mix.
 - Renaming a Contribution Profile no longer wipes its contribution values.
 - A resumed portfolio snapshot draft restores every row of an account held in several parts.
 - Dividends that stay in an account are no longer counted as paid out (they're already in the balance).

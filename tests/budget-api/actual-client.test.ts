@@ -976,6 +976,53 @@ describe("ActualClient", () => {
       expect(mockFetch).toHaveBeenCalledTimes(3);
     });
 
+    it("a write that may have been applied is not sent again; the wrapper goes cold", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: 0 }));
+      await client.getAccountBalance("warm");
+
+      // A POST hitting a server error: it may have been applied.
+      mockFetch.mockReturnValueOnce(jsonResponse({ error: "boom" }, 500));
+      await expect(
+        client.createTransaction({
+          accountId: "a1",
+          date: "2026-01-15",
+          amount: -10,
+          payeeName: "x",
+          categoryId: null,
+          memo: null,
+          cleared: false,
+          reconciled: false,
+        } as never),
+      ).rejects.toThrow();
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+
+      // Cold now: the next request runs alone.
+      let release!: () => void;
+      mockFetch.mockReturnValueOnce(
+        new Promise((resolve) => {
+          release = () => resolve(jsonResponse({ data: 100 }));
+        }),
+      );
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: 200 }));
+      const first = client.getAccountBalance("a1");
+      const second = client.getAccountBalance("a2");
+      await new Promise((r) => setTimeout(r, 0));
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+      release();
+      await Promise.all([first, second]);
+    });
+
+    it("a write the wrapper says never ran is sent again", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: 0 }));
+      await client.getAccountBalance("warm");
+
+      mockFetch.mockReturnValueOnce(noBudget());
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "ok" }));
+      await client.deleteTransaction("tx-1");
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+      expect(mockFetch.mock.calls[2]![1].method).toBe("DELETE");
+    });
+
     it("does not retry an ordinary client error", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ data: 0 }));
       await client.getAccountBalance("warm");

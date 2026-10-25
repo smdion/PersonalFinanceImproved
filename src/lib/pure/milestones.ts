@@ -1436,10 +1436,10 @@ function investing(input: MilestoneInput): MilestoneResult[] {
         status: low ? "reached" : "behind",
         value: { kind: "percent", amount: h.expenseRatio },
         target: { kind: "percent", amount: LOW_COST_EXPENSE_RATIO },
-        headline: `Funds charge ${formatPercent(h.expenseRatio, 2)} a year in fees on average (blended expense ratio)`,
+        headline: `Funds cost ${formatPercent(h.expenseRatio, 2)} a year on average (blended expense ratio — fund costs, taken inside the funds' prices)`,
         nextStep: low
           ? null
-          : `Fund fees average ${formatPercent(h.expenseRatio, 2)} a year, above the ${formatPercent(LOW_COST_EXPENSE_RATIO, 2)} low-cost line — look for lower-fee index funds on the Benchmarks page`,
+          : `Fund costs average ${formatPercent(h.expenseRatio, 2)} a year (expense ratio), above the ${formatPercent(LOW_COST_EXPENSE_RATIO, 2)} low-cost line — look for lower-cost index funds on the Benchmarks page`,
       }),
     );
   }
@@ -1563,13 +1563,13 @@ function fundCosts(input: MilestoneInput): MilestoneResult {
     target: { kind: "count", amount: judged.length },
     progress: (judged.length - pricey.length) / judged.length,
     headline: pricey.length
-      ? `${pricey.length} of ${judged.length} funds charge more in fees than the low-cost bar for their asset class`
-      : `All ${judged.length} funds' fees are under the low-cost bar for their asset class`,
+      ? `${pricey.length} of ${judged.length} funds cost more than the low-cost bar for their asset class (expense ratio)`
+      : `All ${judged.length} funds' costs are under the low-cost bar for their asset class (expense ratio)`,
     nextStep: pricey.length
-      ? `High fund fees — consider a lower-cost fund: ${pricey
+      ? `High fund costs — consider a lower-cost fund: ${pricey
           .map(
             (f) =>
-              `${f.name} charges ${formatPercent(f.expenseRatio, 2)} a year (expense ratio); under ${formatPercent(bar(f), 2)} is low-cost for ${COMPOSITION_BUCKET_LABELS[f.bucket]}`,
+              `${f.name} costs ${formatPercent(f.expenseRatio, 2)} a year (expense ratio); under ${formatPercent(bar(f), 2)} is low-cost for ${COMPOSITION_BUCKET_LABELS[f.bucket]}`,
           )
           .join(" · ")}`
       : null,

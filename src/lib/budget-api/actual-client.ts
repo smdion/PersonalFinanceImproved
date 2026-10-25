@@ -15,7 +15,7 @@ import type {
   NewBudgetTransaction,
 } from "./types";
 import { fromCents, toCents } from "./conversions";
-import { budgetApiRequest, BudgetApiError } from "./errors";
+import { budgetApiRequest, BudgetApiError, isResendable } from "./errors";
 import {
   mergeGoalIntoNote,
   parseGoalFromNote,
@@ -211,14 +211,17 @@ function toActualMonthId(month: string): string {
  * concurrent requests close the database under each other ("No budget file
  * is open", "The database connection is not open", "startServices called
  * while services are already running"). Every retry then repeats the race,
- * so a sync never recovers — confirmed live on the 26.8.1 → 26.10.0 bump
- * (2026-10-24): one request loaded fine, the fan-out did not.
+ * so a sync never recovers — confirmed live on the 26.8.1 → 26.10.0 bump:
+ * one request loaded fine, the fan-out did not.
  *
  * So per wrapper: while it is cold, the first request runs alone and the
  * rest wait for it. If that load fails, the waiters fail with the same
  * error instead of piling on. A load failure on a warm wrapper (it was
- * restarted under us) marks it cold and retries once through the same
- * single-request path.
+ * restarted under us) marks it cold; a request that's harmless to repeat —
+ * or any the wrapper says never ran ("No budget file is open") — is retried
+ * once through the same single-request path. A POST that timed out or hit a
+ * server error isn't: it may have been applied, and the next sync picks it
+ * up.
  */
 type WrapperGate = { warm: boolean; pending: Promise<void> | null };
 const wrapperGates = new Map<string, WrapperGate>();
@@ -237,6 +240,15 @@ export function resetActualWrapperGates(): void {
   wrapperGates.clear();
 }
 
+/** The wrapper had no budget open, so the request never ran. */
+function isBudgetNotOpen(err: unknown): boolean {
+  return (
+    err instanceof BudgetApiError &&
+    err.status === 404 &&
+    /no budget file is open/i.test(err.message)
+  );
+}
+
 /** True if the wrapper failed to load the budget, not the request itself. */
 function isBudgetLoadFailure(err: unknown): boolean {
   if (!(err instanceof BudgetApiError)) return false;
@@ -247,7 +259,18 @@ function isBudgetLoadFailure(err: unknown): boolean {
   ) {
     return true;
   }
-  return err.status === 404 && /no budget file is open/i.test(err.message);
+  return isBudgetNotOpen(err);
+}
+
+/** Safe to send again after a failure: one that's harmless to repeat (the
+ *  shared rule, isResendable), or one the wrapper says never ran. A POST
+ *  that timed out or hit a server error may have been applied — sending it
+ *  again could add a transaction twice. */
+function safeToResend(err: unknown, init?: RequestInit): boolean {
+  return (
+    isBudgetNotOpen(err) ||
+    (err instanceof BudgetApiError && isResendable(err, init))
+  );
 }
 
 export class ActualClient implements BudgetAPIClient {
@@ -303,7 +326,9 @@ export class ActualClient implements BudgetAPIClient {
         log("warn", "actual_client.wrapper_went_cold", {
           error: err instanceof Error ? err.message : String(err),
         });
+        // The next request reloads the budget alone either way.
         gate.warm = false;
+        if (!safeToResend(err, init)) throw err;
         return this.request<T>(path, init, true);
       }
     }

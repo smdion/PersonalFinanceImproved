@@ -1371,9 +1371,9 @@ describe("r/personalfinance", () => {
     expect(r).toMatchObject({
       status: "behind",
       headline:
-        "1 of 2 funds charge more in fees than the low-cost bar for their asset class",
+        "1 of 2 funds cost more than the low-cost bar for their asset class (expense ratio)",
       nextStep:
-        "High fund fees — consider a lower-cost fund: BBB charges 0.44% a year (expense ratio); under 0.10% is low-cost for US stocks",
+        "High fund costs — consider a lower-cost fund: BBB costs 0.44% a year (expense ratio); under 0.10% is low-cost for US stocks",
     });
   });
 
