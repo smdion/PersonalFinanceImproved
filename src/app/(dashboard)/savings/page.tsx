@@ -4,7 +4,8 @@
 
 import React, { useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import { useSearchParams } from "next/navigation";
+import { useFocusMatch, useFocusedState } from "@/lib/hooks/use-focus";
+import { useScrollToFocus } from "@/components/ui/focus-target";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
@@ -208,13 +209,15 @@ export default function SavingsPage() {
   const [projectionView, setProjectionView] = useState<"table" | "chart">(
     "table",
   );
-  const [masterTab, setMasterTab] = useState<"plan" | "manage">("plan");
-  // ?section=extraPaychecks (savingsExtraPaychecksHref) opens Paychecks &
-  // Growth directly — the one place extra-paycheck routing is set up.
-  const linkedSection = useSearchParams().get("section");
-  const [editTab, setEditTab] = useState<
-    "allocations" | "transactions" | "extraPaychecks"
-  >(linkedSection === "extraPaychecks" ? "extraPaychecks" : "allocations");
+  // Links can open a tab (lib/config/focus-topics) — extra-paycheck
+  // routing is set up only under Plan → Paychecks & Growth.
+  const [masterTab, setMasterTab] = useFocusedState("savingsMasterTab", "plan");
+  const [editTab, setEditTab] = useFocusedState(
+    "savingsEditTab",
+    "allocations",
+  );
+  const extraPaychecksRef = useRef<HTMLDivElement>(null);
+  useScrollToFocus(extraPaychecksRef, useFocusMatch("extraPaychecks") !== null);
 
   // ── Top-level form state (lives here to render in correct layout position) ──
   const [newFund, setNewFund] = useState<NewFundForm>({
@@ -759,7 +762,7 @@ export default function SavingsPage() {
                 )}
 
                 {editTab === "extraPaychecks" && (
-                  <div className="space-y-4">
+                  <div ref={extraPaychecksRef} className="space-y-4">
                     {/* Pool Growth — full-width compact bar */}
                     <div className="border-subtle/40 flex items-center gap-6 rounded-lg border px-4 py-3">
                       <div>

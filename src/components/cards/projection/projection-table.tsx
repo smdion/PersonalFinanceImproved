@@ -1,6 +1,7 @@
 "use client";
 
 /** Year-by-year projection table with dynamic column headers, accumulation/decumulation row delegation, and Monte Carlo overlay. */
+import { useFocusMatch } from "@/lib/hooks/use-focus";
 import { HelpTip } from "@/components/ui/help-tip";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
@@ -49,6 +50,7 @@ export function ProjectionTable({
   decumulationBudgetColumn,
   decumulationExpenseOverride,
 }: ProjectionTableProps) {
+  const focusedYear = useFocusMatch("projectionYear")?.year ?? null;
   const {
     accumOverrides,
     decumOverrides,
@@ -343,6 +345,7 @@ export function ProjectionTable({
               </thead>
               <tbody>
                 {getFilteredYears(result.projectionByYear).map((yr) => {
+                  const focused = yr.year === focusedYear;
                   const isPhaseTransition =
                     yr.phase === "decumulation" &&
                     result.projectionByYear.findIndex(
@@ -370,6 +373,7 @@ export function ProjectionTable({
                       <AccumulationRow
                         key={yr.year}
                         yr={yr}
+                        focused={focused}
                         state={state}
                         parentCategoryFilter={parentCategoryFilter}
                         rateIncludesMatch={!excludeMatch}
@@ -395,6 +399,7 @@ export function ProjectionTable({
                     <DecumulationRow
                       key={yr.year}
                       yr={yr as EngineDecumulationYear}
+                      focused={focused}
                       state={state}
                       parentCategoryFilter={parentCategoryFilter}
                       isPhaseTransition={isPhaseTransition}

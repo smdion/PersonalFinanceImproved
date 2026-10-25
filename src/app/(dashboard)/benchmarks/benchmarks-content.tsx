@@ -7,7 +7,7 @@ import { useUser, hasPermission } from "@/lib/context/user-context";
 import { ComparisonSection } from "@/components/investments/comparison-section";
 import { HoldingsSection } from "@/components/investments/holdings-section";
 import Link from "next/link";
-import { holdingHistoryHref } from "@/lib/config/page-links";
+import { focusHref } from "@/lib/config/focus-topics";
 
 export function BenchmarksContent() {
   const user = useUser();
@@ -33,7 +33,7 @@ export function BenchmarksContent() {
       <p className="text-caption text-faint">
         What each account held over time is entered on Portfolio:{" "}
         <Link
-          href={holdingHistoryHref}
+          href={focusHref({ topic: "holdingHistory" })}
           className="text-blue-600 hover:underline dark:text-blue-400"
         >
           Holding history

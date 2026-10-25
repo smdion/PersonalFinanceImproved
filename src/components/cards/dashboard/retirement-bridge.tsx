@@ -1,5 +1,6 @@
 "use client";
 
+import { FocusLink } from "@/components/ui/focus-link";
 import { HelpTip } from "@/components/ui/help-tip";
 import { BRIDGE_SOURCE_LABELS } from "@/lib/config/display-labels";
 import {
@@ -14,6 +15,8 @@ import { compactCurrency, formatCurrency } from "@/lib/utils/format";
 const BRIDGE_RELEVANT_BEFORE_AGE = 60;
 
 const LABEL = "Early-retirement bridge";
+/** The verdict is the link to where it's shown in detail. */
+const HEADLINE = "text-xl font-bold hover:underline";
 const WHAT_IT_IS =
   "Retiring before 59½: some retirement accounts stay locked (10% penalty to draw) until they open.";
 const HOW_JUDGED =
@@ -81,7 +84,13 @@ export function RetirementBridge({
           <HelpTip text={WHAT_IT_IS} />
         </span>
         <div className="mt-1 flex items-baseline gap-2">
-          <span className="text-xl font-bold text-green-600">Not needed</span>
+          <FocusLink
+            focus={{ topic: "earlyAccess" }}
+            className={`${HEADLINE} text-green-600`}
+            title="See reachable vs locked money at retirement"
+          >
+            Not needed
+          </FocusLink>
           <span className="text-muted text-xs">
             nothing locked when retirement starts in {b.year}
           </span>
@@ -100,11 +109,23 @@ export function RetirementBridge({
         <HelpTip lines={detailLines(b)} maxWidth={340} />
       </span>
       <div className="mt-1 flex items-baseline gap-2">
-        <span
-          className={`text-xl font-bold ${shortYears.length ? "text-red-600" : "text-green-600"}`}
-        >
-          {shortYears.length ? "Short" : "Covered"}
-        </span>
+        {shortYears[0] ? (
+          <FocusLink
+            focus={{ topic: "projectionYear", year: shortYears[0].year }}
+            className={`${HEADLINE} text-red-600`}
+            title={`See ${shortYears[0].year} in the retirement projection`}
+          >
+            Short
+          </FocusLink>
+        ) : (
+          <FocusLink
+            focus={{ topic: "earlyAccess" }}
+            className={`${HEADLINE} text-green-600`}
+            title="See reachable vs locked money at retirement"
+          >
+            Covered
+          </FocusLink>
+        )}
         <span className="text-muted text-xs">
           {shortYears.length
             ? `${shortYears.length} of ${b.years.length} yr${b.years.length === 1 ? "" : "s"} · ${range}`

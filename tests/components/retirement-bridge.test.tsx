@@ -66,7 +66,10 @@ describe("RetirementBridge", () => {
         }
       />,
     );
-    expect(screen.getByText("Covered")).toBeTruthy();
+    // The verdict links to where it's shown in detail.
+    expect(
+      screen.getByRole("link", { name: "Covered" }).getAttribute("href"),
+    ).toBe("/tax-buckets?focus=earlyAccess");
     expect(
       screen.getByText("2044–2045 · until locked accounts open"),
     ).toBeTruthy();
@@ -90,7 +93,9 @@ describe("RetirementBridge", () => {
         }
       />,
     );
-    expect(screen.getByText("Short")).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Short" }).getAttribute("href"),
+    ).toBe("/retirement?focus=projectionYear&focusId=2044");
     expect(screen.getByText("1 of 1 yr · 2044")).toBeTruthy();
     expect(screen.getByText(/^Money is locked: retire later/)).toBeTruthy();
   });

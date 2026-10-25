@@ -5,12 +5,13 @@
  *  expensive query before rendering this. */
 
 import { SinceSnapshotBanner } from "@/components/portfolio/account-live-data";
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useMemo } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { HoldingHistorySection } from "@/components/investments/holding-history-section";
-import { HOLDING_HISTORY_ANCHOR } from "@/lib/config/page-links";
+import { useFocusReveal } from "@/lib/hooks/use-focus";
+import { FocusTarget } from "@/components/ui/focus-target";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import {
   formatCurrency,
@@ -205,17 +206,8 @@ export function PortfolioContent() {
   );
   const [showHistory, setShowHistory] = useState(false);
   // Holding history is collapsed like the other sections, and opens when
-  // a link lands on it (Benchmarks → "#holding-history").
-  const [showHoldings, setShowHoldings] = useState(false);
-  useEffect(() => {
-    const openOnHash = () => {
-      if (window.location.hash === `#${HOLDING_HISTORY_ANCHOR}`)
-        setShowHoldings(true);
-    };
-    openOnHash();
-    window.addEventListener("hashchange", openOnHash);
-    return () => window.removeEventListener("hashchange", openOnHash);
-  }, []);
+  // a link lands on it (Benchmarks → "Your mix, in index funds").
+  const [showHoldings, setShowHoldings] = useFocusReveal("holdingHistory");
   const [showChart, setShowChart] = useState(false);
   const [showQuickLook, setShowQuickLook] = useState(false);
   const [showAll, setShowAll] = useState(false);
@@ -938,7 +930,7 @@ export function PortfolioContent() {
           Benchmarks' "Your mix, in index funds". */}
       {hasPermission(user, "portfolio") && (
         <CardBoundary title="Holding history">
-          <div id={HOLDING_HISTORY_ANCHOR} className="mt-8 scroll-mt-4">
+          <FocusTarget topic="holdingHistory" className="mt-8">
             <CollapsibleSection
               title="Holding history"
               open={showHoldings}
@@ -946,7 +938,7 @@ export function PortfolioContent() {
             >
               <HoldingHistorySection />
             </CollapsibleSection>
-          </div>
+          </FocusTarget>
         </CardBoundary>
       )}
     </div>

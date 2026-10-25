@@ -23,7 +23,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { FieldRow } from "@/components/ui/field-row";
 import { SegmentedControl } from "@/components/ui/segmented-control";
-import { savingsExtraPaychecksHref } from "@/lib/config/page-links";
+import { focusHref } from "@/lib/config/focus-topics";
 import {
   getExtraPaycheckMonthKeys,
   isExtraPaycheckBudgetMode,
@@ -1233,14 +1233,14 @@ export function ExtraPaycheckDestinationToggle({
           // Savings needs a split set up first — say where, instead of a
           // button that does nothing.
           <Link
-            href={savingsExtraPaychecksHref}
+            href={focusHref({ topic: "extraPaychecks" })}
             className="text-blue-600 hover:underline dark:text-blue-400"
           >
             Set up where it goes in Savings
           </Link>
         ) : (
           <Link
-            href={savingsExtraPaychecksHref}
+            href={focusHref({ topic: "extraPaychecks" })}
             className="text-blue-600 hover:underline dark:text-blue-400"
           >
             Change the split in Savings
