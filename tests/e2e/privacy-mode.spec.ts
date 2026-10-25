@@ -73,6 +73,42 @@ async function waitForContent(page: Page) {
 }
 
 test.describe("Privacy mode", () => {
+  // Runs before the route scan: the scan alone makes ~530 API calls in under
+  // a minute, and in CI every test shares one rate-limit bucket (DEMO_ONLY
+  // keys by IP, 600/min) — run after it, this test started nearly out of
+  // budget and Net Worth failed with "Rate limit exceeded".
+  test("the toggle button hides and restores amounts and sets the cookie", async ({
+    page,
+    context,
+  }) => {
+    // Several waits of up to 30 s each (content, then amounts, three times
+    // over) — the 30 s default test timeout cut a slow CI run off mid-wait.
+    test.setTimeout(3 * 60_000);
+    // Not the dashboard: on a fresh install (CI's SQLite demo database has
+    // no household) "/" opens the first-run wizard as a full-screen modal
+    // that intercepts clicks on the sidebar toggle. Net Worth always renders
+    // amounts ($0.00 on an empty database) and has no wizard.
+    await page.goto("/networth");
+    await waitForContent(page);
+    await expectAmountsShown(page, true);
+
+    await page.getByRole("button", { name: "Hide amounts" }).first().click();
+    await expectAmountsShown(page, false);
+    const cookies = await context.cookies();
+    expect(cookies.find((c) => c.name === PRIVACY_COOKIE)?.value).toBe("1");
+
+    // Survives a reload.
+    await page.reload();
+    await waitForContent(page);
+    expect(DOLLAR_AMOUNT.test(await visibleText(page))).toBe(false);
+
+    await page.getByRole("button", { name: "Show amounts" }).first().click();
+    await expectAmountsShown(page, true);
+    expect(
+      (await context.cookies()).find((c) => c.name === PRIVACY_COOKIE),
+    ).toBeUndefined();
+  });
+
   test("no dollar amount is visible on any route when the cookie is set", async ({
     page,
     context,
@@ -110,38 +146,6 @@ test.describe("Privacy mode", () => {
         .replace(/<[^>]+>/g, " ");
       expect(html, route).not.toMatch(DOLLAR_AMOUNT);
     }
-  });
-
-  test("the toggle button hides and restores amounts and sets the cookie", async ({
-    page,
-    context,
-  }) => {
-    // Several waits of up to 30 s each (content, then amounts, three times
-    // over) — the 30 s default test timeout cut a slow CI run off mid-wait.
-    test.setTimeout(3 * 60_000);
-    // Not the dashboard: on a fresh install (CI's SQLite demo database has
-    // no household) "/" opens the first-run wizard as a full-screen modal
-    // that intercepts clicks on the sidebar toggle. Net Worth always renders
-    // amounts ($0.00 on an empty database) and has no wizard.
-    await page.goto("/networth");
-    await waitForContent(page);
-    await expectAmountsShown(page, true);
-
-    await page.getByRole("button", { name: "Hide amounts" }).first().click();
-    await expectAmountsShown(page, false);
-    const cookies = await context.cookies();
-    expect(cookies.find((c) => c.name === PRIVACY_COOKIE)?.value).toBe("1");
-
-    // Survives a reload.
-    await page.reload();
-    await waitForContent(page);
-    expect(DOLLAR_AMOUNT.test(await visibleText(page))).toBe(false);
-
-    await page.getByRole("button", { name: "Show amounts" }).first().click();
-    await expectAmountsShown(page, true);
-    expect(
-      (await context.cookies()).find((c) => c.name === PRIVACY_COOKIE),
-    ).toBeUndefined();
   });
 
   test("squiggle font stays reachable through the page font stack", async ({
