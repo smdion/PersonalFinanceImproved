@@ -1131,9 +1131,10 @@ export const performanceRouter = createTRPCRouter({
               input.accounts.map((a) => a.id),
             ),
           );
-        const before = await Promise.all(
-          years.map(({ year }) => captureYearRollups(tx, year)),
-        );
+        const before = [];
+        // One query at a time on the transaction's connection.
+        for (const { year } of years)
+          before.push(await captureYearRollups(tx, year));
         for (const acct of input.accounts) {
           await tx
             .update(schema.accountPerformance)
@@ -1477,19 +1478,20 @@ export const performanceRouter = createTRPCRouter({
           mortgageExtras,
           homeImpItems,
           propTaxRows,
-        ] = await Promise.all([
-          tx.select().from(schema.appSettings),
-          tx.select().from(schema.mortgageLoans),
-          tx
+        ] = [
+          // One query at a time on the transaction's connection.
+          await tx.select().from(schema.appSettings),
+          await tx.select().from(schema.mortgageLoans),
+          await tx
             .select()
             .from(schema.mortgageExtraPayments)
             .orderBy(asc(schema.mortgageExtraPayments.paymentDate)),
-          tx.select().from(schema.homeImprovementItems),
-          tx
+          await tx.select().from(schema.homeImprovementItems),
+          await tx
             .select()
             .from(schema.propertyTaxes)
             .where(eq(schema.propertyTaxes.year, year)),
-        ]);
+        ] as const;
 
         const setting = parseAppSettings(allSettings);
         const yearEndDate = `${year}-12-31`;
@@ -1541,14 +1543,12 @@ export const performanceRouter = createTRPCRouter({
         // historical.ts's computeSummary/upsertSalary do — otherwise
         // finalizing before anyone has recorded salary permanently writes
         // a false $0 into net_worth_annual.
-        const [yearSalaryRows, allPeople, allJobs] = await Promise.all([
-          tx
-            .select()
-            .from(schema.historicalSalaries)
-            .where(eq(schema.historicalSalaries.year, year)),
-          tx.select().from(schema.people),
-          tx.select().from(schema.jobs),
-        ]);
+        const yearSalaryRows = await tx
+          .select()
+          .from(schema.historicalSalaries)
+          .where(eq(schema.historicalSalaries.year, year));
+        const allPeople = await tx.select().from(schema.people);
+        const allJobs = await tx.select().from(schema.jobs);
         const salaryRowByPerson = new Map(
           yearSalaryRows.map((r) => [r.personId, r]),
         );
@@ -1730,9 +1730,10 @@ export const performanceRouter = createTRPCRouter({
             .selectDistinct({ year: schema.accountPerformance.year })
             .from(schema.accountPerformance)
             .where(eq(schema.accountPerformance.performanceAccountId, id));
-          const before = await Promise.all(
-            affectedYears.map(({ year }) => captureYearRollups(tx, year)),
-          );
+          const before = [];
+          // One query at a time on the transaction's connection.
+          for (const { year } of affectedYears)
+            before.push(await captureYearRollups(tx, year));
 
           // 1. Update the master record
           const [updated] = await tx

@@ -89,13 +89,12 @@ export async function captureYearRollups(
   tx: DbOrTx,
   year: number,
 ): Promise<YearRollups> {
-  const [rows, perfAccounts] = await Promise.all([
-    tx
-      .select()
-      .from(schema.accountPerformance)
-      .where(eq(schema.accountPerformance.year, year)),
-    tx.select().from(schema.performanceAccounts),
-  ]);
+  // One query at a time: `tx` is usually a transaction's single connection.
+  const rows = await tx
+    .select()
+    .from(schema.accountPerformance)
+    .where(eq(schema.accountPerformance.year, year));
+  const perfAccounts = await tx.select().from(schema.performanceAccounts);
   const byId = buildPerfAcctLookups(perfAccounts);
   return {
     year,
@@ -148,17 +147,15 @@ export async function syncYearRollups(
   before: YearRollups,
 ): Promise<void> {
   const { year } = before;
-  const [after, yearRows, prevRows] = await Promise.all([
-    captureYearRollups(tx, year),
-    tx
-      .select()
-      .from(schema.annualPerformance)
-      .where(eq(schema.annualPerformance.year, year)),
-    tx
-      .select()
-      .from(schema.annualPerformance)
-      .where(eq(schema.annualPerformance.year, year - 1)),
-  ]);
+  const after = await captureYearRollups(tx, year);
+  const yearRows = await tx
+    .select()
+    .from(schema.annualPerformance)
+    .where(eq(schema.annualPerformance.year, year));
+  const prevRows = await tx
+    .select()
+    .from(schema.annualPerformance)
+    .where(eq(schema.annualPerformance.year, year - 1));
   const finalized = yearRows.some((r) => r.isFinalized);
   if (finalized) {
     await carryEditIntoLockedYear(tx, year, before, after, yearRows, prevRows);
