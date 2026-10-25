@@ -34,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Financial Checkup's "recommendations →" link didn't open, and its rows reloaded the whole page.
 - Clicking a fund in the Savings chart did nothing; it now opens that goal.
+- The dashboard and the Retirement page now show the same baseline nest egg. They could differ by a few cents because they added up the year's balances differently.
 - Pages no longer redraw on load because the server and browser saw different data. The server now loads what the sidebar and header load on every page (saved settings, data freshness, profile lists). Seen on Benchmarks (the "Compare with" description) and Performance (the "Basis updated" date).
 
 ## [0.8.14] - 2026-10-25

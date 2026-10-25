@@ -2,7 +2,10 @@
 
 import { FocusLink } from "@/components/ui/focus-link";
 import { focusHref } from "@/lib/config/focus-topics";
-import { simulatedOrBaseline } from "@/lib/pure/nest-egg-display";
+import {
+  baselineNestEgg,
+  simulatedOrBaseline,
+} from "@/lib/pure/nest-egg-display";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { memo } from "react";
 
@@ -128,26 +131,25 @@ function RetirementCardImpl() {
       ? sustainableWdNominal /
         Math.pow(1 + Number(settings.annualInflation), yearsToRet)
       : sustainableWdNominal;
-  const nestEggNominal =
-    result.projectionByYear.find((y) => y.age === retAge)?.retirementBalance ??
-    portfolioTotal;
-  // Deflate nest egg to today's dollars (same approach as sustainable withdrawal)
-  const inflRate = Number(settings.annualInflation) || 0;
-  const nestEgg =
-    yearsToRet > 0 && inflRate > 0
-      ? nestEggNominal / Math.pow(1 + inflRate, yearsToRet)
-      : nestEggNominal;
   // Already retired: the figure is today's, so the label says today's age.
   const nestEggAge = Math.max(retAge, currentAge);
   // Simulated when the Retirement page has run one for these inputs, else
-  // the baseline — the same rule the page's hero uses.
+  // the baseline — the same rule and figure the page's hero uses.
+  const inflRate = Number(settings.annualInflation) || 0;
   const firstYear = result.projectionByYear[0]?.year ?? 0;
+  const toDisplay = (value: number, year: number) =>
+    inflRate > 0 && year > firstYear
+      ? value / Math.pow(1 + inflRate, year - firstYear)
+      : value;
+  const baseline = baselineNestEgg(result.projectionByYear, nestEggAge);
+  const nestEgg = baseline
+    ? toDisplay(baseline.nominal, baseline.year)
+    : portfolioTotal;
   const nestEggDisplay = simulatedOrBaseline({
     bands: mcPeek?.result?.percentileBands,
     baseline: nestEgg,
     targetAge: nestEggAge,
-    toDisplay: (value, year) =>
-      inflRate > 0 ? value / Math.pow(1 + inflRate, year - firstYear) : value,
+    toDisplay,
     personFiltered: false,
   });
   const totalWithMatch = annualContributions + employerContributions;
