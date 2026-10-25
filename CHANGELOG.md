@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.15] - Unreleased
+
+### Changed
+
+- **Early-retirement bridge** (Retirement card) reads at a glance like Readiness and Growth: a Covered/Short verdict, the years until locked accounts open, the tightest point, and the year chips. Where the money sits, when each person's accounts open and the caveats moved into its help tip; a short year shows one line on what helps.
+
 ## [0.8.14] - 2026-10-25
 
 ### Added

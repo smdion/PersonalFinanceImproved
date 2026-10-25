@@ -2,7 +2,12 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { RetirementBridge } from "@/components/cards/dashboard/retirement-bridge";
 
-vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
+// The help tip carries the bridge's detail — render its lines to check them.
+vi.mock("@/components/ui/help-tip", () => ({
+  HelpTip: ({ lines }: { lines?: string[] }) => (
+    <span data-testid="tip">{lines?.join(" | ")}</span>
+  ),
+}));
 
 const year = (
   y: number,
@@ -61,18 +66,16 @@ describe("RetirementBridge", () => {
         }
       />,
     );
+    expect(screen.getByText("Covered")).toBeTruthy();
     expect(
-      screen.getByText(
-        /2044–2045: \$120,000 of spending after Social Security/,
-      ),
+      screen.getByText("2 yrs until locked accounts open (2044–2045)"),
     ).toBeTruthy();
     expect(
-      screen.getByText(/Covered at assumed returns — tightest in 2044/),
+      screen.getByText("Tightest: $240k reachable left in 2044"),
     ).toBeTruthy();
-    expect(
-      screen.getByText(/Penalty-free in 2044: Taxable brokerage \$300,000/),
-    ).toBeTruthy();
-    expect(screen.getByText(/Locked money opens: Pat 2046/)).toBeTruthy();
+    const tip = screen.getByTestId("tip").textContent;
+    expect(tip).toMatch(/Reachable in 2044: Taxable brokerage \$300k/);
+    expect(tip).toMatch(/Locked accounts open: Pat 2046/);
   });
 
   it("short because money is locked: says so and what helps", () => {
@@ -89,8 +92,11 @@ describe("RetirementBridge", () => {
         }
       />,
     );
-    expect(screen.getByText("Short in 2044")).toBeTruthy();
-    expect(screen.getByText(/Short because money is locked/)).toBeTruthy();
+    expect(screen.getByText("Short")).toBeTruthy();
+    expect(
+      screen.getByText("1 of 1 yr until locked accounts open (2044)"),
+    ).toBeTruthy();
+    expect(screen.getByText(/^Money is locked: retire later/)).toBeTruthy();
   });
 
   it("nothing to show without the engine's eligibility figures", () => {
