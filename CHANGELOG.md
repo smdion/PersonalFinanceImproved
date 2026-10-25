@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
-## [0.8.14] - 2026-10-24
+## [0.8.14] - 2026-10-25
 
 ### Added
 
