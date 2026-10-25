@@ -16,6 +16,7 @@ import {
   payWeekSchema,
   bonusDestinationSchema,
   zDecimal,
+  ROTH_IRA_ROUTE_VALUES,
 } from "@/lib/config/enum-values";
 import { isCalendarDate } from "@/lib/utils/date";
 
@@ -324,6 +325,8 @@ export const contribAccountActiveFieldsPatchSchema = z
     /** Also taken from bonus checks (bonusCheckContribution — the one
      *  gate). Absent = no. */
     fromBonus: z.boolean().optional(),
+    /** A Roth IRA account's route (ROTH_IRA_ROUTE_VALUES). Absent = direct. */
+    rothRoute: z.enum(ROTH_IRA_ROUTE_VALUES).optional(),
     /** A custom display label for this account within this profile —
      *  cosmetic, not financial (was `displayNameActive`, whose `Active`
      *  suffix falsely implied it behaves like `isActive` for swap-safety —

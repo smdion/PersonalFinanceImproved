@@ -1,6 +1,7 @@
 /**
  * Contribution computation, aggregation, and profile resolution helpers.
  */
+import type { RothIraRoute } from "@/lib/config/enum-values";
 import { and, eq, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { EntityFieldMap } from "@/lib/db/schema";
@@ -1162,6 +1163,8 @@ export type ContribRowWithActiveFields =
     contributionMethod: string;
     /** Also taken from bonus checks — always set once active fields apply. */
     fromBonus: boolean | undefined;
+    /** A Roth IRA account's route — absent = direct. */
+    rothRoute?: RothIraRoute;
     displayNameCustom?: string;
     /** @deprecated legacy key. */
     displayNameActive?: string;

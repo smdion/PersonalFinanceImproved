@@ -3,7 +3,12 @@ import { recommendationsFromRothIra } from "@/lib/pure/recommendations-roth";
 import { buildRothIraView } from "@/lib/pure/roth-ira";
 
 // Fictional MFJ-style range.
-const view = (magi: number, preTax = 0, hasEmployerPlan = true) =>
+const view = (
+  magi: number,
+  preTax = 0,
+  hasEmployerPlan = true,
+  rothRoute: "direct" | "backdoor" | null = null,
+) =>
   buildRothIraView({
     rothIra: {
       filingStatus: "MFJ",
@@ -15,6 +20,8 @@ const view = (magi: number, preTax = 0, hasEmployerPlan = true) =>
           compensation: 180_000,
           iraLimit: 7000,
           hasEmployerPlan,
+          iraRoom: null,
+          rothRoute,
         },
       ],
     },
@@ -50,10 +57,46 @@ describe("recommendationsFromRothIra", () => {
     expect(r[1]!.action).toMatch(/pro-rata/);
   });
 
-  it("too close: shows the direct amount; no pro-rata item without pre-tax IRA money", () => {
+  it("too close, nothing contributed yet: wait for the year's income or use the backdoor; no pro-rata item without pre-tax IRA money", () => {
     const r = recs(view(205_000), 2026, "2026-11-01");
     expect(r).toHaveLength(1);
+    expect(r[0]!.action).toMatch(/income is final.*backdoor.*any income/);
+  });
+
+  it("too close and contributing directly: act now — excess risk, the backdoor, the direct amount allowed", () => {
+    const r = recs(view(205_000, 0, true, "direct"), 2026, "2026-11-01");
+    expect(r).toHaveLength(1);
+    expect(r[0]!.action).toMatch(/Ann contributes directly/);
+    expect(r[0]!.action).toMatch(/excess contribution/);
     expect(r[0]!.action).toMatch(/Ann \$3,500/);
+  });
+
+  it("already using the backdoor: nothing to decide, too close or over", () => {
+    expect(
+      recs(view(205_000, 0, true, "backdoor"), 2026, "2026-11-01"),
+    ).toEqual([]);
+    expect(
+      recs(view(220_000, 0, true, "backdoor"), 2026, "2026-11-01"),
+    ).toEqual([]);
+  });
+
+  it("over the limit but contributing directly: switch to the backdoor", () => {
+    const r = recs(view(220_000, 0, true, "direct"), 2026, "2026-11-01");
+    expect(r[0]!.action).toMatch(/set as direct — switch them to the backdoor/);
+    expect(r[0]!.action).toMatch(/recharacterized/);
+  });
+
+  it("the backdoor in use: the pro-rata check stays, whatever the verdict", () => {
+    expect(
+      recs(view(150_000, 5000, true, "backdoor"), 2026, "2026-11-01").map(
+        (x) => x.id,
+      ),
+    ).toEqual(["proRata:7"]);
+    expect(
+      recs(view(205_000, 5000, true, "backdoor"), 2026, "2026-11-01").map(
+        (x) => x.id,
+      ),
+    ).toEqual(["proRata:7"]);
   });
 
   it("this year: now in Q4, soon before", () => {

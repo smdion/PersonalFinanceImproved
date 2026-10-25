@@ -15,6 +15,7 @@ import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useRothIra } from "@/lib/hooks/use-roth-ira";
 import type { InvestmentIncomeBasis } from "@/lib/pure/investment-income";
 import { rothMfsNote } from "@/lib/pure/recommendations-roth";
+import { rothIraAdvice } from "@/lib/pure/roth-ira";
 
 const BASIS_TEXT: Record<InvestmentIncomeBasis, string> = {
   actual: "the year's actual",
@@ -117,13 +118,7 @@ export function RothIraSection({ wageAgi }: { wageAgi: number }) {
                   : "text-primary font-medium"
               }
             >
-              {j.verdict === "direct"
-                ? "Direct Roth IRA contribution OK."
-                : j.verdict === "backdoor"
-                  ? "Over the limit — use the backdoor Roth."
-                  : `Too close to call — decide once the year's income is final (contributions are allowed until the tax-filing deadline). Direct now: ${j.people
-                      .map((p) => `${p.name} ${formatCurrency(p.maxDirect, 0)}`)
-                      .join(", ")}.`}
+              {rothIraAdvice(view, "until the tax-filing deadline")?.summary}
             </p>
             <div className="flex justify-between">
               <span>Safety margin below the phase-out</span>

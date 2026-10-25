@@ -286,3 +286,10 @@ export type StandInPreview = {
   /** Why the last check failed (the figures above are from the one before). */
   error?: string | null;
 };
+
+/** How a Roth IRA contribution gets there: straight into the Roth, or the
+ *  backdoor — a non-deductible traditional IRA contribution converted to
+ *  the Roth (works at any income). A Contribution Profile choice on a Roth
+ *  IRA account; absent = direct. */
+export const ROTH_IRA_ROUTE_VALUES = ["direct", "backdoor"] as const;
+export type RothIraRoute = (typeof ROTH_IRA_ROUTE_VALUES)[number];

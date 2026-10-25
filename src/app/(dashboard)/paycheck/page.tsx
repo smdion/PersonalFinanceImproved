@@ -565,7 +565,12 @@ export default function PaycheckPage() {
                               // Absent means no — turning it off removes it.
                               field === "fromBonus"
                                 ? value === "true" || undefined
-                                : value,
+                                : field === "rothRoute"
+                                  ? // Absent means direct.
+                                    value === "backdoor"
+                                    ? value
+                                    : undefined
+                                  : value,
                             );
                             return;
                           }

@@ -5,13 +5,13 @@
  * judged here.
  */
 import { ROTH_RECOMMENDATION_WINDOWS as W } from "@/lib/config/recommendations";
-import type { RothIraView } from "@/lib/pure/roth-ira";
 import type {
   Recommendation,
   RecommendationUrgency,
 } from "@/lib/pure/recommendations";
 import { formatCurrency } from "@/lib/utils/format";
 import { ROTH_IRA_MFS_PHASEOUT } from "@/lib/config/tax-params";
+import { rothIraAdvice, type RothIraView } from "@/lib/pure/roth-ira";
 
 /** Shown wherever the verdict is: the app has no married-filing-separately
  *  status, whose phase-out is far lower. Built when shown, so privacy mode
@@ -28,7 +28,9 @@ export function recommendationsFromRothIra(
   today: string,
 ): Recommendation[] {
   const j = view?.judgement;
-  if (!view || !j || j.verdict === "direct") return [];
+  if (!view || !j) return [];
+  const usesBackdoor = view.routes.some((r) => r.route === "backdoor");
+  if (j.verdict === "direct" && !usesBackdoor) return [];
   const thisYear = Number(today.slice(0, 4));
   const monthDay = today.slice(5);
   // A past year: only the contribution decision is left, until the filing
@@ -43,24 +45,24 @@ export function recommendationsFromRothIra(
     : "until the tax-filing deadline";
   const range = `${formatCurrency(j.phaseOutStart, 0)}–${formatCurrency(j.phaseOutEnd, 0)}`;
   const context = `${taxYear} Roth IRA MAGI about ${formatCurrency(view.magi, 0)}; phase-out ${range}. ${rothMfsNote()}`;
-  const out: Recommendation[] = [
-    {
-      id: "rothIra",
-      area: "moneyMoves",
-      urgency: urgency(W.rothIra.nowFrom),
-      title: `${taxYear} Roth IRA: direct or backdoor`,
-      action:
-        j.verdict === "backdoor"
-          ? `Over the Roth IRA income limit — contribute through the backdoor (a non-deductible traditional IRA contribution, then convert it), ${deadline}`
-          : `Too close to the income limit to be sure — decide once the year's income is final (contributions are allowed ${deadline}). Direct now: ${j.people
-              .map((p) => `${p.name} ${formatCurrency(p.maxDirect, 0)}`)
-              .join(", ")}`,
-      context,
-      impact: null,
-      href: "/taxes",
-      source: "ledgr",
-    },
-  ];
+  // What to do given how each person contributes (direct or backdoor) —
+  // nothing when the route they use already fits this income.
+  const advice = rothIraAdvice(view, deadline);
+  const out: Recommendation[] = advice?.action
+    ? [
+        {
+          id: "rothIra",
+          area: "moneyMoves",
+          urgency: urgency(W.rothIra.nowFrom),
+          title: `${taxYear} Roth IRA: direct or backdoor`,
+          action: advice.action,
+          context,
+          impact: null,
+          href: "/taxes",
+          source: "ledgr",
+        },
+      ]
+    : [];
   // The pro-rata blocker is measured on Dec 31 of the conversion year —
   // only actionable while that date is ahead.
   if (pastYear) return out;

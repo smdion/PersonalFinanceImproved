@@ -54,7 +54,7 @@ import {
   computeAnnualEarnings,
   sumHouseholdIncome,
 } from "@/lib/pure/household-income";
-import { rothIraSummary } from "@/lib/pure/roth-ira";
+import { rothIraRouteOf, rothIraSummary } from "@/lib/pure/roth-ira";
 import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
 import { medicareLiabilityKey } from "@/lib/config/tax-params";
 import { hsaCashBuffers } from "@/lib/pure/cash-positions";
@@ -704,6 +704,7 @@ export const paycheckRouter = createTRPCRouter({
           iraRoom:
             r.rawContribs.find((c) => isIraCategory(c.accountType) && c.cap)
               ?.cap?.maxEmployee ?? null,
+          rothRoute: rothIraRouteOf(r.rawContribs),
         })),
       });
 

@@ -1,3 +1,4 @@
+import type { RothIraRoute } from "@/lib/config/enum-values";
 import type { CappedContribution } from "@/lib/pure/contribution-caps";
 import type { ViewMode } from "@/lib/context/scenario-context";
 import type { PaycheckResult } from "@/lib/calculators/types";
@@ -49,6 +50,9 @@ export type RawContrib = {
   isPayrollDeducted?: boolean | null;
   /** Also taken from bonus checks (a Contribution Profile election). */
   fromBonus?: boolean;
+  /** A Roth IRA account's route (a Contribution Profile election) —
+   *  absent = direct. */
+  rothRoute?: RothIraRoute;
   displayNameCustom?: string;
   /** @deprecated legacy key — see json-schemas.ts. */
   displayNameActive?: string;

@@ -1,5 +1,8 @@
 "use client";
 
+import { isRothIraContribution } from "@/lib/pure/roth-ira";
+import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
+import type { RothIraRoute } from "@/lib/config/enum-values";
 import { Toggle } from "@/components/ui/toggle";
 import { takesFromBonusCheck } from "@/lib/calculators/paycheck";
 import React, { useState } from "react";
@@ -1647,6 +1650,20 @@ function ProfileInlineEditor({
                               }
                               label="Also taken from bonus checks"
                               size="xs"
+                            />
+                          </div>
+                        )}
+                        {/* A Roth IRA's route — the same election as
+                            Paycheck; absent means direct. */}
+                        {!isDisabled && isRothIraContribution(ad) && (
+                          <div className="mt-1">
+                            <RothRouteSelect
+                              value={af.rothRoute as RothIraRoute | undefined}
+                              onChange={(v) =>
+                                patchAccount(ad.id, {
+                                  rothRoute: v === "backdoor" ? v : undefined,
+                                })
+                              }
                             />
                           </div>
                         )}

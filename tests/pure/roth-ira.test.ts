@@ -227,6 +227,7 @@ describe("rothIraSummary", () => {
         iraLimit: 8000,
         hasEmployerPlan: true,
         iraRoom: null,
+        rothRoute: null,
       },
       // An HSA isn't a plan that takes IRA roll-ins.
       {
@@ -236,6 +237,7 @@ describe("rothIraSummary", () => {
         iraLimit: 7000,
         hasEmployerPlan: false,
         iraRoom: null,
+        rothRoute: null,
       },
     ]);
   });
@@ -297,5 +299,55 @@ describe("pro-rata materiality", () => {
     expect(view(69).proRata).toEqual([]); // under 1% of the $7,000 limit
     expect(view(70).proRata).toHaveLength(1);
     expect(view(5000, null).proRata).toEqual([]); // limit unknown
+  });
+});
+
+describe("Roth IRA route", () => {
+  it("rothIraRouteOf: the Roth IRA contribution's route, absent = direct; null with none", async () => {
+    const { rothIraRouteOf } = await import("@/lib/pure/roth-ira");
+    expect(
+      rothIraRouteOf([
+        { accountType: "401k", taxTreatment: "tax_free" },
+        { accountType: "ira", taxTreatment: "tax_free" },
+      ]),
+    ).toBe("direct");
+    expect(
+      rothIraRouteOf([
+        { accountType: "ira", taxTreatment: "tax_free", rothRoute: "backdoor" },
+      ]),
+    ).toBe("backdoor");
+    // A traditional IRA contribution isn't a Roth route.
+    expect(
+      rothIraRouteOf([{ accountType: "ira", taxTreatment: "pre_tax" }]),
+    ).toBeNull();
+  });
+
+  it("backdoorPlanned: the verdict, or anyone's route", () => {
+    const v = (verdictMagi: number, route: "direct" | "backdoor" | null) =>
+      buildRothIraView({
+        rothIra: {
+          filingStatus: "MFJ",
+          phaseOut: MFJ,
+          people: [
+            {
+              personId: 1,
+              name: "A",
+              compensation: 150_000,
+              iraLimit: 7000,
+              hasEmployerPlan: true,
+              iraRoom: null,
+              rothRoute: route,
+            },
+          ],
+        },
+        wageAgi: verdictMagi,
+        hsaOutsidePayroll: 0,
+        investmentIncome: 0,
+        preTaxIraByPerson: [],
+        marginOverride: null,
+      });
+    expect(backdoorPlanned(v(150_000, "direct"))).toBe(false);
+    expect(backdoorPlanned(v(150_000, "backdoor"))).toBe(true);
+    expect(backdoorPlanned(v(220_000, null))).toBe(true);
   });
 });

@@ -127,3 +127,26 @@ describe("diffContribProfileSwap — taken from bonus checks", () => {
     ).toEqual([]);
   });
 });
+
+describe("diffContribProfileSwap — Roth IRA route", () => {
+  it("a route difference is a line; absent and direct are the same", () => {
+    const value = {
+      contributionValue: "625",
+      contributionMethod: "fixed_monthly",
+    };
+    expect(
+      diffContribProfileSwap(
+        { "1": { ...value, rothRoute: "backdoor" } },
+        { "1": value },
+        [account({ accountName: "Alex Roth IRA" })],
+      ),
+    ).toEqual(["Alex Roth IRA: 625 via backdoor → 625"]);
+    expect(
+      diffContribProfileSwap(
+        { "1": { ...value, rothRoute: "direct" } },
+        { "1": value },
+        [account()],
+      ),
+    ).toEqual([]);
+  });
+});
