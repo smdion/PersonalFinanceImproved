@@ -257,11 +257,11 @@ export const adminProcedures = {
         invalidateYearEndCache();
         return result;
       }),
-    /** Dismiss, snooze or restore one recommendation. The saved map is
-     *  read, changed and written as one step — queued in this process, and
-     *  under a transaction lock on Postgres — so two admins changing
-     *  different items at once both stick (the browser's whole-map upsert
-     *  could drop one). */
+    // The saved map is read, changed and written as one step — queued in
+    // this process, and under a transaction lock on Postgres — so two admins
+    // changing different items at once both stick (the browser's whole-map
+    // upsert could drop one).
+    /** Dismiss, snooze or restore one recommendation (merged on the server). */
     setDismissal: adminProcedure
       .input(
         z.object({
