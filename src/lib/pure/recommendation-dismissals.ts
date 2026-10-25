@@ -16,8 +16,8 @@ const URGENCY_RANK: Record<RecommendationUrgency, number> = {
   soon: 1,
 };
 
-const dismissalIdSchema = z.string().min(1).max(80);
-const dismissalSchema = z.object({
+export const dismissalIdSchema = z.string().min(1).max(80);
+export const dismissalSchema = z.object({
   /** Hidden until this date (YYYY-MM-DD); null = for good. */
   until: z
     .string()

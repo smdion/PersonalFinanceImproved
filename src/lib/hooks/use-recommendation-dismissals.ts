@@ -4,14 +4,12 @@
  * Dismissed / snoozed recommendations: read by everyone (household-wide),
  * changed by admins only (the settings write is admin-gated).
  */
-import { useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { SK_RECOMMENDATION_DISMISSALS } from "@/lib/constants/settings-keys";
 import { localDateStr } from "@/lib/utils/date";
 import { toast } from "@/lib/hooks/use-toast";
 import {
-  nextDismissals,
   parseDismissals,
   snoozeUntil,
   type Dismissals,
@@ -32,37 +30,15 @@ export function useRecommendationDismissals() {
     settings?.find((s) => s.key === SK_RECOMMENDATION_DISMISSALS)?.value,
   );
   const today = localDateStr();
-  const save = trpc.settings.appSettings.upsert.useMutation({
+  // One change per request; the server applies it to the saved map in a
+  // transaction, so two admins (or two quick clicks) never overwrite each
+  // other.
+  const save = trpc.settings.appSettings.setDismissal.useMutation({
     onSuccess: () => void utils.settings.appSettings.list.invalidate(),
     onError: (e) => toast.error(e.message),
   });
-  // The whole map is rewritten on each change, so writes run one at a time
-  // and each starts from the freshly-read saved map — a second dismiss
-  // clicked before the first's refetch lands can't resurrect the first.
-  const queue = useRef<Promise<unknown>>(Promise.resolve());
-  const write = (id: string, value: Dismissals[string] | null) => {
-    queue.current = queue.current
-      .then(async () => {
-        const latest = await utils.settings.appSettings.list
-          .fetch(undefined, { staleTime: 0 })
-          .catch((e: unknown) => {
-            toast.error(
-              e instanceof Error ? e.message : "Couldn't load dismissals",
-            );
-            throw e;
-          });
-        const saved = parseDismissals(
-          latest.find((s) => s.key === SK_RECOMMENDATION_DISMISSALS)?.value,
-        );
-        await save.mutateAsync({
-          key: SK_RECOMMENDATION_DISMISSALS,
-          value: nextDismissals(saved, today, { id, value }),
-        });
-      })
-      .catch(() => {
-        // Surfaced by the mutation's onError; keep the queue going.
-      });
-  };
+  const write = (id: string, value: Dismissals[string] | null) =>
+    save.mutate({ id, value });
   return {
     dismissals,
     today,

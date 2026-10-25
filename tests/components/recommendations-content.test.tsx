@@ -35,31 +35,18 @@ vi.mock("@/lib/hooks/use-recommendations", () => ({
   }),
 }));
 
-// The saved settings row the server holds; upsert writes it, fetch reads it.
-let saved: { key: string; value: unknown }[] = [];
-const mutateAsync = vi.fn(async (input: { key: string; value: unknown }) => {
-  // Simulate a slow server so a second click lands before the first is done.
-  await new Promise((r) => setTimeout(r, 5));
-  saved = [{ key: input.key, value: input.value }];
-});
+// Each click sends its own change; the server merges it (settings router).
+const mutate = vi.fn();
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     useUtils: () => ({
-      settings: {
-        appSettings: {
-          list: {
-            invalidate: vi.fn(),
-            fetch: vi.fn(async () => saved),
-          },
-        },
-      },
+      settings: { appSettings: { list: { invalidate: vi.fn() } } },
     }),
     settings: {
       appSettings: {
-        // The page's cached copy stays stale on purpose.
         list: { useQuery: () => ({ data: [] }) },
-        upsert: {
-          useMutation: () => ({ mutateAsync, isPending: false }),
+        setDismissal: {
+          useMutation: () => ({ mutate, isPending: false }),
         },
       },
     },
@@ -74,8 +61,7 @@ async function renderPage() {
 
 describe("RecommendationsContent", () => {
   beforeEach(() => {
-    saved = [];
-    mutateAsync.mockClear();
+    mutate.mockClear();
   });
 
   it("viewers see the recommendations but no snooze or dismiss controls", async () => {
@@ -86,7 +72,7 @@ describe("RecommendationsContent", () => {
     expect(screen.queryByRole("button", { name: "Snooze" })).toBeNull();
   });
 
-  it("two quick dismissals both stick (the second doesn't overwrite the first)", async () => {
+  it("each dismissal sends only its own change (the server merges them)", async () => {
     role = "admin";
     await renderPage();
     const dismiss = (n: number) => {
@@ -97,7 +83,8 @@ describe("RecommendationsContent", () => {
     };
     dismiss(0);
     dismiss(1);
-    await waitFor(() => expect(mutateAsync).toHaveBeenCalledTimes(2));
-    expect(Object.keys(saved[0]!.value as object).sort()).toEqual(["a", "b"]);
+    await waitFor(() => expect(mutate).toHaveBeenCalledTimes(2));
+    expect(mutate.mock.calls.map(([c]) => c.id)).toEqual(["a", "b"]);
+    expect(mutate.mock.calls[0]![0].value).toMatchObject({ until: null });
   });
 });
