@@ -52,7 +52,7 @@ describe("Keep data current recommendations", () => {
       expect.objectContaining({
         id: "data:basis",
         title: "Basis data",
-        action: "Never entered",
+        action: "Update Basis data — Never entered",
         context: "Never updated",
         href: "/tax-buckets",
       }),

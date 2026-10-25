@@ -87,6 +87,12 @@ export const CHEAPER_FUND = {
   minExpenseGap: 0.001,
 } as const;
 
+/** Cash drag: the least excess cash worth an item. The band and minimum
+ *  move are shares of the account, so a near-empty account (an emptied
+ *  traditional IRA after a backdoor conversion) is "all cash" and would
+ *  otherwise ask the household to invest a few cents. */
+export const CASH_DRAG_MIN_EXCESS = 100;
+
 /** Tax-loss harvesting: a taxable position whose market value is at least
  *  this share below its cost. Relative, so it fits any account size. */
 export const TAX_LOSS_HARVEST = { minLossShare: 0.05 } as const;

@@ -23,6 +23,7 @@ import type { CompositionBucket } from "@/lib/config/enum-values";
 import { HDHP_MIN_DEDUCTIBLE_KEY } from "@/lib/config/tax-params";
 import type { HsaCoverageType } from "@/lib/config/enum-values";
 import { REBALANCE_BANDS } from "@/lib/config/milestones";
+import { CASH_DRAG_MIN_EXCESS } from "@/lib/config/recommendations";
 import { portfolioBuckets, type ValuedHolding } from "@/lib/pure/fund-facts";
 import { outsideRebalanceBand } from "@/lib/pure/milestones";
 
@@ -88,10 +89,12 @@ export function judgeCashDrag(args: {
     if (share <= cls.targetShare) continue;
     if (!outsideRebalanceBand(share, cls.targetShare)) continue;
     if (share - cls.targetShare < REBALANCE_BANDS.minMove) continue;
+    const excess = (share - cls.targetShare) * known;
+    if (excess < CASH_DRAG_MIN_EXCESS) continue;
     out.push({
       simplefinAccountId: a.simplefinAccountId,
       label: a.label,
-      excess: (share - cls.targetShare) * known,
+      excess,
       value: known,
     });
   }

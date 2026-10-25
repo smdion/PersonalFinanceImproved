@@ -125,6 +125,20 @@ describe("judgeCashDrag", () => {
   });
 });
 
+describe("judgeCashDrag — dollar floor", () => {
+  it("a near-empty all-cash account (an emptied IRA) is not worth an item", () => {
+    const judge = (cash: number) =>
+      judgeCashDrag({
+        accounts: [account({ uninvestedCash: cash })],
+        cashClass,
+        excludeTraditionalIra: false,
+      });
+    expect(judge(0.4)).toEqual([]);
+    expect(judge(90)).toEqual([]);
+    expect(judge(1_000)).toHaveLength(1);
+  });
+});
+
 describe("judgeCashDrag — whole-account IRA link", () => {
   it("an IRA with no tax type (whole-account link) is skipped while a backdoor is the plan", () => {
     const ira = account({

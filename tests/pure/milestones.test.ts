@@ -290,7 +290,8 @@ describe("Financial Order of Operations", () => {
     expect(byId(results, "foo5").status).toBe("reached");
     expect(byId(results, "foo6")).toMatchObject({
       status: "behind",
-      nextStep: "Pat 401k: $8,500.00 of room",
+      nextStep:
+        "Pat 401k: contribute $8,500.00 more this year to reach the IRS limit",
     });
     expect(byId(results, "foo7").status).toBe("behind");
     expect(byId(results, "foo9")).toMatchObject({
@@ -303,8 +304,12 @@ describe("Financial Order of Operations", () => {
   it("step 6 covers every Retirement-category limit, not just the 401k", () => {
     const r = byId(run(), "foo6");
     // IRA 7,000 + HSA 8,550 + 401k 15,000 of 7,000 + 8,550 + 23,500
-    expect(r.headline).toBe("$30,550.00 of $39,050.00 a year");
-    expect(r.nextStep).toBe("Pat 401k: $8,500.00 of room");
+    expect(r.headline).toBe(
+      "$30,550.00 of $39,050.00 a year of IRS contribution limits used",
+    );
+    expect(r.nextStep).toBe(
+      "Pat 401k: contribute $8,500.00 more this year to reach the IRS limit",
+    );
     const portfolioIra = run({
       limits: makeInput().limits!.map((l) =>
         l.label === "IRA" ? { ...l, retirement: false, contributed: 0 } : l,
@@ -312,7 +317,7 @@ describe("Financial Order of Operations", () => {
     });
     // An IRA kept in Portfolio is step 5's business, not step 6's.
     expect(byId(portfolioIra, "foo6").nextStep).toBe(
-      "Pat 401k: $8,500.00 of room",
+      "Pat 401k: contribute $8,500.00 more this year to reach the IRS limit",
     );
     expect(byId(portfolioIra, "foo5").status).toBe("behind");
     expect(byId(run({ retirementUnlimited: 3_000 }), "foo6").note).toBe(
@@ -355,7 +360,7 @@ describe("Financial Order of Operations", () => {
     });
     const r = byId(run({ savings }), "savingsRate");
     expect(r.status).toBe("reached");
-    expect(r.headline).toBe("29% of gross pay");
+    expect(r.headline).toBe("Saving 29% of gross pay");
     expect(r.note).toBe(
       "25% into Retirement accounts · employer match left out (pay over $200,000.00)",
     );
@@ -427,7 +432,9 @@ describe("saving, safety and home", () => {
     const r = byId(run(), "savingsRate");
     expect(r.status).toBe("behind");
     // 25% of 150k = 37.5k; saved 33k → 375/mo
-    expect(r.nextStep).toBe("$375.00 more a month reaches 25%");
+    expect(r.nextStep).toBe(
+      "Save $375.00 more a month to reach a 25% savings rate (savings as a share of gross pay)",
+    );
   });
 
   it("emergency fund: reached at 3 months, alert under 1", () => {
@@ -556,7 +563,7 @@ describe("investing (Bogleheads)", () => {
     const r = byId(off, "rebalance");
     expect(r.status).toBe("behind");
     expect(r.headline).toBe(
-      "2 classes outside the band: Bonds 5.0 pts under · Cash 3.0 pts over",
+      "2 asset classes outside the rebalancing band: Bonds 5.0 pts under target · Cash 3.0 pts over target",
     );
   });
 
@@ -574,7 +581,7 @@ describe("investing (Bogleheads)", () => {
       "rebalance",
     );
     expect(r.nextStep).toBe(
-      "Move about $100k out of Stocks — $60k into Bonds and $40k into TIPS",
+      "Rebalance: move about $100k out of Stocks — $60k into Bonds and $40k into TIPS",
     );
     expect(r.impact).toEqual({ kind: "oneTime", amount: 100_000 });
     // The same mix in a $50k household scales with it.
@@ -589,7 +596,7 @@ describe("investing (Bogleheads)", () => {
       "rebalance",
     );
     expect(small.nextStep).toBe(
-      "Move about $5k out of Stocks — $5k into Bonds",
+      "Rebalance: move about $5k out of Stocks — $5k into Bonds",
     );
   });
 
@@ -609,10 +616,10 @@ describe("investing (Bogleheads)", () => {
       "rebalance",
     );
     expect(r.headline).toBe(
-      "2 classes outside the band: Stocks 10.0 pts over · Bonds 5.6 pts under",
+      "2 asset classes outside the rebalancing band: Stocks 10.0 pts over target · Bonds 5.6 pts under target",
     );
     expect(r.nextStep).toBe(
-      "Move about $100k out of Stocks — $56k into Bonds and $40k into TIPS",
+      "Rebalance: move about $100k out of Stocks — $56k into Bonds and $40k into TIPS",
     );
   });
 
@@ -632,7 +639,7 @@ describe("investing (Bogleheads)", () => {
       "rebalance",
     );
     expect(r.nextStep).toBe(
-      "Move about $120k out of A, B and C — $60k into D, $30k into E and $30k into F",
+      "Rebalance: move about $120k out of A, B and C — $60k into D, $30k into E and $30k into F",
     );
   });
 
@@ -1259,7 +1266,8 @@ describe("r/personalfinance", () => {
     expect(at([]).status).toBe("unknown");
     expect(at([{ name: "Car", targetYear: 2028 }])).toMatchObject({
       status: "behind",
-      nextStep: "Move toward savings, CDs or I bonds: Car (2028)",
+      nextStep:
+        "Money for goals due within 3 years shouldn't ride the stock market — move it toward savings, CDs or I bonds: Car (2028)",
     });
     expect(at([{ name: "Roof", targetYear: 2030 }]).status).toBe("onTrack");
     expect(at([{ name: "Cabin", targetYear: 2040 }]).status).toBe("reached");
@@ -1362,8 +1370,10 @@ describe("r/personalfinance", () => {
     const r = byId(run({ holdings }), "fundCosts");
     expect(r).toMatchObject({
       status: "behind",
-      headline: "1 of 2 funds over the bar",
-      nextStep: "BBB 0.44% (US stocks: under 0.10%)",
+      headline:
+        "1 of 2 funds charge more in fees than the low-cost bar for their asset class",
+      nextStep:
+        "High fund fees — consider a lower-cost fund: BBB charges 0.44% a year (expense ratio); under 0.10% is low-cost for US stocks",
     });
   });
 

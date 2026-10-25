@@ -18,7 +18,7 @@ export function recommendationsFromDataSources(
       area: "data" as const,
       urgency: "soon" as const,
       title: `${labelFor(s)} data`,
-      action: s.reason ?? `Update ${labelFor(s).toLowerCase()} data`,
+      action: `Update ${labelFor(s)} data${s.reason ? ` — ${s.reason}` : ""}`,
       context:
         s.lastUpdated === null
           ? "Never updated"

@@ -44,7 +44,12 @@ export function recommendationsFromCaps(
         title: over
           ? `${who}${label} contributions over the IRS limit`
           : `${who}${label} needs a detail to size its IRS limit`,
-        action: types.flatMap((t) => t.capMessages).join(" "),
+        // capMessage's "it" is the contribution — name the account type.
+        action: types
+          .flatMap((t) =>
+            t.capMessages.map((m) => `${t.accountType} contribution: ${m}`),
+          )
+          .join(" "),
         context: over
           ? "Ledgr counts the capped amount everywhere until the contribution is changed — money over the limit is taxed and must be refunded."
           : "Until then Ledgr sizes the limit conservatively.",
