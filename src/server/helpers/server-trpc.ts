@@ -39,8 +39,9 @@ type ServerHelpers = Awaited<ReturnType<typeof createServerHelpers>>;
  * pickers (scenario-bar), saved settings (usePersistedSetting). In the
  * browser they're cached before a page's own section hydrates, so a page
  * that reads one while rendering from prefetched data must have it on the
- * server too, or the two renders differ (a hydration mismatch). Add a query
- * here when the shell starts loading it.
+ * server too, or the two renders differ (a hydration mismatch).
+ * tests/lint/shell-prefetch.test.ts keeps this list equal to what the shell
+ * actually loads.
  */
 function prefetchShellQueries(h: ServerHelpers): Promise<unknown>[] {
   return [
@@ -51,6 +52,7 @@ function prefetchShellQueries(h: ServerHelpers): Promise<unknown>[] {
     h.sync.getSyncStatus.prefetch(),
     h.simplefin.getStatus.prefetch(),
     h.sec.getStatus.prefetch(),
+    h.investments.getHealth.prefetch(),
     h.contributionProfile.list.prefetch(),
     h.contributionProfile.compareData.prefetch(),
     h.salaryProfile.list.prefetch(),
