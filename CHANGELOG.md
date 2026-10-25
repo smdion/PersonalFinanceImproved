@@ -38,7 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Brokerage → By Account** showed another brokerage account's budget link (Long Term Brokerage labelled "R Brokerage"). The label and YNAB balance are now matched to each account itself, not its account type. The links themselves were always saved correctly.
 - Two admins dismissing or snoozing recommendations at the same time no longer lose one of the changes. Each change is now merged on the server.
 - The dashboard and the Retirement page now show the same baseline nest egg. They could differ by a few cents because they added up the year's balances differently.
-- Pages no longer redraw on load because the server and browser saw different data. The server now loads what the sidebar and header load on every page (saved settings, data freshness, profile lists). Seen on Benchmarks (the "Compare with" description) and Performance (the "Basis updated" date).
+- Pages no longer redraw on load because the server and browser saw different data. The server now loads what the sidebar and header load on every page (saved settings, data freshness, profile lists). A page load counts once against the request limit, however many queries it prefetches, so moving quickly between pages can't run out the limit. Seen on Benchmarks (the "Compare with" description) and Performance (the "Basis updated" date).
 
 ## [0.8.14] - 2026-10-25
 

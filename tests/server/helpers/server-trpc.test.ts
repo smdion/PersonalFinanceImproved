@@ -2,7 +2,8 @@
  * prefetchForPage always carries the dashboard shell's queries, so a page
  * rendered from prefetched data reads the same saved settings and freshness
  * dates on the server as in the browser (no hydration mismatch); a shell
- * query failing never costs the page its own data.
+ * query failing never costs the page its own data. A page load is one
+ * request against the rate limit — its queries run as internal calls.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
@@ -13,8 +14,24 @@ vi.mock("next/headers", () => ({
     get: () => (privacy ? { value: "1" } : undefined),
   }),
 }));
+const state = vi.hoisted(
+  (): { tokensLeft: number; charged: string[]; helperCtx: unknown } => ({
+    tokensLeft: Infinity,
+    charged: [],
+    helperCtx: null,
+  }),
+);
 vi.mock("../../../src/server/trpc", () => ({
-  createContext: async () => ({}),
+  createContext: async () => ({ session: { user: { id: "1" } } }),
+  internalCtx: (ctx: object) => ({ ...ctx, internal: true }),
+  takeAuthenticatedRateToken: async (_ctx: unknown, path: string) => {
+    state.charged.push(path);
+    state.tokensLeft -= 1;
+    return {
+      ok: state.tokensLeft >= 0,
+      remaining: Math.max(0, state.tokensLeft),
+    };
+  },
 }));
 vi.mock("../../../src/server/routers", () => ({ appRouter: {} }));
 
@@ -39,7 +56,10 @@ function procedures(queryClient: QueryClient, path: string[] = []): unknown {
   });
 }
 vi.mock("@trpc/react-query/server", () => ({
-  createServerSideHelpers: () => procedures(new QueryClient()),
+  createServerSideHelpers: ({ ctx }: { ctx: unknown }) => {
+    state.helperCtx = ctx;
+    return procedures(new QueryClient());
+  },
 }));
 
 import { prefetchForPage } from "@/server/helpers/server-trpc";
@@ -49,6 +69,8 @@ const pagePrefetch = (h: unknown) => (h as Helpers).page.prefetch();
 
 beforeEach(() => {
   privacy = false;
+  state.tokensLeft = Infinity;
+  state.charged.length = 0;
   shellCalls.length = 0;
   settingsPrefetch = async () => undefined;
 });
@@ -83,6 +105,18 @@ describe("prefetchForPage", () => {
     settingsPrefetch = called;
     expect(await prefetchForPage(pagePrefetch)).toBeUndefined();
     expect(called).not.toHaveBeenCalled();
+    expect(shellCalls).toEqual([]);
+  });
+
+  it("a page load costs one rate-limit token; its queries run as internal calls", async () => {
+    await prefetchForPage(pagePrefetch);
+    expect(state.charged).toEqual(["page.prefetch"]);
+    expect(state.helperCtx).toMatchObject({ internal: true });
+  });
+
+  it("when the budget is spent, prefetches nothing (the browser's fetch reports it)", async () => {
+    state.tokensLeft = 0;
+    expect(await prefetchForPage(pagePrefetch)).toBeUndefined();
     expect(shellCalls).toEqual([]);
   });
 });

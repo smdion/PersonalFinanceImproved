@@ -20,18 +20,30 @@ import { dehydrate, type DehydratedState } from "@tanstack/react-query";
 import { createServerSideHelpers } from "@trpc/react-query/server";
 import { cookies } from "next/headers";
 import { PRIVACY_COOKIE } from "@/lib/utils/format";
-import { createContext } from "../trpc";
+import {
+  createContext,
+  internalCtx,
+  takeAuthenticatedRateToken,
+} from "../trpc";
 import { appRouter } from "../routers";
 
+/**
+ * Server helpers for a page render. Its queries run as internal calls (no
+ * per-query throttle): prefetchForPage charges the page load once instead,
+ * so a page that prefetches a dozen queries costs one request, not twelve.
+ */
 export async function createServerHelpers() {
   const ctx = await createContext();
-  return createServerSideHelpers({
-    router: appRouter,
+  return {
     ctx,
-  });
+    helpers: createServerSideHelpers({
+      router: appRouter,
+      ctx: internalCtx(ctx),
+    }),
+  };
 }
 
-type ServerHelpers = Awaited<ReturnType<typeof createServerHelpers>>;
+type ServerHelpers = Awaited<ReturnType<typeof createServerHelpers>>["helpers"];
 
 /**
  * The no-input queries the dashboard shell loads on every page — the
@@ -83,7 +95,11 @@ export async function prefetchForPage(
   const cookieStore = await cookies();
   if (cookieStore.get(PRIVACY_COOKIE)?.value === "1") return undefined;
   try {
-    const helpers = await createServerHelpers();
+    const { ctx, helpers } = await createServerHelpers();
+    // One page load = one request against the user's rate limit; when it's
+    // spent, skip the prefetch and let the browser's own fetch report it.
+    if (!(await takeAuthenticatedRateToken(ctx, "page.prefetch")).ok)
+      return undefined;
     await Promise.all([prefetch(helpers), ...prefetchShellQueries(helpers)]);
     return dehydrate(helpers.queryClient);
   } catch {
