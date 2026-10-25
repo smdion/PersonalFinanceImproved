@@ -192,7 +192,7 @@ function Growth({
         <span className="text-xl font-bold text-green-600" data-privacy-visible>
           ${formatNumber(factor(years), 2)}
         </span>
-        <span className="text-muted text-xs">
+        <span className="text-muted text-xs" data-privacy-visible>
           per $1 by age {retirementAge} · {years} yrs at{" "}
           {formatPercent(avgReturn, 1)}
         </span>

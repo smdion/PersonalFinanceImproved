@@ -372,7 +372,11 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                           <div className="text-micro text-faint">
                             starting income
                           </div>
-                          <div className="text-micro text-faint">
+                          {/* A unit label, not an amount. */}
+                          <div
+                            className="text-micro text-faint"
+                            data-privacy-visible
+                          >
                             {dollarMode === "nominal"
                               ? "future $"
                               : "today's $"}
