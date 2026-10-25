@@ -18,7 +18,7 @@ const rec = (
   action: id,
   context: "",
   impact: null,
-  href: "/",
+  focus: { topic: "netWorth" },
   source: "moneyGuy",
 });
 

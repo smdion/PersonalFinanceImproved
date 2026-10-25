@@ -2,6 +2,8 @@
 
 /** Savings goals tracking page showing progress, contributions, and projected completion dates. */
 
+import { useRouter } from "next/navigation";
+import { focusHref } from "@/lib/config/focus-topics";
 import React, { useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useFocusMatch, useFocusedState } from "@/lib/hooks/use-focus";
@@ -216,6 +218,7 @@ export default function SavingsPage() {
     "savingsEditTab",
     "allocations",
   );
+  const router = useRouter();
   const extraPaychecksRef = useRef<HTMLDivElement>(null);
   useScrollToFocus(extraPaychecksRef, useFocusMatch("extraPaychecks") !== null);
 
@@ -423,11 +426,11 @@ export default function SavingsPage() {
     (d) => derivedPoolByYear.get(d.getFullYear()) ?? basePool,
   );
 
+  // A fund in the chart opens its card (Manage tab) — the same link any
+  // other page uses for a goal.
   const handleFundClick = (fundName: string) => {
     const gp = goalProjections.find((g) => g.name === fundName);
-    if (!gp) return;
-    const el = document.getElementById(`fund-card-${gp.goalId}`);
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
+    if (gp) router.push(focusHref({ topic: "savingsGoal", goalId: gp.goalId }));
   };
 
   // ── Extra paycheck net pay map ──

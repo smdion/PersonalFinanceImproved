@@ -547,7 +547,7 @@ export function FundManagementSection({
             const children = childGoalsByParent.get(raw.id) ?? [];
 
             return (
-              <div key={gp.goalId} id={`fund-card-${gp.name}`}>
+              <div key={gp.goalId}>
                 <FundCard
                   projection={gp}
                   rawGoal={raw}

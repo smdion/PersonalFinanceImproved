@@ -1,6 +1,7 @@
 "use client";
 
 /** Taxes page body: the year's tax line by line, then the Roth IRA check. */
+import { FocusTarget } from "@/components/ui/focus-target";
 import { PageHeader } from "@/components/ui/page-header";
 import { LoadingCard, ErrorCard } from "@/components/cards/dashboard/utils";
 import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
@@ -28,7 +29,9 @@ export function TaxesContent() {
         <div className="grid gap-4 lg:grid-cols-2">
           <TaxBreakdown data={data} />
           {data.householdTax && (
-            <RothIraSection wageAgi={data.householdTax.wageAgi} />
+            <FocusTarget topic="rothIra">
+              <RothIraSection wageAgi={data.householdTax.wageAgi} />
+            </FocusTarget>
           )}
         </div>
       )}

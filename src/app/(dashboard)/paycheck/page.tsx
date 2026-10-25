@@ -2,8 +2,9 @@
 
 /** Paycheck gross-to-net calculator that breaks down taxes, deductions, and take-home pay. */
 
+import { useFocusReveal } from "@/lib/hooks/use-focus";
 import { DEDUCTION_PRESETS } from "@/lib/config/paycheck-presets";
-import React, { useState } from "react";
+import React from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { PageHeader } from "@/components/ui/page-header";
@@ -48,7 +49,10 @@ export default function PaycheckPage() {
   const user = useUser();
   const canEditProfiles = hasPermission(user, "contributionProfile");
   const { viewMode: mode } = useScenario();
-  const [contribExpanded, setContribExpanded] = useState(false);
+  // A link to contribution elections opens the section (focus-topics).
+  const [contribExpanded, setContribExpanded] = useFocusReveal(
+    "contributionElections",
+  );
   const [taxYearSetting, setTaxYearSetting] = usePersistedSetting<
     number | null
   >("paycheck_tax_year", null);
@@ -415,7 +419,8 @@ export default function PaycheckPage() {
               coverageNoteGroup={d.coverageNoteGroup}
               otherJointContribs={d.otherJointContribs}
               contribExpanded={contribExpanded}
-              onToggleContrib={() => setContribExpanded((prev) => !prev)}
+              onToggleContrib={() => setContribExpanded(!contribExpanded)}
+              scrollToContribs={d === views[0]}
               sharedGroupOrder={sharedContribGroupOrder}
               interaction={
                 profileLocked

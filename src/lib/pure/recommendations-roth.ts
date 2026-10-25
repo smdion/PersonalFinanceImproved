@@ -58,7 +58,7 @@ export function recommendationsFromRothIra(
           action: advice.action,
           context,
           impact: null,
-          href: "/taxes",
+          focus: { topic: "rothIra" },
           source: "ledgr",
         },
       ]
@@ -78,7 +78,7 @@ export function recommendationsFromRothIra(
       context:
         "Current balance shown; the Dec 31 balance of traditional, SEP and SIMPLE IRAs is what counts",
       impact: null,
-      href: "/taxes",
+      focus: { topic: "rothIra" },
       source: "ledgr",
     });
   return out;

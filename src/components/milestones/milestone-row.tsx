@@ -1,7 +1,11 @@
 "use client";
 
-import Link from "next/link";
-import { useState, type ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
+import { FocusLink } from "@/components/ui/focus-link";
+import { useScrollToFocus } from "@/components/ui/focus-target";
+import { FOCUS_HOMES } from "@/lib/config/focus-topics";
+import { useFocusMatch, useFocusReveal } from "@/lib/hooks/use-focus";
 import { Check, CircleDashed, TrendingUp, TriangleAlert } from "lucide-react";
 import { ProgressBar } from "@/components/ui/card";
 import { MILESTONE_SOURCE_LABELS } from "@/lib/config/milestones";
@@ -62,7 +66,14 @@ export function MilestoneRow({
   /** Extra detail in the open row (e.g. the savings-rate breakdown). */
   detail?: ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
+  // A link to this milestone opens it and scrolls to it.
+  const isThis = (ids: { milestoneId: string }) =>
+    ids.milestoneId === result.id;
+  const [open, setOpen] = useFocusReveal("milestone", isThis);
+  const linked = useFocusMatch("milestone");
+  const rowRef = useRef<HTMLDivElement>(null);
+  useScrollToFocus(rowRef, linked !== null && isThis(linked));
+  const pathname = usePathname();
   const style = STATUS_STYLE[result.status];
   const when =
     result.status === "reached"
@@ -70,12 +81,12 @@ export function MilestoneRow({
       : (result.note ??
         (result.expectedYear ? `Expected ${result.expectedYear}` : null));
   return (
-    <div className="border-subtle border-b last:border-b-0">
+    <div ref={rowRef} className="border-subtle border-b last:border-b-0">
       <button
         type="button"
         className="hover:bg-surface-sunken -mx-1 flex w-full items-center gap-2 rounded px-1 py-1.5 text-left"
         aria-expanded={open}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setOpen(!open)}
       >
         <StatusIcon status={result.status} />
         {/* The title keeps a fixed share of the row and the headline wraps
@@ -122,26 +133,26 @@ export function MilestoneRow({
           {result.nextStep && (
             <p>
               <span className="text-primary font-medium">Next step: </span>
-              {result.nextStepHref ? (
-                <Link
-                  href={result.nextStepHref}
+              {result.nextStepFocus ? (
+                <FocusLink
+                  focus={result.nextStepFocus}
                   className="text-blue-600 hover:underline"
                 >
                   {result.nextStep}
-                </Link>
+                </FocusLink>
               ) : (
                 result.nextStep
               )}
             </p>
           )}
           <div className="flex items-center gap-3">
-            {result.href !== "/milestones" && (
-              <Link
-                href={result.href}
+            {FOCUS_HOMES[result.focus.topic].route !== pathname && (
+              <FocusLink
+                focus={result.focus}
                 className="text-blue-600 hover:underline"
               >
                 Go there →
-              </Link>
+              </FocusLink>
             )}
             {extra}
           </div>

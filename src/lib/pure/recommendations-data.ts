@@ -24,7 +24,7 @@ export function recommendationsFromDataSources(
           ? "Never updated"
           : `Last updated ${s.ageDays ?? "?"} day${s.ageDays === 1 ? "" : "s"} ago · ${s.source.rhythmLabel}`,
       impact: null,
-      href: s.source.href,
+      focus: s.source.focus,
       source: "ledgr" as const,
     }));
 }

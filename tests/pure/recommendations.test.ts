@@ -32,7 +32,7 @@ describe("recommendations from milestones", () => {
       urgency: "now",
       area: "paycheck",
       impact: { kind: "perYear", amount: 1_000 },
-      href: "/paycheck",
+      focus: { topic: "contributionElections" },
     });
     // Alerts lead.
     expect(list[0]!.id).toBe("foo2");
@@ -57,7 +57,7 @@ describe("recommendations from milestones", () => {
       action: id,
       context: "",
       impact: amount === null ? null : { kind, amount },
-      href: "/",
+      focus: { topic: "netWorth" },
       source: "moneyGuy",
     });
     const ranked = rankRecommendations([

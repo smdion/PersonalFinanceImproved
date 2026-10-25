@@ -34,16 +34,7 @@ const SENDERS = [
  *  hash. A card header's plain `href="/page"` is the card's general link. */
 const ROUTE_LITERAL = /href: "\/|href="\/[^"]*[?#]/;
 /** Not yet moved to topics — may only shrink (plan: PLAN-deep-links). */
-const NOT_YET = new Set([
-  "components/cards/dashboard/financial-checkup-card.tsx",
-  "lib/config/data-sources.ts",
-  "lib/config/milestones.ts",
-  "lib/pure/milestones.ts",
-  "lib/pure/recommendations-caps.ts",
-  "lib/pure/recommendations-cash.ts",
-  "lib/pure/recommendations-funds.ts",
-  "lib/pure/recommendations-roth.ts",
-]);
+const NOT_YET = new Set<string>([]);
 
 function senderFiles(): string[] {
   return SENDERS.flatMap((s) => {
@@ -116,6 +107,32 @@ describe("links into pages", () => {
 
   const topics = Object.entries(FOCUS_HOMES).filter(([, h]) => !h.href);
 
+  /** Topics whose home is the page itself — no section marked yet. Named
+   *  for the data so a sender never changes when one gets a section. This
+   *  list may only shrink. */
+  const PAGE_LEVEL = [
+    "balances",
+    "brokerageGoals",
+    "debts",
+    "investedAssets",
+    "netWorth",
+    "performance",
+    "planHealth",
+    "retirementProjection",
+    "rothBasis",
+    "savingsGoals",
+    "savingsRate",
+  ];
+
+  it("page-level topics are the listed ones", () => {
+    expect(
+      topics
+        .filter(([, h]) => h.target === "page")
+        .map(([t]) => t)
+        .sort(),
+    ).toEqual(PAGE_LEVEL);
+  });
+
   it.each(topics)(
     "%s: its home renders a target and reads its state",
     (topic, home) => {
@@ -123,7 +140,7 @@ describe("links into pages", () => {
       if (home.target === "section")
         expect(
           new RegExp(
-            `topic="${topic}"|useFocus(Match|Reveal)\\("${topic}"\\)`,
+            `topic="${topic}"|useFocus(Match|Reveal)\\(\\s*"${topic}"`,
           ).test(code),
           `no FocusTarget / useFocusMatch / useFocusReveal for "${topic}" under ${home.route}`,
         ).toBe(true);

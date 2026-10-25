@@ -8,6 +8,8 @@
  * source), the Bogleheads, Fidelity and The Millionaire Next Door.
  */
 
+import type { Focus } from "./focus-topics";
+
 export type MilestoneSource =
   | "moneyGuy"
   | "personalFinance"
@@ -84,7 +86,7 @@ export type MilestoneDefinition = {
   /** How The Money Guy Show's version differs from the original source. */
   adaptedNote?: string;
   /** Where you act on it. */
-  href: string;
+  focus: Focus;
 };
 
 // ---------------------------------------------------------------------------
@@ -277,7 +279,7 @@ export const MILESTONES = [
     source: "moneyGuy",
     title: "Reaching zero",
     rule: "Net worth of $0 or more — everything you own covers everything you owe.",
-    href: "/networth",
+    focus: { topic: "netWorth" },
   },
   {
     id: "first100k",
@@ -285,7 +287,7 @@ export const MILESTONES = [
     source: "moneyGuy",
     title: "Your first $100k",
     rule: "$100,000 in liquid investments: retirement accounts, brokerage, HSA and cash.",
-    href: "/portfolio",
+    focus: { topic: "investedAssets" },
   },
   {
     id: "investmentsSaveHarder",
@@ -295,7 +297,7 @@ export const MILESTONES = [
     rule: `A year's growth on your investments is bigger than a year of saving. ${NAPKIN}`,
     adaptedNote:
       "A year of saving comes from your recorded contributions for past years, your paycheck plan for this year, and the retirement projection for future years.",
-    href: "/portfolio",
+    focus: { topic: "investedAssets" },
   },
   {
     id: "twoComma",
@@ -303,7 +305,7 @@ export const MILESTONES = [
     source: "moneyGuy",
     title: "Two Comma Club",
     rule: "$1 million net worth, home equity included.",
-    href: "/networth",
+    focus: { topic: "netWorth" },
   },
   {
     id: "liquidMillionaire",
@@ -311,7 +313,7 @@ export const MILESTONES = [
     source: "moneyGuy",
     title: "Liquid millionaire",
     rule: "$1 million in liquid investments — the home doesn't count.",
-    href: "/portfolio",
+    focus: { topic: "investedAssets" },
   },
   {
     id: "moneyWorksHarder",
@@ -319,7 +321,7 @@ export const MILESTONES = [
     source: "moneyGuy",
     title: "Money works harder than you",
     rule: `A year's growth on your investments is bigger than your gross pay. ${NAPKIN}`,
-    href: "/portfolio",
+    focus: { topic: "investedAssets" },
   },
   {
     id: "fi",
@@ -329,7 +331,7 @@ export const MILESTONES = [
     rule: "Your liquid net worth reaches your FI number (yearly expenses ÷ your withdrawal rate). It counts all your investments — retirement and other — plus cash.",
     adaptedNote:
       "Money Guy confirms FI with a stress test, not the 4% rule alone — check the Retirement page's simulation too.",
-    href: "/retirement",
+    focus: { topic: "retirementProjection" },
   },
 
   // --- Financial Order of Operations ---
@@ -339,7 +341,7 @@ export const MILESTONES = [
     source: "moneyGuy",
     title: "1 · Deductibles covered",
     rule: "Enough cash to pay your highest insurance deductibles.",
-    href: "/savings",
+    focus: { topic: "savingsGoals" },
   },
   {
     id: "foo2",
@@ -347,7 +349,7 @@ export const MILESTONES = [
     source: "moneyGuy",
     title: "2 · Employer match",
     rule: "Contribute enough to get every dollar of the employer match.",
-    href: "/paycheck",
+    focus: { topic: "contributionElections" },
   },
   {
     id: "foo3",
@@ -357,7 +359,7 @@ export const MILESTONES = [
     rule: "Pay off credit cards and high-rate loans.",
     adaptedNote:
       "Money Guy's line moves with age: student loans above 6% in your 20s, 5% in your 30s, 4% in your 40s; car loans above 10% / 9% / 8%; any credit card balance.",
-    href: "/liabilities",
+    focus: { topic: "debts" },
   },
   {
     id: "foo4",
@@ -365,7 +367,7 @@ export const MILESTONES = [
     source: "moneyGuy",
     title: "4 · Emergency reserves",
     rule: "3–6 months of expenses in cash.",
-    href: "/savings",
+    focus: { topic: "savingsGoals" },
   },
   {
     id: "foo5",
@@ -375,7 +377,7 @@ export const MILESTONES = [
     rule: "Fill the IRA and HSA to their IRS limits.",
     adaptedNote:
       "Money Guy: skip it without a high-deductible health plan (no HSA) or a way to fund a Roth IRA.",
-    href: "/paycheck",
+    focus: { topic: "contributionElections" },
   },
   {
     id: "foo6",
@@ -385,7 +387,7 @@ export const MILESTONES = [
     rule: "Fill the IRS limit of every account in the Retirement category (401k/403b, IRA, HSA) with your own contributions — or reach 25% of gross pay into Retirement accounts first (Portfolio money is step 7's).",
     adaptedNote:
       "Money Guy's step 6 is the employer plans; Ledgr counts every account you've put in the Retirement category, so step 5's IRA and HSA are part of it. Employer match isn't counted — the IRS limit is for your own deferrals (an HSA's limit includes employer money). Money Guy says hitting 25% before maxing out is enough to move on \"if you don't have a high income\" but gives no number; Ledgr's high-income threshold only decides whether the match counts toward the 25%.",
-    href: "/paycheck",
+    focus: { topic: "contributionElections" },
   },
   {
     id: "foo7",
@@ -393,7 +395,7 @@ export const MILESTONES = [
     source: "moneyGuy",
     title: "7 · Hyperaccumulation",
     rule: "Save and invest 25% of gross pay, brokerage included.",
-    href: "/contributions",
+    focus: { topic: "savingsRate" },
   },
   {
     id: "foo8",
@@ -401,7 +403,7 @@ export const MILESTONES = [
     source: "moneyGuy",
     title: "8 · Prepaid future expenses",
     rule: "Save ahead for big costs you can see coming — college, the next car.",
-    href: "/savings",
+    focus: { topic: "savingsGoals" },
   },
   {
     id: "foo9",
@@ -409,7 +411,7 @@ export const MILESTONES = [
     source: "moneyGuy",
     title: "9 · Low-interest debt",
     rule: "Only now pay extra on low-rate debt like the mortgage.",
-    href: "/mortgage",
+    focus: { topic: "debts" },
   },
 
   // --- Wealth ---
@@ -421,7 +423,7 @@ export const MILESTONES = [
     rule: "Net worth at least 2× (age × gross income) ÷ (10 + years until 40).",
     adaptedNote:
       "The Millionaire Next Door's original is age × income ÷ 10. Money Guy adds the years-until-40 so the formula works for people in their 20s and 30s. Under ½ is an Under Accumulator.",
-    href: "/networth",
+    focus: { topic: "netWorth" },
   },
   {
     id: "moneyGuyCheckpoints",
@@ -431,7 +433,7 @@ export const MILESTONES = [
     rule: "Liquid investments of 1× gross income by 30, 3× by 40, 6.4× by 50, 13.7× by 60 and 20× at 65.",
     adaptedNote:
       "Money Guy keeps Fidelity's 1× and 3×, then raises the bar (Fidelity: 6× at 50, 10× at 67) and counts all liquid investments, not just retirement accounts.",
-    href: "/portfolio",
+    focus: { topic: "investedAssets" },
   },
   {
     id: "fidelityCheckpoints",
@@ -439,7 +441,7 @@ export const MILESTONES = [
     source: "fidelity",
     title: "Fidelity savings targets",
     rule: "Retirement savings of 1× salary by 30, 3× by 40, 6× by 50, 8× by 60 and 10× at 67.",
-    href: "/retirement",
+    focus: { topic: "retirementProjection" },
   },
 
   // --- Saving ---
@@ -451,7 +453,7 @@ export const MILESTONES = [
     rule: "Save and invest 25% of gross pay — retirement accounts, HSA and brokerage alike (a rate that rounds to 25% counts). The employer match counts until household pay passes the high-income threshold.",
     adaptedNote:
       "Money set aside for a specific future cost (college, the next car) is step 8, not part of the 25%. Starting later needs more: 6% from age 20, 10% from 25, 17% from 30, about 25% from 35.",
-    href: "/contributions",
+    focus: { topic: "savingsRate" },
   },
   {
     id: "pfRetirementRate",
@@ -461,7 +463,7 @@ export const MILESTONES = [
     rule: "Save at least 15%, up to 20%, of pre-tax income for retirement — the Retirement category — before saving for other goals.",
     adaptedNote:
       "If you're behind on retirement savings, save more than 15%; if you can't reach it yet, start with 10%.",
-    href: "/contributions",
+    focus: { topic: "savingsRate" },
   },
   {
     id: "megaBackdoor",
@@ -471,7 +473,7 @@ export const MILESTONES = [
     rule: "After the 401k is full, some plans take after-tax contributions up to the IRS total-additions limit (employee + employer + after-tax), converted to Roth.",
     adaptedNote:
       "Only if your plan allows after-tax contributions and in-plan Roth conversions or in-service withdrawals — ask HR. Catch-up contributions don't count toward the limit.",
-    href: "/paycheck",
+    focus: { topic: "contributionElections" },
   },
   {
     id: "goalHorizon",
@@ -479,7 +481,7 @@ export const MILESTONES = [
     source: "personalFinance",
     title: "Near-term goals out of stocks",
     rule: "Money for goals sooner than 3–5 years belongs in savings, CDs or I bonds; a conservative stock/bond mix only for goals further out.",
-    href: "/brokerage",
+    focus: { topic: "brokerageGoals" },
   },
 
   // --- Safety ---
@@ -491,7 +493,7 @@ export const MILESTONES = [
     rule: "3–6 months of essential expenses in cash; 6 is fully stocked.",
     adaptedNote:
       "Money Guy suggests more with one income or a specialized job, and 12–18 months in retirement.",
-    href: "/savings",
+    focus: { topic: "savingsGoals" },
   },
   {
     id: "protection",
@@ -499,7 +501,7 @@ export const MILESTONES = [
     source: "moneyGuy",
     title: "Protect and plan",
     rule: "Wills, term life insurance and health-care directives — Money Guy's 40s checklist.",
-    href: "/milestones",
+    focus: { topic: "milestone", milestoneId: "protection" },
   },
 
   // --- Home ---
@@ -511,7 +513,7 @@ export const MILESTONES = [
     rule: "Housing costs under 25% of gross pay (3–5% down, stay 5+ years).",
     adaptedNote:
       "The traditional lender rule is 28% of gross pay with 20% down. Money Guy allows up to ~30% in a high-cost area.",
-    href: "/mortgage",
+    focus: { topic: "mortgage" },
   },
   {
     id: "paidOffHome",
@@ -519,7 +521,7 @@ export const MILESTONES = [
     source: "moneyGuy",
     title: "Paid-off home by 60",
     rule: "The house paid off — or able to be — by the end of your 50s.",
-    href: "/mortgage",
+    focus: { topic: "mortgage" },
   },
 
   // --- Investing (Bogleheads) ---
@@ -531,7 +533,7 @@ export const MILESTONES = [
     rule: "Each asset class within 5 points, or 25% of its target, of where you want it (the 25% band only for classes targeted at 5% or more).",
     adaptedNote:
       "Targets come from your target mix today on Benchmarks (or, until you set one, the retirement simulation's glide path) at your age. “Age in bonds” is the Bogleheads' classic starting point for the bond share.",
-    href: "/benchmarks",
+    focus: { topic: "rebalance" },
   },
   {
     id: "lowCost",
@@ -539,7 +541,7 @@ export const MILESTONES = [
     source: "bogleheads",
     title: "Low cost",
     rule: "A blended expense ratio of 0.20% or less.",
-    href: "/benchmarks",
+    focus: { topic: "fundCosts" },
   },
   {
     id: "fundCosts",
@@ -547,7 +549,7 @@ export const MILESTONES = [
     source: "personalFinance",
     title: "Low-cost funds, fund by fund",
     rule: "Domestic stock index funds under 0.1%, international stock under 0.2%, bond funds under 0.1% — r/personalfinance's bar for a good 401k lineup.",
-    href: "/benchmarks",
+    focus: { topic: "fundCosts" },
   },
 ] as const satisfies readonly MilestoneDefinition[];
 

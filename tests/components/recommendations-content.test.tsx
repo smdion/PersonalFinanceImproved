@@ -22,7 +22,7 @@ const rec = (id: string, title: string): Recommendation => ({
   action: `Do ${title}`,
   context: "",
   impact: null,
-  href: "/milestones",
+  focus: { topic: "milestone", milestoneId: "protection" },
   source: "moneyGuy",
 });
 const recommendations = [rec("a", "First"), rec("b", "Second")];

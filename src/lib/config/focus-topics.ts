@@ -63,6 +63,42 @@ export type Focus =
   | { topic: "holdingHistory" }
   /** Account & contribution settings (Portfolio). */
   | { topic: "portfolioAccounts" }
+  /** Net worth: everything owned less everything owed. */
+  | { topic: "netWorth" }
+  /** Invested balances by account. */
+  | { topic: "investedAssets" }
+  /** Entering this period's balances. */
+  | { topic: "balances" }
+  /** Funds held, their costs, uninvested cash. */
+  | { topic: "holdings" }
+  /** What the funds and accounts cost a year. */
+  | { topic: "fundCosts" }
+  /** Current mix against the target mix. */
+  | { topic: "rebalance" }
+  /** The retirement projection as a whole. */
+  | { topic: "retirementProjection" }
+  /** One milestone (built-in id, or `custom:<goalId>`). */
+  | { topic: "milestone"; milestoneId: string }
+  /** Savings goals and their balances. */
+  | { topic: "savingsGoals" }
+  /** One savings goal. */
+  | { topic: "savingsGoal"; goalId: number }
+  /** Paycheck contribution elections (rates, accounts, match). */
+  | { topic: "contributionElections" }
+  /** Household contributions and savings rates. */
+  | { topic: "savingsRate" }
+  /** Debts other than the mortgage. */
+  | { topic: "debts" }
+  /** The mortgage loans. */
+  | { topic: "mortgage" }
+  /** Brokerage goals and their horizons. */
+  | { topic: "brokerageGoals" }
+  /** Yearly performance by account. */
+  | { topic: "performance" }
+  /** Roth contribution and conversion basis. */
+  | { topic: "rothBasis" }
+  /** Roth IRA eligibility this year. */
+  | { topic: "rothIra" }
   | SettingsFocus;
 
 export type FocusKey = Focus["topic"];
@@ -121,6 +157,55 @@ export const FOCUS_HOMES: { [K in FocusKey]: FocusHome<K> } = {
   },
   holdingHistory: { route: "/portfolio", target: "section" },
   portfolioAccounts: { route: "/portfolio", target: "section" },
+  netWorth: { route: "/networth", target: "page" },
+  investedAssets: { route: "/portfolio", target: "page" },
+  // Balances are entered in a dialog; a link never opens an edit form.
+  balances: { route: "/portfolio", target: "page" },
+  holdings: { route: "/benchmarks", target: "section" },
+  rebalance: { route: "/benchmarks", target: "section" },
+  fundCosts: { route: "/benchmarks", target: "section" },
+  retirementProjection: {
+    route: "/retirement",
+    state: { retirementTab: "projection" },
+    target: "page",
+  },
+  milestone: {
+    route: "/milestones",
+    target: "section",
+    id: {
+      of: (f) => f.milestoneId,
+      parse: (v) => (v ? { milestoneId: v } : null),
+    },
+  },
+  savingsGoals: {
+    route: "/savings",
+    state: { savingsMasterTab: "manage" },
+    target: "page",
+  },
+  savingsGoal: {
+    route: "/savings",
+    state: { savingsMasterTab: "manage" },
+    target: "section",
+    id: {
+      of: (f) => String(f.goalId),
+      parse: (v) => {
+        const goalId = positiveInt(v);
+        return goalId === null ? null : { goalId };
+      },
+    },
+  },
+  contributionElections: { route: "/paycheck", target: "section" },
+  savingsRate: { route: "/contributions", target: "page" },
+  debts: { route: "/liabilities", target: "page" },
+  mortgage: { route: "/liabilities", target: "section" },
+  brokerageGoals: { route: "/brokerage", target: "page" },
+  performance: { route: "/performance", target: "page" },
+  rothBasis: {
+    route: "/tax-buckets",
+    state: { taxBucketsView: "now" },
+    target: "page",
+  },
+  rothIra: { route: "/taxes", target: "section" },
   settings: {
     route: "/settings",
     target: "section",

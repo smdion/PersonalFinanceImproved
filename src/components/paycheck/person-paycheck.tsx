@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import { useScrollToFocus } from "@/components/ui/focus-target";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import {
   accountDisplayName,
@@ -117,6 +118,7 @@ export function PersonPaycheck({
   otherJointContribs,
   contribExpanded,
   onToggleContrib,
+  scrollToContribs = false,
   sharedGroupOrder,
   interaction,
   incompleteAccountIds,
@@ -198,6 +200,8 @@ export function PersonPaycheck({
   otherJointContribs?: JointContrib[];
   contribExpanded: boolean;
   onToggleContrib: () => void;
+  /** A link landed on contributions: scroll here (the first person only). */
+  scrollToContribs?: boolean;
   sharedGroupOrder?: string[];
   interaction: PersonPaycheckInteraction;
   /** Contribution accounts belonging to this person/job with no active
@@ -211,6 +215,8 @@ export function PersonPaycheck({
    *  the matching section titles. */
   editLabels?: { salary: string; contribution: string; setup: string };
 }) {
+  const contribsRef = useRef<HTMLDivElement>(null);
+  useScrollToFocus(contribsRef, scrollToContribs && contribExpanded);
   const [addingDeduction, setAddingDeduction] = useState<{
     isPretax: boolean;
   } | null>(null);
@@ -394,27 +400,29 @@ export function PersonPaycheck({
             anchor={job.anchorPayDate ?? job.startDate}
           />
         )}
-        <ContributionsSection
-          rawContribs={rawContribs}
-          perContribData={perContribData}
-          onUpdateContrib={onUpdateContrib}
-          onToggleAutoMax={handlers?.onToggleAutoMax}
-          onDeleteContrib={handlers?.onDeleteContrib}
-          onCreateContrib={handlers?.onCreateContrib}
-          onUpdateInstitution={handlers?.onUpdateInstitution}
-          coverageNote={coverageNote}
-          coverageNoteGroup={coverageNoteGroup}
-          otherJointContribs={otherJointContribs}
-          salary={salary}
-          periodsPerYear={paycheck.periodsPerYear}
-          isExpanded={contribExpanded}
-          onToggleExpand={onToggleContrib}
-          sharedGroupOrder={sharedGroupOrder}
-          personId={person.id}
-          jobId={job.id}
-          readOnly={readOnly}
-          contribValueReadOnly={contribValueReadOnly}
-        />
+        <div ref={contribsRef}>
+          <ContributionsSection
+            rawContribs={rawContribs}
+            perContribData={perContribData}
+            onUpdateContrib={onUpdateContrib}
+            onToggleAutoMax={handlers?.onToggleAutoMax}
+            onDeleteContrib={handlers?.onDeleteContrib}
+            onCreateContrib={handlers?.onCreateContrib}
+            onUpdateInstitution={handlers?.onUpdateInstitution}
+            coverageNote={coverageNote}
+            coverageNoteGroup={coverageNoteGroup}
+            otherJointContribs={otherJointContribs}
+            salary={salary}
+            periodsPerYear={paycheck.periodsPerYear}
+            isExpanded={contribExpanded}
+            onToggleExpand={onToggleContrib}
+            sharedGroupOrder={sharedGroupOrder}
+            personId={person.id}
+            jobId={job.id}
+            readOnly={readOnly}
+            contribValueReadOnly={contribValueReadOnly}
+          />
+        </div>
 
         {addingDeduction && (
           <AddDeductionForm

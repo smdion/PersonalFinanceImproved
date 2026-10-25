@@ -34,7 +34,7 @@ describe("recommendationsFromCaps", () => {
       urgency: "now",
       title: "Avery: 401(k) contributions over the IRS limit",
       action: `401(k) contribution: ${over}`,
-      href: "/paycheck",
+      focus: { topic: "contributionElections" },
       snoozeOnly: true,
     });
   });

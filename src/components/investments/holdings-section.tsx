@@ -5,6 +5,7 @@
  * your target, and what it costs. Holdings from SimpleFIN, priced at
  * today's close (Tiingo); fund facts from SEC filings or your own entries.
  */
+import { FocusTarget } from "@/components/ui/focus-target";
 import { FULL_SHARE, NEGLIGIBLE_SHARE } from "@/lib/constants";
 import { useState } from "react";
 import {
@@ -551,78 +552,84 @@ export function HoldingsSection() {
   const cost = data.cost;
   return (
     <div className="space-y-4">
-      <Card
-        title="What you hold now"
-        headerRight={
-          <div className="flex rounded border text-xs" role="group">
-            {(["account", "fund"] as const).map((v) => (
-              <button
-                key={v}
-                aria-pressed={view === v}
-                className={`px-2 py-0.5 ${view === v ? "bg-surface-strong text-primary" : "text-muted"}`}
-                onClick={() => chooseView(v)}
-              >
-                {v === "account" ? "By account" : "By fund"}
-              </button>
-            ))}
-          </div>
-        }
-      >
-        <p className="text-caption text-faint mb-2">
-          To confirm a stand-in fund or enter a fund&apos;s own fee and mix,
-          open the account in <PortfolioAccountsLink />.
-        </p>
-        {!data.secConnected && (
-          <p className="mb-3 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
-            Set up SEC fund facts in{" "}
-            <SettingsLink
-              tab="integrations"
-              section="sec"
-              className="underline"
-            />{" "}
-            to see each fund&apos;s mix and expense ratio.
-          </p>
-        )}
-        {view === "fund" ? (
-          <div>
-            <div className="text-caption text-faint mb-1 flex gap-x-3">
-              <span className="flex-1">Fund · held in</span>
-              <span className="w-24 text-right">Mix</span>
-              <span className="w-16 text-right">Fee</span>
-              <span className="w-14 text-right">Of total</span>
-              <span className="w-24 text-right">Value</span>
+      <FocusTarget topic="holdings">
+        <Card
+          title="What you hold now"
+          headerRight={
+            <div className="flex rounded border text-xs" role="group">
+              {(["account", "fund"] as const).map((v) => (
+                <button
+                  key={v}
+                  aria-pressed={view === v}
+                  className={`px-2 py-0.5 ${view === v ? "bg-surface-strong text-primary" : "text-muted"}`}
+                  onClick={() => chooseView(v)}
+                >
+                  {v === "account" ? "By account" : "By fund"}
+                </button>
+              ))}
             </div>
-            {combineHoldings(data.accounts).map((f) => (
-              <FundRow key={f.holding.securityId} f={f} />
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {data.accounts.map((a) => (
-              <div key={a.simplefinAccountId}>
-                <AccountHeader a={a} />
-                {a.accountType !== null && isHsaCategory(a.accountType) && (
-                  <HsaCashBuffer
-                    ownerPersonId={a.ownerPersonId}
-                    uninvestedCash={a.uninvestedCash}
-                  />
-                )}
-                {a.holdings.map((h) => (
-                  <HoldingRow key={h.securityId} h={h} editable={false} />
-                ))}
+          }
+        >
+          <p className="text-caption text-faint mb-2">
+            To confirm a stand-in fund or enter a fund&apos;s own fee and mix,
+            open the account in <PortfolioAccountsLink />.
+          </p>
+          {!data.secConnected && (
+            <p className="mb-3 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-400">
+              Set up SEC fund facts in{" "}
+              <SettingsLink
+                tab="integrations"
+                section="sec"
+                className="underline"
+              />{" "}
+              to see each fund&apos;s mix and expense ratio.
+            </p>
+          )}
+          {view === "fund" ? (
+            <div>
+              <div className="text-caption text-faint mb-1 flex gap-x-3">
+                <span className="flex-1">Fund · held in</span>
+                <span className="w-24 text-right">Mix</span>
+                <span className="w-16 text-right">Fee</span>
+                <span className="w-14 text-right">Of total</span>
+                <span className="w-24 text-right">Value</span>
               </div>
-            ))}
-          </div>
-        )}
-      </Card>
+              {combineHoldings(data.accounts).map((f) => (
+                <FundRow key={f.holding.securityId} f={f} />
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {data.accounts.map((a) => (
+                <div key={a.simplefinAccountId}>
+                  <AccountHeader a={a} />
+                  {a.accountType !== null && isHsaCategory(a.accountType) && (
+                    <HsaCashBuffer
+                      ownerPersonId={a.ownerPersonId}
+                      uninvestedCash={a.uninvestedCash}
+                    />
+                  )}
+                  {a.holdings.map((h) => (
+                    <HoldingRow key={h.securityId} h={h} editable={false} />
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </FocusTarget>
       <div className="grid gap-4 lg:grid-cols-2">
-        <AllocationCard data={data} />
+        <FocusTarget topic="rebalance">
+          <AllocationCard data={data} />
+        </FocusTarget>
         <div className="space-y-4">
-          <WhatItCostsCard
-            cost={cost}
-            accountFees={data.accountFees}
-            invested={data.accounts.reduce((t, a) => t + a.total, 0)}
-          />
+          <FocusTarget topic="fundCosts">
+            <WhatItCostsCard
+              cost={cost}
+              accountFees={data.accountFees}
+              invested={data.accounts.reduce((t, a) => t + a.total, 0)}
+            />
+          </FocusTarget>
           <GlidePathCard data={data} />
         </div>
       </div>

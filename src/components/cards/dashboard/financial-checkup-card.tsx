@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { FocusLink } from "@/components/ui/focus-link";
+import type { Focus } from "@/lib/config/focus-topics";
 import { memo, useState, type ReactNode } from "react";
 
 import { trpc } from "@/lib/trpc";
@@ -28,7 +31,7 @@ type CheckupStep = {
   status: "green" | "yellow" | "red" | "gray";
   text: string;
   subText?: string;
-  href: string;
+  focus: Focus;
   /** Shown under the row when it's expanded (the row then toggles instead of linking). */
   detail?: ReactNode;
 };
@@ -135,9 +138,9 @@ function CheckupRow({ step }: { step: CheckupStep }) {
   );
   if (!step.detail)
     return (
-      <a href={step.href} className={rowClass}>
+      <FocusLink focus={step.focus} className={rowClass}>
         {body}
-      </a>
+      </FocusLink>
     );
   return (
     <div>
@@ -197,7 +200,7 @@ function FinancialCheckupCardImpl() {
     // flash "unknown" first.
     if (id === "fi" && milestones.projectionLoading && r.status !== "reached")
       return [
-        { label, helpTip: r.rule, status: "gray", text: "…", href: r.href },
+        { label, helpTip: r.rule, status: "gray", text: "…", focus: r.focus },
       ];
     return [
       {
@@ -206,7 +209,7 @@ function FinancialCheckupCardImpl() {
         status: checkupStatus(r),
         text: r.short,
         subText: r.note ?? undefined,
-        href: r.href,
+        focus: r.focus,
       },
     ];
   };
@@ -259,7 +262,7 @@ function FinancialCheckupCardImpl() {
       ]
         .filter(Boolean)
         .join(" · ") || undefined,
-    href: "/paycheck",
+    focus: { topic: "savingsRate" },
     detail: (
       <SavingsRateBreakdown
         savings={savingsBreakdown}
@@ -289,14 +292,14 @@ function FinancialCheckupCardImpl() {
       }
       subtitle={`${greenCount}/${steps.length} on track`}
       headerRight={
-        <a
+        <Link
           href="/recommendations"
           className="text-caption text-blue-600 hover:underline"
         >
           {milestones.recommendations.length > 0
             ? `${milestones.recommendations.length} recommendation${milestones.recommendations.length === 1 ? "" : "s"} →`
             : "Recommendations →"}
-        </a>
+        </Link>
       }
     >
       <div className="divide-y">

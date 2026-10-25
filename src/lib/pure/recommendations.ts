@@ -9,6 +9,7 @@ import {
   RECOMMENDATION_AREAS,
   type RecommendationArea,
 } from "@/lib/config/recommendations";
+import type { Focus } from "@/lib/config/focus-topics";
 import type { MilestoneSource } from "@/lib/config/milestones";
 import type { MilestoneImpact, MilestoneResult } from "@/lib/pure/milestones";
 
@@ -25,7 +26,8 @@ export type Recommendation = {
   /** Where things stand, for context. */
   context: string;
   impact: MilestoneImpact | null;
-  href: string;
+  /** What the recommendation is about — where its link lands. */
+  focus: Focus;
   source: MilestoneSource | "ledgr";
   /** An error to fix: it can be snoozed but never dismissed for good. */
   snoozeOnly?: boolean;
@@ -54,7 +56,7 @@ export function recommendationsFromMilestones(
       action: r.nextStep,
       context: r.headline,
       impact: r.impact,
-      href: r.href,
+      focus: r.focus,
       source: r.source,
     });
   }

@@ -99,13 +99,16 @@ export function useFocusedState<S extends FocusStateKey>(
 
 /**
  * A collapsed section a link can land on: opens when the focus for `topic`
- * arrives, and the user can still close it (closing doesn't reopen).
+ * (and, for topics with an id, the one `matches` accepts) arrives, and the
+ * user can still close it (closing doesn't reopen).
  */
-export function useFocusReveal(
-  topic: FocusKey,
+export function useFocusReveal<K extends FocusKey>(
+  topic: K,
+  matches?: (ids: FocusIds<K>) => boolean,
   initial = false,
 ): [boolean, (open: boolean) => void] {
-  const matched = useFocusMatch(topic) !== null;
+  const ids = useFocusMatch(topic);
+  const matched = ids !== null && (!matches || matches(ids));
   const [open, setOpen] = useState(initial || matched);
   const [seen, setSeen] = useState(matched);
   if (seen !== matched) {
