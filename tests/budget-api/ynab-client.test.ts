@@ -194,6 +194,72 @@ describe("YnabClient", () => {
         cleared: false,
         approved: false,
       });
+      // Not split: no parts.
+      expect(txs[0]!.subtransactions).toBeUndefined();
+    });
+
+    it("a split keeps its 'Split' parent and carries its live parts", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: {
+            transactions: [
+              {
+                id: "tx-3",
+                account_id: "acct-1",
+                account_name: "Checking",
+                date: "2026-02-05",
+                amount: -140100,
+                payee_name: "City",
+                category_id: null,
+                category_name: "Split",
+                memo: null,
+                cleared: "cleared",
+                approved: true,
+                deleted: false,
+                subtransactions: [
+                  {
+                    amount: -90100,
+                    memo: null,
+                    category_id: "water",
+                    category_name: "Water",
+                    deleted: false,
+                  },
+                  {
+                    amount: -50000,
+                    memo: "trash",
+                    category_id: "trash",
+                    category_name: "Trash",
+                    deleted: false,
+                  },
+                  {
+                    amount: -1000,
+                    memo: null,
+                    category_id: "x",
+                    category_name: "Gone",
+                    deleted: true,
+                  },
+                ],
+              },
+            ],
+          },
+        }),
+      );
+      const [tx] = await client.getTransactions("2026-01-01");
+      expect(tx!.categoryName).toBe("Split");
+      expect(tx!.subtransactions).toEqual([
+        {
+          categoryId: "water",
+          categoryName: "Water",
+          amount: -90.1,
+          memo: null,
+        },
+        {
+          categoryId: "trash",
+          categoryName: "Trash",
+          amount: -50,
+          memo: "trash",
+        },
+      ]);
     });
   });
 
