@@ -74,6 +74,9 @@ export type ContributionAccountInput = {
   /** The match this account would get at the plan's cap — the full match.
    *  Equals employerMatch when uncapped or a flat amount. */
   employerMatchAvailable?: number;
+  /** The share of pay that gets the full employer match (the match cap);
+   *  null/absent when the match doesn't depend on the rate. */
+  fullMatchShareOfPay?: number | null;
   employerMatchTaxTreatment: TaxTreatmentType;
   /** Yearly cap on this account's payroll contributions that aren't FICA
    *  wages (payrollFicaExemptCap); null = they are FICA wages; Infinity =

@@ -498,6 +498,7 @@ export function buildContribAccounts(
         match.matchAnnual - baseMatchByRow.get(c.id)!.matchAnnual,
       ),
       employerMatchAvailable: roundToCents(match.matchAvailableAnnual),
+      fullMatchShareOfPay: match.fullMatchShareOfPay,
       employerMatchTaxTreatment: match.employerMatchTaxTreatment,
       // A capped row's payroll money is already within the IRS limit less
       // employer money, so all of it is exempt (one split: the cap pass).

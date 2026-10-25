@@ -4,19 +4,25 @@
  */
 import type { CashFinding } from "@/lib/pure/cash-positions";
 import type { Recommendation } from "@/lib/pure/recommendations";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, formatList } from "@/lib/utils/format";
 
 export function recommendationsFromCash(args: {
   drag: readonly CashFinding[];
   hsa: readonly (CashFinding & { buffer: number })[];
+  /** Asset classes under target (classesUnderTarget) — investing the
+   *  cash there also rebalances. */
+  underTarget?: readonly string[];
 }): Recommendation[] {
+  const rebalanceNote = args.underTarget?.length
+    ? ` — ${formatList([...args.underTarget])} ${args.underTarget.length === 1 ? "is" : "are"} under target, so investing it there also rebalances`
+    : "";
   return [
     ...args.drag.map((f): Recommendation => ({
       id: `cashDrag:${f.simplefinAccountId}`,
       area: "investing",
       urgency: "soon",
       title: `Uninvested cash in ${f.label}`,
-      action: `About ${formatCurrency(f.excess, 0)} is sitting in cash in this account, more than your target mix's cash share — invest it if it isn't set aside for something`,
+      action: `About ${formatCurrency(f.excess, 0)} is sitting in cash in this account, more than your target mix's cash share — invest it if it isn't set aside for something${rebalanceNote}`,
       context: `${formatCurrency(f.value, 0)} account value counted`,
       impact: { kind: "oneTime", amount: f.excess },
       href: "/portfolio",

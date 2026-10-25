@@ -8,7 +8,9 @@ import {
   getAccountTypeConfig,
   getAllCategories,
   isRetirementParent,
+  isTaxableCategory,
 } from "@/lib/config/account-types";
+import { canSwitchFunds } from "@/lib/pure/fund-findings";
 import type { AccountCategory } from "@/lib/config/account-types.types";
 import {
   FUND_MAIN_BUCKET_SHARE,
@@ -25,6 +27,7 @@ import {
 } from "@/lib/pure/contributions";
 import type {
   CustomGoal,
+  MatchShortfall,
   MilestoneChecklist,
   MilestoneInput,
   MilestoneLimit,
@@ -146,6 +149,9 @@ type LimitAccount = {
   limit: number;
   employeeContrib: number;
   totalContrib: number;
+  /** A year's contributions through payroll, and outside it. */
+  payrollDeductedContrib?: number;
+  nonPayrollContrib?: number;
 };
 
 /**
@@ -156,11 +162,23 @@ type LimitAccount = {
  * any of its accounts sits in the Retirement parent category.
  */
 export function milestoneLimits(
-  people: readonly { name: string; accountTypes: readonly LimitAccount[] }[],
+  people: readonly {
+    name: string;
+    accountTypes: readonly LimitAccount[];
+    /** Paychecks left this year (null: unknown). */
+    checksLeft?: number | null;
+  }[],
   joint: readonly LimitAccount[],
 ): MilestoneLimit[] {
   const rows = new Map<string, MilestoneLimit>();
-  const add = (owner: string, a: LimitAccount) => {
+  // Through payroll or outside it, from where the money goes today.
+  const route = (a: LimitAccount): boolean | null =>
+    (a.payrollDeductedContrib ?? 0) > 0
+      ? true
+      : (a.nonPayrollContrib ?? 0) > 0
+        ? false
+        : null;
+  const add = (owner: string, a: LimitAccount, checksLeft: number | null) => {
     const config = configOf(a.categoryKey);
     // A limited account with no limit found (the year's IRS limits not
     // entered yet) stays in as limit 0 — judged "not enough data", never
@@ -177,6 +195,7 @@ export function milestoneLimits(
       existing.contributed += contributed;
       existing.limit = Math.max(existing.limit, a.limit);
       existing.retirement ||= retirement;
+      existing.payroll = existing.payroll ?? route(a);
     } else {
       rows.set(key, {
         fooStep5: config.fooStep === 5,
@@ -185,11 +204,15 @@ export function milestoneLimits(
         label: config.displayLabel,
         contributed,
         limit: a.limit,
+        payroll: route(a),
+        // A household-wide group has no one person's paychecks.
+        checksLeft: who === owner ? checksLeft : null,
       });
     }
   };
-  for (const p of people) for (const a of p.accountTypes) add(p.name, a);
-  for (const a of joint) add("Household", a);
+  for (const p of people)
+    for (const a of p.accountTypes) add(p.name, a, p.checksLeft ?? null);
+  for (const a of joint) add("Household", a, null);
   return [...rows.values()];
 }
 
@@ -213,17 +236,25 @@ export function milestoneHoldings(overview: {
   allocation: {
     total: number;
     unknown: number;
-    rows: { name: string; value: number; targetPct: number | null }[];
+    rows: {
+      name: string;
+      value: number;
+      targetPct: number | null;
+      /** The fund categories counted toward this class. */
+      buckets?: readonly CompositionBucket[];
+    }[];
     unmapped?: { value: number }[];
   };
   /** SimpleFIN accounts not linked to a Ledgr account (left out). */
   unlinkedAccounts?: { total: number }[];
   cost: { expenseRatio: number | null; coveredShare: number };
   accounts?: {
+    accountType?: string | null;
     holdings: {
       securityId: number | null;
       name: string | null;
       symbol: string | null;
+      value?: number;
       facts: {
         expenseRatio: { value: number } | null;
         composition: { buckets: Record<CompositionBucket, number> } | null;
@@ -234,15 +265,38 @@ export function milestoneHoldings(overview: {
   const { total, unknown, rows } = overview.allocation;
   if (total <= 0) return null;
   const known = total - unknown;
+  const classOfBucket = new Map<CompositionBucket, string>();
+  for (const r of rows)
+    for (const b of r.buckets ?? []) classOfBucket.set(b, r.name);
+  // Each class's dollars by where they sit: taxable or tax-advantaged.
+  const where = new Map<string, { taxable: number; sheltered: number }>();
   // Each fund once (it can sit in several accounts), by its main category.
   const funds = new Map<
     string,
-    { name: string; bucket: CompositionBucket; expenseRatio: number }
+    {
+      name: string;
+      bucket: CompositionBucket;
+      expenseRatio: number;
+      switchable: boolean;
+    }
   >();
-  for (const a of overview.accounts ?? [])
+  for (const a of overview.accounts ?? []) {
+    const taxable = a.accountType ? isTaxableCategory(a.accountType) : false;
     for (const h of a.holdings) {
-      const er = h.facts.expenseRatio?.value;
       const buckets = h.facts.composition?.buckets;
+      if (buckets && h.value)
+        for (const [b, share] of Object.entries(buckets) as [
+          CompositionBucket,
+          number,
+        ][]) {
+          const cls = classOfBucket.get(b);
+          if (!cls || share <= 0) continue;
+          const w = where.get(cls) ?? { taxable: 0, sheltered: 0 };
+          if (taxable) w.taxable += h.value * share;
+          else w.sheltered += h.value * share;
+          where.set(cls, w);
+        }
+      const er = h.facts.expenseRatio?.value;
       if (er == null || !buckets) continue;
       const main = (
         Object.entries(buckets) as [CompositionBucket, number][]
@@ -253,8 +307,12 @@ export function milestoneHoldings(overview: {
         name: h.symbol ?? h.name ?? "A fund",
         bucket: main[0],
         expenseRatio: er,
+        switchable:
+          (funds.get(key)?.switchable ?? false) ||
+          canSwitchFunds(a.accountType ?? null),
       });
     }
+  }
   return {
     coverage: safeDivide(known, total, 0),
     knownValue: known,
@@ -270,6 +328,8 @@ export function milestoneHoldings(overview: {
       name: r.name,
       share: safeDivide(r.value, known, 0),
       targetShare: r.targetPct,
+      taxableValue: where.get(r.name)?.taxable ?? 0,
+      shelteredValue: where.get(r.name)?.sheltered ?? 0,
     })),
     expenseRatio: overview.cost.expenseRatio,
     costCoverage: overview.cost.coveredShare,
@@ -327,7 +387,38 @@ type MilestoneAccount = LimitAccount &
   SavingsRatePerson["accountTypes"][number] & {
     employerMatch: number;
     employerMatchAvailable: number;
+    /** Percent of pay elected (whole number); null for a fixed amount. */
+    currentPctOfSalary?: number | null;
+    /** Percent of pay that gets the full match; null when the match
+     *  doesn't depend on the rate. */
+    fullMatchPctOfSalary?: number | null;
   };
+
+/** Accounts getting less than their full employer match (a dollar or
+ *  more a year), with the rate that gets it. */
+export function matchShortfalls(
+  people: readonly {
+    name: string;
+    accountTypes: readonly MilestoneAccount[];
+  }[],
+): MatchShortfall[] {
+  return people.flatMap((p) =>
+    p.accountTypes.flatMap((a) => {
+      const missed = a.employerMatchAvailable - a.employerMatch;
+      return missed >= 1
+        ? [
+            {
+              owner: p.name,
+              label: a.accountType,
+              missed,
+              currentPct: a.currentPctOfSalary ?? null,
+              fullPct: a.fullMatchPctOfSalary ?? null,
+            },
+          ]
+        : [];
+    }),
+  );
+}
 
 /**
  * Everything the app already computes → the engine's input. The one place
@@ -348,6 +439,9 @@ export function buildMilestoneInput(raw: {
     people: (Omit<SavingsRatePerson, "accountTypes"> & {
       person: { name: string };
       accountTypes: MilestoneAccount[];
+      /** Paychecks a year, and those already paid this year. */
+      periodsPerYear?: number;
+      periodsElapsedYtd?: number;
     })[];
     jointAccountTypes: MilestoneAccount[];
     /** The year's IRS limits, by key. */
@@ -356,17 +450,20 @@ export function buildMilestoneInput(raw: {
   highIncomeThreshold: number;
   brokerageGoals?: { name: string; targetYear: number }[] | null;
   efundMonths: number | null;
+  efundEssentialMonthly?: number | null;
   mortgage: {
     loans: {
       id: number;
       principalAndInterest: string | number;
       pmi: string | number;
       insuranceAndTaxes: string | number;
+      interestRate?: string | number | null;
     }[];
     activeLoanId: number | null;
     activeLoanResult: {
       remainingMonths: number;
       payoffDate: Date | string;
+      currentBalance?: number;
     } | null;
   } | null;
   projection: {
@@ -438,6 +535,12 @@ export function buildMilestoneInput(raw: {
         (sum, a) => sum + Math.max(a.employerMatch, a.employerMatchAvailable),
         0,
       ),
+      shortfalls: matchShortfalls(
+        people.map((p) => ({
+          name: p.person.name,
+          accountTypes: p.accountTypes,
+        })),
+      ),
     };
     retirementUnlimited = retirementUnlimitedContributions(accounts);
     mega = c.limits
@@ -454,6 +557,10 @@ export function buildMilestoneInput(raw: {
       people.map((p) => ({
         name: p.person.name,
         accountTypes: p.accountTypes,
+        checksLeft:
+          p.periodsPerYear !== undefined && p.periodsElapsedYtd !== undefined
+            ? Math.max(0, p.periodsPerYear - p.periodsElapsedYtd)
+            : null,
       })),
       c.jointAccountTypes,
     );
@@ -477,6 +584,9 @@ export function buildMilestoneInput(raw: {
         active && m.activeLoanResult
           ? payoffYearOf(m.activeLoanResult.payoffDate)
           : null,
+      balance: active ? (m.activeLoanResult?.currentBalance ?? null) : null,
+      annualRate: loan?.interestRate != null ? Number(loan.interestRate) : null,
+      principalAndInterest: loan ? Number(loan.principalAndInterest) : null,
     };
   }
 
@@ -504,6 +614,7 @@ export function buildMilestoneInput(raw: {
     limits,
     retirementUnlimited,
     efundMonths: raw.efundMonths,
+    efundEssentialMonthly: raw.efundEssentialMonthly ?? null,
     mortgage,
     holdings: raw.holdings ? milestoneHoldings(raw.holdings) : null,
     checklist: inputs.checklist,

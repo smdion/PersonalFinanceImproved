@@ -111,6 +111,9 @@ type AccountTypeSnapshot = {
   ytdDataStale: boolean; // true when YTD actual < expected — performance data may be behind
   /** The percent-of-pay election (whole number, e.g. 15); null for fixed-amount contributions. */
   currentPctOfSalary: number | null;
+  /** The percent of pay (whole number) that gets the full employer match;
+   *  null when the match doesn't depend on the contribution rate. */
+  fullMatchPctOfSalary: number | null;
   /** True pre-tax (Traditional) contributions only — hsa/afterTax are NOT
    *  folded in here; see afterTaxContrib/hsaContrib below. */
   tradContrib: number;
@@ -745,6 +748,7 @@ export const contributionRouter = createTRPCRouter({
               electedPct: number | null;
               /** What the bonus check takes for it (bonusCheckContribution). */
               bonus: number;
+              fullMatchShareOfPay: number | null;
             }
           >();
 
@@ -830,6 +834,7 @@ export const contributionRouter = createTRPCRouter({
               performanceAccountIds: new Set<number>(),
               electedPct: 0,
               bonus: 0,
+              fullMatchShareOfPay: null,
             };
             // What the bonus check takes, and the match on it. The Year-End
             // estimate adds them only when the year's actuals don't already
@@ -837,6 +842,8 @@ export const contributionRouter = createTRPCRouter({
             const bonusEmp = bonusCheckContribution(acct, pay.bonusGross);
             const bonusMatch = acct.employerMatchOnBonus ?? 0;
             entry.bonus += bonusEmp;
+            entry.fullMatchShareOfPay =
+              acct.fullMatchShareOfPay ?? entry.fullMatchShareOfPay;
             entry.electedPct =
               entry.electedPct !== null &&
               rawContrib.contributionMethod === "percent_of_salary"
@@ -1052,6 +1059,10 @@ export const contributionRouter = createTRPCRouter({
               views,
               ytdDataStale: data.ytdDataStale,
               currentPctOfSalary,
+              fullMatchPctOfSalary:
+                data.fullMatchShareOfPay === null
+                  ? null
+                  : roundToCents(data.fullMatchShareOfPay * 100),
               tradContrib: roundToCents(data.trad),
               taxFreeContrib: roundToCents(data.taxFree),
               afterTaxContrib: roundToCents(data.afterTax),
@@ -1340,6 +1351,7 @@ export const contributionRouter = createTRPCRouter({
               },
           ytdDataStale: false,
           currentPctOfSalary: null,
+          fullMatchPctOfSalary: null,
           performanceAccountIds:
             c.performanceAccountId != null ? [c.performanceAccountId] : [],
           tradContrib: isPreTaxTreatment(c.taxTreatment)

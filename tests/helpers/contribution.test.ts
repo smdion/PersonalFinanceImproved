@@ -249,6 +249,34 @@ describe("computeGroupedEmployerMatch", () => {
     };
   }
 
+  it("says what share of pay gets the full match — only when the match depends on the rate", () => {
+    const capped = computeGroupedEmployerMatch([
+      makeRow({
+        id: 1,
+        annual: 4800,
+        employerMatchType: "percent_of_contribution",
+        employerMatchValue: 100,
+        employerMaxMatchPct: 0.06,
+      }),
+      makeRow({ id: 2, annual: 1200 }),
+    ]);
+    expect(capped.get(1)!.fullMatchShareOfPay).toBe(0.06);
+    expect(capped.get(2)!.fullMatchShareOfPay).toBe(0.06);
+    const flat = computeGroupedEmployerMatch([
+      makeRow({
+        id: 3,
+        annual: 1000,
+        employerMatchType: "fixed_annual",
+        employerMatchValue: 500,
+      }),
+    ]);
+    expect(flat.get(3)!.fullMatchShareOfPay).toBeNull();
+    expect(
+      computeGroupedEmployerMatch([makeRow({ id: 4, annual: 1000 })]).get(4)!
+        .fullMatchShareOfPay,
+    ).toBeNull();
+  });
+
   it("matches computeEmployerMatch for a single ungrouped row (dormant case, own rate already above cap)", () => {
     // Trad 401k row alone: 10% of 120k = 12000, capped at 6% -> same result
     // whether computed per-row (old code) or combined-then-capped (new code),

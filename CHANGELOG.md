@@ -24,6 +24,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A row that added up before an edit still adds up after it: when you change a figure and not the gain, the gain follows. A row with a gain entered on purpose keeps it.
 - A finalized year's latest snapshot can be corrected; its Performance figures stay as they are.
 - **Tell Ledgr how your Roth IRA money gets there** — direct, or the backdoor (a traditional IRA contribution converted to the Roth) — on the Roth IRA account in the Contribution Profile or on Paycheck. The Roth IRA check then advises on what you actually do: nothing to decide when you use the backdoor (it works at any income); a warning to act now when you contribute directly close to or over the limit; no more "Direct now" nudge when you haven't contributed yet.
+- **Recommendations say exactly what to do, using what Ledgr already knows:**
+  - **Employer match** names the account and the rate that gets the full match ("raise to 6% of pay (now 4%)").
+  - **IRS limits**: room filled through payroll is spread over the paychecks left this year; IRA/HSA room says it's open until the filing deadline.
+  - **Savings rates** say where to start — a missed match first, then the account with the most IRS room.
+  - **Emergency fund** shows the dollars to add.
+  - **Paid-off home** gives the extra principal a month that pays it off by the target age.
+  - **Rebalancing** says where a sale costs no tax (inside a 401(k)/IRA/HSA) or, when it's all taxable, to steer new contributions instead of selling.
+  - **Fund costs** say to switch funds where you choose them (IRA, taxable) and to check the plan's menu in a workplace plan — and don't repeat a fund the "cheaper equivalent" item already names.
+  - **Uninvested cash** says which under-target classes investing it would rebalance.
 - **Every recommendation says what it's about on its own** — fund costs and expense ratios named, rates say what they measure, savings checkpoints say what's counted, and rebalancing, housing, mortgage, emergency-fund and checklist items name their subject.
 - **Two kinds of cost, named apart.** Benchmarks' "What it costs" now shows **fund costs** (expense ratios, taken inside the funds' prices — already in your returns) and **account fees** (charged to the accounts and recorded in Performance) on separate lines, with a year of both together. Performance's fee column and lifetime card say "account fees"; the lifetime card no longer claims to include expense ratios.
 

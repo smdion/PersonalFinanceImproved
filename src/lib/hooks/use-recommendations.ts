@@ -21,6 +21,7 @@ import { useRothIra } from "@/lib/hooks/use-roth-ira";
 import { recommendationsFromRothIra } from "@/lib/pure/recommendations-roth";
 import { useInvestingFindings } from "@/lib/hooks/use-investing-findings";
 import { recommendationsFromCash } from "@/lib/pure/recommendations-cash";
+import { classesUnderTarget } from "@/lib/pure/milestones";
 import { recommendationsFromFunds } from "@/lib/pure/recommendations-funds";
 import {
   rankRecommendations,
@@ -56,7 +57,12 @@ export function useRecommendations(): ReturnType<typeof useMilestones> & {
       ],
       Number(today.slice(0, 4)),
     ),
-    ...recommendationsFromMilestones(milestones.results),
+    // A fund the cheaper-equivalent item already names (with its saving)
+    // isn't repeated by the fund-costs milestone.
+    ...recommendationsFromMilestones(
+      milestones.results,
+      new Set(cash.cheaper.map((f) => f.fund)),
+    ),
     ...recommendationsFromDataSources(data.statuses, (s) =>
       s.source.key === "budgetApi"
         ? budgetApiServiceLabel(data.syncStatus?.service)
@@ -67,7 +73,10 @@ export function useRecommendations(): ReturnType<typeof useMilestones> & {
       roth.taxYear ?? Number(today.slice(0, 4)),
       today,
     ),
-    ...recommendationsFromCash(cash),
+    ...recommendationsFromCash({
+      ...cash,
+      underTarget: classesUnderTarget(milestones.input?.holdings ?? null),
+    }),
     ...recommendationsFromFunds(cash),
   ]);
   const { shown, dismissed } = applyDismissals(ranked, dismissals, today);
