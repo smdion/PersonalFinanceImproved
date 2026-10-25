@@ -270,6 +270,17 @@ export const UTILITY_UNIT_VALUES = ["ccf", "gallon", "kWh"] as const;
 export type UtilityUnit = (typeof UTILITY_UNIT_VALUES)[number];
 export const utilityUnitSchema = z.enum(UTILITY_UNIT_VALUES);
 
+/** Who wrote a utility reading's cost: typed in, the one-time spreadsheet
+ *  import, or the budget service the cost feed pulled it from. */
+export const UTILITY_SOURCE_VALUES = [
+  "import",
+  "manual",
+  "ynab",
+  "actual",
+] as const;
+export type UtilitySource = (typeof UTILITY_SOURCE_VALUES)[number];
+export const utilitySourceSchema = z.enum(UTILITY_SOURCE_VALUES);
+
 /** What a suggested stand-in fund's own SEC filings say (securities.standinPreview). Shares are fractions (0–1). */
 export type StandInPreview = {
   /** Share of the stand-in's holdings its filings classify; null if no holdings filing. */
