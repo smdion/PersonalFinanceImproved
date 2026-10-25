@@ -367,6 +367,8 @@ export function YearRow({
       {isExpanded &&
         accounts.map((a, idx) => {
           const acctEditable = row.isCurrentYear && canEdit;
+          // Figures in any year: a past year's change is previewed first.
+          const figuresEditable = canEdit;
           const acctGainColor =
             a.yearlyGainLoss >= 0 ? "text-green-600" : "text-red-600";
           const isHistoricalDivider =
@@ -426,10 +428,31 @@ export function YearRow({
                 </td>
                 {!onlyBasis && (
                   <>
-                    <td className="text-muted px-4 py-2 text-right">
-                      {formatCurrency(a.beginningBalance)}
-                    </td>
-                    {acctEditable ? (
+                    {figuresEditable ? (
+                      <EditableCell
+                        value={a.beginningBalance}
+                        formatter={formatCurrency}
+                        isEditing={isEditingAccount(a.id, "beginningBalance")}
+                        editValue={editValue}
+                        onStartEdit={() =>
+                          onStartEdit(
+                            "account",
+                            a.id,
+                            "beginningBalance",
+                            a.beginningBalance,
+                          )
+                        }
+                        onEditValueChange={onEditValueChange}
+                        onSaveEdit={onSaveEdit}
+                        onKeyDown={onKeyDown}
+                        className="text-muted"
+                      />
+                    ) : (
+                      <td className="text-muted px-4 py-2 text-right">
+                        {formatCurrency(a.beginningBalance)}
+                      </td>
+                    )}
+                    {figuresEditable ? (
                       <EditableCell
                         value={a.totalContributions}
                         formatter={formatCurrency}
@@ -453,7 +476,7 @@ export function YearRow({
                         {formatCurrency(a.totalContributions)}
                       </td>
                     )}
-                    {acctEditable ? (
+                    {figuresEditable ? (
                       <EditableCell
                         value={a.employerContributions}
                         formatter={formatCurrency}
@@ -480,7 +503,7 @@ export function YearRow({
                         {formatCurrency(a.employerContributions)}
                       </td>
                     )}
-                    {acctEditable ? (
+                    {figuresEditable ? (
                       <EditableCell
                         value={a.distributions}
                         formatter={formatCurrency}
@@ -504,7 +527,7 @@ export function YearRow({
                         {formatCurrency(a.distributions)}
                       </td>
                     )}
-                    {acctEditable ? (
+                    {figuresEditable ? (
                       <EditableCell
                         value={a.rollovers}
                         formatter={formatCurrency}
@@ -523,7 +546,7 @@ export function YearRow({
                         {formatCurrency(a.rollovers)}
                       </td>
                     )}
-                    {acctEditable ? (
+                    {figuresEditable ? (
                       <EditableCell
                         value={a.fees}
                         formatter={formatCurrency}
@@ -542,7 +565,7 @@ export function YearRow({
                         {formatCurrency(a.fees)}
                       </td>
                     )}
-                    {acctEditable ? (
+                    {figuresEditable ? (
                       <EditableCell
                         value={a.yearlyGainLoss}
                         formatter={formatCurrency}
@@ -570,7 +593,7 @@ export function YearRow({
                         {cashBasisAnnotation}
                       </td>
                     )}
-                    {acctEditable ? (
+                    {figuresEditable ? (
                       <EditableCell
                         value={a.endingBalance}
                         formatter={formatCurrency}

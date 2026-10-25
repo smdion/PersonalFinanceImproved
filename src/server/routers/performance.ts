@@ -75,6 +75,11 @@ import {
 import { finalizeRothBasisForYear } from "@/server/helpers/roth-basis";
 import { loadPerformanceChecks } from "@/server/helpers/performance-checks";
 import {
+  editAccountRow,
+  type AccountEdit,
+  type EditPreview,
+} from "@/server/helpers/performance-edit";
+import {
   acceptedCheckSchema,
   parseAcceptedChecks,
   parseEstimatedFields,
@@ -123,6 +128,10 @@ function resolveOwnerName(
   }
   return name;
 }
+
+/** Thrown inside a preview's transaction to roll it back; caught by the
+ *  procedure itself, never sent to the client. */
+class DryRunRollback extends Error {}
 
 /** Stamp performance_last_updated in app_settings */
 async function stampPerformanceUpdated(db: DbType) {
@@ -908,33 +917,54 @@ export const performanceRouter = createTRPCRouter({
       return { success: true };
     }),
 
+  /**
+   * Edit one account row (editAccountRow: a balanced row stays balanced,
+   * every affected year's rollups follow). `chainNextYear` moves next year's
+   * beginning with a changed ending; `dryRun` returns what would change and
+   * writes nothing.
+   */
   updateAccount: performanceProcedure
-    .input(accountUpdateInput)
+    .input(
+      accountUpdateInput.extend({
+        chainNextYear: z.boolean().optional(),
+        dryRun: z.boolean().optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
-      const { id, ...fields } = input;
-      const updates: Record<string, string | null> = {};
-      for (const [key, value] of Object.entries(fields)) {
-        if (value !== undefined) {
-          updates[key] = value;
-        }
-      }
-      if (Object.keys(updates).length === 0) return { success: true };
-      await ctx.db.transaction(async (tx) => {
-        const [acctRow] = await tx
-          .select({ year: schema.accountPerformance.year })
-          .from(schema.accountPerformance)
-          .where(eq(schema.accountPerformance.id, id));
-        const before = acctRow
-          ? await captureYearRollups(tx, acctRow.year)
+      const { id, chainNextYear, dryRun, annualReturnPct, ...fields } = input;
+      const edit = Object.fromEntries(
+        Object.entries(fields).filter(([, v]) => v !== undefined),
+      ) as AccountEdit;
+      if (Object.keys(edit).length === 0 && annualReturnPct === undefined)
+        return { success: true, preview: null };
+      const run = async (tx: DbType) => {
+        if (annualReturnPct !== undefined)
+          await tx
+            .update(schema.accountPerformance)
+            .set({ annualReturnPct })
+            .where(eq(schema.accountPerformance.id, id));
+        return Object.keys(edit).length > 0
+          ? editAccountRow(tx, id, edit, { chainNextYear })
           : null;
-        await tx
-          .update(schema.accountPerformance)
-          .set(updates)
-          .where(eq(schema.accountPerformance.id, id));
-        if (before) await syncYearRollups(tx, before);
+      };
+      if (dryRun) {
+        let preview: EditPreview | null = null;
+        try {
+          await ctx.db.transaction(async (tx) => {
+            preview = await run(tx);
+            throw new DryRunRollback();
+          });
+        } catch (e) {
+          if (!(e instanceof DryRunRollback)) throw e;
+        }
+        return { success: true, preview };
+      }
+      const preview = await ctx.db.transaction(async (tx) => {
+        const p = await run(tx);
         await stampPerformanceUpdated(tx);
+        return p;
       });
-      return { success: true };
+      return { success: true, preview };
     }),
 
   /**

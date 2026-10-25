@@ -11,6 +11,7 @@ export {
 export { PerformanceTable } from "./performance-table";
 export { FinalizeYearModal } from "./finalize-year-modal";
 export { AccountNotesDialog } from "./account-notes-dialog";
+export { PastYearEditDialog } from "./past-year-edit-dialog";
 export { UpdatePerformanceForm } from "./update-performance-form";
 export { UpdateBasisForm } from "./update-basis-form";
 export { AccountPicker } from "./account-picker";

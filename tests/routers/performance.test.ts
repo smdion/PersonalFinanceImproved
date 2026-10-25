@@ -365,7 +365,7 @@ describe("performance router", () => {
         id: accountPerfId,
         beginningBalance: "55000",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toMatchObject({ success: true });
 
       // Verify via computeSummary
       const row = db
@@ -384,7 +384,7 @@ describe("performance router", () => {
         endingBalance: "73000",
         fees: "200",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toMatchObject({ success: true });
 
       const row = db
         .select()
@@ -402,7 +402,7 @@ describe("performance router", () => {
         id: accountPerfId,
         annualReturnPct: "0.085",
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toMatchObject({ success: true });
 
       const row = db
         .select()
@@ -417,7 +417,7 @@ describe("performance router", () => {
         id: accountPerfId,
         annualReturnPct: null,
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toMatchObject({ success: true });
 
       const row = db
         .select()
@@ -431,7 +431,7 @@ describe("performance router", () => {
       const result = await caller.performance.updateAccount({
         id: accountPerfId,
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toMatchObject({ success: true });
     });
 
     it("stamps performance_last_updated after update", async () => {

@@ -131,3 +131,20 @@ export const PERF_CHECK_LABELS: Record<PerfCheckKind, string> = {
   transfers: "Transfers don't match",
   snapshot: "Differs from snapshot",
 };
+
+/** Labels for stored Performance figures (account and yearly rows), as an
+ *  edit preview lists what moved. */
+export const PERF_STORED_FIELD_LABELS: Record<string, string> = {
+  beginningBalance: "Beginning",
+  totalContributions: "Added (you + employer)",
+  employerContributions: "Employer added",
+  distributions: "Paid out",
+  rollovers: "Moved between accounts",
+  fees: "Fees & taxes",
+  yearlyGainLoss: "Gain/loss",
+  endingBalance: "Ending",
+  annualReturnPct: "Return",
+  lifetimeGains: "Lifetime gains",
+  lifetimeContributions: "Lifetime contributions",
+  lifetimeMatch: "Lifetime employer money",
+};

@@ -323,3 +323,128 @@ describe("computeSummary carries each row's checks", () => {
     ]);
   });
 });
+
+describe("editing a row: balance, next year, preview", () => {
+  const lockedYear = { isFinalized: true, isImmutable: true };
+  let n: number;
+  let next: number;
+
+  beforeEach(() => {
+    // 2030 finalized; 2031 open and began where 2030 ended.
+    n = acctRow(2030, brokerage, {
+      beginningBalance: "500",
+      totalContributions: "300",
+      yearlyGainLoss: "200",
+      endingBalance: "1000",
+    });
+    next = acctRow(2031, brokerage, {
+      beginningBalance: "1000",
+      yearlyGainLoss: "100",
+      endingBalance: "1100",
+    });
+    annual(2030, "Brokerage", {
+      ...lockedYear,
+      beginningBalance: "500",
+      totalContributions: "300",
+      yearlyGainLoss: "200",
+      endingBalance: "1000",
+      lifetimeGains: "700",
+    });
+    annual(2030, "Portfolio", {
+      ...lockedYear,
+      beginningBalance: "500",
+      totalContributions: "300",
+      yearlyGainLoss: "200",
+      endingBalance: "1000",
+      lifetimeGains: "700",
+    });
+    annual(2031, "Brokerage", { isCurrentYear: true, lifetimeGains: "800" });
+    annual(2031, "Portfolio", { isCurrentYear: true, lifetimeGains: "800" });
+  });
+
+  const acct = (id: number) =>
+    t.db
+      .select()
+      .from(schema.accountPerformance)
+      .where(eq(schema.accountPerformance.id, id))
+      .get()!;
+
+  it("a balanced row's gain follows its ending; a row with a deliberate gap keeps its gain", async () => {
+    await t.caller.performance.updateAccount({ id: n, endingBalance: "925" });
+    expect(acct(n).yearlyGainLoss).toBe("125.00");
+
+    const gap = acctRow(2032, brokerage, {
+      beginningBalance: "0",
+      endingBalance: "100",
+      yearlyGainLoss: "60",
+    });
+    await t.caller.performance.updateAccount({ id: gap, endingBalance: "90" });
+    expect(acct(gap).yearlyGainLoss).toBe("60");
+  });
+
+  it("chained across a finalized year: next year begins at the new ending and every later lifetime total ends where it started", async () => {
+    const res = await t.caller.performance.updateAccount({
+      id: n,
+      endingBalance: "925",
+      chainNextYear: true,
+    });
+    expect(res.preview!.chainable).toEqual({ nextYear: 2031, rowId: next });
+    expect(acct(next)).toMatchObject({
+      beginningBalance: "925.00",
+      yearlyGainLoss: "175.00",
+    });
+    expect(row(2030, "Brokerage")!.lifetimeGains).toBe("625.00");
+    expect(row(2031, "Brokerage")!.lifetimeGains).toBe("800.00");
+    expect(row(2031, "Portfolio")!.lifetimeGains).toBe("800.00");
+  });
+
+  it("next year with a deliberate gap: only its beginning moves", async () => {
+    t.db
+      .update(schema.accountPerformance)
+      .set({ yearlyGainLoss: "90" })
+      .where(eq(schema.accountPerformance.id, next))
+      .run();
+    await t.caller.performance.updateAccount({
+      id: n,
+      endingBalance: "925",
+      chainNextYear: true,
+    });
+    expect(acct(next)).toMatchObject({
+      beginningBalance: "925.00",
+      yearlyGainLoss: "90",
+    });
+  });
+
+  it("a preview reports every change — the row, next year, rollups, checks — and writes nothing", async () => {
+    const res = await t.caller.performance.updateAccount({
+      id: n,
+      endingBalance: "925",
+      chainNextYear: true,
+      dryRun: true,
+    });
+    const p = res.preview!;
+    expect(p.accounts.find((a) => a.id === n)!.changes).toEqual([
+      { field: "endingBalance", from: 1000, to: 925 },
+      { field: "yearlyGainLoss", from: 200, to: 125 },
+    ]);
+    expect(p.accounts.find((a) => a.id === next)!.changes).toEqual([
+      { field: "beginningBalance", from: 1000, to: 925 },
+      { field: "yearlyGainLoss", from: 100, to: 175 },
+    ]);
+    expect(
+      p.rollups.find((r) => r.year === 2030 && r.category === "Portfolio")!
+        .changes,
+    ).toContainEqual({ field: "lifetimeGains", from: 700, to: 625 });
+    expect(p.checks[n]).toEqual([]);
+
+    expect(acct(n).endingBalance).toBe("1000");
+    expect(acct(next).beginningBalance).toBe("1000");
+    expect(row(2030, "Portfolio")!.lifetimeGains).toBe("700");
+    const stamp = t.db
+      .select()
+      .from(schema.appSettings)
+      .where(eq(schema.appSettings.key, "performance_last_updated"))
+      .get();
+    expect(stamp).toBeUndefined();
+  });
+});
