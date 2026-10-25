@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
   - **Rebalancing** says where a sale costs no tax (inside a 401(k)/IRA/HSA) or, when it's all taxable, to steer new contributions instead of selling.
   - **Fund costs** say to switch funds where you choose them (IRA, taxable) and to check the plan's menu in a workplace plan — and don't repeat a fund the "cheaper equivalent" item already names.
   - **Uninvested cash** says which under-target classes investing it would rebalance.
+- **Budget & Spending bars are readable.** Every bar in the card shares one scale sized to the largest share or range (e.g. 0–40%, labelled on top) instead of 0–100%, so a 13% category no longer hugs the left edge and bars compare across the card. The count reads "at or under range" (being under a spending range counts).
 - **Every recommendation says what it's about on its own** — fund costs and expense ratios named, rates say what they measure, savings checkpoints say what's counted, and rebalancing, housing, mortgage, emergency-fund and checklist items name their subject.
 - **Two kinds of cost, named apart.** Benchmarks' "What it costs" now shows **fund costs** (expense ratios, taken inside the funds' prices — already in your returns) and **account fees** (charged to the accounts and recorded in Performance) on separate lines, with a year of both together. Performance's fee column and lifetime card say "account fees"; the lifetime card no longer claims to include expense ratios.
 

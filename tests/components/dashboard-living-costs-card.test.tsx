@@ -142,7 +142,7 @@ describe("LivingCostsCard math", () => {
     expect(screen.getByText("10%")).toBeInTheDocument();
     expect(screen.getByText("/ 10%-15%")).toBeInTheDocument();
     // Both land in-range (not below), so 2/2.
-    expect(screen.getByText(/2\/2 within range/)).toBeInTheDocument();
+    expect(screen.getByText(/2 of 2 at or under range/)).toBeInTheDocument();
 
     // Retirement (Net): only the $2,000 non-payroll IRA counts, not the
     // $5,000 payroll-deducted 401k -> 2000/48000 = 4.17% -> rounds to 4%.
@@ -175,13 +175,14 @@ describe("LivingCostsCard math", () => {
     fireEvent.click(screen.getByText(/Gross \(/));
 
     // Housing: 12000/60000 = 20% — below Ramsey's 25% floor. Taxes (below)
-    // is also exactly 20%, so two "20%" labels are expected here.
-    expect(screen.getAllByText("20%")).toHaveLength(2);
+    // is also exactly 20%, so two "20%" row labels are expected here — plus
+    // the shared bar scale's 20% tick.
+    expect(screen.getAllByText("20%")).toHaveLength(3);
     // Food: 4800/60000 = 8% — below Ramsey's 10% floor.
     expect(screen.getByText("8%")).toBeInTheDocument();
-    // Both below range still count as "within range" (this card only flags
+    // Both below range still count as "at or under range" (this card only flags
     // "above" a Ramsey ceiling as a problem), so 2/2.
-    expect(screen.getByText(/2\/2 within range/)).toBeInTheDocument();
+    expect(screen.getByText(/2 of 2 at or under range/)).toBeInTheDocument();
 
     // Taxes: 12000/60000 = 20%.
     expect(screen.getByText("Taxes")).toBeInTheDocument();

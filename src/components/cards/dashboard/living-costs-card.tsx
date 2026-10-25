@@ -7,7 +7,12 @@ import { Card, ProgressBar } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { StatusDot } from "@/components/ui/badge";
 import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
-import { sumBy, safeDivide } from "@/lib/utils/math";
+import {
+  sumBy,
+  safeDivide,
+  shareScaleMax,
+  shareScaleTicks,
+} from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { bonusSpendingNet } from "@/lib/pure/household-income";
 import {
@@ -486,6 +491,16 @@ function LivingCostsCardImpl() {
   const totalPct =
     sumBy(rows, (r) => r.pct) + sumBy(extraGrossRows, (r) => r.pct);
 
+  // Every bar shares one scale, sized to the largest share or range top in
+  // the card (rounded up to the next 10%) — not 0–100%, where a 13% share
+  // hugs the left edge.
+  const scaleMax = shareScaleMax([
+    ...rows.flatMap((r) => [r.pct, r.high]),
+    ...extraGrossRows.map((r) => r.pct),
+  ]);
+  const barWidth = (share: number) =>
+    Math.min(Math.max(share, 0) / scaleMax, 1) * 100;
+
   return (
     <Card
       title={
@@ -496,7 +511,7 @@ function LivingCostsCardImpl() {
           />
         </>
       }
-      subtitle={`${onTarget}/${rows.length} within range${
+      subtitle={`${onTarget} of ${rows.length} at or under range${
         activeBudgetProfileName ? ` · ${activeBudgetProfileName}` : ""
       } · ${fullYearNote ?? "full-year view"}`}
       href="/budget"
@@ -539,6 +554,21 @@ function LivingCostsCardImpl() {
           Gross ({formatCurrency(grossIncome)})
         </button>
       </div>
+      {/* One shared scale for every bar: lengths compare across the card. */}
+      <div
+        className="text-micro text-faint relative mb-1 h-3"
+        aria-label={`Bars run from 0 to ${formatPercent(scaleMax, 0)} of ${incomeLabel} income`}
+      >
+        {shareScaleTicks(scaleMax).map((t) => (
+          <span
+            key={t}
+            className="absolute -translate-x-1/2 first:translate-x-0 last:-translate-x-full"
+            style={{ left: `${barWidth(t)}%` }}
+          >
+            {formatPercent(t, 0)}
+          </span>
+        ))}
+      </div>
       <div className="space-y-2">
         {rows.map((r) => (
           <div key={r.name} className="text-xs">
@@ -566,8 +596,8 @@ function LivingCostsCardImpl() {
               <div
                 className="absolute h-full border-r border-l border-green-300 bg-green-100"
                 style={{
-                  left: `${r.low * 100}%`,
-                  width: `${(r.high - r.low) * 100}%`,
+                  left: `${barWidth(r.low)}%`,
+                  width: `${barWidth(r.high) - barWidth(r.low)}%`,
                 }}
               />
               {/* Actual spending bar (top layer) */}
@@ -579,7 +609,7 @@ function LivingCostsCardImpl() {
                       ? "bg-blue-400"
                       : "bg-green-500"
                 }`}
-                style={{ width: `${Math.min(r.pct * 100, 100)}%` }}
+                style={{ width: `${barWidth(r.pct)}%` }}
               />
             </div>
           </div>
@@ -602,7 +632,7 @@ function LivingCostsCardImpl() {
                 <div className="bg-surface-elevated h-2 overflow-hidden rounded-full">
                   <div
                     className={`h-full rounded-full ${r.color}`}
-                    style={{ width: `${Math.min(r.pct * 100, 100)}%` }}
+                    style={{ width: `${barWidth(r.pct)}%` }}
                   />
                 </div>
               </div>
