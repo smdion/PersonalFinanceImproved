@@ -1,3 +1,4 @@
+import { useOwnRateLimitBucket } from "./rate-limit-bucket";
 import { test, expect } from "@playwright/test";
 
 /**
@@ -5,6 +6,8 @@ import { test, expect } from "@playwright/test";
  * the right state and the section is shown. Written to hold on any profile.
  */
 test.describe("focus links", () => {
+  useOwnRateLimitBucket(test, "focus-links");
+
   test("early access opens Retirement taxes at retirement", async ({
     page,
   }) => {
