@@ -1,5 +1,6 @@
 /** Renders a single accumulation-phase table row with salary, contribution breakdowns, balance columns, and MC cell. */
-import React from "react";
+import React, { useRef } from "react";
+import { useScrollToFocus } from "@/components/ui/focus-target";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
   accountTextColor,
@@ -56,6 +57,8 @@ import {
 } from "./projection-table-mc-cell";
 
 export type AccumulationRowProps = {
+  /** A link landed on this year — scrolled to and ringed. */
+  focused?: boolean;
   yr: EngineAccumulationYear;
   state: ProjectionState;
   parentCategoryFilter?: string;
@@ -75,6 +78,7 @@ export type AccumulationRowProps = {
 
 export function AccumulationRow({
   yr,
+  focused = false,
   state,
   parentCategoryFilter,
   rateIncludesMatch = false,
@@ -89,6 +93,8 @@ export function AccumulationRow({
   people,
   mcCellOpts,
 }: AccumulationRowProps) {
+  const rowRef = useRef<HTMLTableRowElement>(null);
+  useScrollToFocus(rowRef, focused);
   const {
     accumOverrides,
     balanceView,
@@ -119,6 +125,7 @@ export function AccumulationRow({
   const pt = getPersonYearTotals(yr);
   return (
     <tr
+      ref={rowRef}
       key={yr.year}
       className={`border-subtle hover:bg-surface-elevated/60 border-b transition-colors ${
         isPhaseTransition

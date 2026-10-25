@@ -38,7 +38,7 @@ describe("Keep data current recommendations", () => {
             mode: "manual",
             rhythm: { kind: "days", days: 30 },
             rhythmLabel: "Monthly",
-            href: "/tax-buckets",
+            focus: { topic: "rothBasis" },
           },
           lastUpdated: null,
           ageDays: null,
@@ -54,7 +54,7 @@ describe("Keep data current recommendations", () => {
         title: "Basis data",
         action: "Update Basis data — Never entered",
         context: "Never updated",
-        href: "/tax-buckets",
+        focus: { topic: "rothBasis" },
       }),
     ]);
   });

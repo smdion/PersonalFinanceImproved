@@ -2,7 +2,12 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { RetirementBridge } from "@/components/cards/dashboard/retirement-bridge";
 
-vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
+// The help tip carries the bridge's detail — render its lines to check them.
+vi.mock("@/components/ui/help-tip", () => ({
+  HelpTip: ({ lines }: { lines?: string[] }) => (
+    <span data-testid="tip">{lines?.join(" | ")}</span>
+  ),
+}));
 
 const year = (
   y: number,
@@ -61,18 +66,17 @@ describe("RetirementBridge", () => {
         }
       />,
     );
+    // The verdict links to where it's shown in detail.
     expect(
-      screen.getByText(
-        /2044–2045: \$120,000 of spending after Social Security/,
-      ),
-    ).toBeTruthy();
+      screen.getByRole("link", { name: "Covered" }).getAttribute("href"),
+    ).toBe("/tax-buckets?focus=earlyAccess");
     expect(
-      screen.getByText(/Covered at assumed returns — tightest in 2044/),
+      screen.getByText("2044–2045 · until locked accounts open"),
     ).toBeTruthy();
-    expect(
-      screen.getByText(/Penalty-free in 2044: Taxable brokerage \$300,000/),
-    ).toBeTruthy();
-    expect(screen.getByText(/Locked money opens: Pat 2046/)).toBeTruthy();
+    expect(screen.getByText("Tightest: 2044, $240k to spare")).toBeTruthy();
+    const tip = screen.getByTestId("tip").textContent;
+    expect(tip).toMatch(/Reachable in 2044: Brokerage \$300k/);
+    expect(tip).toMatch(/Opens: Pat 2046/);
   });
 
   it("short because money is locked: says so and what helps", () => {
@@ -89,8 +93,11 @@ describe("RetirementBridge", () => {
         }
       />,
     );
-    expect(screen.getByText("Short in 2044")).toBeTruthy();
-    expect(screen.getByText(/Short because money is locked/)).toBeTruthy();
+    expect(
+      screen.getByRole("link", { name: "Short" }).getAttribute("href"),
+    ).toBe("/retirement?focus=projectionYear&focusId=2044");
+    expect(screen.getByText("1 of 1 yr · 2044")).toBeTruthy();
+    expect(screen.getByText(/^Money is locked: retire later/)).toBeTruthy();
   });
 
   it("nothing to show without the engine's eligibility figures", () => {

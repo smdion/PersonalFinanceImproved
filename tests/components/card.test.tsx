@@ -1,6 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { Card, Metric, ProgressBar } from "@/components/ui/card";
+import { HelpTip } from "@/components/ui/help-tip";
+import { TooltipProvider } from "@radix-ui/react-tooltip";
+import { createPortal } from "react-dom";
+
+const push = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push }),
+  usePathname: () => "/",
+  useSearchParams: () => new URLSearchParams(),
+}));
 
 // ── Card ──────────────────────────────────────────────────────────
 
@@ -38,10 +48,10 @@ describe("Card", () => {
   });
 
   // --- Linked variant ---
-  it("wraps in a link when href is provided", () => {
+  it("a click on the card surface follows href", () => {
     render(<Card href="/budget">Go</Card>);
-    const link = screen.getByRole("link");
-    expect(link).toHaveAttribute("href", "/budget");
+    fireEvent.click(screen.getByText("Go"));
+    expect(push).toHaveBeenCalledWith("/budget");
   });
 
   it("link variant still renders title and children", () => {
@@ -53,6 +63,92 @@ describe("Card", () => {
     expect(screen.getByText("Savings")).toBeInTheDocument();
     expect(screen.getByText("$5,000")).toBeInTheDocument();
     expect(screen.getByRole("link")).toHaveAttribute("href", "/savings");
+  });
+
+  // --- Linked variant: clicks that belong to something else ---
+  describe("surface click", () => {
+    let open: ReturnType<typeof vi.spyOn>;
+    beforeEach(() => {
+      push.mockClear();
+      open = vi.spyOn(window, "open").mockImplementation(() => null);
+    });
+
+    it("is never a link inside a link (the title is the link)", () => {
+      const { container } = render(
+        <Card href="/savings" title="Savings">
+          <a href="/goal">Goal</a>
+        </Card>,
+      );
+      for (const a of container.querySelectorAll("a"))
+        expect(a.querySelector("a")).toBeNull();
+    });
+
+    it("a control inside the card keeps its click", () => {
+      render(
+        <Card href="/budget" title="Budget">
+          <button type="button">Toggle</button>
+          <select aria-label="Pick">
+            <option>One</option>
+          </select>
+          <a href="/budget?focus=x">Detail</a>
+        </Card>,
+      );
+      fireEvent.click(screen.getByText("Toggle"));
+      fireEvent.click(screen.getByLabelText("Pick"));
+      fireEvent.click(screen.getByText("Detail"));
+      expect(push).not.toHaveBeenCalled();
+    });
+
+    it("the help-tip trigger opens its tip, not the page", () => {
+      render(
+        <TooltipProvider>
+          <Card href="/budget" title="Budget">
+            Body <HelpTip text="Why" />
+          </Card>
+        </TooltipProvider>,
+      );
+      fireEvent.click(screen.getByText("?"));
+      expect(push).not.toHaveBeenCalled();
+    });
+
+    it("a click inside a portal opened from the card doesn't navigate", () => {
+      render(
+        <Card href="/budget" title="Budget">
+          {createPortal(<p>Floating</p>, document.body)}
+        </Card>,
+      );
+      fireEvent.click(screen.getByText("Floating"));
+      expect(push).not.toHaveBeenCalled();
+    });
+
+    it("Ctrl/⌘-click and middle-click open a new tab", () => {
+      render(<Card href="/budget">Go</Card>);
+      fireEvent.click(screen.getByText("Go"), { ctrlKey: true });
+      fireEvent(
+        screen.getByText("Go"),
+        new MouseEvent("auxclick", { bubbles: true, button: 1 }),
+      );
+      expect(open).toHaveBeenCalledTimes(2);
+      expect(open).toHaveBeenCalledWith("/budget", "_blank", "noopener");
+      expect(push).not.toHaveBeenCalled();
+    });
+
+    it("a header-right link navigates (no preventDefault)", () => {
+      render(
+        <Card
+          href="/budget"
+          title="Budget"
+          headerRight={<a href="/recommendations">All</a>}
+        >
+          Body
+        </Card>,
+      );
+      const link = screen.getByText("All");
+      const ev = new MouseEvent("click", { bubbles: true, cancelable: true });
+      link.dispatchEvent(ev);
+      expect(ev.defaultPrevented).toBe(false);
+      expect(push).not.toHaveBeenCalled();
+    });
   });
 
   // --- Collapsible variant ---

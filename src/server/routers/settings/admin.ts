@@ -4,7 +4,7 @@ import {
   unknownAssetClassIds,
 } from "@/lib/pure/current-glide-path";
 import { TRPCError } from "@trpc/server";
-import { eq, asc, desc } from "drizzle-orm";
+import { eq, asc, desc, sql } from "drizzle-orm";
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -24,7 +24,16 @@ import {
   SK_HSA_CASH_BUFFER,
 } from "@/lib/constants/settings-keys";
 import { currentGlidePathSchema } from "@/lib/pure/current-glide-path";
-import { dismissalsSchema } from "@/lib/pure/recommendation-dismissals";
+import {
+  dismissalIdSchema,
+  dismissalSchema,
+  dismissalsSchema,
+  nextDismissals,
+  parseDismissals,
+} from "@/lib/pure/recommendation-dismissals";
+import { isPostgres } from "@/lib/db";
+import { execRaw } from "@/lib/db/compat";
+import { localDateStr } from "@/lib/utils/date";
 import {
   checkpointSourceSchema,
   customGoalsSchema,
@@ -47,6 +56,14 @@ import { applyPlan } from "@/server/helpers/plans";
 import type { Db } from "@/server/helpers/transforms";
 
 // --- Zod schemas ---
+
+/** Runs `fn` after every earlier call has finished (an in-process queue). */
+let dismissalQueue: Promise<unknown> = Promise.resolve();
+function oneAtATime<T>(fn: () => Promise<T>): Promise<T> {
+  const run = dismissalQueue.then(fn, fn);
+  dismissalQueue = run.catch(() => undefined);
+  return run;
+}
 
 const appSettingInput = z.object({
   key: z.string().min(1),
@@ -240,6 +257,51 @@ export const adminProcedures = {
         invalidateYearEndCache();
         return result;
       }),
+    // The saved map is read, changed and written as one step — queued in
+    // this process, and under a transaction lock on Postgres — so two admins
+    // changing different items at once both stick (the browser's whole-map
+    // upsert could drop one).
+    /** Dismiss, snooze or restore one recommendation (merged on the server). */
+    setDismissal: adminProcedure
+      .input(
+        z.object({
+          id: dismissalIdSchema,
+          value: dismissalSchema.nullable(),
+        }),
+      )
+      .mutation(({ ctx, input }) =>
+        oneAtATime(async () => {
+          const apply = async (db: typeof ctx.db) => {
+            const [row] = await db
+              .select({ value: schema.appSettings.value })
+              .from(schema.appSettings)
+              .where(eq(schema.appSettings.key, SK_RECOMMENDATION_DISMISSALS));
+            const value = nextDismissals(
+              parseDismissals(row?.value),
+              localDateStr(),
+              input,
+            );
+            await db
+              .insert(schema.appSettings)
+              .values({ key: SK_RECOMMENDATION_DISMISSALS, value })
+              .onConflictDoUpdate({
+                target: schema.appSettings.key,
+                set: { value },
+              });
+            return value;
+          };
+          // SQLite: one process, one connection — the queue is the lock
+          // (concurrent async transactions on one connection interleave).
+          if (!isPostgres()) return apply(ctx.db);
+          return ctx.db.transaction(async (tx) => {
+            await execRaw(
+              tx as never,
+              sql`SELECT pg_advisory_xact_lock(hashtext(${SK_RECOMMENDATION_DISMISSALS}))`,
+            );
+            return apply(tx as never);
+          });
+        }),
+      ),
     delete: adminProcedure
       .input(z.object({ key: z.string() }))
       .mutation(({ ctx, input }) =>

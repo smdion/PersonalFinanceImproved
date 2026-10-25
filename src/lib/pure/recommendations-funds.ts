@@ -33,7 +33,7 @@ export function recommendationsFromFunds(args: {
         context:
           "Wash-sale rule: a purchase of the same fund within 30 days in any account (a 401(k) reinvestment, a spouse's account) cancels the loss — Ledgr can't see those",
         impact: { kind: "oneTime", amount: total },
-        href: "/portfolio",
+        focus: { topic: "holdings" },
         source: "ledgr",
       };
     }),
@@ -45,7 +45,7 @@ export function recommendationsFromFunds(args: {
       action: `${f.fund} costs ${formatPercent(f.expenseRatio, 2)} a year (expense ratio — a fund cost, taken inside its price); a lower-cost index fund for the same asset class, such as ${f.proxyLabel}, would save about ${formatCurrency(f.yearlySaving, 0)} a year`,
       context: `In ${f.accountLabel}. Saving counted down to a ${formatPercent(LOW_COST_EXPENSE_RATIO, 2)} expense ratio; in a taxable account, selling may realize gains`,
       impact: { kind: "perYear", amount: f.yearlySaving },
-      href: "/portfolio",
+      focus: { topic: "holdings" },
       source: "ledgr",
     })),
   ];

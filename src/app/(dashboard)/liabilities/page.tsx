@@ -2,6 +2,7 @@
 
 /** Consolidated liabilities page showing mortgage details, amortization schedule, and other outstanding debts. */
 
+import { FocusTarget } from "@/components/ui/focus-target";
 import { useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
@@ -138,16 +139,18 @@ export default function LiabilitiesPage() {
       ) : (
         <>
           {/* Active loan cards */}
-          {result.loans.map((loan, idx) => (
-            <ActiveLoanCard
-              key={loan.name}
-              loan={loan}
-              showSchedule={showSchedule === idx}
-              onToggleSchedule={() =>
-                setShowSchedule(showSchedule === idx ? null : idx)
-              }
-            />
-          ))}
+          <FocusTarget topic="mortgage" className="space-y-6">
+            {result.loans.map((loan, idx) => (
+              <ActiveLoanCard
+                key={loan.name}
+                loan={loan}
+                showSchedule={showSchedule === idx}
+                onToggleSchedule={() =>
+                  setShowSchedule(showSchedule === idx ? null : idx)
+                }
+              />
+            ))}
+          </FocusTarget>
 
           {/* What-if scenarios */}
           <WhatIfSection

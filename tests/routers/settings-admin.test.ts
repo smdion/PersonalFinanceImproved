@@ -909,3 +909,58 @@ describe("settings.updateDataFreshness additional", () => {
 // relocationScenarios additional coverage moved to
 // projection-relocation.test.ts (procedures moved to
 // routers/projection/relocation.ts).
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RECOMMENDATION DISMISSALS — one change at a time, merged on the server
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("settings.appSettings.setDismissal", () => {
+  const dismissed = { until: null, urgency: "now" as const, on: "2026-01-02" };
+
+  it("two changes at once both stick; restore removes one", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      await Promise.all([
+        caller.settings.appSettings.setDismissal({ id: "a", value: dismissed }),
+        caller.settings.appSettings.setDismissal({ id: "b", value: dismissed }),
+      ]);
+      const read = async () =>
+        (await caller.settings.appSettings.list()).find(
+          (s) => s.key === "recommendation_dismissals",
+        )?.value as Record<string, unknown>;
+      expect(Object.keys(await read()).sort()).toEqual(["a", "b"]);
+      await caller.settings.appSettings.setDismissal({ id: "a", value: null });
+      expect(Object.keys(await read())).toEqual(["b"]);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("an expired snooze is dropped when the next change is saved", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      await caller.settings.appSettings.setDismissal({
+        id: "old",
+        value: { until: "2000-01-01", urgency: "soon" },
+      });
+      const out = await caller.settings.appSettings.setDismissal({
+        id: "new",
+        value: dismissed,
+      });
+      expect(Object.keys(out)).toEqual(["new"]);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("viewers can't change dismissals", async () => {
+    const { caller, cleanup } = await createTestCaller(viewerSession);
+    try {
+      await expect(
+        caller.settings.appSettings.setDismissal({ id: "a", value: dismissed }),
+      ).rejects.toThrow();
+    } finally {
+      cleanup();
+    }
+  });
+});

@@ -25,7 +25,7 @@ export function recommendationsFromCash(args: {
       action: `About ${formatCurrency(f.excess, 0)} is sitting in cash in this account, more than your target mix's cash share — invest it if it isn't set aside for something${rebalanceNote}`,
       context: `${formatCurrency(f.value, 0)} account value counted`,
       impact: { kind: "oneTime", amount: f.excess },
-      href: "/portfolio",
+      focus: { topic: "holdings" },
       source: "ledgr",
     })),
     ...args.hsa.map((f): Recommendation => ({
@@ -37,7 +37,7 @@ export function recommendationsFromCash(args: {
       context:
         "Buffer: your setting, or the year's HDHP minimum deductible for your coverage",
       impact: { kind: "oneTime", amount: f.excess },
-      href: "/benchmarks",
+      focus: { topic: "holdings" },
       source: "ledgr",
     })),
   ];

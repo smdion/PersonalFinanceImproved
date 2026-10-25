@@ -4,6 +4,7 @@
  *  retirement/page.tsx is a thin server component that prefetches the most
  *  expensive query before rendering this. */
 
+import { useFocusedState } from "@/lib/hooks/use-focus";
 import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
@@ -37,9 +38,8 @@ export function RetirementContent() {
   const user = useUser();
   const admin = isAdmin(user);
   const utils = trpc.useUtils();
-  const [pageTab, setPageTab] = useState<
-    "projection" | "comparison" | "planHealth"
-  >("projection");
+  // Links to Plan Health or a projection year open their tab.
+  const [pageTab, setPageTab] = useFocusedState("retirementTab", "projection");
   const [dollarMode, setDollarMode] = useState<"nominal" | "real">("real");
   // Retirement Profile axis (the assumptions band) — the active profile;
   // the band's picker changes it, same as the header.

@@ -1,3 +1,4 @@
+import { useOwnRateLimitBucket } from "./rate-limit-bucket";
 import { test, expect, type Page } from "@playwright/test";
 
 /**
@@ -73,6 +74,8 @@ async function waitForContent(page: Page) {
 }
 
 test.describe("Privacy mode", () => {
+  useOwnRateLimitBucket(test, "privacy-mode");
+
   test("no dollar amount is visible on any route when the cookie is set", async ({
     page,
     context,

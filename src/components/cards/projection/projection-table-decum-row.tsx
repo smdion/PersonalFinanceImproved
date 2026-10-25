@@ -1,5 +1,6 @@
 /** Renders a single decumulation-phase table row with withdrawal breakdowns, tax costs, balance columns, and MC cell. */
-import React from "react";
+import React, { useRef } from "react";
+import { useScrollToFocus } from "@/components/ui/focus-target";
 import { Tooltip } from "@/components/ui/tooltip";
 import {
   accountTextColor,
@@ -324,6 +325,8 @@ function ownerAccountLabel(ia: { name: string; ownerName?: string }): string {
 }
 
 export type DecumulationRowProps = {
+  /** A link landed on this year — scrolled to and ringed. */
+  focused?: boolean;
   yr: EngineDecumulationYear;
   state: ProjectionState;
   parentCategoryFilter?: string;
@@ -341,6 +344,7 @@ export type DecumulationRowProps = {
 
 export function DecumulationRow({
   yr: dyr,
+  focused = false,
   state,
   parentCategoryFilter: _parentCategoryFilter,
   isPhaseTransition,
@@ -354,6 +358,8 @@ export function DecumulationRow({
   people,
   mcCellOpts,
 }: DecumulationRowProps) {
+  const rowRef = useRef<HTMLTableRowElement>(null);
+  useScrollToFocus(rowRef, focused);
   const {
     decumOverrides: _decumOverrides,
     balanceView,
@@ -421,6 +427,7 @@ export function DecumulationRow({
 
   return (
     <tr
+      ref={rowRef}
       key={yr.year}
       className={`border-subtle hover:bg-surface-elevated/60 border-b transition-colors ${
         isPhaseTransition

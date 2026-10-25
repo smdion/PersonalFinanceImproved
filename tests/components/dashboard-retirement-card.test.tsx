@@ -130,6 +130,10 @@ describe("RetirementCard dashboard cache-peek features", () => {
     render(<RetirementCard />);
     expect(screen.getByText("Simulated success")).toBeInTheDocument();
     expect(screen.getByText("92%")).toBeInTheDocument();
+    // The figure links to where it's explained (Plan Health).
+    expect(screen.getByText("92%").closest("a")?.getAttribute("href")).toBe(
+      "/retirement?focus=planHealth",
+    );
     expect(screen.getByText("Last simulation run")).toBeInTheDocument();
     expect(screen.getByText("just now")).toBeInTheDocument();
   });
@@ -172,9 +176,12 @@ describe("RetirementCard nest egg: simulated or baseline", () => {
     render(<RetirementCard />);
     expect(screen.getByText(/baseline — fixed returns/)).toBeInTheDocument();
     const prompt = screen.getByText(/Run a simulation on the Retirement page/);
-    // Plain text: the card itself is the link, and <a> can't nest.
-    expect(prompt.closest("a")?.getAttribute("href")).toBe("/retirement");
-    expect(prompt.querySelector("a")).toBeNull();
+    // Plain text: the card's title is its link, and a click on the card
+    // surface follows it.
+    expect(prompt.closest("a")).toBeNull();
+    expect(
+      screen.getByRole("link", { name: "Retirement" }).getAttribute("href"),
+    ).toBe("/retirement");
   });
 });
 

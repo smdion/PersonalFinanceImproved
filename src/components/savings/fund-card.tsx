@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
+import { useScrollToFocus } from "@/components/ui/focus-target";
+import { useFocusMatch, useFocusReveal } from "@/lib/hooks/use-focus";
 import dynamic from "next/dynamic";
 import { ChevronRight, ChevronDown } from "lucide-react";
 import { InlineEdit } from "@/components/ui/inline-edit";
@@ -283,7 +285,18 @@ export function FundCard({
   availableParents?: { id: number; name: string }[];
   defaultExpanded?: boolean;
 }) {
-  const [collapsed, setCollapsed] = useState(!defaultExpanded);
+  // A link to this goal opens its card and scrolls to it.
+  const isThis = (ids: { goalId: number }) => ids.goalId === projection.goalId;
+  const [open, setOpen] = useFocusReveal(
+    "savingsGoal",
+    isThis,
+    defaultExpanded,
+  );
+  const collapsed = !open;
+  const setCollapsed = (c: boolean) => setOpen(!c);
+  const linked = useFocusMatch("savingsGoal");
+  const cardRef = useRef<HTMLDivElement>(null);
+  useScrollToFocus(cardRef, linked !== null && isThis(linked));
   const [showMenu, setShowMenu] = useState(false);
   const [reassigningChildId, setReassigningChildId] = useState<number | null>(
     null,
@@ -442,7 +455,7 @@ export function FundCard({
 
   return (
     <div
-      id={`fund-card-${projection.goalId}`}
+      ref={cardRef}
       className="bg-surface-elevated rounded-lg border shadow-sm transition-shadow hover:shadow-md"
     >
       {/* ── Compact summary row (always visible) ── */}

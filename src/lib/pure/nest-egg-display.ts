@@ -52,3 +52,19 @@ export function simulatedOrBaseline(opts: {
     baseline: opts.baseline,
   };
 }
+
+/**
+ * The fixed-return nest egg in nominal dollars, and its year: the engine's
+ * retirement money (`retirementBalance`) at the target age — the retirement
+ * answer, never a view's summed tax buckets. The caller converts it with
+ * the same `toDisplay` it gives `simulatedOrBaseline`, so the baseline and
+ * the simulated range go through one conversion. Null when the projection
+ * has no year at that age.
+ */
+export function baselineNestEgg(
+  years: readonly { age: number; year: number; retirementBalance: number }[],
+  targetAge: number,
+): { nominal: number; year: number } | null {
+  const y = years.find((r) => r.age === targetAge);
+  return y ? { nominal: y.retirementBalance, year: y.year } : null;
+}

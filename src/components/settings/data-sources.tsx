@@ -5,7 +5,7 @@
  * "Data" indicator, with its rhythm, last update, problems and what was
  * collected. Reads the same status queries the sidebar uses — no polling.
  */
-import Link from "next/link";
+import { FocusLink } from "@/components/ui/focus-link";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
@@ -169,12 +169,12 @@ export function DataSourcesSettings() {
                   </>
                 )}
                 {" · "}
-                <Link
-                  href={source.href}
+                <FocusLink
+                  focus={source.focus}
                   className="hover:text-primary underline"
                 >
                   {source.mode === "manual" ? "Update" : "Settings"}
-                </Link>
+                </FocusLink>
               </div>
               {details[source.key] && (
                 <div className="text-caption text-muted mt-0.5">

@@ -1,19 +1,17 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, type MouseEvent, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatPercent } from "@/lib/utils/format";
 
 type CardProps = {
   title?: ReactNode;
   subtitle?: string;
   children: ReactNode;
-  href?: string;
   className?: string;
   /** Content rendered on the right side of the card header (e.g. toggle buttons). */
   headerRight?: ReactNode;
-  /** When true, card body can be toggled open/closed by clicking the title. */
-  isCollapsible?: boolean;
   /** Initial open state when collapsible. Defaults to true. */
   isDefaultOpen?: boolean;
   /** Force the hover-lift/shadow treatment on even without href/isCollapsible
@@ -21,7 +19,62 @@ type CardProps = {
    * handler on content inside). Without href/isCollapsible/interactive, the
    * card gets no hover chrome, since there's nothing to click. */
   interactive?: boolean;
-};
+} & (
+  | {
+      /** Where the card goes: its title is the link, and a click anywhere
+       *  else on the card that isn't on a control follows it too. */
+      href?: string;
+      isCollapsible?: false;
+    }
+  | {
+      href?: undefined;
+      /** When true, card body can be toggled open/closed by clicking the title. */
+      isCollapsible: true;
+    }
+);
+
+/** Clicks on these inside a card are theirs, not the card's. */
+const CARD_CONTROLS = [
+  "a",
+  "button",
+  "input",
+  "select",
+  "textarea",
+  "label",
+  "summary",
+  "[contenteditable]",
+  '[tabindex]:not([tabindex="-1"])',
+  "[data-state]", // Radix triggers (HelpTip)
+  '[data-card-nav="off"]',
+  ...[
+    "button",
+    "link",
+    "tab",
+    "checkbox",
+    "radio",
+    "switch",
+    "menuitem",
+    "option",
+    "combobox",
+    "slider",
+    "textbox",
+  ].map((r) => `[role="${r}"]`),
+].join(", ");
+
+/** A click the card itself should follow — not one on a control inside it,
+ *  in a portal opened from it (tooltips, dialogs), or ending a text selection. */
+function isCardSurfaceClick(e: MouseEvent<HTMLDivElement>): boolean {
+  const card = e.currentTarget;
+  const target = e.target as Element;
+  if (!card.contains(target)) return false;
+  const hit = target.closest(CARD_CONTROLS);
+  if (hit && hit !== card && card.contains(hit)) return false;
+  return !window.getSelection()?.toString();
+}
+
+function openInNewTab(href: string) {
+  window.open(href, "_blank", "noopener");
+}
 
 export function Card({
   title,
@@ -35,6 +88,7 @@ export function Card({
   interactive = false,
 }: CardProps) {
   const [isOpen, setIsOpen] = useState(isDefaultOpen);
+  const router = useRouter();
   const isInteractive = !!href || isCollapsible || interactive;
   const sharedClassName = `bg-surface-primary rounded-lg border border-default p-3 sm:p-4 shadow-sm transition-all duration-200 ${isInteractive ? "hover:shadow-md hover:-translate-y-[1px]" : ""} ${className}`;
 
@@ -77,7 +131,7 @@ export function Card({
             )}
             <div>
               <h3 className="text-muted text-sm font-medium tracking-wide">
-                {title}
+                {href ? <Link href={href}>{title}</Link> : title}
               </h3>
               {subtitle && (
                 <p className="text-faint mt-0.5 text-xs">{subtitle}</p>
@@ -85,14 +139,7 @@ export function Card({
             </div>
           </div>
           {headerRight && (
-            <div
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-            >
-              {headerRight}
-            </div>
+            <div onClick={(e) => e.stopPropagation()}>{headerRight}</div>
           )}
         </div>
       )}
@@ -102,9 +149,19 @@ export function Card({
 
   if (href) {
     return (
-      <Link href={href} className={sharedClassName}>
+      <div
+        className={`${sharedClassName} cursor-pointer`}
+        onClick={(e) => {
+          if (!isCardSurfaceClick(e)) return;
+          if (e.metaKey || e.ctrlKey) openInNewTab(href);
+          else router.push(href);
+        }}
+        onAuxClick={(e) => {
+          if (e.button === 1 && isCardSurfaceClick(e)) openInNewTab(href);
+        }}
+      >
         {content}
-      </Link>
+      </div>
     );
   }
   return <div className={sharedClassName}>{content}</div>;

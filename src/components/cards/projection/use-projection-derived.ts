@@ -1,4 +1,5 @@
 /** Memoized derived data from engine query results — person filtering, visible column detection, deflation, contribution rate schedules, tooltip rendering, and milestone-based year filtering. */
+import { useFocusMatch } from "@/lib/hooks/use-focus";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { useMemo, useCallback, useEffect } from "react";
 import type {
@@ -534,6 +535,8 @@ export function useProjectionDerived(
   const displayAge = (year: number) =>
     avgBirthYear !== null ? Math.round(year - avgBirthYear) : null;
 
+  const focusedYear = useFocusMatch("projectionYear")?.year ?? null;
+
   // --- Milestone filtering ---
   const getFilteredYears = useCallback(
     (years: EngineYearProjection[]) => {
@@ -554,9 +557,11 @@ export function useProjectionDerived(
       if (result?.firstOverflowYear) milestones.add(result.firstOverflowYear);
       const failureYear = result ? assessPlan(result).failureYear : null;
       if (failureYear) milestones.add(failureYear);
+      // A link to one year shows that year too.
+      if (focusedYear !== null) milestones.add(focusedYear);
       return years.filter((yr) => milestones.has(yr.year));
     },
-    [showAllYears, accumOverrides, decumOverrides, result],
+    [showAllYears, accumOverrides, decumOverrides, result, focusedYear],
   );
 
   // Individual account names for lump sum targeting

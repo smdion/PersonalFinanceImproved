@@ -8,7 +8,11 @@
  */
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  formatPercent,
+  maskAmountsInText,
+} from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { withheldThroughPeriod } from "@/lib/calculators/paycheck";
 import type { RouterOutputs } from "@/lib/trpc";
@@ -104,7 +108,7 @@ export function TaxBreakdown({ data }: { data: PaycheckSummary }) {
         />
         {tax.warnings.map((w) => (
           <p key={w} className="text-faint pt-1 text-xs">
-            {w}
+            {maskAmountsInText(w)}
           </p>
         ))}
       </div>

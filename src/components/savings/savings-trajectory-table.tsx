@@ -131,7 +131,11 @@ export function SavingsTrajectoryTable({
     <div className="space-y-2">
       <div className="text-label text-faint border-subtle bg-surface-sunken flex items-center justify-between gap-4 rounded-lg border px-3 py-2">
         {hasAnyFixedTarget || hasAnyRevolving || hasAnyEvents ? (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+          // A colour key: "$0,000" is a sample, not an amount.
+          <div
+            className="flex flex-wrap items-center gap-x-4 gap-y-1"
+            data-privacy-visible
+          >
             {hasAnyFixedTarget && (
               <span className="flex items-center gap-1">
                 <span className="font-bold text-green-500">✓</span>

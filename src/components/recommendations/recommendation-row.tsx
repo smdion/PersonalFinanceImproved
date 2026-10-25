@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { FocusLink } from "@/components/ui/focus-link";
 import type { ReactNode } from "react";
 import { MILESTONE_SOURCE_LABELS } from "@/lib/config/milestones";
 import { STATUS_COLORS } from "@/lib/utils/colors";
@@ -55,12 +55,12 @@ export function RecommendationRow({
           {r.impact.kind === "perYear" ? "/yr" : ""}
         </span>
       )}
-      <Link
-        href={r.href}
+      <FocusLink
+        focus={r.focus}
         className="text-caption whitespace-nowrap text-blue-600 hover:underline"
       >
         Go →
-      </Link>
+      </FocusLink>
       {actions}
     </div>
   );

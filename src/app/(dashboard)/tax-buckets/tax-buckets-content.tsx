@@ -1,6 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { FocusTarget } from "@/components/ui/focus-target";
+import { useFocusedState } from "@/lib/hooks/use-focus";
+import type { FocusStateValue } from "@/lib/config/focus-topics";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
@@ -38,8 +41,6 @@ import { penaltyFreePrefixAmount } from "@/lib/pure/early-access";
 // computeTaxBucketProjection, same pure type) share one type everywhere
 // on this page instead of fighting a spurious Date-vs-string mismatch.
 type AccountEntry = AccountAnalysisEntry;
-
-type ViewMode = "now" | "atRetirement";
 
 /** Household-first: group every account entry into one of the 5 buckets,
  *  summing balance + accessible-now/locked across BOTH people. Brokerage
@@ -166,7 +167,8 @@ export function TaxBucketsContent() {
   const utils = trpc.useUtils();
 
   const [showBulkBasis, setShowBulkBasis] = useState(false);
-  const [view, setView] = useState<ViewMode>("now");
+  // A link to early access opens "At Retirement" (lib/config/focus-topics).
+  const [view, setView] = useFocusedState("taxBucketsView", "now");
   // "At Retirement" only — "Now" figures are already today's dollars, so
   // deflating them would be a no-op at best and confusing at worst.
   // Mirrors the Retirement page's own "Today's $"/"Future $" toggle
@@ -418,7 +420,10 @@ export function TaxBucketsContent() {
           retirement" that means the projection actually resolved, so a
           zeroed placeholder KPI never appears while it's loading. */}
       {activeEntries !== null && (
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+        <FocusTarget
+          topic="earlyAccess"
+          className="grid grid-cols-2 gap-3 md:grid-cols-3"
+        >
           <KpiCard label="Total across these buckets">
             <div className="text-primary text-xl font-bold tabular-nums">
               {fmt(householdTotal)}
@@ -450,7 +455,7 @@ export function TaxBucketsContent() {
               {fmt(householdLocked)}
             </div>
           </KpiCard>
-        </div>
+        </FocusTarget>
       )}
 
       {/* Household-first bucket summary + expandable per-account detail */}
@@ -557,7 +562,7 @@ function AccountDetailRow({
   onSaveSeparationDate,
 }: {
   entry: AccountEntry;
-  view: ViewMode;
+  view: FocusStateValue<"taxBucketsView">;
   fmt: (amount: number) => string;
   canEdit: boolean;
   onSaveRothBasis: (v: {

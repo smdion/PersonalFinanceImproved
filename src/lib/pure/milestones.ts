@@ -13,10 +13,8 @@
  * Retirement projection — the same run the dashboard Retirement card shows.
  */
 import { z } from "zod/v4";
-import {
-  settingsHref,
-  settingsLocationLabel,
-} from "@/lib/config/settings-sections";
+import { settingsLocationLabel } from "@/lib/config/settings-sections";
+import type { Focus } from "@/lib/config/focus-topics";
 import {
   CHECKPOINT_START_AGE,
   CUSTOM_GOAL_METRICS,
@@ -361,7 +359,7 @@ export type MilestoneResult = MilestoneDefinition & {
   /** The step that closes the gap or gets there sooner. */
   nextStep: string | null;
   /** Where the next step is done, when that isn't the milestone's own page. */
-  nextStepHref?: string;
+  nextStepFocus?: Focus;
   /** The funds (or other things) the next step is about — lets another
    *  recommendation that already covers them stand in for this one. */
   subjects?: string[];
@@ -1059,7 +1057,7 @@ function limitStep(
       status: "unknown",
       headline: "This year's IRS limits aren't entered",
       nextStep: `Add them under ${settingsLocationLabel("taxdata", "limits")}`,
-      nextStepHref: settingsHref("taxdata", "limits"),
+      nextStepFocus: { topic: "settings", tab: "taxdata", section: "limits" },
     });
   }
   if (rows.length === 0) {
@@ -1786,7 +1784,7 @@ function customGoal(
     rule: `${CUSTOM_GOAL_METRICS[goal.metric]} of ${formatCurrency(goal.target)}${
       goal.todaysDollars ? ` in ${goal.setYear} dollars` : ""
     }.`,
-    href: "/milestones",
+    focus: { topic: "milestone", milestoneId: `custom:${goal.id}` },
   };
   const headline = `${formatCurrency(current)} of ${formatCurrency(targetNow)}`;
   const base = {

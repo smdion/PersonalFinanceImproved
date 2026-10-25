@@ -8,6 +8,8 @@
  * `lib/pure/data-freshness.ts`'s `DataSourceInputs`.
  */
 
+import type { Focus } from "./focus-topics";
+
 export type DataSourceRhythm =
   /** Late once the last update is more than `days` days old. */
   | { kind: "days"; days: number }
@@ -23,7 +25,7 @@ export type DataSourceDefinition = {
   /** Plain-language rhythm, for Settings. */
   rhythmLabel: string;
   /** Where to fix it. */
-  href: string;
+  focus: Focus;
 };
 
 export type DataSourceKey =
@@ -36,7 +38,7 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     mode: "manual",
     rhythm: { kind: "days", days: 10 },
     rhythmLabel: "Weekly",
-    href: "/portfolio",
+    focus: { topic: "balances" },
   },
   {
     key: "performance",
@@ -44,7 +46,7 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     mode: "manual",
     rhythm: { kind: "days", days: 35 },
     rhythmLabel: "Monthly",
-    href: "/performance",
+    focus: { topic: "performance" },
   },
   {
     key: "basis",
@@ -52,7 +54,7 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     mode: "manual",
     rhythm: { kind: "yearly", dueMonth: 1, dueDay: 31 },
     rhythmLabel: "Yearly, by Jan 31",
-    href: "/tax-buckets",
+    focus: { topic: "rothBasis" },
   },
   {
     key: "budgetApi",
@@ -60,7 +62,7 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     mode: "automatic",
     rhythm: { kind: "days", days: 2 },
     rhythmLabel: "Daily",
-    href: "/settings",
+    focus: { topic: "settings", tab: "integrations" },
   },
   {
     key: "simplefin",
@@ -68,7 +70,7 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     mode: "automatic",
     rhythm: { kind: "days", days: 2 },
     rhythmLabel: "Daily",
-    href: "/settings",
+    focus: { topic: "settings", tab: "integrations", section: "simplefin" },
   },
   {
     key: "secFacts",
@@ -76,6 +78,6 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     mode: "automatic",
     rhythm: { kind: "days", days: 9 },
     rhythmLabel: "Weekly",
-    href: "/settings",
+    focus: { topic: "settings", tab: "integrations", section: "sec" },
   },
 ];

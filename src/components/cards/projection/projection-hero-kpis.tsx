@@ -4,7 +4,10 @@
  *  all metrics so the row reads as a single design language. Uses the same
  *  visual pattern as the MC summary bar in projection-mc-results.tsx. */
 import { DEFAULT_SIMULATION } from "@/lib/constants";
-import { simulatedOrBaseline } from "@/lib/pure/nest-egg-display";
+import {
+  baselineNestEgg,
+  simulatedOrBaseline,
+} from "@/lib/pure/nest-egg-display";
 import { dominantFailureReason } from "@/lib/calculators/plan-outcome";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { rowTotal } from "./utils";
@@ -144,9 +147,18 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
         (yr) => yr.age === engineSettings?.retirementAge,
       );
   const retPt = retYear ? getPersonYearTotals(retYear) : null;
-  const nestEgg = retYear
-    ? deflate(retPt ? retPt.balance : rowTotal(retYear), retYear.year)
-    : 0;
+  // The household's figure is the engine's retirement money — the same one
+  // the dashboard shows (baselineNestEgg); a person filter shows theirs.
+  const household = baselineNestEgg(
+    result.projectionByYear,
+    alreadyRetired ? currentAge : (engineSettings?.retirementAge ?? currentAge),
+  );
+  const nestEgg =
+    retYear && retPt
+      ? deflate(retPt.balance, retYear.year)
+      : household
+        ? deflate(household.nominal, household.year)
+        : 0;
   const peakYear = result.projectionByYear.reduce((best, yr) => {
     const yrB = getPersonYearTotals(yr)?.balance ?? rowTotal(yr);
     const bestB = getPersonYearTotals(best)?.balance ?? rowTotal(best);

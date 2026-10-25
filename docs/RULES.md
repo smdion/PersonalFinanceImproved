@@ -618,6 +618,19 @@ These are true cross-cutting reference data that no single page owns.
 
 ---
 
+## Links into Pages
+
+> A link lands on the data it's about, not the top of a page.
+
+- **Senders carry a `Focus`, never a route string.** Recommendations, milestones, data sources, Financial Checkup and dashboard card sections build links with `focusHref` / `<FocusLink>` (`lib/config/focus-topics.ts`). A card header's plain `href="/page"` is the card's general link and stays.
+- **One home per topic.** `FOCUS_HOMES` maps each topic (named for the data, never a page) to its route, the page state it needs (`FOCUS_STATE` — typed, so a wrong value doesn't compile) and whether a section is marked. Context belongs to the sender: it picks the topic (a covered bridge → `earlyAccess`; a short year → `projectionYear`), the table never branches. A home is never a redirect page (the redirect drops the query).
+- **Pages opt in, they aren't redesigned.** `useFocusedState` for a tab/view, `useFocusReveal` for a collapsed section, `useFocusMatch` for anything else that must reveal itself (a filtered table row), `FocusTarget` / `useScrollToFocus` to scroll to and ring the section. A tab's side effects follow from its value, not its click handler.
+- **A focus only opens a view.** It's read from the URL every render (never seeded once), copied into local state when it arrives, and cleared when the user makes a choice. It never writes saved settings, never opens an edit form or unlocks an edit lock, and never changes the active profile, What-If or the Projected/YTD view. A stale id (a deleted goal) lands on the page without an error.
+- **Cards:** a linked `Card`'s title is its link; a click elsewhere on the card follows it unless it lands on a control, in a portal, or ends a text selection. Never wrap a card in `<a>` — links inside it would nest.
+- Enforced by `tests/lint/focus-links.test.ts` (no route literals in senders; every topic's home renders its target and reads its state; no redirect homes).
+
+---
+
 ## Coding Conventions
 
 - **Pure calculators.** `lib/calculators/` contains pure functions only — no DB, no tRPC, no React. Given the same inputs, always the same outputs. The engine is a modular subdirectory (`lib/calculators/engine/`) — see § "Engine Modularity".

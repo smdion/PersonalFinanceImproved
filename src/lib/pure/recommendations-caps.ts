@@ -54,7 +54,7 @@ export function recommendationsFromCaps(
           ? "Ledgr counts the capped amount everywhere until the contribution is changed — money over the limit is taxed and must be refunded."
           : "Until then Ledgr sizes the limit conservatively.",
         impact: null,
-        href: "/paycheck",
+        focus: { topic: "contributionElections" },
         source: "ledgr",
         ...(over ? { snoozeOnly: true } : {}),
       };

@@ -557,6 +557,14 @@ body {
   outline-offset: 2px;
 }
 
+/* The section a link landed on (components/ui/focus-target.tsx) — an
+   attribute React doesn't manage, so a re-render can't wipe it. */
+[data-focus-landed] {
+  outline: 2px solid rgb(var(--focus-ring, 56 189 248));
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
 /* Tabular figures for all numbers — keeps columns aligned in tables and cards */
 .tabular-nums,
 .font-mono,

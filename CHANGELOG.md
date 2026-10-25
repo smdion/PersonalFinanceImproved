@@ -8,6 +8,38 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.15] - 2026-10-25
+
+### Added
+
+- **Links land on the data, not the top of a page.** A link opens the page in the right tab or view, opens a collapsed section, and scrolls to and briefly outlines what it's about. From the dashboard:
+  - the early-retirement bridge's verdict (Retirement taxes at retirement, or the first short year in the projection);
+  - Simulated success and Coast FIRE (Plan Health);
+  - Readiness (your checkpoint milestone);
+  - Tax-advantaged room and the Contributions card (Paycheck contributions, opened);
+  - a savings goal (its card);
+  - the mortgage line (the loan);
+  - the Roth IRA line (Taxes this year → Roth IRA);
+  - a plan that runs out (that year in the projection).
+
+  Recommendations, milestones, Financial Checkup and Data Sources land the same way. Fund, cash and fund-cost items now go to Benchmarks, where those figures are; they used to go to Portfolio.
+
+- Links that already opened a section (Savings → Paychecks & Growth, Portfolio → Account settings, Holding history) also work when you're already on that page.
+
+### Changed
+
+- **Early-retirement bridge** (Retirement card) reads at a glance like Readiness and Growth: a Covered/Short verdict, the years until locked accounts open, the tightest point, and the year chips. Where the money sits, when each person's accounts open, how Covered is judged and the caveats are in its help tip; a short year shows one line on what helps.
+
+### Fixed
+
+- Financial Checkup's "recommendations →" link didn't open, and its rows reloaded the whole page.
+- Clicking a fund in the Savings chart did nothing; it now opens that goal.
+- **Privacy mode hides every amount on the page.** That now includes amounts in names and notes you typed ("Deck ($20,000)"), milestone labels ("Your first $100k") and tax notes ("about $15 more is due"). Ratios like "per $1" stay readable.
+- **Brokerage → By Account** showed another brokerage account's budget link (Long Term Brokerage labelled "R Brokerage"). The label and YNAB balance are now matched to each account itself, not its account type. The links themselves were always saved correctly.
+- Two admins dismissing or snoozing recommendations at the same time no longer lose one of the changes. Each change is now merged on the server.
+- The dashboard and the Retirement page now show the same baseline nest egg. They could differ by a few cents because they added up the year's balances differently.
+- Pages no longer redraw on load because the server and browser saw different data. The server now loads what the sidebar and header load on every page (saved settings, data freshness, profile lists). A page load counts once against the request limit, however many queries it prefetches, so moving quickly between pages can't run out the limit. Seen on Benchmarks (the "Compare with" description) and Performance (the "Basis updated" date).
+
 ## [0.8.14] - 2026-10-25
 
 ### Added

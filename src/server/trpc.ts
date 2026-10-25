@@ -336,6 +336,33 @@ export async function resolveAuthenticatedRateLimitKey(
     : await getRateLimitKey();
 }
 
+/**
+ * Take one request from the user's authenticated rate-limit budget; false
+ * when it's spent. Shared by the procedure middleware and the page prefetch
+ * (prefetchForPage charges a page load once, then runs its queries as
+ * internal calls).
+ */
+export async function takeAuthenticatedRateToken(
+  ctx: Context,
+  path: string,
+): Promise<{ ok: boolean; remaining: number }> {
+  const key = await resolveAuthenticatedRateLimitKey(ctx);
+  const { success, remaining, firstExceedance } = rateLimit(
+    key,
+    RATE_LIMIT_AUTHENTICATED.maxRequests,
+    RATE_LIMIT_AUTHENTICATED.windowMs,
+  );
+  if (firstExceedance) {
+    log("warn", "rate_limit_exceeded", {
+      tier: "authenticated",
+      key,
+      path,
+      limit: RATE_LIMIT_AUTHENTICATED.maxRequests,
+    });
+  }
+  return { ok: success, remaining };
+}
+
 const authenticatedRateLimitMiddleware = t.middleware(
   async ({ ctx, next, path }) => {
     // Server-side nested call on behalf of an already-authenticated
@@ -343,21 +370,8 @@ const authenticatedRateLimitMiddleware = t.middleware(
     // only the throttle is skipped.
     if (ctx.internal) return next({ ctx });
 
-    const key = await resolveAuthenticatedRateLimitKey(ctx);
-    const { success, remaining, firstExceedance } = rateLimit(
-      key,
-      RATE_LIMIT_AUTHENTICATED.maxRequests,
-      RATE_LIMIT_AUTHENTICATED.windowMs,
-    );
-    if (firstExceedance) {
-      log("warn", "rate_limit_exceeded", {
-        tier: "authenticated",
-        key,
-        path,
-        limit: RATE_LIMIT_AUTHENTICATED.maxRequests,
-      });
-    }
-    if (!success) {
+    const { ok, remaining } = await takeAuthenticatedRateToken(ctx, path);
+    if (!ok) {
       throw new TRPCError({
         code: "TOO_MANY_REQUESTS",
         message: `Rate limit exceeded. Try again shortly. (remaining: ${remaining})`,

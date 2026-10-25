@@ -339,8 +339,8 @@ export const BRIDGE_SOURCE_LABELS: Record<
   "brokerage" | "roth" | "workplacePlan" | "traditionalIra" | "other",
   string
 > = {
-  brokerage: "Taxable brokerage",
-  roth: "Roth (contributions & seasoned conversions)",
+  brokerage: "Brokerage",
+  roth: "Roth",
   workplacePlan: "Workplace plan (Rule of 55)",
   traditionalIra: "Traditional IRA",
   other: "Other",

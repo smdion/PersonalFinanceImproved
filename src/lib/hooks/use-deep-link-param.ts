@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
+import { useClearParams } from "./use-focus";
 
 const NONE: readonly string[] = [];
 
@@ -22,24 +23,17 @@ export function useDeepLinkParam<T extends string>(
   clearAlso: readonly string[] = NONE,
 ): [T, (value: T) => void] {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
+  const clearParams = useClearParams();
   const fromUrl = searchParams.get(param);
   const linked =
     fromUrl !== null && validKeys.includes(fromUrl) ? (fromUrl as T) : null;
 
   const set = useCallback(
     (value: T) => {
-      const stale = [param, ...clearAlso].filter((p) => searchParams.has(p));
-      if (stale.length > 0) {
-        const next = new URLSearchParams(searchParams);
-        for (const p of stale) next.delete(p);
-        const qs = next.toString();
-        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-      }
+      clearParams([param, ...clearAlso]);
       setPersisted(value);
     },
-    [param, clearAlso, pathname, router, searchParams, setPersisted],
+    [param, clearAlso, clearParams, setPersisted],
   );
 
   return [linked ?? persisted, set];
