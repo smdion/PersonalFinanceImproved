@@ -73,7 +73,7 @@ vi.mock("@/lib/trpc", () => ({
       getDataFreshness: { useQuery: () => ({ data: undefined }) },
       appSettings: {
         list: { useQuery: () => ({ data: [] }) },
-        upsert: {
+        setDismissal: {
           useMutation: () => ({ mutate: vi.fn(), isPending: false }),
         },
       },
