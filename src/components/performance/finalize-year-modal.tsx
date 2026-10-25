@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { accountDisplayName, formatCurrency } from "@/lib/utils/format";
-import { describeCheck } from "@/lib/config/performance-help";
+import { describeCheck, PERF_FIELD_HELP } from "@/lib/config/performance-help";
 import {
   PERF_CATEGORY_DISPLAY_ORDER,
   type PerfCategory,
@@ -58,12 +58,14 @@ export function FinalizeYearModal({
   onCancel,
   isPending,
 }: FinalizeYearModalProps) {
+  // Finalizing doesn't clear estimate marks: only confirming them does.
   const toLookAt = accounts
     .map((a) => ({
       a,
       open: (a.checks ?? []).filter((c) => !c.accepted),
+      estimated: a.estimatedFields ?? [],
     }))
-    .filter((x) => x.open.length > 0);
+    .filter((x) => x.open.length > 0 || x.estimated.length > 0);
   // Initialize editable state from computed annual rows
   const [values, setValues] = useState<
     Record<string, Record<FieldKey, string>>
@@ -140,10 +142,10 @@ export function FinalizeYearModal({
         {toLookAt.length > 0 && (
           <div className="mx-6 mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
             <p className="font-semibold">
-              Before you lock {year}: these figures don&apos;t fit together
+              Before you lock {year}: figures to look at
             </p>
             <ul className="mt-1 list-disc pl-5">
-              {toLookAt.map(({ a, open }) => (
+              {toLookAt.map(({ a, open, estimated }) => (
                 <li key={a.id}>
                   <span className="font-medium">
                     {accountDisplayName({
@@ -151,13 +153,23 @@ export function FinalizeYearModal({
                       accountType: a.accountType ?? undefined,
                     })}
                   </span>
-                  : {open.map((c) => describeCheck(c).title).join("; ")}
+                  :{" "}
+                  {[
+                    ...open.map((c) => describeCheck(c).title),
+                    estimated.length > 0 &&
+                      `still estimated: ${estimated
+                        .map((f) => PERF_FIELD_HELP[f].label)
+                        .join(", ")}`,
+                  ]
+                    .filter(Boolean)
+                    .join("; ")}
                 </li>
               ))}
             </ul>
             <p className="mt-1">
-              Fix them in the table, or accept a gap that&apos;s on purpose.
-              Once locked, a correction to {year} carries into later years.
+              Fix them in the table, accept a gap that&apos;s on purpose, or
+              confirm an estimate (click the mark next to the account). Once
+              locked, a correction to {year} carries into later years.
             </p>
           </div>
         )}

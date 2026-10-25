@@ -6,21 +6,9 @@
  * say the same thing.
  */
 import type { PerfCheck, PerfCheckKind } from "@/lib/pure/performance-checks";
+import type { PerfField } from "@/lib/pure/performance-annotations";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import { formatCurrency } from "@/lib/utils/format";
-
-/** The fields of a Performance row, as the update form names them. */
-export const PERF_FIELDS = [
-  "beginningBalance",
-  "employeeContrib",
-  "employerContributions",
-  "distributions",
-  "rollovers",
-  "fees",
-  "endingBalance",
-  "yearlyGainLoss",
-] as const;
-export type PerfField = (typeof PERF_FIELDS)[number];
 
 export const PERF_FIELD_HELP: Record<
   PerfField,

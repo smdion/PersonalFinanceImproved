@@ -1,6 +1,10 @@
 import React from "react";
 import type { PerfCategory } from "@/lib/config/display-labels";
 import type { PerfCheck } from "@/lib/pure/performance-checks";
+import type {
+  AcceptedChecks,
+  PerfField,
+} from "@/lib/pure/performance-annotations";
 
 export type EditingCell = {
   type: "annual" | "account" | "master" | "basis";
@@ -70,6 +74,10 @@ export type AccountRow = {
   }[];
   /** Reconciliation checks (lib/pure/performance-checks.ts). */
   checks?: PerfCheck[];
+  /** The household's note, still-estimated figures, accepted gaps. */
+  note?: string | null;
+  estimatedFields?: PerfField[];
+  acceptedChecks?: AcceptedChecks;
 };
 
 export type MasterAccount = {
@@ -135,6 +143,8 @@ export type YearRowProps = {
   showUnrealized: boolean;
   onlyBasis: boolean;
   canEdit?: boolean;
+  /** Open an account row's notes, estimates and checks. */
+  onOpenNotes?: (account: AccountRow) => void;
 };
 
 export type AddAccountFormProps = {
@@ -173,6 +183,9 @@ export type UpdateFormRow = {
   endingBalance: string;
   yearlyGainLoss: string;
   gainLossOverride: boolean;
+  /** The household's note and still-estimated figures for this row. */
+  note: string;
+  estimatedFields: PerfField[];
   /** Snapshot ending balance for this account (null if no snapshot match). */
   snapshotEndingBalance: number | null;
   /** Original DB values at form open, for "was" hints. */

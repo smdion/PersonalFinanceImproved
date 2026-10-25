@@ -39,6 +39,7 @@ import {
   TabGroup,
   PerformanceTable,
   FinalizeYearModal,
+  AccountNotesDialog,
   UpdatePerformanceForm,
   UpdateBasisForm,
   AccountPicker,
@@ -116,6 +117,7 @@ export function PerformanceContent() {
       utils.taxBuckets.computeBreakdown.invalidate();
     },
   });
+  const [notesAccountId, setNotesAccountId] = useState<number | null>(null);
   const finalizeYear = trpc.performance.finalizeYear.useMutation({
     onSuccess: () => utils.performance.computeSummary.invalidate(),
   });
@@ -699,6 +701,7 @@ export function PerformanceContent() {
             onSaveEdit={saveEdit}
             onKeyDown={handleKeyDown}
             canEdit={canEdit && !tableLocked}
+            onOpenNotes={canEdit ? (a) => setNotesAccountId(a.id) : undefined}
             locked={tableLocked}
             onToggleLock={canEdit ? () => setTableLocked((l) => !l) : undefined}
           />
@@ -771,6 +774,19 @@ export function PerformanceContent() {
       {/* Actual returns vs the projections' assumption (display only) */}
       <RealizedVsAssumedCard />
 
+      {notesAccountId !== null &&
+        (() => {
+          const account = (accountRows as AccountRow[]).find(
+            (a) => a.id === notesAccountId,
+          );
+          return account ? (
+            <AccountNotesDialog
+              account={account}
+              onClose={() => setNotesAccountId(null)}
+              onChanged={() => utils.performance.computeSummary.invalidate()}
+            />
+          ) : null;
+        })()}
       {showFinalizeModal && currentYear && (
         <FinalizeYearModal
           year={currentYear}

@@ -73,8 +73,16 @@ import {
   syncYearRollups,
 } from "@/server/helpers/performance-rollups";
 import { finalizeRothBasisForYear } from "@/server/helpers/roth-basis";
-import { performanceChecks } from "@/lib/pure/performance-checks";
-import { loadYearEndSnapshots } from "@/server/helpers/snapshot-derivatives";
+import { loadPerformanceChecks } from "@/server/helpers/performance-checks";
+import {
+  acceptedCheckSchema,
+  parseAcceptedChecks,
+  parseEstimatedFields,
+  perfCheckKindSchema,
+  perfFieldSchema,
+  PERF_NOTE_MAX,
+} from "@/lib/pure/performance-annotations";
+import { localDateStr } from "@/lib/utils/date";
 
 const performanceAccountInput = z.object({
   institution: z.string().trim().min(1),
@@ -642,24 +650,8 @@ export const performanceRouter = createTRPCRouter({
       rowsPerAccountYear.set(k, (rowsPerAccountYear.get(k) ?? 0) + 1);
     }
 
-    // Reconciliation checks against each year's last snapshot.
-    const yearEndSnapshots = await loadYearEndSnapshots(ctx.db);
-    const checksByRow = performanceChecks(
-      accounts.map((r) => ({
-        id: r.id,
-        year: r.year,
-        performanceAccountId: r.performanceAccountId,
-        ownerPersonId: r.ownerPersonId,
-        beginningBalance: toNumber(r.beginningBalance),
-        totalContributions: toNumber(r.totalContributions),
-        yearlyGainLoss: toNumber(r.yearlyGainLoss),
-        endingBalance: toNumber(r.endingBalance),
-        distributions: toNumber(r.distributions),
-        fees: toNumber(r.fees),
-        rollovers: toNumber(r.rollovers),
-      })),
-      yearEndSnapshots,
-    );
+    // Reconciliation checks (one path: also what "accept this gap" reads).
+    const checksByRow = await loadPerformanceChecks(ctx.db, accounts);
 
     // Transform account rows — enrich with master account data + compute missing return %
     const accountRows = accounts.map((r) => {
@@ -764,6 +756,9 @@ export const performanceRouter = createTRPCRouter({
           ) ?? null,
         basisByOwner,
         checks: checksByRow.get(r.id) ?? [],
+        note: r.note,
+        estimatedFields: parseEstimatedFields(r.estimatedFields),
+        acceptedChecks: parseAcceptedChecks(r.acceptedChecks),
       };
     });
 
@@ -942,6 +937,74 @@ export const performanceRouter = createTRPCRouter({
       return { success: true };
     }),
 
+  /**
+   * The household's note on an account-year, which figures are still
+   * estimates, and gaps accepted as on purpose. Accepting reads the gap
+   * from the same checks the page shows, and needs its own reason; the
+   * check comes back when the gap is no longer the one accepted.
+   * Not a figure change — the performance timestamp doesn't move.
+   */
+  annotateAccount: performanceProcedure
+    .input(
+      z.object({
+        id: z.number().int(),
+        note: z.string().trim().max(PERF_NOTE_MAX).nullable().optional(),
+        estimatedFields: z.array(perfFieldSchema).optional(),
+        accept: z
+          .object({
+            kind: perfCheckKindSchema,
+            note: acceptedCheckSchema.shape.note,
+          })
+          .optional(),
+        unaccept: perfCheckKindSchema.optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.transaction(async (tx) => {
+        const [row] = await tx
+          .select()
+          .from(schema.accountPerformance)
+          .where(eq(schema.accountPerformance.id, input.id));
+        if (!row)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "That Performance row no longer exists.",
+          });
+        const accepted = parseAcceptedChecks(row.acceptedChecks);
+        if (input.unaccept) delete accepted[input.unaccept];
+        if (input.accept) {
+          const check = (await loadPerformanceChecks(tx))
+            .get(row.id)
+            ?.find((c) => c.kind === input.accept!.kind);
+          if (!check)
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message:
+                "There's no such gap on this row any more — nothing to accept.",
+            });
+          accepted[input.accept.kind] = {
+            amount:
+              check.kind === "transfers"
+                ? toNumber(row.rollovers)
+                : check.amount,
+            note: input.accept.note,
+            on: localDateStr(new Date()),
+          };
+        }
+        await tx
+          .update(schema.accountPerformance)
+          .set({
+            ...(input.note !== undefined && { note: input.note || null }),
+            ...(input.estimatedFields && {
+              estimatedFields: parseEstimatedFields(input.estimatedFields),
+            }),
+            acceptedChecks: accepted,
+          })
+          .where(eq(schema.accountPerformance.id, row.id));
+        return { success: true };
+      });
+    }),
+
   updateCostBasis: performanceProcedure
     .input(
       z.object({
@@ -1009,6 +1072,9 @@ export const performanceRouter = createTRPCRouter({
             id: z.number().int(),
             /** Omitted: the stored beginning stays. */
             beginningBalance: zDecimal.optional(),
+            /** Figures still estimated; omitted: the stored marks stay. */
+            estimatedFields: z.array(perfFieldSchema).optional(),
+            note: z.string().trim().max(PERF_NOTE_MAX).nullable().optional(),
             totalContributions: zDecimal,
             employerContributions: zDecimal,
             distributions: zDecimal,
@@ -1045,6 +1111,10 @@ export const performanceRouter = createTRPCRouter({
               ...(acct.beginningBalance !== undefined && {
                 beginningBalance: acct.beginningBalance,
               }),
+              ...(acct.estimatedFields && {
+                estimatedFields: parseEstimatedFields(acct.estimatedFields),
+              }),
+              ...(acct.note !== undefined && { note: acct.note || null }),
               totalContributions: acct.totalContributions,
               employerContributions: acct.employerContributions,
               distributions: acct.distributions,

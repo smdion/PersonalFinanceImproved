@@ -46,6 +46,7 @@ export function YearRow({
   showUnrealized,
   onlyBasis,
   canEdit = true,
+  onOpenNotes,
 }: YearRowProps) {
   const gainColor = row.yearlyGainLoss >= 0 ? "text-green-600" : "text-red-600";
   // Per-account, data-driven gate — never assume a whole category is pure
@@ -403,7 +404,7 @@ export function YearRow({
                 </tr>
               )}
               <tr
-                className={`border-subtle border-b ${isHistoricalDivider || (activeAccountCount !== undefined && idx >= activeAccountCount) ? "bg-surface-sunken/80 opacity-70" : "bg-surface-sunken/50"}`}
+                className={`group border-subtle border-b ${isHistoricalDivider || (activeAccountCount !== undefined && idx >= activeAccountCount) ? "bg-surface-sunken/80 opacity-70" : "bg-surface-sunken/50"}`}
               >
                 <td className="text-muted px-4 py-2 pl-10">
                   <span className="flex items-center gap-2">
@@ -413,7 +414,14 @@ export function YearRow({
                         accountType: a.accountType ?? undefined,
                       })}
                     </span>
-                    {!onlyBasis && <CheckBadge checks={a.checks ?? []} />}
+                    {!onlyBasis && (
+                      <CheckBadge
+                        checks={a.checks ?? []}
+                        note={a.note ?? null}
+                        estimatedFields={a.estimatedFields ?? []}
+                        onOpen={onOpenNotes ? () => onOpenNotes(a) : undefined}
+                      />
+                    )}
                   </span>
                 </td>
                 {!onlyBasis && (

@@ -19,6 +19,7 @@ import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { computeSnapshotEndingBalances } from "@/lib/pure/portfolio";
 import { ownerKey, type YearEndSnapshot } from "@/lib/pure/performance-checks";
+import { parseEstimatedFields } from "@/lib/pure/performance-annotations";
 import { toNumber } from "@/server/helpers/transforms";
 import type { DbType } from "@/server/routers/settings/_shared";
 import {
@@ -163,9 +164,15 @@ export async function refreshSnapshotYearDerivatives(
       }
       updatedPerfIds.add(acctPerf.performanceAccountId);
       const newBalance = perfTotals.get(acctPerf.performanceAccountId)!;
+      // A snapshot is a real balance: the ending is no longer an estimate.
       await tx
         .update(schema.accountPerformance)
-        .set({ endingBalance: newBalance.toFixed(2) })
+        .set({
+          endingBalance: newBalance.toFixed(2),
+          estimatedFields: parseEstimatedFields(
+            acctPerf.estimatedFields,
+          ).filter((f) => f !== "endingBalance"),
+        })
         .where(eq(schema.accountPerformance.id, acctPerf.id));
     }
   }

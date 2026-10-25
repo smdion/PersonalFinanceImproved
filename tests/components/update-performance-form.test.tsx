@@ -212,6 +212,13 @@ describe("UpdatePerformanceForm", () => {
     });
     // 115000 - 100000 - 13000 + 0 - 0 + 60
     expect(acct1.yearlyGainLoss).toBe("2060.00");
+    // The split was estimated from the paycheck setup: marked to confirm.
+    expect(acct1).toMatchObject({
+      estimatedFields: ["employeeContrib", "employerContributions"],
+    });
+    expect(input.accounts.find((a) => a.id === 2)).toMatchObject({
+      estimatedFields: [],
+    });
     // An account without a feed keeps its figures.
     expect(input.accounts.find((a) => a.id === 2)!.endingBalance).toBe(
       "50000.00",

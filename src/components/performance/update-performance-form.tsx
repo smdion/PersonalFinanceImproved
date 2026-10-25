@@ -17,8 +17,12 @@ import { HelpTip } from "@/components/ui/help-tip";
 import {
   PERF_FIELD_HELP,
   performanceTips,
-  type PerfField,
 } from "@/lib/config/performance-help";
+import {
+  PERF_FIELDS,
+  PERF_NOTE_MAX,
+  type PerfField,
+} from "@/lib/pure/performance-annotations";
 import type { UpdateFormRow, UpdatePerformanceFormProps } from "./types";
 
 type EndingBalanceSource = "snapshot" | "manual";
@@ -114,6 +118,8 @@ export function UpdatePerformanceForm({
         endingBalance: String(a.endingBalance),
         yearlyGainLoss: String(a.yearlyGainLoss),
         gainLossOverride: false,
+        note: a.note ?? "",
+        estimatedFields: a.estimatedFields ?? [],
         snapshotEndingBalance: snapBal,
         original: {
           beginningBalance: a.beginningBalance,
@@ -130,7 +136,11 @@ export function UpdatePerformanceForm({
   }, [loadingSnap, currentYearAccounts, currentYear]);
 
   const updateRow = useCallback(
-    (id: number, field: keyof UpdateFormRow, value: string | boolean) => {
+    (
+      id: number,
+      field: keyof UpdateFormRow,
+      value: string | boolean | PerfField[],
+    ) => {
       setRows(
         (prev) =>
           prev?.map((r) =>
@@ -262,8 +272,18 @@ export function UpdatePerformanceForm({
             .filter(Boolean)
             .join(" "),
         );
+        // Figures worked out from the paycheck setup are estimates to
+        // confirm against a statement.
+        const estimatedNow = new Set(r.estimatedFields);
+        if (s.estimate || a.estimated) {
+          if (untouched("employeeContrib", r.employeeContrib))
+            estimatedNow.add("employeeContrib");
+          if (untouched("employerContributions", r.employerContributions))
+            estimatedNow.add("employerContributions");
+        }
         return {
           ...r,
+          estimatedFields: PERF_FIELDS.filter((f) => estimatedNow.has(f)),
           employeeContrib: fill("employeeContrib", s.suggested.employeeContrib),
           employerContributions: fill(
             "employerContributions",
@@ -299,6 +319,8 @@ export function UpdatePerformanceForm({
       return {
         id: r.accountPerformanceId,
         beginningBalance: (parseFloat(r.beginningBalance) || 0).toFixed(2),
+        estimatedFields: r.estimatedFields,
+        note: r.note,
         totalContributions,
         employerContributions: r.employerContributions,
         distributions: r.distributions,
@@ -490,7 +512,7 @@ function AccountFormRow({
   onFieldChange: (
     id: number,
     field: keyof UpdateFormRow,
-    value: string | boolean,
+    value: string | boolean | PerfField[],
   ) => void;
 }) {
   const id = row.accountPerformanceId;
@@ -594,6 +616,57 @@ function AccountFormRow({
           )}
         </span>
       </div>
+
+      <details
+        className="text-caption text-muted mb-2"
+        open={row.note !== "" || row.estimatedFields.length > 0}
+      >
+        <summary className="cursor-pointer select-none">
+          Note &amp; estimates
+          {row.estimatedFields.length > 0 &&
+            ` · ${row.estimatedFields.length} estimated`}
+        </summary>
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          {PERF_FIELDS.map((f) => {
+            const on = row.estimatedFields.includes(f);
+            return (
+              <button
+                key={f}
+                type="button"
+                aria-pressed={on}
+                onClick={() =>
+                  onFieldChange(
+                    id,
+                    "estimatedFields",
+                    on
+                      ? row.estimatedFields.filter((x) => x !== f)
+                      : PERF_FIELDS.filter(
+                          (x) => x === f || row.estimatedFields.includes(x),
+                        ),
+                  )
+                }
+                className={`rounded-full border px-2 py-0.5 ${
+                  on
+                    ? "border-amber-400 bg-amber-100 text-amber-800"
+                    : "border-default"
+                }`}
+              >
+                {on ? "≈ " : ""}
+                {PERF_FIELD_HELP[f].label}
+              </button>
+            );
+          })}
+        </div>
+        <textarea
+          value={row.note}
+          maxLength={PERF_NOTE_MAX}
+          rows={2}
+          aria-label={`Note for ${row.displayName}`}
+          placeholder="Where these figures came from, anything to check at year end"
+          onChange={(e) => onFieldChange(id, "note", e.target.value)}
+          className="border-default text-primary mt-1 w-full rounded border px-2 py-1 text-xs"
+        />
+      </details>
 
       {/* Ending balance + gain/loss summary */}
       <div className="flex items-center gap-4 text-sm">

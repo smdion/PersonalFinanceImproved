@@ -1054,6 +1054,20 @@ export const accountPerformance = pgTable(
     performanceAccountId: integer("performance_account_id")
       .notNull()
       .references(() => performanceAccounts.id, { onDelete: "restrict" }),
+    /** The household's note on this account-year: where figures came
+     *  from, why a gap is fine. */
+    note: text("note"),
+    /** Figures still estimated (PerfField names — parseEstimatedFields). */
+    estimatedFields: jsonb("estimated_fields")
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    /** Reconciliation gaps accepted as on purpose, by check kind
+     *  (parseAcceptedChecks). */
+    acceptedChecks: jsonb("accepted_checks")
+      .$type<Record<string, unknown>>()
+      .notNull()
+      .default({}),
   },
   (table) => [
     uniqueIndex("account_perf_year_inst_label_owner_idx").on(

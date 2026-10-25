@@ -41,6 +41,7 @@ type PerformanceTableProps = {
   showBasis: boolean;
   showUnrealized: boolean;
   onlyBasis: boolean;
+  onOpenNotes?: (account: AccountRow) => void;
 };
 
 export function PerformanceTable({
@@ -57,6 +58,7 @@ export function PerformanceTable({
   onSaveEdit,
   onKeyDown,
   canEdit,
+  onOpenNotes,
   locked,
   onToggleLock,
   showBasis,
@@ -211,6 +213,7 @@ export function PerformanceTable({
                 showUnrealized={showUnrealized}
                 onlyBasis={onlyBasis}
                 canEdit={canEdit}
+                onOpenNotes={onOpenNotes}
               />
             );
           })}
