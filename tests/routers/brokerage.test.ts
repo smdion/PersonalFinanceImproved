@@ -6,7 +6,13 @@
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { createTestCaller } from "./setup";
+import {
+  createTestCaller,
+  seedBudgetProfile,
+  seedBudgetItem,
+  seedPerformanceAccount,
+} from "./setup";
+import * as sqliteSchema from "@/lib/db/schema-sqlite";
 
 describe("brokerage router", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
@@ -119,5 +125,62 @@ describe("brokerage router", () => {
       const summary = await caller.brokerage.computeSummary();
       expect(summary.apiBalances).toEqual([]);
     });
+  });
+
+  // Two brokerage accounts share one account type; each budget link must
+  // name the tracked account it funds, so a page never shows the other
+  // account's link.
+  it("budget links carry the tracked account they fund", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { db } = ctx;
+      const person = db
+        .insert(sqliteSchema.people)
+        .values({ name: "Pat", dateOfBirth: "1990-01-01" })
+        .returning()
+        .get().id;
+      const retirementBrokerage = seedPerformanceAccount(db, {
+        name: "Retirement Brokerage",
+        accountType: "brokerage",
+        parentCategory: "Retirement",
+      });
+      const longTerm = seedPerformanceAccount(db, {
+        name: "Long Term Brokerage",
+        accountType: "brokerage",
+        parentCategory: "Portfolio",
+      });
+      const contrib = (performanceAccountId: number) =>
+        db
+          .insert(sqliteSchema.contributionAccounts)
+          .values({
+            personId: person,
+            accountType: "brokerage",
+            taxTreatment: "after_tax",
+            employerMatchType: "none",
+            performanceAccountId,
+          })
+          .returning()
+          .get().id;
+      const budget = await seedBudgetProfile(db);
+      seedBudgetItem(db, budget, {
+        subcategory: "R Brokerage",
+        contributionAccountId: contrib(retirementBrokerage),
+      });
+      seedBudgetItem(db, budget, {
+        subcategory: "LT Brokerage",
+        contributionAccountId: contrib(longTerm),
+      });
+      const { budgetLinks } = await ctx.caller.brokerage.computeSummary();
+      expect(
+        budgetLinks.map((l) => [l.performanceAccountId, l.budgetItemName]),
+      ).toEqual(
+        expect.arrayContaining([
+          [retirementBrokerage, "R Brokerage"],
+          [longTerm, "LT Brokerage"],
+        ]),
+      );
+    } finally {
+      ctx.cleanup();
+    }
   });
 });

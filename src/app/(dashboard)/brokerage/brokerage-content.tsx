@@ -241,12 +241,10 @@ export function BrokerageContent() {
       ]
     : [];
 
-  // API balance overlay — match by accountCategory (raw DB type) against categoryKey
-  const apiBalances = brokerageData?.apiBalances ?? [];
-  const apiBalanceByCategory = new Map<string, (typeof apiBalances)[0]>();
-  for (const ab of apiBalances) {
-    if (ab.source === "api") apiBalanceByCategory.set(ab.accountCategory, ab);
-  }
+  // API balance overlay — per tracked account (two accounts can share a type)
+  const apiBalances = (brokerageData?.apiBalances ?? []).filter(
+    (ab) => ab.source === "api",
+  );
   const budgetLinks = brokerageData?.budgetLinks ?? [];
 
   // Deflation (Today's $ / Future $) — same pattern as retirement
@@ -334,7 +332,7 @@ export function BrokerageContent() {
         <Card title="By Account" className="lg:col-span-2">
           <ByAccountSummary
             accounts={portfolioAccounts}
-            apiBalanceByCategory={apiBalanceByCategory}
+            apiBalances={apiBalances}
             budgetLinks={budgetLinks}
           />
         </Card>
@@ -627,12 +625,14 @@ type ApiBalanceInfo = {
 
 function ByAccountSummary({
   accounts,
-  apiBalanceByCategory,
+  apiBalances,
   budgetLinks,
 }: {
   accounts: {
     accountType: string;
     categoryKey: string;
+    /** The tracked accounts this row adds up. */
+    performanceAccountIds: number[];
     employeeContrib: number;
     employerMatch: number;
     totalContrib: number;
@@ -648,8 +648,9 @@ function ByAccountSummary({
     hasDiscountBar: boolean;
     employerMatchLabel: string;
   }[];
-  apiBalanceByCategory: Map<string, ApiBalanceInfo>;
+  apiBalances: ApiBalanceInfo[];
   budgetLinks: Array<{
+    performanceAccountId: number | null;
     accountType: string;
     budgetItemName: string;
     budgetCategory: string;
@@ -663,39 +664,48 @@ function ByAccountSummary({
     );
   }
 
-  // Match by categoryKey (raw DB category) — both budgetLinks.accountType and categoryKey are the raw DB value
-  const budgetLinkByType = new Map(
-    budgetLinks.map((bl) => [bl.accountType, bl]),
-  );
-
   return (
     <div className="space-y-3">
       {accounts.map((at) => {
-        const apiInfo = apiBalanceByCategory.get(at.categoryKey);
-        const budgetLink = budgetLinkByType.get(at.categoryKey);
+        // This row's own tracked accounts — never every account of its type.
+        const mine = (id: number | null) =>
+          id !== null && at.performanceAccountIds.includes(id);
+        const rowApi = apiBalances.filter((ab) =>
+          mine(ab.performanceAccountId),
+        );
+        const apiInfo =
+          rowApi.length > 0
+            ? {
+                resolvedBalance: sumBy(rowApi, (ab) => ab.resolvedBalance),
+                snapshotBalance: sumBy(rowApi, (ab) => ab.snapshotBalance),
+              }
+            : null;
+        const linkNames = budgetLinks
+          .filter((bl) => mine(bl.performanceAccountId))
+          .map((bl) => bl.budgetItemName);
         return (
           <div key={at.accountType}>
             <div className="flex items-baseline justify-between text-sm">
               <span className="text-secondary font-medium">
                 {at.accountType}
-                {apiInfo?.source === "api" && (
+                {apiInfo && (
                   <Badge color="blue" className="ml-1.5">
                     YNAB
                   </Badge>
                 )}
               </span>
               <span className="text-primary font-semibold">
-                {apiInfo?.source === "api"
+                {apiInfo
                   ? formatCurrency(apiInfo.resolvedBalance)
                   : `${formatCurrency(at.totalContrib)}/yr`}
               </span>
             </div>
-            {budgetLink && (
+            {linkNames.length > 0 && (
               <p className="text-caption mt-0.5 text-emerald-600">
-                Linked to budget: {budgetLink.budgetItemName}
+                Linked to budget: {linkNames.join(", ")}
               </p>
             )}
-            {apiInfo?.source === "api" && (
+            {apiInfo && (
               <p className="text-caption mt-0.5 text-blue-600">
                 Balance from YNAB (snapshot:{" "}
                 {formatCurrency(apiInfo.snapshotBalance)})

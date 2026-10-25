@@ -111,6 +111,8 @@ export const brokerageRouter = createTRPCRouter({
       ctx.db
         .select({
           contributionAccountId: schema.budgetItems.contributionAccountId,
+          performanceAccountId:
+            schema.contributionAccounts.performanceAccountId,
           budgetItemName: schema.budgetItems.subcategory,
           budgetCategory: schema.budgetItems.category,
           accountType: schema.contributionAccounts.accountType,
@@ -219,6 +221,10 @@ export const brokerageRouter = createTRPCRouter({
       budgetLinks: budgetLinkRows
         .filter((r) => r.contributionAccountId != null)
         .map((r) => ({
+          // The tracked account the linked contribution funds — rows match
+          // on it, never on the account type (two brokerage accounts share
+          // one type).
+          performanceAccountId: r.performanceAccountId,
           accountType: r.accountType,
           budgetItemName: r.budgetItemName,
           budgetCategory: r.budgetCategory,
