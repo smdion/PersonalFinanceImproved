@@ -130,6 +130,10 @@ describe("RetirementCard dashboard cache-peek features", () => {
     render(<RetirementCard />);
     expect(screen.getByText("Simulated success")).toBeInTheDocument();
     expect(screen.getByText("92%")).toBeInTheDocument();
+    // The figure links to where it's explained (Plan Health).
+    expect(screen.getByText("92%").closest("a")?.getAttribute("href")).toBe(
+      "/retirement?focus=planHealth",
+    );
     expect(screen.getByText("Last simulation run")).toBeInTheDocument();
     expect(screen.getByText("just now")).toBeInTheDocument();
   });

@@ -1,5 +1,6 @@
 "use client";
 
+import { FocusLink } from "@/components/ui/focus-link";
 import { memo } from "react";
 
 import { trpc } from "@/lib/trpc";
@@ -350,7 +351,12 @@ function SavingsGoalsCardImpl() {
                     <span
                       className={`inline-block h-2 w-2 rounded-full ${dotColor}`}
                     />
-                    {g.name}
+                    <FocusLink
+                      focus={{ topic: "savingsGoal", goalId: g.goalId }}
+                      className="hover:text-primary hover:underline"
+                    >
+                      {g.name}
+                    </FocusLink>
                   </span>
                   <span className="text-primary">
                     {formatCurrency(g.current)}

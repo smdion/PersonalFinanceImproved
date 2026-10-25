@@ -1,5 +1,6 @@
 "use client";
 
+import { FocusLink } from "@/components/ui/focus-link";
 import React, { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
@@ -104,7 +105,12 @@ function NetWorthCardImpl() {
         {data.hasHouse && (
           <div>
             <div className="flex justify-between">
-              <span className="text-muted">Mortgage</span>
+              <FocusLink
+                focus={{ topic: "mortgage" }}
+                className="text-muted hover:underline"
+              >
+                Mortgage
+              </FocusLink>
               <span className="text-red-600">
                 -{formatCurrency(data.mortgageBalance)}
               </span>

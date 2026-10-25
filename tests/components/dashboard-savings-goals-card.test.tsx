@@ -130,6 +130,10 @@ describe("SavingsGoalsCard smoke", () => {
     render(<SavingsGoalsCard />);
     // Vacation Fund: current 6000 >= target 5000 -> Funded
     expect(screen.getByText("Vacation Fund")).toBeInTheDocument();
+    // The name opens that goal on Savings.
+    expect(
+      screen.getByText("Vacation Fund").closest("a")?.getAttribute("href"),
+    ).toBe("/savings?focus=savingsGoal&focusId=1");
     expect(screen.getAllByText("Funded").length).toBeGreaterThan(0);
   });
 

@@ -10,9 +10,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.8.15] - Unreleased
 
+### Added
+
+- **Links land on the data, not the top of a page.** A link opens the page in the right tab or view, opens a collapsed section, and scrolls to and briefly outlines what it's about. From the dashboard:
+  - the early-retirement bridge's verdict (Retirement taxes at retirement, or the first short year in the projection);
+  - Simulated success and Coast FIRE (Plan Health);
+  - Readiness (your checkpoint milestone);
+  - Tax-advantaged room and the Contributions card (Paycheck contributions, opened);
+  - a savings goal (its card);
+  - the mortgage line (the loan);
+  - the Roth IRA line (Taxes this year → Roth IRA);
+  - a plan that runs out (that year in the projection).
+
+  Recommendations, milestones, Financial Checkup and Data Sources land the same way. Fund, cash and fund-cost items now go to Benchmarks, where those figures are; they used to go to Portfolio.
+
+- Links that already opened a section (Savings → Paychecks & Growth, Portfolio → Account settings, Holding history) also work when you're already on that page.
+
 ### Changed
 
-- **Early-retirement bridge** (Retirement card) reads at a glance like Readiness and Growth: a Covered/Short verdict, the years until locked accounts open, the tightest point, and the year chips. Where the money sits, when each person's accounts open and the caveats moved into its help tip; a short year shows one line on what helps.
+- **Early-retirement bridge** (Retirement card) reads at a glance like Readiness and Growth: a Covered/Short verdict, the years until locked accounts open, the tightest point, and the year chips. Where the money sits, when each person's accounts open, how Covered is judged and the caveats are in its help tip; a short year shows one line on what helps.
+
+### Fixed
+
+- Financial Checkup's "recommendations →" link didn't open, and its rows reloaded the whole page.
+- Clicking a fund in the Savings chart did nothing; it now opens that goal.
 
 ## [0.8.14] - 2026-10-25
 

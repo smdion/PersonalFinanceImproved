@@ -1,5 +1,7 @@
 "use client";
 
+import { FocusLink } from "@/components/ui/focus-link";
+import { focusHref } from "@/lib/config/focus-topics";
 import { simulatedOrBaseline } from "@/lib/pure/nest-egg-display";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { memo } from "react";
@@ -247,9 +249,13 @@ function RetirementCardImpl() {
             {taxAdvSpace > 0 && (
               <div className="flex justify-between">
                 <span className="text-muted">Tax-advantaged room</span>
-                <span className="text-amber-600">
+                <FocusLink
+                  focus={{ topic: "contributionElections" }}
+                  className="text-amber-600 hover:underline"
+                  title="See contribution elections on Paycheck"
+                >
                   {formatCurrency(taxAdvSpace)}/yr
-                </span>
+                </FocusLink>
               </div>
             )}
             <div className="border-subtle my-1 border-t" />
@@ -310,10 +316,13 @@ function RetirementCardImpl() {
                       Coast FIRE
                       <HelpTip
                         text="The earliest age at which you can stop contributing and still fund your plan through end of plan. 'Already Coast' means you could stop today. This is the deterministic baseline — it doesn't account for market variance. The Retirement page's Plan Health tab runs a Simulation and can show a materially later age once you're asking 'stop today, and still succeed in ~90% of simulated outcomes.'"
-                        learnMoreHref="/retirement"
+                        learnMoreHref={focusHref({ topic: "planHealth" })}
                       />
                     </span>
-                    <span className="text-primary">
+                    <FocusLink
+                      focus={{ topic: "planHealth" }}
+                      className="text-primary hover:underline"
+                    >
                       {coastFireData.result.status === "unreachable"
                         ? "Not reachable"
                         : coastFireData.result.status === "already_coast"
@@ -324,7 +333,7 @@ function RetirementCardImpl() {
                           ? `(simulated: ${simLabel})`
                           : "(baseline; see Plan Health for simulated)"}
                       </span>
-                    </span>
+                    </FocusLink>
                   </div>
                 );
               })()}
@@ -334,11 +343,12 @@ function RetirementCardImpl() {
                   Simulated success
                   <HelpTip
                     text="The share of simulated market outcomes in which your plan doesn't run out of money, from the last Simulation you ran on the Retirement page. Not re-run automatically from the dashboard — visit the Retirement page's Plan Health tab to refresh it."
-                    learnMoreHref="/retirement"
+                    learnMoreHref={focusHref({ topic: "planHealth" })}
                   />
                 </span>
-                <span
-                  className={`font-medium ${
+                <FocusLink
+                  focus={{ topic: "planHealth" }}
+                  className={`font-medium hover:underline ${
                     mcPeek.result.successRate >= 0.9
                       ? STATUS_COLORS.green.text
                       : mcPeek.result.successRate >= 0.75
@@ -347,7 +357,7 @@ function RetirementCardImpl() {
                   }`}
                 >
                   {formatPercent(mcPeek.result.successRate, 0)}
-                </span>
+                </FocusLink>
               </div>
             )}
             {(() => {
@@ -372,19 +382,21 @@ function RetirementCardImpl() {
             })()}
             <div className="flex justify-between">
               <span className="text-muted">Duration</span>
-              <span
-                className={
-                  !outcome.succeeded
-                    ? "font-medium text-red-600"
-                    : "font-medium text-green-600"
-                }
-              >
-                {outcome.succeeded
-                  ? `Lasts to ${endAge}+`
-                  : outcome.failureReason === "depleted"
+              {outcome.succeeded ? (
+                <span className="font-medium text-green-600">
+                  Lasts to {endAge}+
+                </span>
+              ) : (
+                // The year it fails, in the projection.
+                <FocusLink
+                  focus={{ topic: "projectionYear", year: outcome.failureYear }}
+                  className="font-medium text-red-600 hover:underline"
+                >
+                  {outcome.failureReason === "depleted"
                     ? `Runs out age ${outcome.failureAge}`
                     : `Falls short age ${outcome.failureAge}`}
-              </span>
+                </FocusLink>
+              )}
             </div>
           </div>
         </div>

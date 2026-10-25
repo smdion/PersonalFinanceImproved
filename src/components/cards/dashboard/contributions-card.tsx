@@ -1,5 +1,6 @@
 "use client";
 
+import { focusHref } from "@/lib/config/focus-topics";
 import React, { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
@@ -217,7 +218,7 @@ function ContributionsCardImpl() {
   return (
     <Card
       title="Contributions"
-      href="/paycheck"
+      href={focusHref({ topic: "contributionElections" })}
       headerRight={
         <ContribPeriodToggle
           value={contribPeriod}

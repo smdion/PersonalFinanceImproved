@@ -1,5 +1,6 @@
 "use client";
 
+import { FocusLink } from "@/components/ui/focus-link";
 import { useState } from "react";
 import type { RouterOutputs } from "@/lib/trpc";
 import { ProgressBar } from "@/components/ui/card";
@@ -93,7 +94,7 @@ function Readiness({
   const gap = portfolio - salary * targetMultiple;
   const onTrack = gap >= 0;
   const maxAge = Math.max(settings.retirementAge, table[table.length - 1]!.age);
-  const { label, measures } = CHECKPOINT_SOURCES[source];
+  const { label, measures, milestoneId } = CHECKPOINT_SOURCES[source];
 
   return (
     <div>
@@ -126,11 +127,13 @@ function Readiness({
         </select>
       </div>
       <div className="mt-1 flex items-baseline gap-2">
-        <span
-          className={`text-xl font-bold ${onTrack ? "text-green-600" : "text-amber-600"}`}
+        <FocusLink
+          focus={{ topic: "milestone", milestoneId }}
+          className={`text-xl font-bold hover:underline ${onTrack ? "text-green-600" : "text-amber-600"}`}
+          title={`See the ${label} checkpoints on Milestones`}
         >
           {formatNumber(actual, 1)}x
-        </span>
+        </FocusLink>
         <span className="text-muted text-xs">
           {projectedAge !== null ? "projected " : ""}of {formatCurrency(salary)}{" "}
           pay · {label}
