@@ -468,6 +468,20 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
     expect(payload!.distributionTaxRates.standardDeduction).toBe(31500);
   });
 
+  it("each tax table carries its own year (pinned 2025; the seed has 2026-only IRMAA and FPL)", async () => {
+    const data = await fetchRetirementData(db, {});
+    const payload = await buildEnginePayload(db, data, {});
+    const r = payload!.distributionTaxRates;
+    expect(r.taxBracketsYear).toBe(2025);
+    expect(r.ltcgBracketsYear).toBe(2025);
+    // No 2025 rows: the oldest complete year, grown from its own year —
+    // not the built-in tables.
+    expect(r.irmaaBracketsYear).toBe(2026);
+    expect(r.fplYear).toBe(2026);
+    expect(r.irmaaBrackets).toBeDefined();
+    expect(r.fplByHousehold).toBeDefined();
+  });
+
   // resolveTaxParams's candidateYears() is
   // sourced from contribution_limits ALONE (not the union of all five
   // reference tables) specifically so a year like this — tax_brackets
@@ -518,6 +532,26 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
       .set({ taxParamsYear: null })
       .where(eq(schema.retirementProfiles.id, profileId))
       .run();
+  });
+});
+
+describe("buildEnginePayload — no withholding tables at all", () => {
+  it("refuses to project rather than tax every withdrawal at a flat default", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const schema = await getSchema();
+      const personId = await seedPerson(ctx.db, "Jo", "1975-03-03");
+      await markPrimary(ctx.db, personId);
+      await seedRetirementSettings(ctx.db, personId, { filingStatus: "MFJ" });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (ctx.db as any).delete(schema.taxBrackets).run();
+      const data = await fetchRetirementData(ctx.db, {});
+      await expect(buildEnginePayload(ctx.db, data, {})).rejects.toThrow(
+        /withholding/,
+      );
+    } finally {
+      ctx.cleanup();
+    }
   });
 });
 

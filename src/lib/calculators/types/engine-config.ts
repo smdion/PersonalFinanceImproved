@@ -461,29 +461,23 @@ export type DecumulationDefaults = {
      *  already-current), matching pre-fix behavior for any caller that
      *  doesn't thread this through.
      *
-     *  Nuance: this is sourced from
-     *  `tax_brackets`' own `MAX(taxYear)` — `standardDeduction`'s actual
-     *  source (`contribution_limits`, queried by `asOfDate`'s calendar
-     *  year, `build-engine-payload.ts` ~line 139) is a SEPARATE query with
-     *  no enforced alignment to it. They currently share the same vintage
-     *  in practice (both 2026-seeded), which is what makes treating them
-     *  as one shared anchor safe today — but nothing prevents that from
-     *  drifting (e.g. next year's brackets seeded in Oct/Nov before the
-     *  matching `contribution_limits` row lands). A drift here doesn't
-     *  desync `toOrdinaryBracketIncome`'s residual math (both are still
-     *  grown by the identical factor off whichever anchor is used) — it
-     *  just makes the growth itself off by however many years the two
-     *  vintages have drifted apart. If that ever becomes a real gap,
-     *  thread a second, `standardDeduction`-specific vintage year instead
-     *  of assuming they match.
-     *
-     *  The split-vintage risk this docblock describes is now closed —
-     *  `build-engine-payload.ts` resolves `taxBrackets`, `standardDeduction`
-     *  and the LTCG/IRMAA slices through one `resolveTaxParams` call anchored
-     *  on a single year, so `taxDataYear` = that resolved year for all of
-     *  them. */
+     *  This is the standard deduction's (contribution limits') year. Each
+     *  other yearly table grows from its own year — `taxBracketsYear`,
+     *  `ltcgBracketsYear`, `irmaaBracketsYear`, `fplYear` below — since
+     *  the tables can come from different years (a new year's limits
+     *  before its withholding tables). Standard deduction and brackets
+     *  grown from their own years each estimate year y's real figures, so
+     *  `toOrdinaryBracketIncome`'s residual stays correct. */
     taxDataYear?: number;
-    /** `tax_params.version` for `taxDataYear` — a human-legible
+    /** Year `taxBrackets` came from (database rows); undefined ⇒ `taxDataYear`. */
+    taxBracketsYear?: number;
+    /** Year `ltcgBrackets` came from; set exactly when `ltcgBrackets` is. */
+    ltcgBracketsYear?: number;
+    /** Year `irmaaBrackets` came from; set exactly when `irmaaBrackets` is. */
+    irmaaBracketsYear?: number;
+    /** Coverage year `fplByHousehold` came from; set exactly when it is. */
+    fplYear?: number;
+    /** `tax_params.version` for `taxDataYear` (the limits year) — a human-legible
      *  "Tax data: 2026, rev N" revision counter. Informational; cache
      *  coherence comes from the resolved values themselves. Undefined for
      *  callers that don't thread it (calculator-level fixtures). */

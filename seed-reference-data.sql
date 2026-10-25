@@ -132,16 +132,11 @@ ON CONFLICT DO NOTHING;
 -- (26 CFR 1.36B-1(h)). Mirrors src/lib/config/aca-tables.ts FPL_BY_HOUSEHOLD.
 --
 -- Deliberately ONE year only (unlike the four tables above, which carry
--- 2025 + 2026). ACA-aware projections anchor on the current year forward
--- and everyone modelled is under 65, so a coverage year earlier than the
--- projection start is unreachable in practice. A profile pinned (via
--- retirement_profiles.tax_params_year) to a year with no row here resolves
--- fplByHousehold => undefined and the engine falls back to the
--- FPL_BY_HOUSEHOLD config constant — safe, but that year's ACA numbers are
--- then not "that year's law". Before adding an earlier/later FPL row here,
--- also move fplGrowthFactor's anchor in decumulation-year.ts off the
--- FPL_COVERAGE_YEAR constant onto resolveTaxParams's resolved year, or the
--- data vintage and the growth anchor will disagree.
+-- 2025 + 2026). A profile pinned (retirement_profiles.tax_params_year) to
+-- a year with no row here uses the oldest complete year instead, grown
+-- from that row's own coverage year (resolveTaxParams sectionFallback +
+-- bracket-growth.ts taxTableYears). A coverage-year row published ahead of
+-- that year's IRS limits is used once those limits are seeded.
 INSERT INTO fpl_by_household (tax_year, amounts) VALUES
   (2026, '{"1": 15650, "2": 21150, "3": 26650, "4": 32150, "5": 37650, "6": 43150, "7": 48650, "8": 54150}')
 ON CONFLICT DO NOTHING;

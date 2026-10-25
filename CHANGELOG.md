@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+# v0.9
+
+## [0.9.0] - Unreleased
+
+### Fixed
+
+- **Each yearly tax table now comes from its own year.** A new year's IRS limits can arrive before that year's withholding, capital-gains, Medicare (IRMAA) or poverty-line tables. Projections used to pair the new limits with missing tables: withholding fell back to no tax at all, and the others to tables built into the app. Each table now comes from its own newest complete year and is grown forward from that year. IRMAA and poverty-line tables used to grow from a fixed year in the code, which over-inflated newer tables and under-inflated a profile pinned to an older year. A database with no withholding tables at all now stops the projection with a message, instead of taxing every withdrawal at a flat default rate.
+
 # v0.8
 
 ## [0.8.15] - 2026-10-25

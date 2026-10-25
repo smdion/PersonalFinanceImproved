@@ -187,6 +187,9 @@ async function runProjection(
     engineInput,
     result: calculateProjection(engineInput),
     taxDataYear: distributionTaxRates.taxDataYear,
+    // The brackets' own year (they can be older than the limits year).
+    taxBracketsYear:
+      distributionTaxRates.taxBracketsYear ?? distributionTaxRates.taxDataYear,
     taxParamsVersion: distributionTaxRates.taxParamsVersion,
   };
 }
@@ -324,7 +327,7 @@ export const taxOptimizationRouter = createTRPCRouter({
       return {
         rows,
         meta: {
-          bracketsThroughYear: run.taxDataYear,
+          bracketsThroughYear: run.taxBracketsYear,
           taxParamsVersion: run.taxParamsVersion,
           projectedFromYear: run.result.projectionByYear[0]?.year ?? null,
           retirementDepletionYear: run.result.retirementDepletionYear,

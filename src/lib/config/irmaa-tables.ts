@@ -10,18 +10,11 @@ import type { FilingStatusType } from "../calculators/types";
 export const MEDICARE_START_AGE = 65;
 
 /**
- * Calendar year `IRMAA_BRACKETS` below represents (see its own docblock:
- * "2026 projected thresholds"). Deliberately its OWN constant, not shared
- * with `distributionTaxRates.taxDataYear` (the ordinary tax bracket
- * table's vintage) — the two tables come from independent sources with
- * no reason to share a vintage, and Phase 1's `taxDataYear` sharing was
- * only correct there because `toOrdinaryBracketIncome`'s residual math
- * genuinely couples `standardDeduction` and `taxBrackets` (see
- * `bracket-growth.ts`'s `growWithholdingBrackets` docblock). IRMAA has no
- * such coupling; borrowing another table's vintage would silently
- * mis-grow this one whenever the two tables' real vintages drift apart
- * (`tests/config/tax-freshness.test.ts` already tracks known DB/seed
- * mislabeling for exactly this reason).
+ * Calendar year `IRMAA_BRACKETS` below represents. The engine grows this
+ * built-in table from this year only when the database has no complete
+ * IRMAA year; database rows grow from their own year (bracket-growth.ts
+ * `taxTableYears`). Every yearly table grows from its own year — none
+ * borrows another's.
  */
 export const IRMAA_DATA_YEAR = 2026;
 

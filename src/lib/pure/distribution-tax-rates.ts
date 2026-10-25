@@ -32,6 +32,9 @@ export type DistributionTaxRateInput = {
   irmaaBracketData: ResolvedTax["irmaaByStatus"];
   fplByHousehold: ResolvedTax["fplByHousehold"];
   latestTaxYear: number;
+  /** The year each table came from (resolveTaxParams `sectionYears`);
+   *  undefined = every table is `latestTaxYear`'s. */
+  sectionYears?: ResolvedTax["sectionYears"];
   taxParamsVersion: ResolvedTax["version"];
   accumulationExpenses: number;
   decumulationExpenses: number;
@@ -47,6 +50,7 @@ export function buildDistributionTaxRates({
   irmaaBracketData,
   fplByHousehold,
   latestTaxYear,
+  sectionYears,
   taxParamsVersion,
   accumulationExpenses,
   decumulationExpenses,
@@ -189,6 +193,18 @@ export function buildDistributionTaxRates({
     ltcgBrackets: ltcgBracketData,
     irmaaBrackets: irmaaBracketData,
     fplByHousehold: fplByHousehold,
+    // Each table's own year, set exactly when the table is (taxTableYears).
+    taxBracketsYear:
+      bracketData.length > 0
+        ? (sectionYears?.withholding ?? latestTaxYear)
+        : undefined,
+    ltcgBracketsYear: ltcgBracketData
+      ? (sectionYears?.ltcg ?? latestTaxYear)
+      : undefined,
+    irmaaBracketsYear: irmaaBracketData
+      ? (sectionYears?.irmaa ?? latestTaxYear)
+      : undefined,
+    fplYear: fplByHousehold ? (sectionYears?.fpl ?? latestTaxYear) : undefined,
     taxMultiplier: taxMult,
     grossUpForTaxes: settings.grossUpForTaxes,
     rothBracketTarget: toNumber(settings.rothBracketTarget ?? "0.12"),

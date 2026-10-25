@@ -35,8 +35,13 @@
  * higher).
  */
 import type { WithholdingBracket } from "./tax-estimation";
-import { LTCG_BRACKETS } from "../../config/tax-tables";
-import { IRMAA_BRACKETS, type IrmaaBracket } from "../../config/irmaa-tables";
+import { LTCG_BRACKETS, LTCG_DATA_YEAR } from "../../config/tax-tables";
+import {
+  IRMAA_BRACKETS,
+  IRMAA_DATA_YEAR,
+  type IrmaaBracket,
+} from "../../config/irmaa-tables";
+import { FPL_COVERAGE_YEAR } from "../../config/aca-tables";
 
 /**
  * The exponent every grow* helper below expects: years between the
@@ -54,13 +59,14 @@ export function taxGrowthYears(
   return Math.max(0, year - taxDataYear);
 }
 
-/** `(1 + inflationRate) ^ taxGrowthYears(...)` — the one factor every
- *  grow* helper below applies. Compute ONCE per year and reuse across
- *  every threshold that needs it (RULES.md single-computation-path) —
- *  never derive it twice, and never grow `standardDeduction` and
- *  `taxBrackets` by two different factors: `toOrdinaryBracketIncome`'s
- *  residual math (`tax-estimation.ts`) is only scale-consistent when both
- *  share the identical factor. */
+/** `(1 + inflationRate) ^ taxGrowthYears(...)` — the factor the grow*
+ *  helpers below apply, one per table per year (RULES.md
+ *  single-computation-path). Each table grows from its own year
+ *  (`taxTableYears`); when `standardDeduction` and `taxBrackets` share a
+ *  year they share the identical factor, and when they don't, each grown
+ *  value still estimates year y's real figure, so
+ *  `toOrdinaryBracketIncome`'s residual (`tax-estimation.ts`) stays
+ *  correct. */
 export function taxGrowthFactor(
   year: number,
   taxDataYear: number | undefined,
@@ -201,4 +207,49 @@ export function growIrmaaBrackets(
     }));
   }
   return grown;
+}
+
+/**
+ * The year each yearly tax table grows from — paired with the table, so a
+ * table and its year can't drift: the database rows' own year when the
+ * database supplied the table, else the built-in table's year
+ * (`LTCG_DATA_YEAR`, `IRMAA_DATA_YEAR`, `FPL_COVERAGE_YEAR`). The standard
+ * deduction grows from `taxDataYear` (the limits year).
+ */
+export function taxTableYears(taxRates: {
+  taxDataYear?: number;
+  taxBrackets?: unknown;
+  taxBracketsYear?: number;
+  ltcgBrackets?: unknown;
+  ltcgBracketsYear?: number;
+  irmaaBrackets?: unknown;
+  irmaaBracketsYear?: number;
+  fplByHousehold?: unknown;
+  fplYear?: number;
+}): {
+  standardDeduction: number | undefined;
+  brackets: number | undefined;
+  ltcg: number | undefined;
+  irmaa: number;
+  fpl: number;
+} {
+  return {
+    standardDeduction: taxRates.taxDataYear,
+    brackets: taxRates.taxBracketsYear ?? taxRates.taxDataYear,
+    // A database table with no year given grows from the limits year. A
+    // caller that threads no tax years at all (`taxDataYear` undefined)
+    // means "treat the tax data as current" — no growth, as documented on
+    // `taxDataYear`.
+    ltcg: taxRates.ltcgBrackets
+      ? (taxRates.ltcgBracketsYear ?? taxRates.taxDataYear)
+      : taxRates.taxDataYear === undefined
+        ? undefined
+        : LTCG_DATA_YEAR,
+    irmaa: taxRates.irmaaBrackets
+      ? (taxRates.irmaaBracketsYear ?? IRMAA_DATA_YEAR)
+      : IRMAA_DATA_YEAR,
+    fpl: taxRates.fplByHousehold
+      ? (taxRates.fplYear ?? FPL_COVERAGE_YEAR)
+      : FPL_COVERAGE_YEAR,
+  };
 }

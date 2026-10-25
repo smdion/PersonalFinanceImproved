@@ -384,9 +384,22 @@ export async function buildEnginePayload(
       fpl: allFplByHousehold,
     },
     requestedTaxYear,
-    { onMissing: "nearest" },
+    // Each table from its own newest complete year (a new year's limits
+    // can land before its withholding/IRMAA/FPL tables) — the engine grows
+    // each from that year.
+    { onMissing: "nearest", sectionFallback: true },
   );
   const latestTaxYear = resolvedTax.resolvedYear;
+  for (const section of resolvedTax.missing ?? []) {
+    // No complete year at all — an emptied table (a restore reseeds it).
+    // Withholding has no built-in fallback: a projection without it would
+    // silently tax every withdrawal at the flat default rate.
+    if (section === "withholding")
+      throw new Error(
+        "Tax data is missing: no complete year of withholding tables (Settings → Reference Data → Tax Brackets).",
+      );
+    log("warn", "tax_section_missing", { section, year: latestTaxYear });
+  }
 
   // Same shapes the engine already consumed — the diff is "swap the
   // source, not the shape". `?? []` / `undefined` fall-backs are
@@ -1031,6 +1044,7 @@ export async function buildEnginePayload(
     irmaaBracketData,
     fplByHousehold: resolvedTax.fplByHousehold,
     latestTaxYear,
+    sectionYears: resolvedTax.sectionYears,
     taxParamsVersion: resolvedTax.version,
     accumulationExpenses,
     decumulationExpenses,

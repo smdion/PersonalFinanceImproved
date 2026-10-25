@@ -63,6 +63,11 @@ export function toLtcgTaxableIncome(
   return Math.max(0, grossOrdinaryIncome - (standardDeduction ?? 0));
 }
 
+/** Calendar year `LTCG_BRACKETS` below represents (Rev. Proc. 2025-32). The
+ *  engine grows this built-in table from this year when the database has
+ *  no complete LTCG year (bracket-growth.ts `taxTableYears`). */
+export const LTCG_DATA_YEAR = 2026;
+
 /** 2026 LTCG brackets by filing status (thresholds adjusted annually for inflation). */
 export const LTCG_BRACKETS: Record<FilingStatusType, LtcgBracket[]> = {
   MFJ: [

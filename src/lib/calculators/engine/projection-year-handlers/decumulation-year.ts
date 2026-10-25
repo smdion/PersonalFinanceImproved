@@ -45,9 +45,8 @@ import {
   growWithholdingBrackets,
   growLtcgBrackets,
   growIrmaaBrackets,
+  taxTableYears,
 } from "../bracket-growth";
-import { IRMAA_DATA_YEAR } from "../../../config/irmaa-tables";
-import { FPL_COVERAGE_YEAR } from "../../../config/aca-tables";
 import { resolveDecumulationConfig } from "../override-resolution";
 import { applyGrowth } from "../growth-application";
 import { computeTaxableSS, computeTaxFromSlots } from "../tax-estimation";
@@ -412,18 +411,25 @@ export function runDecumulationYear(
   // NIIT/SS-taxation thresholds are genuinely flat-nominal by law and are
   // deliberately NOT touched here.
   //
-  // Computed ONCE per year, applied everywhere `taxRates.taxBrackets`/
-  // `taxRates.standardDeduction` would otherwise be read raw below — both
-  // MUST share this identical factor (not two separately-derived numbers)
-  // or `toOrdinaryBracketIncome`'s residual math desyncs (see
-  // `growWithholdingBrackets`'s docblock).
+  // One factor per table per year, each from that table's own year
+  // (taxTableYears — the table and its year come together). The standard
+  // deduction grows from the limits year; withholding brackets from
+  // theirs. When the two share a year they share the factor; when they
+  // don't, each still estimates year y, so `toOrdinaryBracketIncome`'s
+  // residual stays correct (bracket-growth.ts).
+  const tableYears = taxTableYears(taxRates);
   const taxGrowth = taxGrowthFactor(
     year,
-    taxRates.taxDataYear,
+    tableYears.standardDeduction,
+    ctx.inflationRate,
+  );
+  const bracketGrowth = taxGrowthFactor(
+    year,
+    tableYears.brackets,
     ctx.inflationRate,
   );
   const grownTaxBrackets = taxRates.taxBrackets
-    ? growWithholdingBrackets(taxRates.taxBrackets, taxGrowth)
+    ? growWithholdingBrackets(taxRates.taxBrackets, bracketGrowth)
     : undefined;
   // Fold the IRC §63(f)(1) age-65+ additional standard deduction into
   // the base deduction BEFORE growth, so the senior amount is grown on the
@@ -493,15 +499,13 @@ export function runDecumulationYear(
   // see `growLtcgBrackets`'s docblock for why relying on each consumer's
   // own internal fallback would silently skip growth for most
   // households).
-  const grownLtcgBrackets = growLtcgBrackets(taxRates.ltcgBrackets, taxGrowth);
+  const grownLtcgBrackets = growLtcgBrackets(
+    taxRates.ltcgBrackets,
+    taxGrowthFactor(year, tableYears.ltcg, ctx.inflationRate),
+  );
 
-  // Phase 3: IRMAA brackets. Anchored on IRMAA_BRACKETS' OWN
-  // vintage (IRMAA_DATA_YEAR, irmaa-tables.ts) rather than taxGrowth's
-  // taxDataYear above -- the ordinary-bracket/LTCG tables share one
-  // vintage because they come from the same DB query and (for ordinary
-  // brackets + standard deduction) are mathematically coupled; IRMAA has
-  // neither property, so reusing taxDataYear would silently mis-grow it
-  // the day the two tables' real vintages drift apart.
+  // Phase 3: IRMAA brackets, grown from their own year (tableYears.irmaa:
+  // the database rows' year, or IRMAA_DATA_YEAR for the built-in table).
   //
   // TWO different growth factors, not one -- this is not a copy-paste
   // duplication, it answers two different questions:
@@ -517,12 +521,12 @@ export function runDecumulationYear(
   //    years of real threshold growth.
   const irmaaGrowthCheck = taxGrowthFactor(
     year,
-    IRMAA_DATA_YEAR,
+    tableYears.irmaa,
     ctx.inflationRate,
   );
   const irmaaGrowthCap = taxGrowthFactor(
     year + 2,
-    IRMAA_DATA_YEAR,
+    tableYears.irmaa,
     ctx.inflationRate,
   );
   const grownIrmaaBracketsForCheck = growIrmaaBrackets(
@@ -534,17 +538,16 @@ export function runDecumulationYear(
     irmaaGrowthCap,
   );
 
-  // Phase 4: ACA subsidy cliff (400% FPL). Own vintage
-  // anchor (FPL_COVERAGE_YEAR, aca-tables.ts) for the same reason as
-  // IRMAA above -- no coupling to taxDataYear. Single vintage (unlike
-  // IRMAA's two): ACA premium tax credits are computed on the coverage
+  // Phase 4: ACA subsidy cliff (400% FPL), grown from its own coverage
+  // year (tableYears.fpl). One factor (unlike IRMAA's two): ACA premium
+  // tax credits are computed on the coverage
   // year's OWN income, no multi-year MAGI lookback the way Medicare's
   // IRMAA has, so `checkAca` (single call site, no conversion-capping
   // analog to IRMAA's `irmaaAwareRothConversions`) just needs "this
   // year's" vintage.
   const fplGrowthFactor = taxGrowthFactor(
     year,
-    FPL_COVERAGE_YEAR,
+    tableYears.fpl,
     ctx.inflationRate,
   );
 
