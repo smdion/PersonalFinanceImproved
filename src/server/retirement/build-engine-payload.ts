@@ -663,6 +663,16 @@ export async function buildEnginePayload(
   const ruleOf55OverrideByPerson = new Map(
     perPersonSettings.map((p) => [p.personId, p.ruleOf55Override]),
   );
+  // When each person's still-active job ends (Rule of 55): their own
+  // planned retirement year.
+  const retirementYearByPersonId = new Map(
+    perPersonSettings.flatMap((ps) => {
+      const birthYear = birthYearByPersonId.get(ps.personId);
+      return birthYear != null
+        ? [[ps.personId, birthYear + ps.retirementAge] as const]
+        : [];
+    }),
+  );
   const individualAccounts = buildIndividualAccounts({
     allJobs,
     jobLinkRows,
@@ -672,6 +682,7 @@ export async function buildEnginePayload(
     asOfDate,
     taxBucketBreakdown,
     birthYearByPersonId,
+    retirementYearByPersonId,
     ruleOf55OverrideByPerson,
     rmdTarget,
   });

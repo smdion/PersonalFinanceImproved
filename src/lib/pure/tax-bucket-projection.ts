@@ -192,14 +192,20 @@ export function projectRuleOf55(
      *  view (tax-bucket-analysis.ts) — this is a forecasting assumption
      *  about a future year, not a correction to today's real status. */
     forceIneligible?: boolean;
+    /** The year the account's owner plans to retire. A still-active job
+     *  ends no later than that — someone who retires at 50 has separated
+     *  at 50, not in whichever later year is being projected, so the plan
+     *  doesn't become Rule-of-55 eligible at 55. Absent = no cap. */
+    ownerRetirementYear?: number;
   },
 ): RuleOf55Status | null {
   let projected: RuleOf55Status | null = now;
   if (now && now.source === "active") {
-    const separationYear =
-      now.knownFutureSeparationYear != null
-        ? Math.min(now.knownFutureSeparationYear, assumedYear)
-        : assumedYear;
+    const separationYear = Math.min(
+      now.knownFutureSeparationYear ?? Infinity,
+      opts?.ownerRetirementYear ?? Infinity,
+      assumedYear,
+    );
     projected = {
       eligible: isRuleOf55Eligible(separationYear, birthYear),
       separationYear,
@@ -227,9 +233,18 @@ export function computeTaxBucketProjection(input: {
    *  `projectRuleOf55`'s docblock: this is a forecasting assumption about a
    *  future year, not a correction to today's real status). */
   ruleOf55OverrideByPersonId?: Map<number, boolean>;
+  /** Each person's planned retirement year — the same figure the engine
+   *  puts on each account (`IndividualAccountInput.ownerRetirementYear`),
+   *  so both agree on when a still-active job ends. */
+  retirementYearByPersonId?: Map<number, number>;
 }): TaxBucketProjectionResult {
-  const { nowEntries, projectionByYear, people, ruleOf55OverrideByPersonId } =
-    input;
+  const {
+    nowEntries,
+    projectionByYear,
+    people,
+    ruleOf55OverrideByPersonId,
+    retirementYearByPersonId,
+  } = input;
   const peopleById = new Map(people.map((p) => [p.id, p]));
 
   const accumulationYears = projectionByYear.filter(
@@ -401,6 +416,10 @@ export function computeTaxBucketProjection(input: {
             now.ownerPersonId != null
               ? ruleOf55OverrideByPersonId?.get(now.ownerPersonId) === false
               : false,
+          ownerRetirementYear:
+            now.ownerPersonId != null
+              ? retirementYearByPersonId?.get(now.ownerPersonId)
+              : undefined,
         },
       );
       const eligible = ruleOf55?.eligible ?? false;

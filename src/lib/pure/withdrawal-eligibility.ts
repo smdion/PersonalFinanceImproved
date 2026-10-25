@@ -92,6 +92,9 @@ export type EligibilityAccountInput = {
    *  not the same as locked (the pro_rata
    *  branch below is "Rule of 55 OR 59½"). */
   ruleOf55ForceIneligible?: boolean;
+  /** The owner's planned retirement year — caps when a still-active job is
+   *  assumed to end (see `projectRuleOf55`'s `opts.ownerRetirementYear`). */
+  ownerRetirementYear?: number;
   /** Household is fine paying the penalty on THIS account if it avoids an
    *  otherwise-real shortfall. Only ever `true` when set — see
    *  `IndividualAccountInput.allowPenalizedWithdrawals`'s docblock
@@ -343,6 +346,7 @@ export function computeWithdrawalEligibility(input: {
           birthYear,
           {
             forceIneligible: ia.ruleOf55ForceIneligible,
+            ownerRetirementYear: ia.ownerRetirementYear,
           },
         );
         const ruleOf55Eligible = projected?.eligible ?? false;

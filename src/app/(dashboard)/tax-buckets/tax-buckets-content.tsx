@@ -226,11 +226,27 @@ export function TaxBucketsContent() {
             ]),
           )
         : undefined;
+    // Each person's retirement year — the same figure the engine uses for
+    // when a still-active job ends.
+    const birthYears = new Map(data.people.map((p) => [p.id, p.birthYear]));
+    const retirementYearByPersonId =
+      "perPersonSettings" in projectionQuery.data &&
+      projectionQuery.data.perPersonSettings
+        ? new Map(
+            projectionQuery.data.perPersonSettings.flatMap((ps) => {
+              const by = birthYears.get(ps.personId);
+              return by != null && ps.retirementAge != null
+                ? [[ps.personId, by + ps.retirementAge] as const]
+                : [];
+            }),
+          )
+        : undefined;
     return computeTaxBucketProjection({
       nowEntries: data.accounts,
       projectionByYear: projectionQuery.data.result.projectionByYear,
       people: data.people,
       ruleOf55OverrideByPersonId,
+      retirementYearByPersonId,
     });
   }, [data, projectionQuery.data]);
 

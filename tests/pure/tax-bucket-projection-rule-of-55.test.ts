@@ -88,3 +88,37 @@ describe("projectRuleOf55 — forceIneligible", () => {
     expect(result?.eligible).toBe(false);
   });
 });
+
+describe("projectRuleOf55 — the owner's retirement year caps the assumed separation", () => {
+  const active: RuleOf55Status = {
+    eligible: false,
+    separationYear: null,
+    source: "active",
+    knownFutureSeparationYear: null,
+  };
+
+  it("retiring at 50 separates at 50: not eligible at 56", () => {
+    // Born 1985; retires 2035 (age 50); projected year 2041 (age 56).
+    const r = projectRuleOf55(active, 2041, 1985, {
+      ownerRetirementYear: 2035,
+    });
+    expect(r).toMatchObject({ eligible: false, separationYear: 2035 });
+  });
+
+  it("retiring in the year you turn 55 or later still qualifies", () => {
+    const r = projectRuleOf55(active, 2042, 1985, {
+      ownerRetirementYear: 2040,
+    });
+    expect(r).toMatchObject({ eligible: true, separationYear: 2040 });
+  });
+
+  it("a known earlier job end still wins", () => {
+    const r = projectRuleOf55(
+      { ...active, knownFutureSeparationYear: 2030 },
+      2042,
+      1985,
+      { ownerRetirementYear: 2040 },
+    );
+    expect(r?.separationYear).toBe(2030);
+  });
+});

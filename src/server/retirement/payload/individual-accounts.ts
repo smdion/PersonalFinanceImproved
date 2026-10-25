@@ -41,6 +41,7 @@ export function buildIndividualAccounts({
   asOfDate,
   taxBucketBreakdown,
   birthYearByPersonId,
+  retirementYearByPersonId,
   ruleOf55OverrideByPerson,
   rmdTarget,
 }: {
@@ -52,6 +53,8 @@ export function buildIndividualAccounts({
   asOfDate: Date;
   taxBucketBreakdown: ReturnType<typeof computeTaxBucketBreakdown>;
   birthYearByPersonId: ReadonlyMap<number, number>;
+  /** Each person's planned retirement year (birth year + retirement age). */
+  retirementYearByPersonId?: ReadonlyMap<number, number>;
   ruleOf55OverrideByPerson: ReadonlyMap<number, boolean | null | undefined>;
   rmdTarget: ReturnType<typeof resolveRmdExcessTarget>;
 }): IndividualAccountInput[] {
@@ -229,6 +232,10 @@ export function buildIndividualAccounts({
           ownerBirthYear:
             a.ownerPersonId != null
               ? birthYearByPersonId.get(a.ownerPersonId)
+              : undefined,
+          ownerRetirementYear:
+            a.ownerPersonId != null
+              ? retirementYearByPersonId?.get(a.ownerPersonId)
               : undefined,
           ruleOf55ForceIneligible:
             a.ownerPersonId != null &&
