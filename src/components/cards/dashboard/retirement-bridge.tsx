@@ -15,7 +15,9 @@ const BRIDGE_RELEVANT_BEFORE_AGE = 60;
 
 const LABEL = "Early-retirement bridge";
 const WHAT_IT_IS =
-  "Retiring before 59½ leaves some retirement accounts locked — drawing them costs a 10% penalty. These are the years until they open, paid from money you can reach without it (taxable savings, Roth contributions and seasoned conversions, a workplace plan under the Rule of 55). At your assumed returns.";
+  "Retiring before 59½: some retirement accounts stay locked (10% penalty to draw) until they open.";
+const HOW_JUDGED =
+  "Covered: each year's spending after Social Security is paid from money you can reach without the penalty, in your retirement projection at fixed assumed returns (no bad markets).";
 
 /** What helps, for the first reason a year fell short. */
 const SHORT_FIX: Record<NonNullable<BridgeYear["cause"]>, string> = {
@@ -27,50 +29,36 @@ const SHORT_FIX: Record<NonNullable<BridgeYear["cause"]>, string> = {
     "Not enough reachable money: build taxable savings, or start Roth conversions 5+ years before retiring.",
 };
 
+const list = (items: string[]) => items.join(" · ");
+
 /** The help tip carries the detail; the card stays a quick read. */
 function detailLines(b: Extract<Bridge, { status: "bridge" }>): string[] {
-  const lines = [WHAT_IT_IS];
+  const lines = [WHAT_IT_IS, HOW_JUDGED];
   if (b.sources.length > 0)
     lines.push(
-      `Reachable in ${b.firstYear}: ${b.sources
-        .map(
-          (s) => `${BRIDGE_SOURCE_LABELS[s.kind]} ${compactCurrency(s.amount)}`,
-        )
-        .join(", ")}.`,
+      `Reachable in ${b.firstYear}: ${list(b.sources.map((s) => `${BRIDGE_SOURCE_LABELS[s.kind]} ${compactCurrency(s.amount)}`))}`,
     );
   if (b.hsa > 0)
     lines.push(
-      `HSA ${compactCurrency(b.hsa)} not counted — penalty-free only for medical costs before 65.`,
+      `Not counted: HSA ${compactCurrency(b.hsa)} (medical only before 65)`,
     );
   if (b.unlocks.length > 0)
-    lines.push(
-      `Locked accounts open: ${b.unlocks.map((u) => `${u.name} ${u.year}`).join(", ")}.`,
-    );
-  if (b.sources.some((s) => s.kind === "workplacePlan"))
-    lines.push(
-      "Rule of 55 counts only if you leave that employer in or after the year you turn 55.",
-    );
-  if (b.strategyCut > 0)
-    lines.push(
-      `Includes ${formatCurrency(b.strategyCut, 0)} of spending cut by the withdrawal strategy's guardrails.`,
-    );
-  if (b.penaltyCost > 0)
-    lines.push(
-      `Includes ${formatCurrency(b.penaltyCost, 0)} of early-withdrawal penalties.`,
-    );
-  if (b.conversionsDuring)
-    lines.push(
+    lines.push(`Opens: ${list(b.unlocks.map((u) => `${u.name} ${u.year}`))}`);
+  const notes = [
+    b.sources.some((s) => s.kind === "workplacePlan") &&
+      "Rule of 55 needs you to leave that employer in or after the year you turn 55.",
+    b.strategyCut > 0 &&
+      `Guardrails cut ${compactCurrency(b.strategyCut)} of spending in these years.`,
+    b.penaltyCost > 0 &&
+      `Includes ${compactCurrency(b.penaltyCost)} of early-withdrawal penalties.`,
+    b.conversionsDuring &&
       "Roth conversions in these years aren't counted as reachable yet.",
-    );
-  if (b.rothBasisUncertain)
-    lines.push(
-      "A Roth basis record is out of date — the Roth amount may be understated.",
-    );
-  if (b.unownedAccounts.length > 0)
-    lines.push(
-      `No owner on ${b.unownedAccounts.join(", ")} — counted as open; set one so its age rules apply.`,
-    );
-  return lines;
+    b.rothBasisUncertain &&
+      "A Roth basis record is out of date — Roth may be understated.",
+    b.unownedAccounts.length > 0 &&
+      `No owner on ${b.unownedAccounts.join(", ")} — set one so its age rules apply.`,
+  ].filter((n): n is string => typeof n === "string");
+  return [...lines, ...notes.map((n) => `Note: ${n}`)];
 }
 
 /**
@@ -102,7 +90,7 @@ export function RetirementBridge({
     ) : null;
 
   const shortYears = b.years.filter((y) => y.short);
-  const span = `${b.years.length} yr${b.years.length === 1 ? "" : "s"} until locked accounts open (${b.firstYear}${b.lastYear > b.firstYear ? `–${b.lastYear}` : ""})`;
+  const range = `${b.firstYear}${b.lastYear > b.firstYear ? `–${b.lastYear}` : ""}`;
   const firstCause = shortYears.find((y) => y.cause)?.cause;
 
   return (
@@ -118,7 +106,9 @@ export function RetirementBridge({
           {shortYears.length ? "Short" : "Covered"}
         </span>
         <span className="text-muted text-xs">
-          {shortYears.length ? `${shortYears.length} of ${span}` : span}
+          {shortYears.length
+            ? `${shortYears.length} of ${b.years.length} yr${b.years.length === 1 ? "" : "s"} · ${range}`
+            : `${range} · until locked accounts open`}
         </span>
       </div>
       {shortYears.length > 0 && firstCause ? (
@@ -126,8 +116,8 @@ export function RetirementBridge({
       ) : (
         b.cushion && (
           <p className="text-faint text-xs">
-            Tightest: {compactCurrency(b.cushion.amount)} reachable left in{" "}
-            {b.cushion.year}
+            Tightest: {b.cushion.year}, {compactCurrency(b.cushion.amount)} to
+            spare
           </p>
         )
       )}

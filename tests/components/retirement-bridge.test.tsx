@@ -68,14 +68,12 @@ describe("RetirementBridge", () => {
     );
     expect(screen.getByText("Covered")).toBeTruthy();
     expect(
-      screen.getByText("2 yrs until locked accounts open (2044–2045)"),
+      screen.getByText("2044–2045 · until locked accounts open"),
     ).toBeTruthy();
-    expect(
-      screen.getByText("Tightest: $240k reachable left in 2044"),
-    ).toBeTruthy();
+    expect(screen.getByText("Tightest: 2044, $240k to spare")).toBeTruthy();
     const tip = screen.getByTestId("tip").textContent;
-    expect(tip).toMatch(/Reachable in 2044: Taxable brokerage \$300k/);
-    expect(tip).toMatch(/Locked accounts open: Pat 2046/);
+    expect(tip).toMatch(/Reachable in 2044: Brokerage \$300k/);
+    expect(tip).toMatch(/Opens: Pat 2046/);
   });
 
   it("short because money is locked: says so and what helps", () => {
@@ -93,9 +91,7 @@ describe("RetirementBridge", () => {
       />,
     );
     expect(screen.getByText("Short")).toBeTruthy();
-    expect(
-      screen.getByText("1 of 1 yr until locked accounts open (2044)"),
-    ).toBeTruthy();
+    expect(screen.getByText("1 of 1 yr · 2044")).toBeTruthy();
     expect(screen.getByText(/^Money is locked: retire later/)).toBeTruthy();
   });
 
