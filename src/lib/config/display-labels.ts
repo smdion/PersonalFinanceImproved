@@ -332,3 +332,16 @@ export const COMPOSITION_BUCKET_LABELS: Record<CompositionBucket, string> = {
  *  money when the household has no Retirement brokerage (rmd-excess-target). */
 export const PROJECTED_RETIREMENT_BROKERAGE_LABEL =
   "Retirement brokerage (projected)";
+
+/** Where penalty-free money sits at the start of the retirement bridge
+ *  (lib/pure/retirement-bridge.ts). */
+export const BRIDGE_SOURCE_LABELS: Record<
+  "brokerage" | "roth" | "workplacePlan" | "traditionalIra" | "other",
+  string
+> = {
+  brokerage: "Taxable brokerage",
+  roth: "Roth (contributions & seasoned conversions)",
+  workplacePlan: "Workplace plan (Rule of 55)",
+  traditionalIra: "Traditional IRA",
+  other: "Other",
+};

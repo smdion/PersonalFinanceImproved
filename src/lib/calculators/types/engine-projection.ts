@@ -469,6 +469,15 @@ export type EngineDecumulationYear = {
    *  NOT included in `taxCost` — see `ComputeTaxFromSlotsResult`'s
    *  docblock in `tax-estimation.ts`. */
   penaltyCost?: number;
+  /** What the withdrawals delivered to spend after tax and penalty
+   *  (totalWithdrawal − taxCost − penaltyCost) — compare with
+   *  `afterTaxNeed`. */
+  deliveredAfterTax?: number;
+  /** Retirement money (HSA aside) still locked by early-withdrawal rules
+   *  this year — penalty-exposed and not opted into a penalized draw
+   *  (the eligibility record's still-excluded total). Undefined without
+   *  per-account tracking. */
+  penaltyLockedStillExcluded?: number;
   /** Debug: pre-withdrawal per-account balances (what the router sees). */
   preWithdrawalAcctBal?: AccountBalances;
   /** Retirement money at end of year: every account minus the

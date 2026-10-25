@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - A row that added up before an edit still adds up after it: when you change a figure and not the gain, the gain follows. A row with a gain entered on purpose keeps it.
 - A finalized year's latest snapshot can be corrected; its Performance figures stay as they are.
 - **Tell Ledgr how your Roth IRA money gets there** — direct, or the backdoor (a traditional IRA contribution converted to the Roth) — on the Roth IRA account in the Contribution Profile or on Paycheck. The Roth IRA check then advises on what you actually do: nothing to decide when you use the backdoor (it works at any income); a warning to act now when you contribute directly close to or over the limit; no more "Direct now" nudge when you haven't contributed yet.
+- **Bridge to penalty-free money** on the dashboard's Retirement card, when you retire before 59½: the years until locked retirement money opens, the spending to cover after Social Security, whether the money you can reach without the 10% penalty covers it (and the tightest year), where that money sits (taxable brokerage, Roth contributions, a workplace plan under the Rule of 55), when each person's locked money opens, and — if it falls short — why and what helps. At your assumed returns.
 - **Recommendations say exactly what to do, using what Ledgr already knows:**
   - **Employer match** names the account and the rate that gets the full match ("raise to 6% of pay (now 4%)").
   - **IRS limits**: room filled through payroll is spread over the paychecks left this year; IRA/HSA room says it's open until the filing deadline.
@@ -45,6 +46,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Actual Budget syncs recover after an Actual upgrade.** The first request after the Actual connection starts (when it upgrades and opens the budget) now runs on its own; before, several at once broke the budget's loading and every retry repeated it.
 - **Budget syncs never create a transaction twice.** A request that creates something (YNAB or Actual) is no longer sent again after a timeout or server error — it may already have gone through; the next sync picks it up instead. Reads and updates still retry.
 - **"Uninvested cash" no longer asks you to invest $0** for a nearly empty all-cash account (such as a traditional IRA emptied by a backdoor Roth conversion): it now needs at least $100 over your target mix.
+- **The Rule of 55 isn't granted to someone who retires before 55.** The projection assumed a still-active job ended in each future year, so retiring at 50 made the workplace plan penalty-free at 55; the job now ends at the person's own planned retirement. The Tax Buckets page agrees.
+- **A recent Roth conversion is penalty-free once you're 59½** — the 5-year conversion penalty applies only under 59½; the projection kept that money locked.
 - Renaming a Contribution Profile no longer wipes its contribution values.
 - A resumed portfolio snapshot draft restores every row of an account held in several parts.
 - Dividends that stay in an account are no longer counted as paid out (they're already in the balance).
