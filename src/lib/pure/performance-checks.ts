@@ -10,6 +10,10 @@
  * per part, never pooled). Run over the same rows the rollups sum, inactive
  * ones included.
  */
+import {
+  PERF_CHECK_ROUNDING,
+  PERF_YEAR_END_SNAPSHOT_DAYS,
+} from "@/lib/constants";
 import { computeGainLoss } from "@/lib/pure/performance";
 import { roundToCents } from "@/lib/utils/math";
 
@@ -78,7 +82,8 @@ export const ownerKey = (
 ) => `${performanceAccountId}|${ownerPersonId ?? ""}`;
 
 const cents = roundToCents;
-const isGap = (n: number) => cents(n) !== 0;
+const isGap = (n: number) =>
+  Math.abs(cents(n)) > PERF_CHECK_ROUNDING + Number.EPSILON;
 const sameCents = (a: number | undefined, b: number) =>
   a !== undefined && Math.round(a * 100) === Math.round(b * 100);
 
@@ -119,7 +124,16 @@ export function performanceChecks(
     return count.get(part) === 1 ? (byPart.get(part) ?? null) : null;
   };
 
-  const snapshotFor = new Map(snapshots.map((s) => [s.year, s]));
+  // The latest year's snapshot is its current balance; an earlier year's
+  // last snapshot speaks for its ending only if taken at year end.
+  const latestYear = Math.max(...snapshots.map((s) => s.year));
+  const atYearEnd = (s: YearEndSnapshot) =>
+    s.year === latestYear ||
+    s.date >=
+      `${s.year}-12-${String(31 - PERF_YEAR_END_SNAPSHOT_DAYS).padStart(2, "0")}`;
+  const snapshotFor = new Map(
+    snapshots.filter(atYearEnd).map((s) => [s.year, s]),
+  );
   // Transfers net over the rollovers nobody has accepted as one-sided.
   const openNet = new Map<number, number>();
   const isOpenTransfer = (r: CheckRow) =>

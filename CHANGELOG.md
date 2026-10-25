@@ -8,6 +8,37 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.8
 
+## [0.8.14] - 2026-10-24
+
+### Added
+
+- **IRS contribution limits are enforced everywhere.** A 401(k), 403(b), IRA or HSA contribution set above its IRS limit now counts only up to the limit in this year's paycheck, budget and contribution summary. The retirement projection holds each person to the limit every year (limits grow over time); anything a percentage contribution carries past it is still saved in a Retirement brokerage, as before. Employer money that counts toward a limit is included, a married couple's family HSA limit is shared, an IRA can't exceed earned income, and a joint account is held to the household's remaining room.
+- **Over-limit contributions are an error to fix**: saving one is refused with the most it can be ("set it to at most 20.41% of pay"), the row shows how far over it is, and it's a top recommendation until fixed. An account with no owner, or an HSA with no coverage type, gets a prompt to set one.
+- **Performance checks.** Each account row flags figures that don't fit together — a gain that doesn't add up, a year that doesn't start where the last one ended, money moved between tracked accounts with one side missing, an ending that differs from the year's last snapshot — with what usually causes it. The year shows a count, and Finalize lists them before you lock a year.
+- **Notes, estimates and accepted gaps on Performance rows.** Add a note to an account's year, mark figures still estimated (a SimpleFIN fill marks the ones it worked out from your paycheck setup), and accept a gap that's on purpose with a reason — it stays quiet only while the gap is the one you accepted. Finalize lists what's still estimated; finalizing never clears it.
+- **Correct a past year with a preview.** Past years' figures (and every year's beginning balance) can be edited in the Performance table; saving shows everything the change moves — the row, next year's beginning (with the option to start next year at the new ending), and each year's totals — before it's saved.
+
+### Changed
+
+- **Update Performance speaks plainly**: fields are "You added", "Paid out to you", "Moved between accounts", "Fees & taxes withheld", each with help, plus tips for the account type (ESPP purchases at market value, IRA conversions aren't contributions, HSA refunds, statement totals at year end). The beginning balance is shown and editable, with "Last year ended at … — use that" when a year doesn't continue the last.
+- A row that added up before an edit still adds up after it: when you change a figure and not the gain, the gain follows. A row with a gain entered on purpose keeps it.
+- A finalized year's latest snapshot can be corrected; its Performance figures stay as they are.
+
+### Fixed
+
+- **Correcting a finalized year no longer resets lifetime totals.** An edit to a locked year now moves that year's totals and every later year's lifetime totals by exactly what changed; before, it could recompute lifetime totals from scratch and lose history from before tracking began.
+- Yearly Performance totals are rebuilt by account type, rollovers included; editing an account no longer rewrites a finalized year or stores a stray "Retirement" total.
+- A snapshot dated earlier in a year than its latest no longer overwrites that year's ending balances, and a snapshot in a finalized year leaves its figures alone.
+- Renaming a Contribution Profile no longer wipes its contribution values.
+- A resumed portfolio snapshot draft restores every row of an account held in several parts.
+- Dividends that stay in an account are no longer counted as paid out (they're already in the balance).
+
+### Internals (no user-facing changes)
+
+- Database migration adds Performance notes, estimates and accepted gaps (runs automatically; older backups restore with none).
+
+---
+
 ## [0.8.13] - 2026-10-23
 
 ### Security

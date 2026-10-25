@@ -295,6 +295,15 @@ export const PERF_BALANCE_MISMATCH_ABS = 5;
 /** Ending balance mismatch warning: relative threshold (0.01% of portfolio total). */
 export const PERF_BALANCE_MISMATCH_PCT = 0.0001;
 
+/** Performance checks: figures each stored to the cent can disagree by a
+ *  cent through rounding alone — a gap must be larger to be flagged. */
+export const PERF_CHECK_ROUNDING = 0.01;
+
+/** Performance checks: a past year's ending is compared with its last
+ *  snapshot only when that snapshot is this close to Dec 31 (an earlier
+ *  one says nothing about the year's ending). */
+export const PERF_YEAR_END_SNAPSHOT_DAYS = 7;
+
 // ---------------------------------------------------------------------------
 // Limits
 // ---------------------------------------------------------------------------

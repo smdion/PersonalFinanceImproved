@@ -235,3 +235,65 @@ describe("snapshot", () => {
     expect(performanceChecks([d1, d2], [snap([[1, 999]])]).size).toBe(0);
   });
 });
+
+describe("calibration", () => {
+  it("a one-cent gap is rounding; two cents is a gap", () => {
+    const cent = row({
+      beginningBalance: 100,
+      endingBalance: 110,
+      yearlyGainLoss: 10.01,
+    });
+    const two = row({
+      beginningBalance: 100,
+      endingBalance: 110,
+      yearlyGainLoss: 10.02,
+    });
+    const m = performanceChecks([cent, two], []);
+    expect(m.get(cent.id)).toBeUndefined();
+    expect(m.get(two.id)![0]).toMatchObject({
+      kind: "unbalanced",
+      amount: -0.02,
+    });
+  });
+
+  it("a past year's snapshot counts only near Dec 31; the latest year's always does", () => {
+    const snap = (
+      year: number,
+      date: string,
+      bal: number,
+    ): YearEndSnapshot => ({
+      year,
+      date,
+      byAccount: new Map([[1, bal]]),
+      byAccountOwner: new Map(),
+    });
+    const early = row({
+      year: 2028,
+      beginningBalance: 500,
+      endingBalance: 500,
+    });
+    const late = row({
+      year: 2029,
+      performanceAccountId: 2,
+      beginningBalance: 500,
+      endingBalance: 500,
+    });
+    const current = row({
+      year: 2030,
+      performanceAccountId: 3,
+      beginningBalance: 500,
+      endingBalance: 500,
+    });
+    const m = performanceChecks(
+      [early, late, current],
+      [
+        snap(2028, "2028-11-18", 400),
+        { ...snap(2029, "2029-12-27", 0), byAccount: new Map([[2, 400]]) },
+        { ...snap(2030, "2030-06-30", 0), byAccount: new Map([[3, 400]]) },
+      ],
+    );
+    expect(m.get(early.id)).toBeUndefined();
+    expect(kinds(m, late)).toEqual(["snapshot"]);
+    expect(kinds(m, current)).toEqual(["snapshot"]);
+  });
+});
