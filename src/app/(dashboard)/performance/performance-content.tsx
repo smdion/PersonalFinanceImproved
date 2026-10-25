@@ -778,6 +778,7 @@ export function PerformanceContent() {
             (r) =>
               r.year === currentYear && r.category !== PERF_CATEGORY_PORTFOLIO,
           )}
+          accounts={accountRows.filter((a) => a.year === currentYear)}
           onConfirm={(overrides) => {
             // Compute Portfolio override as sum of category overrides
             const portfolioOverride = {

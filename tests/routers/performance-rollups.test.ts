@@ -304,3 +304,22 @@ describe("snapshots set ending balances only when they're the year's latest", ()
     expect(row(2030, "Portfolio")!.endingBalance).toBe("700");
   });
 });
+
+describe("computeSummary carries each row's checks", () => {
+  it("a year that doesn't continue the last, and an ending off its year-end snapshot", async () => {
+    acctRow(2031, brokerage, { beginningBalance: "100", endingBalance: "100" });
+    const id = acctRow(2032, brokerage, {
+      beginningBalance: "175",
+      endingBalance: "175",
+    });
+    seedSnapshot(t.db, "2032-12-31", [
+      { performanceAccountId: brokerage, amount: "180" },
+    ]);
+    const res = await t.caller.performance.computeSummary();
+    const row = res.accountRows.find((r) => r.id === id)!;
+    expect(row.checks.map((c) => [c.kind, c.amount])).toEqual([
+      ["chain", 75],
+      ["snapshot", -5],
+    ]);
+  });
+});

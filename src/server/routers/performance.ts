@@ -73,6 +73,8 @@ import {
   syncYearRollups,
 } from "@/server/helpers/performance-rollups";
 import { finalizeRothBasisForYear } from "@/server/helpers/roth-basis";
+import { performanceChecks } from "@/lib/pure/performance-checks";
+import { loadYearEndSnapshots } from "@/server/helpers/snapshot-derivatives";
 
 const performanceAccountInput = z.object({
   institution: z.string().trim().min(1),
@@ -640,6 +642,25 @@ export const performanceRouter = createTRPCRouter({
       rowsPerAccountYear.set(k, (rowsPerAccountYear.get(k) ?? 0) + 1);
     }
 
+    // Reconciliation checks against each year's last snapshot.
+    const yearEndSnapshots = await loadYearEndSnapshots(ctx.db);
+    const checksByRow = performanceChecks(
+      accounts.map((r) => ({
+        id: r.id,
+        year: r.year,
+        performanceAccountId: r.performanceAccountId,
+        ownerPersonId: r.ownerPersonId,
+        beginningBalance: toNumber(r.beginningBalance),
+        totalContributions: toNumber(r.totalContributions),
+        yearlyGainLoss: toNumber(r.yearlyGainLoss),
+        endingBalance: toNumber(r.endingBalance),
+        distributions: toNumber(r.distributions),
+        fees: toNumber(r.fees),
+        rollovers: toNumber(r.rollovers),
+      })),
+      yearEndSnapshots,
+    );
+
     // Transform account rows — enrich with master account data + compute missing return %
     const accountRows = accounts.map((r) => {
       const master = resolveMaster(r, perfLookups);
@@ -742,6 +763,7 @@ export const performanceRouter = createTRPCRouter({
             null,
           ) ?? null,
         basisByOwner,
+        checks: checksByRow.get(r.id) ?? [],
       };
     });
 
@@ -985,6 +1007,8 @@ export const performanceRouter = createTRPCRouter({
         accounts: z.array(
           z.object({
             id: z.number().int(),
+            /** Omitted: the stored beginning stays. */
+            beginningBalance: zDecimal.optional(),
             totalContributions: zDecimal,
             employerContributions: zDecimal,
             distributions: zDecimal,
@@ -1018,6 +1042,9 @@ export const performanceRouter = createTRPCRouter({
           await tx
             .update(schema.accountPerformance)
             .set({
+              ...(acct.beginningBalance !== undefined && {
+                beginningBalance: acct.beginningBalance,
+              }),
               totalContributions: acct.totalContributions,
               employerContributions: acct.employerContributions,
               distributions: acct.distributions,

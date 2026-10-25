@@ -4,6 +4,7 @@
  */
 import { toNumber } from "@/server/helpers/transforms";
 import { sumBy, safeDivide } from "@/lib/utils/math";
+import { HALF_CENT } from "@/lib/constants";
 import { parseLocalDateOnly } from "@/lib/utils/date";
 
 /**
@@ -431,7 +432,8 @@ export function rollupDeltas(
     const a = after.get(cat) ?? zero;
     const d = { ...zero };
     for (const f of ROLLUP_FIELDS) d[f] = a[f] - b[f];
-    if (ROLLUP_FIELDS.some((f) => Math.abs(d[f]) >= 0.005)) deltas.set(cat, d);
+    if (ROLLUP_FIELDS.some((f) => Math.abs(d[f]) >= HALF_CENT))
+      deltas.set(cat, d);
   }
   return deltas;
 }

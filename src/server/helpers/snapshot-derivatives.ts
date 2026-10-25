@@ -14,10 +14,12 @@
  *    mappings. `mode: "create"` skips groups already tagged for this
  *    snapshot; `mode: "resync"` deletes the prior tag and re-posts.
  */
-import { and, eq, gt, lte } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { computeSnapshotEndingBalances } from "@/lib/pure/portfolio";
+import { ownerKey, type YearEndSnapshot } from "@/lib/pure/performance-checks";
+import { toNumber } from "@/server/helpers/transforms";
 import type { DbType } from "@/server/routers/settings/_shared";
 import {
   captureYearRollups,
@@ -25,6 +27,70 @@ import {
 } from "@/server/helpers/performance-rollups";
 import { pushSnapshotToBudgetApi } from "@/server/helpers";
 import type { PushSnapshotMode } from "@/server/helpers/budget-api-push";
+
+/**
+ * Each year's latest snapshot — the one that sets that year's ending
+ * balances. The single rule for "the year's snapshot", shared by the sync
+ * below and the Performance checks so they can't disagree.
+ */
+export async function lastSnapshotPerYear(
+  db: DbType,
+): Promise<Map<number, { id: number; date: string }>> {
+  const all = await db
+    .select({
+      id: schema.portfolioSnapshots.id,
+      date: schema.portfolioSnapshots.snapshotDate,
+    })
+    .from(schema.portfolioSnapshots);
+  const last = new Map<number, { id: number; date: string }>();
+  for (const s of all) {
+    const y = parseInt(s.date.substring(0, 4), 10);
+    const cur = last.get(y);
+    if (!cur || s.date > cur.date) last.set(y, s);
+  }
+  return last;
+}
+
+/** Each year's latest snapshot balances, per account (as the sync totals
+ *  them) and per account + person (for accounts held in parts). */
+export async function loadYearEndSnapshots(
+  db: DbType,
+): Promise<YearEndSnapshot[]> {
+  const last = await lastSnapshotPerYear(db);
+  if (last.size === 0) return [];
+  const rows = await db
+    .select({
+      snapshotId: schema.portfolioAccounts.snapshotId,
+      performanceAccountId: schema.portfolioAccounts.performanceAccountId,
+      ownerPersonId: schema.portfolioAccounts.ownerPersonId,
+      amount: schema.portfolioAccounts.amount,
+    })
+    .from(schema.portfolioAccounts)
+    .where(
+      inArray(
+        schema.portfolioAccounts.snapshotId,
+        Array.from(last.values(), (v) => v.id),
+      ),
+    );
+  return Array.from(last, ([year, snap]) => {
+    const own = rows.filter((a) => a.snapshotId === snap.id);
+    const byAccountOwner = new Map<string, number>();
+    for (const a of own)
+      if (a.performanceAccountId != null) {
+        const k = ownerKey(a.performanceAccountId, a.ownerPersonId);
+        byAccountOwner.set(
+          k,
+          (byAccountOwner.get(k) ?? 0) + toNumber(a.amount),
+        );
+      }
+    return {
+      year,
+      date: snap.date,
+      byAccount: computeSnapshotEndingBalances(own),
+      byAccountOwner,
+    };
+  });
+}
 
 /**
  * Re-derive `account_performance.ending_balance` for the snapshot's year
@@ -58,17 +124,8 @@ export async function refreshSnapshotYearDerivatives(
   accounts: { performanceAccountId: number | null; amount: string }[],
 ): Promise<SnapshotPerformanceSync> {
   const snapshotYear = parseInt(snapshotDate.substring(0, 4), 10);
-  const [later] = await tx
-    .select({ id: schema.portfolioSnapshots.id })
-    .from(schema.portfolioSnapshots)
-    .where(
-      and(
-        gt(schema.portfolioSnapshots.snapshotDate, snapshotDate),
-        lte(schema.portfolioSnapshots.snapshotDate, `${snapshotYear}-12-31`),
-      ),
-    )
-    .limit(1);
-  if (later) return "earlier-snapshot";
+  const last = (await lastSnapshotPerYear(tx)).get(snapshotYear);
+  if (last && last.date > snapshotDate) return "earlier-snapshot";
   const [finalized] = await tx
     .select({ id: schema.annualPerformance.id })
     .from(schema.annualPerformance)

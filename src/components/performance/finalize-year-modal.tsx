@@ -1,12 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
-import { formatCurrency } from "@/lib/utils/format";
+import { accountDisplayName, formatCurrency } from "@/lib/utils/format";
+import { describeCheck } from "@/lib/config/performance-help";
 import {
   PERF_CATEGORY_DISPLAY_ORDER,
   type PerfCategory,
 } from "@/lib/config/display-labels";
-import type { AnnualRow } from "./types";
+import type { AccountRow, AnnualRow } from "./types";
 
 type CategoryOverride = {
   category: PerfCategory;
@@ -26,6 +27,8 @@ type CategoryOverride = {
 type FinalizeYearModalProps = {
   year: number;
   rows: AnnualRow[];
+  /** The year's account rows — their open checks are listed before locking. */
+  accounts?: AccountRow[];
   onConfirm: (overrides: CategoryOverride[]) => void;
   onCancel: () => void;
   isPending: boolean;
@@ -50,10 +53,17 @@ type FieldKey = (typeof FIELDS)[number]["key"];
 export function FinalizeYearModal({
   year,
   rows,
+  accounts = [],
   onConfirm,
   onCancel,
   isPending,
 }: FinalizeYearModalProps) {
+  const toLookAt = accounts
+    .map((a) => ({
+      a,
+      open: (a.checks ?? []).filter((c) => !c.accepted),
+    }))
+    .filter((x) => x.open.length > 0);
   // Initialize editable state from computed annual rows
   const [values, setValues] = useState<
     Record<string, Record<FieldKey, string>>
@@ -126,6 +136,31 @@ export function FinalizeYearModal({
             Review and adjust values before locking
           </p>
         </div>
+
+        {toLookAt.length > 0 && (
+          <div className="mx-6 mt-4 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+            <p className="font-semibold">
+              Before you lock {year}: these figures don&apos;t fit together
+            </p>
+            <ul className="mt-1 list-disc pl-5">
+              {toLookAt.map(({ a, open }) => (
+                <li key={a.id}>
+                  <span className="font-medium">
+                    {accountDisplayName({
+                      ...a,
+                      accountType: a.accountType ?? undefined,
+                    })}
+                  </span>
+                  : {open.map((c) => describeCheck(c).title).join("; ")}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-1">
+              Fix them in the table, or accept a gap that&apos;s on purpose.
+              Once locked, a correction to {year} carries into later years.
+            </p>
+          </div>
+        )}
 
         <div className="px-6 py-4">
           <table className="w-full text-sm">
@@ -205,7 +240,11 @@ export function FinalizeYearModal({
             disabled={isPending}
             className="rounded-md bg-amber-600 px-4 py-2 text-sm text-white transition-colors hover:bg-amber-700 disabled:opacity-50"
           >
-            {isPending ? "Finalizing..." : `Finalize ${year}`}
+            {isPending
+              ? "Finalizing..."
+              : toLookAt.length > 0
+                ? `Finalize ${year} anyway`
+                : `Finalize ${year}`}
           </button>
         </div>
       </div>

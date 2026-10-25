@@ -1,5 +1,6 @@
 import React from "react";
 import type { PerfCategory } from "@/lib/config/display-labels";
+import type { PerfCheck } from "@/lib/pure/performance-checks";
 
 export type EditingCell = {
   type: "annual" | "account" | "master" | "basis";
@@ -67,6 +68,8 @@ export type AccountRow = {
     /** False when no basis row exists yet for this person and year. */
     recorded?: boolean;
   }[];
+  /** Reconciliation checks (lib/pure/performance-checks.ts). */
+  checks?: PerfCheck[];
 };
 
 export type MasterAccount = {
@@ -156,7 +159,11 @@ export type UpdateFormRow = {
   parentCategory: string;
   accountType: string | null;
   subType: string | null;
-  beginningBalance: number;
+  /** Beginning balance as typed (starts at the stored figure). */
+  beginningBalance: string;
+  /** Last year's ending for this account (part), when this year doesn't
+   *  start there — from the row's `chain` check. */
+  previousEnding: number | null;
   /** Employee-only portion of contributions (totalContributions - employerContributions). */
   employeeContrib: string;
   employerContributions: string;
@@ -170,6 +177,7 @@ export type UpdateFormRow = {
   snapshotEndingBalance: number | null;
   /** Original DB values at form open, for "was" hints. */
   original: {
+    beginningBalance: number;
     employeeContrib: number;
     employerContributions: number;
     distributions: number;

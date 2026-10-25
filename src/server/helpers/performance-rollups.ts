@@ -18,6 +18,7 @@
  */
 import { and, eq, gt } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
+import { HALF_CENT } from "@/lib/constants";
 import {
   accountTypeToPerformanceCategory,
   PERF_CATEGORY_PORTFOLIO,
@@ -326,9 +327,9 @@ async function carryLifetimeForward(
   d: Rollup,
 ): Promise<void> {
   if (
-    Math.abs(d.gainLoss) < 0.005 &&
-    Math.abs(d.contribs) < 0.005 &&
-    Math.abs(d.employer) < 0.005
+    Math.abs(d.gainLoss) < HALF_CENT &&
+    Math.abs(d.contribs) < HALF_CENT &&
+    Math.abs(d.employer) < HALF_CENT
   )
     return;
   const later = await tx

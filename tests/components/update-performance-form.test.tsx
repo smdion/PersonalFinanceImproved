@@ -31,6 +31,10 @@ let batchMutationState: {
 
 let suggestionData: unknown = undefined;
 
+vi.mock("@/components/ui/help-tip", () => ({
+  HelpTip: () => null,
+}));
+
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     investments: {
@@ -253,8 +257,8 @@ describe("UpdatePerformanceForm", () => {
         onSaved={vi.fn()}
       />,
     );
-    // Fidelity's row comes first; its first field is Employee Contrib.
-    fireEvent.change(screen.getAllByRole("spinbutton")[0]!, {
+    // Fidelity's row comes first; after Beginning comes You added.
+    fireEvent.change(screen.getAllByRole("spinbutton")[1]!, {
       target: { value: "10500" },
     });
     fireEvent.click(
@@ -360,6 +364,47 @@ describe("UpdatePerformanceForm", () => {
     const acct2 = accounts.find((a) => a.id === 2)!;
     expect(acct2.endingBalance).toBe("50000.00");
     expect(acct2.yearlyGainLoss).toBe("-500.00");
+  });
+
+  it("a year that doesn't start where the last ended: one click starts it there, and the gain follows", () => {
+    const rows: AccountRow[] = accountRows.map((r) =>
+      r.id === 1
+        ? {
+            ...r,
+            checks: [
+              {
+                kind: "chain",
+                amount: 75,
+                previousYear: 2025,
+                previousEnding: 99925,
+                accepted: false,
+              },
+            ],
+          }
+        : r,
+    );
+    render(
+      <UpdatePerformanceForm
+        currentYear={2026}
+        accountRows={rows}
+        onClose={vi.fn()}
+        onSaved={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(/Last year ended at \$99,925\.00/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Use that" }));
+    expect(screen.queryByText(/Last year ended at/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
+    const { accounts } = batchMutate.mock.calls[0][0] as {
+      accounts: {
+        id: number;
+        beginningBalance: string;
+        yearlyGainLoss: string;
+      }[];
+    };
+    const acct1 = accounts.find((a) => a.id === 1)!;
+    expect(acct1.beginningBalance).toBe("99925.00");
+    expect(acct1.yearlyGainLoss).toBe("3125.00"); // 3,050 + the 75
   });
 
   it("overrides the computed gain/loss with a manual value and submits that instead", () => {

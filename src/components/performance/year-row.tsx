@@ -19,6 +19,7 @@ import {
   tracksCostBasis,
   tracksRothBasis,
 } from "@/lib/config/account-types";
+import { CheckBadge } from "./check-badge";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import type { AccountRow, YearRowProps } from "./types";
@@ -101,6 +102,10 @@ export function YearRow({
     (a) => a.conversionBasis ?? 0,
   );
   const isEditable = canEdit;
+  const openChecks = accounts.reduce(
+    (n, a) => n + (a.checks ?? []).filter((c) => !c.accepted).length,
+    0,
+  );
   const isEditingAnnual = (field: string) =>
     editingCell?.type === "annual" &&
     editingCell.id === row.id &&
@@ -138,6 +143,15 @@ export function YearRow({
             {row.isCurrentYear && (
               <Badge color="blue" className="rounded-full">
                 In Progress
+              </Badge>
+            )}
+            {!onlyBasis && openChecks > 0 && (
+              <Badge
+                color="amber"
+                className="rounded-full"
+                title="Figures that don't fit together — expand the year and hover the ⚠ on an account"
+              >
+                {openChecks} to check
               </Badge>
             )}
           </span>
@@ -399,6 +413,7 @@ export function YearRow({
                         accountType: a.accountType ?? undefined,
                       })}
                     </span>
+                    {!onlyBasis && <CheckBadge checks={a.checks ?? []} />}
                   </span>
                 </td>
                 {!onlyBasis && (
