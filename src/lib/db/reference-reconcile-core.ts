@@ -198,6 +198,26 @@ export function sameReferenceValue(
   return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
 }
 
+/** Where a reconcile's figures come from: the file shipped with this
+ *  version, or a community update an admin approved. */
+export type RefMode = "seed" | "community";
+
+/** One figure the reconcile added or changed (notes-only changes aren't
+ *  listed). `key` names the row, e.g. "2026|ira_limit". */
+export type RefChange = {
+  table: string;
+  key: string;
+  kind: "insert" | "update";
+  from: unknown;
+  to: unknown;
+};
+
+export type RefResult = {
+  inserted: number;
+  updated: number;
+  changes: RefChange[];
+};
+
 function rowKey(keyVals: unknown[]): string {
   return keyVals
     .map((v) => (typeof v === "boolean" ? (v ? "1" : "0") : String(v)))
@@ -218,11 +238,16 @@ function rowKey(keyVals: unknown[]): string {
  * 4. Missing rows are added. `tax_params` takes a higher revision.
  * 5. A household-started year past the file's newest gets any figure it
  *    lacks, carried forward from the newest shipped year.
+ *
+ * `community` mode (an approved community update) never runs step 1 — an
+ * outside file must not reclassify the household's rows — writes only
+ * rows whose value changes, and marks them `community`.
  */
 function* reconcileSteps(
   dialect: RefDialect,
   file: TaxDataFile,
-): Generator<RefStep, { inserted: number; updated: number }, Rows> {
+  mode: RefMode,
+): Generator<RefStep, RefResult, Rows> {
   const query = (sql: string, params: unknown[] = []) => ({ sql, params });
   if (file.formatVersion > TAX_DATA_FORMAT_VERSION)
     throw new Error(
@@ -234,6 +259,7 @@ function* reconcileSteps(
     r.json ? JSON.stringify(r.value) : String(r.value);
   let inserted = 0;
   let updated = 0;
+  const changes: RefChange[] = [];
 
   for (const [y, data] of Object.entries(file.years)) {
     const [current] = yield query(
@@ -282,17 +308,25 @@ function* reconcileSteps(
             ...keyParams,
             write(r),
             ...(r.notes !== undefined ? [r.notes] : []),
-            "seed",
+            mode,
             file.dataVersion,
           ],
         );
         inserted++;
+        changes.push({
+          table,
+          key: rowKey(r.keyVals),
+          kind: "insert",
+          from: null,
+          to: r.value,
+        });
         continue;
       }
       let origin = String(row.origin);
       let version = Number(row.source_version ?? 0);
       const holdsShipped = sameReferenceValue(row[r.valueCol], r.value, r.json);
       if (
+        mode === "seed" &&
         origin === "user" &&
         row.confirmed_at == null &&
         (holdsShipped ||
@@ -308,17 +342,27 @@ function* reconcileSteps(
         ((origin === "seed" || origin === "community") &&
           version < file.dataVersion);
       if (!behind) continue;
+      if (mode === "community" && holdsShipped) continue;
       const where = r.keyCols.map((c) => `${c} = ?`).join(" AND ");
       yield query(
-        `UPDATE ${table} SET ${r.valueCol} = ?, ${r.notes !== undefined ? "notes = ?, " : ""}origin = 'seed', source_version = ?, confirmed_at = NULL WHERE ${where}`,
+        `UPDATE ${table} SET ${r.valueCol} = ?, ${r.notes !== undefined ? "notes = ?, " : ""}origin = ?, source_version = ?, confirmed_at = NULL WHERE ${where}`,
         [
           write(r),
           ...(r.notes !== undefined ? [r.notes] : []),
+          mode,
           file.dataVersion,
           ...keyParams,
         ],
       );
       updated++;
+      if (!holdsShipped)
+        changes.push({
+          table,
+          key: rowKey(r.keyVals),
+          kind: "update",
+          from: row[r.valueCol],
+          to: r.value,
+        });
     }
   }
 
@@ -347,9 +391,16 @@ function* reconcileSteps(
           [year, type, String(l.value), l.notes ?? l.source],
         );
         inserted++;
+        changes.push({
+          table: "contribution_limits",
+          key: rowKey([year, type]),
+          kind: "insert",
+          from: null,
+          to: l.value,
+        });
       }
   }
-  return { inserted, updated };
+  return { inserted, updated, changes };
 }
 
 /** Reconcile through an async driver. */
@@ -357,8 +408,9 @@ export async function reconcileReferenceRows(
   run: RefQuery,
   dialect: RefDialect,
   file: TaxDataFile,
-): Promise<{ inserted: number; updated: number }> {
-  const steps = reconcileSteps(dialect, file);
+  mode: RefMode = "seed",
+): Promise<RefResult> {
+  const steps = reconcileSteps(dialect, file, mode);
   let next = steps.next();
   while (!next.done)
     next = steps.next(await run(next.value.sql, next.value.params));
@@ -369,8 +421,9 @@ export async function reconcileReferenceRows(
 export function reconcileReferenceRowsSync(
   run: RefQuerySync,
   file: TaxDataFile,
-): { inserted: number; updated: number } {
-  const steps = reconcileSteps("sqlite", file);
+  mode: RefMode = "seed",
+): RefResult {
+  const steps = reconcileSteps("sqlite", file, mode);
   let next = steps.next();
   while (!next.done) next = steps.next(run(next.value.sql, next.value.params));
   return next.value;

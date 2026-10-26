@@ -99,7 +99,7 @@ describe("reconcile", () => {
 
   it("running again changes nothing", () => {
     const db = openTestSqlite();
-    expect(reconcile(db)).toEqual({ inserted: 0, updated: 0 });
+    expect(reconcile(db)).toEqual({ inserted: 0, updated: 0, changes: [] });
   });
 
   it("an install still on a superseded figure is corrected (never classified before)", () => {
@@ -255,5 +255,107 @@ describe("the app's statement adapter", () => {
     );
     expect(q.sql).toBe("UPDATE t SET a = $1, b = $2 WHERE c = $3 AND d = $4");
     expect(q.params).toEqual([1, "x", true, 4]);
+  });
+});
+
+describe("community mode (an approved community update)", () => {
+  const community = (db: Db, file: TaxDataFile) =>
+    reconcileReferenceRowsSync(
+      (text, params) => {
+        const stmt = db.prepare(text);
+        if (stmt.reader)
+          return stmt.all(...params) as Record<string, unknown>[];
+        stmt.run(...params);
+        return [];
+      },
+      file,
+      "community",
+    );
+  /** The shipped file one version on, with one figure changed. */
+  const update = (change: (f: TaxDataFile) => void) => {
+    const f = JSON.parse(JSON.stringify(readTaxData())) as TaxDataFile;
+    f.dataVersion += 1;
+    change(f);
+    return f;
+  };
+
+  it("writes and lists only the figures whose value changes, as community", () => {
+    const db = openTestSqlite();
+    reconcile(db);
+    const f = update((f) => {
+      f.years["2026"]!.limits.ira_limit!.value = 7600;
+    });
+    const r = community(db, f);
+    expect(r.changes).toEqual([
+      {
+        table: "contribution_limits",
+        key: "2026|ira_limit",
+        kind: "update",
+        from: expect.anything(),
+        to: 7600,
+      },
+    ]);
+    expect(limit(db, 2026, "ira_limit")).toMatchObject({
+      origin: "community",
+      source_version: f.dataVersion,
+    });
+    // An unchanged figure keeps its shipped marking.
+    expect(limit(db, 2026, "ss_wage_base")).toMatchObject({ origin: "seed" });
+  });
+
+  it("never reclassifies the household's rows, even one matching a superseded value", () => {
+    const db = openTestSqlite();
+    reconcile(db);
+    // A pre-tracking household edit equal to a value the update supersedes.
+    setLimit(db, 2026, "ira_limit", 7000, "user");
+    const f = update((f) => {
+      f.years["2026"]!.limits.ira_limit!.supersedes = [7000];
+      f.years["2026"]!.limits.ira_limit!.value = 7600;
+    });
+    expect(community(db, f).changes).toEqual([]);
+    expect(limit(db, 2026, "ira_limit")).toMatchObject({
+      value: "7000",
+      origin: "user",
+    });
+  });
+
+  it("a newer shipped file wins over an older community update, never the reverse", () => {
+    const db = openTestSqlite();
+    reconcile(db);
+    const shipped = readTaxData();
+    const c = update((f) => {
+      f.years["2026"]!.limits.ira_limit!.value = 7600;
+    });
+    community(db, c);
+    // The same (older) shipped file on the next start: no downgrade.
+    reconcile(db, shipped);
+    expect(Number(limit(db, 2026, "ira_limit").value)).toBe(7600);
+    // A release with a higher dataVersion: its figure wins.
+    const newer = JSON.parse(JSON.stringify(shipped)) as TaxDataFile;
+    newer.dataVersion = c.dataVersion + 1;
+    newer.years["2026"]!.limits.ira_limit!.value = 7700;
+    reconcile(db, newer);
+    expect(limit(db, 2026, "ira_limit")).toMatchObject({ origin: "seed" });
+    expect(Number(limit(db, 2026, "ira_limit").value)).toBe(7700);
+  });
+
+  it("a preview (writes skipped) lists exactly what applying changes", () => {
+    const db = openTestSqlite();
+    reconcile(db);
+    const f = update((f) => {
+      f.years["2026"]!.limits.ira_limit!.value = 7600;
+      f.years["2026"]!.limits.ss_wage_base!.value = 190000;
+    });
+    const preview = reconcileReferenceRowsSync(
+      (text, params) =>
+        /^\s*SELECT/i.test(text)
+          ? (db.prepare(text).all(...params) as Record<string, unknown>[])
+          : [],
+      f,
+      "community",
+    );
+    expect(Number(limit(db, 2026, "ira_limit").value)).toBe(7500);
+    expect(community(db, f).changes).toEqual(preview.changes);
+    expect(preview.changes).toHaveLength(2);
   });
 });
