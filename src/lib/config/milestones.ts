@@ -257,7 +257,8 @@ export const MILESTONE_CHECKLIST_TODOS: Record<MilestoneChecklistItem, string> =
 
 export const CUSTOM_GOAL_METRICS = {
   netWorth: "Net worth",
-  liquid: "Liquid investments",
+  liquid: "Liquid investments (incl. cash)",
+  invested: "Invested (no cash)",
   retirement: "Retirement accounts",
   brokerage: "Brokerage accounts",
 } as const;

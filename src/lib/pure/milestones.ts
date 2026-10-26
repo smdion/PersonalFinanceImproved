@@ -1559,6 +1559,8 @@ function customGoalValue(metric: CustomGoalMetric, y: MilestoneYear): number {
       return y.netWorth;
     case "liquid":
       return y.liquid;
+    case "invested":
+      return y.liquid - y.cash;
     case "retirement":
       return y.retirement;
     case "brokerage":
@@ -1583,12 +1585,16 @@ function customGoal(
     (y) => customGoalValue(goal.metric, y) >= targetIn(y.year),
   );
   const nonLiquid = now.netWorth - now.liquid;
+  // Projected liquid holds today's cash flat, so invested is liquid less
+  // today's cash.
   const projected =
     goal.metric === "liquid"
       ? (y: MilestoneProjectionYear) => y.liquid
-      : goal.metric === "netWorth"
-        ? (y: MilestoneProjectionYear) => y.liquid + nonLiquid
-        : null;
+      : goal.metric === "invested"
+        ? (y: MilestoneProjectionYear) => y.liquid - now.cash
+        : goal.metric === "netWorth"
+          ? (y: MilestoneProjectionYear) => y.liquid + nonLiquid
+          : null;
   const expected =
     reachedYear === null && projected && input.projection
       ? firstProjectedYear(

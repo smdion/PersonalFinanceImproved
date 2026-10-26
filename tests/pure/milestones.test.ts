@@ -773,6 +773,32 @@ describe("custom goals", () => {
     expect(r).toMatchObject({ status: "reached", reachedYear: 2025 });
   });
 
+  it("an invested goal leaves cash out, in history and the projection", () => {
+    // Now: 300k liquid, 30k of it cash → 270k invested; 2025: 240k → 210k.
+    const reached = { ...goal, target: 230_000 };
+    expect(byId(run({ customGoals: [reached] }), "custom:g1").reachedYear).toBe(
+      2025,
+    );
+    const invested = byId(
+      run({ customGoals: [{ ...reached, metric: "invested" }] }),
+      "custom:g1",
+    );
+    expect(invested).toMatchObject({ status: "reached", reachedYear: 2026 });
+    expect(invested.value).toEqual({ kind: "currency", amount: 270_000 });
+    // Projected: 300k × 1.1^n less today's 30k cash ≥ 520k → n = 7
+    // (liquid alone gets there at n = 6).
+    const target = { ...goal, target: 520_000 };
+    expect(byId(run({ customGoals: [target] }), "custom:g1").expectedYear).toBe(
+      2032,
+    );
+    expect(
+      byId(
+        run({ customGoals: [{ ...target, metric: "invested" }] }),
+        "custom:g1",
+      ).expectedYear,
+    ).toBe(2033);
+  });
+
   it("parses stored settings, reading bad data as empty", () => {
     expect(
       parseMilestoneSettings({

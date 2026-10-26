@@ -10,6 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.9.1] - 2026-10-26
 
+### Added
+
+- **Your own goals can count invested money alone.** A new "Invested (no cash)" target leaves cash out — for a goal like an invested millionaire — with the year you reached it and when you're on pace to. The existing "Liquid investments" target is now labelled "(incl. cash)"; goals already set keep working.
+
 ### Fixed
 
 - **"Investments save harder than you" and "Money works harder than you" count what actually happened.** A past year now counts when its recorded gain (from Performance) beat that year's saving, employer money included, or that year's pay. Before, every year was judged on a napkin 8% of the balance, so a strong year could be missed and a weak one counted. This year can't count until it's over: it shows as on pace until it's finalized in Performance. Later years still use the 8% napkin math, and a milestone you reached stays reached after a weaker year.
