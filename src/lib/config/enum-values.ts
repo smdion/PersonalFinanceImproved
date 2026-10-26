@@ -313,3 +313,16 @@ export type StandInPreview = {
  *  IRA account; absent = direct. */
 export const ROTH_IRA_ROUTE_VALUES = ["direct", "backdoor"] as const;
 export type RothIraRoute = (typeof ROTH_IRA_ROUTE_VALUES)[number];
+
+// ── Debts (labels and the high-interest line per kind: lib/config/debts.ts) ──
+
+export const DEBT_KIND_VALUES = [
+  "student_loan",
+  "auto_loan",
+  "credit_card",
+  "personal_loan",
+  "medical",
+  "other",
+] as const;
+export type DebtKind = (typeof DEBT_KIND_VALUES)[number];
+export const debtKindSchema = z.enum(DEBT_KIND_VALUES);

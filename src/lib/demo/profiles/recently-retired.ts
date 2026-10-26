@@ -619,6 +619,8 @@ export const recentlyRetiredProfile: DemoProfile = {
   ],
 
   // ── Mortgages (paid-off home — empty active loans) ──────────────────────
+  debts: [],
+
   mortgageLoans: [
     {
       name: "Primary Residence",

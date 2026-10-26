@@ -113,6 +113,13 @@
       "when": 1793023622774,
       "tag": "0015_v090_utility_feed",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1793025457137,
+      "tag": "0016_v090_debts",
+      "breakpoints": true
     }
   ]
 }

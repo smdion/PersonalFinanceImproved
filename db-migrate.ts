@@ -1007,6 +1007,7 @@ const VERSION_TABLE_NAMES = [
   "performance_accounts",
   "mortgage_what_if_scenarios",
   "mortgage_extra_payments",
+  "debts",
   "retirement_settings",
   "retirement_profile_people",
   "retirement_salary_overrides",
@@ -1132,6 +1133,9 @@ export const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.9.0: utilities cost feed (category + billing lag per service, cost source per reading).
   "5dbf28830857afa5c706a3186d2038f849575e81732b8362de57d7cbd62fb34d":
     "0015_v090_utility_feed",
+  // v0.9.0: debts list (Liabilities).
+  d835e0d55fdd16f70497e222b3f5113f2f73365a24063a3d0430001b37d75534:
+    "0016_v090_debts",
 };
 
 /**

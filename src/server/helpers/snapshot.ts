@@ -30,7 +30,6 @@ import type { SalaryProfileActiveMap } from "./salary";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {
   getEffectiveCash,
-  getEffectiveCreditCardDebt,
   getEffectiveOtherAssets,
   getAnnualExpensesFromBudget,
   type BudgetTargeting,
@@ -51,6 +50,7 @@ import {
 import { sumAccounts, computeReturn } from "@/lib/pure/performance";
 import { filterActiveJobs } from "@/lib/pure/profiles";
 import { isDiscountBasisEmployerContrib } from "@/lib/config/account-types";
+import { getEffectiveOtherLiabilities } from "./debts";
 
 // ---------------------------------------------------------------------------
 // Snapshot account grouping
@@ -803,14 +803,14 @@ export async function buildYearEndHistory(
     const setting = parseAppSettings(settings);
     const { cash } = await getEffectiveCash(db, settings);
     const otherAssets = await getEffectiveOtherAssets(db, settings, asOfDate);
-    // Additive on top of the manual figure — see getEffectiveCreditCardDebt's
-    // docblock. Only computed for the CURRENT (isCurrent: true) row; a
+    // Typed figure + the debts list + mapped credit cards
+    // (server/helpers/debts.ts). Only computed for the CURRENT (isCurrent: true) row; a
     // finalized past year always reads otherLiabilities from the stored
     // net_worth_annual row instead (below), which finalizeYear (performance.ts)
     // writes with this same addition baked in at finalize time.
-    const otherLiabilities =
-      setting("current_other_liabilities", 0) +
-      (await getEffectiveCreditCardDebt(db));
+    const otherLiabilities = (
+      await getEffectiveOtherLiabilities(db, { asOf: asOfDate })
+    ).total;
 
     const mortgageBalance = computeMortgageBalance(
       mortgageLoans,

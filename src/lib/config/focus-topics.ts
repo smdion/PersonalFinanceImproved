@@ -196,7 +196,7 @@ export const FOCUS_HOMES: { [K in FocusKey]: FocusHome<K> } = {
   },
   contributionElections: { route: "/paycheck", target: "section" },
   savingsRate: { route: "/contributions", target: "page" },
-  debts: { route: "/liabilities", target: "page" },
+  debts: { route: "/liabilities", target: "section" },
   mortgage: { route: "/liabilities", target: "section" },
   brokerageGoals: { route: "/brokerage", target: "page" },
   performance: { route: "/performance", target: "page" },

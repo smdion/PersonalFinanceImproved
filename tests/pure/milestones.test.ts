@@ -17,6 +17,7 @@ import {
   type MilestoneInput,
   type MilestoneResult,
 } from "@/lib/pure/milestones";
+import type { MilestoneDebt } from "@/lib/pure/milestones";
 import {
   buildMilestoneInput,
   milestoneHoldings,
@@ -1741,6 +1742,163 @@ describe("input builders: the context recommendations use", () => {
     ).toEqual({
       TAX: true,
       PLAN: false,
+    });
+  });
+});
+
+describe("FOO steps 3 and 9 with the debts list", () => {
+  const debt = (
+    o: Partial<MilestoneDebt> & Pick<MilestoneDebt, "name" | "kind">,
+  ): MilestoneDebt => ({
+    balance: 10_000,
+    rate: 0.05,
+    ownerAge: 35,
+    open: true,
+    payoffYear: 2030,
+    never: false,
+    paidOffYear: null,
+    ...o,
+  });
+  const otherDebt = { manual: 0, creditCardMapped: 0 };
+
+  it("step 3 judges each debt against Money Guy's line for its owner's age", () => {
+    // 5.5% student loan: below the 6% line in your 20s, above 5% in your 30s.
+    const student = (ownerAge: number) =>
+      byId(
+        run({
+          debts: [
+            debt({
+              name: "Nelnet",
+              kind: "student_loan",
+              rate: 0.055,
+              ownerAge,
+            }),
+          ],
+          otherDebt,
+        }),
+        "foo3",
+      );
+    expect(student(27)).toMatchObject({
+      status: "reached",
+      headline: "No high-interest debt",
+    });
+    expect(student(33)).toMatchObject({
+      status: "behind",
+      alert: true,
+      subjects: ["Nelnet"],
+      impact: { kind: "perYear", amount: 550 },
+    });
+    expect(student(33).nextStep).toMatch(/Nelnet \(5\.5%\)/);
+  });
+
+  it("a card on the list is a balance carried at any rate; mapped cards aren't judged", () => {
+    expect(
+      byId(
+        run({
+          debts: [debt({ name: "Visa", kind: "credit_card", rate: null })],
+          otherDebt,
+        }),
+        "foo3",
+      ).status,
+    ).toBe("behind");
+    const mapped = byId(
+      run({ debts: [], otherDebt: { manual: 0, creditCardMapped: 900 } }),
+      "foo3",
+    );
+    expect(mapped).toMatchObject({
+      status: "reached",
+      headline: "No debt besides the mortgage",
+    });
+    expect(mapped.note).toMatch(/aren't judged/);
+  });
+
+  it("step 3 can't judge a debt without a rate, or debt that isn't itemized", () => {
+    expect(
+      byId(
+        run({
+          debts: [debt({ name: "Loan", kind: "personal_loan", rate: null })],
+          otherDebt,
+        }),
+        "foo3",
+      ),
+    ).toMatchObject({ status: "unknown", headline: "No rate for Loan" });
+    expect(
+      byId(
+        run({ debts: [], otherDebt: { manual: 2400, creditCardMapped: 0 } }),
+        "foo3",
+      ).headline,
+    ).toBe("$2,400.00 of other debt not itemized");
+  });
+
+  it("step 9 is debt-free in the last payoff year — mortgage or other debt", () => {
+    // run()'s mortgage is paid off in 2045.
+    expect(
+      byId(
+        run({
+          debts: [debt({ name: "Car", kind: "auto_loan", payoffYear: 2050 })],
+          otherDebt,
+        }),
+        "foo9",
+      ),
+    ).toMatchObject({
+      status: "onTrack",
+      expectedYear: 2050,
+      headline: "Debt-free 2050",
+    });
+    expect(
+      byId(
+        run({
+          debts: [debt({ name: "Car", kind: "auto_loan", payoffYear: 2028 })],
+          otherDebt,
+        }),
+        "foo9",
+      ).expectedYear,
+    ).toBe(2045);
+  });
+
+  it("step 9: a debt that never pays off is behind; one without a payment is unknown; paid-off debts are achievements", () => {
+    expect(
+      byId(
+        run({
+          debts: [
+            debt({
+              name: "Visa",
+              kind: "credit_card",
+              payoffYear: null,
+              never: true,
+            }),
+          ],
+          otherDebt,
+        }),
+        "foo9",
+      ),
+    ).toMatchObject({ status: "behind" });
+    const r = byId(
+      run({
+        debts: [
+          debt({ name: "Loan", kind: "personal_loan", payoffYear: null }),
+          debt({
+            name: "Nelnet",
+            kind: "student_loan",
+            open: false,
+            balance: 0,
+            paidOffYear: 2017,
+          }),
+        ],
+        otherDebt,
+      }),
+      "foo9",
+    );
+    expect(r.status).toBe("unknown");
+    expect(r.achievements).toEqual([{ year: 2017, label: "Paid off Nelnet" }]);
+  });
+
+  it("without the list, a mortgage plus other debt is no longer 'on track'", () => {
+    const input = makeInput();
+    input.years[2] = { ...input.years[2]!, otherLiabilities: 2_400 };
+    expect(byId(evaluateMilestones(input), "foo9")).toMatchObject({
+      status: "unknown",
+      headline: "Mortgage and other debt in progress",
     });
   });
 });

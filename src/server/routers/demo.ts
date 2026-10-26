@@ -422,6 +422,22 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     });
   }
 
+  // Debts besides the mortgage
+  for (const d of profile.debts) {
+    await db.insert(schema.debts).values({
+      name: d.name,
+      kind: d.kind,
+      ownerPersonId: d.ownerPersonName
+        ? (personIdByName.get(d.ownerPersonName) ?? null)
+        : null,
+      balance: d.balance,
+      balanceAsOf: d.balanceAsOf,
+      interestRate: d.interestRate,
+      monthlyPayment: d.monthlyPayment,
+      originalAmount: d.originalAmount,
+    });
+  }
+
   // 14. Mortgage loans
   for (const ml of profile.mortgageLoans) {
     await db.insert(schema.mortgageLoans).values({

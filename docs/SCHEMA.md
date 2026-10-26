@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**82 tables.**
+**83 tables.**
 
 ## Mermaid diagram
 
@@ -108,6 +108,9 @@ erDiagram
     int id PK
   }
   mortgage_extra_payments {
+    int id PK
+  }
+  debts {
     int id PK
   }
   property_taxes {
@@ -282,6 +285,7 @@ erDiagram
   historical_salaries }o--|| people : references
   mortgage_what_if_scenarios }o--|| mortgage_loans : references
   mortgage_extra_payments }o--|| mortgage_loans : references
+  debts }o--|| people : references
   property_taxes }o--|| mortgage_loans : references
   utility_reading }o--|| utility_service : references
   retirement_settings }o--|| people : references
@@ -331,6 +335,7 @@ erDiagram
 - **contribution_accounts** → jobs, people
 - **contribution_limits**
 - **contribution_profiles**
+- **debts** → people
 - **fpl_by_household**
 - **glide_path_allocations** → asset_class_params
 - **historical_notes**

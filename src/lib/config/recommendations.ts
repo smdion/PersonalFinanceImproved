@@ -50,8 +50,8 @@ export const MILESTONE_RECOMMENDATIONS: readonly {
   { id: "foo5", area: "paycheck" },
   { id: "savingsRate", area: "paycheck" },
   { id: "pfRetirementRate", area: "paycheck" },
-  // FOO step 3 (high-interest debt): only reached/unknown until the debts
-  // list gives it rates, so it can't surface yet — kept so it does then.
+  // FOO step 3 (high-interest debt): judged from the Liabilities debts
+  // list (each debt's rate against Money Guy's line for its owner's age).
   { id: "foo3", area: "moneyMoves" },
   { id: "goalHorizon", area: "moneyMoves" },
   { id: "moneyGuyCheckpoints", area: "moneyMoves" },

@@ -369,6 +369,8 @@ export const earlyRetirementProfile: DemoProfile = {
     { age: 75, rateOfReturn: "0.05" },
   ],
 
+  debts: [],
+
   mortgageLoans: [
     {
       name: "Condo",

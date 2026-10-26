@@ -291,6 +291,29 @@ export const debtPayoffProfile: DemoProfile = {
     { age: 80, rateOfReturn: "0.05" },
   ],
 
+  debts: [
+    {
+      name: "Student loans",
+      kind: "student_loan",
+      ownerPersonName: "Casey",
+      balance: "21400.00",
+      balanceAsOf: "2026-09-30",
+      interestRate: "0.055000",
+      monthlyPayment: "450.00",
+      originalAmount: "38000.00",
+    },
+    {
+      name: "Rewards card",
+      kind: "credit_card",
+      ownerPersonName: "Casey",
+      balance: "3200.00",
+      balanceAsOf: "2026-09-30",
+      interestRate: "0.219900",
+      monthlyPayment: "200.00",
+      originalAmount: null,
+    },
+  ],
+
   mortgageLoans: [
     {
       name: "Primary Residence",

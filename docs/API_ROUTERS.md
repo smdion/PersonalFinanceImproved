@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**379 procedures across 53 routers.**
+**385 procedures across 54 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -102,6 +102,17 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `getColumns` | query | `adminProcedure` | Get column metadata for a table.       |
 | `getRows`    | query | `adminProcedure` | Get paginated rows from a table.       |
 | `listTables` | query | `adminProcedure` | List all known tables with row counts. |
+
+## `debts`
+
+| Procedure     | Kind     | Auth                 | Description                                                                     |
+| ------------- | -------- | -------------------- | ------------------------------------------------------------------------------- |
+| `create`      | mutation | `adminProcedure`     | (no description)                                                                |
+| `delete`      | mutation | `adminProcedure`     | (no description)                                                                |
+| `list`        | query    | `protectedProcedure` | Every debt (open first), with its payoff estimate.                              |
+| `markPaidOff` | mutation | `adminProcedure`     | Paid off on `date`: the balance becomes 0 as of then; the row stays as history. |
+| `summary`     | query    | `protectedProcedure` | Other liabilities and its parts — the same figure net worth uses.               |
+| `update`      | mutation | `adminProcedure`     | (no description)                                                                |
 
 ## `demo`
 

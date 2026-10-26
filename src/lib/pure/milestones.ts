@@ -71,6 +71,8 @@ import {
 } from "@/lib/utils/format";
 import { calculateLoanMonthlyPayment, safeDivide } from "@/lib/utils/math";
 import { type HouseholdSavings } from "@/lib/pure/contributions";
+import { isHighInterestDebt } from "@/lib/config/debts";
+import type { DebtKind } from "@/lib/config/enum-values";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -233,6 +235,23 @@ export function checkpointBalance(
   return source === "moneyGuy" ? y.liquid : y.retirement;
 }
 
+/** A debt from the Liabilities list, as milestones judge it. */
+export type MilestoneDebt = {
+  name: string;
+  kind: DebtKind;
+  balance: number;
+  /** Annual rate (fraction); null when not entered. */
+  rate: number | null;
+  /** The owner's age today (the household's for a joint debt). */
+  ownerAge: number;
+  open: boolean;
+  /** Estimated payoff year at its monthly payment; null when no payment is
+   *  entered or it never pays off (`never`). */
+  payoffYear: number | null;
+  never: boolean;
+  paidOffYear: number | null;
+};
+
 export type MilestoneInput = {
   asOfYear: number;
   /** Oldest first; the last row is the current year. */
@@ -315,6 +334,11 @@ export type MilestoneInput = {
       switchable?: boolean;
     }[];
   } | null;
+  /** The Liabilities debts list; null/absent before it's loaded. */
+  debts?: MilestoneDebt[] | null;
+  /** The other-debt figures that aren't itemized: the typed lump and the
+   *  credit cards mapped from the budget. */
+  otherDebt?: { manual: number; creditCardMapped: number } | null;
   checklist: MilestoneChecklist;
   customGoals: CustomGoal[];
   /** Which income-multiple checkpoints the household follows. */
@@ -1235,20 +1259,7 @@ function foo(
     );
   }
 
-  out.push(
-    now.otherLiabilities <= 0
-      ? result("foo3", {
-          status: "reached",
-          headline: "No debt besides the mortgage",
-        })
-      : result("foo3", {
-          status: "unknown",
-          headline: `${formatCurrency(now.otherLiabilities)} of other debt`,
-          note: "Includes credit-card balances — Ledgr can't tell what's paid in full each month or what the rates are",
-          nextStep:
-            "Pay off any card balance you carry, and loans above Money Guy's age line",
-        }),
-  );
+  out.push(highInterestDebtStep(input, now));
 
   out.push({ ...efund, ...definition("foo4"), id: "foo4" });
   out.push(limitStep("foo5", input));
@@ -1266,25 +1277,153 @@ function foo(
         }),
   );
 
+  out.push(debtFreeStep(input, now));
+  return out;
+}
+
+/** FOO step 3 — high-interest debt, judged per debt against Money Guy's
+ *  line for its owner's age (lib/config/debts.ts). Card balances mapped
+ *  from the budget aren't judged (usually paid in full each month); a card
+ *  on the debts list is a balance carried. */
+function highInterestDebtStep(
+  input: MilestoneInput,
+  now: MilestoneYear,
+): MilestoneResult {
+  const debts = input.debts;
+  if (!debts)
+    return now.otherLiabilities <= 0
+      ? result("foo3", {
+          status: "reached",
+          headline: "No debt besides the mortgage",
+        })
+      : result("foo3", {
+          status: "unknown",
+          headline: `${formatCurrency(now.otherLiabilities)} of other debt`,
+          note: "Includes credit-card balances — Ledgr can't tell what's paid in full each month or what the rates are",
+          nextStep:
+            "Pay off any card balance you carry, and loans above Money Guy's age line",
+          nextStepFocus: { topic: "debts" },
+        });
+  const open = debts.filter((d) => d.open && d.balance > 0);
+  const manual = input.otherDebt?.manual ?? 0;
+  const cardsNote =
+    (input.otherDebt?.creditCardMapped ?? 0) > 0
+      ? "Card balances from your budget aren't judged — add a card you carry month to month to the debts list"
+      : null;
+  const high = open.filter(
+    (d) =>
+      (d.rate != null || d.kind === "credit_card") &&
+      isHighInterestDebt(d.kind, d.rate ?? 0, d.ownerAge),
+  );
+  if (high.length > 0) {
+    const interest = high.reduce((s, d) => s + d.balance * (d.rate ?? 0), 0);
+    const names = high.map((d) =>
+      d.rate != null ? `${d.name} (${formatPercent(d.rate, 1)})` : d.name,
+    );
+    return result("foo3", {
+      status: "behind",
+      alert: true,
+      headline: `${formatCurrency(high.reduce((s, d) => s + d.balance, 0))} of high-interest debt`,
+      note: cardsNote,
+      nextStep: `Pay off ${names.join(", ")} — above Money Guy's line for your age`,
+      nextStepFocus: { topic: "debts" },
+      subjects: high.map((d) => d.name),
+      impact: interest > 0 ? { kind: "perYear", amount: interest } : null,
+    });
+  }
+  const noRate = open.filter((d) => d.rate == null && d.kind !== "credit_card");
+  if (manual > 0 || noRate.length > 0)
+    return result("foo3", {
+      status: "unknown",
+      headline:
+        noRate.length > 0
+          ? `No rate for ${noRate.map((d) => d.name).join(", ")}`
+          : `${formatCurrency(manual)} of other debt not itemized`,
+      note: cardsNote,
+      nextStep:
+        "List each debt with its interest rate on Liabilities, so it can be judged against Money Guy's line",
+      nextStepFocus: { topic: "debts" },
+    });
+  return result("foo3", {
+    status: "reached",
+    headline:
+      open.length === 0
+        ? "No debt besides the mortgage"
+        : "No high-interest debt",
+    note: cardsNote,
+  });
+}
+
+/** FOO step 9 — debt-free: the mortgage and every other debt. The expected
+ *  year is the last payoff among them. */
+function debtFreeStep(
+  input: MilestoneInput,
+  now: MilestoneYear,
+): MilestoneResult {
   const payoffYear = input.mortgage?.payoffYear ?? null;
-  if (!owesMortgage(input, now) && now.otherLiabilities <= 0) {
-    out.push(result("foo9", { status: "reached", headline: "Debt-free" }));
-  } else if (owesMortgage(input, now)) {
-    out.push(
-      result("foo9", {
+  const mortgage = owesMortgage(input, now);
+  const debts = input.debts;
+  const achievements = (debts ?? [])
+    .filter((d) => d.paidOffYear != null)
+    .map((d) => ({ year: d.paidOffYear!, label: `Paid off ${d.name}` }));
+  if (!debts) {
+    if (!mortgage && now.otherLiabilities <= 0)
+      return result("foo9", { status: "reached", headline: "Debt-free" });
+    if (mortgage && now.otherLiabilities <= 0)
+      return result("foo9", {
         status: "onTrack",
         headline: payoffYear
           ? `Mortgage paid off ${payoffYear}`
           : "Mortgage in progress",
         expectedYear: payoffYear,
-      }),
-    );
-  } else {
-    out.push(
-      result("foo9", { status: "unknown", headline: "Other debt in progress" }),
-    );
+      });
+    return result("foo9", {
+      status: "unknown",
+      headline: mortgage
+        ? "Mortgage and other debt in progress"
+        : "Other debt in progress",
+    });
   }
-  return out;
+  const open = debts.filter((d) => d.open && d.balance > 0);
+  const manual = input.otherDebt?.manual ?? 0;
+  if (!mortgage && open.length === 0 && manual <= 0)
+    return result("foo9", {
+      status: "reached",
+      headline: "Debt-free",
+      achievements,
+    });
+  const never = open.filter((d) => d.never);
+  if (never.length > 0)
+    return result("foo9", {
+      status: "behind",
+      headline: `${never.map((d) => d.name).join(", ")} never pays off at today's payment`,
+      nextStep: "Pay more than the interest each month",
+      nextStepFocus: { topic: "debts" },
+      achievements,
+    });
+  const unknownDebt = open.some((d) => d.payoffYear == null);
+  if (manual > 0 || unknownDebt || (mortgage && payoffYear == null))
+    return result("foo9", {
+      status: "unknown",
+      headline: mortgage
+        ? "Mortgage and other debt in progress"
+        : "Other debt in progress",
+      nextStep: unknownDebt
+        ? "Add each debt's monthly payment on Liabilities to estimate when it's paid off"
+        : null,
+      nextStepFocus: unknownDebt ? { topic: "debts" } : undefined,
+      achievements,
+    });
+  const year = Math.max(
+    ...(mortgage && payoffYear != null ? [payoffYear] : []),
+    ...open.map((d) => d.payoffYear!),
+  );
+  return result("foo9", {
+    status: "onTrack",
+    headline: `Debt-free ${year}`,
+    expectedYear: year,
+    achievements,
+  });
 }
 
 /** A mortgage is still owed: the active loan, or a balance in this year's

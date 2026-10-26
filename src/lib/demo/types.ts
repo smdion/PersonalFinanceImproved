@@ -2,6 +2,7 @@ import type { PerfCategory } from "@/lib/config/display-labels";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { HsaCoverageType, TaxTreatment } from "@/lib/config/enum-values";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
+import type { DebtKind } from "@/lib/config/enum-values";
 
 /**
  * DemoProfile — complete, holistic dataset for a demo persona.
@@ -167,6 +168,18 @@ export type DemoProfile = {
   returnRates: {
     age: number;
     rateOfReturn: string;
+  }[];
+
+  /** Debts besides the mortgage (Liabilities ▸ Other debts). */
+  debts: {
+    name: string;
+    kind: DebtKind;
+    ownerPersonName: string | null;
+    balance: string;
+    balanceAsOf: string;
+    interestRate: string | null;
+    monthlyPayment: string | null;
+    originalAmount: string | null;
   }[];
 
   mortgageLoans: {

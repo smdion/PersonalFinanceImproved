@@ -49,6 +49,7 @@ import type {
   HoldingPeriodBasis,
   UtilityKind,
   UtilityUnit,
+  DebtKind,
   UtilitySource,
   StandInPreview,
   BonusDestination,
@@ -154,7 +155,7 @@ export type ExtraPaycheckRoutingData = {
 //                                    otherAssetItems, historicalNotes
 //   9.  Mortgages .................. mortgageLoans, mortgageWhatIfScenarios,
 //                                    mortgageExtraPayments, propertyTaxes,
-//                                    utilityService, utilityReading
+//                                    utilityService, utilityReading, debts
 //  10.  Retirement settings ........ retirementSettings, retirementSalaryOverrides,
 //                                    retirementBudgetOverrides, projectionOverrides,
 //                                    retirementScenarios
@@ -1335,6 +1336,40 @@ export const mortgageExtraPayments = pgTable(
       sql`(payment_date IS NOT NULL AND start_date IS NULL AND end_date IS NULL) OR (payment_date IS NULL AND start_date IS NOT NULL AND end_date IS NOT NULL)`,
     ),
   ],
+);
+
+/**
+ * Debts other than the mortgage — student and car loans, credit cards
+ * carried month to month, personal and medical debt. One row per debt, kept
+ * after it's paid off (paid_off_date) as history. Balances are what the
+ * household entered, as of `balance_as_of` — never amortized forward into
+ * net worth; the payoff estimate is computed on read
+ * (utils/math.ts `loanPayoffMonths`). A household fact, the same in every
+ * profile.
+ */
+export const debts = pgTable(
+  "debts",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    kind: text("kind").$type<DebtKind>().notNull(),
+    /** Null: joint / household. */
+    ownerPersonId: integer("owner_person_id").references(() => people.id, {
+      onDelete: "restrict",
+    }),
+    balance: decimal("balance", { precision: 14, scale: 2 }).notNull(),
+    balanceAsOf: date("balance_as_of").notNull(),
+    originalAmount: decimal("original_amount", { precision: 14, scale: 2 }),
+    /** Annual rate as a fraction (0.065 = 6.5%). */
+    interestRate: decimal("interest_rate", { precision: 8, scale: 6 }),
+    /** What the household pays each month (not the card's minimum). */
+    monthlyPayment: decimal("monthly_payment", { precision: 14, scale: 2 }),
+    openedDate: date("opened_date"),
+    paidOffDate: date("paid_off_date"),
+    notes: text("notes"),
+    sortOrder: integer("sort_order").notNull().default(0),
+  },
+  (table) => [index("debts_owner_person_id_idx").on(table.ownerPersonId)],
 );
 
 export const propertyTaxes = pgTable(

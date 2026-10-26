@@ -9,7 +9,12 @@ import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { MortgageSettings } from "@/components/mortgage/mortgage-settings";
-import { formatCurrency, maskAmountsInText } from "@/lib/utils/format";
+import {
+  budgetApiServiceLabel,
+  formatCurrency,
+  maskAmountsInText,
+} from "@/lib/utils/format";
+import { DebtsCard } from "@/components/liabilities/debts-card";
 import {
   ActiveLoanCard,
   HistoricalLoans,
@@ -26,6 +31,9 @@ export default function LiabilitiesPage() {
   const [showManageLoans, setShowManageLoans] = useState(false);
   const { data, isLoading, error } =
     trpc.mortgage.computeActiveSummary.useQuery();
+  const { data: other } = trpc.debts.summary.useQuery();
+  const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
+  const serviceLabel = budgetApiServiceLabel(syncStatus?.service);
 
   if (isLoading) {
     return (
@@ -76,17 +84,20 @@ export default function LiabilitiesPage() {
         )}
       </PageHeader>
 
-      {/* Summary Cards — only show when there are loans */}
-      {hasLoans && (
+      {/* Summary Cards — when there's a mortgage or any other debt */}
+      {(hasLoans || (other?.total ?? 0) > 0) && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Card
             title={
               <>
-                Total Liabilities {hasApiBalance && <SyncBadge source="ynab" />}
+                Total Liabilities{" "}
+                {hasApiBalance && <SyncBadge source={serviceLabel} />}
               </>
             }
           >
-            <Metric value={formatCurrency(totalMortgage)} />
+            <Metric
+              value={formatCurrency(totalMortgage + (other?.total ?? 0))}
+            />
           </Card>
           <Card title="Mortgage Balance">
             <Metric
@@ -99,7 +110,14 @@ export default function LiabilitiesPage() {
             />
           </Card>
           <Card title="Other Liabilities">
-            <Metric value={formatCurrency(0)} label="No other debts tracked" />
+            <Metric
+              value={formatCurrency(other?.total ?? 0)}
+              label={
+                (other?.total ?? 0) > 0
+                  ? "Debts, cards and other debt"
+                  : "No other debts"
+              }
+            />
           </Card>
         </div>
       )}
@@ -112,7 +130,7 @@ export default function LiabilitiesPage() {
             key={loan.name}
             className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800"
           >
-            <strong>{loan.name}</strong>: YNAB balance{" "}
+            <strong>{loan.name}</strong>: {serviceLabel} balance{" "}
             {formatCurrency(loan.apiBalance!)} vs. Calculated{" "}
             {formatCurrency(loan.calculatedBalance!)} — Difference:{" "}
             {formatCurrency(
@@ -201,6 +219,10 @@ export default function LiabilitiesPage() {
           )}
         </>
       )}
+
+      <FocusTarget topic="debts">
+        <DebtsCard />
+      </FocusTarget>
     </div>
   );
 }

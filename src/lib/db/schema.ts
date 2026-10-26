@@ -69,6 +69,7 @@ export const mortgageExtraPayments = active.mortgageExtraPayments;
 export const propertyTaxes = active.propertyTaxes;
 export const utilityService = active.utilityService;
 export const utilityReading = active.utilityReading;
+export const debts = active.debts;
 export const retirementSettings = active.retirementSettings;
 export const retirementProfiles = active.retirementProfiles;
 export const retirementProfilePeople = active.retirementProfilePeople;

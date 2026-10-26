@@ -84,6 +84,7 @@ const V08_SCHEMA_TAGS = [
   "0013_v090_tax_data_origin", // PG + SQLite: origin ('user'), source_version, confirmed_at on the five reference tables — older backups restore as 'user' and never confirmed; the reference reconcile then recognises shipped values
   "0014_v090_tax_data_updates", // PG + SQLite: tax_data_updates (not backed up) — no transform needed
   "0015_v090_utility_feed", // PG + SQLite: utility_service.budget_api_category_id / billing_lag_months (default 0), utility_reading.source (null = typed in) — older backups restore with the defaults; no transform needed
+  "0016_v090_debts", // PG + SQLite: debts table — older backups restore with no debts; no transform needed
 ] as const;
 
 /** First tags whose backups carry asset_class_buckets (PG, SQLite). */

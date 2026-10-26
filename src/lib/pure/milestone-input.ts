@@ -27,6 +27,7 @@ import {
 } from "@/lib/pure/contributions";
 import type {
   CustomGoal,
+  MilestoneDebt,
   MatchShortfall,
   MilestoneChecklist,
   MilestoneInput,
@@ -434,6 +435,8 @@ export function buildMilestoneInput(raw: {
     checklist: MilestoneChecklist;
     checkpointSource: CheckpointSource;
     savingsTargetSource: SavingsTargetSource;
+    debts?: MilestoneDebt[] | null;
+    otherDebt?: { manual: number; creditCardMapped: number } | null;
   };
   contributions: {
     people: (Omit<SavingsRatePerson, "accountTypes"> & {
@@ -619,6 +622,8 @@ export function buildMilestoneInput(raw: {
     holdings: raw.holdings ? milestoneHoldings(raw.holdings) : null,
     checklist: inputs.checklist,
     customGoals: inputs.customGoals,
+    debts: inputs.debts ?? null,
+    otherDebt: inputs.otherDebt ?? null,
     checkpointSource: inputs.checkpointSource,
     savingsTargetSource: inputs.savingsTargetSource,
     megaBackdoor: mega,
