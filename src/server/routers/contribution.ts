@@ -61,7 +61,11 @@ import type {
   ViewAwareTotals,
 } from "@/lib/pure/contributions";
 import { findActiveJob } from "@/lib/pure/profiles";
-import { capMessage, computeValue } from "@/lib/pure/contribution-caps";
+import {
+  capMessage,
+  combinedCoverage,
+  computeValue,
+} from "@/lib/pure/contribution-caps";
 import {
   capForRequest,
   loadCapHousehold,
@@ -96,6 +100,9 @@ type AccountTypeSnapshot = {
   categoryKey: string; // base config key for color lookup (e.g. 'brokerage' for all brokerage sub-types, 'espp' for ESPP)
   parentCategory: string; // 'Retirement' or 'Portfolio' — from DB parentCategory column
   limit: number;
+  /** HSA coverage behind the limit (family if any of the rows has it);
+   *  null for other types or when not set. */
+  hsaCoverageType: string | null;
   /** How much the configured contributions are over the IRS limit (the
    *  figures above already show the capped amounts). */
   overBy: number;
@@ -374,14 +381,15 @@ export const contributionRouter = createTRPCRouter({
 
       const asOfDate = new Date();
       // The IRS-limit cap pass: every figure below reads the capped value.
+      const capHousehold = await loadCapHousehold(
+        ctx.db,
+        people,
+        limitsRecord,
+        asOfDate.getFullYear(),
+      );
       const effectiveContribs = capForRequest(
         sandboxed,
-        await loadCapHousehold(
-          ctx.db,
-          people,
-          limitsRecord,
-          asOfDate.getFullYear(),
-        ),
+        capHousehold,
         effectiveJobs,
         salaryProfileActiveMap,
         effectiveSalaryMap,
@@ -1044,6 +1052,9 @@ export const contributionRouter = createTRPCRouter({
               performanceAccountIds: [...data.performanceAccountIds],
               parentCategory: data.parentCategory,
               limit,
+              hsaCoverageType: combinedCoverage(
+                typeRows.map((c) => c.hsaCoverageType ?? null),
+              ),
               overBy: roundToCents(sumBy(typeRows, (c) => c.cap?.overBy ?? 0)),
               capMessages: typeRows.flatMap((c) => {
                 const m = capMessage(c);
@@ -1322,6 +1333,7 @@ export const contributionRouter = createTRPCRouter({
           parentCategory: c.parentCategory,
           overBy: roundToCents(c.cap?.overBy ?? 0),
           capMessages: jointCapMessage ? [jointCapMessage] : [],
+          hsaCoverageType: c.hsaCoverageType ?? null,
           limit: resolveIrsLimit(
             c.accountType,
             householdAge,
@@ -1388,6 +1400,8 @@ export const contributionRouter = createTRPCRouter({
       return {
         people: results,
         limits: limitsRecord,
+        /** The cap pass's filing status — whether an HSA limit is shared. */
+        filingStatus: capHousehold.filingStatus,
         jointAccountTypes,
         jointTotals,
         priorYearWindow: inPriorYearWindow

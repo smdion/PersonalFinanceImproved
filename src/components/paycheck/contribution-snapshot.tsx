@@ -39,6 +39,7 @@ import {
   type SavingsGroup,
 } from "@/lib/pure/contributions";
 import type { AccountCategory } from "@/lib/config/account-types";
+import { HSA_FAMILY_COVERAGE } from "@/lib/config/enum-values";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
 export function ContributionSnapshot() {
@@ -368,13 +369,19 @@ export function ContributionSnapshot() {
                     p.periodsPerYear!,
                   );
                   if (!at) {
-                    // Show "Covered via X" note for household-limit categories when this person doesn't contribute directly
+                    // "Covered via X" for a household-limit category this
+                    // person doesn't contribute to — only when X's coverage
+                    // is family (a self-only HSA covers no one else).
                     const typeCfg = hasLimit
                       ? getAccountTypeConfig(categoryKey as AccountCategory)
                       : null;
                     if (typeCfg?.isHouseholdLimit) {
                       const hsaContributor = activePeople.find((op) =>
-                        op.accountTypes.some((a) => a.accountType === type),
+                        op.accountTypes.some(
+                          (a) =>
+                            a.accountType === type &&
+                            a.hsaCoverageType === HSA_FAMILY_COVERAGE,
+                        ),
                       );
                       if (hsaContributor) {
                         return (

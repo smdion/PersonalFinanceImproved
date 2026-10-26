@@ -961,7 +961,7 @@ describe("input builders", () => {
           acct("401k", 10_000, 23_500),
           acct("403b", 5_000, 23_500),
           // HSA: the IRS limit counts employer money.
-          acct("hsa", 4_000, 8_550, 5_000),
+          { ...acct("hsa", 4_000, 8_550, 5_000), hsaCoverageType: "family" },
         ],
       },
       {
@@ -974,7 +974,7 @@ describe("input builders", () => {
         ],
       },
     ];
-    expect(milestoneLimits(people, [])).toEqual([
+    expect(milestoneLimits(people, [], "MFJ")).toEqual([
       {
         fooStep5: false,
         retirement: true,
@@ -1018,6 +1018,7 @@ describe("input builders", () => {
       employeeContrib: number,
       limit: number,
       totalContrib = employeeContrib,
+      hsaCoverageType: string | null = null,
     ) => ({
       categoryKey,
       accountType: categoryKey,
@@ -1025,8 +1026,11 @@ describe("input builders", () => {
       limit,
       employeeContrib,
       totalContrib,
+      hsaCoverageType,
     });
-    expect(milestoneLimits([], [acct("hsa", 8_000, 8_750, 8_500)])).toEqual([
+    expect(
+      milestoneLimits([], [acct("hsa", 8_000, 8_750, 8_500, "family")], "MFJ"),
+    ).toEqual([
       {
         fooStep5: true,
         retirement: true,
@@ -1042,9 +1046,43 @@ describe("input builders", () => {
     expect(
       milestoneLimits(
         [{ name: "Pat", accountTypes: [acct("hsa", 1_000, 8_750)] }],
-        [acct("hsa", 7_000, 8_750)],
+        [acct("hsa", 7_000, 8_750, 7_000, "family")],
+        "MFJ",
       ),
     ).toMatchObject([{ owner: "Household", contributed: 8_000, limit: 8_750 }]);
+  });
+
+  it("two self-only HSAs are two limits, not one household limit", () => {
+    const hsa = (employeeContrib: number, hsaCoverageType: string | null) => ({
+      categoryKey: "hsa",
+      accountType: "hsa",
+      parentCategory: "Retirement",
+      limit: 4_400,
+      employeeContrib,
+      totalContrib: employeeContrib,
+      hsaCoverageType,
+    });
+    const people = [
+      { name: "Pat", accountTypes: [hsa(4_400, "self_only")] },
+      { name: "Sam", accountTypes: [hsa(2_000, "self_only")] },
+    ];
+    expect(milestoneLimits(people, [], "MFJ")).toMatchObject([
+      { owner: "Pat", contributed: 4_400, limit: 4_400 },
+      { owner: "Sam", contributed: 2_000, limit: 4_400 },
+    ]);
+    // Family coverage on either spouse makes it one shared limit (Pub 969)…
+    const family = [
+      people[0]!,
+      {
+        name: "Sam",
+        accountTypes: [{ ...hsa(2_000, "family"), limit: 8_750 }],
+      },
+    ];
+    expect(milestoneLimits(family, [], "MFJ")).toMatchObject([
+      { owner: "Household", contributed: 6_400, limit: 8_750 },
+    ]);
+    // …but only for a married couple.
+    expect(milestoneLimits(family, [], "Single")).toHaveLength(2);
   });
 
   it("a limited account with no limit entered is not enough data, not dropped", () => {

@@ -209,14 +209,39 @@ function maxEmployeeFor(p: Participant, room: number): number {
   return lo;
 }
 
-/** Family if any of the rows has it, else the first coverage given. */
+/** Family if any of the coverages is, else the first one given. */
+export function combinedCoverage(
+  coverages: readonly (string | null)[],
+): string | null {
+  if (coverages.includes(HSA_FAMILY_COVERAGE)) return HSA_FAMILY_COVERAGE;
+  return coverages.find((c) => c !== null) ?? null;
+}
+
 function personCoverage(rows: readonly CapRow[]): string | null {
-  if (rows.some((r) => r.hsaCoverageType === HSA_FAMILY_COVERAGE))
-    return HSA_FAMILY_COVERAGE;
-  return rows.find((r) => r.hsaCoverageType !== null)?.hsaCoverageType ?? null;
+  return combinedCoverage(rows.map((r) => r.hsaCoverageType));
 }
 
 const includes = (list: readonly string[], s: string) => list.includes(s);
+
+/**
+ * Whether a household-wide limit with a coverage variant (HSA) is one
+ * shared limit: married, and either spouse has family coverage (Pub 969).
+ * Otherwise each person has their own coverage's limit. The caps and
+ * Milestones both read this, so they can't disagree.
+ */
+export function sharesHouseholdLimit(
+  accountType: string,
+  filingStatus: string,
+  coverages: readonly (string | null)[],
+): boolean {
+  const cfg = getAccountTypeConfig(accountType as AccountCategory);
+  return (
+    cfg.isHouseholdLimit &&
+    !!cfg.irsLimitKeys?.coverageVariant &&
+    includes(MARRIED_FILING_STATUSES, filingStatus) &&
+    coverages.includes(HSA_FAMILY_COVERAGE)
+  );
+}
 
 type Size = { base: number; catchup: number };
 
@@ -280,7 +305,6 @@ export function capContributionsByLimitGroup(
   const reasonOf: (CapReason | null)[] = rows.map(() => null);
   const ageOf = ageMap(ctx);
   const groupLimits = new Map<string, number>();
-  const married = includes(MARRIED_FILING_STATUSES, ctx.filingStatus);
   const flag = (idx: readonly number[], reason: CapReason) =>
     idx.forEach((i) => (reasonOf[i] ??= reason));
 
@@ -319,11 +343,10 @@ export function capContributionsByLimitGroup(
     const jointCoverage = coverageMatters
       ? personCoverage(joint.map((i) => rows[i]!))
       : null;
-    const sharedFamily =
-      cfg.isHouseholdLimit &&
-      coverageMatters &&
-      married &&
-      [...coverage.values(), jointCoverage].includes(HSA_FAMILY_COVERAGE);
+    const sharedFamily = sharesHouseholdLimit(type, ctx.filingStatus, [
+      ...coverage.values(),
+      jointCoverage,
+    ]);
 
     const sizeFor = (pid: number, cov: string | null) =>
       sizeLimit(type, ageOf.get(pid) ?? null, cov, ctx.limits);
