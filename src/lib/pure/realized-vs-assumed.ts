@@ -9,6 +9,7 @@
  * linked), so a few big years don't dominate a simple average.
  */
 import { chainReturns } from "./performance";
+import { returnRateAtAge } from "./return-rate-breakpoints";
 
 export type ReturnRateRow = { age: number; rate: number };
 
@@ -18,9 +19,12 @@ export function assumedRateAt(
   age: number,
 ): number | null {
   if (rates.length === 0) return null;
-  const sorted = [...rates].sort((a, b) => a.age - b.age);
-  const floor = sorted.filter((r) => r.age <= age).at(-1);
-  return (floor ?? sorted[0]!).rate;
+  const pairs = rates.map((r) => [r.age, r.rate] as const);
+  // Before the first breakpoint, the first one's rate.
+  return (
+    returnRateAtAge(pairs, age) ??
+    [...rates].sort((a, b) => a.age - b.age)[0]!.rate
+  );
 }
 
 export type RealizedVsAssumedYear = {

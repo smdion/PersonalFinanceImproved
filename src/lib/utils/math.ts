@@ -92,6 +92,29 @@ export function calculateLoanMonthlyPayment(
 }
 
 /**
+ * Months to pay off a balance at a fixed monthly payment — the inverse of
+ * calculateLoanMonthlyPayment. `undefined` when there's no payment or no
+ * rate to go on (a missing rate is unknown, not 0%); `null` when the
+ * payment doesn't cover the interest (it never pays off). A zero balance is
+ * 0 months.
+ */
+export function loanPayoffMonths(
+  balance: number,
+  annualRate: number | null,
+  monthlyPayment: number | null,
+): number | null | undefined {
+  if (balance <= 0) return 0;
+  if (monthlyPayment == null || monthlyPayment <= 0) return undefined;
+  if (annualRate == null) return undefined;
+  const r = annualRate / 12;
+  if (r <= 0) return Math.ceil(balance / monthlyPayment - 1e-9);
+  if (monthlyPayment <= r * balance) return null;
+  return Math.ceil(
+    -Math.log(1 - (r * balance) / monthlyPayment) / Math.log(1 + r) - 1e-9,
+  );
+}
+
+/**
  * The top of a shared bar scale for shares (0–1): the largest share rounded
  * up to the next `step`, at least one step and at most 100% — so bars of
  * small shares fill the width instead of hugging the left edge.

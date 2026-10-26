@@ -1,13 +1,11 @@
-// Long-Term Capital Gains tax brackets by filing status.
-// Source: IRS Revenue Procedure 2025-32 (2026 tax year, adjusted annually).
+// Long-term capital gains tax math. The brackets themselves are yearly
+// data (tax-data/us-federal.json → `ltcg_brackets`), passed in by the
+// caller — none are built in.
 //
 // Key: LTCG brackets use total taxable income (ordinary + capital gains),
 // NOT just capital gains alone.
 
 import type { FilingStatusType } from "../calculators/types";
-
-/** LTCG bracket entry — rate applies to gains when total taxable income is below threshold. */
-type LtcgBracket = { threshold: number; rate: number };
 
 /**
  * Convert GROSS ordinary income (Traditional withdrawals + taxable SS +
@@ -17,7 +15,7 @@ type LtcgBracket = { threshold: number; rate: number };
  * every LTCG-stacking call site in the engine
  * (`withdrawal-cost-ranking.ts`'s Tier 1 0%-room calc, `tax-estimation.ts`'s
  * `computeTaxFromSlots`, `decumulation-year.ts`'s Roth-conversion-revised
- * LTCG recompute) fed `LTCG_BRACKETS`/`ltcgBrackets` a gross figure with
+ * LTCG recompute) fed `ltcgBrackets` a gross figure with
  * nothing subtracted. LTCG brackets use real IRS taxable-income thresholds
  * (see this file's header) — gross income sits ABOVE the true stacking
  * floor by roughly the household's standard deduction, so every one of
@@ -63,24 +61,25 @@ export function toLtcgTaxableIncome(
   return Math.max(0, grossOrdinaryIncome - (standardDeduction ?? 0));
 }
 
-/** 2026 LTCG brackets by filing status (thresholds adjusted annually for inflation). */
-export const LTCG_BRACKETS: Record<FilingStatusType, LtcgBracket[]> = {
-  MFJ: [
-    { threshold: 98900, rate: 0 },
-    { threshold: 613700, rate: 0.15 },
-    { threshold: Infinity, rate: 0.2 },
-  ],
-  Single: [
-    { threshold: 49450, rate: 0 },
-    { threshold: 545500, rate: 0.15 },
-    { threshold: Infinity, rate: 0.2 },
-  ],
-  HOH: [
-    { threshold: 66200, rate: 0 },
-    { threshold: 579600, rate: 0.15 },
-    { threshold: Infinity, rate: 0.2 },
-  ],
-};
+/** LTCG brackets by filing status, as stored (`ltcg_brackets`): each
+ *  threshold is that bracket's ceiling; `null` is the open top bracket. */
+export type LtcgBracketTable = Record<
+  string,
+  { threshold: number | null; rate: number }[]
+>;
+
+/** The filing status's brackets. Every complete year has every status
+ *  (resolveTaxParams), so a missing one is a caller bug — never guessed. */
+function bracketsFor(
+  brackets: LtcgBracketTable,
+  filingStatus: FilingStatusType,
+): { threshold: number; rate: number }[] {
+  const raw = brackets[filingStatus];
+  if (!raw || raw.length === 0)
+    throw new Error(`No LTCG brackets for filing status ${filingStatus}`);
+  // Normalize null thresholds to Infinity (the stored open top bracket).
+  return raw.map((b) => ({ threshold: b.threshold ?? Infinity, rate: b.rate }));
+}
 
 /**
  * Get the effective LTCG tax rate based on total taxable income and filing status.
@@ -90,28 +89,17 @@ export const LTCG_BRACKETS: Record<FilingStatusType, LtcgBracket[]> = {
  * A blended rate would be more accurate for large gains spanning brackets, but the
  * single-rate approximation is sufficient for projection purposes.
  *
- * @param dbBrackets Optional DB-loaded brackets (overrides hardcoded defaults).
- *                   Thresholds use null for Infinity (top bracket).
+ * @param brackets The year's LTCG brackets (`ltcg_brackets`, resolved).
  */
 export function getLtcgRate(
   totalTaxableIncome: number,
   filingStatus: FilingStatusType,
-  dbBrackets?: Record<string, { threshold: number | null; rate: number }[]>,
+  brackets: LtcgBracketTable,
 ): number {
-  // Use DB brackets if provided, falling back to hardcoded defaults
-  const raw = dbBrackets
-    ? dbBrackets[filingStatus]
-    : LTCG_BRACKETS[filingStatus];
-  if (!raw) return 0.15; // fallback
-  // Normalize null thresholds to Infinity (DB stores null for top bracket)
-  const brackets = raw.map((b) => ({
-    threshold: b.threshold ?? Infinity,
-    rate: b.rate,
-  }));
-  for (const b of brackets) {
-    if (totalTaxableIncome <= b.threshold) return b.rate;
-  }
-  return 0.2; // above all thresholds
+  const table = bracketsFor(brackets, filingStatus);
+  // The top bracket is open (ltcgBracketsSchema), so this always finds one.
+  return (table.find((b) => totalTaxableIncome <= b.threshold) ?? table.at(-1)!)
+    .rate;
 }
 
 /**
@@ -143,16 +131,10 @@ export function getLtcgRate(
 export function ltcgRateForNextDollar(
   taxableIncome: number,
   filingStatus: FilingStatusType,
-  dbBrackets?: Record<string, { threshold: number | null; rate: number }[]>,
+  brackets: LtcgBracketTable,
 ): number {
-  const raw = dbBrackets
-    ? dbBrackets[filingStatus]
-    : LTCG_BRACKETS[filingStatus];
-  if (!raw) return 0.15; // fallback
-  for (const b of raw) {
-    if (taxableIncome < (b.threshold ?? Infinity)) return b.rate;
-  }
-  return 0.2; // above all thresholds
+  const table = bracketsFor(brackets, filingStatus);
+  return (table.find((b) => taxableIncome < b.threshold) ?? table.at(-1)!).rate;
 }
 
 /**
@@ -174,26 +156,17 @@ export function computeLtcgTax(
   ordinaryTaxableIncome: number,
   capitalGains: number,
   filingStatus: FilingStatusType,
-  dbBrackets?: Record<string, { threshold: number | null; rate: number }[]>,
+  brackets: LtcgBracketTable,
 ): number {
   if (capitalGains <= 0) return 0;
-
-  const raw = dbBrackets
-    ? dbBrackets[filingStatus]
-    : LTCG_BRACKETS[filingStatus];
-  if (!raw) return capitalGains * 0.15; // fallback
-
-  const brackets = raw.map((b) => ({
-    threshold: b.threshold ?? Infinity,
-    rate: b.rate,
-  }));
+  const table = bracketsFor(brackets, filingStatus);
 
   let tax = 0;
   let gainsRemaining = capitalGains;
   // "floor" is the bottom of the current bracket segment for gains
   let floor = Math.max(0, ordinaryTaxableIncome);
 
-  for (const b of brackets) {
+  for (const b of table) {
     if (gainsRemaining <= 0) break;
     if (floor >= b.threshold) continue; // ordinary income already past this bracket
 
@@ -223,17 +196,10 @@ export function ltcgRoomForRate(
   targetRate: number,
   ordinaryTaxableIncome: number,
   filingStatus: FilingStatusType,
-  dbBrackets?: Record<string, { threshold: number | null; rate: number }[]>,
+  brackets: LtcgBracketTable,
 ): number {
-  const raw = dbBrackets
-    ? dbBrackets[filingStatus]
-    : LTCG_BRACKETS[filingStatus];
-  if (!raw) return 0;
-  const brackets = raw.map((b) => ({
-    threshold: b.threshold ?? Infinity,
-    rate: b.rate,
-  }));
-  for (const b of brackets) {
+  const table = bracketsFor(brackets, filingStatus);
+  for (const b of table) {
     // LTCG brackets store the bracket's OWN ceiling (unlike ordinary
     // brackets, which store the NEXT bracket's floor) — so the room for
     // staying AT `targetRate` is that bracket's own threshold, found via

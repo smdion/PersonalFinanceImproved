@@ -8,6 +8,13 @@
 import "./setup-mocks";
 import { vi, describe, it, expect } from "vitest";
 import { createTestCaller, adminSession } from "./setup";
+import { readTaxData } from "../helpers/tax-data";
+import { and, eq } from "drizzle-orm";
+import {
+  applyReferenceData,
+  reconcileTaxDataFiles,
+} from "@/lib/db/reference-data";
+import * as schema from "@/lib/db/schema-sqlite";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -23,7 +30,7 @@ describe("settings.contributionLimits", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.contributionLimits.list();
-      // The test DB carries seed-reference-data.sql (2025 + 2026).
+      // The test DB carries tax-data/us-federal.json (2025 + 2026).
       expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
@@ -162,7 +169,7 @@ describe("settings.taxBrackets", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.taxBrackets.list();
-      // The test DB carries seed-reference-data.sql (2025 + 2026).
+      // The test DB carries tax-data/us-federal.json (2025 + 2026).
       expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
@@ -264,7 +271,7 @@ describe("settings.ltcgBrackets", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.ltcgBrackets.list();
-      // The test DB carries seed-reference-data.sql (2025 + 2026).
+      // The test DB carries tax-data/us-federal.json (2025 + 2026).
       expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
@@ -346,7 +353,7 @@ describe("settings.irmaaBrackets", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.irmaaBrackets.list();
-      // The test DB carries seed-reference-data.sql (2025 + 2026).
+      // The test DB carries tax-data/us-federal.json (2025 + 2026).
       expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
@@ -445,7 +452,7 @@ describe("settings.fplByHousehold", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.fplByHousehold.list();
-      // The test DB carries seed-reference-data.sql (2025 + 2026).
+      // The test DB carries tax-data/us-federal.json (2025 + 2026).
       expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
@@ -511,6 +518,219 @@ describe("settings.fplByHousehold", () => {
           amounts: { "1": 15650, "2": 21150, "3": 26650, "4": 32150 },
         }),
       ).rejects.toThrow();
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// Where a figure came from: an edit makes it the household's only when the
+// value changes; a shipped figure is reset, never deleted.
+describe("settings.contributionLimits — provenance", () => {
+  const ira2026 = async (
+    caller: Awaited<ReturnType<typeof createTestCaller>>["caller"],
+  ) =>
+    (await caller.settings.contributionLimits.list()).find(
+      (r) => r.taxYear === 2026 && r.limitType === "ira_limit",
+    )!;
+
+  it("saving a shipped figure unchanged keeps it shipped (just confirmed)", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const row = await ira2026(caller);
+      expect(row.origin).toBe("seed");
+      await caller.settings.contributionLimits.update({
+        id: row.id,
+        taxYear: 2026,
+        limitType: "ira_limit",
+        value: "7500.00",
+        notes: row.notes,
+      });
+      const after = await ira2026(caller);
+      expect(after.origin).toBe("seed");
+      expect(after.confirmedAt).not.toBeNull();
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("changing it makes it the household's; Reset to shipped puts the shipped value back", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const row = await ira2026(caller);
+      await caller.settings.contributionLimits.update({
+        id: row.id,
+        taxYear: 2026,
+        limitType: "ira_limit",
+        value: "9000",
+        notes: row.notes,
+      });
+      expect(await ira2026(caller)).toMatchObject({ origin: "user" });
+      await caller.settings.contributionLimits.resetToShipped({ id: row.id });
+      const reset = await ira2026(caller);
+      expect(reset.origin).toBe("seed");
+      expect(Number(reset.value)).toBe(7500);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("after an approved community update: it's what Ledgr ships, Reset returns to it, and a restore re-applies it", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const update = readTaxData();
+      update.dataVersion += 1;
+      update.years["2026"]!.limits.ira_limit!.value = 7600;
+      db.insert(schema.taxDataUpdates)
+        .values({
+          dataVersion: update.dataVersion,
+          fileText: JSON.stringify(update),
+          signature: "[]",
+          status: "applied",
+        })
+        .run();
+      await applyReferenceData(db as never);
+      expect(await ira2026(caller)).toMatchObject({ origin: "community" });
+      const listed = (await caller.settings.contributionLimits.list()).find(
+        (r) => r.taxYear === 2026 && r.limitType === "ira_limit",
+      )!;
+      expect(listed.shippedValue).toBe(7600);
+
+      const row = await ira2026(caller);
+      await caller.settings.contributionLimits.update({
+        id: row.id,
+        taxYear: 2026,
+        limitType: "ira_limit",
+        value: "9000",
+        notes: row.notes,
+      });
+      await caller.settings.contributionLimits.resetToShipped({ id: row.id });
+      expect(Number((await ira2026(caller)).value)).toBe(7600);
+
+      // A restore that brings back the old shipped value: re-applied.
+      db.update(schema.contributionLimits)
+        .set({ value: "7500", origin: "seed", sourceVersion: 0 })
+        .where(
+          and(
+            eq(schema.contributionLimits.taxYear, 2026),
+            eq(schema.contributionLimits.limitType, "ira_limit"),
+          ),
+        )
+        .run();
+      await applyReferenceData(db as never);
+      expect(Number((await ira2026(caller)).value)).toBe(7600);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("applying the tax data is one transaction: a failure in the update undoes the shipped pass", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const row = await ira2026(caller);
+      db.update(schema.contributionLimits)
+        .set({ value: "7000", origin: "seed", sourceVersion: 0 })
+        .where(eq(schema.contributionLimits.id, row.id))
+        .run();
+      const bad = readTaxData();
+      bad.formatVersion = 99; // the community pass throws before writing
+      await expect(
+        reconcileTaxDataFiles(db as never, [
+          { file: readTaxData(), mode: "seed" },
+          { file: bad, mode: "community" },
+        ]),
+      ).rejects.toThrow(/format 99/);
+      // The shipped pass's correction (7000 → 7500) was rolled back.
+      expect(Number((await ira2026(caller)).value)).toBe(7000);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("a shipped figure can't be deleted; one Ledgr doesn't ship can", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const row = await ira2026(caller);
+      await expect(
+        caller.settings.contributionLimits.delete({ id: row.id }),
+      ).rejects.toThrow(/Reset to shipped/);
+      const own = await caller.settings.contributionLimits.create({
+        taxYear: 2026,
+        limitType: "roth_ira_magi_limit_mfj",
+        value: "236000",
+      });
+      await caller.settings.contributionLimits.delete({ id: own!.id });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("a +Year copy is carried forward, not the household's own", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const row = await caller.settings.contributionLimits.create({
+        taxYear: 2031,
+        limitType: "ira_limit",
+        value: "7500",
+        carried: true,
+      });
+      expect(row).toMatchObject({ origin: "carried", confirmedAt: null });
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+describe("settings.taxData", () => {
+  it("Add year copies every table forward as carried, listed to confirm", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const { copied } = await caller.settings.taxData.addYear({ year: 2031 });
+      expect(copied).toEqual({
+        contribution_limits: 2026,
+        tax_brackets: 2026,
+        ltcg_brackets: 2026,
+        irmaa_brackets: 2026,
+        fpl_by_household: 2026,
+      });
+      const ira = (await caller.settings.contributionLimits.list()).find(
+        (r) => r.taxYear === 2031 && r.limitType === "ira_limit",
+      )!;
+      expect(ira).toMatchObject({ origin: "carried", confirmedAt: null });
+      expect(Number(ira.value)).toBe(7500);
+
+      const status = await caller.settings.taxData.status();
+      expect(status.carriedRows.length).toBeGreaterThan(30);
+      expect(status.needsAttention).toBe(true);
+      // Running it again changes nothing (every table has the year).
+      expect(
+        (await caller.settings.taxData.addYear({ year: 2031 })).copied,
+      ).toEqual({});
+
+      // Confirming takes a figure off the list; it stays carried.
+      await caller.settings.taxData.confirm({
+        table: "contribution_limits",
+        id: ira.id,
+      });
+      const after = await caller.settings.taxData.status();
+      expect(after.carriedRows.length).toBe(status.carriedRows.length - 1);
+      expect(
+        (await caller.settings.contributionLimits.list()).find(
+          (r) => r.id === ira.id,
+        ),
+      ).toMatchObject({ origin: "carried" });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("each IRS limit carries the value Ledgr ships", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const ira = (await caller.settings.contributionLimits.list()).find(
+        (r) => r.taxYear === 2026 && r.limitType === "ira_limit",
+      )!;
+      expect(ira.shippedValue).toBe(7500);
     } finally {
       cleanup();
     }

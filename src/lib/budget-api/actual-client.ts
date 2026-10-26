@@ -86,6 +86,14 @@ type ActualTransaction = {
   imported_id?: string;
   cleared: boolean;
   reconciled: boolean;
+  /** A split parent's parts (actual-http-api passes them through as-is). */
+  subtransactions?: {
+    amount: number; // cents
+    category?: string;
+    category_name?: string;
+    notes?: string;
+    tombstone?: boolean;
+  }[];
 };
 
 // -- Account type mapping --
@@ -176,6 +184,16 @@ function mapTransaction(t: ActualTransaction): BudgetTransaction {
     cleared: t.cleared || t.reconciled,
     approved: true, // Actual doesn't have approved flag
     deleted: false,
+    ...(t.subtransactions?.length && {
+      subtransactions: t.subtransactions
+        .filter((st) => !st.tombstone)
+        .map((st) => ({
+          categoryId: st.category ?? null,
+          categoryName: st.category_name ?? null,
+          amount: fromCents(st.amount),
+          memo: st.notes ?? null,
+        })),
+    }),
   };
 }
 

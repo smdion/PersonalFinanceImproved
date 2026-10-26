@@ -81,6 +81,20 @@ const V08_SCHEMA_TAGS = [
   "0010_v0810_holding_period_parts", // PG + SQLite: holding_periods.sub_key (the part of an account whose feeds are linked per part; null = whole account) — nullable, older backups restore as whole-account periods
   "0011_v0811_rmd_excess_target", // PG + SQLite: retirement_settings.rmd_excess_target_performance_account_id (nullable FK, SET NULL) — older backups restore as "spread across Retirement brokerages"
   "0012_v0814_perf_annotations", // PG + SQLite: account_performance.note (nullable), estimated_fields ([]), accepted_checks ({}) — older backups restore with no notes, estimates or accepted gaps
+  // The v0.9 line continues this list (one ordered list — indexOf-based
+  // checks like predatesAssetClassBuckets compare positions in it).
+  // 0013–0016 are the four v0.9.0 migrations as numbered before the v0.9.0
+  // squash renumbered them 0001–0004: only dev databases (and their
+  // backups) carry these tags.
+  "0013_v090_tax_data_origin",
+  "0014_v090_tax_data_updates",
+  "0015_v090_utility_feed",
+  "0016_v090_debts",
+  "0000_v9_initial_schema", // PG + SQLite: v0.9.0 squash of the v0.8 line — the v0.8.15 schema, no change; a backup at it is current-shape
+  "0001_v090_tax_data_origin", // PG + SQLite: origin ('user'), source_version, confirmed_at on the five reference tables — older backups restore as 'user' and never confirmed; the reference reconcile then recognises shipped values
+  "0002_v090_tax_data_updates", // PG + SQLite: tax_data_updates (not backed up) — no transform needed
+  "0003_v090_utility_feed", // PG + SQLite: utility_service.budget_api_category_id / billing_lag_months (default 0), utility_reading.source (null = typed in) — older backups restore with the defaults; no transform needed
+  "0004_v090_debts", // PG + SQLite: debts table — older backups restore with no debts; no transform needed
 ] as const;
 
 /** First tags whose backups carry asset_class_buckets (PG, SQLite). */

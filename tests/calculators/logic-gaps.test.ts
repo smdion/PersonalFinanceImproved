@@ -10,6 +10,7 @@
  * 7. Net worth age-40 wealth formula transition
  * 8. Budget multi-column emergency vs standard comparison
  */
+import { FIXTURE_SS_WAGE_BASE_2026 } from "./fixtures";
 import { describe, it, expect } from "vitest";
 import { calculatePaycheck } from "@/lib/calculators/paycheck";
 import { taxForOnePerson, type OnePersonTaxInput } from "./tax-helpers";
@@ -365,7 +366,7 @@ describe("paycheck SS wage base cap transition", () => {
   it("high earner SS drops to zero after crossing wage base", () => {
     const input: PaycheckInput = {
       ...PERSON_A_PAYCHECK_INPUT,
-      annualSalary: 250000, // Well above $176,100 SS wage base
+      annualSalary: 250000, // Well above the $184,500 SS wage base
       deductions: [],
       contributionAccounts: [],
       bonusPercent: 0,
@@ -382,13 +383,13 @@ describe("paycheck SS wage base cap transition", () => {
 
     // Total annual SS should equal wage base × rate
     const totalSS = result.yearSchedule.reduce((s, p) => s + p.ficaSS, 0);
-    expect(totalSS).toBeCloseTo(176100 * 0.062, 0);
+    expect(totalSS).toBeCloseTo(FIXTURE_SS_WAGE_BASE_2026 * 0.062, 0);
   });
 
   it("earner below wage base pays SS on every period", () => {
     const input: PaycheckInput = {
       ...PERSON_A_PAYCHECK_INPUT,
-      annualSalary: 100000, // Below $176,100 SS wage base
+      annualSalary: 100000, // Below the $184,500 SS wage base
       deductions: [],
       contributionAccounts: [],
       bonusPercent: 0,

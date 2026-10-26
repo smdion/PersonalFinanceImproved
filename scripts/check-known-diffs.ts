@@ -11,11 +11,12 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { readPgSchemaSource } from "./pg-schema-source";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const KNOWN_DIFFS_PATH = path.join(ROOT, ".scratch/data/known-diffs.json");
-const SCHEMA_PATH = path.join(ROOT, "src/lib/db/schema-pg.ts");
+
 const STALE_MONTHS = 6;
 
 interface KnownDiff {
@@ -43,7 +44,7 @@ function loadKnownDiffs(): KnownDiffsFile {
 }
 
 function loadSchemaFields(): Set<string> {
-  const schema = fs.readFileSync(SCHEMA_PATH, "utf-8");
+  const schema = readPgSchemaSource(ROOT);
   const fields = new Set<string>();
 
   // Match camelCase JS property names: `propertyName: type(...)`

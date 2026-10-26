@@ -7,6 +7,7 @@
 import { withConsistentStart } from "../calculators/fixtures/engine-fixtures";
 import type { ProjectionInput, MonteCarloInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 const AS_OF = new Date("2026-03-01");
 
@@ -66,6 +67,7 @@ const DEFAULT_DECUMULATION = {
     ira: "traditional" as const,
   },
   distributionTaxRates: {
+    ...shippedTaxTables(),
     traditionalFallbackRate: 0.22,
     roth: 0,
     hsa: 0,
@@ -96,6 +98,7 @@ export function makePureGrowthInput(
       decumulationDefaults: {
         ...DEFAULT_DECUMULATION,
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0,
           roth: 0,
           hsa: 0,
@@ -166,6 +169,7 @@ export function makeTrinityInput(
       ...DEFAULT_DECUMULATION,
       withdrawalRate,
       distributionTaxRates: {
+        ...shippedTaxTables(),
         traditionalFallbackRate: 0,
         roth: 0,
         hsa: 0,

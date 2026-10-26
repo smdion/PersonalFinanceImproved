@@ -25,6 +25,7 @@ import {
   makeTaxBuckets,
   TEST_BRACKETS,
 } from "./fixtures/engine-fixtures";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 /**
  * makeAccountBalances (from a single aggregate TaxBuckets) splits preTax
@@ -57,6 +58,7 @@ describe("estimateWithdrawalTaxCost", () => {
         hsa: 0,
         brokerage: 0.15,
         taxBrackets: TEST_BRACKETS,
+        ltcgBrackets: shippedTaxTables().ltcgBrackets,
         rothBracketTarget: 0.22,
       },
       balances: makeTaxBuckets(),
@@ -84,6 +86,7 @@ describe("estimateWithdrawalTaxCost", () => {
         hsa: 0,
         brokerage: 0.15,
         taxBrackets: TEST_BRACKETS,
+        ltcgBrackets: shippedTaxTables().ltcgBrackets,
         rothBracketTarget: 0.22,
       },
       balances: makeTaxBuckets(),
@@ -110,6 +113,7 @@ describe("estimateWithdrawalTaxCost", () => {
         hsa: 0,
         brokerage: 0.15,
         taxBrackets: TEST_BRACKETS,
+        ltcgBrackets: shippedTaxTables().ltcgBrackets,
         rothBracketTarget: 0.22,
       },
       balances: makeTaxBuckets({
@@ -146,6 +150,7 @@ describe("estimateWithdrawalTaxCost", () => {
         hsa: 0,
         brokerage: 0.15,
         taxBrackets: TEST_BRACKETS,
+        ltcgBrackets: shippedTaxTables().ltcgBrackets,
         rothBracketTarget: 0.22,
       },
       balances: makeTaxBuckets(),
@@ -168,6 +173,7 @@ describe("estimateWithdrawalTaxCost", () => {
         hsa: 0,
         brokerage: 0.15,
         taxBrackets: TEST_BRACKETS,
+        ltcgBrackets: shippedTaxTables().ltcgBrackets,
         rothBracketTarget: 0.22,
       },
       balances: makeTaxBuckets(),
@@ -191,6 +197,7 @@ describe("estimateWithdrawalTaxCost", () => {
         hsa: 0,
         brokerage: 0.15,
         taxBrackets: TEST_BRACKETS,
+        ltcgBrackets: shippedTaxTables().ltcgBrackets,
         rothBracketTarget: 0.22,
       },
       balances: makeTaxBuckets(),
@@ -215,6 +222,7 @@ describe("estimateWithdrawalTaxCost", () => {
         hsa: 0,
         brokerage: 0.15,
         taxBrackets: TEST_BRACKETS,
+        ltcgBrackets: shippedTaxTables().ltcgBrackets,
         rothBracketTarget: 0.22,
       },
       balances: makeTaxBuckets(),
@@ -235,6 +243,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
     hsa: 0,
     brokerage: 0.15,
     taxBrackets: TEST_BRACKETS,
+    ltcgBrackets: shippedTaxTables().ltcgBrackets,
     rothBracketTarget: 0.22,
   };
 
@@ -426,6 +435,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
 
     const routeResult = routeForMode(est.targetWithdrawal, config, acctBal, {
       taxBrackets: taxRates.taxBrackets,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: taxRates.rothBracketTarget,
       taxableSS: 0,
     });

@@ -737,6 +737,7 @@ export function routeWithdrawalsBracketFilling(
         source: tier.source,
         costRate: tier.costRate,
         amount: drawn,
+        ...(tier.includesNiit && { includesNiit: true as const }),
       });
     }
   }
@@ -861,7 +862,7 @@ export interface RouteBracketInfo {
    *  filingStatus at all skips LTCG/NIIT lookups entirely; the others
    *  default to "no basis tracking / no MAGI headroom known"). */
   filingStatus?: FilingStatusType | null;
-  ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
+  ltcgBrackets: Record<string, { threshold: number | null; rate: number }[]>;
   /** Total Roth BASIS dollars (tax-free, non-qualified-growth-free) still
    *  available across the accounts routing will draw from, from
    *  individual-account tracking. Omitted (not 0!) ⇒ the ranking treats
@@ -970,6 +971,8 @@ export type RouteResult = {
     source: WithdrawalSourceKind;
     costRate: number;
     amount: number;
+    /** See WithdrawalTier.includesNiit. */
+    includesNiit?: true;
   }[];
   /** The two zero-cost discretionary tiers' real capacity this year,
    *  computed BEFORE `discretionaryWithdrawalOrder` decides which drains

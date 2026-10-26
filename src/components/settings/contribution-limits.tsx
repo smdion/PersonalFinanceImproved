@@ -8,146 +8,26 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
-  categoriesWithIrsLimit,
-  getAccountTypeConfig,
-  getLimitGroup,
-} from "@/lib/config/account-types";
-// Build account-type limit groups from config
-type LimitGroupEntry = {
-  label: string;
-  types: { key: string; label: string; format: "dollar" | "percent" }[];
+  taxLimitGroups,
+  type TaxLimitFormat,
+} from "@/lib/config/tax-limit-keys";
+type LimitFormat = TaxLimitFormat;
+
+/** Display value ↔ stored value for a format (percent shows ×100), rounded
+ *  to the stored scale so 1.45% round-trips exactly (no float noise that
+ *  would read as an edit). */
+const toInput = (value: string, format: LimitFormat) =>
+  format === "percent" ? String(+(Number(value) * 100).toFixed(4)) : value;
+const fromInput = (value: string, format: LimitFormat) => {
+  const n = value.replace(/[^0-9.]/g, "");
+  return format === "percent" ? String(+(Number(n) / 100).toFixed(6)) : n;
 };
-
-function buildAccountLimitGroups(): LimitGroupEntry[] {
-  const seen = new Set<string>();
-  const groups: LimitGroupEntry[] = [];
-  for (const cat of categoriesWithIrsLimit()) {
-    const cfg = getAccountTypeConfig(cat);
-    const group = getLimitGroup(cat) ?? cat;
-    if (seen.has(group)) continue; // 401k/403b share a group
-    seen.add(group);
-    if (!cfg.irsLimitKeys) continue;
-    const types: {
-      key: string;
-      label: string;
-      format: "dollar" | "percent";
-    }[] = [];
-    types.push({
-      key: cfg.irsLimitKeys.base,
-      label: cfg.irsLimitKeys.coverageVariant ? "Self-only" : "Annual limit",
-      format: "dollar",
-    });
-    if (cfg.irsLimitKeys.coverageVariant) {
-      types.push({
-        key: cfg.irsLimitKeys.coverageVariant,
-        label: "Family",
-        format: "dollar",
-      });
-    }
-    if (cfg.irsLimitKeys.catchup) {
-      const catchupLabel = cfg.catchupAge
-        ? `Catch-up (${cfg.catchupAge}+)`
-        : "Catch-up";
-      types.push({
-        key: cfg.irsLimitKeys.catchup,
-        label: catchupLabel,
-        format: "dollar",
-      });
-    }
-    if (cfg.irsLimitKeys.superCatchup && cfg.superCatchupAgeRange) {
-      types.push({
-        key: cfg.irsLimitKeys.superCatchup,
-        label: `Super catch-up (${cfg.superCatchupAgeRange[0]}-${cfg.superCatchupAgeRange[1]})`,
-        format: "dollar",
-      });
-    }
-    groups.push({ label: cfg.displayLabel, types });
-  }
-  return groups;
-}
-
-// Group limit types by category for display
-const limitGroups: LimitGroupEntry[] = [
-  ...buildAccountLimitGroups(),
-  {
-    label: "FICA / Medicare",
-    types: [
-      { key: "ss_wage_base", label: "SS wage base", format: "dollar" },
-      { key: "fica_ss_rate", label: "SS rate", format: "percent" },
-      { key: "fica_medicare_rate", label: "Medicare rate", format: "percent" },
-      {
-        key: "fica_medicare_surtax_rate",
-        label: "Additional Medicare rate",
-        format: "percent",
-      },
-      {
-        key: "fica_medicare_surtax_threshold",
-        label: "Additional Medicare threshold",
-        format: "dollar",
-      },
-    ],
-  },
-  {
-    label: "Other",
-    types: [
-      {
-        key: "standard_deduction_mfj",
-        label: "Standard deduction (MFJ)",
-        format: "dollar",
-      },
-      {
-        key: "standard_deduction_single",
-        label: "Standard deduction (Single)",
-        format: "dollar",
-      },
-      {
-        key: "standard_deduction_hoh",
-        label: "Standard deduction (HoH)",
-        format: "dollar",
-      },
-      {
-        key: "additional_std_deduction_65_married",
-        label: "Additional standard deduction, age 65+ (married, per spouse)",
-        format: "dollar",
-      },
-      {
-        key: "additional_std_deduction_65_unmarried",
-        label: "Additional standard deduction, age 65+ (single / HoH)",
-        format: "dollar",
-      },
-      {
-        key: "obbba_senior_deduction_per_person",
-        label: "OBBBA senior deduction, per person 65+ (2025-2028 only)",
-        format: "dollar",
-      },
-      {
-        key: "obbba_senior_deduction_phaseout_start_mfj",
-        label: "OBBBA senior deduction phaseout start (MFJ)",
-        format: "dollar",
-      },
-      {
-        key: "obbba_senior_deduction_phaseout_start_unmarried",
-        label: "OBBBA senior deduction phaseout start (single / HoH)",
-        format: "dollar",
-      },
-      {
-        key: "obbba_senior_deduction_phaseout_rate",
-        label: "OBBBA senior deduction phaseout rate",
-        format: "percent",
-      },
-      // obbba_senior_deduction_sunset_year deliberately NOT listed here — a
-      // plain year (e.g. "2028"), not a dollar or percent figure, and this
-      // table's format union is dollar|percent only. It still edits fine
-      // via the "custom" fallback section below, which renders unknown
-      // limit types generically.
-      {
-        key: "supplemental_tax_rate",
-        label: "Supplemental tax rate",
-        format: "percent",
-      },
-    ],
-  },
-];
+const display = (value: number, format: LimitFormat) =>
+  format === "percent"
+    ? formatPercent(value, 2)
+    : format === "year"
+      ? String(Math.round(value))
+      : formatCurrency(value);
 
 export function ContributionLimitsSettings({ year }: { year: number }) {
   const user = useUser();
@@ -161,6 +41,9 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
     onSuccess: () => utils.settings.contributionLimits.list.invalidate(),
   });
   const deleteMut = trpc.settings.contributionLimits.delete.useMutation({
+    onSuccess: () => utils.settings.contributionLimits.list.invalidate(),
+  });
+  const resetMut = trpc.settings.contributionLimits.resetToShipped.useMutation({
     onSuccess: () => utils.settings.contributionLimits.list.invalidate(),
   });
 
@@ -181,22 +64,30 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
   // Build a lookup: type -> record for the active year
   const limitsMap = new Map<
     string,
-    { id: number; value: string; taxYear: number; notes: string | null }
+    {
+      id: number;
+      value: string;
+      taxYear: number;
+      notes: string | null;
+      origin: string;
+      shipped: boolean;
+      shippedValue: number | null;
+    }
   >();
   for (const l of yearData) {
     limitsMap.set(l.limitType, l);
   }
 
+  /** `placeholder`: "+ Set" — a carried-forward 0 until it's filled in or
+   *  the real figure ships, not the household's own figure. */
   const handleSave = (
     limitType: string,
     value: string,
-    format: "dollar" | "percent",
+    format: LimitFormat,
+    placeholder = false,
   ) => {
     const existing = limitsMap.get(limitType);
-    const numericValue =
-      format === "percent"
-        ? String(Number(value.replace(/[^0-9.]/g, "")) / 100)
-        : value.replace(/[^0-9.]/g, "");
+    const numericValue = fromInput(value, format);
 
     if (existing) {
       updateMut.mutate({
@@ -212,6 +103,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
         limitType,
         value: numericValue,
         notes: null,
+        ...(placeholder && { carried: true }),
       });
     }
   };
@@ -224,11 +116,13 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
     if (!copyFrom || yearData.length > 0) return;
     const sourceData = (data ?? []).filter((l) => l.taxYear === copyFrom);
     for (const l of sourceData) {
+      // Carried forward: a release with this year's real figure replaces it.
       await createMut.mutateAsync({
         taxYear: activeYear,
         limitType: l.limitType,
         value: l.value,
         notes: l.notes,
+        carried: true,
       });
     }
     setCopyFrom(null);
@@ -242,11 +136,14 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
     setConfirmDeleteYear(null);
   };
 
-  // Collect any limit types not in our groups
+  const limitGroups = taxLimitGroups();
+  // Rows Ledgr doesn't use (an old key a household still has).
   const knownTypes = new Set(
-    limitGroups.flatMap((g) => g.types.map((t) => t.key)),
+    limitGroups.flatMap((g) => g.keys.map((k) => k.key)),
   );
-  const customLimits = yearData.filter((l) => !knownTypes.has(l.limitType));
+  const unusedLimits = yearData.filter((l) => !knownTypes.has(l.limitType));
+  // A year Ledgr ships can't be deleted (it would come back on restart).
+  const yearShipped = yearData.some((l) => l.shipped);
 
   // Compare with previous year for change indicators
   const prevYear = years.find((y) => y < activeYear);
@@ -325,7 +222,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
               <h3 className="text-primary font-medium">{group.label}</h3>
             </div>
             <div className="p-3">
-              {group.types.map((type, idx) => {
+              {group.keys.map((type, idx) => {
                 const record = limitsMap.get(type.key);
                 const prevVal = prevYearMap.get(type.key);
                 const currVal = record ? Number(record.value) : null;
@@ -339,30 +236,47 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
                     key={type.key}
                     className={`flex items-center justify-between py-1 text-sm ${idx > 0 ? "border-subtle border-t" : ""}`}
                   >
-                    <span className="text-muted">{type.label}</span>
+                    <span className="text-muted">
+                      {type.label}
+                      {record?.origin === "user" &&
+                        record.shippedValue !== null &&
+                        Math.abs(Number(record.value) - record.shippedValue) >=
+                          5e-7 && (
+                          <span className="text-caption text-faint ml-2">
+                            Ledgr ships{" "}
+                            {display(record.shippedValue, type.format)}
+                          </span>
+                        )}
+                      {admin && record?.shipped && record.origin === "user" && (
+                        <button
+                          type="button"
+                          onClick={() => resetMut.mutate({ id: record.id })}
+                          className="text-caption ml-2 text-blue-600 hover:underline"
+                          title="You changed this figure — put back the one Ledgr ships"
+                        >
+                          Reset to shipped
+                        </button>
+                      )}
+                    </span>
                     <div className="flex items-center gap-1.5">
                       {changed && (
                         <span
                           className={`text-micro ${currVal! > prevVal! ? "text-green-500" : "text-red-500"}`}
-                          title={`${prevYear}: ${type.format === "percent" ? formatPercent(prevVal!, 2) : formatCurrency(prevVal!)}`}
+                          title={`${prevYear}: ${display(prevVal!, type.format)}`}
                         >
                           {currVal! > prevVal! ? "▲" : "▼"}
                         </span>
                       )}
                       {record ? (
                         <InlineEdit
-                          value={
-                            type.format === "percent"
-                              ? String(Number(record.value) * 100)
-                              : record.value
-                          }
+                          value={toInput(record.value, type.format)}
                           onSave={(v) => handleSave(type.key, v, type.format)}
-                          formatDisplay={(v) => {
-                            const n = Number(v);
-                            return type.format === "percent"
-                              ? formatPercent(n / 100, 2)
-                              : formatCurrency(n);
-                          }}
+                          formatDisplay={(v) =>
+                            display(
+                              Number(fromInput(v, type.format)),
+                              type.format,
+                            )
+                          }
                           parseInput={(v) => v.replace(/[^0-9.]/g, "")}
                           type="number"
                           className="font-medium"
@@ -370,13 +284,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
                         />
                       ) : admin ? (
                         <button
-                          onClick={() =>
-                            handleSave(
-                              type.key,
-                              type.format === "percent" ? "0" : "0",
-                              type.format,
-                            )
-                          }
+                          onClick={() => handleSave(type.key, "0", type.format)}
                           className="text-xs text-blue-600 hover:text-blue-800"
                         >
                           + Set
@@ -393,43 +301,37 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
         ))}
       </div>
 
-      {customLimits.length > 0 && (
+      {unusedLimits.length > 0 && (
         <div className="mt-4 overflow-hidden rounded-lg border">
           <div className="bg-surface-sunken border-b px-4 py-2">
-            <h3 className="text-primary font-medium">Custom</h3>
+            <h3 className="text-primary font-medium">Not used by Ledgr</h3>
+            <p className="text-faint text-xs">
+              Figures saved from older versions that nothing reads any more.
+            </p>
           </div>
           <div className="p-3">
-            {customLimits.map((l, idx) => {
-              const isPercent = Number(l.value) < 1;
-              return (
-                <div
-                  key={l.id}
-                  className={`flex items-center justify-between py-1 text-sm ${idx > 0 ? "border-subtle border-t" : ""}`}
-                >
-                  <span className="text-muted">{l.limitType}</span>
-                  <InlineEdit
-                    value={isPercent ? String(Number(l.value) * 100) : l.value}
-                    onSave={(v) =>
-                      handleSave(
-                        l.limitType,
-                        v,
-                        isPercent ? "percent" : "dollar",
-                      )
-                    }
-                    formatDisplay={(v) => {
-                      const n = Number(v);
-                      return isPercent
-                        ? formatPercent(n / 100, 2)
-                        : formatCurrency(n);
-                    }}
-                    parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-                    type="number"
-                    className="font-medium"
-                    isEditable={admin}
-                  />
-                </div>
-              );
-            })}
+            {unusedLimits.map((l, idx) => (
+              <div
+                key={l.id}
+                className={`flex items-center justify-between py-1 text-sm ${idx > 0 ? "border-subtle border-t" : ""}`}
+              >
+                <span className="text-muted">{l.limitType}</span>
+                <span className="flex items-center gap-2">
+                  <span className="font-medium">
+                    {Number(l.value).toLocaleString("en-US")}
+                  </span>
+                  {admin && (
+                    <button
+                      type="button"
+                      onClick={() => deleteMut.mutate({ id: l.id })}
+                      className="text-xs text-red-500 hover:text-red-700"
+                    >
+                      Delete
+                    </button>
+                  )}
+                </span>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -438,14 +340,17 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
         <p className="text-faint text-xs">
           Source: IRS annual limits. Click any value to edit.
         </p>
-        {admin && years.length > 1 && confirmDeleteYear !== activeYear && (
-          <button
-            onClick={() => setConfirmDeleteYear(activeYear)}
-            className="text-xs text-red-500 hover:text-red-700"
-          >
-            Delete {activeYear}
-          </button>
-        )}
+        {admin &&
+          years.length > 1 &&
+          !yearShipped &&
+          confirmDeleteYear !== activeYear && (
+            <button
+              onClick={() => setConfirmDeleteYear(activeYear)}
+              className="text-xs text-red-500 hover:text-red-700"
+            >
+              Delete {activeYear}
+            </button>
+          )}
       </div>
     </div>
   );

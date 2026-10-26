@@ -1,24 +1,29 @@
 #!/usr/bin/env bash
 # scripts/test-migration.sh
 #
-# Migration safety test (v0.5 expert-review companion).
+# Migration safety test — the release gate for any release with a migration.
 #
-# Snapshots a source PostgreSQL database via pg_dump, restores it into
-# a throwaway PostgreSQL container, runs `pnpm db:migrate` against the
-# throwaway, and verifies that key v5 schema changes are present.
-# Tear down on exit.
+# Snapshots a source PostgreSQL database via pg_dump, restores it into a
+# throwaway database, runs `pnpm db:migrate` against it, and verifies:
+#   - the migrator exited 0 and logged no squash_upgrade_failed (and, when
+#     the source had more journal rows than the journal has entries, that
+#     the squash completed);
+#   - __drizzle_migrations holds exactly the journal's file hashes;
+#   - every table and column of the latest drizzle snapshot exists;
+#   - row counts are unchanged, apart from the reference tables (the
+#     tax-data reconcile may add rows) and app_settings.
 #
-# Use this BEFORE deploying a new release that contains schema changes
-# to confirm the migration works against current production data.
+# The source must be v0.8.14 or later (v0.9.0 refuses older databases).
 #
 # Usage:
-#   ./scripts/test-migration.sh <source-database-url>
+#   ./scripts/test-migration.sh <source-database-url> [target-database-url]
 #   SOURCE_DATABASE_URL=postgresql://... ./scripts/test-migration.sh
 #
-# Requirements:
-#   - docker (for the throwaway PG container)
-#   - pg_dump + psql in PATH (postgresql-client package on Debian/Ubuntu)
-#   - The source database is reachable from this machine
+# With a target URL (an EMPTY database you created, e.g. on the dev server)
+# no Docker is needed; it is left in place for inspection. Without one, a
+# throwaway postgres:16 container is started and torn down on exit.
+#
+# Requirements: pg_dump + psql + node in PATH; docker only without a target.
 #
 # Exit 0 = migration succeeded against the snapshot.
 # Exit 1 = anything went wrong (dump, restore, migrate, verify).
@@ -37,8 +42,9 @@ warn() { echo -e "${YELLOW}! $*${NC}"; }
 err()  { echo -e "${RED}✗ $*${NC}" >&2; }
 
 SOURCE_URL="${1:-${SOURCE_DATABASE_URL:-}}"
+TARGET_URL="${2:-}"
 if [[ -z "$SOURCE_URL" ]]; then
-  err "Usage: $0 <source-database-url>"
+  err "Usage: $0 <source-database-url> [target-database-url]"
   err "    or: SOURCE_DATABASE_URL=postgresql://... $0"
   exit 1
 fi
@@ -47,26 +53,30 @@ fi
 
 step "Checking prerequisites"
 
-for cmd in docker pg_dump psql node; do
+NEEDED="pg_dump psql node"
+[[ -z "$TARGET_URL" ]] && NEEDED="docker $NEEDED"
+for cmd in $NEEDED; do
   if ! command -v "$cmd" >/dev/null 2>&1; then
     err "$cmd is not installed"
     exit 1
   fi
 done
-ok "docker, pg_dump, psql, node all present"
+ok "$NEEDED all present"
 
-if ! docker info >/dev/null 2>&1; then
+if [[ -z "$TARGET_URL" ]] && ! docker info >/dev/null 2>&1; then
   err "Docker daemon is not running or not reachable"
   exit 1
 fi
-ok "Docker daemon reachable"
 
 # ── 1. Snapshot the source ───────────────────────────────────────────
 
 step "Snapshotting source database"
 
 DUMP_FILE="$(mktemp -t ledgr-mig-test-XXXXXX.sql)"
-trap 'rm -f "$DUMP_FILE"' EXIT
+# The migrator's pre-upgrade backup is a full copy of the source's data —
+# keep it out of the repo and delete it with the dump.
+export LEDGR_BACKUP_DIR="$(mktemp -d -t ledgr-mig-test-backups-XXXXXX)"
+trap 'rm -f "$DUMP_FILE"; rm -rf "$LEDGR_BACKUP_DIR"' EXIT
 
 if ! pg_dump --no-owner --no-acl --clean --if-exists "$SOURCE_URL" > "$DUMP_FILE" 2>/tmp/ledgr-pgdump.log; then
   err "pg_dump failed (see /tmp/ledgr-pgdump.log)"
@@ -77,47 +87,59 @@ fi
 DUMP_BYTES=$(wc -c < "$DUMP_FILE")
 ok "Dumped to $DUMP_FILE ($DUMP_BYTES bytes)"
 
-# ── 2. Spin up throwaway container ───────────────────────────────────
+# ── 2. Target database ───────────────────────────────────────────────
 
-step "Starting throwaway PostgreSQL container"
-
-CONTAINER_NAME="ledgr-migration-test-$$"
-HOST_PORT=15432
-TEMP_URL="postgresql://postgres:test@localhost:${HOST_PORT}/test"
-
-cleanup_container() {
-  docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
-}
-trap 'cleanup_container; rm -f "$DUMP_FILE"' EXIT
-
-docker run -d --rm \
-  --name "$CONTAINER_NAME" \
-  -e POSTGRES_PASSWORD=test \
-  -e POSTGRES_DB=test \
-  -p "${HOST_PORT}:5432" \
-  postgres:16-alpine >/dev/null
-
-ok "Container $CONTAINER_NAME started on localhost:$HOST_PORT"
-
-# Wait for postgres to accept connections
-step "Waiting for PostgreSQL to be ready"
-ready=false
-for i in $(seq 1 30); do
-  if docker exec "$CONTAINER_NAME" pg_isready -U postgres >/dev/null 2>&1; then
-    ready=true
-    break
+if [[ -n "$TARGET_URL" ]]; then
+  TEMP_URL="$TARGET_URL"
+  if ! TARGET_TABLES=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM information_schema.tables WHERE table_schema IN ('public','drizzle')"); then
+    err "Can't connect to the target database"
+    exit 1
   fi
-  sleep 1
-done
-if ! $ready; then
-  err "PostgreSQL did not become ready within 30 seconds"
-  exit 1
+  if [[ "$TARGET_TABLES" != "0" ]]; then
+    err "Target database is not empty"
+    exit 1
+  fi
+  ok "Using the empty target database"
+else
+  step "Starting throwaway PostgreSQL container"
+
+  CONTAINER_NAME="ledgr-migration-test-$$"
+  HOST_PORT=15432
+  TEMP_URL="postgresql://postgres:test@localhost:${HOST_PORT}/test"
+
+  cleanup_container() {
+    docker rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+  }
+  trap 'cleanup_container; rm -f "$DUMP_FILE"; rm -rf "$LEDGR_BACKUP_DIR"' EXIT
+
+  docker run -d --rm \
+    --name "$CONTAINER_NAME" \
+    -e POSTGRES_PASSWORD=test \
+    -e POSTGRES_DB=test \
+    -p "${HOST_PORT}:5432" \
+    postgres:16-alpine >/dev/null
+
+  ok "Container $CONTAINER_NAME started on localhost:$HOST_PORT"
+
+  step "Waiting for PostgreSQL to be ready"
+  ready=false
+  for i in $(seq 1 30); do
+    if docker exec "$CONTAINER_NAME" pg_isready -U postgres >/dev/null 2>&1; then
+      ready=true
+      break
+    fi
+    sleep 1
+  done
+  if ! $ready; then
+    err "PostgreSQL did not become ready within 30 seconds"
+    exit 1
+  fi
+  ok "PostgreSQL ready"
 fi
-ok "PostgreSQL ready"
 
 # ── 3. Restore the snapshot ──────────────────────────────────────────
 
-step "Restoring snapshot into throwaway container"
+step "Restoring snapshot"
 
 if ! psql "$TEMP_URL" -v ON_ERROR_STOP=1 < "$DUMP_FILE" >/tmp/ledgr-restore.log 2>&1; then
   err "psql restore failed (see /tmp/ledgr-restore.log)"
@@ -126,139 +148,93 @@ if ! psql "$TEMP_URL" -v ON_ERROR_STOP=1 < "$DUMP_FILE" >/tmp/ledgr-restore.log 
 fi
 ok "Snapshot restored"
 
-# v0.8.10: how many active Salary Profile entries have a bonus switch on
-# before the upgrade (0 once already upgraded — the columns are gone).
-SWITCHES_ON=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM salary_profiles p, jsonb_each(p.salaries) e WHERE p.id::text = (SELECT value #>> '{}' FROM app_settings WHERE key = 'active_salary_profile_id') AND ((e.value->>'include401kInBonus')::boolean OR (e.value->>'includeBonusInContributions')::boolean)" 2>/dev/null || echo 0)
+# Reference tables may gain rows (the tax-data reconcile), never lose them;
+# app_settings gains the upgrade-backup flag. Every other table is unchanged.
+REFERENCE_TABLES="'contribution_limits', 'tax_brackets', 'ltcg_brackets', 'irmaa_brackets', 'fpl_by_household', 'tax_params'"
+counts_sql() { echo "SELECT 'SELECT * FROM (' || string_agg(format('SELECT %L AS t, count(*) AS n FROM public.%I', table_name, table_name), ' UNION ALL ') || ') c ORDER BY t' FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE' AND $1"; }
+row_counts() { psql "$TEMP_URL" -tAc "$(psql "$TEMP_URL" -tAc "$(counts_sql "table_name NOT IN ('app_settings', '__drizzle_migrations', $REFERENCE_TABLES)")")"; }
+ref_counts() { psql "$TEMP_URL" -tAc "$(psql "$TEMP_URL" -tAc "$(counts_sql "table_name IN ($REFERENCE_TABLES)")")"; }
+COUNTS_BEFORE="$(row_counts)"
+REF_BEFORE="$(ref_counts)"
+ROWS_BEFORE=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM drizzle.__drizzle_migrations" 2>/dev/null || echo 0)
 
-# ── 4. Run db:migrate against the throwaway ──────────────────────────
+# ── 4. Run db:migrate against the restored copy ──────────────────────
 
-step "Running pnpm db:migrate against the throwaway"
+step "Running pnpm db:migrate"
 
 cd "$(dirname "$0")/.."
 if ! DATABASE_URL="$TEMP_URL" pnpm db:migrate 2>&1 | tee /tmp/ledgr-migrate.log; then
   err "Migration failed (see /tmp/ledgr-migrate.log)"
   exit 1
 fi
+if grep -q '"squash_upgrade_failed"\|"migration_failed"' /tmp/ledgr-migrate.log; then
+  err "The migrator logged a failure (see /tmp/ledgr-migrate.log)"
+  exit 1
+fi
+JOURNAL_ENTRIES=$(node -e 'console.log(require("./drizzle/meta/_journal.json").entries.length)')
+if (( ROWS_BEFORE > JOURNAL_ENTRIES )) && ! grep -q '"squash_upgrade_complete"' /tmp/ledgr-migrate.log; then
+  err "Source had $ROWS_BEFORE journal rows (> $JOURNAL_ENTRIES entries) but no squash completed"
+  exit 1
+fi
 ok "Migration completed"
 
-# ── 5. Verify v5 schema markers ──────────────────────────────────────
+# ── 5. Journal = the files ───────────────────────────────────────────
 
-step "Verifying v5 schema markers"
+step "Verifying the migration journal"
 
-# Check for is_immutable column on annual_performance
-HAS_IMMUTABLE=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='annual_performance' AND column_name='is_immutable'")
-if [[ "$HAS_IMMUTABLE" != "1" ]]; then
-  err "annual_performance.is_immutable column missing after migration"
+EXPECTED_HASHES=$(node -e '
+  const fs = require("fs"), c = require("crypto");
+  for (const e of require("./drizzle/meta/_journal.json").entries)
+    console.log(c.createHash("sha256").update(fs.readFileSync(`drizzle/${e.tag}.sql`, "utf8")).digest("hex"));
+' | sort)
+RECORDED_HASHES=$(psql "$TEMP_URL" -tAc "SELECT hash FROM drizzle.__drizzle_migrations" | sort)
+if [[ "$EXPECTED_HASHES" != "$RECORDED_HASHES" ]]; then
+  err "__drizzle_migrations doesn't hold exactly the journal's file hashes"
+  diff <(echo "$EXPECTED_HASHES") <(echo "$RECORDED_HASHES") >&2 || true
   exit 1
 fi
-ok "annual_performance.is_immutable present"
+ok "Journal holds exactly the $JOURNAL_ENTRIES file hashes"
 
-# Check for the new FK indexes
-HAS_BUDGET_IDX=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM pg_indexes WHERE indexname='budget_items_contribution_account_id_idx'")
-HAS_API_IDX=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM pg_indexes WHERE indexname='api_connections_linked_profile_id_idx'")
-if [[ "$HAS_BUDGET_IDX" != "1" ]]; then
-  err "budget_items_contribution_account_id_idx missing"
+# ── 6. Schema = the latest snapshot ──────────────────────────────────
+
+step "Verifying every table and column of the latest snapshot"
+
+EXPECTED_COLS=$(node -e '
+  const j = require("./drizzle/meta/_journal.json");
+  const idx = String(j.entries[j.entries.length - 1].idx).padStart(4, "0");
+  const s = require(`./drizzle/meta/${idx}_snapshot.json`);
+  for (const t of Object.values(s.tables))
+    for (const c of Object.values(t.columns)) console.log(`${t.name}.${c.name}`);
+' | sort)
+ACTUAL_COLS=$(psql "$TEMP_URL" -tAc "SELECT table_name || '.' || column_name FROM information_schema.columns WHERE table_schema = 'public'" | sort)
+MISSING=$(comm -23 <(echo "$EXPECTED_COLS") <(echo "$ACTUAL_COLS"))
+if [[ -n "$MISSING" ]]; then
+  err "Missing after migration:"
+  echo "$MISSING" >&2
   exit 1
 fi
-if [[ "$HAS_API_IDX" != "1" ]]; then
-  err "api_connections_linked_profile_id_idx missing"
+ok "$(echo "$EXPECTED_COLS" | wc -l) columns present"
+
+# ── 7. Data kept ─────────────────────────────────────────────────────
+
+step "Verifying row counts"
+
+COUNTS_AFTER="$(row_counts)"
+CHANGED=$(diff <(echo "$COUNTS_BEFORE") <(echo "$COUNTS_AFTER") | grep '^<' || true)
+if [[ -n "$CHANGED" ]]; then
+  err "Row counts changed (before → see /tmp/ledgr-migrate.log):"
+  echo "$CHANGED" >&2
   exit 1
 fi
-ok "FK indexes present"
+ok "Row counts unchanged (apart from the reference tables and app_settings)"
 
-# Check for decimal(14,2) on a sample column
-DECIMAL_TYPE=$(psql "$TEMP_URL" -tAc "SELECT data_type || '(' || numeric_precision || ',' || numeric_scale || ')' FROM information_schema.columns WHERE table_name='annual_performance' AND column_name='ending_balance'")
-if [[ "$DECIMAL_TYPE" != "numeric(14,2)" ]]; then
-  err "ending_balance is $DECIMAL_TYPE, expected numeric(14,2)"
+LOST=$(join -t'|' <(echo "$REF_BEFORE") <(ref_counts) | awk -F'|' '$3 < $2 { print $1 ": " $2 " → " $3 }')
+if [[ -n "$LOST" ]]; then
+  err "Reference tables lost rows:"
+  echo "$LOST" >&2
   exit 1
 fi
-ok "Decimal widening applied (ending_balance = $DECIMAL_TYPE)"
-
-# Verify the row count is preserved (sanity check that data wasn't lost)
-ROW_COUNT=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM annual_performance")
-ok "annual_performance has $ROW_COUNT rows after migration"
-
-# Verify is_immutable backfill: every is_finalized=true row should have is_immutable=true
-NOT_BACKFILLED=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM annual_performance WHERE is_finalized = true AND is_immutable = false")
-if [[ "$NOT_BACKFILLED" != "0" ]]; then
-  err "$NOT_BACKFILLED finalized rows missing is_immutable backfill"
-  exit 1
-fi
-ok "is_immutable backfill verified ($NOT_BACKFILLED rows would have leaked through)"
-
-# ── 6. Verify v0.8.10 (0009_v0810_profile_sets) ──────────────────────
-
-step "Verifying v0.8.10 profile sets"
-
-HAS_PLAN_NAME_IDX=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM pg_indexes WHERE indexname='scenarios_name_unique'")
-if [[ "$HAS_PLAN_NAME_IDX" != "1" ]]; then
-  err "scenarios_name_unique missing (two Plans may still share a name)"
-  exit 1
-fi
-ok "Plan names unique"
-
-LEFT_COLS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM information_schema.columns WHERE (table_name='scenarios' AND column_name IN ('overrides','is_baseline')) OR (table_name='budget_profiles' AND column_name IN ('column_contribution_profile_ids','column_salary_profile_ids'))")
-if [[ "$LEFT_COLS" != "0" ]]; then
-  err "$LEFT_COLS dropped column(s) still present"
-  exit 1
-fi
-ok "Plan overrides and Budget column profile ids dropped"
-
-OLD_FLAGS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM salary_profiles, jsonb_each(salaries) e WHERE e.value ? 'include401kInBonus' OR e.value ? 'includeBonusInContributions'")
-if [[ "$OLD_FLAGS" != "0" ]]; then
-  err "$OLD_FLAGS Salary Profile entries still carry the old bonus switches"
-  exit 1
-fi
-OLD_SETTING=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM app_settings WHERE key='bonus_destinations'")
-if [[ "$OLD_SETTING" != "0" ]]; then
-  err "bonus_destinations setting not converted"
-  exit 1
-fi
-FROM_BONUS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM contribution_profiles, jsonb_each(contribution_active_fields->'contributionAccounts') a WHERE a.value->>'fromBonus' = 'true'")
-if [[ "${SWITCHES_ON:-0}" != "0" && "$FROM_BONUS" == "0" ]]; then
-  err "$SWITCHES_ON active Salary Profile entries had a bonus switch on, but no account is taken from bonus checks"
-  exit 1
-fi
-ok "Bonus switches converted ($SWITCHES_ON entries on before; $FROM_BONUS account entries taken from bonus checks)"
-
-# ── 7. Verify v0.8.10 (0010_v0810_holding_period_parts) ──────────────
-
-step "Verifying holding history per part"
-
-HAS_SUB_KEY=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='holding_periods' AND column_name='sub_key'")
-HAS_SUB_CHECK=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM pg_constraint WHERE conname='holding_periods_sub_key_check'")
-if [[ "$HAS_SUB_KEY" != "1" || "$HAS_SUB_CHECK" != "1" ]]; then
-  err "holding_periods.sub_key or its check is missing"
-  exit 1
-fi
-# A part key naming another account must be refused (e.g. account 5 with "51_…").
-if [[ "$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM performance_accounts")" != "0" ]]; then
-  BAD_INSERT=$(psql "$TEMP_URL" -tAc "INSERT INTO holding_periods (performance_account_id, sub_key, start_date, basis) SELECT id, id::text || '1_x', '2020-01-01', 'user' FROM performance_accounts ORDER BY id LIMIT 1" 2>&1 || true)
-  if ! grep -q "holding_periods_sub_key_check" <<<"$BAD_INSERT"; then
-    err "holding_periods_sub_key_check accepted another account's part key"
-    exit 1
-  fi
-fi
-WHOLE_PERIODS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM holding_periods WHERE sub_key IS NULL")
-ok "holding_periods.sub_key + check present ($WHOLE_PERIODS existing periods stay whole-account)"
-
-# ── 8. Verify v0.8.11 (0011_v0811_rmd_excess_target) ─────────────────
-
-step "Verifying the unspent-RMD account setting"
-
-HAS_RMD_TARGET=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM information_schema.columns WHERE table_name='retirement_settings' AND column_name='rmd_excess_target_performance_account_id'")
-if [[ "$HAS_RMD_TARGET" != "1" ]]; then
-  err "retirement_settings.rmd_excess_target_performance_account_id is missing"
-  exit 1
-fi
-HAS_RMD_TARGET_IDX=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM pg_indexes WHERE indexname='retirement_settings_rmd_excess_target_idx'")
-if [[ "$HAS_RMD_TARGET_IDX" != "1" ]]; then
-  err "retirement_settings_rmd_excess_target_idx is missing"
-  exit 1
-fi
-SET_TARGETS=$(psql "$TEMP_URL" -tAc "SELECT count(*) FROM retirement_settings WHERE rmd_excess_target_performance_account_id IS NOT NULL")
-ok "unspent-RMD account column present ($SET_TARGETS rows set; the rest spread across Retirement brokerages)"
+ok "Reference tables kept every row"
 
 echo ""
 echo -e "${GREEN}${BOLD}MIGRATION TEST PASSED${NC}"
-echo "The throwaway PG container is being torn down via the trap."

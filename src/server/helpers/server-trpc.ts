@@ -59,6 +59,7 @@ function prefetchShellQueries(h: ServerHelpers): Promise<unknown>[] {
   return [
     h.settings.appSettings.list.prefetch(),
     h.settings.getDataFreshness.prefetch(),
+    h.settings.taxData.status.prefetch(),
     h.settings.scenarios.list.prefetch(),
     h.sync.getActiveBudgetApiLink.prefetch(),
     h.sync.getSyncStatus.prefetch(),

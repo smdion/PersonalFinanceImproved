@@ -103,6 +103,8 @@ vi.mock("@/lib/trpc", () => ({
         irmaaBrackets: { invalidate: vi.fn() },
         fplByHousehold: { invalidate: vi.fn() },
         appSettings: { list: { invalidate: vi.fn() } },
+        taxData: { status: { invalidate: vi.fn() } },
+        invalidate: vi.fn(),
       },
       retirement: {
         returnRates: { list: { invalidate: vi.fn() } },
@@ -113,6 +115,7 @@ vi.mock("@/lib/trpc", () => ({
         list: { useQuery: () => ({ data: [], isLoading: false }) },
         upsert: { useMutation: noopMutation },
         delete: { useMutation: noopMutation },
+        resetToShipped: { useMutation: noopMutation },
       },
     },
     settings: {
@@ -120,11 +123,29 @@ vi.mock("@/lib/trpc", () => ({
         list: { useQuery: () => ({ data: [], isLoading: false }) },
         upsert: { useMutation: noopMutation },
       },
+      taxDataSync: {
+        status: { useQuery: () => ({ data: undefined }) },
+        preview: { useQuery: () => ({ data: undefined }) },
+        setEnabled: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
+        checkNow: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
+        approve: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+        dismiss: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+      },
+      taxData: {
+        status: { useQuery: () => ({ data: undefined }) },
+        addYear: { useMutation: noopMutation },
+        confirm: { useMutation: noopMutation },
+      },
       contributionLimits: {
         list: { useQuery: () => ({ data: limits2025, isLoading: false }) },
         update: { useMutation: noopMutation },
         create: { useMutation: noopMutation },
         delete: { useMutation: noopMutation },
+        resetToShipped: { useMutation: noopMutation },
       },
       taxBrackets: {
         list: {
@@ -136,24 +157,28 @@ vi.mock("@/lib/trpc", () => ({
         update: { useMutation: noopMutation },
         create: { useMutation: noopMutation },
         delete: { useMutation: noopMutation },
+        resetToShipped: { useMutation: noopMutation },
       },
       ltcgBrackets: {
         list: { useQuery: () => ({ data: ltcg2025, isLoading: false }) },
         update: { useMutation: noopMutation },
         create: { useMutation: noopMutation },
         delete: { useMutation: noopMutation },
+        resetToShipped: { useMutation: noopMutation },
       },
       irmaaBrackets: {
         list: { useQuery: () => ({ data: [], isLoading: false }) },
         update: { useMutation: noopMutation },
         create: { useMutation: noopMutation },
         delete: { useMutation: noopMutation },
+        resetToShipped: { useMutation: noopMutation },
       },
       fplByHousehold: {
         list: { useQuery: () => ({ data: fpl2025, isLoading: false }) },
         update: { useMutation: noopMutation },
         create: { useMutation: noopMutation },
         delete: { useMutation: noopMutation },
+        resetToShipped: { useMutation: noopMutation },
       },
     },
   },

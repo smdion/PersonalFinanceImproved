@@ -68,6 +68,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "performance_accounts", tier: 1 },
   { name: "mortgage_what_if_scenarios", tier: 1 },
   { name: "mortgage_extra_payments", tier: 1 },
+  { name: "debts", tier: 1 }, // FK owner_person_id → people (tier 0)
   { name: "retirement_settings", tier: 1 },
   // FKs both people (tier 0) and retirement_profiles (tier 0, ordered above).
   { name: "retirement_profile_people", tier: 1 },
@@ -133,4 +134,5 @@ export const EXCLUDED_TABLES = [
   "projection_cache", // derived-from-inputs cache; rebuilt on demand, never user data
   "sync_request_log", // outbound-request quota ledger; operational, pruned after 30 days
   "sec_filing_cache", // normalised SEC filings by accession; re-fetchable
+  "tax_data_updates", // fetched community tax-data files + admin decisions; not household data
 ];

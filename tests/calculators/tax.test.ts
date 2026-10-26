@@ -58,9 +58,9 @@ describe("household tax, one person", () => {
     });
 
     it("computes FICA Social Security capped at wage base", () => {
-      // SS on gross up to $176,100 cap
-      // Since $230,000 > $176,100, SS = $176,100 × 0.062 = $10,918.20
-      expect(result.ficaSS).toBe(10918.2);
+      // SS on gross up to the 2026 $184,500 cap
+      // Since $230,000 > $184,500, SS = $184,500 × 0.062 = $11,439.00
+      expect(result.ficaSS).toBe(11439);
     });
 
     it("computes FICA Medicare with additional tax", () => {

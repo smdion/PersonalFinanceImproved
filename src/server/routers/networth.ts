@@ -19,7 +19,6 @@ import {
   getLatestSnapshot,
   parseAppSettings,
   getEffectiveCash,
-  getEffectiveCreditCardDebt,
   getEffectiveOtherAssets,
   getEffectiveOtherAssetsDetailed,
   getPrimaryPerson,
@@ -45,6 +44,7 @@ import {
   resolveSnapshotParentCategory,
   resolveSnapshotAccountAmounts,
 } from "@/lib/pure/portfolio";
+import { getEffectiveOtherLiabilities } from "@/server/helpers/debts";
 
 const portfolioSnapshotInput = z.object({
   snapshotDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -185,12 +185,12 @@ export const networthRouter = createTRPCRouter({
       const otherAssetsSyncSource =
         activeBudgetApi !== "none" ? activeBudgetApi : null;
 
-      // Additive on top of the manual figure — see getEffectiveCreditCardDebt's
-      // docblock (server/helpers/budget.ts). Only ever nonzero once the
-      // household maps a "Credit Card" account for the active service.
-      const otherLiabilities =
-        setting("current_other_liabilities", 0) +
-        (await getEffectiveCreditCardDebt(ctx.db, activeBudgetApi));
+      // Typed figure + the debts list + mapped credit cards
+      // (server/helpers/debts.ts).
+      const otherLiabilitiesParts = await getEffectiveOtherLiabilities(ctx.db, {
+        activeBudgetApi,
+      });
+      const otherLiabilities = otherLiabilitiesParts.total;
       const homeImprovements = setting("current_home_improvements", 0);
 
       // Home values: market (estimated) and cost basis (purchase + improvements)
@@ -283,6 +283,12 @@ export const networthRouter = createTRPCRouter({
         otherAssetItems,
         otherAssetsSyncSource,
         otherLiabilities,
+        /** Its parts — the card edits only the typed figure. */
+        otherLiabilitiesParts: {
+          manual: otherLiabilitiesParts.manual,
+          itemized: otherLiabilitiesParts.itemized,
+          creditCardMapped: otherLiabilitiesParts.creditCardMapped,
+        },
         withdrawalRate: currentRow?.withdrawalRate ?? DEFAULT_WITHDRAWAL_RATE,
         withdrawalRateIsDefault: currentRow?.withdrawalRateIsDefault ?? true,
       };
@@ -758,9 +764,9 @@ export const networthRouter = createTRPCRouter({
         getEffectiveCash(ctx.db, settings, activeBudgetApi),
         getEffectiveOtherAssets(ctx.db, settings),
       ]);
-      const otherLiabilities =
-        setting("current_other_liabilities", 0) +
-        (await getEffectiveCreditCardDebt(ctx.db, activeBudgetApi));
+      const otherLiabilities = (
+        await getEffectiveOtherLiabilities(ctx.db, { activeBudgetApi })
+      ).total;
 
       // Find nearest snapshot to a target date
       async function getSnapshotAtDate(targetDate: string) {

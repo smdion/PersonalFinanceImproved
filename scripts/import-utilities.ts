@@ -255,6 +255,7 @@ async function main(): Promise<void> {
           month: row.month,
           cost: row.cost,
           usage: row.usage,
+          source: "import",
         })
         .onConflictDoUpdate({
           target: [
@@ -262,7 +263,7 @@ async function main(): Promise<void> {
             schema.utilityReading.year,
             schema.utilityReading.month,
           ],
-          set: { cost: row.cost, usage: row.usage },
+          set: { cost: row.cost, usage: row.usage, source: "import" },
         });
     }
 

@@ -29,7 +29,13 @@ export type DataSourceDefinition = {
 };
 
 export type DataSourceKey =
-  "balance" | "performance" | "basis" | "budgetApi" | "simplefin" | "secFacts";
+  | "balance"
+  | "performance"
+  | "basis"
+  | "budgetApi"
+  | "simplefin"
+  | "secFacts"
+  | "taxData";
 
 export const DATA_SOURCES: readonly DataSourceDefinition[] = [
   {
@@ -79,5 +85,15 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     rhythm: { kind: "days", days: 9 },
     rhythmLabel: "Weekly",
     focus: { topic: "settings", tab: "integrations", section: "sec" },
+  },
+  {
+    key: "taxData",
+    label: "Tax data",
+    mode: "automatic",
+    // Judged by its own publication dates (lib/pure/tax-data-status.ts),
+    // reported as warnings — never by age.
+    rhythm: { kind: "days", days: 100_000 },
+    rhythmLabel: "Yearly, with Ledgr updates",
+    focus: { topic: "settings", tab: "taxdata" },
   },
 ];

@@ -18,9 +18,7 @@ import {
   getLatestSnapshot,
   computeMortgageBalance,
   getActiveMortgageLoan,
-  parseAppSettings,
   getEffectiveCash,
-  getEffectiveCreditCardDebt,
   getEffectiveOtherAssets,
   invalidateYearEndCache,
   loadEffectiveSalaryProfile,
@@ -88,6 +86,7 @@ import {
   PERF_NOTE_MAX,
 } from "@/lib/pure/performance-annotations";
 import { localDateStr } from "@/lib/utils/date";
+import { getEffectiveOtherLiabilities } from "@/server/helpers/debts";
 
 const performanceAccountInput = z.object({
   institution: z.string().trim().min(1),
@@ -1493,7 +1492,6 @@ export const performanceRouter = createTRPCRouter({
             .where(eq(schema.propertyTaxes.year, year)),
         ] as const;
 
-        const setting = parseAppSettings(allSettings);
         const yearEndDate = `${year}-12-31`;
         const asOfDate = new Date(yearEndDate);
 
@@ -1506,10 +1504,14 @@ export const performanceRouter = createTRPCRouter({
         // Same addition as buildYearEndHistory's current-year branch
         // (snapshot.ts) — locks in whatever the live view showed right
         // before finalizing, so the permanently-stored figure doesn't
-        // silently drop the API-mapped credit-card debt component.
-        const otherLiabilities =
-          setting("current_other_liabilities", 0) +
-          (await getEffectiveCreditCardDebt(tx));
+        // silently drop the debts list or the API-mapped credit cards.
+        // Which debts count is judged at Dec 31 (local) of the year being
+        // finalized: one paid off since then still belongs to that year.
+        const otherLiabilities = (
+          await getEffectiveOtherLiabilities(tx, {
+            asOf: new Date(year, 11, 31),
+          })
+        ).total;
 
         // Compute cumulative home improvements from items table (not app_settings scalar)
         const homeImprovements = computeHomeImpCumulative(homeImpItems, year);

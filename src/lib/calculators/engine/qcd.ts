@@ -35,7 +35,6 @@
  * required are QCD's highest-value window for shrinking a future one.
  */
 import { roundToCents } from "../../utils/math";
-import { QCD_ANNUAL_CAP_PER_PERSON } from "../../constants";
 
 export interface QcdPersonInput {
   personId: number;
@@ -65,16 +64,15 @@ export interface QcdPersonResult {
 export function computeQcdAmounts(
   qcdMaximize: boolean,
   people: QcdPersonInput[],
+  /** The year's per-person QCD limit (`qcd_annual_limit`, grown). */
+  annualLimitPerPerson: number,
 ): QcdPersonResult[] {
   if (!qcdMaximize) return [];
   return people
     .map((p) => ({
       personId: p.personId,
       qcdAmount: roundToCents(
-        Math.max(
-          0,
-          Math.min(p.iraTraditionalBalance, QCD_ANNUAL_CAP_PER_PERSON),
-        ),
+        Math.max(0, Math.min(p.iraTraditionalBalance, annualLimitPerPerson)),
       ),
     }))
     .filter((r) => r.qcdAmount > 0.01);

@@ -102,7 +102,24 @@ export interface ResolveTaxParamsOptions {
    *               "show empty, never another year's figures".
    */
   onMissing?: "throw" | "nearest" | "null";
+  /**
+   * Resolve withholding / LTCG / IRMAA / FPL **each from its own year**: the
+   * newest year ≤ the resolved limits year that has a complete set for that
+   * section (every required filing status; withholding needs the standard
+   * `w4Checkbox=false` row for each), else the oldest complete year. Only
+   * the retirement projection passes this — it grows each table forward
+   * from its own year. Savings and paycheck record or show ONE year's
+   * figures, so they stay exact-year on purpose.
+   *
+   * A section published ahead of the limits year (FPL coverage-year rows
+   * come out ~10 months before the IRS limits) is ignored until that limits
+   * year exists: stale (last year's grown), never applied a year early.
+   */
+  sectionFallback?: boolean;
 }
+
+/** The yearly tables besides contribution limits. */
+export type TaxSection = "withholding" | "ltcg" | "irmaa" | "fpl";
 
 // ── Output shape ─────────────────────────────────────────────────────
 
@@ -116,8 +133,8 @@ export interface ResolvedTaxParams {
   /**
    * `tax_brackets` for `resolvedYear`, keyed
    * `[filingStatus][w4Checkbox]` -> ordered bracket list.
-   * `undefined` when the resolved year has no rows (caller falls back to
-   * its hardcoded default, same as today).
+   * `undefined` when no year has rows (the projection payload then stops
+   * with a message; nothing stands in).
    */
   withholdingBrackets:
     Record<string, Record<"true" | "false", TaxBracketEntry[]>> | undefined;
@@ -127,6 +144,12 @@ export interface ResolvedTaxParams {
   irmaaByStatus: Record<string, IrmaaBracketEntry[]> | undefined;
   /** `fpl_by_household` for `resolvedYear` as a `size -> dollars` map. `undefined` when none. */
   fplByHousehold: Record<number, number> | undefined;
+  /** With `sectionFallback`: the year each section's rows came from (null =
+   *  no complete year at all). Without it, every section is `resolvedYear`
+   *  or absent, and this is undefined. */
+  sectionYears?: Record<TaxSection, number | null>;
+  /** With `sectionFallback`: sections with no complete year at all. */
+  missing?: TaxSection[];
 }
 
 // ── Implementation ──────────────────────────────────────────────────
@@ -146,8 +169,8 @@ function toNum(v: number | string): number {
  *  take down every household's projections and the paycheck router with a
  *  throw, even though the previous year has complete data. The other four
  *  slices (`withholdingBrackets`/`ltcgByStatus`/`irmaaByStatus`/
- *  `fplByHousehold`) are `| undefined` by design and degrade gracefully —
- *  they don't need to gate year selection. */
+ *  `fplByHousehold`) resolve per section (`sectionFallback`), so they
+ *  don't need to gate year selection. */
 function candidateYears(rows: TaxParamsRowSets): number[] {
   return [...new Set(rows.contributionLimits.map((r) => r.taxYear))].sort(
     (a, b) => a - b,
@@ -185,7 +208,7 @@ export function resolveTaxParams(
 export function resolveTaxParams(
   rows: TaxParamsRowSets,
   requestedYear?: number,
-  opts?: { onMissing?: "throw" | "nearest" },
+  opts?: { onMissing?: "throw" | "nearest"; sectionFallback?: boolean },
 ): ResolvedTaxParams;
 export function resolveTaxParams(
   rows: TaxParamsRowSets,
@@ -204,8 +227,32 @@ export function resolveTaxParams(
     if (r.taxYear === resolvedYear) limits[r.limitType] = toNum(r.value);
   }
 
+  // Each section's year: the resolved limits year, or — with
+  // sectionFallback — its own newest complete year (see the option).
+  const fallback = opts.sectionFallback === true;
+  const sectionYears: Record<TaxSection, number | null> = {
+    withholding: fallback
+      ? pickSectionYear(
+          completeYears(rows.withholdingBrackets, (r) => !r.w4Checkbox),
+          resolvedYear,
+        )
+      : resolvedYear,
+    ltcg: fallback
+      ? pickSectionYear(completeYears(rows.ltcgBrackets), resolvedYear)
+      : resolvedYear,
+    irmaa: fallback
+      ? pickSectionYear(completeYears(rows.irmaaBrackets), resolvedYear)
+      : resolvedYear,
+    fpl: fallback
+      ? pickSectionYear(
+          [...new Set(rows.fpl.map((r) => r.taxYear))].sort((a, b) => a - b),
+          resolvedYear,
+        )
+      : resolvedYear,
+  };
+
   const whRows = rows.withholdingBrackets.filter(
-    (r) => r.taxYear === resolvedYear,
+    (r) => r.taxYear === sectionYears.withholding,
   );
   let withholdingBrackets:
     Record<string, Record<"true" | "false", TaxBracketEntry[]>> | undefined;
@@ -219,21 +266,23 @@ export function resolveTaxParams(
     }
   }
 
-  const ltcgRows = rows.ltcgBrackets.filter((r) => r.taxYear === resolvedYear);
+  const ltcgRows = rows.ltcgBrackets.filter(
+    (r) => r.taxYear === sectionYears.ltcg,
+  );
   const ltcgByStatus =
     ltcgRows.length > 0
       ? Object.fromEntries(ltcgRows.map((r) => [r.filingStatus, r.brackets]))
       : undefined;
 
   const irmaaRows = rows.irmaaBrackets.filter(
-    (r) => r.taxYear === resolvedYear,
+    (r) => r.taxYear === sectionYears.irmaa,
   );
   const irmaaByStatus =
     irmaaRows.length > 0
       ? Object.fromEntries(irmaaRows.map((r) => [r.filingStatus, r.brackets]))
       : undefined;
 
-  const fplRow = rows.fpl.find((r) => r.taxYear === resolvedYear);
+  const fplRow = rows.fpl.find((r) => r.taxYear === sectionYears.fpl);
   const fplByHousehold = fplRow
     ? Object.fromEntries(
         Object.entries(fplRow.amounts).map(([k, v]) => [Number(k), v]),
@@ -248,7 +297,41 @@ export function resolveTaxParams(
     ltcgByStatus,
     irmaaByStatus,
     fplByHousehold,
+    ...(fallback && {
+      sectionYears,
+      missing: (Object.keys(sectionYears) as TaxSection[]).filter(
+        (k) => sectionYears[k] === null,
+      ),
+    }),
   };
+}
+
+/** Years whose rows cover every required filing status (`keep` narrows
+ *  which rows count — withholding's standard, non-2(c) table). */
+function completeYears<R extends { taxYear: number; filingStatus: string }>(
+  rows: readonly R[],
+  keep: (r: R) => boolean = () => true,
+): number[] {
+  const byYear = new Map<number, Set<string>>();
+  for (const r of rows)
+    if (keep(r))
+      (
+        byYear.get(r.taxYear) ??
+        byYear.set(r.taxYear, new Set()).get(r.taxYear)!
+      ).add(r.filingStatus);
+  return [...byYear]
+    .filter(([, statuses]) =>
+      REQUIRED_FILING_STATUSES.every((f) => statuses.has(f)),
+    )
+    .map(([y]) => y)
+    .sort((a, b) => a - b);
+}
+
+/** Newest year ≤ `limitsYear`, else the oldest; null when there are none. */
+function pickSectionYear(years: number[], limitsYear: number): number | null {
+  if (years.length === 0) return null;
+  const earlier = years.filter((y) => y <= limitsYear);
+  return earlier.length > 0 ? earlier[earlier.length - 1]! : years[0]!;
 }
 
 /** Pub 590-A Worksheet 2-2: a reduced Roth IRA limit rounds UP to the next

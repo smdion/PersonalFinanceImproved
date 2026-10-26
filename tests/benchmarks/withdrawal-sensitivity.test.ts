@@ -12,6 +12,7 @@ import {
   IBBOTSON_CLASSES,
   make7525GlidePath,
 } from "./benchmark-helpers";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 const STOCK_BOND_CORRELATIONS = [
   { classAId: 1, classBId: 3, correlation: -0.1 },
@@ -38,6 +39,7 @@ describe("Withdrawal rate sensitivity", () => {
           },
           withdrawalTaxPreference: {},
           distributionTaxRates: {
+            ...shippedTaxTables(),
             traditionalFallbackRate: 0,
             roth: 0,
             hsa: 0,

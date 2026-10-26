@@ -94,6 +94,13 @@ type YnabTransaction = {
   cleared: string;
   approved: boolean;
   deleted: boolean;
+  subtransactions?: {
+    amount: number;
+    memo: string | null;
+    category_id: string | null;
+    category_name: string | null;
+    deleted: boolean;
+  }[];
 };
 
 type YnabResponse<T> = {
@@ -201,6 +208,16 @@ function mapTransaction(t: YnabTransaction): BudgetTransaction {
     cleared: t.cleared === "cleared" || t.cleared === "reconciled",
     approved: t.approved,
     deleted: t.deleted,
+    ...(t.subtransactions?.length && {
+      subtransactions: t.subtransactions
+        .filter((st) => !st.deleted)
+        .map((st) => ({
+          categoryId: st.category_id,
+          categoryName: st.category_name,
+          amount: fromMilliunits(st.amount),
+          memo: st.memo,
+        })),
+    }),
   };
 }
 

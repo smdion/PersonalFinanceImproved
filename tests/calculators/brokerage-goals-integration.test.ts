@@ -10,6 +10,7 @@ import { calculateBrokerageGoals } from "@/lib/calculators/brokerage-goals";
 import type { ProjectionInput } from "@/lib/calculators/types";
 import type { BrokerageGoalInput } from "@/lib/calculators/brokerage-goals";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 const AS_OF = new Date("2025-03-07");
 
@@ -46,6 +47,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        ...shippedTaxTables(),
         traditionalFallbackRate: 0.22,
         roth: 0,
         hsa: 0,

@@ -5,92 +5,36 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1788406154298,
-      "tag": "0000_v8_initial_schema",
+      "when": 1792888104087,
+      "tag": "0000_v9_initial_schema",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "7",
-      "when": 1788643606868,
-      "tag": "0001_nappy_blade",
+      "when": 1792971269363,
+      "tag": "0001_v090_tax_data_origin",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "7",
-      "when": 1788652231615,
-      "tag": "0002_talented_monster_badoon",
+      "when": 1792979635626,
+      "tag": "0002_v090_tax_data_updates",
       "breakpoints": true
     },
     {
       "idx": 3,
       "version": "7",
-      "when": 1788670995054,
-      "tag": "0003_past_rhodey",
+      "when": 1793023621673,
+      "tag": "0003_v090_utility_feed",
       "breakpoints": true
     },
     {
       "idx": 4,
       "version": "7",
-      "when": 1791835560186,
-      "tag": "0004_v085_investments",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "7",
-      "when": 1791858575688,
-      "tag": "0005_v086_schema_cleanup",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "7",
-      "when": 1792446873043,
-      "tag": "0006_v088_holding_periods",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "7",
-      "when": 1792448703605,
-      "tag": "0007_v088_drop_account_holdings",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1792459104126,
-      "tag": "0008_v088_paycheck_earnings",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "7",
-      "when": 1792520390630,
-      "tag": "0009_v0810_profile_sets",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "7",
-      "when": 1792547484959,
-      "tag": "0010_v0810_holding_period_parts",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "7",
-      "when": 1792604715218,
-      "tag": "0011_v0811_rmd_excess_target",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "7",
-      "when": 1792888104087,
-      "tag": "0012_v0814_perf_annotations",
+      "when": 1793025456054,
+      "tag": "0004_v090_debts",
       "breakpoints": true
     }
   ]

@@ -9,6 +9,7 @@
  */
 
 import type { Focus } from "./focus-topics";
+import { highInterestLineText } from "./debts";
 
 export type MilestoneSource =
   | "moneyGuy"
@@ -357,8 +358,7 @@ export const MILESTONES = [
     source: "moneyGuy",
     title: "3 · High-interest debt",
     rule: "Pay off credit cards and high-rate loans.",
-    adaptedNote:
-      "Money Guy's line moves with age: student loans above 6% in your 20s, 5% in your 30s, 4% in your 40s; car loans above 10% / 9% / 8%; any credit card balance.",
+    adaptedNote: highInterestLineText(),
     focus: { topic: "debts" },
   },
   {

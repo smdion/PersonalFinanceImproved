@@ -311,7 +311,7 @@ export interface ComputeTaxFromSlotsInput {
     brokerage: number;
     taxBrackets?: WithholdingBracket[];
     taxMultiplier?: number;
-    ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
+    ltcgBrackets: Record<string, { threshold: number | null; rate: number }[]>;
     /** See `toLtcgTaxableIncome`'s docblock — converts `actualTaxableIncome`
      *  (gross) into real taxable income before the LTCG bracket lookup
      *  below. Omitted ⇒ 0 (the prior behavior). */

@@ -13,33 +13,12 @@ import {
   describeBracketTargetChoice,
   describeDiscretionaryCapacityMath,
 } from "./bracket-target-narrative";
-import { LTCG_BRACKETS as CONFIG_LTCG_BRACKETS } from "@/lib/config/tax-tables";
-import { NIIT_RATE } from "@/lib/config/niit";
 
 const TIER_SOURCE_LABEL: Record<"roth" | "brokerage" | "hsa", string> = {
   roth: "Roth",
   brokerage: "Brokerage",
   hsa: "HSA",
 };
-
-/** The real LTCG rates (0%, 15%, 20% — identical across filing statuses,
- *  so any one status's ladder works) and the NIIT surtax rate — used only
- *  to LABEL a brokerage tier's rate as "capital-gains" vs "capital-gains +
- *  Medicare surtax" for the explanation text below. Not a second pricing
- *  computation: withdrawal-cost-ranking.ts already computed `costRate`
- *  itself (`ltcgRate` or `ltcgRate + NIIT_RATE`); this only pattern-matches
- *  the result against the small, fixed set of values it could legitimately
- *  be, to describe it in words. See that module for the real rate logic.
- *  Derived from the config module instead of a re-declared
- *  literal, so a rate-ladder change (legislative only — these are
- *  statutory percentages, not annually-indexed) can't drift between the
- *  two copies. */
-const LTCG_RATE_LADDER = CONFIG_LTCG_BRACKETS.MFJ.map((b) => b.rate);
-const RATE_EPSILON = 0.0005;
-
-function approxEquals(a: number, b: number): boolean {
-  return Math.abs(a - b) < RATE_EPSILON;
-}
 
 /** Explains WHAT KIND of rate a tier's `costRate` is and WHY, not just the
  *  number — a household may ask "why is Roth cheaper
@@ -57,6 +36,7 @@ function approxEquals(a: number, b: number): boolean {
 function describeTierRate(
   source: "roth" | "brokerage" | "hsa",
   costRate: number,
+  includesNiit: boolean,
 ): string {
   if (costRate <= 0) {
     if (source === "roth") {
@@ -78,18 +58,12 @@ function describeTierRate(
   if (source === "hsa") {
     return `taxed at your ${formatPercent(costRate, 1)} ordinary income rate (a non-medical HSA withdrawal)`;
   }
-  // brokerage
-  const withNiit = LTCG_RATE_LADDER.some((b) =>
-    approxEquals(costRate, b + NIIT_RATE),
-  );
-  const ltcgOnly = LTCG_RATE_LADDER.some((b) => approxEquals(costRate, b));
-  if (withNiit) {
+  // brokerage — the ranking says which rate it priced
+  // (withdrawal-cost-ranking.ts), so nothing is inferred from the number.
+  if (includesNiit) {
     return `${formatPercent(costRate, 1)} — your long-term capital-gains rate plus the 3.8% Medicare surtax, since this draw crosses that income threshold`;
   }
-  if (ltcgOnly) {
-    return `${formatPercent(costRate, 1)} long-term capital-gains rate`;
-  }
-  return `${formatPercent(costRate, 1)} marginal tax`;
+  return `${formatPercent(costRate, 1)} long-term capital-gains rate`;
 }
 
 /**
@@ -105,14 +79,20 @@ export function formatDiscretionaryTierBreakdown(
         source: "roth" | "brokerage" | "hsa";
         costRate: number;
         amount: number;
+        includesNiit?: true;
       }[]
     | undefined,
 ): string | undefined {
   if (!breakdown || breakdown.length === 0) return undefined;
-  const parts = breakdown.map((t) => {
-    const rate = describeTierRate(t.source, t.costRate);
-    return `${formatCurrency(t.amount)} ${TIER_SOURCE_LABEL[t.source]} (${rate})`;
-  });
+  // A tier with no real price (no filing status to rank by) isn't
+  // explained as a rate.
+  const parts = breakdown
+    .filter((t) => Number.isFinite(t.costRate))
+    .map((t) => {
+      const rate = describeTierRate(t.source, t.costRate, !!t.includesNiit);
+      return `${formatCurrency(t.amount)} ${TIER_SOURCE_LABEL[t.source]} (${rate})`;
+    });
+  if (parts.length === 0) return undefined;
   return `Household-wide, beyond the bracket target, cheapest source first: ${parts.join(" → ")}`;
 }
 

@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**362 procedures across 52 routers.**
+**385 procedures across 54 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -102,6 +102,17 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `getColumns` | query | `adminProcedure` | Get column metadata for a table.       |
 | `getRows`    | query | `adminProcedure` | Get paginated rows from a table.       |
 | `listTables` | query | `adminProcedure` | List all known tables with row counts. |
+
+## `debts`
+
+| Procedure     | Kind     | Auth                 | Description                                                       |
+| ------------- | -------- | -------------------- | ----------------------------------------------------------------- |
+| `create`      | mutation | `adminProcedure`     | (no description)                                                  |
+| `delete`      | mutation | `adminProcedure`     | (no description)                                                  |
+| `list`        | query    | `protectedProcedure` | Every debt (open first), with its payoff estimate.                |
+| `markPaidOff` | mutation | `adminProcedure`     | Paid off on `date`, keeping its last balance.                     |
+| `summary`     | query    | `protectedProcedure` | Other liabilities and its parts — the same figure net worth uses. |
+| `update`      | mutation | `adminProcedure`     | (no description)                                                  |
 
 ## `demo`
 
@@ -479,30 +490,49 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `update`             | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
 | `update`             | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
 
+## `settings/tax-data-sync`
+
+| Procedure    | Kind     | Auth                 | Description                                                        |
+| ------------ | -------- | -------------------- | ------------------------------------------------------------------ |
+| `approve`    | mutation | `adminProcedure`     | Apply the reviewed update, exactly as reviewed.                    |
+| `checkNow`   | mutation | `adminProcedure`     | (no description)                                                   |
+| `dismiss`    | mutation | `adminProcedure`     | (no description)                                                   |
+| `preview`    | query    | `protectedProcedure` | What the waiting update would change, and a hash to approve it by. |
+| `setEnabled` | mutation | `adminProcedure`     | (no description)                                                   |
+| `status`     | query    | `protectedProcedure` | On/off, the last check, and a summary of any waiting update.       |
+
 ## `settings/tax-limits`
 
-| Procedure | Kind     | Auth                 | Description      |
-| --------- | -------- | -------------------- | ---------------- |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
+| Procedure        | Kind     | Auth                 | Description                                                                                                      |
+| ---------------- | -------- | -------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `addYear`        | mutation | `adminProcedure`     | year as carried forward (replaced when the real figures ship). Tables that already have the year are left alone. |
+| `confirm`        | mutation | `adminProcedure`     | figure replaces it when it ships), but no longer needs attention.                                                |
+| `create`         | mutation | `adminProcedure`     | What Ledgr ships for this figure (null if it doesn't).                                                           |
+| `create`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
+| `create`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
+| `create`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
+| `create`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
+| `delete`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
+| `delete`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
+| `delete`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
+| `delete`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
+| `delete`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
+| `list`           | query    | `protectedProcedure` | Each row says whether Ledgr ships it (Reset to shipped vs delete).                                               |
+| `list`           | query    | `protectedProcedure` | (no description)                                                                                                 |
+| `list`           | query    | `protectedProcedure` | (no description)                                                                                                 |
+| `list`           | query    | `protectedProcedure` | (no description)                                                                                                 |
+| `list`           | query    | `protectedProcedure` | (no description)                                                                                                 |
+| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).                                                  |
+| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).                                                  |
+| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).                                                  |
+| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).                                                  |
+| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).                                                  |
+| `status`         | query    | `protectedProcedure` | Is the tax data current, and what was carried forward?                                                           |
+| `update`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
+| `update`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
+| `update`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
+| `update`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
+| `update`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
 
 ## `simplefin`
 
@@ -598,15 +628,18 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `utilities`
 
-| Procedure        | Kind     | Auth                 | Description                                                                                                                                                                      |
-| ---------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeSummary` | query    | `protectedProcedure` | Full per-service, per-year summary. Loads the stored readings and computes every derived value (total/avg/min/max cost & usage, $/unit, YoY) here. Nothing derived is persisted. |
-| `deleteReading`  | mutation | `adminProcedure`     | (no description)                                                                                                                                                                 |
-| `listServices`   | query    | `protectedProcedure` | All utility services ordered for display.                                                                                                                                        |
-| `updateReading`  | mutation | `adminProcedure`     | Update a reading's values by id (key fields stay fixed).                                                                                                                         |
-| `updateService`  | mutation | `adminProcedure`     | Update editable fields of an existing service by id (kind is immutable).                                                                                                         |
-| `upsertReading`  | mutation | `adminProcedure`     | Create or update a reading by its natural key (serviceId, year, month).                                                                                                          |
-| `upsertService`  | mutation | `adminProcedure`     | Create or update a service by its kind (unique).                                                                                                                                 |
+| Procedure                 | Kind     | Auth                 | Description                                                                                                                                                                      |
+| ------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `applyBudgetApiFeed`      | mutation | `adminProcedure`     | the same budget service wrote; never touches usage, or a cost someone changed after the review.                                                                                  |
+| `computeSummary`          | query    | `protectedProcedure` | Full per-service, per-year summary. Loads the stored readings and computes every derived value (total/avg/min/max cost & usage, $/unit, YoY) here. Nothing derived is persisted. |
+| `deleteReading`           | mutation | `adminProcedure`     | (no description)                                                                                                                                                                 |
+| `listBudgetApiCategories` | query    | `protectedProcedure` | one its bills are paid from. Empty until the budget has synced.                                                                                                                  |
+| `listServices`            | query    | `protectedProcedure` | All utility services ordered for display.                                                                                                                                        |
+| `previewBudgetApiFeed`    | query    | `protectedProcedure` | leaves alone (conflicts, credits, months no longer in the budget), and a hash the apply must match — it writes exactly what was reviewed.                                        |
+| `updateReading`           | mutation | `adminProcedure`     | Update a reading's values by id (key fields stay fixed).                                                                                                                         |
+| `updateService`           | mutation | `adminProcedure`     | Update editable fields of an existing service by id (kind is immutable).                                                                                                         |
+| `upsertReading`           | mutation | `adminProcedure`     | Create or update a reading by its natural key (serviceId, year, month).                                                                                                          |
+| `upsertService`           | mutation | `adminProcedure`     | Create or update a service by its kind (unique).                                                                                                                                 |
 
 ## `version`
 

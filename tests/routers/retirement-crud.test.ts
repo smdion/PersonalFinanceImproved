@@ -549,6 +549,44 @@ describe("retirement.returnRates", () => {
       expect(afterRows.length).toBe(1);
       expect(afterRows[0]!.age).toBe(30);
     });
+
+    it("collapses a breakpoint that repeats the previous rate", async () => {
+      // 30 → 7%; adding 40 at 7% changes nothing, so it isn't kept.
+      await caller.retirement.returnRates.upsert({
+        age: 40,
+        rateOfReturn: "0.07",
+      });
+      expect(
+        (await caller.retirement.returnRates.list()).map((r) => r.age),
+      ).toEqual([30]);
+    });
+
+    it("collapses the rows a change makes equal", async () => {
+      await caller.retirement.returnRates.upsert({
+        age: 50,
+        rateOfReturn: "0.06",
+      });
+      await caller.retirement.returnRates.upsert({
+        age: 60,
+        rateOfReturn: "0.05",
+      });
+      // 60 → 6% makes it repeat 50's rate.
+      await caller.retirement.returnRates.upsert({
+        age: 60,
+        rateOfReturn: "0.06",
+      });
+      expect(
+        (await caller.retirement.returnRates.list()).map((r) => r.age),
+      ).toEqual([30, 50]);
+      // Deleting 50 leaves nothing to merge; 30 stays the only row.
+      const fifty = (await caller.retirement.returnRates.list()).find(
+        (r) => r.age === 50,
+      )!;
+      await caller.retirement.returnRates.delete({ id: fifty.id });
+      expect(
+        (await caller.retirement.returnRates.list()).map((r) => r.age),
+      ).toEqual([30]);
+    });
   });
 
   describe("auth", () => {

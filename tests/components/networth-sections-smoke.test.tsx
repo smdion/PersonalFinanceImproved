@@ -61,7 +61,7 @@ describe("AssetsLiabilitiesCards smoke", () => {
     displayHomeValue: 400000,
     otherAssets: 0,
     mortgageBalance: 250000,
-    otherLiabilities: 0,
+    otherLiabilities: { manual: 0, itemized: 0, creditCardMapped: 0 },
     totalLiabilities: 250000,
     useMarketValue: true,
     hasHouse: true,
@@ -101,9 +101,24 @@ describe("AssetsLiabilitiesCards smoke", () => {
     expect(screen.getByText("Collectibles")).toBeInTheDocument();
   });
 
-  it("shows other liabilities row when otherLiabilities > 0", () => {
-    render(<AssetsLiabilitiesCards {...baseProps} otherLiabilities={10000} />);
-    expect(screen.getByText("Other Liabilities")).toBeInTheDocument();
+  it("always offers the typed figure; lists the debts list and mapped cards when present", () => {
+    const { rerender } = render(<AssetsLiabilitiesCards {...baseProps} />);
+    expect(screen.getByText(/Other debts, not itemized/)).toBeInTheDocument();
+    expect(screen.queryByText(/Debts \(list\)/)).toBeNull();
+    rerender(
+      <AssetsLiabilitiesCards
+        {...baseProps}
+        otherLiabilities={{
+          manual: 500,
+          itemized: 12000,
+          creditCardMapped: 800,
+        }}
+      />,
+    );
+    expect(screen.getByText(/Debts \(list\)/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Credit cards \(from budget\)/),
+    ).toBeInTheDocument();
   });
 });
 

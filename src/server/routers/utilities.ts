@@ -1,11 +1,29 @@
 /** House utilities tracker — metered services (gas/water/electric) and monthly readings. */
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { toNumber } from "@/server/helpers";
+import { toNumber, type Db } from "@/server/helpers";
 import { zDecimal } from "./settings/_shared";
-import { utilityKindSchema, utilityUnitSchema } from "@/lib/config/enum-values";
+import {
+  utilityKindSchema,
+  utilityUnitSchema,
+  type UtilitySource,
+} from "@/lib/config/enum-values";
+import { cacheGet } from "@/lib/budget-api/cache";
+import { getActiveBudgetApi } from "@/lib/budget-api/factory";
+import type {
+  BudgetCategoryGroup,
+  BudgetTransaction,
+} from "@/lib/budget-api/types";
+import {
+  feedMonths,
+  reconcileFeed,
+  sameCost,
+  type FeedService,
+} from "@/lib/pure/utility-cost-feed";
+import { createHash } from "crypto";
+import { TRPCError } from "@trpc/server";
 import { safeDivide } from "@/lib/utils/math";
 
 // ── Shared field validators ──
@@ -21,6 +39,17 @@ const readingValueFields = {
   usage: zDecimal.nullable().optional(),
   note: z.string().nullable().optional(),
 };
+
+/** Who wrote a reading's cost after a save: `manual` when the cost
+ *  changed (or is new), else whoever wrote it before. */
+function typedCostSource(
+  current: { cost: string; source: UtilitySource | null } | undefined,
+  cost: string,
+): UtilitySource | null {
+  if (current && sameCost(toNumber(current.cost), toNumber(cost)))
+    return current.source;
+  return "manual";
+}
 
 /** Service editable fields, shared between upsertService and updateService. */
 const serviceEditableFields = {
@@ -38,6 +67,8 @@ type ReadingSummary = {
   usage: number | null;
   note: string | null;
   costPerUnit: number | null;
+  /** Who wrote the cost (null: from before sources were tracked). */
+  source: UtilitySource | null;
 };
 
 /** Per-year aggregate for one service. All values derived at read time. */
@@ -53,7 +84,8 @@ type YearSummary = {
   avgUsage: number | null;
   minUsage: number | null;
   maxUsage: number | null;
-  /** totalCost / totalUsage; null when usage is missing/zero. */
+  /** Cost per unit over the months with both a cost and usage; null when
+   *  none has usage. */
   costPerUnit: number | null;
   /** Year-over-year change in totalCost vs the prior year; null for the first year. */
   yoyCostPct: number | null;
@@ -130,10 +162,22 @@ export const utilitiesRouter = createTRPCRouter({
               totalUsage != null ? safeDivide(totalUsage, usages.length) : null,
             minUsage: usages.length > 0 ? Math.min(...usages) : null,
             maxUsage: usages.length > 0 ? Math.max(...usages) : null,
-            costPerUnit:
-              totalUsage != null
-                ? safeDivide(totalCost, totalUsage, null)
-                : null,
+            // Months with both a cost and usage only — a cost-only month
+            // (a bill with no meter reading entered) has nothing to divide.
+            costPerUnit: (() => {
+              const metered = rows.filter((r) => r.usage != null);
+              const meteredUsage = metered.reduce(
+                (s, r) => s + toNumber(r.usage),
+                0,
+              );
+              return metered.length
+                ? safeDivide(
+                    metered.reduce((s, r) => s + toNumber(r.cost), 0),
+                    meteredUsage,
+                    null,
+                  )
+                : null;
+            })(),
             yoyCostPct: null as number | null, // filled in below
             readings: rows.map((r) => {
               const usage = r.usage != null ? toNumber(r.usage) : null;
@@ -143,6 +187,7 @@ export const utilitiesRouter = createTRPCRouter({
                 cost: toNumber(r.cost),
                 usage,
                 note: r.note,
+                source: r.source,
                 costPerUnit:
                   usage != null
                     ? safeDivide(toNumber(r.cost), usage, null)
@@ -194,6 +239,19 @@ export const utilitiesRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const [current] = await ctx.db
+        .select()
+        .from(schema.utilityReading)
+        .where(
+          and(
+            eq(schema.utilityReading.serviceId, input.serviceId),
+            eq(schema.utilityReading.year, input.year),
+            eq(schema.utilityReading.month, input.month),
+          ),
+        );
+      // A cost typed in is the household's; saving the same cost keeps
+      // whoever wrote it (the budget feed may still refresh its own).
+      const source = typedCostSource(current, input.cost);
       await ctx.db
         .insert(schema.utilityReading)
         .values({
@@ -203,6 +261,7 @@ export const utilitiesRouter = createTRPCRouter({
           cost: input.cost,
           usage: input.usage ?? null,
           note: input.note ?? null,
+          source,
         })
         .onConflictDoUpdate({
           target: [
@@ -214,6 +273,7 @@ export const utilitiesRouter = createTRPCRouter({
             cost: input.cost,
             usage: input.usage ?? null,
             note: input.note ?? null,
+            source,
           },
         });
       return { success: true };
@@ -231,7 +291,14 @@ export const utilitiesRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const updates: Record<string, string | null> = {};
-      if (input.cost !== undefined) updates.cost = input.cost;
+      if (input.cost !== undefined) {
+        const [current] = await ctx.db
+          .select()
+          .from(schema.utilityReading)
+          .where(eq(schema.utilityReading.id, input.id));
+        updates.cost = input.cost;
+        updates.source = typedCostSource(current, input.cost);
+      }
       if (input.usage !== undefined) updates.usage = input.usage ?? null;
       if (input.note !== undefined) updates.note = input.note ?? null;
       if (Object.keys(updates).length > 0) {
@@ -293,10 +360,33 @@ export const utilitiesRouter = createTRPCRouter({
         usageUnit: serviceEditableFields.usageUnit,
         sortOrder: serviceEditableFields.sortOrder,
         active: serviceEditableFields.active,
+        /** The budget category this service's cost is fed from (null: none). */
+        budgetApiCategoryId: z.string().min(1).nullable().optional(),
+        billingLagMonths: z.number().int().min(0).max(6).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const updates: Record<string, string | number | boolean | null> = {};
+      if (input.budgetApiCategoryId) {
+        const others = await ctx.db
+          .select()
+          .from(schema.utilityService)
+          .where(
+            eq(
+              schema.utilityService.budgetApiCategoryId,
+              input.budgetApiCategoryId,
+            ),
+          );
+        if (others.some((o) => o.id !== input.id))
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Another utility is already fed from that category.",
+          });
+      }
+      if (input.budgetApiCategoryId !== undefined)
+        updates.budgetApiCategoryId = input.budgetApiCategoryId;
+      if (input.billingLagMonths !== undefined)
+        updates.billingLagMonths = input.billingLagMonths;
       if (input.providerName !== undefined)
         updates.providerName = input.providerName;
       if (input.usageUnit !== undefined)
@@ -311,4 +401,173 @@ export const utilitiesRouter = createTRPCRouter({
       }
       return { success: true };
     }),
+
+  /** The active budget service's categories, for mapping a service to the
+   *  one its bills are paid from. Empty until the budget has synced. */
+  listBudgetApiCategories: protectedProcedure.query(async ({ ctx }) => {
+    const service = await getActiveBudgetApi(ctx.db);
+    if (service === "none") return { service, categories: [] };
+    const cached = await cacheGet<BudgetCategoryGroup[]>(
+      ctx.db,
+      service,
+      "categories",
+    );
+    // A category in use stays listed even if it's been hidden since.
+    const mapped = new Set(
+      (await ctx.db.select().from(schema.utilityService))
+        .map((s) => s.budgetApiCategoryId)
+        .filter(Boolean),
+    );
+    return {
+      service,
+      categories: (cached?.data ?? []).flatMap((g) =>
+        g.categories
+          .filter((c) => (!g.hidden && !c.hidden) || mapped.has(c.id))
+          .map((c) => ({ id: c.id, groupName: g.name, name: c.name })),
+      ),
+    };
+  }),
+
+  /** What pulling costs from the budget would write (changes) and what it
+   *  leaves alone (conflicts, credits, months no longer in the budget), and
+   *  a hash the apply must match — it writes exactly what was reviewed. */
+  previewBudgetApiFeed: protectedProcedure.query(async ({ ctx }) => {
+    const plan = await planBudgetApiFeed(ctx.db);
+    return { ...plan, planHash: planHash(plan.changes) };
+  }),
+
+  /** Write the reviewed costs — fills empty months and refreshes the ones
+   *  the same budget service wrote; never touches usage, or a cost someone
+   *  changed after the review. */
+  applyBudgetApiFeed: adminProcedure
+    .input(z.object({ planHash: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const plan = await planBudgetApiFeed(ctx.db);
+      if (planHash(plan.changes) !== input.planHash)
+        throw new TRPCError({
+          code: "CONFLICT",
+          message:
+            "The costs changed since you reviewed them — review the pull again.",
+        });
+      if (plan.service === "none") return { written: 0 };
+      const source = plan.service;
+      let written = 0;
+      await ctx.db.transaction(async (tx) => {
+        for (const c of plan.changes) {
+          const rows =
+            c.previous === null
+              ? await tx
+                  .insert(schema.utilityReading)
+                  .values({
+                    serviceId: c.serviceId,
+                    year: c.year,
+                    month: c.month,
+                    cost: String(c.cost),
+                    source,
+                  })
+                  .onConflictDoNothing()
+                  .returning({ id: schema.utilityReading.id })
+              : // Only if it's still this service's, at the reviewed cost.
+                await tx
+                  .update(schema.utilityReading)
+                  .set({ cost: String(c.cost) })
+                  .where(
+                    and(
+                      eq(schema.utilityReading.serviceId, c.serviceId),
+                      eq(schema.utilityReading.year, c.year),
+                      eq(schema.utilityReading.month, c.month),
+                      eq(schema.utilityReading.source, source),
+                      sql`round(cast(${schema.utilityReading.cost} as numeric) * 100) = ${Math.round(c.previous * 100)}`,
+                    ),
+                  )
+                  .returning({ id: schema.utilityReading.id });
+          written += rows.length;
+        }
+      });
+      return { written };
+    }),
 });
+
+/** A fingerprint of the changes a pull would write. */
+function planHash(
+  changes: {
+    serviceId: number;
+    year: number;
+    month: number;
+    cost: number;
+    previous: number | null;
+  }[],
+): string {
+  return createHash("sha256")
+    .update(
+      JSON.stringify(
+        changes.map((c) => [c.serviceId, c.year, c.month, c.cost, c.previous]),
+      ),
+    )
+    .digest("hex");
+}
+
+/** The feed's plan against the current readings (shared by preview and
+ *  apply, so apply writes exactly what the preview shows). Active services
+ *  with a category only. */
+async function planBudgetApiFeed(db: Db) {
+  const service = await getActiveBudgetApi(db);
+  const services = await db.select().from(schema.utilityService);
+  const fed: FeedService[] = services
+    .filter((s) => s.active && s.budgetApiCategoryId)
+    .map((s) => ({
+      serviceId: s.id,
+      categoryId: s.budgetApiCategoryId!,
+      billingLagMonths: s.billingLagMonths,
+    }));
+  type Plan = ReturnType<typeof reconcileFeed>;
+  const empty = {
+    service,
+    mappedServices: fed.length,
+    syncedAt: null as Date | null,
+    changes: [] as Plan["changes"],
+    conflicts: [] as Plan["conflicts"],
+    credits: [] as Plan["credits"],
+    gone: [] as Plan["gone"],
+  };
+  if (service === "none" || fed.length === 0) return empty;
+  const cached = await cacheGet<BudgetTransaction[]>(
+    db,
+    service,
+    "transactions",
+  );
+  if (!cached) return empty;
+  const readings = await db.select().from(schema.utilityReading);
+  let months;
+  try {
+    months = feedMonths(cached.data, fed);
+  } catch (err) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+  const plan = reconcileFeed(
+    months,
+    readings.map((r) => ({
+      serviceId: r.serviceId,
+      year: r.year,
+      month: r.month,
+      cost: toNumber(r.cost),
+      source: r.source,
+    })),
+    service,
+  );
+  const order = (
+    a: { year: number; month: number; serviceId: number },
+    b: { year: number; month: number; serviceId: number },
+  ) => b.year - a.year || b.month - a.month || a.serviceId - b.serviceId;
+  return {
+    ...empty,
+    syncedAt: cached.fetchedAt,
+    changes: plan.changes.sort(order),
+    conflicts: plan.conflicts.sort(order),
+    credits: plan.credits.sort(order),
+    gone: plan.gone.sort(order),
+  };
+}

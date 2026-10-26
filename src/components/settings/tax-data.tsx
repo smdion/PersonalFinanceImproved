@@ -7,9 +7,10 @@
  * (every one of them is "what does the tax law say for year X") and share
  * a year toggle in the top right that persists as you switch between them;
  * Return Rates (age-indexed market-return assumptions, not tax law — no
- * year axis at all) joins the same left-column nav for one-stop "external
- * inputs the projection engine reads" reference data, but the year toggle
- * hides for it since it doesn't apply.
+ * year axis at all) and Fixed by law (the statutory, non-indexed figures,
+ * read-only) join the same left-column nav for one-stop "external inputs
+ * the projection engine reads" reference data; the year toggle hides for
+ * them since it doesn't apply.
  *
  * The 5 tax tables have no FK/join relating them — a year existing in one
  * doesn't mean it exists in the others (resolveTaxParams, see
@@ -21,6 +22,7 @@
  * degrading downstream.
  */
 import { useState } from "react";
+import { TaxDataUpdates } from "./tax-data-updates";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
@@ -35,7 +37,9 @@ import { TaxBracketsSettings } from "@/components/settings/tax-brackets";
 import { LtcgBracketsSettings } from "@/components/settings/ltcg-brackets";
 import { IrmaaBracketsSettings } from "@/components/settings/irmaa-brackets";
 import { FplByHouseholdSettings } from "@/components/settings/fpl-by-household";
+import { IrsLimitGrowthSetting } from "./irs-limit-growth";
 import { ReturnRatesSettings } from "@/components/settings/return-rates";
+import { FixedByLaw } from "./fixed-by-law";
 import { useDeepLinkParam } from "@/lib/hooks/use-deep-link-param";
 import {
   SETTINGS_SECTION_PARAM,
@@ -88,6 +92,8 @@ export function TaxDataSettings() {
     SECTION_KEYS,
     usePersistedSetting<SectionKey>(SK_SETTINGS_TAX_DATA_SECTION, "limits"),
   );
+  // Return Rates and Fixed by law have no year axis.
+  const isYearSection = TAX_YEAR_SECTIONS.some((s) => s.key === section);
   // Client-side-only years with no backing row anywhere yet — added via
   // "+Year" below so a brand-new year is selectable before any of the 5
   // tables has a row for it. Not persisted: once a row exists for a year
@@ -123,9 +129,17 @@ export function TaxDataSettings() {
   const [showAddYear, setShowAddYear] = useState(false);
   const [newYear, setNewYear] = useState("");
 
-  const handleAddYear = () => {
+  const utils = trpc.useUtils();
+  const addYear = trpc.settings.taxData.addYear.useMutation({
+    onSuccess: () => utils.settings.invalidate(),
+  });
+
+  /** One step: every table copies its latest year forward as carried
+   *  (replaced when a Ledgr update brings the real figures). */
+  const handleAddYear = async () => {
     const yr = parseInt(newYear, 10);
     if (isNaN(yr) || yr < TAX_YEAR_MIN || yr > TAX_YEAR_MAX) return;
+    await addYear.mutateAsync({ year: yr });
     if (!unionYears.includes(yr)) setExtraYears((prev) => [...prev, yr]);
     setPersistedYear(yr);
     setShowAddYear(false);
@@ -151,9 +165,11 @@ export function TaxDataSettings() {
       </nav>
 
       <div>
+        {isYearSection && <TaxDataUpdates admin={admin} />}
+
         {/* Return Rates has no year axis — the shared toggle doesn't
             apply there and would just be inert/confusing. */}
-        {section !== "returns" && (
+        {isYearSection && (
           <div className="mb-2 flex flex-col items-end gap-2">
             <YearSelector
               years={unionYears}
@@ -182,10 +198,14 @@ export function TaxDataSettings() {
                 </label>
                 <button
                   onClick={handleAddYear}
-                  className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
+                  disabled={addYear.isPending}
+                  className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
                 >
                   Add
                 </button>
+                <span className="text-faint text-xs">
+                  Copies the latest figures forward, to check
+                </span>
                 <button
                   onClick={() => setShowAddYear(false)}
                   className="text-muted hover:text-primary px-3 py-1 text-sm"
@@ -204,6 +224,7 @@ export function TaxDataSettings() {
             against. Only visibility toggles. */}
         <div className={section === "limits" ? "" : "hidden"}>
           <ContributionLimitsSettings year={activeYear} />
+          <IrsLimitGrowthSetting />
         </div>
         <div className={section === "tax" ? "" : "hidden"}>
           <TaxBracketsSettings year={activeYear} />
@@ -219,6 +240,9 @@ export function TaxDataSettings() {
         </div>
         <div className={section === "returns" ? "" : "hidden"}>
           <ReturnRatesSettings />
+        </div>
+        <div className={section === "law" ? "" : "hidden"}>
+          <FixedByLaw />
         </div>
       </div>
     </div>

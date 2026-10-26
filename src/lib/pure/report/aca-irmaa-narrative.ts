@@ -115,7 +115,7 @@ export function buildWatchlist(
       // BEFORE comparing against a fixed real-dollar watchlist threshold
       // -- comparing it nominal, as this used to, silently shrinks the
       // real window this flag fires in every year further from
-      // FPL_COVERAGE_YEAR (by year 40 at typical inflation, a nominal
+      // the FPL table's own year (by year 40 at typical inflation, a nominal
       // $3,000 window is worth well under half that in real terms, so
       // this watchlist entry would quietly stop firing in exactly the
       // late years where the cliff bites hardest). this

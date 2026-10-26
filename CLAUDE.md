@@ -33,10 +33,12 @@ The advisor should have enough context to disagree.
 
 ## Project shortcuts
 
-- **Schema is generated.** `src/lib/db/schema-pg.ts` is the source of truth.
-  After editing it, run `npx tsx scripts/gen-sqlite-schema.ts` to regenerate
-  `schema-sqlite.ts`. Never edit `schema-sqlite.ts` directly — your change
-  will be silently overwritten on the next regen.
+- **Schema is generated.** The PostgreSQL schema is the source of truth:
+  tables live by domain in `src/lib/db/pg/*.ts`, re-exported by
+  `src/lib/db/schema-pg.ts` (a new domain file gets an `export *` line
+  there). After editing, run `npx tsx scripts/gen-sqlite-schema.ts` to
+  regenerate `src/lib/db/sqlite/` and `schema-sqlite.ts`. Never edit those
+  directly — your change will be silently overwritten on the next regen.
 - After touching engine modules, routers, or schema files, run
   `pnpm docs:verify` so DESIGN.md auto-gen counts stay accurate.
   Use `pnpm docs:update` to rewrite the markers in place. The PostToolUse

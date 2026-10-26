@@ -113,7 +113,6 @@ describe("links into pages", () => {
   const PAGE_LEVEL = [
     "balances",
     "brokerageGoals",
-    "debts",
     "investedAssets",
     "netWorth",
     "performance",

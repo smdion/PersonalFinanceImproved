@@ -485,7 +485,8 @@ active one rather than erroring.
 2. **Generic over specific.** Contribution accounts, savings goals, budget categories — all user-definable.
 3. **Snapshots for history, settings for current state.** Time-varying data gets point-in-time records.
 4. **Computed values are not stored — with documented exceptions.** Live totals, percentages, and projections are recalculated from source data at read time. **Exceptions** fall into three classes: (a) stored because inputs may not survive, (b) a deliberate point-in-time commitment recorded under whatever was active at save time — the "recorded fact" pattern — which stays fixed even though its inputs DO survive and remain deterministic, because re-deriving it later would mean the value silently changes out from under something that already treated it as settled (a materialized future transaction, a pinned actual), or (c) a pure performance cache of an expensive-but-fully-reproducible computation — inputs survive, recomputation is deterministic, and nothing downstream treats it as settled (unlike (b)), but the computation itself is expensive enough that repeating it on every read is wasteful. Class (c) is only safe when the cache key captures every input that could change the result — an incomplete key silently serves stale-but-presented-as-fresh data, which is exactly the failure mode (a)/(b) don't have to guard against.
-   - **`projection_cache`** (`schema-pg.ts`, `src/server/helpers/projection-cache.ts`) — the deterministic Retirement engine result, Monte Carlo, and Coast FIRE MC. Class (c): the cache key is a SHA-256 hash of the canonicalized EXACT object passed to the pure calculator (not the raw tRPC input — the router resolves profile IDs into live DB state that isn't otherwise captured, so hashing only the tRPC input would silently serve stale cross-device results). `engineVersion` is folded into the uniqueness constraint so an engine-logic change invalidates every existing row without a manual cache-clear. TTL 36h; eviction is opportunistic (fire-and-forget on write, not cron-driven) rather than a scheduled job, since writes are infrequent relative to reads. `seed` is stored WITH the row (a miss mints one, a hit replays it) so a cached Monte Carlo result stays honestly reproducible rather than a frozen snapshot of randomness masquerading as determinism.
+   - **`projection_cache`** (`lib/db/pg/api-sync.ts`, `src/server/helpers/projection-cache.ts`) — the deterministic Retirement engine result, Monte Carlo, and Coast FIRE MC. Class (c): the cache key is a SHA-256 hash of the canonicalized EXACT object passed to the pure calculator (not the raw tRPC input — the router resolves profile IDs into live DB state that isn't otherwise captured, so hashing only the tRPC input would silently serve stale cross-device results). `engineVersion` is folded into the uniqueness constraint so an engine-logic change invalidates every existing row without a manual cache-clear. TTL 36h; eviction is opportunistic (fire-and-forget on write, not cron-driven) rather than a scheduled job, since writes are infrequent relative to reads. `seed` is stored WITH the row (a miss mints one, a hit replays it) so a cached Monte Carlo result stays honestly reproducible rather than a frozen snapshot of randomness masquerading as determinism.
+   - **`utility_reading.cost` filled from the budget** (`source` `ynab`/`actual`, the utilities cost feed) — a month's net spend in the mapped budget category, stored because the budget's synced transactions only reach back about a year and a half; older months can't be recomputed, and the household can override any month (a typed cost is never replaced). Refreshed only by an explicit pull the household reviews. Class (a).
    - **`net_worth_annual`** — finalized year-end records capture point-in-time state (tax location breakdown from a Dec 31 snapshot that may later be pruned). Class (a).
    - **`annualReturnPct`** — stored on finalized `annual_performance` rows; recomputed on read for non-finalized years. Per-account returns are always computed on read from the row's own figures (`account_performance.annual_return_pct` is not read). A finalized year's stored return may not be reproducible from its rows (an override, imported history), so an edit to that year's account rows keeps its basis rather than recomputing it (`rebaseLockedReturn`). Class (a).
    - **`lifetimeGains`, `lifetimeContributions`, `lifetimeMatch`** — cumulative fields on `annual_performance`. Computed at finalization from previous year's baseline. **Cascade rule:** when `account_performance` rows on a finalized year are edited, that year's category and Portfolio rows and the lifetime fields of every later year move by exactly what the edit changed — never re-summed from the first stored year, because a baseline can predate the tracked rows (history carried in at setup, an account that changed category). One path does this for every edit (`syncYearRollups` in `src/server/helpers/performance-rollups.ts`); without it, corrections to historical data silently drift every forward lifetime total. Class (a).
@@ -510,15 +511,43 @@ database (`db-migrate.ts`, inside the migration's transaction, just before
 its SQL drops what the converter reads) and on an older backup being
 restored (`backup-transforms.ts` → `transformBackupToCurrentSchema`, e.g.
 `transformV0810ProfileSets`). `db-migrate.ts` is compiled on its own and
-can't import from `src/`, so it keeps an **identical copy** of the converter
-between `// BEGIN …` / `// END …` markers — a test checks the copies match
-(`tests/db/v0810-profile-sets.test.ts`); edit both together. Converters work
+can't import from `src/`, so while the migration is in the journal it keeps
+an **identical copy** of the converter between `// BEGIN …` / `// END …`
+markers, with a test that the copies match; edit both together. (The
+v0.8.10 converter's live copy went with the v0.9.0 squash — only the
+restore path in `src/lib/db/v0810-profile-sets.ts` remains.) Converters work
 on snake_case rows (JSON as object or text), are idempotent (a no-op once
 their source is gone) and write only non-default values; the restore path
 also drops the columns the migration drops, and each new data-changing
 migration tag goes in `V08_SCHEMA_TAGS`. A replayed unique violation is
-swallowed on PostgreSQL, so a migration that adds a unique index asserts it
-exists afterwards (`assertV0810IndexPg`).
+swallowed on PostgreSQL: a squash replay's final check requires every index
+of the latest snapshot, and an incremental migration that adds a unique
+index over existing data asserts it exists afterwards.
+
+### Migration squashes
+
+A squash folds a finished release line into one `0000_vN_initial_schema`
+baseline, **generated from that line's last release** (a worktree at its
+tag) — never from a schema that includes the new release's changes, whose
+`ADD COLUMN`s a replay against an existing table would silently skip. The
+new release's own migrations stay incremental after the baseline. Rules:
+
+- Carry the baseline's hand-edited section forward (the profile seed) and
+  no data statements from the squashed migrations.
+- The generated snapshot must equal the old line's last snapshot apart from
+  `id`/`prevId`; `drizzle-kit check` and `generate` report no changes.
+- Installs older than the squashed line's last release are **refused**
+  (`assertSupportedUpgradePath`: every table and column of the baseline's
+  snapshot, checked before any backup or change — not swallowed). They
+  update to that release first.
+- The squash replay is one transaction ending in a check that every table
+  and column of the latest snapshot exists; a failure stops startup with
+  nothing changed.
+- Keep every old tag in `V08_SCHEMA_TAGS` (backups name them) and every
+  hash in `V08_MIGRATION_HASHES`.
+- Verify on a restored prod dump, a fresh install from the new chain and one
+  from the old chain (`pg_dump -s`, by name), both dialects, plus a refused
+  older install.
 
 ### Account Categories
 

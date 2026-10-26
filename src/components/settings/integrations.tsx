@@ -21,6 +21,7 @@ import { PreviewPanel } from "./integrations-preview-panel";
 import { SimplefinCard } from "./integrations-simplefin";
 import { TiingoCard } from "./integrations-tiingo";
 import { SecCard } from "./integrations-sec";
+import { TaxDataSyncCard } from "./integrations-tax-data";
 import {
   ConnectionStatusLine,
   ConnectionResultMessage,
@@ -525,6 +526,7 @@ export function IntegrationsSettings() {
   const { data: simplefinStatus } = trpc.simplefin.getStatus.useQuery();
   const { data: tiingoStatus } = trpc.tiingo.getStatus.useQuery();
   const { data: secStatus } = trpc.sec.getStatus.useQuery();
+  const { data: taxDataSync } = trpc.settings.taxDataSync.status.useQuery();
   const [section, setSection] = useDeepLinkParam(
     SETTINGS_SECTION_PARAM,
     SECTION_KEYS,
@@ -644,6 +646,9 @@ export function IntegrationsSettings() {
               {s.key === "sec" && (
                 <NavStatusDot connected={secStatus?.connected ?? false} />
               )}
+              {s.key === "taxData" && (
+                <NavStatusDot connected={taxDataSync?.enabled ?? false} />
+              )}
               {s.label}
             </button>
           ))}
@@ -690,6 +695,9 @@ export function IntegrationsSettings() {
           </div>
           <div className={section === "sec" ? "" : "hidden"}>
             <SecCard />
+          </div>
+          <div className={section === "taxData" ? "" : "hidden"}>
+            <TaxDataSyncCard />
           </div>
           {section === "syncBehavior" && <SyncBehaviorSettings />}
         </div>

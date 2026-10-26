@@ -12,9 +12,7 @@
  * current year for point-in-time balances); expected dates come from the
  * Retirement projection — the same run the dashboard Retirement card shows.
  */
-import { z } from "zod/v4";
 import { settingsLocationLabel } from "@/lib/config/settings-sections";
-import type { Focus } from "@/lib/config/focus-topics";
 import {
   CHECKPOINT_START_AGE,
   CUSTOM_GOAL_METRICS,
@@ -25,9 +23,7 @@ import {
   HOUSING_COST_SHARE,
   LIMIT_FILLED_TOLERANCE,
   LOW_COST_EXPENSE_RATIO,
-  MAX_CUSTOM_GOALS,
   MILESTONE_BY_ID,
-  MILESTONE_CHECKLIST_ITEMS,
   MILESTONE_CHECKLIST_TODOS,
   MONEY_GUY_CHECKPOINTS,
   MONEY_GUY_NAPKIN_RETURN,
@@ -36,14 +32,9 @@ import {
   PAID_OFF_HOME_BY_AGE,
   PROTECTION_CHECKLIST_AGE,
   REBALANCE_BANDS,
-  CHECKPOINT_SOURCES,
-  DEFAULT_CHECKPOINT_SOURCE,
-  DEFAULT_SAVINGS_TARGET_SOURCE,
   GOAL_HORIZON_YEARS,
   PF_FUND_EXPENSE_RATIO,
   PF_RETIREMENT_RATE,
-  SAVINGS_TARGET_SOURCES,
-  type SavingsTargetSource,
   type BuiltInMilestoneId,
   type CheckpointSource,
   type CustomGoalMetric,
@@ -60,7 +51,6 @@ import {
   COMPOSITION_BUCKET_LABELS,
   wealthScoreTier,
 } from "@/lib/config/display-labels";
-import type { CompositionBucket } from "@/lib/config/enum-values";
 import {
   compactCurrency,
   formatCurrency,
@@ -70,158 +60,23 @@ import {
   formatSavingsRate,
 } from "@/lib/utils/format";
 import { calculateLoanMonthlyPayment, safeDivide } from "@/lib/utils/math";
-import { type HouseholdSavings } from "@/lib/pure/contributions";
+import { isHighInterestDebt } from "@/lib/config/debts";
+import type {
+  CustomGoal,
+  MatchShortfall,
+  MilestoneInput,
+  MilestoneLimit,
+  MilestoneProjectionYear,
+  MilestoneResult,
+  MilestoneValue,
+  MilestoneYear,
+} from "@/lib/pure/milestones.types";
+
+export * from "@/lib/pure/milestones.types";
 
 // ---------------------------------------------------------------------------
-// Types
+// Shared helpers
 // ---------------------------------------------------------------------------
-
-/** One year of household history, as the milestones read it. */
-export type MilestoneYear = {
-  year: number;
-  isCurrent: boolean;
-  /** Household age (average of the people) — the wealth formula's age. */
-  age: number;
-  /** Market-value net worth. */
-  netWorth: number;
-  /** Liquid investments: every investment account plus cash. */
-  liquid: number;
-  cash: number;
-  retirement: number;
-  brokerage: number;
-  /** Gross pretax income — see wealthFormulaIncome. */
-  grossIncome: number;
-  /** A full year's contributions incl. employer money (finalized years
-   *  only — the current year's are still accruing). */
-  contributions: number | null;
-  /** Wealth-formula score (net worth ÷ expected net worth). */
-  wealthScore: number;
-  fiProgress: number;
-  mortgageBalance: number;
-  otherLiabilities: number;
-};
-
-/** One projected year, as the milestones read it. */
-export type MilestoneProjectionYear = {
-  year: number;
-  age: number;
-  /** Projected investments plus today's cash held flat. */
-  liquid: number;
-  /** Projected gross pay (null once retired). */
-  salary: number | null;
-  /** Projected contributions incl. employer money (null once retired). */
-  contributions: number | null;
-};
-
-export type MilestoneLimit = {
-  /** An IRA/HSA limit — FOO step 5 (config `fooStep`). */
-  fooStep5: boolean;
-  /** In the Retirement parent category — counts toward FOO step 6. */
-  retirement: boolean;
-  /** Who it's for ("Household" for a household-wide limit). */
-  owner: string;
-  /** The account-type label, e.g. "IRA". */
-  label: string;
-  contributed: number;
-  limit: number;
-  /** Filled through payroll (true), outside it (false — an IRA, an HSA
-   *  funded directly: this year's room stays open until the filing
-   *  deadline), or unknown (null — nothing contributed yet). */
-  payroll?: boolean | null;
-  /** The owner's paychecks left this year (payroll rows). */
-  checksLeft?: number | null;
-};
-
-/** An account getting less than its full employer match. */
-export type MatchShortfall = {
-  owner: string;
-  label: string;
-  /** Match left on the table a year. */
-  missed: number;
-  /** Percent of pay elected now (whole number); null for a fixed amount. */
-  currentPct: number | null;
-  /** Percent of pay that gets the full match; null when it doesn't
-   *  depend on the rate. */
-  fullPct: number | null;
-};
-
-export type MilestoneChecklist = Partial<
-  Record<MilestoneChecklistItem, boolean>
->;
-
-export const customGoalSchema = z.object({
-  id: z.string().min(1).max(40),
-  label: z.string().trim().min(1).max(60),
-  metric: z.enum(
-    Object.keys(CUSTOM_GOAL_METRICS) as [
-      CustomGoalMetric,
-      ...CustomGoalMetric[],
-    ],
-  ),
-  target: z.number().positive().max(1e12),
-  /** Grow the target with inflation from the year it was set. */
-  todaysDollars: z.boolean(),
-  /** The year the target is in "today's dollars" of. */
-  setYear: z.number().int().min(1900).max(2200),
-});
-export type CustomGoal = z.infer<typeof customGoalSchema>;
-
-export const customGoalsSchema = z
-  .array(customGoalSchema)
-  .max(MAX_CUSTOM_GOALS)
-  .refine((goals) => new Set(goals.map((g) => g.id)).size === goals.length, {
-    message: "Goal ids must be unique",
-  });
-
-export const milestoneChecklistSchema = z
-  .object(
-    Object.fromEntries(
-      Object.keys(MILESTONE_CHECKLIST_ITEMS).map((k) => [
-        k,
-        z.boolean().optional(),
-      ]),
-    ) as Record<MilestoneChecklistItem, z.ZodOptional<z.ZodBoolean>>,
-  )
-  .strict();
-
-export const checkpointSourceSchema = z.enum(
-  Object.keys(CHECKPOINT_SOURCES) as [CheckpointSource, ...CheckpointSource[]],
-);
-
-export const savingsTargetSourceSchema = z.enum(
-  Object.keys(SAVINGS_TARGET_SOURCES) as [
-    SavingsTargetSource,
-    ...SavingsTargetSource[],
-  ],
-);
-
-/** Stored settings → validated values. Anything unreadable reads as empty
- *  (writes are validated with the same schemas, so this only guards old or
- *  hand-edited data). */
-export function parseMilestoneSettings(raw: {
-  customGoals: unknown;
-  checklist: unknown;
-  checkpointSource?: unknown;
-  savingsTargetSource?: unknown;
-}): {
-  customGoals: CustomGoal[];
-  checklist: MilestoneChecklist;
-  checkpointSource: CheckpointSource;
-  savingsTargetSource: SavingsTargetSource;
-} {
-  const goals = customGoalsSchema.safeParse(raw.customGoals);
-  const checklist = milestoneChecklistSchema.safeParse(raw.checklist);
-  const source = checkpointSourceSchema.safeParse(raw.checkpointSource);
-  const target = savingsTargetSourceSchema.safeParse(raw.savingsTargetSource);
-  return {
-    customGoals: goals.success ? goals.data : [],
-    checklist: checklist.success ? checklist.data : {},
-    checkpointSource: source.success ? source.data : DEFAULT_CHECKPOINT_SOURCE,
-    savingsTargetSource: target.success
-      ? target.data
-      : DEFAULT_SAVINGS_TARGET_SOURCE,
-  };
-}
 
 /** The money a checkpoint table measures: Money Guy counts liquid
  *  investments (retirement + brokerage + HSA + cash), Fidelity retirement
@@ -232,150 +87,6 @@ export function checkpointBalance(
 ): number {
   return source === "moneyGuy" ? y.liquid : y.retirement;
 }
-
-export type MilestoneInput = {
-  asOfYear: number;
-  /** Oldest first; the last row is the current year. */
-  years: MilestoneYear[];
-  projection: {
-    years: MilestoneProjectionYear[];
-    inflationRate: number;
-  } | null;
-  /** FI number in today's dollars (yearly expenses ÷ withdrawal rate). */
-  fiTarget: number;
-  /** Money Guy savings rates (match counted below the high-income
-   *  threshold) and this year's totals. */
-  savings: {
-    /** Retirement + Portfolio money — the 25% rule and FOO step 7. */
-    rate: number;
-    /** Retirement category only — FOO step 6's "25% before maxing out". */
-    retirementRate: number;
-    saved: number;
-    savedWithMatch: number;
-    compensation: number;
-    matchCounted: boolean;
-    /** At or above the household's high-income threshold. */
-    highIncome: boolean;
-    highIncomeThreshold: number;
-    /** Both goal groups with the match rule applied, for the breakdown. */
-    breakdown: HouseholdSavings;
-  } | null;
-  match: {
-    captured: number;
-    available: number;
-    /** Each account getting less than its full match. */
-    shortfalls?: MatchShortfall[];
-  } | null;
-  limits: MilestoneLimit[] | null;
-  /** A year's employee contributions to Retirement accounts that have no
-   *  IRS limit (shown next to step 6, never part of its limit test). */
-  retirementUnlimited: number | null;
-  efundMonths: number | null;
-  /** Essential expenses a month (the emergency-fund goal's basis); null
-   *  when unknown. */
-  efundEssentialMonthly?: number | null;
-  mortgage: {
-    active: boolean;
-    monthlyHousingCost: number;
-    payoffYear: number | null;
-    /** Today's balance, annual rate (fraction) and principal + interest a
-     *  month — sizing an extra payment; absent when unknown. */
-    balance?: number | null;
-    annualRate?: number | null;
-    principalAndInterest?: number | null;
-  } | null;
-  holdings: {
-    /** Share of the portfolio whose asset class is known. */
-    coverage: number;
-    /** Dollars whose mix is known — the shares' denominator. */
-    knownValue: number;
-    /** Dollars in fund categories not linked to any asset class. */
-    unlinkedValue: number;
-    /** Dollars in SimpleFIN accounts not linked to a Ledgr account. */
-    unlinkedAccountsValue?: number;
-    classes: {
-      name: string;
-      share: number;
-      targetShare: number | null;
-      /** Dollars of this class in taxable accounts, and in tax-advantaged
-       *  ones (where a rebalancing sale costs no tax). */
-      taxableValue?: number;
-      shelteredValue?: number;
-    }[];
-    expenseRatio: number | null;
-    /** Share of the portfolio with a known expense ratio. */
-    costCoverage: number;
-    /** Each held fund with a known expense ratio and main category. */
-    funds: {
-      name: string;
-      bucket: CompositionBucket;
-      expenseRatio: number;
-      /** Held in an account whose funds the household picks (an IRA,
-       *  a taxable account) — not only in fixed workplace/HSA menus. */
-      switchable?: boolean;
-    }[];
-  } | null;
-  checklist: MilestoneChecklist;
-  customGoals: CustomGoal[];
-  /** Which income-multiple checkpoints the household follows. */
-  checkpointSource: CheckpointSource;
-  /** Which savings-rate rule the household follows. */
-  savingsTargetSource: SavingsTargetSource;
-  /** After-tax ("mega backdoor") room per person: the IRS total-additions
-   *  limit less employee deferrals (catch-up excluded) and employer money. */
-  megaBackdoor: { owner: string; room: number; limit: number }[] | null;
-  /** Active brokerage goals (money held in the brokerage account). */
-  brokerageGoals: { name: string; targetYear: number }[] | null;
-};
-
-export type MilestoneImpact = {
-  /** perYear: a yearly amount (match missed, savings gap, unused room);
-   *  oneTime: a lump to reach a target. */
-  kind: "perYear" | "oneTime";
-  amount: number;
-};
-
-export type MilestoneStatus = "reached" | "onTrack" | "behind" | "unknown";
-
-export type MilestoneValue = {
-  kind: "currency" | "percent" | "multiple" | "months" | "count";
-  amount: number;
-};
-
-export type MilestoneResult = MilestoneDefinition & {
-  status: MilestoneStatus;
-  /** Needs action now (the Checkup's red). */
-  alert: boolean;
-  value: MilestoneValue | null;
-  target: MilestoneValue | null;
-  /** 0–1 toward the target, when it's a distance. */
-  progress: number | null;
-  /** Your figure against the rule, in a few words. */
-  headline: string;
-  /** A badge-sized version of the headline (the dashboard Checkup). */
-  short: string;
-  /** Reached / expected context ("Reached 2023", "On pace for 2031"). */
-  note: string | null;
-  /** The step that closes the gap or gets there sooner. */
-  nextStep: string | null;
-  /** Where the next step is done, when that isn't the milestone's own page. */
-  nextStepFocus?: Focus;
-  /** The funds (or other things) the next step is about — lets another
-   *  recommendation that already covers them stand in for this one. */
-  subjects?: string[];
-  reachedYear: number | null;
-  expectedYear: number | null;
-  expectedAge: number | null;
-  /** Everything this milestone contributes to the timeline. */
-  achievements: { year: number; label: string }[];
-  /** The dollars closing the gap would move — set where the gap is already
-   *  worked out, so Recommendations rank by it without re-deriving it. */
-  impact: MilestoneImpact | null;
-};
-
-// ---------------------------------------------------------------------------
-// Shared helpers
-// ---------------------------------------------------------------------------
 
 /** The income multiple a checkpoint table expects at an age (linear between
  *  checkpoints, from 0× at CHECKPOINT_START_AGE; flat past the last). */
@@ -1235,20 +946,7 @@ function foo(
     );
   }
 
-  out.push(
-    now.otherLiabilities <= 0
-      ? result("foo3", {
-          status: "reached",
-          headline: "No debt besides the mortgage",
-        })
-      : result("foo3", {
-          status: "unknown",
-          headline: `${formatCurrency(now.otherLiabilities)} of other debt`,
-          note: "Includes credit-card balances — Ledgr can't tell what's paid in full each month or what the rates are",
-          nextStep:
-            "Pay off any card balance you carry, and loans above Money Guy's age line",
-        }),
-  );
+  out.push(highInterestDebtStep(input, now));
 
   out.push({ ...efund, ...definition("foo4"), id: "foo4" });
   out.push(limitStep("foo5", input));
@@ -1266,25 +964,165 @@ function foo(
         }),
   );
 
+  out.push(debtFreeStep(input, now));
+  return out;
+}
+
+/** FOO step 3 — high-interest debt, judged per debt against Money Guy's
+ *  line for its owner's age (lib/config/debts.ts). Card balances mapped
+ *  from the budget aren't judged (usually paid in full each month); a card
+ *  on the debts list is a balance carried. */
+function highInterestDebtStep(
+  input: MilestoneInput,
+  now: MilestoneYear,
+): MilestoneResult {
+  const debts = input.debts;
+  if (!debts)
+    return now.otherLiabilities <= 0
+      ? result("foo3", {
+          status: "reached",
+          headline: "No debt besides the mortgage",
+        })
+      : result("foo3", {
+          status: "unknown",
+          headline: `${formatCurrency(now.otherLiabilities)} of other debt`,
+          note: "Includes credit-card balances — Ledgr can't tell what's paid in full each month or what the rates are",
+          nextStep:
+            "Pay off any card balance you carry, and loans above Money Guy's age line",
+          nextStepFocus: { topic: "debts" },
+        });
+  const open = debts.filter((d) => d.open && d.balance > 0);
+  const manual = input.otherDebt?.manual ?? 0;
+  const cardsNote =
+    (input.otherDebt?.creditCardMapped ?? 0) > 0
+      ? "Card balances from your budget aren't judged — add a card you carry month to month to the debts list"
+      : null;
+  const noRate = open.filter((d) => d.rate == null && d.kind !== "credit_card");
+  const high = open.filter(
+    (d) =>
+      (d.rate != null || d.kind === "credit_card") &&
+      isHighInterestDebt(d.kind, d.rate ?? 0, d.ownerAge),
+  );
+  if (high.length > 0) {
+    const interest = high.reduce((s, d) => s + d.balance * (d.rate ?? 0), 0);
+    const names = high.map((d) =>
+      d.rate != null ? `${d.name} (${formatPercent(d.rate, 1)})` : d.name,
+    );
+    return result("foo3", {
+      status: "behind",
+      alert: true,
+      headline: `${formatCurrency(high.reduce((s, d) => s + d.balance, 0))} of high-interest debt`,
+      note:
+        [
+          cardsNote,
+          noRate.length > 0
+            ? `No rate yet for ${noRate.map((d) => d.name).join(", ")}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join(". ") || null,
+      nextStep: `Pay off ${names.join(", ")} — above Money Guy's line for your age`,
+      nextStepFocus: { topic: "debts" },
+      subjects: high.map((d) => d.name),
+      impact: interest > 0 ? { kind: "perYear", amount: interest } : null,
+    });
+  }
+  if (manual > 0 || noRate.length > 0)
+    return result("foo3", {
+      status: "unknown",
+      headline:
+        noRate.length > 0
+          ? `No rate for ${noRate.map((d) => d.name).join(", ")}`
+          : `${formatCurrency(manual)} of other debt not itemized`,
+      note: cardsNote,
+      nextStep:
+        "List each debt with its interest rate on Liabilities, so it can be judged against Money Guy's line",
+      nextStepFocus: { topic: "debts" },
+    });
+  return result("foo3", {
+    status: "reached",
+    headline:
+      open.length === 0
+        ? "No debt besides the mortgage"
+        : "No high-interest debt",
+    note: cardsNote,
+  });
+}
+
+/** FOO step 9 — debt-free: the mortgage and every other debt. The expected
+ *  year is the last payoff among them. */
+function debtFreeStep(
+  input: MilestoneInput,
+  now: MilestoneYear,
+): MilestoneResult {
   const payoffYear = input.mortgage?.payoffYear ?? null;
-  if (!owesMortgage(input, now) && now.otherLiabilities <= 0) {
-    out.push(result("foo9", { status: "reached", headline: "Debt-free" }));
-  } else if (owesMortgage(input, now)) {
-    out.push(
-      result("foo9", {
+  const mortgage = owesMortgage(input, now);
+  const debts = input.debts;
+  const achievements = (debts ?? [])
+    .filter((d) => !d.open && d.paidOffYear != null)
+    .map((d) => ({ year: d.paidOffYear!, label: `Paid off ${d.name}` }));
+  if (!debts) {
+    if (!mortgage && now.otherLiabilities <= 0)
+      return result("foo9", { status: "reached", headline: "Debt-free" });
+    if (mortgage && now.otherLiabilities <= 0)
+      return result("foo9", {
         status: "onTrack",
         headline: payoffYear
           ? `Mortgage paid off ${payoffYear}`
           : "Mortgage in progress",
         expectedYear: payoffYear,
-      }),
-    );
-  } else {
-    out.push(
-      result("foo9", { status: "unknown", headline: "Other debt in progress" }),
-    );
+      });
+    return result("foo9", {
+      status: "unknown",
+      headline: mortgage
+        ? "Mortgage and other debt in progress"
+        : "Other debt in progress",
+    });
   }
-  return out;
+  const open = debts.filter((d) => d.open && d.balance > 0);
+  const manual = input.otherDebt?.manual ?? 0;
+  if (!mortgage && open.length === 0 && manual <= 0)
+    return result("foo9", {
+      status: "reached",
+      headline: "Debt-free",
+      achievements,
+    });
+  const never = open.filter((d) => d.never);
+  if (never.length > 0)
+    return result("foo9", {
+      status: "behind",
+      headline: `${never.map((d) => d.name).join(", ")} never pays off at today's payment`,
+      nextStep: "Pay more than the interest each month",
+      nextStepFocus: { topic: "debts" },
+      achievements,
+    });
+  const stale = open.filter((d) => d.stale);
+  const unknownDebt = open.some((d) => d.payoffYear == null);
+  if (manual > 0 || unknownDebt || (mortgage && payoffYear == null))
+    return result("foo9", {
+      status: "unknown",
+      headline: mortgage
+        ? "Mortgage and other debt in progress"
+        : "Other debt in progress",
+      nextStep:
+        stale.length > 0
+          ? `Update the balance of ${stale.map((d) => d.name).join(", ")} on Liabilities — its payoff estimate has passed`
+          : unknownDebt
+            ? "Add each debt's rate and monthly payment on Liabilities to estimate when it's paid off"
+            : null,
+      nextStepFocus: unknownDebt ? { topic: "debts" } : undefined,
+      achievements,
+    });
+  const year = Math.max(
+    ...(mortgage && payoffYear != null ? [payoffYear] : []),
+    ...open.map((d) => d.payoffYear!),
+  );
+  return result("foo9", {
+    status: "onTrack",
+    headline: `Debt-free ${year}`,
+    expectedYear: year,
+    achievements,
+  });
 }
 
 /** A mortgage is still owed: the active loan, or a balance in this year's

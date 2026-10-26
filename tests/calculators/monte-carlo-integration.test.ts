@@ -9,6 +9,7 @@ import { describe, it, expect } from "vitest";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
 import type { ProjectionInput, MonteCarloInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 const AS_OF = new Date("2025-03-07");
 
@@ -45,6 +46,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        ...shippedTaxTables(),
         traditionalFallbackRate: 0.22,
         roth: 0,
         hsa: 0,
@@ -400,6 +402,7 @@ describe("monte carlo integration", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
           hsa: 0,
@@ -630,6 +633,7 @@ describe("monte carlo integration", () => {
         withdrawalTaxPreference: { "401k": "traditional" },
         withdrawalStrategy: "guyton_klinger",
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,

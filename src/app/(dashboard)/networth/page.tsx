@@ -202,7 +202,7 @@ export default function NetWorthPage() {
     otherAssets,
     otherAssetItems,
     otherAssetsSyncSource,
-    otherLiabilities,
+    otherLiabilitiesParts,
     hasHouse,
   } = data;
 
@@ -388,7 +388,7 @@ export default function NetWorthPage() {
               otherAssetItems={otherAssetItems}
               otherAssetsSyncSource={otherAssetsSyncSource}
               mortgageBalance={mortgageBalance}
-              otherLiabilities={otherLiabilities}
+              otherLiabilities={otherLiabilitiesParts}
               totalLiabilities={result.totalLiabilities}
               useMarketValue={useMarketValue}
               hasHouse={hasHouse}

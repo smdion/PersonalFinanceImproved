@@ -81,9 +81,8 @@ export interface RothConversionInput {
    * TWO YEARS LATER (IRMAA's own 2-year lookback: year-N income sets
    * year-(N+2)'s premium), so the caller must grow this table to year
    * N+2's vintage, not year N's — see `decumulation-year.ts`'s
-   * `grownIrmaaBracketsForCap`. Undefined falls back to the hardcoded
-   * (ungrown) `IRMAA_BRACKETS` default, same as pre-Phase-3 behavior. */
-  irmaaBrackets?: Record<string, IrmaaBracket[]>;
+   * `grownIrmaaBracketsForCap`. */
+  irmaaBrackets: Record<string, IrmaaBracket[]>;
   filingStatus?: FilingStatusType | null;
   /** Current balances (mutated in place). */
   balances: TaxBuckets;
@@ -169,11 +168,9 @@ export interface IrmaaInput {
    * IRMAA brackets grown to year N's vintage (the surcharge SCHEDULE
    * that applies this year, regardless of which year's MAGI it's
    * evaluated against — see `decumulation-year.ts`'s
-   * `grownIrmaaBracketsForCheck`). Undefined falls back to the
-   * hardcoded (ungrown) `IRMAA_BRACKETS` default, same as pre-Phase-3
-   * behavior. NOT the same growth vintage as `RothConversionInput.irmaaBrackets` —
+   * `grownIrmaaBracketsForCheck`). NOT the same growth vintage as `RothConversionInput.irmaaBrackets` —
    * see that field's docblock for why the two differ. */
-  irmaaBrackets?: Record<string, IrmaaBracket[]>;
+  irmaaBrackets: Record<string, IrmaaBracket[]>;
 }
 
 export interface IrmaaResult {
@@ -204,8 +201,8 @@ export interface AcaInput {
    *  benefit, unlike income-tax provisional income or IRMAA MAGI. */
   ssIncome: number;
   /**
-   * `(1 + inflationRate) ^ (year - FPL_COVERAGE_YEAR)` (see
-   * `aca-tables.ts`'s `FPL_COVERAGE_YEAR` docblock) — grows the ACA
+   * `(1 + inflationRate) ^ (year - fplYear)` (the poverty levels'
+   * coverage year, bracket-growth.ts `taxTableYears`) — grows the ACA
    * subsidy cliff (400% FPL) forward instead of holding it flat nominal.
    * REQUIRED, not optional: making this required rather than defaulting to
    * 1 means a future caller can't silently skip growth by omission. Growth
@@ -214,10 +211,8 @@ export interface AcaInput {
    * — mathematically identical to growing each FPL cell first
    * (fpl*4*k === (fpl*k)*4). */
   fplGrowthFactor: number;
-  /** DB-resolved FPL map from `fpl_by_household`. Same
-   *  override-else-default pattern as `ltcgBrackets`/`irmaaBrackets`:
-   *  undefined ⇒ the hardcoded `FPL_BY_HOUSEHOLD` fallback. */
-  fplByHousehold?: Record<number, number>;
+  /** The coverage year's poverty levels (`fpl_by_household`). */
+  fplByHousehold: Record<number, number>;
 }
 
 export interface AcaResult {
@@ -712,7 +707,7 @@ export function checkAca(input: AcaInput): AcaResult {
   // Grow the 400%-FPL cliff forward instead of holding it flat nominal —
   // mathematically identical to growing each FPL cell first and
   // multiplying by 4 after (fpl*4*k === (fpl*k)*4). `fplByHousehold` is
-  // the DB-resolved FPL map; undefined ⇒ hardcoded fallback.
+  // the coverage year's poverty levels.
   const acaCliff =
     getAcaSubsidyCliff(householdSize, fplByHousehold) * fplGrowthFactor;
   const projectedMagi = acaMagi({

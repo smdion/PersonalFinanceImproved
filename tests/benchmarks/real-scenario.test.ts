@@ -8,6 +8,7 @@ import {
   CORRELATIONS,
   CURRENT_GLIDE_PATH,
 } from "./benchmark-helpers";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 describe(
   "Full lifecycle scenario: accumulation + decumulation",
@@ -74,6 +75,7 @@ describe(
             ira: "traditional" as const,
           },
           distributionTaxRates: {
+            ...shippedTaxTables(),
             traditionalFallbackRate: 0.22,
             roth: 0,
             hsa: 0,

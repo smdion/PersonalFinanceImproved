@@ -49,6 +49,7 @@
  */
 import type { ProjectionInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../../helpers/tax-data";
 
 export const RETIRING_MIDYEAR_AS_OF = new Date("2026-04-14T12:00:00Z");
 
@@ -71,6 +72,7 @@ export function makeRetiringMidyearInput(
       withdrawalSplits: { "401k": 1.0 },
       withdrawalTaxPreference: { "401k": "traditional" },
       distributionTaxRates: {
+        ...shippedTaxTables(),
         traditionalFallbackRate: 0.22,
         roth: 0,
         hsa: 0,

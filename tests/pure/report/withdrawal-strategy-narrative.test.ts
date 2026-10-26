@@ -83,10 +83,24 @@ describe("formatDiscretionaryTierBreakdown — 'why this rate' explanations (fou
 
   it("labels an LTCG-plus-NIIT rate as including the Medicare surtax", () => {
     const result = formatDiscretionaryTierBreakdown([
-      { source: "brokerage", costRate: 0.15 + 0.038, amount: 1000 },
+      {
+        source: "brokerage",
+        costRate: 0.15 + 0.038,
+        amount: 1000,
+        includesNiit: true,
+      },
     ])!;
     expect(result).toMatch(/Medicare surtax/i);
     expect(result).toMatch(/18\.8%/);
+  });
+
+  it("reads the surtax from the tier, not the number (rates are editable)", () => {
+    // 18.8% without the flag is a capital-gains rate someone set, not NIIT.
+    const result = formatDiscretionaryTierBreakdown([
+      { source: "brokerage", costRate: 0.188, amount: 1000 },
+    ])!;
+    expect(result).not.toMatch(/Medicare surtax/i);
+    expect(result).toMatch(/18\.8% long-term capital-gains rate/);
   });
 });
 

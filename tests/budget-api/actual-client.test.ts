@@ -871,6 +871,49 @@ describe("ActualClient", () => {
         amount: -50,
       });
     });
+
+    it("a split keeps its own category and carries its live parts", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: [
+            {
+              id: "a1",
+              name: "Checking",
+              type: "checking",
+              offbudget: false,
+              closed: false,
+              balance: 0,
+            },
+          ],
+        }),
+      );
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: [
+            {
+              id: "tx-2",
+              account: "a1",
+              date: "2026-02-05",
+              amount: -14010,
+              category: "utilities",
+              cleared: true,
+              reconciled: false,
+              subtransactions: [
+                { amount: -9010, category: "water", notes: null },
+                { amount: -5000, category: "trash", notes: "trash" },
+                { amount: -100, category: "x", tombstone: true },
+              ],
+            },
+          ],
+        }),
+      );
+      const [tx] = await client.getTransactions("2026-01-01");
+      expect(tx!.categoryId).toBe("utilities");
+      expect(tx!.subtransactions).toEqual([
+        { categoryId: "water", categoryName: null, amount: -90.1, memo: null },
+        { categoryId: "trash", categoryName: null, amount: -50, memo: "trash" },
+      ]);
+    });
   });
 
   describe("deleteTransaction", () => {

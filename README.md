@@ -96,6 +96,12 @@ All configuration is through environment variables. Copy `.env.example` to `.env
 | `DATABASE_URL` | PostgreSQL connection string (e.g. `postgresql://user:pass@host:5432/ledgr`). Omit for SQLite. | _(none — SQLite)_ |
 | `SQLITE_PATH`  | Path to the SQLite database file (used only when `DATABASE_URL` is unset)                      | `data/ledgr.db`   |
 
+### Optional — tax data updates
+
+| Variable              | Description                                                                    | Default                          |
+| --------------------- | ------------------------------------------------------------------------------ | -------------------------------- |
+| `LEDGR_TAX_DATA_SYNC` | `off` disables the weekly check for community tax-data releases on this server | _(on when an admin turns it on)_ |
+
 ### Optional — authentication
 
 | Variable                | Description                                                                        |
@@ -238,6 +244,7 @@ All three are configured from **Settings → Integrations** — there are no cre
 - **YNAB (You Need A Budget)** — Generate a personal access token at [YNAB Developer Settings](https://app.ynab.com/settings/developer), paste it in, and pick a budget. Syncs accounts, categories, monthly summaries, and transactions with delta sync for fast incremental updates. Two-way: category-goal targets and portfolio snapshots can be pushed back.
 - **Actual Budget** — Requires a running [Actual Budget HTTP API](https://github.com/jhonderson/actual-http-api) wrapper in front of your Actual server. Enter the server URL, API key, and budget sync ID. Outbound requests to private IP ranges are blocked unless the host is in `ALLOWED_ACTUAL_HOSTS`.
 - **SimpleFIN Bridge** — Read-only daily data per linked account: balances, holdings and investment transactions (used for live balances, benchmarks, holdings history and suggested Performance fills). No budget sync.
+- **Tax data updates** — Optional, off unless you turn it on (onboarding offers it). Once a week Ledgr checks this project's signed tax-data release on GitHub for new tax figures between Ledgr updates — one plain download from `github.com`, nothing about your household sent. A newer file is verified against a key built into Ledgr and checked, then waits in **Settings → Reference Data** for an admin to review and apply; figures you've changed are never touched. `LEDGR_TAX_DATA_SYNC=off` turns it off for the whole server. Behind a proxy, set `NODE_USE_ENV_PROXY=1`.
 
 The integration layer hardens every outbound call: typed error classification, exponential backoff with `Retry-After` support on rate limits, deterministic idempotency keys so retries don't create duplicate transactions, and drift detection after every sync that surfaces broken account mappings in the UI.
 

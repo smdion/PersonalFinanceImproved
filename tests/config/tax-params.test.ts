@@ -9,8 +9,11 @@
  * rewrite deliberately changes.
  */
 import { describe, it, expect } from "vitest";
-import fs from "node:fs";
-import path from "node:path";
+import {
+  taxDataBrackets,
+  taxDataLimits,
+  taxDataWithholding,
+} from "../helpers/tax-data";
 import {
   resolveTaxParams,
   type TaxParamsRowSets,
@@ -21,52 +24,18 @@ import {
 // data, not a hand-typed copy.
 // ---------------------------------------------------------------------------
 
-const SEED = fs.readFileSync(
-  path.resolve(__dirname, "../../seed-reference-data.sql"),
-  "utf8",
-);
-
 function parseLimits(): TaxParamsRowSets["contributionLimits"] {
-  const out: TaxParamsRowSets["contributionLimits"] = [];
-  const re = /\((\d{4}), '([a-z0-9_]+)', ([\d.]+),/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(SEED)) !== null) {
-    out.push({ taxYear: Number(m[1]), limitType: m[2]!, value: m[3]! });
-  }
-  return out;
+  return taxDataLimits();
 }
 
 function parseWithholding(): TaxParamsRowSets["withholdingBrackets"] {
-  const out: TaxParamsRowSets["withholdingBrackets"] = [];
-  const re = /\((\d{4}), '(MFJ|Single|HOH)', (true|false), '(\[.*?\])'\)/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(SEED)) !== null) {
-    out.push({
-      taxYear: Number(m[1]),
-      filingStatus: m[2]!,
-      w4Checkbox: m[3] === "true",
-      brackets: JSON.parse(m[4]!),
-    });
-  }
-  return out;
+  return taxDataWithholding();
 }
 
 function parseBracketMaps(
-  needle: string,
+  needle: "threshold" | "magiThreshold",
 ): { taxYear: number; filingStatus: string; brackets: unknown[] }[] {
-  const out: { taxYear: number; filingStatus: string; brackets: unknown[] }[] =
-    [];
-  const re = /\((\d{4}), '(MFJ|Single|HOH)', '(\[[^']*\])'\)/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(SEED)) !== null) {
-    if (!m[3]!.includes(needle)) continue;
-    out.push({
-      taxYear: Number(m[1]),
-      filingStatus: m[2]!,
-      brackets: JSON.parse(m[3]!),
-    });
-  }
-  return out;
+  return taxDataBrackets(needle === "magiThreshold" ? "irmaa" : "ltcg");
 }
 
 function seedRows(overrides: Partial<TaxParamsRowSets> = {}): TaxParamsRowSets {
@@ -396,5 +365,73 @@ describe("resolveTaxParams — no tax_params rows (old-backup restore)", () => {
     const withVintage = resolveTaxParams(seedRows());
     expect(r.limits).toEqual(withVintage.limits);
     expect(r.withholdingBrackets).toEqual(withVintage.withholdingBrackets);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Per-section years (sectionFallback — the retirement projection only).
+// ---------------------------------------------------------------------------
+
+describe("resolveTaxParams — sectionFallback", () => {
+  // 2027 IRS limits published; 2027 withholding only partly entered (MFJ
+  // only), no 2027 LTCG/IRMAA/FPL yet.
+  const limits2027 = parseLimits()
+    .filter((r) => r.taxYear === 2026)
+    .map((r) => ({ ...r, taxYear: 2027 }));
+  const mfjOnly2027 = parseWithholding()
+    .filter((r) => r.taxYear === 2026 && r.filingStatus === "MFJ")
+    .map((r) => ({ ...r, taxYear: 2027 }));
+  const rows = seedRows({
+    contributionLimits: [...parseLimits(), ...limits2027],
+    withholdingBrackets: [...parseWithholding(), ...mfjOnly2027],
+  });
+
+  it("each section comes from its own newest complete year", () => {
+    const r = resolveTaxParams(rows, 2027, { sectionFallback: true });
+    expect(r.resolvedYear).toBe(2027);
+    expect(r.sectionYears).toEqual({
+      // MFJ-only 2027 is incomplete — a Single household would get [] tax.
+      withholding: 2026,
+      ltcg: 2026,
+      irmaa: 2026,
+      fpl: 2026,
+    });
+    expect(r.missing).toEqual([]);
+    expect(r.withholdingBrackets?.Single?.false?.length).toBeGreaterThan(0);
+    expect(r.irmaaByStatus).toBeDefined();
+  });
+
+  it("a profile pinned below every section year uses the oldest complete year", () => {
+    const r = resolveTaxParams(
+      seedRows({ fpl: [{ taxYear: 2026, amounts: { "1": 15650 } }] }),
+      2025,
+      { sectionFallback: true },
+    );
+    expect(r.resolvedYear).toBe(2025);
+    // Only 2026 FPL exists (as in the seed): use it, don't fall to code.
+    expect(r.sectionYears?.fpl).toBe(2026);
+    expect(r.fplByHousehold).toEqual({ 1: 15650 });
+    // IRMAA's only year in the seed is 2026 too.
+    expect(r.sectionYears?.irmaa).toBe(2026);
+  });
+
+  it("a table with no complete year is reported missing", () => {
+    const r = resolveTaxParams(seedRows({ irmaaBrackets: [] }), 2026, {
+      sectionFallback: true,
+    });
+    expect(r.sectionYears?.irmaa).toBeNull();
+    expect(r.missing).toEqual(["irmaa"]);
+    expect(r.irmaaByStatus).toBeUndefined();
+  });
+
+  it("without the option every section stays on the resolved year (savings, paycheck)", () => {
+    const r = resolveTaxParams(rows, 2027, { onMissing: "nearest" });
+    expect(r.resolvedYear).toBe(2027);
+    expect(r.sectionYears).toBeUndefined();
+    expect(r.missing).toBeUndefined();
+    // Exact year: 2027 withholding is the MFJ-only partial set, LTCG none.
+    expect(Object.keys(r.withholdingBrackets ?? {})).toEqual(["MFJ"]);
+    expect(r.ltcgByStatus).toBeUndefined();
+    expect(resolveTaxParams(rows, 2028, { onMissing: "null" })).toBeNull();
   });
 });

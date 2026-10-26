@@ -512,6 +512,8 @@ export const dualIncomeFamilyProfile: DemoProfile = {
     { age: 85, rateOfReturn: "0.045" },
   ],
 
+  debts: [],
+
   mortgageLoans: [
     {
       name: "Primary Residence",

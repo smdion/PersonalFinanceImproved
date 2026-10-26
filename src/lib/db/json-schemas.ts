@@ -68,8 +68,38 @@ export const ltcgBracketEntrySchema = z.object({
   rate: z.number(),
 });
 
-/** ltcg_brackets.brackets — ordered list of LTCG bracket entries */
-export const ltcgBracketsSchema = z.array(ltcgBracketEntrySchema);
+/** Each entry's value is ≥ the previous one's. */
+const nonDecreasing = (xs: number[]) =>
+  xs.every((x, i) => i === 0 || x >= xs[i - 1]!);
+
+/** ltcg_brackets.brackets — ordered list of LTCG bracket entries. Each
+ *  threshold is that bracket's ceiling, so the shape the tax helpers rely
+ *  on is enforced here: only the last threshold is null (the open top —
+ *  gains above a numeric last ceiling would go untaxed), thresholds
+ *  never go down, rates are 0–100% and never go down. Equal thresholds
+ *  are allowed (Settings' empty placeholder starts at 0 / 0 / top). */
+export const ltcgBracketsSchema = z
+  .array(ltcgBracketEntrySchema)
+  .min(1)
+  .refine((b) => b.at(-1)?.threshold === null, {
+    message: "The last LTCG bracket must have no upper limit",
+  })
+  .refine(
+    (b) =>
+      b.slice(0, -1).every((e) => e.threshold !== null && e.threshold >= 0),
+    {
+      message: "Only the last LTCG bracket can have no upper limit",
+    },
+  )
+  .refine((b) => nonDecreasing(b.slice(0, -1).map((e) => e.threshold ?? 0)), {
+    message: "LTCG thresholds must go up",
+  })
+  .refine(
+    (b) =>
+      b.every((e) => e.rate >= 0 && e.rate <= 1) &&
+      nonDecreasing(b.map((e) => e.rate)),
+    { message: "LTCG rates must be 0–100% and go up" },
+  );
 
 // ── irmaa_brackets ──────────────────────────────────────────────
 
@@ -79,19 +109,27 @@ export const irmaaBracketEntrySchema = z.object({
   annualSurcharge: z.number(),
 });
 
-/** irmaa_brackets.brackets — ordered list of IRMAA bracket entries */
-export const irmaaBracketsSchema = z.array(irmaaBracketEntrySchema);
+/** irmaa_brackets.brackets — ordered list of IRMAA bracket entries (the
+ *  surcharge applies above each threshold): thresholds and surcharges are
+ *  non-negative and never go down. */
+export const irmaaBracketsSchema = z
+  .array(irmaaBracketEntrySchema)
+  .min(1)
+  .refine(
+    (b) =>
+      b.every((e) => e.magiThreshold >= 0 && e.annualSurcharge >= 0) &&
+      nonDecreasing(b.map((e) => e.magiThreshold)) &&
+      nonDecreasing(b.map((e) => e.annualSurcharge)),
+    { message: "IRMAA thresholds and surcharges must be positive and go up" },
+  );
 
 // ── fpl_by_household ────────────────────────────────────────────
 
 /**
  * fpl_by_household.amounts — Federal Poverty Level dollar figure by
  * household size, ALL 8 keys required (not a partial z.record).
- * getAcaSubsidyCliff (aca-tables.ts) does
- * `table[size] ?? table[2] ?? FPL_BY_HOUSEHOLD[2]!` when reading this —
- * a missing size would silently fall back to size-2's dollar figure at
- * READ time instead of failing at WRITE time. Requiring all 8 keys here
- * turns that into a rejected write.
+ * getAcaSubsidyCliff (aca-tables.ts) throws on a missing size, so a
+ * partial table is rejected at WRITE time instead.
  */
 export const fplByHouseholdAmountsSchema = z.object({
   "1": z.number(),

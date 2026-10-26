@@ -31,6 +31,7 @@ import {
 } from "@/lib/config/account-types";
 import { WITHDRAWAL_STRATEGY_VALUES } from "@/lib/config/withdrawal-strategies";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -70,6 +71,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -1203,6 +1205,7 @@ describe("engine invariants", () => {
             ira: "traditional",
           },
           distributionTaxRates: {
+            ...shippedTaxTables(),
             traditionalFallbackRate: 0.22,
             roth: 0,
             hsa: 0,
@@ -2612,6 +2615,7 @@ describe("engine invariants", () => {
           decumulationDefaults: {
             ...base.decumulationDefaults,
             distributionTaxRates: {
+              ...shippedTaxTables(),
               ...base.decumulationDefaults.distributionTaxRates,
               enableRothConversions: true,
               rothConversionTarget: 0.22,

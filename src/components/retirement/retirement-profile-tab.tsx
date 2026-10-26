@@ -25,6 +25,7 @@
  */
 
 import { useMemo, useCallback, useRef } from "react";
+import Link from "next/link";
 import { toast } from "@/lib/hooks/use-toast";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
@@ -36,6 +37,8 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatPercent } from "@/lib/utils/format";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
+import { IRS_LIMIT_GROWTH_RATE } from "@/lib/constants";
+import { SK_IRS_LIMIT_GROWTH_RATE } from "@/lib/constants/settings-keys";
 import {
   getAllStrategyKeys,
   getStrategyMeta,
@@ -80,6 +83,14 @@ export function RetirementProfileTab({
   const currentYear = new Date().getFullYear();
   const user = useUser();
   const admin = isAdmin(user);
+  const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
+  const irsLimitGrowthRow = appSettings?.find(
+    (s) => s.key === SK_IRS_LIMIT_GROWTH_RATE,
+  );
+  const irsLimitGrowthRate =
+    irsLimitGrowthRow && Number.isFinite(Number(irsLimitGrowthRow.value))
+      ? Number(irsLimitGrowthRow.value)
+      : IRS_LIMIT_GROWTH_RATE;
   const utils = trpc.useUtils();
   const [decBudgetProfileId, setDecBudgetProfileId] = usePersistedSetting<
     number | null
@@ -523,7 +534,7 @@ export function RetirementProfileTab({
               <div>
                 <span className="text-muted">
                   Inflation
-                  <HelpTip text="Constant CPI rate used for the deterministic projection — expense growth, real-dollar conversions, and IRS limit growth. In simulation mode, this is replaced by the Stochastic Inflation setting from your simulation preset (View Assumptions)." />
+                  <HelpTip text="Constant CPI rate used for the deterministic projection — expense growth and real-dollar conversions. In simulation mode, this is replaced by the Stochastic Inflation setting from your simulation preset (View Assumptions)." />
                 </span>
                 <div className="font-medium">
                   <InlineEdit
@@ -542,9 +553,14 @@ export function RetirementProfileTab({
               <div>
                 <span className="text-muted">
                   IRS Limit Growth
-                  <HelpTip text="Annual increase in 401k/IRA/HSA contribution limits. Historically ~2%/yr." />
+                  <HelpTip text="How fast 401k/IRA/HSA contribution limits are assumed to rise in years past the newest IRS figures. Click the rate to change it in Reference Data." />
                 </span>
-                <div className="text-muted font-medium">~2%/yr</div>
+                <Link
+                  href="/settings?tab=taxdata&section=limits"
+                  className="font-medium hover:underline"
+                >
+                  {formatPercent(irsLimitGrowthRate, 1)}/yr
+                </Link>
               </div>
             </div>
           </div>

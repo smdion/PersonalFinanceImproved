@@ -1,6 +1,6 @@
 {
   "name": "ledgr",
-  "version": "0.8.15",
+  "version": "0.9.0",
   "private": true,
   "packageManager": "pnpm@10.32.1",
   "scripts": {
@@ -36,6 +36,8 @@
     "check:bundle": "tsx scripts/check-bundle-size.ts",
     "check:migrations": "tsx scripts/check-migrations.ts",
     "check:tax-params": "tsx scripts/check-tax-params.ts",
+    "tax-data:keygen": "tsx scripts/tax-data-keygen.ts",
+    "tax-data:publish": "tsx scripts/tax-data-publish.ts",
     "backup:export": "tsx scripts/export-backup.ts",
     "backup:import": "tsx scripts/import-backup.ts",
     "prepare": "husky"

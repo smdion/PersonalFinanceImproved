@@ -149,8 +149,13 @@ function relPath(abs: string): string {
   return path.relative(REPO_ROOT, abs);
 }
 
+/** The schema, split by domain under these folders (schema-pg.ts /
+ *  schema-sqlite.ts are their barrels): column definitions, not logic. */
+const SCHEMA_DIRS = ["src/lib/db/pg/", "src/lib/db/sqlite/"];
+const inSchemaDir = (rel: string) => SCHEMA_DIRS.some((d) => rel.startsWith(d));
+
 function isExempt(rel: string): boolean {
-  return rel in EXEMPT;
+  return rel in EXEMPT || inSchemaDir(rel);
 }
 
 function readFileLines(filePath: string): string[] {
@@ -731,7 +736,7 @@ function findFilingStatusObjectLiteralViolations(): Violation[] {
   for (const file of walkTsFiles(SRC_DIR)) {
     const rel = relPath(file);
     if (rel.startsWith("src/lib/config/")) continue;
-    if (FILING_STATUS_LITERAL_EXEMPT.has(rel)) continue;
+    if (FILING_STATUS_LITERAL_EXEMPT.has(rel) || inSchemaDir(rel)) continue;
     const content = fs.readFileSync(file, "utf8");
     if (content.includes("lint-violation-ok")) continue;
     const m = FILING_STATUS_OBJECT_LITERAL_PATTERN.exec(content);

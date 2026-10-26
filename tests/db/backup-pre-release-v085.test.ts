@@ -51,6 +51,22 @@ describe("pre-release v0.8.5 backups", () => {
       CURRENT,
     );
     expect(tables.asset_class_buckets).toBeUndefined();
+    // Every later tag too — including the v0.9 line, which continues the
+    // same ordered list (a tag missing from it reads as "older than the
+    // table" and would re-link a household's deliberately empty links).
+    for (const version of [
+      "0012_v0814_perf_annotations",
+      "0000_v9_initial_schema",
+      "0004_v090_debts",
+      "0016_v090_debts",
+    ])
+      expect(
+        transformBackupToCurrentSchema(
+          { asset_class_params: classes() },
+          version,
+          "0004_v090_debts",
+        ).tables.asset_class_buckets,
+      ).toBeUndefined();
   });
 
   it("send hand-set transaction kinds back to the built-in rules, keeping ingest locks", () => {

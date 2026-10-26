@@ -91,27 +91,19 @@ export function assertTaxFreshness(entry: TaxFreshnessEntry): void {
 export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
   // --- DB-driven (annual, updated via seed file or Settings UI) ---
   //
-  // The 6 seed-table + LTCG-fallback entries that used to live
-  // here individually (Federal tax brackets, Contribution limits, Standard
-  // deduction, LTCG brackets, IRMAA brackets — all seed-only, no dedicated
-  // drift-guard test referencing their name — plus the LTCG code fallback)
-  // are collapsed into one entry below. `pnpm check:tax-params`
-  // (scripts/check-tax-params.ts) now verifies each of those, individually
-  // and structurally, against the real seed file + the real LTCG_BRACKETS
-  // export on every run — this registry entry is a once-a-year manual
-  // "I checked this" attestation, not the thing that actually catches
-  // drift, so one combined validThrough is enough. IRMAA's code fallback
-  // and the ACA FPL entry stay separate below — each has its own
-  // dedicated drift-guard test (tax-freshness.test.ts) that looks it up
-  // by name.
+  // The tax-data file's yearly tables (withholding brackets, limits,
+  // deductions, LTCG) are one entry: `pnpm check:tax-params` and
+  // tax-data-file.test.ts check each individually on every run, so this is
+  // a once-a-year "I checked this" attestation. IRMAA and the ACA poverty
+  // levels keep their own entries (different publishers and timing).
   {
-    name: "Seed reference data (brackets, limits, deductions, LTCG) + LTCG fallback",
+    name: "Tax-data file (brackets, limits, deductions, LTCG)",
     validThrough: 2026,
     source:
       "IRS Publication 15-T (2025/2026); IRS Notice 2025-67; IRS Revenue Procedure 2025-32",
     updateUrl: "https://www.irs.gov/pub/irs-pdf/p15t.pdf",
     location:
-      "seed-reference-data.sql (tax_brackets, contribution_limits, ltcg_brackets) + src/lib/config/tax-tables.ts LTCG_BRACKETS fallback — verified structurally by `pnpm check:tax-params`",
+      "tax-data/us-federal.json (tax_brackets, contribution_limits, ltcg_brackets) — verified structurally by `pnpm check:tax-params`",
     changeFrequency: "annual",
   },
   {
@@ -119,22 +111,13 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
     validThrough: 2026,
     source: "CMS 2026 projected thresholds",
     updateUrl: "https://www.cms.gov/newsroom/fact-sheets",
-    location: "seed-reference-data.sql → irmaa_brackets",
-    changeFrequency: "annual",
-  },
-  {
-    name: "IRMAA bracket fallback (code)",
-    validThrough: 2026,
-    source: "CMS 2026 projected thresholds",
-    updateUrl: "https://www.cms.gov/newsroom/fact-sheets",
-    location: "src/lib/config/irmaa-tables.ts → IRMAA_BRACKETS",
+    location: "tax-data/us-federal.json → irmaa_brackets",
     changeFrequency: "annual",
   },
   {
     name: "ACA Federal Poverty Level",
-    // `validThrough` names the COVERAGE year (matches `FPL_COVERAGE_YEAR`
-    // in aca-tables.ts, and this entry's own drift-guard test in
-    // tax-freshness.test.ts) -- NOT the HHS publication year. Per 26 CFR
+    // `validThrough` names the COVERAGE year -- NOT the HHS publication
+    // year. Per 26 CFR
     // §1.36B-1(h), a coverage year's PTC eligibility uses the guidelines
     // HHS published the PRIOR calendar year, so this table's actual
     // source data was published in (validThrough - 1).
@@ -143,7 +126,7 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
       "HHS Federal Register (guidelines published 2025, for 2026 coverage)",
     updateUrl:
       "https://aspe.hhs.gov/topics/poverty-economic-mobility/hhs-poverty-guidelines",
-    location: "src/lib/config/aca-tables.ts → FPL_BY_HOUSEHOLD",
+    location: "tax-data/us-federal.json → fpl_by_household",
     changeFrequency: "annual",
   },
   // (The "ACA premium estimates" entry was removed along with
@@ -177,14 +160,14 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
     validThrough: 2026,
     source:
       "IRC §3101 — SS rate unchanged since 1990, Medicare surtax since 2013",
-    location: "seed-reference-data.sql → contribution_limits (fica_*)",
+    location: "tax-data/us-federal.json → contribution_limits (fica_*)",
     changeFrequency: "legislative-only",
   },
   {
     name: "Medicare surtax threshold ($200k/$250k)",
     validThrough: 2026,
     source: "IRC §3101(b)(2) — not indexed to inflation",
-    location: "seed-reference-data.sql → fica_medicare_surtax_threshold",
+    location: "tax-data/us-federal.json → fica_medicare_surtax_threshold",
     changeFrequency: "legislative-only",
   },
   {

@@ -1,36 +1,26 @@
 import { describe, it, expect } from "vitest";
-import {
-  FPL_BY_HOUSEHOLD,
-  getAcaSubsidyCliff,
-  acaMagi,
-} from "@/lib/config/aca-tables";
+import { getAcaSubsidyCliff, acaMagi } from "@/lib/config/aca-tables";
+import { shippedTaxTables } from "../helpers/tax-data";
 
-describe("FPL_BY_HOUSEHOLD", () => {
-  it("has entries for household sizes 1-8", () => {
-    for (let size = 1; size <= 8; size++) {
-      expect(FPL_BY_HOUSEHOLD[size]).toBeGreaterThan(0);
-    }
-  });
-
-  it("FPL increases with household size", () => {
-    for (let size = 2; size <= 8; size++) {
-      expect(FPL_BY_HOUSEHOLD[size]).toBeGreaterThan(
-        FPL_BY_HOUSEHOLD[size - 1],
-      );
-    }
-  });
-});
+/** The shipped 2026 coverage-year poverty levels. */
+const FPL = shippedTaxTables(2026).fplByHousehold;
 
 describe("getAcaSubsidyCliff", () => {
   it("returns 400% of FPL for each household size", () => {
-    expect(getAcaSubsidyCliff(1)).toBe(FPL_BY_HOUSEHOLD[1] * 4);
-    expect(getAcaSubsidyCliff(4)).toBe(FPL_BY_HOUSEHOLD[4] * 4);
+    expect(getAcaSubsidyCliff(1, FPL)).toBe(FPL[1]! * 4);
+    expect(getAcaSubsidyCliff(4, FPL)).toBe(FPL[4]! * 4);
   });
 
   it("clamps household size to 1-8 range", () => {
-    expect(getAcaSubsidyCliff(0)).toBe(FPL_BY_HOUSEHOLD[1] * 4);
-    expect(getAcaSubsidyCliff(-1)).toBe(FPL_BY_HOUSEHOLD[1] * 4);
-    expect(getAcaSubsidyCliff(10)).toBe(FPL_BY_HOUSEHOLD[8] * 4);
+    expect(getAcaSubsidyCliff(0, FPL)).toBe(FPL[1]! * 4);
+    expect(getAcaSubsidyCliff(-1, FPL)).toBe(FPL[1]! * 4);
+    expect(getAcaSubsidyCliff(10, FPL)).toBe(FPL[8]! * 4);
+  });
+
+  it("throws on a missing household size (never borrows another's)", () => {
+    expect(() => getAcaSubsidyCliff(3, { 1: 15650, 2: 21150 })).toThrow(
+      /household of 3/,
+    );
   });
 });
 
@@ -72,14 +62,10 @@ describe("acaMagi", () => {
   });
 });
 
-describe("getAcaSubsidyCliff — DB FPL override (R43)", () => {
-  it("uses a passed fpl_by_household map instead of the hardcoded fallback", () => {
-    const override = { 1: 20000, 2: 30000 };
-    expect(getAcaSubsidyCliff(1, override)).toBe(80000); // 20000 * 4
-    expect(getAcaSubsidyCliff(2, override)).toBe(120000);
-  });
-
-  it("falls back to FPL_BY_HOUSEHOLD when no override is given", () => {
-    expect(getAcaSubsidyCliff(1)).toBe(FPL_BY_HOUSEHOLD[1]! * 4);
+describe("getAcaSubsidyCliff — reads the table it's given (R43)", () => {
+  it("uses the passed fpl_by_household map", () => {
+    const table = { 1: 20000, 2: 30000 };
+    expect(getAcaSubsidyCliff(1, table)).toBe(80000); // 20000 * 4
+    expect(getAcaSubsidyCliff(2, table)).toBe(120000);
   });
 });

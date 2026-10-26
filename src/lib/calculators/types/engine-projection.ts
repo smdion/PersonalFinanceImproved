@@ -416,6 +416,8 @@ export type EngineDecumulationYear = {
     source: "roth" | "brokerage" | "hsa";
     costRate: number;
     amount: number;
+    /** Brokerage: `costRate` includes the 3.8% Medicare surtax. */
+    includesNiit?: true;
   }[];
   /** The two zero-cost discretionary tiers' real capacity this year, BEFORE
    *  `discretionaryWithdrawalOrder` decides which drains first and before

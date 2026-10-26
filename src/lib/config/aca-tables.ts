@@ -1,5 +1,7 @@
 // ACA (Affordable Care Act) subsidy cliff tables.
-// Source: HHS Federal Poverty Level guidelines.
+// The poverty levels are yearly data (tax-data/us-federal.json →
+// `fpl_by_household`; coverage year N uses the guidelines HHS published in
+// N−1, 26 CFR §1.36B-1(h)), passed in by the caller.
 //
 // IMPORTANT CAVEAT: The subsidy estimation in this file uses NATIONAL AVERAGE benchmark
 // premiums. Actual ACA premiums and subsidy amounts vary dramatically by state, county,
@@ -12,55 +14,21 @@
 // Roth and HSA withdrawals do NOT count toward MAGI.
 
 /**
- * Which coverage year these guidelines apply to: 26 CFR §1.36B-1(h) sets ACA
- * premium tax credit eligibility for a coverage year using the HHS
- * poverty guidelines PUBLISHED IN THE PRIOR calendar year (guidelines
- * are released each January and apply to marketplace open enrollment
- * that same fall, for the FOLLOWING coverage year). So coverage year
- * 2026 uses the guidelines HHS published in early 2025 -- this table's
- * values are that one-year-lagged publication, not a same-year figure.
- *
- * `FPL_COVERAGE_YEAR` names the COVERAGE year (2026), matching every
- * other `*_DATA_YEAR`-style anchor's convention of naming the year the
- * projection engine actually compares against -- NOT the HHS publication
- * year, which is one year earlier. When refreshing this table for a new
- * coverage year, pull the guidelines HHS published in the PRIOR calendar
- * year (e.g. coverage year 2027 -> guidelines published in 2026), and
- * bump `FPL_COVERAGE_YEAR` to the coverage year, not the publication
- * year -- getting this backwards silently shifts every projection year's
- * growth by one year in bracket-growth.ts's `growthFactor` math.
- */
-export const FPL_COVERAGE_YEAR = 2026;
-
-/** Federal Poverty Level by household size (2026 coverage year, continental US). */
-export const FPL_BY_HOUSEHOLD: Record<number, number> = {
-  1: 15650,
-  2: 21150,
-  3: 26650,
-  4: 32150,
-  5: 37650,
-  6: 43150,
-  7: 48650,
-  8: 54150,
-};
-
-/**
  * Get the ACA subsidy cliff (400% of FPL) for a given household size.
  * Above this MAGI, all premium tax credits are lost.
  *
- * @param fplOverride DB-resolved FPL map from `fpl_by_household`.
- *   Same override-else-default pattern as LTCG/IRMAA brackets — undefined
- *   ⇒ the hardcoded `FPL_BY_HOUSEHOLD` fallback. The seed row is
- *   byte-identical to the fallback, so passing it is a no-op today; it
- *   exists so a re-seeded / edited FPL year reaches the engine.
+ * @param fplByHousehold The poverty levels by household size
+ *   (`fpl_by_household`, resolved; sizes 1–8 always present —
+ *   fplByHouseholdAmountsSchema). Households over 8 use size 8.
  */
 export function getAcaSubsidyCliff(
   householdSize: number,
-  fplOverride?: Record<number, number>,
+  fplByHousehold: Record<number, number>,
 ): number {
-  const table = fplOverride ?? FPL_BY_HOUSEHOLD;
-  const clamped = Math.min(Math.max(1, householdSize), 8);
-  const fpl = table[clamped] ?? table[2] ?? FPL_BY_HOUSEHOLD[2]!;
+  const size = Math.min(Math.max(1, householdSize), 8);
+  const fpl = fplByHousehold[size];
+  if (fpl == null)
+    throw new Error(`No poverty level for a household of ${size}`);
   return fpl * 4;
 }
 

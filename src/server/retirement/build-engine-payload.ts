@@ -67,7 +67,7 @@ import {
 } from "./payload/profile-switches";
 import { retirementContributions } from "./payload/retirement-contributions";
 import { buildIndividualAccounts } from "./payload/individual-accounts";
-import { resolveTaxParams } from "@/lib/config/tax-params";
+import { resolveTaxParams, type TaxSection } from "@/lib/config/tax-params";
 import type { db as _db } from "@/lib/db";
 import { filterActiveJobs } from "@/lib/pure/profiles";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
@@ -384,24 +384,44 @@ export async function buildEnginePayload(
       fpl: allFplByHousehold,
     },
     requestedTaxYear,
-    { onMissing: "nearest" },
+    // Each table from its own newest complete year (a new year's limits
+    // can land before its withholding/IRMAA/FPL tables) — the engine grows
+    // each from that year.
+    { onMissing: "nearest", sectionFallback: true },
   );
   const latestTaxYear = resolvedTax.resolvedYear;
+  // No complete year of a table at all means an emptied table — the
+  // tax-data file is applied on every start and after any restore, and
+  // shipped rows can't be deleted. Nothing stands in for a missing table:
+  // a projection without one would quietly price that tax at a guess.
+  const sectionNames: Record<TaxSection, string> = {
+    withholding: "withholding tables (Tax Brackets)",
+    ltcg: "capital-gains brackets (LTCG Brackets)",
+    irmaa: "Medicare brackets (IRMAA Tables)",
+    fpl: "poverty levels (ACA/FPL)",
+  };
+  const missingSections = resolvedTax.missing ?? [];
+  const ltcgBracketData = resolvedTax.ltcgByStatus;
+  const irmaaBracketData = resolvedTax.irmaaByStatus;
+  const fplByHouseholdData = resolvedTax.fplByHousehold;
+  if (
+    missingSections.length > 0 ||
+    !ltcgBracketData ||
+    !irmaaBracketData ||
+    !fplByHouseholdData
+  )
+    throw new Error(
+      `Tax data is missing: no complete year of ${
+        missingSections.map((s) => sectionNames[s]).join(", ") || "a tax table"
+      } (Settings → Reference Data).`,
+    );
 
-  // Same shapes the engine already consumed — the diff is "swap the
-  // source, not the shape". `?? []` / `undefined` fall-backs are
-  // unchanged, so a slice with no rows for `latestTaxYear` still degrades
-  // to the engine's own hardcoded default exactly as before.
   const bracketData = (resolvedTax.withholdingBrackets?.[filingStatus]?.false ??
     []) as {
     threshold: number;
     baseWithholding: number;
     rate: number;
   }[];
-  const ltcgBracketData: typeof resolvedTax.ltcgByStatus =
-    resolvedTax.ltcgByStatus;
-  const irmaaBracketData: typeof resolvedTax.irmaaByStatus =
-    resolvedTax.irmaaByStatus;
 
   // Per-person retirement settings (for per-person age display + editing)
   // Per-person assumptions come from the active profile's own child rows.
@@ -1029,8 +1049,9 @@ export async function buildEnginePayload(
     bracketData,
     ltcgBracketData,
     irmaaBracketData,
-    fplByHousehold: resolvedTax.fplByHousehold,
+    fplByHousehold: fplByHouseholdData,
     latestTaxYear,
+    sectionYears: resolvedTax.sectionYears,
     taxParamsVersion: resolvedTax.version,
     accumulationExpenses,
     decumulationExpenses,

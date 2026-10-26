@@ -6,18 +6,25 @@ import {
   growWithholdingBrackets,
   growLtcgBrackets,
   growIrmaaBrackets,
+  taxTableYears,
 } from "@/lib/calculators/engine/bracket-growth";
 import {
   estimateEffectiveTaxRate,
   computeTaxableSS,
 } from "@/lib/calculators/engine/tax-estimation";
-import { computeLtcgTax, LTCG_BRACKETS } from "@/lib/config/tax-tables";
-import { IRMAA_BRACKETS } from "@/lib/config/irmaa-tables";
+import { computeLtcgTax } from "@/lib/config/tax-tables";
 import { NIIT_THRESHOLDS, computeNiit } from "@/lib/config/niit";
 import { TEST_BRACKETS } from "./fixtures/engine-fixtures";
 import { calculateProjection } from "@/lib/calculators/engine";
 import type { ProjectionInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../helpers/tax-data";
+
+/** The shipped 2026 tables these tests grow. */
+const SHIPPED = shippedTaxTables(2026);
+const LTCG_BRACKETS = SHIPPED.ltcgBrackets;
+const IRMAA_BRACKETS = SHIPPED.irmaaBrackets;
+const DATA_YEAR = 2026;
 
 describe("taxGrowthYears", () => {
   it("is 0 when year equals taxDataYear", () => {
@@ -162,20 +169,17 @@ describe("growLtcgBrackets", () => {
     expect(grown.MFJ![2]!.threshold).toBeNull();
   });
 
-  it("falls back to the hardcoded LTCG_BRACKETS default (grown) when no DB override is passed — the common case, since most households have no ltcg_brackets DB row", () => {
-    const grown = growLtcgBrackets(undefined, 1.5);
+  it("grows the shipped table, keeping its open top bracket null", () => {
+    const grown = growLtcgBrackets(LTCG_BRACKETS, 1.5);
     expect(grown.MFJ![0]!.threshold).toBeCloseTo(
-      LTCG_BRACKETS.MFJ[0]!.threshold * 1.5,
+      LTCG_BRACKETS.MFJ![0]!.threshold! * 1.5,
       5,
     );
-    // The hardcoded default's own top bracket is a literal Infinity (not
-    // null) -- must survive multiplication as Infinity, not become NaN
-    // or a finite number.
-    expect(grown.MFJ![2]!.threshold).toBe(Infinity);
+    expect(grown.MFJ![2]!.threshold).toBeNull();
   });
 
   it("maps over every filing-status key, not just one", () => {
-    const grown = growLtcgBrackets(undefined, 1.5);
+    const grown = growLtcgBrackets(LTCG_BRACKETS, 1.5);
     expect(Object.keys(grown).sort()).toEqual(["HOH", "MFJ", "Single"]);
   });
 
@@ -246,6 +250,7 @@ const MFJ_BRACKETS = [
 function makeInput(
   overrides: {
     taxDataYear?: number;
+    taxBracketsYear?: number;
     inflationRate?: number;
   } = {},
 ): ProjectionInput {
@@ -276,6 +281,7 @@ function makeInput(
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        ...shippedTaxTables(),
         traditionalFallbackRate: 0.22,
         roth: 0,
         hsa: 0,
@@ -285,6 +291,7 @@ function makeInput(
         standardDeduction: 32200,
         enableRothConversions: false,
         taxDataYear: overrides.taxDataYear,
+        taxBracketsYear: overrides.taxBracketsYear,
       },
     },
     accumulationOverrides: [],
@@ -450,6 +457,7 @@ function makeLtcgHeavyInput(
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        ...shippedTaxTables(),
         traditionalFallbackRate: 0.1,
         roth: 0,
         hsa: 0,
@@ -461,6 +469,10 @@ function makeLtcgHeavyInput(
           rothConversionOverrides.enableRothConversions ?? false,
         rothConversionTarget: rothConversionOverrides.rothConversionTarget,
         taxDataYear,
+        // The LTCG table as database data from the same (stale) year — the
+        // built-in table would grow from its own year instead.
+        ltcgBrackets: LTCG_BRACKETS,
+        ltcgBracketsYear: taxDataYear,
       },
     },
     accumulationOverrides: [],
@@ -676,16 +688,16 @@ describe("growIrmaaBrackets", () => {
     expect(grown.MFJ![1]!.annualSurcharge).toBeCloseTo(2640 * 1.5, 5);
   });
 
-  it("falls back to the hardcoded IRMAA_BRACKETS default (grown) when no DB override is passed -- irmaa_brackets DB rows exist but nothing in the engine payload reads them yet", () => {
-    const grown = growIrmaaBrackets(undefined, 1.5);
+  it("grows the shipped table", () => {
+    const grown = growIrmaaBrackets(IRMAA_BRACKETS, 1.5);
     expect(grown.MFJ![0]!.magiThreshold).toBeCloseTo(
-      IRMAA_BRACKETS.MFJ[0]!.magiThreshold * 1.5,
+      IRMAA_BRACKETS.MFJ![0]!.magiThreshold * 1.5,
       5,
     );
   });
 
   it("maps over every filing-status key, not just one", () => {
-    const grown = growIrmaaBrackets(undefined, 1.5);
+    const grown = growIrmaaBrackets(IRMAA_BRACKETS, 1.5);
     expect(Object.keys(grown).sort()).toEqual(["HOH", "MFJ", "Single"]);
   });
 });
@@ -753,12 +765,15 @@ function makeIrmaaHouseholdInput(): ProjectionInput {
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        ...shippedTaxTables(),
         traditionalFallbackRate: 0.15,
         roth: 0,
         hsa: 0,
         brokerage: 0.15,
         rothBracketTarget: 0.22,
         taxBrackets: MFJ_BRACKETS,
+        // The shipped tables are 2026's; projection years grow from it.
+        taxDataYear: DATA_YEAR,
         standardDeduction: 32200,
         enableRothConversions: true,
         rothConversionTarget: 0.24,
@@ -918,12 +933,15 @@ function makeAcaHouseholdInput(): ProjectionInput {
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        ...shippedTaxTables(),
         traditionalFallbackRate: 0.15,
         roth: 0,
         hsa: 0,
         brokerage: 0.15,
         rothBracketTarget: 0.12,
         taxBrackets: MFJ_BRACKETS,
+        // The shipped tables are 2026's; projection years grow from it.
+        taxDataYear: DATA_YEAR,
         standardDeduction: 32200,
         enableRothConversions: false,
       },
@@ -1003,5 +1021,63 @@ describe("end-to-end: ACA subsidy cliff grows through checkAca", () => {
     expect(y2028.acaSubsidyPreserved).toBe(true);
     expect(y2029.acaSubsidyPreserved).toBe(true);
     expect(y2028.acaMagiHeadroom).toBeGreaterThan(0);
+  });
+});
+
+describe("taxTableYears — each table grows from its own year", () => {
+  it("each table uses its own year", () => {
+    expect(
+      taxTableYears({
+        taxDataYear: 2027,
+        taxBrackets: [],
+        taxBracketsYear: 2026,
+        ltcgBrackets: {},
+        ltcgBracketsYear: 2026,
+        irmaaBrackets: {},
+        irmaaBracketsYear: 2025,
+        fplByHousehold: {},
+        fplYear: 2027,
+      }),
+    ).toEqual({
+      standardDeduction: 2027,
+      brackets: 2026,
+      ltcg: 2026,
+      irmaa: 2025,
+      fpl: 2027,
+    });
+  });
+
+  it("a table without its own year grows from the limits year", () => {
+    expect(taxTableYears({ taxDataYear: 2027 })).toEqual({
+      standardDeduction: 2027,
+      brackets: 2027,
+      ltcg: 2027,
+      irmaa: 2027,
+      fpl: 2027,
+    });
+  });
+
+  it("no years at all means no growth, for every table alike", () => {
+    expect(taxTableYears({ irmaaBracketsYear: 2025, fplYear: 2025 })).toEqual({
+      standardDeduction: undefined,
+      brackets: undefined,
+      ltcg: undefined,
+      irmaa: undefined,
+      fpl: undefined,
+    });
+  });
+});
+
+describe("end-to-end: withholding brackets grow from their own year", () => {
+  it("older brackets than the limits year grow one more year (and the cap moves)", () => {
+    const year = AS_OF.getFullYear();
+    const sameYear = calculateProjection(makeInput({ taxDataYear: year }));
+    const olderBrackets = calculateProjection(
+      makeInput({ taxDataYear: year, taxBracketsYear: year - 1 }),
+    );
+    const cap = (r: typeof sameYear) =>
+      r.projectionByYear.find((y) => y.phase === "decumulation")!
+        .bracketTraditionalCap!;
+    expect(cap(olderBrackets)).toBeGreaterThan(cap(sameYear));
   });
 });

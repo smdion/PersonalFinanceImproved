@@ -35,6 +35,7 @@ export const TAX_YEAR_SECTIONS = [
 export const TAX_DATA_SECTIONS = [
   ...TAX_YEAR_SECTIONS,
   { key: "returns", label: "Return Rates" },
+  { key: "law", label: "Fixed by law" },
 ] as const;
 
 export const INTEGRATIONS_SECTIONS = [
@@ -43,6 +44,7 @@ export const INTEGRATIONS_SECTIONS = [
   { key: "simplefin", label: "SimpleFIN" },
   { key: "tiingo", label: "Tiingo" },
   { key: "sec", label: "SEC fund facts" },
+  { key: "taxData", label: "Tax data updates" },
   { key: "syncBehavior", label: "Sync Behavior" },
 ] as const;
 

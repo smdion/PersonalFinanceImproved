@@ -33,6 +33,10 @@ export type BracketRow<TEntry> = {
   taxYear: number;
   filingStatus: string;
   brackets: TEntry[];
+  /** Ledgr ships this table (Reset to shipped, never deleted). */
+  shipped?: boolean;
+  /** Where it came from — "user" once the household changed it. */
+  origin?: string;
 };
 
 export type BracketColumn<TEntry> = {
@@ -96,6 +100,8 @@ type Props<TEntry> = {
     brackets: TEntry[],
   ) => Promise<unknown>;
   onDeleteRow: (rowId: number) => Promise<unknown>;
+  /** Put a shipped table the household changed back to the shipped one. */
+  onResetRow: (rowId: number) => Promise<unknown>;
   intro?: React.ReactNode;
   sourceNote: React.ReactNode;
 };
@@ -113,16 +119,11 @@ export function BracketTableEditor<TEntry>({
   onUpdateRow,
   onCreateRow,
   onDeleteRow,
+  onResetRow,
   intro,
   sourceNote,
 }: Props<TEntry>) {
   const [copyFrom, setCopyFrom] = useState<number | null>(null);
-  // Distinguishes "the dropdown hasn't been touched yet" (fall back to the
-  // most recent year, `copyFrom` is still its `null` initial value) from
-  // "the admin explicitly picked Empty brackets" (also `null`, but must NOT
-  // fall back — the two states used to collapse into the same value, which
-  // made "Empty brackets" unreachable whenever any prior year existed).
-  const [copyFromTouched, setCopyFromTouched] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
   if (isLoading) return <Skeleton className="h-6 w-48" />;
@@ -131,9 +132,11 @@ export function BracketTableEditor<TEntry>({
     (a, b) => b - a,
   );
   const yearData = rows.filter((r) => r.taxYear === year);
-  const effectiveCopyFrom = copyFromTouched
-    ? copyFrom
-    : (copyFrom ?? years[0] ?? null);
+  // A year Ledgr ships can't be deleted (it would come back on restart).
+  const yearShipped = yearData.some((r) => r.shipped);
+  // A new year starts from a real one when there is one: an empty
+  // placeholder would quietly price every figure at 0 until edited.
+  const effectiveCopyFrom = copyFrom ?? years[0] ?? null;
 
   const handleAddYear = async () => {
     if (years.includes(year)) return;
@@ -151,7 +154,6 @@ export function BracketTableEditor<TEntry>({
       }
     }
     setCopyFrom(null);
-    setCopyFromTouched(false);
   };
 
   const handleDeleteYear = async () => {
@@ -176,15 +178,9 @@ export function BracketTableEditor<TEntry>({
                   Copy from:
                   <select
                     value={effectiveCopyFrom ?? ""}
-                    onChange={(e) => {
-                      setCopyFrom(
-                        e.target.value ? parseInt(e.target.value) : null,
-                      );
-                      setCopyFromTouched(true);
-                    }}
+                    onChange={(e) => setCopyFrom(parseInt(e.target.value))}
                     className="ml-2 rounded border px-2 py-1 text-sm"
                   >
-                    <option value="">Empty brackets</option>
                     {years.map((yr) => (
                       <option key={yr} value={yr}>
                         {yr}
@@ -242,6 +238,16 @@ export function BracketTableEditor<TEntry>({
               <div className="bg-surface-sunken border-b px-4 py-2">
                 <h3 className="text-primary font-medium">
                   {STATUS_LABELS[status]}
+                  {admin && row.shipped && row.origin === "user" && (
+                    <button
+                      type="button"
+                      onClick={() => onResetRow(row.id)}
+                      className="text-caption ml-2 font-normal text-blue-600 hover:underline"
+                      title="You changed this table — put back the one Ledgr ships"
+                    >
+                      Reset to shipped
+                    </button>
+                  )}
                 </h3>
               </div>
               <div className="p-3">
@@ -296,14 +302,17 @@ export function BracketTableEditor<TEntry>({
 
       <div className="mt-4 flex items-center justify-between">
         <p className="text-faint text-xs">{sourceNote}</p>
-        {admin && years.length > 1 && confirmDelete !== year && (
-          <button
-            onClick={() => setConfirmDelete(year)}
-            className="text-xs text-red-500 hover:text-red-700"
-          >
-            Delete {year}
-          </button>
-        )}
+        {admin &&
+          years.length > 1 &&
+          !yearShipped &&
+          confirmDelete !== year && (
+            <button
+              onClick={() => setConfirmDelete(year)}
+              className="text-xs text-red-500 hover:text-red-700"
+            >
+              Delete {year}
+            </button>
+          )}
       </div>
     </div>
   );

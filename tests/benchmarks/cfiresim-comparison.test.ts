@@ -21,6 +21,7 @@ import {
   CURRENT_GLIDE_PATH,
   make7525GlidePath,
 } from "./benchmark-helpers";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 // ---------------------------------------------------------------------------
 // cFIREsim ran: $712,425 starting, $90k spending, 75/25 allocation,
@@ -166,6 +167,7 @@ describe("cFIREsim apples-to-apples comparison", () => {
               ira: "traditional" as const,
             },
             distributionTaxRates: {
+              ...shippedTaxTables(),
               traditionalFallbackRate: 0,
               roth: 0,
               hsa: 0,
@@ -254,6 +256,7 @@ describe("cFIREsim apples-to-apples comparison", () => {
               ira: "traditional" as const,
             },
             distributionTaxRates: {
+              ...shippedTaxTables(),
               traditionalFallbackRate: 0,
               roth: 0,
               hsa: 0,

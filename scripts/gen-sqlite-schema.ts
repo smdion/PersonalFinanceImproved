@@ -1,5 +1,8 @@
 /**
- * Generates schema-sqlite.ts from schema-pg.ts by mechanical text transformation.
+ * Generates the SQLite schema from the PostgreSQL one by mechanical text
+ * transformation: each src/lib/db/pg/<domain>.ts → src/lib/db/sqlite/<domain>.ts
+ * (imports rebuilt from what the transformed file uses), and the
+ * schema-pg.ts barrel → schema-sqlite.ts.
  * Run with: npx tsx scripts/gen-sqlite-schema.ts
  *
  * Column type mappings:
@@ -38,10 +41,15 @@
  *     v0.8 baseline (the schema now declares the self-reference), absent on
  *     upgraded SQLite installs (the SQLite 0019 never added it).
  *   - savings_goals.parent_goal_id FK (→ SET NULL): declared in the schema
- *     (and so in the SQLite snapshot) but on NO SQLite install — 0005 adds
- *     only its index, since a table rebuild inside the migration runner's
- *     transaction would cascade-delete savings history. The savings router
- *     detaches sub-goals on delete instead.
+ *     (and so in the SQLite snapshot). Present on installs created fresh
+ *     from the v0.9 baseline; absent on SQLite installs upgraded from v0.8
+ *     — the v0.8.6 migration added only its index, since a table rebuild
+ *     inside the migration runner's transaction would cascade-delete
+ *     savings history. The savings router detaches sub-goals on delete
+ *     either way.
+ *   - retirement_settings.rmd_excess_target_performance_account_id
+ *     (→ SET NULL): inline REFERENCES on upgraded installs, a table-level
+ *     FOREIGN KEY on fresh v0.9 ones — same constraint, different spelling.
  * None affect PostgreSQL, where schema-pg.ts is authoritative and all are
  * enforced.
  */
@@ -49,108 +57,147 @@
 import * as fs from "fs";
 import * as path from "path";
 
-const src = fs.readFileSync(
-  path.resolve(__dirname, "../src/lib/db/schema-pg.ts"),
-  "utf-8",
-);
+const DB = path.resolve(__dirname, "../src/lib/db");
+const PG_DIR = path.join(DB, "pg");
+const SQLITE_DIR = path.join(DB, "sqlite");
 
-let out = src;
+/** The sqlite-core names a transformed file uses, in import order. */
+const SQLITE_CORE = [
+  "sqliteTable",
+  "text",
+  "integer",
+  "uniqueIndex",
+  "index",
+] as const;
 
-// --- Header ---
-out = out.replace(
-  /\/\/ Drizzle schema — all table definitions for ledgr\.\n\/\/ This file is the single source of truth for the data model\.\n\/\/ See Migration Plan Section 4 for design principles and seed data notes\./,
-  "// AUTO-GENERATED from schema-pg.ts — do not edit by hand.\n// Run: npx tsx scripts/gen-sqlite-schema.ts\n// SQLite dialect of the Drizzle schema.",
-);
+function transform(src: string): string {
+  // The pg-core import and `sql` are rebuilt below from what's used.
+  let out = src
+    .replace(/import \{[\s\S]*?\} from "drizzle-orm\/pg-core";\n/, "")
+    .replace(/import \{ sql \} from "drizzle-orm";\n/, "")
+    .replace(
+      /^\/\/ Part of the Drizzle schema \(PostgreSQL\)/m,
+      "// AUTO-GENERATED from ../pg/ by scripts/gen-sqlite-schema.ts — do not edit.\n// Part of the Drizzle schema (SQLite)",
+    );
 
-// --- Import statement ---
-// Note: `check` is intentionally NOT imported in the SQLite output — see
-// header comment about CHECK constraint stripping.
-out = out.replace(
-  /import \{\n\s+pgTable,\n\s+serial,\n\s+text,\n\s+integer,\n\s+boolean,\n\s+date,\n\s+timestamp,\n\s+decimal,\n\s+varchar,\n\s+jsonb,\n\s+uniqueIndex,\n\s+index,\n\s+check,\n\s+type AnyPgColumn,\n\} from "drizzle-orm\/pg-core";/,
-  `import {\n  sqliteTable,\n  text,\n  integer,\n  uniqueIndex,\n  index,\n  type AnySQLiteColumn,\n} from "drizzle-orm/sqlite-core";`,
-);
+  // --- Lazy self-reference callbacks: AnyPgColumn → AnySQLiteColumn ---
+  out = out.replace(/\(\): AnyPgColumn =>/g, "(): AnySQLiteColumn =>");
 
-// --- Lazy self-reference callbacks: AnyPgColumn → AnySQLiteColumn ---
-out = out.replace(/\(\): AnyPgColumn =>/g, "(): AnySQLiteColumn =>");
+  // --- pgTable → sqliteTable ---
+  out = out.replace(/pgTable\(/g, "sqliteTable(");
 
-// --- pgTable → sqliteTable ---
-out = out.replace(/pgTable\(/g, "sqliteTable(");
+  // --- serial("id").primaryKey() → integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }) ---
+  out = out.replace(
+    /serial\("id"\)\.primaryKey\(\)/g,
+    'integer("id", { mode: "number" }).primaryKey({ autoIncrement: true })',
+  );
 
-// --- serial("id").primaryKey() → integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }) ---
-out = out.replace(
-  /serial\("id"\)\.primaryKey\(\)/g,
-  'integer("id", { mode: "number" }).primaryKey({ autoIncrement: true })',
-);
+  // --- timestamp("col", { withTimezone: true }).notNull().defaultNow() ---
+  // Must come before generic timestamp replacement
+  out = out.replace(
+    /timestamp\("([^"]+)",\s*\{[^}]*\}\)\.notNull\(\)\.defaultNow\(\)/g,
+    'integer("$1", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`)',
+  );
 
-// --- timestamp("col", { withTimezone: true }).notNull().defaultNow() ---
-// Must come before generic timestamp replacement
-out = out.replace(
-  /timestamp\("([^"]+)",\s*\{[^}]*\}\)\.notNull\(\)\.defaultNow\(\)/g,
-  'integer("$1", { mode: "timestamp" }).notNull().default(sql`(unixepoch())`)',
-);
+  // --- timestamp("col", { withTimezone: true }) (nullable, no default) ---
+  out = out.replace(
+    /timestamp\("([^"]+)",\s*\{[^}]*\}\)/g,
+    'integer("$1", { mode: "timestamp" })',
+  );
 
-// --- timestamp("col", { withTimezone: true }) (nullable, no default) ---
-out = out.replace(
-  /timestamp\("([^"]+)",\s*\{[^}]*\}\)/g,
-  'integer("$1", { mode: "timestamp" })',
-);
+  // --- decimal("col", { precision: X, scale: Y }) → text("col") ---
+  // Handle multi-line decimal declarations, including the form Prettier wraps
+  // a long column name into — decimal(\n  "col",\n  { ... },\n) — where the
+  // string literal itself sits on its own line rather than immediately after
+  // `decimal(`. Found 2026-08-30: `distributionTaxRateTraditional`'s name is
+  // long enough that Prettier wraps it this way and the previous pattern
+  // (which required the quote right after the opening paren) silently left it
+  // as an un-translated decimal() call, which doesn't exist in the SQLite
+  // dialect's import set — a real regression a schema regen should never
+  // produce silently. `[\s\S]` (not `.`) so it matches across the newlines.
+  out = out.replace(
+    /decimal\(\s*"([^"]+)",\s*\{[\s\S]*?\}\s*,?\s*\)/g,
+    'text("$1")',
+  );
 
-// --- decimal("col", { precision: X, scale: Y }) → text("col") ---
-// Handle multi-line decimal declarations, including the form Prettier wraps
-// a long column name into — decimal(\n  "col",\n  { ... },\n) — where the
-// string literal itself sits on its own line rather than immediately after
-// `decimal(`. Found 2026-08-30: `distributionTaxRateTraditional`'s name is
-// long enough that Prettier wraps it this way and the previous pattern
-// (which required the quote right after the opening paren) silently left it
-// as an un-translated decimal() call, which doesn't exist in the SQLite
-// dialect's import set — a real regression a schema regen should never
-// produce silently. `[\s\S]` (not `.`) so it matches across the newlines.
-out = out.replace(
-  /decimal\(\s*"([^"]+)",\s*\{[\s\S]*?\}\s*,?\s*\)/g,
-  'text("$1")',
-);
+  // --- jsonb("col") → text("col", { mode: "json" }) ---
+  // Single-line form
+  out = out.replace(/jsonb\("([^"]+)"\)/g, 'text("$1", { mode: "json" })');
+  // Multi-line form: jsonb(\n  "col",\n)
+  out = out.replace(
+    /jsonb\(\s*\n\s*"([^"]+)",?\s*\n\s*\)/g,
+    'text(\n      "$1", { mode: "json" },\n    )',
+  );
 
-// --- jsonb("col") → text("col", { mode: "json" }) ---
-// Single-line form
-out = out.replace(/jsonb\("([^"]+)"\)/g, 'text("$1", { mode: "json" })');
-// Multi-line form: jsonb(\n  "col",\n)
-out = out.replace(
-  /jsonb\(\s*\n\s*"([^"]+)",?\s*\n\s*\)/g,
-  'text(\n      "$1", { mode: "json" },\n    )',
-);
+  // --- boolean("col") → integer("col", { mode: "boolean" }) ---
+  out = out.replace(
+    /boolean\("([^"]+)"\)/g,
+    'integer("$1", { mode: "boolean" })',
+  );
 
-// --- boolean("col") → integer("col", { mode: "boolean" }) ---
-out = out.replace(
-  /boolean\("([^"]+)"\)/g,
-  'integer("$1", { mode: "boolean" })',
-);
+  // --- date("col") → text("col") ---
+  // Only match standalone date() calls, not "updated_at" etc.
+  out = out.replace(/\bdate\("([^"]+)"\)/g, 'text("$1")');
 
-// --- date("col") → text("col") ---
-// Only match standalone date() calls, not "updated_at" etc.
-out = out.replace(/\bdate\("([^"]+)"\)/g, 'text("$1")');
+  // --- varchar("col", { length: N }) → text("col") ---
+  out = out.replace(/varchar\("([^"]+)",\s*\{[^}]*\}\)/g, 'text("$1")');
 
-// --- varchar("col", { length: N }) → text("col") ---
-out = out.replace(/varchar\("([^"]+)",\s*\{[^}]*\}\)/g, 'text("$1")');
+  // --- .default({}) / .default([]) for json columns need an sql wrapper ---
+  // jsonb default {} becomes text default — need to stringify
+  out = out.replace(/\.default\(\{\}\)/g, ".default(sql`'{}'`)");
+  out = out.replace(/\.default\(\[\]\)/g, ".default(sql`'[]'`)");
 
-// --- .default({}) / .default([]) for json columns need an sql wrapper ---
-// jsonb default {} becomes text default — need to stringify
-out = out.replace(/\.default\(\{\}\)/g, ".default(sql`'{}'`)");
-out = out.replace(/\.default\(\[\]\)/g, ".default(sql`'[]'`)");
+  // --- .defaultNow() remaining (multi-line timestamp patterns) ---
+  out = out.replace(/\.defaultNow\(\)/g, ".default(sql`(unixepoch())`)");
 
-// --- .defaultNow() remaining (multi-line timestamp patterns) ---
-out = out.replace(/\.defaultNow\(\)/g, ".default(sql`(unixepoch())`)");
+  // --- Strip CHECK constraints (PG-only; SQLite enforces at app layer) ---
+  // Matches multi-line check() calls inside the (table) => [...] index/constraint
+  // list, including the trailing comma. The check( call may span 4-5 lines and
+  // uses sql`...` interpolation, so we use a non-greedy multiline regex.
+  // IMPORTANT: this assumes check() calls are NEVER nested inside other arrays.
+  out = out.replace(/^\s*check\(\s*\n[\s\S]*?\n\s*\),?\s*\n/gm, "");
+  // A table whose only extras were CHECKs is left with an empty list and an
+  // unused `table` parameter (fails no-unused-vars) — drop the parameter.
+  out = out.replace(/\(table\) => \[\s*\]/g, "() => []");
 
-// --- Strip CHECK constraints (PG-only; SQLite enforces at app layer) ---
-// Matches multi-line check() calls inside the (table) => [...] index/constraint
-// list, including the trailing comma. The check( call may span 4-5 lines and
-// uses sql`...` interpolation, so we use a non-greedy multiline regex.
-// IMPORTANT: this assumes check() calls are NEVER nested inside other arrays.
-out = out.replace(/^\s*check\(\s*\n[\s\S]*?\n\s*\),?\s*\n/gm, "");
-// A table whose only extras were CHECKs is left with an empty list and an
-// unused `table` parameter (fails no-unused-vars) — drop the parameter.
-out = out.replace(/\(table\) => \[\s*\]/g, "() => []");
+  const code = out.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+  const core: string[] = SQLITE_CORE.filter((n) =>
+    new RegExp(`(?<![\\w$.])${n}\\(`).test(code),
+  );
+  if (/\bAnySQLiteColumn\b/.test(code)) core.push("type AnySQLiteColumn");
+  const imports = [
+    ...(core.length
+      ? [
+          `import {\n${core.map((n) => `  ${n},\n`).join("")}} from "drizzle-orm/sqlite-core";`,
+        ]
+      : []),
+    ...(/\bsql`/.test(code) ? ['import { sql } from "drizzle-orm";'] : []),
+  ];
+  if (!imports.length) return out;
+  // After the leading comment lines.
+  const lines = out.split("\n");
+  let i = 0;
+  while (i < lines.length && lines[i]!.startsWith("//")) i++;
+  lines.splice(i, 0, "", ...imports);
+  return lines.join("\n").replace(/\n{3,}/g, "\n\n");
+}
 
-// --- Write output ---
-const outPath = path.resolve(__dirname, "../src/lib/db/schema-sqlite.ts");
-fs.writeFileSync(outPath, out, "utf-8");
-console.log(`Generated ${outPath}`);
+fs.rmSync(SQLITE_DIR, { recursive: true, force: true });
+fs.mkdirSync(SQLITE_DIR);
+for (const f of fs.readdirSync(PG_DIR).filter((f) => f.endsWith(".ts")))
+  fs.writeFileSync(
+    path.join(SQLITE_DIR, f),
+    transform(fs.readFileSync(path.join(PG_DIR, f), "utf-8")),
+    "utf-8",
+  );
+
+// The barrel: same sections, re-exported from ./sqlite/.
+const barrel = fs
+  .readFileSync(path.join(DB, "schema-pg.ts"), "utf-8")
+  .replace(
+    /^\/\/ Drizzle schema — all table definitions for ledgr\.\n\/\/ This file is the single source of truth for the data model\.\n\/\/ See Migration Plan Section 4 for design principles and seed data notes\./,
+    "// AUTO-GENERATED from schema-pg.ts — do not edit by hand.\n// Run: npx tsx scripts/gen-sqlite-schema.ts\n// SQLite dialect of the Drizzle schema.",
+  )
+  .replace(/from "\.\/pg\//g, 'from "./sqlite/');
+fs.writeFileSync(path.join(DB, "schema-sqlite.ts"), barrel, "utf-8");
+console.log(`Generated ${SQLITE_DIR} and schema-sqlite.ts`);

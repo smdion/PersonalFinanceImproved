@@ -7,39 +7,16 @@
  *
  * Source: IRS.gov Revenue Procedure / Notice for each tax year
  */
+import { taxDataLimitMap } from "../helpers/tax-data";
 import { describe, it, expect } from "vitest";
-import fs from "fs";
-import path from "path";
 
 // ---------------------------------------------------------------------------
 // Parse actual seed data — single source of truth
 // ---------------------------------------------------------------------------
 
-const SEED_SQL = fs.readFileSync(
-  path.join(process.cwd(), "seed-reference-data.sql"),
-  "utf-8",
-);
-
-/** Extract contribution_limits rows from seed SQL */
+/** contribution_limits from the tax-data file, `"year:limit_type" → value`. */
 function parseSeedLimits(): Map<string, number> {
-  const limits = new Map<string, number>();
-  // Match: (year, 'limit_type', value, 'notes')
-  const re = /\(\s*(\d+),\s*'([^']+)',\s*([\d.]+),\s*'[^']*'\s*\)/g;
-  let match;
-  // Only capture lines after "INSERT INTO contribution_limits"
-  const section = SEED_SQL.slice(
-    SEED_SQL.indexOf("INSERT INTO contribution_limits"),
-  );
-  const endIdx = section.indexOf("ON CONFLICT");
-  const block = endIdx > 0 ? section.slice(0, endIdx) : section;
-
-  while ((match = re.exec(block)) !== null) {
-    const year = match[1];
-    const type = match[2];
-    const value = parseFloat(match[3]);
-    limits.set(`${year}:${type}`, value);
-  }
-  return limits;
+  return taxDataLimitMap();
 }
 
 const seedLimits = parseSeedLimits();
@@ -286,12 +263,12 @@ describe("IRS Contribution Limits", () => {
           const seedValue = seedLimits.get(`${year}:${limitType}`);
           expect(
             seedValue,
-            `Seed data missing ${year}:${limitType} — update seed-reference-data.sql`,
+            `Seed data missing ${year}:${limitType} — update tax-data/us-federal.json`,
           ).toBeDefined();
           expect(
             seedValue,
             `Seed value ${seedValue} ≠ IRS value ${value} for ${year}:${limitType}. ` +
-              `Either update seed-reference-data.sql or update this test if IRS values changed.`,
+              `Either update tax-data/us-federal.json or update this test if IRS values changed.`,
           ).toBe(value);
         });
       }

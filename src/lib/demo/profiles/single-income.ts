@@ -323,6 +323,8 @@ export const singleIncomeProfile: DemoProfile = {
     { age: 75, rateOfReturn: "0.05" },
   ],
 
+  debts: [],
+
   mortgageLoans: [],
 
   // annualReturnPct: decimal fraction (0.115 = 11.5%)

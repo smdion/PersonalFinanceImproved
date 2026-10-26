@@ -903,6 +903,34 @@ describe("retirement router -- return rates", () => {
     expect(result.result).not.toBeNull();
     expect(result.result!.projectionByYear.length).toBeGreaterThan(0);
   });
+
+  it("a breakpoint table and one row per age give the same projection", async () => {
+    const input = {
+      currentProfileId: profileId,
+      currentBudgetColumn: 0,
+      relocationProfileId: profileId,
+      relocationBudgetColumn: 0,
+    };
+    const sparse = await caller.retirement.computeRelocationAnalysis(input);
+    // Fill every gap with the rate already in effect there (inserted
+    // directly — the router would collapse them).
+    const breakpoints: [number, string][] = [
+      [30, "0.10"],
+      [35, "0.09"],
+      [40, "0.08"],
+      [50, "0.07"],
+      [60, "0.06"],
+    ];
+    for (let age = 31; age < 65; age++) {
+      if (breakpoints.some(([a]) => a === age)) continue;
+      const rate = breakpoints.filter(([a]) => a <= age).at(-1)![1];
+      await seedReturnRate(db, age, rate);
+    }
+    const perAge = await caller.retirement.computeRelocationAnalysis(input);
+    expect(perAge.result!.projectionByYear).toEqual(
+      sparse.result!.projectionByYear,
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------

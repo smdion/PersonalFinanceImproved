@@ -11,6 +11,7 @@ import { reportError } from "@/lib/error-reporting";
 let versionInterval: ReturnType<typeof setInterval> | undefined;
 let simplefinInterval: ReturnType<typeof setInterval> | undefined;
 let secInterval: ReturnType<typeof setInterval> | undefined;
+let taxDataInterval: ReturnType<typeof setInterval> | undefined;
 
 export function registerNodeHandlers() {
   // Server date math runs in the household's zone from the first request.
@@ -33,6 +34,7 @@ export function registerNodeHandlers() {
     if (versionInterval) clearInterval(versionInterval);
     if (simplefinInterval) clearInterval(simplefinInterval);
     if (secInterval) clearInterval(secInterval);
+    if (taxDataInterval) clearInterval(taxDataInterval);
     process.exit(0);
   });
 
@@ -65,6 +67,14 @@ export function registerNodeHandlers() {
     runSecWeeklyCheck();
     secInterval = setInterval(runSecWeeklyCheck, 60 * 60 * 1000);
   }, 60_000 + secJitterMs);
+
+  // Community tax-data updates: hourly check, runs once a week when an
+  // admin turned it on (persisted last check). Same pattern as SEC.
+  const taxDataJitterMs = Math.floor(Math.random() * 55 * 60 * 1000);
+  setTimeout(() => {
+    runTaxDataWeeklyCheck();
+    taxDataInterval = setInterval(runTaxDataWeeklyCheck, 60 * 60 * 1000);
+  }, 90_000 + taxDataJitterMs);
 }
 
 function getBaseUrl(): string {
@@ -178,5 +188,28 @@ async function runSecWeeklyCheck() {
   } catch (err) {
     if (err instanceof Error) reportError(err, { context: "sec_weekly_check" });
     else log("error", "sec_weekly_failed", { error: String(err) });
+  }
+}
+
+async function runTaxDataWeeklyCheck() {
+  try {
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret) return;
+    const res = await fetch(`${getBaseUrl()}/api/tax-data/weekly`, {
+      headers: { "X-Cron-Secret": cronSecret },
+    });
+    const body = await res.json();
+    if (body.ok) {
+      log("info", "tax_data_weekly_checked", {
+        result: body.result,
+        dataVersion: body.dataVersion,
+      });
+    } else if (!body.skipped) {
+      log("warn", "tax_data_weekly_unexpected", { status: res.status });
+    }
+  } catch (err) {
+    if (err instanceof Error)
+      reportError(err, { context: "tax_data_weekly_check" });
+    else log("error", "tax_data_weekly_failed", { error: String(err) });
   }
 }

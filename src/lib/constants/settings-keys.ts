@@ -110,3 +110,9 @@ export const SK_DIAG_MODE = "diag_mode";
 // ── Household ───────────────────────────────────────────────────────
 /** IANA time zone the server's date math runs in (e.g. "America/Chicago"). */
 export const SK_HOUSEHOLD_TIMEZONE = "household_timezone";
+
+/** Community tax-data updates on (true) or off. Unset = off: existing
+ *  installs opt in; onboarding offers it to new ones. */
+export const SK_TAX_DATA_SYNC_ENABLED = "tax_data_sync_enabled";
+/** The last community tax-data check: `{ at, result, detail? }`. */
+export const SK_TAX_DATA_LAST_CHECK = "tax_data_last_check";

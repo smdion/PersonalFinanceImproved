@@ -1,19 +1,15 @@
 /**
- * The v0.8.10 profile-sets conversion (migration 0009 and restoring an older
- * backup): Plan salaries → Salary Profiles, bonus destinations → entries,
+ * The v0.8.10 profile-sets conversion (restoring a pre-v0.8.10 backup;
+ * migration 0009 itself was squashed into the v0.9.0 baseline): Plan salaries → Salary Profiles, bonus destinations → entries,
  * bonus switches → each payroll account's fromBonus, unique Plan names.
  * Fictional household.
  */
 import { describe, it, expect } from "vitest";
-import Database from "better-sqlite3";
-import * as fs from "fs";
-import * as path from "path";
 import {
   convertV0810ProfileSets,
   type V0810Tables,
 } from "@/lib/db/v0810-profile-sets";
 import { transformBackupToCurrentSchema } from "@/lib/db/backup-transforms";
-import { applyV0810ProfileSetsSqlite, V0810_TAG } from "../../db-migrate";
 
 const entry = (over: Record<string, unknown> = {}) => ({
   salary: 90_000,
@@ -269,21 +265,6 @@ describe("convertV0810ProfileSets", () => {
   });
 });
 
-describe("db-migrate.ts keeps an identical copy of the conversion", () => {
-  it("the BEGIN/END blocks match", () => {
-    const block = (file: string) => {
-      const s = fs.readFileSync(path.join(process.cwd(), file), "utf8");
-      return s.slice(
-        s.indexOf("// BEGIN v0810-profile-sets"),
-        s.indexOf("// END v0810-profile-sets"),
-      );
-    };
-    const src = block("src/lib/db/v0810-profile-sets.ts");
-    expect(src.length).toBeGreaterThan(1000);
-    expect(block("db-migrate.ts")).toBe(src);
-  });
-});
-
 describe("restoring a pre-v0.8.10 backup", () => {
   it("converts it and drops the removed columns", () => {
     const t = oldTables();
@@ -298,7 +279,7 @@ describe("restoring a pre-v0.8.10 backup", () => {
     const { tables } = transformBackupToCurrentSchema(
       t as Record<string, unknown[]>,
       "0008_v088_paycheck_earnings",
-      V0810_TAG,
+      "0009_v0810_profile_sets",
     );
     const rows = tables as Record<string, Record<string, unknown>[]>;
     expect(rows["salary_profiles"]!.map((p) => p["name"])).toEqual([
@@ -316,111 +297,6 @@ describe("restoring a pre-v0.8.10 backup", () => {
     expect(rows["scenarios"]![0]).not.toHaveProperty("overrides");
     expect(rows["scenarios"]![0]).not.toHaveProperty("is_baseline");
     expect(rows["budget_profiles"]![0]).toEqual({ id: 1, name: "Base" });
-  });
-});
-
-describe("migration 0009 on SQLite", () => {
-  function dbAt0008() {
-    const db = new Database(":memory:");
-    db.pragma("foreign_keys = ON");
-    const journal = JSON.parse(
-      fs.readFileSync("drizzle-sqlite/meta/_journal.json", "utf8"),
-    ) as { entries: { tag: string }[] };
-    for (const { tag } of journal.entries) {
-      if (tag === V0810_TAG) break;
-      const sql = fs.readFileSync(`drizzle-sqlite/${tag}.sql`, "utf8");
-      for (const stmt of sql.split("--> statement-breakpoint"))
-        if (stmt.trim()) db.exec(stmt);
-    }
-    return db;
-  }
-  function apply0009(db: Database.Database) {
-    const sql = fs.readFileSync(`drizzle-sqlite/${V0810_TAG}.sql`, "utf8");
-    db.transaction(() => {
-      applyV0810ProfileSetsSqlite(db);
-      for (const stmt of sql.split("--> statement-breakpoint"))
-        if (stmt.trim()) db.exec(stmt);
-    })();
-  }
-
-  it("converts the data, then drops the columns without losing Budget items", () => {
-    const db = dbAt0008();
-    db.exec(`
-      INSERT INTO people (id, name, date_of_birth) VALUES (1, 'Alex', '1990-01-01');
-      INSERT INTO jobs (id, person_id, employer_name, start_date) VALUES (10, 1, 'Acme', '2020-01-01');
-      INSERT INTO contribution_accounts (id, job_id, person_id, account_type, tax_treatment, employer_match_type)
-        VALUES (100, 10, 1, '401k', 'pre_tax', 'none');
-      INSERT INTO budget_profiles (id, name, column_labels, column_contribution_profile_ids, is_active)
-        VALUES (5, 'Base', '["Standard"]', '[1]', 1);
-      INSERT INTO budget_items (profile_id, category, subcategory, amounts)
-        VALUES (5, 'Home', 'Rent', '[1000]');
-      INSERT INTO scenarios (id, name, overrides, salary_profile_id) VALUES (1, 'Lean', '{"people":{"1":{"salary":80000}}}', 1);
-      INSERT INTO scenarios (id, name, overrides) VALUES (2, 'Lean', '{}');
-      INSERT INTO app_settings (key, value) VALUES ('bonus_destinations', '{"1":"spending"}');
-    `);
-    const entryJson = JSON.stringify({
-      "10": entry({ include401kInBonus: true }),
-    });
-    db.prepare("UPDATE salary_profiles SET salaries = ? WHERE id = 1").run(
-      entryJson,
-    );
-    db.prepare(
-      "UPDATE contribution_profiles SET contribution_active_fields = ? WHERE id = 1",
-    ).run(
-      JSON.stringify({
-        contributionAccounts: {
-          "100": {
-            contributionValue: "6",
-            contributionMethod: "percent_of_salary",
-          },
-        },
-        deductions: {},
-      }),
-    );
-
-    apply0009(db);
-
-    const plans = db
-      .prepare("SELECT * FROM scenarios ORDER BY id")
-      .all() as Record<string, unknown>[];
-    expect(plans.map((p) => p["name"])).toEqual(["Lean", "Lean (2)"]);
-    expect(plans[0]).not.toHaveProperty("overrides");
-    const made = db
-      .prepare("SELECT * FROM salary_profiles WHERE id = ?")
-      .get(plans[0]!["salary_profile_id"]) as {
-      name: string;
-      salaries: string;
-    };
-    expect(made.name).toBe("Lean salary");
-    const madeEntry = JSON.parse(made.salaries)["10"];
-    expect(madeEntry.salary).toBe(80_000);
-    expect(madeEntry.bonusDestination).toBe("spending");
-    expect(madeEntry).not.toHaveProperty("include401kInBonus");
-    const cp = db
-      .prepare(
-        "SELECT contribution_active_fields AS f FROM contribution_profiles WHERE id = 1",
-      )
-      .get() as { f: string };
-    expect(JSON.parse(cp.f).contributionAccounts["100"].fromBonus).toBe(true);
-    expect(
-      db
-        .prepare(
-          "SELECT count(*) AS n FROM app_settings WHERE key = 'bonus_destinations'",
-        )
-        .get(),
-    ).toEqual({ n: 0 });
-    // DROP COLUMN only — the budget profile and its items are still there.
-    expect(
-      db
-        .prepare("SELECT count(*) AS n FROM budget_items WHERE profile_id = 5")
-        .get(),
-    ).toEqual({ n: 1 });
-    const bp = db.prepare("SELECT * FROM budget_profiles WHERE id = 5").get();
-    expect(bp).not.toHaveProperty("column_contribution_profile_ids");
-    // Plan names are unique now.
-    expect(() =>
-      db.prepare("INSERT INTO scenarios (name) VALUES ('Lean')").run(),
-    ).toThrow(/UNIQUE/);
   });
 });
 

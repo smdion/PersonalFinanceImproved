@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "83deb0a2-61b6-4a8b-8ea5-a28fe6c7fe5a",
+  "id": "cd9e6b7c-5077-4391-8c63-78b1886e6574",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "account_basis": {
@@ -124,129 +124,6 @@
           "columnsFrom": ["owner_person_id"],
           "columnsTo": ["id"],
           "onDelete": "restrict",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "account_holdings": {
-      "name": "account_holdings",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "performance_account_id": {
-          "name": "performance_account_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "snapshot_id": {
-          "name": "snapshot_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "ticker": {
-          "name": "ticker",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "weight_bps": {
-          "name": "weight_bps",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "expense_ratio": {
-          "name": "expense_ratio",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "asset_class_id": {
-          "name": "asset_class_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "asset_class_source": {
-          "name": "asset_class_source",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'manual'"
-        }
-      },
-      "indexes": {
-        "account_holdings_acct_snap_ticker_idx": {
-          "name": "account_holdings_acct_snap_ticker_idx",
-          "columns": ["performance_account_id", "snapshot_id", "ticker"],
-          "isUnique": true
-        },
-        "account_holdings_perf_acct_idx": {
-          "name": "account_holdings_perf_acct_idx",
-          "columns": ["performance_account_id"],
-          "isUnique": false
-        },
-        "account_holdings_snapshot_idx": {
-          "name": "account_holdings_snapshot_idx",
-          "columns": ["snapshot_id"],
-          "isUnique": false
-        },
-        "account_holdings_asset_class_idx": {
-          "name": "account_holdings_asset_class_idx",
-          "columns": ["asset_class_id"],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "account_holdings_performance_account_id_performance_accounts_id_fk": {
-          "name": "account_holdings_performance_account_id_performance_accounts_id_fk",
-          "tableFrom": "account_holdings",
-          "tableTo": "performance_accounts",
-          "columnsFrom": ["performance_account_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "account_holdings_snapshot_id_portfolio_snapshots_id_fk": {
-          "name": "account_holdings_snapshot_id_portfolio_snapshots_id_fk",
-          "tableFrom": "account_holdings",
-          "tableTo": "portfolio_snapshots",
-          "columnsFrom": ["snapshot_id"],
-          "columnsTo": ["id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "account_holdings_asset_class_id_asset_class_params_id_fk": {
-          "name": "account_holdings_asset_class_id_asset_class_params_id_fk",
-          "tableFrom": "account_holdings",
-          "tableTo": "asset_class_params",
-          "columnsFrom": ["asset_class_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },
@@ -388,6 +265,29 @@
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "estimated_fields": {
+          "name": "estimated_fields",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'[]'"
+        },
+        "accepted_checks": {
+          "name": "accepted_checks",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'{}'"
         }
       },
       "indexes": {
@@ -707,6 +607,46 @@
         }
       },
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "asset_class_buckets": {
+      "name": "asset_class_buckets",
+      "columns": {
+        "bucket": {
+          "name": "bucket",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "asset_class_id": {
+          "name": "asset_class_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "asset_class_buckets_class_idx": {
+          "name": "asset_class_buckets_class_idx",
+          "columns": ["asset_class_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "asset_class_buckets_asset_class_id_asset_class_params_id_fk": {
+          "name": "asset_class_buckets_asset_class_id_asset_class_params_id_fk",
+          "tableFrom": "asset_class_buckets",
+          "tableTo": "asset_class_params",
+          "columnsFrom": ["asset_class_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -1366,20 +1306,6 @@
         },
         "column_months": {
           "name": "column_months",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "column_contribution_profile_ids": {
-          "name": "column_contribution_profile_ids",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "column_salary_profile_ids": {
-          "name": "column_salary_profile_ids",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -2052,6 +1978,311 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "holding_observations": {
+      "name": "holding_observations",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "simplefin_account_id": {
+          "name": "simplefin_account_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "performance_account_id": {
+          "name": "performance_account_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "security_id": {
+          "name": "security_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "balance_date": {
+          "name": "balance_date",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "as_of": {
+          "name": "as_of",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "shares": {
+          "name": "shares",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "reported_market_value": {
+          "name": "reported_market_value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "avg_cost_per_share": {
+          "name": "avg_cost_per_share",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "holding_observations_simplefin_idx": {
+          "name": "holding_observations_simplefin_idx",
+          "columns": ["simplefin_account_id", "security_id", "as_of"],
+          "isUnique": true,
+          "where": "\"holding_observations\".\"simplefin_account_id\" IS NOT NULL"
+        },
+        "holding_observations_manual_idx": {
+          "name": "holding_observations_manual_idx",
+          "columns": ["performance_account_id", "security_id", "as_of"],
+          "isUnique": true,
+          "where": "\"holding_observations\".\"performance_account_id\" IS NOT NULL"
+        },
+        "holding_observations_security_idx": {
+          "name": "holding_observations_security_idx",
+          "columns": ["security_id"],
+          "isUnique": false
+        },
+        "holding_observations_perf_account_idx": {
+          "name": "holding_observations_perf_account_idx",
+          "columns": ["performance_account_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "holding_observations_simplefin_account_id_simplefin_accounts_id_fk": {
+          "name": "holding_observations_simplefin_account_id_simplefin_accounts_id_fk",
+          "tableFrom": "holding_observations",
+          "tableTo": "simplefin_accounts",
+          "columnsFrom": ["simplefin_account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "holding_observations_performance_account_id_performance_accounts_id_fk": {
+          "name": "holding_observations_performance_account_id_performance_accounts_id_fk",
+          "tableFrom": "holding_observations",
+          "tableTo": "performance_accounts",
+          "columnsFrom": ["performance_account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "holding_observations_security_id_securities_id_fk": {
+          "name": "holding_observations_security_id_securities_id_fk",
+          "tableFrom": "holding_observations",
+          "tableTo": "securities",
+          "columnsFrom": ["security_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "holding_period_weights": {
+      "name": "holding_period_weights",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "holding_period_id": {
+          "name": "holding_period_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "security_id": {
+          "name": "security_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "weight": {
+          "name": "weight",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "holding_period_weights_period_security_idx": {
+          "name": "holding_period_weights_period_security_idx",
+          "columns": ["holding_period_id", "security_id"],
+          "isUnique": true
+        },
+        "holding_period_weights_security_idx": {
+          "name": "holding_period_weights_security_idx",
+          "columns": ["security_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "holding_period_weights_holding_period_id_holding_periods_id_fk": {
+          "name": "holding_period_weights_holding_period_id_holding_periods_id_fk",
+          "tableFrom": "holding_period_weights",
+          "tableTo": "holding_periods",
+          "columnsFrom": ["holding_period_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "holding_period_weights_security_id_securities_id_fk": {
+          "name": "holding_period_weights_security_id_securities_id_fk",
+          "tableFrom": "holding_period_weights",
+          "tableTo": "securities",
+          "columnsFrom": ["security_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "holding_periods": {
+      "name": "holding_periods",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "performance_account_id": {
+          "name": "performance_account_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sub_key": {
+          "name": "sub_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "basis": {
+          "name": "basis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "fit_quality": {
+          "name": "fit_quality",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "holding_periods_account_part_start_idx": {
+          "name": "holding_periods_account_part_start_idx",
+          "columns": ["performance_account_id", "sub_key", "start_date"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "holding_periods_performance_account_id_performance_accounts_id_fk": {
+          "name": "holding_periods_performance_account_id_performance_accounts_id_fk",
+          "tableFrom": "holding_periods",
+          "tableTo": "performance_accounts",
+          "columnsFrom": ["performance_account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "home_improvement_items": {
       "name": "home_improvement_items",
       "columns": {
@@ -2093,6 +2324,124 @@
       },
       "indexes": {},
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "investment_transactions": {
+      "name": "investment_transactions",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "simplefin_account_id": {
+          "name": "simplefin_account_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "external_id": {
+          "name": "external_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "posted": {
+          "name": "posted",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "transacted": {
+          "name": "transacted",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "amount": {
+          "name": "amount",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pending": {
+          "name": "pending",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": false
+        },
+        "kind_override": {
+          "name": "kind_override",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "voided_at": {
+          "name": "voided_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "first_seen_at": {
+          "name": "first_seen_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "investment_transactions_external_idx": {
+          "name": "investment_transactions_external_idx",
+          "columns": ["simplefin_account_id", "external_id"],
+          "isUnique": true
+        },
+        "investment_transactions_account_posted_idx": {
+          "name": "investment_transactions_account_posted_idx",
+          "columns": ["simplefin_account_id", "posted"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "investment_transactions_simplefin_account_id_simplefin_accounts_id_fk": {
+          "name": "investment_transactions_simplefin_account_id_simplefin_accounts_id_fk",
+          "tableFrom": "investment_transactions",
+          "tableTo": "simplefin_accounts",
+          "columnsFrom": ["simplefin_account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -3296,8 +3645,8 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "pending_rollovers": {
-      "name": "pending_rollovers",
+    "paycheck_earnings": {
+      "name": "paycheck_earnings",
       "columns": {
         "id": {
           "name": "id",
@@ -3306,110 +3655,60 @@
           "notNull": true,
           "autoincrement": true
         },
-        "source_account_performance_id": {
-          "name": "source_account_performance_id",
+        "job_id": {
+          "name": "job_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "destination_performance_account_id": {
-          "name": "destination_performance_account_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "amount": {
-          "name": "amount",
+        "earning_name": {
+          "name": "earning_name",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false
         },
-        "sale_date": {
-          "name": "sale_date",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "sale_year": {
-          "name": "sale_year",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "apply_year": {
-          "name": "apply_year",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "confirmed_at": {
-          "name": "confirmed_at",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "created_at": {
-          "name": "created_at",
+        "is_cash": {
+          "name": "is_cash",
           "type": "integer",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": false,
-          "default": "(unixepoch())"
+          "default": true
+        },
+        "federal_taxable": {
+          "name": "federal_taxable",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
+        },
+        "fica_taxable": {
+          "name": "fica_taxable",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": true
         }
       },
       "indexes": {
-        "pending_rollovers_source_idx": {
-          "name": "pending_rollovers_source_idx",
-          "columns": ["source_account_performance_id"],
-          "isUnique": false
-        },
-        "pending_rollovers_dest_idx": {
-          "name": "pending_rollovers_dest_idx",
-          "columns": ["destination_performance_account_id"],
-          "isUnique": false
-        },
-        "pending_rollovers_sale_year_idx": {
-          "name": "pending_rollovers_sale_year_idx",
-          "columns": ["sale_year"],
-          "isUnique": false
-        },
-        "pending_rollovers_confirmed_idx": {
-          "name": "pending_rollovers_confirmed_idx",
-          "columns": ["confirmed_at"],
+        "paycheck_earnings_job_id_idx": {
+          "name": "paycheck_earnings_job_id_idx",
+          "columns": ["job_id"],
           "isUnique": false
         }
       },
       "foreignKeys": {
-        "pending_rollovers_source_account_performance_id_account_performance_id_fk": {
-          "name": "pending_rollovers_source_account_performance_id_account_performance_id_fk",
-          "tableFrom": "pending_rollovers",
-          "tableTo": "account_performance",
-          "columnsFrom": ["source_account_performance_id"],
+        "paycheck_earnings_job_id_jobs_id_fk": {
+          "name": "paycheck_earnings_job_id_jobs_id_fk",
+          "tableFrom": "paycheck_earnings",
+          "tableTo": "jobs",
+          "columnsFrom": ["job_id"],
           "columnsTo": ["id"],
-          "onDelete": "restrict",
-          "onUpdate": "no action"
-        },
-        "pending_rollovers_destination_performance_account_id_performance_accounts_id_fk": {
-          "name": "pending_rollovers_destination_performance_account_id_performance_accounts_id_fk",
-          "tableFrom": "pending_rollovers",
-          "tableTo": "performance_accounts",
-          "columnsFrom": ["destination_performance_account_id"],
-          "columnsTo": ["id"],
-          "onDelete": "restrict",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -4216,6 +4515,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "social_security_pia": {
+          "name": "social_security_pia",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "ss_start_age": {
           "name": "ss_start_age",
           "type": "integer",
@@ -4722,6 +5028,28 @@
           "autoincrement": false,
           "default": "'roth_first'"
         },
+        "withdrawal_routing_mode": {
+          "name": "withdrawal_routing_mode",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'bracket_filling'"
+        },
+        "withdrawal_order": {
+          "name": "withdrawal_order",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "withdrawal_splits": {
+          "name": "withdrawal_splits",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "gk_upper_guardrail": {
           "name": "gk_upper_guardrail",
           "type": "text",
@@ -4850,6 +5178,13 @@
           "autoincrement": false,
           "default": "'reinvest'"
         },
+        "rmd_excess_target_performance_account_id": {
+          "name": "rmd_excess_target_performance_account_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "qcd_maximize": {
           "name": "qcd_maximize",
           "type": "integer",
@@ -4951,6 +5286,11 @@
           "columns": ["profile_id"],
           "isUnique": false
         },
+        "retirement_settings_rmd_excess_target_idx": {
+          "name": "retirement_settings_rmd_excess_target_idx",
+          "columns": ["rmd_excess_target_performance_account_id"],
+          "isUnique": false
+        },
         "retirement_settings_profile_person_unq": {
           "name": "retirement_settings_profile_person_unq",
           "columns": ["profile_id", "person_id"],
@@ -4965,6 +5305,15 @@
           "columnsFrom": ["person_id"],
           "columnsTo": ["id"],
           "onDelete": "restrict",
+          "onUpdate": "no action"
+        },
+        "retirement_settings_rmd_excess_target_performance_account_id_performance_accounts_id_fk": {
+          "name": "retirement_settings_rmd_excess_target_performance_account_id_performance_accounts_id_fk",
+          "tableFrom": "retirement_settings",
+          "tableTo": "performance_accounts",
+          "columnsFrom": ["rmd_excess_target_performance_account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
           "onUpdate": "no action"
         },
         "retirement_settings_profile_id_retirement_profiles_id_fk": {
@@ -5406,9 +5755,24 @@
           "name": "savings_goals_is_active_idx",
           "columns": ["is_active"],
           "isUnique": false
+        },
+        "savings_goals_parent_goal_id_idx": {
+          "name": "savings_goals_parent_goal_id_idx",
+          "columns": ["parent_goal_id"],
+          "isUnique": false
         }
       },
-      "foreignKeys": {},
+      "foreignKeys": {
+        "savings_goals_parent_goal_id_savings_goals_id_fk": {
+          "name": "savings_goals_parent_goal_id_savings_goals_id_fk",
+          "tableFrom": "savings_goals",
+          "tableTo": "savings_goals",
+          "columnsFrom": ["parent_goal_id"],
+          "columnsTo": ["id"],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}
@@ -5661,22 +6025,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "overrides": {
-          "name": "overrides",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'{}'"
-        },
-        "is_baseline": {
-          "name": "is_baseline",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
         "budget_profile_id": {
           "name": "budget_profile_id",
           "type": "integer",
@@ -5723,6 +6071,11 @@
         }
       },
       "indexes": {
+        "scenarios_name_unique": {
+          "name": "scenarios_name_unique",
+          "columns": ["name"],
+          "isUnique": true
+        },
         "scenarios_budget_profile_id_idx": {
           "name": "scenarios_budget_profile_id_idx",
           "columns": ["budget_profile_id"],
@@ -5779,6 +6132,394 @@
           "columnsFrom": ["retirement_profile_id"],
           "columnsTo": ["id"],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "sec_filing_cache": {
+      "name": "sec_filing_cache",
+      "columns": {
+        "accession": {
+          "name": "accession",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "series_id": {
+          "name": "series_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "period_end": {
+          "name": "period_end",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "us_equity_pct": {
+          "name": "us_equity_pct",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "intl_equity_pct": {
+          "name": "intl_equity_pct",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "us_bond_pct": {
+          "name": "us_bond_pct",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "intl_bond_pct": {
+          "name": "intl_bond_pct",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "tips_pct": {
+          "name": "tips_pct",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "cash_pct": {
+          "name": "cash_pct",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "other_pct": {
+          "name": "other_pct",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "coverage": {
+          "name": "coverage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "fetched_at": {
+          "name": "fetched_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "sec_filing_cache_series_idx": {
+          "name": "sec_filing_cache_series_idx",
+          "columns": ["series_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "securities": {
+      "name": "securities",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "ticker": {
+          "name": "ticker",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source_symbol": {
+          "name": "source_symbol",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "institution": {
+          "name": "institution",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source_description": {
+          "name": "source_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sec_series_id": {
+          "name": "sec_series_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "sec_class_id": {
+          "name": "sec_class_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "facts_series_id": {
+          "name": "facts_series_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "facts_class_id": {
+          "name": "facts_class_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "facts_series_name": {
+          "name": "facts_series_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "facts_basis": {
+          "name": "facts_basis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "standin_confirmed_at": {
+          "name": "standin_confirmed_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "standin_preview": {
+          "name": "standin_preview",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "facts_checked_at": {
+          "name": "facts_checked_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "securities_ticker_idx": {
+          "name": "securities_ticker_idx",
+          "columns": ["ticker"],
+          "isUnique": true,
+          "where": "\"securities\".\"ticker\" IS NOT NULL"
+        },
+        "securities_untickered_identity_idx": {
+          "name": "securities_untickered_identity_idx",
+          "columns": ["institution", "source_description"],
+          "isUnique": true,
+          "where": "\"securities\".\"ticker\" IS NULL"
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "security_facts": {
+      "name": "security_facts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "security_id": {
+          "name": "security_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "as_of": {
+          "name": "as_of",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "source": {
+          "name": "source",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "sec_series_id": {
+          "name": "sec_series_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "accession": {
+          "name": "accession",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "expense_ratio": {
+          "name": "expense_ratio",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "us_equity_pct": {
+          "name": "us_equity_pct",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "intl_equity_pct": {
+          "name": "intl_equity_pct",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "us_bond_pct": {
+          "name": "us_bond_pct",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "intl_bond_pct": {
+          "name": "intl_bond_pct",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "tips_pct": {
+          "name": "tips_pct",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "cash_pct": {
+          "name": "cash_pct",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "other_pct": {
+          "name": "other_pct",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "coverage": {
+          "name": "coverage",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "fetched_at": {
+          "name": "fetched_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "security_facts_identity_idx": {
+          "name": "security_facts_identity_idx",
+          "columns": ["security_id", "source", "as_of"],
+          "isUnique": true
+        },
+        "security_facts_security_idx": {
+          "name": "security_facts_security_idx",
+          "columns": ["security_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "security_facts_security_id_securities_id_fk": {
+          "name": "security_facts_security_id_securities_id_fk",
+          "tableFrom": "security_facts",
+          "tableTo": "securities",
+          "columnsFrom": ["security_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
           "onUpdate": "no action"
         }
       },
@@ -5876,6 +6617,68 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "simplefin_account_balances": {
+      "name": "simplefin_account_balances",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "simplefin_account_id": {
+          "name": "simplefin_account_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "balance_date": {
+          "name": "balance_date",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "balance": {
+          "name": "balance",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        }
+      },
+      "indexes": {
+        "simplefin_account_balances_account_date_idx": {
+          "name": "simplefin_account_balances_account_date_idx",
+          "columns": ["simplefin_account_id", "balance_date"],
+          "isUnique": true
+        }
+      },
+      "foreignKeys": {
+        "simplefin_account_balances_simplefin_account_id_simplefin_accounts_id_fk": {
+          "name": "simplefin_account_balances_simplefin_account_id_simplefin_accounts_id_fk",
+          "tableFrom": "simplefin_account_balances",
+          "tableTo": "simplefin_accounts",
+          "columnsFrom": ["simplefin_account_id"],
+          "columnsTo": ["id"],
+          "onDelete": "restrict",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "simplefin_accounts": {
       "name": "simplefin_accounts",
       "columns": {
@@ -5914,6 +6717,13 @@
           "notNull": true,
           "autoincrement": false
         },
+        "last_balance_date": {
+          "name": "last_balance_date",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "is_included": {
           "name": "is_included",
           "type": "integer",
@@ -5933,6 +6743,13 @@
         "linked_performance_account_id": {
           "name": "linked_performance_account_id",
           "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "linked_sub_key": {
+          "name": "linked_sub_key",
+          "type": "text",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false
@@ -6172,6 +6989,65 @@
         "state_versions_created_at_idx": {
           "name": "state_versions_created_at_idx",
           "columns": ["created_at"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "sync_request_log": {
+      "name": "sync_request_log",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": true
+        },
+        "service": {
+          "name": "service",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "requested_at": {
+          "name": "requested_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(unixepoch())"
+        },
+        "endpoint": {
+          "name": "endpoint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "http_status": {
+          "name": "http_status",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "sync_request_log_service_requested_idx": {
+          "name": "sync_request_log_service_requested_idx",
+          "columns": ["service", "requested_at"],
           "isUnique": false
         }
       },

@@ -17,6 +17,7 @@ import {
 } from "./fixtures/engine-fixtures";
 import { makeIndKey } from "@/lib/calculators/engine/individual-account-tracking";
 import type { IndividualAccountInput } from "@/lib/calculators/types";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 // ---------------------------------------------------------------------------
 // performRothConversion
@@ -36,6 +37,7 @@ function makeRothInput(
     rothTaxableGrowth: 0,
     brokerageGainsPortion: 5000,
     filingStatus: "MFJ",
+    irmaaBrackets: shippedTaxTables().irmaaBrackets,
     balances: makeTaxBuckets(),
     acctBal: makeAccountBalances(),
     ...overrides,
@@ -275,6 +277,7 @@ function makeIrmaaInput(overrides: Partial<IrmaaInput> = {}): IrmaaInput {
     enableIrmaaAwareness: true,
     filingStatus: "MFJ",
     anyPersonAge65: true,
+    irmaaBrackets: shippedTaxTables().irmaaBrackets,
     projectedMagi: 250000,
     rothConversionAmount: 0,
     ...overrides,
@@ -360,6 +363,7 @@ function makeAcaInput(overrides: Partial<AcaInput> = {}): AcaInput {
     // existed and assert against the raw $84,600 (2-person) cliff, so
     // keep them at the no-op factor rather than updating every literal.
     fplGrowthFactor: 1,
+    fplByHousehold: shippedTaxTables().fplByHousehold,
     ...overrides,
   };
 }

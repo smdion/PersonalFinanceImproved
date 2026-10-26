@@ -21,6 +21,7 @@ import {
   make5050GlidePath,
   make7525GlidePath,
 } from "./benchmark-helpers";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 // Simplified correlations for 2-asset (stock/bond) scenarios
 const STOCK_BOND_CORRELATIONS = [
@@ -62,6 +63,7 @@ describe("Trinity Study — 4% rule validation", () => {
           },
           withdrawalTaxPreference: {},
           distributionTaxRates: {
+            ...shippedTaxTables(),
             traditionalFallbackRate: 0,
             roth: 0,
             hsa: 0,
@@ -97,6 +99,7 @@ describe("Trinity Study — 4% rule validation", () => {
           },
           withdrawalTaxPreference: {},
           distributionTaxRates: {
+            ...shippedTaxTables(),
             traditionalFallbackRate: 0,
             roth: 0,
             hsa: 0,

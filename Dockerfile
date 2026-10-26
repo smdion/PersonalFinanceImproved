@@ -73,7 +73,8 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/drizzle-sqlite ./drizzle-sqlite
 COPY --from=builder /app/db-migrate.js ./db-migrate.js
-COPY --from=builder /app/seed-reference-data.sql ./seed-reference-data.sql
+# The tax-data file (reference data), read from disk by db-migrate.js and the app.
+COPY --from=builder /app/tax-data ./tax-data
 
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod 555 docker-entrypoint.sh

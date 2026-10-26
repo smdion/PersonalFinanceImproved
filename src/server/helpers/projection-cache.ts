@@ -338,8 +338,22 @@ import { log } from "@/lib/logger";
  *  shortfallMaterialityFloor.
  *
  *  54: penalty-locked categories are capped at what their tracked accounts
- *  can give penalty-free — untracked money in them was drawn as reachable. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 55;
+ *  can give penalty-free — untracked money in them was drawn as reachable.
+ *
+ *  55: early-access bridge fields (penalty-free / exposed per account,
+ *  delivered after tax).
+ *
+ *  56: each yearly tax table (withholding, LTCG, IRMAA, FPL) comes from its
+ *  own newest complete year and grows from that year (taxTableYears) —
+ *  IRMAA/FPL grew from code constants, and a section missing the limits
+ *  year fell back to the built-in tables.
+ *  57: Monte Carlo without asset classes reads the return-rate table as
+ *  breakpoints (it used the exact age only, else the 7% default).
+ *  58: the built-in LTCG/IRMAA/FPL tables are gone (the payload always
+ *  supplies them; years follow one rule); the QCD limit comes from the
+ *  tax data (it was a stale $115,000 constant); discretionary tiers carry
+ *  `includesNiit`. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 58;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

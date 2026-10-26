@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -34,7 +35,12 @@ export function AssetsLiabilitiesCards({
   otherAssetItems?: { name: string; value: number; synced: boolean }[];
   otherAssetsSyncSource?: string | null;
   mortgageBalance: number;
-  otherLiabilities: number;
+  /** Typed figure (editable here), the debts list and mapped cards. */
+  otherLiabilities: {
+    manual: number;
+    itemized: number;
+    creditCardMapped: number;
+  };
   totalLiabilities: number;
   useMarketValue: boolean;
   hasHouse: boolean;
@@ -161,19 +167,38 @@ export function AssetsLiabilitiesCards({
               </span>
             </div>
           )}
-          {otherLiabilities > 0 && (
-            <div className="border-subtle flex items-center justify-between border-b py-1">
-              <span className="text-muted">Other Liabilities</span>
-              <InlineEdit
-                value={String(otherLiabilities)}
-                onSave={(v) => onSettingUpdate("current_other_liabilities", v)}
-                formatDisplay={(v) => formatCurrency(Number(v))}
-                parseInput={(v) => v.replace(/[^0-9.]/g, "")}
-                type="number"
-                className="font-medium"
-              />
+          {otherLiabilities.itemized > 0 && (
+            <div className="border-subtle flex justify-between border-b py-1">
+              <Link href="/liabilities" className="text-muted hover:underline">
+                Debts (list)
+              </Link>
+              <span className="font-medium">
+                {formatCurrency(otherLiabilities.itemized)}
+              </span>
             </div>
           )}
+          {otherLiabilities.creditCardMapped > 0 && (
+            <div className="border-subtle flex justify-between border-b py-1">
+              <span className="text-muted">Credit cards (from budget)</span>
+              <span className="font-medium">
+                {formatCurrency(otherLiabilities.creditCardMapped)}
+              </span>
+            </div>
+          )}
+          <div className="border-subtle flex items-center justify-between border-b py-1">
+            <span className="text-muted">
+              Other debts, not itemized
+              <HelpTip text="A single figure for debts you haven't listed one by one on Liabilities." />
+            </span>
+            <InlineEdit
+              value={String(otherLiabilities.manual)}
+              onSave={(v) => onSettingUpdate("current_other_liabilities", v)}
+              formatDisplay={(v) => formatCurrency(Number(v))}
+              parseInput={(v) => v.replace(/[^0-9.]/g, "")}
+              type="number"
+              className="font-medium"
+            />
+          </div>
           <div className="flex justify-between py-1 font-semibold">
             <span>Total Liabilities</span>
             <span>{formatCurrency(totalLiabilities)}</span>

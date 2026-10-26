@@ -28,10 +28,13 @@ export type DistributionTaxRateInput = {
   filingStatus: Parameters<typeof getLtcgRate>[1] | null;
   limitsMap: Record<string, number>;
   bracketData: { threshold: number; baseWithholding: number; rate: number }[];
-  ltcgBracketData: ResolvedTax["ltcgByStatus"];
-  irmaaBracketData: ResolvedTax["irmaaByStatus"];
-  fplByHousehold: ResolvedTax["fplByHousehold"];
+  ltcgBracketData: NonNullable<ResolvedTax["ltcgByStatus"]>;
+  irmaaBracketData: NonNullable<ResolvedTax["irmaaByStatus"]>;
+  fplByHousehold: NonNullable<ResolvedTax["fplByHousehold"]>;
   latestTaxYear: number;
+  /** The year each table came from (resolveTaxParams `sectionYears`);
+   *  undefined = every table is `latestTaxYear`'s. */
+  sectionYears?: ResolvedTax["sectionYears"];
   taxParamsVersion: ResolvedTax["version"];
   accumulationExpenses: number;
   decumulationExpenses: number;
@@ -47,6 +50,7 @@ export function buildDistributionTaxRates({
   irmaaBracketData,
   fplByHousehold,
   latestTaxYear,
+  sectionYears,
   taxParamsVersion,
   accumulationExpenses,
   decumulationExpenses,
@@ -189,6 +193,11 @@ export function buildDistributionTaxRates({
     ltcgBrackets: ltcgBracketData,
     irmaaBrackets: irmaaBracketData,
     fplByHousehold: fplByHousehold,
+    // Each table's own year (taxTableYears grows each from it).
+    taxBracketsYear: sectionYears?.withholding ?? latestTaxYear,
+    ltcgBracketsYear: sectionYears?.ltcg ?? latestTaxYear,
+    irmaaBracketsYear: sectionYears?.irmaa ?? latestTaxYear,
+    fplYear: sectionYears?.fpl ?? latestTaxYear,
     taxMultiplier: taxMult,
     grossUpForTaxes: settings.grossUpForTaxes,
     rothBracketTarget: toNumber(settings.rothBracketTarget ?? "0.12"),
@@ -217,6 +226,8 @@ export function buildDistributionTaxRates({
     obbbaSeniorPhaseoutStart,
     obbbaSeniorPhaseoutRate,
     obbbaSeniorSunsetYear,
+    // Evergreen (IRC 408(d)(8)), so required like the deductions above.
+    qcdAnnualLimit: requireLimit(limitsMap, "qcd_annual_limit"),
     // The actual calendar year `bracketData`/`standardDeductionForFilingStatus`
     // were seeded for — NOT necessarily "this year." See
     // `DecumulationDefaults.distributionTaxRates.taxDataYear`'s docblock

@@ -17,15 +17,22 @@ const limitsMap = {
   standard_deduction_mfj: 30000,
   additional_std_deduction_65_married: 1500,
   additional_std_deduction_65_unmarried: 2000,
+  qcd_annual_limit: 100000,
 };
 const base = {
   settings,
   filingStatus: "MFJ" as const,
   limitsMap,
   bracketData: [],
-  ltcgBracketData: undefined,
-  irmaaBracketData: undefined,
-  fplByHousehold: undefined,
+  ltcgBracketData: {
+    MFJ: [
+      { threshold: 90000, rate: 0 },
+      { threshold: 600000, rate: 0.15 },
+      { threshold: null, rate: 0.2 },
+    ],
+  },
+  irmaaBracketData: { MFJ: [{ magiThreshold: 200000, annualSurcharge: 1000 }] },
+  fplByHousehold: { 1: 15000, 2: 20000 },
   latestTaxYear: 2026,
   taxParamsVersion: 1,
   accumulationExpenses: 80000,

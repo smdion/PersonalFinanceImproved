@@ -16,6 +16,7 @@ import {
 } from "@/lib/calculators/withdrawal-bracket-optimizer";
 import type { ProjectionInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 const AS_OF = new Date("2025-03-07");
 
@@ -66,6 +67,7 @@ function makeMainHousehold(
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        ...shippedTaxTables(),
         traditionalFallbackRate: 0.22,
         roth: 0,
         hsa: 0,
@@ -251,6 +253,7 @@ function makeDepletionHousehold(currentTarget: number): ProjectionInput {
       },
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
+        ...shippedTaxTables(),
         traditionalFallbackRate: 0.22,
         roth: 0,
         hsa: 0,

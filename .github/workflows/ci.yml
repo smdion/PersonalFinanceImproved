@@ -135,6 +135,13 @@ jobs:
       - name: Check tax parameter freshness
         run: pnpm check:tax-params
 
+      - name: Tax-data file raises its dataVersion when it changes
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.base_ref || github.event.before }}
+        run: |
+          git fetch --depth=1 origin "$BASE" 2>/dev/null || true
+          pnpm tsx scripts/check-tax-data-version.ts FETCH_HEAD
+
       - name: Verify docs freshness
         run: pnpm docs:verify
 

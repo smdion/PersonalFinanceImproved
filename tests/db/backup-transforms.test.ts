@@ -936,8 +936,26 @@ describe("schema-version registry tracks the drizzle journals", () => {
     expect(v07ish.length).toBeGreaterThanOrEqual(50);
   });
 
+  it("keeps the v0.8 line's tags registered after the v0.9.0 squash", () => {
+    // They're gone from the journal, but backups taken on v0.8.x (and dev
+    // backups on the pre-renumbering v0.9 tags) still name them.
+    const known = KNOWN_SCHEMA_VERSIONS as readonly string[];
+    for (const tag of [
+      "0000_v8_initial_schema",
+      "0004_v085_investments",
+      "0009_v0810_profile_sets",
+      "0012_v0814_perf_annotations",
+      "0013_v090_tax_data_origin",
+      "0016_v090_debts",
+    ]) {
+      expect(known).toContain(tag);
+      expect(schemaEra(tag)).not.toBe("v0.1");
+    }
+  });
+
   it("routes the current baseline and the v0.7_final tag to the v0.7 transform, not a throw", () => {
     for (const tag of [
+      "0000_v9_initial_schema",
       "0000_v8_initial_schema",
       "v0.7_final",
       "0000_v7_initial_schema",

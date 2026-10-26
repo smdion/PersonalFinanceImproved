@@ -67,6 +67,15 @@ export type BudgetMonthDetail = {
 };
 
 /** A transaction from the budget API */
+/** One part of a split transaction. */
+export type BudgetSubTransaction = {
+  categoryId: string | null;
+  categoryName: string | null;
+  /** Dollars, signed (outflow negative). */
+  amount: number;
+  memo: string | null;
+};
+
 export type BudgetTransaction = {
   id: string;
   accountId: string;
@@ -80,6 +89,10 @@ export type BudgetTransaction = {
   cleared: boolean;
   approved: boolean;
   deleted: boolean;
+  /** The parts of a split transaction (only readers that need splits use
+   *  this — the parent keeps its own category, so expense compares and
+   *  drift are unchanged). Absent when the transaction isn't split. */
+  subtransactions?: BudgetSubTransaction[];
 };
 
 /** Input for creating a new transaction */

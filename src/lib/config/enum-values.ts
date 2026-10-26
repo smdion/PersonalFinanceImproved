@@ -270,6 +270,26 @@ export const UTILITY_UNIT_VALUES = ["ccf", "gallon", "kWh"] as const;
 export type UtilityUnit = (typeof UTILITY_UNIT_VALUES)[number];
 export const utilityUnitSchema = z.enum(UTILITY_UNIT_VALUES);
 
+/** Who wrote a utility reading's cost: typed in, the one-time spreadsheet
+ *  import, or the budget service the cost feed pulled it from. */
+export const UTILITY_SOURCE_VALUES = [
+  "import",
+  "manual",
+  "ynab",
+  "actual",
+] as const;
+export type UtilitySource = (typeof UTILITY_SOURCE_VALUES)[number];
+export const utilitySourceSchema = z.enum(UTILITY_SOURCE_VALUES);
+
+/** A community tax-data update's state (`tax_data_updates.status`). */
+export const TAX_DATA_UPDATE_STATUS_VALUES = [
+  "pending", // fetched and verified, waiting for an admin
+  "applied",
+  "dismissed",
+] as const;
+export type TaxDataUpdateStatus =
+  (typeof TAX_DATA_UPDATE_STATUS_VALUES)[number];
+
 /** What a suggested stand-in fund's own SEC filings say (securities.standinPreview). Shares are fractions (0–1). */
 export type StandInPreview = {
   /** Share of the stand-in's holdings its filings classify; null if no holdings filing. */
@@ -293,3 +313,16 @@ export type StandInPreview = {
  *  IRA account; absent = direct. */
 export const ROTH_IRA_ROUTE_VALUES = ["direct", "backdoor"] as const;
 export type RothIraRoute = (typeof ROTH_IRA_ROUTE_VALUES)[number];
+
+// ── Debts (labels and the high-interest line per kind: lib/config/debts.ts) ──
+
+export const DEBT_KIND_VALUES = [
+  "student_loan",
+  "auto_loan",
+  "credit_card",
+  "personal_loan",
+  "medical",
+  "other",
+] as const;
+export type DebtKind = (typeof DEBT_KIND_VALUES)[number];
+export const debtKindSchema = z.enum(DEBT_KIND_VALUES);

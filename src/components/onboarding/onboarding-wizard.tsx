@@ -592,7 +592,15 @@ function IncomeStep({
   );
 }
 
-function DoneStep({ isSaving }: { isSaving: boolean }) {
+function DoneStep({
+  isSaving,
+  taxDataSync,
+  setTaxDataSync,
+}: {
+  isSaving: boolean;
+  taxDataSync: boolean;
+  setTaxDataSync: (v: boolean) => void;
+}) {
   return (
     <div className="flex flex-col items-center justify-center gap-6 py-8 text-center">
       <div className="text-primary text-4xl font-bold">
@@ -602,6 +610,20 @@ function DoneStep({ isSaving }: { isSaving: boolean }) {
         Your dashboard is ready. You can always add more details from the
         Settings page.
       </p>
+      <label className="text-secondary flex max-w-md items-start gap-2 text-left text-sm">
+        <input
+          type="checkbox"
+          checked={taxDataSync}
+          onChange={(e) => setTaxDataSync(e.target.checked)}
+          className="mt-1"
+        />
+        <span>
+          Check weekly for new tax figures (IRS limits, brackets) between Ledgr
+          updates. A plain request to the project&apos;s GitHub — nothing about
+          you is sent, and nothing changes until you review it. You can turn it
+          off later under Integrations.
+        </span>
+      </label>
       {isSaving && <p className="text-muted text-sm">Saving your data...</p>}
     </div>
   );
@@ -663,6 +685,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [people, setPeople] = useState<PersonDraft[]>([]);
   const [jobs, setJobs] = useState<JobDraft[]>([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [taxDataSync, setTaxDataSync] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stepError, setStepError] = useState<string | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
@@ -673,6 +696,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const createJob = trpc.settings.jobs.create.useMutation();
   const updateSalaryProfile = trpc.salaryProfile.update.useMutation();
   const completeOnboarding = trpc.settings.completeOnboarding.useMutation();
+  const setTaxDataSyncEnabled =
+    trpc.settings.taxDataSync.setEnabled.useMutation();
   const syncAll = trpc.sync.syncAll.useMutation();
   const utils = trpc.useUtils();
 
@@ -819,6 +844,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         }
       }
 
+      await setTaxDataSyncEnabled.mutateAsync({ enabled: taxDataSync });
       // Mark onboarding complete
       await completeOnboarding.mutateAsync();
       onComplete();
@@ -897,7 +923,13 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         {currentStep === "Income" && (
           <IncomeStep people={people} jobs={jobs} setJobs={setJobs} />
         )}
-        {currentStep === "Done" && <DoneStep isSaving={isSaving} />}
+        {currentStep === "Done" && (
+          <DoneStep
+            isSaving={isSaving}
+            taxDataSync={taxDataSync}
+            setTaxDataSync={setTaxDataSync}
+          />
+        )}
 
         {/* Restoring overlay */}
         {isRestoring && (

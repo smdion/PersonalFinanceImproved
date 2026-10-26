@@ -2,9 +2,9 @@
 import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
 import {
   DEMO_SCHEMA_MARKER_PREFIX,
-  MIGRATION_COUNT_SQL,
+  MIGRATION_STAMP_SQL,
 } from "@/lib/db/demo-schema-marker";
-import { referenceTableNames } from "@/lib/db/reference-data";
+import { applyReferenceData } from "@/lib/db/reference-data";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { sql } from "drizzle-orm";
@@ -422,6 +422,22 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     });
   }
 
+  // Debts besides the mortgage
+  for (const d of profile.debts) {
+    await db.insert(schema.debts).values({
+      name: d.name,
+      kind: d.kind,
+      ownerPersonId: d.ownerPersonName
+        ? (personIdByName.get(d.ownerPersonName) ?? null)
+        : null,
+      balance: d.balance,
+      balanceAsOf: d.balanceAsOf,
+      interestRate: d.interestRate,
+      monthlyPayment: d.monthlyPayment,
+      originalAmount: d.originalAmount,
+    });
+  }
+
   // 14. Mortgage loans
   for (const ml of profile.mortgageLoans) {
     await db.insert(schema.mortgageLoans).values({
@@ -608,6 +624,9 @@ export const demoRouter = createTRPCRouter({
         );
 
         for (const { tablename } of tables.rows) {
+          // Community tax-data updates are the install's, not household
+          // data: a demo reads the public table through its search_path.
+          if (tablename === "tax_data_updates") continue;
           const quotedTable = quoteIdent(tablename);
           await cdb.execute(
             sql.raw(
@@ -641,27 +660,24 @@ export const demoRouter = createTRPCRouter({
 
         // Stamp the schema with the migrations it was built for, so a
         // later upgrade can tell it's stale (see demo-schema-marker.ts).
-        const migrations = (await client.query(MIGRATION_COUNT_SQL)) as {
-          rows: { n: number }[];
+        const migrations = (await client.query(MIGRATION_STAMP_SQL)) as {
+          rows: { stamp: string }[];
         };
+        const stamp = migrations.rows[0]?.stamp ?? "";
+        // "<count>:<hex hash>" — interpolated, so check its shape.
+        if (!/^\d+:[0-9a-f]*$/.test(stamp))
+          throw new Error(`Unexpected migration stamp: ${stamp}`);
         await client.query(
-          `COMMENT ON SCHEMA ${quotedSchema} IS '${DEMO_SCHEMA_MARKER_PREFIX}${Number(migrations.rows[0]?.n ?? 0)}'`,
+          `COMMENT ON SCHEMA ${quotedSchema} IS '${DEMO_SCHEMA_MARKER_PREFIX}${stamp}'`,
         );
 
         // Switch search_path and seed demo data + reference tables
         await client.query(`SET search_path TO ${quotedSchema}, public`);
 
-        // Copy every reference table calculators read (limits, brackets,
-        // LTCG / IRMAA, poverty lines, tax parameters) — public's are
-        // current (the migrator reconciles them on every start).
-        for (const table of referenceTableNames()) {
-          const quotedTable = quoteIdent(table);
-          await cdb.execute(
-            sql.raw(
-              `INSERT INTO ${quotedSchema}.${quotedTable} SELECT * FROM public.${quotedTable}`,
-            ),
-          );
-        }
+        // Reference data (limits, brackets, LTCG / IRMAA, poverty lines,
+        // tax-data revisions) from the shipped tax-data file and any newer
+        // approved update — never the household's own rows.
+        await applyReferenceData(cdb);
 
         await seedProfile(cdb, profile);
       } finally {
