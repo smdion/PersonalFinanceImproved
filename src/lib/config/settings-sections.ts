@@ -44,6 +44,7 @@ export const INTEGRATIONS_SECTIONS = [
   { key: "simplefin", label: "SimpleFIN" },
   { key: "tiingo", label: "Tiingo" },
   { key: "sec", label: "SEC fund facts" },
+  { key: "taxData", label: "Tax data updates" },
   { key: "syncBehavior", label: "Sync Behavior" },
 ] as const;
 

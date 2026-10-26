@@ -24,6 +24,18 @@ vi.mock("@/lib/trpc", () => ({
       },
     }),
     settings: {
+      taxDataSync: {
+        status: { useQuery: () => ({ data: undefined }) },
+        preview: { useQuery: () => ({ data: undefined }) },
+        setEnabled: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
+        checkNow: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
+        approve: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+        dismiss: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+      },
       appSettings: {
         list: { useQuery: () => ({ data: [] }) },
         upsert: {
@@ -226,6 +238,22 @@ describe("IntegrationsSettings", () => {
           },
         }),
         settings: {
+          taxDataSync: {
+            status: { useQuery: () => ({ data: undefined }) },
+            preview: { useQuery: () => ({ data: undefined }) },
+            setEnabled: {
+              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+            },
+            checkNow: {
+              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+            },
+            approve: {
+              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+            },
+            dismiss: {
+              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+            },
+          },
           appSettings: {
             list: { useQuery: () => ({ data: [] }) },
             upsert: {
@@ -383,6 +411,22 @@ describe("IntegrationsSettings", () => {
           },
         }),
         settings: {
+          taxDataSync: {
+            status: { useQuery: () => ({ data: undefined }) },
+            preview: { useQuery: () => ({ data: undefined }) },
+            setEnabled: {
+              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+            },
+            checkNow: {
+              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+            },
+            approve: {
+              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+            },
+            dismiss: {
+              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+            },
+          },
           appSettings: {
             list: { useQuery: () => ({ data: [] }) },
             upsert: {
@@ -586,6 +630,22 @@ describe("IntegrationsSettings", () => {
           settings: { appSettings: { list: { invalidate: vi.fn() } } },
         }),
         settings: {
+          taxDataSync: {
+            status: { useQuery: () => ({ data: undefined }) },
+            preview: { useQuery: () => ({ data: undefined }) },
+            setEnabled: {
+              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+            },
+            checkNow: {
+              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+            },
+            approve: {
+              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+            },
+            dismiss: {
+              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+            },
+          },
           appSettings: {
             list: { useQuery: () => ({ data: [] }) },
             upsert: {

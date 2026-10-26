@@ -123,6 +123,18 @@ vi.mock("@/lib/trpc", () => ({
         list: { useQuery: () => ({ data: [], isLoading: false }) },
         upsert: { useMutation: noopMutation },
       },
+      taxDataSync: {
+        status: { useQuery: () => ({ data: undefined }) },
+        preview: { useQuery: () => ({ data: undefined }) },
+        setEnabled: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
+        checkNow: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
+        approve: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+        dismiss: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
+      },
       taxData: {
         status: { useQuery: () => ({ data: undefined }) },
         addYear: { useMutation: noopMutation },

@@ -26,6 +26,7 @@ import {
 } from "@/lib/db/reference-data";
 import { taxLimitKey } from "@/lib/config/tax-limit-keys";
 import { taxDataStatus, type CarriedFigure } from "@/lib/pure/tax-data-status";
+import { pendingUpdate } from "./tax-data-sync";
 import { localDateStr } from "@/lib/utils/date";
 
 // --- Where a figure came from (lib/db/reference-reconcile-core.ts) ---
@@ -247,7 +248,18 @@ export const taxLimitsProcedures = {
             });
           }
       }
-      const status = taxDataStatus({ yearsByTable, carried });
+      const base = taxDataStatus({ yearsByTable, carried });
+      // A community update waiting for review needs attention too.
+      const pending = await pendingUpdate(ctx.db);
+      const status = pending
+        ? {
+            ...base,
+            needsAttention: true,
+            summary: [base.summary, "tax data update to review"]
+              .filter(Boolean)
+              .join("; "),
+          }
+        : base;
       return {
         ...status,
         sections: status.sections.map(({ upcoming, ...s }) => ({

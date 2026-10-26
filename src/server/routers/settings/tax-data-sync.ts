@@ -35,7 +35,7 @@ import {
 
 /** The waiting update (the newest pending one above everything this
  *  install has applied or ships), or null. */
-async function pendingUpdate(db: Db) {
+export async function pendingUpdate(db: Db) {
   const shipped = readTaxDataFile().dataVersion;
   const rows = await db
     .select()

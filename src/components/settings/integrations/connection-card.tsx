@@ -12,8 +12,11 @@ import { STATUS_COLORS } from "@/lib/utils/colors";
 export function ConnectionStatusLine({
   connected,
   extra,
+  labels = ["Connected", "Not connected"],
 }: {
   connected: boolean;
+  /** The status text when on / off (a setting rather than a connection). */
+  labels?: [string, string];
   /** Follow-on content next to the status text — an "Active" Badge, a
    *  "Last synced ..." caption, etc. */
   extra?: React.ReactNode;
@@ -25,7 +28,7 @@ export function ConnectionStatusLine({
         className={`inline-block h-2 w-2 rounded-full ${connected ? "bg-green-500" : "bg-red-400"}`}
       />
       <span className={`text-sm ${colors.text}`}>
-        {connected ? "Connected" : "Not connected"}
+        {connected ? labels[0] : labels[1]}
       </span>
       {extra}
     </div>
