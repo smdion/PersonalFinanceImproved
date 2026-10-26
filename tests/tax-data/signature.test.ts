@@ -45,3 +45,32 @@ describe("tax-data signatures", () => {
     expect(verifyTaxDataSignature(file, sig, [])).toBe(false);
   });
 });
+
+describe("the release asset", () => {
+  it("packs the file's exact text with its signatures, and unpacks to verify", async () => {
+    const { packSignedTaxData, unpackSignedTaxData } =
+      await import("@/lib/tax-data/signature");
+    const { publicKey, privateKey } = generateKeyPairSync("ed25519");
+    const keys = [
+      {
+        keyId: "a",
+        publicKey: publicKey.export({ type: "spki", format: "pem" }).toString(),
+      },
+    ];
+    const file = '{"formatVersion":1,"dataVersion":1}\n';
+    const asset = packSignedTaxData(file, [
+      signTaxData(
+        file,
+        privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
+        "a",
+      ),
+    ]);
+    const unpacked = unpackSignedTaxData(asset)!;
+    expect(unpacked.fileText).toBe(file);
+    expect(
+      verifyTaxDataSignature(unpacked.fileText, unpacked.signature, keys),
+    ).toBe(true);
+    expect(unpackSignedTaxData("[]")).toBeNull();
+    expect(unpackSignedTaxData("junk")).toBeNull();
+  });
+});

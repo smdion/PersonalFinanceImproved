@@ -48,8 +48,7 @@ function CommunityUpdate({ admin }: { admin: boolean }) {
         className="hover:underline"
         onClick={() => setOpen(!open)}
       >
-        Tax data update available (data version {version}) — review{" "}
-        {open ? "▾" : "▸"}
+        Tax data update available — review the new figures {open ? "▾" : "▸"}
       </button>
       {open && (
         <div className="mt-2 space-y-2">

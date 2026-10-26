@@ -6,8 +6,9 @@ vi.mock("@/lib/config/tax-data-sync", async () => {
   const { TEST_TAX_DATA_KEY: k } = await import("../helpers/tax-data-keys");
   return {
     TAX_DATA_REPO: "owner/repo",
-    TAX_DATA_TAG_PREFIX: "tax-data-v",
-    TAX_DATA_TEST_TAG_PREFIX: "tax-data-test-v",
+    TAX_DATA_RELEASE_TAG: "tax-data",
+    TAX_DATA_TEST_RELEASE_TAG: "tax-data-test",
+    TAX_DATA_ASSET: "us-federal.signed.json",
     TAX_DATA_PUBLIC_KEYS: [{ keyId: k.keyId, publicKey: k.publicKey }],
   };
 });

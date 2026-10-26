@@ -1,8 +1,9 @@
 /**
  * Signing and verifying a tax-data file. A signature covers the file's
  * exact bytes, prefixed so it can't be reused for anything else; the
- * `.sig` file is JSON `[{ keyId, sig }]` (base64), so a release can carry
- * one signature per key during a rotation. A file verifies when any
+ * signatures are JSON `[{ keyId, sig }]` (base64), so a release can carry
+ * one per key during a rotation; the release asset packs the file's exact
+ * text with them. A file verifies when any
  * bundled key's signature checks out — checked before the file is parsed.
  */
 import { createPrivateKey, createPublicKey, sign, verify } from "crypto";
@@ -59,4 +60,27 @@ export function verifyTaxDataSignature(
       return false;
     }
   });
+}
+
+/** The release asset: the file's exact text and its signatures, in one
+ *  JSON document. */
+export function packSignedTaxData(
+  fileText: string,
+  signatures: TaxDataSignature,
+): string {
+  return JSON.stringify({ file: fileText, signatures }, null, 2) + "\n";
+}
+
+/** The file text and signature JSON from a release asset, or null when it
+ *  isn't one. Not verified — `verifyTaxDataSignature` does that. */
+export function unpackSignedTaxData(
+  assetText: string,
+): { fileText: string; signature: string } | null {
+  try {
+    const a = JSON.parse(assetText) as { file?: unknown; signatures?: unknown };
+    if (typeof a.file !== "string" || !Array.isArray(a.signatures)) return null;
+    return { fileText: a.file, signature: JSON.stringify(a.signatures) };
+  } catch {
+    return null;
+  }
 }

@@ -49,7 +49,7 @@ export function TaxDataSyncCard() {
           New tax figures (IRS limits, brackets, Medicare and poverty levels)
           reach Ledgr with each update. Turn this on to also get them in
           between: once a week Ledgr checks the project&apos;s signed tax-data
-          releases on GitHub. Nothing about your household is sent, and nothing
+          release on GitHub. Nothing about your household is sent, and nothing
           changes until an admin reviews the update in{" "}
           <Link
             href="/settings?tab=taxdata&section=limits"
@@ -86,7 +86,6 @@ export function TaxDataSyncCard() {
         {last && last.result !== "off" && (
           <p className="text-caption text-muted">
             {RESULT[last.result] ?? last.result}
-            {last.dataVersion ? ` (data version ${last.dataVersion})` : ""}
             {last.detail && last.result !== "current"
               ? ` — ${last.detail}`
               : ""}
@@ -99,8 +98,7 @@ export function TaxDataSyncCard() {
               href="/settings?tab=taxdata&section=limits"
               className="text-blue-600 hover:underline"
             >
-              Review the waiting update (data version{" "}
-              {status.pending.dataVersion})
+              Review the waiting update
             </Link>
           </p>
         )}

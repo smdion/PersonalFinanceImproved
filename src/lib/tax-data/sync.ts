@@ -1,11 +1,11 @@
 /**
- * Community tax-data updates: find the newest signed `tax-data-vN`
- * release on the public repo, verify it, and keep it for an admin to
- * review (tax_data_updates). Nothing is applied here — an admin approves
- * the diff in Settings → Reference Data.
+ * Community tax-data updates: download the project's signed tax-data
+ * release, verify it, and when it's newer than anything this install has,
+ * keep it for an admin to review (tax_data_updates). Nothing is applied
+ * here — an admin approves the changes in Settings → Reference Data.
  *
- * Outbound: two plain GETs to GitHub (the tag list, then the file and its
- * signature); nothing about the household is sent. Off unless an admin
+ * Outbound: one plain GET of the release asset from github.com; nothing
+ * about the household is sent. Off unless an admin
  * turned it on (SK_TAX_DATA_SYNC_ENABLED), and always off with
  * LEDGR_TAX_DATA_SYNC=off or in demo-only mode. Behind a proxy, set
  * NODE_USE_ENV_PROXY=1 (Node's fetch ignores HTTPS_PROXY otherwise).
@@ -14,9 +14,10 @@ import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { Db } from "@/server/helpers";
 import {
+  TAX_DATA_ASSET,
+  TAX_DATA_RELEASE_TAG,
   TAX_DATA_REPO,
-  TAX_DATA_TAG_PREFIX,
-  TAX_DATA_TEST_TAG_PREFIX,
+  TAX_DATA_TEST_RELEASE_TAG,
 } from "@/lib/config/tax-data-sync";
 import {
   SK_TAX_DATA_LAST_CHECK,
@@ -30,7 +31,7 @@ import {
   previewCommunityTaxData,
   readTaxDataFile,
 } from "@/lib/db/reference-data";
-import { verifyTaxDataSignature } from "./signature";
+import { unpackSignedTaxData, verifyTaxDataSignature } from "./signature";
 import { validateTaxDataFile } from "./validate";
 import { log } from "@/lib/logger";
 
@@ -40,7 +41,7 @@ const USER_AGENT = "Ledgr self-hosted personal finance (tax-data updates)";
 
 export type TaxDataCheckResult =
   | "off"
-  | "current" // nothing newer than this install has
+  | "current" // nothing newer than this install has (or nothing published)
   | "pending" // a verified update is waiting for an admin
   | "applied" // a newer release changed nothing here: recorded as applied
   | "needs-newer-ledgr" // a newer file format, or no bundled key verifies
@@ -51,14 +52,12 @@ export type TaxDataCheckResult =
 export type TaxDataLastCheck = {
   at: string;
   result: TaxDataCheckResult;
-  dataVersion?: number;
   detail?: string;
 };
 
-/** Where to fetch from (tests point these at a fake). */
+/** Where to fetch from (tests point this at a fake). */
 export type TaxDataSource = {
   fetch?: typeof fetch;
-  apiBase?: string;
   downloadBase?: string;
 };
 
@@ -101,25 +100,21 @@ export async function lastTaxDataCheck(
 
 class RateLimited extends Error {}
 
-/** The tags this server reads: test releases only on a server set to the
- *  test channel (LEDGR_TAX_DATA_CHANNEL=test). */
-function tagPrefix(): string {
+/** The release this server reads: the test release only on a server set
+ *  to the test channel (LEDGR_TAX_DATA_CHANNEL=test). */
+function releaseTag(): string {
   return process.env.LEDGR_TAX_DATA_CHANNEL === "test"
-    ? TAX_DATA_TEST_TAG_PREFIX
-    : TAX_DATA_TAG_PREFIX;
+    ? TAX_DATA_TEST_RELEASE_TAG
+    : TAX_DATA_RELEASE_TAG;
 }
 
 /** GET as text with a time and size cap; null on 404. */
 async function getText(
   url: string,
   doFetch: typeof fetch,
-  accept?: string,
 ): Promise<string | null> {
   const res = await doFetch(url, {
-    headers: {
-      "User-Agent": USER_AGENT,
-      ...(accept && { Accept: accept }),
-    },
+    headers: { "User-Agent": USER_AGENT },
     redirect: "follow",
     signal: AbortSignal.timeout(TIMEOUT_MS),
   });
@@ -142,30 +137,6 @@ async function getText(
     text += decoder.decode(value, { stream: true });
   }
   return text + decoder.decode();
-}
-
-/** The highest published tax-data release number, or null. */
-export async function latestTaxDataRelease(
-  source: TaxDataSource = {},
-): Promise<number | null> {
-  const api = source.apiBase ?? "https://api.github.com";
-  const text = await getText(
-    `${api}/repos/${TAX_DATA_REPO}/git/matching-refs/tags/${tagPrefix()}`,
-    source.fetch ?? fetch,
-    "application/vnd.github+json",
-  );
-  if (!text) return null;
-  const refs = JSON.parse(text) as { ref?: string }[];
-  const versions = (Array.isArray(refs) ? refs : [])
-    .map((r) =>
-      (r?.ref ?? "").startsWith(`refs/tags/${tagPrefix()}`)
-        ? /^(\d+)$/.exec(r.ref!.slice(`refs/tags/${tagPrefix()}`.length))?.[1]
-        : undefined,
-    )
-    .filter((n): n is string => !!n)
-    .map(Number)
-    .filter((n) => Number.isSafeInteger(n) && n > 0);
-  return versions.length ? Math.max(...versions) : null;
 }
 
 /** The highest data version this install has (shipped, or any fetched
@@ -199,52 +170,47 @@ export async function checkForTaxDataUpdate(
     return { at: new Date().toISOString(), result: "off" };
 
   try {
-    const latest = await latestTaxDataRelease(source);
-    if (latest === null || latest <= (await knownDataVersion(db)))
-      return await done({ result: "current" });
-
-    const base =
+    const url =
       (source.downloadBase ?? "https://github.com") +
-      `/${TAX_DATA_REPO}/releases/download/${tagPrefix()}${latest}`;
-    const doFetch = source.fetch ?? fetch;
-    const fileText = await getText(`${base}/us-federal.json`, doFetch);
-    const signature = await getText(`${base}/us-federal.json.sig`, doFetch);
-    // A tag without its release assets yet: try again next time.
-    if (fileText === null || signature === null)
+      `/${TAX_DATA_REPO}/releases/download/${releaseTag()}/${TAX_DATA_ASSET}`;
+    const assetText = await getText(url, source.fetch ?? fetch);
+    // Nothing published yet.
+    if (assetText === null) return await done({ result: "current" });
+    const signed = unpackSignedTaxData(assetText);
+    if (!signed)
       return await done({
-        result: "current",
-        detail: `v${latest} not published yet`,
+        result: "invalid",
+        detail: "the release isn't a signed tax-data file",
       });
+    const { fileText, signature } = signed;
 
     // Verified before it's parsed.
     if (!verifyTaxDataSignature(fileText, signature))
       return await done({
         result: "needs-newer-ledgr",
-        dataVersion: latest,
         detail: "signed with a key this Ledgr doesn't have",
       });
     const parsed = JSON.parse(fileText) as TaxDataFile;
-    if (parsed.dataVersion !== latest)
-      return await done({
-        result: "invalid",
-        dataVersion: latest,
-        detail: `release v${latest} holds data version ${parsed.dataVersion}`,
-      });
     if (parsed.formatVersion > TAX_DATA_FORMAT_VERSION)
       return await done({
         result: "needs-newer-ledgr",
-        dataVersion: latest,
-        detail: `file format ${parsed.formatVersion}`,
+        detail: "a newer tax-data format",
       });
+    // Not newer than what's shipped or already fetched (incl. a replay of
+    // an older signed file): nothing to do.
+    if (
+      !Number.isSafeInteger(parsed.dataVersion) ||
+      parsed.dataVersion <= (await knownDataVersion(db))
+    )
+      return await done({ result: "current" });
     // A limit key this version doesn't know is kept (shown as not used
     // here, in place for a version that uses it), never a reason to refuse.
     const file = parsed;
     const problems = validateTaxDataFile(file, { unknownKeys: "ignore" });
     if (problems.length) {
-      log("warn", "tax_data_update_invalid", { latest, problems });
+      log("warn", "tax_data_update_invalid", { problems });
       return await done({
         result: "invalid",
-        dataVersion: latest,
         detail: problems.slice(0, 3).join("; "),
       });
     }
@@ -255,7 +221,7 @@ export async function checkForTaxDataUpdate(
     await db
       .insert(schema.taxDataUpdates)
       .values({
-        dataVersion: latest,
+        dataVersion: file.dataVersion,
         fileText,
         signature,
         status,
@@ -265,7 +231,7 @@ export async function checkForTaxDataUpdate(
         }),
       })
       .onConflictDoNothing();
-    return await done({ result: status, dataVersion: latest });
+    return await done({ result: status });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     log("warn", "tax_data_check_failed", { error: detail });
