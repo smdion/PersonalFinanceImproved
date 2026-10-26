@@ -24,6 +24,9 @@ export function IrmaaBracketsSettings({ year }: { year: number }) {
   const createMutation = trpc.settings.irmaaBrackets.create.useMutation({
     onSuccess: invalidate,
   });
+  const resetMutation = trpc.settings.irmaaBrackets.resetToShipped.useMutation({
+    onSuccess: () => utils.settings.irmaaBrackets.list.invalidate(),
+  });
   const deleteMutation = trpc.settings.irmaaBrackets.delete.useMutation({
     onSuccess: invalidate,
   });
@@ -88,9 +91,17 @@ export function IrmaaBracketsSettings({ year }: { year: number }) {
         });
       }}
       onCreateRow={(taxYear, filingStatus, brackets) =>
-        createMutation.mutateAsync({ taxYear, filingStatus, brackets })
+        // A copy or an empty placeholder: carried forward until the real
+        // table ships.
+        createMutation.mutateAsync({
+          taxYear,
+          filingStatus,
+          brackets,
+          carried: true,
+        })
       }
       onDeleteRow={(id) => deleteMutation.mutateAsync({ id })}
+      onResetRow={(id) => resetMutation.mutateAsync({ id })}
     />
   );
 }

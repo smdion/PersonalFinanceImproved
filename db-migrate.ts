@@ -481,39 +481,15 @@ function getDialect(): "postgresql" | "sqlite" {
 }
 
 /**
- * Reference-data reconcile (R43).
- *
- * `seed-reference-data.sql` is `INSERT … ON CONFLICT DO NOTHING`, plus a
- * trailing corrections section of `UPDATE … WHERE value = <old>` statements
- * — no DDL, no DELETE. It is safe to re-run on every migrate, and doing so
- * is the only way a new tax year added to the seed reaches an existing
- * install. Previously the seed ran only when `contribution_limits` was empty,
- * so annual figure updates never propagated to a populated DB (R43 audit,
- * systemic problem #3).
- *
- * `ON CONFLICT DO NOTHING` never overwrites an admin's Settings edit. A
- * seed-value *correction* goes in the seed's corrections section as an
- * UPDATE guarded by the exact old value (CAST so it compares numerically
- * in SQLite too), so it only ever replaces a row
- * still holding the wrong figure (never an admin's edit).
- *
- * Every table the seed writes MUST be a year-keyed reference table with a
- * `tax_year`-scoped unique constraint. Without one, `ON CONFLICT DO NOTHING`
- * has nothing to conflict on and every reconcile re-inserts duplicate rows.
- * Two guards enforce this before the seed runs, both failing the migrate
- * loudly:
- *   1. Every `INSERT INTO` target must be in `REFERENCE_SEED_TABLES` — an
- *      explicit allowlist, so adding a non-year-keyed `INSERT` to the seed
- *      file surfaces as a clear "this reconcile only handles year-keyed
- *      reference tables" error rather than a cryptic constraint failure or
- *      silent row duplication.
- *   2. Each of those tables is checked for a `tax_year`-scoped unique index
- *      in the live schema (belt-and-braces against the allowlist drifting
- *      from reality).
- * If you need to seed non-year-keyed reference data, do it through a
- * separate mechanism — not this file.
+ * Reference-data reconcile: the tax-data file (tax-data/us-federal.json) is
+ * applied on every migrate, in public and in each live demo schema, so a new
+ * tax year or a corrected figure reaches existing installs — without ever
+ * touching a figure the household changed (see reconcileReferenceRows). The
+ * code below is a verbatim copy of src/lib/db/reference-reconcile-core.ts
+ * (this file compiles standalone and can't import src/); a test keeps the
+ * two identical.
  */
-/** Kept equal to the seed file's tables (a test checks; see src/lib/db/reference-data.ts). */
+/** The tables the reconcile writes (a test keeps this in step with the core). */
 export const REFERENCE_SEED_TABLES = new Set([
   "contribution_limits",
   "tax_brackets",
@@ -523,29 +499,345 @@ export const REFERENCE_SEED_TABLES = new Set([
   "tax_params",
 ]);
 
-function parseSeedTableNames(seedSql: string): string[] {
-  const names = new Set<string>();
-  // Comment lines can mention a table without writing to it.
-  const code = seedSql
-    .split("\n")
-    .filter((line) => !line.trimStart().startsWith("--"))
-    .join("\n");
-  const re = /INSERT\s+INTO\s+"?([A-Za-z_][A-Za-z0-9_]*)"?/gi;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(code)) !== null) names.add(m[1]!);
-  const unexpected = [...names].filter((n) => !REFERENCE_SEED_TABLES.has(n));
-  if (unexpected.length > 0) {
-    throw new Error(
-      `seed-reference-data.sql inserts into non-reference table(s) [${unexpected.join(
-        ", ",
-      )}]. The migrate reconcile only handles year-keyed reference tables ` +
-        `(${[...REFERENCE_SEED_TABLES].join(", ")}) — add the table to ` +
-        `REFERENCE_SEED_TABLES in db-migrate.ts only if it has a tax_year-scoped ` +
-        `unique index, otherwise seed it through a separate mechanism.`,
-    );
-  }
-  return [...names];
+function readTaxDataFile(): TaxDataFile {
+  return JSON.parse(
+    fs.readFileSync(path.resolve("./tax-data/us-federal.json"), "utf-8"),
+  ) as TaxDataFile;
 }
+
+// BEGIN reference-reconcile-core (keep identical in db-migrate.ts)
+export type RefDialect = "pg" | "sqlite";
+type Rows = Record<string, unknown>[];
+/** One statement with `?` placeholders; the driver sends back its rows. */
+type RefStep = { sql: string; params: unknown[] };
+/** Run one statement (async driver: Postgres, the app). */
+export type RefQuery = (sql: string, params: unknown[]) => Promise<Rows>;
+/** Run one statement (sync driver: better-sqlite3). */
+export type RefQuerySync = (sql: string, params: unknown[]) => Rows;
+
+/** Highest tax-data file format this code reads. */
+export const TAX_DATA_FORMAT_VERSION = 1;
+
+/** Who a reference figure came from. */
+export const TAX_DATA_ORIGIN_VALUES = [
+  "seed", // shipped with the app (the tax-data file)
+  "carried", // copied forward from an earlier year, not yet confirmed
+  "community", // the tax-data sync between releases
+  "integration", // reserved for an outside data source
+  "user", // the household typed or changed it
+] as const;
+export type TaxDataOrigin = (typeof TAX_DATA_ORIGIN_VALUES)[number];
+
+type Brackets = unknown[];
+export type TaxDataLimit = {
+  value: number;
+  /** Citation (IRS notice, Rev. Proc., …). */
+  source: string;
+  /** Plain-words note; the row's `notes` is this, else `source`. */
+  notes?: string;
+  /** Values this key shipped with before — an install still holding one
+   *  is corrected (when nobody changed it). */
+  supersedes?: number[];
+  exception?: { reason: string; source: string };
+};
+export type TaxDataYear = {
+  revision: number;
+  source: string;
+  notes?: string;
+  limits: Record<string, TaxDataLimit>;
+  withholding: {
+    source: string;
+    notes?: string;
+    tables: Record<string, { standard: Brackets; checkbox: Brackets }>;
+    supersedes?: Record<
+      string,
+      { standard?: Brackets[]; checkbox?: Brackets[] }
+    >;
+    exception?: { reason: string; source: string };
+  };
+  ltcg?: {
+    source: string;
+    brackets: Record<string, Brackets>;
+    supersedes?: Record<string, Brackets[]>;
+    exception?: { reason: string; source: string };
+  };
+  irmaa?: {
+    source: string;
+    brackets: Record<string, Brackets>;
+    supersedes?: Record<string, Brackets[]>;
+    exception?: { reason: string; source: string };
+  };
+  fpl?: {
+    source: string;
+    amounts: Record<string, number>;
+    supersedes?: Record<string, number>[];
+    exception?: { reason: string; source: string };
+  };
+};
+export type TaxDataFile = {
+  formatVersion: number;
+  /** Increases with every change to the file. */
+  dataVersion: number;
+  years: Record<string, TaxDataYear>;
+};
+
+/** One shipped row: its table, natural key, value and older values. */
+type ShippedRow = {
+  table: string;
+  keyCols: string[];
+  keyVals: unknown[];
+  valueCol: string;
+  value: unknown;
+  json: boolean;
+  /** contribution_limits only. */
+  notes?: string;
+  supersedes: unknown[];
+};
+
+/** Every row the file ships, flattened. */
+export function shippedReferenceRows(file: TaxDataFile): ShippedRow[] {
+  const rows: ShippedRow[] = [];
+  for (const [y, data] of Object.entries(file.years)) {
+    const year = Number(y);
+    for (const [type, l] of Object.entries(data.limits))
+      rows.push({
+        table: "contribution_limits",
+        keyCols: ["tax_year", "limit_type"],
+        keyVals: [year, type],
+        valueCol: "value",
+        value: l.value,
+        json: false,
+        notes: l.notes ?? l.source,
+        supersedes: l.supersedes ?? [],
+      });
+    for (const [status, t] of Object.entries(data.withholding.tables))
+      for (const kind of ["standard", "checkbox"] as const)
+        rows.push({
+          table: "tax_brackets",
+          keyCols: ["tax_year", "filing_status", "w4_checkbox"],
+          keyVals: [year, status, kind === "checkbox"],
+          valueCol: "brackets",
+          value: t[kind],
+          json: true,
+          supersedes: data.withholding.supersedes?.[status]?.[kind] ?? [],
+        });
+    for (const [section, table] of [
+      ["ltcg", "ltcg_brackets"],
+      ["irmaa", "irmaa_brackets"],
+    ] as const) {
+      const s = data[section];
+      if (!s) continue;
+      for (const [status, b] of Object.entries(s.brackets))
+        rows.push({
+          table,
+          keyCols: ["tax_year", "filing_status"],
+          keyVals: [year, status],
+          valueCol: "brackets",
+          value: b,
+          json: true,
+          supersedes: s.supersedes?.[status] ?? [],
+        });
+    }
+    if (data.fpl)
+      rows.push({
+        table: "fpl_by_household",
+        keyCols: ["tax_year"],
+        keyVals: [year],
+        valueCol: "amounts",
+        value: data.fpl.amounts,
+        json: true,
+        supersedes: data.fpl.supersedes ?? [],
+      });
+  }
+  return rows;
+}
+
+/** JSON as a comparable value: parsed, numbers as numbers, object keys
+ *  sorted, null / missing keys dropped (the LTCG top bracket's threshold
+ *  may be stored either way); array order kept. */
+function canonical(v: unknown): unknown {
+  if (typeof v === "string") {
+    try {
+      return canonical(JSON.parse(v));
+    } catch {
+      return v;
+    }
+  }
+  if (Array.isArray(v)) return v.map(canonical);
+  if (v && typeof v === "object") {
+    const out: Record<string, unknown> = {};
+    for (const k of Object.keys(v).sort()) {
+      const x = (v as Record<string, unknown>)[k];
+      if (x !== null && x !== undefined) out[k] = canonical(x);
+    }
+    return out;
+  }
+  if (typeof v === "boolean") return v;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : v;
+}
+
+/** Same figure? Numbers compared numerically (decimal text differs by
+ *  dialect), JSON compared parsed. A false "no" only leaves a row alone. */
+export function sameReferenceValue(
+  a: unknown,
+  b: unknown,
+  json: boolean,
+): boolean {
+  // Stored at scale 6 (decimal(12,6)): equal to that precision. Float
+  // noise from a percent typed in Settings (1.45 → 0.0144999…) is no change.
+  if (!json) return Math.abs(Number(a) - Number(b)) < 5e-7;
+  return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
+}
+
+function rowKey(keyVals: unknown[]): string {
+  return keyVals
+    .map((v) => (typeof v === "boolean" ? (v ? "1" : "0") : String(v)))
+    .join("|");
+}
+
+/**
+ * Reconcile the reference tables with the file:
+ * 1. A row nobody has classified yet (`origin='user'` and never confirmed —
+ *    i.e. from before tracking, or an old backup) holding the shipped value
+ *    or one it supersedes is recognised as shipped.
+ * 2. Shipped rows (`seed`, or a `community` sync) from an older file
+ *    version, and `carried` rows, take the file's value and notes.
+ * 3. Rows the household changed (`user`) are never touched; years and keys
+ *    the file doesn't have are never touched or removed. A shipped row's
+ *    notes follow the file too (Settings doesn't edit notes; a note change
+ *    alone doesn't make a row the household's).
+ * 4. Missing rows are added. `tax_params` takes a higher revision.
+ */
+function* reconcileSteps(
+  dialect: RefDialect,
+  file: TaxDataFile,
+): Generator<RefStep, { inserted: number; updated: number }, Rows> {
+  const query = (sql: string, params: unknown[] = []) => ({ sql, params });
+  if (file.formatVersion > TAX_DATA_FORMAT_VERSION)
+    throw new Error(
+      `tax-data file format ${file.formatVersion} is newer than this app reads (${TAX_DATA_FORMAT_VERSION})`,
+    );
+  const bool = (b: unknown) =>
+    typeof b === "boolean" && dialect === "sqlite" ? (b ? 1 : 0) : b;
+  const write = (r: ShippedRow) =>
+    r.json ? JSON.stringify(r.value) : String(r.value);
+  let inserted = 0;
+  let updated = 0;
+
+  for (const [y, data] of Object.entries(file.years)) {
+    const [current] = yield query(
+      "SELECT version FROM tax_params WHERE tax_year = ?",
+      [Number(y)],
+    );
+    if (!current) {
+      yield query(
+        "INSERT INTO tax_params (tax_year, version, source, notes) VALUES (?, ?, ?, ?)",
+        [Number(y), data.revision, data.source, data.notes ?? null],
+      );
+      inserted++;
+    } else if (Number(current.version) < data.revision) {
+      yield query(
+        "UPDATE tax_params SET version = ?, source = ?, notes = ? WHERE tax_year = ?",
+        [data.revision, data.source, data.notes ?? null, Number(y)],
+      );
+      updated++;
+    }
+  }
+
+  const shipped = shippedReferenceRows(file);
+  for (const table of [...new Set(shipped.map((r) => r.table))]) {
+    const mine = shipped.filter((r) => r.table === table);
+    const keyCols = mine[0]!.keyCols;
+    const existing = new Map(
+      (yield query(`SELECT * FROM ${table}`)).map((row) => [
+        rowKey(keyCols.map((c) => row[c])),
+        row,
+      ]),
+    );
+    for (const r of mine) {
+      const row = existing.get(rowKey(r.keyVals));
+      const keyParams = r.keyVals.map(bool);
+      if (!row) {
+        const cols = [
+          ...r.keyCols,
+          r.valueCol,
+          ...(r.notes !== undefined ? ["notes"] : []),
+          "origin",
+          "source_version",
+        ];
+        yield query(
+          `INSERT INTO ${table} (${cols.join(", ")}) VALUES (${cols.map(() => "?").join(", ")})`,
+          [
+            ...keyParams,
+            write(r),
+            ...(r.notes !== undefined ? [r.notes] : []),
+            "seed",
+            file.dataVersion,
+          ],
+        );
+        inserted++;
+        continue;
+      }
+      let origin = String(row.origin);
+      let version = Number(row.source_version ?? 0);
+      const holdsShipped = sameReferenceValue(row[r.valueCol], r.value, r.json);
+      if (
+        origin === "user" &&
+        row.confirmed_at == null &&
+        (holdsShipped ||
+          r.supersedes.some((s) =>
+            sameReferenceValue(row[r.valueCol], s, r.json),
+          ))
+      ) {
+        origin = "seed";
+        version = 0;
+      }
+      const behind =
+        origin === "carried" ||
+        ((origin === "seed" || origin === "community") &&
+          version < file.dataVersion);
+      if (!behind) continue;
+      const where = r.keyCols.map((c) => `${c} = ?`).join(" AND ");
+      yield query(
+        `UPDATE ${table} SET ${r.valueCol} = ?, ${r.notes !== undefined ? "notes = ?, " : ""}origin = 'seed', source_version = ?, confirmed_at = NULL WHERE ${where}`,
+        [
+          write(r),
+          ...(r.notes !== undefined ? [r.notes] : []),
+          file.dataVersion,
+          ...keyParams,
+        ],
+      );
+      updated++;
+    }
+  }
+  return { inserted, updated };
+}
+
+/** Reconcile through an async driver. */
+export async function reconcileReferenceRows(
+  run: RefQuery,
+  dialect: RefDialect,
+  file: TaxDataFile,
+): Promise<{ inserted: number; updated: number }> {
+  const steps = reconcileSteps(dialect, file);
+  let next = steps.next();
+  while (!next.done)
+    next = steps.next(await run(next.value.sql, next.value.params));
+  return next.value;
+}
+
+/** Reconcile through a sync driver (better-sqlite3). */
+export function reconcileReferenceRowsSync(
+  run: RefQuerySync,
+  file: TaxDataFile,
+): { inserted: number; updated: number } {
+  const steps = reconcileSteps("sqlite", file);
+  let next = steps.next();
+  while (!next.done) next = steps.next(run(next.value.sql, next.value.params));
+  return next.value;
+}
+// END reference-reconcile-core
 
 // Table names that are included in versioned backups (must match version-tables.ts).
 // This is a local copy because db-migrate.ts runs in Docker where src/ isn't available.
@@ -664,7 +956,7 @@ const BASELINE_HASHES: Record<string, string> = {
 // migration here when it ships. The LATEST applied row names exactly where an install was, so a
 // backup taken before the squash is labelled with its real schema tag
 // (all are in backup-transforms' V08_SCHEMA_TAGS).
-const V08_MIGRATION_HASHES: Record<string, string> = {
+export const V08_MIGRATION_HASHES: Record<string, string> = {
   a626ffc04645cdc4d3a28b0793d380796c27be18d954ba22b62514018d595d5f:
     "0000_v8_initial_schema",
   fcdc386e4feec343e36bf406408b945085d25e3ab894400c35380eae6f089db1:
@@ -711,6 +1003,12 @@ const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.8.11: where reinvested RMD money goes (per Retirement Profile).
   "0366e7ae1b9763c3f54b88688d82045f70e204c8817fbad10ce68c9d9e4e975c":
     "0011_v0811_rmd_excess_target",
+  // v0.8.14: Performance notes, estimated fields, accepted checks.
+  "887f50d59ffe2a1e15e321d1116a106d652e8ac4ad96ec0c3d7a5db112690651":
+    "0012_v0814_perf_annotations",
+  // v0.9.0: where each reference figure came from (origin, source_version, confirmed_at).
+  d210c1418b4e930b2244c6bd723b5a9672f33621c753fa59fcb8cde5a467adf6:
+    "0013_v090_tax_data_origin",
 };
 
 /**
@@ -1499,44 +1797,41 @@ async function runPostgres() {
       }
     }
 
-    // Reference-data reconcile (R43): additive, runs on every migrate so a
-    // new tax year in the seed reaches existing installs. Fails the migrate
-    // loudly on any error — a silently skipped reconcile is the "seed never
-    // reaches prod" bug this replaces.
+    // Reference-data reconcile: the tax-data file, in public and in each
+    // live demo schema (demo reference data comes from the file, never from
+    // the household's own rows). Fails the migrate loudly — a silently
+    // skipped reconcile is how a seed fix never reaches prod.
     const seedClient = await pool.connect();
     try {
-      const seedSql = fs.readFileSync(
-        path.resolve("./seed-reference-data.sql"),
-        "utf-8",
-      );
-      const seedTables = parseSeedTableNames(seedSql);
-      for (const table of seedTables) {
-        const { rows } = await seedClient.query(
-          `SELECT 1
-             FROM pg_index i
-             JOIN pg_class c ON c.oid = i.indrelid
-             JOIN pg_attribute a ON a.attrelid = i.indrelid
-                                AND a.attnum = ANY(i.indkey)
-            WHERE c.relname = $1 AND i.indisunique AND a.attname = 'tax_year'
-            LIMIT 1`,
-          [table],
+      const file = readTaxDataFile();
+      const pgQuery: RefQuery = async (text, params) => {
+        let i = 0;
+        const res = await seedClient.query(
+          text.replace(/\?/g, () => `$${++i}`),
+          params,
         );
-        if (rows.length === 0) {
-          throw new Error(
-            `Reference table "${table}" has no tax_year-scoped unique constraint — ` +
-              `seed reconcile would duplicate rows on every migrate. Add a unique index first.`,
-          );
+        return res.rows as Record<string, unknown>[];
+      };
+      // One transaction per schema: a failure part-way leaves nothing half
+      // applied (it's idempotent, but a mixed state shouldn't serve traffic).
+      const inTransaction = async <T>(fn: () => Promise<T>): Promise<T> => {
+        await seedClient.query("BEGIN");
+        try {
+          const out = await fn();
+          await seedClient.query("COMMIT");
+          return out;
+        } catch (err) {
+          await seedClient.query("ROLLBACK");
+          throw err;
         }
-      }
-      await seedClient.query(seedSql);
+      };
+      const result = await inTransaction(() =>
+        reconcileReferenceRows(pgQuery, "pg", file),
+      );
       log("info", "reference_data_reconciled", {
-        tables: seedTables.join(", "),
+        dataVersion: file.dataVersion,
+        ...result,
       });
-      // Live demo schemas copied these tables when they were built and are
-      // only rebuilt when the migration count changes — so a new tax year
-      // or a seed correction would never reach them. Apply the seed in each
-      // (inserts + its guarded corrections), then add any other rows public
-      // has. Stale schemas were dropped above, so the tables still match.
       const { rows: demos } = await seedClient.query<{ nspname: string }>(
         `SELECT nspname FROM pg_namespace WHERE nspname LIKE 'demo\\_%'`,
       );
@@ -1544,23 +1839,11 @@ async function runPostgres() {
         const schemaIdent = `"${nspname.replace(/"/g, '""')}"`;
         try {
           await seedClient.query(`SET search_path TO ${schemaIdent}`);
-          await seedClient.query(seedSql);
+          await inTransaction(() =>
+            reconcileReferenceRows(pgQuery, "pg", file),
+          );
         } finally {
           await seedClient.query("SET search_path TO public");
-        }
-        for (const table of seedTables) {
-          const { rows: cols } = await seedClient.query<{
-            column_name: string;
-          }>(
-            `SELECT column_name FROM information_schema.columns
-              WHERE table_schema = 'public' AND table_name = $1
-              ORDER BY ordinal_position`,
-            [table],
-          );
-          const list = cols.map((c) => `"${c.column_name}"`).join(", ");
-          await seedClient.query(
-            `INSERT INTO ${schemaIdent}."${table}" (${list}) SELECT ${list} FROM public."${table}" ON CONFLICT DO NOTHING`,
-          );
         }
       }
       if (demos.length > 0)
@@ -2051,35 +2334,23 @@ function runSQLite() {
     }
   }
 
-  // Reference-data reconcile (R43): additive, runs on every migrate. Mirrors
-  // the Postgres path above — fails loudly rather than warn-and-continue.
+  // Reference-data reconcile: the tax-data file. Mirrors the Postgres path
+  // above — fails loudly rather than warn-and-continue.
   try {
-    const seedSql = fs.readFileSync(
-      path.resolve("./seed-reference-data.sql"),
-      "utf-8",
-    );
-    const seedTables = parseSeedTableNames(seedSql);
-    for (const table of seedTables) {
-      const indexes = sqlite.prepare(`PRAGMA index_list("${table}")`).all() as {
-        name: string;
-        unique: number;
-      }[];
-      const hasYearScopedUnique = indexes.some((idx) => {
-        if (idx.unique !== 1) return false;
-        const cols = sqlite
-          .prepare(`PRAGMA index_info("${idx.name}")`)
-          .all() as { name: string }[];
-        return cols.some((c) => c.name === "tax_year");
-      });
-      if (!hasYearScopedUnique) {
-        throw new Error(
-          `Reference table "${table}" has no tax_year-scoped unique constraint — ` +
-            `seed reconcile would duplicate rows on every migrate. Add a unique index first.`,
-        );
-      }
-    }
-    sqlite.exec(seedSql);
-    log("info", "reference_data_reconciled", { tables: seedTables.join(", ") });
+    const file = readTaxDataFile();
+    const result = sqlite.transaction(() =>
+      reconcileReferenceRowsSync((text, params) => {
+        const stmt = sqlite.prepare(text);
+        if (stmt.reader)
+          return stmt.all(...params) as Record<string, unknown>[];
+        stmt.run(...params);
+        return [];
+      }, file),
+    )();
+    log("info", "reference_data_reconciled", {
+      dataVersion: file.dataVersion,
+      ...result,
+    });
   } finally {
     sqlite.close();
   }

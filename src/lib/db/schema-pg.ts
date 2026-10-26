@@ -52,6 +52,7 @@ import type {
   StandInPreview,
   BonusDestination,
 } from "@/lib/config/enum-values";
+import type { TaxDataOrigin } from "./reference-reconcile-core";
 
 /** One date-ranged rule directing an extra paycheck to one or more savings goals. */
 export type ExtraPaycheckRule = {
@@ -309,6 +310,19 @@ export const contributionAccounts = pgTable(
   ],
 );
 
+/**
+ * Where a reference figure came from (tax-data file, carried forward, the
+ * sync, or the household) — the reconcile updates shipped figures and never
+ * the household's (lib/db/reference-reconcile-core.ts).
+ */
+const referenceOriginColumns = {
+  origin: text("origin").$type<TaxDataOrigin>().notNull().default("user"),
+  /** The tax-data file's `dataVersion` a `seed`/`community` row came from. */
+  sourceVersion: integer("source_version"),
+  /** When the household last confirmed or changed this figure. */
+  confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+};
+
 export const contributionLimits = pgTable(
   "contribution_limits",
   {
@@ -317,6 +331,7 @@ export const contributionLimits = pgTable(
     limitType: text("limit_type").notNull(),
     value: decimal("value", { precision: 12, scale: 6 }).notNull(),
     notes: text("notes"),
+    ...referenceOriginColumns,
   },
   (table) => [
     uniqueIndex("contribution_limits_year_type_idx").on(
@@ -1996,6 +2011,7 @@ export const taxBrackets = pgTable(
     filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
     w4Checkbox: boolean("w4_checkbox").notNull(),
     brackets: jsonb("brackets").$type<TaxBracketEntry[]>().notNull(),
+    ...referenceOriginColumns,
   },
   (table) => [
     uniqueIndex("tax_brackets_year_status_checkbox_idx").on(
@@ -2020,6 +2036,7 @@ export const ltcgBrackets = pgTable(
     taxYear: integer("tax_year").notNull(),
     filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
     brackets: jsonb("brackets").$type<LtcgBracketEntry[]>().notNull(),
+    ...referenceOriginColumns,
   },
   (table) => [
     uniqueIndex("ltcg_brackets_year_status_idx").on(
@@ -2043,6 +2060,7 @@ export const irmaaBrackets = pgTable(
     taxYear: integer("tax_year").notNull(),
     filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
     brackets: jsonb("brackets").$type<IrmaaBracketEntry[]>().notNull(),
+    ...referenceOriginColumns,
   },
   (table) => [
     uniqueIndex("irmaa_brackets_year_status_idx").on(
@@ -2066,6 +2084,7 @@ export const fplByHousehold = pgTable(
     id: serial("id").primaryKey(),
     taxYear: integer("tax_year").notNull(),
     amounts: jsonb("amounts").$type<Record<string, number>>().notNull(),
+    ...referenceOriginColumns,
   },
   (table) => [uniqueIndex("fpl_by_household_year_idx").on(table.taxYear)],
 );

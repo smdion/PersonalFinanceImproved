@@ -6,7 +6,7 @@
  * IRS/CMS/HHS publishes new data.
  *
  * Checks:
- *   1. seed-reference-data.sql has rows for the expected tax year in every
+ *   1. tax-data/us-federal.json has rows for the expected tax year in every
  *      reference table (contribution_limits, tax_brackets, ltcg_brackets,
  *      irmaa_brackets, fpl_by_household).
  *   1b. tax_params vintage rows don't claim a year the actual value
@@ -83,18 +83,35 @@ function readFile(relativePath: string): string {
   return fs.readFileSync(path.join(ROOT, relativePath), "utf-8");
 }
 
-/** Every `tax_year` value found in `table`'s INSERT block in the seed. */
-function seedYearsForTable(sql: string, table: string): number[] {
-  const pattern = new RegExp(`INSERT INTO ${table}[\\s\\S]*?ON CONFLICT`, "g");
-  const match = pattern.exec(sql);
-  if (!match) return [];
-  const years: number[] = [];
-  const yearPattern = /\((\d{4}),\s/g;
-  let m: RegExpExecArray | null;
-  while ((m = yearPattern.exec(match[0])) !== null) {
-    years.push(parseInt(m[1]!, 10));
-  }
-  return years;
+type TaxDataFileJson = {
+  years: Record<
+    string,
+    {
+      limits?: Record<string, unknown>;
+      withholding?: { tables?: Record<string, unknown> };
+      ltcg?: { brackets?: Record<string, unknown> };
+      irmaa?: { brackets?: Record<string, unknown> };
+      fpl?: unknown;
+    }
+  >;
+};
+
+/** Every tax year the tax-data file has rows for in `table`. `data` is the
+ *  file's text. */
+function seedYearsForTable(data: string, table: string): number[] {
+  const file = JSON.parse(data) as TaxDataFileJson;
+  const has: Record<string, (y: TaxDataFileJson["years"][string]) => boolean> =
+    {
+      contribution_limits: (y) => Object.keys(y.limits ?? {}).length > 0,
+      tax_brackets: (y) => Object.keys(y.withholding?.tables ?? {}).length > 0,
+      ltcg_brackets: (y) => Object.keys(y.ltcg?.brackets ?? {}).length > 0,
+      irmaa_brackets: (y) => Object.keys(y.irmaa?.brackets ?? {}).length > 0,
+      fpl_by_household: (y) => y.fpl !== undefined,
+      tax_params: () => true,
+    };
+  return Object.entries(file.years)
+    .filter(([, y]) => has[table]?.(y))
+    .map(([year]) => Number(year));
 }
 
 // ---------------------------------------------------------------------------
@@ -187,22 +204,9 @@ function checkCodeFallbacks(sql: string): FallbackCheck[] {
   // precise, and doesn't depend on a parseable header comment).
   const ltcgYears = seedYearsForTable(sql, "ltcg_brackets");
   const ltcgSeedMax = ltcgYears.length > 0 ? Math.max(...ltcgYears) : 0;
-  // Scope the row regex to JUST the ltcg_brackets INSERT block — irmaa_brackets
-  // rows have the identical (year, 'status', '[...]') shape, and running this
-  // against the whole file would let a later irmaa_brackets match silently
-  // overwrite the ltcg capture.
-  const ltcgBlockMatch = /INSERT INTO ltcg_brackets[\s\S]*?ON CONFLICT/.exec(
-    sql,
-  );
-  const ltcgRowRe = /\((\d{4}), '(MFJ|Single|HOH)', '(\[[^']*\])'\)/g;
-  const seedLtcgLatest: Record<string, unknown> = {};
-  let m: RegExpExecArray | null;
-  if (ltcgBlockMatch) {
-    while ((m = ltcgRowRe.exec(ltcgBlockMatch[0])) !== null) {
-      if (Number(m[1]) !== ltcgSeedMax) continue;
-      seedLtcgLatest[m[2]!] = JSON.parse(m[3]!);
-    }
-  }
+  const seedLtcgLatest: Record<string, unknown> =
+    (JSON.parse(sql) as TaxDataFileJson).years[String(ltcgSeedMax)]?.ltcg
+      ?.brackets ?? {};
   const ltcgMatches =
     JSON.stringify(LTCG_BRACKETS.MFJ) === JSON.stringify(seedLtcgLatest.MFJ) &&
     JSON.stringify(LTCG_BRACKETS.Single) ===
@@ -226,7 +230,7 @@ function checkCodeFallbacks(sql: string): FallbackCheck[] {
 
 function run() {
   const now = new Date();
-  const sql = readFile("seed-reference-data.sql");
+  const sql = readFile("tax-data/us-federal.json");
 
   console.log("Tax parameter staleness check\n");
 
@@ -235,7 +239,7 @@ function run() {
   let seedWarnings = 0;
   let seedErrors = 0;
 
-  console.log("=== Seed Data (seed-reference-data.sql) ===\n");
+  console.log("=== Tax data (tax-data/us-federal.json) ===\n");
 
   for (const check of seedChecks) {
     // The year after the expected one is the next to come due.

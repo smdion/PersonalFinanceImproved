@@ -27,6 +27,9 @@ export function FplByHouseholdSettings({ year }: { year: number }) {
   const deleteMutation = trpc.settings.fplByHousehold.delete.useMutation({
     onSuccess: () => utils.settings.fplByHousehold.invalidate(),
   });
+  const resetMutation = trpc.settings.fplByHousehold.resetToShipped.useMutation(
+    { onSuccess: () => utils.settings.fplByHousehold.invalidate() },
+  );
 
   const [copyFrom, setCopyFrom] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
@@ -66,6 +69,8 @@ export function FplByHouseholdSettings({ year }: { year: number }) {
       amounts: Object.fromEntries(
         HOUSEHOLD_SIZES.map((s) => [s, sourceAmounts[s] ?? 0]),
       ) as Record<"1" | "2" | "3" | "4" | "5" | "6" | "7" | "8", number>,
+      // A copy or all-zero placeholder: replaced when the real table ships.
+      carried: true,
     });
 
     setCopyFrom(null);
@@ -158,7 +163,19 @@ export function FplByHouseholdSettings({ year }: { year: number }) {
 
       <div className="overflow-hidden rounded-lg border">
         <div className="bg-surface-sunken border-b px-4 py-2">
-          <h3 className="text-primary font-medium">By Household Size</h3>
+          <h3 className="text-primary font-medium">
+            By Household Size
+            {admin && row.shipped && row.origin === "user" && (
+              <button
+                type="button"
+                onClick={() => resetMutation.mutate({ id: row.id })}
+                className="text-caption ml-2 font-normal text-blue-600 hover:underline"
+                title="You changed this table — put back the one Ledgr ships"
+              >
+                Reset to shipped
+              </button>
+            )}
+          </h3>
         </div>
         <div className="overflow-x-auto p-3">
           <table className="w-full border-collapse text-sm">
@@ -196,14 +213,17 @@ export function FplByHouseholdSettings({ year }: { year: number }) {
         <p className="text-faint text-xs">
           Source: HHS Federal Register poverty guidelines.
         </p>
-        {admin && years.length > 1 && confirmDelete !== activeYear && (
-          <button
-            onClick={() => setConfirmDelete(activeYear)}
-            className="text-xs text-red-500 hover:text-red-700"
-          >
-            Delete {activeYear}
-          </button>
-        )}
+        {admin &&
+          years.length > 1 &&
+          !row.shipped &&
+          confirmDelete !== activeYear && (
+            <button
+              onClick={() => setConfirmDelete(activeYear)}
+              className="text-xs text-red-500 hover:text-red-700"
+            >
+              Delete {activeYear}
+            </button>
+          )}
       </div>
     </div>
   );

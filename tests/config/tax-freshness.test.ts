@@ -12,9 +12,12 @@
  * When a test fails, update the parameter values in the codebase,
  * then bump `validThrough` in the registry (tax-freshness.ts).
  */
+import {
+  taxDataBrackets,
+  taxDataLimits,
+  taxDataWithholding,
+} from "../helpers/tax-data";
 import { describe, it, expect } from "vitest";
-import fs from "node:fs";
-import path from "node:path";
 import {
   TAX_PARAMETER_REGISTRY,
   assertTaxFreshness,
@@ -103,7 +106,7 @@ describe("Tax parameter freshness", () => {
 // Part 1b: tax_brackets seed-data structural invariants (regression guard)
 // ============================================================================
 //
-// Two typos were once present in seed-reference-data.sql's w4_checkbox=true rows
+// Two typos were once present in the shipped data's w4_checkbox=true rows
 // (a dropped digit in a baseWithholding value, a dropped digit in a
 // threshold) that only surfaced via manual arithmetic verification. These
 // invariants catch that whole bug class automatically: every row's
@@ -120,34 +123,14 @@ type SeedBracketRow = {
 };
 
 function parseSeedTaxBrackets(): SeedBracketRow[] {
-  const sql = fs.readFileSync(
-    path.resolve(__dirname, "../../seed-reference-data.sql"),
-    "utf8",
-  );
-  const rows: SeedBracketRow[] = [];
-  const rowRe = /\((\d{4}), '(MFJ|Single|HOH)', (true|false), '(\[.*?\])'\)/g;
-  let m: RegExpExecArray | null;
-  while ((m = rowRe.exec(sql))) {
-    rows.push({
-      taxYear: Number(m[1]),
-      filingStatus: m[2] as "MFJ" | "Single" | "HOH",
-      w4Checkbox: m[3] === "true",
-      brackets: JSON.parse(m[4]!),
-    });
-  }
-  return rows;
+  return taxDataWithholding() as SeedBracketRow[];
 }
 
 function parseSeedStandardDeductions(): Map<string, number> {
-  const sql = fs.readFileSync(
-    path.resolve(__dirname, "../../seed-reference-data.sql"),
-    "utf8",
-  );
   const map = new Map<string, number>();
-  const re = /\((\d{4}), 'standard_deduction_(mfj|single|hoh)', ([\d.]+)/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(sql))) {
-    map.set(`${m[1]}:${m[2]!.toUpperCase()}`, Number(m[3]));
+  for (const r of taxDataLimits()) {
+    const m = /^standard_deduction_(mfj|single|hoh)$/.exec(r.limitType);
+    if (m) map.set(`${r.taxYear}:${m[1]!.toUpperCase()}`, r.value);
   }
   return map;
 }
@@ -453,26 +436,14 @@ describe("IRMAA bracket values", () => {
   // the seed from the fallback, THIS test fails -- update both together,
   // exactly like the LTCG fallback.
   it("seed irmaa_brackets (latest year) == IRMAA_BRACKETS fallback", () => {
-    const sql = fs.readFileSync(
-      path.resolve(__dirname, "../../seed-reference-data.sql"),
-      "utf8",
-    );
-    const rowRe = /\((\d{4}), '(MFJ|Single|HOH)', '(\[[^']*\])'\)/g;
     const seedByYear = new Map<
       number,
       Partial<Record<"MFJ" | "Single" | "HOH", unknown>>
     >();
-    // Only the irmaa_brackets INSERT block uses the
-    // (year, status, json) 3-tuple shape without a w4 flag AND with
-    // magiThreshold keys — scope by the latter to avoid matching LTCG.
-    let m: RegExpExecArray | null;
-    while ((m = rowRe.exec(sql)) !== null) {
-      if (!m[3]!.includes("magiThreshold")) continue;
-      const year = Number(m[1]);
-      if (!seedByYear.has(year)) seedByYear.set(year, {});
-      seedByYear.get(year)![m[2] as "MFJ" | "Single" | "HOH"] = JSON.parse(
-        m[3]!,
-      );
+    for (const r of taxDataBrackets("irmaa")) {
+      if (!seedByYear.has(r.taxYear)) seedByYear.set(r.taxYear, {});
+      seedByYear.get(r.taxYear)![r.filingStatus as "MFJ" | "Single" | "HOH"] =
+        r.brackets;
     }
     expect(seedByYear.size).toBeGreaterThan(0);
     const latestYear = Math.max(...seedByYear.keys());

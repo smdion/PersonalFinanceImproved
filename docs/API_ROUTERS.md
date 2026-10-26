@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**362 procedures across 52 routers.**
+**367 procedures across 52 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -481,28 +481,33 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `settings/tax-limits`
 
-| Procedure | Kind     | Auth                 | Description      |
-| --------- | -------- | -------------------- | ---------------- |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `create`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `delete`  | mutation | `adminProcedure`     | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `list`    | query    | `protectedProcedure` | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
-| `update`  | mutation | `adminProcedure`     | (no description) |
+| Procedure        | Kind     | Auth                 | Description                                                        |
+| ---------------- | -------- | -------------------- | ------------------------------------------------------------------ |
+| `create`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `create`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `create`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `create`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `create`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `delete`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `delete`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `delete`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `delete`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `delete`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `list`           | query    | `protectedProcedure` | Each row says whether Ledgr ships it (Reset to shipped vs delete). |
+| `list`           | query    | `protectedProcedure` | (no description)                                                   |
+| `list`           | query    | `protectedProcedure` | (no description)                                                   |
+| `list`           | query    | `protectedProcedure` | (no description)                                                   |
+| `list`           | query    | `protectedProcedure` | (no description)                                                   |
+| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).    |
+| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).    |
+| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).    |
+| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).    |
+| `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).    |
+| `update`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `update`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `update`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `update`         | mutation | `adminProcedure`     | (no description)                                                   |
+| `update`         | mutation | `adminProcedure`     | (no description)                                                   |
 
 ## `simplefin`
 

@@ -23,7 +23,7 @@ describe("settings.contributionLimits", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.contributionLimits.list();
-      // The test DB carries seed-reference-data.sql (2025 + 2026).
+      // The test DB carries tax-data/us-federal.json (2025 + 2026).
       expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
@@ -162,7 +162,7 @@ describe("settings.taxBrackets", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.taxBrackets.list();
-      // The test DB carries seed-reference-data.sql (2025 + 2026).
+      // The test DB carries tax-data/us-federal.json (2025 + 2026).
       expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
@@ -264,7 +264,7 @@ describe("settings.ltcgBrackets", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.ltcgBrackets.list();
-      // The test DB carries seed-reference-data.sql (2025 + 2026).
+      // The test DB carries tax-data/us-federal.json (2025 + 2026).
       expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
@@ -346,7 +346,7 @@ describe("settings.irmaaBrackets", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.irmaaBrackets.list();
-      // The test DB carries seed-reference-data.sql (2025 + 2026).
+      // The test DB carries tax-data/us-federal.json (2025 + 2026).
       expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
@@ -445,7 +445,7 @@ describe("settings.fplByHousehold", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.fplByHousehold.list();
-      // The test DB carries seed-reference-data.sql (2025 + 2026).
+      // The test DB carries tax-data/us-federal.json (2025 + 2026).
       expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
@@ -511,6 +511,91 @@ describe("settings.fplByHousehold", () => {
           amounts: { "1": 15650, "2": 21150, "3": 26650, "4": 32150 },
         }),
       ).rejects.toThrow();
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// Where a figure came from: an edit makes it the household's only when the
+// value changes; a shipped figure is reset, never deleted.
+describe("settings.contributionLimits — provenance", () => {
+  const ira2026 = async (
+    caller: Awaited<ReturnType<typeof createTestCaller>>["caller"],
+  ) =>
+    (await caller.settings.contributionLimits.list()).find(
+      (r) => r.taxYear === 2026 && r.limitType === "ira_limit",
+    )!;
+
+  it("saving a shipped figure unchanged keeps it shipped (just confirmed)", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const row = await ira2026(caller);
+      expect(row.origin).toBe("seed");
+      await caller.settings.contributionLimits.update({
+        id: row.id,
+        taxYear: 2026,
+        limitType: "ira_limit",
+        value: "7500.00",
+        notes: row.notes,
+      });
+      const after = await ira2026(caller);
+      expect(after.origin).toBe("seed");
+      expect(after.confirmedAt).not.toBeNull();
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("changing it makes it the household's; Reset to shipped puts the shipped value back", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const row = await ira2026(caller);
+      await caller.settings.contributionLimits.update({
+        id: row.id,
+        taxYear: 2026,
+        limitType: "ira_limit",
+        value: "9000",
+        notes: row.notes,
+      });
+      expect(await ira2026(caller)).toMatchObject({ origin: "user" });
+      await caller.settings.contributionLimits.resetToShipped({ id: row.id });
+      const reset = await ira2026(caller);
+      expect(reset.origin).toBe("seed");
+      expect(Number(reset.value)).toBe(7500);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("a shipped figure can't be deleted; one Ledgr doesn't ship can", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const row = await ira2026(caller);
+      await expect(
+        caller.settings.contributionLimits.delete({ id: row.id }),
+      ).rejects.toThrow(/Reset to shipped/);
+      const own = await caller.settings.contributionLimits.create({
+        taxYear: 2026,
+        limitType: "roth_ira_magi_limit_mfj",
+        value: "236000",
+      });
+      await caller.settings.contributionLimits.delete({ id: own!.id });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("a +Year copy is carried forward, not the household's own", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const row = await caller.settings.contributionLimits.create({
+        taxYear: 2031,
+        limitType: "ira_limit",
+        value: "7500",
+        carried: true,
+      });
+      expect(row).toMatchObject({ origin: "carried", confirmedAt: null });
     } finally {
       cleanup();
     }

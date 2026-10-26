@@ -81,6 +81,7 @@ const V08_SCHEMA_TAGS = [
   "0010_v0810_holding_period_parts", // PG + SQLite: holding_periods.sub_key (the part of an account whose feeds are linked per part; null = whole account) — nullable, older backups restore as whole-account periods
   "0011_v0811_rmd_excess_target", // PG + SQLite: retirement_settings.rmd_excess_target_performance_account_id (nullable FK, SET NULL) — older backups restore as "spread across Retirement brokerages"
   "0012_v0814_perf_annotations", // PG + SQLite: account_performance.note (nullable), estimated_fields ([]), accepted_checks ({}) — older backups restore with no notes, estimates or accepted gaps
+  "0013_v090_tax_data_origin", // PG + SQLite: origin ('user'), source_version, confirmed_at on the five reference tables — older backups restore as 'user' and never confirmed; the reference reconcile then recognises shipped values
 ] as const;
 
 /** First tags whose backups carry asset_class_buckets (PG, SQLite). */

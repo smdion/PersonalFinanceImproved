@@ -9,8 +9,11 @@
  * rewrite deliberately changes.
  */
 import { describe, it, expect } from "vitest";
-import fs from "node:fs";
-import path from "node:path";
+import {
+  taxDataBrackets,
+  taxDataLimits,
+  taxDataWithholding,
+} from "../helpers/tax-data";
 import {
   resolveTaxParams,
   type TaxParamsRowSets,
@@ -21,52 +24,18 @@ import {
 // data, not a hand-typed copy.
 // ---------------------------------------------------------------------------
 
-const SEED = fs.readFileSync(
-  path.resolve(__dirname, "../../seed-reference-data.sql"),
-  "utf8",
-);
-
 function parseLimits(): TaxParamsRowSets["contributionLimits"] {
-  const out: TaxParamsRowSets["contributionLimits"] = [];
-  const re = /\((\d{4}), '([a-z0-9_]+)', ([\d.]+),/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(SEED)) !== null) {
-    out.push({ taxYear: Number(m[1]), limitType: m[2]!, value: m[3]! });
-  }
-  return out;
+  return taxDataLimits();
 }
 
 function parseWithholding(): TaxParamsRowSets["withholdingBrackets"] {
-  const out: TaxParamsRowSets["withholdingBrackets"] = [];
-  const re = /\((\d{4}), '(MFJ|Single|HOH)', (true|false), '(\[.*?\])'\)/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(SEED)) !== null) {
-    out.push({
-      taxYear: Number(m[1]),
-      filingStatus: m[2]!,
-      w4Checkbox: m[3] === "true",
-      brackets: JSON.parse(m[4]!),
-    });
-  }
-  return out;
+  return taxDataWithholding();
 }
 
 function parseBracketMaps(
-  needle: string,
+  needle: "threshold" | "magiThreshold",
 ): { taxYear: number; filingStatus: string; brackets: unknown[] }[] {
-  const out: { taxYear: number; filingStatus: string; brackets: unknown[] }[] =
-    [];
-  const re = /\((\d{4}), '(MFJ|Single|HOH)', '(\[[^']*\])'\)/g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(SEED)) !== null) {
-    if (!m[3]!.includes(needle)) continue;
-    out.push({
-      taxYear: Number(m[1]),
-      filingStatus: m[2]!,
-      brackets: JSON.parse(m[3]!),
-    });
-  }
-  return out;
+  return taxDataBrackets(needle === "magiThreshold" ? "irmaa" : "ltcg");
 }
 
 function seedRows(overrides: Partial<TaxParamsRowSets> = {}): TaxParamsRowSets {

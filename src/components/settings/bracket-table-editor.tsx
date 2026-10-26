@@ -33,6 +33,10 @@ export type BracketRow<TEntry> = {
   taxYear: number;
   filingStatus: string;
   brackets: TEntry[];
+  /** Ledgr ships this table (Reset to shipped, never deleted). */
+  shipped?: boolean;
+  /** Where it came from — "user" once the household changed it. */
+  origin?: string;
 };
 
 export type BracketColumn<TEntry> = {
@@ -96,6 +100,8 @@ type Props<TEntry> = {
     brackets: TEntry[],
   ) => Promise<unknown>;
   onDeleteRow: (rowId: number) => Promise<unknown>;
+  /** Put a shipped table the household changed back to the shipped one. */
+  onResetRow: (rowId: number) => Promise<unknown>;
   intro?: React.ReactNode;
   sourceNote: React.ReactNode;
 };
@@ -113,6 +119,7 @@ export function BracketTableEditor<TEntry>({
   onUpdateRow,
   onCreateRow,
   onDeleteRow,
+  onResetRow,
   intro,
   sourceNote,
 }: Props<TEntry>) {
@@ -131,6 +138,8 @@ export function BracketTableEditor<TEntry>({
     (a, b) => b - a,
   );
   const yearData = rows.filter((r) => r.taxYear === year);
+  // A year Ledgr ships can't be deleted (it would come back on restart).
+  const yearShipped = yearData.some((r) => r.shipped);
   const effectiveCopyFrom = copyFromTouched
     ? copyFrom
     : (copyFrom ?? years[0] ?? null);
@@ -242,6 +251,16 @@ export function BracketTableEditor<TEntry>({
               <div className="bg-surface-sunken border-b px-4 py-2">
                 <h3 className="text-primary font-medium">
                   {STATUS_LABELS[status]}
+                  {admin && row.shipped && row.origin === "user" && (
+                    <button
+                      type="button"
+                      onClick={() => onResetRow(row.id)}
+                      className="text-caption ml-2 font-normal text-blue-600 hover:underline"
+                      title="You changed this table — put back the one Ledgr ships"
+                    >
+                      Reset to shipped
+                    </button>
+                  )}
                 </h3>
               </div>
               <div className="p-3">
@@ -296,14 +315,17 @@ export function BracketTableEditor<TEntry>({
 
       <div className="mt-4 flex items-center justify-between">
         <p className="text-faint text-xs">{sourceNote}</p>
-        {admin && years.length > 1 && confirmDelete !== year && (
-          <button
-            onClick={() => setConfirmDelete(year)}
-            className="text-xs text-red-500 hover:text-red-700"
-          >
-            Delete {year}
-          </button>
-        )}
+        {admin &&
+          years.length > 1 &&
+          !yearShipped &&
+          confirmDelete !== year && (
+            <button
+              onClick={() => setConfirmDelete(year)}
+              className="text-xs text-red-500 hover:text-red-700"
+            >
+              Delete {year}
+            </button>
+          )}
       </div>
     </div>
   );

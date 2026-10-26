@@ -3,6 +3,7 @@
  * Lightweight DB harness for helper tests that need a real SQLite database
  * but don't need the full tRPC caller.
  */
+import { reconcileReferenceRowsSync } from "@/lib/db/reference-reconcile-core";
 import fs from "fs";
 import path from "path";
 import Database from "better-sqlite3";
@@ -35,8 +36,20 @@ export function openTestSqlite(): InstanceType<typeof Database> {
   if (!template) {
     const t = new Database(":memory:");
     applyMigrationsIdempotent(t);
-    const seedPath = path.resolve("seed-reference-data.sql");
-    if (fs.existsSync(seedPath)) t.exec(fs.readFileSync(seedPath, "utf-8"));
+    // Reference data from the tax-data file, through the same reconcile
+    // the migrator runs.
+    reconcileReferenceRowsSync(
+      (text, params) => {
+        const stmt = t.prepare(text);
+        if (stmt.reader)
+          return stmt.all(...params) as Record<string, unknown>[];
+        stmt.run(...params);
+        return [];
+      },
+      JSON.parse(
+        fs.readFileSync(path.resolve("tax-data/us-federal.json"), "utf-8"),
+      ),
+    );
     template = t.serialize();
     t.close();
   }

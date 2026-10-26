@@ -115,7 +115,7 @@ describe("paycheck edge cases", () => {
     const result = calculatePaycheck({
       ...basePaycheck,
       annualSalary: 200000,
-      ytdGrossEarnings: 180000, // already past $176,100
+      ytdGrossEarnings: 190000, // already past the 2026 $184,500
     });
     expect(result.ficaSS).toBe(0);
     expect(result.warnings).toContainEqual(

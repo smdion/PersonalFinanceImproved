@@ -106,6 +106,9 @@ vi.mock("@/lib/trpc", () => ({
             isPending: false,
           }),
         },
+        resetToShipped: {
+          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+        },
       },
     },
   },
@@ -124,7 +127,7 @@ describe("ContributionLimitsSettings smoke", () => {
   it("renders the FICA/Medicare group for the given year", () => {
     render(<ContributionLimitsSettings year={2025} />);
     expect(screen.getByText("Contribution & Tax Limits")).toBeInTheDocument();
-    expect(screen.getByText("FICA / Medicare")).toBeInTheDocument();
+    expect(screen.getByText("Social Security & Medicare")).toBeInTheDocument();
   });
 
   it("shows a change indicator when a value differs from the prior year", () => {

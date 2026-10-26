@@ -113,6 +113,7 @@ vi.mock("@/lib/trpc", () => ({
         list: { useQuery: () => ({ data: [], isLoading: false }) },
         upsert: { useMutation: noopMutation },
         delete: { useMutation: noopMutation },
+        resetToShipped: { useMutation: noopMutation },
       },
     },
     settings: {
@@ -125,6 +126,7 @@ vi.mock("@/lib/trpc", () => ({
         update: { useMutation: noopMutation },
         create: { useMutation: noopMutation },
         delete: { useMutation: noopMutation },
+        resetToShipped: { useMutation: noopMutation },
       },
       taxBrackets: {
         list: {
@@ -136,24 +138,28 @@ vi.mock("@/lib/trpc", () => ({
         update: { useMutation: noopMutation },
         create: { useMutation: noopMutation },
         delete: { useMutation: noopMutation },
+        resetToShipped: { useMutation: noopMutation },
       },
       ltcgBrackets: {
         list: { useQuery: () => ({ data: ltcg2025, isLoading: false }) },
         update: { useMutation: noopMutation },
         create: { useMutation: noopMutation },
         delete: { useMutation: noopMutation },
+        resetToShipped: { useMutation: noopMutation },
       },
       irmaaBrackets: {
         list: { useQuery: () => ({ data: [], isLoading: false }) },
         update: { useMutation: noopMutation },
         create: { useMutation: noopMutation },
         delete: { useMutation: noopMutation },
+        resetToShipped: { useMutation: noopMutation },
       },
       fplByHousehold: {
         list: { useQuery: () => ({ data: fpl2025, isLoading: false }) },
         update: { useMutation: noopMutation },
         create: { useMutation: noopMutation },
         delete: { useMutation: noopMutation },
+        resetToShipped: { useMutation: noopMutation },
       },
     },
   },

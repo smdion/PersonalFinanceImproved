@@ -4,9 +4,8 @@
  * Validates tax calculations against IRS 2025/2026 published tables.
  * Tests bracket math, FICA, standard deduction, and effective rates.
  */
+import { taxDataWithholding } from "../helpers/tax-data";
 import { describe, it, expect } from "vitest";
-import fs from "node:fs";
-import path from "node:path";
 import { taxForOnePerson } from "../calculators/tax-helpers";
 import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
 import type { TaxBracketInput } from "@/lib/calculators/types";
@@ -41,13 +40,11 @@ describe("toTaxableIncomeBrackets — Pub 15-T -> real 1040 derivation (R57)", (
   // disagree — the whole point of this derivation is that calculateTax's
   // production input (via buildLiabilityBracketInput) matches this spec.
   it("derives the real 2026 MFJ taxable-income brackets from the seed's Pub 15-T row", () => {
-    const sql = fs.readFileSync(
-      path.resolve(__dirname, "../../seed-reference-data.sql"),
-      "utf8",
+    const row = taxDataWithholding().find(
+      (r) => r.taxYear === 2026 && r.filingStatus === "MFJ" && !r.w4Checkbox,
     );
-    const m = sql.match(/\(2026, 'MFJ', false, '(\[.*?\])'\)/);
-    expect(m).not.toBeNull();
-    const raw: { rate: number; threshold: number }[] = JSON.parse(m![1]!);
+    expect(row).toBeDefined();
+    const raw: { rate: number; threshold: number }[] = row!.brackets;
     const withholdingBrackets = raw.map((b, i, arr) => ({
       min: b.threshold,
       max: i < arr.length - 1 ? arr[i + 1]!.threshold : null,

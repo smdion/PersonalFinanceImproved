@@ -44,6 +44,9 @@ export function TaxBracketsSettings({ year }: { year: number }) {
   const deleteMutation = trpc.settings.taxBrackets.delete.useMutation({
     onSuccess: () => utils.settings.taxBrackets.invalidate(),
   });
+  const resetMutation = trpc.settings.taxBrackets.resetToShipped.useMutation({
+    onSuccess: () => utils.settings.taxBrackets.invalidate(),
+  });
 
   const [copyFrom, setCopyFrom] = useState<number | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
@@ -57,6 +60,8 @@ export function TaxBracketsSettings({ year }: { year: number }) {
   const activeYear = year;
   const yearData = (data ?? []).filter((tb) => tb.taxYear === activeYear);
   const hasYearData = yearData.length > 0;
+  // A year Ledgr ships can't be deleted (it would come back on restart).
+  const yearShipped = yearData.some((tb) => tb.shipped);
   const effectiveCopyFrom = copyFrom ?? years[0] ?? null;
 
   const filingStatuses = ["MFJ", "Single", "HOH"] as const;
@@ -107,6 +112,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
           filingStatus: tb.filingStatus as "MFJ" | "Single" | "HOH",
           w4Checkbox: tb.w4Checkbox,
           brackets: tb.brackets as BracketEntry[],
+          carried: true, // replaced when the real tables ship
         });
       }
     } else {
@@ -118,6 +124,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
             filingStatus: fs,
             w4Checkbox: checkbox,
             brackets: [{ threshold: 0, baseWithholding: 0, rate: 0 }],
+            carried: true, // a placeholder until filled in or shipped
           });
         }
       }
@@ -217,6 +224,23 @@ export function TaxBracketsSettings({ year }: { year: number }) {
               <div className="bg-surface-sunken border-b px-4 py-2">
                 <h3 className="text-primary font-medium">
                   {statusLabels[status]}
+                  {admin &&
+                    statusBrackets.some(
+                      (tb) => tb.shipped && tb.origin === "user",
+                    ) && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          for (const tb of statusBrackets)
+                            if (tb.shipped && tb.origin === "user")
+                              await resetMutation.mutateAsync({ id: tb.id });
+                        }}
+                        className="text-caption ml-2 font-normal text-blue-600 hover:underline"
+                        title="You changed these tables — put back the ones Ledgr ships"
+                      >
+                        Reset to shipped
+                      </button>
+                    )}
                 </h3>
               </div>
 
@@ -333,14 +357,17 @@ export function TaxBracketsSettings({ year }: { year: number }) {
           Source: IRS Publication 15-T. Click any value to edit. Edit rates as
           percentages (e.g., enter 22 for 22%).
         </p>
-        {admin && years.length > 1 && confirmDelete !== activeYear && (
-          <button
-            onClick={() => setConfirmDelete(activeYear)}
-            className="text-xs text-red-500 hover:text-red-700"
-          >
-            Delete {activeYear}
-          </button>
-        )}
+        {admin &&
+          years.length > 1 &&
+          !yearShipped &&
+          confirmDelete !== activeYear && (
+            <button
+              onClick={() => setConfirmDelete(activeYear)}
+              className="text-xs text-red-500 hover:text-red-700"
+            >
+              Delete {activeYear}
+            </button>
+          )}
       </div>
     </div>
   );
