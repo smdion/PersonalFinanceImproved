@@ -11,6 +11,7 @@ import {
   isTaxableCategory,
 } from "@/lib/config/account-types";
 import { canSwitchFunds } from "@/lib/pure/fund-findings";
+import { sharesHouseholdLimit } from "@/lib/pure/contribution-caps";
 import type { AccountCategory } from "@/lib/config/account-types.types";
 import {
   FUND_MAIN_BUCKET_SHARE,
@@ -75,6 +76,7 @@ export function milestoneYearFromHistory(row: {
   grossIncome: number;
   perfContributions: number | null;
   perfEmployerMatch: number | null;
+  perfGainLoss: number | null;
   aawScoreMarket: number;
   fiProgress: number;
   mortgageBalance: number;
@@ -106,6 +108,7 @@ export function milestoneYearFromHistory(row: {
       !row.isCurrent && row.perfContributions !== null
         ? row.perfContributions + (row.perfEmployerMatch ?? 0)
         : null,
+    gain: !row.isCurrent ? row.perfGainLoss : null,
     wealthScore: row.aawScoreMarket,
     fiProgress: row.fiProgress,
     mortgageBalance: row.mortgageBalance,
@@ -153,11 +156,15 @@ type LimitAccount = {
   /** A year's contributions through payroll, and outside it. */
   payrollDeductedContrib?: number;
   nonPayrollContrib?: number;
+  /** HSA coverage behind the limit; null/absent when not set. */
+  hsaCoverageType?: string | null;
 };
 
 /**
  * Contributions vs IRS limits, one row per person per limit group (401k and
- * 403b share one limit), household-wide groups (family HSA) counted once.
+ * 403b share one limit). A household-wide limit is counted once only when
+ * it's shared (`sharesHouseholdLimit`: married, family HSA coverage) — two
+ * self-only HSAs are two limits, as the contribution caps hold them.
  * Employee money only, unless the IRS limit itself counts employer money
  * (config `matchCountsTowardLimit`, e.g. HSA). A row is "retirement" when
  * any of its accounts sits in the Retirement parent category.
@@ -170,8 +177,24 @@ export function milestoneLimits(
     checksLeft?: number | null;
   }[],
   joint: readonly LimitAccount[],
+  /** The household's filing status (whether an HSA limit is shared). */
+  filingStatus = "",
 ): MilestoneLimit[] {
   const rows = new Map<string, MilestoneLimit>();
+  // Shared household limits, by limit group, from every account in it.
+  const all = [...people.flatMap((p) => p.accountTypes), ...joint];
+  const shared = new Set(
+    all.flatMap((a) => {
+      const group = configOf(a.categoryKey)?.irsLimitGroup;
+      if (!group) return [];
+      const coverages = all
+        .filter((b) => configOf(b.categoryKey)?.irsLimitGroup === group)
+        .map((b) => b.hsaCoverageType ?? null);
+      return sharesHouseholdLimit(a.categoryKey, filingStatus, coverages)
+        ? [group]
+        : [];
+    }),
+  );
   // Through payroll or outside it, from where the money goes today.
   const route = (a: LimitAccount): boolean | null =>
     (a.payrollDeductedContrib ?? 0) > 0
@@ -185,7 +208,7 @@ export function milestoneLimits(
     // entered yet) stays in as limit 0 — judged "not enough data", never
     // silently dropped.
     if (!config || !config.irsLimitGroup) return;
-    const who = config.isHouseholdLimit ? "Household" : owner;
+    const who = shared.has(config.irsLimitGroup) ? "Household" : owner;
     const key = `${who}|${config.irsLimitGroup}`;
     const contributed = config.matchCountsTowardLimit
       ? a.totalContrib
@@ -449,6 +472,8 @@ export function buildMilestoneInput(raw: {
     jointAccountTypes: MilestoneAccount[];
     /** The year's IRS limits, by key. */
     limits?: Record<string, number>;
+    /** The household's filing status (whether an HSA limit is shared). */
+    filingStatus?: string;
   } | null;
   highIncomeThreshold: number;
   brokerageGoals?: { name: string; targetYear: number }[] | null;
@@ -566,6 +591,7 @@ export function buildMilestoneInput(raw: {
             : null,
       })),
       c.jointAccountTypes,
+      c.filingStatus,
     );
   }
 

@@ -152,25 +152,66 @@ describe("wealth journey", () => {
     expect(r.note).toBe("Not reached in the projection");
   });
 
-  it("dates 'investments save harder' from finalized years only", () => {
-    const input = makeInput({
-      savings: makeSavings({
-        rate: 0.22,
-        saved: 33_000,
-        savedWithMatch: 38_000,
-        compensation: 150_000,
-        matchCounted: true,
-        highIncome: false,
-      }),
-    });
-    // 2025: 240k × 8% = 19.2k < 38k; now: 300k × 8% = 24k < 38k.
-    expect(
-      byId(evaluateMilestones(input), "investmentsSaveHarder").status,
-    ).not.toBe("reached");
+  it("judges 'investments save harder' on a finalized year's recorded gain", () => {
+    const input = makeInput();
+    // No recorded gain: a big balance alone doesn't count for a past year.
     input.years[1] = { ...input.years[1]!, liquid: 500_000 };
+    expect(
+      byId(evaluateMilestones(input), "investmentsSaveHarder").reachedYear,
+    ).toBeNull();
+    // 2025 gained 40k vs 38k saved (napkin on 240k would be 19.2k).
+    input.years[1] = { ...input.years[1]!, liquid: 240_000, gain: 40_000 };
     const r = byId(evaluateMilestones(input), "investmentsSaveHarder");
     expect(r.status).toBe("reached");
     expect(r.reachedYear).toBe(2025);
+    expect(r.headline).toBe("2025: $40,000.00 growth vs $38,000.00 saved");
+    expect(r.achievements).toEqual([
+      { year: 2025, label: "Investments save harder than you" },
+    ]);
+  });
+
+  it("stays reached after a weaker year, and says it's currently below", () => {
+    const input = makeInput();
+    input.years[0] = { ...input.years[0]!, gain: 36_000 }; // vs 35k: met
+    input.years[1] = { ...input.years[1]!, gain: 20_000 }; // vs 38k: not
+    const r = byId(evaluateMilestones(input), "investmentsSaveHarder");
+    expect(r.status).toBe("reached");
+    expect(r.reachedYear).toBe(2024);
+    expect(r.note).toContain("currently below");
+  });
+
+  it("never stamps the current year reached — on pace until it's finalized", () => {
+    const input = makeInput();
+    // Now: 600k × 8% = 48k ≥ 38k saved, but the year isn't over.
+    input.years[2] = { ...input.years[2]!, liquid: 600_000 };
+    const r = byId(evaluateMilestones(input), "investmentsSaveHarder");
+    expect(r.status).toBe("onTrack");
+    expect(r.reachedYear).toBeNull();
+    expect(r.achievements).toEqual([]);
+    expect(r.expectedYear).toBe(2026);
+    expect(r.note).toBe(
+      "On pace for 2026 · counts once it's finalized in Performance",
+    );
+    const pay = byId(
+      evaluateMilestones({
+        ...input,
+        years: input.years.map((y) =>
+          y.isCurrent ? { ...y, liquid: 2_000_000 } : y,
+        ),
+      }),
+      "moneyWorksHarder",
+    );
+    expect(pay.status).toBe("onTrack");
+    expect(pay.reachedYear).toBeNull();
+  });
+
+  it("judges 'money works harder' on a finalized year's gain vs its pay", () => {
+    const input = makeInput();
+    input.years[1] = { ...input.years[1]!, gain: 160_000 };
+    const r = byId(evaluateMilestones(input), "moneyWorksHarder");
+    expect(r.status).toBe("reached");
+    expect(r.reachedYear).toBe(2025);
+    expect(r.headline).toBe("2025: $160,000.00 growth vs $150,000.00 pay");
   });
 
   it("projects 'money works harder' against projected pay", () => {
@@ -732,6 +773,32 @@ describe("custom goals", () => {
     expect(r).toMatchObject({ status: "reached", reachedYear: 2025 });
   });
 
+  it("an invested goal leaves cash out, in history and the projection", () => {
+    // Now: 300k liquid, 30k of it cash → 270k invested; 2025: 240k → 210k.
+    const reached = { ...goal, target: 230_000 };
+    expect(byId(run({ customGoals: [reached] }), "custom:g1").reachedYear).toBe(
+      2025,
+    );
+    const invested = byId(
+      run({ customGoals: [{ ...reached, metric: "invested" }] }),
+      "custom:g1",
+    );
+    expect(invested).toMatchObject({ status: "reached", reachedYear: 2026 });
+    expect(invested.value).toEqual({ kind: "currency", amount: 270_000 });
+    // Projected: 300k × 1.1^n less today's 30k cash ≥ 520k → n = 7
+    // (liquid alone gets there at n = 6).
+    const target = { ...goal, target: 520_000 };
+    expect(byId(run({ customGoals: [target] }), "custom:g1").expectedYear).toBe(
+      2032,
+    );
+    expect(
+      byId(
+        run({ customGoals: [{ ...target, metric: "invested" }] }),
+        "custom:g1",
+      ).expectedYear,
+    ).toBe(2033);
+  });
+
   it("parses stored settings, reading bad data as empty", () => {
     expect(
       parseMilestoneSettings({
@@ -817,7 +884,7 @@ describe("summaries", () => {
 });
 
 describe("input builders", () => {
-  it("maps a history row: retirement vs brokerage, finalized contributions only", () => {
+  it("maps a history row: retirement vs brokerage, finalized contributions and gain only", () => {
     const row = {
       year: 2025,
       isCurrent: false,
@@ -830,6 +897,7 @@ describe("input builders", () => {
       grossIncome: 150_000,
       perfContributions: 30_000,
       perfEmployerMatch: 5_000,
+      perfGainLoss: 18_000,
       aawScoreMarket: 1.1,
       fiProgress: 0.16,
       mortgageBalance: 210_000,
@@ -841,10 +909,11 @@ describe("input builders", () => {
       retirement: 180_000,
       brokerage: 35_000,
       contributions: 35_000,
+      gain: 18_000,
     });
-    expect(
-      milestoneYearFromHistory({ ...row, isCurrent: true }).contributions,
-    ).toBeNull();
+    expect(milestoneYearFromHistory({ ...row, isCurrent: true })).toMatchObject(
+      { contributions: null, gain: null },
+    );
     // Each account's own parent category wins over its type's default.
     expect(
       milestoneYearFromHistory({
@@ -918,7 +987,7 @@ describe("input builders", () => {
           acct("401k", 10_000, 23_500),
           acct("403b", 5_000, 23_500),
           // HSA: the IRS limit counts employer money.
-          acct("hsa", 4_000, 8_550, 5_000),
+          { ...acct("hsa", 4_000, 8_550, 5_000), hsaCoverageType: "family" },
         ],
       },
       {
@@ -931,7 +1000,7 @@ describe("input builders", () => {
         ],
       },
     ];
-    expect(milestoneLimits(people, [])).toEqual([
+    expect(milestoneLimits(people, [], "MFJ")).toEqual([
       {
         fooStep5: false,
         retirement: true,
@@ -975,6 +1044,7 @@ describe("input builders", () => {
       employeeContrib: number,
       limit: number,
       totalContrib = employeeContrib,
+      hsaCoverageType: string | null = null,
     ) => ({
       categoryKey,
       accountType: categoryKey,
@@ -982,8 +1052,11 @@ describe("input builders", () => {
       limit,
       employeeContrib,
       totalContrib,
+      hsaCoverageType,
     });
-    expect(milestoneLimits([], [acct("hsa", 8_000, 8_750, 8_500)])).toEqual([
+    expect(
+      milestoneLimits([], [acct("hsa", 8_000, 8_750, 8_500, "family")], "MFJ"),
+    ).toEqual([
       {
         fooStep5: true,
         retirement: true,
@@ -999,9 +1072,43 @@ describe("input builders", () => {
     expect(
       milestoneLimits(
         [{ name: "Pat", accountTypes: [acct("hsa", 1_000, 8_750)] }],
-        [acct("hsa", 7_000, 8_750)],
+        [acct("hsa", 7_000, 8_750, 7_000, "family")],
+        "MFJ",
       ),
     ).toMatchObject([{ owner: "Household", contributed: 8_000, limit: 8_750 }]);
+  });
+
+  it("two self-only HSAs are two limits, not one household limit", () => {
+    const hsa = (employeeContrib: number, hsaCoverageType: string | null) => ({
+      categoryKey: "hsa",
+      accountType: "hsa",
+      parentCategory: "Retirement",
+      limit: 4_400,
+      employeeContrib,
+      totalContrib: employeeContrib,
+      hsaCoverageType,
+    });
+    const people = [
+      { name: "Pat", accountTypes: [hsa(4_400, "self_only")] },
+      { name: "Sam", accountTypes: [hsa(2_000, "self_only")] },
+    ];
+    expect(milestoneLimits(people, [], "MFJ")).toMatchObject([
+      { owner: "Pat", contributed: 4_400, limit: 4_400 },
+      { owner: "Sam", contributed: 2_000, limit: 4_400 },
+    ]);
+    // Family coverage on either spouse makes it one shared limit (Pub 969)…
+    const family = [
+      people[0]!,
+      {
+        name: "Sam",
+        accountTypes: [{ ...hsa(2_000, "family"), limit: 8_750 }],
+      },
+    ];
+    expect(milestoneLimits(family, [], "MFJ")).toMatchObject([
+      { owner: "Household", contributed: 6_400, limit: 8_750 },
+    ]);
+    // …but only for a married couple.
+    expect(milestoneLimits(family, [], "Single")).toHaveLength(2);
   });
 
   it("a limited account with no limit entered is not enough data, not dropped", () => {

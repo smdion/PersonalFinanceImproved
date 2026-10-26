@@ -45,6 +45,9 @@ export type MilestoneYear = {
   /** A full year's contributions incl. employer money (finalized years
    *  only — the current year's are still accruing). */
   contributions: number | null;
+  /** The year's recorded investment gain (Performance, all accounts) —
+   *  finalized years only, like contributions. */
+  gain: number | null;
   /** Wealth-formula score (net worth ÷ expected net worth). */
   wealthScore: number;
   fiProgress: number;

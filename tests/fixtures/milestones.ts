@@ -20,6 +20,7 @@ export function makeYear(
     brokerage: 50_000,
     grossIncome: 150_000,
     contributions: null,
+    gain: null,
     wealthScore: 1.2,
     fiProgress: 0.2,
     mortgageBalance: 200_000,

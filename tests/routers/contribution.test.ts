@@ -282,6 +282,7 @@ describe("contribution router", () => {
       expect(acctType).toBeDefined();
       // 2026 limit is 24500
       expect(acctType!.limit).toBe(24500);
+      expect(acctType!.hsaCoverageType).toBeNull();
       // fundingPct = 12000 / 24500
       expect(acctType!.views.projected.fundingPct).toBeCloseTo(
         12000 / 24500,
@@ -530,6 +531,8 @@ describe("contribution router", () => {
       expect(hsaAcct).toBeDefined();
       // 2026 family HSA limit = 8750
       expect(hsaAcct!.limit).toBe(8750);
+      // Milestones reads the coverage to decide whether the limit is shared.
+      expect(hsaAcct!.hsaCoverageType).toBe("family");
       expect(hsaAcct!.employeeContrib).toBe(7000);
       expect(hsaAcct!.employerMatch).toBe(1000);
     });
