@@ -15,6 +15,7 @@ import fs from "fs";
 import path from "path";
 
 import { fileURLToPath } from "url";
+import { pgSchemaFiles } from "./pg-schema-source";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 
@@ -92,7 +93,10 @@ function countPages(): number {
 }
 
 function countTables(): number {
-  return countInFile(path.join(ROOT, "src/lib/db/schema-pg.ts"), /pgTable\(/g);
+  return pgSchemaFiles(ROOT).reduce(
+    (n, f) => n + countInFile(f, /pgTable\(/g),
+    0,
+  );
 }
 
 function countTestFiles(): number {

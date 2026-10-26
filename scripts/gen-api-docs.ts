@@ -1,7 +1,7 @@
 /**
  * Generates the API + schema docs.
  *
- * Walks src/server/routers/ and src/lib/db/schema-pg.ts and writes:
+ * Walks src/server/routers/ and the schema (src/lib/db/pg/) and writes:
  *   - docs/API_ROUTERS.md  — one-line summary of every tRPC procedure
  *   - docs/SCHEMA.md       — mermaid ER diagram of every table
  *
@@ -15,11 +15,12 @@
 import * as fs from "fs";
 import * as path from "path";
 import { fileURLToPath } from "url";
+import { readPgSchemaSource } from "./pg-schema-source";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 const ROUTERS_DIR = path.join(ROOT, "src/server/routers");
-const SCHEMA_PATH = path.join(ROOT, "src/lib/db/schema-pg.ts");
+
 const API_DOCS_OUT = path.join(ROOT, "docs/API_ROUTERS.md");
 const SCHEMA_DOCS_OUT = path.join(ROOT, "docs/SCHEMA.md");
 
@@ -198,7 +199,7 @@ interface TableInfo {
 }
 
 function parseSchemaFile(): TableInfo[] {
-  const content = readFileSafe(SCHEMA_PATH);
+  const content = readPgSchemaSource(ROOT);
   const tables: TableInfo[] = [];
 
   // Match: export const <varName> = pgTable("<tableName>", { ... });
@@ -261,7 +262,7 @@ function buildSchemaErDiagram(): string {
   // The tables list uses tableName; the FKs reference varNames. The varName
   // is usually a camelCase of the snake_case tableName. Build the lookup.
   const varToTable = new Map<string, string>();
-  const content = readFileSafe(SCHEMA_PATH);
+  const content = readPgSchemaSource(ROOT);
   const reLookup = /export const (\w+) = pgTable\(\s*"([^"]+)"/g;
   let m;
   while ((m = reLookup.exec(content)) !== null) {

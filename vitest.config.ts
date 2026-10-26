@@ -172,6 +172,8 @@ export default defineConfig({
         // DB schema files — declarative definitions, not logic
         "src/lib/db/schema-pg.ts",
         "src/lib/db/schema-sqlite.ts",
+        "src/lib/db/pg/**",
+        "src/lib/db/sqlite/**",
         "src/lib/db/schema.ts",
         // DB runtime — requires live database for transactions/queries
         // (version-logic.ts is not here: tests/integration/backup-roundtrip
