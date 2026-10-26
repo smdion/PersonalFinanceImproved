@@ -14,6 +14,12 @@ export const TAX_DATA_REPO = "smdion/PersonalFinanceImproved";
 /** Tag prefix of a tax-data release (`tax-data-v3`). */
 export const TAX_DATA_TAG_PREFIX = "tax-data-v";
 
+/** Tag prefix of a test release (`tax-data-test-v3`, a pre-release
+ *  published from a branch by `pnpm tax-data:publish --test`). Only a
+ *  server with LEDGR_TAX_DATA_CHANNEL=test reads these — a dev install
+ *  trying the sync before a merge; every other install ignores them. */
+export const TAX_DATA_TEST_TAG_PREFIX = "tax-data-test-v";
+
 /** Ed25519 public keys (SPKI PEM) that may sign a tax-data release. */
 export const TAX_DATA_PUBLIC_KEYS: readonly {
   keyId: string;

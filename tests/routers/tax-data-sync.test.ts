@@ -7,6 +7,7 @@ vi.mock("@/lib/config/tax-data-sync", async () => {
   return {
     TAX_DATA_REPO: "owner/repo",
     TAX_DATA_TAG_PREFIX: "tax-data-v",
+    TAX_DATA_TEST_TAG_PREFIX: "tax-data-test-v",
     TAX_DATA_PUBLIC_KEYS: [{ keyId: k.keyId, publicKey: k.publicKey }],
   };
 });

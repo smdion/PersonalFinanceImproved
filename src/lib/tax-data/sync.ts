@@ -13,7 +13,11 @@
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { Db } from "@/server/helpers";
-import { TAX_DATA_REPO, TAX_DATA_TAG_PREFIX } from "@/lib/config/tax-data-sync";
+import {
+  TAX_DATA_REPO,
+  TAX_DATA_TAG_PREFIX,
+  TAX_DATA_TEST_TAG_PREFIX,
+} from "@/lib/config/tax-data-sync";
 import {
   SK_TAX_DATA_LAST_CHECK,
   SK_TAX_DATA_SYNC_ENABLED,
@@ -97,6 +101,14 @@ export async function lastTaxDataCheck(
 
 class RateLimited extends Error {}
 
+/** The tags this server reads: test releases only on a server set to the
+ *  test channel (LEDGR_TAX_DATA_CHANNEL=test). */
+function tagPrefix(): string {
+  return process.env.LEDGR_TAX_DATA_CHANNEL === "test"
+    ? TAX_DATA_TEST_TAG_PREFIX
+    : TAX_DATA_TAG_PREFIX;
+}
+
 /** GET as text with a time and size cap; null on 404. */
 async function getText(
   url: string,
@@ -138,14 +150,18 @@ export async function latestTaxDataRelease(
 ): Promise<number | null> {
   const api = source.apiBase ?? "https://api.github.com";
   const text = await getText(
-    `${api}/repos/${TAX_DATA_REPO}/git/matching-refs/tags/${TAX_DATA_TAG_PREFIX}`,
+    `${api}/repos/${TAX_DATA_REPO}/git/matching-refs/tags/${tagPrefix()}`,
     source.fetch ?? fetch,
     "application/vnd.github+json",
   );
   if (!text) return null;
   const refs = JSON.parse(text) as { ref?: string }[];
   const versions = (Array.isArray(refs) ? refs : [])
-    .map((r) => /^refs\/tags\/tax-data-v(\d+)$/.exec(r?.ref ?? "")?.[1])
+    .map((r) =>
+      (r?.ref ?? "").startsWith(`refs/tags/${tagPrefix()}`)
+        ? /^(\d+)$/.exec(r.ref!.slice(`refs/tags/${tagPrefix()}`.length))?.[1]
+        : undefined,
+    )
     .filter((n): n is string => !!n)
     .map(Number)
     .filter((n) => Number.isSafeInteger(n) && n > 0);
@@ -189,7 +205,7 @@ export async function checkForTaxDataUpdate(
 
     const base =
       (source.downloadBase ?? "https://github.com") +
-      `/${TAX_DATA_REPO}/releases/download/${TAX_DATA_TAG_PREFIX}${latest}`;
+      `/${TAX_DATA_REPO}/releases/download/${tagPrefix()}${latest}`;
     const doFetch = source.fetch ?? fetch;
     const fileText = await getText(`${base}/us-federal.json`, doFetch);
     const signature = await getText(`${base}/us-federal.json.sig`, doFetch);

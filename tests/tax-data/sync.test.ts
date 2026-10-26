@@ -11,6 +11,7 @@ vi.mock("@/lib/config/tax-data-sync", async () => {
   return {
     TAX_DATA_REPO: "owner/repo",
     TAX_DATA_TAG_PREFIX: "tax-data-v",
+    TAX_DATA_TEST_TAG_PREFIX: "tax-data-test-v",
     TAX_DATA_PUBLIC_KEYS: [{ keyId: k.keyId, publicKey: k.publicKey }],
   };
 });
@@ -218,6 +219,40 @@ describe("checkForTaxDataUpdate", () => {
         ).result,
       ).toBe("current");
     } finally {
+      cleanup();
+    }
+  });
+
+  it("reads test releases only on a server set to the test channel", async () => {
+    const { db, cleanup } = await setup();
+    try {
+      const r = release();
+      // A test release is published under its own tag prefix.
+      const testGithub = vi.fn<typeof fetch>(async (url) => {
+        const u = String(url);
+        if (u.includes("/git/matching-refs/tags/tax-data-test-v"))
+          return new Response(
+            JSON.stringify([{ ref: `refs/tags/tax-data-test-v${r.version}` }]),
+          );
+        if (u.includes("/git/matching-refs/tags/"))
+          return new Response(JSON.stringify([]));
+        if (u.endsWith(`tax-data-test-v${r.version}/us-federal.json`))
+          return new Response(r.fileText);
+        if (u.endsWith(`tax-data-test-v${r.version}/us-federal.json.sig`))
+          return new Response(r.signature);
+        return new Response("not found", { status: 404 });
+      });
+      expect(
+        (await checkForTaxDataUpdate(db, { source: { fetch: testGithub } }))
+          .result,
+      ).toBe("current");
+      process.env.LEDGR_TAX_DATA_CHANNEL = "test";
+      expect(
+        (await checkForTaxDataUpdate(db, { source: { fetch: testGithub } }))
+          .result,
+      ).toBe("pending");
+    } finally {
+      delete process.env.LEDGR_TAX_DATA_CHANNEL;
       cleanup();
     }
   });
