@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **"Investments save harder than you" and "Money works harder than you" count what actually happened.** A past year now counts when its recorded gain (from Performance) beat that year's saving, employer money included, or that year's pay. Before, every year was judged on a napkin 8% of the balance, so a strong year could be missed and a weak one counted. This year can't count until it's over: it shows as on pace until it's finalized in Performance. Later years still use the 8% napkin math, and a milestone you reached stays reached after a weaker year.
 - **Spouses with their own self-only HSAs each get their own HSA limit** in Milestones (Financial Order of Operations step 5) and the IRS-room recommendation. Both HSAs were held to one shared limit, as if the household had family coverage. The paycheck's "Covered via" note for an HSA now shows only when the spouse's coverage is family.
+- **Privacy mode hides amounts in hover tooltips too.** A tooltip built from something you typed (an account or goal name with an amount in it) could still show the amount while "Hide amounts" was on.
 
 ---
 
