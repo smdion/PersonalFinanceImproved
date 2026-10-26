@@ -10,46 +10,109 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.9.0] - 2026-10-26
 
-### Upgrading
+> Rollup of everything since v0.8.0. For patch-level detail, see the v0.8.x entries below.
+
+### Upgrading from v0.8.x
 
 - **Upgrade from v0.8.14 or v0.8.15.** v0.9.0 folds the v0.8 migrations into one starting schema, so it can only upgrade a database that already has every v0.8 change. On anything older it stops before changing anything and says so: update to v0.8.15 first, start it once, then update to v0.9.0. A new install isn't affected.
 - Pull the new image and restart. The upgrade writes a backup first, then applies v0.9.0's changes. It is all or nothing: if any step fails, nothing is changed and the container doesn't start, so the previous image still runs against the database.
 - **Going back to v0.8.15 needs the backup taken before the upgrade**, restored together with the v0.8.15 image. Swapping the image back alone isn't enough.
 
-### Added
+### Tax data
 
 - **Tax data ships as one reviewed file, and updates never overwrite your changes.** Every yearly figure (IRS limits, withholding tables, capital-gains and Medicare brackets, poverty levels) now comes from `tax-data/us-federal.json`, each with its source. Each start brings the database in line with it: new years are added and corrected figures replace old ones, but a figure you changed in Settings stays yours. Installs seeded before the 2026 withholding correction get the corrected tables.
 - **Reference Data shows whether tax data is current.** A notice appears when a year's figures are overdue, and the sidebar's Data indicator says so too. "How tax data updates work" explains where the figures come from and when they arrive.
 - **Add year in one step.** "+ Year" copies the latest figures forward into every section as _carried forward_. A checklist lists them to confirm, and a Ledgr update with the real figures replaces the ones you haven't edited.
 - **Tax data updates between releases (optional).** Turn on in Settings → Integrations (new installs are offered it during setup; existing installs stay off). Once a week Ledgr checks the project's signed tax-data release on GitHub — nothing about your household is sent. A newer file is verified against a key built into Ledgr and checked like the shipped file, then waits in Reference Data showing each figure's current and new value with its source; an admin applies or dismisses it. Figures you changed are never touched, and a newer Ledgr release always wins. `LEDGR_TAX_DATA_SYNC=off` turns it off for a server.
-- **Debts list on Liabilities.** List student and car loans, cards you carry a balance on, and personal or medical debt — each with its rate, what you pay each month and the date its balance is as of. Ledgr estimates when each is paid off (or flags a payment that never covers the interest), keeps paid-off debts as history, and counts open ones in net worth alongside your typed "other debts, not itemized" figure and any credit cards mapped from your budget.
-- **High-interest debt is judged.** Financial Order of Operations step 3 checks each listed debt against Money Guy's line for its owner's age (student loans above 6% / 5% / 4%, car and other loans above 10% / 9% / 8%, any card balance you carry) and names the ones to pay off first; step 9 estimates the year you're debt-free across the mortgage and every other debt, and paid-off debts appear on the Milestones timeline.
-- **Utility costs from your budget.** Upkeep ▸ Utilities can fill each month's gas, water and electric cost from YNAB or Actual Budget: pick the budget category each utility is paid from and how many months after the service month bills are paid, then pull. A month's cost is its bills less refunds (bills split across categories count their utility part). The preview lists every month it would fill or refresh, flags months with two bills, and leaves any cost you typed alone; months it filled show the budget's name. Usage is still entered by hand.
 - **Fixed by law.** A new Reference Data section lists the figures set by law that don't change with inflation (investment income tax, when Social Security becomes taxable, catch-up and withdrawal ages, penalties), each with its citation, so everything the calculators assume can be seen in one place.
 - **Reset to shipped.** A shipped figure you changed shows the value Ledgr ships, and Reset to shipped hands it back. Shipped figures and years can't be deleted.
-
-### Changed
-
 - **IRS limits have readable names.** The "Custom" group is gone: every limit sits in a named card (Standard deduction, Social Security & Medicare, Roth IRA eligibility, …). Figures Ledgr no longer reads are listed as "Not used by Ledgr".
 - **The IRS-limit growth rate moved to IRS Limits** ("Growth in future years"), out of Return Rates. The retirement plan's assumptions show the rate you set and link to it, instead of a fixed "~2%/yr".
-- **Return rates: one entry per run of equal rates.** A row with the same rate as the row before it changes nothing, so it's merged into that row whenever the table changes. Single ages read "20", not "20–20". Projections are unchanged.
-
-### Fixed
-
 - **Each yearly tax table now comes from its own year.** A new year's IRS limits can arrive before that year's withholding, capital-gains, Medicare (IRMAA) or poverty-line tables. Projections used to pair the new limits with missing tables: withholding fell back to no tax at all, and the others to tables built into the app. Each table now comes from its own newest complete year and is grown forward from that year. IRMAA and poverty-line tables used to grow from a fixed year in the code, which over-inflated newer tables and under-inflated a profile pinned to an older year. A database with no withholding tables at all now stops the projection with a message, instead of taxing every withdrawal at a flat default rate.
+- **No built-in tax tables.** Capital-gains, Medicare (IRMAA) and poverty-level tables lived in the code as well as in the tax data, and a filing status a table didn't have was quietly priced at a guessed 15% / 20% / $0. The tax data is now the only source: a projection without a complete table stops with a message, and every table grows from its own year. LTCG and IRMAA tables saved in Settings must have the shape the tax math relies on (an open top bracket, thresholds and rates that only go up).
+- **The QCD limit was $4,000 too high.** Charitable distributions from an IRA were capped at $115,000 a person, labelled the 2026 figure; the real 2026 limit is $111,000 (IRS Notice 2025-67). It's now in the tax data with its source, shown under IRS Limits, and grows with inflation in later projection years.
+- New reference figures: Roth IRA income phase-outs, the Additional Medicare Tax thresholds you owe on, HDHP minimum deductibles and the IRS total-additions limit. The 2025 standard deduction follows OBBBA ($31,500 married). Tax tables stay current after a restore, an import or a reset, and demo profiles get every table.
+
+### Taxes and paychecks
+
+- **IRS contribution limits are enforced everywhere.** A 401(k), 403(b), IRA or HSA contribution above its limit counts only up to it in the paycheck, budget, contribution summary and every projection year. Saving one over the limit is refused with the most it can be, and it's a top recommendation until fixed.
+- **Taxes page** (Planning → Taxes): this year's household tax line by line, with a **Roth IRA check** — your MAGI against the phase-out, direct vs backdoor, and a pro-rata warning. Tell Ledgr whether your Roth IRA money goes in directly or by the backdoor, and the check advises on what you actually do.
+- **Paycheck matches your pay stub:** each deduction says how your stub lists it (before-tax Section 125, before-tax retirement, after-tax); other pay and taxable benefits (e.g. imputed life insurance); and **Check against a pay stub**, which compares any figures from a real stub with Ledgr's and names the likely reason for a mismatch.
+- **Bonus checks:** each payroll contribution has its own "Also taken from bonus checks" switch; "Bonus goes to" is part of the Salary Profile; annual tax, Household Income and Living Costs count the bonus.
+- **Contribution figures agree everywhere** — one rule for bonus-check money and one savings-rate calculation across the paycheck, Contributions, the Retirement card and the projection; the employer match and savings-rate switches (include match, include Portfolio) are shared by every page.
+- Fixed: FICA on payroll HSA money, Social Security past the wage base, Additional Medicare on combined wages, the effective tax rate (federal tax ÷ AGI), and bonus 401(k) money counted twice.
+
+### Profiles and Plans
+
+- **Each profile is its own world**, and the active one of each kind (Salary, Contributions, Budget, Retirement) is what every page uses. A **Plan** is a saved set of profiles; applying it makes them active for the household. The header is one "Profiles" panel and a labelled "View" switch.
+- **Profiles page** (Planning → Profiles): every profile kind, the What-If sandbox, and up to three Plans side by side. One salary editor, the same as the Paycheck page's. Budget columns are spending levels, and Plan names are unique.
+- Older Plans' salaries become Salary Profiles of their own on upgrade.
+
+### Retirement
+
+- **Retirement projections use only retirement money.** Portfolio accounts no longer size spending, absorb contributions over the IRS limits, widen simulation bands or keep a plan from running out. FI milestones and net-worth benchmarks still count every account plus cash.
+- **One verdict for "does this plan work"** — simulation success, Coast FIRE, Social Security claiming, tax optimization, relocation, stress tests and the report all use the same rule, and say how a plan fails.
+- **The dashboard shows the simulated nest egg** when the Retirement page has run one, and the dashboard and Retirement page describe the same plan (same inputs, same saved "Changes by year", one baseline nest egg).
+- **Bridge to penalty-free money** on the Retirement card for anyone retiring before 59½: the years until locked money opens, whether reachable money covers them, and the tightest year.
+- **Social Security PIA and claiming-age comparison**, spousal benefits included.
+- **Roth & conversions** (was Tax Optimization): a Roth conversion explorer, a withdrawal-strategy comparison and IRMAA alerts, on the same engine as the Retirement page. Withdrawal routing, order and splits are saved profile settings.
+- Choose where unspent required withdrawals are reinvested; each brokerage carries its own cost basis.
+- Fixed: withdrawals reach money left untouched (bracket filling past the target, emptied accounts' shares, the tax gross-up); the Rule of 55 only for someone who retires at 55 or later; a Roth conversion penalty-free from 59½; Coast FIRE really stops contributions; saved "Changes by year" apply everywhere and the first edit no longer wipes them.
+- **Return rates: one entry per run of equal rates.** A row with the same rate as the row before it changes nothing, so it's merged into that row whenever the table changes. Single ages read "20", not "20–20". Projections are unchanged.
+- **Return rates are read the same way everywhere.** The relocation calculator averaged the table's rows instead of its years, so a table with gaps between ages (every demo profile) gave a different rate than the same table listed age by age. Monte Carlo without asset classes used 7% for any age without its own row. Both now apply each row's rate until the next row, as projections always have.
+
+### Debts and liabilities
+
+- **Debts list on Liabilities.** List student and car loans, cards you carry a balance on, and personal or medical debt — each with its rate, what you pay each month and the date its balance is as of. Ledgr estimates when each is paid off (or flags a payment that never covers the interest), keeps paid-off debts as history, and counts open ones in net worth alongside your typed "other debts, not itemized" figure and any credit cards mapped from your budget.
+- **High-interest debt is judged.** Financial Order of Operations step 3 checks each listed debt against Money Guy's line for its owner's age (student loans above 6% / 5% / 4%, car and other loans above 10% / 9% / 8%, any card balance you carry) and names the ones to pay off first; step 9 estimates the year you're debt-free across the mortgage and every other debt, and paid-off debts appear on the Milestones timeline.
 - **Net Worth's other-liabilities figure counted credit cards twice.** Saving it wrote the total — including credit-card balances mapped from the budget — back into the typed figure, so the cards were added again. The card now edits only the typed part ("Other debts, not itemized"), shows it even at $0, and lists the debts list and mapped cards separately.
 - **Liabilities' totals ignored other debt.** The summary showed only with a mortgage, "Total Liabilities" was the mortgage alone, "Other Liabilities" was always $0, and two labels said YNAB for Actual users.
 - **"Debt-free" said on track with a mortgage alone**, ignoring any other debt.
-- **The QCD limit was $4,000 too high.** Charitable distributions from an IRA were capped at $115,000 a person, labelled the 2026 figure; the real 2026 limit is $111,000 (IRS Notice 2025-67). It's now in the tax data with its source, shown under IRS Limits, and grows with inflation in later projection years.
-- **No built-in tax tables.** Capital-gains, Medicare (IRMAA) and poverty-level tables lived in the code as well as in the tax data, and a filing status a table didn't have was quietly priced at a guessed 15% / 20% / $0. The tax data is now the only source: a projection without a complete table stops with a message, and every table grows from its own year. LTCG and IRMAA tables saved in Settings must have the shape the tax math relies on (an open top bracket, thresholds and rates that only go up).
+
+### Milestones and recommendations
+
+- **Milestones** (Insights → Milestones): Money Guy's wealth milestones, the Financial Order of Operations, the wealth formula, income-multiple checkpoints (Money Guy's or Fidelity's), housing and Bogleheads rules, r/personalfinance's rules, your own goals and a checklist — each with when you reached it, when you're on pace to, and the next step.
+- **Recommendations** (Insights → Recommendations): what to do next, ranked by urgency and dollars a year, built from Ledgr's own data — the account and rate that gets the full match, room per paycheck left, where to save first, dollars to an emergency fund, extra principal for a paid-off home, rebalancing that costs no tax, cheaper funds, uninvested cash, tax-loss harvesting, Roth IRA and pro-rata items, and data to bring up to date. Admins can snooze or dismiss one with a note.
+- Wealth score tiers follow The Millionaire Next Door, on gross pay. Savings rates are judged to whole percents.
+
+### Investments and performance
+
+- **Investments from SimpleFIN:** holdings, transactions and fund details from linked accounts fill snapshots, Performance and cost basis (you confirm), with transfers between your own accounts recognized. Live balance and recent change for the household and each account.
+- **Benchmarks:** your mix against a target-date fund or a blend, a current glide path of your own, rebalancing in dollars, **Holding history** per account (per part for accounts held in parts), and **"Your mix, in index funds"**. Fund costs and account fees are named apart.
+- **Performance checks, notes and corrections:** each row flags figures that don't fit together; notes, estimated figures and accepted gaps; past years can be corrected with a preview of everything the change moves, without resetting lifetime totals. "Realized vs assumed returns" moved here.
+- Tiingo connection for historical prices.
+
+### Utilities
+
+- **Utility costs from your budget.** Upkeep ▸ Utilities can fill each month's gas, water and electric cost from YNAB or Actual Budget: pick the budget category each utility is paid from and how many months after the service month bills are paid, then pull. A month's cost is its bills less refunds (bills split across categories count their utility part). The preview lists every month it would fill or refresh, flags months with two bills, and leaves any cost you typed alone; months it filled show the budget's name. Usage is still entered by hand.
 - **Utilities cost per unit** counted every month's cost against only the months with a meter reading, overstating it (e.g. $5.08/ccf instead of about $1). It now uses only months with both.
-- **Return rates are read the same way everywhere.** The relocation calculator averaged the table's rows instead of its years, so a table with gaps between ages (every demo profile) gave a different rate than the same table listed age by age. Monte Carlo without asset classes used 7% for any age without its own row. Both now apply each row's rate until the next row, as projections always have.
+
+### Finding your way around
+
+- **Links land on the data:** a link opens the page in the right tab or view, opens a collapsed section, and scrolls to and outlines what it's about — from the dashboard, Recommendations, Milestones, Financial Checkup and Data Sources.
+- **Quick search** (Cmd/Ctrl-K) jumps to any page by name or by what's on it.
+- **Privacy mode** hides every amount on the page, including amounts in names and notes you typed.
+- The dashboard combines related cards (Budget & Spending, Household Income with taxes, Net Worth with the mortgage, a wide Retirement card); plainer page and setting names; the edit lock says "View only" or "Editing".
+- Accessibility and print: color is never the only cue for a gain or loss, keyboard focus is visible, progress bars are announced, charts clear contrast minimums, and printing is always light.
+
+### Budget-provider sync
+
+- **Actual Budget syncs recover after an Actual upgrade**, and a request that creates a transaction (YNAB or Actual) is never sent twice.
+- Snapshot pushes to your budget app are an explicit **Sync** button; a link to your budget app sits in the sidebar.
+
+### Security
+
+- Runs on **Node.js 26.12.1** (the October 2026 security release).
+- Stored settings of connected services can no longer be read by any signed-in user — admin-only, and never with credentials.
 
 ### Under the hood
 
 - **v0.9.0 migration squash.** The v0.8 line (the v0.8.0 baseline plus 12 migrations) is now one `0000_v9_initial_schema` per dialect, generated from v0.8.15. v0.9.0's own changes follow as four separate migrations. The migrator refuses databases older than the baseline, replays a squash in one transaction that checks every table and column afterwards, and labels each backup with the schema it actually came from.
 - The PostgreSQL schema is split into one file per domain (`src/lib/db/pg/`), with the SQLite schema generated from it file by file. The data model is unchanged.
 - `scripts/test-migration.sh` checks the migration journal, every column and the row counts, and can run against an existing empty database without Docker.
+- A household time zone (Settings → General) sets "today" for every server-side date.
+
+---
 
 # v0.8
 
