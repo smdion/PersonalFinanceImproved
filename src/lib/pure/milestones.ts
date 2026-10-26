@@ -291,6 +291,101 @@ function amountMilestone(
   });
 }
 
+/**
+ * A "growth beats a year's figure" milestone (investments save harder than
+ * you, money works harder than you). It's about a whole year, so it's
+ * judged on what happened: a finalized year's recorded gain against that
+ * year's figure. Nothing has happened yet for this year or later ones, so
+ * they use the napkin rate — and this year shows as on pace, never
+ * reached, until it's finalized. Reached stays reached after a weaker
+ * year, like the other achievements.
+ */
+function growthMilestone(
+  id: "investmentsSaveHarder" | "moneyWorksHarder",
+  input: MilestoneInput,
+  now: MilestoneYear,
+  opts: {
+    /** A finalized year's figure; null when not recorded. */
+    past: (y: MilestoneYear) => number | null;
+    /** This year's figure; null when unknown. */
+    current: number | null;
+    projected: (y: MilestoneProjectionYear) => number | null;
+    /** What the headline calls the figure ("saved", "pay"). */
+    label: string;
+    /** The next step's ending. */
+    matches: string;
+  },
+): MilestoneResult {
+  const beats = (growth: number, figure: number | null) =>
+    figure !== null && figure > 0 && growth >= figure;
+  const judged = input.years.flatMap((y) => {
+    const figure = opts.past(y);
+    return !y.isCurrent && y.gain !== null && figure !== null && figure > 0
+      ? [{ year: y.year, gain: y.gain, figure }]
+      : [];
+  });
+  const reached = judged.find((y) => beats(y.gain, y.figure)) ?? null;
+  const last = judged[judged.length - 1] ?? null;
+  const pace = now.liquid * MONEY_GUY_NAPKIN_RETURN;
+  const target =
+    opts.current !== null && opts.current > 0 ? opts.current : null;
+  const onPace = beats(pace, target);
+  const expected =
+    reached || onPace || !input.projection
+      ? null
+      : firstProjectedYear(input.projection.years, input.asOfYear, (y) =>
+          beats(y.liquid * MONEY_GUY_NAPKIN_RETURN, opts.projected(y)),
+        );
+  // The latest finalized year when there is one (what happened), else
+  // this year's pace.
+  const shown: { growth: number; figure: number | null } = last
+    ? { growth: last.gain, figure: last.figure }
+    : { growth: pace, figure: target };
+  return result(id, {
+    status: reached
+      ? "reached"
+      : target === null
+        ? "unknown"
+        : onPace
+          ? "onTrack"
+          : !input.projection
+            ? "unknown"
+            : expected
+              ? "onTrack"
+              : "behind",
+    value: { kind: "currency", amount: shown.growth },
+    target:
+      shown.figure !== null ? { kind: "currency", amount: shown.figure } : null,
+    progress:
+      shown.figure !== null
+        ? Math.max(0, Math.min(1, safeDivide(shown.growth, shown.figure, 0)))
+        : null,
+    headline:
+      shown.figure !== null
+        ? `${last ? `${last.year}: ` : ""}${formatCurrency(shown.growth)} growth vs ${formatCurrency(shown.figure)} ${opts.label}`
+        : `${formatCurrency(shown.growth)} growth a year`,
+    reachedYear: reached?.year ?? null,
+    note: reached
+      ? reachedNote(
+          reached.year,
+          input.years,
+          last ? beats(last.gain, last.figure) : true,
+        )
+      : onPace
+        ? `On pace for ${input.asOfYear} · counts once it's finalized in Performance`
+        : expectedNote(expected, input),
+    nextStep:
+      !reached && !onPace && target !== null
+        ? `At ${formatCurrency(safeDivide(target, MONEY_GUY_NAPKIN_RETURN, 0))} invested, ${opts.matches}`
+        : null,
+    expectedYear: onPace ? input.asOfYear : (expected?.year ?? null),
+    expectedAge: onPace ? now.age : (expected?.age ?? null),
+    achievements: reached
+      ? [{ year: reached.year, label: definition(id).title }]
+      : [],
+  });
+}
+
 // ---------------------------------------------------------------------------
 // Wealth journey
 // ---------------------------------------------------------------------------
@@ -317,77 +412,17 @@ function journey(input: MilestoneInput, now: MilestoneYear): MilestoneResult[] {
     }),
   );
 
-  // Investments save harder than you: growth at the napkin rate vs a year
-  // of saving (incl. employer money).
-  {
-    const growth = now.liquid * MONEY_GUY_NAPKIN_RETURN;
-    const saving = input.savings?.savedWithMatch ?? null;
-    const reachedYear = firstReachedYear(
-      input.years,
-      (y) =>
-        y.contributions !== null &&
-        y.contributions > 0 &&
-        y.liquid * MONEY_GUY_NAPKIN_RETURN >= y.contributions,
-      false,
-    );
-    const metNow = saving !== null && saving > 0 && growth >= saving;
-    const firstYear = reachedYear ?? (metNow ? input.asOfYear : null);
-    const expected =
-      firstYear === null && input.projection
-        ? firstProjectedYear(
-            input.projection.years,
-            input.asOfYear,
-            (y) =>
-              y.contributions !== null &&
-              y.contributions > 0 &&
-              y.liquid * MONEY_GUY_NAPKIN_RETURN >= y.contributions,
-          )
-        : null;
-    out.push(
-      result("investmentsSaveHarder", {
-        status:
-          firstYear !== null
-            ? "reached"
-            : saving === null
-              ? "unknown"
-              : !input.projection
-                ? "unknown"
-                : expected
-                  ? "onTrack"
-                  : "behind",
-        value: { kind: "currency", amount: growth },
-        target: saving !== null ? { kind: "currency", amount: saving } : null,
-        progress:
-          saving && saving > 0
-            ? Math.min(1, safeDivide(growth, saving, 0))
-            : null,
-        headline:
-          saving !== null
-            ? `${formatCurrency(growth)} growth vs ${formatCurrency(saving)} saved a year`
-            : `${formatCurrency(growth)} growth a year`,
-        reachedYear: firstYear,
-        note:
-          firstYear !== null
-            ? reachedNote(firstYear, input.years, metNow || saving === null)
-            : expectedNote(expected, input),
-        nextStep:
-          firstYear === null && saving !== null
-            ? `At ${formatCurrency(safeDivide(saving, MONEY_GUY_NAPKIN_RETURN, 0))} invested, growth matches what you save`
-            : null,
-        expectedYear: expected?.year ?? null,
-        expectedAge: expected?.age ?? null,
-        achievements:
-          firstYear !== null
-            ? [
-                {
-                  year: firstYear,
-                  label: definition("investmentsSaveHarder").title,
-                },
-              ]
-            : [],
-      }),
-    );
-  }
+  out.push(
+    growthMilestone("investmentsSaveHarder", input, now, {
+      // A year of saving includes employer money: Money Guy counts all
+      // money saved.
+      past: (y) => y.contributions,
+      current: input.savings?.savedWithMatch ?? null,
+      projected: (y) => y.contributions,
+      label: "saved",
+      matches: "growth matches what you save",
+    }),
+  );
 
   out.push(
     amountMilestone("twoComma", input, {
@@ -407,71 +442,19 @@ function journey(input: MilestoneInput, now: MilestoneYear): MilestoneResult[] {
     }),
   );
 
-  // Money works harder than you: growth at the napkin rate vs gross pay.
   // Finalized years compare against gross income (salary + bonus, as
   // recorded); projected years only have the engine's projected salary —
   // the engine carries no per-year gross figure — so the "on pace" year
   // can come a little early for a household with a large bonus.
-  {
-    const growth = now.liquid * MONEY_GUY_NAPKIN_RETURN;
-    const pay = now.grossIncome;
-    const reachedYear = firstReachedYear(
-      input.years,
-      (y) =>
-        y.grossIncome > 0 &&
-        y.liquid * MONEY_GUY_NAPKIN_RETURN >= y.grossIncome,
-      false,
-    );
-    const metNow = pay > 0 && growth >= pay;
-    const firstYear = reachedYear ?? (metNow ? input.asOfYear : null);
-    const expected =
-      firstYear === null && input.projection
-        ? firstProjectedYear(
-            input.projection.years,
-            input.asOfYear,
-            (y) =>
-              y.salary !== null &&
-              y.salary > 0 &&
-              y.liquid * MONEY_GUY_NAPKIN_RETURN >= y.salary,
-          )
-        : null;
-    out.push(
-      result("moneyWorksHarder", {
-        status:
-          firstYear !== null
-            ? "reached"
-            : pay <= 0
-              ? "unknown"
-              : !input.projection
-                ? "unknown"
-                : expected
-                  ? "onTrack"
-                  : "behind",
-        value: { kind: "currency", amount: growth },
-        target: pay > 0 ? { kind: "currency", amount: pay } : null,
-        progress: pay > 0 ? Math.min(1, safeDivide(growth, pay, 0)) : null,
-        headline:
-          pay > 0
-            ? `${formatCurrency(growth)} growth vs ${formatCurrency(pay)} pay`
-            : `${formatCurrency(growth)} growth a year`,
-        reachedYear: firstYear,
-        note:
-          firstYear !== null
-            ? reachedNote(firstYear, input.years, metNow || pay <= 0)
-            : expectedNote(expected, input),
-        nextStep:
-          firstYear === null && pay > 0
-            ? `At ${formatCurrency(safeDivide(pay, MONEY_GUY_NAPKIN_RETURN, 0))} invested, growth matches your pay`
-            : null,
-        expectedYear: expected?.year ?? null,
-        expectedAge: expected?.age ?? null,
-        achievements:
-          firstYear !== null
-            ? [{ year: firstYear, label: definition("moneyWorksHarder").title }]
-            : [],
-      }),
-    );
-  }
+  out.push(
+    growthMilestone("moneyWorksHarder", input, now, {
+      past: (y) => y.grossIncome,
+      current: now.grossIncome,
+      projected: (y) => y.salary,
+      label: "pay",
+      matches: "growth matches your pay",
+    }),
+  );
 
   out.push(fi(input, now));
   return out;

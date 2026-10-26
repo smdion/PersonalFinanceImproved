@@ -270,7 +270,10 @@ export const MAX_CUSTOM_GOALS = 12;
 // The registry
 // ---------------------------------------------------------------------------
 
-const NAPKIN = "Money Guy's napkin math: 8% growth a year.";
+/** How the growth milestones are judged: what happened in past years,
+ *  napkin math for years that haven't. */
+const GROWTH_JUDGED =
+  "Past years use your recorded gain from Performance; this year and later use Money Guy's napkin math (8% growth a year). This year counts once it's finalized in Performance.";
 
 export const MILESTONES = [
   // --- Wealth journey (Money Guy's 7) ---
@@ -295,9 +298,8 @@ export const MILESTONES = [
     group: "journey",
     source: "moneyGuy",
     title: "Investments save harder than you",
-    rule: `A year's growth on your investments is bigger than a year of saving. ${NAPKIN}`,
-    adaptedNote:
-      "A year of saving comes from your recorded contributions for past years, your paycheck plan for this year, and the retirement projection for future years.",
+    rule: "A year's growth on your investments is bigger than a year of saving.",
+    adaptedNote: `${GROWTH_JUDGED} A year of saving includes employer money and comes from your recorded contributions for past years, your paycheck plan for this year, and the retirement projection for future years.`,
     focus: { topic: "investedAssets" },
   },
   {
@@ -321,7 +323,8 @@ export const MILESTONES = [
     group: "journey",
     source: "moneyGuy",
     title: "Money works harder than you",
-    rule: `A year's growth on your investments is bigger than your gross pay. ${NAPKIN}`,
+    rule: "A year's growth on your investments is bigger than your gross pay.",
+    adaptedNote: GROWTH_JUDGED,
     focus: { topic: "investedAssets" },
   },
   {

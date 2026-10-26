@@ -75,6 +75,7 @@ export function milestoneYearFromHistory(row: {
   grossIncome: number;
   perfContributions: number | null;
   perfEmployerMatch: number | null;
+  perfGainLoss: number | null;
   aawScoreMarket: number;
   fiProgress: number;
   mortgageBalance: number;
@@ -106,6 +107,7 @@ export function milestoneYearFromHistory(row: {
       !row.isCurrent && row.perfContributions !== null
         ? row.perfContributions + (row.perfEmployerMatch ?? 0)
         : null,
+    gain: !row.isCurrent ? row.perfGainLoss : null,
     wealthScore: row.aawScoreMarket,
     fiProgress: row.fiProgress,
     mortgageBalance: row.mortgageBalance,

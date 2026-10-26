@@ -152,25 +152,66 @@ describe("wealth journey", () => {
     expect(r.note).toBe("Not reached in the projection");
   });
 
-  it("dates 'investments save harder' from finalized years only", () => {
-    const input = makeInput({
-      savings: makeSavings({
-        rate: 0.22,
-        saved: 33_000,
-        savedWithMatch: 38_000,
-        compensation: 150_000,
-        matchCounted: true,
-        highIncome: false,
-      }),
-    });
-    // 2025: 240k × 8% = 19.2k < 38k; now: 300k × 8% = 24k < 38k.
-    expect(
-      byId(evaluateMilestones(input), "investmentsSaveHarder").status,
-    ).not.toBe("reached");
+  it("judges 'investments save harder' on a finalized year's recorded gain", () => {
+    const input = makeInput();
+    // No recorded gain: a big balance alone doesn't count for a past year.
     input.years[1] = { ...input.years[1]!, liquid: 500_000 };
+    expect(
+      byId(evaluateMilestones(input), "investmentsSaveHarder").reachedYear,
+    ).toBeNull();
+    // 2025 gained 40k vs 38k saved (napkin on 240k would be 19.2k).
+    input.years[1] = { ...input.years[1]!, liquid: 240_000, gain: 40_000 };
     const r = byId(evaluateMilestones(input), "investmentsSaveHarder");
     expect(r.status).toBe("reached");
     expect(r.reachedYear).toBe(2025);
+    expect(r.headline).toBe("2025: $40,000.00 growth vs $38,000.00 saved");
+    expect(r.achievements).toEqual([
+      { year: 2025, label: "Investments save harder than you" },
+    ]);
+  });
+
+  it("stays reached after a weaker year, and says it's currently below", () => {
+    const input = makeInput();
+    input.years[0] = { ...input.years[0]!, gain: 36_000 }; // vs 35k: met
+    input.years[1] = { ...input.years[1]!, gain: 20_000 }; // vs 38k: not
+    const r = byId(evaluateMilestones(input), "investmentsSaveHarder");
+    expect(r.status).toBe("reached");
+    expect(r.reachedYear).toBe(2024);
+    expect(r.note).toContain("currently below");
+  });
+
+  it("never stamps the current year reached — on pace until it's finalized", () => {
+    const input = makeInput();
+    // Now: 600k × 8% = 48k ≥ 38k saved, but the year isn't over.
+    input.years[2] = { ...input.years[2]!, liquid: 600_000 };
+    const r = byId(evaluateMilestones(input), "investmentsSaveHarder");
+    expect(r.status).toBe("onTrack");
+    expect(r.reachedYear).toBeNull();
+    expect(r.achievements).toEqual([]);
+    expect(r.expectedYear).toBe(2026);
+    expect(r.note).toBe(
+      "On pace for 2026 · counts once it's finalized in Performance",
+    );
+    const pay = byId(
+      evaluateMilestones({
+        ...input,
+        years: input.years.map((y) =>
+          y.isCurrent ? { ...y, liquid: 2_000_000 } : y,
+        ),
+      }),
+      "moneyWorksHarder",
+    );
+    expect(pay.status).toBe("onTrack");
+    expect(pay.reachedYear).toBeNull();
+  });
+
+  it("judges 'money works harder' on a finalized year's gain vs its pay", () => {
+    const input = makeInput();
+    input.years[1] = { ...input.years[1]!, gain: 160_000 };
+    const r = byId(evaluateMilestones(input), "moneyWorksHarder");
+    expect(r.status).toBe("reached");
+    expect(r.reachedYear).toBe(2025);
+    expect(r.headline).toBe("2025: $160,000.00 growth vs $150,000.00 pay");
   });
 
   it("projects 'money works harder' against projected pay", () => {
@@ -817,7 +858,7 @@ describe("summaries", () => {
 });
 
 describe("input builders", () => {
-  it("maps a history row: retirement vs brokerage, finalized contributions only", () => {
+  it("maps a history row: retirement vs brokerage, finalized contributions and gain only", () => {
     const row = {
       year: 2025,
       isCurrent: false,
@@ -830,6 +871,7 @@ describe("input builders", () => {
       grossIncome: 150_000,
       perfContributions: 30_000,
       perfEmployerMatch: 5_000,
+      perfGainLoss: 18_000,
       aawScoreMarket: 1.1,
       fiProgress: 0.16,
       mortgageBalance: 210_000,
@@ -841,10 +883,11 @@ describe("input builders", () => {
       retirement: 180_000,
       brokerage: 35_000,
       contributions: 35_000,
+      gain: 18_000,
     });
-    expect(
-      milestoneYearFromHistory({ ...row, isCurrent: true }).contributions,
-    ).toBeNull();
+    expect(milestoneYearFromHistory({ ...row, isCurrent: true })).toMatchObject(
+      { contributions: null, gain: null },
+    );
     // Each account's own parent category wins over its type's default.
     expect(
       milestoneYearFromHistory({
