@@ -4,8 +4,12 @@ import {
   loadCapHousehold,
 } from "@/server/helpers/contribution-caps";
 import type { CapPassed } from "@/lib/pure/contribution-caps";
+import {
+  redundantReturnRateIds,
+  returnRateAtAge,
+} from "@/lib/pure/return-rate-breakpoints";
 import { assertNoPlanUses } from "@/server/helpers/plans";
-import { eq, ne, asc, and, isNull } from "drizzle-orm";
+import { eq, ne, asc, and, isNull, inArray } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 import { DEFAULT_RETURN_RATE } from "@/lib/constants";
@@ -203,6 +207,18 @@ const returnRateInput = z.object({
   age: z.number().int(),
   rateOfReturn: zDecimal,
 });
+
+/** Remove breakpoints that repeat the previous rate — one entry per run of
+ *  equal rates (lib/pure/return-rate-breakpoints.ts). */
+async function collapseReturnRates(db: Db) {
+  const ids = redundantReturnRateIds(
+    await db.select().from(schema.returnRateTable),
+  );
+  if (ids.length > 0)
+    await db
+      .delete(schema.returnRateTable)
+      .where(inArray(schema.returnRateTable.id, ids));
+}
 
 // `fetchRetirementData` and `buildEnginePayload` were moved to
 // `src/server/retirement/build-engine-payload.ts`.
@@ -582,20 +598,20 @@ export const retirementRouter = createTRPCRouter({
         input.relocationContributionProfileId,
       );
 
-      // Average return rate from age-indexed table (include floor rate)
-      const relocFloor = returnRates
-        .filter((r) => r.age <= age)
-        .sort((a, b) => b.age - a.age)[0];
-      const relevantRates = returnRates
-        .filter(
-          (r) =>
-            (r.age >= age && r.age <= settings.retirementAge) ||
-            (relocFloor && r.age === relocFloor.age),
-        )
-        .map((r) => toNumber(r.rateOfReturn));
+      // Average return rate over the years to retirement, each year at the
+      // breakpoint in effect (returnRateAtAge) — per year, not per row, so
+      // a table with one row per age and its collapsed form agree.
+      const rateBreakpoints = returnRates.map(
+        (r) => [r.age, toNumber(r.rateOfReturn)] as const,
+      );
+      const yearRates: number[] = [];
+      for (let a = age; a <= Math.max(age, settings.retirementAge); a++) {
+        const r = returnRateAtAge(rateBreakpoints, a);
+        if (r !== null) yearRates.push(r);
+      }
       const avgReturnRate =
-        relevantRates.length > 0
-          ? relevantRates.reduce((s, r) => s + r, 0) / relevantRates.length
+        yearRates.length > 0
+          ? yearRates.reduce((s, r) => s + r, 0) / yearRates.length
           : DEFAULT_RETURN_RATE;
 
       const selectedScenario = retScenarios.find((s) => s.isSelected);
@@ -1409,33 +1425,38 @@ export const retirementRouter = createTRPCRouter({
         .from(schema.returnRateTable)
         .orderBy(asc(schema.returnRateTable.age)),
     ),
-    upsert: adminProcedure
-      .input(returnRateInput)
-      .mutation(async ({ ctx, input }) => {
-        const existing = await ctx.db
+    upsert: adminProcedure.input(returnRateInput).mutation(({ ctx, input }) =>
+      ctx.db.transaction(async (tx) => {
+        const existing = await tx
           .select()
           .from(schema.returnRateTable)
           .where(eq(schema.returnRateTable.age, input.age));
-        if (existing.length > 0) {
-          return ctx.db
-            .update(schema.returnRateTable)
-            .set(input)
-            .where(eq(schema.returnRateTable.age, input.age))
-            .returning()
-            .then((r) => r[0]);
-        }
-        return ctx.db
-          .insert(schema.returnRateTable)
-          .values(input)
-          .returning()
-          .then((r) => r[0]);
+        const row =
+          existing.length > 0
+            ? await tx
+                .update(schema.returnRateTable)
+                .set(input)
+                .where(eq(schema.returnRateTable.age, input.age))
+                .returning()
+                .then((r) => r[0])
+            : await tx
+                .insert(schema.returnRateTable)
+                .values(input)
+                .returning()
+                .then((r) => r[0]);
+        await collapseReturnRates(tx);
+        return row;
       }),
+    ),
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(({ ctx, input }) =>
-        ctx.db
-          .delete(schema.returnRateTable)
-          .where(eq(schema.returnRateTable.id, input.id)),
+        ctx.db.transaction(async (tx) => {
+          await tx
+            .delete(schema.returnRateTable)
+            .where(eq(schema.returnRateTable.id, input.id));
+          await collapseReturnRates(tx);
+        }),
       ),
   }),
 });

@@ -31,6 +31,7 @@ export const REFERENCE_TABLES = [
   "fpl_by_household",
   "tax_params",
 ] as const;
+export type ReferenceTable = (typeof REFERENCE_TABLES)[number];
 
 /** The shipped tax-data file, read from disk (the Docker image copies
  *  `tax-data/`; never bundled, so the app and the migrator read one file). */

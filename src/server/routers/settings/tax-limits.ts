@@ -22,6 +22,9 @@ import {
   readTaxDataFile,
   reconcileReferenceData,
 } from "@/lib/db/reference-data";
+import { taxLimitKey } from "@/lib/config/tax-limit-keys";
+import { taxDataStatus, type CarriedFigure } from "@/lib/pure/tax-data-status";
+import { localDateStr } from "@/lib/utils/date";
 
 // --- Where a figure came from (lib/db/reference-reconcile-core.ts) ---
 
@@ -66,6 +69,17 @@ function shippedKeys(): Set<string> {
     ),
   );
   return shippedKeyCache;
+}
+
+/** The value the tax-data file ships for each IRS limit, `"year|type"`. */
+let shippedLimitCache: Map<string, number> | undefined;
+function shippedLimitValues(): Map<string, number> {
+  shippedLimitCache ??= new Map(
+    shippedReferenceRows(readTaxDataFile())
+      .filter((r) => r.table === "contribution_limits")
+      .map((r) => [keyText(r.keyVals), Number(r.value)]),
+  );
+  return shippedLimitCache;
 }
 
 /** Does the tax-data file ship this row (same table and key)? */
@@ -154,7 +168,138 @@ const fplByHouseholdInput = z.object({
 
 // --- Procedures ---
 
+/** The five yearly tables, as the status and Add year see them. */
+const YEARLY_TABLES = {
+  contribution_limits: schema.contributionLimits,
+  tax_brackets: schema.taxBrackets,
+  ltcg_brackets: schema.ltcgBrackets,
+  irmaa_brackets: schema.irmaaBrackets,
+  fpl_by_household: schema.fplByHousehold,
+} as const;
+type YearlyTable = keyof typeof YEARLY_TABLES;
+const yearlyTableSchema = z.enum(
+  Object.keys(YEARLY_TABLES) as [YearlyTable, ...YearlyTable[]],
+);
+
+/** A carried figure's name, as the checklist shows it. */
+function carriedName(table: YearlyTable, row: Record<string, unknown>) {
+  if (table === "contribution_limits")
+    return taxLimitKey(String(row.limitType))?.label ?? String(row.limitType);
+  if (table === "fpl_by_household") return "Poverty levels by household size";
+  const status = String(row.filingStatus);
+  if (table === "tax_brackets")
+    return `${status} withholding${row.w4Checkbox ? " (W-4 box 2(c))" : ""}`;
+  return status;
+}
+
 export const taxLimitsProcedures = {
+  /** Is the tax data current, and what was carried forward? */
+  taxData: createTRPCRouter({
+    status: protectedProcedure.query(async ({ ctx }) => {
+      const yearsByTable: Partial<Record<YearlyTable, number[]>> = {};
+      const carried: CarriedFigure[] = [];
+      const carriedRows: {
+        table: YearlyTable;
+        id: number;
+        taxYear: number;
+        name: string;
+      }[] = [];
+      for (const [name, table] of Object.entries(YEARLY_TABLES) as [
+        YearlyTable,
+        (typeof YEARLY_TABLES)[YearlyTable],
+      ][]) {
+        const rows = (await ctx.db.select().from(table)) as Record<
+          string,
+          unknown
+        >[];
+        yearsByTable[name] = [...new Set(rows.map((r) => Number(r.taxYear)))];
+        for (const r of rows)
+          if (r.origin === "carried" && r.confirmedAt == null) {
+            const label = carriedName(name, r);
+            carried.push({
+              table: name,
+              taxYear: Number(r.taxYear),
+              name: label,
+            });
+            carriedRows.push({
+              table: name,
+              id: Number(r.id),
+              taxYear: Number(r.taxYear),
+              name: label,
+            });
+          }
+      }
+      const status = taxDataStatus({ yearsByTable, carried });
+      return {
+        ...status,
+        sections: status.sections.map(({ upcoming, ...s }) => ({
+          ...s,
+          upcoming: upcoming
+            ? { year: upcoming.year, due: localDateStr(upcoming.due) }
+            : null,
+        })),
+        carriedRows,
+      };
+    }),
+
+    /** Start a year in one step: every table copies its newest earlier
+     *  year as carried forward (replaced when the real figures ship).
+     *  Tables that already have the year are left alone. */
+    addYear: adminProcedure
+      .input(z.object({ year: z.number().int().min(2000).max(2100) }))
+      .mutation(async ({ ctx, input }) => {
+        const copied: Partial<Record<YearlyTable, number | null>> = {};
+        for (const [name, table] of Object.entries(YEARLY_TABLES) as [
+          YearlyTable,
+          (typeof YEARLY_TABLES)[YearlyTable],
+        ][]) {
+          const rows = (await ctx.db.select().from(table)) as Record<
+            string,
+            unknown
+          >[];
+          const years = [...new Set(rows.map((r) => Number(r.taxYear)))];
+          if (years.includes(input.year)) continue;
+          const earlier = years.filter((y) => y < input.year);
+          const from = earlier.length
+            ? Math.max(...earlier)
+            : years.length
+              ? Math.min(...years)
+              : null;
+          copied[name] = from;
+          if (from === null) continue;
+          const copies = rows
+            .filter((r) => Number(r.taxYear) === from)
+            .map(
+              ({
+                id: _id,
+                origin: _o,
+                sourceVersion: _v,
+                confirmedAt: _c,
+                ...r
+              }) => ({
+                ...r,
+                taxYear: input.year,
+                origin: "carried" as const,
+              }),
+            );
+          if (copies.length) await ctx.db.insert(table).values(copies as never);
+        }
+        return { copied };
+      }),
+
+    /** The household checked a carried figure: it stays carried (the real
+     *  figure replaces it when it ships), but no longer needs attention. */
+    confirm: adminProcedure
+      .input(z.object({ table: yearlyTableSchema, id: z.number().int() }))
+      .mutation(async ({ ctx, input }) => {
+        const table = YEARLY_TABLES[input.table];
+        await ctx.db
+          .update(table)
+          .set({ confirmedAt: new Date() } as never)
+          .where(eq(table.id, input.id));
+      }),
+  }),
+
   contributionLimits: createTRPCRouter({
     /** Each row says whether Ledgr ships it (Reset to shipped vs delete). */
     list: protectedProcedure.query(async ({ ctx }) => {
@@ -166,9 +311,13 @@ export const taxLimitsProcedures = {
           asc(schema.contributionLimits.limitType),
         );
       const shipped = shippedKeys();
+      const shippedValues = shippedLimitValues();
       return rows.map((r) => ({
         ...r,
         shipped: isShipped("contribution_limits", r, shipped),
+        /** What Ledgr ships for this figure (null if it doesn't). */
+        shippedValue:
+          shippedValues.get(keyText([r.taxYear, r.limitType])) ?? null,
       }));
     }),
     create: adminProcedure

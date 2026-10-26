@@ -10,9 +10,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.9.0] - Unreleased
 
+### Added
+
+- **Tax data ships as one reviewed file, and updates never overwrite your changes.** Every yearly figure (IRS limits, withholding tables, capital-gains and Medicare brackets, poverty levels) now comes from `tax-data/us-federal.json`, each with its source. Each start brings the database in line with it: new years are added and corrected figures replace old ones, but a figure you changed in Settings stays yours. Installs seeded before the 2026 withholding correction get the corrected tables.
+- **Reference Data shows whether tax data is current.** A notice appears when a year's figures are overdue, and the sidebar's Data indicator says so too. "How tax data updates work" explains where the figures come from and when they arrive.
+- **Add year in one step.** "+ Year" copies the latest figures forward into every section as _carried forward_. A checklist lists them to confirm, and a Ledgr update with the real figures replaces the ones you haven't edited.
+- **Reset to shipped.** A shipped figure you changed shows the value Ledgr ships, and Reset to shipped hands it back. Shipped figures and years can't be deleted.
+
+### Changed
+
+- **IRS limits have readable names.** The "Custom" group is gone: every limit sits in a named card (Standard deduction, Social Security & Medicare, Roth IRA eligibility, …). Figures Ledgr no longer reads are listed as "Not used by Ledgr".
+- **The IRS-limit growth rate moved to IRS Limits** ("Growth in future years"), out of Return Rates. The retirement plan's assumptions show the rate you set and link to it, instead of a fixed "~2%/yr".
+- **Return rates: one entry per run of equal rates.** A row with the same rate as the row before it changes nothing, so it's merged into that row whenever the table changes. Single ages read "20", not "20–20". Projections are unchanged.
+
 ### Fixed
 
 - **Each yearly tax table now comes from its own year.** A new year's IRS limits can arrive before that year's withholding, capital-gains, Medicare (IRMAA) or poverty-line tables. Projections used to pair the new limits with missing tables: withholding fell back to no tax at all, and the others to tables built into the app. Each table now comes from its own newest complete year and is grown forward from that year. IRMAA and poverty-line tables used to grow from a fixed year in the code, which over-inflated newer tables and under-inflated a profile pinned to an older year. A database with no withholding tables at all now stops the projection with a message, instead of taxing every withdrawal at a flat default rate.
+- **Return rates are read the same way everywhere.** The relocation calculator averaged the table's rows instead of its years, so a table with gaps between ages (every demo profile) gave a different rate than the same table listed age by age. Monte Carlo without asset classes used 7% for any age without its own row. Both now apply each row's rate until the next row, as projections always have.
 
 # v0.8
 

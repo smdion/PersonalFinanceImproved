@@ -21,6 +21,7 @@
  * degrading downstream.
  */
 import { useState } from "react";
+import { TaxDataUpdates } from "./tax-data-updates";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
@@ -35,6 +36,7 @@ import { TaxBracketsSettings } from "@/components/settings/tax-brackets";
 import { LtcgBracketsSettings } from "@/components/settings/ltcg-brackets";
 import { IrmaaBracketsSettings } from "@/components/settings/irmaa-brackets";
 import { FplByHouseholdSettings } from "@/components/settings/fpl-by-household";
+import { IrsLimitGrowthSetting } from "./irs-limit-growth";
 import { ReturnRatesSettings } from "@/components/settings/return-rates";
 import { useDeepLinkParam } from "@/lib/hooks/use-deep-link-param";
 import {
@@ -123,9 +125,17 @@ export function TaxDataSettings() {
   const [showAddYear, setShowAddYear] = useState(false);
   const [newYear, setNewYear] = useState("");
 
-  const handleAddYear = () => {
+  const utils = trpc.useUtils();
+  const addYear = trpc.settings.taxData.addYear.useMutation({
+    onSuccess: () => utils.settings.invalidate(),
+  });
+
+  /** One step: every table copies its latest year forward as carried
+   *  (replaced when a Ledgr update brings the real figures). */
+  const handleAddYear = async () => {
     const yr = parseInt(newYear, 10);
     if (isNaN(yr) || yr < TAX_YEAR_MIN || yr > TAX_YEAR_MAX) return;
+    await addYear.mutateAsync({ year: yr });
     if (!unionYears.includes(yr)) setExtraYears((prev) => [...prev, yr]);
     setPersistedYear(yr);
     setShowAddYear(false);
@@ -151,6 +161,8 @@ export function TaxDataSettings() {
       </nav>
 
       <div>
+        {section !== "returns" && <TaxDataUpdates admin={admin} />}
+
         {/* Return Rates has no year axis — the shared toggle doesn't
             apply there and would just be inert/confusing. */}
         {section !== "returns" && (
@@ -182,10 +194,14 @@ export function TaxDataSettings() {
                 </label>
                 <button
                   onClick={handleAddYear}
-                  className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700"
+                  disabled={addYear.isPending}
+                  className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
                 >
                   Add
                 </button>
+                <span className="text-faint text-xs">
+                  Copies the latest figures forward, to check
+                </span>
                 <button
                   onClick={() => setShowAddYear(false)}
                   className="text-muted hover:text-primary px-3 py-1 text-sm"
@@ -204,6 +220,7 @@ export function TaxDataSettings() {
             against. Only visibility toggles. */}
         <div className={section === "limits" ? "" : "hidden"}>
           <ContributionLimitsSettings year={activeYear} />
+          <IrsLimitGrowthSetting />
         </div>
         <div className={section === "tax" ? "" : "hidden"}>
           <TaxBracketsSettings year={activeYear} />

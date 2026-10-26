@@ -601,3 +601,59 @@ describe("settings.contributionLimits — provenance", () => {
     }
   });
 });
+
+describe("settings.taxData", () => {
+  it("Add year copies every table forward as carried, listed to confirm", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const { copied } = await caller.settings.taxData.addYear({ year: 2031 });
+      expect(copied).toEqual({
+        contribution_limits: 2026,
+        tax_brackets: 2026,
+        ltcg_brackets: 2026,
+        irmaa_brackets: 2026,
+        fpl_by_household: 2026,
+      });
+      const ira = (await caller.settings.contributionLimits.list()).find(
+        (r) => r.taxYear === 2031 && r.limitType === "ira_limit",
+      )!;
+      expect(ira).toMatchObject({ origin: "carried", confirmedAt: null });
+      expect(Number(ira.value)).toBe(7500);
+
+      const status = await caller.settings.taxData.status();
+      expect(status.carriedRows.length).toBeGreaterThan(30);
+      expect(status.needsAttention).toBe(true);
+      // Running it again changes nothing (every table has the year).
+      expect(
+        (await caller.settings.taxData.addYear({ year: 2031 })).copied,
+      ).toEqual({});
+
+      // Confirming takes a figure off the list; it stays carried.
+      await caller.settings.taxData.confirm({
+        table: "contribution_limits",
+        id: ira.id,
+      });
+      const after = await caller.settings.taxData.status();
+      expect(after.carriedRows.length).toBe(status.carriedRows.length - 1);
+      expect(
+        (await caller.settings.contributionLimits.list()).find(
+          (r) => r.id === ira.id,
+        ),
+      ).toMatchObject({ origin: "carried" });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("each IRS limit carries the value Ledgr ships", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const ira = (await caller.settings.contributionLimits.list()).find(
+        (r) => r.taxYear === 2026 && r.limitType === "ira_limit",
+      )!;
+      expect(ira.shippedValue).toBe(7500);
+    } finally {
+      cleanup();
+    }
+  });
+});

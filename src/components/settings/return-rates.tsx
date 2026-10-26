@@ -24,17 +24,7 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatPercent } from "@/lib/utils/format";
-import {
-  IRS_LIMIT_GROWTH_RATE,
-  IRS_LIMIT_GROWTH_RATE_MAX,
-} from "@/lib/constants";
-import { SK_IRS_LIMIT_GROWTH_RATE } from "@/lib/constants/settings-keys";
-
-/** Sanity bounds for the editable IRS-limit growth rate. Also enforced
- *  server-side (build-engine-payload.ts clamps on read). */
-const IRS_GROWTH_MIN = 0;
-const IRS_GROWTH_MAX = IRS_LIMIT_GROWTH_RATE_MAX;
-
+import { returnRateAtAge } from "@/lib/pure/return-rate-breakpoints";
 /** Display-only cap for the glide-path bar and the last breakpoint's
  *  open-ended range label — the engine itself has no upper bound, a
  *  breakpoint's rate just keeps applying past this. */
@@ -66,54 +56,10 @@ export function ReturnRatesSettings() {
     onSuccess: () => utils.retirement.returnRates.list.invalidate(),
   });
 
-  const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
-  const upsertSetting = trpc.settings.appSettings.upsert.useMutation({
-    onSuccess: () => {
-      utils.settings.appSettings.list.invalidate();
-      // This value feeds every projection — refetch them so /retirement
-      // reflects the new rate without a hard reload.
-      utils.projection.invalidate();
-      utils.retirement.invalidate();
-      setIrsGrowthError(null);
-    },
-  });
-  const [irsGrowthError, setIrsGrowthError] = useState<string | null>(null);
-  const irsGrowthRow = appSettings?.find(
-    (s) => s.key === SK_IRS_LIMIT_GROWTH_RATE,
-  );
-  const irsGrowthRate =
-    irsGrowthRow && Number.isFinite(Number(irsGrowthRow.value))
-      ? Number(irsGrowthRow.value)
-      : IRS_LIMIT_GROWTH_RATE;
-  const irsGrowthIsDefault = !irsGrowthRow;
-
-  const handleSaveIrsGrowth = (rawPercent: string) => {
-    const pct = parseFloat(rawPercent);
-    if (isNaN(pct)) {
-      setIrsGrowthError("Enter a number");
-      return;
-    }
-    const rate = pct / 100;
-    if (rate < IRS_GROWTH_MIN || rate > IRS_GROWTH_MAX) {
-      setIrsGrowthError(
-        `Must be between ${IRS_GROWTH_MIN * 100}% and ${IRS_GROWTH_MAX * 100}%`,
-      );
-      return;
-    }
-    setIrsGrowthError(null);
-    // Back to the engine default → delete the row so the constant applies
-    // and the "(default)" tag returns. `upsert` with a null value deletes.
-    if (Math.abs(rate - IRS_LIMIT_GROWTH_RATE) < 1e-9) {
-      if (irsGrowthRow)
-        upsertSetting.mutate({ key: SK_IRS_LIMIT_GROWTH_RATE, value: null });
-      return;
-    }
-    upsertSetting.mutate({ key: SK_IRS_LIMIT_GROWTH_RATE, value: rate });
-  };
-
   const [showAddRow, setShowAddRow] = useState(false);
   const [newAge, setNewAge] = useState("");
   const [newRate, setNewRate] = useState("");
+  const [addNote, setAddNote] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   if (isLoading) return <Skeleton className="h-6 w-48" />;
@@ -133,6 +79,19 @@ export function ReturnRatesSettings() {
     if (isNaN(pct)) return;
     // Check for duplicate age
     if (rows.some((r) => r.age === age)) return;
+    // Same rate as the breakpoint already in effect there: nothing to add
+    // (the server would merge it straight back).
+    const inEffect = returnRateAtAge(
+      rows.map((r) => [r.age, Number(r.rateOfReturn)] as const),
+      age,
+    );
+    if (inEffect !== null && Math.abs(inEffect - pct / 100) < 5e-7) {
+      setAddNote(
+        `Age ${age} already gets ${formatPercent(inEffect, 2)} — nothing to add.`,
+      );
+      return;
+    }
+    setAddNote(null);
     upsertMut.mutate(
       { age, rateOfReturn: String(pct / 100) },
       {
@@ -165,45 +124,6 @@ export function ReturnRatesSettings() {
 
   return (
     <div>
-      {/* IRS limit growth rate — a forward projection assumption (how fast
-          IRS contribution limits are assumed to rise each future year),
-          not tax law, so it lives here alongside the return-rate table
-          rather than in the per-year IRS Limits section. */}
-      <div className="border-subtle bg-surface-sunken mb-6 rounded-lg border p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="text-secondary text-sm font-medium">
-              IRS limit growth rate
-            </div>
-            <div className="text-faint text-xs">
-              How fast IRS contribution limits are assumed to grow each
-              projected year beyond the last entered tax year.
-            </div>
-          </div>
-          <div className="flex flex-col items-end gap-0.5 whitespace-nowrap">
-            <div className="flex items-center gap-2">
-              {admin ? (
-                <InlineEdit
-                  value={(irsGrowthRate * 100).toFixed(2).replace(/\.?0+$/, "")}
-                  onSave={handleSaveIrsGrowth}
-                  formatDisplay={(v) => formatPercent(parseFloat(v) / 100, 1)}
-                />
-              ) : (
-                <span className="text-primary text-sm">
-                  {formatPercent(irsGrowthRate, 1)}
-                </span>
-              )}
-              {irsGrowthIsDefault && (
-                <span className="text-faint text-xs">(default)</span>
-              )}
-            </div>
-            {irsGrowthError && (
-              <span className="text-xs text-red-600">{irsGrowthError}</span>
-            )}
-          </div>
-        </div>
-      </div>
-
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold">Return Rate Table</h2>
         {admin && (
@@ -265,6 +185,7 @@ export function ReturnRatesSettings() {
               Cancel
             </Button>
           </div>
+          {addNote && <p className="text-muted mt-2 text-xs">{addNote}</p>}
         </div>
       )}
 
@@ -319,7 +240,11 @@ export function ReturnRatesSettings() {
                 {ranges.map((row) => (
                   <tr key={row.id} className="border-subtle border-t">
                     <td className="text-primary px-4 py-1.5">
-                      {row.endAge ? `${row.age}–${row.endAge}` : `${row.age}+`}
+                      {row.endAge === null
+                        ? `${row.age}+`
+                        : row.endAge === row.age
+                          ? `${row.age}`
+                          : `${row.age}–${row.endAge}`}
                     </td>
                     <td className="px-4 py-1.5 text-right">
                       <InlineEdit
@@ -370,8 +295,8 @@ export function ReturnRatesSettings() {
       <p className="text-faint mt-4 text-xs">
         Each row is a breakpoint, not a fixed single-age rate — its rate applies
         to every age from there up until the next breakpoint (the Age Range
-        column). Click any rate to edit. Rates are stored as decimals (e.g.,
-        enter 7 for 7%).
+        column). A row with the same rate as the one before it is merged into
+        it. Click any rate to edit; enter 7 for 7%.
       </p>
     </div>
   );

@@ -71,6 +71,7 @@ vi.mock("@/lib/trpc", () => ({
     investments: { getHealth: { useQuery: () => ({ data: undefined }) } },
     settings: {
       getDataFreshness: { useQuery: () => ({ data: undefined }) },
+      taxData: { status: { useQuery: () => ({ data: undefined }) } },
       appSettings: {
         list: { useQuery: () => ({ data: [] }) },
         setDismissal: {

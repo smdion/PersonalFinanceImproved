@@ -103,6 +103,8 @@ vi.mock("@/lib/trpc", () => ({
         irmaaBrackets: { invalidate: vi.fn() },
         fplByHousehold: { invalidate: vi.fn() },
         appSettings: { list: { invalidate: vi.fn() } },
+        taxData: { status: { invalidate: vi.fn() } },
+        invalidate: vi.fn(),
       },
       retirement: {
         returnRates: { list: { invalidate: vi.fn() } },
@@ -120,6 +122,11 @@ vi.mock("@/lib/trpc", () => ({
       appSettings: {
         list: { useQuery: () => ({ data: [], isLoading: false }) },
         upsert: { useMutation: noopMutation },
+      },
+      taxData: {
+        status: { useQuery: () => ({ data: undefined }) },
+        addYear: { useMutation: noopMutation },
+        confirm: { useMutation: noopMutation },
       },
       contributionLimits: {
         list: { useQuery: () => ({ data: limits2025, isLoading: false }) },

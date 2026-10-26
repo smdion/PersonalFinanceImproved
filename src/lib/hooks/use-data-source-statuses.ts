@@ -11,6 +11,7 @@ import {
   evaluateDataSources,
   type DataSourceStatus,
 } from "@/lib/pure/data-freshness";
+import { localDateStr } from "@/lib/utils/date";
 
 /** A sync time as ISO text — tRPC sends Dates as strings at runtime even
  *  where the type says Date, and Date#toString() isn't ISO. */
@@ -26,6 +27,7 @@ export function useDataSourceStatuses() {
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const { data: simplefinStatus } = trpc.simplefin.getStatus.useQuery();
   const { data: secStatus } = trpc.sec.getStatus.useQuery();
+  const { data: taxDataStatus } = trpc.settings.taxData.status.useQuery();
   const user = useUser();
   // Holdings checks name accounts and values: portfolio permission only.
   const { data: investmentHealth } = trpc.investments.getHealth.useQuery(
@@ -57,6 +59,13 @@ export function useDataSourceStatuses() {
           : undefined,
         secFacts: secStatus?.connected
           ? { lastUpdated: secStatus.lastRun, error: secStatus.lastError }
+          : undefined,
+        // Current = checked now; late years or carried figures = warnings.
+        taxData: taxDataStatus
+          ? {
+              lastUpdated: localDateStr(),
+              warnings: taxDataStatus.summary ? [taxDataStatus.summary] : [],
+            }
           : undefined,
       })
     : [];

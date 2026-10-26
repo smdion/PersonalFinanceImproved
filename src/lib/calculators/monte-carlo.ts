@@ -12,6 +12,7 @@
  */
 import { assessPlan, type PlanFailureReason } from "./plan-outcome";
 import { calculateProjection } from "./engine";
+import { resolveReturnRateForAge } from "./engine/growth-application";
 import {
   createPRNG,
   sampleCorrelatedReturns,
@@ -29,7 +30,6 @@ import type {
 } from "./types";
 import { roundToCents, sumBy, safeDivide } from "../utils/math";
 import {
-  DEFAULT_RETURN_RATE,
   MC_RETURN_CLAMP_MIN,
   MC_RETURN_CLAMP_MAX,
   MC_SPENDING_STABILITY_THRESHOLD,
@@ -229,6 +229,14 @@ export function calculateMonteCarlo(
   // state with.
   const progressInterval = Math.max(1, Math.floor(numTrials / 50));
 
+  // Deterministic return rates (age -> rate), read as breakpoints exactly
+  // as the engine reads them. Only used when there are no asset classes.
+  const detRateMap = new Map<number, number>();
+  for (const r of engineInput.returnRates) {
+    const ageMatch = r.label.match(/(\d+)/);
+    if (ageMatch) detRateMap.set(Number(ageMatch[1]), r.rate);
+  }
+
   // Run trials
   for (let trial = 0; trial < numTrials; trial++) {
     if (
@@ -256,11 +264,7 @@ export function calculateMonteCarlo(
         annualReturn = blendReturns(assetReturns, assetClasses, glidePath, age);
       } else {
         // Fallback: use the deterministic return rate
-        const detRate = engineInput.returnRates.find((r) => {
-          const ageMatch = r.label.match(/(\d+)/);
-          return ageMatch && Number(ageMatch[1]) === age;
-        });
-        annualReturn = detRate?.rate ?? DEFAULT_RETURN_RATE;
+        annualReturn = resolveReturnRateForAge(detRateMap, age);
       }
 
       // Clamp extreme returns (prevent unrealistic scenarios)

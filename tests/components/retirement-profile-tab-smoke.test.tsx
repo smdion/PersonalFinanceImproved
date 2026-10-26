@@ -86,6 +86,7 @@ vi.mock("@/lib/trpc", () => ({
         computeProjection: { cancel: vi.fn(), setData: vi.fn() },
       },
     }),
+    settings: { appSettings: { list: { useQuery: () => ({ data: [] }) } } },
     contributionProfile: { list: { useQuery: () => ({ data: [] }) } },
     salaryProfile: { list: { useQuery: () => ({ data: [] }) } },
     projection: {

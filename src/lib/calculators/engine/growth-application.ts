@@ -8,6 +8,7 @@
 import type { TaxBuckets, AccountBalances } from "../types";
 import { roundToCents } from "../../utils/math";
 import { MIN_RETURN_RATE } from "../../constants";
+import { returnRateAtAge } from "@/lib/pure/return-rate-breakpoints";
 import {
   getAllCategories,
   setTraditional,
@@ -22,8 +23,8 @@ import {
 /**
  * Resolve the effective return rate for a given age from a sparse
  * age→rate map (populated only at configured breakpoint ages, e.g. "Age
- * 39") — falls back to the closest configured age at or below the
- * requested one, throws if nothing qualifies, then floors at
+ * 39") — the breakpoint at or below the requested age
+ * (returnRateAtAge), throws if nothing qualifies, then floors at
  * `MIN_RETURN_RATE`. Shared so the real
  * per-year growth application and any forward-looking projection (e.g. the
  * RMD-smoothing lookahead) can't quietly diverge on how a sparse
@@ -35,18 +36,11 @@ export function resolveReturnRateForAge(
   returnRateMap: Map<number, number>,
   age: number,
 ): number {
-  let rate = returnRateMap.get(age);
-  if (rate === undefined) {
-    let closestAge = 0;
-    returnRateMap.forEach((_rate, rateAge) => {
-      if (rateAge <= age) closestAge = rateAge;
-    });
-    rate = returnRateMap.get(closestAge);
-    if (rate === undefined) {
-      throw new Error(
-        `No return rate configured for age ${age}. Add return rates in retirement settings.`,
-      );
-    }
+  const rate = returnRateAtAge(returnRateMap, age);
+  if (rate === null) {
+    throw new Error(
+      `No return rate configured for age ${age}. Add return rates in retirement settings.`,
+    );
   }
   return Math.max(MIN_RETURN_RATE, rate);
 }

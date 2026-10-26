@@ -11,14 +11,19 @@ export function recommendationsFromDataSources(
   /** The source's display name (the budget sync is named by its service). */
   labelFor: (s: DataSourceStatus) => string,
 ): Recommendation[] {
+  // "Tax data" is already "… data".
+  const named = (s: DataSourceStatus) => {
+    const label = labelFor(s);
+    return /\bdata$/i.test(label) ? label : `${label} data`;
+  };
   return statuses
     .filter((s) => s.needsAttention)
     .map((s) => ({
       id: `data:${s.source.key}`,
       area: "data" as const,
       urgency: "soon" as const,
-      title: `${labelFor(s)} data`,
-      action: `Update ${labelFor(s)} data${s.reason ? ` — ${s.reason}` : ""}`,
+      title: named(s),
+      action: `Update ${named(s)}${s.reason ? ` — ${s.reason}` : ""}`,
       context:
         s.lastUpdated === null
           ? "Never updated"

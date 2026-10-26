@@ -71,6 +71,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
       notes: string | null;
       origin: string;
       shipped: boolean;
+      shippedValue: number | null;
     }
   >();
   for (const l of yearData) {
@@ -237,6 +238,15 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
                   >
                     <span className="text-muted">
                       {type.label}
+                      {record?.origin === "user" &&
+                        record.shippedValue !== null &&
+                        Math.abs(Number(record.value) - record.shippedValue) >=
+                          5e-7 && (
+                          <span className="text-caption text-faint ml-2">
+                            Ledgr ships{" "}
+                            {display(record.shippedValue, type.format)}
+                          </span>
+                        )}
                       {admin && record?.shipped && record.origin === "user" && (
                         <button
                           type="button"

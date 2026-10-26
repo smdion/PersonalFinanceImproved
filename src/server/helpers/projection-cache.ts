@@ -346,8 +346,10 @@ import { log } from "@/lib/logger";
  *  56: each yearly tax table (withholding, LTCG, IRMAA, FPL) comes from its
  *  own newest complete year and grows from that year (taxTableYears) —
  *  IRMAA/FPL grew from code constants, and a section missing the limits
- *  year fell back to the built-in tables. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 56;
+ *  year fell back to the built-in tables.
+ *  57: Monte Carlo without asset classes reads the return-rate table as
+ *  breakpoints (it used the exact age only, else the 7% default). */
+export const PROJECTION_CACHE_ENGINE_VERSION = 57;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;
