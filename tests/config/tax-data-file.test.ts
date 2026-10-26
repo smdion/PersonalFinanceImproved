@@ -7,6 +7,11 @@ import { readTaxData } from "../helpers/tax-data";
 import { TAX_DATA_FORMAT_VERSION } from "@/lib/db/reference-reconcile-core";
 import { TAX_LIMIT_KEYS, taxLimitKey } from "@/lib/config/tax-limit-keys";
 import { REQUIRED_FILING_STATUSES } from "@/lib/config/tax-params";
+import {
+  fplByHouseholdAmountsSchema,
+  irmaaBracketsSchema,
+  ltcgBracketsSchema,
+} from "@/lib/db/json-schemas";
 
 const file = readTaxData();
 const years = Object.keys(file.years)
@@ -70,6 +75,26 @@ describe("tax-data file", () => {
           expect(Object.keys(d[s]!.brackets).sort(), `${y} ${s}`).toEqual(
             [...REQUIRED_FILING_STATUSES].sort(),
           );
+    }
+  });
+
+  it("brackets have the shape the tax math relies on (the Settings write schemas)", () => {
+    for (const y of years) {
+      const d = file.years[y]!;
+      for (const [st, b] of Object.entries(d.ltcg?.brackets ?? {}))
+        expect(ltcgBracketsSchema.safeParse(b).success, `${y} ltcg ${st}`).toBe(
+          true,
+        );
+      for (const [st, b] of Object.entries(d.irmaa?.brackets ?? {}))
+        expect(
+          irmaaBracketsSchema.safeParse(b).success,
+          `${y} irmaa ${st}`,
+        ).toBe(true);
+      if (d.fpl)
+        expect(
+          fplByHouseholdAmountsSchema.safeParse(d.fpl.amounts).success,
+          `${y} fpl`,
+        ).toBe(true);
     }
   });
 
@@ -160,5 +185,58 @@ describe("tax-data file", () => {
           });
         }
     expect(off).toEqual([]);
+  });
+});
+
+describe("bracket write schemas", () => {
+  const top = { threshold: null, rate: 0.2 };
+  it("LTCG: open top, thresholds and rates never go down", () => {
+    const ok = [
+      { threshold: 100, rate: 0 },
+      { threshold: 500, rate: 0.15 },
+      top,
+    ];
+    expect(ltcgBracketsSchema.safeParse(ok).success).toBe(true);
+    // The Settings placeholder: equal thresholds are fine.
+    expect(
+      ltcgBracketsSchema.safeParse([
+        { threshold: 0, rate: 0 },
+        { threshold: 0, rate: 0.15 },
+        top,
+      ]).success,
+    ).toBe(true);
+    for (const bad of [
+      [],
+      [{ threshold: 100, rate: 0 }], // no open top: gains above go untaxed
+      [{ threshold: null, rate: 0 }, top], // open bracket before the end
+      [{ threshold: 500, rate: 0 }, { threshold: 100, rate: 0.15 }, top],
+      [{ threshold: 100, rate: 0.15 }, { threshold: 500, rate: 0 }, top],
+      [{ threshold: 100, rate: 15 }, top], // a percent, not a rate
+    ])
+      expect(
+        ltcgBracketsSchema.safeParse(bad).success,
+        JSON.stringify(bad),
+      ).toBe(false);
+  });
+
+  it("IRMAA: thresholds and surcharges never go down", () => {
+    expect(
+      irmaaBracketsSchema.safeParse([
+        { magiThreshold: 100, annualSurcharge: 10 },
+        { magiThreshold: 200, annualSurcharge: 20 },
+      ]).success,
+    ).toBe(true);
+    for (const bad of [
+      [],
+      [
+        { magiThreshold: 200, annualSurcharge: 10 },
+        { magiThreshold: 100, annualSurcharge: 20 },
+      ],
+      [
+        { magiThreshold: 100, annualSurcharge: 20 },
+        { magiThreshold: 200, annualSurcharge: 10 },
+      ],
+    ])
+      expect(irmaaBracketsSchema.safeParse(bad).success).toBe(false);
   });
 });

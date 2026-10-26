@@ -14,6 +14,7 @@ import {
 import { getAllCategories } from "@/lib/config/account-types";
 import type { AccountCategory, AccountBalances } from "@/lib/calculators/types";
 import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 function slotFor(
   slots: { category: string; withdrawal: number }[],
@@ -322,6 +323,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     const balances = makeAccountBalances();
     const result = routeWithdrawalsBracketFilling(50000, config, balances, {
       taxBrackets: undefined,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.12,
       taxableSS: 0,
     });
@@ -335,6 +337,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     const balances = makeAccountBalances();
     const result = routeWithdrawalsBracketFilling(50000, config, balances, {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: undefined,
       taxableSS: 0,
     });
@@ -351,6 +354,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     });
     const result = routeWithdrawalsBracketFilling(100000, config, balances, {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.12,
       taxableSS: 5000,
     });
@@ -374,6 +378,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     });
     const result = routeWithdrawalsBracketFilling(150000, config, balances, {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.12,
       taxableSS: 0,
     });
@@ -396,6 +401,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     });
     const result = routeWithdrawalsBracketFilling(200000, config, balances, {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.12,
       taxableSS: 0,
     });
@@ -413,6 +419,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     });
     const result = routeWithdrawalsBracketFilling(100000, config, balances, {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.12,
       taxableSS: 0,
     });
@@ -431,6 +438,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     });
     const result = routeWithdrawalsBracketFilling(60000, config, balances, {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.12,
       taxableSS: 0,
     });
@@ -443,6 +451,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     const balances = makeAccountBalances();
     const result = routeWithdrawalsBracketFilling(50000, config, balances, {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.22,
       taxableSS: 0,
     });
@@ -456,11 +465,13 @@ describe("routeWithdrawalsBracketFilling", () => {
     const balances = makeAccountBalances({ preTax: 500000 });
     const noSS = routeWithdrawalsBracketFilling(50000, config, balances, {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.22,
       taxableSS: 0,
     });
     const withSS = routeWithdrawalsBracketFilling(50000, config, balances, {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.22,
       taxableSS: 20000,
     });
@@ -479,6 +490,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     });
     const result = routeWithdrawalsBracketFilling(100000, config, balances, {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.12,
       taxableSS: 0,
     });
@@ -517,6 +529,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     });
     const bracketInfo = {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.12, // caps traditional well below either account's balance
       taxableSS: 0,
     };
@@ -590,6 +603,7 @@ describe("routeWithdrawalsBracketFilling", () => {
       balances,
       {
         taxBrackets: TEST_BRACKETS,
+        ltcgBrackets: shippedTaxTables().ltcgBrackets,
         rothBracketTarget: 0.12,
         taxableSS: 0,
       },
@@ -618,6 +632,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     });
     const result = routeWithdrawalsBracketFilling(100000, config, balances, {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.12,
       taxableSS: 5000,
     });
@@ -658,6 +673,7 @@ describe("routeWithdrawalsBracketFilling", () => {
       balances,
       {
         taxBrackets: TEST_BRACKETS,
+        ltcgBrackets: shippedTaxTables().ltcgBrackets,
         rothBracketTarget: 0.12,
         taxableSS: 0,
         filingStatus: "MFJ",
@@ -684,6 +700,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     });
     const result = routeWithdrawalsBracketFilling(60000, config, balances, {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.12,
       taxableSS: 0,
       filingStatus: "MFJ",
@@ -717,6 +734,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     });
     const result = routeWithdrawalsBracketFilling(60000, config, balances, {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.1, // no longer read for Roth-growth pricing
       taxableSS: 700000, // real ordinary income lands in the 35% bracket
       filingStatus: "MFJ",
@@ -744,6 +762,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     // instead of/before it.
     const result = routeWithdrawalsBracketFilling(120000, config, balances, {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.12,
       taxableSS: 0,
       // filingStatus intentionally omitted
@@ -763,6 +782,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     });
     const result = routeWithdrawalsBracketFilling(80000, config, balances, {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.1,
       taxableSS: 0,
     });
@@ -797,6 +817,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     const routeWith = (conversionTarget: number) =>
       routeWithdrawalsBracketFilling(60000, config, balances, {
         taxBrackets: TEST_BRACKETS,
+        ltcgBrackets: shippedTaxTables().ltcgBrackets,
         rothBracketTarget: 0.32,
         conversionTarget,
         conversionsEnabled: true,
@@ -838,6 +859,7 @@ describe("routeWithdrawalsBracketFilling", () => {
     });
     const bracketInfo = {
       taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
       rothBracketTarget: 0.32,
       conversionsEnabled: true,
       taxableSS: 40000,
@@ -1336,6 +1358,7 @@ describe("routeForMode (waterfall + Roth-bracket-overlay surfaces bracketTraditi
   const SD = 30000;
   const bracketInfo = {
     taxBrackets: TEST_BRACKETS,
+    ltcgBrackets: shippedTaxTables().ltcgBrackets,
     rothBracketTarget: 0.22,
     taxableSS: 0,
     standardDeduction: SD,

@@ -9,13 +9,18 @@ import {
   computeQcdAmounts,
   totalQcdAmount,
 } from "@/lib/calculators/engine/qcd";
-import { QCD_ANNUAL_CAP_PER_PERSON } from "@/lib/constants";
+
+/** An invented per-person limit (the real one is the year's
+ *  `qcd_annual_limit`, passed in by the engine). */
+const LIMIT = 100000;
 
 describe("computeQcdAmounts", () => {
   it("returns empty when qcdMaximize is off, regardless of IRA size", () => {
-    const result = computeQcdAmounts(false, [
-      { personId: 1, iraTraditionalBalance: 1000000 },
-    ]);
+    const result = computeQcdAmounts(
+      false,
+      [{ personId: 1, iraTraditionalBalance: 1000000 }],
+      LIMIT,
+    );
     expect(result).toEqual([]);
   });
 
@@ -23,44 +28,54 @@ describe("computeQcdAmounts", () => {
     // A person with a small (or zero) RMD can still QCD up to their full
     // IRA balance (below the annual cap) -- the RMD size never enters
     // this computation.
-    const result = computeQcdAmounts(true, [
-      { personId: 1, iraTraditionalBalance: 60000 },
-    ]);
+    const result = computeQcdAmounts(
+      true,
+      [{ personId: 1, iraTraditionalBalance: 60000 }],
+      LIMIT,
+    );
     expect(result).toEqual([{ personId: 1, qcdAmount: 60000 }]);
   });
 
   it("caps at the IRA-only Traditional balance when it's below the annual cap", () => {
-    const result = computeQcdAmounts(true, [
-      { personId: 1, iraTraditionalBalance: 15000 },
-    ]);
+    const result = computeQcdAmounts(
+      true,
+      [{ personId: 1, iraTraditionalBalance: 15000 }],
+      LIMIT,
+    );
     expect(result).toEqual([{ personId: 1, qcdAmount: 15000 }]);
   });
 
-  it(`caps at QCD_ANNUAL_CAP_PER_PERSON (${QCD_ANNUAL_CAP_PER_PERSON}) when the IRA balance exceeds it`, () => {
-    const result = computeQcdAmounts(true, [
-      { personId: 1, iraTraditionalBalance: 2000000 },
-    ]);
-    expect(result).toEqual([
-      { personId: 1, qcdAmount: QCD_ANNUAL_CAP_PER_PERSON },
-    ]);
+  it("caps at the per-person limit when the IRA balance exceeds it", () => {
+    const result = computeQcdAmounts(
+      true,
+      [{ personId: 1, iraTraditionalBalance: 2000000 }],
+      LIMIT,
+    );
+    expect(result).toEqual([{ personId: 1, qcdAmount: LIMIT }]);
   });
 
   it("excludes a person with zero IRA Traditional balance (e.g. 401k-only)", () => {
-    const result = computeQcdAmounts(true, [
-      { personId: 1, iraTraditionalBalance: 0 },
-    ]);
+    const result = computeQcdAmounts(
+      true,
+      [{ personId: 1, iraTraditionalBalance: 0 }],
+      LIMIT,
+    );
     expect(result).toEqual([]);
   });
 
   it("computes each person independently in a multi-person household", () => {
-    const result = computeQcdAmounts(true, [
-      { personId: 1, iraTraditionalBalance: 20000 },
-      { personId: 2, iraTraditionalBalance: 2000000 },
-      { personId: 3, iraTraditionalBalance: 0 },
-    ]);
+    const result = computeQcdAmounts(
+      true,
+      [
+        { personId: 1, iraTraditionalBalance: 20000 },
+        { personId: 2, iraTraditionalBalance: 2000000 },
+        { personId: 3, iraTraditionalBalance: 0 },
+      ],
+      LIMIT,
+    );
     expect(result).toEqual([
       { personId: 1, qcdAmount: 20000 },
-      { personId: 2, qcdAmount: QCD_ANNUAL_CAP_PER_PERSON },
+      { personId: 2, qcdAmount: LIMIT },
     ]);
   });
 });

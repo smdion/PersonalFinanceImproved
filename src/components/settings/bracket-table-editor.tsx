@@ -124,12 +124,6 @@ export function BracketTableEditor<TEntry>({
   sourceNote,
 }: Props<TEntry>) {
   const [copyFrom, setCopyFrom] = useState<number | null>(null);
-  // Distinguishes "the dropdown hasn't been touched yet" (fall back to the
-  // most recent year, `copyFrom` is still its `null` initial value) from
-  // "the admin explicitly picked Empty brackets" (also `null`, but must NOT
-  // fall back — the two states used to collapse into the same value, which
-  // made "Empty brackets" unreachable whenever any prior year existed).
-  const [copyFromTouched, setCopyFromTouched] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
 
   if (isLoading) return <Skeleton className="h-6 w-48" />;
@@ -140,9 +134,9 @@ export function BracketTableEditor<TEntry>({
   const yearData = rows.filter((r) => r.taxYear === year);
   // A year Ledgr ships can't be deleted (it would come back on restart).
   const yearShipped = yearData.some((r) => r.shipped);
-  const effectiveCopyFrom = copyFromTouched
-    ? copyFrom
-    : (copyFrom ?? years[0] ?? null);
+  // A new year starts from a real one when there is one: an empty
+  // placeholder would quietly price every figure at 0 until edited.
+  const effectiveCopyFrom = copyFrom ?? years[0] ?? null;
 
   const handleAddYear = async () => {
     if (years.includes(year)) return;
@@ -160,7 +154,6 @@ export function BracketTableEditor<TEntry>({
       }
     }
     setCopyFrom(null);
-    setCopyFromTouched(false);
   };
 
   const handleDeleteYear = async () => {
@@ -185,15 +178,9 @@ export function BracketTableEditor<TEntry>({
                   Copy from:
                   <select
                     value={effectiveCopyFrom ?? ""}
-                    onChange={(e) => {
-                      setCopyFrom(
-                        e.target.value ? parseInt(e.target.value) : null,
-                      );
-                      setCopyFromTouched(true);
-                    }}
+                    onChange={(e) => setCopyFrom(parseInt(e.target.value))}
                     className="ml-2 rounded border px-2 py-1 text-sm"
                   >
-                    <option value="">Empty brackets</option>
                     {years.map((yr) => (
                       <option key={yr} value={yr}>
                         {yr}

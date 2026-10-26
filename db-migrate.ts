@@ -708,6 +708,8 @@ function rowKey(keyVals: unknown[]): string {
  *    notes follow the file too (Settings doesn't edit notes; a note change
  *    alone doesn't make a row the household's).
  * 4. Missing rows are added. `tax_params` takes a higher revision.
+ * 5. A household-started year past the file's newest gets any figure it
+ *    lacks, carried forward from the newest shipped year.
  */
 function* reconcileSteps(
   dialect: RefDialect,
@@ -810,6 +812,34 @@ function* reconcileSteps(
       );
       updated++;
     }
+  }
+
+  // 5. A year the household started beyond the file's newest (an early
+  //    "+ Year") gets each figure the newest shipped year has and it lacks
+  //    — a figure added in this release — as carried forward, so a figure
+  //    the calculators require is never missing. Its own rows stand.
+  const fileYears = Object.keys(file.years).map(Number);
+  if (fileYears.length > 0) {
+    const newest = Math.max(...fileYears);
+    const newestLimits = file.years[String(newest)]!.limits;
+    const have = new Map<number, Set<string>>();
+    for (const row of yield query(
+      "SELECT tax_year, limit_type FROM contribution_limits WHERE tax_year > ?",
+      [newest],
+    )) {
+      const y = Number(row.tax_year);
+      if (!have.has(y)) have.set(y, new Set());
+      have.get(y)!.add(String(row.limit_type));
+    }
+    for (const [year, keys] of have)
+      for (const [type, l] of Object.entries(newestLimits)) {
+        if (keys.has(type)) continue;
+        yield query(
+          "INSERT INTO contribution_limits (tax_year, limit_type, value, notes, origin) VALUES (?, ?, ?, ?, 'carried')",
+          [year, type, String(l.value), l.notes ?? l.source],
+        );
+        inserted++;
+      }
   }
   return { inserted, updated };
 }

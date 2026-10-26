@@ -88,3 +88,34 @@ export function taxDataFpl(): {
     d.fpl ? [{ taxYear, amounts: d.fpl.amounts }] : [],
   );
 }
+
+/** The engine's yearly tax tables (and the QCD limit) for one year of the
+ *  shipped file, in the shapes `distributionTaxRates` takes — pinned to a year (default 2026)
+ *  so a new data release doesn't move every engine test. */
+export function shippedTaxTables(year = 2026): {
+  ltcgBrackets: Record<string, { threshold: number | null; rate: number }[]>;
+  irmaaBrackets: Record<
+    string,
+    { magiThreshold: number; annualSurcharge: number }[]
+  >;
+  fplByHousehold: Record<number, number>;
+  qcdAnnualLimit: number;
+} {
+  const d = readTaxData().years[String(year)];
+  if (!d?.ltcg || !d.irmaa || !d.fpl)
+    throw new Error(`The tax-data file has no complete ${year}`);
+  return {
+    ltcgBrackets: d.ltcg.brackets as Record<
+      string,
+      { threshold: number | null; rate: number }[]
+    >,
+    irmaaBrackets: d.irmaa.brackets as Record<
+      string,
+      { magiThreshold: number; annualSurcharge: number }[]
+    >,
+    fplByHousehold: Object.fromEntries(
+      Object.entries(d.fpl.amounts).map(([k, v]) => [Number(k), v]),
+    ),
+    qcdAnnualLimit: d.limits.qcd_annual_limit!.value,
+  };
+}

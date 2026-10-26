@@ -161,6 +161,11 @@ export const HSA_NON_MEDICAL_PENALTY_AGE = 65;
  *  is deliberately NOT modeled — see `toLtcgTaxableIncome`. */
 export const ADDITIONAL_STANDARD_DEDUCTION_AGE = 65;
 
+/** Medicare eligibility age (Social Security Act §226). IRMAA surcharges
+ *  apply from this age onward; it also backs ACA subsidy-eligibility checks
+ *  elsewhere, since gaining Medicare ends marketplace-subsidy eligibility. */
+export const MEDICARE_START_AGE = 65;
+
 /** 10% early-withdrawal penalty rate for Traditional/Roth IRA and 401k/403b
  *  (IRC §72(t)) — every account type this module gates EXCEPT HSA, which
  *  has its own, higher rate (see `HSA_NON_MEDICAL_PENALTY_RATE` immediately
@@ -330,19 +335,6 @@ export const MAX_BROKERAGE_RAMP_YEARS = 40;
 // ---------------------------------------------------------------------------
 // RMD / Qualified Charitable Distribution
 // ---------------------------------------------------------------------------
-
-/** Annual per-person cap on Qualified Charitable Distributions from an IRA
- *  (IRC §408(d)(8)). IRS-indexed annually for inflation — NOT tied to the
- *  household's own inflation assumption, which is why this is a flat
- *  constant rather than derived from `annualInflation`. $115,000 is the
- *  2026 figure (was $105,000 for 2024, $108,000 for 2025 — this constant
- *  was found stale by two years' worth of indexing; update it annually
- *  when the IRS publishes a new figure, the same discipline that applies
- *  to bracket/contribution-limit updates). Held flat across the whole
- *  projection horizon (no attempt to model future IRS indexing) — same
- *  simplification this engine already applies to IRS contribution limits
- *  via `limitGrowthRate` rather than real published figures. */
-export const QCD_ANNUAL_CAP_PER_PERSON = 115000;
 
 /** Minimum age for QCD eligibility (IRC §408(d)(8)(B)(ii): age 70½) — the
  *  engine tracks whole-year ages only, so this rounds DOWN to 70 rather

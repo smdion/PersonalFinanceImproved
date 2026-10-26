@@ -85,7 +85,7 @@ export interface TaxEstimationInput {
     /** See RouteBracketInfo.conversionTarget's docblock (withdrawal-routing.ts). */
     rothConversionTarget?: number;
     taxMultiplier?: number;
-    ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
+    ltcgBrackets: Record<string, { threshold: number | null; rate: number }[]>;
     enableRothConversions?: boolean;
     /** Household's annual standard deduction — see `RouteBracketInfo.standardDeduction`
      *  (withdrawal-routing.ts). Declared here (not just structurally passed

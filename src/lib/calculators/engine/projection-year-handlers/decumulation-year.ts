@@ -31,6 +31,7 @@ import {
   MAX_BROKERAGE_RAMP_YEARS,
   QCD_MIN_ELIGIBILITY_AGE,
   ADDITIONAL_STANDARD_DEDUCTION_AGE,
+  MEDICARE_START_AGE,
 } from "../../../constants";
 import { cloneAccountBalances, scopedBalances } from "../balance-utils";
 import {
@@ -59,7 +60,6 @@ import {
   checkIrmaa,
   checkAca,
 } from "../post-withdrawal-optimizer";
-import { MEDICARE_START_AGE } from "@/lib/config/irmaa-tables";
 import {
   distributeWithdrawals,
   applyIndividualGrowth,
@@ -319,12 +319,17 @@ export function runDecumulationYear(
         );
       }
     }
+    // The per-person QCD limit is CPI-indexed (IRC 408(d)(8)(G)): grown
+    // from the limits year like the standard deduction.
+    const { qcdAnnualLimit, taxDataYear } =
+      decumulationDefaults.distributionTaxRates;
     qcdByPerson = computeQcdAmounts(
       config.qcdMaximize,
       qcdEligiblePersonIds.map((personId) => ({
         personId,
         iraTraditionalBalance: iraTradByPerson.get(personId) ?? 0,
       })),
+      qcdAnnualLimit * taxGrowthFactor(year, taxDataYear, ctx.inflationRate),
     );
     totalQcd = totalQcdAmount(qcdByPerson);
     if (totalQcd > 0) {
@@ -492,20 +497,13 @@ export function runDecumulationYear(
     grownBaseAndSeniorDeduction != null
       ? grownBaseAndSeniorDeduction + obbbaAddon
       : grownBaseAndSeniorDeduction;
-  // Phase 2: LTCG brackets, same growth factor as ordinary
-  // brackets/standard deduction above — always returns a real, grown
-  // table (falls back to the hardcoded LTCG_BRACKETS default when the
-  // household has no `ltcg_brackets` DB row, which is the common case;
-  // see `growLtcgBrackets`'s docblock for why relying on each consumer's
-  // own internal fallback would silently skip growth for most
-  // households).
+  // Phase 2: LTCG brackets, grown from their own year.
   const grownLtcgBrackets = growLtcgBrackets(
     taxRates.ltcgBrackets,
     taxGrowthFactor(year, tableYears.ltcg, ctx.inflationRate),
   );
 
-  // Phase 3: IRMAA brackets, grown from their own year (tableYears.irmaa:
-  // the database rows' year, or IRMAA_DATA_YEAR for the built-in table).
+  // Phase 3: IRMAA brackets, grown from their own year (tableYears.irmaa).
   //
   // TWO different growth factors, not one -- this is not a copy-paste
   // duplication, it answers two different questions:
@@ -530,7 +528,7 @@ export function runDecumulationYear(
     ctx.inflationRate,
   );
   const grownIrmaaBracketsForCheck = growIrmaaBrackets(
-    taxRates.irmaaBrackets, // DB-loaded irmaa_brackets; undefined => IRMAA_BRACKETS default
+    taxRates.irmaaBrackets,
     irmaaGrowthCheck,
   );
   const grownIrmaaBracketsForCap = growIrmaaBrackets(
@@ -1249,7 +1247,7 @@ export function runDecumulationYear(
     rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
     ssIncome,
     fplGrowthFactor,
-    fplByHousehold: taxRates.fplByHousehold, // DB-resolved FPL; undefined => hardcoded fallback
+    fplByHousehold: taxRates.fplByHousehold,
   });
   const { acaSubsidyPreserved, acaMagiHeadroom } = acaResult;
   routeWarnings.push(...acaResult.warnings);

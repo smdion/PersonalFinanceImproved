@@ -13,7 +13,7 @@
  * then bump `validThrough` in the registry (tax-freshness.ts).
  */
 import {
-  taxDataBrackets,
+  shippedTaxTables,
   taxDataLimits,
   taxDataWithholding,
 } from "../helpers/tax-data";
@@ -25,28 +25,22 @@ import {
 } from "./tax-freshness";
 
 // -- Import actual values to verify they match expectations --
-import {
-  LTCG_BRACKETS,
-  getLtcgRate,
-  computeLtcgTax,
-} from "@/lib/config/tax-tables";
+import { getLtcgRate, computeLtcgTax } from "@/lib/config/tax-tables";
 import { NIIT_RATE, NIIT_THRESHOLDS, computeNiit } from "@/lib/config/niit";
 import { SS_TAX_THRESHOLDS } from "@/lib/config/ss-tax";
-import {
-  IRMAA_BRACKETS,
-  IRMAA_DATA_YEAR,
-  getIrmaaCost,
-  getNextIrmaaCliff,
-} from "@/lib/config/irmaa-tables";
-import {
-  FPL_BY_HOUSEHOLD,
-  FPL_COVERAGE_YEAR,
-  getAcaSubsidyCliff,
-} from "@/lib/config/aca-tables";
+import { getIrmaaCost, getNextIrmaaCliff } from "@/lib/config/irmaa-tables";
+import { getAcaSubsidyCliff } from "@/lib/config/aca-tables";
 import {
   UNIFORM_LIFETIME_TABLE,
   getRmdStartAge,
 } from "@/lib/config/rmd-tables";
+
+/** The shipped tables these values come from (tax-data/us-federal.json). */
+const {
+  ltcgBrackets: LTCG_BRACKETS,
+  irmaaBrackets: IRMAA_BRACKETS,
+  fplByHousehold: FPL_BY_HOUSEHOLD,
+} = shippedTaxTables(2026);
 
 // ============================================================================
 // Part 1: Freshness checks — do any parameters need updating?
@@ -64,14 +58,13 @@ describe("Tax parameter freshness", () => {
   it("registry covers all parameter categories", () => {
     const names = TAX_PARAMETER_REGISTRY.map((e) => e.name);
     // Ensure we haven't forgotten a category. The
-    // seed-brackets/limits/deductions/LTCG entries + the LTCG code
-    // fallback are collapsed into one combined entry — pnpm check:tax-params verifies
-    // each of those individually now, so this registry only needs one.
+    // brackets/limits/deductions/LTCG entries are collapsed into one —
+    // pnpm check:tax-params and tax-data-file.test.ts check each of those
+    // individually, so this registry only needs one.
     expect(names).toContain(
-      "Seed reference data (brackets, limits, deductions, LTCG) + LTCG fallback",
+      "Tax-data file (brackets, limits, deductions, LTCG)",
     );
     expect(names).toContain("IRMAA brackets (seed)");
-    expect(names).toContain("IRMAA bracket fallback (code)");
     expect(names).toContain("ACA Federal Poverty Level");
     expect(names).toContain("SS taxation thresholds");
     expect(names).toContain("RMD Uniform Lifetime Table");
@@ -265,15 +258,15 @@ describe("LTCG bracket values", () => {
   });
 
   it("getLtcgRate returns 0% for income below first threshold (MFJ)", () => {
-    expect(getLtcgRate(50000, "MFJ")).toBe(0);
+    expect(getLtcgRate(50000, "MFJ", LTCG_BRACKETS)).toBe(0);
   });
 
   it("getLtcgRate returns 15% for income between thresholds (MFJ)", () => {
-    expect(getLtcgRate(200000, "MFJ")).toBe(0.15);
+    expect(getLtcgRate(200000, "MFJ", LTCG_BRACKETS)).toBe(0.15);
   });
 
   it("getLtcgRate returns 20% for income above all thresholds (MFJ)", () => {
-    expect(getLtcgRate(700000, "MFJ")).toBe(0.2);
+    expect(getLtcgRate(700000, "MFJ", LTCG_BRACKETS)).toBe(0.2);
   });
 });
 
@@ -281,41 +274,41 @@ describe("LTCG progressive tax (computeLtcgTax)", () => {
   // MFJ 2026: 0% up to $98,900; 15% up to $613,700; 20% above
   it("all gains in 0% bracket → $0 tax", () => {
     // $80k ordinary + $10k gains = $90k total, all within 0% bracket ($98,900)
-    expect(computeLtcgTax(80000, 10000, "MFJ")).toBe(0);
+    expect(computeLtcgTax(80000, 10000, "MFJ", LTCG_BRACKETS)).toBe(0);
   });
 
   it("gains spanning 0% and 15% brackets", () => {
     // $80k ordinary + $30k gains: $18,900 at 0% + $11,100 at 15% = $1,665
-    expect(computeLtcgTax(80000, 30000, "MFJ")).toBe(1665);
+    expect(computeLtcgTax(80000, 30000, "MFJ", LTCG_BRACKETS)).toBe(1665);
   });
 
   it("all gains in 15% bracket", () => {
     // $150k ordinary + $50k gains: all in 15% bracket = $7,500
-    expect(computeLtcgTax(150000, 50000, "MFJ")).toBe(7500);
+    expect(computeLtcgTax(150000, 50000, "MFJ", LTCG_BRACKETS)).toBe(7500);
   });
 
   it("gains spanning 15% and 20% brackets", () => {
     // $600k ordinary + $30k gains: $13,700 at 15% + $16,300 at 20% = $2,055 + $3,260 = $5,315
-    expect(computeLtcgTax(600000, 30000, "MFJ")).toBe(5315);
+    expect(computeLtcgTax(600000, 30000, "MFJ", LTCG_BRACKETS)).toBe(5315);
   });
 
   it("all gains in 20% bracket", () => {
     // $700k ordinary + $50k gains: all at 20% = $10,000
-    expect(computeLtcgTax(700000, 50000, "MFJ")).toBe(10000);
+    expect(computeLtcgTax(700000, 50000, "MFJ", LTCG_BRACKETS)).toBe(10000);
   });
 
   it("zero gains → $0 tax", () => {
-    expect(computeLtcgTax(100000, 0, "MFJ")).toBe(0);
+    expect(computeLtcgTax(100000, 0, "MFJ", LTCG_BRACKETS)).toBe(0);
   });
 
   it("negative gains → $0 tax", () => {
-    expect(computeLtcgTax(100000, -5000, "MFJ")).toBe(0);
+    expect(computeLtcgTax(100000, -5000, "MFJ", LTCG_BRACKETS)).toBe(0);
   });
 
   it("Single: gains spanning brackets", () => {
     // Single 2026: 0% up to $49,450; 15% up to $545,500
     // $40k ordinary + $20k gains: $9,450 at 0% + $10,550 at 15% = $1,582.50
-    expect(computeLtcgTax(40000, 20000, "Single")).toBe(1582.5);
+    expect(computeLtcgTax(40000, 20000, "Single", LTCG_BRACKETS)).toBe(1582.5);
   });
 });
 
@@ -392,67 +385,19 @@ describe("IRMAA bracket values", () => {
   });
 
   it("getIrmaaCost returns 0 below first threshold", () => {
-    expect(getIrmaaCost(100000, "MFJ")).toBe(0);
+    expect(getIrmaaCost(100000, "MFJ", IRMAA_BRACKETS)).toBe(0);
   });
 
   it("getIrmaaCost returns tier 1 surcharge just above threshold", () => {
-    expect(getIrmaaCost(207000, "MFJ")).toBe(1056);
+    expect(getIrmaaCost(207000, "MFJ", IRMAA_BRACKETS)).toBe(1056);
   });
 
   it("getNextIrmaaCliff returns first threshold when below all", () => {
-    expect(getNextIrmaaCliff(100000, "MFJ")).toBe(206000);
+    expect(getNextIrmaaCliff(100000, "MFJ", IRMAA_BRACKETS)).toBe(206000);
   });
 
   it("getNextIrmaaCliff returns null when above all tiers", () => {
-    expect(getNextIrmaaCliff(800000, "MFJ")).toBeNull();
-  });
-
-  // IRMAA drift guard: IRMAA_DATA_YEAR
-  // (bracket-growth.ts's growIrmaaBrackets anchor) is a hand-maintained
-  // constant in a DIFFERENT file from this registry's "IRMAA bracket
-  // fallback (code)" entry -- unlike taxDataYear, which
-  // arrives from the DB alongside its table and physically can't drift.
-  // Without this assertion, refreshing IRMAA_BRACKETS to a new tax year
-  // and bumping this registry's validThrough (the normal update
-  // procedure) would silently leave IRMAA_DATA_YEAR stale -- over-growing
-  // every IRMAA threshold by a year, every projected year, for every
-  // household with enableIrmaaAwareness on, with no test failure anywhere
-  // else to catch it.
-  it("IRMAA_DATA_YEAR matches the registry's own validThrough for this table -- bump both together", () => {
-    const entry = TAX_PARAMETER_REGISTRY.find(
-      (e) => e.name === "IRMAA bracket fallback (code)",
-    );
-    expect(entry).toBeDefined();
-    expect(IRMAA_DATA_YEAR).toBe(entry!.validThrough);
-  });
-
-  // irmaa_brackets is now READ by the engine payload
-  // (build-engine-payload.ts -> distributionTaxRates.irmaaBrackets ->
-  // decumulation-year.ts's growIrmaaBrackets). The table was previously
-  // live but inert. This asserts the seed rows for the latest seeded year
-  // are byte-identical to the IRMAA_BRACKETS hardcoded fallback, so the
-  // wiring is a pure no-op for any household on seeded data (no
-  // engine-snapshot / golden movement). If a future seed edit diverges
-  // the seed from the fallback, THIS test fails -- update both together,
-  // exactly like the LTCG fallback.
-  it("seed irmaa_brackets (latest year) == IRMAA_BRACKETS fallback", () => {
-    const seedByYear = new Map<
-      number,
-      Partial<Record<"MFJ" | "Single" | "HOH", unknown>>
-    >();
-    for (const r of taxDataBrackets("irmaa")) {
-      if (!seedByYear.has(r.taxYear)) seedByYear.set(r.taxYear, {});
-      seedByYear.get(r.taxYear)![r.filingStatus as "MFJ" | "Single" | "HOH"] =
-        r.brackets;
-    }
-    expect(seedByYear.size).toBeGreaterThan(0);
-    const latestYear = Math.max(...seedByYear.keys());
-    const seedLatest = seedByYear.get(latestYear)!;
-    for (const status of ["MFJ", "Single", "HOH"] as const) {
-      expect(seedLatest[status], `seed missing irmaa ${status}`).toEqual(
-        IRMAA_BRACKETS[status],
-      );
-    }
+    expect(getNextIrmaaCliff(800000, "MFJ", IRMAA_BRACKETS)).toBeNull();
   });
 });
 
@@ -475,22 +420,7 @@ describe("ACA FPL values", () => {
   });
 
   it("400% FPL cliff for 2-person household = $84,600", () => {
-    expect(getAcaSubsidyCliff(2)).toBe(21150 * 4);
-  });
-
-  // Phase 4 drift guard (2026-08-31), same pattern as IRMAA_DATA_YEAR's
-  // guard above: FPL_COVERAGE_YEAR (bracket-growth.ts's growth anchor,
-  // via fplGrowthFactor) is a hand-maintained constant in a different
-  // file from this registry's own validThrough. Without this assertion,
-  // refreshing FPL_BY_HOUSEHOLD and bumping validThrough (the normal
-  // update procedure) could silently leave FPL_COVERAGE_YEAR stale,
-  // over- or under-growing the ACA cliff for every ACA-aware household.
-  it("FPL_COVERAGE_YEAR matches the registry's own validThrough for this table -- bump both together", () => {
-    const entry = TAX_PARAMETER_REGISTRY.find(
-      (e) => e.name === "ACA Federal Poverty Level",
-    );
-    expect(entry).toBeDefined();
-    expect(FPL_COVERAGE_YEAR).toBe(entry!.validThrough);
+    expect(getAcaSubsidyCliff(2, FPL_BY_HOUSEHOLD)).toBe(21150 * 4);
   });
 });
 

@@ -1731,14 +1731,14 @@ exports[`engine snapshot parity > fixture 31: RMD + Roth conversion + IRMAA — 
     },
     {
       "category": "401k",
-      "depletionAge": 85,
-      "depletionYear": 2038,
+      "depletionAge": 86,
+      "depletionYear": 2039,
       "subType": "traditional",
     },
   ],
   "finalYear": {
     "age": 94,
-    "allAccountsBalance": 3693540.41,
+    "allAccountsBalance": 3709384.99,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1747,7 +1747,7 @@ exports[`engine snapshot parity > fixture 31: RMD + Roth conversion + IRMAA — 
   "retirementDepletionYear": null,
   "retirementYear": {
     "age": 72,
-    "allAccountsBalance": 1527858.35,
+    "allAccountsBalance": 1529070.66,
     "projectedExpenses": 70000,
     "totalWithdrawal": 28000,
   },
@@ -1755,7 +1755,7 @@ exports[`engine snapshot parity > fixture 31: RMD + Roth conversion + IRMAA — 
   "totalYears": 23,
   "warningCount": 1,
   "year0": {
-    "allAccountsBalance": 1527858.35,
+    "allAccountsBalance": 1529070.66,
     "phase": "decumulation",
     "projectedExpenses": 70000,
     "totalWithdrawal": 28000,
@@ -2944,14 +2944,14 @@ exports[`engine snapshot parity > fixture 54: IRMAA awareness enabled, income ne
     },
     {
       "category": "401k",
-      "depletionAge": 71,
-      "depletionYear": 2030,
+      "depletionAge": 72,
+      "depletionYear": 2031,
       "subType": "traditional",
     },
   ],
   "finalYear": {
     "age": 89,
-    "allAccountsBalance": 1888900.93,
+    "allAccountsBalance": 1915295.39,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2960,7 +2960,7 @@ exports[`engine snapshot parity > fixture 54: IRMAA awareness enabled, income ne
   "retirementDepletionYear": null,
   "retirementYear": {
     "age": 66,
-    "allAccountsBalance": 1349793.23,
+    "allAccountsBalance": 1351005.54,
     "projectedExpenses": 90000,
     "totalWithdrawal": 46000,
   },
@@ -2968,7 +2968,7 @@ exports[`engine snapshot parity > fixture 54: IRMAA awareness enabled, income ne
   "totalYears": 24,
   "warningCount": 1,
   "year0": {
-    "allAccountsBalance": 1349793.23,
+    "allAccountsBalance": 1351005.54,
     "phase": "decumulation",
     "projectedExpenses": 90000,
     "totalWithdrawal": 46000,
@@ -3579,14 +3579,14 @@ exports[`engine snapshot parity > fixture 65: qcdMaximize fully covers a modest 
     },
     {
       "category": "ira",
-      "depletionAge": 83,
-      "depletionYear": 2033,
+      "depletionAge": 84,
+      "depletionYear": 2034,
       "subType": "traditional",
     },
   ],
   "finalYear": {
     "age": 84,
-    "allAccountsBalance": 2299622.5,
+    "allAccountsBalance": 2311297.52,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -3595,7 +3595,7 @@ exports[`engine snapshot parity > fixture 65: qcdMaximize fully covers a modest 
   "retirementDepletionYear": null,
   "retirementYear": {
     "age": 75,
-    "allAccountsBalance": 2123267.02,
+    "allAccountsBalance": 2127547.02,
     "projectedExpenses": 40000,
     "totalWithdrawal": 10638.3,
   },
@@ -3603,7 +3603,7 @@ exports[`engine snapshot parity > fixture 65: qcdMaximize fully covers a modest 
   "totalYears": 10,
   "warningCount": 1,
   "year0": {
-    "allAccountsBalance": 2123267.02,
+    "allAccountsBalance": 2127547.02,
     "phase": "decumulation",
     "projectedExpenses": 40000,
     "totalWithdrawal": 10638.3,
@@ -3647,7 +3647,7 @@ exports[`engine snapshot parity > fixture 66: qcdMaximize capped below a large R
   ],
   "finalYear": {
     "age": 77,
-    "allAccountsBalance": 6866927.14,
+    "allAccountsBalance": 6877392.31,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -3656,18 +3656,18 @@ exports[`engine snapshot parity > fixture 66: qcdMaximize capped below a large R
   "retirementDepletionYear": null,
   "retirementYear": {
     "age": 75,
-    "allAccountsBalance": 6305964.87,
+    "allAccountsBalance": 6309217.67,
     "projectedExpenses": 40000,
-    "totalWithdrawal": 139540.74,
+    "totalWithdrawal": 143540.74,
   },
   "sustainableWithdrawal": 10638.3,
   "totalYears": 3,
   "warningCount": 1,
   "year0": {
-    "allAccountsBalance": 6305964.87,
+    "allAccountsBalance": 6309217.67,
     "phase": "decumulation",
     "projectedExpenses": 40000,
-    "totalWithdrawal": 139540.74,
+    "totalWithdrawal": 143540.74,
   },
 }
 `;
@@ -3719,7 +3719,7 @@ exports[`engine snapshot parity > fixture 67: same as fixture 66 but rmdExcessHa
     "age": 75,
     "allAccountsBalance": 6201141.41,
     "projectedExpenses": 40000,
-    "totalWithdrawal": 139540.74,
+    "totalWithdrawal": 143540.74,
   },
   "sustainableWithdrawal": 10638.3,
   "totalYears": 3,
@@ -3728,7 +3728,7 @@ exports[`engine snapshot parity > fixture 67: same as fixture 66 but rmdExcessHa
     "allAccountsBalance": 6201141.41,
     "phase": "decumulation",
     "projectedExpenses": 40000,
-    "totalWithdrawal": 139540.74,
+    "totalWithdrawal": 143540.74,
   },
 }
 `;

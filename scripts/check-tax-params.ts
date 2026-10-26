@@ -1,8 +1,7 @@
 /**
  * Tax Parameter Staleness Checker
  *
- * Validates that seed data and code fallbacks are current for the active tax
- * year. Runs as a CI check and on a monthly schedule (Oct-Jan) when
+ * Validates that the tax-data file is current for the active tax year. Runs as a CI check and on a monthly schedule (Oct-Jan) when
  * IRS/CMS/HHS publishes new data.
  *
  * Checks:
@@ -12,13 +11,6 @@
  *   1b. tax_params vintage rows don't claim a year the actual value
  *       tables haven't been seeded for — catches "bumped tax_params to 2027
  *       but forgot to add the 2027 brackets."
- *   2. Code fallback constants (irmaa-tables.ts's IRMAA_DATA_YEAR,
- *      aca-tables.ts's FPL_COVERAGE_YEAR, tax-tables.ts's LTCG_BRACKETS)
- *      are in sync with the latest seed data — read via real `import`s of
- *      the config modules, not comment-text scraping (an earlier
- *      comment-regex approach silently returned "?" for aca-tables.ts, and
- *      a stale/reworded comment could drift from the real exported value
- *      with nothing to catch it).
  *
  * See TAX-PARAMETER-RUNBOOK.md for the full annual update procedure.
  *
@@ -32,9 +24,6 @@ import {
   taxDataStatus,
   taxYearDeadline,
 } from "../src/lib/pure/tax-data-status";
-import { IRMAA_DATA_YEAR } from "../src/lib/config/irmaa-tables";
-import { FPL_COVERAGE_YEAR } from "../src/lib/config/aca-tables";
-import { LTCG_BRACKETS } from "../src/lib/config/tax-tables";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
@@ -132,66 +121,6 @@ function checkTaxParamsVintage(sql: string): VintageCheck[] {
 }
 
 // ---------------------------------------------------------------------------
-// Check 2: code fallbacks are in sync with the latest seed data — via real
-// imports of the config modules, not comment-text scraping.
-// ---------------------------------------------------------------------------
-
-interface FallbackCheck {
-  file: string;
-  label: string;
-  ok: boolean;
-  detail: string;
-}
-
-function checkCodeFallbacks(sql: string): FallbackCheck[] {
-  const results: FallbackCheck[] = [];
-
-  // irmaa-tables.ts: IRMAA_DATA_YEAR must equal the seed's latest
-  // irmaa_brackets year.
-  const irmaaSeedMax = Math.max(0, ...seedYearsForTable(sql, "irmaa_brackets"));
-  results.push({
-    file: "src/lib/config/irmaa-tables.ts",
-    label: "IRMAA_DATA_YEAR",
-    ok: IRMAA_DATA_YEAR === irmaaSeedMax,
-    detail: `code=${IRMAA_DATA_YEAR}, seed max=${irmaaSeedMax}`,
-  });
-
-  // aca-tables.ts: FPL_COVERAGE_YEAR must equal the seed's latest
-  // fpl_by_household year.
-  const fplSeedMax = Math.max(0, ...seedYearsForTable(sql, "fpl_by_household"));
-  results.push({
-    file: "src/lib/config/aca-tables.ts",
-    label: "FPL_COVERAGE_YEAR",
-    ok: FPL_COVERAGE_YEAR === fplSeedMax,
-    detail: `code=${FPL_COVERAGE_YEAR}, seed max=${fplSeedMax}`,
-  });
-
-  // tax-tables.ts: LTCG_BRACKETS should match the seed's latest ltcg_brackets
-  // year's values exactly (a value comparison, not a year comparison — more
-  // precise, and doesn't depend on a parseable header comment).
-  const ltcgYears = seedYearsForTable(sql, "ltcg_brackets");
-  const ltcgSeedMax = ltcgYears.length > 0 ? Math.max(...ltcgYears) : 0;
-  const seedLtcgLatest: Record<string, unknown> =
-    (JSON.parse(sql) as TaxDataFileJson).years[String(ltcgSeedMax)]?.ltcg
-      ?.brackets ?? {};
-  const ltcgMatches =
-    JSON.stringify(LTCG_BRACKETS.MFJ) === JSON.stringify(seedLtcgLatest.MFJ) &&
-    JSON.stringify(LTCG_BRACKETS.Single) ===
-      JSON.stringify(seedLtcgLatest.Single) &&
-    JSON.stringify(LTCG_BRACKETS.HOH) === JSON.stringify(seedLtcgLatest.HOH);
-  results.push({
-    file: "src/lib/config/tax-tables.ts",
-    label: "LTCG_BRACKETS",
-    ok: ltcgMatches,
-    detail: ltcgMatches
-      ? `matches seed ${ltcgSeedMax}`
-      : `does not match seed ${ltcgSeedMax} values`,
-  });
-
-  return results;
-}
-
-// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -244,27 +173,11 @@ function run() {
     }
   }
 
-  // --- Check 2: Code fallbacks ---
-  const fallbackChecks = checkCodeFallbacks(sql);
-  let fallbackErrors = 0;
-
-  console.log("\n=== Code Fallback Sync ===\n");
-
-  for (const check of fallbackChecks) {
-    if (check.ok) {
-      console.log(`  ✓ ${check.file}: ${check.label} — ${check.detail}`);
-    } else {
-      console.log(`  ✗ ${check.file}: ${check.label} — ${check.detail}`);
-      fallbackErrors++;
-    }
-  }
-
   // --- Summary ---
-  const totalErrors = seedErrors + vintageChecks.length + fallbackErrors;
+  const totalErrors = seedErrors + vintageChecks.length;
   console.log(`\n--- Summary ---`);
   console.log(`Seed:      ${seedErrors} error(s), ${seedWarnings} not-yet-due`);
   console.log(`Vintage:   ${vintageChecks.length} error(s)`);
-  console.log(`Fallbacks: ${fallbackErrors} error(s)`);
 
   if (totalErrors > 0) {
     console.log(

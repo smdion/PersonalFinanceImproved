@@ -4,9 +4,7 @@
  * brackets. (ACA's 400%-FPL cliff is inflation-indexed too and gets the
  * same fix, but grown at its own single call site —
  * `checkAca`, `post-withdrawal-optimizer.ts` — via a `fplGrowthFactor`
- * multiplier rather than a `grow*` helper here, since there's no
- * `fpl_by_household`-style DB override table to grow the way
- * `growLtcgBrackets`/`growIrmaaBrackets` do.) An "outside the box" review
+ * multiplier rather than a `grow*` helper here.) An "outside the box" review
  * of engine-wide tax assumptions found that every one of these is resolved
  * once from a
  * single DB row / hardcoded config and held flat in NOMINAL dollars for
@@ -35,13 +33,8 @@
  * higher).
  */
 import type { WithholdingBracket } from "./tax-estimation";
-import { LTCG_BRACKETS, LTCG_DATA_YEAR } from "../../config/tax-tables";
-import {
-  IRMAA_BRACKETS,
-  IRMAA_DATA_YEAR,
-  type IrmaaBracket,
-} from "../../config/irmaa-tables";
-import { FPL_COVERAGE_YEAR } from "../../config/aca-tables";
+import type { LtcgBracketTable } from "../../config/tax-tables";
+import type { IrmaaBracketTable } from "../../config/irmaa-tables";
 
 /**
  * The exponent every grow* helper below expects: years between the
@@ -124,28 +117,16 @@ export function growWithholdingBrackets(
  * and `rate` alone every call, so scaling `threshold` (leaving `rate`
  * alone) is sufficient and self-consistent on its own.
  *
- * `threshold: null` (the DB/API convention for the top/Infinity bracket)
- * stays `null` — do not multiply it (`null * k` coerces to `0` in JS,
- * silently turning the top bracket into a $0 threshold). A literal
- * `Infinity` threshold (this module's own fallback default,
- * `LTCG_BRACKETS`) is safe to multiply as-is: `Infinity * k === Infinity`
- * for any finite positive `k`.
- *
- * Falls back to the hardcoded `LTCG_BRACKETS` default (grown) when
- * `brackets` is undefined — most households have no `ltcg_brackets` DB
- * row (verified this session: the table was empty), so relying on each
- * consumer's own internal "fall back to `LTCG_BRACKETS`" behavior would
- * silently skip growth entirely for nearly everyone; grow the fallback
- * here instead so a caller always gets a real, grown table either way.
+ * `threshold: null` (the stored open top bracket) stays `null` — do not
+ * multiply it (`null * k` coerces to `0` in JS, silently turning the top
+ * bracket into a $0 threshold).
  */
 export function growLtcgBrackets(
-  brackets:
-    Record<string, { threshold: number | null; rate: number }[]> | undefined,
+  brackets: LtcgBracketTable,
   growthFactor: number,
-): Record<string, { threshold: number | null; rate: number }[]> {
-  const source = brackets ?? LTCG_BRACKETS;
-  const grown: Record<string, { threshold: number | null; rate: number }[]> =
-    {};
+): LtcgBracketTable {
+  const source = brackets;
+  const grown: LtcgBracketTable = {};
   for (const [filingStatus, entries] of Object.entries(source)) {
     grown[filingStatus] = entries.map((b) => ({
       threshold: b.threshold == null ? null : b.threshold * growthFactor,
@@ -182,24 +163,15 @@ export function growLtcgBrackets(
  *   today — is a known, deliberate conservatism, not an attempt at
  *   precision.)
  *
- * No `null`/`Infinity` top-bracket special-casing needed (unlike LTCG) —
- * `IrmaaBracket.magiThreshold` is always a real finite number by
- * construction (irmaa-tables.ts has no open-ended top tier the way
- * `LTCG_BRACKETS`/DB `ltcg_brackets` do).
- *
- * Falls back to the hardcoded `IRMAA_BRACKETS` default (grown) when
- * `brackets` is undefined — same reasoning as `growLtcgBrackets`: the
- * `irmaa_brackets` DB table exists (schema-pg.ts) but nothing in the
- * engine payload reads it yet, so every household hits this fallback
- * today. Growing the fallback here means growth isn't silently
- * bypassed for everyone until that DB wiring is added later.
+ * No `null` top-bracket special-casing needed (unlike LTCG) — every IRMAA
+ * tier has a finite `magiThreshold`.
  */
 export function growIrmaaBrackets(
-  brackets: Record<string, IrmaaBracket[]> | undefined,
+  brackets: IrmaaBracketTable,
   growthFactor: number,
-): Record<string, IrmaaBracket[]> {
-  const source = brackets ?? IRMAA_BRACKETS;
-  const grown: Record<string, IrmaaBracket[]> = {};
+): IrmaaBracketTable {
+  const source = brackets;
+  const grown: IrmaaBracketTable = {};
   for (const [filingStatus, entries] of Object.entries(source)) {
     grown[filingStatus] = entries.map((b) => ({
       magiThreshold: b.magiThreshold * growthFactor,
@@ -210,46 +182,32 @@ export function growIrmaaBrackets(
 }
 
 /**
- * The year each yearly tax table grows from — paired with the table, so a
- * table and its year can't drift: the database rows' own year when the
- * database supplied the table, else the built-in table's year
- * (`LTCG_DATA_YEAR`, `IRMAA_DATA_YEAR`, `FPL_COVERAGE_YEAR`). The standard
- * deduction grows from `taxDataYear` (the limits year).
+ * The year each yearly tax table grows from — its own year when the caller
+ * gives one, else the limits year (`taxDataYear`). A caller that threads no
+ * years at all (`taxDataYear` undefined) means "treat the tax data as
+ * current": no growth, for every table alike.
  */
 export function taxTableYears(taxRates: {
   taxDataYear?: number;
-  taxBrackets?: unknown;
   taxBracketsYear?: number;
-  ltcgBrackets?: unknown;
   ltcgBracketsYear?: number;
-  irmaaBrackets?: unknown;
   irmaaBracketsYear?: number;
-  fplByHousehold?: unknown;
   fplYear?: number;
 }): {
   standardDeduction: number | undefined;
   brackets: number | undefined;
   ltcg: number | undefined;
-  irmaa: number;
-  fpl: number;
+  irmaa: number | undefined;
+  fpl: number | undefined;
 } {
+  const y = taxRates.taxDataYear;
+  const own = (year: number | undefined) =>
+    y === undefined ? undefined : (year ?? y);
   return {
-    standardDeduction: taxRates.taxDataYear,
-    brackets: taxRates.taxBracketsYear ?? taxRates.taxDataYear,
-    // A database table with no year given grows from the limits year. A
-    // caller that threads no tax years at all (`taxDataYear` undefined)
-    // means "treat the tax data as current" — no growth, as documented on
-    // `taxDataYear`.
-    ltcg: taxRates.ltcgBrackets
-      ? (taxRates.ltcgBracketsYear ?? taxRates.taxDataYear)
-      : taxRates.taxDataYear === undefined
-        ? undefined
-        : LTCG_DATA_YEAR,
-    irmaa: taxRates.irmaaBrackets
-      ? (taxRates.irmaaBracketsYear ?? IRMAA_DATA_YEAR)
-      : IRMAA_DATA_YEAR,
-    fpl: taxRates.fplByHousehold
-      ? (taxRates.fplYear ?? FPL_COVERAGE_YEAR)
-      : FPL_COVERAGE_YEAR,
+    standardDeduction: y,
+    brackets: own(taxRates.taxBracketsYear),
+    ltcg: own(taxRates.ltcgBracketsYear),
+    irmaa: own(taxRates.irmaaBracketsYear),
+    fpl: own(taxRates.fplYear),
   };
 }

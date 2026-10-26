@@ -133,8 +133,8 @@ export interface ResolvedTaxParams {
   /**
    * `tax_brackets` for `resolvedYear`, keyed
    * `[filingStatus][w4Checkbox]` -> ordered bracket list.
-   * `undefined` when the resolved year has no rows (caller falls back to
-   * its hardcoded default, same as today).
+   * `undefined` when no year has rows (the projection payload then stops
+   * with a message; nothing stands in).
    */
   withholdingBrackets:
     Record<string, Record<"true" | "false", TaxBracketEntry[]>> | undefined;
@@ -169,8 +169,8 @@ function toNum(v: number | string): number {
  *  take down every household's projections and the paycheck router with a
  *  throw, even though the previous year has complete data. The other four
  *  slices (`withholdingBrackets`/`ltcgByStatus`/`irmaaByStatus`/
- *  `fplByHousehold`) are `| undefined` by design and degrade gracefully —
- *  they don't need to gate year selection. */
+ *  `fplByHousehold`) resolve per section (`sectionFallback`), so they
+ *  don't need to gate year selection. */
 function candidateYears(rows: TaxParamsRowSets): number[] {
   return [...new Set(rows.contributionLimits.map((r) => r.taxYear))].sort(
     (a, b) => a - b,

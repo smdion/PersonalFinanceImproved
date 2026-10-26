@@ -13,6 +13,7 @@ import {
 import { calculateProjection } from "@/lib/calculators/engine";
 import type { ProjectionInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 const AS_OF = new Date("2025-03-07");
 
@@ -45,6 +46,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -441,6 +443,7 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -643,6 +646,7 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -854,6 +858,7 @@ describe("findCoastFireAge — net/gross unit fix for the no-stated-need fallbac
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,

@@ -1,6 +1,6 @@
 {
   "formatVersion": 1,
-  "dataVersion": 1,
+  "dataVersion": 2,
   "years": {
     "2025": {
       "revision": 1,
@@ -165,6 +165,11 @@
         "obbba_senior_deduction_sunset_year": {
           "value": 2028,
           "source": "Last tax year OBBBA senior deduction is authorized \u2014 engine gates on this, not a hardcoded literal"
+        },
+        "qcd_annual_limit": {
+          "value": 108000,
+          "source": "IRS Notice 2024-80",
+          "notes": "Qualified charitable distributions from IRAs, per person (IRC 408(d)(8)(G))"
         }
       },
       "withholding": {
@@ -905,6 +910,11 @@
         "obbba_senior_deduction_sunset_year": {
           "value": 2028,
           "source": "Last tax year OBBBA senior deduction is authorized \u2014 engine gates on this, not a hardcoded literal"
+        },
+        "qcd_annual_limit": {
+          "value": 111000,
+          "source": "IRS Notice 2025-67",
+          "notes": "Qualified charitable distributions from IRAs, per person (IRC 408(d)(8)(G))"
         }
       },
       "withholding": {

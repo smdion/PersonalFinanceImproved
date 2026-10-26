@@ -169,6 +169,37 @@ describe("reconcile", () => {
     });
   });
 
+  it("a year started early gets a figure added in this release, carried forward", () => {
+    // "+ Year 2027" before a release that adds a new required figure: 2027
+    // has the household's own rows but not the new one.
+    const db = openTestSqlite();
+    db.prepare(
+      "INSERT INTO contribution_limits (tax_year, limit_type, value, origin) VALUES (2027, 'ira_limit', '8000', 'user')",
+    ).run();
+    reconcile(db);
+    expect(limit(db, 2027, "qcd_annual_limit")).toMatchObject({
+      origin: "carried",
+      confirmed_at: null,
+    });
+    expect(Number(limit(db, 2027, "qcd_annual_limit").value)).toBe(111000);
+    // Its own rows stand; running again adds nothing more.
+    expect(limit(db, 2027, "ira_limit")).toMatchObject({
+      value: "8000",
+      origin: "user",
+    });
+    const count = () =>
+      (
+        db
+          .prepare(
+            "SELECT COUNT(*) AS n FROM contribution_limits WHERE tax_year = 2027",
+          )
+          .get() as { n: number }
+      ).n;
+    const before = count();
+    reconcile(db);
+    expect(count()).toBe(before);
+  });
+
   it("a newer file updates shipped rows and tax_params; an older one never downgrades", () => {
     const db = openTestSqlite();
     const file = readTaxData();

@@ -30,6 +30,7 @@ import {
   makeMCInput,
   makeStandardInput,
 } from "../benchmarks/benchmark-helpers";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 const MFJ_BRACKETS = [
   { threshold: 23850, baseWithholding: 0, rate: 0.1 },
@@ -97,6 +98,7 @@ function household(): ProjectionInput {
       ...base.decumulationDefaults,
       withdrawalRoutingMode: "bracket_filling",
       distributionTaxRates: {
+        ...shippedTaxTables(),
         ...base.decumulationDefaults.distributionTaxRates,
         rothBracketTarget: 0.12,
         taxBrackets: MFJ_BRACKETS,

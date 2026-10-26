@@ -658,6 +658,7 @@ describe("savings edge cases", () => {
 import { calculateProjection } from "@/lib/calculators/engine/projection";
 import type { ProjectionInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 const EMPTY_ACCOUNT_BALANCES = {
   "401k": { structure: "roth_traditional" as const, traditional: 0, roth: 0 },
@@ -692,6 +693,7 @@ const DEFAULT_DECUMULATION = {
     ira: "traditional" as const,
   },
   distributionTaxRates: {
+    ...shippedTaxTables(),
     traditionalFallbackRate: 0.22,
     roth: 0,
     hsa: 0,
@@ -713,6 +715,7 @@ function makeBaseProjection(
     decumulationDefaults: {
       ...DEFAULT_DECUMULATION,
       distributionTaxRates: {
+        ...shippedTaxTables(),
         traditionalFallbackRate: 0,
         roth: 0,
         hsa: 0,
@@ -1041,6 +1044,7 @@ describe("retirement projection edge cases", () => {
           withdrawalRoutingMode: "percentage",
           withdrawalSplits: undefined as never,
           distributionTaxRates: {
+            ...shippedTaxTables(),
             traditionalFallbackRate: 0,
             roth: 0,
             hsa: 0,

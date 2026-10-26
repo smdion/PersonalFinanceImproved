@@ -156,14 +156,9 @@ export function TaxBracketsSettings({ year }: { year: number }) {
                   Copy from:
                   <select
                     value={effectiveCopyFrom ?? ""}
-                    onChange={(e) =>
-                      setCopyFrom(
-                        e.target.value ? parseInt(e.target.value) : null,
-                      )
-                    }
+                    onChange={(e) => setCopyFrom(parseInt(e.target.value))}
                     className="ml-2 rounded border px-2 py-1 text-sm"
                   >
-                    <option value="">Empty brackets</option>
                     {years.map((yr) => (
                       <option key={yr} value={yr}>
                         {yr}

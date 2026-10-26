@@ -1629,8 +1629,8 @@ export const retirementSettings = pgTable(
     ).references(() => performanceAccounts.id, { onDelete: "set null" }),
     /** Automatically apply the largest Qualified Charitable
      *  Distribution the household's RMD situation allows each year
-     *  (capped by QCD_ANNUAL_CAP_PER_PERSON and the person's IRA-only
-     *  Traditional balance — see constants.ts for the approximation this uses).
+     *  (capped by the year's qcd_annual_limit and the person's IRA-only
+     *  Traditional balance — see qcd.ts for the approximation this uses).
      *  Excludes that portion of RMD from taxable income entirely. */
     qcdMaximize: boolean("qcd_maximize").notNull().default(false),
     /** Proactively size Roth conversions to shrink a FUTURE RMD
@@ -2072,11 +2072,9 @@ export const irmaaBrackets = pgTable(
 
 // ── ACA Federal Poverty Level ──────────────────────────────────
 //
-// FPL was the one annually-indexed federal figure set with no DB home
-// (it lived only in `aca-tables.ts`'s `FPL_BY_HOUSEHOLD`). One row per ACA
-// COVERAGE year (not the HHS publication year, which is one calendar year
-// earlier — see aca-tables.ts). `amounts` maps household size "1".."8" to
-// the annual FPL dollar figure.
+// One row per ACA COVERAGE year (not the HHS publication year, which is
+// one calendar year earlier — 26 CFR §1.36B-1(h)). `amounts` maps
+// household size "1".."8" to the annual FPL dollar figure.
 
 export const fplByHousehold = pgTable(
   "fpl_by_household",

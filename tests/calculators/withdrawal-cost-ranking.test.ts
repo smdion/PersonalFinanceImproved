@@ -5,6 +5,7 @@ import {
   type RankWithdrawalTiersInput,
 } from "@/lib/calculators/engine/withdrawal-cost-ranking";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 function rothState(
   contributionBasis: number,
@@ -34,7 +35,7 @@ function baseInput(
     filingStatus: "MFJ",
     ordinaryIncomeFloor: 150000, // in the 12% bracket
     taxBrackets: MFJ_BRACKETS,
-    ltcgBrackets: undefined, // use hardcoded 2026 defaults
+    ltcgBrackets: shippedTaxTables().ltcgBrackets,
     rothBasisAvailable: 0,
     rothAvailable: 50000,
     brokerageAvailable: 50000,

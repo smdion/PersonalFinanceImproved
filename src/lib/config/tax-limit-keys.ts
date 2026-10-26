@@ -36,6 +36,7 @@ export const TAX_LIMIT_GROUPS = [
   "Social Security & Medicare",
   "Roth IRA eligibility",
   "HSA eligibility (HDHP)",
+  "Charitable distributions (QCD)",
   "Withholding",
 ] as const;
 
@@ -284,6 +285,14 @@ const OTHER_KEYS: TaxLimitKey[] = [
     key: "hdhp_min_deductible_family",
     label: "Minimum deductible, family",
     group: "HSA eligibility (HDHP)",
+    kind: "indexed",
+    format: "currency",
+  },
+  // Charitable distributions
+  {
+    key: "qcd_annual_limit",
+    label: "Most an IRA can give to charity, per person",
+    group: "Charitable distributions (QCD)",
     kind: "indexed",
     format: "currency",
   },

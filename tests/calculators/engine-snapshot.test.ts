@@ -35,6 +35,7 @@ import type {
   AccountCategory,
 } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 const AS_OF = new Date("2025-03-07");
 
@@ -72,6 +73,7 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -510,6 +512,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -608,6 +611,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -668,6 +672,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -720,6 +725,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -894,6 +900,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -1263,6 +1270,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.12,
           roth: 0,
           hsa: 0,
@@ -1327,6 +1335,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
           hsa: 0,
@@ -1591,6 +1600,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -1615,12 +1625,11 @@ describe("engine snapshot parity", () => {
     // rmd-enforcement.ts's rounding-
     // residual fallback no longer force-feeds a genuine capacity shortfall
     // past an account's real remaining room.
-    // IRMAA brackets now grow
-    // forward instead of holding flat nominal -- this fixture's Roth
-    // conversions are IRMAA-cliff-aware, so a correctly-grown (tighter or
-    // looser, depending on vintage) cliff shifts conversion amounts and
-    // final balance.
-    expect(metrics.finalYear?.allAccountsBalance).toBe(3693540.41);
+    // No `taxDataYear` here, so no table grows (one rule for every table,
+    // v0.9.0) -- IRMAA alone used to grow from a built-in 2026. This
+    // fixture's conversions are IRMAA-cliff-aware, so that moved the final
+    // balance. Growth itself is covered in bracket-growth.test.ts.
+    expect(metrics.finalYear?.allAccountsBalance).toBe(3709384.99);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -1682,6 +1691,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -1751,6 +1761,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -1821,6 +1832,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -1892,6 +1904,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -2168,6 +2181,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -2292,6 +2306,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
           hsa: 0,
@@ -2426,6 +2441,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -2548,6 +2564,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -2691,6 +2708,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "roth", ira: "roth" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -2764,6 +2782,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -2785,10 +2804,9 @@ describe("engine snapshot parity", () => {
     expect(result.sustainableWithdrawal).toBe(46000);
     // Same rmd-enforcement.ts residual fix
     // as fixture 31.
-    // IRMAA brackets now grow
-    // forward -- this fixture is explicitly "IRMAA awareness enabled,
-    // income near cliff," so it's expected to move.
-    expect(metrics.finalYear?.allAccountsBalance).toBe(1888900.93);
+    // No `taxDataYear`, so IRMAA stays flat like every other table (it
+    // alone used to grow from a built-in 2026; v0.9.0).
+    expect(metrics.finalYear?.allAccountsBalance).toBe(1915295.39);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2845,6 +2863,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -2930,6 +2949,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
           hsa: 0,
@@ -3006,6 +3026,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -3067,6 +3088,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -3129,6 +3151,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.15, // Low fallback — person expects low bracket
           roth: 0,
           hsa: 0,
@@ -3199,6 +3222,7 @@ describe("engine snapshot parity", () => {
         },
         withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.22,
           roth: 0,
           hsa: 0,
@@ -3251,7 +3275,7 @@ describe("engine snapshot parity", () => {
       retirementAge: 65,
       projectionEndAge: 90,
       currentSalary: 250000,
-      filingStatus: "single",
+      filingStatus: "Single",
       householdSize: 1,
       enableIrmaaAwareness: true,
       enableAcaAwareness: true,
@@ -3298,7 +3322,7 @@ describe("engine snapshot parity", () => {
       retirementAge: 65,
       projectionEndAge: 90,
       currentSalary: 180000,
-      filingStatus: "mfj",
+      filingStatus: "MFJ",
       birthYear: 1966,
       accumulationDefaults: {
         contributionRate: 0.3, // Aggressive final-5-years savings
@@ -3357,8 +3381,9 @@ describe("engine snapshot parity", () => {
   // socialSecurityEntries, required for qcdMaximize to take effect —
   // see qcd.ts's docblock) so the only variable between them is the QCD
   // settings themselves.
-  it("fixture 65: qcdMaximize fully covers a modest RMD (no taxable distribution forced)", () => {
-    const input = makeInput({
+  /** Fixture 65's household (one QCD-eligible IRA owner at 75). */
+  const qcdHousehold = () =>
+    makeInput({
       currentAge: 75,
       retirementAge: 65,
       projectionEndAge: 85,
@@ -3467,6 +3492,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
           hsa: 0,
@@ -3476,6 +3502,9 @@ describe("engine snapshot parity", () => {
         rmdExcessHandling: "reinvest",
       },
     });
+
+  it("fixture 65: qcdMaximize fully covers a modest RMD (no taxable distribution forced)", () => {
+    const input = qcdHousehold();
     const result = calculateProjection(input);
     const decYears = result.projectionByYear.filter(
       (y): y is Extract<typeof y, { phase: "decumulation" }> =>
@@ -3483,13 +3512,13 @@ describe("engine snapshot parity", () => {
     );
     // RMD ($81,300.81 at age 75) is well under the IRA Traditional
     // balance ($800k), and QCD is no longer capped at the RMD amount
-    // (a QCD can legally exceed the RMD, up to the annual $115k/person
-    // cap) — so QCD maximizes to the $115k
-    // cap itself, still comfortably covering the RMD with room to spare,
+    // (a QCD can legally exceed the RMD, up to the annual per-person limit,
+    // $111k for 2026 — IRS Notice 2025-67) — so QCD maximizes to the limit
+    // itself, still comfortably covering the RMD with room to spare,
     // so no taxable Traditional distribution is forced and there's no
     // leftover excess to reinvest.
     expect(decYears[0]?.rmdAmount).toBe(81300.81);
-    expect(decYears[0]?.qcdAmount).toBe(115000);
+    expect(decYears[0]?.qcdAmount).toBe(111000);
     expect(decYears[0]?.totalTraditionalWithdrawal).toBe(0);
     expect(decYears[0]?.rmdExcessAmount).toBe(0);
     const metrics = extractMetrics(result);
@@ -3504,8 +3533,33 @@ describe("engine snapshot parity", () => {
     // stopping at the RMD) never gets to compound in the account across
     // the remaining 10-year horizon, same direction the allAccountsBalance drop
     // in fixture 66/67 shows.
-    expect(metrics.finalYear?.allAccountsBalance).toBe(2299622.5);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(2311297.52);
     expect(metrics).toMatchSnapshot();
+  });
+
+  it("the QCD limit grows with inflation from its tax year", () => {
+    // Not a snapshot: a projection with tax years threaded (as production
+    // always does) grows the per-person limit like the standard deduction.
+    const base = qcdHousehold();
+    const input = {
+      ...base,
+      decumulationDefaults: {
+        ...base.decumulationDefaults,
+        distributionTaxRates: {
+          ...base.decumulationDefaults.distributionTaxRates,
+          taxDataYear: 2026,
+        },
+      },
+    };
+    const decYears = calculateProjection(input).projectionByYear.filter(
+      (y): y is Extract<typeof y, { phase: "decumulation" }> =>
+        y.phase === "decumulation",
+    );
+    for (const y of decYears.slice(0, 4)) {
+      const limit =
+        111000 * Math.pow(1 + input.inflationRate, Math.max(0, y.year - 2026));
+      expect(y.qcdAmount, String(y.year)).toBeCloseTo(limit, 1);
+    }
   });
 
   it("fixture 66: qcdMaximize capped below a large RMD — remainder still forces a taxable distribution + reinvested excess", () => {
@@ -3602,6 +3656,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
           hsa: 0,
@@ -3616,20 +3671,19 @@ describe("engine snapshot parity", () => {
       (y): y is Extract<typeof y, { phase: "decumulation" }> =>
         y.phase === "decumulation",
     );
-    // RMD ($243,902.44 at age 75) exceeds the $115k/person QCD annual cap
-    // (2026 figure — was $105k, stale by two years' indexing; advisor
-    // review 2026-08-29) — QCD caps at exactly $115,000, and enforceRmd
-    // still forces the remaining $128,902.44 through as a real taxable
-    // Traditional distribution.
+    // RMD ($243,902.44 at age 75) exceeds the per-person QCD limit ($111k
+    // for 2026, from the tax data) — QCD caps at exactly $111,000, and
+    // enforceRmd still forces the remaining $132,902.44 through as a real
+    // taxable Traditional distribution.
     expect(decYears[0]?.rmdAmount).toBe(243902.44);
-    expect(decYears[0]?.qcdAmount).toBe(115000);
-    expect(decYears[0]?.totalTraditionalWithdrawal).toBe(128902.44);
+    expect(decYears[0]?.qcdAmount).toBe(111000);
+    expect(decYears[0]?.totalTraditionalWithdrawal).toBe(132902.44);
     const metrics = extractMetrics(result);
     // Same fix as fixture 65. Lower
     // than before the QCD-cap fix (was 6893089.39) — the extra $10k/yr
     // QCD (cap raised 105k->115k) leaves the account as charity instead
     // of compounding.
-    expect(metrics.finalYear?.allAccountsBalance).toBe(6866927.14);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(6877392.31);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3727,6 +3781,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
           hsa: 0,
@@ -3744,8 +3799,8 @@ describe("engine snapshot parity", () => {
     // Same RMD/QCD/excess amounts as fixture 66 — only the DESTINATION of
     // the excess differs (spent, not reinvested), so end balance is lower.
     expect(decYears[0]?.rmdAmount).toBe(243902.44);
-    expect(decYears[0]?.qcdAmount).toBe(115000);
-    expect(decYears[0]?.rmdExcessAmount).toBe(97965.85);
+    expect(decYears[0]?.qcdAmount).toBe(111000);
+    expect(decYears[0]?.rmdExcessAmount).toBe(101005.85);
     const metrics = extractMetrics(result);
     // Same fix as fixture 65. Unchanged
     // from before the QCD-cap fix -- with rmdExcessHandling="spend", the
@@ -3753,7 +3808,7 @@ describe("engine snapshot parity", () => {
     // spend as "excess" by the same amount, so the portfolio's own
     // trajectory nets out the same either way.
     expect(metrics.finalYear?.allAccountsBalance).toBe(6517851.49);
-    expect(metrics.finalYear?.allAccountsBalance).toBeLessThan(6866927.14); // vs. fixture 66's "reinvest"
+    expect(metrics.finalYear?.allAccountsBalance).toBeLessThan(6877392.31); // vs. fixture 66's "reinvest"
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3864,6 +3919,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
           hsa: 0,
@@ -3991,6 +4047,7 @@ describe("engine snapshot parity", () => {
           },
         },
         distributionTaxRates: {
+          ...shippedTaxTables(),
           traditionalFallbackRate: 0.24,
           roth: 0,
           hsa: 0,

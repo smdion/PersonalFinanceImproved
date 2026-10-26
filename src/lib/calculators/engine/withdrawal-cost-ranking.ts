@@ -122,6 +122,9 @@ export type WithdrawalTier = {
    *  unbounded by a bracket/basis limit (the caller still clamps to actual
    *  account balances). */
   capacity: number;
+  /** Brokerage beyond the Medicare surtax threshold: `costRate` is the
+   *  capital-gains rate plus NIIT. */
+  includesNiit?: true;
 };
 
 export interface RankWithdrawalTiersInput {
@@ -133,7 +136,7 @@ export interface RankWithdrawalTiersInput {
    *  the marginal rate for Roth growth. */
   ordinaryIncomeFloor: number;
   taxBrackets: WithholdingBracket[];
-  ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
+  ltcgBrackets: Record<string, { threshold: number | null; rate: number }[]>;
   /** Roth basis dollars available across the accounts routing will draw
    *  from, i.e. still-free withdrawal room BEFORE hitting non-qualified
    *  growth. When individual-account tracking isn't enabled there is no
@@ -441,6 +444,7 @@ export function rankWithdrawalTiers(
           source: "brokerage",
           costRate: ltcgRate + NIIT_RATE,
           capacity: brokeragePostNiitCapacity,
+          includesNiit: true,
         }
       : undefined;
   const hsaTier: WithdrawalTier | undefined =

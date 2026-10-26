@@ -9,6 +9,7 @@ import {
   type AssetClassRow,
 } from "@/server/routers/projection-v5-helpers";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
+import { shippedTaxTables } from "../helpers/tax-data";
 
 /**
  * Unit tests for the projection-v5-helpers module. These helpers were
@@ -228,6 +229,7 @@ describe("runStressTestScenarios (M2)", () => {
   }
 
   const distributionTaxRates = {
+    ...shippedTaxTables(),
     traditionalFallbackRate: 0.22,
     roth: 0,
     hsa: 0,

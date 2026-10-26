@@ -5,41 +5,45 @@ import {
   getLtcgRate,
   ltcgRateForNextDollar,
 } from "@/lib/config/tax-tables";
+import { shippedTaxTables } from "../helpers/tax-data";
+
+/** The shipped 2026 LTCG brackets. */
+const LTCG = shippedTaxTables(2026).ltcgBrackets;
 
 describe("ltcgRoomForRate", () => {
   it("MFJ: 0% headroom at $0 ordinary income is the 0% bracket's own ceiling ($98,900)", () => {
-    expect(ltcgRoomForRate(0, 0, "MFJ")).toBe(98900);
+    expect(ltcgRoomForRate(0, 0, "MFJ", LTCG)).toBe(98900);
   });
 
   it("MFJ: 0% headroom shrinks by however much ordinary income already occupies", () => {
-    expect(ltcgRoomForRate(0, 80000, "MFJ")).toBe(18900);
+    expect(ltcgRoomForRate(0, 80000, "MFJ", LTCG)).toBe(18900);
   });
 
   it("MFJ: 0% headroom floors at 0, never negative, once ordinary income exceeds the ceiling", () => {
-    expect(ltcgRoomForRate(0, 200000, "MFJ")).toBe(0);
+    expect(ltcgRoomForRate(0, 200000, "MFJ", LTCG)).toBe(0);
   });
 
   it("MFJ: 15% headroom is the 15% bracket's ceiling minus ordinary income", () => {
-    expect(ltcgRoomForRate(0.15, 100000, "MFJ")).toBe(513700);
+    expect(ltcgRoomForRate(0.15, 100000, "MFJ", LTCG)).toBe(513700);
   });
 
   it("MFJ: no bracket exceeds a 20%+ target ⇒ Infinity (matches incomeCapForMarginalRate's convention)", () => {
-    expect(ltcgRoomForRate(0.2, 100000, "MFJ")).toBe(Infinity);
+    expect(ltcgRoomForRate(0.2, 100000, "MFJ", LTCG)).toBe(Infinity);
   });
 
   it("Single: uses the Single bracket table, not MFJ's", () => {
-    expect(ltcgRoomForRate(0, 0, "Single")).toBe(49450);
+    expect(ltcgRoomForRate(0, 0, "Single", LTCG)).toBe(49450);
   });
 
   it("does NOT reproduce incomeCapForMarginalRate's semantics against the same table — regression guard for the advisor-flagged bug", () => {
-    // incomeCapForMarginalRate(0, LTCG_BRACKETS.MFJ) would wrongly return
+    // incomeCapForMarginalRate(0, LTCG.MFJ) would wrongly return
     // 613700 (the 15% bracket's ceiling) because ordinary brackets match
     // `>=` floor semantics while LTCG brackets match `<=` ceiling semantics.
     // ltcgRoomForRate must NOT produce that number here.
-    expect(ltcgRoomForRate(0, 0, "MFJ")).not.toBe(613700);
+    expect(ltcgRoomForRate(0, 0, "MFJ", LTCG)).not.toBe(613700);
   });
 
-  it("respects DB-loaded override brackets over the hardcoded defaults", () => {
+  it("reads the brackets it's given", () => {
     const dbBrackets = {
       MFJ: [
         { threshold: 50000, rate: 0 },
@@ -50,8 +54,9 @@ describe("ltcgRoomForRate", () => {
     expect(ltcgRoomForRate(0, 10000, "MFJ", dbBrackets)).toBe(40000);
   });
 
-  it("returns 0 when the filing status has no bracket data at all", () => {
-    expect(ltcgRoomForRate(0, 0, "MFJ", {})).toBe(0);
+  it("throws when the filing status has no brackets (never guesses)", () => {
+    expect(() => ltcgRoomForRate(0, 0, "MFJ", {})).toThrow(/MFJ/);
+    expect(() => getLtcgRate(0, "MFJ", { Single: [] })).toThrow(/MFJ/);
   });
 });
 
@@ -79,11 +84,12 @@ describe("toLtcgTaxableIncome", () => {
 
   it("real household scenario: crosses from 15% into 0%-LTCG room once the deduction is applied", () => {
     const grossOrdinary = 120100;
-    const withoutFix = ltcgRoomForRate(0, grossOrdinary, "MFJ");
+    const withoutFix = ltcgRoomForRate(0, grossOrdinary, "MFJ", LTCG);
     const withFix = ltcgRoomForRate(
       0,
       toLtcgTaxableIncome(grossOrdinary, 32200),
       "MFJ",
+      LTCG,
     );
     expect(withoutFix).toBe(0); // the bug: no 0%-LTCG room at all
     expect(withFix).toBe(11000); // 98,900 - 87,900
@@ -101,33 +107,33 @@ describe("toLtcgTaxableIncome", () => {
 // the bracket BELOW.
 describe("ltcgRateForNextDollar", () => {
   it("MFJ: one dollar below the 0% ceiling ⇒ still 0%", () => {
-    expect(ltcgRateForNextDollar(98899, "MFJ")).toBe(0);
+    expect(ltcgRateForNextDollar(98899, "MFJ", LTCG)).toBe(0);
   });
 
   it("MFJ: exactly AT the 0% ceiling ⇒ the NEXT dollar is 15%, not 0%", () => {
-    expect(ltcgRateForNextDollar(98900, "MFJ")).toBe(0.15);
+    expect(ltcgRateForNextDollar(98900, "MFJ", LTCG)).toBe(0.15);
   });
 
   it("MFJ: one dollar past the 0% ceiling ⇒ 15%", () => {
-    expect(ltcgRateForNextDollar(98901, "MFJ")).toBe(0.15);
+    expect(ltcgRateForNextDollar(98901, "MFJ", LTCG)).toBe(0.15);
   });
 
   it("MFJ: exactly AT the 15% ceiling ⇒ the NEXT dollar is 20%, not 15%", () => {
-    expect(ltcgRateForNextDollar(613700, "MFJ")).toBe(0.2);
+    expect(ltcgRateForNextDollar(613700, "MFJ", LTCG)).toBe(0.2);
   });
 
   it("MFJ: well past the top bracket ⇒ 20%", () => {
-    expect(ltcgRateForNextDollar(1_000_000, "MFJ")).toBe(0.2);
+    expect(ltcgRateForNextDollar(1_000_000, "MFJ", LTCG)).toBe(0.2);
   });
 
   it("deliberately disagrees with getLtcgRate at an exact ceiling — documents the intentional inclusive/exclusive split", () => {
-    expect(getLtcgRate(98900, "MFJ")).toBe(0);
-    expect(ltcgRateForNextDollar(98900, "MFJ")).toBe(0.15);
-    expect(getLtcgRate(613700, "MFJ")).toBe(0.15);
-    expect(ltcgRateForNextDollar(613700, "MFJ")).toBe(0.2);
+    expect(getLtcgRate(98900, "MFJ", LTCG)).toBe(0);
+    expect(ltcgRateForNextDollar(98900, "MFJ", LTCG)).toBe(0.15);
+    expect(getLtcgRate(613700, "MFJ", LTCG)).toBe(0.15);
+    expect(ltcgRateForNextDollar(613700, "MFJ", LTCG)).toBe(0.2);
   });
 
-  it("respects DB-loaded override brackets over the hardcoded defaults", () => {
+  it("reads the brackets it's given", () => {
     const dbBrackets = {
       MFJ: [
         { threshold: 50000, rate: 0 },

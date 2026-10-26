@@ -28,9 +28,9 @@ export type DistributionTaxRateInput = {
   filingStatus: Parameters<typeof getLtcgRate>[1] | null;
   limitsMap: Record<string, number>;
   bracketData: { threshold: number; baseWithholding: number; rate: number }[];
-  ltcgBracketData: ResolvedTax["ltcgByStatus"];
-  irmaaBracketData: ResolvedTax["irmaaByStatus"];
-  fplByHousehold: ResolvedTax["fplByHousehold"];
+  ltcgBracketData: NonNullable<ResolvedTax["ltcgByStatus"]>;
+  irmaaBracketData: NonNullable<ResolvedTax["irmaaByStatus"]>;
+  fplByHousehold: NonNullable<ResolvedTax["fplByHousehold"]>;
   latestTaxYear: number;
   /** The year each table came from (resolveTaxParams `sectionYears`);
    *  undefined = every table is `latestTaxYear`'s. */
@@ -193,18 +193,11 @@ export function buildDistributionTaxRates({
     ltcgBrackets: ltcgBracketData,
     irmaaBrackets: irmaaBracketData,
     fplByHousehold: fplByHousehold,
-    // Each table's own year, set exactly when the table is (taxTableYears).
-    taxBracketsYear:
-      bracketData.length > 0
-        ? (sectionYears?.withholding ?? latestTaxYear)
-        : undefined,
-    ltcgBracketsYear: ltcgBracketData
-      ? (sectionYears?.ltcg ?? latestTaxYear)
-      : undefined,
-    irmaaBracketsYear: irmaaBracketData
-      ? (sectionYears?.irmaa ?? latestTaxYear)
-      : undefined,
-    fplYear: fplByHousehold ? (sectionYears?.fpl ?? latestTaxYear) : undefined,
+    // Each table's own year (taxTableYears grows each from it).
+    taxBracketsYear: sectionYears?.withholding ?? latestTaxYear,
+    ltcgBracketsYear: sectionYears?.ltcg ?? latestTaxYear,
+    irmaaBracketsYear: sectionYears?.irmaa ?? latestTaxYear,
+    fplYear: sectionYears?.fpl ?? latestTaxYear,
     taxMultiplier: taxMult,
     grossUpForTaxes: settings.grossUpForTaxes,
     rothBracketTarget: toNumber(settings.rothBracketTarget ?? "0.12"),
@@ -233,6 +226,8 @@ export function buildDistributionTaxRates({
     obbbaSeniorPhaseoutStart,
     obbbaSeniorPhaseoutRate,
     obbbaSeniorSunsetYear,
+    // Evergreen (IRC 408(d)(8)), so required like the deductions above.
+    qcdAnnualLimit: requireLimit(limitsMap, "qcd_annual_limit"),
     // The actual calendar year `bracketData`/`standardDeductionForFilingStatus`
     // were seeded for — NOT necessarily "this year." See
     // `DecumulationDefaults.distributionTaxRates.taxDataYear`'s docblock

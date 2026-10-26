@@ -51,6 +51,8 @@
 import type { AccountCategory } from "@/lib/config/account-types";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type { LumpSum } from "./shared";
+import type { LtcgBracketTable } from "../../config/tax-tables";
+import type { IrmaaBracketTable } from "../../config/irmaa-tables";
 
 /**
  * How contributions are distributed across account categories.
@@ -370,31 +372,23 @@ export type DecumulationDefaults = {
     enableRothConversions?: boolean;
     /** Target marginal rate for Roth conversions (null/undefined = use rothBracketTarget). */
     rothConversionTarget?: number;
-    /** DB-loaded LTCG brackets by filing status, from the `ltcg_brackets`
-     *  table. Overrides `LTCG_BRACKETS`' hardcoded
-     *  defaults in `tax-tables.ts` when present — mirrors how `taxBrackets`
-     *  above overrides the ordinary W-4 defaults. Threshold `null` = the top
-     *  (Infinity) bracket. Undefined = fall back to the hardcoded table. */
-    ltcgBrackets?: Record<string, { threshold: number | null; rate: number }[]>;
-    /** DB-loaded IRMAA brackets by filing status, from the `irmaa_brackets`
-     *  table. Overrides `IRMAA_BRACKETS`' hardcoded defaults in
-     *  `irmaa-tables.ts` when present — same pattern as `ltcgBrackets` above.
-     *  Undefined = fall back to the hardcoded table. This channel previously
-     *  did not exist: the `irmaa_brackets` table + its Settings editor were
-     *  live but no engine path read them, so edits changed no projection
-     *  output). */
-    irmaaBrackets?: Record<
-      string,
-      { magiThreshold: number; annualSurcharge: number }[]
-    >;
-    /** DB-resolved FPL map from `fpl_by_household`, keyed by household
-     *  size. Overrides `FPL_BY_HOUSEHOLD` when present — same pattern as
-     *  `ltcgBrackets`/`irmaaBrackets`. Undefined ⇒ hardcoded fallback. */
-    fplByHousehold?: Record<number, number>;
+    /** The year's LTCG brackets by filing status (`ltcg_brackets`).
+     *  Threshold `null` = the open top bracket. Required: nothing stands in
+     *  for a missing table (the payload throws). */
+    ltcgBrackets: LtcgBracketTable;
+    /** The year's IRMAA brackets by filing status (`irmaa_brackets`). */
+    irmaaBrackets: IrmaaBracketTable;
+    /** The coverage year's poverty levels by household size
+     *  (`fpl_by_household`). */
+    fplByHousehold: Record<number, number>;
+    /** The most an IRA owner can give as qualified charitable
+     *  distributions in a year, per person (`qcd_annual_limit`, the limits
+     *  year's; CPI-indexed, grown from `taxDataYear`). */
+    qcdAnnualLimit: number;
     /** Household's annual standard deduction (from `contribution_limits`,
      *  filing-status-keyed), for converting GROSS ordinary income into the
      *  TAXABLE income LTCG brackets are actually denominated in
-     *  (`LTCG_BRACKETS`/`ltcgBrackets` use real IRS
+     *  (`ltcgBrackets` use real IRS
      *  taxable-income thresholds, but every LTCG-stacking call site fed
      *  them a gross figure with nothing subtracted, systematically
      *  overstating how much of the 0%/15% room ordinary income had
@@ -471,11 +465,11 @@ export type DecumulationDefaults = {
     taxDataYear?: number;
     /** Year `taxBrackets` came from (database rows); undefined ⇒ `taxDataYear`. */
     taxBracketsYear?: number;
-    /** Year `ltcgBrackets` came from; set exactly when `ltcgBrackets` is. */
+    /** Year `ltcgBrackets` came from; undefined ⇒ `taxDataYear`. */
     ltcgBracketsYear?: number;
-    /** Year `irmaaBrackets` came from; set exactly when `irmaaBrackets` is. */
+    /** Year `irmaaBrackets` came from; undefined ⇒ `taxDataYear`. */
     irmaaBracketsYear?: number;
-    /** Coverage year `fplByHousehold` came from; set exactly when it is. */
+    /** Coverage year `fplByHousehold` came from; undefined ⇒ `taxDataYear`. */
     fplYear?: number;
     /** `tax_params.version` for `taxDataYear` (the limits year) — a human-legible
      *  "Tax data: 2026, rev N" revision counter. Informational; cache
@@ -545,7 +539,7 @@ export type DecumulationDefaults = {
   /**
    * When true, every year with an active RMD automatically applies
    * the largest Qualified Charitable Distribution the approximation in
-   * `qcd.ts` allows (capped by `QCD_ANNUAL_CAP_PER_PERSON` and each
+   * `qcd.ts` allows (capped by `distributionTaxRates.qcdAnnualLimit` and each
    * person's own IRA-only Traditional balance — NOT full IRS per-account-
    * type RMD accuracy). The QCD'd
    * amount satisfies that much of the RMD directly and is excluded from
