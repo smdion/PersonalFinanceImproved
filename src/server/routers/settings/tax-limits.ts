@@ -1,5 +1,5 @@
 import { z } from "zod/v4";
-import { eq, asc } from "drizzle-orm";
+import { eq, asc, max } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import {
   createTRPCRouter,
@@ -7,6 +7,7 @@ import {
   adminProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
+import type { Db } from "@/server/helpers";
 import { zDecimal } from "./_shared";
 import {
   taxBracketsSchema,
@@ -19,6 +20,7 @@ import {
   shippedReferenceRows,
 } from "@/lib/db/reference-reconcile-core";
 import {
+  approvedCommunityFile,
   readTaxDataFile,
   reconcileReferenceData,
 } from "@/lib/db/reference-data";
@@ -59,36 +61,51 @@ const keyText = (vals: unknown[]) =>
     .map((v) => (typeof v === "boolean" ? (v ? "1" : "0") : String(v)))
     .join("|");
 
-/** `table|key` of every row the tax-data file ships — the file is fixed
- *  per image, so it's read once. */
-let shippedKeyCache: Set<string> | undefined;
-function shippedKeys(): Set<string> {
-  shippedKeyCache ??= new Set(
-    shippedReferenceRows(readTaxDataFile()).map(
-      (r) => `${r.table}|${keyText(r.keyVals)}`,
-    ),
-  );
-  return shippedKeyCache;
+/** What Ledgr ships here: every row of the shipped file and of a newer
+ *  approved community update (both are applied, so neither's rows may be
+ *  deleted), and each IRS limit's value by `"year|type"` — the community
+ *  file's where it has one. Rebuilt only when the approved version
+ *  changes. */
+type Shipped = { keys: Set<string>; limitValues: Map<string, number> };
+let shippedCache: { version: number; shipped: Shipped } | undefined;
+async function shippedData(db: Db): Promise<Shipped> {
+  const [row] = (await db
+    .select({ v: max(schema.taxDataUpdates.dataVersion) })
+    .from(schema.taxDataUpdates)
+    .where(eq(schema.taxDataUpdates.status, "applied"))) as {
+    v: number | null;
+  }[];
+  const version = row?.v ?? 0;
+  if (shippedCache?.version !== version) {
+    const shippedFile = readTaxDataFile();
+    const community = await approvedCommunityFile(db, shippedFile.dataVersion);
+    const rows = [
+      ...shippedReferenceRows(shippedFile),
+      ...(community ? shippedReferenceRows(community) : []),
+    ];
+    shippedCache = {
+      version,
+      shipped: {
+        keys: new Set(rows.map((r) => `${r.table}|${keyText(r.keyVals)}`)),
+        // Later rows (the community file's) win.
+        limitValues: new Map(
+          rows
+            .filter((r) => r.table === "contribution_limits")
+            .map((r) => [keyText(r.keyVals), Number(r.value)]),
+        ),
+      },
+    };
+  }
+  return shippedCache.shipped;
 }
 
-/** The value the tax-data file ships for each IRS limit, `"year|type"`. */
-let shippedLimitCache: Map<string, number> | undefined;
-function shippedLimitValues(): Map<string, number> {
-  shippedLimitCache ??= new Map(
-    shippedReferenceRows(readTaxDataFile())
-      .filter((r) => r.table === "contribution_limits")
-      .map((r) => [keyText(r.keyVals), Number(r.value)]),
-  );
-  return shippedLimitCache;
-}
-
-/** Does the tax-data file ship this row (same table and key)? */
+/** Does the tax data ship this row (same table and key)? */
 function isShipped(
   table: keyof typeof SHIPPED_KEY,
   row: Record<string, unknown>,
-  shipped: Set<string> = shippedKeys(),
+  shipped: Shipped,
 ): boolean {
-  return shipped.has(
+  return shipped.keys.has(
     `${table}|${keyText(SHIPPED_KEY[table].cols.map((c) => row[c]))}`,
   );
 }
@@ -111,11 +128,12 @@ function editProvenance(
 
 /** A shipped figure can't be deleted (the next start would add it back);
  *  reset it to the shipped value instead. */
-function refuseShippedDelete(
+async function refuseShippedDelete(
+  db: Db,
   table: keyof typeof SHIPPED_KEY,
   row: Record<string, unknown> | undefined,
 ) {
-  if (row && isShipped(table, row))
+  if (row && isShipped(table, row, await shippedData(db)))
     throw new TRPCError({
       code: "BAD_REQUEST",
       message:
@@ -310,14 +328,13 @@ export const taxLimitsProcedures = {
           asc(schema.contributionLimits.taxYear),
           asc(schema.contributionLimits.limitType),
         );
-      const shipped = shippedKeys();
-      const shippedValues = shippedLimitValues();
+      const shipped = await shippedData(ctx.db);
       return rows.map((r) => ({
         ...r,
         shipped: isShipped("contribution_limits", r, shipped),
         /** What Ledgr ships for this figure (null if it doesn't). */
         shippedValue:
-          shippedValues.get(keyText([r.taxYear, r.limitType])) ?? null,
+          shipped.limitValues.get(keyText([r.taxYear, r.limitType])) ?? null,
       }));
     }),
     create: adminProcedure
@@ -359,7 +376,7 @@ export const taxLimitsProcedures = {
           .select()
           .from(schema.contributionLimits)
           .where(eq(schema.contributionLimits.id, input.id));
-        refuseShippedDelete("contribution_limits", row);
+        await refuseShippedDelete(ctx.db, "contribution_limits", row);
         return ctx.db
           .delete(schema.contributionLimits)
           .where(eq(schema.contributionLimits.id, input.id));
@@ -373,7 +390,10 @@ export const taxLimitsProcedures = {
           .select()
           .from(schema.contributionLimits)
           .where(eq(schema.contributionLimits.id, input.id));
-        if (!row || !isShipped("contribution_limits", row))
+        if (
+          !row ||
+          !isShipped("contribution_limits", row, await shippedData(ctx.db))
+        )
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Ledgr doesn't ship this figure.",
@@ -395,9 +415,10 @@ export const taxLimitsProcedures = {
           asc(schema.taxBrackets.taxYear),
           asc(schema.taxBrackets.filingStatus),
         );
+      const shipped = await shippedData(ctx.db);
       return rows.map((r) => ({
         ...r,
-        shipped: isShipped("tax_brackets", r),
+        shipped: isShipped("tax_brackets", r, shipped),
       }));
     }),
     create: adminProcedure
@@ -433,7 +454,7 @@ export const taxLimitsProcedures = {
           .select()
           .from(schema.taxBrackets)
           .where(eq(schema.taxBrackets.id, input.id));
-        refuseShippedDelete("tax_brackets", row);
+        await refuseShippedDelete(ctx.db, "tax_brackets", row);
         return ctx.db
           .delete(schema.taxBrackets)
           .where(eq(schema.taxBrackets.id, input.id));
@@ -447,7 +468,7 @@ export const taxLimitsProcedures = {
           .select()
           .from(schema.taxBrackets)
           .where(eq(schema.taxBrackets.id, input.id));
-        if (!row || !isShipped("tax_brackets", row))
+        if (!row || !isShipped("tax_brackets", row, await shippedData(ctx.db)))
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Ledgr doesn't ship this figure.",
@@ -469,9 +490,10 @@ export const taxLimitsProcedures = {
           asc(schema.ltcgBrackets.taxYear),
           asc(schema.ltcgBrackets.filingStatus),
         );
+      const shipped = await shippedData(ctx.db);
       return rows.map((r) => ({
         ...r,
-        shipped: isShipped("ltcg_brackets", r),
+        shipped: isShipped("ltcg_brackets", r, shipped),
       }));
     }),
     create: adminProcedure
@@ -507,7 +529,7 @@ export const taxLimitsProcedures = {
           .select()
           .from(schema.ltcgBrackets)
           .where(eq(schema.ltcgBrackets.id, input.id));
-        refuseShippedDelete("ltcg_brackets", row);
+        await refuseShippedDelete(ctx.db, "ltcg_brackets", row);
         return ctx.db
           .delete(schema.ltcgBrackets)
           .where(eq(schema.ltcgBrackets.id, input.id));
@@ -521,7 +543,7 @@ export const taxLimitsProcedures = {
           .select()
           .from(schema.ltcgBrackets)
           .where(eq(schema.ltcgBrackets.id, input.id));
-        if (!row || !isShipped("ltcg_brackets", row))
+        if (!row || !isShipped("ltcg_brackets", row, await shippedData(ctx.db)))
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Ledgr doesn't ship this figure.",
@@ -543,9 +565,10 @@ export const taxLimitsProcedures = {
           asc(schema.irmaaBrackets.taxYear),
           asc(schema.irmaaBrackets.filingStatus),
         );
+      const shipped = await shippedData(ctx.db);
       return rows.map((r) => ({
         ...r,
-        shipped: isShipped("irmaa_brackets", r),
+        shipped: isShipped("irmaa_brackets", r, shipped),
       }));
     }),
     create: adminProcedure
@@ -585,7 +608,7 @@ export const taxLimitsProcedures = {
           .select()
           .from(schema.irmaaBrackets)
           .where(eq(schema.irmaaBrackets.id, input.id));
-        refuseShippedDelete("irmaa_brackets", row);
+        await refuseShippedDelete(ctx.db, "irmaa_brackets", row);
         return ctx.db
           .delete(schema.irmaaBrackets)
           .where(eq(schema.irmaaBrackets.id, input.id));
@@ -599,7 +622,10 @@ export const taxLimitsProcedures = {
           .select()
           .from(schema.irmaaBrackets)
           .where(eq(schema.irmaaBrackets.id, input.id));
-        if (!row || !isShipped("irmaa_brackets", row))
+        if (
+          !row ||
+          !isShipped("irmaa_brackets", row, await shippedData(ctx.db))
+        )
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Ledgr doesn't ship this figure.",
@@ -618,9 +644,10 @@ export const taxLimitsProcedures = {
         .select()
         .from(schema.fplByHousehold)
         .orderBy(asc(schema.fplByHousehold.taxYear));
+      const shipped = await shippedData(ctx.db);
       return rows.map((r) => ({
         ...r,
-        shipped: isShipped("fpl_by_household", r),
+        shipped: isShipped("fpl_by_household", r, shipped),
       }));
     }),
     create: adminProcedure
@@ -662,7 +689,7 @@ export const taxLimitsProcedures = {
           .select()
           .from(schema.fplByHousehold)
           .where(eq(schema.fplByHousehold.id, input.id));
-        refuseShippedDelete("fpl_by_household", row);
+        await refuseShippedDelete(ctx.db, "fpl_by_household", row);
         return ctx.db
           .delete(schema.fplByHousehold)
           .where(eq(schema.fplByHousehold.id, input.id));
@@ -676,7 +703,10 @@ export const taxLimitsProcedures = {
           .select()
           .from(schema.fplByHousehold)
           .where(eq(schema.fplByHousehold.id, input.id));
-        if (!row || !isShipped("fpl_by_household", row))
+        if (
+          !row ||
+          !isShipped("fpl_by_household", row, await shippedData(ctx.db))
+        )
           throw new TRPCError({
             code: "BAD_REQUEST",
             message: "Ledgr doesn't ship this figure.",

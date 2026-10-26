@@ -9,6 +9,7 @@ import { describe, it, expect } from "vitest";
 import { openTestSqlite } from "../helpers/db-harness";
 import { readTaxData } from "../helpers/tax-data";
 import {
+  pickApprovedCommunityFile,
   reconcileReferenceRowsSync,
   sameReferenceValue,
   shippedReferenceRows,
@@ -357,5 +358,46 @@ describe("community mode (an approved community update)", () => {
     expect(Number(limit(db, 2026, "ira_limit").value)).toBe(7500);
     expect(community(db, f).changes).toEqual(preview.changes);
     expect(preview.changes).toHaveLength(2);
+  });
+});
+
+describe("seed then community, carry-forward once", () => {
+  it("a household-started year past both files is carried from the community file's newest year", () => {
+    const db = openTestSqlite();
+    reconcile(db);
+    const community = JSON.parse(JSON.stringify(readTaxData())) as TaxDataFile;
+    community.dataVersion += 1;
+    community.years["2027"] = JSON.parse(
+      JSON.stringify(community.years["2026"]),
+    );
+    community.years["2027"]!.limits.ira_limit!.value = 8000;
+    // The household started 2028 with one figure of its own.
+    db.prepare(
+      "INSERT INTO contribution_limits (tax_year, limit_type, value, origin) VALUES (2028, 'hsa_limit', '5000', 'user')",
+    ).run();
+    const run = (text: string, params: unknown[]) => {
+      const stmt = db.prepare(text);
+      if (stmt.reader) return stmt.all(...params) as Record<string, unknown>[];
+      stmt.run(...params);
+      return [];
+    };
+    reconcileReferenceRowsSync(run, readTaxData(), "seed", false);
+    reconcileReferenceRowsSync(run, community, "community");
+    // From 2027 (the community file's newest), not 2026.
+    expect(Number(limit(db, 2028, "ira_limit").value)).toBe(8000);
+    expect(limit(db, 2028, "ira_limit")).toMatchObject({ origin: "carried" });
+  });
+
+  it("picks the newest approved file this version can read", () => {
+    const f = (dataVersion: number, formatVersion = 1) => ({
+      file_text: JSON.stringify({ formatVersion, dataVersion, years: {} }),
+    });
+    expect(
+      pickApprovedCommunityFile(
+        [f(3), f(5, 99), f(4), { file_text: "junk" }],
+        2,
+      )?.dataVersion,
+    ).toBe(4);
+    expect(pickApprovedCommunityFile([f(2)], 2)).toBeNull();
   });
 });

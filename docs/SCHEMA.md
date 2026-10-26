@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**81 tables.**
+**82 tables.**
 
 ## Mermaid diagram
 
@@ -177,6 +177,9 @@ erDiagram
     int id PK
   }
   sec_filing_cache {
+    int id PK
+  }
+  tax_data_updates {
     int id PK
   }
   simplefin_account_balances {
@@ -387,6 +390,7 @@ erDiagram
 - **state_versions**
 - **sync_request_log**
 - **tax_brackets**
+- **tax_data_updates**
 - **tax_params**
 - **utility_reading** → utility_service
 - **utility_service**

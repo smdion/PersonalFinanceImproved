@@ -95,6 +95,7 @@ export const investmentTransactions = active.investmentTransactions;
 export const syncRequestLog = active.syncRequestLog;
 export const securityFacts = active.securityFacts;
 export const secFilingCache = active.secFilingCache;
+export const taxDataUpdates = active.taxDataUpdates;
 export const appSettings = active.appSettings;
 export const localAdmins = active.localAdmins;
 export const relocationScenarios = active.relocationScenarios;

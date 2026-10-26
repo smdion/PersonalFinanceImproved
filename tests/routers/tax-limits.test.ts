@@ -8,6 +8,13 @@
 import "./setup-mocks";
 import { vi, describe, it, expect } from "vitest";
 import { createTestCaller, adminSession } from "./setup";
+import { readTaxData } from "../helpers/tax-data";
+import { and, eq } from "drizzle-orm";
+import {
+  applyReferenceData,
+  reconcileTaxDataFiles,
+} from "@/lib/db/reference-data";
+import * as schema from "@/lib/db/schema-sqlite";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -563,6 +570,78 @@ describe("settings.contributionLimits — provenance", () => {
       const reset = await ira2026(caller);
       expect(reset.origin).toBe("seed");
       expect(Number(reset.value)).toBe(7500);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("after an approved community update: it's what Ledgr ships, Reset returns to it, and a restore re-applies it", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const update = readTaxData();
+      update.dataVersion += 1;
+      update.years["2026"]!.limits.ira_limit!.value = 7600;
+      db.insert(schema.taxDataUpdates)
+        .values({
+          dataVersion: update.dataVersion,
+          fileText: JSON.stringify(update),
+          signature: "[]",
+          status: "applied",
+        })
+        .run();
+      await applyReferenceData(db as never);
+      expect(await ira2026(caller)).toMatchObject({ origin: "community" });
+      const listed = (await caller.settings.contributionLimits.list()).find(
+        (r) => r.taxYear === 2026 && r.limitType === "ira_limit",
+      )!;
+      expect(listed.shippedValue).toBe(7600);
+
+      const row = await ira2026(caller);
+      await caller.settings.contributionLimits.update({
+        id: row.id,
+        taxYear: 2026,
+        limitType: "ira_limit",
+        value: "9000",
+        notes: row.notes,
+      });
+      await caller.settings.contributionLimits.resetToShipped({ id: row.id });
+      expect(Number((await ira2026(caller)).value)).toBe(7600);
+
+      // A restore that brings back the old shipped value: re-applied.
+      db.update(schema.contributionLimits)
+        .set({ value: "7500", origin: "seed", sourceVersion: 0 })
+        .where(
+          and(
+            eq(schema.contributionLimits.taxYear, 2026),
+            eq(schema.contributionLimits.limitType, "ira_limit"),
+          ),
+        )
+        .run();
+      await applyReferenceData(db as never);
+      expect(Number((await ira2026(caller)).value)).toBe(7600);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("applying the tax data is one transaction: a failure in the update undoes the shipped pass", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const row = await ira2026(caller);
+      db.update(schema.contributionLimits)
+        .set({ value: "7000", origin: "seed", sourceVersion: 0 })
+        .where(eq(schema.contributionLimits.id, row.id))
+        .run();
+      const bad = readTaxData();
+      bad.formatVersion = 99; // the community pass throws before writing
+      await expect(
+        reconcileTaxDataFiles(db as never, [
+          { file: readTaxData(), mode: "seed" },
+          { file: bad, mode: "community" },
+        ]),
+      ).rejects.toThrow(/format 99/);
+      // The shipped pass's correction (7000 → 7500) was rolled back.
+      expect(Number((await ira2026(caller)).value)).toBe(7000);
     } finally {
       cleanup();
     }

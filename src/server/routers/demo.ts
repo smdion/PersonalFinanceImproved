@@ -608,6 +608,9 @@ export const demoRouter = createTRPCRouter({
         );
 
         for (const { tablename } of tables.rows) {
+          // Community tax-data updates are the install's, not household
+          // data: a demo reads the public table through its search_path.
+          if (tablename === "tax_data_updates") continue;
           const quotedTable = quoteIdent(tablename);
           await cdb.execute(
             sql.raw(
@@ -652,8 +655,8 @@ export const demoRouter = createTRPCRouter({
         await client.query(`SET search_path TO ${quotedSchema}, public`);
 
         // Reference data (limits, brackets, LTCG / IRMAA, poverty lines,
-        // tax-data revisions) from the shipped tax-data file — never the
-        // household's own rows.
+        // tax-data revisions) from the shipped tax-data file and any newer
+        // approved update — never the household's own rows.
         await applyReferenceData(cdb);
 
         await seedProfile(cdb, profile);

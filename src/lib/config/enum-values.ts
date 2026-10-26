@@ -281,6 +281,15 @@ export const UTILITY_SOURCE_VALUES = [
 export type UtilitySource = (typeof UTILITY_SOURCE_VALUES)[number];
 export const utilitySourceSchema = z.enum(UTILITY_SOURCE_VALUES);
 
+/** A community tax-data update's state (`tax_data_updates.status`). */
+export const TAX_DATA_UPDATE_STATUS_VALUES = [
+  "pending", // fetched and verified, waiting for an admin
+  "applied",
+  "dismissed",
+] as const;
+export type TaxDataUpdateStatus =
+  (typeof TAX_DATA_UPDATE_STATUS_VALUES)[number];
+
 /** What a suggested stand-in fund's own SEC filings say (securities.standinPreview). Shares are fractions (0–1). */
 export type StandInPreview = {
   /** Share of the stand-in's holdings its filings classify; null if no holdings filing. */

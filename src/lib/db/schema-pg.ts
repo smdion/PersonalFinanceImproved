@@ -51,6 +51,7 @@ import type {
   UtilityUnit,
   StandInPreview,
   BonusDestination,
+  TaxDataUpdateStatus,
 } from "@/lib/config/enum-values";
 import type { TaxDataOrigin } from "./reference-reconcile-core";
 
@@ -2392,6 +2393,28 @@ export const secFilingCache = pgTable(
   },
   (table) => [index("sec_filing_cache_series_idx").on(table.seriesId)],
 );
+
+/**
+ * Community tax-data updates this install has fetched (signed releases of
+ * the tax-data file between Ledgr versions) and what an admin decided.
+ * The file is kept as fetched, with its signature, so it can be verified
+ * again before applying; the figures it would change are worked out on
+ * demand against the current rows, never stored. An approved file newer
+ * than the shipped one is applied after it on every start and restore
+ * (reference-data.ts `approvedCommunityFile`). Not household data: not
+ * versioned, backed up or reset.
+ */
+export const taxDataUpdates = pgTable("tax_data_updates", {
+  dataVersion: integer("data_version").primaryKey(),
+  fileText: text("file_text").notNull(),
+  signature: text("signature").notNull(),
+  fetchedAt: timestamp("fetched_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  status: text("status").$type<TaxDataUpdateStatus>().notNull(),
+  decidedBy: text("decided_by"),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
+});
 
 /** A SimpleFIN account's balance as reported, per balance date. */
 export const simplefinAccountBalances = pgTable(

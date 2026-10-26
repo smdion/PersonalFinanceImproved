@@ -731,6 +731,10 @@ function rowKey(keyVals: unknown[]): string {
  * 5. A household-started year past the file's newest gets any figure it
  *    lacks, carried forward from the newest shipped year.
  *
+ * Step 5 runs once, with the last file applied (`carryForward`): a seed
+ * pass followed by a community pass leaves it to the community file,
+ * whose newest year is the real one.
+ *
  * `community` mode (an approved community update) never runs step 1 — an
  * outside file must not reclassify the household's rows — writes only
  * rows whose value changes, and marks them `community`.
@@ -739,6 +743,7 @@ function* reconcileSteps(
   dialect: RefDialect,
   file: TaxDataFile,
   mode: RefMode,
+  carryForward: boolean,
 ): Generator<RefStep, RefResult, Rows> {
   const query = (sql: string, params: unknown[] = []) => ({ sql, params });
   if (file.formatVersion > TAX_DATA_FORMAT_VERSION)
@@ -863,7 +868,7 @@ function* reconcileSteps(
   //    — a figure added in this release — as carried forward, so a figure
   //    the calculators require is never missing. Its own rows stand.
   const fileYears = Object.keys(file.years).map(Number);
-  if (fileYears.length > 0) {
+  if (carryForward && fileYears.length > 0) {
     const newest = Math.max(...fileYears);
     const newestLimits = file.years[String(newest)]!.limits;
     const have = new Map<number, Set<string>>();
@@ -895,14 +900,42 @@ function* reconcileSteps(
   return { inserted, updated, changes };
 }
 
+/** The newest approved community file this code can read that's newer
+ *  than the shipped one (`rows`: tax_data_updates `file_text`s with status
+ *  'applied', any order), or null. Every limit key is kept: one this
+ *  version doesn't use shows as "not used by Ledgr", and is in place for
+ *  the version that does. */
+export function pickApprovedCommunityFile(
+  rows: { file_text: unknown }[],
+  shippedVersion: number,
+): TaxDataFile | null {
+  let best: TaxDataFile | null = null;
+  for (const r of rows) {
+    let f: TaxDataFile;
+    try {
+      f = JSON.parse(String(r.file_text)) as TaxDataFile;
+    } catch {
+      continue;
+    }
+    if (
+      f.formatVersion <= TAX_DATA_FORMAT_VERSION &&
+      f.dataVersion > shippedVersion &&
+      (!best || f.dataVersion > best.dataVersion)
+    )
+      best = f;
+  }
+  return best;
+}
+
 /** Reconcile through an async driver. */
 export async function reconcileReferenceRows(
   run: RefQuery,
   dialect: RefDialect,
   file: TaxDataFile,
   mode: RefMode = "seed",
+  carryForward = true,
 ): Promise<RefResult> {
-  const steps = reconcileSteps(dialect, file, mode);
+  const steps = reconcileSteps(dialect, file, mode, carryForward);
   let next = steps.next();
   while (!next.done)
     next = steps.next(await run(next.value.sql, next.value.params));
@@ -914,8 +947,9 @@ export function reconcileReferenceRowsSync(
   run: RefQuerySync,
   file: TaxDataFile,
   mode: RefMode = "seed",
+  carryForward = true,
 ): RefResult {
-  const steps = reconcileSteps("sqlite", file, mode);
+  const steps = reconcileSteps("sqlite", file, mode, carryForward);
   let next = steps.next();
   while (!next.done) next = steps.next(run(next.value.sql, next.value.params));
   return next.value;
@@ -1092,6 +1126,9 @@ export const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.9.0: where each reference figure came from (origin, source_version, confirmed_at).
   d210c1418b4e930b2244c6bd723b5a9672f33621c753fa59fcb8cde5a467adf6:
     "0013_v090_tax_data_origin",
+  // v0.9.0: community tax-data updates fetched and decided.
+  "8031a00f15f435979edae028edd12267db92c427f7cd333b5949a343fffcbaf4":
+    "0014_v090_tax_data_updates",
 };
 
 /**
@@ -1908,11 +1945,36 @@ async function runPostgres() {
           throw err;
         }
       };
-      const result = await inTransaction(() =>
-        reconcileReferenceRows(pgQuery, "pg", file),
+      // An approved community update newer than this image's file is
+      // applied after it (the shipped file can't add what it doesn't have).
+      const community = pickApprovedCommunityFile(
+        (
+          await seedClient.query<{ file_text: string }>(
+            "SELECT file_text FROM tax_data_updates WHERE status = 'applied'",
+          )
+        ).rows,
+        file.dataVersion,
       );
+      const bothFiles = async () => {
+        const seeded = await reconcileReferenceRows(
+          pgQuery,
+          "pg",
+          file,
+          "seed",
+          !community,
+        );
+        const updated = community
+          ? await reconcileReferenceRows(pgQuery, "pg", community, "community")
+          : null;
+        return {
+          inserted: seeded.inserted + (updated?.inserted ?? 0),
+          updated: seeded.updated + (updated?.updated ?? 0),
+        };
+      };
+      const result = await inTransaction(bothFiles);
       log("info", "reference_data_reconciled", {
         dataVersion: file.dataVersion,
+        communityDataVersion: community?.dataVersion ?? null,
         ...result,
       });
       const { rows: demos } = await seedClient.query<{ nspname: string }>(
@@ -1922,9 +1984,7 @@ async function runPostgres() {
         const schemaIdent = `"${nspname.replace(/"/g, '""')}"`;
         try {
           await seedClient.query(`SET search_path TO ${schemaIdent}`);
-          await inTransaction(() =>
-            reconcileReferenceRows(pgQuery, "pg", file),
-          );
+          await inTransaction(bothFiles);
         } finally {
           await seedClient.query("SET search_path TO public");
         }
@@ -2421,17 +2481,33 @@ function runSQLite() {
   // above — fails loudly rather than warn-and-continue.
   try {
     const file = readTaxDataFile();
-    const result = sqlite.transaction(() =>
-      reconcileReferenceRowsSync((text, params) => {
-        const stmt = sqlite.prepare(text);
-        if (stmt.reader)
-          return stmt.all(...params) as Record<string, unknown>[];
-        stmt.run(...params);
-        return [];
-      }, file),
-    )();
+    const run = (text: string, params: unknown[]) => {
+      const stmt = sqlite.prepare(text);
+      if (stmt.reader) return stmt.all(...params) as Record<string, unknown>[];
+      stmt.run(...params);
+      return [];
+    };
+    const community = pickApprovedCommunityFile(
+      sqlite
+        .prepare(
+          "SELECT file_text FROM tax_data_updates WHERE status = 'applied'",
+        )
+        .all() as { file_text: string }[],
+      file.dataVersion,
+    );
+    const result = sqlite.transaction(() => {
+      const seeded = reconcileReferenceRowsSync(run, file, "seed", !community);
+      const updated = community
+        ? reconcileReferenceRowsSync(run, community, "community")
+        : null;
+      return {
+        inserted: seeded.inserted + (updated?.inserted ?? 0),
+        updated: seeded.updated + (updated?.updated ?? 0),
+      };
+    })();
     log("info", "reference_data_reconciled", {
       dataVersion: file.dataVersion,
+      communityDataVersion: community?.dataVersion ?? null,
       ...result,
     });
   } finally {

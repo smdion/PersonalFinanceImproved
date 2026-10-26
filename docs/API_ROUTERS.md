@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**370 procedures across 52 routers.**
+**376 procedures across 53 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -478,6 +478,17 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `update`             | mutation | `adminProcedure`               | (no description)                                                                                                                                                                                         |
 | `update`             | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
 | `update`             | mutation | `contributionProfileProcedure` | (no description)                                                                                                                                                                                         |
+
+## `settings/tax-data-sync`
+
+| Procedure    | Kind     | Auth                 | Description                                                        |
+| ------------ | -------- | -------------------- | ------------------------------------------------------------------ |
+| `approve`    | mutation | `adminProcedure`     | Apply the reviewed update, exactly as reviewed.                    |
+| `checkNow`   | mutation | `adminProcedure`     | (no description)                                                   |
+| `dismiss`    | mutation | `adminProcedure`     | (no description)                                                   |
+| `preview`    | query    | `protectedProcedure` | What the waiting update would change, and a hash to approve it by. |
+| `setEnabled` | mutation | `adminProcedure`     | (no description)                                                   |
+| `status`     | query    | `protectedProcedure` | On/off, the last check, and a summary of any waiting update.       |
 
 ## `settings/tax-limits`
 

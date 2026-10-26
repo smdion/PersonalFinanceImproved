@@ -239,6 +239,10 @@ function rowKey(keyVals: unknown[]): string {
  * 5. A household-started year past the file's newest gets any figure it
  *    lacks, carried forward from the newest shipped year.
  *
+ * Step 5 runs once, with the last file applied (`carryForward`): a seed
+ * pass followed by a community pass leaves it to the community file,
+ * whose newest year is the real one.
+ *
  * `community` mode (an approved community update) never runs step 1 — an
  * outside file must not reclassify the household's rows — writes only
  * rows whose value changes, and marks them `community`.
@@ -247,6 +251,7 @@ function* reconcileSteps(
   dialect: RefDialect,
   file: TaxDataFile,
   mode: RefMode,
+  carryForward: boolean,
 ): Generator<RefStep, RefResult, Rows> {
   const query = (sql: string, params: unknown[] = []) => ({ sql, params });
   if (file.formatVersion > TAX_DATA_FORMAT_VERSION)
@@ -371,7 +376,7 @@ function* reconcileSteps(
   //    — a figure added in this release — as carried forward, so a figure
   //    the calculators require is never missing. Its own rows stand.
   const fileYears = Object.keys(file.years).map(Number);
-  if (fileYears.length > 0) {
+  if (carryForward && fileYears.length > 0) {
     const newest = Math.max(...fileYears);
     const newestLimits = file.years[String(newest)]!.limits;
     const have = new Map<number, Set<string>>();
@@ -403,14 +408,42 @@ function* reconcileSteps(
   return { inserted, updated, changes };
 }
 
+/** The newest approved community file this code can read that's newer
+ *  than the shipped one (`rows`: tax_data_updates `file_text`s with status
+ *  'applied', any order), or null. Every limit key is kept: one this
+ *  version doesn't use shows as "not used by Ledgr", and is in place for
+ *  the version that does. */
+export function pickApprovedCommunityFile(
+  rows: { file_text: unknown }[],
+  shippedVersion: number,
+): TaxDataFile | null {
+  let best: TaxDataFile | null = null;
+  for (const r of rows) {
+    let f: TaxDataFile;
+    try {
+      f = JSON.parse(String(r.file_text)) as TaxDataFile;
+    } catch {
+      continue;
+    }
+    if (
+      f.formatVersion <= TAX_DATA_FORMAT_VERSION &&
+      f.dataVersion > shippedVersion &&
+      (!best || f.dataVersion > best.dataVersion)
+    )
+      best = f;
+  }
+  return best;
+}
+
 /** Reconcile through an async driver. */
 export async function reconcileReferenceRows(
   run: RefQuery,
   dialect: RefDialect,
   file: TaxDataFile,
   mode: RefMode = "seed",
+  carryForward = true,
 ): Promise<RefResult> {
-  const steps = reconcileSteps(dialect, file, mode);
+  const steps = reconcileSteps(dialect, file, mode, carryForward);
   let next = steps.next();
   while (!next.done)
     next = steps.next(await run(next.value.sql, next.value.params));
@@ -422,8 +455,9 @@ export function reconcileReferenceRowsSync(
   run: RefQuerySync,
   file: TaxDataFile,
   mode: RefMode = "seed",
+  carryForward = true,
 ): RefResult {
-  const steps = reconcileSteps("sqlite", file, mode);
+  const steps = reconcileSteps("sqlite", file, mode, carryForward);
   let next = steps.next();
   while (!next.done) next = steps.next(run(next.value.sql, next.value.params));
   return next.value;

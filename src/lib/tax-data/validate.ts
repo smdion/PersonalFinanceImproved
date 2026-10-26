@@ -52,7 +52,8 @@ export function withKnownKeysOnly(file: TaxDataFile): TaxDataFile {
 
 /** Every problem with the file, as readable lines (empty = valid).
  *  Unknown keys are a problem only when `unknownKeys` is "reject" (CI on
- *  the shipped file); the app drops them first. */
+ *  the shipped file); a community update may carry keys a newer Ledgr
+ *  uses. */
 export function validateTaxDataFile(
   file: TaxDataFile,
   { unknownKeys = "reject" }: { unknownKeys?: "reject" | "ignore" } = {},
