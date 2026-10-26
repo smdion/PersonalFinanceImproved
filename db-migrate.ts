@@ -1129,6 +1129,9 @@ export const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.9.0: community tax-data updates fetched and decided.
   "8031a00f15f435979edae028edd12267db92c427f7cd333b5949a343fffcbaf4":
     "0014_v090_tax_data_updates",
+  // v0.9.0: utilities cost feed (category + billing lag per service, cost source per reading).
+  "5dbf28830857afa5c706a3186d2038f849575e81732b8362de57d7cbd62fb34d":
+    "0015_v090_utility_feed",
 };
 
 /**

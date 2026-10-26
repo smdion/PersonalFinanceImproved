@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**376 procedures across 53 routers.**
+**379 procedures across 53 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -617,15 +617,18 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `utilities`
 
-| Procedure        | Kind     | Auth                 | Description                                                                                                                                                                      |
-| ---------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `computeSummary` | query    | `protectedProcedure` | Full per-service, per-year summary. Loads the stored readings and computes every derived value (total/avg/min/max cost & usage, $/unit, YoY) here. Nothing derived is persisted. |
-| `deleteReading`  | mutation | `adminProcedure`     | (no description)                                                                                                                                                                 |
-| `listServices`   | query    | `protectedProcedure` | All utility services ordered for display.                                                                                                                                        |
-| `updateReading`  | mutation | `adminProcedure`     | Update a reading's values by id (key fields stay fixed).                                                                                                                         |
-| `updateService`  | mutation | `adminProcedure`     | Update editable fields of an existing service by id (kind is immutable).                                                                                                         |
-| `upsertReading`  | mutation | `adminProcedure`     | Create or update a reading by its natural key (serviceId, year, month).                                                                                                          |
-| `upsertService`  | mutation | `adminProcedure`     | Create or update a service by its kind (unique).                                                                                                                                 |
+| Procedure                 | Kind     | Auth                 | Description                                                                                                                                                                      |
+| ------------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `applyBudgetApiFeed`      | mutation | `adminProcedure`     | the same budget service wrote; never touches usage, or a cost someone changed after the review.                                                                                  |
+| `computeSummary`          | query    | `protectedProcedure` | Full per-service, per-year summary. Loads the stored readings and computes every derived value (total/avg/min/max cost & usage, $/unit, YoY) here. Nothing derived is persisted. |
+| `deleteReading`           | mutation | `adminProcedure`     | (no description)                                                                                                                                                                 |
+| `listBudgetApiCategories` | query    | `protectedProcedure` | one its bills are paid from. Empty until the budget has synced.                                                                                                                  |
+| `listServices`            | query    | `protectedProcedure` | All utility services ordered for display.                                                                                                                                        |
+| `previewBudgetApiFeed`    | query    | `protectedProcedure` | leaves alone (conflicts, credits, months no longer in the budget), and a hash the apply must match — it writes exactly what was reviewed.                                        |
+| `updateReading`           | mutation | `adminProcedure`     | Update a reading's values by id (key fields stay fixed).                                                                                                                         |
+| `updateService`           | mutation | `adminProcedure`     | Update editable fields of an existing service by id (kind is immutable).                                                                                                         |
+| `upsertReading`           | mutation | `adminProcedure`     | Create or update a reading by its natural key (serviceId, year, month).                                                                                                          |
+| `upsertService`           | mutation | `adminProcedure`     | Create or update a service by its kind (unique).                                                                                                                                 |
 
 ## `version`
 

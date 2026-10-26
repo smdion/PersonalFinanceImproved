@@ -9,7 +9,12 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import dynamic from "next/dynamic";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import {
+  budgetApiServiceLabel,
+  formatCurrency,
+  formatPercent,
+} from "@/lib/utils/format";
+import { UtilityFeedCard } from "@/components/upkeep/utility-feed-card";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import { ChevronDown, ChevronRight, Lock, LockOpen } from "lucide-react";
 
@@ -60,6 +65,7 @@ type UtilityReadingRow = {
   usage: number | null;
   note: string | null;
   costPerUnit: number | null;
+  source: string | null;
 };
 type UtilityYearRow = {
   year: number;
@@ -383,6 +389,14 @@ function UtilityCard({
                             {MONTH_NAMES[r.month - 1]}
                           </td>
                           <td className="py-1.5 text-right font-medium tabular-nums">
+                            {(r.source === "ynab" || r.source === "actual") && (
+                              <span
+                                className="text-faint mr-1.5 text-[10px] font-normal"
+                                title={`Cost from ${budgetApiServiceLabel(r.source)}`}
+                              >
+                                {budgetApiServiceLabel(r.source)}
+                              </span>
+                            )}
                             {formatCurrency(r.cost)}
                           </td>
                           <td className="text-muted py-1.5 text-right tabular-nums">
@@ -522,6 +536,8 @@ export default function UtilitiesPage() {
               );
             })}
           </div>
+
+          <UtilityFeedCard />
 
           {/* Per-utility detail */}
           {summaries.map((svc) => (

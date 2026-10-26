@@ -41,6 +41,7 @@ import type {
   HoldingPeriodBasis,
   UtilityKind,
   UtilityUnit,
+  UtilitySource,
   StandInPreview,
   BonusDestination,
   TaxDataUpdateStatus,
@@ -1247,6 +1248,13 @@ export const utilityService = sqliteTable(
     usageUnit: text("usage_unit").$type<UtilityUnit>(),
     sortOrder: integer("sort_order").notNull().default(0),
     active: integer("active", { mode: "boolean" }).notNull().default(true),
+    /** The budget category (in whichever budget service is active) this
+     *  service's cost is fed from — by id, not name (names change). Null:
+     *  not fed; costs are typed in. */
+    budgetApiCategoryId: text("budget_api_category_id"),
+    /** Months a bill is paid after the month it covers (a payment in March
+     *  for February's gas is 1). */
+    billingLagMonths: integer("billing_lag_months").notNull().default(0),
   },
   (table) => [
     // Unique by kind makes the spreadsheet import idempotent (one service per kind).
@@ -1270,6 +1278,10 @@ export const utilityReading = sqliteTable(
     // fractional meter reads (e.g. ccf/kWh sub-unit precision) lossless.
     usage: text("usage"),
     note: text("note"),
+    /** Who wrote `cost`: typed in, the one-time import, or the budget feed
+     *  (YNAB / Actual). Null: from before sources were tracked — treated as
+     *  typed in, so the feed never overwrites it. */
+    source: text("source").$type<UtilitySource>(),
   },
   (table) => [
     // Composite unique drives idempotent upserts AND covers the serviceId FK as
