@@ -12,19 +12,6 @@ CREATE TABLE "account_basis" (
 	"notes" text
 );
 --> statement-breakpoint
-CREATE TABLE "account_holdings" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"performance_account_id" integer NOT NULL,
-	"snapshot_id" integer NOT NULL,
-	"ticker" text NOT NULL,
-	"name" text NOT NULL,
-	"weight_bps" integer NOT NULL,
-	"expense_ratio" numeric(12, 6),
-	"asset_class_id" integer,
-	"asset_class_source" text DEFAULT 'manual' NOT NULL,
-	CONSTRAINT "account_holdings_weight_range" CHECK (weight_bps >= 0 AND weight_bps <= 10000)
-);
---> statement-breakpoint
 CREATE TABLE "account_performance" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"year" integer NOT NULL,
@@ -43,7 +30,10 @@ CREATE TABLE "account_performance" (
 	"parent_category" text NOT NULL,
 	"is_active" boolean DEFAULT true NOT NULL,
 	"is_finalized" boolean DEFAULT false NOT NULL,
-	"performance_account_id" integer NOT NULL
+	"performance_account_id" integer NOT NULL,
+	"note" text,
+	"estimated_fields" jsonb DEFAULT '[]'::jsonb NOT NULL,
+	"accepted_checks" jsonb DEFAULT '{}'::jsonb NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "annual_performance" (
@@ -86,6 +76,11 @@ CREATE TABLE "app_settings" (
 	"key" text NOT NULL,
 	"value" jsonb NOT NULL,
 	CONSTRAINT "app_settings_key_unique" UNIQUE("key")
+);
+--> statement-breakpoint
+CREATE TABLE "asset_class_buckets" (
+	"bucket" text PRIMARY KEY NOT NULL,
+	"asset_class_id" integer NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "asset_class_correlations" (
@@ -174,8 +169,6 @@ CREATE TABLE "budget_profiles" (
 	"description" text,
 	"column_labels" jsonb NOT NULL,
 	"column_months" jsonb,
-	"column_contribution_profile_ids" jsonb,
-	"column_salary_profile_ids" jsonb,
 	"is_active" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "budget_profiles_name_unique" UNIQUE("name")
@@ -264,12 +257,65 @@ CREATE TABLE "historical_salaries" (
 	"bonus" numeric(14, 2) DEFAULT '0' NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "holding_observations" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"simplefin_account_id" integer,
+	"performance_account_id" integer,
+	"security_id" integer NOT NULL,
+	"balance_date" timestamp with time zone,
+	"as_of" date NOT NULL,
+	"shares" numeric(20, 8) NOT NULL,
+	"reported_market_value" numeric(14, 2),
+	"avg_cost_per_share" numeric(20, 8),
+	"source" text NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "holding_observations_one_account_check" CHECK (("holding_observations"."simplefin_account_id" IS NULL) <> ("holding_observations"."performance_account_id" IS NULL))
+);
+--> statement-breakpoint
+CREATE TABLE "holding_period_weights" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"holding_period_id" integer NOT NULL,
+	"security_id" integer NOT NULL,
+	"weight" numeric(12, 6) NOT NULL,
+	CONSTRAINT "holding_period_weights_range_check" CHECK ("holding_period_weights"."weight" > 0 AND "holding_period_weights"."weight" <= 1)
+);
+--> statement-breakpoint
+CREATE TABLE "holding_periods" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"performance_account_id" integer NOT NULL,
+	"sub_key" text,
+	"start_date" date NOT NULL,
+	"end_date" date,
+	"basis" text NOT NULL,
+	"fit_quality" numeric(12, 6),
+	"notes" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "holding_periods_dates_check" CHECK ("holding_periods"."end_date" IS NULL OR "holding_periods"."end_date" >= "holding_periods"."start_date"),
+	CONSTRAINT "holding_periods_sub_key_check" CHECK ("holding_periods"."sub_key" IS NULL OR left("holding_periods"."sub_key", length("holding_periods"."performance_account_id"::text) + 1) = "holding_periods"."performance_account_id"::text || '_')
+);
+--> statement-breakpoint
 CREATE TABLE "home_improvement_items" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"year" integer NOT NULL,
 	"description" text NOT NULL,
 	"cost" numeric(14, 2) NOT NULL,
 	"note" text
+);
+--> statement-breakpoint
+CREATE TABLE "investment_transactions" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"simplefin_account_id" integer NOT NULL,
+	"external_id" text NOT NULL,
+	"posted" date NOT NULL,
+	"transacted" date,
+	"amount" numeric(14, 2) NOT NULL,
+	"description" text NOT NULL,
+	"pending" boolean DEFAULT false NOT NULL,
+	"kind_override" text,
+	"voided_at" timestamp with time zone,
+	"first_seen_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "irmaa_brackets" (
@@ -435,17 +481,13 @@ CREATE TABLE "paycheck_deductions" (
 	"fica_exempt" boolean DEFAULT false NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "pending_rollovers" (
+CREATE TABLE "paycheck_earnings" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"source_account_performance_id" integer NOT NULL,
-	"destination_performance_account_id" integer NOT NULL,
-	"amount" numeric(14, 2) NOT NULL,
-	"sale_date" date NOT NULL,
-	"sale_year" integer NOT NULL,
-	"apply_year" integer NOT NULL,
-	"notes" text,
-	"confirmed_at" timestamp with time zone,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+	"job_id" integer NOT NULL,
+	"earning_name" text NOT NULL,
+	"is_cash" boolean DEFAULT true NOT NULL,
+	"federal_taxable" boolean DEFAULT true NOT NULL,
+	"fica_taxable" boolean DEFAULT true NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "people" (
@@ -554,6 +596,7 @@ CREATE TABLE "retirement_profile_people" (
 	"retirement_age" integer NOT NULL,
 	"end_age" integer NOT NULL,
 	"social_security_monthly" numeric(14, 2),
+	"social_security_pia" numeric(14, 2),
 	"ss_start_age" integer,
 	"rule_of_55_override" boolean,
 	"salary_annual_increase" numeric(8, 6)
@@ -618,6 +661,9 @@ CREATE TABLE "retirement_settings" (
 	"roth_conversion_target" numeric(8, 6),
 	"withdrawal_strategy" varchar(30) DEFAULT 'fixed' NOT NULL,
 	"discretionary_withdrawal_order" varchar(20) DEFAULT 'roth_first' NOT NULL,
+	"withdrawal_routing_mode" varchar(20) DEFAULT 'bracket_filling' NOT NULL,
+	"withdrawal_order" jsonb,
+	"withdrawal_splits" jsonb,
 	"gk_upper_guardrail" numeric(8, 6) DEFAULT '0.80',
 	"gk_lower_guardrail" numeric(8, 6) DEFAULT '1.20',
 	"gk_increase_pct" numeric(8, 6) DEFAULT '0.10',
@@ -634,6 +680,7 @@ CREATE TABLE "retirement_settings" (
 	"vd_floor_percent" numeric(12, 6) DEFAULT '0.025',
 	"rmd_multiplier" numeric(12, 6) DEFAULT '1.0',
 	"rmd_excess_handling" varchar(20) DEFAULT 'reinvest' NOT NULL,
+	"rmd_excess_target_performance_account_id" integer,
 	"qcd_maximize" boolean DEFAULT false NOT NULL,
 	"rmd_smoothing_enabled" boolean DEFAULT false NOT NULL,
 	"rmd_smoothing_max_bracket_target" numeric(8, 6),
@@ -740,14 +787,68 @@ CREATE TABLE "scenarios" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"name" text NOT NULL,
 	"description" text,
-	"overrides" jsonb DEFAULT '{}'::jsonb NOT NULL,
-	"is_baseline" boolean DEFAULT false NOT NULL,
 	"budget_profile_id" integer,
 	"contribution_profile_id" integer,
 	"salary_profile_id" integer,
 	"retirement_profile_id" integer,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "sec_filing_cache" (
+	"accession" text PRIMARY KEY NOT NULL,
+	"series_id" text NOT NULL,
+	"period_end" date NOT NULL,
+	"us_equity_pct" numeric(12, 6),
+	"intl_equity_pct" numeric(12, 6),
+	"us_bond_pct" numeric(12, 6),
+	"intl_bond_pct" numeric(12, 6),
+	"tips_pct" numeric(12, 6),
+	"cash_pct" numeric(12, 6),
+	"other_pct" numeric(12, 6),
+	"coverage" numeric(12, 6),
+	"fetched_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "securities" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"ticker" text,
+	"source_symbol" text,
+	"name" text NOT NULL,
+	"kind" text NOT NULL,
+	"institution" text,
+	"source_description" text,
+	"sec_series_id" text,
+	"sec_class_id" text,
+	"facts_series_id" text,
+	"facts_class_id" text,
+	"facts_series_name" text,
+	"facts_basis" text,
+	"standin_confirmed_at" timestamp with time zone,
+	"standin_preview" jsonb,
+	"facts_checked_at" timestamp with time zone,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "security_facts" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"security_id" integer NOT NULL,
+	"as_of" date NOT NULL,
+	"source" text NOT NULL,
+	"sec_series_id" text,
+	"accession" text,
+	"expense_ratio" numeric(12, 6),
+	"us_equity_pct" numeric(12, 6),
+	"intl_equity_pct" numeric(12, 6),
+	"us_bond_pct" numeric(12, 6),
+	"intl_bond_pct" numeric(12, 6),
+	"tips_pct" numeric(12, 6),
+	"cash_pct" numeric(12, 6),
+	"other_pct" numeric(12, 6),
+	"coverage" numeric(12, 6),
+	"fetched_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "security_facts_fraction_check" CHECK (("security_facts"."expense_ratio" IS NULL OR ("security_facts"."expense_ratio" >= 0 AND "security_facts"."expense_ratio" < 1))
+        AND ("security_facts"."coverage" IS NULL OR ("security_facts"."coverage" >= 0 AND "security_facts"."coverage" <= 1)))
 );
 --> statement-breakpoint
 CREATE TABLE "self_loans" (
@@ -760,15 +861,25 @@ CREATE TABLE "self_loans" (
 	"repaid_date" date
 );
 --> statement-breakpoint
+CREATE TABLE "simplefin_account_balances" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"simplefin_account_id" integer NOT NULL,
+	"balance_date" timestamp with time zone NOT NULL,
+	"balance" numeric(14, 2) NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "simplefin_accounts" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"external_account_id" text NOT NULL,
 	"org_name" text NOT NULL,
 	"account_name" text NOT NULL,
 	"last_balance" numeric(14, 2) NOT NULL,
+	"last_balance_date" timestamp with time zone,
 	"is_included" boolean DEFAULT true NOT NULL,
 	"last_seen_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"linked_performance_account_id" integer,
+	"linked_sub_key" text,
 	CONSTRAINT "simplefin_accounts_external_account_id_unique" UNIQUE("external_account_id")
 );
 --> statement-breakpoint
@@ -800,6 +911,15 @@ CREATE TABLE "state_versions" (
 	"size_estimate_bytes" integer,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"created_by" text NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "sync_request_log" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"service" text NOT NULL,
+	"requested_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"endpoint" text NOT NULL,
+	"http_status" integer,
+	"outcome" text NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "tax_brackets" (
@@ -841,11 +961,9 @@ CREATE TABLE "utility_service" (
 --> statement-breakpoint
 ALTER TABLE "account_basis" ADD CONSTRAINT "account_basis_performance_account_id_performance_accounts_id_fk" FOREIGN KEY ("performance_account_id") REFERENCES "public"."performance_accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "account_basis" ADD CONSTRAINT "account_basis_owner_person_id_people_id_fk" FOREIGN KEY ("owner_person_id") REFERENCES "public"."people"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "account_holdings" ADD CONSTRAINT "account_holdings_performance_account_id_performance_accounts_id_fk" FOREIGN KEY ("performance_account_id") REFERENCES "public"."performance_accounts"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "account_holdings" ADD CONSTRAINT "account_holdings_snapshot_id_portfolio_snapshots_id_fk" FOREIGN KEY ("snapshot_id") REFERENCES "public"."portfolio_snapshots"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "account_holdings" ADD CONSTRAINT "account_holdings_asset_class_id_asset_class_params_id_fk" FOREIGN KEY ("asset_class_id") REFERENCES "public"."asset_class_params"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "account_performance" ADD CONSTRAINT "account_performance_owner_person_id_people_id_fk" FOREIGN KEY ("owner_person_id") REFERENCES "public"."people"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "account_performance" ADD CONSTRAINT "account_performance_performance_account_id_performance_accounts_id_fk" FOREIGN KEY ("performance_account_id") REFERENCES "public"."performance_accounts"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "asset_class_buckets" ADD CONSTRAINT "asset_class_buckets_asset_class_id_asset_class_params_id_fk" FOREIGN KEY ("asset_class_id") REFERENCES "public"."asset_class_params"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "asset_class_correlations" ADD CONSTRAINT "asset_class_correlations_class_a_id_asset_class_params_id_fk" FOREIGN KEY ("class_a_id") REFERENCES "public"."asset_class_params"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "asset_class_correlations" ADD CONSTRAINT "asset_class_correlations_class_b_id_asset_class_params_id_fk" FOREIGN KEY ("class_b_id") REFERENCES "public"."asset_class_params"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "brokerage_planned_transactions" ADD CONSTRAINT "brokerage_planned_transactions_goal_id_brokerage_goals_id_fk" FOREIGN KEY ("goal_id") REFERENCES "public"."brokerage_goals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -858,6 +976,13 @@ ALTER TABLE "contribution_accounts" ADD CONSTRAINT "contribution_accounts_person
 ALTER TABLE "contribution_accounts" ADD CONSTRAINT "contribution_accounts_performance_account_id_performance_accounts_id_fk" FOREIGN KEY ("performance_account_id") REFERENCES "public"."performance_accounts"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "glide_path_allocations" ADD CONSTRAINT "glide_path_allocations_asset_class_id_asset_class_params_id_fk" FOREIGN KEY ("asset_class_id") REFERENCES "public"."asset_class_params"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "historical_salaries" ADD CONSTRAINT "historical_salaries_person_id_people_id_fk" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "holding_observations" ADD CONSTRAINT "holding_observations_simplefin_account_id_simplefin_accounts_id_fk" FOREIGN KEY ("simplefin_account_id") REFERENCES "public"."simplefin_accounts"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "holding_observations" ADD CONSTRAINT "holding_observations_performance_account_id_performance_accounts_id_fk" FOREIGN KEY ("performance_account_id") REFERENCES "public"."performance_accounts"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "holding_observations" ADD CONSTRAINT "holding_observations_security_id_securities_id_fk" FOREIGN KEY ("security_id") REFERENCES "public"."securities"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "holding_period_weights" ADD CONSTRAINT "holding_period_weights_holding_period_id_holding_periods_id_fk" FOREIGN KEY ("holding_period_id") REFERENCES "public"."holding_periods"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "holding_period_weights" ADD CONSTRAINT "holding_period_weights_security_id_securities_id_fk" FOREIGN KEY ("security_id") REFERENCES "public"."securities"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "holding_periods" ADD CONSTRAINT "holding_periods_performance_account_id_performance_accounts_id_fk" FOREIGN KEY ("performance_account_id") REFERENCES "public"."performance_accounts"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "investment_transactions" ADD CONSTRAINT "investment_transactions_simplefin_account_id_simplefin_accounts_id_fk" FOREIGN KEY ("simplefin_account_id") REFERENCES "public"."simplefin_accounts"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "jobs" ADD CONSTRAINT "jobs_person_id_people_id_fk" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "mc_preset_glide_paths" ADD CONSTRAINT "mc_preset_glide_paths_preset_id_mc_presets_id_fk" FOREIGN KEY ("preset_id") REFERENCES "public"."mc_presets"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "mc_preset_glide_paths" ADD CONSTRAINT "mc_preset_glide_paths_asset_class_id_asset_class_params_id_fk" FOREIGN KEY ("asset_class_id") REFERENCES "public"."asset_class_params"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -867,8 +992,7 @@ ALTER TABLE "mortgage_extra_payments" ADD CONSTRAINT "mortgage_extra_payments_lo
 ALTER TABLE "mortgage_loans" ADD CONSTRAINT "mortgage_loans_refinanced_from_id_mortgage_loans_id_fk" FOREIGN KEY ("refinanced_from_id") REFERENCES "public"."mortgage_loans"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "mortgage_what_if_scenarios" ADD CONSTRAINT "mortgage_what_if_scenarios_loan_id_mortgage_loans_id_fk" FOREIGN KEY ("loan_id") REFERENCES "public"."mortgage_loans"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "paycheck_deductions" ADD CONSTRAINT "paycheck_deductions_job_id_jobs_id_fk" FOREIGN KEY ("job_id") REFERENCES "public"."jobs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "pending_rollovers" ADD CONSTRAINT "pending_rollovers_source_account_performance_id_account_performance_id_fk" FOREIGN KEY ("source_account_performance_id") REFERENCES "public"."account_performance"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "pending_rollovers" ADD CONSTRAINT "pending_rollovers_destination_performance_account_id_performance_accounts_id_fk" FOREIGN KEY ("destination_performance_account_id") REFERENCES "public"."performance_accounts"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "paycheck_earnings" ADD CONSTRAINT "paycheck_earnings_job_id_jobs_id_fk" FOREIGN KEY ("job_id") REFERENCES "public"."jobs"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "performance_accounts" ADD CONSTRAINT "performance_accounts_owner_person_id_people_id_fk" FOREIGN KEY ("owner_person_id") REFERENCES "public"."people"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "portfolio_accounts" ADD CONSTRAINT "portfolio_accounts_snapshot_id_portfolio_snapshots_id_fk" FOREIGN KEY ("snapshot_id") REFERENCES "public"."portfolio_snapshots"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "portfolio_accounts" ADD CONSTRAINT "portfolio_accounts_owner_person_id_people_id_fk" FOREIGN KEY ("owner_person_id") REFERENCES "public"."people"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
@@ -881,11 +1005,13 @@ ALTER TABLE "retirement_salary_overrides" ADD CONSTRAINT "retirement_salary_over
 ALTER TABLE "retirement_salary_overrides" ADD CONSTRAINT "retirement_salary_overrides_contribution_profile_id_contribution_profiles_id_fk" FOREIGN KEY ("contribution_profile_id") REFERENCES "public"."contribution_profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "retirement_salary_overrides" ADD CONSTRAINT "retirement_salary_overrides_salary_profile_id_salary_profiles_id_fk" FOREIGN KEY ("salary_profile_id") REFERENCES "public"."salary_profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "retirement_settings" ADD CONSTRAINT "retirement_settings_person_id_people_id_fk" FOREIGN KEY ("person_id") REFERENCES "public"."people"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "retirement_settings" ADD CONSTRAINT "retirement_settings_rmd_excess_target_performance_account_id_performance_accounts_id_fk" FOREIGN KEY ("rmd_excess_target_performance_account_id") REFERENCES "public"."performance_accounts"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "retirement_settings" ADD CONSTRAINT "retirement_settings_profile_id_retirement_profiles_id_fk" FOREIGN KEY ("profile_id") REFERENCES "public"."retirement_profiles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "savings_allocation_overrides" ADD CONSTRAINT "savings_allocation_overrides_goal_id_savings_goals_id_fk" FOREIGN KEY ("goal_id") REFERENCES "public"."savings_goals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "savings_goal_category_links" ADD CONSTRAINT "savings_goal_category_links_savings_goal_id_savings_goals_id_fk" FOREIGN KEY ("savings_goal_id") REFERENCES "public"."savings_goals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "savings_goal_profile_allocations" ADD CONSTRAINT "savings_goal_profile_allocations_goal_id_savings_goals_id_fk" FOREIGN KEY ("goal_id") REFERENCES "public"."savings_goals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "savings_goal_profile_allocations" ADD CONSTRAINT "savings_goal_profile_allocations_budget_profile_id_budget_profiles_id_fk" FOREIGN KEY ("budget_profile_id") REFERENCES "public"."budget_profiles"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "savings_goals" ADD CONSTRAINT "savings_goals_parent_goal_id_savings_goals_id_fk" FOREIGN KEY ("parent_goal_id") REFERENCES "public"."savings_goals"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "savings_monthly" ADD CONSTRAINT "savings_monthly_goal_id_savings_goals_id_fk" FOREIGN KEY ("goal_id") REFERENCES "public"."savings_goals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "savings_planned_transactions" ADD CONSTRAINT "savings_planned_transactions_goal_id_savings_goals_id_fk" FOREIGN KEY ("goal_id") REFERENCES "public"."savings_goals"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "savings_planned_tx_settlements" ADD CONSTRAINT "savings_planned_tx_settlements_planned_tx_id_savings_planned_transactions_id_fk" FOREIGN KEY ("planned_tx_id") REFERENCES "public"."savings_planned_transactions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -893,24 +1019,23 @@ ALTER TABLE "scenarios" ADD CONSTRAINT "scenarios_budget_profile_id_budget_profi
 ALTER TABLE "scenarios" ADD CONSTRAINT "scenarios_contribution_profile_id_contribution_profiles_id_fk" FOREIGN KEY ("contribution_profile_id") REFERENCES "public"."contribution_profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scenarios" ADD CONSTRAINT "scenarios_salary_profile_id_salary_profiles_id_fk" FOREIGN KEY ("salary_profile_id") REFERENCES "public"."salary_profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "scenarios" ADD CONSTRAINT "scenarios_retirement_profile_id_retirement_profiles_id_fk" FOREIGN KEY ("retirement_profile_id") REFERENCES "public"."retirement_profiles"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "security_facts" ADD CONSTRAINT "security_facts_security_id_securities_id_fk" FOREIGN KEY ("security_id") REFERENCES "public"."securities"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "self_loans" ADD CONSTRAINT "self_loans_from_goal_id_savings_goals_id_fk" FOREIGN KEY ("from_goal_id") REFERENCES "public"."savings_goals"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "self_loans" ADD CONSTRAINT "self_loans_to_goal_id_savings_goals_id_fk" FOREIGN KEY ("to_goal_id") REFERENCES "public"."savings_goals"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "simplefin_account_balances" ADD CONSTRAINT "simplefin_account_balances_simplefin_account_id_simplefin_accounts_id_fk" FOREIGN KEY ("simplefin_account_id") REFERENCES "public"."simplefin_accounts"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "simplefin_accounts" ADD CONSTRAINT "simplefin_accounts_linked_performance_account_id_performance_accounts_id_fk" FOREIGN KEY ("linked_performance_account_id") REFERENCES "public"."performance_accounts"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "state_version_tables" ADD CONSTRAINT "state_version_tables_version_id_state_versions_id_fk" FOREIGN KEY ("version_id") REFERENCES "public"."state_versions"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "utility_reading" ADD CONSTRAINT "utility_reading_service_id_utility_service_id_fk" FOREIGN KEY ("service_id") REFERENCES "public"."utility_service"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE UNIQUE INDEX "account_basis_account_owner_year_idx" ON "account_basis" USING btree ("performance_account_id","owner_person_id","year");--> statement-breakpoint
 CREATE INDEX "account_basis_owner_person_id_idx" ON "account_basis" USING btree ("owner_person_id");--> statement-breakpoint
 CREATE INDEX "account_basis_year_idx" ON "account_basis" USING btree ("year");--> statement-breakpoint
-CREATE UNIQUE INDEX "account_holdings_acct_snap_ticker_idx" ON "account_holdings" USING btree ("performance_account_id","snapshot_id","ticker");--> statement-breakpoint
-CREATE INDEX "account_holdings_perf_acct_idx" ON "account_holdings" USING btree ("performance_account_id");--> statement-breakpoint
-CREATE INDEX "account_holdings_snapshot_idx" ON "account_holdings" USING btree ("snapshot_id");--> statement-breakpoint
-CREATE INDEX "account_holdings_asset_class_idx" ON "account_holdings" USING btree ("asset_class_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "account_perf_year_inst_label_owner_idx" ON "account_performance" USING btree ("year","institution","account_label","owner_person_id");--> statement-breakpoint
 CREATE INDEX "account_performance_owner_id_idx" ON "account_performance" USING btree ("owner_person_id");--> statement-breakpoint
 CREATE INDEX "account_performance_perf_acct_idx" ON "account_performance" USING btree ("performance_account_id");--> statement-breakpoint
 CREATE INDEX "account_performance_is_active_idx" ON "account_performance" USING btree ("is_active");--> statement-breakpoint
 CREATE UNIQUE INDEX "annual_performance_year_cat_idx" ON "annual_performance" USING btree ("year","category");--> statement-breakpoint
 CREATE INDEX "api_connections_linked_profile_id_idx" ON "api_connections" USING btree ("linked_profile_id");--> statement-breakpoint
+CREATE INDEX "asset_class_buckets_class_idx" ON "asset_class_buckets" USING btree ("asset_class_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "asset_class_correlations_pair_idx" ON "asset_class_correlations" USING btree ("class_a_id","class_b_id");--> statement-breakpoint
 CREATE INDEX "asset_class_correlations_class_a_idx" ON "asset_class_correlations" USING btree ("class_a_id");--> statement-breakpoint
 CREATE INDEX "asset_class_correlations_class_b_idx" ON "asset_class_correlations" USING btree ("class_b_id");--> statement-breakpoint
@@ -941,6 +1066,15 @@ CREATE UNIQUE INDEX "glide_path_age_class_idx" ON "glide_path_allocations" USING
 CREATE INDEX "glide_path_asset_class_idx" ON "glide_path_allocations" USING btree ("asset_class_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "historical_notes_year_field_idx" ON "historical_notes" USING btree ("year","field");--> statement-breakpoint
 CREATE UNIQUE INDEX "historical_salaries_person_year_idx" ON "historical_salaries" USING btree ("person_id","year");--> statement-breakpoint
+CREATE UNIQUE INDEX "holding_observations_simplefin_idx" ON "holding_observations" USING btree ("simplefin_account_id","security_id","as_of") WHERE "holding_observations"."simplefin_account_id" IS NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "holding_observations_manual_idx" ON "holding_observations" USING btree ("performance_account_id","security_id","as_of") WHERE "holding_observations"."performance_account_id" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX "holding_observations_security_idx" ON "holding_observations" USING btree ("security_id");--> statement-breakpoint
+CREATE INDEX "holding_observations_perf_account_idx" ON "holding_observations" USING btree ("performance_account_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "holding_period_weights_period_security_idx" ON "holding_period_weights" USING btree ("holding_period_id","security_id");--> statement-breakpoint
+CREATE INDEX "holding_period_weights_security_idx" ON "holding_period_weights" USING btree ("security_id");--> statement-breakpoint
+CREATE INDEX "holding_periods_account_part_start_idx" ON "holding_periods" USING btree ("performance_account_id","sub_key","start_date");--> statement-breakpoint
+CREATE UNIQUE INDEX "investment_transactions_external_idx" ON "investment_transactions" USING btree ("simplefin_account_id","external_id");--> statement-breakpoint
+CREATE INDEX "investment_transactions_account_posted_idx" ON "investment_transactions" USING btree ("simplefin_account_id","posted");--> statement-breakpoint
 CREATE UNIQUE INDEX "irmaa_brackets_year_status_idx" ON "irmaa_brackets" USING btree ("tax_year","filing_status");--> statement-breakpoint
 CREATE INDEX "jobs_person_id_idx" ON "jobs" USING btree ("person_id");--> statement-breakpoint
 CREATE INDEX "jobs_is_speculative_idx" ON "jobs" USING btree ("is_speculative");--> statement-breakpoint
@@ -958,10 +1092,7 @@ CREATE INDEX "mortgage_loans_refinanced_from_id_idx" ON "mortgage_loans" USING b
 CREATE INDEX "mortgage_what_if_loan_id_idx" ON "mortgage_what_if_scenarios" USING btree ("loan_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "other_asset_items_name_year_idx" ON "other_asset_items" USING btree ("name","year");--> statement-breakpoint
 CREATE INDEX "paycheck_deductions_job_id_idx" ON "paycheck_deductions" USING btree ("job_id");--> statement-breakpoint
-CREATE INDEX "pending_rollovers_source_idx" ON "pending_rollovers" USING btree ("source_account_performance_id");--> statement-breakpoint
-CREATE INDEX "pending_rollovers_dest_idx" ON "pending_rollovers" USING btree ("destination_performance_account_id");--> statement-breakpoint
-CREATE INDEX "pending_rollovers_sale_year_idx" ON "pending_rollovers" USING btree ("sale_year");--> statement-breakpoint
-CREATE INDEX "pending_rollovers_confirmed_idx" ON "pending_rollovers" USING btree ("confirmed_at");--> statement-breakpoint
+CREATE INDEX "paycheck_earnings_job_id_idx" ON "paycheck_earnings" USING btree ("job_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "performance_accounts_inst_type_idx" ON "performance_accounts" USING btree ("institution","account_type","sub_type","label","owner_person_id");--> statement-breakpoint
 CREATE INDEX "idx_perf_accounts_inst_label" ON "performance_accounts" USING btree ("institution","account_label");--> statement-breakpoint
 CREATE INDEX "performance_accounts_owner_id_idx" ON "performance_accounts" USING btree ("owner_person_id");--> statement-breakpoint
@@ -989,6 +1120,7 @@ CREATE INDEX "retirement_salary_overrides_contribution_profile_id_idx" ON "retir
 CREATE INDEX "retirement_salary_overrides_salary_profile_id_idx" ON "retirement_salary_overrides" USING btree ("salary_profile_id");--> statement-breakpoint
 CREATE INDEX "retirement_settings_person_id_idx" ON "retirement_settings" USING btree ("person_id");--> statement-breakpoint
 CREATE INDEX "retirement_settings_profile_id_idx" ON "retirement_settings" USING btree ("profile_id");--> statement-breakpoint
+CREATE INDEX "retirement_settings_rmd_excess_target_idx" ON "retirement_settings" USING btree ("rmd_excess_target_performance_account_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "retirement_settings_profile_person_unq" ON "retirement_settings" USING btree ("profile_id","person_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "savings_alloc_override_goal_month_idx" ON "savings_allocation_overrides" USING btree ("goal_id","month_date");--> statement-breakpoint
 CREATE INDEX "savings_goal_category_links_savings_goal_id_idx" ON "savings_goal_category_links" USING btree ("savings_goal_id");--> statement-breakpoint
@@ -996,23 +1128,32 @@ CREATE UNIQUE INDEX "savings_goal_category_links_goal_service_role_idx" ON "savi
 CREATE UNIQUE INDEX "savings_goal_profile_alloc_goal_profile_idx" ON "savings_goal_profile_allocations" USING btree ("goal_id","budget_profile_id");--> statement-breakpoint
 CREATE INDEX "savings_goal_profile_alloc_profile_idx" ON "savings_goal_profile_allocations" USING btree ("budget_profile_id");--> statement-breakpoint
 CREATE INDEX "savings_goals_is_active_idx" ON "savings_goals" USING btree ("is_active");--> statement-breakpoint
+CREATE INDEX "savings_goals_parent_goal_id_idx" ON "savings_goals" USING btree ("parent_goal_id");--> statement-breakpoint
 CREATE INDEX "savings_monthly_goal_id_idx" ON "savings_monthly" USING btree ("goal_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "savings_monthly_goal_month_idx" ON "savings_monthly" USING btree ("goal_id","month_date");--> statement-breakpoint
 CREATE INDEX "savings_planned_tx_goal_id_idx" ON "savings_planned_transactions" USING btree ("goal_id");--> statement-breakpoint
 CREATE INDEX "savings_planned_tx_source_idx" ON "savings_planned_transactions" USING btree ("source");--> statement-breakpoint
 CREATE UNIQUE INDEX "savings_planned_tx_settlements_occurrence_idx" ON "savings_planned_tx_settlements" USING btree ("planned_tx_id","occurrence_month");--> statement-breakpoint
+CREATE UNIQUE INDEX "scenarios_name_unique" ON "scenarios" USING btree ("name");--> statement-breakpoint
 CREATE INDEX "scenarios_budget_profile_id_idx" ON "scenarios" USING btree ("budget_profile_id");--> statement-breakpoint
 CREATE INDEX "scenarios_contribution_profile_id_idx" ON "scenarios" USING btree ("contribution_profile_id");--> statement-breakpoint
 CREATE INDEX "scenarios_salary_profile_id_idx" ON "scenarios" USING btree ("salary_profile_id");--> statement-breakpoint
 CREATE INDEX "scenarios_retirement_profile_id_idx" ON "scenarios" USING btree ("retirement_profile_id");--> statement-breakpoint
+CREATE INDEX "sec_filing_cache_series_idx" ON "sec_filing_cache" USING btree ("series_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "securities_ticker_idx" ON "securities" USING btree ("ticker") WHERE "securities"."ticker" IS NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "securities_untickered_identity_idx" ON "securities" USING btree ("institution","source_description") WHERE "securities"."ticker" IS NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX "security_facts_identity_idx" ON "security_facts" USING btree ("security_id","source","as_of");--> statement-breakpoint
+CREATE INDEX "security_facts_security_idx" ON "security_facts" USING btree ("security_id");--> statement-breakpoint
 CREATE INDEX "self_loans_from_goal_id_idx" ON "self_loans" USING btree ("from_goal_id");--> statement-breakpoint
 CREATE INDEX "self_loans_to_goal_id_idx" ON "self_loans" USING btree ("to_goal_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "simplefin_account_balances_account_date_idx" ON "simplefin_account_balances" USING btree ("simplefin_account_id","balance_date");--> statement-breakpoint
 CREATE INDEX "simplefin_accounts_org_name_idx" ON "simplefin_accounts" USING btree ("org_name","account_name");--> statement-breakpoint
 CREATE INDEX "simplefin_accounts_linked_perf_account_idx" ON "simplefin_accounts" USING btree ("linked_performance_account_id");--> statement-breakpoint
 CREATE INDEX "simplefin_balance_snapshots_date_idx" ON "simplefin_balance_snapshots" USING btree ("snapshot_date");--> statement-breakpoint
 CREATE INDEX "state_version_tables_version_id_idx" ON "state_version_tables" USING btree ("version_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "state_version_tables_version_table_idx" ON "state_version_tables" USING btree ("version_id","table_name");--> statement-breakpoint
 CREATE INDEX "state_versions_created_at_idx" ON "state_versions" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "sync_request_log_service_requested_idx" ON "sync_request_log" USING btree ("service","requested_at");--> statement-breakpoint
 CREATE UNIQUE INDEX "tax_brackets_year_status_checkbox_idx" ON "tax_brackets" USING btree ("tax_year","filing_status","w4_checkbox");--> statement-breakpoint
 CREATE UNIQUE INDEX "tax_params_year_idx" ON "tax_params" USING btree ("tax_year");--> statement-breakpoint
 CREATE UNIQUE INDEX "utility_reading_service_year_month_idx" ON "utility_reading" USING btree ("service_id","year","month");--> statement-breakpoint
@@ -1021,7 +1162,8 @@ CREATE UNIQUE INDEX "utility_service_kind_idx" ON "utility_service" USING btree 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- HAND-EDITED — do not regenerate this file blindly. Everything above is
 -- `drizzle-kit generate` output; everything below is carried forward by hand
--- through the v0.8.0 squash and must be re-applied after any regenerate.
+-- through the v0.8.0 and v0.9.0 squashes and must be re-applied after any
+-- regenerate.
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Converge the mortgage self-FK onto its canonical (drizzle-generated) name.
 -- Migration 0019 added it by hand as "mortgage_loans_refinanced_from_id_fk";

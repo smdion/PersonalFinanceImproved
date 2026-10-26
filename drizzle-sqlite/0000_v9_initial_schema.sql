@@ -17,25 +17,6 @@ CREATE TABLE `account_basis` (
 CREATE UNIQUE INDEX `account_basis_account_owner_year_idx` ON `account_basis` (`performance_account_id`,`owner_person_id`,`year`);--> statement-breakpoint
 CREATE INDEX `account_basis_owner_person_id_idx` ON `account_basis` (`owner_person_id`);--> statement-breakpoint
 CREATE INDEX `account_basis_year_idx` ON `account_basis` (`year`);--> statement-breakpoint
-CREATE TABLE `account_holdings` (
-	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`performance_account_id` integer NOT NULL,
-	`snapshot_id` integer NOT NULL,
-	`ticker` text NOT NULL,
-	`name` text NOT NULL,
-	`weight_bps` integer NOT NULL,
-	`expense_ratio` text,
-	`asset_class_id` integer,
-	`asset_class_source` text DEFAULT 'manual' NOT NULL,
-	FOREIGN KEY (`performance_account_id`) REFERENCES `performance_accounts`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`snapshot_id`) REFERENCES `portfolio_snapshots`(`id`) ON UPDATE no action ON DELETE cascade,
-	FOREIGN KEY (`asset_class_id`) REFERENCES `asset_class_params`(`id`) ON UPDATE no action ON DELETE set null
-);
---> statement-breakpoint
-CREATE UNIQUE INDEX `account_holdings_acct_snap_ticker_idx` ON `account_holdings` (`performance_account_id`,`snapshot_id`,`ticker`);--> statement-breakpoint
-CREATE INDEX `account_holdings_perf_acct_idx` ON `account_holdings` (`performance_account_id`);--> statement-breakpoint
-CREATE INDEX `account_holdings_snapshot_idx` ON `account_holdings` (`snapshot_id`);--> statement-breakpoint
-CREATE INDEX `account_holdings_asset_class_idx` ON `account_holdings` (`asset_class_id`);--> statement-breakpoint
 CREATE TABLE `account_performance` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`year` integer NOT NULL,
@@ -55,6 +36,9 @@ CREATE TABLE `account_performance` (
 	`is_active` integer DEFAULT true NOT NULL,
 	`is_finalized` integer DEFAULT false NOT NULL,
 	`performance_account_id` integer NOT NULL,
+	`note` text,
+	`estimated_fields` text DEFAULT '[]' NOT NULL,
+	`accepted_checks` text DEFAULT '{}' NOT NULL,
 	FOREIGN KEY (`owner_person_id`) REFERENCES `people`(`id`) ON UPDATE no action ON DELETE restrict,
 	FOREIGN KEY (`performance_account_id`) REFERENCES `performance_accounts`(`id`) ON UPDATE no action ON DELETE restrict
 );
@@ -106,6 +90,13 @@ CREATE TABLE `app_settings` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `app_settings_key_unique` ON `app_settings` (`key`);--> statement-breakpoint
+CREATE TABLE `asset_class_buckets` (
+	`bucket` text PRIMARY KEY NOT NULL,
+	`asset_class_id` integer NOT NULL,
+	FOREIGN KEY (`asset_class_id`) REFERENCES `asset_class_params`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `asset_class_buckets_class_idx` ON `asset_class_buckets` (`asset_class_id`);--> statement-breakpoint
 CREATE TABLE `asset_class_correlations` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`class_a_id` integer NOT NULL,
@@ -212,8 +203,6 @@ CREATE TABLE `budget_profiles` (
 	`description` text,
 	`column_labels` text NOT NULL,
 	`column_months` text,
-	`column_contribution_profile_ids` text,
-	`column_salary_profile_ids` text,
 	`is_active` integer DEFAULT false NOT NULL,
 	`created_at` integer DEFAULT (unixepoch()) NOT NULL
 );
@@ -323,6 +312,53 @@ CREATE TABLE `historical_salaries` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `historical_salaries_person_year_idx` ON `historical_salaries` (`person_id`,`year`);--> statement-breakpoint
+CREATE TABLE `holding_observations` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`simplefin_account_id` integer,
+	`performance_account_id` integer,
+	`security_id` integer NOT NULL,
+	`balance_date` integer,
+	`as_of` text NOT NULL,
+	`shares` text NOT NULL,
+	`reported_market_value` text,
+	`avg_cost_per_share` text,
+	`source` text NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	FOREIGN KEY (`simplefin_account_id`) REFERENCES `simplefin_accounts`(`id`) ON UPDATE no action ON DELETE restrict,
+	FOREIGN KEY (`performance_account_id`) REFERENCES `performance_accounts`(`id`) ON UPDATE no action ON DELETE restrict,
+	FOREIGN KEY (`security_id`) REFERENCES `securities`(`id`) ON UPDATE no action ON DELETE restrict
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `holding_observations_simplefin_idx` ON `holding_observations` (`simplefin_account_id`,`security_id`,`as_of`) WHERE "holding_observations"."simplefin_account_id" IS NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX `holding_observations_manual_idx` ON `holding_observations` (`performance_account_id`,`security_id`,`as_of`) WHERE "holding_observations"."performance_account_id" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX `holding_observations_security_idx` ON `holding_observations` (`security_id`);--> statement-breakpoint
+CREATE INDEX `holding_observations_perf_account_idx` ON `holding_observations` (`performance_account_id`);--> statement-breakpoint
+CREATE TABLE `holding_period_weights` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`holding_period_id` integer NOT NULL,
+	`security_id` integer NOT NULL,
+	`weight` text NOT NULL,
+	FOREIGN KEY (`holding_period_id`) REFERENCES `holding_periods`(`id`) ON UPDATE no action ON DELETE cascade,
+	FOREIGN KEY (`security_id`) REFERENCES `securities`(`id`) ON UPDATE no action ON DELETE restrict
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `holding_period_weights_period_security_idx` ON `holding_period_weights` (`holding_period_id`,`security_id`);--> statement-breakpoint
+CREATE INDEX `holding_period_weights_security_idx` ON `holding_period_weights` (`security_id`);--> statement-breakpoint
+CREATE TABLE `holding_periods` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`performance_account_id` integer NOT NULL,
+	`sub_key` text,
+	`start_date` text NOT NULL,
+	`end_date` text,
+	`basis` text NOT NULL,
+	`fit_quality` text,
+	`notes` text,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
+	FOREIGN KEY (`performance_account_id`) REFERENCES `performance_accounts`(`id`) ON UPDATE no action ON DELETE restrict
+);
+--> statement-breakpoint
+CREATE INDEX `holding_periods_account_part_start_idx` ON `holding_periods` (`performance_account_id`,`sub_key`,`start_date`);--> statement-breakpoint
 CREATE TABLE `home_improvement_items` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`year` integer NOT NULL,
@@ -331,6 +367,24 @@ CREATE TABLE `home_improvement_items` (
 	`note` text
 );
 --> statement-breakpoint
+CREATE TABLE `investment_transactions` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`simplefin_account_id` integer NOT NULL,
+	`external_id` text NOT NULL,
+	`posted` text NOT NULL,
+	`transacted` text,
+	`amount` text NOT NULL,
+	`description` text NOT NULL,
+	`pending` integer DEFAULT false NOT NULL,
+	`kind_override` text,
+	`voided_at` integer,
+	`first_seen_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`updated_at` integer DEFAULT (unixepoch()) NOT NULL,
+	FOREIGN KEY (`simplefin_account_id`) REFERENCES `simplefin_accounts`(`id`) ON UPDATE no action ON DELETE restrict
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `investment_transactions_external_idx` ON `investment_transactions` (`simplefin_account_id`,`external_id`);--> statement-breakpoint
+CREATE INDEX `investment_transactions_account_posted_idx` ON `investment_transactions` (`simplefin_account_id`,`posted`);--> statement-breakpoint
 CREATE TABLE `irmaa_brackets` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`tax_year` integer NOT NULL,
@@ -519,25 +573,17 @@ CREATE TABLE `paycheck_deductions` (
 );
 --> statement-breakpoint
 CREATE INDEX `paycheck_deductions_job_id_idx` ON `paycheck_deductions` (`job_id`);--> statement-breakpoint
-CREATE TABLE `pending_rollovers` (
+CREATE TABLE `paycheck_earnings` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
-	`source_account_performance_id` integer NOT NULL,
-	`destination_performance_account_id` integer NOT NULL,
-	`amount` text NOT NULL,
-	`sale_date` text NOT NULL,
-	`sale_year` integer NOT NULL,
-	`apply_year` integer NOT NULL,
-	`notes` text,
-	`confirmed_at` integer,
-	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
-	FOREIGN KEY (`source_account_performance_id`) REFERENCES `account_performance`(`id`) ON UPDATE no action ON DELETE restrict,
-	FOREIGN KEY (`destination_performance_account_id`) REFERENCES `performance_accounts`(`id`) ON UPDATE no action ON DELETE restrict
+	`job_id` integer NOT NULL,
+	`earning_name` text NOT NULL,
+	`is_cash` integer DEFAULT true NOT NULL,
+	`federal_taxable` integer DEFAULT true NOT NULL,
+	`fica_taxable` integer DEFAULT true NOT NULL,
+	FOREIGN KEY (`job_id`) REFERENCES `jobs`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
-CREATE INDEX `pending_rollovers_source_idx` ON `pending_rollovers` (`source_account_performance_id`);--> statement-breakpoint
-CREATE INDEX `pending_rollovers_dest_idx` ON `pending_rollovers` (`destination_performance_account_id`);--> statement-breakpoint
-CREATE INDEX `pending_rollovers_sale_year_idx` ON `pending_rollovers` (`sale_year`);--> statement-breakpoint
-CREATE INDEX `pending_rollovers_confirmed_idx` ON `pending_rollovers` (`confirmed_at`);--> statement-breakpoint
+CREATE INDEX `paycheck_earnings_job_id_idx` ON `paycheck_earnings` (`job_id`);--> statement-breakpoint
 CREATE TABLE `people` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,
@@ -666,6 +712,7 @@ CREATE TABLE `retirement_profile_people` (
 	`retirement_age` integer NOT NULL,
 	`end_age` integer NOT NULL,
 	`social_security_monthly` text,
+	`social_security_pia` text,
 	`ss_start_age` integer,
 	`rule_of_55_override` integer,
 	`salary_annual_increase` text,
@@ -742,6 +789,9 @@ CREATE TABLE `retirement_settings` (
 	`roth_conversion_target` text,
 	`withdrawal_strategy` text DEFAULT 'fixed' NOT NULL,
 	`discretionary_withdrawal_order` text DEFAULT 'roth_first' NOT NULL,
+	`withdrawal_routing_mode` text DEFAULT 'bracket_filling' NOT NULL,
+	`withdrawal_order` text,
+	`withdrawal_splits` text,
 	`gk_upper_guardrail` text DEFAULT '0.80',
 	`gk_lower_guardrail` text DEFAULT '1.20',
 	`gk_increase_pct` text DEFAULT '0.10',
@@ -758,6 +808,7 @@ CREATE TABLE `retirement_settings` (
 	`vd_floor_percent` text DEFAULT '0.025',
 	`rmd_multiplier` text DEFAULT '1.0',
 	`rmd_excess_handling` text DEFAULT 'reinvest' NOT NULL,
+	`rmd_excess_target_performance_account_id` integer,
 	`qcd_maximize` integer DEFAULT false NOT NULL,
 	`rmd_smoothing_enabled` integer DEFAULT false NOT NULL,
 	`rmd_smoothing_max_bracket_target` text,
@@ -771,11 +822,13 @@ CREATE TABLE `retirement_settings` (
 	`distribution_tax_rate_hsa` text,
 	`distribution_tax_rate_brokerage` text,
 	FOREIGN KEY (`person_id`) REFERENCES `people`(`id`) ON UPDATE no action ON DELETE restrict,
+	FOREIGN KEY (`rmd_excess_target_performance_account_id`) REFERENCES `performance_accounts`(`id`) ON UPDATE no action ON DELETE set null,
 	FOREIGN KEY (`profile_id`) REFERENCES `retirement_profiles`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
 CREATE INDEX `retirement_settings_person_id_idx` ON `retirement_settings` (`person_id`);--> statement-breakpoint
 CREATE INDEX `retirement_settings_profile_id_idx` ON `retirement_settings` (`profile_id`);--> statement-breakpoint
+CREATE INDEX `retirement_settings_rmd_excess_target_idx` ON `retirement_settings` (`rmd_excess_target_performance_account_id`);--> statement-breakpoint
 CREATE UNIQUE INDEX `retirement_settings_profile_person_unq` ON `retirement_settings` (`profile_id`,`person_id`);--> statement-breakpoint
 CREATE TABLE `return_rate_table` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
@@ -842,11 +895,13 @@ CREATE TABLE `savings_goals` (
 	`api_category_name` text,
 	`is_api_sync_enabled` integer DEFAULT false NOT NULL,
 	`reimbursement_api_category_id` text,
-	`target_mode` text DEFAULT 'fixed' NOT NULL
+	`target_mode` text DEFAULT 'fixed' NOT NULL,
+	FOREIGN KEY (`parent_goal_id`) REFERENCES `savings_goals`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `savings_goals_name_unique` ON `savings_goals` (`name`);--> statement-breakpoint
 CREATE INDEX `savings_goals_is_active_idx` ON `savings_goals` (`is_active`);--> statement-breakpoint
+CREATE INDEX `savings_goals_parent_goal_id_idx` ON `savings_goals` (`parent_goal_id`);--> statement-breakpoint
 CREATE TABLE `savings_monthly` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`goal_id` integer NOT NULL,
@@ -887,8 +942,6 @@ CREATE TABLE `scenarios` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`name` text NOT NULL,
 	`description` text,
-	`overrides` text DEFAULT '{}' NOT NULL,
-	`is_baseline` integer DEFAULT false NOT NULL,
 	`budget_profile_id` integer,
 	`contribution_profile_id` integer,
 	`salary_profile_id` integer,
@@ -901,10 +954,71 @@ CREATE TABLE `scenarios` (
 	FOREIGN KEY (`retirement_profile_id`) REFERENCES `retirement_profiles`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX `scenarios_name_unique` ON `scenarios` (`name`);--> statement-breakpoint
 CREATE INDEX `scenarios_budget_profile_id_idx` ON `scenarios` (`budget_profile_id`);--> statement-breakpoint
 CREATE INDEX `scenarios_contribution_profile_id_idx` ON `scenarios` (`contribution_profile_id`);--> statement-breakpoint
 CREATE INDEX `scenarios_salary_profile_id_idx` ON `scenarios` (`salary_profile_id`);--> statement-breakpoint
 CREATE INDEX `scenarios_retirement_profile_id_idx` ON `scenarios` (`retirement_profile_id`);--> statement-breakpoint
+CREATE TABLE `sec_filing_cache` (
+	`accession` text PRIMARY KEY NOT NULL,
+	`series_id` text NOT NULL,
+	`period_end` text NOT NULL,
+	`us_equity_pct` text,
+	`intl_equity_pct` text,
+	`us_bond_pct` text,
+	`intl_bond_pct` text,
+	`tips_pct` text,
+	`cash_pct` text,
+	`other_pct` text,
+	`coverage` text,
+	`fetched_at` integer DEFAULT (unixepoch()) NOT NULL
+);
+--> statement-breakpoint
+CREATE INDEX `sec_filing_cache_series_idx` ON `sec_filing_cache` (`series_id`);--> statement-breakpoint
+CREATE TABLE `securities` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`ticker` text,
+	`source_symbol` text,
+	`name` text NOT NULL,
+	`kind` text NOT NULL,
+	`institution` text,
+	`source_description` text,
+	`sec_series_id` text,
+	`sec_class_id` text,
+	`facts_series_id` text,
+	`facts_class_id` text,
+	`facts_series_name` text,
+	`facts_basis` text,
+	`standin_confirmed_at` integer,
+	`standin_preview` text,
+	`facts_checked_at` integer,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `securities_ticker_idx` ON `securities` (`ticker`) WHERE "securities"."ticker" IS NOT NULL;--> statement-breakpoint
+CREATE UNIQUE INDEX `securities_untickered_identity_idx` ON `securities` (`institution`,`source_description`) WHERE "securities"."ticker" IS NULL;--> statement-breakpoint
+CREATE TABLE `security_facts` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`security_id` integer NOT NULL,
+	`as_of` text NOT NULL,
+	`source` text NOT NULL,
+	`sec_series_id` text,
+	`accession` text,
+	`expense_ratio` text,
+	`us_equity_pct` text,
+	`intl_equity_pct` text,
+	`us_bond_pct` text,
+	`intl_bond_pct` text,
+	`tips_pct` text,
+	`cash_pct` text,
+	`other_pct` text,
+	`coverage` text,
+	`fetched_at` integer DEFAULT (unixepoch()) NOT NULL,
+	FOREIGN KEY (`security_id`) REFERENCES `securities`(`id`) ON UPDATE no action ON DELETE restrict
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `security_facts_identity_idx` ON `security_facts` (`security_id`,`source`,`as_of`);--> statement-breakpoint
+CREATE INDEX `security_facts_security_idx` ON `security_facts` (`security_id`);--> statement-breakpoint
 CREATE TABLE `self_loans` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`from_goal_id` integer NOT NULL,
@@ -919,15 +1033,27 @@ CREATE TABLE `self_loans` (
 --> statement-breakpoint
 CREATE INDEX `self_loans_from_goal_id_idx` ON `self_loans` (`from_goal_id`);--> statement-breakpoint
 CREATE INDEX `self_loans_to_goal_id_idx` ON `self_loans` (`to_goal_id`);--> statement-breakpoint
+CREATE TABLE `simplefin_account_balances` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`simplefin_account_id` integer NOT NULL,
+	`balance_date` integer NOT NULL,
+	`balance` text NOT NULL,
+	`created_at` integer DEFAULT (unixepoch()) NOT NULL,
+	FOREIGN KEY (`simplefin_account_id`) REFERENCES `simplefin_accounts`(`id`) ON UPDATE no action ON DELETE restrict
+);
+--> statement-breakpoint
+CREATE UNIQUE INDEX `simplefin_account_balances_account_date_idx` ON `simplefin_account_balances` (`simplefin_account_id`,`balance_date`);--> statement-breakpoint
 CREATE TABLE `simplefin_accounts` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`external_account_id` text NOT NULL,
 	`org_name` text NOT NULL,
 	`account_name` text NOT NULL,
 	`last_balance` text NOT NULL,
+	`last_balance_date` integer,
 	`is_included` integer DEFAULT true NOT NULL,
 	`last_seen_at` integer DEFAULT (unixepoch()) NOT NULL,
 	`linked_performance_account_id` integer,
+	`linked_sub_key` text,
 	FOREIGN KEY (`linked_performance_account_id`) REFERENCES `performance_accounts`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint
@@ -969,6 +1095,16 @@ CREATE TABLE `state_versions` (
 );
 --> statement-breakpoint
 CREATE INDEX `state_versions_created_at_idx` ON `state_versions` (`created_at`);--> statement-breakpoint
+CREATE TABLE `sync_request_log` (
+	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
+	`service` text NOT NULL,
+	`requested_at` integer DEFAULT (unixepoch()) NOT NULL,
+	`endpoint` text NOT NULL,
+	`http_status` integer,
+	`outcome` text NOT NULL
+);
+--> statement-breakpoint
+CREATE INDEX `sync_request_log_service_requested_idx` ON `sync_request_log` (`service`,`requested_at`);--> statement-breakpoint
 CREATE TABLE `tax_brackets` (
 	`id` integer PRIMARY KEY AUTOINCREMENT NOT NULL,
 	`tax_year` integer NOT NULL,
@@ -1014,10 +1150,11 @@ CREATE UNIQUE INDEX `utility_service_kind_idx` ON `utility_service` (`kind`);
 -- ─────────────────────────────────────────────────────────────────────────────
 -- HAND-EDITED — do not regenerate this file blindly. Everything above is
 -- `drizzle-kit generate` output; everything below is carried forward by hand
--- through the v0.8.0 squash and must be re-applied after any regenerate.
+-- through the v0.8.0 and v0.9.0 squashes and must be re-applied after any
+-- regenerate.
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Baseline profile seed — SQLite twin of the block appended to
--- drizzle/0000_v8_initial_schema.sql. Same idempotency guards.
+-- drizzle/0000_v9_initial_schema.sql. Same idempotency guards.
 INSERT INTO `salary_profiles` (`name`, `description`, `salaries`)
 SELECT
 	(

@@ -1,7 +1,8 @@
 /**
- * The v0.8.0 squashed baseline (0000_v8_initial_schema) must produce a
- * usable fresh database on its own — including the hand-edited profile
- * seed carried forward from 0008_kill_live_sentinel. Without that seed a
+ * The squashed baseline (0000_v9_initial_schema — the v0.8 line, squashed in
+ * v0.9.0) must produce a usable fresh database on its own — including the
+ * hand-edited profile seed carried forward from 0008_kill_live_sentinel
+ * through the v0.8.0 and v0.9.0 squashes. Without that seed a
  * fresh install has no active Salary or Contribution profile and the
  * router layer falls over.
  */
@@ -14,7 +15,7 @@ function migratedDb() {
   const db = new Database(":memory:");
   db.pragma("foreign_keys = OFF");
   const sql = fs.readFileSync(
-    path.join(process.cwd(), "drizzle-sqlite", "0000_v8_initial_schema.sql"),
+    path.join(process.cwd(), "drizzle-sqlite", "0000_v9_initial_schema.sql"),
     "utf8",
   );
   for (const stmt of sql.split("--> statement-breakpoint")) {
@@ -24,7 +25,7 @@ function migratedDb() {
   return db;
 }
 
-describe("v0.8.0 squashed baseline (SQLite)", () => {
+describe("v0.9.0 squashed baseline (SQLite)", () => {
   it("creates every schema table in one migration", () => {
     const db = migratedDb();
     const n = db
@@ -32,7 +33,18 @@ describe("v0.8.0 squashed baseline (SQLite)", () => {
         "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' AND name NOT LIKE '__drizzle%'",
       )
       .get() as { n: number };
-    expect(n.n).toBe(72);
+    const snapshot = JSON.parse(
+      fs.readFileSync(
+        path.join(
+          process.cwd(),
+          "drizzle-sqlite",
+          "meta",
+          "0000_snapshot.json",
+        ),
+        "utf8",
+      ),
+    ) as { tables: Record<string, unknown> };
+    expect(n.n).toBe(Object.keys(snapshot.tables).length);
   });
 
   it("seeds exactly one active Salary profile and one active Contribution profile", () => {
@@ -76,7 +88,7 @@ describe("v0.8.0 squashed baseline (SQLite)", () => {
   it("re-applying the baseline is idempotent (squash-recovery replay leaves seed counts unchanged)", () => {
     const db = migratedDb();
     const sql = fs.readFileSync(
-      path.join(process.cwd(), "drizzle-sqlite", "0000_v8_initial_schema.sql"),
+      path.join(process.cwd(), "drizzle-sqlite", "0000_v9_initial_schema.sql"),
       "utf8",
     );
     for (const stmt of sql.split("--> statement-breakpoint")) {

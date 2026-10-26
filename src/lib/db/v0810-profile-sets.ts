@@ -1,13 +1,10 @@
 /**
- * The v0.8.10 data conversion — shared by migration 0009 (db-migrate.ts,
- * which runs it on the live tables just before 0009's SQL) and restoring an
- * older backup (backup-transforms.ts). db-migrate.ts is compiled on its own
- * and can't import from src/, so it keeps an identical copy of the block
- * between the BEGIN/END markers; tests/db/v0810-profile-sets.test.ts checks
- * the two are the same. Edit both together.
+ * The v0.8.10 data conversion, for restoring a backup taken before v0.8.10
+ * (backup-transforms.ts). Migration 0009 also ran it on live tables until
+ * the v0.9.0 squash folded the v0.8 line into one baseline — a database
+ * that old must go through v0.8.15 first.
  */
 
-// BEGIN v0810-profile-sets (keep identical in db-migrate.ts)
 type V0810Row = Record<string, unknown>;
 
 /** The rows the v0.8.10 conversion reads and changes, keyed by table name
@@ -332,4 +329,3 @@ export function convertV0810ProfileSets(tables: V0810Tables): V0810Result {
   }
   return result;
 }
-// END v0810-profile-sets

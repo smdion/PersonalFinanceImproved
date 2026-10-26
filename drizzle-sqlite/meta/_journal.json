@@ -5,120 +5,36 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1788406194841,
-      "tag": "0000_v8_initial_schema",
+      "when": 1792888105153,
+      "tag": "0000_v9_initial_schema",
       "breakpoints": true
     },
     {
       "idx": 1,
       "version": "6",
-      "when": 1788643615870,
-      "tag": "0001_cool_frank_castle",
+      "when": 1792971270443,
+      "tag": "0001_v090_tax_data_origin",
       "breakpoints": true
     },
     {
       "idx": 2,
       "version": "6",
-      "when": 1788652232841,
-      "tag": "0002_complete_jackpot",
+      "when": 1792979636710,
+      "tag": "0002_v090_tax_data_updates",
       "breakpoints": true
     },
     {
       "idx": 3,
       "version": "6",
-      "when": 1788671002892,
-      "tag": "0003_shallow_patch",
+      "when": 1793023622774,
+      "tag": "0003_v090_utility_feed",
       "breakpoints": true
     },
     {
       "idx": 4,
       "version": "6",
-      "when": 1791835561221,
-      "tag": "0004_v085_investments",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1791858576742,
-      "tag": "0005_v086_schema_cleanup",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1792446874052,
-      "tag": "0006_v088_holding_periods",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "6",
-      "when": 1792448704631,
-      "tag": "0007_v088_drop_account_holdings",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "6",
-      "when": 1792459105182,
-      "tag": "0008_v088_paycheck_earnings",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "6",
-      "when": 1792520393852,
-      "tag": "0009_v0810_profile_sets",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "6",
-      "when": 1792547485974,
-      "tag": "0010_v0810_holding_period_parts",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "6",
-      "when": 1792604716294,
-      "tag": "0011_v0811_rmd_excess_target",
-      "breakpoints": true
-    },
-    {
-      "idx": 12,
-      "version": "6",
-      "when": 1792888105153,
-      "tag": "0012_v0814_perf_annotations",
-      "breakpoints": true
-    },
-    {
-      "idx": 13,
-      "version": "6",
-      "when": 1792971270443,
-      "tag": "0013_v090_tax_data_origin",
-      "breakpoints": true
-    },
-    {
-      "idx": 14,
-      "version": "6",
-      "when": 1792979636710,
-      "tag": "0014_v090_tax_data_updates",
-      "breakpoints": true
-    },
-    {
-      "idx": 15,
-      "version": "6",
-      "when": 1793023622774,
-      "tag": "0015_v090_utility_feed",
-      "breakpoints": true
-    },
-    {
-      "idx": 16,
-      "version": "6",
       "when": 1793025457137,
-      "tag": "0016_v090_debts",
+      "tag": "0004_v090_debts",
       "breakpoints": true
     }
   ]

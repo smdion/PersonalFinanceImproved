@@ -3,6 +3,9 @@ import * as path from "path";
 
 /** Kept equal to src/lib/db/demo-schema-marker.ts (standalone build; a test checks). */
 export const DEMO_SCHEMA_MARKER_PREFIX = "ledgr-migrations:";
+/** Kept equal to src/lib/db/demo-schema-marker.ts — "<count>:<last hash>". */
+export const MIGRATION_STAMP_SUBQUERY =
+  "(SELECT count(*)::text || ':' || coalesce((SELECT hash FROM drizzle.__drizzle_migrations ORDER BY id DESC LIMIT 1), '') FROM drizzle.__drizzle_migrations)";
 
 function log(
   level: "info" | "warn" | "error",
@@ -12,461 +15,6 @@ function log(
   const entry = { timestamp: new Date().toISOString(), level, event, ...data };
   if (level === "error") console.error(JSON.stringify(entry));
   else console.log(JSON.stringify(entry));
-}
-
-// BEGIN v0810-profile-sets (keep identical in db-migrate.ts)
-type V0810Row = Record<string, unknown>;
-
-/** The rows the v0.8.10 conversion reads and changes, keyed by table name
- *  (snake_case columns, as both a backup and `SELECT *` give them). */
-export type V0810Tables = Record<string, V0810Row[] | undefined>;
-
-export type V0810Result = {
-  /** Salary Profiles made from older Plans' salaries (ids already set). */
-  newSalaryProfiles: V0810Row[];
-  /** Ids of rows changed in place, per table. */
-  changed: {
-    salary_profiles: Set<number>;
-    contribution_profiles: Set<number>;
-    scenarios: Set<number>;
-  };
-  /** app_settings keys to delete. */
-  deletedSettings: string[];
-  /** What was converted, for the log. */
-  notes: string[];
-};
-
-/** A JSON column as an object: a backup or PostgreSQL gives the value,
- *  SQLite gives text. Anything unreadable is null. */
-function v0810Json(value: unknown): unknown {
-  if (typeof value !== "string") return value ?? null;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
-}
-
-function v0810Object(value: unknown): Record<string, unknown> | null {
-  const v = v0810Json(value);
-  return v && typeof v === "object" && !Array.isArray(v)
-    ? (v as Record<string, unknown>)
-    : null;
-}
-
-function v0810Truthy(value: unknown): boolean {
-  return value === true || value === 1 || value === "1" || value === "true";
-}
-
-/**
- * Convert v0.8.9-and-older profile data to the v0.8.10 shapes, in place:
- *
- * 1. A Plan's stored salaries (`scenarios.overrides.people[personId].salary`)
- *    become a new Salary Profile — a copy of the Plan's own (or else the
- *    active) Salary Profile with those salaries on each person's current
- *    job — and the Plan uses it.
- * 2. Where each person's bonus goes (the `bonus_destinations` setting)
- *    moves into every Salary Profile entry for that person's jobs
- *    (`bonusDestination`, only when "spending"); the setting is deleted.
- * 3. The Salary Profile's bonus switches (`include401kInBonus` /
- *    `includeBonusInContributions`) become each payroll account's own
- *    `fromBonus` in every Contribution Profile that has an entry for it —
- *    read from the active Salary Profile's entry for the account's job,
- *    else the first profile that has one — and are removed from entries.
- * 4. Duplicate Plan names get " (2)", " (3)", … so the new unique index
- *    can be built.
- *
- * Every step does nothing when its source is gone, so running it twice
- * changes nothing the second time. Only non-default values are written.
- */
-export function convertV0810ProfileSets(tables: V0810Tables): V0810Result {
-  const result: V0810Result = {
-    newSalaryProfiles: [],
-    changed: {
-      salary_profiles: new Set(),
-      contribution_profiles: new Set(),
-      scenarios: new Set(),
-    },
-    deletedSettings: [],
-    notes: [],
-  };
-  const scenarios = tables["scenarios"] ?? [];
-  const salaryProfiles = tables["salary_profiles"] ?? [];
-  const contributionProfiles = tables["contribution_profiles"] ?? [];
-  const accounts = tables["contribution_accounts"] ?? [];
-  const jobs = tables["jobs"] ?? [];
-  const settings = tables["app_settings"] ?? [];
-
-  const setting = (key: string) =>
-    v0810Json(settings.find((s) => s["key"] === key)?.["value"]);
-  const byId = (rows: V0810Row[]) =>
-    [...rows].sort((a, b) => Number(a["id"]) - Number(b["id"]));
-
-  // Each profile's salaries, parsed once and written back at the end.
-  const salariesOf = new Map<V0810Row, Record<string, V0810Row>>();
-  for (const p of salaryProfiles) {
-    const s = v0810Object(p["salaries"]) as Record<string, V0810Row> | null;
-    salariesOf.set(p, s ?? {});
-  }
-  const activeSalaryId = Number(setting("active_salary_profile_id"));
-  const activeSalary =
-    salaryProfiles.find((p) => Number(p["id"]) === activeSalaryId) ??
-    byId(salaryProfiles)[0];
-  const jobById = new Map(jobs.map((j) => [Number(j["id"]), j]));
-  const currentJob = (personId: number) =>
-    byId(jobs).find(
-      (j) =>
-        Number(j["person_id"]) === personId &&
-        !j["end_date"] &&
-        !v0810Truthy(j["is_speculative"]),
-    );
-
-  // 1. Plan salaries → their own Salary Profile.
-  const takenProfileNames = new Set(salaryProfiles.map((p) => p["name"]));
-  let nextProfileId =
-    Math.max(0, ...salaryProfiles.map((p) => Number(p["id"]) || 0)) + 1;
-  for (const plan of byId(scenarios)) {
-    const people = v0810Object(v0810Object(plan["overrides"])?.["people"]);
-    if (!people) continue;
-    const base =
-      salaryProfiles.find(
-        (p) => Number(p["id"]) === Number(plan["salary_profile_id"]),
-      ) ?? activeSalary;
-    if (!base) continue;
-    const salaries: Record<string, V0810Row> = JSON.parse(
-      JSON.stringify(salariesOf.get(base) ?? {}),
-    );
-    let changed = false;
-    for (const [personId, fields] of Object.entries(people)) {
-      const salary = Number(v0810Object(fields)?.["salary"]);
-      if (!Number.isFinite(salary)) continue;
-      const job = currentJob(Number(personId));
-      const current = jobs.filter(
-        (j) =>
-          Number(j["person_id"]) === Number(personId) &&
-          !j["end_date"] &&
-          !v0810Truthy(j["is_speculative"]),
-      );
-      if (current.length > 1)
-        result.notes.push(
-          `Plan ${plan["id"]}: person ${personId} has ${current.length} current jobs; their stored salary went to job ${job?.["id"]}`,
-        );
-      const entry = job ? salaries[String(job["id"])] : undefined;
-      if (!entry) {
-        result.notes.push(
-          `Plan ${plan["id"]}: person ${personId} has no current job in its Salary Profile; their stored salary was not kept`,
-        );
-        continue;
-      }
-      // Same as the profile already says: nothing to keep.
-      if (Number(entry["salary"]) === salary) continue;
-      entry["salary"] = salary;
-      changed = true;
-    }
-    if (!changed) continue;
-    let name = `${String(plan["name"])} salary`;
-    for (let n = 2; takenProfileNames.has(name); n++)
-      name = `${String(plan["name"])} salary (${n})`;
-    takenProfileNames.add(name);
-    const profile: V0810Row = {
-      id: nextProfileId++,
-      name,
-      description: `Made from Plan "${String(plan["name"])}" when upgrading to v0.8.10.`,
-      salaries,
-      // A restored backup inserts every column its rows carry.
-      ...("created_at" in base ? { created_at: base["created_at"] } : {}),
-    };
-    result.newSalaryProfiles.push(profile);
-    salariesOf.set(profile, salaries);
-    plan["salary_profile_id"] = profile["id"];
-    result.changed.scenarios.add(Number(plan["id"]));
-    result.notes.push(
-      `Plan ${plan["id"]}: its salaries became Salary Profile "${name}"`,
-    );
-  }
-  const allSalaryProfiles = [...salaryProfiles, ...result.newSalaryProfiles];
-
-  // 2. Bonus destinations → Salary Profile entries.
-  const destinations = v0810Object(setting("bonus_destinations"));
-  if (destinations) {
-    for (const p of salaryProfiles) {
-      for (const [jobId, entry] of Object.entries(salariesOf.get(p)!)) {
-        const personId = jobById.get(Number(jobId))?.["person_id"];
-        if (
-          destinations[String(personId)] === "spending" &&
-          entry["bonusDestination"] !== "spending"
-        ) {
-          entry["bonusDestination"] = "spending";
-          result.changed.salary_profiles.add(Number(p["id"]));
-        }
-      }
-    }
-    for (const p of result.newSalaryProfiles) {
-      for (const [jobId, entry] of Object.entries(salariesOf.get(p)!)) {
-        const personId = jobById.get(Number(jobId))?.["person_id"];
-        if (destinations[String(personId)] === "spending")
-          entry["bonusDestination"] = "spending";
-      }
-    }
-  }
-  if (settings.some((s) => s["key"] === "bonus_destinations"))
-    result.deletedSettings.push("bonus_destinations");
-
-  // 3. Bonus switches → each payroll account's fromBonus.
-  const switchOn = (entry: V0810Row | undefined) =>
-    entry === undefined
-      ? undefined
-      : v0810Truthy(entry["include401kInBonus"]) ||
-        v0810Truthy(entry["includeBonusInContributions"]);
-  const payrollJobOf = new Map<number, number>();
-  for (const a of accounts) {
-    const isPayroll =
-      a["is_payroll_deducted"] === null ||
-      a["is_payroll_deducted"] === undefined
-        ? a["job_id"] !== null && a["job_id"] !== undefined
-        : v0810Truthy(a["is_payroll_deducted"]);
-    if (!isPayroll) continue;
-    const jobId =
-      a["job_id"] !== null && a["job_id"] !== undefined
-        ? Number(a["job_id"])
-        : Number(currentJob(Number(a["person_id"]))?.["id"]);
-    if (Number.isFinite(jobId)) payrollJobOf.set(Number(a["id"]), jobId);
-  }
-  // Which Salary Profile's switch each Contribution Profile follows: the one
-  // its Plans pair it with (when they all agree on one), else the active
-  // one, else the oldest.
-  const pairedSalary = (contributionProfileId: number) => {
-    const ids = new Set(
-      scenarios
-        .filter(
-          (plan) =>
-            Number(plan["contribution_profile_id"]) === contributionProfileId,
-        )
-        .map((plan) => plan["salary_profile_id"])
-        .filter((id) => id !== null && id !== undefined)
-        .map(Number),
-    );
-    return ids.size === 1
-      ? allSalaryProfiles.find((p) => Number(p["id"]) === [...ids][0])
-      : undefined;
-  };
-  for (const cp of contributionProfiles) {
-    const fields = v0810Object(cp["contribution_active_fields"]);
-    const perAccount = v0810Object(fields?.["contributionAccounts"]);
-    if (!fields || !perAccount) continue;
-    const paired = pairedSalary(Number(cp["id"]));
-    const ordered = [
-      ...(paired ? [paired] : []),
-      ...(activeSalary && activeSalary !== paired ? [activeSalary] : []),
-      ...byId(salaryProfiles).filter((p) => p !== activeSalary && p !== paired),
-    ];
-    let changed = false;
-    for (const [accountId, jobId] of payrollJobOf) {
-      const entry = v0810Object(perAccount[String(accountId)]);
-      if (!entry) continue;
-      const sources = ordered
-        .map((p) => ({ p, on: switchOn(salariesOf.get(p)![String(jobId)]) }))
-        .filter((v): v is { p: V0810Row; on: boolean } => v.on !== undefined);
-      const first = sources[0];
-      if (!first) continue;
-      if (sources.some((v) => v.on !== first.on))
-        result.notes.push(
-          `Contribution Profile ${cp["id"]}, account ${accountId}: Salary Profiles disagreed on taking contributions from bonus checks; used ${first.on ? "yes" : "no"} from Salary Profile "${String(first.p["name"])}"`,
-        );
-      if (!first.on || entry["fromBonus"] === true) continue;
-      perAccount[String(accountId)] = { ...entry, fromBonus: true };
-      changed = true;
-    }
-    if (!changed) continue;
-    cp["contribution_active_fields"] = {
-      ...fields,
-      contributionAccounts: perAccount,
-    };
-    result.changed.contribution_profiles.add(Number(cp["id"]));
-  }
-  for (const p of allSalaryProfiles) {
-    for (const entry of Object.values(salariesOf.get(p)!)) {
-      if (
-        "include401kInBonus" in entry ||
-        "includeBonusInContributions" in entry
-      ) {
-        delete entry["include401kInBonus"];
-        delete entry["includeBonusInContributions"];
-        if (!result.newSalaryProfiles.includes(p))
-          result.changed.salary_profiles.add(Number(p["id"]));
-      }
-    }
-  }
-  for (const p of salaryProfiles)
-    if (result.changed.salary_profiles.has(Number(p["id"])))
-      p["salaries"] = salariesOf.get(p);
-
-  // Budget columns no longer have profiles of their own (0009 drops them):
-  // note each Budget profile whose columns had one.
-  for (const bp of tables["budget_profiles"] ?? []) {
-    const ids = [
-      v0810Json(bp["column_contribution_profile_ids"]),
-      v0810Json(bp["column_salary_profile_ids"]),
-    ].flatMap((v) => (Array.isArray(v) ? v : []));
-    if (ids.some((id) => id !== null && id !== undefined))
-      result.notes.push(
-        `Budget profile ${bp["id"]}: its columns' own profiles are gone; every column now uses the active Salary and Contribution profiles`,
-      );
-  }
-
-  // 4. Unique Plan names.
-  // A new name must be free of every Plan's name, not just the ones before.
-  const allPlanNames = new Set(scenarios.map((p) => String(p["name"])));
-  const takenPlanNames = new Set<string>();
-  for (const plan of byId(scenarios)) {
-    const base = String(plan["name"]);
-    let name = base;
-    if (takenPlanNames.has(name)) {
-      let n = 2;
-      while (
-        takenPlanNames.has(`${base} (${n})`) ||
-        allPlanNames.has(`${base} (${n})`)
-      )
-        n++;
-      name = `${base} (${n})`;
-    }
-    if (name !== base) {
-      plan["name"] = name;
-      result.changed.scenarios.add(Number(plan["id"]));
-      result.notes.push(`Plan ${plan["id"]}: renamed to "${name}"`);
-    }
-    takenPlanNames.add(name);
-  }
-  return result;
-}
-// END v0810-profile-sets
-
-/** The tables convertV0810ProfileSets reads. */
-const V0810_TABLES = [
-  "scenarios",
-  "salary_profiles",
-  "contribution_profiles",
-  "contribution_accounts",
-  "jobs",
-  "app_settings",
-  "budget_profiles",
-] as const;
-
-/** Migration 0009's tag — its data conversion runs just before its SQL. */
-export const V0810_TAG = "0009_v0810_profile_sets";
-
-/**
- * Run the v0.8.10 data conversion on a PostgreSQL database, inside the
- * caller's transaction (before 0009's statements drop the columns it reads).
- * A table that doesn't exist is skipped.
- */
-async function applyV0810ProfileSetsPg(client: {
-  query: (
-    sql: string,
-    params?: unknown[],
-  ) => Promise<{ rows: Record<string, unknown>[] }>;
-}): Promise<void> {
-  const tables: V0810Tables = {};
-  for (const table of V0810_TABLES) {
-    await client.query("SAVEPOINT v0810_read");
-    try {
-      tables[table] = (await client.query(`SELECT * FROM "${table}"`)).rows;
-      await client.query("RELEASE SAVEPOINT v0810_read");
-    } catch (err) {
-      if ((err as { code?: string }).code !== "42P01") throw err;
-      await client.query("ROLLBACK TO SAVEPOINT v0810_read");
-    }
-  }
-  const r = convertV0810ProfileSets(tables);
-  for (const p of r.newSalaryProfiles)
-    await client.query(
-      "INSERT INTO salary_profiles (id, name, description, salaries) VALUES ($1, $2, $3, $4::jsonb)",
-      [p["id"], p["name"], p["description"], JSON.stringify(p["salaries"])],
-    );
-  if (r.newSalaryProfiles.length > 0)
-    await client.query(
-      "SELECT setval(pg_get_serial_sequence('salary_profiles', 'id'), (SELECT MAX(id) FROM salary_profiles))",
-    );
-  for (const p of tables["salary_profiles"] ?? [])
-    if (r.changed.salary_profiles.has(Number(p["id"])))
-      await client.query(
-        "UPDATE salary_profiles SET salaries = $1::jsonb WHERE id = $2",
-        [JSON.stringify(p["salaries"]), p["id"]],
-      );
-  for (const p of tables["contribution_profiles"] ?? [])
-    if (r.changed.contribution_profiles.has(Number(p["id"])))
-      await client.query(
-        "UPDATE contribution_profiles SET contribution_active_fields = $1::jsonb WHERE id = $2",
-        [JSON.stringify(p["contribution_active_fields"]), p["id"]],
-      );
-  for (const p of tables["scenarios"] ?? [])
-    if (r.changed.scenarios.has(Number(p["id"])))
-      await client.query(
-        "UPDATE scenarios SET name = $1, salary_profile_id = $2 WHERE id = $3",
-        [p["name"], p["salary_profile_id"], p["id"]],
-      );
-  for (const key of r.deletedSettings)
-    await client.query("DELETE FROM app_settings WHERE key = $1", [key]);
-  for (const note of r.notes) log("info", "v0810_conversion", { note });
-}
-
-/** 0009 builds a unique index on Plan names. The replay loops swallow a
- *  unique violation (23505), so make sure the index really exists. */
-async function assertV0810IndexPg(client: {
-  query: (sql: string) => Promise<{ rows: unknown[] }>;
-}): Promise<void> {
-  const { rows } = await client.query(
-    "SELECT 1 FROM pg_indexes WHERE indexname = 'scenarios_name_unique'",
-  );
-  if (rows.length === 0)
-    throw new Error(
-      "Migration 0009: the unique index on Plan names wasn't created — two Plans still share a name.",
-    );
-}
-
-/** The SQLite twin of applyV0810ProfileSetsPg (JSON columns are text). */
-export function applyV0810ProfileSetsSqlite(
-  sqlite: InstanceType<typeof import("better-sqlite3")>,
-): void {
-  const tables: V0810Tables = {};
-  for (const table of V0810_TABLES) {
-    try {
-      tables[table] = sqlite
-        .prepare(`SELECT * FROM "${table}"`)
-        .all() as Record<string, unknown>[];
-    } catch (err) {
-      if (!String((err as Error).message).includes("no such table")) throw err;
-    }
-  }
-  const r = convertV0810ProfileSets(tables);
-  for (const p of r.newSalaryProfiles)
-    sqlite
-      .prepare(
-        "INSERT INTO salary_profiles (id, name, description, salaries) VALUES (?, ?, ?, ?)",
-      )
-      .run(p["id"], p["name"], p["description"], JSON.stringify(p["salaries"]));
-  for (const p of tables["salary_profiles"] ?? [])
-    if (r.changed.salary_profiles.has(Number(p["id"])))
-      sqlite
-        .prepare("UPDATE salary_profiles SET salaries = ? WHERE id = ?")
-        .run(JSON.stringify(p["salaries"]), p["id"]);
-  for (const p of tables["contribution_profiles"] ?? [])
-    if (r.changed.contribution_profiles.has(Number(p["id"])))
-      sqlite
-        .prepare(
-          "UPDATE contribution_profiles SET contribution_active_fields = ? WHERE id = ?",
-        )
-        .run(JSON.stringify(p["contribution_active_fields"]), p["id"]);
-  for (const p of tables["scenarios"] ?? [])
-    if (r.changed.scenarios.has(Number(p["id"])))
-      sqlite
-        .prepare(
-          "UPDATE scenarios SET name = ?, salary_profile_id = ? WHERE id = ?",
-        )
-        .run(p["name"], p["salary_profile_id"], p["id"]);
-  for (const key of r.deletedSettings)
-    sqlite.prepare("DELETE FROM app_settings WHERE key = ?").run(key);
-  for (const note of r.notes) log("info", "v0810_conversion", { note });
 }
 
 function getDialect(): "postgresql" | "sqlite" {
@@ -1070,8 +618,8 @@ const BASELINE_HASHES: Record<string, string> = {
 };
 
 // sha256 of every PostgreSQL migration file of the v0.8 line, including the
-// pre-release 0004–0011 that v0.8.5 squashed into one. Add each new
-// migration here when it ships. The LATEST applied row names exactly where an install was, so a
+// pre-release 0004–0011 that v0.8.5 squashed into one, and of the v0.9 line
+// (its baseline first). Add each new migration here when it ships. The LATEST applied row names exactly where an install was, so a
 // backup taken before the squash is labelled with its real schema tag
 // (all are in backup-transforms' V08_SCHEMA_TAGS).
 export const V08_MIGRATION_HASHES: Record<string, string> = {
@@ -1124,18 +672,21 @@ export const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.8.14: Performance notes, estimated fields, accepted checks.
   "887f50d59ffe2a1e15e321d1116a106d652e8ac4ad96ec0c3d7a5db112690651":
     "0012_v0814_perf_annotations",
+  // v0.9.0 squash: the v0.8 line (0000_v8 + 0001–0012) as one baseline.
+  "4ed68e830f616dd677dddd9e0dd48a0b84a3b758a5766acffea2da1090cca153":
+    "0000_v9_initial_schema",
   // v0.9.0: where each reference figure came from (origin, source_version, confirmed_at).
   d210c1418b4e930b2244c6bd723b5a9672f33621c753fa59fcb8cde5a467adf6:
-    "0013_v090_tax_data_origin",
+    "0001_v090_tax_data_origin",
   // v0.9.0: community tax-data updates fetched and decided.
   "8031a00f15f435979edae028edd12267db92c427f7cd333b5949a343fffcbaf4":
-    "0014_v090_tax_data_updates",
+    "0002_v090_tax_data_updates",
   // v0.9.0: utilities cost feed (category + billing lag per service, cost source per reading).
   "5dbf28830857afa5c706a3186d2038f849575e81732b8362de57d7cbd62fb34d":
-    "0015_v090_utility_feed",
+    "0003_v090_utility_feed",
   // v0.9.0: debts list (Liabilities).
   d835e0d55fdd16f70497e222b3f5113f2f73365a24063a3d0430001b37d75534:
-    "0016_v090_debts",
+    "0004_v090_debts",
 };
 
 /**
@@ -1387,29 +938,333 @@ async function writePreMigrationBackupPg(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Supported upgrade path + schema checks (both dialects)
+// ---------------------------------------------------------------------------
+
 /**
- * Handle a migration squash: when the DB has more applied migrations than the
- * journal has entries, a schema squash has occurred. This function:
- * 1. Creates a pre-upgrade backup
- * 2. Clears the old __drizzle_migrations entries
- * 3. Applies the new squashed migration idempotently (savepoints + ignore duplicates)
- * 4. Records the new migration hash
- *
- * After this, Drizzle's migrate() sees all migrations as applied and is a no-op.
+ * The tag a backup of a database at the baseline's schema carries: the last
+ * migration of the release line squashed into `0000_v9_initial_schema`
+ * (v0.8.15 shipped no migration of its own, so v0.8.14's).
+ */
+export const SQUASHED_LINE_TIP = "0012_v0814_perf_annotations";
+
+/** The database is from a release this one can't upgrade directly. Never
+ *  swallowed — the migration stops with the database untouched. */
+export class UpgradePathError extends Error {
+  override name = "UpgradePathError";
+}
+
+type Journal = { entries: { idx: number; tag: string }[] };
+
+function readJournal(migrationsFolder: string): Journal {
+  return JSON.parse(
+    fs.readFileSync(
+      path.resolve(`${migrationsFolder}/meta/_journal.json`),
+      "utf-8",
+    ),
+  );
+}
+
+function fileHash(
+  crypto: typeof import("crypto"),
+  filePath: string,
+): string | null {
+  const p = path.resolve(filePath);
+  if (!fs.existsSync(p)) return null;
+  return crypto
+    .createHash("sha256")
+    .update(fs.readFileSync(p, "utf-8"))
+    .digest("hex");
+}
+
+/** Table → column names of a journal entry's drizzle snapshot. */
+export function snapshotColumns(
+  migrationsFolder: string,
+  idx: number,
+): Map<string, string[]> {
+  const snap = JSON.parse(
+    fs.readFileSync(
+      path.resolve(
+        `${migrationsFolder}/meta/${String(idx).padStart(4, "0")}_snapshot.json`,
+      ),
+      "utf-8",
+    ),
+  ) as {
+    tables: Record<
+      string,
+      { name: string; columns: Record<string, { name: string }> }
+    >;
+  };
+  return new Map(
+    Object.values(snap.tables).map((t) => [
+      t.name,
+      Object.values(t.columns).map((c) => c.name),
+    ]),
+  );
+}
+
+/** What a snapshot has that the database doesn't ("table" or "table.column"). */
+export function missingFromSnapshot(
+  expected: Map<string, string[]>,
+  actual: Map<string, Set<string>>,
+): string[] {
+  const missing: string[] = [];
+  for (const [table, cols] of expected) {
+    const have = actual.get(table);
+    if (!have) {
+      missing.push(table);
+      continue;
+    }
+    for (const c of cols) if (!have.has(c)) missing.push(`${table}.${c}`);
+  }
+  return missing;
+}
+
+function columnMap(
+  rows: { table_name: string; column_name: string }[],
+): Map<string, Set<string>> {
+  const m = new Map<string, Set<string>>();
+  for (const r of rows) {
+    if (!m.has(r.table_name)) m.set(r.table_name, new Set());
+    m.get(r.table_name)!.add(r.column_name);
+  }
+  return m;
+}
+
+/**
+ * Where an existing database's schema is, by the journal: the last entry
+ * whose file hash is recorded, else the last entry whose snapshot's tables
+ * and columns are all present (a journal cleared by a failed run), else —
+ * the baseline's schema — the squashed line's tip. The label restore
+ * transforms key on. The shape fallback only sees additions: once a
+ * migration after the baseline drops or renames something, an emptied
+ * journal could be labelled one entry early.
+ */
+export function schemaLabel(
+  journal: Journal,
+  migrationsFolder: string,
+  recordedHashes: Set<string>,
+  actual: Map<string, Set<string>>,
+  crypto: typeof import("crypto"),
+): string {
+  const { lastAppliedTag } = pendingJournalEntries(
+    journal,
+    migrationsFolder,
+    recordedHashes,
+    crypto,
+  );
+  if (lastAppliedTag) return lastAppliedTag;
+  for (const entry of [...journal.entries].reverse()) {
+    if (entry.idx === 0) break;
+    if (
+      missingFromSnapshot(snapshotColumns(migrationsFolder, entry.idx), actual)
+        .length === 0
+    )
+      return entry.tag;
+  }
+  return SQUASHED_LINE_TIP;
+}
+
+/**
+ * Refuse a database older than the baseline. Squashing replays the
+ * baseline's CREATE TABLEs, which an existing table silently skips — so an
+ * install that predates the baseline would never get the columns its
+ * release line added later. Allowed: a fresh install (no `people`), one
+ * that has recorded the baseline, and one with every table and column of
+ * the baseline's snapshot (v0.8.14/v0.8.15, a dev database on any v0.9
+ * migration, a journal cleared by a failed run). Anything else stops here,
+ * before any backup or change.
+ */
+export function assertSupportedUpgradePath(
+  journal: Journal,
+  migrationsFolder: string,
+  recordedHashes: Set<string>,
+  actual: Map<string, Set<string>>,
+  crypto: typeof import("crypto"),
+  era: () => string,
+): void {
+  if (!actual.has("people")) return;
+  const baseline = journal.entries[0];
+  if (!baseline) return;
+  const baselineHash = fileHash(
+    crypto,
+    `${migrationsFolder}/${baseline.tag}.sql`,
+  );
+  if (baselineHash && recordedHashes.has(baselineHash)) return;
+  const missing = missingFromSnapshot(
+    snapshotColumns(migrationsFolder, baseline.idx),
+    actual,
+  );
+  if (missing.length === 0) return;
+  throw new UpgradePathError(
+    `This database is from an older Ledgr (schema ${era()}). This release upgrades from v0.8.14 or later: update to v0.8.15 first, start it once so it migrates, then update to this release. Nothing has been changed. Missing: ${missing.slice(0, 8).join(", ")}${missing.length > 8 ? ` and ${missing.length - 8} more` : ""}.`,
+  );
+}
+
+/** Index names of a journal entry's drizzle snapshot. */
+function snapshotIndexes(migrationsFolder: string, idx: number): string[] {
+  const snap = JSON.parse(
+    fs.readFileSync(
+      path.resolve(
+        `${migrationsFolder}/meta/${String(idx).padStart(4, "0")}_snapshot.json`,
+      ),
+      "utf-8",
+    ),
+  ) as {
+    tables: Record<string, { indexes?: Record<string, { name: string }> }>;
+  };
+  return Object.values(snap.tables).flatMap((t) =>
+    Object.values(t.indexes ?? {}).map((i) => i.name),
+  );
+}
+
+/**
+ * After a squash replay: every table, column and index of the latest
+ * snapshot. Indexes too because the replay skips a unique violation — a
+ * CREATE UNIQUE INDEX over duplicate rows would otherwise be skipped
+ * silently.
+ */
+function assertSchemaComplete(
+  journal: Journal,
+  migrationsFolder: string,
+  actual: Map<string, Set<string>>,
+  actualIndexes: Set<string>,
+): void {
+  const last = journal.entries[journal.entries.length - 1];
+  if (!last) return;
+  const missing = [
+    ...missingFromSnapshot(snapshotColumns(migrationsFolder, last.idx), actual),
+    ...snapshotIndexes(migrationsFolder, last.idx)
+      .filter((name) => !actualIndexes.has(name))
+      .map((name) => `index ${name}`),
+  ];
+  if (missing.length > 0)
+    throw new Error(
+      `Squash replay left the schema incomplete (missing ${missing.slice(0, 8).join(", ")}) — rolled back, nothing changed.`,
+    );
+}
+
+async function pgIndexes(
+  client: import("pg").PoolClient,
+): Promise<Set<string>> {
+  const { rows } = await client.query<{ indexname: string }>(
+    "SELECT indexname FROM pg_indexes WHERE schemaname = 'public'",
+  );
+  return new Set(rows.map((r) => r.indexname));
+}
+
+async function pgColumns(
+  client: import("pg").PoolClient,
+): Promise<Map<string, Set<string>>> {
+  const { rows } = await client.query<{
+    table_name: string;
+    column_name: string;
+  }>(
+    "SELECT table_name, column_name FROM information_schema.columns WHERE table_schema = 'public'",
+  );
+  return columnMap(rows);
+}
+
+async function pgRecordedHashes(
+  client: import("pg").PoolClient,
+): Promise<Set<string>> {
+  const { rows } = await client.query<{ exists: boolean }>(
+    `SELECT EXISTS (SELECT 1 FROM information_schema.tables
+       WHERE table_schema = 'drizzle' AND table_name = '__drizzle_migrations') AS exists`,
+  );
+  if (!rows[0]?.exists) return new Set();
+  const { rows: hashes } = await client.query<{ hash: string }>(
+    "SELECT hash FROM drizzle.__drizzle_migrations",
+  );
+  return new Set(hashes.map((r) => r.hash));
+}
+
+async function assertSupportedUpgradePathPg(
+  pool: import("pg").Pool,
+  migrationsFolder: string,
+): Promise<void> {
+  const client = await pool.connect();
+  try {
+    const crypto = await import("crypto");
+    const actual = await pgColumns(client);
+    if (!actual.has("people")) return;
+    const era = await detectSchemaEra(client);
+    assertSupportedUpgradePath(
+      readJournal(migrationsFolder),
+      migrationsFolder,
+      await pgRecordedHashes(client),
+      actual,
+      crypto,
+      () => era,
+    );
+  } finally {
+    client.release();
+  }
+}
+
+// "Already done" AND "already moved past" are both benign when replaying a
+// migration whose hash isn't recorded against a database that may already be
+// past it. A migration that creates something that already exists
+// (duplicate_*) is as expected as one that references a column/table a later
+// migration already renamed or dropped (undefined_column/undefined_table).
+const IGNORABLE_PG_CODES = new Set([
+  "42701", // duplicate_column
+  "42P07", // duplicate_table
+  "42710", // duplicate_object (index, constraint, etc.)
+  "42704", // undefined_object (DROP CONSTRAINT/INDEX on missing object)
+  "23505", // unique_violation
+  "42703", // undefined_column — already renamed/dropped by a later migration
+  "42P01", // undefined_table — already renamed/dropped by a later migration
+]);
+
+/** Run one migration file's statements inside the caller's transaction, each
+ *  under a savepoint so an ignorable error skips only that statement. */
+async function applyStatementsPg(
+  client: import("pg").PoolClient,
+  sql: string,
+): Promise<void> {
+  const statements = sql
+    .split("--> statement-breakpoint")
+    .map((s: string) => s.trim())
+    .filter(Boolean);
+  for (const stmt of statements) {
+    await client.query("SAVEPOINT apply_stmt");
+    try {
+      await client.query(stmt);
+      await client.query("RELEASE SAVEPOINT apply_stmt");
+    } catch (stmtErr) {
+      const code = (stmtErr as { code?: string }).code;
+      if (code && IGNORABLE_PG_CODES.has(code)) {
+        await client.query("ROLLBACK TO SAVEPOINT apply_stmt");
+      } else {
+        throw stmtErr;
+      }
+    }
+  }
+}
+
+/**
+ * Handle a migration squash: when the database has more applied migrations
+ * than the journal has entries (or none recorded but tables present, or
+ * recorded hashes that don't match the journal's), the migrations were
+ * squashed since it last ran. assertSupportedUpgradePathPg has already
+ * established the database is at the baseline's schema or past it. This:
+ * 1. writes a pre-upgrade backup (always — none means stop),
+ * 2. in ONE transaction: clears __drizzle_migrations, replays every journal
+ *    entry idempotently (savepoints, ignorable errors skipped), records each
+ *    hash, and checks every table and column of the latest snapshot exists.
+ * Any failure rolls the whole thing back and stops the migration — nothing
+ * is half done, and the previous image still runs against the database.
+ * After this, the pre-apply loop and Drizzle's migrate() are no-ops.
  */
 async function handleSquashUpgrade(
   pool: import("pg").Pool,
   migrationsFolder: string,
-  journalPath: string,
 ): Promise<SquashResult> {
   const client = await pool.connect();
-  // Hoisted out of the try block (rather than declared where it's first
-  // assigned below) so the catch block can report whether a backup was
-  // already written to disk before whatever failed — see the catch block.
   let backupPathBeforeFailure: string | null = null;
   try {
-    // Drizzle ORM stores migrations in the "drizzle" schema.
-    // Check if drizzle.__drizzle_migrations table exists.
     const { rows: tableCheck } = await client.query(
       `SELECT EXISTS (
         SELECT 1 FROM information_schema.tables
@@ -1419,233 +1274,100 @@ async function handleSquashUpgrade(
     if (!tableCheck[0]?.exists)
       return { backupPath: null, schemaVersion: null, wasSquash: false };
 
-    const { rows: migrationRows } = await client.query(
+    const recordedHashes = await pgRecordedHashes(client);
+    const { rows: countRows } = await client.query(
       "SELECT count(*)::int AS count FROM drizzle.__drizzle_migrations",
     );
-    const appliedCount = migrationRows[0]?.count ?? 0;
-
-    const journal = JSON.parse(
-      fs.readFileSync(path.resolve(journalPath), "utf-8"),
-    );
-    const journalCount = journal.entries?.length ?? 0;
+    const appliedCount: number = countRows[0]?.count ?? 0;
+    const journal = readJournal(migrationsFolder);
+    const journalCount = journal.entries.length;
+    const crypto = await import("crypto");
+    const actual = await pgColumns(client);
 
     // Squash detection. Three cases trigger recovery:
-    //   1. appliedCount > journalCount — old logic, catches the common case
-    //      where a squash collapses N migrations into M < N entries.
-    //   2. appliedCount == 0 with existing application tables — partial
-    //      recovery from a previous failed squash that cleared the journal.
-    //   3. HASH mismatch — appliedCount equals journalCount but the DB's
-    //      applied hashes don't match the journal's expected hashes. Happens
-    //      when a v0.5-style squash produces the same number of journal
-    //      entries as the previous version, but the file contents (and
-    //      therefore hashes) changed. Without this, drizzle.migrate() would
-    //      attempt to apply the new migrations from scratch and fail on
-    //      duplicate-table errors.
-    let isPartialRecovery = false;
-    let needsRecovery = appliedCount > journalCount;
-    if (!needsRecovery) {
-      if (appliedCount === 0) {
-        // Check if any application tables exist (partial squash recovery)
-        const { rows: tableProbe } = await client.query(
-          `SELECT EXISTS (
-            SELECT 1 FROM information_schema.tables
-            WHERE table_schema = 'public' AND table_name = 'people'
-          ) AS exists`,
-        );
-        if (tableProbe[0]?.exists) {
-          isPartialRecovery = true;
-          needsRecovery = true;
-          log("info", "partial_squash_recovery_detected", {
-            reason:
-              "Migration journal empty but application tables exist — recovering from failed squash",
-          });
-        }
-      } else if (journalCount > 0) {
-        // Hash-mismatch detection.
-        // Only check the first `appliedCount` journal entries — entries beyond
-        // appliedCount are legitimately new (not yet applied) and should NOT
-        // trigger squash recovery; they go through the normal migrate() path.
-        const cryptoMod = await import("crypto");
-        const { rows: appliedRows } = await client.query<{ hash: string }>(
-          "SELECT hash FROM drizzle.__drizzle_migrations",
-        );
-        const appliedHashes = new Set(appliedRows.map((r) => r.hash));
-        for (const entry of journal.entries.slice(0, appliedCount)) {
-          const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
-          if (!fs.existsSync(sqlPath)) continue;
-          const sql = fs.readFileSync(sqlPath, "utf-8");
-          const expected = cryptoMod
-            .createHash("sha256")
-            .update(sql)
-            .digest("hex");
-          if (!appliedHashes.has(expected)) {
-            needsRecovery = true;
-            break;
-          }
-        }
-      }
-    }
-    if (!needsRecovery) {
+    //   1. appliedCount > journalCount — a squash collapsed N migrations
+    //      into M < N entries.
+    //   2. appliedCount == 0 with existing application tables — a journal
+    //      cleared by an earlier failed run.
+    //   3. Hash mismatch — as many rows as entries, but the first
+    //      `appliedCount` entries' file hashes aren't all recorded (a squash
+    //      that kept the entry count). Entries beyond appliedCount are new
+    //      and go through the normal pre-apply path.
+    const needsRecovery =
+      appliedCount > journalCount ||
+      (appliedCount === 0 && actual.has("people")) ||
+      (appliedCount > 0 &&
+        journal.entries.slice(0, appliedCount).some((entry) => {
+          const h = fileHash(crypto, `${migrationsFolder}/${entry.tag}.sql`);
+          return h !== null && !recordedHashes.has(h);
+        }));
+    if (!needsRecovery)
       return { backupPath: null, schemaVersion: null, wasSquash: false };
-    }
 
-    // --- Squash detected (or partial recovery) ---
-    const schemaVersion = await detectSchemaEra(client);
+    const schemaVersion = schemaLabel(
+      journal,
+      migrationsFolder,
+      recordedHashes,
+      actual,
+      crypto,
+    );
     log("info", "squash_upgrade_start", {
       appliedMigrations: appliedCount,
       journalMigrations: journalCount,
       schemaVersion,
     });
 
-    // 1. Export backup + clear journal (skip for partial recovery — already empty)
-    let backupPath: string | null = null;
-    if (!isPartialRecovery) {
-      backupPath = await writePreMigrationBackupPg(client, schemaVersion);
-      backupPathBeforeFailure = backupPath;
-      // Clearing the journal below is the most destructive step — never
-      // without a backup.
-      requireBackupOrAbort(backupPath);
+    // 1. Backup — never clear the journal without one.
+    const backupPath = await writePreMigrationBackupPg(client, schemaVersion);
+    backupPathBeforeFailure = backupPath;
+    requireBackupOrAbort(backupPath);
 
-      // 2. Clear old migration journal
+    // 2. Clear, replay, record, check — all or nothing.
+    await client.query("BEGIN");
+    try {
       await client.query("DELETE FROM drizzle.__drizzle_migrations");
-      log("info", "migration_journal_cleared", {
-        removedEntries: appliedCount,
-      });
-    }
-
-    // 3. Apply each new journal migration idempotently and record its hash
-    const crypto = await import("crypto");
-    // "Already done" AND "already moved past" are both benign here — this
-    // loop blindly replays potentially-ancient migrations against a DB that
-    // may already be arbitrarily far beyond them. A migration that creates
-    // something that already exists (duplicate_*) is exactly as expected as
-    // one that references a column/table a LATER migration already
-    // renamed or dropped (undefined_column/undefined_table) — e.g. 0005's
-    // `INSERT ... SELECT bonus_override FROM jobs` + `DROP COLUMN
-    // bonus_override`, replayed after some later migration already dropped
-    // that column for real. Without these two codes, a replay that reaches
-    // exactly this kind of statement hard-fails mid-loop, after the journal
-    // has already been cleared and earlier entries already committed —
-    // leaving __drizzle_migrations in a half-recovered state that requires
-    // manual repair (see .scratch/recover-migration-tracking.mjs for the
-    // one-off recovery this caused on the dev DB on 2026-08-18).
-    const IGNORABLE_PG_CODES = new Set([
-      "42701", // duplicate_column
-      "42P07", // duplicate_table
-      "42710", // duplicate_object (index, constraint, etc.)
-      "42704", // undefined_object (DROP CONSTRAINT/INDEX on missing object)
-      "23505", // unique_violation
-      "42703", // undefined_column — already renamed/dropped by a later migration
-      "42P01", // undefined_table — already renamed/dropped by a later migration
-    ]);
-
-    for (const entry of journal.entries) {
-      const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
-      if (!fs.existsSync(sqlPath)) continue;
-      const sql = fs.readFileSync(sqlPath, "utf-8");
-      const hash = crypto.createHash("sha256").update(sql).digest("hex");
-
-      // The only per-tag data step is 0009's (V0810_TAG): it runs inside the
-      // migration's transaction, before the statements drop what it reads.
-
-      const statements = sql
-        .split("--> statement-breakpoint")
-        .map((s: string) => s.trim())
-        .filter(Boolean);
-
-      await client.query("BEGIN");
-      try {
-        // v0.8.10 data conversion, before 0009 drops what it reads.
-        if (entry.tag === V0810_TAG) await applyV0810ProfileSetsPg(client);
-        for (const stmt of statements) {
-          await client.query("SAVEPOINT squash_stmt");
-          try {
-            await client.query(stmt);
-            await client.query("RELEASE SAVEPOINT squash_stmt");
-          } catch (stmtErr) {
-            const code = (stmtErr as { code?: string }).code;
-            if (code && IGNORABLE_PG_CODES.has(code)) {
-              await client.query("ROLLBACK TO SAVEPOINT squash_stmt");
-            } else {
-              throw stmtErr;
-            }
-          }
-        }
-        if (entry.tag === V0810_TAG) await assertV0810IndexPg(client);
+      for (const entry of journal.entries) {
+        const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
+        if (!fs.existsSync(sqlPath)) continue;
+        const sql = fs.readFileSync(sqlPath, "utf-8");
+        await applyStatementsPg(client, sql);
         await client.query(
           "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
-          [hash, String(Date.now())],
+          [
+            crypto.createHash("sha256").update(sql).digest("hex"),
+            String(Date.now()),
+          ],
         );
-        await client.query("COMMIT");
         log("info", "squash_migration_applied", { tag: entry.tag });
-      } catch (txErr) {
-        await client.query("ROLLBACK");
-        throw txErr;
       }
+      assertSchemaComplete(
+        journal,
+        migrationsFolder,
+        await pgColumns(client),
+        await pgIndexes(client),
+      );
+      await client.query("COMMIT");
+    } catch (txErr) {
+      await client.query("ROLLBACK").catch(() => {});
+      throw txErr;
     }
 
-    // 4. v0.1.x → v0.4: rename boolean columns that changed in v0.2.0
-    if (schemaVersion === "0008_prior_year_contrib") {
-      const renames = [
-        {
-          table: "savings_goals",
-          from: "api_sync_enabled",
-          to: "is_api_sync_enabled",
-        },
-        {
-          table: "retirement_scenarios",
-          from: "lt_brokerage_enabled",
-          to: "is_lt_brokerage_enabled",
-        },
-      ];
-      for (const { table, from, to } of renames) {
-        try {
-          const { rows } = await client.query(
-            `SELECT 1 FROM information_schema.columns
-             WHERE table_schema = 'public' AND table_name = $1 AND column_name = $2`,
-            [table, from],
-          );
-          if (rows.length > 0) {
-            await client.query(
-              `ALTER TABLE "${table}" RENAME COLUMN "${from}" TO "${to}"`,
-            );
-            log("info", "column_renamed", { table, from, to });
-          }
-        } catch (renameErr) {
-          log("warn", "column_rename_skipped", {
-            table,
-            from,
-            to,
-            error:
-              renameErr instanceof Error
-                ? renameErr.message
-                : String(renameErr),
-          });
-        }
-      }
-    }
-
-    log("info", "squash_upgrade_complete", { schemaVersion });
+    log("info", "squash_upgrade_complete", {
+      schemaVersion,
+      removedEntries: appliedCount,
+    });
     return { backupPath, schemaVersion, wasSquash: true };
   } catch (err) {
-    // A missing backup stops everything — never swallowed like other
-    // squash failures below.
-    if (err instanceof BackupRequiredError) throw err;
-    // A backup written before the failure is real, on-disk pre-upgrade
-    // state — say so explicitly. Without this, the swallow-and-continue
-    // behavior below (unchanged: callers proceed as if no squash happened)
-    // gives an operator no signal that a usable backup already exists, even
-    // though one may be sitting right there.
-    log("warn", "squash_upgrade_failed", {
+    log("error", "squash_upgrade_failed", {
       error: err instanceof Error ? err.message : String(err),
       ...(backupPathBeforeFailure
         ? {
-            message: `backup written to ${backupPathBeforeFailure} before failure — see it for pre-upgrade state`,
+            message: `Nothing was changed; a backup was written to ${backupPathBeforeFailure} before the failure.`,
             backupPath: backupPathBeforeFailure,
           }
         : {}),
     });
-    return { backupPath: null, schemaVersion: null, wasSquash: false };
+    throw err;
   } finally {
     client.release();
   }
@@ -1715,15 +1437,15 @@ async function runPostgres() {
   });
 
   try {
+    // Refuse a database older than the baseline before anything else —
+    // outside the squash, so nothing can swallow it.
+    await assertSupportedUpgradePathPg(pool, "./drizzle");
+
     // Handle squash upgrade: if the DB has more applied migrations than the
-    // journal, a schema squash occurred.  This creates a backup, clears old
-    // journal entries, applies the new squashed migration idempotently, and
-    // records its hash — so Drizzle's migrate() below becomes a no-op.
-    const squash = await handleSquashUpgrade(
-      pool,
-      "./drizzle",
-      "./drizzle/meta/_journal.json",
-    );
+    // journal, a schema squash occurred. Backs up, then clears the old
+    // journal and replays the new one in one transaction — so the pre-apply
+    // loop and Drizzle's migrate() below become no-ops.
+    const squash = await handleSquashUpgrade(pool, "./drizzle");
     let backupPath = squash.backupPath;
 
     // Apply any pending migrations idempotently before handing off to Drizzle's
@@ -1786,49 +1508,15 @@ async function runPostgres() {
         }
       }
 
-      // See the matching comment in handleSquashUpgrade above — this loop
-      // has the identical "replay a migration whose hash isn't recorded yet
-      // against a DB that may already be past it" shape, so it needs the
-      // same undefined_column/undefined_table tolerance.
-      const IGNORABLE_PG_CODES = new Set([
-        "42701", // duplicate_column
-        "42P07", // duplicate_table
-        "42710", // duplicate_object (index, constraint, etc.)
-        "42704", // undefined_object (DROP CONSTRAINT/INDEX on missing object)
-        "23505", // unique_violation
-        "42703", // undefined_column — already renamed/dropped by a later migration
-        "42P01", // undefined_table — already renamed/dropped by a later migration
-      ]);
       for (const entry of journal.entries) {
         const sqlPath = path.resolve(`./drizzle/${entry.tag}.sql`);
         if (!fs.existsSync(sqlPath)) continue;
         const sql = fs.readFileSync(sqlPath, "utf-8");
         const hash = crypto.createHash("sha256").update(sql).digest("hex");
         if (recordedHashes.has(hash)) continue;
-        // (The only per-tag data step is 0009's — V0810_TAG below.)
-        const statements = sql
-          .split("--> statement-breakpoint")
-          .map((s: string) => s.trim())
-          .filter(Boolean);
         await preClient.query("BEGIN");
         try {
-          // v0.8.10 data conversion, before 0009 drops what it reads.
-          if (entry.tag === V0810_TAG) await applyV0810ProfileSetsPg(preClient);
-          for (const stmt of statements) {
-            await preClient.query("SAVEPOINT apply_stmt");
-            try {
-              await preClient.query(stmt);
-              await preClient.query("RELEASE SAVEPOINT apply_stmt");
-            } catch (stmtErr) {
-              const code = (stmtErr as { code?: string }).code;
-              if (code && IGNORABLE_PG_CODES.has(code)) {
-                await preClient.query("ROLLBACK TO SAVEPOINT apply_stmt");
-              } else {
-                throw stmtErr;
-              }
-            }
-          }
-          if (entry.tag === V0810_TAG) await assertV0810IndexPg(preClient);
+          await applyStatementsPg(preClient, sql);
           await preClient.query(
             "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
             [hash, String(Date.now())],
@@ -1836,7 +1524,7 @@ async function runPostgres() {
           await preClient.query("COMMIT");
           log("info", "migration_applied", { tag: entry.tag });
         } catch (txErr) {
-          await preClient.query("ROLLBACK");
+          await preClient.query("ROLLBACK").catch(() => {});
           throw txErr;
         }
       }
@@ -1855,8 +1543,8 @@ async function runPostgres() {
     // schema's current structure on next activation. Demo schemas are
     // sandboxes the demo router (src/server/routers/demo.ts) builds with
     // CREATE TABLE LIKE public.x and stamps with the applied-migration
-    // count (src/lib/db/demo-schema-marker.ts); any whose stamp doesn't
-    // match the current count was built for an older structure. Checked on
+    // count and last hash (src/lib/db/demo-schema-marker.ts); any whose
+    // stamp doesn't match the current one was built for an older structure. Checked on
     // EVERY start, not just when a migration ran, so a failed drop is
     // retried — and it's fatal: a stale schema can't be left in place
     // (requests refuse to use it, but it must not linger silently).
@@ -1867,7 +1555,7 @@ async function runPostgres() {
           `SELECT n.nspname FROM pg_namespace n
             WHERE n.nspname LIKE 'demo\\_%'
               AND obj_description(n.oid, 'pg_namespace') IS DISTINCT FROM
-                  $1 || (SELECT count(*)::int FROM drizzle.__drizzle_migrations)::text
+                  $1 || ${MIGRATION_STAMP_SUBQUERY}
             ORDER BY n.nspname`,
           [DEMO_SCHEMA_MARKER_PREFIX],
         );
@@ -2009,71 +1697,6 @@ async function runPostgres() {
 }
 
 /**
- * SQLite twin of writePreMigrationBackupPg (see its docblock) — same
- * VERSION_TABLE_NAMES snapshot, same JSON shape, written by the
- * squash-upgrade path.
- */
-function writePreMigrationBackupSQLite(
-  sqlite: InstanceType<typeof import("better-sqlite3")>,
-  schemaVersion: string,
-): string | null {
-  const tables: Record<string, unknown[]> = {};
-  for (const tableName of VERSION_TABLE_NAMES) {
-    try {
-      tables[tableName] = sqlite.prepare(`SELECT * FROM "${tableName}"`).all();
-    } catch {
-      tables[tableName] = [];
-    }
-  }
-
-  const backup = {
-    schemaVersion,
-    exportedAt: new Date().toISOString(),
-    preUpgradeBackup: true,
-    tables,
-  };
-
-  const backupDir = resolveWritableBackupDir();
-  if (!backupDir) {
-    log("error", "pre_migration_backup_no_writable_dir", {
-      message:
-        "No writable directory for the pre-upgrade backup (tried LEDGR_BACKUP_DIR, /app/data, /tmp, .). Migration is proceeding WITHOUT an on-disk safety net — set LEDGR_BACKUP_DIR to a writable volume mount.",
-    });
-    return null;
-  }
-  try {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const backupPath = path.join(
-      backupDir,
-      `pre-upgrade-backup-${timestamp}.json`,
-    );
-    fs.writeFileSync(backupPath, JSON.stringify(backup));
-    log("info", "pre_migration_backup_complete", {
-      path: backupPath,
-      tableCount: Object.keys(tables).length,
-      totalRows: Object.values(tables).reduce(
-        (sum, rows) => sum + rows.length,
-        0,
-      ),
-    });
-    return backupPath;
-  } catch (backupErr) {
-    log("error", "pre_migration_backup_write_failed", {
-      dir: backupDir,
-      error: backupErr instanceof Error ? backupErr.message : String(backupErr),
-      message:
-        "Pre-upgrade backup write failed after its directory passed a probe. Migration is proceeding WITHOUT an on-disk safety net.",
-    });
-    return null;
-  }
-}
-
-/**
- * Handle SQLite squash upgrade: same logic as PG but using better-sqlite3 API.
- * Detects squash, creates backup, clears old journal, applies migration
- * idempotently, and records the hash so Drizzle's migrate() is a no-op.
- */
-/**
  * Exact copy of the SQLite database (VACUUM INTO — consistent, includes the
  * migration journal). Restoring = stop Ledgr, put this file in place of the
  * database file, start the previous version.
@@ -2106,239 +1729,206 @@ function writePreMigrationBackupSqlite(
   }
 }
 
-function handleSQLiteSquashUpgrade(
-  sqlite: InstanceType<typeof import("better-sqlite3")>,
-  migrationsFolder: string,
-  journalPath: string,
-): string | null {
-  // Check if __drizzle_migrations table exists
-  const tableExists = sqlite
-    .prepare(
-      "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations'",
-    )
-    .get() as { n: number };
-  if (!tableExists || tableExists.n === 0) return null;
+type SqliteDb = InstanceType<typeof import("better-sqlite3")>;
 
-  const appliedCount = (
-    sqlite.prepare("SELECT count(*) AS n FROM __drizzle_migrations").get() as {
-      n: number;
-    }
-  ).n;
-
-  const journal = JSON.parse(
-    fs.readFileSync(path.resolve(journalPath), "utf-8"),
-  );
-  const journalCount = journal.entries?.length ?? 0;
-
-  // Detect squash. Three cases:
-  //   1. Count mismatch (appliedCount > journalCount) — old logic, catches the
-  //      common case where a squash collapses N migrations into M < N.
-  //   2. appliedCount === 0 with existing application tables — partial recovery
-  //      from a previous failed squash that cleared the journal but didn't finish.
-  //   3. HASH mismatch — appliedCount equals journalCount but the DB's applied
-  //      hashes don't match the journal's expected hashes. Happens when the
-  //      v4→v5 squash produces the same number of journal entries as the
-  //      previous version had, but the file contents (and therefore hashes)
-  //      changed. Without this, drizzle.migrate() would attempt to apply the
-  //      "new" migrations from scratch and fail on duplicate-table errors.
-  let needsSquashRecovery = appliedCount > journalCount;
-  if (!needsSquashRecovery) {
-    if (appliedCount === 0) {
-      // Check if any application tables exist (partial squash recovery).
-      // Use the era probes so we can skip the second probe pass below if positive.
-      const v07Check = sqlite
-        .prepare(
-          "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='savings_planned_tx_settlements'",
-        )
-        .get() as { n: number };
-      const v06Check = sqlite
-        .prepare(
-          "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='account_holdings'",
-        )
-        .get() as { n: number };
-      const v05Check = sqlite
-        .prepare(
-          "SELECT count(*) AS n FROM pragma_table_info('annual_performance') WHERE name='is_immutable'",
-        )
-        .get() as { n: number };
-      const v03Check = sqlite
-        .prepare(
-          "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='projection_overrides'",
-        )
-        .get() as { n: number };
-      if (
-        v07Check.n > 0 ||
-        v06Check.n > 0 ||
-        v05Check.n > 0 ||
-        v03Check.n > 0
-      ) {
-        needsSquashRecovery = true;
-        log("info", "partial_squash_recovery_detected", {
-          reason:
-            "Migration journal empty but application tables exist — recovering from failed squash",
-        });
-      }
-    } else if (journalCount > 0) {
-      // Only check the first `appliedCount` journal entries for hash mismatch.
-      // Entries beyond appliedCount are legitimately new (not yet applied) and
-      // should NOT trigger squash recovery — they go through the normal migrate() path.
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const cryptoMod = require("crypto") as typeof import("crypto");
-      const appliedHashes = new Set(
-        (
-          sqlite.prepare("SELECT hash FROM __drizzle_migrations").all() as {
-            hash: string;
-          }[]
-        ).map((r) => r.hash),
-      );
-      for (const entry of journal.entries.slice(0, appliedCount)) {
-        const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
-        if (!fs.existsSync(sqlPath)) continue;
-        const sql = fs.readFileSync(sqlPath, "utf-8");
-        const expected = cryptoMod
-          .createHash("sha256")
-          .update(sql)
-          .digest("hex");
-        if (!appliedHashes.has(expected)) {
-          needsSquashRecovery = true;
-          break;
-        }
-      }
-    }
-  }
-  if (!needsSquashRecovery) return null;
-
-  // --- Squash detected ---
-  // Detect schema era. The first migration a post-squash install applied is
-  // its release-line baseline — an exact signal (a schema-shape probe can't
-  // tell a v0.7.0 install from a v0.6.8 one, since the v7 baseline IS the
-  // v0.6.8 tip). SQLite baseline files differ from the PG ones, so these
-  // hashes are the SQLite spellings.
+/**
+ * SQLite twin of detectSchemaEra — only words the refusal message now. The
+ * first migration a post-squash install applied is its release-line
+ * baseline (SQLite spellings of BASELINE_HASHES); older installs fall back
+ * to schema-shape probes.
+ */
+function detectSchemaEraSqlite(sqlite: SqliteDb): string {
   const SQLITE_BASELINE_HASHES: Record<string, string> = {
     dc91abbd28dd17fc654c9712fb27ce8f922708ccaaad7a4d68acbc19d8a7c685:
       "v0.7_final",
     d640cf13da448193bc3cd36084a9495bf8f826d3a3df15f0cfe4acfb6776c2d3:
       "v0.6_final",
   };
-  let hashEra: string | null = null;
   try {
     const firstRow = sqlite
       .prepare(
         "SELECT hash FROM __drizzle_migrations ORDER BY rowid ASC LIMIT 1",
       )
       .get() as { hash?: string } | undefined;
-    if (firstRow?.hash && SQLITE_BASELINE_HASHES[firstRow.hash]) {
-      hashEra = SQLITE_BASELINE_HASHES[firstRow.hash] ?? null;
-    }
+    const era = firstRow?.hash && SQLITE_BASELINE_HASHES[firstRow.hash];
+    if (era) return era;
   } catch {
-    // fall through to probes
+    // no journal — fall through to probes
   }
-
-  // Heuristic fallback for older eras / installs missing the baseline row.
-  // v0.8.5+ first (has `securities`; account_holdings is gone since 0007).
-  const probeV085Sqlite = sqlite
-    .prepare(
-      "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='securities'",
-    )
-    .get() as { n: number };
-  const probeV06Sqlite = sqlite
-    .prepare(
-      "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='account_holdings'",
-    )
-    .get() as { n: number };
-  const probeV05Sqlite = sqlite
-    .prepare(
+  const has = (sql: string) =>
+    (sqlite.prepare(sql).get() as { n: number }).n > 0;
+  const table = (name: string) =>
+    has(
+      `SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='${name}'`,
+    );
+  if (table("securities")) return "0004_v085_investments";
+  if (table("account_holdings")) return "v0.6_final";
+  if (
+    has(
       "SELECT count(*) AS n FROM pragma_table_info('annual_performance') WHERE name='is_immutable'",
     )
-    .get() as { n: number };
-  const probeV03Sqlite = sqlite
-    .prepare(
-      "SELECT count(*) AS n FROM sqlite_master WHERE type='table' AND name='projection_overrides'",
-    )
-    .get() as { n: number };
-  const schemaVersion =
-    hashEra ??
-    (probeV085Sqlite.n > 0
-      ? "0004_v085_investments"
-      : probeV06Sqlite.n > 0
-        ? "v0.6_final"
-        : probeV05Sqlite.n > 0
-          ? "v0.5_final"
-          : probeV03Sqlite.n > 0
-            ? "v0.3_final"
-            : "v0.2_final");
+  )
+    return "v0.5_final";
+  if (table("projection_overrides")) return "v0.3_final";
+  return "v0.2_final";
+}
 
+function sqliteColumns(sqlite: SqliteDb): Map<string, Set<string>> {
+  return columnMap(
+    sqlite
+      .prepare(
+        "SELECT m.name AS table_name, p.name AS column_name FROM sqlite_master m JOIN pragma_table_info(m.name) p WHERE m.type = 'table'",
+      )
+      .all() as { table_name: string; column_name: string }[],
+  );
+}
+
+function sqliteRecordedHashes(sqlite: SqliteDb): Set<string> {
+  const exists = sqlite
+    .prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations'",
+    )
+    .get();
+  if (!exists) return new Set();
+  return new Set(
+    (
+      sqlite.prepare("SELECT hash FROM __drizzle_migrations").all() as {
+        hash: string;
+      }[]
+    ).map((r) => r.hash),
+  );
+}
+
+/** Run one migration file's statements inside the caller's transaction,
+ *  skipping the ones that are already done (or already moved past — see
+ *  IGNORABLE_PG_CODES). */
+function applyStatementsSqlite(sqlite: SqliteDb, sql: string): void {
+  const statements = sql
+    .split("--> statement-breakpoint")
+    .map((s: string) => s.trim())
+    .filter(Boolean);
+  for (const stmt of statements) {
+    try {
+      sqlite.exec(stmt);
+    } catch (stmtErr) {
+      const msg = (stmtErr as Error).message ?? "";
+      if (
+        msg.includes("already exists") ||
+        msg.includes("duplicate column") ||
+        msg.includes("no such column") ||
+        msg.includes("no such table") ||
+        msg.includes("no such index")
+      ) {
+        // idempotent — skip
+      } else {
+        throw stmtErr;
+      }
+    }
+  }
+}
+
+/**
+ * SQLite twin of handleSquashUpgrade (see its docblock): same detection,
+ * backup first (an exact VACUUM INTO copy), then clear + replay + record +
+ * check in one transaction; any failure rolls back and stops.
+ */
+function handleSQLiteSquashUpgrade(
+  sqlite: SqliteDb,
+  migrationsFolder: string,
+): string | null {
+  const tableExists = sqlite
+    .prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations'",
+    )
+    .get();
+  if (!tableExists) return null;
+
+  const recordedHashes = sqliteRecordedHashes(sqlite);
+  const appliedCount = (
+    sqlite.prepare("SELECT count(*) AS n FROM __drizzle_migrations").get() as {
+      n: number;
+    }
+  ).n;
+  const journal = readJournal(migrationsFolder);
+  const journalCount = journal.entries.length;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports -- dynamic require in SQLite dialect
+  const crypto = require("crypto") as typeof import("crypto");
+  const actual = sqliteColumns(sqlite);
+
+  // The same three cases as handleSquashUpgrade.
+  const needsRecovery =
+    appliedCount > journalCount ||
+    (appliedCount === 0 && actual.has("people")) ||
+    (appliedCount > 0 &&
+      journal.entries.slice(0, appliedCount).some((entry) => {
+        const h = fileHash(crypto, `${migrationsFolder}/${entry.tag}.sql`);
+        return h !== null && !recordedHashes.has(h);
+      }));
+  if (!needsRecovery) return null;
+
+  const schemaVersion = schemaLabel(
+    journal,
+    migrationsFolder,
+    recordedHashes,
+    actual,
+    crypto,
+  );
   log("info", "sqlite_squash_upgrade_start", {
     appliedMigrations: appliedCount,
     journalMigrations: journalCount,
     schemaVersion,
   });
 
-  // 1. Export backup — never clear the journal without one.
-  const backupPath = writePreMigrationBackupSQLite(sqlite, schemaVersion);
+  // 1. Backup — never clear the journal without one.
+  const backupPath = writePreMigrationBackupSqlite(sqlite);
   requireBackupOrAbort(backupPath);
 
-  // 2. Clear old journal
-  sqlite.prepare("DELETE FROM __drizzle_migrations").run();
-
-  // 3. Apply new migration idempotently and record hash
-  // eslint-disable-next-line @typescript-eslint/no-require-imports -- dynamic require in SQLite dialect
-  const crypto = require("crypto") as typeof import("crypto");
-  for (const entry of journal.entries) {
-    const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
-    if (!fs.existsSync(sqlPath)) continue;
-    const sql = fs.readFileSync(sqlPath, "utf-8");
-    const hash = crypto.createHash("sha256").update(sql).digest("hex");
-
-    // The only per-tag data step is 0009's (V0810_TAG): it runs inside the
-    // migration's transaction, before the statements drop what it reads.
-    const statements = sql
-      .split("--> statement-breakpoint")
-      .map((s: string) => s.trim())
-      .filter(Boolean);
-
-    const applyTx = sqlite.transaction(() => {
-      // v0.8.10 data conversion, before 0009 drops what it reads.
-      if (entry.tag === V0810_TAG) applyV0810ProfileSetsSqlite(sqlite);
-      for (const stmt of statements) {
-        try {
-          sqlite.exec(stmt);
-        } catch (stmtErr) {
-          const msg = (stmtErr as Error).message ?? "";
-          // SQLite: "table X already exists", "duplicate column name", etc.
-          // "no such column"/"no such table" is the mirror-image case — a
-          // later migration already renamed/dropped what this (older,
-          // blindly-replayed) migration is trying to touch. See the
-          // matching IGNORABLE_PG_CODES comment in handleSquashUpgrade
-          // above for why both directions are benign here.
-          if (
-            msg.includes("already exists") ||
-            msg.includes("duplicate column") ||
-            msg.includes("no such column") ||
-            msg.includes("no such table") ||
-            msg.includes("no such index")
-          ) {
-            // Idempotent — ignore
-          } else {
-            throw stmtErr;
-          }
-        }
+  // 2. Clear, replay, record, check — all or nothing.
+  try {
+    sqlite.transaction(() => {
+      sqlite.prepare("DELETE FROM __drizzle_migrations").run();
+      for (const entry of journal.entries) {
+        const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
+        if (!fs.existsSync(sqlPath)) continue;
+        const sql = fs.readFileSync(sqlPath, "utf-8");
+        applyStatementsSqlite(sqlite, sql);
+        sqlite
+          .prepare(
+            "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
+          )
+          .run(
+            crypto.createHash("sha256").update(sql).digest("hex"),
+            String(Date.now()),
+          );
+        log("info", "squash_migration_applied", { tag: entry.tag });
       }
-      sqlite
-        .prepare(
-          "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
-        )
-        .run(hash, String(Date.now()));
+      assertSchemaComplete(
+        journal,
+        migrationsFolder,
+        sqliteColumns(sqlite),
+        new Set(
+          (
+            sqlite
+              .prepare("SELECT name FROM sqlite_master WHERE type = 'index'")
+              .all() as { name: string }[]
+          ).map((r) => r.name),
+        ),
+      );
+    })();
+  } catch (err) {
+    log("error", "squash_upgrade_failed", {
+      error: err instanceof Error ? err.message : String(err),
+      message: `Nothing was changed; a backup was written to ${backupPath} before the failure.`,
+      backupPath,
     });
-    applyTx();
-    log("info", "squash_migration_applied", { tag: entry.tag });
+    throw err;
   }
 
   log("info", "sqlite_squash_upgrade_complete", { schemaVersion });
   return backupPath;
 }
 
-function runSQLite() {
+export function runSQLite() {
   /* eslint-disable @typescript-eslint/no-require-imports -- dynamic require for SQLite dialect */
   const Database = require("better-sqlite3");
   const { drizzle } = require("drizzle-orm/better-sqlite3");
@@ -2357,12 +1947,22 @@ function runSQLite() {
   sqlite.pragma("foreign_keys = ON");
   sqlite.pragma("synchronous = NORMAL");
 
+  // Refuse a database older than the baseline before anything else.
+  {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const crypto = require("crypto") as typeof import("crypto");
+    assertSupportedUpgradePath(
+      readJournal("./drizzle-sqlite"),
+      "./drizzle-sqlite",
+      sqliteRecordedHashes(sqlite),
+      sqliteColumns(sqlite),
+      crypto,
+      () => detectSchemaEraSqlite(sqlite),
+    );
+  }
+
   // Handle squash upgrade before running Drizzle's migrate()
-  let backupPath = handleSQLiteSquashUpgrade(
-    sqlite,
-    "./drizzle-sqlite",
-    "./drizzle-sqlite/meta/_journal.json",
-  );
+  let backupPath = handleSQLiteSquashUpgrade(sqlite, "./drizzle-sqlite");
 
   // Apply any pending migrations idempotently. Mirrors the PostgreSQL pre-apply
   // step: handles upgrade DBs that already have tables/columns from old pre-squash
@@ -2417,33 +2017,8 @@ function runSQLite() {
       const sql = fs.readFileSync(sqlPath, "utf-8");
       const hash = crypto.createHash("sha256").update(sql).digest("hex");
       if (appliedHashes.has(hash)) continue;
-      // The only per-tag data step is 0009's (V0810_TAG): it runs inside the
-      // migration's transaction, before the statements drop what it reads.
-      const statements = sql
-        .split("--> statement-breakpoint")
-        .map((s: string) => s.trim())
-        .filter(Boolean);
       const applyTx = sqlite.transaction(() => {
-        // v0.8.10 data conversion, before 0009 drops what it reads.
-        if (entry.tag === V0810_TAG) applyV0810ProfileSetsSqlite(sqlite);
-        for (const stmt of statements) {
-          try {
-            sqlite.exec(stmt);
-          } catch (stmtErr) {
-            const msg = (stmtErr as Error).message ?? "";
-            if (
-              msg.includes("already exists") ||
-              msg.includes("duplicate column") ||
-              msg.includes("no such column") ||
-              msg.includes("no such table") ||
-              msg.includes("no such index")
-            ) {
-              // idempotent — skip
-            } else {
-              throw stmtErr;
-            }
-          }
-        }
+        applyStatementsSqlite(sqlite, sql);
         sqlite
           .prepare(
             "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",

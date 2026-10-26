@@ -10,6 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.9.0] - Unreleased
 
+### Upgrading
+
+- **Upgrade from v0.8.14 or v0.8.15.** v0.9.0 folds the v0.8 migrations into one starting schema, so it can only upgrade a database that already has every v0.8 change. On anything older it stops before changing anything and says so: update to v0.8.15 first, start it once, then update to v0.9.0. A new install isn't affected.
+- Pull the new image and restart. The upgrade writes a backup first, then applies v0.9.0's changes. It is all or nothing: if any step fails, nothing is changed and the container doesn't start, so the previous image still runs against the database.
+- **Going back to v0.8.15 needs the backup taken before the upgrade**, restored together with the v0.8.15 image. Swapping the image back alone isn't enough.
+
 ### Added
 
 - **Tax data ships as one reviewed file, and updates never overwrite your changes.** Every yearly figure (IRS limits, withholding tables, capital-gains and Medicare brackets, poverty levels) now comes from `tax-data/us-federal.json`, each with its source. Each start brings the database in line with it: new years are added and corrected figures replace old ones, but a figure you changed in Settings stays yours. Installs seeded before the 2026 withholding correction get the corrected tables.
@@ -38,6 +44,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **No built-in tax tables.** Capital-gains, Medicare (IRMAA) and poverty-level tables lived in the code as well as in the tax data, and a filing status a table didn't have was quietly priced at a guessed 15% / 20% / $0. The tax data is now the only source: a projection without a complete table stops with a message, and every table grows from its own year. LTCG and IRMAA tables saved in Settings must have the shape the tax math relies on (an open top bracket, thresholds and rates that only go up).
 - **Utilities cost per unit** counted every month's cost against only the months with a meter reading, overstating it (e.g. $5.08/ccf instead of about $1). It now uses only months with both.
 - **Return rates are read the same way everywhere.** The relocation calculator averaged the table's rows instead of its years, so a table with gaps between ages (every demo profile) gave a different rate than the same table listed age by age. Monte Carlo without asset classes used 7% for any age without its own row. Both now apply each row's rate until the next row, as projections always have.
+
+### Under the hood
+
+- **v0.9.0 migration squash.** The v0.8 line (the v0.8.0 baseline plus 12 migrations) is now one `0000_v9_initial_schema` per dialect, generated from v0.8.15. v0.9.0's own changes follow as four separate migrations. The migrator refuses databases older than the baseline, replays a squash in one transaction that checks every table and column afterwards, and labels each backup with the schema it actually came from.
+- The PostgreSQL schema is split into one file per domain (`src/lib/db/pg/`), with the SQLite schema generated from it file by file. The data model is unchanged.
+- `scripts/test-migration.sh` checks the migration journal, every column and the row counts, and can run against an existing empty database without Docker.
 
 # v0.8
 

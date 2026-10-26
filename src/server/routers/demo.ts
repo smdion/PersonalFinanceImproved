@@ -2,7 +2,7 @@
 import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
 import {
   DEMO_SCHEMA_MARKER_PREFIX,
-  MIGRATION_COUNT_SQL,
+  MIGRATION_STAMP_SQL,
 } from "@/lib/db/demo-schema-marker";
 import { applyReferenceData } from "@/lib/db/reference-data";
 import { z } from "zod/v4";
@@ -660,11 +660,15 @@ export const demoRouter = createTRPCRouter({
 
         // Stamp the schema with the migrations it was built for, so a
         // later upgrade can tell it's stale (see demo-schema-marker.ts).
-        const migrations = (await client.query(MIGRATION_COUNT_SQL)) as {
-          rows: { n: number }[];
+        const migrations = (await client.query(MIGRATION_STAMP_SQL)) as {
+          rows: { stamp: string }[];
         };
+        const stamp = migrations.rows[0]?.stamp ?? "";
+        // "<count>:<hex hash>" — interpolated, so check its shape.
+        if (!/^\d+:[0-9a-f]*$/.test(stamp))
+          throw new Error(`Unexpected migration stamp: ${stamp}`);
         await client.query(
-          `COMMENT ON SCHEMA ${quotedSchema} IS '${DEMO_SCHEMA_MARKER_PREFIX}${Number(migrations.rows[0]?.n ?? 0)}'`,
+          `COMMENT ON SCHEMA ${quotedSchema} IS '${DEMO_SCHEMA_MARKER_PREFIX}${stamp}'`,
         );
 
         // Switch search_path and seed demo data + reference tables

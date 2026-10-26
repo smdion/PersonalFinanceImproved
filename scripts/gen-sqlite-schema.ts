@@ -41,10 +41,15 @@
  *     v0.8 baseline (the schema now declares the self-reference), absent on
  *     upgraded SQLite installs (the SQLite 0019 never added it).
  *   - savings_goals.parent_goal_id FK (→ SET NULL): declared in the schema
- *     (and so in the SQLite snapshot) but on NO SQLite install — 0005 adds
- *     only its index, since a table rebuild inside the migration runner's
- *     transaction would cascade-delete savings history. The savings router
- *     detaches sub-goals on delete instead.
+ *     (and so in the SQLite snapshot). Present on installs created fresh
+ *     from the v0.9 baseline; absent on SQLite installs upgraded from v0.8
+ *     — the v0.8.6 migration added only its index, since a table rebuild
+ *     inside the migration runner's transaction would cascade-delete
+ *     savings history. The savings router detaches sub-goals on delete
+ *     either way.
+ *   - retirement_settings.rmd_excess_target_performance_account_id
+ *     (→ SET NULL): inline REFERENCES on upgraded installs, a table-level
+ *     FOREIGN KEY on fresh v0.9 ones — same constraint, different spelling.
  * None affect PostgreSQL, where schema-pg.ts is authoritative and all are
  * enforced.
  */

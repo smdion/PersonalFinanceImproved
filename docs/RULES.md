@@ -511,15 +511,43 @@ database (`db-migrate.ts`, inside the migration's transaction, just before
 its SQL drops what the converter reads) and on an older backup being
 restored (`backup-transforms.ts` → `transformBackupToCurrentSchema`, e.g.
 `transformV0810ProfileSets`). `db-migrate.ts` is compiled on its own and
-can't import from `src/`, so it keeps an **identical copy** of the converter
-between `// BEGIN …` / `// END …` markers — a test checks the copies match
-(`tests/db/v0810-profile-sets.test.ts`); edit both together. Converters work
+can't import from `src/`, so while the migration is in the journal it keeps
+an **identical copy** of the converter between `// BEGIN …` / `// END …`
+markers, with a test that the copies match; edit both together. (The
+v0.8.10 converter's live copy went with the v0.9.0 squash — only the
+restore path in `src/lib/db/v0810-profile-sets.ts` remains.) Converters work
 on snake_case rows (JSON as object or text), are idempotent (a no-op once
 their source is gone) and write only non-default values; the restore path
 also drops the columns the migration drops, and each new data-changing
 migration tag goes in `V08_SCHEMA_TAGS`. A replayed unique violation is
-swallowed on PostgreSQL, so a migration that adds a unique index asserts it
-exists afterwards (`assertV0810IndexPg`).
+swallowed on PostgreSQL: a squash replay's final check requires every index
+of the latest snapshot, and an incremental migration that adds a unique
+index over existing data asserts it exists afterwards.
+
+### Migration squashes
+
+A squash folds a finished release line into one `0000_vN_initial_schema`
+baseline, **generated from that line's last release** (a worktree at its
+tag) — never from a schema that includes the new release's changes, whose
+`ADD COLUMN`s a replay against an existing table would silently skip. The
+new release's own migrations stay incremental after the baseline. Rules:
+
+- Carry the baseline's hand-edited section forward (the profile seed) and
+  no data statements from the squashed migrations.
+- The generated snapshot must equal the old line's last snapshot apart from
+  `id`/`prevId`; `drizzle-kit check` and `generate` report no changes.
+- Installs older than the squashed line's last release are **refused**
+  (`assertSupportedUpgradePath`: every table and column of the baseline's
+  snapshot, checked before any backup or change — not swallowed). They
+  update to that release first.
+- The squash replay is one transaction ending in a check that every table
+  and column of the latest snapshot exists; a failure stops startup with
+  nothing changed.
+- Keep every old tag in `V08_SCHEMA_TAGS` (backups name them) and every
+  hash in `V08_MIGRATION_HASHES`.
+- Verify on a restored prod dump, a fresh install from the new chain and one
+  from the old chain (`pg_dump -s`, by name), both dialects, plus a refused
+  older install.
 
 ### Account Categories
 

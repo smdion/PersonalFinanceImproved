@@ -1,7 +1,7 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import {
   DEMO_SCHEMA_MARKER_PREFIX,
-  MIGRATION_COUNT_SUBQUERY,
+  MIGRATION_STAMP_SUBQUERY,
 } from "@/lib/db/demo-schema-marker";
 import { ZodError, z } from "zod/v4";
 import type { Session } from "next-auth";
@@ -219,14 +219,14 @@ const demoSchemaMiddleware = t.middleware(async ({ ctx, next, path }) => {
     // public tables. Only the demo.* procedures (set up / leave a demo)
     // run without a complete demo schema — and they never read app data.
     // A schema built before the latest migration is stale too (its tables
-    // lack new columns), so its stamp must match the current count.
+    // lack new columns), so its stamp must match the current one.
     const { rows } = (await client.query(
       `SELECT to_regnamespace($1) IS NOT NULL AND NOT EXISTS (
          SELECT 1 FROM pg_tables p WHERE p.schemaname = 'public'
            AND NOT EXISTS (SELECT 1 FROM pg_tables d
              WHERE d.schemaname = $1 AND d.tablename = p.tablename)
        ) AND obj_description(to_regnamespace($1)::oid, 'pg_namespace')
-         = $2 || ${MIGRATION_COUNT_SUBQUERY}::text
+         = $2 || ${MIGRATION_STAMP_SUBQUERY}
        AS complete`,
       [ctx.demoSchema, DEMO_SCHEMA_MARKER_PREFIX],
     )) as { rows: { complete: boolean }[] };
