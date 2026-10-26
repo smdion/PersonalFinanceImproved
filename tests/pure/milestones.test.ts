@@ -1756,6 +1756,7 @@ describe("FOO steps 3 and 9 with the debts list", () => {
     open: true,
     payoffYear: 2030,
     never: false,
+    stale: false,
     paidOffYear: null,
     ...o,
   });
@@ -1891,6 +1892,36 @@ describe("FOO steps 3 and 9 with the debts list", () => {
     );
     expect(r.status).toBe("unknown");
     expect(r.achievements).toEqual([{ year: 2017, label: "Paid off Nelnet" }]);
+  });
+
+  it("step 9: an open debt whose payoff estimate has passed asks for a new balance, not 'on track'", () => {
+    const r = byId(
+      run({
+        debts: [
+          debt({
+            name: "Car",
+            kind: "auto_loan",
+            payoffYear: null,
+            stale: true,
+          }),
+        ],
+        otherDebt,
+      }),
+      "foo9",
+    );
+    expect(r.status).toBe("unknown");
+    expect(r.nextStep).toMatch(/Update the balance of Car/);
+  });
+
+  it("step 9: a payoff date still ahead is not an achievement yet", () => {
+    const r = byId(
+      run({
+        debts: [debt({ name: "Car", kind: "auto_loan", paidOffYear: 2099 })],
+        otherDebt,
+      }),
+      "foo9",
+    );
+    expect(r.achievements ?? []).toEqual([]);
   });
 
   it("without the list, a mortgage plus other debt is no longer 'on track'", () => {

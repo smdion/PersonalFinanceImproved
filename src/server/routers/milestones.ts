@@ -16,8 +16,8 @@ import { parseMilestoneSettings } from "@/lib/pure/milestones";
 import { milestoneYearFromHistory } from "@/lib/pure/milestone-input";
 import { zYearEndTargeting } from "./_shared";
 import type { MilestoneDebt } from "@/lib/pure/milestones";
-import { loanPayoffMonths } from "@/lib/utils/math";
-import { ageInYear, localDateStr } from "@/lib/utils/date";
+import { debtPayoffEstimate } from "@/lib/pure/debts";
+import { getAge, localDateStr } from "@/lib/utils/date";
 import { toNumber } from "@/server/helpers";
 import {
   getEffectiveOtherLiabilities,
@@ -55,38 +55,43 @@ export const milestonesRouter = createTRPCRouter({
         settingRows.find((r) => r.key === key)?.value ?? null;
       const current =
         history.find((h) => h.isCurrent) ?? history[history.length - 1];
-      // Each debt judged at its owner's age today (a joint debt: the
-      // household's, as every other milestone uses).
+      // Each debt judged at its owner's age today, by birthday (a joint
+      // debt: the household's average age, as every other milestone uses —
+      // 0, the most lenient band, only when there are no people at all).
       const today = localDateStr(asOfDate);
       const householdAge = current?.averageAge ?? 0;
       const ageOf = (personId: number | null) => {
         const p = people.find((x) => x.id === personId);
         return p
-          ? ageInYear(Number(p.dateOfBirth.slice(0, 4)), asOfDate.getFullYear())
+          ? getAge(new Date(`${p.dateOfBirth}T00:00:00`), asOfDate)
           : householdAge;
       };
       const debts: MilestoneDebt[] = debtRows.map((d) => {
-        const months = loanPayoffMonths(
-          toNumber(d.balance),
-          d.interestRate == null ? null : toNumber(d.interestRate),
-          d.monthlyPayment == null ? null : toNumber(d.monthlyPayment),
+        const balance = toNumber(d.balance);
+        const rate = d.interestRate == null ? null : toNumber(d.interestRate);
+        const open = isOpenDebt(d, today);
+        const est = debtPayoffEstimate(
+          {
+            balance,
+            interestRate: rate,
+            monthlyPayment:
+              d.monthlyPayment == null ? null : toNumber(d.monthlyPayment),
+            balanceAsOf: d.balanceAsOf,
+          },
+          today,
         );
-        const asOf =
-          Number(d.balanceAsOf.slice(0, 4)) * 12 +
-          Number(d.balanceAsOf.slice(5, 7)) -
-          1;
         return {
           name: d.name,
           kind: d.kind,
-          balance: toNumber(d.balance),
-          rate: d.interestRate == null ? null : toNumber(d.interestRate),
+          balance,
+          rate,
           ownerAge: ageOf(d.ownerPersonId),
-          open: isOpenDebt(d, today),
-          payoffYear:
-            typeof months === "number"
-              ? Math.floor((asOf + months) / 12)
-              : null,
-          never: months === null,
+          open,
+          payoffYear: est.payoffMonth
+            ? Number(est.payoffMonth.slice(0, 4))
+            : null,
+          never: est.never,
+          stale: open && est.stale,
           paidOffYear: d.paidOffDate ? Number(d.paidOffDate.slice(0, 4)) : null,
         };
       });

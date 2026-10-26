@@ -105,14 +105,14 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `debts`
 
-| Procedure     | Kind     | Auth                 | Description                                                                     |
-| ------------- | -------- | -------------------- | ------------------------------------------------------------------------------- |
-| `create`      | mutation | `adminProcedure`     | (no description)                                                                |
-| `delete`      | mutation | `adminProcedure`     | (no description)                                                                |
-| `list`        | query    | `protectedProcedure` | Every debt (open first), with its payoff estimate.                              |
-| `markPaidOff` | mutation | `adminProcedure`     | Paid off on `date`: the balance becomes 0 as of then; the row stays as history. |
-| `summary`     | query    | `protectedProcedure` | Other liabilities and its parts — the same figure net worth uses.               |
-| `update`      | mutation | `adminProcedure`     | (no description)                                                                |
+| Procedure     | Kind     | Auth                 | Description                                                       |
+| ------------- | -------- | -------------------- | ----------------------------------------------------------------- |
+| `create`      | mutation | `adminProcedure`     | (no description)                                                  |
+| `delete`      | mutation | `adminProcedure`     | (no description)                                                  |
+| `list`        | query    | `protectedProcedure` | Every debt (open first), with its payoff estimate.                |
+| `markPaidOff` | mutation | `adminProcedure`     | Paid off on `date`, keeping its last balance.                     |
+| `summary`     | query    | `protectedProcedure` | Other liabilities and its parts — the same figure net worth uses. |
+| `update`      | mutation | `adminProcedure`     | (no description)                                                  |
 
 ## `demo`
 

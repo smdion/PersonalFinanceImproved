@@ -8,13 +8,15 @@
  *  - `creditCardMapped`: credit-card balances from the budget's mapped
  *    accounts (getEffectiveCreditCardDebt).
  * Balances are as entered (never amortized forward). Finalizing a year
- * stores today's figures, as it always has for the typed one.
+ * stores today's balances, as it always has for the typed one, for the
+ * debts open at that year's Dec 31.
  */
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { ActiveBudgetApi } from "@/lib/budget-api/types";
 import { localDateStr } from "@/lib/utils/date";
 import { getEffectiveCreditCardDebt } from "./budget";
+import { parseAppSettings } from "./settings";
 import { toNumber } from "./transforms";
 import type { DbOrTx } from "./transforms";
 
@@ -48,7 +50,10 @@ export async function getEffectiveOtherLiabilities(
     .select()
     .from(schema.appSettings)
     .where(eq(schema.appSettings.key, "current_other_liabilities"));
-  const manual = Number(manualRow?.value ?? 0) || 0;
+  const manual = parseAppSettings(manualRow ? [manualRow] : [])(
+    "current_other_liabilities",
+    0,
+  );
   const day = localDateStr(asOf);
   const openDebts = (await db.select().from(schema.debts)).filter((d) =>
     isOpenDebt(d, day),

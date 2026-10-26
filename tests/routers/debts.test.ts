@@ -4,6 +4,7 @@ import "./setup-mocks";
 import { describe, it, expect } from "vitest";
 import { createTestCaller, adminSession, viewerSession } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
+import { getEffectiveOtherLiabilities } from "@/server/helpers/debts";
 
 const loan = {
   name: "Student loans",
@@ -76,7 +77,7 @@ describe("debts router", () => {
     }
   });
 
-  it("a paid-off debt stays as history and leaves the total", async () => {
+  it("a paid-off debt stays as history with its last balance, and leaves the total", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const d = await caller.debts.create(loan);
@@ -85,10 +86,48 @@ describe("debts router", () => {
       const [after] = await caller.debts.list();
       expect(after).toMatchObject({
         open: false,
-        balance: 0,
+        balance: 20000,
         paidOffDate: "2026-03-01",
       });
       expect((await caller.debts.summary()).itemized).toBe(0);
+      // Clearing the payoff date reopens it at that balance, not $0.
+      await caller.debts.update({ id: d!.id, paidOffDate: null });
+      expect((await caller.debts.summary()).itemized).toBe(20000);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("as of a past Dec 31 (finalizing that year), a debt paid off since still counts", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const d = await caller.debts.create(loan);
+      await caller.debts.markPaidOff({ id: d!.id, date: "2026-02-15" });
+      const at = (asOf: Date) =>
+        getEffectiveOtherLiabilities(
+          db as Parameters<typeof getEffectiveOtherLiabilities>[0],
+          { asOf },
+        ).then((r) => r.itemized);
+      expect(await at(new Date(2025, 11, 31))).toBe(20000);
+      expect(await at(new Date(2026, 11, 31))).toBe(0);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("a person who owns a debt can't be deleted — a clear message, not a foreign-key error", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      const p = await caller.settings.people.create({
+        name: "Pat",
+        dateOfBirth: "1990-05-01",
+      });
+      const d = await caller.debts.create({ ...loan, ownerPersonId: p!.id });
+      await expect(
+        caller.settings.people.delete({ id: p!.id }),
+      ).rejects.toThrow(/own Student loans on Liabilities/);
+      await caller.debts.update({ id: d!.id, ownerPersonId: null });
+      await caller.settings.people.delete({ id: p!.id });
     } finally {
       cleanup();
     }

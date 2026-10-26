@@ -300,6 +300,17 @@ export const paycheckProcedures = {
         // must be one transaction — otherwise a failed person delete (a
         // real job still referencing them) leaves the peg gone with no
         // re-provisioning path.
+        // Debts they own block the delete (owner_person_id restrict) —
+        // say so instead of surfacing the foreign-key error.
+        const owned = await ctx.db
+          .select({ name: schema.debts.name })
+          .from(schema.debts)
+          .where(eq(schema.debts.ownerPersonId, input.id));
+        if (owned.length > 0)
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: `They own ${owned.map((d) => d.name).join(", ")} on Liabilities — make it joint, reassign or delete it first`,
+          });
         return ctx.db.transaction(async (tx) => {
           await tx
             .delete(schema.jobs)

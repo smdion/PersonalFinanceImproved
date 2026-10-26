@@ -245,10 +245,14 @@ export type MilestoneDebt = {
   /** The owner's age today (the household's for a joint debt). */
   ownerAge: number;
   open: boolean;
-  /** Estimated payoff year at its monthly payment; null when no payment is
-   *  entered or it never pays off (`never`). */
+  /** Estimated payoff year at its monthly payment; null when no payment or
+   *  rate is entered, it never pays off (`never`), or the estimate has
+   *  already passed (`stale`). */
   payoffYear: number | null;
   never: boolean;
+  /** Still open but its estimated payoff has passed — the balance is out
+   *  of date. */
+  stale: boolean;
   paidOffYear: number | null;
 };
 
@@ -1310,6 +1314,7 @@ function highInterestDebtStep(
     (input.otherDebt?.creditCardMapped ?? 0) > 0
       ? "Card balances from your budget aren't judged — add a card you carry month to month to the debts list"
       : null;
+  const noRate = open.filter((d) => d.rate == null && d.kind !== "credit_card");
   const high = open.filter(
     (d) =>
       (d.rate != null || d.kind === "credit_card") &&
@@ -1324,14 +1329,21 @@ function highInterestDebtStep(
       status: "behind",
       alert: true,
       headline: `${formatCurrency(high.reduce((s, d) => s + d.balance, 0))} of high-interest debt`,
-      note: cardsNote,
+      note:
+        [
+          cardsNote,
+          noRate.length > 0
+            ? `No rate yet for ${noRate.map((d) => d.name).join(", ")}`
+            : null,
+        ]
+          .filter(Boolean)
+          .join(". ") || null,
       nextStep: `Pay off ${names.join(", ")} — above Money Guy's line for your age`,
       nextStepFocus: { topic: "debts" },
       subjects: high.map((d) => d.name),
       impact: interest > 0 ? { kind: "perYear", amount: interest } : null,
     });
   }
-  const noRate = open.filter((d) => d.rate == null && d.kind !== "credit_card");
   if (manual > 0 || noRate.length > 0)
     return result("foo3", {
       status: "unknown",
@@ -1364,7 +1376,7 @@ function debtFreeStep(
   const mortgage = owesMortgage(input, now);
   const debts = input.debts;
   const achievements = (debts ?? [])
-    .filter((d) => d.paidOffYear != null)
+    .filter((d) => !d.open && d.paidOffYear != null)
     .map((d) => ({ year: d.paidOffYear!, label: `Paid off ${d.name}` }));
   if (!debts) {
     if (!mortgage && now.otherLiabilities <= 0)
@@ -1401,6 +1413,7 @@ function debtFreeStep(
       nextStepFocus: { topic: "debts" },
       achievements,
     });
+  const stale = open.filter((d) => d.stale);
   const unknownDebt = open.some((d) => d.payoffYear == null);
   if (manual > 0 || unknownDebt || (mortgage && payoffYear == null))
     return result("foo9", {
@@ -1408,9 +1421,12 @@ function debtFreeStep(
       headline: mortgage
         ? "Mortgage and other debt in progress"
         : "Other debt in progress",
-      nextStep: unknownDebt
-        ? "Add each debt's monthly payment on Liabilities to estimate when it's paid off"
-        : null,
+      nextStep:
+        stale.length > 0
+          ? `Update the balance of ${stale.map((d) => d.name).join(", ")} on Liabilities — its payoff estimate has passed`
+          : unknownDebt
+            ? "Add each debt's rate and monthly payment on Liabilities to estimate when it's paid off"
+            : null,
       nextStepFocus: unknownDebt ? { topic: "debts" } : undefined,
       achievements,
     });

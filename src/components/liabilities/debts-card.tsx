@@ -14,7 +14,7 @@ import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { formatCurrency, formatDate, formatPercent } from "@/lib/utils/format";
 import { localDateStr } from "@/lib/utils/date";
 import { DEBT_KIND_CONFIG } from "@/lib/config/debts";
 import { DEBT_KIND_VALUES, type DebtKind } from "@/lib/config/enum-values";
@@ -352,7 +352,7 @@ export function DebtsCard() {
                   <td className="py-1.5 text-right tabular-nums">
                     {formatCurrency(d.balance)}
                     <div className="text-faint text-[10px]">
-                      as of {d.balanceAsOf}
+                      as of {formatDate(d.balanceAsOf, "medium")}
                     </div>
                   </td>
                   <td className="py-1.5 text-right tabular-nums">
@@ -373,6 +373,13 @@ export function DebtsCard() {
                       >
                         never
                       </span>
+                    ) : d.stale ? (
+                      <span
+                        className="text-amber-600"
+                        title="The estimate has passed but the debt is still open — update the balance"
+                      >
+                        update balance
+                      </span>
                     ) : d.payoffMonth ? (
                       monthLabel(d.payoffMonth)
                     ) : (
@@ -383,10 +390,11 @@ export function DebtsCard() {
                         className="text-faint ml-2 text-xs hover:text-blue-600"
                         onClick={(e) => {
                           e.stopPropagation();
-                          markPaidOff.mutate({
-                            id: d.id,
-                            date: localDateStr(),
-                          });
+                          if (confirm(`Mark ${d.name} paid off today?`))
+                            markPaidOff.mutate({
+                              id: d.id,
+                              date: localDateStr(),
+                            });
                         }}
                         title="Mark paid off today"
                       >
@@ -449,7 +457,8 @@ export function DebtsCard() {
                       </span>
                     </span>
                     <span>
-                      paid off {d.paidOffDate}
+                      paid off{" "}
+                      {d.paidOffDate && formatDate(d.paidOffDate, "medium")}
                       {admin && (
                         <>
                           <button

@@ -1505,7 +1505,13 @@ export const performanceRouter = createTRPCRouter({
         // (snapshot.ts) — locks in whatever the live view showed right
         // before finalizing, so the permanently-stored figure doesn't
         // silently drop the debts list or the API-mapped credit cards.
-        const otherLiabilities = (await getEffectiveOtherLiabilities(tx)).total;
+        // Which debts count is judged at Dec 31 (local) of the year being
+        // finalized: one paid off since then still belongs to that year.
+        const otherLiabilities = (
+          await getEffectiveOtherLiabilities(tx, {
+            asOf: new Date(year, 11, 31),
+          })
+        ).total;
 
         // Compute cumulative home improvements from items table (not app_settings scalar)
         const homeImprovements = computeHomeImpCumulative(homeImpItems, year);

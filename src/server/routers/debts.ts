@@ -6,7 +6,7 @@ import * as schema from "@/lib/db/schema";
 import { toNumber } from "@/server/helpers";
 import { zDecimal, debtKindSchema } from "@/lib/config/enum-values";
 import { isCalendarDate, localDateStr } from "@/lib/utils/date";
-import { loanPayoffMonths } from "@/lib/utils/math";
+import { debtPayoffEstimate } from "@/lib/pure/debts";
 import {
   getEffectiveOtherLiabilities,
   isOpenDebt,
@@ -36,30 +36,6 @@ const debtFields = {
   sortOrder: z.number().int().optional(),
 };
 
-/** The payoff estimate from the balance's date: a YYYY-MM month, "never"
- *  (the payment doesn't cover the interest) or null (no payment entered). */
-function payoffEstimate(d: typeof schema.debts.$inferSelect): {
-  months: number | null;
-  payoffMonth: string | null;
-  never: boolean;
-} {
-  const months = loanPayoffMonths(
-    toNumber(d.balance),
-    d.interestRate == null ? null : toNumber(d.interestRate),
-    d.monthlyPayment == null ? null : toNumber(d.monthlyPayment),
-  );
-  if (months === undefined)
-    return { months: null, payoffMonth: null, never: false };
-  if (months === null) return { months: null, payoffMonth: null, never: true };
-  const [y, m] = d.balanceAsOf.split("-").map(Number) as [number, number];
-  const i = y * 12 + (m - 1) + months;
-  return {
-    months,
-    payoffMonth: `${Math.floor(i / 12)}-${String((i % 12) + 1).padStart(2, "0")}`,
-    never: false,
-  };
-}
-
 export const debtsRouter = createTRPCRouter({
   /** Every debt (open first), with its payoff estimate. */
   list: protectedProcedure.query(async ({ ctx }) => {
@@ -68,17 +44,19 @@ export const debtsRouter = createTRPCRouter({
       .from(schema.debts)
       .orderBy(asc(schema.debts.sortOrder), asc(schema.debts.id));
     const today = localDateStr();
-    return rows.map((d) => ({
-      ...d,
-      balance: toNumber(d.balance),
-      originalAmount:
-        d.originalAmount == null ? null : toNumber(d.originalAmount),
-      interestRate: d.interestRate == null ? null : toNumber(d.interestRate),
-      monthlyPayment:
-        d.monthlyPayment == null ? null : toNumber(d.monthlyPayment),
-      open: isOpenDebt(d, today),
-      ...payoffEstimate(d),
-    }));
+    return rows.map((d) => {
+      const row = {
+        ...d,
+        balance: toNumber(d.balance),
+        originalAmount:
+          d.originalAmount == null ? null : toNumber(d.originalAmount),
+        interestRate: d.interestRate == null ? null : toNumber(d.interestRate),
+        monthlyPayment:
+          d.monthlyPayment == null ? null : toNumber(d.monthlyPayment),
+        open: isOpenDebt(d, today),
+      };
+      return { ...row, ...debtPayoffEstimate(row, today) };
+    });
   }),
 
   /** Other liabilities and its parts — the same figure net worth uses. */
@@ -126,13 +104,16 @@ export const debtsRouter = createTRPCRouter({
       return { success: true };
     }),
 
-  /** Paid off on `date`: the balance becomes 0 as of then; the row stays as history. */
+  // Only the date changes: the last balance stays as history (and as the
+  // balance again if the payoff date is cleared) — the paid-off date alone
+  // takes it out of every open total.
+  /** Paid off on `date`, keeping its last balance. */
   markPaidOff: adminProcedure
     .input(z.object({ id: z.number().int().positive(), date: zDate }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db
         .update(schema.debts)
-        .set({ paidOffDate: input.date, balance: "0", balanceAsOf: input.date })
+        .set({ paidOffDate: input.date })
         .where(eq(schema.debts.id, input.id));
       return { success: true };
     }),

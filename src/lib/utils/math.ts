@@ -93,9 +93,10 @@ export function calculateLoanMonthlyPayment(
 
 /**
  * Months to pay off a balance at a fixed monthly payment — the inverse of
- * calculateLoanMonthlyPayment. `undefined` when there's no payment to go
- * on; `null` when the payment doesn't cover the interest (it never pays
- * off). A zero balance is 0 months.
+ * calculateLoanMonthlyPayment. `undefined` when there's no payment or no
+ * rate to go on (a missing rate is unknown, not 0%); `null` when the
+ * payment doesn't cover the interest (it never pays off). A zero balance is
+ * 0 months.
  */
 export function loanPayoffMonths(
   balance: number,
@@ -104,7 +105,8 @@ export function loanPayoffMonths(
 ): number | null | undefined {
   if (balance <= 0) return 0;
   if (monthlyPayment == null || monthlyPayment <= 0) return undefined;
-  const r = (annualRate ?? 0) / 12;
+  if (annualRate == null) return undefined;
+  const r = annualRate / 12;
   if (r <= 0) return Math.ceil(balance / monthlyPayment - 1e-9);
   if (monthlyPayment <= r * balance) return null;
   return Math.ceil(

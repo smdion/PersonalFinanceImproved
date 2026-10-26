@@ -91,7 +91,9 @@ export default function LiabilitiesPage() {
             title={
               <>
                 Total Liabilities{" "}
-                {hasApiBalance && <SyncBadge source={serviceLabel} />}
+                {hasApiBalance && (
+                  <SyncBadge source={syncStatus?.service ?? ""} />
+                )}
               </>
             }
           >

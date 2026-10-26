@@ -12,7 +12,10 @@ describe("loanPayoffMonths", () => {
 
   it("no interest: balance over payment, rounded up", () => {
     expect(loanPayoffMonths(1000, 0, 300)).toBe(4);
-    expect(loanPayoffMonths(900, null, 300)).toBe(3);
+  });
+
+  it("unknown when no rate is entered (not treated as 0%)", () => {
+    expect(loanPayoffMonths(900, null, 300)).toBeUndefined();
   });
 
   it("never when the payment doesn't cover the interest; unknown with no payment", () => {
