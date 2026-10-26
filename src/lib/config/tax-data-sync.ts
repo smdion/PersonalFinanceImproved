@@ -18,4 +18,10 @@ export const TAX_DATA_TAG_PREFIX = "tax-data-v";
 export const TAX_DATA_PUBLIC_KEYS: readonly {
   keyId: string;
   publicKey: string;
-}[] = [];
+}[] = [
+  {
+    keyId: "ledgr-2026",
+    publicKey:
+      "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAtJAEDi9QccYkYEstTNBSzDGweVwPYPbjOxLEdU1+iHE=\n-----END PUBLIC KEY-----\n",
+  },
+];
