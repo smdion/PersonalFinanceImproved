@@ -689,7 +689,7 @@ function savingsRate(input: MilestoneInput): MilestoneResult {
       .join(" · "),
     nextStep: met
       ? null
-      : `Save ${formatCurrency(gapPerMonth)} more a month to reach a ${formatSavingsRate(MONEY_GUY_SAVINGS_RATE)} savings rate (savings as a share of gross pay)${(() => {
+      : `Save ${formatCurrency(gapPerMonth)} more a month to reach a ${formatSavingsRate(MONEY_GUY_SAVINGS_RATE)} savings rate${(() => {
           const first = whereToSaveFirst(input);
           return first ? ` — ${first}` : "";
         })()}`,
@@ -858,13 +858,11 @@ function whereToSaveFirst(input: MilestoneInput): string | null {
     : null;
 }
 
-/** "Raise Ann 401k to 6% of pay (now 4%) — $1,200 a year of match". */
+/** "raise Ann 401k to 6% of pay (now 4%)" — the dollars are the step's. */
 function matchShortfallStep(s: MatchShortfall): string {
-  const how =
-    s.fullPct !== null
-      ? `raise to ${formatNumber(s.fullPct, s.fullPct % 1 === 0 ? 0 : 1)}% of pay${s.currentPct !== null ? ` (now ${formatNumber(s.currentPct, s.currentPct % 1 === 0 ? 0 : 1)}%)` : ""}`
-      : "raise the contribution";
-  return `${s.owner} ${s.label}: ${how} — ${formatCurrency(s.missed)} a year of match`;
+  return s.fullPct !== null
+    ? `raise ${s.owner} ${s.label} to ${formatNumber(s.fullPct, s.fullPct % 1 === 0 ? 0 : 1)}% of pay${s.currentPct !== null ? ` (now ${formatNumber(s.currentPct, s.currentPct % 1 === 0 ? 0 : 1)}%)` : ""}`
+    : `raise ${s.owner} ${s.label} (${formatCurrency(s.missed)} a year of match missed)`;
 }
 
 function foo(
@@ -922,8 +920,8 @@ function foo(
           left < 1
             ? null
             : m.shortfalls?.length
-              ? `${formatCurrency(left)} a year of employer match left on the table — ${m.shortfalls.map(matchShortfallStep).join(" · ")}`
-              : `${formatCurrency(left)} a year of employer match left on the table — raise your workplace-plan contribution to get the full match`,
+              ? `Get the full employer match (${formatCurrency(left)} a year): ${m.shortfalls.map(matchShortfallStep).join(" · ")}`
+              : `Raise your workplace-plan contribution to get the full employer match (${formatCurrency(left)} a year)`,
         impact: left >= 1 ? { kind: "perYear", amount: left } : null,
       }),
     );
@@ -1233,15 +1231,16 @@ function housing(input: MilestoneInput, now: MilestoneYear): MilestoneResult[] {
         expectedAge: payoffAge,
         nextStep:
           payoffAge !== null && payoffAge > PAID_OFF_HOME_BY_AGE
-            ? `The mortgage is on schedule to be paid off ${Math.ceil(payoffAge - PAID_OFF_HOME_BY_AGE)} years after age ${PAID_OFF_HOME_BY_AGE} — ${(() => {
+            ? (() => {
+                const late = `on schedule ${Math.ceil(payoffAge - PAID_OFF_HOME_BY_AGE)} years after age ${PAID_OFF_HOME_BY_AGE}`;
                 const extra = extraPrincipalToPayOffBy(
                   mortgage,
                   (PAID_OFF_HOME_BY_AGE - now.age) * 12,
                 );
                 return extra !== null
-                  ? `about ${formatCurrency(extra)} more principal a month pays it off by ${PAID_OFF_HOME_BY_AGE}`
-                  : "extra principal payments close the gap";
-              })()}, and so do investments set aside that could pay it off`
+                  ? `Pay about ${formatCurrency(extra)} more principal a month to own the home by ${PAID_OFF_HOME_BY_AGE} — it's ${late}`
+                  : `Make extra principal payments to own the home by ${PAID_OFF_HOME_BY_AGE} — it's ${late}`;
+              })()
             : null,
       }),
     );
@@ -1333,9 +1332,7 @@ function investing(input: MilestoneInput): MilestoneResult[] {
       .filter((c) => c.share < c.targetShare!)
       .sort((a, b) => dollars(b) - dollars(a));
     const list = (cs: typeof targeted) =>
-      formatList(
-        cs.map((c) => `${compactCurrency(dollars(c))} into ${c.name}`),
-      );
+      formatList(cs.map((c) => `${compactCurrency(dollars(c))} ${c.name}`));
     const names = (cs: typeof targeted) => formatList(cs.map((c) => c.name));
     const overTotal = over.reduce((s, c) => s + dollars(c), 0);
     const underTotal = under.reduce((s, c) => s + dollars(c), 0);
@@ -1348,17 +1345,17 @@ function investing(input: MilestoneInput): MilestoneResult[] {
     const where = !known
       ? ""
       : sheltered >= overTotal
-        ? " — make the move inside tax-advantaged accounts (401(k), IRA, HSA), where selling costs no tax"
+        ? " — inside tax-advantaged accounts, so no tax"
         : sheltered > 0
-          ? ` — sell inside tax-advantaged accounts first (about ${compactCurrency(sheltered)} of it is there; no tax), and steer new contributions for the rest`
-          : " — it's all in taxable accounts: steer new contributions instead of selling, which would realize gains";
+          ? ` — sell the ${compactCurrency(sheltered)} in tax-advantaged accounts first (no tax); steer new contributions for the rest`
+          : " — steer new contributions; selling in taxable accounts realizes gains";
     const action =
       over.length && under.length
-        ? `Rebalance: move about ${compactCurrency(overTotal)} out of ${names(over)} — ${list(under)}${where}`
+        ? `Rebalance about ${compactCurrency(overTotal)}: sell ${names(over)}; buy ${list(under)}${where}`
         : over.length
-          ? `Rebalance: move about ${compactCurrency(overTotal)} out of ${names(over)} into what's under target${where}`
+          ? `Rebalance about ${compactCurrency(overTotal)}: sell ${names(over)}; buy what's under target${where}`
           : under.length
-            ? `Rebalance: add about ${compactCurrency(underTotal)} — ${list(under)}`
+            ? `Add about ${compactCurrency(underTotal)}: ${list(under)}`
             : null;
     const gaps = off
       .map((c) => {
@@ -1404,7 +1401,7 @@ function investing(input: MilestoneInput): MilestoneResult[] {
         headline: `Funds cost ${formatPercent(h.expenseRatio, 2)} a year on average (blended expense ratio)`,
         nextStep: low
           ? null
-          : `Fund costs average ${formatPercent(h.expenseRatio, 2)} a year (expense ratio), above the ${formatPercent(LOW_COST_EXPENSE_RATIO, 2)} low-cost line — look for lower-cost index funds on the Benchmarks page`,
+          : `Lower your fund costs — they average ${formatPercent(h.expenseRatio, 2)} a year, above the ${formatPercent(LOW_COST_EXPENSE_RATIO, 2)} low-cost line`,
       }),
     );
   }
@@ -1498,7 +1495,7 @@ function goalHorizon(input: MilestoneInput): MilestoneResult {
     return result("goalHorizon", {
       status: "behind",
       headline: `${soon.length} brokerage goal${soon.length === 1 ? "" : "s"} due within ${GOAL_HORIZON_YEARS.cash} years`,
-      nextStep: `Money for goals due within ${GOAL_HORIZON_YEARS.cash} years shouldn't ride the stock market — move it toward savings, CDs or I bonds: ${list(soon)}`,
+      nextStep: `Move money for ${list(soon)} out of stocks into savings, CDs or I bonds — due within ${GOAL_HORIZON_YEARS.cash} years`,
       note: mid.length ? `Conservative mix for: ${list(mid)}` : null,
     });
   }
@@ -1534,16 +1531,16 @@ function fundCosts(input: MilestoneInput): MilestoneResult {
       ? `${pricey.length} of ${judged.length} funds above the low-cost bar for their asset class`
       : `All ${judged.length} funds under the low-cost bar for their asset class`,
     nextStep: pricey.length
-      ? `High fund costs: ${pricey
+      ? pricey
           .map(
             (f) =>
-              `${f.name} costs ${formatPercent(f.expenseRatio, 2)} a year (expense ratio); under ${formatPercent(bar(f), 2)} is low-cost for ${COMPOSITION_BUCKET_LABELS[f.bucket]} — ${
+              `Swap ${f.name} (${formatPercent(f.expenseRatio, 2)} a year) for ${
                 f.switchable
-                  ? "switch to a lower-cost index fund"
-                  : "check the plan's menu for a lower-cost option"
-              }`,
+                  ? "a low-cost index fund"
+                  : "a cheaper option on the plan's menu"
+              } — under ${formatPercent(bar(f), 2)} is low-cost for ${COMPOSITION_BUCKET_LABELS[f.bucket]}`,
           )
-          .join(" · ")}`
+          .join(" · ")
       : null,
     subjects: pricey.map((f) => f.name),
   });

@@ -25,6 +25,9 @@ import {
 } from "@/lib/pure/profiles";
 import { formatEmployerMatch } from "@/lib/pure/contributions";
 import { EMPLOYER_MATCH_VALUE_UNIT } from "@/lib/config/display-labels";
+import { isRothIraContribution } from "@/lib/pure/roth-ira";
+import { RothRouteSelect } from "@/components/paycheck/roth-route-select";
+import type { RothIraRoute } from "@/lib/config/enum-values";
 
 export function ContributionRow({
   contrib: c,
@@ -136,6 +139,16 @@ export function ContributionRow({
             <span className="text-muted">
               {TAX_LABELS[c.taxTreatment] ?? c.taxTreatment}
             </span>
+            {isRothIraContribution(c) && (
+              <>
+                <span className="text-faint">·</span>
+                <span className="text-muted">
+                  {activeProfileFields?.rothRoute === "backdoor"
+                    ? "Backdoor"
+                    : "Direct"}
+                </span>
+              </>
+            )}
             {matchText && (
               <>
                 <span className="text-faint">·</span>
@@ -416,6 +429,23 @@ export function ContributionRow({
                   }
                   disabled={!onUpdate}
                 />
+              </div>
+            )}
+            {/* A Roth IRA's route lives on the active Contribution Profile
+                (the same election as Paycheck) — the Roth IRA check reads it. */}
+            {activeProfileName && isRothIraContribution(c) && (
+              <div className="col-span-2 flex items-end pb-1">
+                <RothRouteSelect
+                  value={
+                    (activeProfileFields?.rothRoute as
+                      RothIraRoute | undefined) ?? undefined
+                  }
+                  disabled={!onUpdate}
+                  onChange={(v) => onUpdate?.({ rothRoute: v })}
+                />
+                <span className="text-caption text-faint ml-2">
+                  in {activeProfileName}
+                </span>
               </div>
             )}
             <div className="col-span-2">

@@ -7,6 +7,7 @@
  * Medicare owed at filing). The dashboard shows only the two-line summary.
  */
 import { Card } from "@/components/ui/card";
+import { FilingStatusRow } from "@/components/taxes/filing-status-row";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
   formatCurrency,
@@ -79,6 +80,10 @@ export function TaxBreakdown({ data }: { data: PaycheckSummary }) {
           help="Pre-tax 401(k), payroll HSA and pre-tax deductions, including what the bonus check takes."
         />
         <Row label="AGI (wages)" value={formatCurrency(tax.wageAgi)} />
+        <FilingStatusRow
+          status={data.filingStatus}
+          source={data.filingStatusSource}
+        />
         <Row label="Taxable income" value={formatCurrency(tax.taxableIncome)} />
         <div className="border-subtle my-2 border-t" />
         <Row

@@ -10,15 +10,8 @@ import type {
   RecommendationUrgency,
 } from "@/lib/pure/recommendations";
 import { formatCurrency } from "@/lib/utils/format";
-import { ROTH_IRA_MFS_PHASEOUT } from "@/lib/config/tax-params";
+import { filingStatusLabel } from "@/lib/config/display-labels";
 import { rothIraAdvice, type RothIraView } from "@/lib/pure/roth-ira";
-
-/** Shown wherever the verdict is: the app has no married-filing-separately
- *  status, whose phase-out is far lower. Built when shown, so privacy mode
- *  masks its dollars. */
-export function rothMfsNote(): string {
-  return `Filing married-separately? Your phase-out is ${formatCurrency(ROTH_IRA_MFS_PHASEOUT.start, 0)}–${formatCurrency(ROTH_IRA_MFS_PHASEOUT.end, 0)} — this verdict doesn't apply.`;
-}
 
 export function recommendationsFromRothIra(
   view: RothIraView | null,
@@ -44,10 +37,12 @@ export function recommendationsFromRothIra(
     ? `by the ${taxYear} filing deadline`
     : "until the tax-filing deadline";
   const range = `${formatCurrency(j.phaseOutStart, 0)}–${formatCurrency(j.phaseOutEnd, 0)}`;
-  const context = `${taxYear} Roth IRA MAGI about ${formatCurrency(view.magi, 0)}; phase-out ${range}. ${rothMfsNote()}`;
   // What to do given how each person contributes (direct or backdoor) —
   // nothing when the route they use already fits this income.
   const advice = rothIraAdvice(view, deadline);
+  // The figures behind it, for the household's own filing status.
+  const facts = `${filingStatusLabel(view.filingStatus)}: ${taxYear} income (MAGI) about ${formatCurrency(view.magi, 0)}, phase-out ${range}`;
+  const context = advice?.detail ? `${advice.detail} ${facts}` : facts;
   const out: Recommendation[] = advice?.action
     ? [
         {
@@ -58,7 +53,11 @@ export function recommendationsFromRothIra(
           action: advice.action,
           context,
           impact: null,
-          focus: { topic: "rothIra" },
+          // Someone contributes directly: the fix is their route, set
+          // with the contribution elections; otherwise the Roth IRA check.
+          focus: view.routes.some((r) => r.route === "direct")
+            ? { topic: "contributionElections" }
+            : { topic: "rothIra" },
           source: "ledgr",
         },
       ]
@@ -73,10 +72,11 @@ export function recommendationsFromRothIra(
       urgency: urgency(W.proRata.nowFrom),
       title: `${p.name}: pre-tax IRA money blocks a clean backdoor`,
       action: p.hasEmployerPlan
-        ? `Consider rolling ${formatCurrency(p.amount, 0)} of pre-tax IRA money into your workplace plan before Dec 31 (if it accepts roll-ins) — otherwise most of a backdoor Roth conversion is taxable`
-        : `${formatCurrency(p.amount, 0)} of pre-tax IRA money makes most of a backdoor Roth conversion taxable (pro-rata) — weigh that before converting`,
-      context:
-        "Current balance shown; the Dec 31 balance of traditional, SEP and SIMPLE IRAs is what counts",
+        ? `Roll ${p.name}'s ${formatCurrency(p.amount, 0)} pre-tax IRA into the workplace plan before Dec 31`
+        : `${p.name}'s ${formatCurrency(p.amount, 0)} pre-tax IRA makes a backdoor conversion mostly taxable`,
+      context: p.hasEmployerPlan
+        ? "Otherwise most of a backdoor conversion is taxable (pro-rata rule). Check the plan takes roll-ins. The Dec 31 balance of traditional, SEP and SIMPLE IRAs counts."
+        : "Pro-rata rule: the Dec 31 balance of traditional, SEP and SIMPLE IRAs counts — weigh the tax before converting.",
       impact: null,
       focus: { topic: "rothIra" },
       source: "ledgr",

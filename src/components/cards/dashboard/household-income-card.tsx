@@ -34,7 +34,12 @@ function HouseholdIncomeCardImpl() {
 
   const people = data?.people?.filter((d) => d.paycheck) ?? [];
   const periods = (d: (typeof people)[0]) =>
-    isYtd ? d.paycheck!.periodsElapsedYtd : d.paycheck!.periodsPerYear;
+    isYtd
+      ? Math.max(
+          0,
+          d.paycheck!.periodsElapsedYtd - d.paycheck!.periodsBeforeStart,
+        )
+      : d.paycheck!.periodsPerYear;
   const blendedOf = (d: (typeof people)[0]) =>
     (d as Record<string, unknown>).blendedAnnual as
       | import("@/lib/calculators/types/calculators").BlendedAnnualTotals
@@ -57,24 +62,11 @@ function HouseholdIncomeCardImpl() {
       ? formula
       : null;
   };
+  // The calculator's bonus period (null when there's no bonus date, or it
+  // falls before the job started) against the paydays so far.
   const isBonusPaidYtd = (d: (typeof people)[0]) => {
-    // paycheck.computeSummary's `job` is the Salary-Profile-merged shape
-    // (mergeSalaryProfileJobFields) — bonusMonth/bonusDayOfMonth live there
-    // now, not on the `jobs` table. This asserts the flat, merged shape
-    // PersonPaycheck/BonusSection already expect from the same `job` field
-    // (see their prop types and use-paycheck-person-views.ts's `job: any`
-    // escape hatch for the identical gap) rather than inventing a
-    // different nesting.
-    const job = d.job as {
-      bonusMonth: number | null;
-      bonusDayOfMonth: number | null;
-    } | null;
-    const bonusMonth = job?.bonusMonth;
-    if (bonusMonth == null) return false;
-    const day = job?.bonusDayOfMonth ?? 1;
-    const today = new Date();
-    const payDate = new Date(today.getFullYear(), bonusMonth - 1, day);
-    return today >= payDate;
+    const p = d.paycheck!.bonusPeriod;
+    return p !== null && p <= d.paycheck!.periodsElapsedYtd;
   };
   const totalBonusGross = isYtd
     ? sumBy(people, (d) =>

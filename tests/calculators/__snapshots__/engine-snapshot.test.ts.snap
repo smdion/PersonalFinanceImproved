@@ -1731,14 +1731,14 @@ exports[`engine snapshot parity > fixture 31: RMD + Roth conversion + IRMAA — 
     },
     {
       "category": "401k",
-      "depletionAge": 86,
-      "depletionYear": 2039,
+      "depletionAge": 85,
+      "depletionYear": 2038,
       "subType": "traditional",
     },
   ],
   "finalYear": {
     "age": 94,
-    "allAccountsBalance": 3709384.99,
+    "allAccountsBalance": 3693018.8,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -1747,7 +1747,7 @@ exports[`engine snapshot parity > fixture 31: RMD + Roth conversion + IRMAA — 
   "retirementDepletionYear": null,
   "retirementYear": {
     "age": 72,
-    "allAccountsBalance": 1529070.66,
+    "allAccountsBalance": 1527599.41,
     "projectedExpenses": 70000,
     "totalWithdrawal": 28000,
   },
@@ -1755,7 +1755,7 @@ exports[`engine snapshot parity > fixture 31: RMD + Roth conversion + IRMAA — 
   "totalYears": 23,
   "warningCount": 1,
   "year0": {
-    "allAccountsBalance": 1529070.66,
+    "allAccountsBalance": 1527599.41,
     "phase": "decumulation",
     "projectedExpenses": 70000,
     "totalWithdrawal": 28000,
@@ -2944,14 +2944,14 @@ exports[`engine snapshot parity > fixture 54: IRMAA awareness enabled, income ne
     },
     {
       "category": "401k",
-      "depletionAge": 72,
-      "depletionYear": 2031,
+      "depletionAge": 71,
+      "depletionYear": 2030,
       "subType": "traditional",
     },
   ],
   "finalYear": {
     "age": 89,
-    "allAccountsBalance": 1915295.39,
+    "allAccountsBalance": 1891477.91,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,
@@ -2960,7 +2960,7 @@ exports[`engine snapshot parity > fixture 54: IRMAA awareness enabled, income ne
   "retirementDepletionYear": null,
   "retirementYear": {
     "age": 66,
-    "allAccountsBalance": 1351005.54,
+    "allAccountsBalance": 1348180.74,
     "projectedExpenses": 90000,
     "totalWithdrawal": 46000,
   },
@@ -2968,7 +2968,7 @@ exports[`engine snapshot parity > fixture 54: IRMAA awareness enabled, income ne
   "totalYears": 24,
   "warningCount": 1,
   "year0": {
-    "allAccountsBalance": 1351005.54,
+    "allAccountsBalance": 1348180.74,
     "phase": "decumulation",
     "projectedExpenses": 90000,
     "totalWithdrawal": 46000,

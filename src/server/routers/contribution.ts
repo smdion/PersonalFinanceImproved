@@ -14,10 +14,10 @@ import {
 } from "./investments/live-contributions";
 import {
   contribRemainingFraction,
-  countPeriodsElapsed,
   monthsDoneYtd,
   monthsElapsedYtd,
   periodsElapsedYtd,
+  checksPaidYtd,
   bonusCheckContribution,
   isPaidThroughPayroll,
 } from "@/lib/calculators/paycheck";
@@ -433,11 +433,14 @@ export const contributionRouter = createTRPCRouter({
           effectiveSalaryMap,
         );
         const periodsPerYear = getPeriodsPerYear(job.payPeriod);
-        const periodsElapsed = periodsElapsedYtd(
+        // Expected YTD counts the checks this job has paid — none before
+        // a start this year.
+        const periodsElapsed = checksPaidYtd(
           asOfDate,
           job.payPeriod,
           job.anchorPayDate,
           periodsPerYear,
+          job.startDate,
         );
         jobCache.set(c.jobId, { salary, periodsPerYear, periodsElapsed });
       }
@@ -902,13 +905,21 @@ export const contributionRouter = createTRPCRouter({
                   liveThroughToday.has(rawContrib.performanceAccountId)
                 )
               ) {
-                const anchor = new Date(activeJob.anchorPayDate);
-                const periodsAtPerfDate = countPeriodsElapsed(
-                  perfLastUpdated,
-                  activeJob.payPeriod,
-                  anchor,
+                // Checks this job paid since the data's date — a payday
+                // before a start this year isn't a missed contribution.
+                const { payPeriod } = activeJob;
+                const paid = (at: Date) =>
+                  checksPaidYtd(
+                    at,
+                    payPeriod,
+                    activeJob.anchorPayDate,
+                    periodsPerYear,
+                    activeJob.startDate,
+                  );
+                stalePeriods = Math.max(
+                  0,
+                  paid(asOfDate) - paid(perfLastUpdated),
                 );
-                stalePeriods = Math.max(0, periodsElapsed - periodsAtPerfDate);
               }
               if (stalePeriods > 0) entry.ytdDataStale = true;
               const regularMatch = acct.employerMatch - bonusMatch;
@@ -1176,8 +1187,16 @@ export const contributionRouter = createTRPCRouter({
             ),
           );
 
+          // Year-to-date totals: the checks this job has paid, not the
+          // paydays before it started.
           const ytdRatioForTotals = safeDivide(
-            periodsElapsed,
+            checksPaidYtd(
+              asOfDate,
+              activeJob.payPeriod,
+              activeJob.anchorPayDate,
+              periodsPerYear,
+              activeJob.startDate,
+            ),
             periodsPerYear,
             0,
           );

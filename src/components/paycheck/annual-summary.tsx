@@ -104,7 +104,10 @@ export function AnnualSummary({
 
   // Year-end estimate without salary-change data falls back to projected.
   const ytd = mode === "ytd";
-  const checks = ytd ? paycheck.periodsElapsedYtd : paycheck.periodsPerYear;
+  // Year to date: the checks this job has paid (none before it started).
+  const checks = ytd
+    ? Math.max(0, paycheck.periodsElapsedYtd - paycheck.periodsBeforeStart)
+    : paycheck.periodsPerYear;
   const sum = (lines: { amount: number }[]) =>
     lines.reduce((s, d) => s + d.amount, 0);
   return (

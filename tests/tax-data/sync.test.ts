@@ -142,7 +142,10 @@ describe("checkForTaxDataUpdate", () => {
     try {
       const r = release((f) => {
         f.years["2026"]!.limits.ira_limit!.value = 7600;
-        f.years["2026"]!.limits.some_future_limit = { value: 1, source: "x" };
+        f.years["2026"]!.limits.some_future_limit = {
+          value: 1,
+          source: f.years["2026"]!.limits.ira_limit!.source,
+        };
       });
       expect(await check(github(r))).toBe("pending");
     } finally {

@@ -478,7 +478,7 @@ describe("saving, safety and home", () => {
     expect(r.status).toBe("behind");
     // 25% of 150k = 37.5k; saved 33k → 375/mo
     expect(r.nextStep).toBe(
-      "Save $375.00 more a month to reach a 25% savings rate (savings as a share of gross pay) — Pat 401k has $8,500.00 of IRS room this year",
+      "Save $375.00 more a month to reach a 25% savings rate — Pat 401k has $8,500.00 of IRS room this year",
     );
   });
 
@@ -626,7 +626,7 @@ describe("investing (Bogleheads)", () => {
       "rebalance",
     );
     expect(r.nextStep).toBe(
-      "Rebalance: move about $100k out of Stocks — $60k into Bonds and $40k into TIPS",
+      "Rebalance about $100k: sell Stocks; buy $60k Bonds and $40k TIPS",
     );
     expect(r.impact).toEqual({ kind: "oneTime", amount: 100_000 });
     // The same mix in a $50k household scales with it.
@@ -641,7 +641,7 @@ describe("investing (Bogleheads)", () => {
       "rebalance",
     );
     expect(small.nextStep).toBe(
-      "Rebalance: move about $5k out of Stocks — $5k into Bonds",
+      "Rebalance about $5k: sell Stocks; buy $5k Bonds",
     );
   });
 
@@ -664,7 +664,7 @@ describe("investing (Bogleheads)", () => {
       "2 asset classes outside the rebalancing band: Stocks 10.0 pts over target · Bonds 5.6 pts under target",
     );
     expect(r.nextStep).toBe(
-      "Rebalance: move about $100k out of Stocks — $56k into Bonds and $40k into TIPS",
+      "Rebalance about $100k: sell Stocks; buy $56k Bonds and $40k TIPS",
     );
   });
 
@@ -684,7 +684,7 @@ describe("investing (Bogleheads)", () => {
       "rebalance",
     );
     expect(r.nextStep).toBe(
-      "Rebalance: move about $120k out of A, B and C — $60k into D, $30k into E and $30k into F",
+      "Rebalance about $120k: sell A, B and C; buy $60k D, $30k E and $30k F",
     );
   });
 
@@ -1413,7 +1413,7 @@ describe("r/personalfinance", () => {
     expect(at([{ name: "Car", targetYear: 2028 }])).toMatchObject({
       status: "behind",
       nextStep:
-        "Money for goals due within 3 years shouldn't ride the stock market — move it toward savings, CDs or I bonds: Car (2028)",
+        "Move money for Car (2028) out of stocks into savings, CDs or I bonds — due within 3 years",
     });
     expect(at([{ name: "Roof", targetYear: 2030 }]).status).toBe("onTrack");
     expect(at([{ name: "Cabin", targetYear: 2040 }]).status).toBe("reached");
@@ -1518,7 +1518,7 @@ describe("r/personalfinance", () => {
       status: "behind",
       headline: "1 of 2 funds above the low-cost bar for their asset class",
       nextStep:
-        "High fund costs: BBB costs 0.44% a year (expense ratio); under 0.10% is low-cost for US stocks — check the plan's menu for a lower-cost option",
+        "Swap BBB (0.44% a year) for a cheaper option on the plan's menu — under 0.10% is low-cost for US stocks",
     });
   });
 
@@ -1562,7 +1562,7 @@ describe("recommendations use what Ledgr knows", () => {
       "foo2",
     );
     expect(r.nextStep).toBe(
-      "$1,500.00 a year of employer match left on the table — Pat 401k: raise to 6% of pay (now 4%) — $1,500.00 a year of match",
+      "Get the full employer match ($1,500.00 a year): raise Pat 401k to 6% of pay (now 4%)",
     );
   });
 
@@ -1674,7 +1674,7 @@ describe("recommendations use what Ledgr knows", () => {
       "paidOffHome",
     );
     expect(r.nextStep).toMatch(
-      /about \$[\d,.]+ more principal a month pays it off by 60/,
+      /^Pay about \$[\d,.]+ more principal a month to own the home by 60 — it's on schedule \d+ years after age 60$/,
     );
   });
 
@@ -1706,19 +1706,15 @@ describe("recommendations use what Ledgr knows", () => {
   it("rebalancing: where a sale costs no tax", () => {
     expect(
       byId(run({ holdings: holdings(80_000, 0) }), "rebalance").nextStep,
-    ).toMatch(
-      /inside tax-advantaged accounts \(401\(k\), IRA, HSA\), where selling costs no tax$/,
-    );
+    ).toMatch(/ — inside tax-advantaged accounts, so no tax$/);
     expect(
       byId(run({ holdings: holdings(0, 80_000) }), "rebalance").nextStep,
     ).toMatch(
-      /all in taxable accounts: steer new contributions instead of selling/,
+      /steer new contributions; selling in taxable accounts realizes gains$/,
     );
     expect(
       byId(run({ holdings: holdings(10_000, 70_000) }), "rebalance").nextStep,
-    ).toMatch(
-      /sell inside tax-advantaged accounts first \(about \$10k of it is there/,
-    );
+    ).toMatch(/sell the \$10k in tax-advantaged accounts first \(no tax\)/);
     expect(classesUnderTarget(holdings(0, 0))).toEqual(["Bonds"]);
   });
 
@@ -1745,10 +1741,10 @@ describe("recommendations use what Ledgr knows", () => {
       }),
       "fundCosts",
     );
+    expect(r.nextStep).toMatch(/Swap AAA \(.*\) for a low-cost index fund/);
     expect(r.nextStep).toMatch(
-      /AAA costs .* — switch to a lower-cost index fund/,
+      /Swap BBB \(.*\) for a cheaper option on the plan's menu/,
     );
-    expect(r.nextStep).toMatch(/BBB costs .* — check the plan's menu/);
     expect(r.subjects).toEqual(["AAA", "BBB"]);
   });
 });

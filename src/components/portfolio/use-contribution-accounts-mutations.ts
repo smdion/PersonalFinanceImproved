@@ -8,6 +8,7 @@
  * The parent component still owns query calls and UI state.
  */
 
+import type { RothIraRoute } from "@/lib/config/enum-values";
 import { trpc } from "@/lib/trpc";
 import type { AccountCategory } from "@/lib/config/account-types";
 
@@ -226,6 +227,9 @@ export function useContributionAccountsMutations({
       allocationPriority: number;
       notes: string | null;
       isPayrollDeducted: boolean | null;
+      /** A Roth IRA's route — profile-only (no account column); direct is
+       *  stored as absent, as the Paycheck page does. */
+      rothRoute: RothIraRoute;
     }>,
   ) => {
     // Route profile-owned fields (employer match terms, autoMaximize) into
@@ -253,11 +257,16 @@ export function useContributionAccountsMutations({
           (profileFields as any)[field] = value;
         }
       }
-      if (Object.keys(profileFields).length > 0) {
+      const route = updates.rothRoute;
+      if (route === "backdoor")
+        (profileFields as { rothRoute?: RothIraRoute }).rothRoute = route;
+      const unset = route === "direct" ? ["rothRoute"] : [];
+      if (Object.keys(profileFields).length > 0 || unset.length > 0) {
         setContribProfileFieldsMut.mutate({
           profileId: activeContribProfileId,
           accountId: c.id,
           fields: profileFields,
+          ...(unset.length > 0 ? { unset } : {}),
         });
       }
       // Everything else in `updates` (if any) still falls through to the raw
@@ -265,7 +274,9 @@ export function useContributionAccountsMutations({
       const rest = Object.fromEntries(
         Object.entries(updates).filter(
           ([key]) =>
-            !(PROFILE_OWNED_CONTRIB_FIELDS as readonly string[]).includes(key),
+            !(PROFILE_OWNED_CONTRIB_FIELDS as readonly string[]).includes(
+              key,
+            ) && key !== "rothRoute",
         ),
       );
       if (Object.keys(rest).length === 0) return;

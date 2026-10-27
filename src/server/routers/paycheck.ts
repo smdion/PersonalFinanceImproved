@@ -303,9 +303,15 @@ export const paycheckRouter = createTRPCRouter({
 
       const asOfDate = new Date();
       // The IRS-limit cap pass: every figure below reads the capped value.
+      const capHousehold = await loadCapHousehold(
+        ctx.db,
+        people,
+        limitsRecord,
+        taxYear,
+      );
       const effectiveContribs = capForRequest(
         sandboxed,
-        await loadCapHousehold(ctx.db, people, limitsRecord, taxYear),
+        capHousehold,
         effectiveJobs,
         salaryProfileActiveMap,
         effectiveSalaryMap,
@@ -673,9 +679,13 @@ export const paycheckRouter = createTRPCRouter({
         earners.length > 0
           ? sumHouseholdIncome(earners.map((r) => r.earnings!))
           : null;
+      // The household's tax-return filing status — the one the caps use
+      // (loadCapHousehold), never a W-4 on its own: a W-4 status is a
+      // withholding choice (married couples often pick Single).
+      const householdFilingStatus = capHousehold.filingStatus || null;
       let householdTax = null;
-      if (earners.length > 0) {
-        const filingStatus = earners[0]!.job!.w4FilingStatus!;
+      if (earners.length > 0 && householdFilingStatus) {
+        const filingStatus = householdFilingStatus;
         const bracketRow = allBrackets.find(
           (b) => b.filingStatus === filingStatus && b.w4Checkbox === false,
         );
@@ -690,7 +700,8 @@ export const paycheckRouter = createTRPCRouter({
       }
 
       const rothIra = rothIraSummary({
-        filingStatus: earners[0]?.job?.w4FilingStatus ?? null,
+        // No one with a job → no Roth IRA view, as before.
+        filingStatus: earners.length > 0 ? householdFilingStatus : null,
         taxYear,
         limits: limitsRecord,
         people: results.map((r) => ({
@@ -726,6 +737,14 @@ export const paycheckRouter = createTRPCRouter({
         jointContribs,
         householdIncome,
         householdTax,
+        /** The tax-return filing status the household tax was figured for
+         *  (null: none set and no W-4 to stand in). */
+        filingStatus: householdFilingStatus,
+        /** Where it came from: the household setting, the active
+         *  Retirement Profile, or a W-4 standing in. */
+        filingStatusSource: householdFilingStatus
+          ? capHousehold.filingStatusSource
+          : null,
         rothIra,
         hsaBuffers,
         // The tax-data vintage this summary was priced under — for a

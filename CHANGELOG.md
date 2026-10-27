@@ -8,6 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.9
 
+## [0.9.2] - 2026-10-26
+
+### Changed
+
+- **Recommendations are shorter and say what to do.** Each one leads with a single line (what to do, who or which account, how much), with the how and the figures in the small line under it. "Start here" items aren't repeated in the area cards below.
+- **A Roth IRA's route can be set where the account is.** Portfolio → Account & Contribution Settings now shows "Gets to the Roth: Direct / Backdoor" on a Roth IRA contribution (it saves to the active Contribution Profile, the same setting as Paycheck), and the contribution's summary shows which. The "Switch … to the backdoor Roth" recommendation's link goes to the contribution elections on Paycheck, and its detail says which setting to change.
+- **The filing status picker shows names, not codes** ("Married filing jointly", not "MFJ"), and its help says what it sets.
+- **This year's tax return has its own filing status**, set on the Taxes page. This year's tax, the Roth IRA check and the IRS limits use it; retirement years keep the Retirement Profile's status, so a profile that plans for a different status later doesn't change this year. Unset, it follows the Retirement Profile's (then the W-4) and says so. The Roth IRA panel notes that married filing separately isn't modelled.
+- **The Expenses page loads about 430 KB less JavaScript.** It pulled in the server's budget-sync code, and a browser copy of Node's crypto with it, for one list of category names.
+- **Tax data is one file a year, with tooling for contributors.** `tax-data/us-federal/` holds `index.json` and a file per year (installs still download one signed file). `pnpm tax-data:check` checks it in seconds without a database; `pnpm tax-data:new-year YYYY` starts a year with every figure blank, so nothing carries over unnoticed; generated JSON Schemas give editors autocomplete; the README lists every key and the conventions, and CONTRIBUTING.md says how to send figures.
+- **Every tax figure links to its document.** Each citation now names a document only and links to it (IRS notices and Revenue Procedures, Publications 15 and 15-T, the Code, the OBBBA, CMS, HHS); CI refuses a citation without a link. Several figures cited the wrong document (2026 HSA limits cited the retirement-plan notice; they come from Rev. Proc. 2025-19).
+- **CI blocks on page weight.** The bundle check now measures what each page downloads on first load and fails a page over its budget. It used to add up every page's code and failed every build without blocking anything.
+
+### Fixed
+
+- **The Roth IRA check and the household tax use the household's filing status.** Both read the first earner's W-4 status, which is a withholding choice, so a married couple withholding at the Single rate was judged against the Single Roth IRA phase-out. They now use this year's filing status (above); the W-4 only fills in when nothing else is set. The Roth recommendation names the filing status it used instead of asking about married filing separately.
+- **The IRS limits no longer drop the married rules when no Retirement Profile is set up.** With no filing status set, they now follow the W-4 like the rest of the app, and stay unknown (never assumed married) with no job either.
+- **Two tax tables held the wrong year's figures.** The 2025 capital-gains brackets were 2024's (now Rev. Proc. 2024-40: 0% up to $96,700 married filing jointly, $48,350 single, $64,750 head of household), and the 2026 Medicare IRMAA brackets were 2024's thresholds with estimated surcharges (now CMS's 2026 figures: from $218,000 jointly / $109,000 otherwise, $1,148.40 a year per person at the first tier). Installs pick up the corrections on their next start; a figure you changed yourself stays yours. Retirement projections with IRMAA awareness move slightly.
+- **A job started this year is paid from its start date.** The year's pay schedule started every job on January 1, so Social Security looked like it stopped a few checks early, and "withheld so far", the year-to-date paycheck totals, the Contributions page's expected-so-far figure and missed-contribution check, and the pay-stub check's Medicare wages counted checks from before the job began. A bonus dated before the start no longer counts as paid.
+
 ## [0.9.1] - 2026-10-26
 
 ### Added

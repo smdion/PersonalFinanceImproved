@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { YnabClient, YNAB_INTERNAL_GROUPS } from "@/lib/budget-api/ynab-client";
+import { YnabClient } from "@/lib/budget-api/ynab-client";
+import { YNAB_INTERNAL_GROUPS } from "@/lib/config/ynab";
 
 // Mock fetch globally
 const mockFetch = vi.fn();

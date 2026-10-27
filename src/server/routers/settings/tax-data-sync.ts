@@ -58,7 +58,10 @@ function verifiedFile(row: { fileText: string; signature: string }) {
       message: "The stored update no longer verifies — it can't be applied.",
     });
   const file = JSON.parse(row.fileText) as TaxDataFile;
-  const problems = validateTaxDataFile(file, { unknownKeys: "ignore" });
+  const problems = validateTaxDataFile(file, {
+    unknownKeys: "ignore",
+    citations: "lenient",
+  });
   if (problems.length)
     throw new TRPCError({
       code: "BAD_REQUEST",

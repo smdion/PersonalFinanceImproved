@@ -369,7 +369,7 @@ export function ledgrCheckFor(
   // Medicare wages so far this year through this check, the bonus included
   // once paid.
   const medicareWagesYtd =
-    n * paycheck.ficaWages +
+    Math.max(0, n - paycheck.periodsBeforeStart) * paycheck.ficaWages +
     (paycheck.bonusPeriod !== null && paycheck.bonusPeriod <= n
       ? paycheck.bonusEstimate.bonusFicaWages
       : 0);

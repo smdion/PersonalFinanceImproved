@@ -6,6 +6,7 @@
  *  echo `projection.computeProjection` returns), so this reads exactly what
  *  drove the numbers above it rather than a second, possibly-stale query.
  */
+import { filingStatusLabel } from "@/lib/config/display-labels";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { MAX_BROKERAGE_RAMP_YEARS } from "@/lib/constants";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
@@ -16,17 +17,6 @@ import { parseAnnualPia } from "@/lib/config/social-security";
  *  strings for some (drizzle decimal columns) and plain numbers for others
  *  — accept both here rather than pinning down which is which per field. */
 type NumLike = number | string;
-
-/** Human-readable labels for the engine's short-code filing status
- *  (`FilingStatusType`/`W4FilingStatus` — "MFJ"/"Single"/"HOH") — this
- *  printed report is a client-facing document, so it must never render
- *  the raw short code (the app's "never render raw DB keys" rule). Falls
- *  back to the raw value for anything unrecognized rather than hiding it. */
-const FILING_STATUS_LABELS: Record<string, string> = {
-  MFJ: "Married Filing Jointly",
-  Single: "Single",
-  HOH: "Head of Household",
-};
 
 /** Structural subset of the `settings` object `projection.computeProjection`
  *  returns (see `src/server/routers/projection/scenarios.ts`) — named
@@ -238,10 +228,7 @@ export function ReportAssumptionsSummary({
         {settings.filingStatus && (
           <Row
             label="Tax filing status"
-            value={
-              FILING_STATUS_LABELS[settings.filingStatus] ??
-              settings.filingStatus
-            }
+            value={filingStatusLabel(settings.filingStatus)}
           />
         )}
       </Section>

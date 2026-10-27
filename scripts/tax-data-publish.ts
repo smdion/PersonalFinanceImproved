@@ -6,8 +6,11 @@
  * file and its signature together. Run by the owner, locally: the signing
  * key never goes to CI (dependabot merges to main unreviewed).
  *
+ * The repo keeps one file a year (tax-data/us-federal/); what's published
+ * is those assembled into the one signed file every install reads.
+ *
  * Checks, then signs and publishes:
- *  - on main, a clean tree, and the file is byte-identical to origin/main;
+ *  - on main, a clean tree, and the tax data matches origin/main;
  *  - the file passes every tax-data check;
  *  - it's newer (its dataVersion counter) than what the release holds;
  *  - the signature verifies with a public key this code bundles.
@@ -15,8 +18,8 @@
  * Usage: TAX_DATA_SIGNING_KEY_FILE=<pem> TAX_DATA_SIGNING_KEY_ID=<id> \
  *          pnpm tax-data:publish [--dry-run]
  *
- * Trying a change before it's merged: add `--test [--file <path>]` — any
- * valid file, from any branch, to the separate `tax-data-test` pre-release
+ * Trying a change before it's merged: add `--test [--file <path>]` — this
+ * branch's tax data, or any valid assembled file, to the separate `tax-data-test` pre-release
  * that only a server with LEDGR_TAX_DATA_CHANNEL=test reads. Delete it
  * afterwards: `gh release delete tax-data-test --cleanup-tag`.
  */
@@ -25,6 +28,8 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import {
+  TAX_DATA_DIR,
+  readTaxDataDir,
   shippedReferenceRows,
   sameReferenceValue,
   type TaxDataFile,
@@ -42,7 +47,9 @@ import {
   TAX_DATA_TEST_RELEASE_TAG,
 } from "../src/lib/config/tax-data-sync";
 
-const FILE = "tax-data/us-federal.json";
+/** The repo's tax data, assembled into the published file's bytes. */
+const assembled = () =>
+  Buffer.from(`${JSON.stringify(readTaxDataDir(fs), null, 2)}\n`, "utf8");
 const args = process.argv.slice(2);
 const dryRun = args.includes("--dry-run");
 const test = args.includes("--test");
@@ -64,15 +71,18 @@ run("git", "fetch", "--quiet", "origin", "main");
 let bytes: Buffer;
 let sha: string | undefined;
 if (test) {
-  bytes = fs.readFileSync(fileArg ?? FILE);
+  bytes = fileArg ? fs.readFileSync(fileArg) : assembled();
 } else {
   if (run("git", "rev-parse", "--abbrev-ref", "HEAD") !== "main")
     fail("Run from main (or publish a --test release from a branch).");
   if (run("git", "status", "--porcelain"))
     fail("The working tree isn't clean.");
-  bytes = fs.readFileSync(FILE);
-  if (!bytes.equals(execFileSync("git", ["show", `origin/main:${FILE}`])))
-    fail(`${FILE} differs from origin/main — merge it first.`);
+  bytes = assembled();
+  try {
+    execFileSync("git", ["diff", "--quiet", "origin/main", "--", TAX_DATA_DIR]);
+  } catch {
+    fail(`${TAX_DATA_DIR} differs from origin/main — merge it first.`);
+  }
   sha = run("git", "rev-parse", "origin/main");
 }
 
@@ -114,9 +124,7 @@ if (!verifyTaxDataSignature(bytes, JSON.stringify(signatures)))
   );
 
 // 5. What changed since the release (a first test: since this branch's file).
-const before =
-  published ??
-  (test ? (JSON.parse(fs.readFileSync(FILE, "utf8")) as TaxDataFile) : null);
+const before = published ?? (test ? readTaxDataDir(fs) : null);
 const prevRows = new Map(
   (before ? shippedReferenceRows(before) : []).map((r) => [
     `${r.table} ${r.keyVals.join(" ")}`,

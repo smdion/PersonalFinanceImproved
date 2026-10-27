@@ -33,7 +33,7 @@ describe("recommendationsFromCaps", () => {
       area: "paycheck",
       urgency: "now",
       title: "Avery: 401(k) contributions over the IRS limit",
-      action: `401(k) contribution: ${over}`,
+      action: `Avery's 401(k): ${over}`,
       focus: { topic: "contributionElections" },
       snoozeOnly: true,
     });

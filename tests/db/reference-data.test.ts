@@ -113,6 +113,52 @@ describe("reconcile", () => {
     expect(Number(limit(db, 2025, "standard_deduction_mfj").value)).toBe(31500);
   });
 
+  it("an install on the previous file gets a corrected section (2025 LTCG, 2026 IRMAA)", () => {
+    const db = openTestSqlite();
+    const file = readTaxData();
+    const row = (table: string, year: number) =>
+      db
+        .prepare(
+          `SELECT brackets, origin, source_version FROM ${table} WHERE tax_year = ? AND filing_status = 'MFJ'`,
+        )
+        .get(year) as { brackets: string; origin: string };
+    // As the previous file left it: shipped, at the older dataVersion.
+    for (const [table, year, section] of [
+      ["ltcg_brackets", 2025, file.years["2025"]!.ltcg!],
+      ["irmaa_brackets", 2026, file.years["2026"]!.irmaa!],
+    ] as const) {
+      const old = section.supersedes?.MFJ?.[0];
+      expect(old).toBeDefined();
+      db.prepare(
+        `UPDATE ${table} SET brackets = ?, origin = 'seed', source_version = ? WHERE tax_year = ? AND filing_status = 'MFJ'`,
+      ).run(JSON.stringify(old), file.dataVersion - 1, year);
+      reconcile(db);
+      expect(
+        sameReferenceValue(
+          row(table, year).brackets,
+          section.brackets.MFJ,
+          true,
+        ),
+      ).toBe(true);
+    }
+  });
+
+  it("a year still being filled in (blanks) is never written", () => {
+    const db = openTestSqlite();
+    const file = readTaxData();
+    const blank = JSON.parse(
+      JSON.stringify(file.years["2026"]),
+    ) as (typeof file.years)["2026"];
+    blank.limits.ira_limit!.value = null as never;
+    const next = { ...file, years: { ...file.years, "2099": blank } };
+    reconcile(db, next);
+    expect(limit(db, 2099, "ira_limit")).toBeUndefined();
+    expect(limit(db, 2099, "ss_wage_base")).toBeUndefined();
+    expect(
+      db.prepare("SELECT 1 FROM tax_params WHERE tax_year = 2099").get(),
+    ).toBeUndefined();
+  });
+
   it("an old withholding table (pre-R58) is corrected too", () => {
     const db = openTestSqlite();
     const file = readTaxData();

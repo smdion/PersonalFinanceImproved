@@ -35,7 +35,7 @@ import {
   getRmdStartAge,
 } from "@/lib/config/rmd-tables";
 
-/** The shipped tables these values come from (tax-data/us-federal.json). */
+/** The shipped tables these values come from (tax-data/us-federal/). */
 const {
   ltcgBrackets: LTCG_BRACKETS,
   irmaaBrackets: IRMAA_BRACKETS,
@@ -362,17 +362,17 @@ describe("NIIT values (3.8% surtax)", () => {
 });
 
 describe("IRMAA bracket values", () => {
-  // Source: CMS 2026 projected thresholds
+  // Source: CMS, 2026 Medicare Parts A & B Premiums and Deductibles
   it("MFJ has 5 tiers", () => {
     expect(IRMAA_BRACKETS.MFJ).toHaveLength(5);
   });
 
-  it("MFJ tier 1 threshold = $206,000", () => {
-    expect(IRMAA_BRACKETS.MFJ[0]!.magiThreshold).toBe(206000);
+  it("MFJ tier 1 threshold = $218,000", () => {
+    expect(IRMAA_BRACKETS.MFJ[0]!.magiThreshold).toBe(218000);
   });
 
-  it("Single tier 1 threshold = $103,000 (half of MFJ)", () => {
-    expect(IRMAA_BRACKETS.Single[0]!.magiThreshold).toBe(103000);
+  it("Single tier 1 threshold = $109,000 (half of MFJ)", () => {
+    expect(IRMAA_BRACKETS.Single[0]!.magiThreshold).toBe(109000);
   });
 
   it("surcharges increase monotonically", () => {
@@ -389,11 +389,12 @@ describe("IRMAA bracket values", () => {
   });
 
   it("getIrmaaCost returns tier 1 surcharge just above threshold", () => {
-    expect(getIrmaaCost(207000, "MFJ", IRMAA_BRACKETS)).toBe(1056);
+    // Part B $81.20 + Part D $14.50 a month, × 12.
+    expect(getIrmaaCost(219000, "MFJ", IRMAA_BRACKETS)).toBeCloseTo(1148.4, 2);
   });
 
   it("getNextIrmaaCliff returns first threshold when below all", () => {
-    expect(getNextIrmaaCliff(100000, "MFJ", IRMAA_BRACKETS)).toBe(206000);
+    expect(getNextIrmaaCliff(100000, "MFJ", IRMAA_BRACKETS)).toBe(218000);
   });
 
   it("getNextIrmaaCliff returns null when above all tiers", () => {

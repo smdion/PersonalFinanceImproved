@@ -1,7 +1,7 @@
 /**
  * Brings the reference tables (contribution limits, withholding / LTCG /
  * IRMAA tables, poverty lines, tax-data revisions) in line with the shipped
- * tax-data file (`tax-data/us-federal.json`) — without ever touching a
+ * tax-data file (`tax-data/us-federal/`) — without ever touching a
  * figure the household changed.
  *
  * Runs on every migrate (db-migrate.ts — which can't import src/, so the
@@ -52,6 +52,10 @@ export type TaxDataYear = {
   revision: number;
   source: string;
   notes?: string;
+  /** Every citation the year uses → a link to the document (each
+   *  `source` is one or more citations joined by "; "). Required by the
+   *  validator; optional here so older files still parse. */
+  sources?: Record<string, string>;
   limits: Record<string, TaxDataLimit>;
   withholding: {
     source: string;
@@ -88,6 +92,101 @@ export type TaxDataFile = {
   dataVersion: number;
   years: Record<string, TaxDataYear>;
 };
+
+/** Where the tax data lives in the repo (and the image): `index.json`
+ *  (formatVersion, dataVersion) and one `YYYY.json` per year. Everything
+ *  reads it as one TaxDataFile (assembleTaxData) — the published, signed
+ *  file is that same single shape. */
+export const TAX_DATA_DIR = "tax-data/us-federal";
+
+/** The directory's files → one TaxDataFile. A `$schema` line in any file
+ *  is the editor's and is dropped. Throws on a file that isn't
+ *  `index.json` or `YYYY.json`. */
+export function assembleTaxData(
+  files: readonly { name: string; text: string }[],
+): TaxDataFile {
+  const drop = (o: Record<string, unknown>) => {
+    const { $schema: _schema, ...rest } = o;
+    return rest;
+  };
+  const index = files.find((f) => f.name === "index.json");
+  if (!index) throw new Error(`${TAX_DATA_DIR}/index.json is missing`);
+  const head = drop(JSON.parse(index.text)) as {
+    formatVersion: number;
+    dataVersion: number;
+  };
+  const years: Record<string, TaxDataYear> = {};
+  for (const f of files) {
+    if (f.name === "index.json") continue;
+    const m = /^(\d{4})\.json$/.exec(f.name);
+    if (!m)
+      throw new Error(
+        `${TAX_DATA_DIR}/${f.name}: only index.json and YYYY.json belong here`,
+      );
+    years[m[1]!] = drop(JSON.parse(f.text)) as TaxDataYear;
+  }
+  return {
+    formatVersion: head.formatVersion,
+    dataVersion: head.dataVersion,
+    years: Object.fromEntries(
+      Object.keys(years)
+        .sort()
+        .map((y) => [y, years[y]!]),
+    ),
+  };
+}
+
+/** A year with every figure filled in. A year being added
+ *  (`pnpm tax-data:new-year`, blanks until filled) isn't: the reconcile
+ *  skips it, so a half-done year never reaches a database. */
+export function isCompleteTaxDataYear(d: TaxDataYear): boolean {
+  const num = (v: unknown) => typeof v === "number" && Number.isFinite(v);
+  const rows = (b: unknown) =>
+    (Array.isArray(b) ? b : []) as Record<string, unknown>[];
+  return (
+    Object.values(d.limits ?? {}).every((l) => num(l?.value)) &&
+    Object.values(d.withholding?.tables ?? {}).every((t) =>
+      [t?.standard, t?.checkbox].every((k) =>
+        rows(k).every(
+          (r) => num(r.threshold) && num(r.baseWithholding) && num(r.rate),
+        ),
+      ),
+    ) &&
+    Object.values(d.ltcg?.brackets ?? {}).every((b) =>
+      rows(b).every(
+        (r, i, all) =>
+          num(r.rate) &&
+          (num(r.threshold) || (r.threshold === null && i === all.length - 1)),
+      ),
+    ) &&
+    Object.values(d.irmaa?.brackets ?? {}).every((b) =>
+      rows(b).every((r) => num(r.magiThreshold) && num(r.annualSurcharge)),
+    ) &&
+    Object.values(d.fpl?.amounts ?? {}).every(num)
+  );
+}
+
+/** Read the tax-data directory with the caller's fs (the app, the
+ *  migrator and scripts share this). */
+export function readTaxDataDir(
+  fsLike: {
+    readdirSync: (p: string) => string[];
+    readFileSync: (p: string, enc: "utf-8") => string;
+  },
+  dir: string = TAX_DATA_DIR,
+): TaxDataFile {
+  // Only index.json and YYYY.json — a stray file must not stop a start
+  // (tax-data:check and the tests assemble every file, strictly).
+  return assembleTaxData(
+    fsLike
+      .readdirSync(dir)
+      .filter((n) => /^(index|\d{4})\.json$/.test(n))
+      .map((name) => ({
+        name,
+        text: fsLike.readFileSync(`${dir}/${name}`, "utf-8"),
+      })),
+  );
+}
 
 /** One shipped row: its table, natural key, value and older values. */
 type ShippedRow = {
@@ -258,6 +357,13 @@ function* reconcileSteps(
     throw new Error(
       `tax-data file format ${file.formatVersion} is newer than this app reads (${TAX_DATA_FORMAT_VERSION})`,
     );
+  // A year still being filled in is never written.
+  file = {
+    ...file,
+    years: Object.fromEntries(
+      Object.entries(file.years).filter(([, d]) => isCompleteTaxDataYear(d)),
+    ),
+  };
   const bool = (b: unknown) =>
     typeof b === "boolean" && dialect === "sqlite" ? (b ? 1 : 0) : b;
   const write = (r: ShippedRow) =>

@@ -24,6 +24,9 @@ export type PeriodBreakdown = {
   bonusGross: number; // bonus amount included in this period (0 for non-bonus periods)
   bonusWithholding: number; // federal withholding on bonus portion
   bonusFica: number; // FICA on bonus portion
+  /** A payday this year before the job started — not this job's check
+   *  (every amount 0). Periods keep their calendar number. */
+  beforeStart?: true;
 };
 
 export type BonusEstimate = {
@@ -57,6 +60,9 @@ export type PaycheckInput = {
   bonusMonth: number | null; // 1-12, month when bonus is paid (null = unknown/not modeled)
   bonusDayOfMonth: number | null; // 1-31, day of month when bonus is paid (null = first period of month)
   asOfDate: Date;
+  /** The job's start date — a job started this year has no checks before
+   *  it. Absent: paid all year. */
+  startDate?: Date | null;
 };
 
 export type PaycheckResult = {
@@ -78,7 +84,11 @@ export type PaycheckResult = {
   extraPaycheckMonths: string[];
   yearSchedule: PeriodBreakdown[];
   periodsPerYear: number;
+  /** Paydays so far this year, by the calendar (the year schedule's index). */
   periodsElapsedYtd: number;
+  /** This year's paydays before the job started (0 for a job held all
+   *  year). Checks this job has paid so far = periodsElapsedYtd − this. */
+  periodsBeforeStart: number;
   nextPayDate: string; // ISO date string of next upcoming payday
   payFrequencyLabel: string; // human-readable label like "Biweekly (Even Weeks)"
   warnings: string[];

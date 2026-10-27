@@ -3,7 +3,11 @@
  * Lightweight DB harness for helper tests that need a real SQLite database
  * but don't need the full tRPC caller.
  */
-import { reconcileReferenceRowsSync } from "@/lib/db/reference-reconcile-core";
+import {
+  TAX_DATA_DIR,
+  readTaxDataDir,
+  reconcileReferenceRowsSync,
+} from "@/lib/db/reference-reconcile-core";
 import fs from "fs";
 import path from "path";
 import Database from "better-sqlite3";
@@ -46,9 +50,7 @@ export function openTestSqlite(): InstanceType<typeof Database> {
         stmt.run(...params);
         return [];
       },
-      JSON.parse(
-        fs.readFileSync(path.resolve("tax-data/us-federal.json"), "utf-8"),
-      ),
+      readTaxDataDir(fs, path.resolve(TAX_DATA_DIR)),
     );
     template = t.serialize();
     t.close();

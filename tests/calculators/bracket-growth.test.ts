@@ -25,6 +25,16 @@ const SHIPPED = shippedTaxTables(2026);
 const LTCG_BRACKETS = SHIPPED.ltcgBrackets;
 const IRMAA_BRACKETS = SHIPPED.irmaaBrackets;
 const DATA_YEAR = 2026;
+/** Fictional IRMAA tiers for the end-to-end growth tests below (fixed, so
+ *  yearly data never moves their household across a tier). */
+const tiers = (t: number[], s: number[]) =>
+  t.map((magiThreshold, i) => ({ magiThreshold, annualSurcharge: s[i]! }));
+const MECH_SURCHARGES = [1056, 2640, 4224, 5808, 6924];
+const IRMAA_MECHANISM_BRACKETS = {
+  MFJ: tiers([206000, 258000, 322000, 386000, 750000], MECH_SURCHARGES),
+  Single: tiers([103000, 129000, 161000, 193000, 375000], MECH_SURCHARGES),
+  HOH: tiers([103000, 129000, 161000, 193000, 375000], MECH_SURCHARGES),
+};
 
 describe("taxGrowthYears", () => {
   it("is 0 when year equals taxDataYear", () => {
@@ -766,6 +776,10 @@ function makeIrmaaHouseholdInput(): ProjectionInput {
       withdrawalTaxPreference: { "401k": "traditional", ira: "traditional" },
       distributionTaxRates: {
         ...shippedTaxTables(),
+        // A fixed table, not the shipped year's: this household's MAGI is
+        // placed between its first tier and that tier grown two years, and
+        // a tax-data update must not move it across.
+        irmaaBrackets: IRMAA_MECHANISM_BRACKETS,
         traditionalFallbackRate: 0.15,
         roth: 0,
         hsa: 0,

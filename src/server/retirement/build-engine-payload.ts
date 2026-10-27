@@ -10,6 +10,7 @@
  * balances. Callers (projection router endpoints) consume the result and add
  * their own accumulation/decumulation overrides and decumulation defaults.
  */
+import { taxFilingStatusSetting } from "@/lib/pure/filing-status";
 import { eq, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import {
@@ -761,10 +762,14 @@ export async function buildEnginePayload(
     id: p.id,
     birthYear: birthYearByPersonId.get(p.id) ?? null,
   }));
+  // This year's caps follow this year's return (the household setting),
+  // as the paycheck's do; the projection's brackets keep the profile's.
+  const capFilingStatus =
+    taxFilingStatusSetting(allAppSettings) ?? filingStatus;
   const capHousehold: CapPassHousehold = {
     people: irsLimitPeople,
     limits: limitsMap,
-    filingStatus,
+    filingStatus: capFilingStatus,
     taxYear: currentYear,
   };
   const activeContribs = capEffectiveContribs(
@@ -791,7 +796,7 @@ export async function buildEnginePayload(
   const irsGroupLimits = Object.fromEntries(
     accountGroupLimits(irsLimitAccounts, {
       taxYear: currentYear,
-      filingStatus,
+      filingStatus: capFilingStatus,
       limits: limitsMap,
       people: irsLimitPeople.map((p) => ({ ...p, wages: null })),
     }),

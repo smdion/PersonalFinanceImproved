@@ -11,6 +11,8 @@ import {
   periodsElapsedYtd,
   getExtraPaycheckMonthKeys,
   withheldThroughPeriod,
+  periodsBeforeStart,
+  checksPaidYtd,
   type SalarySegment,
 } from "@/lib/calculators/paycheck";
 import type {
@@ -794,5 +796,96 @@ describe("monthsDoneYtd", () => {
     expect(monthsDoneYtd(oct12, "2026-10-02")).toBe(10);
     expect(monthsDoneYtd(oct12, "2026-09-02")).toBe(9);
     expect(monthsDoneYtd(oct12, "2025-12-02")).toBe(9); // last year's
+  });
+});
+
+describe("a job started this year", () => {
+  // Biweekly Fridays from 2025-01-03; the job starts Monday 2025-06-02, so
+  // the eleven paydays Jan 3 – May 23 aren't its checks; Jun 6 is the first.
+  const input: PaycheckInput = {
+    ...PERSON_A_PAYCHECK_INPUT,
+    annualSalary: 300_000,
+    asOfDate: new Date("2025-08-01"),
+    startDate: new Date("2025-06-02"),
+  };
+
+  it("counts this year's paydays before the start", () => {
+    expect(
+      periodsBeforeStart(
+        input.asOfDate,
+        "biweekly",
+        input.anchorPayDate,
+        input.startDate,
+      ),
+    ).toBe(11);
+    // Started before this year, or no start date: paid all year.
+    expect(
+      periodsBeforeStart(
+        input.asOfDate,
+        "biweekly",
+        input.anchorPayDate,
+        "2024-03-01",
+      ),
+    ).toBe(0);
+    expect(
+      periodsBeforeStart(input.asOfDate, "biweekly", input.anchorPayDate, null),
+    ).toBe(0);
+    expect(
+      checksPaidYtd(
+        input.asOfDate,
+        "biweekly",
+        input.anchorPayDate,
+        26,
+        input.startDate,
+      ),
+    ).toBe(5);
+  });
+
+  it("the paydays before the start are empty; Social Security counts from the first check", () => {
+    const r = calculatePaycheck(input);
+    const full = calculatePaycheck({ ...input, startDate: null });
+    expect(r.periodsBeforeStart).toBe(11);
+    expect(r.yearSchedule).toHaveLength(26);
+    expect(r.yearSchedule.slice(0, 11).every((p) => p.beforeStart)).toBe(true);
+    expect(r.yearSchedule[10]!.gross).toBe(0);
+    expect(r.yearSchedule[11]!.beforeStart).toBeUndefined();
+    // A full year hits the wage base partway; fifteen checks never do.
+    const capAt = (x: PaycheckResult) =>
+      x.yearSchedule.findIndex((p) => !p.beforeStart && p.ficaSS === 0);
+    expect(capAt(full)).toBeGreaterThan(0);
+    expect(capAt(r)).toBe(-1);
+    // Same regular check otherwise.
+    expect(r.gross).toBe(full.gross);
+  });
+
+  it("a bonus dated before the start isn't this job's", () => {
+    const r = calculatePaycheck({
+      ...input,
+      bonusOverride: 10_000,
+      bonusMonth: 3,
+      bonusDayOfMonth: 15,
+    });
+    expect(r.bonusPeriod).toBeNull();
+    expect(r.yearSchedule.every((p) => p.bonusGross === 0)).toBe(true);
+    const later = calculatePaycheck({
+      ...input,
+      bonusOverride: 10_000,
+      bonusMonth: 12,
+      bonusDayOfMonth: 15,
+    });
+    expect(later.bonusPeriod).toBeGreaterThan(11);
+  });
+
+  it("no anchor payday: the start date is one, as the paycheck uses", () => {
+    // Every other Friday from Jun 6: five checks through Aug 1.
+    expect(
+      checksPaidYtd(input.asOfDate, "biweekly", null, 26, "2025-06-06"),
+    ).toBe(5);
+  });
+
+  it("withheld so far is the checks this job paid", () => {
+    const r = calculatePaycheck(input);
+    const sofar = withheldThroughPeriod(r.yearSchedule, r.periodsElapsedYtd);
+    expect(sofar.federal).toBeCloseTo(5 * r.federalWithholding, 0);
   });
 });

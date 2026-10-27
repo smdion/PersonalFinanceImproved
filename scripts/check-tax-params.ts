@@ -5,7 +5,7 @@
  * IRS/CMS/HHS publishes new data.
  *
  * Checks:
- *   1. tax-data/us-federal.json has rows for the expected tax year in every
+ *   1. the tax data (tax-data/us-federal/) has rows for the expected tax year in every
  *      reference table (contribution_limits, tax_brackets, ltcg_brackets,
  *      irmaa_brackets, fpl_by_household).
  *   1b. tax_params vintage rows don't claim a year the actual value
@@ -21,6 +21,10 @@ import * as path from "path";
 import { fileURLToPath } from "url";
 import { TAX_DATA_SECTIONS } from "../src/lib/config/tax-data-publication";
 import {
+  TAX_DATA_DIR,
+  readTaxDataDir,
+} from "../src/lib/db/reference-reconcile-core";
+import {
   taxDataStatus,
   taxYearDeadline,
 } from "../src/lib/pure/tax-data-status";
@@ -35,10 +39,6 @@ const ROOT = path.resolve(__dirname, "..");
 // Each table's publication date and the "should have it by now" rule are
 // shared with the app's notice: lib/config/tax-data-publication.ts,
 // lib/pure/tax-data-status.ts.
-
-function readFile(relativePath: string): string {
-  return fs.readFileSync(path.join(ROOT, relativePath), "utf-8");
-}
 
 type TaxDataFileJson = {
   years: Record<
@@ -126,7 +126,8 @@ function checkTaxParamsVintage(sql: string): VintageCheck[] {
 
 function run() {
   const now = new Date();
-  const sql = readFile("tax-data/us-federal.json");
+  // The tax data, assembled into the one file every install reads.
+  const sql = JSON.stringify(readTaxDataDir(fs, path.join(ROOT, TAX_DATA_DIR)));
 
   console.log("Tax parameter staleness check\n");
 
@@ -135,7 +136,7 @@ function run() {
   let seedWarnings = 0;
   let seedErrors = 0;
 
-  console.log("=== Tax data (tax-data/us-federal.json) ===\n");
+  console.log(`=== Tax data (${TAX_DATA_DIR}) ===\n`);
 
   for (const check of seedChecks) {
     // The year after the expected one is the next to come due.

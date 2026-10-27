@@ -18,7 +18,8 @@ const URGENCY = {
   },
 } as const;
 
-/** One recommendation: what to do, where things stand, the dollars
+/** One recommendation: what to do (one line that stands on its own — the
+ *  title isn't shown), the detail and figures under it, the dollars
  *  involved, and where to do it. */
 export function RecommendationRow({
   recommendation: r,
@@ -45,7 +46,7 @@ export function RecommendationRow({
           {maskAmountsInText(r.action)}
         </div>
         <div className="text-micro text-faint">
-          {r.title} · {maskAmountsInText(r.context)} · {sourceLabel}
+          {maskAmountsInText(r.context)} · {sourceLabel}
         </div>
         {detail}
       </div>

@@ -1,5 +1,5 @@
 // Long-term capital gains tax math. The brackets themselves are yearly
-// data (tax-data/us-federal.json → `ltcg_brackets`), passed in by the
+// data (tax-data/us-federal/ → `ltcg_brackets`), passed in by the
 // caller — none are built in.
 //
 // Key: LTCG brackets use total taxable income (ordinary + capital gains),
