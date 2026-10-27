@@ -37,9 +37,7 @@ import {
   resolveActiveProfilePair,
 } from "@/server/helpers";
 import { getAllPeople } from "@/server/helpers/people";
-import { w4FilingStatusOf } from "@/server/helpers/salary";
 import type { Db } from "@/server/helpers";
-import type { W4FilingStatus } from "@/lib/config/enum-values";
 import {
   aggregateContributionsByCategory,
   type ContribRowWithActiveFields,
@@ -64,21 +62,6 @@ import {
   pickProfileSettingsRow,
   resolveRetirementProfileId,
 } from "@/server/helpers/retirement-profile";
-
-/**
- * Resolve the filing status to store when a caller sends null/undefined
- * (meaning "auto") — the person's own active, non-speculative job's W-4
- * filing status, or "MFJ" as the ultimate fallback. Mirrors
- * build-engine-payload.ts's read-time job-facts tier so the write-time
- * value and the read-time fallback agree, but only used here at write time
- * since filing_status is NOT NULL on the DB row (see drizzle/0021).
- */
-async function resolveDefaultFilingStatus(
-  db: Db,
-  personId: number,
-): Promise<W4FilingStatus> {
-  return (await w4FilingStatusOf(db, [personId])) ?? "MFJ";
-}
 
 // --- CRUD Zod schemas ---
 
@@ -871,18 +854,17 @@ export const retirementRouter = createTRPCRouter({
               profileScope,
             ),
           );
-        // filing_status is NOT NULL on the DB row (see drizzle/0021's
-        // backfill) even though a caller may still send null/undefined to
-        // mean "auto" — resolve that request to a concrete value here, the
-        // same way build-engine-payload.ts's job-facts tier does at read
-        // time, so the column never gets a null written to it.
+        // filing_status: null = "Auto" (follow this year's filing status,
+        // resolved when read — lib/pure/filing-status.ts); not sent = keep
+        // what's stored. Never defaulted here.
         const { profileId: _profileIdKey, ...inputFields } = input;
         const resolvedInput = {
           ...inputFields,
           profileId: resolvedProfileId,
           filingStatus:
-            input.filingStatus ??
-            (await resolveDefaultFilingStatus(ctx.db, input.personId)),
+            input.filingStatus === undefined
+              ? (existing[0]?.filingStatus ?? null)
+              : input.filingStatus,
         };
         return ctx.db.transaction(async (tx) => {
           const saved =

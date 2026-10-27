@@ -25,6 +25,7 @@ import {
   reconcileReferenceData,
 } from "@/lib/db/reference-data";
 import { taxLimitKey } from "@/lib/config/tax-limit-keys";
+import { citationsOf } from "@/lib/tax-data/validate";
 import { taxDataStatus, type CarriedFigure } from "@/lib/pure/tax-data-status";
 import { pendingUpdate } from "./tax-data-sync";
 import { localDateStr } from "@/lib/utils/date";
@@ -65,9 +66,23 @@ const keyText = (vals: unknown[]) =>
 /** What Ledgr ships here: every row of the shipped file and of a newer
  *  approved community update (both are applied, so neither's rows may be
  *  deleted), and each IRS limit's value by `"year|type"` — the community
- *  file's where it has one. Rebuilt only when the approved version
+ *  file's where it has one, with the documents it cites (a link each,
+ *  from the year's `sources`). Rebuilt only when the approved version
  *  changes. */
-type Shipped = { keys: Set<string>; limitValues: Map<string, number> };
+type Citation = { name: string; url: string | null };
+type Shipped = {
+  keys: Set<string>;
+  limitValues: Map<string, number>;
+  limitCitations: Map<string, Citation[]>;
+  /** By year: each table section's citations (withholding, ltcg, …). */
+  sectionCitations: Record<string, Partial<Record<TaxDataSection, Citation[]>>>;
+};
+type TaxDataSection = "withholding" | "ltcg" | "irmaa" | "fpl";
+const linked = (
+  source: string,
+  links: Record<string, string> | undefined,
+): Citation[] =>
+  citationsOf(source).map((name) => ({ name, url: links?.[name] ?? null }));
 let shippedCache: { version: number; shipped: Shipped } | undefined;
 async function shippedData(db: Db): Promise<Shipped> {
   const [row] = (await db
@@ -93,6 +108,35 @@ async function shippedData(db: Db): Promise<Shipped> {
           rows
             .filter((r) => r.table === "contribution_limits")
             .map((r) => [keyText(r.keyVals), Number(r.value)]),
+        ),
+        limitCitations: new Map(
+          [shippedFile, ...(community ? [community] : [])].flatMap((f) =>
+            Object.entries(f.years).flatMap(([y, d]) =>
+              Object.entries(d.limits).map(
+                ([k, l]) =>
+                  [
+                    keyText([Number(y), k]),
+                    linked(l.source, d.sources),
+                  ] as const,
+              ),
+            ),
+          ),
+        ),
+        // Later files (the community one) win, year by year.
+        sectionCitations: Object.assign(
+          {},
+          ...[shippedFile, ...(community ? [community] : [])].map((f) =>
+            Object.fromEntries(
+              Object.entries(f.years).map(([y, d]) => [
+                y,
+                Object.fromEntries(
+                  (["withholding", "ltcg", "irmaa", "fpl"] as const).flatMap(
+                    (s) => (d[s] ? [[s, linked(d[s]!.source, d.sources)]] : []),
+                  ),
+                ),
+              ]),
+            ),
+          ),
         ),
       },
     };
@@ -214,6 +258,10 @@ function carriedName(table: YearlyTable, row: Record<string, unknown>) {
 export const taxLimitsProcedures = {
   /** Is the tax data current, and what was carried forward? */
   taxData: createTRPCRouter({
+    /** The documents each year's shipped tables cite, linked. */
+    sectionSources: protectedProcedure.query(
+      async ({ ctx }) => (await shippedData(ctx.db)).sectionCitations,
+    ),
     status: protectedProcedure.query(async ({ ctx }) => {
       const yearsByTable: Partial<Record<YearlyTable, number[]>> = {};
       const carried: CarriedFigure[] = [];
@@ -347,6 +395,9 @@ export const taxLimitsProcedures = {
         /** What Ledgr ships for this figure (null if it doesn't). */
         shippedValue:
           shipped.limitValues.get(keyText([r.taxYear, r.limitType])) ?? null,
+        /** The documents Ledgr's figure cites, each with its link. */
+        shippedSources:
+          shipped.limitCitations.get(keyText([r.taxYear, r.limitType])) ?? [],
       }));
     }),
     create: adminProcedure

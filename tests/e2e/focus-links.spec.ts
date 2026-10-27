@@ -8,7 +8,7 @@ import { test, expect } from "@playwright/test";
 test.describe("focus links", () => {
   useOwnRateLimitBucket(test, "focus-links");
 
-  test("early access opens Retirement taxes at retirement", async ({
+  test("early access opens Tax buckets & basis at retirement", async ({
     page,
   }) => {
     await page.goto("/tax-buckets?focus=earlyAccess");

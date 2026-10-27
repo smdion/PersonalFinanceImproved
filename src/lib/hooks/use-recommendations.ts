@@ -15,7 +15,11 @@ import { recommendationsFromCaps } from "@/lib/pure/recommendations-caps";
 import { useRecommendationDismissals } from "@/lib/hooks/use-recommendation-dismissals";
 import { applyDismissals } from "@/lib/pure/recommendation-dismissals";
 import { useDataSourceStatuses } from "@/lib/hooks/use-data-source-statuses";
-import { recommendationsFromDataSources } from "@/lib/pure/recommendations-data";
+import {
+  recommendationsFromDataSources,
+  recommendationsFromFilingStatus,
+} from "@/lib/pure/recommendations-data";
+import { useHouseholdIncomeSummary } from "@/lib/hooks/use-household-income-summary";
 import { budgetApiServiceLabel } from "@/lib/utils/format";
 import { useRothIra } from "@/lib/hooks/use-roth-ira";
 import { recommendationsFromRothIra } from "@/lib/pure/recommendations-roth";
@@ -37,6 +41,7 @@ export function useRecommendations(): ReturnType<typeof useMilestones> & {
   const { dismissals, today } = useRecommendationDismissals();
   const data = useDataSourceStatuses();
   const roth = useRothIra();
+  const income = useHouseholdIncomeSummary();
   const cash = useInvestingFindings();
   const contribs = trpc.contribution.computeSummary.useQuery(
     useContributionSummaryInput(),
@@ -68,6 +73,7 @@ export function useRecommendations(): ReturnType<typeof useMilestones> & {
         ? budgetApiServiceLabel(data.syncStatus?.service)
         : s.source.label,
     ),
+    ...recommendationsFromFilingStatus(income.data?.filingStatus),
     ...recommendationsFromRothIra(
       roth.view,
       roth.taxYear ?? Number(today.slice(0, 4)),

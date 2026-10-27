@@ -113,7 +113,7 @@ export const navStructure: NavEntry[] = [
       { href: "/profiles", label: "Profiles", Icon: SlidersHorizontal },
       { href: "/retirement", label: "Retirement", Icon: Palmtree },
       { href: "/taxes", label: "Taxes this year", Icon: Receipt },
-      { href: "/tax-buckets", label: "Retirement taxes", Icon: Unlock },
+      { href: "/tax-buckets", label: "Tax buckets & basis", Icon: Unlock },
       {
         href: "/tax-optimization",
         label: "Roth & conversions",

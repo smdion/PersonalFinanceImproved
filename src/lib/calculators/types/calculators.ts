@@ -37,6 +37,12 @@ export type BonusEstimate = {
   bonusContributions: number;
   /** The bonus's FICA wages: bonusGross less FICA-exempt payroll contributions the bonus check takes. */
   bonusFicaWages: number;
+  /** The bonus's federal taxable wages: bonusGross less the pre-tax
+   *  contributions the bonus check takes — what the supplemental rate
+   *  applies to. */
+  bonusFederalTaxable: number;
+  /** The contributions the bonus check takes, as its deduction lines. */
+  bonusLines: DeductionLine[];
 };
 
 export type PaycheckInput = {
@@ -89,6 +95,9 @@ export type PaycheckResult = {
   /** This year's paydays before the job started (0 for a job held all
    *  year). Checks this job has paid so far = periodsElapsedYtd − this. */
   periodsBeforeStart: number;
+  /** The bonus is dated before the job started — not this job's, so not
+   *  in this year's pay (bonusPeriod is null then too). */
+  bonusBeforeStart: boolean;
   nextPayDate: string; // ISO date string of next upcoming payday
   payFrequencyLabel: string; // human-readable label like "Biweekly (Even Weeks)"
   warnings: string[];

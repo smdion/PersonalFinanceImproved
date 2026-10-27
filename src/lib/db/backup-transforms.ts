@@ -95,6 +95,7 @@ const V08_SCHEMA_TAGS = [
   "0002_v090_tax_data_updates", // PG + SQLite: tax_data_updates (not backed up) — no transform needed
   "0003_v090_utility_feed", // PG + SQLite: utility_service.budget_api_category_id / billing_lag_months (default 0), utility_reading.source (null = typed in) — older backups restore with the defaults; no transform needed
   "0004_v090_debts", // PG + SQLite: debts table — older backups restore with no debts; no transform needed
+  "0005_v092_filing_status_auto", // PG + SQLite: retirement_settings.filing_status may be null (= Auto) — older backups restore with their stored status; no transform needed
 ] as const;
 
 /** First tags whose backups carry asset_class_buckets (PG, SQLite). */

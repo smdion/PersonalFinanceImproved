@@ -36,6 +36,13 @@
       "when": 1793025456054,
       "tag": "0004_v090_debts",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793110016186,
+      "tag": "0005_v092_filing_status_auto",
+      "breakpoints": true
     }
   ]
 }

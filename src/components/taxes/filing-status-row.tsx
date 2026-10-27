@@ -6,6 +6,7 @@
  * active Retirement Profile's status, else a W-4, and says which.
  */
 import { HelpTip } from "@/components/ui/help-tip";
+import { FocusTarget } from "@/components/ui/focus-target";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
@@ -55,31 +56,33 @@ export function FilingStatusRow({
       ? `${filingStatusLabel(status)} (${SOURCE_TEXT[source]})`
       : "Not set";
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-muted inline-flex items-center">
-        Filing status
-        <HelpTip text={HELP} />
-      </span>
-      {isAdmin(user) ? (
-        <select
-          aria-label="Filing status on this year's return"
-          className="text-primary hover:border-border focus:border-accent rounded border border-transparent bg-transparent px-1 py-0.5 text-right text-sm focus:outline-none"
-          value={setting ?? ""}
-          disabled={upsert.isPending}
-          onChange={(e) => setSetting(e.target.value || null)}
-        >
-          <option value="">{followed}</option>
-          {W4_FILING_STATUS_VALUES.map((s) => (
-            <option key={s} value={s}>
-              {FILING_STATUS_LABELS[s]}
-            </option>
-          ))}
-        </select>
-      ) : (
-        <span className="text-primary">
-          {status ? filingStatusLabel(status) : "Not set"}
+    <FocusTarget topic="filingStatus">
+      <div className="flex items-center justify-between">
+        <span className="text-muted inline-flex items-center">
+          Filing status
+          <HelpTip text={HELP} />
         </span>
-      )}
-    </div>
+        {isAdmin(user) ? (
+          <select
+            aria-label="Filing status on this year's return"
+            className="text-primary hover:border-border focus:border-accent rounded border border-transparent bg-transparent px-1 py-0.5 text-right text-sm focus:outline-none"
+            value={setting ?? ""}
+            disabled={upsert.isPending}
+            onChange={(e) => setSetting(e.target.value || null)}
+          >
+            <option value="">{followed}</option>
+            {W4_FILING_STATUS_VALUES.map((s) => (
+              <option key={s} value={s}>
+                {FILING_STATUS_LABELS[s]}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <span className="text-primary">
+            {status ? filingStatusLabel(status) : "Not set"}
+          </span>
+        )}
+      </div>
+    </FocusTarget>
   );
 }

@@ -43,7 +43,8 @@ const STATUS_TEXT: Record<PaystubFinding["status"], string> = {
 /**
  * "Check against a pay stub": type one real stub's figures (any of them)
  * and see where Ledgr's paycheck differs and the likely fix. Nothing is
- * saved. A regular check — a bonus check has its own figures.
+ * saved. A regular check, or the bonus check (paid on its own) — each
+ * against its own figures.
  */
 export function PaystubCheck({
   paycheck,
@@ -61,6 +62,9 @@ export function PaystubCheck({
   const [open, setOpen] = useState(false);
   const [payDate, setPayDate] = useState("");
   const [values, setValues] = useState<Record<string, string>>({});
+  const hasBonus = paycheck.bonusEstimate.bonusGross > 0;
+  const [chosenKind, setKind] = useState<"regular" | "bonus">("regular");
+  const kind = hasBonus ? chosenKind : "regular";
 
   const taxYear = new Date().getFullYear();
   const date = payDate ? new Date(`${payDate}T12:00:00Z`) : null;
@@ -83,10 +87,10 @@ export function PaystubCheck({
         stub[f.key] = Number(v);
     }
     return checkPaystub(
-      ledgrCheckFor(paycheck, rates, n, deductionDisplayName),
+      ledgrCheckFor(paycheck, rates, n, deductionDisplayName, kind),
       stub,
     );
-  }, [values, paycheck, rates, n, otherYear]);
+  }, [values, paycheck, rates, n, otherYear, kind]);
 
   return (
     <div>
@@ -110,9 +114,36 @@ export function PaystubCheck({
         <div className="mt-3 space-y-4">
           <div className="bg-surface-sunken border-subtle space-y-3 rounded-lg border p-4 text-sm">
             <p className="text-caption text-faint">
-              Type the figures from one regular check — any you have. Nothing is
-              saved.
+              Type the figures from one check — any you have. Nothing is saved.
             </p>
+            {hasBonus && (
+              <div
+                role="radiogroup"
+                aria-label="Which check"
+                className="flex flex-wrap items-center gap-3"
+              >
+                <span className="text-secondary">Which check</span>
+                {(
+                  [
+                    ["regular", "Regular check"],
+                    ["bonus", "Bonus check"],
+                  ] as const
+                ).map(([k, label]) => (
+                  <label key={k} className="flex items-center gap-1">
+                    <input
+                      type="radio"
+                      name="paystub-kind"
+                      checked={kind === k}
+                      onChange={() => setKind(k)}
+                    />
+                    {label}
+                  </label>
+                ))}
+                <span className="text-caption text-faint">
+                  A bonus paid on its own check, at the flat supplemental rate.
+                </span>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-x-4 gap-y-3">
               <label className="col-span-2 block sm:col-span-1">
                 <span className="text-secondary block">Pay date</span>
@@ -154,10 +185,10 @@ export function PaystubCheck({
             </div>
           </div>
           <div className="space-y-2 text-sm">
-            {isBonusCheck && (
+            {isBonusCheck && kind === "regular" && (
               <p className="text-caption text-amber-600 dark:text-amber-400">
-                Your bonus is paid on this date. If this stub includes it,
-                compare a regular check instead.
+                Your bonus is paid on this date. If this stub is the bonus
+                check, choose Bonus check above.
               </p>
             )}
             {otherYear && (

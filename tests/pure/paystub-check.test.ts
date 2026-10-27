@@ -5,9 +5,13 @@
 import { describe, it, expect } from "vitest";
 import {
   checkPaystub,
+  ledgrCheckFor,
   linesSummingTo,
+  type FicaRates,
   type PaystubLedgrCheck,
 } from "@/lib/pure/paystub-check";
+import { calculatePaycheck } from "@/lib/calculators/paycheck";
+import { PERSON_A_PAYCHECK_INPUT } from "../calculators/fixtures";
 import { PAYSTUB_MAX_LINES as MAX_LINES } from "@/lib/constants";
 
 // $4,000 gross; a $400 traditional 401(k) (pre-tax, FICA wages), $150
@@ -173,17 +177,6 @@ describe("checkPaystub", () => {
     expect(alone.note).toMatch(/federal taxable wages too/);
   });
 
-  it("net pay off under Additional Medicare: says that's why", () => {
-    const f = finding(
-      checkPaystub(
-        { ...ledgr, additionalMedicare: true },
-        { gross: 4_000, netPay: 2_835 },
-      ),
-      "netPay",
-    );
-    expect(f.note).toMatch(/Additional Medicare/);
-  });
-
   it("net pay off with everything else matching: something isn't in Ledgr", () => {
     const f = finding(
       checkPaystub(ledgr, { gross: 4_000, netPay: 2_850 }),
@@ -222,5 +215,115 @@ describe("linesSummingTo", () => {
       amount: i === MAX_LINES + 1 ? 999 : 1,
     }));
     expect(linesSummingTo(many, 999)).toEqual([]);
+  });
+});
+
+describe("ledgrCheckFor: Ledgr's figures for one check", () => {
+  const rates = (input: typeof PERSON_A_PAYCHECK_INPUT): FicaRates => ({
+    socialSecurity: input.taxBrackets.socialSecurityRate,
+    medicare: input.taxBrackets.medicareRate,
+    socialSecurityWageBase: input.taxBrackets.socialSecurityWageBase,
+    medicareWithholdingThreshold: input.taxBrackets.medicareAdditionalThreshold,
+    additionalMedicare: input.taxBrackets.medicareAdditionalRate,
+  });
+
+  it("net pay takes Additional Medicare once this year's Medicare wages pass the threshold", () => {
+    // Fictional high earner: the threshold is crossed partway through the year.
+    const input = {
+      ...PERSON_A_PAYCHECK_INPUT,
+      annualSalary: 520_000,
+      bonusPercent: 0,
+      bonusOverride: null,
+    };
+    const pay = calculatePaycheck(input);
+    const r = rates(input);
+    const first = ledgrCheckFor(pay, r, 1);
+    const last = ledgrCheckFor(pay, r, pay.periodsPerYear);
+    expect(first.additionalMedicare).toBe(false);
+    expect(last.additionalMedicare).toBe(true);
+    // A late check's whole Medicare wages are above the threshold: its
+    // Medicare is the regular rate plus Additional Medicare.
+    const late = pay.yearSchedule[pay.periodsPerYear - 1]!;
+    expect(pay.yearSchedule[0]!.ficaMedicare).toBeCloseTo(
+      pay.ficaWages * r.medicare,
+      1,
+    );
+    expect(late.ficaMedicare).toBeCloseTo(
+      pay.ficaWages * (r.medicare + r.additionalMedicare),
+      1,
+    );
+    expect(last.netPay).toBe(late.netPay);
+    // The year's Additional Medicare withheld: the rate on wages above it.
+    const withheld =
+      pay.yearSchedule.reduce((sum, p) => sum + p.ficaMedicare, 0) -
+      pay.ficaWages * pay.periodsPerYear * r.medicare;
+    expect(withheld).toBeCloseTo(
+      r.additionalMedicare *
+        (pay.ficaWages * pay.periodsPerYear - r.medicareWithholdingThreshold),
+      0,
+    );
+  });
+
+  it("a bonus check: the bonus's own figures, the flat rate on its taxable wages", () => {
+    const input = {
+      ...PERSON_A_PAYCHECK_INPUT,
+      bonusOverride: 10_000,
+      contributionAccounts: [
+        ...PERSON_A_PAYCHECK_INPUT.contributionAccounts,
+        {
+          name: "Traditional 401k",
+          annualContribution: 6_000,
+          perPeriodContribution: 230.77,
+          rateOfGross: 0.05,
+          taxTreatment: "pre_tax" as const,
+          isPayrollDeducted: true,
+          fromBonus: true,
+          group: "retirement",
+          employerMatch: 0,
+          employerMatchTaxTreatment: "pre_tax" as const,
+        },
+      ],
+    };
+    const pay = calculatePaycheck(input);
+    const check = ledgrCheckFor(pay, rates(input), 5, (n) => n, "bonus");
+    expect(check.gross).toBe(10_000);
+    // 5% pre-tax 401(k) from the bonus: taxable 9,500; 22% of that.
+    expect(check.federalTaxableGross).toBeCloseTo(9_500, 2);
+    expect(check.federalWithholding).toBeCloseTo(
+      9_500 * input.supplementalTaxRate,
+      2,
+    );
+    expect(check.lines.map((l) => l.name)).toContain("Traditional 401k");
+    const f = checkPaystub(check, {
+      gross: 10_000,
+      federalTaxableWages: 9_500,
+      federalWithholding: check.federalWithholding,
+      netPay: check.netPay,
+    });
+    expect(f.allMatch).toBe(true);
+  });
+
+  it("a mid-year bonus check uses its own place in the year (Social Security room, Additional Medicare)", () => {
+    // Fictional high earner, bonus in March: the wage base isn't used up
+    // by then, so the bonus check still pays Social Security.
+    const input = {
+      ...PERSON_A_PAYCHECK_INPUT,
+      annualSalary: 400_000,
+      bonusOverride: 20_000,
+      bonusMonth: 3,
+      bonusDayOfMonth: 15,
+    };
+    const pay = calculatePaycheck(input);
+    const check = ledgrCheckFor(pay, rates(input), 1, (n) => n, "bonus");
+    expect(pay.bonusPeriod).not.toBeNull();
+    expect(check.ssStopped).toBe(false);
+    const period = pay.yearSchedule[pay.bonusPeriod! - 1]!;
+    expect(check.netPay).toBeCloseTo(
+      pay.bonusEstimate.bonusGross -
+        period.bonusWithholding -
+        period.bonusFica -
+        pay.bonusEstimate.bonusContributions,
+      2,
+    );
   });
 });

@@ -39,7 +39,7 @@ import {
   calculateNetWorth,
   wealthFormulaIncome,
 } from "@/lib/calculators/net-worth";
-import { countPeriodsElapsed } from "@/lib/calculators/paycheck";
+import { checksPaidYtd, periodsBeforeStart } from "@/lib/calculators/paycheck";
 import type { NetWorthInput } from "@/lib/calculators/types";
 import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
 import {
@@ -1038,14 +1038,22 @@ export async function buildYearEndHistory(
           // excluded, not defaulted to a guessed period count.
           if (job.payPeriod == null) continue;
           const ppy = PAY_PERIOD_CONFIG[job.payPeriod]?.periodsPerYear ?? 12;
-          const elapsed = job.anchorPayDate
-            ? countPeriodsElapsed(
-                asOf,
-                job.payPeriod,
-                new Date(job.anchorPayDate),
-              )
-            : Math.round((asOf.getMonth() / 12) * ppy);
-          const ratio = safeDivide(elapsed, ppy, 0);
+          // The checks this job has paid out of the ones it pays THIS year
+          // (a job started this year has fewer — none before its start), so
+          // YTD ÷ ratio is this year's own total. Contributions' ytdRatio
+          // divides by a full year's checks instead (full-year rates).
+          const anchor = job.anchorPayDate ?? job.startDate;
+          const paid = checksPaidYtd(
+            asOf,
+            job.payPeriod,
+            anchor,
+            ppy,
+            job.startDate,
+          );
+          const thisYear =
+            ppy -
+            periodsBeforeStart(asOf, job.payPeriod, anchor, job.startDate);
+          const ratio = safeDivide(paid, thisYear, 0);
           const comp = resolveCompensation(salaryProfileActiveMap, job.id);
           const salary = getTotalCompensation(comp.salary, comp.terms);
           weightedRatio += ratio * salary;

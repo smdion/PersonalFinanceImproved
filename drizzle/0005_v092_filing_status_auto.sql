@@ -1,0 +1,1 @@
+ALTER TABLE "retirement_settings" ALTER COLUMN "filing_status" DROP NOT NULL;

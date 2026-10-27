@@ -6,7 +6,9 @@
  * re-summing salary, so a bonus or a FICA-exempt contribution can't be in
  * one figure and missing from another.
  *
- * Built from the paycheck calculator's own result: the RESOLVED bonus
+ * A job pays only the checks inside the year (`checks` — fewer for one
+ * started or ended this year); every job a person had this year is summed
+ * (the paycheck router). Built from the paycheck calculator's own result: the RESOLVED bonus
  * (`bonusEstimate` — the set bonus if there is one, else the formula), the
  * per-check FICA wages, and each contribution account's yearly amount
  * including what the bonus check takes (bonusCheckContribution — the same
@@ -57,26 +59,36 @@ export function computeAnnualEarnings(args: {
   paycheck: PaycheckResult;
   contributionAccounts: ContributionAccountInput[];
   deductions: DeductionLine[];
+  /** The checks this job pays inside the year — fewer for a job started
+   *  or ended this year. Default: every check (a full year). */
+  checks?: number;
+  /** The bonus is paid this year by this job. Default: yes. */
+  bonusPaid?: boolean;
 }): AnnualEarnings {
-  const { salary, periodsPerYear, paycheck } = args;
-  const bonus = paycheck.bonusEstimate.bonusGross;
+  const { periodsPerYear, paycheck } = args;
+  const checks = args.checks ?? periodsPerYear;
+  const share = periodsPerYear > 0 ? checks / periodsPerYear : 0;
+  const salary = args.salary * share;
+  const bonusPaid = args.bonusPaid ?? true;
+  const bonusEstimate = paycheck.bonusEstimate;
+  const bonus = bonusPaid ? bonusEstimate.bonusGross : 0;
 
   const preTaxContributions = sumBy(
     args.contributionAccounts.filter(
       (ca) => ca.isPayrollDeducted && isPreTax(ca.taxTreatment),
     ),
-    (ca) => ca.annualContribution + bonusCheckContribution(ca, bonus),
+    (ca) => ca.annualContribution * share + bonusCheckContribution(ca, bonus),
   );
   const preTaxDeductions =
     sumBy(
       args.deductions.filter((d) => isPreTax(d.taxTreatment)),
       (d) => d.amount,
-    ) * periodsPerYear;
+    ) * checks;
 
   // Other pay on the checks, by its own tax flags.
   const lines = paycheck.earnings ?? [];
   const perYear = (pick: (e: (typeof lines)[number]) => boolean) =>
-    sumBy(lines.filter(pick), (e) => e.amount) * periodsPerYear;
+    sumBy(lines.filter(pick), (e) => e.amount) * checks;
   const otherCashPay = perYear((e) => e.isCash);
   const imputedIncome = perYear((e) => !e.isCash);
   const otherFederalTaxable = perYear((e) => e.federalTaxable);
@@ -95,11 +107,22 @@ export function computeAnnualEarnings(args: {
     // The checks' own FICA wages (salary, other pay, less exempt money)
     // plus the bonus check's — built from explicit parts, never from salary.
     ficaWages: roundToCents(
-      paycheck.ficaWages * periodsPerYear +
-        paycheck.bonusEstimate.bonusFicaWages,
+      paycheck.ficaWages * checks +
+        (bonusPaid ? bonusEstimate.bonusFicaWages : 0),
     ),
-    netRegular: roundToCents(paycheck.netPay * periodsPerYear),
-    netBonus: paycheck.bonusEstimate.bonusNet,
+    // The year schedule's own checks (Social Security stops at the wage
+    // base, Additional Medicare starts above its threshold) — this job's,
+    // from its first check this year.
+    netRegular: roundToCents(
+      sumBy(
+        paycheck.yearSchedule.slice(
+          paycheck.periodsBeforeStart,
+          paycheck.periodsBeforeStart + checks,
+        ),
+        (p) => p.netPay,
+      ),
+    ),
+    netBonus: bonusPaid ? bonusEstimate.bonusNet : 0,
     hsaOutsidePayroll: roundToCents(
       sumBy(
         args.contributionAccounts.filter(

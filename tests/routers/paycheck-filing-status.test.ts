@@ -9,6 +9,16 @@ import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
 import { createTestCaller, seedJob, seedPerson } from "./setup";
 import { loadCapHousehold } from "@/server/helpers/contribution-caps";
+import {
+  w4FilingStatusOf,
+  type SalaryProfileActiveMap,
+} from "@/server/helpers/salary";
+import {
+  buildEnginePayload,
+  fetchRetirementData,
+} from "@/server/retirement/build-engine-payload";
+import { FILING_STATUS_IF_UNKNOWN } from "@/lib/pure/filing-status";
+import { recommendationsFromFilingStatus } from "@/lib/pure/recommendations-data";
 
 describe("paycheck: the household's filing status", () => {
   let ctx: Awaited<ReturnType<typeof createTestCaller>>;
@@ -108,5 +118,114 @@ describe("loadCapHousehold: no setting and no job", () => {
     expect(
       (await loadCapHousehold(ctx.db as never, people, {}, 2026)).filingStatus,
     ).toBe("");
+  });
+});
+
+describe("a Retirement Profile's filing status: Auto, saves, the fallback", () => {
+  let ctx: Awaited<ReturnType<typeof createTestCaller>>;
+  let personId: number;
+  const base = {
+    retirementAge: 65,
+    endAge: 95,
+    returnAfterRetirement: "0.06",
+    annualInflation: "0.03",
+    salaryAnnualIncrease: "0.03",
+  };
+  const stored = () =>
+    ctx.db
+      .select({ f: schema.retirementSettings.filingStatus })
+      .from(schema.retirementSettings)
+      .where(eq(schema.retirementSettings.personId, personId))
+      .get()?.f;
+  const engineStatus = async () => {
+    const data = await fetchRetirementData(ctx.db as never, {});
+    return (await buildEnginePayload(ctx.db as never, data, {}))?.filingStatus;
+  };
+
+  beforeAll(async () => {
+    ctx = await createTestCaller();
+    // Retired: no job, so no W-4 to stand in.
+    personId = await seedPerson(ctx.db, "Example Retiree", "1958-03-01");
+    ctx.db
+      .update(schema.people)
+      .set({ isPrimaryUser: true })
+      .where(eq(schema.people.id, personId))
+      .run();
+  });
+  afterAll(() => ctx.cleanup());
+
+  it("Auto is stored empty — never defaulted — and nothing known means Single, flagged", async () => {
+    await ctx.caller.retirement.retirementSettings.upsert({
+      personId,
+      ...base,
+      filingStatus: null,
+    });
+    expect(stored()).toBeNull();
+    expect(await engineStatus()).toBe(FILING_STATUS_IF_UNKNOWN);
+    const s = await ctx.caller.paycheck.computeSummary();
+    expect(s.filingStatus).toBeNull();
+    expect(recommendationsFromFilingStatus(s.filingStatus)).toHaveLength(1);
+  });
+
+  it("Auto follows this year's filing status into the projection", async () => {
+    await ctx.caller.settings.appSettings.upsert({
+      key: "tax_filing_status",
+      value: "HOH",
+    });
+    expect(await engineStatus()).toBe("HOH");
+    expect(
+      recommendationsFromFilingStatus(
+        (await ctx.caller.paycheck.computeSummary()).filingStatus,
+      ),
+    ).toEqual([]);
+  });
+
+  it("a set profile status wins for retirement years; a save without it keeps it", async () => {
+    await ctx.caller.retirement.retirementSettings.upsert({
+      personId,
+      ...base,
+      filingStatus: "Single",
+    });
+    expect(await engineStatus()).toBe("Single");
+    // A save that doesn't send the field (another setting changed).
+    await ctx.caller.retirement.retirementSettings.upsert({
+      personId,
+      ...base,
+      retirementAge: 66,
+    });
+    expect(stored()).toBe("Single");
+    await ctx.caller.settings.appSettings.upsert({
+      key: "tax_filing_status",
+      value: null,
+    });
+  });
+});
+
+describe("w4FilingStatusOf: the request's Salary Profile", () => {
+  let ctx: Awaited<ReturnType<typeof createTestCaller>>;
+  let personId: number;
+  let jobId: number;
+  beforeAll(async () => {
+    ctx = await createTestCaller();
+    personId = await seedPerson(ctx.db, "Example Earner", "1985-06-15");
+    jobId = seedJob(ctx.db, personId, {
+      employerName: "Example Co",
+      annualSalary: "90000",
+      payPeriod: "biweekly",
+      payWeek: "even",
+      startDate: "2020-01-01",
+      w4FilingStatus: "Single",
+    });
+  });
+  afterAll(() => ctx.cleanup());
+
+  it("reads a What-If's W-4 when given its map, else the active profile's", async () => {
+    expect(await w4FilingStatusOf(ctx.db as never, [personId])).toBe("Single");
+    const whatIf = new Map([
+      [jobId, { w4FilingStatus: "HOH" } as never],
+    ]) as SalaryProfileActiveMap;
+    expect(await w4FilingStatusOf(ctx.db as never, [personId], whatIf)).toBe(
+      "HOH",
+    );
   });
 });

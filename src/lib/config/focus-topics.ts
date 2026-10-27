@@ -99,6 +99,8 @@ export type Focus =
   | { topic: "rothBasis" }
   /** Roth IRA eligibility this year. */
   | { topic: "rothIra" }
+  /** This year's filing status (the household setting). */
+  | { topic: "filingStatus" }
   | SettingsFocus;
 
 export type FocusKey = Focus["topic"];
@@ -206,6 +208,7 @@ export const FOCUS_HOMES: { [K in FocusKey]: FocusHome<K> } = {
     target: "page",
   },
   rothIra: { route: "/taxes", target: "section" },
+  filingStatus: { route: "/taxes", target: "section" },
   settings: {
     route: "/settings",
     target: "section",

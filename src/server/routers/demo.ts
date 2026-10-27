@@ -22,7 +22,6 @@ import {
   SK_ACTIVE_SALARY_PROFILE_ID,
 } from "@/lib/constants/settings-keys";
 import { speculativeJobValues } from "./settings/paycheck";
-import type { W4FilingStatus } from "@/lib/config/enum-values";
 import type { SalaryProfileEntry } from "../helpers/salary";
 import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 
@@ -312,13 +311,8 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     });
   }
 
-  // 12. Retirement settings — filing_status is NOT NULL on the DB row (see
-  // drizzle/0021); derive it from that person's own job the same way the
-  // migration's backfill does, since the demo seeder writes directly to
-  // the DB rather than through retirement.retirementSettings.upsert.
-  const filingStatusByPersonName = (personName: string): W4FilingStatus =>
-    profile.jobs.find((j) => j.personName === personName)?.w4FilingStatus ??
-    "MFJ";
+  // 12. Retirement settings — filing status left as "Auto" (null): it
+  // follows this year's, here the demo jobs' W-4 (lib/pure/filing-status.ts).
   const rs = profile.retirementSettings;
   const personId = personIdByName.get(rs.personName)!;
   await db.insert(schema.retirementSettings).values({
@@ -332,7 +326,7 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     withdrawalStrategy: rs.withdrawalStrategy,
     socialSecurityMonthly: rs.socialSecurityMonthly,
     ssStartAge: rs.ssStartAge,
-    filingStatus: filingStatusByPersonName(rs.personName),
+    filingStatus: null,
   });
   // Tracks each person's real retirement-age/end-age/SS figures for step
   // 12c's retirement_profile_people backfill below — mirrors what was
@@ -363,7 +357,7 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
           withdrawalStrategy: rs.withdrawalStrategy,
           socialSecurityMonthly: prs.socialSecurityMonthly,
           ssStartAge: prs.ssStartAge,
-          filingStatus: filingStatusByPersonName(prs.personName),
+          filingStatus: null,
         });
         retirementFieldsByPersonId.set(prsPersonId, {
           retirementAge: prs.retirementAge ?? rs.retirementAge,

@@ -33,6 +33,12 @@ const mockLimits2025 = [
     limitType: "ss_wage_base",
     value: "176100",
     notes: null,
+    shippedSources: [
+      {
+        name: "IRS Publication 15 (2025)",
+        url: "https://www.irs.gov/pub/irs-prior/p15--2025.pdf",
+      },
+    ],
   },
   {
     id: 2,
@@ -40,6 +46,7 @@ const mockLimits2025 = [
     limitType: "fica_ss_rate",
     value: "0.062",
     notes: null,
+    shippedSources: [],
   },
   {
     id: 3,
@@ -47,6 +54,7 @@ const mockLimits2025 = [
     limitType: "fica_medicare_rate",
     value: "0.0145",
     notes: null,
+    shippedSources: [],
   },
 ];
 
@@ -57,6 +65,7 @@ const mockLimits2024 = [
     limitType: "ss_wage_base",
     value: "168600",
     notes: null,
+    shippedSources: [],
   },
 ];
 
@@ -117,6 +126,18 @@ vi.mock("@/lib/trpc", () => ({
 import { ContributionLimitsSettings } from "@/components/settings/contribution-limits";
 
 describe("ContributionLimitsSettings smoke", () => {
+  it("links each shipped figure's source document", () => {
+    render(<ContributionLimitsSettings year={2025} />);
+    const link = screen.getByRole("link", {
+      name: "IRS Publication 15 (2025)",
+    });
+    expect(link).toHaveAttribute(
+      "href",
+      "https://www.irs.gov/pub/irs-prior/p15--2025.pdf",
+    );
+    expect(link).toHaveAttribute("target", "_blank");
+  });
+
   beforeEach(() => {
     currentRole = "admin";
     updateMutate.mockClear();

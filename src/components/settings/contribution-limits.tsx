@@ -1,6 +1,7 @@
 "use client";
 
 /** Settings tab for managing IRS contribution limits, FICA rates, and standard deductions by tax year with inline editing, year duplication, and year-over-year change indicators. */
+import { SourceLinks } from "./source-links";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
@@ -72,6 +73,7 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
       origin: string;
       shipped: boolean;
       shippedValue: number | null;
+      shippedSources: { name: string; url: string | null }[];
     }
   >();
   for (const l of yearData) {
@@ -238,6 +240,12 @@ export function ContributionLimitsSettings({ year }: { year: number }) {
                   >
                     <span className="text-muted">
                       {type.label}
+                      {record && (
+                        <SourceLinks
+                          citations={record.shippedSources}
+                          className="text-caption text-faint ml-2"
+                        />
+                      )}
                       {record?.origin === "user" &&
                         record.shippedValue !== null &&
                         Math.abs(Number(record.value) - record.shippedValue) >=

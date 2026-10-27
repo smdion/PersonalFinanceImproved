@@ -227,12 +227,10 @@ export const retirementSettings = sqliteTable(
       .default(false),
     /** Household size for ACA FPL calculation. */
     householdSize: integer("household_size").notNull().default(2),
-    /** Filing status for retirement projections. Backfilled from the
-     *  person's active job's W-4 filing status (drizzle/0021), then made
-     *  NOT NULL — the job-facts fallback tier in build-engine-payload.ts
-     *  stays in place until this column is reliably non-null for every
-     *  household, but no new row can be inserted without one. */
-    filingStatus: text("filing_status").$type<W4FilingStatus>().notNull(),
+    /** Filing status for retirement projections. Null = "Auto": follow
+     *  this year's filing status (lib/pure/filing-status.ts — the household
+     *  setting, else a W-4). Resolved by resolveRetirementFilingStatus. */
+    filingStatus: text("filing_status").$type<W4FilingStatus>(),
 
     // --- Retirement Profiles migration, step A (expand) ---------------------
     // Added additively; nothing reads them yet (step B switches the reads).

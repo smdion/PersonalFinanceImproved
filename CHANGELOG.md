@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.9
 
+## [Unreleased]
+
+### Changed
+
+- **"Retirement taxes" is now "Tax buckets & basis"** — the page shows where your money sits by tax treatment and holds the basis you enter, so the Basis link from Data sources lands on a page whose name matches.
+- **Reference Data links every figure to its document.** IRS limits show the notice each figure comes from; the tax-bracket, capital-gains, IRMAA and poverty-line tables show their source for the year. Each opens the document.
+- **A Retirement Profile's filing status can be Auto** — it then follows this year's filing status (the Taxes page setting, else the W-4). Ledgr no longer assumes married filing jointly when nothing says: it uses Single (the highest tax and no spousal Social Security, so a projection is never flattered) and asks you to set it. Profiles keep the status they have; choose Auto on one to have it follow this year's. The Taxes page shows the filing status even when no one has a paycheck.
+- **The pay-stub check compares a bonus check too** — choose Bonus check to compare the bonus's own figures.
+- **Data sources shows tax data as current**, with the years it covers and when the next ones are due (it said "Not connected").
+- The Utilities page's empty state no longer mentions an import script.
+
+### Fixed
+
+- **This year's income counts every job you had in it.** A job started this year counts from its start date, and one that ended this year counts up to its end — the household tax, the Roth IRA income check and every this-year income figure. If no earlier job is recorded, the Taxes page says pay before the start isn't counted.
+- **A bonus is withheld on its taxable amount.** The flat 22% supplemental rate applied to the whole bonus; it now applies after the pre-tax 401(k) or HSA money the bonus check takes, as payroll does.
+- **Each check includes Additional Medicare once your year's wages pass $200,000**, as employers withhold it — net pay per check, "withheld so far" and the pay-stub check include it.
+- **Saving a Retirement Profile setting no longer resets its filing status** to the W-4's (or MFJ) when the filing status wasn't part of the change.
+- **The year-to-date projection for a job started this year** counts its checks out of the ones it pays this year, not a full year's.
+
 ## [0.9.2] - 2026-10-26
 
 ### Changed

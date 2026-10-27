@@ -62,6 +62,7 @@ const {
       limitType: "ss_wage_base",
       value: "176100",
       notes: null,
+      shippedSources: [],
     },
   ],
   taxBrackets2025: [
@@ -137,6 +138,7 @@ vi.mock("@/lib/trpc", () => ({
       },
       taxData: {
         status: { useQuery: () => ({ data: undefined }) },
+        sectionSources: { useQuery: () => ({ data: undefined }) },
         addYear: { useMutation: noopMutation },
         confirm: { useMutation: noopMutation },
       },

@@ -494,9 +494,8 @@ export default function UtilitiesPage() {
           <div className="py-12 text-center">
             <p className="text-muted">No utility data yet</p>
             <p className="text-faint mt-2 text-sm">
-              Run <code className="text-xs">scripts/import-utilities.ts</code>{" "}
-              to import the House Upkeep spreadsheet, or unlock a service to add
-              readings.
+              Add your gas, water and electric bills to see their cost and usage
+              history here.
             </p>
           </div>
         </Card>

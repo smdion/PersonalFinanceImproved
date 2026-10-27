@@ -42,6 +42,13 @@ let milestonesState: {
   results: MilestoneResult[];
 };
 // The Roth IRA recommendation has its own tests (recommendations-roth).
+vi.mock("@/lib/hooks/use-household-income-summary", () => ({
+  // Filing status known — no "set your filing status" item.
+  useHouseholdIncomeSummary: () => ({
+    data: { filingStatus: "MFJ" },
+    isLoading: false,
+  }),
+}));
 vi.mock("@/lib/hooks/use-roth-ira", () => ({
   useRothIra: () => ({ isLoading: false, view: null }),
 }));
