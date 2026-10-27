@@ -14,7 +14,7 @@ export function recommendationsFromCash(args: {
   underTarget?: readonly string[];
 }): Recommendation[] {
   const rebalanceNote = args.underTarget?.length
-    ? ` — ${formatList([...args.underTarget])} ${args.underTarget.length === 1 ? "is" : "are"} under target, so investing it there also rebalances`
+    ? ` Putting it into ${formatList([...args.underTarget])} (under target) also rebalances.`
     : "";
   return [
     ...args.drag.map((f): Recommendation => ({
@@ -22,8 +22,8 @@ export function recommendationsFromCash(args: {
       area: "investing",
       urgency: "soon",
       title: `Uninvested cash in ${f.label}`,
-      action: `About ${formatCurrency(f.excess, 0)} is sitting in cash in this account, more than your target mix's cash share — invest it if it isn't set aside for something${rebalanceNote}`,
-      context: `${formatCurrency(f.value, 0)} account value counted`,
+      action: `Invest about ${formatCurrency(f.excess, 0)} of idle cash in ${f.label}`,
+      context: `More cash than your target mix holds, out of ${formatCurrency(f.value, 0)} in the account — skip it if the cash is set aside for something.${rebalanceNote}`,
       impact: { kind: "oneTime", amount: f.excess },
       focus: { topic: "holdings" },
       source: "ledgr",
@@ -33,9 +33,8 @@ export function recommendationsFromCash(args: {
       area: "investing",
       urgency: "soon",
       title: `HSA cash in ${f.label}`,
-      action: `About ${formatCurrency(f.excess, 0)} of HSA cash above the ${formatCurrency(f.buffer, 0)} you keep on hand — invest the rest`,
-      context:
-        "Buffer: your setting, or the year's HDHP minimum deductible for your coverage",
+      action: `Invest about ${formatCurrency(f.excess, 0)} of HSA cash in ${f.label}`,
+      context: `Keeps ${formatCurrency(f.buffer, 0)} on hand — your setting, or the year's HDHP minimum deductible for your coverage.`,
       impact: { kind: "oneTime", amount: f.excess },
       focus: { topic: "holdings" },
       source: "ledgr",

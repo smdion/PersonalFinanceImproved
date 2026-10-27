@@ -16,6 +16,14 @@
  */
 "use client";
 
+import {
+  W4_FILING_STATUS_VALUES,
+  type W4FilingStatus,
+} from "@/lib/config/enum-values";
+import {
+  FILING_STATUS_LABELS,
+  filingStatusLabel,
+} from "@/lib/config/display-labels";
 import { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
@@ -143,18 +151,22 @@ export function TaxesSection({
             const val = e.target.value || null;
             upsertSettings.mutate(
               buildSettingsPatch(settings, {
-                filingStatus: val as "MFJ" | "Single" | "HOH" | null,
+                filingStatus: val as W4FilingStatus | null,
               }),
             );
           }}
         >
-          <option value="">Auto ({filingStatus})</option>
-          <option value="MFJ">MFJ</option>
-          <option value="Single">Single</option>
-          <option value="HOH">HOH</option>
+          <option value="">
+            Auto ({filingStatusLabel(filingStatus ?? "")})
+          </option>
+          {W4_FILING_STATUS_VALUES.map((s) => (
+            <option key={s} value={s}>
+              {FILING_STATUS_LABELS[s]}
+            </option>
+          ))}
         </select>
         <span className="text-caption text-faint">brackets</span>
-        <HelpTip text="Tax filing status used for retirement tax estimates — affects federal brackets, LTCG rates, IRMAA thresholds, and Social Security taxation. 'Auto' inherits from your primary job's W-4. Change it here if your filing status will change in retirement." />
+        <HelpTip text="Tax filing status used for retirement tax estimates — affects federal brackets, LTCG rates, IRMAA thresholds, and Social Security taxation. Change it here if your filing status will change in retirement. This year's return has its own filing status on the Taxes page. Ledgr doesn't model married filing separately." />
         <Badge color="indigo">Baseline + Simulation</Badge>
         <div className="flex-1 border-t" />
       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-/** Recommendations page body: the top few first, then everything by area. */
+/** Recommendations page body: the top few first, then the rest by area. */
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -108,6 +108,8 @@ export function RecommendationsContent() {
     );
 
   const top = recommendations.slice(0, TOP_COUNT);
+  // The area cards hold the rest — "Start here" items aren't repeated.
+  const rest = recommendations.slice(TOP_COUNT);
   return (
     <div className="space-y-3">
       {header}
@@ -122,7 +124,7 @@ export function RecommendationsContent() {
       </Card>
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         {RECOMMENDATION_AREAS.map((area) => {
-          const rows = recommendations.filter((r) => r.area === area.key);
+          const rows = rest.filter((r) => r.area === area.key);
           if (rows.length === 0) return null;
           return (
             <Card key={area.key} title={area.title} subtitle={area.blurb}>

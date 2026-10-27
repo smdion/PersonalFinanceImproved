@@ -110,5 +110,6 @@ export function buildPaycheckInputForJob(
     bonusMonth: job.bonusMonth ?? null,
     bonusDayOfMonth: job.bonusDayOfMonth ?? null,
     asOfDate: resolved.asOfDate,
+    startDate: new Date(job.startDate),
   };
 }

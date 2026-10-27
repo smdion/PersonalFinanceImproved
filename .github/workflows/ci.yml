@@ -66,11 +66,10 @@ jobs:
       - name: Benchmark tests
         run: pnpm test:benchmarks
 
-      # Non-blocking — reports chunk/total sizes but doesn't fail the pipeline.
-      # Currently over its own thresholds (recharts/zod chunk weight, tracked
-      # as R31 in FEATURE-ROADMAP.md); flip to blocking once that's resolved.
+      # Blocking: each page's first-load JS (gzipped) against its budget,
+      # and no single chunk over 500 KB (scripts/check-bundle-size.ts).
       - name: Check bundle size
-        run: pnpm check:bundle || true
+        run: pnpm check:bundle
 
       - name: Cache Playwright browsers
         id: pw-cache

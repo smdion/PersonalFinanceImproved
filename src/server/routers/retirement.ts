@@ -37,6 +37,7 @@ import {
   resolveActiveProfilePair,
 } from "@/server/helpers";
 import { getAllPeople } from "@/server/helpers/people";
+import { w4FilingStatusOf } from "@/server/helpers/salary";
 import type { Db } from "@/server/helpers";
 import type { W4FilingStatus } from "@/lib/config/enum-values";
 import {
@@ -76,20 +77,7 @@ async function resolveDefaultFilingStatus(
   db: Db,
   personId: number,
 ): Promise<W4FilingStatus> {
-  const [job] = await db
-    .select({ id: schema.jobs.id })
-    .from(schema.jobs)
-    .where(
-      and(
-        eq(schema.jobs.personId, personId),
-        isNull(schema.jobs.endDate),
-        eq(schema.jobs.isSpeculative, false),
-      ),
-    )
-    .limit(1);
-  if (!job) return "MFJ";
-  const salaryProfileActiveMap = await loadEffectiveSalaryProfile(db, null);
-  return salaryProfileActiveMap.get(job.id)?.w4FilingStatus ?? "MFJ";
+  return (await w4FilingStatusOf(db, [personId])) ?? "MFJ";
 }
 
 // --- CRUD Zod schemas ---

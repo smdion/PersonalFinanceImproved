@@ -20,10 +20,14 @@ export type Recommendation = {
   id: string;
   area: RecommendationArea;
   urgency: RecommendationUrgency;
+  /** A name for the item (not shown on its row — the action stands alone). */
   title: string;
-  /** What to do. */
+  /** What to do, in one short line that stands on its own: the verb, who
+   *  or which account, how much. No "how" or caveats — those go in context. */
   action: string;
-  /** Where things stand, for context. */
+  /** The how, the fallback and the figures behind it — the small line. Uses
+   *  what Ledgr knows (the household's filing status, names, accounts)
+   *  instead of asking the reader. */
   context: string;
   impact: MilestoneImpact | null;
   /** What the recommendation is about — where its link lands. */

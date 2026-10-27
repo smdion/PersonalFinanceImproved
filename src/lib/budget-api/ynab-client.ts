@@ -3,6 +3,7 @@
 // Auth: Bearer token
 // Amounts: milliunits (÷1000 for dollars)
 
+import "server-only";
 import type { BudgetAPIClient } from "./interface";
 import type {
   BudgetAccount,
@@ -17,6 +18,10 @@ import type {
 import { fromMilliunits, toMilliunits } from "./conversions";
 import { budgetApiRequest } from "./errors";
 import { transactionIdempotencyKey } from "./idempotency";
+import {
+  YNAB_EXPENSE_EXCLUDED_CATEGORIES,
+  YNAB_INTERNAL_GROUPS,
+} from "@/lib/config/ynab";
 
 const YNAB_BASE = "https://api.ynab.com/v1";
 
@@ -53,24 +58,6 @@ type YnabCategory = {
   goal_type: string | null;
   note: string | null;
 };
-
-/** YNAB internal category groups that should never surface in our app. */
-export const YNAB_INTERNAL_GROUPS = new Set([
-  "Internal Master Category",
-  "Hidden Categories",
-]);
-
-/** YNAB category names excluded from expense comparisons (system/non-expense categories). */
-export const YNAB_EXPENSE_EXCLUDED_CATEGORIES = new Set([
-  "Split", // parent of split txns — children carry real categories
-  "Inflow: Ready to Assign", // income inflows, not expenses
-  "Uncategorized", // unassigned noise until categorized
-]);
-
-/** YNAB category groups excluded from expense views (not real spending). */
-export const YNAB_EXPENSE_EXCLUDED_GROUPS = new Set([
-  "Credit Card Payments", // internal transfers between accounts
-]);
 
 type YnabMonth = {
   month: string;

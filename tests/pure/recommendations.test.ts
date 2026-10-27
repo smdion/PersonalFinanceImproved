@@ -122,11 +122,9 @@ describe("recommendations that defer to a more precise one", () => {
     ];
     expect(
       recommendationsFromCash({ drag, hsa: [], underTarget: ["Bonds"] })[0]!
-        .action,
-    ).toMatch(
-      /— Bonds is under target, so investing it there also rebalances$/,
-    );
-    expect(recommendationsFromCash({ drag, hsa: [] })[0]!.action).not.toMatch(
+        .context,
+    ).toMatch(/Putting it into Bonds \(under target\) also rebalances\.$/);
+    expect(recommendationsFromCash({ drag, hsa: [] })[0]!.context).not.toMatch(
       /under target/,
     );
   });

@@ -15,7 +15,8 @@ import { formatCurrency } from "@/lib/utils/format";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useRothIra } from "@/lib/hooks/use-roth-ira";
 import type { InvestmentIncomeBasis } from "@/lib/pure/investment-income";
-import { rothMfsNote } from "@/lib/pure/recommendations-roth";
+import { filingStatusLabel } from "@/lib/config/display-labels";
+import { ROTH_IRA_MFS_PHASEOUT } from "@/lib/config/tax-params";
 import { rothIraAdvice } from "@/lib/pure/roth-ira";
 
 const BASIS_TEXT: Record<InvestmentIncomeBasis, string> = {
@@ -28,7 +29,7 @@ const BASIS_TEXT: Record<InvestmentIncomeBasis, string> = {
 
 /** Built at render time so privacy mode masks its dollars. */
 const notCounted = () =>
-  `Not counted: bank/HYSA interest, gains from selling investments, RSU/ESPP and other pay outside salary and bonus, a job change mid-year (only the current job), traditional IRA deductions. ${rothMfsNote()}`;
+  `Not counted: bank/HYSA interest, gains from selling investments, RSU/ESPP and other pay outside salary and bonus, a job change mid-year (only the current job), traditional IRA deductions. Married filing separately isn't modelled: its Roth IRA phase-out is ${formatCurrency(ROTH_IRA_MFS_PHASEOUT.start, 0)}–${formatCurrency(ROTH_IRA_MFS_PHASEOUT.end, 0)}.`;
 
 export function RothIraSection({ wageAgi }: { wageAgi: number }) {
   const user = useUser();
@@ -102,7 +103,8 @@ export function RothIraSection({ wageAgi }: { wageAgi: number }) {
             <div className="flex justify-between">
               <span>
                 Phase-out {formatCurrency(j.phaseOutStart, 0)}–
-                {formatCurrency(j.phaseOutEnd, 0)}
+                {formatCurrency(j.phaseOutEnd, 0)} (
+                {filingStatusLabel(view.filingStatus).toLowerCase()})
               </span>
               <span>
                 {j.distanceToStart > 0

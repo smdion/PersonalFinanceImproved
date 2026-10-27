@@ -1,3 +1,5 @@
+import { SK_TAX_FILING_STATUS } from "@/lib/constants/settings-keys";
+import { w4FilingStatusSchema } from "@/lib/config/enum-values";
 import { z } from "zod/v4";
 import {
   parseCurrentGlidePath,
@@ -73,6 +75,7 @@ const appSettingInput = z.object({
 /** Settings whose value has a shape: checked on every write, so a bad save
  *  is refused instead of read back later as empty. */
 const STRUCTURED_SETTINGS: Record<string, z.ZodType> = {
+  [SK_TAX_FILING_STATUS]: w4FilingStatusSchema,
   [SK_MILESTONE_CUSTOM_GOALS]: customGoalsSchema,
   [SK_MILESTONE_CHECKLIST]: milestoneChecklistSchema,
   [SK_MILESTONE_CHECKPOINT_SOURCE]: checkpointSourceSchema,

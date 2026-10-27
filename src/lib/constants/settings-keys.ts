@@ -65,6 +65,8 @@ export const SK_SAVINGS_PROJECTION_YEARS = "savings_projection_years";
 export const SK_PAYCHECK_TAX_YEAR = "paycheck_tax_year";
 /** Dollars below the Roth IRA phase-out start "direct contribution OK" needs; unset = the range's width. */
 export const SK_ROTH_IRA_DIRECT_MARGIN = "roth_ira_direct_margin";
+/** The filing status on this year's tax return (MFJ / Single / HOH); unset = the active Retirement Profile's, else a W-4. */
+export const SK_TAX_FILING_STATUS = "tax_filing_status";
 /** Dollars of HSA cash to keep uninvested; unset = the year's HDHP minimum deductible for the coverage. */
 export const SK_HSA_CASH_BUFFER = "hsa_cash_buffer";
 

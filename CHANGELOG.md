@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.9
 
+## [Unreleased]
+
+### Changed
+
+- **Recommendations are shorter and say what to do.** Each one leads with a single line (what to do, who or which account, how much), with the how and the figures in the small line under it. "Start here" items aren't repeated in the area cards below.
+- **The filing status picker shows names, not codes** ("Married filing jointly", not "MFJ"), and its help says what it sets.
+- **This year's tax return has its own filing status**, set on the Taxes page. This year's tax, the Roth IRA check and the IRS limits use it; retirement years keep the Retirement Profile's status, so a profile that plans for a different status later doesn't change this year. Unset, it follows the Retirement Profile's (then the W-4) and says so. The Roth IRA panel notes that married filing separately isn't modelled.
+- **The Expenses page loads about 430 KB less JavaScript.** It pulled in the server's budget-sync code, and a browser copy of Node's crypto with it, for one list of category names.
+- **CI blocks on page weight.** The bundle check now measures what each page downloads on first load and fails a page over its budget. It used to add up every page's code and failed every build without blocking anything.
+
+### Fixed
+
+- **The Roth IRA check and the household tax use the household's filing status.** Both read the first earner's W-4 status, which is a withholding choice, so a married couple withholding at the Single rate was judged against the Single Roth IRA phase-out. They now use this year's filing status (above); the W-4 only fills in when nothing else is set. The Roth recommendation names the filing status it used instead of asking about married filing separately.
+- **The IRS limits no longer drop the married rules when no Retirement Profile is set up.** With no filing status set, they now follow the W-4 like the rest of the app, and stay unknown (never assumed married) with no job either.
+- **A job started this year is paid from its start date.** The year's pay schedule started every job on January 1, so Social Security looked like it stopped a few checks early, and "withheld so far", the year-to-date paycheck totals, the Contributions page's expected-so-far figure and missed-contribution check, and the pay-stub check's Medicare wages counted checks from before the job began. A bonus dated before the start no longer counts as paid.
+
 ## [0.9.1] - 2026-10-26
 
 ### Added

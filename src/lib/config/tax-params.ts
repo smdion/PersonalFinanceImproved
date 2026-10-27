@@ -366,7 +366,7 @@ export const PRO_RATA_MATERIAL_SHARE_OF_IRA_LIMIT = 0.01;
 
 /** Married filing separately (and lived together): the Roth IRA phase-out
  *  is statutory and not indexed (IRC 408A(c)(3)(B)). The app has no MFS
- *  status, so this is only used to say so. */
+ *  status — shown on the fixed-by-law list and the Roth IRA panel's note. */
 export const ROTH_IRA_MFS_PHASEOUT = { start: 0, end: 10_000 } as const;
 
 /** The yearly HDHP minimum-deductible row for each HSA coverage type —

@@ -35,6 +35,7 @@ export function recommendationsFromCaps(
     }
     return [...byGroup].map(([group, types]): Recommendation => {
       const who = s.personName ? `${s.personName}: ` : "";
+      const whose = s.personName ? `${s.personName}'s ` : "";
       const label = types.map((t) => t.accountType).join(" + ");
       const over = types.some((t) => t.overBy > 0);
       return {
@@ -44,10 +45,10 @@ export function recommendationsFromCaps(
         title: over
           ? `${who}${label} contributions over the IRS limit`
           : `${who}${label} needs a detail to size its IRS limit`,
-        // capMessage's "it" is the contribution — name the account type.
+        // capMessage's "it" is the contribution — name whose and which.
         action: types
           .flatMap((t) =>
-            t.capMessages.map((m) => `${t.accountType} contribution: ${m}`),
+            t.capMessages.map((m) => `${whose}${t.accountType}: ${m}`),
           )
           .join(" "),
         context: over

@@ -389,6 +389,15 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   // ── Step 8: Year schedule ──
   // Full year amortization of all pay periods, modeling when SS tax stops mid-year.
   // If bonusMonth is set, the bonus is injected into the correct period so SS cap timing is accurate.
+  // A job started this year pays nothing before its start: those paydays
+  // stay in the schedule (calendar numbering) but empty, so this
+  // employer's Social Security wage base counts from its first check.
+  const beforeStart = periodsBeforeStart(
+    input.asOfDate,
+    input.payPeriod,
+    input.anchorPayDate,
+    input.startDate,
+  );
   const yearSchedule = buildYearSchedule(
     input,
     gross,
@@ -397,22 +406,16 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     ficaBase,
     totalPostTax,
     bonusEstimate,
+    beforeStart,
   );
 
-  // Estimate how many pay periods have already passed this year (for UI display)
-  // If ytdGrossEarnings is provided and > 0, use it; otherwise compute from the pay schedule.
-  let periodsElapsedYtd: number;
-  if (input.ytdGrossEarnings > 0) {
-    periodsElapsedYtd = Math.round(
-      safeDivide(input.ytdGrossEarnings, gross, 0)!,
-    );
-  } else {
-    periodsElapsedYtd = countPeriodsElapsed(
-      input.asOfDate,
-      input.payPeriod,
-      input.anchorPayDate,
-    );
-  }
+  // Paydays so far this year by the calendar — the year schedule's index
+  // (checks this job paid = this − beforeStart).
+  const periodsElapsedYtd = countPeriodsElapsed(
+    input.asOfDate,
+    input.payPeriod,
+    input.anchorPayDate,
+  );
 
   // ── Step 9: Next pay date and frequency label ──
   const nextPayDate = findNextPayDate(
@@ -426,7 +429,9 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   );
 
   // Determine which period the bonus lands in (for UI display)
-  const bonusPeriod =
+  // A bonus dated before the job started isn't this job's (the schedule
+  // leaves it out too).
+  const bonusPeriodFound =
     input.bonusMonth != null && bonusEstimate.bonusGross > 0
       ? findBonusPeriod(
           input.asOfDate,
@@ -435,6 +440,10 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
           input.bonusMonth,
           input.bonusDayOfMonth,
         )
+      : null;
+  const bonusPeriod =
+    bonusPeriodFound !== null && bonusPeriodFound > beforeStart
+      ? bonusPeriodFound
       : null;
 
   return {
@@ -454,6 +463,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     yearSchedule,
     periodsPerYear,
     periodsElapsedYtd,
+    periodsBeforeStart: beforeStart,
     nextPayDate,
     payFrequencyLabel,
     warnings,
@@ -689,6 +699,49 @@ export function periodsElapsedYtd(
   return anchorPayDate
     ? countPeriodsElapsed(asOfDate, payPeriod, new Date(anchorPayDate))
     : Math.round((asOfDate.getMonth() / 12) * periodsPerYear);
+}
+
+/**
+ * This year's paydays before a job started (as of `asOfDate`'s year): 0
+ * for a job started before Jan 1 or with no start date. Counted on the
+ * job's own pay calendar, so a check on the start date is the job's first.
+ */
+export function periodsBeforeStart(
+  asOfDate: Date,
+  payPeriod: string,
+  anchorPayDate: string | Date | null | undefined,
+  startDate: string | Date | null | undefined,
+): number {
+  if (!startDate) return 0;
+  const start = new Date(startDate);
+  if (start.getUTCFullYear() !== asOfDate.getUTCFullYear()) return 0;
+  const dayBefore = new Date(start.getTime() - MS_PER_DAY);
+  if (dayBefore.getUTCFullYear() !== asOfDate.getUTCFullYear()) return 0;
+  // No anchor payday: the start date is one, as the paycheck uses.
+  return countPeriodsElapsed(
+    dayBefore,
+    payPeriod,
+    new Date(anchorPayDate ?? start),
+  );
+}
+
+/** Checks a job has paid so far this year: paydays so far less those
+ *  before it started. What a year-to-date dollar figure multiplies by;
+ *  the paydays left this year stay periodsPerYear − periodsElapsedYtd. */
+export function checksPaidYtd(
+  asOfDate: Date,
+  payPeriod: string,
+  anchorPayDate: string | Date | null | undefined,
+  periodsPerYear: number,
+  startDate: string | Date | null | undefined,
+): number {
+  // No anchor payday: the start date is one, as the paycheck uses.
+  const anchor = anchorPayDate ?? startDate;
+  return Math.max(
+    0,
+    periodsElapsedYtd(asOfDate, payPeriod, anchor, periodsPerYear) -
+      periodsBeforeStart(asOfDate, payPeriod, anchor, startDate),
+  );
 }
 
 /** Months of contributions so far this year for a monthly schedule (a month counts from the 15th). */
@@ -956,6 +1009,8 @@ function buildYearSchedule(
   ficaBase: number,
   totalPostTax: number,
   bonusEstimate: BonusEstimate,
+  /** Paydays this year before the job started — empty rows. */
+  beforeStart = 0,
 ): PeriodBreakdown[] {
   const periodsPerYear = getPeriodsPerYear(input.payPeriod);
   const ssRate = input.taxBrackets.socialSecurityRate;
@@ -978,6 +1033,24 @@ function buildYearSchedule(
   let ytdFicaBase = 0; // Running total of FICA-taxable earnings
 
   for (let p = 1; p <= periodsPerYear; p++) {
+    if (p <= beforeStart) {
+      // Not this job's check (a bonus dated before the start isn't either).
+      schedule.push({
+        periodNumber: p,
+        gross: 0,
+        federalWithholding: 0,
+        ficaSS: 0,
+        ficaMedicare: 0,
+        preTaxDeductions: 0,
+        postTaxDeductions: 0,
+        netPay: 0,
+        bonusGross: 0,
+        bonusWithholding: 0,
+        bonusFica: 0,
+        beforeStart: true,
+      });
+      continue;
+    }
     const isBonus = p === bonusPeriodNum;
     const periodBonusGross = isBonus ? bonusEstimate.bonusGross : 0;
     const periodBonusWithholding = isBonus

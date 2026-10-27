@@ -10,7 +10,7 @@
  *     SalaryProfileEntry below). No partial/pinned state, no fallback to
  *     "the job's live value" — a job has none.
  */
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "./transforms";
@@ -323,6 +323,37 @@ export async function loadEffectiveSalaryProfile(
   }
   const activeId = await resolveActiveSalaryProfileId(db);
   return activeId != null ? loadAndApplySalaryProfile(db, activeId) : new Map();
+}
+
+/**
+ * The W-4 filing status of the first of `personIds` (in order) with an
+ * active, non-speculative job, from the active Salary Profile — null when
+ * none has one. Only a stand-in for the household's filing status where no
+ * Retirement Profile row sets it: a W-4 status is a withholding choice.
+ */
+export async function w4FilingStatusOf(
+  db: Db,
+  personIds: readonly number[],
+): Promise<W4FilingStatus | null> {
+  if (personIds.length === 0) return null;
+  const jobs = await db
+    .select({ id: schema.jobs.id, personId: schema.jobs.personId })
+    .from(schema.jobs)
+    .where(
+      and(
+        inArray(schema.jobs.personId, [...personIds]),
+        isNull(schema.jobs.endDate),
+        eq(schema.jobs.isSpeculative, false),
+      ),
+    );
+  if (jobs.length === 0) return null;
+  const active = await loadEffectiveSalaryProfile(db, null);
+  for (const personId of personIds)
+    for (const job of jobs.filter((j) => j.personId === personId)) {
+      const status = active.get(job.id)?.w4FilingStatus;
+      if (status) return status;
+    }
+  return null;
 }
 
 /**

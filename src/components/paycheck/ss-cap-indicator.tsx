@@ -4,8 +4,12 @@ import { formatCurrency } from "@/lib/utils/format";
 import type { PaycheckResult } from "./types";
 
 export function SSCapIndicator({ paycheck }: { paycheck: PaycheckResult }) {
-  const capPeriod = paycheck.yearSchedule.findIndex((p) => p.ficaSS === 0);
+  // Paydays before the job started are empty, not the cap.
+  const capPeriod = paycheck.yearSchedule.findIndex(
+    (p) => !p.beforeStart && p.ficaSS === 0,
+  );
   if (capPeriod === -1) return null;
+  const firstCheck = paycheck.yearSchedule.find((p) => !p.beforeStart);
 
   return (
     <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm">
@@ -20,8 +24,8 @@ export function SSCapIndicator({ paycheck }: { paycheck: PaycheckResult }) {
           )}
       </p>
       <p className="mt-1 text-xs text-blue-600">
-        Take-home increases by{" "}
-        {formatCurrency(paycheck.yearSchedule[0]?.ficaSS ?? 0)}/period after
+        Take-home increases by {formatCurrency(firstCheck?.ficaSS ?? 0)}/period
+        after
       </p>
     </div>
   );

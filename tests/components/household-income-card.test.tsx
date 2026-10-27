@@ -88,6 +88,8 @@ const summary = {
     warnings: ["Additional Medicare Tax: example note"],
   },
   taxYear: 2026,
+  filingStatus: "Single",
+  filingStatusSource: "retirementProfile",
   // Fictional phase-out range.
   rothIra: {
     filingStatus: "Single",
@@ -123,7 +125,14 @@ vi.mock("@/lib/trpc", () => ({
     useUtils: () => ({
       settings: { appSettings: { list: { invalidate: vi.fn() } } },
     }),
-    settings: { appSettings: { list: { useQuery: () => ({ data: [] }) } } },
+    settings: {
+      appSettings: {
+        list: { useQuery: () => ({ data: [] }) },
+        upsert: {
+          useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
+        },
+      },
+    },
     salaryProfile: {
       list: { useQuery: () => ({ data: [] }) },
       setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
@@ -220,6 +229,16 @@ describe("Taxes page", () => {
     expect(
       screen.getByText("Additional Medicare Tax: example note"),
     ).toBeInTheDocument();
+    // A viewer sees the filing status; an admin gets the editor.
+    expect(screen.getByText("Filing status")).toBeInTheDocument();
+    expect(screen.getAllByText("Single").length).toBeGreaterThan(0);
+  });
+
+  it("an admin sets this year's filing status; unset says what it follows", () => {
+    user = { role: "admin", name: "T", permissions: [] };
+    render(<TaxesContent />);
+    const select = screen.getByLabelText("Filing status on this year's return");
+    expect(select).toHaveDisplayValue("Single (the Retirement Profile's)");
   });
 
   it("with portfolio access: the full Roth IRA check", () => {

@@ -5,6 +5,7 @@
  */
 import type { RefChange, TaxDataFile } from "@/lib/db/reference-reconcile-core";
 import { taxLimitKey } from "@/lib/config/tax-limit-keys";
+import { FILING_STATUS_LABELS } from "@/lib/config/display-labels";
 import { TAX_DATA_SECTIONS } from "@/lib/config/tax-data-publication";
 
 export type TaxDataChangeRow = {
@@ -20,11 +21,9 @@ export type TaxDataChangeRow = {
   source: string;
 };
 
-const STATUS: Record<string, string> = {
-  MFJ: "married filing jointly",
-  Single: "single",
-  HOH: "head of household",
-};
+const STATUS: Record<string, string> = Object.fromEntries(
+  Object.entries(FILING_STATUS_LABELS).map(([k, v]) => [k, v.toLowerCase()]),
+);
 
 const num = (v: unknown) =>
   v === null || v === undefined || Number.isNaN(Number(v)) ? null : Number(v);

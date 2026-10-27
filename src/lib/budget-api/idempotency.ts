@@ -13,6 +13,7 @@
  * representation; no randomness.
  */
 
+import "server-only";
 import { createHash } from "node:crypto";
 
 /**

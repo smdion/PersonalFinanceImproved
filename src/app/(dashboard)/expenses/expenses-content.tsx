@@ -13,11 +13,9 @@ import { safeDivide } from "@/lib/utils/math";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
-// Imported from the leaf module, not the @/lib/budget-api barrel — the
-// barrel also re-exports cache.ts (drizzle-orm + DB schema), which is
-// server-only. Importing through the barrel pulled the whole server-side
-// dependency graph into this client bundle (~540KB, see check:bundle).
-import { YNAB_EXPENSE_EXCLUDED_GROUPS } from "@/lib/budget-api/ynab-client";
+// From config, never @/lib/budget-api: the barrel and the YNAB client are
+// server-only (DB, node:crypto) and once shipped ~430 KB to this page.
+import { YNAB_EXPENSE_EXCLUDED_GROUPS } from "@/lib/config/ynab";
 import {
   EXPENSE_PIE_COLORS,
   essentialColor,

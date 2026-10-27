@@ -14,6 +14,11 @@ import {
 } from "@/lib/pure/contribution-caps";
 import { TRPCError } from "@trpc/server";
 import { getAllPeople } from "./people";
+import { w4FilingStatusOf } from "./salary";
+import {
+  taxFilingStatusSetting,
+  type FilingStatusSource,
+} from "@/lib/pure/filing-status";
 import { accountDisplayName } from "@/lib/utils/format";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {
@@ -208,11 +213,21 @@ export function capEffectiveContribs<R extends CapPassRow>(
   });
 }
 
+/** People ids, the primary person first. */
+function primaryFirst(
+  people: readonly { id: number; isPrimaryUser: boolean }[],
+): number[] {
+  return [...people]
+    .sort((a, b) => Number(b.isPrimaryUser) - Number(a.isPrimaryUser))
+    .map((p) => p.id);
+}
+
 /**
  * The household's cap context for a request: who (birth years), the year's
- * limits, and the household's filing status — the active retirement
- * profile's, as the projection uses (a W-4 status is a withholding
- * choice, not the household's).
+ * limits, and this year's filing status (lib/pure/filing-status.ts — a W-4
+ * status is a withholding choice, only a last stand-in). The paycheck's
+ * household tax and Roth IRA view read it from here too, so there is one
+ * answer.
  */
 export async function loadCapHousehold(
   db: Db,
@@ -224,7 +239,9 @@ export async function loadCapHousehold(
   /** The year's limits; null = load the tax year's contribution limits. */
   limits: Record<string, number> | null,
   taxYear: number,
-): Promise<CapPassHousehold> {
+): Promise<
+  CapPassHousehold & { filingStatusSource: FilingStatusSource | null }
+> {
   const [appSettings, retSettings, retProfiles, limitRows] = await Promise.all([
     db.select().from(schema.appSettings),
     db.select().from(schema.retirementSettings),
@@ -244,6 +261,15 @@ export async function loadCapHousehold(
     resolveRetirementProfileIdFrom(appSettings, retProfiles),
     getPrimaryPerson([...people])?.id ?? null,
   );
+  // This year's return: the household setting, else the active
+  // Retirement Profile's, else the earners' W-4 (the primary person's
+  // first), else unknown — married rules off, never assumed.
+  const household = taxFilingStatusSetting(appSettings);
+  const w4 =
+    household || settings?.filingStatus
+      ? null
+      : await w4FilingStatusOf(db, primaryFirst(people));
+  const filingStatus = household ?? settings?.filingStatus ?? w4 ?? "";
   return {
     people: people.map((p) => ({
       id: p.id,
@@ -252,7 +278,14 @@ export async function loadCapHousehold(
     limits:
       limits ??
       Object.fromEntries(limitRows.map((l) => [l.limitType, Number(l.value)])),
-    filingStatus: settings?.filingStatus ?? "",
+    filingStatus,
+    filingStatusSource: household
+      ? "household"
+      : settings?.filingStatus
+        ? "retirementProfile"
+        : w4
+          ? "w4"
+          : null,
     taxYear,
   };
 }
