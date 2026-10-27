@@ -877,9 +877,10 @@ export function HelpContent() {
           </li>
           <li>
             <strong>People</strong> &mdash; Add household members with birth
-            dates and W-4 filing status. The W-4 status drives paycheck
-            withholding; retirement projections can use a different filing
-            status, set in the Taxes in Retirement section.
+            dates. Each job&apos;s W-4 filing status (on the Paycheck page)
+            drives paycheck withholding only. This year&apos;s tax return has
+            its own filing status, set on the Taxes page; retirement years use
+            the one in the Taxes in Retirement section.
           </li>
           <li>
             <strong>IRS Limits</strong> &mdash; Review and adjust annual
