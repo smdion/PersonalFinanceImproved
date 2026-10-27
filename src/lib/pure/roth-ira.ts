@@ -427,6 +427,8 @@ export function rothIraAdvice(
   const allowed = j.people
     .map((p) => `${p.name} ${formatCurrency(p.maxDirect, 0)}`)
     .join(", ");
+  const whereToSwitch =
+    'Set "Gets to the Roth" to Backdoor on each Roth IRA contribution (Paycheck, or the account\'s contributions).';
   const howBackdoor =
     "Backdoor: a non-deductible traditional IRA contribution, then converted to Roth.";
   // How far income sits from the phase-out — the reason in one phrase.
@@ -451,7 +453,7 @@ export function rothIraAdvice(
       return {
         summary: `Over the limit — ${names(direct)} contribute${direct.length === 1 ? "s" : ""} directly: switch to the backdoor Roth.`,
         action: `Switch ${names(direct)} to the backdoor Roth — ${where}`,
-        detail: `Change it in the Contribution Profile; anything already put in directly this year can be recharacterized before the filing deadline. ${howBackdoor}`,
+        detail: `${whereToSwitch} Anything already put in directly this year can be recharacterized before the filing deadline. ${howBackdoor}`,
       };
     if (backdoor.length)
       return {
@@ -472,7 +474,7 @@ export function rothIraAdvice(
     return {
       summary: `Close to the limit and ${names(direct)} contribute${direct.length === 1 ? "s" : ""} directly — switching to the backdoor removes the risk.`,
       action: `Switch ${names(direct)} to the backdoor Roth — ${where}`,
-      detail: `Staying direct? Allowed today: ${allowed}; check once the year's income is final and recharacterize anything over. ${howBackdoor}`,
+      detail: `${whereToSwitch} Staying direct? Allowed today: ${allowed}; check once the year's income is final and recharacterize anything over. ${howBackdoor}`,
     };
   if (backdoor.length)
     return {

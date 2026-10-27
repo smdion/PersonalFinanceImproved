@@ -53,7 +53,11 @@ export function recommendationsFromRothIra(
           action: advice.action,
           context,
           impact: null,
-          focus: { topic: "rothIra" },
+          // Someone contributes directly: the fix is their route, set
+          // with the contribution elections; otherwise the Roth IRA check.
+          focus: view.routes.some((r) => r.route === "direct")
+            ? { topic: "contributionElections" }
+            : { topic: "rothIra" },
           source: "ledgr",
         },
       ]

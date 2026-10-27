@@ -279,6 +279,30 @@ describe("useContributionAccountsMutations", () => {
   // handleLinkContrib
   // ---------------------------------------------------------------------
 
+  it("handleContribUpdate saves a Roth IRA route to the active Contribution Profile — direct as absent, never on the account row", async () => {
+    const useContributionAccountsMutations = await importHook();
+    const { result } = renderHook(() =>
+      useContributionAccountsMutations({
+        allContribs: [],
+        activeContribProfileId: 9,
+      }),
+    );
+    result.current.handleContribUpdate(baseContrib, { rothRoute: "backdoor" });
+    expect(mutations.setContribProfileFields.mutate).toHaveBeenLastCalledWith({
+      profileId: 9,
+      accountId: 1,
+      fields: { rothRoute: "backdoor" },
+    });
+    result.current.handleContribUpdate(baseContrib, { rothRoute: "direct" });
+    expect(mutations.setContribProfileFields.mutate).toHaveBeenLastCalledWith({
+      profileId: 9,
+      accountId: 1,
+      fields: {},
+      unset: ["rothRoute"],
+    });
+    expect(mutations.updateContrib.mutate).not.toHaveBeenCalled();
+  });
+
   it("handleLinkContrib finds the contrib by id and updates its performanceAccountId", async () => {
     const useContributionAccountsMutations = await importHook();
     const { result } = renderHook(() =>

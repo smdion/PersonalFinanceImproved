@@ -120,7 +120,15 @@ describe("recommendationsFromRothIra", () => {
     expect(r[0]!.action).toBe(
       "Switch Ann to the backdoor Roth — income is over the Roth IRA limit",
     );
-    expect(r[0]!.context).toMatch(/Contribution Profile.*recharacterized/);
+    expect(r[0]!.context).toMatch(
+      /"Gets to the Roth" to Backdoor.*recharacterized/,
+    );
+    // Go → lands where the route is set.
+    expect(r[0]!.focus).toEqual({ topic: "contributionElections" });
+    // Nobody contributing directly: the Roth IRA check.
+    expect(recs(view(220_000), 2026, "2026-11-01")[0]!.focus).toEqual({
+      topic: "rothIra",
+    });
   });
 
   it("the backdoor in use: the pro-rata check stays, whatever the verdict", () => {

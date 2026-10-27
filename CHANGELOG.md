@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Changed
 
 - **Recommendations are shorter and say what to do.** Each one leads with a single line (what to do, who or which account, how much), with the how and the figures in the small line under it. "Start here" items aren't repeated in the area cards below.
+- **A Roth IRA's route can be set where the account is.** Portfolio → Account & Contribution Settings now shows "Gets to the Roth: Direct / Backdoor" on a Roth IRA contribution (it saves to the active Contribution Profile, the same setting as Paycheck), and the contribution's summary shows which. The "Switch … to the backdoor Roth" recommendation's link goes to the contribution elections on Paycheck, and its detail says which setting to change.
 - **The filing status picker shows names, not codes** ("Married filing jointly", not "MFJ"), and its help says what it sets.
 - **This year's tax return has its own filing status**, set on the Taxes page. This year's tax, the Roth IRA check and the IRS limits use it; retirement years keep the Retirement Profile's status, so a profile that plans for a different status later doesn't change this year. Unset, it follows the Retirement Profile's (then the W-4) and says so. The Roth IRA panel notes that married filing separately isn't modelled.
 - **The Expenses page loads about 430 KB less JavaScript.** It pulled in the server's budget-sync code, and a browser copy of Node's crypto with it, for one list of category names.
