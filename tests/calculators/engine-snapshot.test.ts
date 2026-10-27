@@ -1629,7 +1629,10 @@ describe("engine snapshot parity", () => {
     // v0.9.0) -- IRMAA alone used to grow from a built-in 2026. This
     // fixture's conversions are IRMAA-cliff-aware, so that moved the final
     // balance. Growth itself is covered in bracket-growth.test.ts.
-    expect(metrics.finalYear?.allAccountsBalance).toBe(3709384.99);
+    // v0.9.2: the shipped 2026 IRMAA table was corrected to CMS's (it held
+    // 2024 thresholds and estimated surcharges) — cliffs moved up, surcharges
+    // too.
+    expect(metrics.finalYear?.allAccountsBalance).toBe(3693018.8);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2805,8 +2808,9 @@ describe("engine snapshot parity", () => {
     // Same rmd-enforcement.ts residual fix
     // as fixture 31.
     // No `taxDataYear`, so IRMAA stays flat like every other table (it
-    // alone used to grow from a built-in 2026; v0.9.0).
-    expect(metrics.finalYear?.allAccountsBalance).toBe(1915295.39);
+    // alone used to grow from a built-in 2026; v0.9.0). v0.9.2: the
+    // corrected 2026 IRMAA table, as fixture 31.
+    expect(metrics.finalYear?.allAccountsBalance).toBe(1891477.91);
     expect(metrics).toMatchSnapshot();
   });
 

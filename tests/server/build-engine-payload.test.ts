@@ -368,8 +368,8 @@ describe("buildEnginePayload — irmaa_brackets wiring (R43)", () => {
     const payload = await buildEnginePayload(db, data, {});
     const irmaa = payload!.distributionTaxRates.irmaaBrackets;
     expect(irmaa).toBeDefined();
-    // Seed Single tier 1 threshold = 103000 (matches IRMAA_BRACKETS default).
-    expect(irmaa!.Single?.[0]?.magiThreshold).toBe(103000);
+    // Seed Single tier 1 threshold (CMS 2026).
+    expect(irmaa!.Single?.[0]?.magiThreshold).toBe(109000);
   });
 
   it("an admin edit to an irmaa_brackets row moves the resolved value", async () => {

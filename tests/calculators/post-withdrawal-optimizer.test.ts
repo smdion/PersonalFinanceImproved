@@ -189,11 +189,11 @@ describe("performRothConversion", () => {
     const result = performRothConversion(
       makeRothInput({
         irmaaAwareRothConversions: true,
-        totalTraditionalWithdrawal: 150000,
+        totalTraditionalWithdrawal: 162000,
         taxableSS: 10000,
         brokerageGainsPortion: 40000,
-        // MAGI without conversion = 150000 + 40000 + 10000 = 200000
-        // Next IRMAA cliff = 206000
+        // MAGI without conversion = 162000 + 40000 + 10000 = 212000
+        // Next IRMAA cliff = 218000 (CMS 2026, MFJ)
         // Max conversion for cliff = 6000
         // bracket cap for 0.22 = 96175
         // yearTaxableIncome = 160000
@@ -205,7 +205,7 @@ describe("performRothConversion", () => {
       }),
     );
     // Without IRMAA: conversionRoom = 457525 - 160000 = 297525 (capped at preTax 500000)
-    // With IRMAA: max = 206000 - 200000 = 6000
+    // With IRMAA: max = 218000 - 212000 = 6000
     expect(result.rothConversionAmount).toBeLessThanOrEqual(6000);
   });
 
@@ -213,10 +213,10 @@ describe("performRothConversion", () => {
     const result = performRothConversion(
       makeRothInput({
         irmaaAwareRothConversions: true,
-        totalTraditionalWithdrawal: 150000,
+        totalTraditionalWithdrawal: 162000,
         taxableSS: 10000,
-        brokerageGainsPortion: 40000, // MAGI w/o conversion = 200000
-        rothBracketTarget: 0.35, // bracket cap far above the next cliff (206000)
+        brokerageGainsPortion: 40000, // MAGI w/o conversion = 212000
+        rothBracketTarget: 0.35, // bracket cap far above the next cliff (218000)
       }),
     );
     // The conversion was clamped to the ~6000 of cliff headroom, and the
@@ -302,10 +302,10 @@ describe("checkIrmaa", () => {
   });
 
   it("returns surcharge when MAGI exceeds IRMAA threshold", () => {
-    // MFJ tier 1: 206000 → surcharge 1056
-    // MAGI 250000 > 206000, < 258000 → tier 1
+    // MFJ tier 1: above 218000 → surcharge 1148.40 (CMS 2026, B + D × 12)
+    // MAGI 250000 > 218000, ≤ 274000 → tier 1
     const result = checkIrmaa(makeIrmaaInput({ projectedMagi: 250000 }));
-    expect(result.irmaaCost).toBe(1056);
+    expect(result.irmaaCost).toBeCloseTo(1148.4, 2);
   });
 
   it("returns zero when MAGI is below all thresholds", () => {
@@ -314,31 +314,29 @@ describe("checkIrmaa", () => {
   });
 
   it("warns when Roth conversion pushes MAGI over a cliff", () => {
-    // Without conversion: MAGI = 200000 (below 206000) → no surcharge
-    // With conversion: MAGI = 200000 + 20000 = 220000 → surcharge 1056
+    // Without conversion: MAGI = 200000 (below 218000) → no surcharge
+    // With conversion: MAGI = 200000 + 20000 = 220000 → tier 1, 1148.40
     const result = checkIrmaa(
       makeIrmaaInput({
         projectedMagi: 220000, // includes conversion
         rothConversionAmount: 20000,
       }),
     );
-    expect(result.irmaaCost).toBe(1056);
+    expect(result.irmaaCost).toBeCloseTo(1148.4, 2);
     expect(result.warnings.length).toBeGreaterThan(0);
     expect(result.warnings[0]).toContain("IRMAA");
     expect(result.warnings[0]).toContain("Roth conversion");
   });
 
   it("no warning when conversion doesn't change IRMAA tier", () => {
-    // MAGI = 260000 with or without conversion → already in tier 1
     const result = checkIrmaa(
       makeIrmaaInput({
-        projectedMagi: 260000,
+        projectedMagi: 276000,
         rothConversionAmount: 5000,
-        // Without conversion: 255000 → tier 1 (1056), same as with
       }),
     );
-    expect(result.irmaaCost).toBe(2640); // tier 2 (>258000)
-    // Without conversion: 255000 → tier 1 (1056) < 2640 → should warn
+    expect(result.irmaaCost).toBeCloseTo(2884.8, 2); // tier 2 (>274000)
+    // Without conversion: 271000 → tier 1 (1148.40) < 2884.80 → should warn
     expect(result.warnings.length).toBeGreaterThan(0);
   });
 });

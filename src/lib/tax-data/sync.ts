@@ -206,7 +206,10 @@ export async function checkForTaxDataUpdate(
     // A limit key this version doesn't know is kept (shown as not used
     // here, in place for a version that uses it), never a reason to refuse.
     const file = parsed;
-    const problems = validateTaxDataFile(file, { unknownKeys: "ignore" });
+    const problems = validateTaxDataFile(file, {
+      unknownKeys: "ignore",
+      citations: "lenient",
+    });
     if (problems.length) {
       log("warn", "tax_data_update_invalid", { problems });
       return await done({

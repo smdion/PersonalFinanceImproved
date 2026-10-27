@@ -30,7 +30,7 @@ describe("settings.contributionLimits", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.contributionLimits.list();
-      // The test DB carries tax-data/us-federal.json (2025 + 2026).
+      // The test DB carries tax-data/us-federal/ (2025 + 2026).
       expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
@@ -169,7 +169,7 @@ describe("settings.taxBrackets", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.taxBrackets.list();
-      // The test DB carries tax-data/us-federal.json (2025 + 2026).
+      // The test DB carries tax-data/us-federal/ (2025 + 2026).
       expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
@@ -271,7 +271,7 @@ describe("settings.ltcgBrackets", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.ltcgBrackets.list();
-      // The test DB carries tax-data/us-federal.json (2025 + 2026).
+      // The test DB carries tax-data/us-federal/ (2025 + 2026).
       expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
@@ -353,7 +353,7 @@ describe("settings.irmaaBrackets", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.irmaaBrackets.list();
-      // The test DB carries tax-data/us-federal.json (2025 + 2026).
+      // The test DB carries tax-data/us-federal/ (2025 + 2026).
       expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();
@@ -452,7 +452,7 @@ describe("settings.fplByHousehold", () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
       const rows = await caller.settings.fplByHousehold.list();
-      // The test DB carries tax-data/us-federal.json (2025 + 2026).
+      // The test DB carries tax-data/us-federal/ (2025 + 2026).
       expect(rows.some((r) => r.taxYear === 2026)).toBe(true);
     } finally {
       cleanup();

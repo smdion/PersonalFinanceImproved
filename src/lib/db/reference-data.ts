@@ -1,7 +1,7 @@
 /**
  * Reference data (contribution limits, tax brackets, LTCG / IRMAA brackets,
  * poverty lines, tax-data revisions) comes from the tax-data file,
- * `tax-data/us-federal.json` — one source, reviewed in the public repo. The
+ * `tax-data/us-federal/` — one source, reviewed in the public repo. The
  * migrator applies it on every start (db-migrate.ts); the rules for what it
  * may change are in reference-reconcile-core.ts.
  *
@@ -25,6 +25,8 @@ import {
   type RefMode,
   pickApprovedCommunityFile,
   type TaxDataFile,
+  TAX_DATA_DIR,
+  readTaxDataDir,
 } from "./reference-reconcile-core";
 
 /** The tables the reference data writes (db-migrate.ts keeps the same set;
@@ -39,14 +41,12 @@ export const REFERENCE_TABLES = [
 ] as const;
 export type ReferenceTable = (typeof REFERENCE_TABLES)[number];
 
-/** The shipped tax-data file, read from disk once (the Docker image copies
- *  `tax-data/`; never bundled, so the app and the migrator read one file).
- *  Shared — don't mutate it. */
+/** The shipped tax data, read from disk once and assembled into one file
+ *  (the Docker image copies `tax-data/`; never bundled, so the app and the
+ *  migrator read the same files). Shared — don't mutate it. */
 let shippedFile: TaxDataFile | undefined;
 export function readTaxDataFile(): TaxDataFile {
-  shippedFile ??= JSON.parse(
-    fs.readFileSync(path.resolve("./tax-data/us-federal.json"), "utf-8"),
-  ) as TaxDataFile;
+  shippedFile ??= readTaxDataDir(fs, path.resolve(TAX_DATA_DIR));
   return shippedFile;
 }
 

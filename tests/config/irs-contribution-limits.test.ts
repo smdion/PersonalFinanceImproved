@@ -263,12 +263,12 @@ describe("IRS Contribution Limits", () => {
           const seedValue = seedLimits.get(`${year}:${limitType}`);
           expect(
             seedValue,
-            `Seed data missing ${year}:${limitType} — update tax-data/us-federal.json`,
+            `Seed data missing ${year}:${limitType} — update tax-data/us-federal/`,
           ).toBeDefined();
           expect(
             seedValue,
             `Seed value ${seedValue} ≠ IRS value ${value} for ${year}:${limitType}. ` +
-              `Either update tax-data/us-federal.json or update this test if IRS values changed.`,
+              `Either update tax-data/us-federal/ or update this test if IRS values changed.`,
           ).toBe(value);
         });
       }

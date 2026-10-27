@@ -1,5 +1,5 @@
 // ACA (Affordable Care Act) subsidy cliff tables.
-// The poverty levels are yearly data (tax-data/us-federal.json →
+// The poverty levels are yearly data (tax-data/us-federal/ →
 // `fpl_by_household`; coverage year N uses the guidelines HHS published in
 // N−1, 26 CFR §1.36B-1(h)), passed in by the caller.
 //

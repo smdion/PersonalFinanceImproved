@@ -16,13 +16,13 @@ import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
 // file's bracket fixtures below, so a January bump is one edit here
 // instead of finding every inline copy. (An audit found the standard
 // deduction alone hand-copied 35x across 11 test files — this file was
-// one of them.) Source: tax-data/us-federal.json (2026, MFJ, ...).
+// one of them.) Source: tax-data/us-federal/ (2026, MFJ, ...).
 export const FIXTURE_STANDARD_DEDUCTION_MFJ_2026 = 32200;
 export const FIXTURE_SS_WAGE_BASE_2026 = 184500;
 
 // ── 2026 MFJ Tax Brackets (W-4 2(c) CHECKED) ──
 // These are the halved brackets used for paycheck withholding when both spouses work.
-// Source: tax-data/us-federal.json tax_brackets (2026, MFJ, true).
+// Source: tax-data/us-federal/ tax_brackets (2026, MFJ, true).
 export const MFJ_2C_BRACKETS: TaxBracketInput = {
   filingStatus: "MFJ",
   w4Checkbox: true,
@@ -47,7 +47,7 @@ export const MFJ_2C_BRACKETS: TaxBracketInput = {
 
 // ── 2026 MFJ Tax Brackets (NO checkbox) ──
 // Standard brackets for annual tax estimation and paycheck withholding.
-// Source: tax-data/us-federal.json tax_brackets (2026, MFJ, false). This
+// Source: tax-data/us-federal/ tax_brackets (2026, MFJ, false). This
 // fixture once dropped the 24% bracket entirely and duplicated 0.37 in its
 // place (jumped 230700@0.22 -> 422850@0.32) — fixed.
 export const MFJ_NO_CHECKBOX_BRACKETS: TaxBracketInput = {

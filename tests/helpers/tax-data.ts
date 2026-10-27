@@ -1,21 +1,19 @@
 /**
- * The shipped tax-data file (tax-data/us-federal.json) as the row shapes
+ * The shipped tax data (tax-data/us-federal/, one file a year) as the row shapes
  * tests use — the one source the database is reconciled from.
  */
 import * as fs from "fs";
 import * as path from "path";
-import type {
-  TaxDataFile,
-  TaxDataYear,
+import {
+  TAX_DATA_DIR,
+  readTaxDataDir,
+  type TaxDataFile,
+  type TaxDataYear,
 } from "@/lib/db/reference-reconcile-core";
 
-export const TAX_DATA_PATH = path.resolve(
-  __dirname,
-  "../../tax-data/us-federal.json",
-);
-
+/** The repo's tax data (one file a year), assembled as installs read it. */
 export function readTaxData(): TaxDataFile {
-  return JSON.parse(fs.readFileSync(TAX_DATA_PATH, "utf8")) as TaxDataFile;
+  return readTaxDataDir(fs, path.resolve(__dirname, "../..", TAX_DATA_DIR));
 }
 
 const years = (): [number, TaxDataYear][] =>

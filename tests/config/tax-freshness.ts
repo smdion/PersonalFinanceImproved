@@ -103,7 +103,7 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
       "IRS Publication 15-T (2025/2026); IRS Notice 2025-67; IRS Revenue Procedure 2025-32",
     updateUrl: "https://www.irs.gov/pub/irs-pdf/p15t.pdf",
     location:
-      "tax-data/us-federal.json (tax_brackets, contribution_limits, ltcg_brackets) — verified structurally by `pnpm check:tax-params`",
+      "tax-data/us-federal/ (tax_brackets, contribution_limits, ltcg_brackets) — verified structurally by `pnpm check:tax-params`",
     changeFrequency: "annual",
   },
   {
@@ -111,7 +111,7 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
     validThrough: 2026,
     source: "CMS 2026 projected thresholds",
     updateUrl: "https://www.cms.gov/newsroom/fact-sheets",
-    location: "tax-data/us-federal.json → irmaa_brackets",
+    location: "tax-data/us-federal/ → irmaa_brackets",
     changeFrequency: "annual",
   },
   {
@@ -126,7 +126,7 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
       "HHS Federal Register (guidelines published 2025, for 2026 coverage)",
     updateUrl:
       "https://aspe.hhs.gov/topics/poverty-economic-mobility/hhs-poverty-guidelines",
-    location: "tax-data/us-federal.json → fpl_by_household",
+    location: "tax-data/us-federal/ → fpl_by_household",
     changeFrequency: "annual",
   },
   // (The "ACA premium estimates" entry was removed along with
@@ -160,14 +160,14 @@ export const TAX_PARAMETER_REGISTRY: TaxFreshnessEntry[] = [
     validThrough: 2026,
     source:
       "IRC §3101 — SS rate unchanged since 1990, Medicare surtax since 2013",
-    location: "tax-data/us-federal.json → contribution_limits (fica_*)",
+    location: "tax-data/us-federal/ → contribution_limits (fica_*)",
     changeFrequency: "legislative-only",
   },
   {
     name: "Medicare surtax threshold ($200k/$250k)",
     validThrough: 2026,
     source: "IRC §3101(b)(2) — not indexed to inflation",
-    location: "tax-data/us-federal.json → fica_medicare_surtax_threshold",
+    location: "tax-data/us-federal/ → fica_medicare_surtax_threshold",
     changeFrequency: "legislative-only",
   },
   {

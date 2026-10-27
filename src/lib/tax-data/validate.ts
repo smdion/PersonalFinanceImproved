@@ -7,6 +7,7 @@
 import {
   TAX_DATA_FORMAT_VERSION,
   type TaxDataFile,
+  type TaxDataYear,
 } from "@/lib/db/reference-reconcile-core";
 import { TAX_LIMIT_KEYS, taxLimitKey } from "@/lib/config/tax-limit-keys";
 import { REQUIRED_FILING_STATUSES } from "@/lib/config/tax-params";
@@ -21,6 +22,33 @@ export const INDEXED_BOUNDS = [0.98, 1.15] as const;
 const within = (prev: number, next: number) =>
   prev === 0 ||
   (next / prev >= INDEXED_BOUNDS[0] && next / prev <= INDEXED_BOUNDS[1]);
+
+/** The citations in a `source` string ("A; B" → ["A", "B"]). */
+export function citationsOf(source: string | undefined): string[] {
+  return (source ?? "")
+    .split(";")
+    .map((c) => c.trim())
+    .filter(Boolean);
+}
+
+/** Every `source` in a year — the year's, each figure's, each section's
+ *  and each exception's — with where it is, for messages. */
+function yearSources(d: TaxDataYear): { at: string; source: string }[] {
+  const out = [{ at: "", source: d.source }];
+  for (const [k, l] of Object.entries(d.limits)) {
+    out.push({ at: ` ${k}`, source: l.source });
+    if (l.exception)
+      out.push({ at: ` ${k} exception`, source: l.exception.source });
+  }
+  for (const s of ["withholding", "ltcg", "irmaa", "fpl"] as const) {
+    const sec = d[s];
+    if (!sec) continue;
+    out.push({ at: ` ${s}`, source: sec.source });
+    if (sec.exception)
+      out.push({ at: ` ${s} exception`, source: sec.exception.source });
+  }
+  return out;
+}
 
 /** Limit keys this Ledgr doesn't know, by year. */
 export function unknownTaxDataKeys(file: TaxDataFile): string[] {
@@ -56,7 +84,16 @@ export function withKnownKeysOnly(file: TaxDataFile): TaxDataFile {
  *  uses. */
 export function validateTaxDataFile(
   file: TaxDataFile,
-  { unknownKeys = "reject" }: { unknownKeys?: "reject" | "ignore" } = {},
+  {
+    unknownKeys = "reject",
+    citations = "strict",
+  }: {
+    unknownKeys?: "reject" | "ignore";
+    /** "strict" (CI, publish, tax-data:check): every citation links to its
+     *  document. An install checking a community update passes "lenient" —
+     *  a citation typo must not refuse a correct figure. */
+    citations?: "strict" | "lenient";
+  } = {},
 ): string[] {
   const problems: string[] = [];
   const add = (p: string) => problems.push(p);
@@ -86,6 +123,20 @@ export function validateTaxDataFile(
   for (const y of years) {
     const d = file.years[y]!;
     if (!d.source?.trim()) add(`${y}: no source`);
+    // Every citation links to its document: the year's `sources` map.
+    if (citations === "strict") {
+      const links = d.sources ?? {};
+      if (!d.sources) add(`${y}: no sources map (citation → link)`);
+      const cited = new Set<string>();
+      for (const { at, source } of yearSources(d))
+        for (const c of citationsOf(source)) {
+          cited.add(c);
+          if (!/^https:\/\/\S+$/.test(links[c] ?? ""))
+            add(`${y}${at}: "${c}" has no https link in sources`);
+        }
+      for (const c of Object.keys(links))
+        if (!cited.has(c)) add(`${y} sources: "${c}" isn't cited`);
+    }
     for (const [k, l] of Object.entries(d.limits)) {
       if (!l.source?.trim()) add(`${y} ${k}: no source`);
       if (typeof l.value !== "number" || !Number.isFinite(l.value))
@@ -115,6 +166,8 @@ export function validateTaxDataFile(
         add(`${y} irmaa ${st}: brackets out of shape`);
     if (d.fpl && !fplByHouseholdAmountsSchema.safeParse(d.fpl.amounts).success)
       add(`${y} fpl: needs sizes 1–8`);
+    if (!Number.isInteger(d.revision) || d.revision < 1)
+      add(`${y}: revision must be a whole number from 1`);
     for (const [st, t] of Object.entries(d.withholding?.tables ?? {}))
       for (const kind of ["standard", "checkbox"] as const) {
         const rows = (t[kind] ?? []) as {
@@ -122,6 +175,12 @@ export function validateTaxDataFile(
           baseWithholding: number;
           rate: number;
         }[];
+        // A blank (a new year not filled in yet) never passes.
+        rows.forEach((r, i) => {
+          for (const f of ["threshold", "baseWithholding", "rate"] as const)
+            if (typeof r[f] !== "number" || !Number.isFinite(r[f]))
+              add(`${y} withholding ${st} ${kind} row ${i}: ${f} is blank`);
+        });
         rows.slice(1).forEach((r, i) => {
           const p = rows[i]!;
           const expected =

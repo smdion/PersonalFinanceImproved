@@ -54,6 +54,18 @@ import { toNumber } from "@/server/helpers/transforms";
 
 See `ls src/lib/pure/` for the existing modules — check there before adding one.
 
+## Sending tax figures
+
+The yearly tax figures (IRS limits, withholding tables, capital-gains and IRMAA brackets, poverty lines) live in `tax-data/us-federal/`, one file a year, and every install picks them up. You don't need the app running to change them:
+
+```sh
+pnpm install
+pnpm tax-data:new-year 2027   # a new year: every figure blank, to fill in
+pnpm tax-data:check           # the same checks CI runs, in seconds
+```
+
+Cite the published document for every figure and link it in the year's `sources`; use only published figures, never estimates. Format, conventions and the list of keys: [`tax-data/README.md`](tax-data/README.md).
+
 ## Reporting Issues
 
 Open a GitHub issue with:

@@ -274,7 +274,7 @@ describe("engine input snapshot guard", () => {
     // annualSalary: "120000", no salary-change rows → currentSalary = 120000
     expect(bei.currentSalary).toBe(120000);
 
-    // 2026 IRS contribution limits (seed: tax-data/us-federal.json + vi.setSystemTime("2026-04-14"))
+    // 2026 IRS contribution limits (seed: tax-data/us-federal/ + vi.setSystemTime("2026-04-14"))
     // irsLimitCaps carries the year's whole limit table (the engine grows
     // and applies it per person, catch-up gated by each person's age) and
     // the people — fixture person id=1; birthYear matches bei.birthYear
