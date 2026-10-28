@@ -13,7 +13,7 @@
   ],
   "project": ["src/**/*.{ts,tsx}", "scripts/**/*.ts", "tests/**/*.{ts,tsx}"],
   "ignore": ["src/lib/db/sqlite/**", "src/lib/db/schema-sqlite.ts"],
-  "ignoreDependencies": ["tailwindcss", "postcss-load-config"],
+  "ignoreDependencies": ["tailwindcss", "postcss-load-config", "xlsx"],
   "rules": {
     "duplicates": "off"
   },
