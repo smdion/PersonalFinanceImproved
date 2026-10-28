@@ -140,12 +140,12 @@ describe("brokerage router", () => {
         .returning()
         .get().id;
       const retirementBrokerage = seedPerformanceAccount(db, {
-        name: "Retirement Brokerage",
+        accountLabel: "Retirement Brokerage",
         accountType: "brokerage",
         parentCategory: "Retirement",
       });
       const longTerm = seedPerformanceAccount(db, {
-        name: "Long Term Brokerage",
+        accountLabel: "Long Term Brokerage",
         accountType: "brokerage",
         parentCategory: "Portfolio",
       });

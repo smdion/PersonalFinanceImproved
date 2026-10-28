@@ -1460,7 +1460,7 @@ describe("projection router — computeProjection edge cases", () => {
 
       // Add a Roth contribution account
       const rothPerfAcctId = seedPerformanceAccount(db, {
-        name: "Roth 401k",
+        accountLabel: "Roth 401k",
         institution: "Vanguard",
         accountType: "401k",
         parentCategory: "Retirement",

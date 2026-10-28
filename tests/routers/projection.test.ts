@@ -553,7 +553,7 @@ describe("projection router — computeProjection", () => {
 
   it("echoes the saved unspent-RMD account (the Retirement settings picker reads it)", async () => {
     const brokerage = seedPerformanceAccount(db, {
-      name: "Echo brokerage",
+      accountLabel: "Echo brokerage",
       accountType: "brokerage",
       parentCategory: "Retirement",
     });
@@ -577,7 +577,7 @@ describe("projection router — computeProjection", () => {
 
   it("a saved unspent-RMD account that's no longer a Retirement brokerage falls back with a warning", async () => {
     const moved = seedPerformanceAccount(db, {
-      name: "Moved brokerage",
+      accountLabel: "Moved brokerage",
       accountType: "brokerage",
       parentCategory: "Portfolio",
     });
@@ -621,7 +621,7 @@ describe("projection router — computeProjection", () => {
       .where(eq(schema.contributionAccounts.id, retirement401k.id))
       .run();
     const portfolioPerf = seedPerformanceAccount(db, {
-      name: "Long-term brokerage",
+      accountLabel: "Long-term brokerage",
       accountType: "brokerage",
       parentCategory: "Portfolio",
     });

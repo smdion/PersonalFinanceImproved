@@ -403,9 +403,7 @@ function seedContribAccount(
       accountType: "401k",
       parentCategory: "Retirement",
       taxTreatment: "pre_tax",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
-      employerMatchType: "percent",
+      employerMatchType: "percent_of_contribution",
       employerMatchValue: "0.50",
       employerMaxMatchPct: "0.06",
       isActive: true,
@@ -628,7 +626,7 @@ describe("contributionProfiles coverage", () => {
         const jobId = seedJob(db, personId, { employerName: "Fidelity" });
         // Create a perf account that matches by type + person
         seedPerformanceAccount(db, {
-          name: "401k",
+          accountLabel: "401k",
           institution: "Fidelity",
           accountType: "401k",
           accountLabel: "Alex 401k",
@@ -665,7 +663,7 @@ describe("contributionProfiles coverage", () => {
         const personId = await seedPerson(db, "Alex");
         const jobId = seedJob(db, personId, { employerName: "TechCorp" });
         const perfId = seedPerformanceAccount(db, {
-          name: "Linked 401k",
+          accountLabel: "Linked 401k",
           institution: "Vanguard",
           accountType: "401k",
           accountLabel: "Vanguard 401k",
@@ -1050,8 +1048,6 @@ describe("contributionProfiles coverage", () => {
         db.insert(sqliteSchema.scenarios)
           .values({
             name: "My Plan",
-            overrides: {},
-            isBaseline: false,
             contributionProfileId: profileId,
           })
           .run();
@@ -1321,7 +1317,7 @@ describe("contributionProfiles coverage", () => {
         seedJob(db, personId);
         // Perf account has a DIFFERENT ownerPersonId but label contains the person name
         seedPerformanceAccount(db, {
-          name: "401k",
+          accountLabel: "401k",
           institution: "Fidelity",
           accountType: "401k",
           accountLabel: "Jordan Old 401k",
@@ -1394,8 +1390,6 @@ describe("contributionProfiles coverage", () => {
         seedJob(db, personId, { annualSalary: "100000" });
         seedContribAccount(db, {
           personId,
-          contributionMethod: "percent_of_salary",
-          contributionValue: "0.10",
           employerMatchType: "none",
         });
 

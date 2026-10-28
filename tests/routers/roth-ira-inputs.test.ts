@@ -30,19 +30,19 @@ describe("investments.getRothIraInputs", () => {
       .returning()
       .get().id;
     const brokerage = seedPerformanceAccount(db, {
-      name: "Taxable",
+      accountLabel: "Taxable",
       institution: "Example Bank",
       accountType: "brokerage",
       ownerPersonId: alice,
     });
     const ira = seedPerformanceAccount(db, {
-      name: "IRA",
+      accountLabel: "IRA",
       institution: "Example Bank",
       accountType: "ira",
       ownerPersonId: alice,
     });
     const unfed = seedPerformanceAccount(db, {
-      name: "Paper Brokerage",
+      accountLabel: "Paper Brokerage",
       institution: "Other Bank",
       accountType: "brokerage",
       ownerPersonId: alice,

@@ -27,9 +27,10 @@ import {
 function seedLinkableContributionAccount(
   db: Awaited<ReturnType<typeof createTestCaller>>["db"],
   personId: number,
-  overrides: Partial<
-    typeof sqliteSchema.contributionAccounts.$inferInsert
-  > = {},
+  overrides: Partial<typeof sqliteSchema.contributionAccounts.$inferInsert> & {
+    contributionMethod?: string;
+    contributionValue?: string;
+  } = {},
 ): number {
   // Accounts carry no value of their own — contributionMethod/Value are
   // stripped here and given to the account via a Contribution Profile's

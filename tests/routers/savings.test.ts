@@ -87,7 +87,6 @@ describe("savings.plannedTransactions", () => {
     goalId = seedSavingsGoal(db, {
       name: "Vacation Fund",
       targetAmount: "5000",
-      monthlyContribution: "200",
     });
   });
 
@@ -288,12 +287,10 @@ describe("savings.allocationOverrides", () => {
     goalId = seedSavingsGoal(db, {
       name: "House Fund",
       targetAmount: "50000",
-      monthlyContribution: "1000",
     });
     goalId2 = seedSavingsGoal(db, {
       name: "Car Fund",
       targetAmount: "20000",
-      monthlyContribution: "400",
     });
   });
 
@@ -498,7 +495,6 @@ describe("savings.linkGoalToApi / unlinkGoalFromApi", () => {
     goalId = seedSavingsGoal(db, {
       name: "Sinking Fund",
       targetAmount: "3000",
-      monthlyContribution: "150",
     });
   });
 
@@ -551,7 +547,6 @@ describe("savings.linkGoalToApi / unlinkGoalFromApi", () => {
       const dualGoalId = seedSavingsGoal(db, {
         name: "Dual-Service Goal",
         targetAmount: "5000",
-        monthlyContribution: "200",
       });
       await caller.savings.linkGoalToApi({
         goalId: dualGoalId,
@@ -606,7 +601,6 @@ describe("savings.linkGoalToApi / unlinkGoalFromApi", () => {
       const freshGoalId = seedSavingsGoal(db, {
         name: "Never Linked Goal",
         targetAmount: "1000",
-        monthlyContribution: "50",
       });
       const result = await caller.savings.unlinkGoalFromApi({
         goalId: freshGoalId,
@@ -794,7 +788,6 @@ describe("savings.convertGoalToBudgetItem", () => {
     const goalId = seedSavingsGoal(db, {
       name: "Convertible Goal",
       targetAmount: "8000",
-      monthlyContribution: "400",
     });
     await caller.savings.linkGoalToApi({
       goalId,
@@ -832,7 +825,6 @@ describe("savings.convertGoalToBudgetItem", () => {
     const goalId = seedSavingsGoal(db, {
       name: "Essential Goal",
       targetAmount: "2000",
-      monthlyContribution: "100",
     });
     const result = await caller.savings.convertGoalToBudgetItem({
       goalId,
@@ -861,7 +853,6 @@ describe("savings.convertGoalToBudgetItem", () => {
       const freshGoalId = seedSavingsGoal(freshCtx.db, {
         name: "Homeless Goal",
         targetAmount: "1000",
-        monthlyContribution: "50",
       });
       await expect(
         freshCtx.caller.savings.convertGoalToBudgetItem({
@@ -881,7 +872,6 @@ describe("savings.convertGoalToBudgetItem", () => {
     const goalId = seedSavingsGoal(db, {
       name: "One-Time Goal",
       targetAmount: "500",
-      monthlyContribution: "50",
     });
     await caller.savings.convertGoalToBudgetItem({
       goalId,
@@ -918,7 +908,6 @@ describe("savings.linkReimbursementCategory", () => {
     efundGoalId = seedSavingsGoal(db, {
       name: "Emergency Fund",
       targetAmount: "15000",
-      monthlyContribution: "500",
       isEmergencyFund: true,
     });
   });
@@ -956,7 +945,6 @@ describe("savings.linkReimbursementCategory", () => {
     const regularGoalId = seedSavingsGoal(db, {
       name: "Regular Goal",
       targetAmount: "5000",
-      monthlyContribution: "200",
       isEmergencyFund: false,
     });
     const result = await caller.savings.linkReimbursementCategory({
@@ -1027,12 +1015,10 @@ describe("savings.transfers", () => {
     fromGoalId = seedSavingsGoal(db, {
       name: "Source Goal",
       targetAmount: "20000",
-      monthlyContribution: "800",
     });
     toGoalId = seedSavingsGoal(db, {
       name: "Destination Goal",
       targetAmount: "10000",
-      monthlyContribution: "300",
     });
   });
 
@@ -1268,7 +1254,6 @@ describe("savings.computeSummary", () => {
     const goalId = seedSavingsGoal(db, {
       name: "Amount Type Check Goal",
       targetAmount: "2000",
-      monthlyContribution: "100",
     });
     await caller.savings.plannedTransactions.create({
       goalId,
@@ -1287,7 +1272,6 @@ describe("savings.computeSummary", () => {
     const goalId = seedSavingsGoal(db, {
       name: "Override Amount Type Goal",
       targetAmount: "1000",
-      monthlyContribution: "50",
     });
     await caller.savings.allocationOverrides.upsert({
       goalId,
@@ -1315,7 +1299,6 @@ describe("savings.computeSummary", () => {
       seedSavingsGoal(freshCtx.db, {
         name: "Emergency Fund",
         targetAmount: "12000",
-        monthlyContribution: "600",
         isEmergencyFund: true,
         targetMonths: 3,
       });
@@ -1342,7 +1325,6 @@ describe("savings.computeSummary", () => {
       const goalId = seedSavingsGoal(freshCtx.db, {
         name: "Goal With TX",
         targetAmount: "5000",
-        monthlyContribution: "250",
       });
       await freshCtx.caller.savings.plannedTransactions.create({
         goalId,
@@ -1376,7 +1358,6 @@ describe("savings.computeSummary", () => {
       const goalId = seedSavingsGoal(freshCtx.db, {
         name: "Goal With Override",
         targetAmount: "3000",
-        monthlyContribution: "150",
       });
       await freshCtx.caller.savings.allocationOverrides.upsert({
         goalId,

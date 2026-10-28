@@ -106,7 +106,7 @@ describe("retirement.retirementSettings", () => {
     it("takes an active Retirement brokerage and refuses anything else", async () => {
       const brokerage = (parentCategory: string) =>
         seedPerformanceAccount(db, {
-          name: `${parentCategory} brokerage`,
+          accountLabel: `${parentCategory} brokerage`,
           accountType: "brokerage",
           parentCategory,
         });
@@ -161,7 +161,7 @@ describe("retirement.retirementSettings", () => {
 
     it("an unrelated edit keeps it; deactivating or moving it to Portfolio clears it", async () => {
       const id = seedPerformanceAccount(db, {
-        name: "Changing brokerage",
+        accountLabel: "Changing brokerage",
         accountType: "brokerage",
         parentCategory: "Retirement",
       });

@@ -99,6 +99,9 @@ describe("contribution router", () => {
       accountType: string;
       /** Also taken from bonus checks (this profile's election). */
       fromBonus?: boolean;
+      /** Written to the default profile's active fields, not the account. */
+      contributionValue?: string | number;
+      contributionMethod?: string;
     },
   ): number {
     const { contributionValue, contributionMethod, fromBonus, ...rest } =
@@ -546,7 +549,7 @@ describe("contribution router", () => {
       personId = await seedPerson(db, "Brokerage-Person", "1991-09-01");
       seedJob(db, personId, { annualSalary: "130000" });
       perfAcctId = seedPerformanceAccount(db, {
-        name: "Brokerage",
+        accountLabel: "Brokerage",
         institution: "Vanguard",
         accountType: "brokerage",
         parentCategory: "Portfolio",
@@ -867,7 +870,7 @@ describe("contribution router", () => {
       personId = await seedPerson(db, "PerfAcct-Label", "1991-03-15");
       seedJob(db, personId, { annualSalary: "100000" });
       const perfId = seedPerformanceAccount(db, {
-        name: "Growth",
+        accountLabel: "Growth",
         institution: "Fidelity",
         accountType: "brokerage",
         parentCategory: "Portfolio",

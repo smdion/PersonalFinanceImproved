@@ -1264,8 +1264,6 @@ describe("settings.contributionAccounts — no performanceAccountId", () => {
       personId,
       accountType: "brokerage",
       taxTreatment: "after_tax",
-      contributionMethod: "fixed_monthly",
-      contributionValue: "500",
       employerMatchType: "none",
       parentCategory: "Portfolio",
     });
@@ -1301,8 +1299,6 @@ describe("settings.contributionAccounts — update priorYearContrib validation",
       personId,
       accountType: "401k",
       taxTreatment: "pre_tax",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
       employerMatchType: "none",
     });
     acctId401k = acct401k!.id;
@@ -1312,8 +1308,6 @@ describe("settings.contributionAccounts — update priorYearContrib validation",
       personId,
       accountType: "ira",
       taxTreatment: "tax_free",
-      contributionMethod: "fixed_annual",
-      contributionValue: "7000",
       employerMatchType: "none",
     });
     acctIdIra = acctIra!.id;
@@ -1328,8 +1322,6 @@ describe("settings.contributionAccounts — update priorYearContrib validation",
         personId,
         accountType: "401k",
         taxTreatment: "pre_tax",
-        contributionMethod: "percent_of_salary",
-        contributionValue: "0.10",
         employerMatchType: "none",
         priorYearContribAmount: "5000",
       }),
@@ -1342,8 +1334,6 @@ describe("settings.contributionAccounts — update priorYearContrib validation",
       personId,
       accountType: "ira",
       taxTreatment: "tax_free",
-      contributionMethod: "fixed_annual",
-      contributionValue: "7000",
       employerMatchType: "none",
       priorYearContribAmount: "3000",
     });
@@ -1380,8 +1370,6 @@ describe("settings.contributionAccounts — update with performanceAccountId", (
       personId,
       accountType: "brokerage",
       taxTreatment: "after_tax",
-      contributionMethod: "fixed_monthly",
-      contributionValue: "500",
       employerMatchType: "none",
       parentCategory: "Retirement", // intentionally wrong
     });
@@ -1392,8 +1380,6 @@ describe("settings.contributionAccounts — update with performanceAccountId", (
       personId,
       accountType: "brokerage",
       taxTreatment: "after_tax",
-      contributionMethod: "fixed_monthly",
-      contributionValue: "500",
       employerMatchType: "none",
       performanceAccountId: perfAcctId,
     });
@@ -1506,8 +1492,6 @@ describe("settings.contributionAccounts.setPriorYearAmount", () => {
       personId,
       accountType: "ira",
       taxTreatment: "pre_tax",
-      contributionMethod: "fixed_annual",
-      contributionValue: "7000",
       employerMatchType: "none",
     });
 
@@ -1527,8 +1511,6 @@ describe("settings.contributionAccounts.setPriorYearAmount", () => {
       personId,
       accountType: "hsa",
       taxTreatment: "hsa",
-      contributionMethod: "fixed_annual",
-      contributionValue: "4150",
       employerMatchType: "none",
     });
 
@@ -1546,8 +1528,6 @@ describe("settings.contributionAccounts.setPriorYearAmount", () => {
       personId,
       accountType: "401k",
       taxTreatment: "pre_tax",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
       employerMatchType: "none",
     });
 

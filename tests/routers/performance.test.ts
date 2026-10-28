@@ -185,7 +185,7 @@ describe("performance router", () => {
       perfAccountId = seedPerformanceAccount(db, {
         institution: "Schwab",
         accountType: "401k",
-        name: "Main 401k",
+        accountLabel: "Main 401k",
         parentCategory: "Retirement",
         ownershipType: "individual",
       });
@@ -228,7 +228,7 @@ describe("performance router", () => {
       });
 
       expect(row!.institution).toBe("Schwab");
-      expect(row!.accountLabel).toContain("Schwab");
+      expect(row!.accountLabel).toBe("Main 401k");
       expect(row!.parentCategory).toBe("Retirement");
     });
 
@@ -604,7 +604,7 @@ describe("performance router", () => {
       perfAcct2Id = seedPerformanceAccount(db, {
         institution: "Fidelity",
         accountType: "hsa",
-        name: "HSA Account",
+        accountLabel: "HSA Account",
         parentCategory: "Retirement",
         ownershipType: "individual",
       });

@@ -62,12 +62,12 @@ async function seedFullData(
     .run();
 
   const perfAcctId = seedPerformanceAccount(db, {
-    name: "401k",
+    accountLabel: "401k",
     institution: "Fidelity",
     accountType: "401k",
   });
   const perfAcctId2 = seedPerformanceAccount(db, {
-    name: "Brokerage",
+    accountLabel: "Brokerage",
     institution: "Schwab",
     accountType: "brokerage",
     parentCategory: "Portfolio",

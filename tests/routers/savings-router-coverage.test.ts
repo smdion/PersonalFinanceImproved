@@ -158,7 +158,6 @@ describe("savings.computeSummary", () => {
       seedSavingsGoal(freshCtx.db, {
         name: "Emergency Fund",
         targetAmount: "20000",
-        monthlyContribution: "500",
         isEmergencyFund: true,
         targetMonths: 6,
         isActive: true,
@@ -184,7 +183,6 @@ describe("savings.computeSummary", () => {
       const _goalId = seedSavingsGoal(freshCtx.db, {
         name: "API Goal",
         targetAmount: "5000",
-        monthlyContribution: "200",
         isActive: true,
         priority: 1,
       });
@@ -269,7 +267,6 @@ describe("savings.listApiBalances", () => {
       const linkedGoalId = seedSavingsGoal(ctx.db, {
         name: "Linked Goal",
         targetAmount: "5000",
-        monthlyContribution: "200",
       });
       linkGoal(ctx.db, linkedGoalId, "ynab", "cat-abc", "Test Category");
 
@@ -910,7 +907,6 @@ describe("savings.listEfundReimbursements", () => {
         name: "E-Fund",
         isEmergencyFund: true,
         targetAmount: "15000",
-        monthlyContribution: "500",
         // no reimbursementApiCategoryId
       });
 
@@ -931,7 +927,6 @@ describe("savings.listEfundReimbursements", () => {
         name: "E-Fund",
         isEmergencyFund: true,
         targetAmount: "15000",
-        monthlyContribution: "500",
       });
       linkGoal(
         ctx.db,
@@ -987,7 +982,6 @@ describe("savings.listEfundReimbursements", () => {
         name: "E-Fund",
         isEmergencyFund: true,
         targetAmount: "15000",
-        monthlyContribution: "500",
       });
       linkGoal(
         ctx.db,
@@ -1036,7 +1030,6 @@ describe("savings.listEfundReimbursements", () => {
         name: "E-Fund",
         isEmergencyFund: true,
         targetAmount: "15000",
-        monthlyContribution: "500",
       });
       linkGoal(
         ctx.db,
@@ -1094,12 +1087,10 @@ describe("savings.transfers", () => {
     goalId1 = seedSavingsGoal(db, {
       name: "Fund A",
       targetAmount: "10000",
-      monthlyContribution: "500",
     });
     goalId2 = seedSavingsGoal(db, {
       name: "Fund B",
       targetAmount: "5000",
-      monthlyContribution: "200",
     });
   });
 
@@ -1179,12 +1170,10 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
     goalId1 = seedSavingsGoal(db, {
       name: "Settle Fund A",
       targetAmount: "10000",
-      monthlyContribution: "500",
     });
     goalId2 = seedSavingsGoal(db, {
       name: "Settle Fund B",
       targetAmount: "5000",
-      monthlyContribution: "200",
     });
   });
 
@@ -1489,12 +1478,10 @@ describe("savings.allocationOverrides advanced", () => {
     goalId = seedSavingsGoal(db, {
       name: "Override Goal A",
       targetAmount: "10000",
-      monthlyContribution: "500",
     });
     goalId2 = seedSavingsGoal(db, {
       name: "Override Goal B",
       targetAmount: "5000",
-      monthlyContribution: "200",
     });
   });
 

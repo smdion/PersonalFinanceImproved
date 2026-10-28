@@ -27,12 +27,12 @@ describe("milestones.computeInputs", () => {
     const personId = await seedPerson(db, "Test Person", "1990-01-01");
     seedJob(db, personId);
     const retirement = seedPerformanceAccount(db, {
-      name: "401k",
+      accountLabel: "401k",
       institution: "Fidelity",
       accountType: "401k",
     });
     const brokerage = seedPerformanceAccount(db, {
-      name: "Brokerage",
+      accountLabel: "Brokerage",
       institution: "Schwab",
       accountType: "brokerage",
       parentCategory: "Portfolio",
