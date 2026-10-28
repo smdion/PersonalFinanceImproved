@@ -609,14 +609,17 @@ function ContributionsCardImpl() {
         )}
       </div>
       <div className="border-subtle mt-3 space-y-2 border-t pt-3">
-        <div className="grid grid-cols-3 gap-3">
+        {/* Labels share one row and figures the next (subgrid), so a label
+            that wraps — "Total (retirement only)" — doesn't push its
+            figures below the others. */}
+        <div className="grid grid-cols-3 gap-x-3 gap-y-0.5">
           {footer.map((f) => {
             const [main, alt] = excludeMatch
               ? [f.without, f.with]
               : [f.with, f.without];
             return (
-              <div key={f.key}>
-                <p className="text-caption text-faint mb-0.5 tracking-wide uppercase">
+              <div key={f.key} className="row-span-2 grid grid-rows-subgrid">
+                <p className="text-caption text-faint self-end tracking-wide uppercase">
                   {f.label}
                 </p>
                 <div className="text-xs">

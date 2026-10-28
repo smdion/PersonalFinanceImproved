@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **"Withheld so far" includes a job that ended this year** — on the Taxes page and the dashboard's year-to-date taxes, even when no one has a job now.
 - **Simple tax mode is tax-free throughout.** With a filing status set, the one pot's gains were still taxed on the capital-gains brackets (plus NIIT), and the Medicare IRMAA surcharge and ACA check still ran.
 - **Live Balance's breakdown lines up** — a long account name wraps in its own column, and the balances and changes stay aligned down the card.
+- **The Contributions card's totals line up** — a label that wraps ("Total (retirement only)") no longer pushes its figures below the others.
 
 ## [0.9.2] - 2026-10-26
 
