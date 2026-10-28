@@ -1,8 +1,7 @@
 /**
  * Utilities cost feed: a month's utility cost from the synced budget's
  * transactions (YNAB or Actual — the normalized BudgetTransaction shape, so
- * nothing here is service-specific). Plan: .scratch/docs/plans/
- * UTILITIES-COST-FEED-PLAN.md §5.
+ * nothing here is service-specific).
  *
  * - A transaction (or a part of a split) counts toward a service when its
  *   category is the one that service is mapped to. A month's cost is its

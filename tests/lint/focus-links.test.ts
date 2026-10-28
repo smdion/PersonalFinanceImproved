@@ -33,7 +33,7 @@ const SENDERS = [
 /** A link written as data (`href: "/…"`), or a JSX link carrying a query or
  *  hash. A card header's plain `href="/page"` is the card's general link. */
 const ROUTE_LITERAL = /href: "\/|href="\/[^"]*[?#]/;
-/** Not yet moved to topics — may only shrink (plan: PLAN-deep-links). */
+/** Not yet moved to topics — may only shrink (docs/RULES.md § Links into Pages). */
 const NOT_YET = new Set<string>([]);
 
 function senderFiles(): string[] {

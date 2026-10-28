@@ -5,6 +5,9 @@
  * one per key during a rotation; the release asset packs the file's exact
  * text with them. A file verifies when any
  * bundled key's signature checks out — checked before the file is parsed.
+ *
+ * No `server-only` guard: scripts/tax-data-publish.ts signs with it outside
+ * Next, where that package throws. Keep it out of client components.
  */
 import { createPrivateKey, createPublicKey, sign, verify } from "crypto";
 import { TAX_DATA_PUBLIC_KEYS } from "@/lib/config/tax-data-sync";

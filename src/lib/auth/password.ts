@@ -7,6 +7,7 @@
  * No external dependencies — uses only `node:crypto`.
  */
 
+import "server-only";
 import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 
 const SALT_LENGTH = 32;

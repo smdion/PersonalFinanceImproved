@@ -26,6 +26,7 @@
  *   meaningful reduction in blast radius for a self-hosted homelab.
  */
 
+import "server-only";
 import {
   randomBytes,
   createCipheriv,
