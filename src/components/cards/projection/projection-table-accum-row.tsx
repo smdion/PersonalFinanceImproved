@@ -2,6 +2,7 @@
 import React, { useRef } from "react";
 import { useScrollToFocus } from "@/components/ui/focus-target";
 import { Tooltip } from "@/components/ui/tooltip";
+import { BalanceCell } from "./balance-cell";
 import {
   accountTextColor,
   taxTypeTextColor,
@@ -1086,13 +1087,12 @@ export function AccumulationRow({
                   })
                 : undefined;
             return (
-              <Tooltip key={bucket} content={tooltipContent} side="top">
-                <td
-                  className={`px-2 py-1.5 text-right ${taxTypeTextColor(bucket)}`}
-                >
-                  {formatCurrency(deflate(bal, yr.year))}
-                </td>
-              </Tooltip>
+              <BalanceCell
+                key={bucket}
+                amount={deflate(bal, yr.year)}
+                color={taxTypeTextColor(bucket)}
+                tooltip={tooltipContent}
+              />
             );
           })
       ) : (
@@ -1244,11 +1244,12 @@ export function AccumulationRow({
                     })()
                   : undefined;
               return (
-                <Tooltip key={col.key} content={tooltipContent} side="top">
-                  <td className={`px-2 py-1.5 text-right ${col.color}`}>
-                    {formatCurrency(deflate(bal, yr.year))}
-                  </td>
-                </Tooltip>
+                <BalanceCell
+                  key={col.key}
+                  amount={deflate(bal, yr.year)}
+                  color={col.color}
+                  tooltip={tooltipContent}
+                />
               );
             })}
         </>
