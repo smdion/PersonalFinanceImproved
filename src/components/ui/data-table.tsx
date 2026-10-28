@@ -8,7 +8,7 @@ import { confirm } from "./confirm-dialog";
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-export type SortDirection = "asc" | "desc";
+type SortDirection = "asc" | "desc";
 
 export type DataTableColumn<T> = {
   key: string;

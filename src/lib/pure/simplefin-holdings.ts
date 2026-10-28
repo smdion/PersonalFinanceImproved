@@ -16,7 +16,7 @@ export type HoldingInput = {
   costBasisPerShare: number | null;
 };
 
-export type SecurityIdentity = {
+type SecurityIdentity = {
   /** Identity key within this ingest: institution + description. */
   key: string;
   sourceSymbol: string | null;
@@ -71,7 +71,7 @@ export function hasInvestedHoldings(
   );
 }
 
-export type ObservationPlan =
+type ObservationPlan =
   | { status: "unknown"; reason: "no_holdings_reported" }
   | {
       status: "ok";

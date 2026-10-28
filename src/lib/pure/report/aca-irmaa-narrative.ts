@@ -21,7 +21,7 @@
 import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
 import { formatCurrency } from "@/lib/utils/format";
 
-export interface WatchlistItem {
+interface WatchlistItem {
   startYear: number;
   endYear: number;
   detail: string;

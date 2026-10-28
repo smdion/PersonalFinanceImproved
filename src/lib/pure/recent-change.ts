@@ -13,9 +13,9 @@
 import { addDays } from "@/lib/utils/date";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 
-export type DailyBalance = { day: string; balance: number };
+type DailyBalance = { day: string; balance: number };
 
-export type WindowChange = {
+type WindowChange = {
   days: number;
   /** null until every feed in the group reaches back this far. */
   change: number | null;

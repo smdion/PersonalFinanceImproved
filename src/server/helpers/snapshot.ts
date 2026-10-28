@@ -76,7 +76,7 @@ export function groupSnapshotAccounts<T extends { snapshotId: number }>(
 // Latest portfolio snapshot
 // ---------------------------------------------------------------------------
 
-export type SnapshotAccount = {
+type SnapshotAccount = {
   institution: string;
   taxType: string;
   accountType: AccountCategory;
@@ -90,7 +90,7 @@ export type SnapshotAccount = {
   accountLabel: string | null;
 };
 
-export type SnapshotResult = {
+type SnapshotResult = {
   snapshot: typeof schema.portfolioSnapshots.$inferSelect;
   accounts: SnapshotAccount[];
   total: number;
@@ -181,7 +181,7 @@ export async function getLatestSnapshot(
 // ---------------------------------------------------------------------------
 
 /** Per-category performance breakdown (contributions, gains, distributions). */
-export type CategoryPerformance = {
+type CategoryPerformance = {
   endingBalance: number;
   contributions: number;
   employerMatch: number;
@@ -194,13 +194,13 @@ export type CategoryPerformance = {
 };
 
 /** Tax-type distribution within a parent category. */
-export type TaxLocationBreakdown = {
+type TaxLocationBreakdown = {
   retirement: Record<string, number>; // taxType → amount
   portfolio: Record<string, number>; // taxType → amount
 };
 
 /** Unified year-end row returned by buildYearEndHistory. */
-export type YearEndRow = {
+type YearEndRow = {
   year: number;
   yearEndDate: string;
   isCurrent: boolean;
@@ -310,7 +310,7 @@ export type YearEndRow = {
  * column, session salaries), so a Plan-pinned or profile-scoped call only ever
  * reads a result built with exactly the same inputs.
  */
-export type YearEndHistoryTargeting = BudgetTargeting;
+type YearEndHistoryTargeting = BudgetTargeting;
 
 // Short-lived (5s) cache keyed by the targeting, so a page that asks for
 // the same targeted history from several procedures in one load (the

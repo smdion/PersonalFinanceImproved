@@ -34,7 +34,7 @@ export type FillRow = FlowRow & {
 };
 
 /** What the fill ledger kept for one year of one fill (see server/helpers/fill-ledger.ts). */
-export type FillLedger = {
+type FillLedger = {
   baselines: Readonly<Record<number, string>>;
   counted: Readonly<Record<string, string>>;
   estimatedThrough?: Readonly<Record<number, string>>;
@@ -133,7 +133,7 @@ export function snapshotNewMoney(a: {
 }
 
 /** A Performance row's stored figures (numbers). */
-export type StoredPerformanceRow = {
+type StoredPerformanceRow = {
   id: number;
   performanceAccountId: number;
   ownerPersonId: number | null;
@@ -239,7 +239,7 @@ export function suggestPerformanceRow(
 }
 
 /** A Roth-basis row's stored figures (numbers). */
-export type StoredBasisRow = {
+type StoredBasisRow = {
   id: number;
   performanceAccountId: number;
   ownerPersonId: number;

@@ -17,7 +17,7 @@ import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
 // instead of finding every inline copy. (An audit found the standard
 // deduction alone hand-copied 35x across 11 test files — this file was
 // one of them.) Source: tax-data/us-federal/ (2026, MFJ, ...).
-export const FIXTURE_STANDARD_DEDUCTION_MFJ_2026 = 32200;
+const FIXTURE_STANDARD_DEDUCTION_MFJ_2026 = 32200;
 export const FIXTURE_SS_WAGE_BASE_2026 = 184500;
 
 // ── 2026 MFJ Tax Brackets (W-4 2(c) CHECKED) ──
@@ -50,7 +50,7 @@ export const MFJ_2C_BRACKETS: TaxBracketInput = {
 // Source: tax-data/us-federal/ tax_brackets (2026, MFJ, false). This
 // fixture once dropped the 24% bracket entirely and duplicated 0.37 in its
 // place (jumped 230700@0.22 -> 422850@0.32) — fixed.
-export const MFJ_NO_CHECKBOX_BRACKETS: TaxBracketInput = {
+const MFJ_NO_CHECKBOX_BRACKETS: TaxBracketInput = {
   filingStatus: "MFJ",
   w4Checkbox: false,
   brackets: [
@@ -90,7 +90,7 @@ export const MFJ_TAXABLE_INCOME_BRACKETS: TaxBracketInput = {
 // Salary: $120,000, Biweekly, 2(c) checked
 // Deductions: STD $30 LTD $22 (both pre-tax + FICA-exempt)
 // Contributions: Roth 401k 14% (payroll-deducted), Roth IRA $312.50 (NOT payroll), Brokerage $75 (NOT payroll)
-export const PERSON_A_DEDUCTIONS: DeductionLine[] = [
+const PERSON_A_DEDUCTIONS: DeductionLine[] = [
   { name: "STD", amount: 30.0, taxTreatment: "pre_tax", ficaExempt: true },
   { name: "LTD", amount: 22.0, taxTreatment: "pre_tax", ficaExempt: true },
 ];
@@ -160,7 +160,7 @@ export const PERSON_A_PAYCHECK_INPUT: PaycheckInput = {
 // Deductions: Dental $8, Medical $140, Vision $5 (all pre-tax + FICA-exempt)
 // Contributions: Trad 401k 16% (payroll), Roth 401k 5% (payroll), HSA $321 (payroll), ESPP 10% (payroll)
 //               Roth IRA $312.50 (NOT payroll)
-export const PERSON_B_DEDUCTIONS: DeductionLine[] = [
+const PERSON_B_DEDUCTIONS: DeductionLine[] = [
   { name: "Dental", amount: 8.0, taxTreatment: "pre_tax", ficaExempt: true },
   { name: "Medical", amount: 140.0, taxTreatment: "pre_tax", ficaExempt: true },
   { name: "Vision", amount: 5.0, taxTreatment: "pre_tax", ficaExempt: true },

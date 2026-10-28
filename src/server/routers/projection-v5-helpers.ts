@@ -192,7 +192,7 @@ interface StressTestRunInput {
   avgRetirementAge: number;
 }
 
-export interface StressTestScenarioResult {
+interface StressTestScenarioResult {
   label: string;
   description: string;
   returnRate: number;

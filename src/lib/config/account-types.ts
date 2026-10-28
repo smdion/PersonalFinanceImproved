@@ -11,25 +11,9 @@
 // ---------------------------------------------------------------------------
 
 // Types
-export type {
-  BalanceStructure,
-  WithdrawalTaxType,
-  DisplayGroup,
-  IrsLimitKeys,
-  ColorSet,
-  AccountTypeConfig,
-  RothTraditionalBalance,
-  SingleBucketBalance,
-  BasisTrackingBalance,
-  AccountBalance,
-  AccountSegment,
-  AccountCategory,
-} from "./account-types.types";
+export type { AccountBalance, AccountCategory } from "./account-types.types";
 
-export {
-  ACCOUNT_CATEGORY_VALUES,
-  accountCategoryEnum,
-} from "./account-types.types";
+export { accountCategoryEnum } from "./account-types.types";
 
 // Balance helpers
 export {
@@ -45,7 +29,6 @@ export {
   setRoth,
   setBalance,
   setBasis,
-  zeroBalanceForStructure,
   cloneBalance,
   getSegmentBalance,
 } from "./account-balance";
@@ -562,11 +545,6 @@ export function isOverflowTarget(category: AccountCategory): boolean {
 export function getLimitGroup(category: string): string | null {
   const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
   return cfg?.irsLimitGroup ?? null;
-}
-
-/** Check if a category shares the 401k IRS elective deferral limit (e.g. 401k, 403b). */
-export function isInLimit401kGroup(category: string): boolean {
-  return getLimitGroup(category) === "401k";
 }
 
 /** The sub-type holding employer match money for a category, if it tracks one. */

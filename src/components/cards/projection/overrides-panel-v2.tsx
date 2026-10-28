@@ -15,7 +15,7 @@ import type { AccumOverride, DecumOverride } from "./types";
 import { catDisplayLabel } from "./utils";
 import { LumpSumForm } from "./lump-sum-form";
 
-export type OverridesPanelV2Props = {
+type OverridesPanelV2Props = {
   state: ProjectionState;
   accumulationExpenseOverride?: number;
 };

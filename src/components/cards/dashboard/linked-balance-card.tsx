@@ -42,7 +42,7 @@ export type SimplefinAccountListItem = {
   snapshotDate: string | null;
 };
 
-export type AccountTypeGroup = {
+type AccountTypeGroup = {
   key: string;
   label: string;
   balance: number;
@@ -134,7 +134,7 @@ export function summarizeByAccountType(
  * type — a different rollup of identical underlying accounts, so the two
  * views' totals always agree.
  */
-export function summarizeByInstitution(
+function summarizeByInstitution(
   accounts: SimplefinAccountListItem[],
 ): AccountTypeGroup[] {
   return summarizeAccounts(

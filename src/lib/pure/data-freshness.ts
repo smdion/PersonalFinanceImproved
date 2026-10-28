@@ -8,7 +8,7 @@ import {
 } from "@/lib/config/data-sources";
 
 /** What is known about one source right now. Absent = not in use (not connected / never entered). */
-export type DataSourceInput = {
+type DataSourceInput = {
   /** Date-only ("YYYY-MM-DD") or ISO timestamp of the last update. Null = connected but never run. */
   lastUpdated: string | null;
   /** Last run's error, for automatic sources. */
@@ -17,7 +17,7 @@ export type DataSourceInput = {
   warnings?: readonly string[];
 };
 
-export type DataSourceInputs = Partial<Record<DataSourceKey, DataSourceInput>>;
+type DataSourceInputs = Partial<Record<DataSourceKey, DataSourceInput>>;
 
 export type DataSourceStatus = {
   source: DataSourceDefinition;

@@ -482,7 +482,7 @@ export function rebaseLockedReturn(
 }
 
 /** Minimal account shape for next-year seeding decisions. */
-export type SeedableAccount = {
+type SeedableAccount = {
   isActive: boolean;
   performanceAccountId: number | null;
 };
@@ -519,7 +519,7 @@ export function buildAccountKeys(
 }
 
 /** The net worth values structure for a finalized year. */
-export type NetWorthValues = {
+type NetWorthValues = {
   yearEndDate: string;
   grossIncome: string;
   portfolioTotal: string;

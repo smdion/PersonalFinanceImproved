@@ -28,14 +28,14 @@ import {
 } from "@/components/charts/chart-defaults";
 import { CHART_COLORS } from "@/lib/utils/colors";
 
-export type GroupSummaryRow = {
+type GroupSummaryRow = {
   name: string;
   budgeted: number;
   actual: number;
   diff: number;
 };
 
-export type SpendingPieSlice = {
+type SpendingPieSlice = {
   name: string;
   value: number;
   color: string | undefined;

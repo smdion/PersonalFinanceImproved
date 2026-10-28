@@ -61,7 +61,7 @@ export interface FundManagementCallbacks {
   onGoalUpdateMulti: (goalId: number, fields: Record<string, string>) => void;
 }
 
-export interface FundManagementSectionProps {
+interface FundManagementSectionProps {
   /** The real active budget profile — funding (monthlyContribution/
    *  allocationPercent) is per-profile with no shared default, and every
    *  number on this page reflects the active profile (see savings/page.tsx's

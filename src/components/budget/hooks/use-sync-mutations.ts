@@ -48,5 +48,3 @@ export function useSyncMutations() {
 
   return { syncFromApi, syncToApi };
 }
-
-export type SyncMutations = ReturnType<typeof useSyncMutations>;

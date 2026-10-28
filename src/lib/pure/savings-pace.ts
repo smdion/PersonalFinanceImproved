@@ -35,7 +35,7 @@ export type PaceStatus =
   | "estimated"
   | "no_plan";
 
-export type PacePlan = {
+type PacePlan = {
   /** The year's plan at today's setup, employee + employer. */
   yearly: number;
   /** Of it, what's still to come after today. */
@@ -126,5 +126,3 @@ export function savingsPace(accounts: readonly PaceAccountInput[]) {
     },
   };
 }
-
-export type SavingsPace = ReturnType<typeof savingsPace>;

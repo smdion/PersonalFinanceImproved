@@ -12,7 +12,7 @@ import { recogniseAccountKind } from "@/lib/config/simplefin-account-kinds";
 import type { AccountCategory } from "@/lib/config/account-types.types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 
-export type UnlinkedSimplefinAccount = {
+type UnlinkedSimplefinAccount = {
   id: number;
   orgName: string;
   accountName: string;
@@ -31,7 +31,7 @@ export type SubAccountCandidate = {
   amount: number;
 };
 
-export type LinkSuggestion = {
+type LinkSuggestion = {
   simplefinAccountId: number;
   candidate: SubAccountCandidate;
 };

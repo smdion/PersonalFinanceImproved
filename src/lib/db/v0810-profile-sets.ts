@@ -11,7 +11,7 @@ type V0810Row = Record<string, unknown>;
  *  (snake_case columns, as both a backup and `SELECT *` give them). */
 export type V0810Tables = Record<string, V0810Row[] | undefined>;
 
-export type V0810Result = {
+type V0810Result = {
   /** Salary Profiles made from older Plans' salaries (ids already set). */
   newSalaryProfiles: V0810Row[];
   /** Ids of rows changed in place, per table. */

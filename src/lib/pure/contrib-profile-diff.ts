@@ -11,7 +11,7 @@
 
 import { takesFromBonusCheck } from "@/lib/calculators/paycheck";
 
-export type ContribFieldSet = {
+type ContribFieldSet = {
   contributionValue?: string | number | null;
   contributionMethod?: string | null;
   employerMatchType?: string | null;

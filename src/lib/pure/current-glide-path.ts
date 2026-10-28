@@ -37,8 +37,6 @@ export const currentGlidePathSchema = z
     { message: "Each age's mix must add up to 100%" },
   );
 
-export type CurrentGlidePath = z.infer<typeof currentGlidePathSchema>;
-
 /** Stored setting → glide-path entries (oldest age first), or null when
  *  unset or unreadable (then the retirement glide path is the target). */
 export function parseCurrentGlidePath(

@@ -334,7 +334,7 @@ export type ContribRowPatch = Partial<
 >;
 
 /** What a contribution save changes, before and after. */
-export type ContribSaveCheck = {
+type ContribSaveCheck = {
   /** The Contribution Profile the fields belong to; null = an account edit,
    *  judged under the active profile. */
   profileId: number | null;

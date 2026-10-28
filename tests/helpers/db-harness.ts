@@ -92,7 +92,7 @@ export async function createTestDb(): Promise<TestDbContext> {
  * a later schema snapshot, causing 0001 to re-add tables/columns 0000 already
  * created. Mirrors the savepoint logic in db-migrate.ts.
  */
-export function applyMigrationsIdempotent(
+function applyMigrationsIdempotent(
   sqlite: InstanceType<typeof Database>,
   migrationsFolder = "./drizzle-sqlite",
 ): void {

@@ -82,9 +82,6 @@ export function initialCrossYearState(): SpendingCrossYearState {
 // Per-strategy typed params — one interface per strategy that has params
 // ---------------------------------------------------------------------------
 
-/** Fixed Real: no configurable params. */
-export type FixedParams = Record<string, never>;
-
 /** Forgo Inflation After Loss: no configurable params. */
 export type ForgoInflationParams = Record<string, never>;
 
@@ -126,21 +123,6 @@ export interface VanguardDynamicParams {
   ceilingPercent: number;
   floorPercent: number;
 }
-
-/** Union of all strategy param types — maps strategy key to its typed params. */
-export interface StrategyParamsMap {
-  fixed: FixedParams;
-  forgo_inflation_after_loss: ForgoInflationParams;
-  rmd_spending: RmdSpendingParams;
-  guyton_klinger: GuytonKlingerStrategyParams;
-  spending_decline: SpendingDeclineParams;
-  constant_percentage: ConstantPercentageParams;
-  endowment: EndowmentParams;
-  vanguard_dynamic: VanguardDynamicParams;
-}
-
-/** Params for any strategy — used at API boundaries where strategy type is dynamic. */
-export type AnyStrategyParams = StrategyParamsMap[WithdrawalStrategyType];
 
 // ---------------------------------------------------------------------------
 // Dispatcher

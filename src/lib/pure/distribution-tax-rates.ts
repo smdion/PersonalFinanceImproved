@@ -13,7 +13,7 @@ import type { resolveTaxParams } from "@/lib/config/tax-params";
 type Decimal = string | null | undefined;
 type ResolvedTax = ReturnType<typeof resolveTaxParams>;
 
-export type DistributionTaxRateInput = {
+type DistributionTaxRateInput = {
   settings: {
     distributionTaxRateTraditional: Decimal;
     distributionTaxRateBrokerage: Decimal;

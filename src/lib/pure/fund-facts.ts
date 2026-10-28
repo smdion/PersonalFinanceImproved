@@ -271,7 +271,7 @@ export function fundsInBucket<H extends ValuedHolding & { securityId: number }>(
 }
 
 /** The horizons the compounded fund cost is shown for (years). */
-export const FEE_PROJECTION_YEARS = [10, 20, 30] as const;
+const FEE_PROJECTION_YEARS = [10, 20, 30] as const;
 
 /**
  * What a fund cost compounds to: today's balance grown at the expected

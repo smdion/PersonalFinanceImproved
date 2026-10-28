@@ -33,7 +33,7 @@ import type { IndKeyFn } from "./individual-account-tracking";
 export type BrokerageBasis = Map<string, number>;
 
 /** Accounts whose balance structure tracks cost basis (brokerage). */
-export function basisTrackedAccounts(
+function basisTrackedAccounts(
   indAccts: readonly IndividualAccountInput[],
 ): IndividualAccountInput[] {
   return indAccts.filter(

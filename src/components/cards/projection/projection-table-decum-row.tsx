@@ -324,7 +324,7 @@ function ownerAccountLabel(ia: { name: string; ownerName?: string }): string {
   return `${ia.ownerName} — ${ia.name}`;
 }
 
-export type DecumulationRowProps = {
+type DecumulationRowProps = {
   /** A link landed on this year — scrolled to and ringed. */
   focused?: boolean;
   yr: EngineDecumulationYear;

@@ -40,5 +40,3 @@ export function useProfileMutations() {
     duplicateProfile,
   };
 }
-
-export type ProfileMutations = ReturnType<typeof useProfileMutations>;

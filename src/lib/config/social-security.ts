@@ -13,7 +13,7 @@
 // so this is a static constant module, not a versioned DB table.
 
 /** Full Retirement Age, in whole years + months, by birth year. */
-export type FullRetirementAge = { years: number; months: number };
+type FullRetirementAge = { years: number; months: number };
 
 /**
  * FRA by birth year. 65y0m for 1937 and earlier, sliding in 2-month

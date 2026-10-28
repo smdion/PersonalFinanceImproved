@@ -38,7 +38,7 @@ const stop = (e: React.SyntheticEvent) => {
 /** The household's chosen income-multiple table and today's figures for it
  *  (the Milestones engine's current year), plus every account's projection
  *  for Money Guy's liquid-investments measure. */
-export type ReadinessCheckpoint = {
+type ReadinessCheckpoint = {
   source: CheckpointSource;
   now: MilestoneYear | null;
   allAccountsByYear: { age: number; allAccountsBalance: number }[];

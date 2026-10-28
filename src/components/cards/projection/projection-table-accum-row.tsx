@@ -56,7 +56,7 @@ import {
   type RenderMcCellOptions,
 } from "./projection-table-mc-cell";
 
-export type AccumulationRowProps = {
+type AccumulationRowProps = {
   /** A link landed on this year — scrolled to and ringed. */
   focused?: boolean;
   yr: EngineAccumulationYear;

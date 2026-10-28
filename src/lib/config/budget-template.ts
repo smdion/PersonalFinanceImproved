@@ -2,7 +2,7 @@
 // Categories and subcategories mirror common budgeting frameworks (Dave Ramsey, YNAB).
 // All amounts default to 0; users fill in their own numbers after creation.
 
-export type BudgetTemplateItem = {
+type BudgetTemplateItem = {
   category: string;
   subcategory: string;
   isEssential: boolean;

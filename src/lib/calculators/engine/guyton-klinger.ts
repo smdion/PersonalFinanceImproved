@@ -53,7 +53,7 @@ export interface GuytonKlingerInput {
   priorYearReturn: number | null;
 }
 
-export interface GuytonKlingerResult {
+interface GuytonKlingerResult {
   /** Adjusted spending for this year. */
   projectedExpenses: number;
   /** Which guardrail triggered, if any. */

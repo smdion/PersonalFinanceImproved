@@ -25,7 +25,7 @@ import type { IndividualAccountYearBalance } from "@/lib/calculators/types/share
 import { roundToCents, sumBy } from "@/lib/utils/math";
 
 /** Where penalty-free money at the start of the bridge sits. */
-export type BridgeSourceKind =
+type BridgeSourceKind =
   "brokerage" | "roth" | "workplacePlan" | "traditionalIra" | "other";
 
 export type BridgeYear = {

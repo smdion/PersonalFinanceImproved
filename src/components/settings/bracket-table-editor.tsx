@@ -39,7 +39,7 @@ export type BracketRow<TEntry> = {
   origin?: string;
 };
 
-export type BracketColumn<TEntry> = {
+type BracketColumn<TEntry> = {
   header: string;
   align?: "left" | "right";
   /** Render one cell. `onSave` merges a partial entry into this bracket row

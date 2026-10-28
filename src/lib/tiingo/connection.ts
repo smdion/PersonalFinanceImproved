@@ -10,9 +10,9 @@ import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
 
 type Db = typeof import("@/lib/db").db;
 
-export const TIINGO_SERVICE = "tiingo";
+const TIINGO_SERVICE = "tiingo";
 
-export type TiingoConfig = { apiKey: string };
+type TiingoConfig = { apiKey: string };
 
 export async function getTiingoConnection(db: Db) {
   const rows = await db

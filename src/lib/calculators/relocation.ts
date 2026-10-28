@@ -45,7 +45,7 @@ function growOneYear(
 }
 
 /** Pre-computed per-purchase data used during the year-by-year loop. */
-export type PurchasePrecomputed = {
+type PurchasePrecomputed = {
   cashOutlay: number; // withdrawn from portfolio in purchase year
   saleProceeds: number; // added back to portfolio in purchase year
   monthlyPayment: number; // loan payment (0 if all-cash)

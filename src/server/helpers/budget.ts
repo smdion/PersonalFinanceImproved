@@ -39,7 +39,7 @@ import {
 } from "./contribution";
 
 /** No TTL — cached YNAB data is kept until the user manually triggers a resync. */
-export const BUDGET_CACHE_MAX_AGE_MS = undefined;
+const BUDGET_CACHE_MAX_AGE_MS = undefined;
 
 /**
  * The active-profile predicate, for callers that already have every profile

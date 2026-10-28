@@ -16,7 +16,6 @@ import { eq, and, gte, notInArray, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type {
   ExtraPaycheckRule,
-  ExtraPaycheckOverride,
   ExtraPaycheckRoutingData,
   YearlyGrowthEntry,
 } from "@/lib/db/schema-pg";
@@ -298,5 +297,3 @@ function findActiveRule(
   }
   return null;
 }
-
-export type { ExtraPaycheckOverride };

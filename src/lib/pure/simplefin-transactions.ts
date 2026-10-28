@@ -11,7 +11,7 @@ import {
 } from "@/lib/config/simplefin-transaction-rules";
 import type { InvestmentTransactionKind } from "@/lib/config/enum-values";
 
-export type ClassifiedTransaction = {
+type ClassifiedTransaction = {
   kind: InvestmentTransactionKind;
   /** The amount to use: the row's amount, or its absolute value when the rule fixes the direction. */
   amount: number;
@@ -23,7 +23,7 @@ export type ClassifiedTransaction = {
   uncertain: boolean;
 };
 
-export type ClassifyOptions = {
+type ClassifyOptions = {
   /** Current account balance — lets rules judge "small" relative to the account. */
   accountBalance?: number;
 };

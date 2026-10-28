@@ -20,7 +20,7 @@ import { gridProps, axisProps } from "@/components/charts";
 
 /** Minimal per-year shape this chart needs — decoupled from the page's
  *  fuller UtilityYearRow. */
-export type CostTrendYear = {
+type CostTrendYear = {
   year: number;
   totalCost: number;
   totalUsage: number | null;

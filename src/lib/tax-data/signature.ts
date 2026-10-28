@@ -14,7 +14,7 @@ import { TAX_DATA_PUBLIC_KEYS } from "@/lib/config/tax-data-sync";
 
 const PREFIX = "ledgr-tax-data\n";
 
-export type TaxDataSignature = { keyId: string; sig: string }[];
+type TaxDataSignature = { keyId: string; sig: string }[];
 
 const signed = (fileBytes: string | Buffer) =>
   Buffer.concat([Buffer.from(PREFIX), Buffer.from(fileBytes)]);

@@ -6,12 +6,6 @@
 /** Milliseconds per day (24 * 60 * 60 * 1000). */
 export const MS_PER_DAY = 86_400_000;
 
-/** Average days per year, accounting for leap years (365.25). */
-export const DAYS_PER_YEAR = 365.25;
-
-/** MS_PER_DAY * DAYS_PER_YEAR — used for age calculations. */
-export const MS_PER_YEAR = MS_PER_DAY * DAYS_PER_YEAR;
-
 // ---------------------------------------------------------------------------
 // Time
 // ---------------------------------------------------------------------------
@@ -61,13 +55,10 @@ export const FALLBACK_CONTRIBUTION_RATE = 0.25;
 
 /** Fallback pay periods per year (biweekly) when a job's schedule can't be resolved. */
 export const DEFAULT_PAY_PERIODS_PER_YEAR = 26;
-
 // ---------------------------------------------------------------------------
 // Distribution Tax Rates (defaults for new retirement scenarios)
 // ---------------------------------------------------------------------------
 
-export const DEFAULT_TAX_RATE_TRADITIONAL = 0.22;
-export const DEFAULT_TAX_RATE_ROTH = 0;
 export const DEFAULT_TAX_RATE_BROKERAGE = 0.15;
 
 // ---------------------------------------------------------------------------
@@ -89,13 +80,6 @@ export const WEALTH_TIER_PAW_MIN = WEALTH_FORMULA_MULTIPLIER;
 /** Wealth score at or below which a household is an Under Accumulator (UAW) —
  *  half the expected amount, per The Millionaire Next Door. */
 export const WEALTH_TIER_UAW_MAX = 0.5;
-
-// ---------------------------------------------------------------------------
-// Financial Independence
-// ---------------------------------------------------------------------------
-
-/** FI progress ≥ 1.0 means fully financially independent. */
-export const FI_COMPLETE_THRESHOLD = 1.0;
 
 /** Performance data older than this many days is considered "Outdated". */
 export const PERFORMANCE_STALE_DAYS = 14;
@@ -366,17 +350,6 @@ export const QCD_MIN_ELIGIBILITY_AGE = 70;
  *  the two highest ordinary brackets, matching the same "moderate, not
  *  the top bracket" intent as the schema/UI default. */
 export const RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK = 0.24;
-
-// ---------------------------------------------------------------------------
-// Analytics
-// ---------------------------------------------------------------------------
-
-/** Show coverage indicator when holdings weight sum deviates this far from
- *  10000 bps (100%). Applies to both under and over coverage. */
-export const ANALYTICS_WEIGHT_COVERAGE_WARN_BPS = 500; // 5%
-
-/** Default number of snapshots to fetch for historical allocation/drift charts. */
-export const ANALYTICS_HISTORY_SNAPSHOT_LIMIT = 12;
 
 // ---------------------------------------------------------------------------
 // Settings Forms

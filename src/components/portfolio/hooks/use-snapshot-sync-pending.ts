@@ -14,7 +14,7 @@ import { useCallback, useEffect, useState } from "react";
 
 const KEY = "pf-snapshot-unsynced";
 
-export type SnapshotSyncPending = {
+type SnapshotSyncPending = {
   snapshotId: number;
   snapshotDate: string;
   count: number;

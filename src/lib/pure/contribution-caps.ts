@@ -85,7 +85,7 @@ export type CapContext = {
   employerAt?: (rowIds: readonly number[], factor: number) => number;
 };
 
-export type CapReason =
+type CapReason =
   /** Cut to the IRS limit. */
   | "over-limit"
   /** Employer money alone fills the limit — no employee money fits. */
@@ -281,7 +281,7 @@ const ageMap = (ctx: CapContext) =>
     ]),
   );
 
-export type CapResult = {
+type CapResult = {
   byRow: Map<number, CappedContribution>;
   /** Each limit group's household limit, every shared limit counted once:
    *  owners' limits (a shared family HSA's base once plus each spouse's
@@ -621,10 +621,7 @@ export function computeValue(c: {
 const floorTo2 = (v: number) => Math.floor(v * 100 + 1e-9) / 100;
 
 /** The most a row can be set to, in its own method's terms. */
-export function capMaxLabel(
-  method: string | null,
-  cappedValue: number,
-): string {
+function capMaxLabel(method: string | null, cappedValue: number): string {
   const v = floorTo2(Math.max(0, cappedValue));
   const dollars = `$${v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   switch (method ?? "percent_of_salary") {

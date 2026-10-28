@@ -6,7 +6,7 @@ import { geometricMean } from "@/lib/calculators/random";
 import type { GlidePathEntry } from "@/lib/calculators/random";
 
 /** Minimal asset class shape for blending calculations. */
-export type BlendableAssetClass = {
+type BlendableAssetClass = {
   id: number;
   meanReturn: number;
   stdDev: number;

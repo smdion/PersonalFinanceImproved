@@ -38,6 +38,9 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
+      - name: Dead code (unused files, exports, dependencies)
+        run: pnpm check:dead-code
+
       - name: Check file sizes
         run: bash scripts/check-file-size.sh
 

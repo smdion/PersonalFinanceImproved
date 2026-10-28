@@ -25,7 +25,7 @@ export function expectedTaxYear(due: TaxDataSection["due"], now: Date): number {
   return now > taxYearDeadline(next, due) ? next : next - 1;
 }
 
-export type TaxDataSectionStatus = TaxDataSection & {
+type TaxDataSectionStatus = TaxDataSection & {
   /** The year it should have by now. */
   expectedYear: number;
   /** The newest year it has (null = none at all). */
@@ -43,7 +43,7 @@ export type CarriedFigure = {
   name: string;
 };
 
-export type TaxDataStatus = {
+type TaxDataStatus = {
   sections: TaxDataSectionStatus[];
   /** Copied forward from an earlier year and not yet confirmed or edited. */
   carried: CarriedFigure[];

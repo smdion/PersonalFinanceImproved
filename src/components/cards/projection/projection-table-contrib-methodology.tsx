@@ -23,7 +23,7 @@ import {
 import { TAX_TREATMENT_TO_BUCKET } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
 
-export type ContribMethodologyProps = {
+type ContribMethodologyProps = {
   state: ProjectionState;
 };
 

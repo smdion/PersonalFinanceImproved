@@ -38,7 +38,7 @@ export type SimplefinConfig = {
   accessUrl: string;
 };
 
-export type SimplefinSyncResult = {
+type SimplefinSyncResult = {
   snapshotDate: string;
   totalBalance: number;
   accountCount: number;
@@ -270,7 +270,7 @@ export async function removeSimplefinConnection(db: Db) {
     .where(eq(schema.apiConnections.service, "simplefin"));
 }
 
-export type SimplefinAccountRow = {
+type SimplefinAccountRow = {
   id: number;
   externalAccountId: string;
   orgName: string;

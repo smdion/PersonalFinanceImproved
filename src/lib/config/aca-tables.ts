@@ -26,7 +26,7 @@ export const HOUSEHOLD_SIZE_MAX = 12;
  *   (`fpl_by_household`, resolved; sizes 1–8 always present —
  *   fplByHouseholdAmountsSchema).
  */
-export function povertyLevel(
+function povertyLevel(
   householdSize: number,
   fplByHousehold: Record<number, number>,
 ): number {

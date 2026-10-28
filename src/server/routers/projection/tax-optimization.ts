@@ -39,10 +39,7 @@ import type {
 } from "@/lib/calculators/types";
 import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
 import { taxYearFlags } from "@/lib/pure/report/year-table";
-import {
-  accountCategoryEnum,
-  getDefaultDecumulationOrder,
-} from "@/lib/config/account-types";
+import { accountCategoryEnum } from "@/lib/config/account-types";
 import {
   fetchRetirementData,
   buildEnginePayload,
@@ -75,7 +72,7 @@ type _RoutingModeCovered =
 const _routingModeCovered: _RoutingModeCovered = true;
 void _routingModeCovered;
 
-export const zRoutingMode = z.enum(ROUTING_MODES);
+const zRoutingMode = z.enum(ROUTING_MODES);
 
 /**
  * The read-selection surface every Tax Optimization procedure shares — which
@@ -83,7 +80,7 @@ export const zRoutingMode = z.enum(ROUTING_MODES);
  * input (`scenarios.ts:61-108`); it deliberately carries no assumption
  * values (see the file docblock).
  */
-export const taxOptimizationBaseInput = z.object({
+const taxOptimizationBaseInput = z.object({
   decumulationDefaults: decumulationDefaultsInputSchema,
   accumulationOverrides: accumulationOverrideSchema,
   decumulationOverrides: decumulationOverrideSchema,
@@ -106,7 +103,7 @@ export const taxOptimizationBaseInput = z.object({
  * One named withdrawal-sequencing strategy for the side-by-side
  * comparison. `order` only applies when `mode === "waterfall"`.
  */
-export const withdrawalStrategyChoiceSchema = z.object({
+const withdrawalStrategyChoiceSchema = z.object({
   label: z.string().min(1).max(40),
   mode: zRoutingMode,
   order: z.array(z.enum(accountCategoryEnum())).optional(),
@@ -117,13 +114,10 @@ export const withdrawalStrategyChoiceSchema = z.object({
  * `targetRate` is a marginal-rate ceiling (0–0.5); applied sticky-forward
  * as a `decumulationOverride`.
  */
-export const rothConversionTargetSchema = z.object({
+const rothConversionTargetSchema = z.object({
   year: z.number().int().min(2024).max(2100),
   targetRate: z.number().min(0).max(0.5),
 });
-
-/** Kept exported so callers/tests can build a valid default `order`. */
-export const DEFAULT_WITHDRAWAL_ORDER = getDefaultDecumulationOrder();
 
 // ---------------------------------------------------------------------------
 // Shared engine runner — the single computation path
@@ -209,7 +203,7 @@ function decumulationYears(
  *  added separately — the engine already folds it into `taxCost`
  *  (`decumulation-year.ts` does `taxCost = taxCost + niitAmount`); the
  *  earlier `+ niitAmount` here was double-counting it. */
-export function lifetimeTax(years: EngineDecumulationYear[]): number {
+function lifetimeTax(years: EngineDecumulationYear[]): number {
   return years.reduce(
     (sum, y) =>
       sum +
@@ -225,7 +219,7 @@ export function lifetimeTax(years: EngineDecumulationYear[]): number {
 // projectTaxYears — the year-by-year tax table (roadmap #4)
 // ---------------------------------------------------------------------------
 
-export type TaxYearRow = {
+type TaxYearRow = {
   year: number;
   age: number;
   /** Where the year's money comes from (nominal $). No salary/pension line

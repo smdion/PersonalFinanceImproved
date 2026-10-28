@@ -59,7 +59,7 @@ function matchKey(
   return `${name}|${category}|${taxType}|${ownerPersonId ?? "null"}`;
 }
 
-export type TaxBucketProjectionResult = {
+type TaxBucketProjectionResult = {
   /** Null when the projection has no modeled accumulation phase at all —
    *  e.g. the household is already past its retirement transition in the
    *  active projection. The page must say so explicitly rather than

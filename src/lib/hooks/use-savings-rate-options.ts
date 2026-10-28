@@ -20,7 +20,7 @@ import {
 } from "@/lib/constants/settings-keys";
 
 /** "auto": leave the match out at or above the high-income threshold. */
-export type MatchChoice = "auto" | "include" | "exclude";
+type MatchChoice = "auto" | "include" | "exclude";
 
 type Choices = { match: MatchChoice | null; portfolio: boolean | null };
 

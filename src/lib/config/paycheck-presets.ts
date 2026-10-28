@@ -4,7 +4,7 @@
  * (reduces federal income-tax wages) and `ficaExempt` (reduces Social
  * Security + Medicare wages). Data, not code: another preset is one entry.
  */
-export type DeductionPreset = {
+type DeductionPreset = {
   key: string;
   /** Short label for the pay-stub row. */
   short: string;
@@ -54,7 +54,7 @@ export function deductionPresetFor(flags: {
 }
 
 /** How a line of other pay is taxed and paid, named the way a stub lists it. */
-export type EarningPreset = {
+type EarningPreset = {
   key: string;
   short: string;
   label: string;

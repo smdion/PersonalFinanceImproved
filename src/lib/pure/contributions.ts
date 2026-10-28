@@ -206,7 +206,7 @@ export function resolvePriorYearLimit(
 }
 
 /** Minimal shape for a contribution account used in sibling total computation. */
-export type SiblingContrib = {
+type SiblingContrib = {
   accountType: string;
   annualContribution: number;
   employerMatch: number;
@@ -262,7 +262,7 @@ export function isEligibleForPriorYear(
  * Severity of a contribution-order warning. UI surfaces these as
  * yellow callouts (not errors) — the user is allowed to override.
  */
-export type ContributionOrderWarning = {
+type ContributionOrderWarning = {
   severity: "warn" | "info";
   /** The category that's out of place. */
   category: string;

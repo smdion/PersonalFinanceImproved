@@ -18,7 +18,7 @@ import {
 } from "@/lib/db/json-schemas";
 
 /** Indexed dollar figures may move −2%…+15% a year. */
-export const INDEXED_BOUNDS = [0.98, 1.15] as const;
+const INDEXED_BOUNDS = [0.98, 1.15] as const;
 const within = (prev: number, next: number) =>
   prev === 0 ||
   (next / prev >= INDEXED_BOUNDS[0] && next / prev <= INDEXED_BOUNDS[1]);

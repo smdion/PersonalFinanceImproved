@@ -4,7 +4,7 @@
 // components cannot import server modules directly.
 
 /** Per-category performance breakdown (contributions, gains, distributions). */
-export type CategoryPerformance = {
+type CategoryPerformance = {
   endingBalance: number;
   contributions: number;
   employerMatch: number;

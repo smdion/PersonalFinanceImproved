@@ -12,7 +12,7 @@ import type { StandInPreview } from "@/lib/config/enum-values";
 /** Share of the stand-in's holdings its filings must classify to trust its mix. */
 export const STANDIN_COVERAGE_OK = 0.9;
 
-export type StandInAdvice =
+type StandInAdvice =
   | { mix: "checking" }
   | { mix: "use"; coverage: number }
   | {

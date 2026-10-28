@@ -56,7 +56,7 @@ import {
  * and the single most valuable answer this endpoint gives is "no, that
  * age doesn't work." `passes` carries that instead, as a plain boolean.
  */
-export type CoastFireProbeResult = {
+type CoastFireProbeResult = {
   probeAge: number;
   successRate: number;
   passes: boolean;

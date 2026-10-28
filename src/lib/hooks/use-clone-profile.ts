@@ -29,7 +29,7 @@ interface CloneMutation {
   isPending: boolean;
 }
 
-export interface UseCloneProfileReturn {
+interface UseCloneProfileReturn {
   /** Prompts for a new name (pre-filled from the source), then fires the mutation. */
   clone: (sourceProfileId: number, currentName: string) => Promise<void>;
   isPending: boolean;

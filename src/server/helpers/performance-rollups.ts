@@ -83,7 +83,7 @@ export function getEffectiveCategory(
 }
 
 /** A year's per-category sums, taken before an edit. */
-export type YearRollups = { year: number; byCategory: Map<string, Rollup> };
+type YearRollups = { year: number; byCategory: Map<string, Rollup> };
 
 export async function captureYearRollups(
   tx: DbOrTx,

@@ -20,7 +20,7 @@ import {
 } from "@/lib/config/account-types";
 import { roundToCents } from "@/lib/utils/math";
 
-export type SnapshotSub = {
+type SnapshotSub = {
   key: string;
   performanceAccountId: number;
   taxType: string;
@@ -29,7 +29,7 @@ export type SnapshotSub = {
   amount: number;
 };
 
-export type SnapshotFeed = {
+type SnapshotFeed = {
   id: number;
   performanceAccountId: number;
   subKey: string | null;
@@ -51,7 +51,7 @@ export type NewMoney = {
   estimated: boolean;
 };
 
-export type SnapshotAccountNote = {
+type SnapshotAccountNote = {
   /** The feeds' total balance. */
   total: number;
   balanceDate: string | null;
@@ -76,7 +76,7 @@ export type UnplacedFeed = {
   reason: "no_part" | "part_gone";
 };
 
-export type SnapshotSuggestions = {
+type SnapshotSuggestions = {
   amounts: Map<string, number>;
   accounts: Map<number, SnapshotAccountNote>;
   unplaced: UnplacedFeed[];

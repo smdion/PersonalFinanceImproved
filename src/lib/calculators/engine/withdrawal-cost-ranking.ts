@@ -194,7 +194,7 @@ export interface RankWithdrawalTiersInput {
  * see it). Both capacities are 0, not omitted, when there is none — so
  * callers can state "$0 room" rather than "no data."
  */
-export type RankedWithdrawalTiers = {
+type RankedWithdrawalTiers = {
   tiers: WithdrawalTier[];
   /** Roth basis capacity — always tax-free, independent of bracket. */
   rothBasisCapacity: number;

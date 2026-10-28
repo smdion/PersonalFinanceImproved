@@ -27,7 +27,7 @@ import { toNumber } from "./transforms";
 
 export type PushSnapshotMode = "create" | "resync";
 
-export type PushSnapshotResult = {
+type PushSnapshotResult = {
   groupsPosted: number;
   groupsSkipped: number;
   groupsCleaned: number;

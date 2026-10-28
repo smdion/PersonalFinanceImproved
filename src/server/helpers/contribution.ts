@@ -63,7 +63,6 @@ export {
   matchGroupKey,
   matchPayGroupsWithBonus,
   type GroupableMatchRow,
-  type GroupedMatchResult,
 } from "./contribution-match";
 
 /**
@@ -140,7 +139,7 @@ export function resolveContribPeriods(
  * jobId === null, so percent_of_salary — which needs a salary — never
  * applies here; reject it loudly rather than silently writing $0).
  */
-export function computeContributionValueFromMonthly(
+function computeContributionValueFromMonthly(
   method: string,
   monthlyAmount: number,
   periodsPerYear: number,
@@ -523,7 +522,7 @@ export function buildContribAccounts(
 // ---------------------------------------------------------------------------
 
 /** Per-category contribution totals with tax breakdown. */
-export type ContribCategorySummary = {
+type ContribCategorySummary = {
   annual: number;
   rothFraction: number;
   rothAnnual: number;
@@ -807,7 +806,7 @@ export function aggregateContributionsByCategory(
 // ---------------------------------------------------------------------------
 
 /** Output of buildContributionDisplaySpecs — per-record spec with match. */
-export type ContribDisplaySpec = {
+type ContribDisplaySpec = {
   /** Source contribution_accounts.id — the only reliable way to look this
    *  spec's row back up when personId/ownerName can't disambiguate (e.g.
    *  multiple joint contributions in the same category, where both are
@@ -940,7 +939,7 @@ export function buildContributionDisplaySpecs(
  * adds them from a specific profile's active fields, and only for accounts
  * that have an entry there.
  */
-export type LiveContribRow = {
+type LiveContribRow = {
   personId: number | null;
   jobId: number | null;
   accountType: AccountCategory;
@@ -952,15 +951,6 @@ export type LiveContribRow = {
   employerMatchValue: string | null;
   employerMaxMatchPct: string | null;
   id: number;
-};
-
-/** LiveContribRow with a specific profile's active fields resolved onto
- *  it — guaranteed to carry contributionValue/contributionMethod, since
- *  rows with no active entry are excluded (see resolveProfile). */
-export type ResolvedContribRow = LiveContribRow & {
-  contributionValue: string | number;
-  contributionMethod: string;
-  fromBonus: boolean | undefined;
 };
 
 /**
@@ -1309,7 +1299,7 @@ export function buildSandboxContribRow(
 }
 
 /** paycheck_deductions row with a resolved amountPerPeriod attached. */
-export type DeductionRowWithActiveFields =
+type DeductionRowWithActiveFields =
   typeof schema.paycheckDeductions.$inferSelect & {
     amountPerPeriod: string | number;
   };
@@ -1342,23 +1332,6 @@ export function applyDeductionActiveFields(
       return { ...deduction, ...activeFields } as DeductionRowWithActiveFields;
     })
     .filter((d): d is DeductionRowWithActiveFields => d !== null);
-}
-
-/**
- * Which of these deductions have no active amount set under the given
- * profile's active fields — the "incomplete profile" surface for the UI,
- * same purpose as getIncompleteContribAccountIds.
- */
-export function getIncompleteDeductionIds(
-  rows: { id: number }[],
-  deductionActiveFields: Record<string, Record<string, unknown>>,
-): number[] {
-  return rows
-    .filter(
-      (row) =>
-        deductionActiveFields[String(row.id)]?.amountPerPeriod === undefined,
-    )
-    .map((row) => row.id);
 }
 
 /**
@@ -1483,7 +1456,7 @@ export function applyContribProfileRow(
 // ---------------------------------------------------------------------------
 
 /** Context needed from the main buildEnginePayload for spec building. */
-export type ProfileContribContext = {
+type ProfileContribContext = {
   perfCategoryMap: Map<number, string>;
   perfRetirementBehaviorMap: Map<number, string>;
   perfContributionScalingMap: Map<number, string>;
@@ -1584,7 +1557,7 @@ export function matchAccountForContribution(
 }
 
 /** Result of building engine contribution data from a resolved profile. */
-export type ProfileContribData = {
+type ProfileContribData = {
   contributionSpecs: ContributionSpec[];
   baseYearContributions: Record<AccountCategory, number>;
   baseYearEmployerMatch: Record<AccountCategory, number>;
@@ -1600,7 +1573,7 @@ export type ProfileContribData = {
 };
 
 /** Minimal contribution row shape needed by buildProfileContribData. */
-export type ContribInputRow = {
+type ContribInputRow = {
   id: number;
   personId: number | null;
   jobId: number | null;

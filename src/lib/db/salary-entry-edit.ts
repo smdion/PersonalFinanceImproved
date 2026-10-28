@@ -13,7 +13,7 @@ import { isMonthDay } from "@/lib/utils/date";
 import type { z } from "zod/v4";
 
 /** Entry fields an edit can set. */
-export type SalaryEntryFields = Partial<z.infer<typeof salaryEntrySchema>>;
+type SalaryEntryFields = Partial<z.infer<typeof salaryEntrySchema>>;
 
 type EntryField = keyof typeof salaryEntrySchema.shape;
 

@@ -25,7 +25,6 @@ import {
   SPOUSAL_BENEFIT_BASE_RATE,
   SS_EARLIEST_CLAIMING_AGE_MONTHS,
   SS_LATEST_CLAIMING_AGE_MONTHS,
-  type FullRetirementAge,
 } from "../config/social-security";
 
 /**
@@ -98,7 +97,7 @@ export function computeSpousalBenefit(
   return Math.max(ownAdjustedBenefit, spousalAmount);
 }
 
-export type ClaimingAgeSweepCandidate = {
+type ClaimingAgeSweepCandidate = {
   /** Candidate claiming age, in whole years. */
   claimingAge: number;
   /** This person's adjusted annual benefit at this claiming age. */
@@ -112,7 +111,7 @@ export type ClaimingAgeSweepCandidate = {
   fails: boolean;
 };
 
-export type ClaimingAgeSweepResult = {
+type ClaimingAgeSweepResult = {
   /** The claiming age that scores best among the candidates. `null` when
    *  every candidate fails (nothing safe to recommend). */
   recommendedAge: number | null;
@@ -123,7 +122,7 @@ export type ClaimingAgeSweepResult = {
   candidates: ClaimingAgeSweepCandidate[];
 };
 
-export type ClaimingAgeSweepOptions = {
+type ClaimingAgeSweepOptions = {
   /** Base projection input. Only consulted by the DEFAULT candidate-input
    *  builder (see `buildCandidateInput`) — a caller that passes its own
    *  `buildCandidateInput` is free to derive candidates from richer data
@@ -265,5 +264,3 @@ export function sweepClaimingAges(
 
   return { recommendedAge, candidates };
 }
-
-export type { FullRetirementAge };

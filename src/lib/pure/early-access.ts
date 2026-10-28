@@ -17,7 +17,7 @@ import { roundToCents } from "@/lib/utils/math";
 
 export type SeparationSource = "explicit" | "derived" | "active" | "no_data";
 
-export type SeparationResolution = {
+type SeparationResolution = {
   /** Calendar year the person actually separated from the employer funding
    *  this account. Null when not yet separated (still employed there) or
    *  when there's no data to resolve it at all — NEVER a hypothetical

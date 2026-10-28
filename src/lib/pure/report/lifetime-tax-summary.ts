@@ -7,7 +7,7 @@
  *  accumulation isn't included. */
 import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
 
-export type LifetimeTaxDecade = {
+type LifetimeTaxDecade = {
   /** e.g. "50s" for ages 50-59. */
   label: string;
   /** e.g. 50 for "50s" — sort key, since string labels sort wrong past 100

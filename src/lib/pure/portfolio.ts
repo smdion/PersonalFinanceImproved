@@ -5,7 +5,7 @@
 import { toNumber } from "@/server/helpers/transforms";
 
 /** A snapshot row's sub-account identity (see {@link snapshotAccountKey}). */
-export type SubAccountIdentity = {
+type SubAccountIdentity = {
   performanceAccountId: number | null;
   taxType: string;
   subType: string | null;

@@ -68,7 +68,7 @@ export type MatchedMixInput = {
   proxyPrices: Readonly<Record<CompositionBucket, MonthlyPrices | null>>;
 };
 
-export type MatchedMixLevels = {
+type MatchedMixLevels = {
   /** Synthetic month-end level, starting at 100 the month before the first covered month. */
   prices: Map<string, number>;
   firstMonth: string | null;

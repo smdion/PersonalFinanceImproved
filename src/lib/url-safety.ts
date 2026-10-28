@@ -90,7 +90,7 @@ function getAllowlist(): Set<string> {
   );
 }
 
-export interface UrlSafetyResult {
+interface UrlSafetyResult {
   ok: boolean;
   reason?: string;
 }

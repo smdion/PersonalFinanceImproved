@@ -5,7 +5,7 @@
  * Copy lives here, not in components, so the form, the table and Finalize
  * say the same thing.
  */
-import type { PerfCheck, PerfCheckKind } from "@/lib/pure/performance-checks";
+import type { PerfCheck } from "@/lib/pure/performance-checks";
 import type { PerfField } from "@/lib/pure/performance-annotations";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import { formatCurrency } from "@/lib/utils/format";
@@ -124,13 +124,6 @@ export function describeCheck(c: PerfCheck): { title: string; help: string } {
       };
   }
 }
-
-export const PERF_CHECK_LABELS: Record<PerfCheckKind, string> = {
-  unbalanced: "Doesn't add up",
-  chain: "Doesn't continue last year",
-  transfers: "Transfers don't match",
-  snapshot: "Differs from snapshot",
-};
 
 /** Labels for stored Performance figures (account and yearly rows), as an
  *  edit preview lists what moved. */

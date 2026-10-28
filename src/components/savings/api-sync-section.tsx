@@ -61,7 +61,7 @@ type LockInMutation = ReturnType<
   typeof trpc.savings.lockInAllocationPercent.useMutation
 >;
 
-export interface ApiSyncSectionProps {
+interface ApiSyncSectionProps {
   rawGoals: RawGoal[];
   apiBalanceMap: Map<
     number,

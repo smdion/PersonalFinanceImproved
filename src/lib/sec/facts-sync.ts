@@ -44,7 +44,7 @@ const MAX_LOOK_THROUGH_DEPTH = 2;
 const LAST_RUN_KEY = "sec_facts_last_run";
 const LAST_ERROR_KEY = "sec_facts_last_error";
 
-export type SecFactsSummary = {
+type SecFactsSummary = {
   checked: number;
   updated: number;
   unresolved: number;

@@ -56,7 +56,7 @@ export function PillBtn({
 }
 
 /** Pill button group container. */
-export function PillGroup({
+function PillGroup({
   children,
   size = "sm",
 }: {

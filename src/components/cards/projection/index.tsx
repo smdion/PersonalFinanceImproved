@@ -71,8 +71,6 @@ import {
 // Main Component
 // ---------------------------------------------------------------------------
 
-export { type EngineContribRate } from "./use-projection-state";
-
 export function ProjectionCard(props: {
   people?: { id: number; name: string; birthYear: number }[];
   onContributionRates?: (rates: EngineContribRate[]) => void;

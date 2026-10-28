@@ -31,7 +31,7 @@ export function StrategyGuideButton({ className }: { className?: string }) {
 }
 
 /** The strategy guide slide panel — reads all content from WithdrawalStrategyConfig. */
-export function StrategyGuidePanel({
+function StrategyGuidePanel({
   open,
   onClose,
   activeStrategy,

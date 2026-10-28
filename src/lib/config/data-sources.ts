@@ -10,7 +10,7 @@
 
 import type { Focus } from "./focus-topics";
 
-export type DataSourceRhythm =
+type DataSourceRhythm =
   /** Late once the last update is more than `days` days old. */
   | { kind: "days"; days: number }
   /** Due once a year for the year just ended: late after `dueMonth`/`dueDay` until updated (from Dec 31 on). */

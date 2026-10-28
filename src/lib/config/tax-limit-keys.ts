@@ -16,10 +16,10 @@ import { ACCOUNT_TYPE_CONFIG } from "./account-types";
  *  `rate`: a tax rate set by law (unchanged unless an exception is cited).
  *  `statutory`: a fixed dollar amount or year set by law (unchanged unless
  *  an exception is cited). */
-export type TaxLimitKind = "indexed" | "rate" | "statutory";
+type TaxLimitKind = "indexed" | "rate" | "statutory";
 export type TaxLimitFormat = "currency" | "percent" | "year";
 
-export type TaxLimitKey = {
+type TaxLimitKey = {
   key: string;
   label: string;
   /** Settings card it appears in. Account-type keys use the account's
@@ -28,17 +28,6 @@ export type TaxLimitKey = {
   kind: TaxLimitKind;
   format: TaxLimitFormat;
 };
-
-/** Settings card order after the account-type cards. */
-export const TAX_LIMIT_GROUPS = [
-  "Standard deduction",
-  "Senior deduction (2025–2028)",
-  "Social Security & Medicare",
-  "Roth IRA eligibility",
-  "HSA eligibility (HDHP)",
-  "Charitable distributions (QCD)",
-  "Withholding",
-] as const;
 
 /** Account-type limit roles: label and kind. */
 const ACCOUNT_ROLES: Record<

@@ -38,7 +38,7 @@ import type {
 } from "@/lib/pure/milestones";
 
 /** Account-type config for a category key, or null when it isn't one. */
-export function configOf(key: string) {
+function configOf(key: string) {
   return getAllCategories().includes(key as AccountCategory)
     ? getAccountTypeConfig(key as AccountCategory)
     : null;

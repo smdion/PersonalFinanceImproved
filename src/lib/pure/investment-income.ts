@@ -52,7 +52,7 @@ const BASIS_RANK: Record<InvestmentIncomeBasis, number> = {
   none: 3,
 };
 
-export type InvestmentIncomeEstimate = {
+type InvestmentIncomeEstimate = {
   estimate: number;
   ytd: number;
   lastYearRemainder: number;
@@ -128,7 +128,7 @@ export function estimateFeedIncome(args: {
   };
 }
 
-export type IncomeFeed = {
+type IncomeFeed = {
   id: number;
   label: string;
   /** The linked tracked account's type; null when the feed isn't linked. */

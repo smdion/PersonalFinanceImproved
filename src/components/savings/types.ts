@@ -1,4 +1,3 @@
-import { formatDate } from "@/lib/utils/format";
 import type { TargetMode } from "@/lib/config/enum-values";
 
 /** Canonical savings-goal row shape — was independently redeclared (as
@@ -71,17 +70,11 @@ export interface NewFundForm {
   parentGoalId?: number | null;
 }
 
-export type SavingsTab = "projections" | "funds" | "transactions";
-
 export function monthKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-export function monthLabel(d: Date): string {
-  return formatDate(d, "short");
-}
-
-export interface MonthEvent {
+interface MonthEvent {
   id: string;
   /** Source row + specific occurrence — needed to target a settle action. */
   plannedTxId: number;

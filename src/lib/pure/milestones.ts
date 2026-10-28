@@ -122,7 +122,7 @@ export function firstReachedYear(
 }
 
 /** First projected year after `asOfYear` that meets a test. */
-export function firstProjectedYear(
+function firstProjectedYear(
   years: readonly MilestoneProjectionYear[],
   asOfYear: number,
   test: (y: MilestoneProjectionYear) => boolean,

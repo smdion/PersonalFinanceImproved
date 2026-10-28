@@ -7,9 +7,9 @@
 import type { DebtKind } from "./enum-values";
 
 /** The age bands the line moves with: under 30, 30s, 40 and over. */
-export type DebtAgeBand = "20s" | "30s" | "40s+";
+type DebtAgeBand = "20s" | "30s" | "40s+";
 
-export type DebtKindConfig = {
+type DebtKindConfig = {
   label: string;
   /** High-interest above this annual rate, by age band; `0` = any balance
    *  counts (credit cards). */
@@ -35,7 +35,7 @@ export const DEBT_KIND_CONFIG: Record<DebtKind, DebtKindConfig> = {
 };
 
 /** The age band for a person's age (whole years). */
-export function debtAgeBand(age: number): DebtAgeBand {
+function debtAgeBand(age: number): DebtAgeBand {
   return age < 30 ? "20s" : age < 40 ? "30s" : "40s+";
 }
 

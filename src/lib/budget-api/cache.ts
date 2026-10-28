@@ -74,22 +74,6 @@ export async function cacheSet(
     });
 }
 
-/** Remove a specific cache entry. */
-export async function cacheDelete(
-  db: Db,
-  service: BudgetApiService,
-  key: string,
-): Promise<void> {
-  await db
-    .delete(schema.budgetApiCache)
-    .where(
-      and(
-        eq(schema.budgetApiCache.service, service),
-        eq(schema.budgetApiCache.cacheKey, key),
-      ),
-    );
-}
-
 /** Remove all cache entries for a service. */
 export async function cacheClear(
   db: Db,

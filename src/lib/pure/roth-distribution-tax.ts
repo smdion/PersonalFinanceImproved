@@ -26,7 +26,7 @@ import { ageInYear } from "@/lib/utils/date";
 import { PENALTY_FREE_AGE } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
 
-export type RothTaxSplit = {
+type RothTaxSplit = {
   /** Growth drawn from accounts whose distribution is NOT qualified —
    *  ordinary income. */
   taxableGrowth: number;

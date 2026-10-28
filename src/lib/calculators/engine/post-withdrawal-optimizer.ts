@@ -132,7 +132,7 @@ export interface RothConversionInput {
   rmdSmoothingMaxBracketTarget?: number;
 }
 
-export interface RothConversionResult {
+interface RothConversionResult {
   rothConversionAmount: number;
   rothConversionTaxCost: number;
   /** Portion of `rmdSmoothingTarget` that did NOT end up converted
@@ -173,7 +173,7 @@ export interface IrmaaInput {
   irmaaBrackets: Record<string, IrmaaBracket[]>;
 }
 
-export interface IrmaaResult {
+interface IrmaaResult {
   irmaaCost: number;
   warnings: string[];
 }
@@ -215,7 +215,7 @@ export interface AcaInput {
   fplByHousehold: Record<number, number>;
 }
 
-export interface AcaResult {
+interface AcaResult {
   acaSubsidyPreserved: boolean;
   acaMagiHeadroom: number;
   warnings: string[];

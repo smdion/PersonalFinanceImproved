@@ -28,7 +28,7 @@ export const MILESTONE_SOURCE_LABELS: Record<MilestoneSource, string> = {
   custom: "Your goal",
 };
 
-export type MilestoneGroup =
+type MilestoneGroup =
   | "journey"
   | "custom"
   | "wealth"
@@ -182,18 +182,6 @@ export const FUND_MAIN_BUCKET_SHARE = 0.6;
 /** Money Guy's hyperaccumulation savings rate (of gross pay). */
 export const MONEY_GUY_SAVINGS_RATE = 0.25;
 
-/** Money Guy: the savings rate needed to retire comfortably, by the age you
- *  start saving. */
-export const MONEY_GUY_STARTING_AGE_RATES: readonly {
-  age: number;
-  rate: number;
-}[] = [
-  { age: 20, rate: 0.06 },
-  { age: 25, rate: 0.1 },
-  { age: 30, rate: 0.17 },
-  { age: 35, rate: 0.25 },
-];
-
 /** Months of essential expenses. Money Guy: 3–6 months by FOO step 4. */
 export const EMERGENCY_FUND_MONTHS = { min: 3, full: 6, alertBelow: 1 };
 
@@ -276,7 +264,7 @@ export const MAX_CUSTOM_GOALS = 12;
 const GROWTH_JUDGED =
   "Past years use your recorded gain from Performance; this year and later use Money Guy's napkin math (8% growth a year). This year counts once it's finalized in Performance.";
 
-export const MILESTONES = [
+const MILESTONES = [
   // --- Wealth journey (Money Guy's 7) ---
   {
     id: "zero",

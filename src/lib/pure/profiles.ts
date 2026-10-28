@@ -7,7 +7,7 @@ import { localMidnight, parseLocalDateOnly } from "@/lib/utils/date";
 
 // --- Profile deletion guards ---
 
-export type DeletionCheck = { allowed: boolean; reason?: string };
+type DeletionCheck = { allowed: boolean; reason?: string };
 
 /**
  * Check if a budget profile can be deleted.
@@ -133,10 +133,7 @@ export type JobLike = {
  * for this year's figures, the projection's or snapshot's own date for
  * theirs.
  */
-export function isJobCurrent(
-  job: Omit<JobLike, "personId">,
-  asOf: Date,
-): boolean {
+function isJobCurrent(job: Omit<JobLike, "personId">, asOf: Date): boolean {
   // Date-only strings parse in local time, so a job that starts/ends on
   // `asOf` compares as the same calendar day (UTC parsing would put it
   // ~5–8h earlier in any US timezone).
@@ -233,7 +230,7 @@ export function jobYearsNote(
 // --- Profile linking ---
 
 /** Minimal profile shape for resolution. */
-export type ProfileLike = {
+type ProfileLike = {
   id: number;
   isActive: boolean;
 };
@@ -267,7 +264,7 @@ export type ContribAccountActiveFields = {
   isActive?: boolean;
 } | null;
 
-export type ContribFieldDisplayState = {
+type ContribFieldDisplayState = {
   /** True when this profile has a resolvable `contributionValue` for the
    *  account, including an explicit value of "0" — absence, not zero, is
    *  what excludes a row (matches getIncompleteContribAccountIds's own

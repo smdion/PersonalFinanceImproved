@@ -13,7 +13,7 @@ import type {
 } from "@/lib/calculators/types/engine-projection";
 import type { MonteCarloResult } from "@/lib/calculators/types/monte-carlo";
 
-export interface ActionItem {
+interface ActionItem {
   title: string;
   detail: string;
 }

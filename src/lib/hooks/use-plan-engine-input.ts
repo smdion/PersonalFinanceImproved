@@ -26,7 +26,7 @@ import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-pr
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { defaultDecumulationConfig } from "@/lib/config/account-types";
 
-export type PlanEngineInput = {
+type PlanEngineInput = {
   contributionProfileId?: number;
   salaryProfileId?: number;
   retirementProfileId?: number;

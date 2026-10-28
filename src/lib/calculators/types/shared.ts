@@ -13,7 +13,7 @@ import type {
 export type ViewMode = "projected" | "blended" | "ytd";
 
 export type PayPeriodType = "weekly" | "biweekly" | "semimonthly" | "monthly";
-export type TaxTreatmentType = "pre_tax" | "tax_free" | "after_tax" | "hsa";
+type TaxTreatmentType = "pre_tax" | "tax_free" | "after_tax" | "hsa";
 export type FilingStatusType = "MFJ" | "Single" | "HOH";
 
 export type DeductionLine = {

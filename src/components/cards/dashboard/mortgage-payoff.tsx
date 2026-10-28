@@ -9,7 +9,7 @@ import { trpc } from "@/lib/trpc";
 import { formatDate, formatPercent } from "@/lib/utils/format";
 
 /** "7 yr 8 mo", "8 mo", "2 yr". */
-export function formatMonths(months: number): string {
+function formatMonths(months: number): string {
   const years = Math.floor(months / 12);
   const rem = months % 12;
   if (years === 0) return `${rem} mo`;

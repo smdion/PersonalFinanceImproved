@@ -280,7 +280,7 @@ export function makeIndividualAccount(
 // ---------------------------------------------------------------------------
 
 /** The tax buckets a set of per-category balances adds up to. */
-export function taxBucketsFromAccountBalances(a: AccountBalances): TaxBuckets {
+function taxBucketsFromAccountBalances(a: AccountBalances): TaxBuckets {
   const b: TaxBuckets = {
     preTax: 0,
     taxFree: 0,

@@ -38,7 +38,8 @@ export function applyHouseholdTimeZone(tz: unknown): void {
   log("info", "household_timezone_applied", { timeZone: next ?? "UTC" });
 }
 
-/** Apply the saved household zone (server start). Never throws. */
+/** Apply the saved household zone (server start). Never throws.
+ *  @public — loaded by instrumentation.node.ts's dynamic import, which knip can't follow. */
 export async function loadHouseholdTimeZone(db: Db): Promise<void> {
   try {
     const [row] = await db
