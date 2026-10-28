@@ -29,7 +29,7 @@ afterAll(() => {
   else process.env.ENCRYPTION_KEY = originalKey;
 });
 
-import { getAccounts } from "@/lib/simplefin/client";
+import { getAccounts, type SimplefinAccount } from "@/lib/simplefin/client";
 import { eq } from "drizzle-orm";
 import {
   getSimplefinConnection,
@@ -44,6 +44,13 @@ import {
 } from "@/lib/simplefin/sync";
 
 const mockGetAccounts = vi.mocked(getAccounts);
+
+/** An account as SimpleFIN sends one with nothing but a balance. */
+function bare(
+  a: Pick<SimplefinAccount, "id" | "name" | "balance" | "orgName">,
+): SimplefinAccount {
+  return { ...a, balanceDate: null, holdings: null, transactions: [] };
+}
 
 describe("simplefin/sync", () => {
   let ctx: TestDbContext;
@@ -65,7 +72,7 @@ describe("simplefin/sync", () => {
    */
   async function excludeAllCurrentlyIncluded() {
     await ctx.rawDb
-      .update(ctx.schema.simplefinAccounts)
+      .update(ctx.appSchema.simplefinAccounts)
       .set({ isIncluded: false })
       .where(eq(ctx.schema.simplefinAccounts.isIncluded, true));
   }
@@ -133,10 +140,16 @@ describe("simplefin/sync", () => {
       );
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [
-          { id: "a1", name: "Checking", balance: 1200.5, orgName: "Bank" },
-          { id: "a2", name: "Savings", balance: 340.25, orgName: "Bank" },
+          bare({
+            id: "a1",
+            name: "Checking",
+            balance: 1200.5,
+            orgName: "Bank",
+          }),
+          bare({ id: "a2", name: "Savings", balance: 340.25, orgName: "Bank" }),
         ],
         providerErrors: [],
+        accountIdsWithErrors: [],
       });
 
       const asOfDate = new Date(2026, 0, 15); // local Jan 15, 2026
@@ -165,17 +178,29 @@ describe("simplefin/sync", () => {
 
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [
-          { id: "sync2-1", name: "Checking", balance: 100, orgName: "Bank" },
+          bare({
+            id: "sync2-1",
+            name: "Checking",
+            balance: 100,
+            orgName: "Bank",
+          }),
         ],
         providerErrors: [],
+        accountIdsWithErrors: [],
       });
       await runSimplefinSync(ctx.rawDb, asOfDate);
 
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [
-          { id: "sync2-1", name: "Checking", balance: 250, orgName: "Bank" },
+          bare({
+            id: "sync2-1",
+            name: "Checking",
+            balance: 250,
+            orgName: "Bank",
+          }),
         ],
         providerErrors: [],
+        accountIdsWithErrors: [],
       });
       const second = await runSimplefinSync(ctx.rawDb, asOfDate);
 
@@ -198,6 +223,7 @@ describe("simplefin/sync", () => {
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [],
         providerErrors: [],
+        accountIdsWithErrors: [],
       });
 
       await runSimplefinSync(ctx.rawDb, new Date(2026, 2, 1));
@@ -242,6 +268,7 @@ describe("simplefin/sync", () => {
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [],
         providerErrors: [],
+        accountIdsWithErrors: [],
       });
       await runSimplefinSync(ctx.rawDb, new Date(2026, 3, 3));
       expect(await getSimplefinLastError(ctx.rawDb)).toBeNull();
@@ -255,9 +282,15 @@ describe("simplefin/sync", () => {
       await excludeAllCurrentlyIncluded();
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [
-          { id: "provErr-1", name: "Checking", balance: 10, orgName: "Bank" },
+          bare({
+            id: "provErr-1",
+            name: "Checking",
+            balance: 10,
+            orgName: "Bank",
+          }),
         ],
         providerErrors: ["Institution X needs re-authentication"],
+        accountIdsWithErrors: [],
       });
 
       const result = await runSimplefinSync(ctx.rawDb, new Date(2026, 3, 4));
@@ -284,15 +317,15 @@ describe("simplefin/sync", () => {
 
       // Seed: exclude "excluded-1" before the sync that would otherwise sum it in.
       await upsertSimplefinAccounts(ctx.rawDb, [
-        {
+        bare({
           id: "excluded-1",
           name: "Old Credit Card",
           balance: 999.99,
           orgName: "Bank",
-        },
+        }),
       ]);
       await ctx.rawDb
-        .update(ctx.schema.simplefinAccounts)
+        .update(ctx.appSchema.simplefinAccounts)
         .set({ isIncluded: false })
         .where(
           eq(ctx.schema.simplefinAccounts.externalAccountId, "excluded-1"),
@@ -300,26 +333,27 @@ describe("simplefin/sync", () => {
 
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [
-          {
+          bare({
             id: "excluded-1",
             name: "Old Credit Card",
             balance: 999.99,
             orgName: "Bank",
-          },
-          {
+          }),
+          bare({
             id: "included-1",
             name: "Checking",
             balance: 100.5,
             orgName: "Bank",
-          },
-          {
+          }),
+          bare({
             id: "included-2",
             name: "Savings",
             balance: 25.25,
             orgName: "Bank",
-          },
+          }),
         ],
         providerErrors: [],
+        accountIdsWithErrors: [],
       });
 
       const result = await runSimplefinSync(ctx.rawDb, asOfDate);
@@ -339,10 +373,21 @@ describe("simplefin/sync", () => {
 
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [
-          { id: "partial-1", name: "Checking", balance: 100, orgName: "Bank" },
-          { id: "partial-2", name: "Savings", balance: 50, orgName: "Bank" },
+          bare({
+            id: "partial-1",
+            name: "Checking",
+            balance: 100,
+            orgName: "Bank",
+          }),
+          bare({
+            id: "partial-2",
+            name: "Savings",
+            balance: 50,
+            orgName: "Bank",
+          }),
         ],
         providerErrors: [],
+        accountIdsWithErrors: [],
       });
       const firstDate = new Date(2026, 6, 1);
       await runSimplefinSync(ctx.rawDb, firstDate);
@@ -352,9 +397,15 @@ describe("simplefin/sync", () => {
       // no explicit provider error.
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [
-          { id: "partial-1", name: "Checking", balance: 110, orgName: "Bank" },
+          bare({
+            id: "partial-1",
+            name: "Checking",
+            balance: 110,
+            orgName: "Bank",
+          }),
         ],
         providerErrors: [],
+        accountIdsWithErrors: [],
       });
       const secondDate = new Date(2026, 6, 2);
       const result = await runSimplefinSync(ctx.rawDb, secondDate);
@@ -385,10 +436,16 @@ describe("simplefin/sync", () => {
       // every partial attempt on day 1, until the retry cap is hit.
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [
-          { id: "cap-1", name: "Checking", balance: 100, orgName: "Bank" },
-          { id: "cap-2", name: "Savings", balance: 50, orgName: "Bank" },
+          bare({
+            id: "cap-1",
+            name: "Checking",
+            balance: 100,
+            orgName: "Bank",
+          }),
+          bare({ id: "cap-2", name: "Savings", balance: 50, orgName: "Bank" }),
         ],
         providerErrors: [],
+        accountIdsWithErrors: [],
       });
       const day0 = new Date(2026, 6, 10);
       await runSimplefinSync(ctx.rawDb, day0);
@@ -399,9 +456,15 @@ describe("simplefin/sync", () => {
       for (let i = 0; i < MAX_PARTIAL_SYNC_RETRIES_PER_DAY - 1; i++) {
         mockGetAccounts.mockResolvedValueOnce({
           accounts: [
-            { id: "cap-1", name: "Checking", balance: 100, orgName: "Bank" },
+            bare({
+              id: "cap-1",
+              name: "Checking",
+              balance: 100,
+              orgName: "Bank",
+            }),
           ],
           providerErrors: [],
+          accountIdsWithErrors: [],
         });
         await runSimplefinSync(ctx.rawDb, day1);
         const stillPending = await getSimplefinConnection(ctx.rawDb);
@@ -411,9 +474,15 @@ describe("simplefin/sync", () => {
       // Final attempt hits the cap — gives up and advances to day1.
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [
-          { id: "cap-1", name: "Checking", balance: 100, orgName: "Bank" },
+          bare({
+            id: "cap-1",
+            name: "Checking",
+            balance: 100,
+            orgName: "Bank",
+          }),
         ],
         providerErrors: [],
+        accountIdsWithErrors: [],
       });
       await runSimplefinSync(ctx.rawDb, day1);
       const after = await getSimplefinConnection(ctx.rawDb);
@@ -452,6 +521,7 @@ describe("simplefin/sync", () => {
       mockGetAccounts.mockResolvedValueOnce({
         accounts: [],
         providerErrors: [],
+        accountIdsWithErrors: [],
       });
       const asOfDate = new Date(2026, 5, 10);
       await runSimplefinSync(ctx.rawDb, asOfDate);
@@ -474,7 +544,12 @@ describe("simplefin/sync", () => {
   describe("upsertSimplefinAccounts", () => {
     it("defaults a brand-new account to included", async () => {
       const [row] = await upsertSimplefinAccounts(ctx.rawDb, [
-        { id: "new-acct-1", name: "New Account", balance: 50, orgName: "Bank" },
+        bare({
+          id: "new-acct-1",
+          name: "New Account",
+          balance: 50,
+          orgName: "Bank",
+        }),
       ]);
       expect(row!.isIncluded).toBe(true);
       expect(row!.lastBalance).toBe(50);
@@ -482,15 +557,25 @@ describe("simplefin/sync", () => {
 
     it("preserves a manually-excluded account's flag across re-upserts, but refreshes its balance", async () => {
       await upsertSimplefinAccounts(ctx.rawDb, [
-        { id: "toggle-1", name: "Toggle Me", balance: 10, orgName: "Bank" },
+        bare({
+          id: "toggle-1",
+          name: "Toggle Me",
+          balance: 10,
+          orgName: "Bank",
+        }),
       ]);
       await ctx.rawDb
-        .update(ctx.schema.simplefinAccounts)
+        .update(ctx.appSchema.simplefinAccounts)
         .set({ isIncluded: false })
         .where(eq(ctx.schema.simplefinAccounts.externalAccountId, "toggle-1"));
 
       const [row] = await upsertSimplefinAccounts(ctx.rawDb, [
-        { id: "toggle-1", name: "Toggle Me", balance: 99, orgName: "Bank" },
+        bare({
+          id: "toggle-1",
+          name: "Toggle Me",
+          balance: 99,
+          orgName: "Bank",
+        }),
       ]);
 
       expect(row!.isIncluded).toBe(false);
@@ -510,11 +595,11 @@ describe("simplefin/sync", () => {
       );
 
       await upsertSimplefinAccounts(ctx.rawDb, [
-        { id: "local-1", name: "A", balance: 40, orgName: "Bank" },
-        { id: "local-2", name: "B", balance: 60, orgName: "Bank" },
+        bare({ id: "local-1", name: "A", balance: 40, orgName: "Bank" }),
+        bare({ id: "local-2", name: "B", balance: 60, orgName: "Bank" }),
       ]);
       await ctx.rawDb
-        .update(ctx.schema.simplefinAccounts)
+        .update(ctx.appSchema.simplefinAccounts)
         .set({ isIncluded: false })
         .where(eq(ctx.schema.simplefinAccounts.externalAccountId, "local-2"));
 

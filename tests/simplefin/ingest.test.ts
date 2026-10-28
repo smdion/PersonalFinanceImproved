@@ -485,7 +485,7 @@ describe("ingestInvestmentData", () => {
         holdings: [
           {
             id: "p1",
-            symbol: null,
+            symbol: "", // the client sends "" when the institution omits one
             description: "Example Plan Fund",
             shares: 5,
             marketValue: 500,

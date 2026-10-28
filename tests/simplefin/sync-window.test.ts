@@ -63,7 +63,7 @@ describe("transaction window across syncs", () => {
     await saveSimplefinConnection(ctx.rawDb, "https://u:p@bridge.example");
     // Balances have been syncing daily before this version.
     await ctx.rawDb
-      .update(ctx.schema.apiConnections)
+      .update(ctx.appSchema.apiConnections)
       .set({ lastSyncedAt: new Date("2026-06-01T12:00:00Z") })
       .where(eq(ctx.schema.apiConnections.service, "simplefin"));
   });
@@ -111,7 +111,7 @@ describe("transaction window across syncs", () => {
     expect(await getWindowLimitDays(ctx.rawDb)).toBe(59);
     // The next request stays inside the learned limit.
     await ctx.rawDb
-      .delete(ctx.schema.appSettings)
+      .delete(ctx.appSchema.appSettings)
       .where(eq(ctx.schema.appSettings.key, "simplefin_investments_synced_at"));
     mockGetAccounts.mockResolvedValueOnce(response());
     const asOf = new Date("2026-06-07T12:00:00Z");

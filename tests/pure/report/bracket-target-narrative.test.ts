@@ -7,14 +7,23 @@ import {
 } from "@/lib/pure/report/bracket-target-narrative";
 import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
 
+type Candidate = BracketOptimizerResult["candidates"][number];
+
+/** The narrative reads target, cost and shortfall only — the tax split
+ *  (lifetimeTax, traditionalEnd) defaults to 0. */
 function optimizer(
-  candidates: BracketOptimizerResult["candidates"],
+  candidates: (Omit<Candidate, "lifetimeTax" | "traditionalEnd"> &
+    Partial<Candidate>)[],
   overrides: Partial<BracketOptimizerResult> = {},
 ): BracketOptimizerResult {
   return {
     recommendedTarget: null,
     currentTarget: null,
-    candidates,
+    candidates: candidates.map((c) => ({
+      lifetimeTax: 0,
+      traditionalEnd: 0,
+      ...c,
+    })),
     ...overrides,
   };
 }
