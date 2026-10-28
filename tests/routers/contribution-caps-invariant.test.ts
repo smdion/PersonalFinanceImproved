@@ -2,8 +2,9 @@
  * The cross-consumer invariant for IRS-limit caps: one person configured
  * over their 401(k) limit, and every figure that reads this year's
  * contribution — the contribution summary, the paycheck (per check and
- * pre-tax income), the engine payload (year-0 amounts and specs) and the
- * contribution mix — shows the same capped amount. A grep can't see
+ * pre-tax income), the engine payload (year-0 amounts and specs), a budget
+ * line linked to the account, and the contribution mix — shows the same
+ * capped amount. A grep can't see
  * `perPeriod × periods`; this can. The pay-stub check alone keeps the
  * configured amount (what payroll actually deducts).
  *
@@ -16,6 +17,7 @@ import {
   createTestCaller,
   seedStandardDataset,
   seedContributionProfile,
+  seedBudgetItem,
 } from "./setup";
 import {
   buildEnginePayload,
@@ -171,6 +173,31 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
       [2050, 35750],
       [2054, 32500],
     ]);
+  });
+
+  it("a budget line linked to the account (budget summary and profile list)", async () => {
+    const budgetProfileId = t.db
+      .select({ id: schema.budgetProfiles.id })
+      .from(schema.budgetProfiles)
+      .where(eq(schema.budgetProfiles.isActive, true))
+      .get()!.id;
+    const itemId = seedBudgetItem(t.db, budgetProfileId, {
+      category: "Investing",
+      subcategory: "401(k)",
+      amounts: [999], // never read once linked
+      contributionAccountId: accountId,
+    });
+    const summary = await t.caller.budget.computeActiveSummary();
+    const item = summary.rawItems!.find((i) => i.id === itemId)!;
+    expect(item.contribAmounts![0]).toBeCloseTo(LIMIT / 12, 2);
+    const listed = (await t.caller.budget.listProfiles()).find(
+      (p) => p.id === budgetProfileId,
+    )!;
+    expect(JSON.stringify(listed)).not.toContain(String(CONFIGURED / 12));
+    t.db
+      .delete(schema.budgetItems)
+      .where(eq(schema.budgetItems.id, itemId))
+      .run();
   });
 
   it("the contribution mix", async () => {
