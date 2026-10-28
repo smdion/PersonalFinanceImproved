@@ -157,8 +157,8 @@ describe("retirement profile-switch salary injection", () => {
         .run();
     }
 
-    const data = await fetchRetirementData(testCaller.db, {});
-    const result = await buildEnginePayload(testCaller.db, data, {});
+    const data = await fetchRetirementData(testCaller.rawDb, {});
+    const result = await buildEnginePayload(testCaller.rawDb, data, {});
     if (!result) throw new Error("buildEnginePayload returned null");
     payload = result;
   });

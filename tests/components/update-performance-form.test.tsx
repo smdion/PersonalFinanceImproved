@@ -187,7 +187,7 @@ describe("UpdatePerformanceForm", () => {
     expect(screen.getByText(/No SimpleFIN feed/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
-    const input = batchMutate.mock.calls[0][0] as {
+    const input = batchMutate.mock.calls[0]![0] as {
       accounts: {
         id: number;
         totalContributions: string;
@@ -275,7 +275,7 @@ describe("UpdatePerformanceForm", () => {
       screen.getByText(/Kept the figures you'd already edited/),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
-    const { accounts } = batchMutate.mock.calls[0][0] as {
+    const { accounts } = batchMutate.mock.calls[0]![0] as {
       accounts: { id: number; totalContributions: string }[];
     };
     expect(accounts.find((a) => a.id === 1)!.totalContributions).toBe(
@@ -359,7 +359,7 @@ describe("UpdatePerformanceForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
 
     expect(batchMutate).toHaveBeenCalledTimes(1);
-    const { accounts } = batchMutate.mock.calls[0][0] as {
+    const { accounts } = batchMutate.mock.calls[0]![0] as {
       accounts: { id: number; yearlyGainLoss: string; endingBalance: string }[];
     };
     expect(accounts).toHaveLength(2);
@@ -402,7 +402,7 @@ describe("UpdatePerformanceForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Use that" }));
     expect(screen.queryByText(/Last year ended at/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
-    const { accounts } = batchMutate.mock.calls[0][0] as {
+    const { accounts } = batchMutate.mock.calls[0]![0] as {
       accounts: {
         id: number;
         beginningBalance: string;
@@ -438,7 +438,7 @@ describe("UpdatePerformanceForm", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
 
-    const { accounts } = batchMutate.mock.calls[0][0] as {
+    const { accounts } = batchMutate.mock.calls[0]![0] as {
       accounts: { id: number; yearlyGainLoss: string }[];
     };
     const acct1 = accounts.find((a) => a.id === 1)!;

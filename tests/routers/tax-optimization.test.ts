@@ -206,7 +206,7 @@ describe("projection router — compareWithdrawalStrategies", () => {
         .sort((a, b) => a.lifetimeTax - b.lifetimeTax)[0];
       // baselineLabel is only forced to the overall-cheapest when at least
       // one strategy doesn't deplete; this fixture doesn't deplete.
-      expect(res.baselineLabel).toBe(cheapest.label);
+      expect(res.baselineLabel).toBe(cheapest!.label);
     } finally {
       cleanup();
     }
@@ -256,8 +256,8 @@ describe("projection router — rothConversionWhatIf", () => {
       };
       expect(r.candidates.length).toBeGreaterThan(0);
       for (let i = 1; i < r.candidates.length; i++) {
-        expect(r.candidates[i].netCost).toBeGreaterThanOrEqual(
-          r.candidates[i - 1].netCost,
+        expect(r.candidates[i]!.netCost).toBeGreaterThanOrEqual(
+          r.candidates[i - 1]!.netCost,
         );
       }
     } finally {
@@ -272,9 +272,9 @@ describe("projection router — rothConversionWhatIf", () => {
 
       // Baseline projection to learn the horizon + starting Traditional balance.
       const base = await caller.projection.projectTaxYears({});
-      const firstYear = base.rows[0].year;
-      const lastYear = base.rows[base.rows.length - 1].year;
-      const startingTraditional = base.rows[0].balanceByTaxType.preTax;
+      const firstYear = base.rows[0]!.year;
+      const lastYear = base.rows[base.rows.length - 1]!.year;
+      const startingTraditional = base.rows[0]!.balanceByTaxType.preTax;
 
       const res = await caller.projection.rothConversionWhatIf({
         mode: "explicit",

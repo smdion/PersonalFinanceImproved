@@ -103,7 +103,7 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
       { recommendedTarget: 0.22, currentTarget: 0.12 },
     );
     screen.getByText("Apply").click();
-    const patch = mutate.mock.calls[0][0];
+    const patch = mutate.mock.calls[0]![0];
     expect(patch.rothBracketTarget).toBe("0.22");
     expect(patch.rothConversionTarget).toBeUndefined();
     expect(patch.rmdSmoothingMaxBracketTarget).toBeUndefined();
@@ -116,7 +116,7 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
       { recommendedTarget: 0.22, currentTarget: 0.12 },
     );
     screen.getByText("Apply").click();
-    const patch = mutate.mock.calls[0][0];
+    const patch = mutate.mock.calls[0]![0];
     expect(patch.rothBracketTarget).toBe("0.22");
     expect(patch.rothConversionTarget).toBe("0.22");
     expect(patch.rmdSmoothingMaxBracketTarget).toBeUndefined();
@@ -132,7 +132,7 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
     );
     expect(screen.getByText(/RMD Smoothing ceiling/)).toBeInTheDocument();
     screen.getByText("Apply").click();
-    const patch = mutate.mock.calls[0][0];
+    const patch = mutate.mock.calls[0]![0];
     expect(patch.rothBracketTarget).toBe("0.22");
     expect(patch.rothConversionTarget).toBeUndefined();
     expect(patch.rmdSmoothingMaxBracketTarget).toBe("0.22");
@@ -144,7 +144,7 @@ describe("TaxesSection — withdrawal bracket optimizer recommendation", () => {
       { recommendedTarget: 0.22, currentTarget: 0.12 },
     );
     screen.getByText("Apply").click();
-    const patch = mutate.mock.calls[0][0];
+    const patch = mutate.mock.calls[0]![0];
     expect(patch.rothBracketTarget).toBe("0.22");
     expect(patch.rothConversionTarget).toBe("0.22");
     expect(patch.rmdSmoothingMaxBracketTarget).toBe("0.22");
@@ -175,7 +175,7 @@ describe("TaxesSection — Withdrawal Routing (persisted default)", () => {
     (select as HTMLSelectElement).value = "percentage";
     select.dispatchEvent(new Event("change", { bubbles: true }));
     expect(mutate).toHaveBeenCalled();
-    const patch = mutate.mock.calls[0][0];
+    const patch = mutate.mock.calls[0]![0];
     expect(patch.withdrawalRoutingMode).toBe("percentage");
     expect(patch.profileId).toBe(settings.profileId);
   });
@@ -189,7 +189,7 @@ describe("TaxesSection — Withdrawal Order / Splits (persisted defaults)", () =
     // Each account past the first has a "Move <cat> left" button.
     fireEvent.click(screen.getByTitle("Move 403b left"));
     expect(mutate).toHaveBeenCalledTimes(1);
-    const patch = mutate.mock.calls[0][0];
+    const patch = mutate.mock.calls[0]![0];
     expect(patch.withdrawalOrder).toEqual([
       "403b",
       "401k",
@@ -212,7 +212,7 @@ describe("TaxesSection — Withdrawal Order / Splits (persisted defaults)", () =
       withdrawalOrder: ["hsa", "brokerage", "ira", "403b", "401k"],
     });
     fireEvent.click(screen.getByText("Reset to default order"));
-    expect(mutate.mock.calls[0][0].withdrawalOrder).toBeNull();
+    expect(mutate.mock.calls[0]![0].withdrawalOrder).toBeNull();
   });
 
   it("hides the splits grid unless routing mode is percentage", () => {
@@ -238,7 +238,7 @@ describe("TaxesSection — Withdrawal Order / Splits (persisted defaults)", () =
     expect(mutate).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText("Save splits"));
     expect(mutate).toHaveBeenCalledTimes(1);
-    const patch = mutate.mock.calls[0][0];
+    const patch = mutate.mock.calls[0]![0];
     expect(patch.withdrawalSplits["401k"]).toBeCloseTo(0.4);
     expect(patch.withdrawalSplits.ira).toBeCloseTo(0.25);
   });

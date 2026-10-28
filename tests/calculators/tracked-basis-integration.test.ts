@@ -222,14 +222,14 @@ describe("Tracked Roth basis draw-down — full pipeline", () => {
     expect(firstLockedIdx).toBeGreaterThan(-1);
 
     const firstLockedYear = iraYears[firstLockedIdx];
-    expect(firstLockedYear.basisRemaining).toBe(0);
+    expect(firstLockedYear!.basisRemaining).toBe(0);
 
     // Every year before the flip (once withdrawals have started) had
     // basisRemaining > 0 while unlocked.
     for (let i = 0; i < firstLockedIdx; i++) {
       const y = iraYears[i];
-      if (y.withdrawal > 0 && y.locked !== undefined) {
-        expect(y.locked).toBe(false);
+      if (y!.withdrawal > 0 && y!.locked !== undefined) {
+        expect(y!.locked).toBe(false);
       }
     }
 
@@ -237,8 +237,8 @@ describe("Tracked Roth basis draw-down — full pipeline", () => {
     // never replenishes without new contributions, and this fixture makes
     // none post-retirement).
     for (let i = firstLockedIdx; i < iraYears.length; i++) {
-      if (iraYears[i].withdrawal > 0 || iraYears[i].balance > 0) {
-        expect(iraYears[i].locked).toBe(true);
+      if (iraYears[i]!.withdrawal > 0 || iraYears[i]!.balance > 0) {
+        expect(iraYears[i]!.locked).toBe(true);
       }
     }
   });

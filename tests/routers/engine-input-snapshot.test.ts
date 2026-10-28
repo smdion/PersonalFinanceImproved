@@ -134,10 +134,10 @@ describe("engine input snapshot guard", () => {
       .run();
 
     // Fetch + build the payload that feeds every compute endpoint
-    const data = await fetchRetirementData(testCaller.db, {
+    const data = await fetchRetirementData(testCaller.rawDb, {
       contributionProfileId: contribProfileId,
     });
-    const result = await buildEnginePayload(testCaller.db, data, {
+    const result = await buildEnginePayload(testCaller.rawDb, data, {
       contributionProfileId: contribProfileId,
     });
     if (!result) {

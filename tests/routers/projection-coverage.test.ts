@@ -500,13 +500,13 @@ describe("projection router — computeMonteCarloProjection", () => {
       expect(response.result).not.toBeNull();
       expect(response.result!.successRate).toBeGreaterThanOrEqual(0);
       expect(response.result!.successRate).toBeLessThanOrEqual(1);
-      expect(response.simulationInputs.retirementAge).toBe(65);
-      expect(response.simulationInputs.assetClasses.map((a) => a.name)).toEqual(
-        ["Stocks", "Bonds"],
-      );
-      expect(response.simulationInputs.preset).toBe("custom");
-      expect(response.simulationInputs.presetLabel).toBe("Custom");
-      expect(response.simulationInputs.taxMode).toBe("simple");
+      expect(response.simulationInputs!.retirementAge).toBe(65);
+      expect(
+        response.simulationInputs!.assetClasses.map((a) => a.name),
+      ).toEqual(["Stocks", "Bonds"]);
+      expect(response.simulationInputs!.preset).toBe("custom");
+      expect(response.simulationInputs!.presetLabel).toBe("Custom");
+      expect(response.simulationInputs!.taxMode).toBe("simple");
     } finally {
       cleanup();
     }
@@ -528,7 +528,7 @@ describe("projection router — computeMonteCarloProjection", () => {
       });
 
       expect(response.result).not.toBeNull();
-      expect(response.simulationInputs.taxMode).toBe("advanced");
+      expect(response.simulationInputs!.taxMode).toBe("advanced");
     } finally {
       cleanup();
     }
@@ -591,11 +591,11 @@ describe("projection router — computeMonteCarloProjection", () => {
         .run();
 
       const after = await run("simple");
-      expect(after.simulationInputs.startingBalance).toBe(
-        before.simulationInputs.startingBalance,
+      expect(after.simulationInputs!.startingBalance).toBe(
+        before.simulationInputs!.startingBalance,
       );
-      expect(after.simulationInputs.annualContributions).toBeCloseTo(
-        before.simulationInputs.annualContributions,
+      expect(after.simulationInputs!.annualContributions).toBeCloseTo(
+        before.simulationInputs!.annualContributions,
         2,
       );
       expect(after.result!.successRate).toBe(before.result!.successRate);
@@ -603,8 +603,8 @@ describe("projection router — computeMonteCarloProjection", () => {
         before.result!.percentileBands,
       );
       // The assumptions panel shows retirement money in Advanced too.
-      expect((await run("advanced")).simulationInputs.startingBalance).toBe(
-        before.simulationInputs.startingBalance,
+      expect((await run("advanced")).simulationInputs!.startingBalance).toBe(
+        before.simulationInputs!.startingBalance,
       );
     } finally {
       cleanup();
@@ -642,7 +642,7 @@ describe("projection router — computeMonteCarloProjection", () => {
         seed: 42,
       });
       expect(response.result).not.toBeNull();
-      expect(response.simulationInputs.preset).toBe("default");
+      expect(response.simulationInputs!.preset).toBe("default");
     } finally {
       cleanup();
     }
@@ -664,8 +664,8 @@ describe("projection router — computeMonteCarloProjection", () => {
       });
 
       expect(response.result).not.toBeNull();
-      expect(response.simulationInputs.hasAssetClassOverrides).toBe(true);
-      const stockClass = response.simulationInputs.assetClasses.find(
+      expect(response.simulationInputs!.hasAssetClassOverrides).toBe(true);
+      const stockClass = response.simulationInputs!.assetClasses.find(
         (ac: { id: number }) => ac.id === 1,
       );
       expect(stockClass?.meanReturn).toBeCloseTo(0.12);
@@ -727,11 +727,11 @@ describe("projection router — computeMonteCarloProjection", () => {
       expect(response.result).not.toBeNull();
       expect(response.savedOverrides.assetClassOverrides).toHaveLength(1);
       // Saved overrides are applied to the run, not just echoed back.
-      const stocks = response.simulationInputs.assetClasses.find(
+      const stocks = response.simulationInputs!.assetClasses.find(
         (ac: { id: number }) => ac.id === 1,
       );
       expect(stocks?.meanReturn).toBeCloseTo(0.11);
-      expect(response.simulationInputs.inflationRisk.meanRate).toBeCloseTo(
+      expect(response.simulationInputs!.inflationRisk.meanRate).toBeCloseTo(
         0.035,
       );
     } finally {
@@ -764,10 +764,12 @@ describe("projection router — computeMonteCarloProjection", () => {
 
       expect(response.result).not.toBeNull();
       // The explicit inflationRisk should take priority
-      expect(response.simulationInputs.inflationRisk.meanRate).toBeCloseTo(
+      expect(response.simulationInputs!.inflationRisk.meanRate).toBeCloseTo(
         0.02,
       );
-      expect(response.simulationInputs.inflationRisk.stdDev).toBeCloseTo(0.008);
+      expect(response.simulationInputs!.inflationRisk.stdDev).toBeCloseTo(
+        0.008,
+      );
     } finally {
       cleanup();
     }
@@ -790,8 +792,12 @@ describe("projection router — computeMonteCarloProjection", () => {
       });
 
       expect(response.result).not.toBeNull();
-      expect(response.simulationInputs.accumulationExpenseOverride).toBe(50000);
-      expect(response.simulationInputs.decumulationExpenseOverride).toBe(40000);
+      expect(response.simulationInputs!.accumulationExpenseOverride).toBe(
+        50000,
+      );
+      expect(response.simulationInputs!.decumulationExpenseOverride).toBe(
+        40000,
+      );
     } finally {
       cleanup();
     }
@@ -850,7 +856,7 @@ describe("projection router — computeMonteCarloProjection cache", () => {
       const first = await caller.projection.computeMonteCarloProjection(input);
       const second = await caller.projection.computeMonteCarloProjection(input);
 
-      expect(second.simulationInputs.seed).toBe(first.simulationInputs.seed);
+      expect(second.simulationInputs!.seed).toBe(first.simulationInputs!.seed);
       expect(second.result).toEqual(first.result);
       const rows = db.select().from(schema.projectionCache).all();
       expect(rows).toHaveLength(1);
@@ -871,8 +877,8 @@ describe("projection router — computeMonteCarloProjection cache", () => {
       const first = await caller.projection.computeMonteCarloProjection(input);
       const second = await caller.projection.computeMonteCarloProjection(input);
 
-      expect(first.simulationInputs.seed).toBe(777);
-      expect(second.simulationInputs.seed).toBe(777);
+      expect(first.simulationInputs!.seed).toBe(777);
+      expect(second.simulationInputs!.seed).toBe(777);
       expect(second.result).toEqual(first.result);
     } finally {
       cleanup();
@@ -896,8 +902,8 @@ describe("projection router — computeMonteCarloProjection cache", () => {
 
       const rows = db.select().from(schema.projectionCache).all();
       expect(rows).toHaveLength(1);
-      expect(refreshed.simulationInputs.seed).not.toBe(
-        first.simulationInputs.seed,
+      expect(refreshed.simulationInputs!.seed).not.toBe(
+        first.simulationInputs!.seed,
       );
     } finally {
       cleanup();
@@ -919,7 +925,7 @@ describe("projection router — computeMonteCarloProjection cache", () => {
       });
 
       expect(response.result).toBeNull();
-      expect(response.simulationInputs.seed).toBeNull();
+      expect(response.simulationInputs!.seed).toBeNull();
       const rows = db.select().from(schema.projectionCache).all();
       expect(rows).toHaveLength(0);
     } finally {
@@ -943,8 +949,8 @@ describe("projection router — computeMonteCarloProjection cache", () => {
       });
 
       expect(peeked.result).toEqual(real.result);
-      expect(peeked.simulationInputs.seed).toBe(real.simulationInputs.seed);
-      expect(peeked.simulationInputs.computedAt).not.toBeNull();
+      expect(peeked.simulationInputs!.seed).toBe(real.simulationInputs!.seed);
+      expect(peeked.simulationInputs!.computedAt).not.toBeNull();
       const rows = db.select().from(schema.projectionCache).all();
       expect(rows).toHaveLength(1);
     } finally {
@@ -1026,7 +1032,7 @@ describe("projection router — computeMonteCarloProjection cache", () => {
       });
 
       expect(peeked.result).toEqual(real.result);
-      expect(peeked.simulationInputs.seed).toBe(real.simulationInputs.seed);
+      expect(peeked.simulationInputs!.seed).toBe(real.simulationInputs!.seed);
       // Still exactly one row — peekOnly+forceRefresh together must not
       // trigger a fresh computation/write.
       const rows = db.select().from(schema.projectionCache).all();
@@ -1441,7 +1447,7 @@ describe("projection router — computeProjection edge cases", () => {
       });
 
       expect(response).toHaveProperty("people");
-      expect(response.people.length).toBeGreaterThanOrEqual(1);
+      expect(response.people!.length).toBeGreaterThanOrEqual(1);
     } finally {
       cleanup();
     }
@@ -1504,7 +1510,7 @@ describe("projection router — computeProjection edge cases", () => {
       });
 
       expect(response.result).not.toBeNull();
-      expect(response.contributionSpecs.length).toBeGreaterThanOrEqual(1);
+      expect(response.contributionSpecs!.length).toBeGreaterThanOrEqual(1);
     } finally {
       cleanup();
     }
@@ -1532,11 +1538,11 @@ describe("projection router — computeProjection edge cases", () => {
       });
 
       const summary = response.returnRateSummary;
-      expect(summary.retirementRate).toBeCloseTo(0.05);
+      expect(summary!.retirementRate).toBeCloseTo(0.05);
       // The glide from 7% (35) to 5% (65) averages in between.
-      expect(summary.avgAccumulation).toBeLessThan(0.07);
-      expect(summary.avgAccumulation).toBeGreaterThan(0.05);
-      expect(summary.schedule.length).toBeGreaterThan(0);
+      expect(summary!.avgAccumulation).toBeLessThan(0.07);
+      expect(summary!.avgAccumulation).toBeGreaterThan(0.05);
+      expect(summary!.schedule.length).toBeGreaterThan(0);
     } finally {
       cleanup();
     }
@@ -1563,7 +1569,7 @@ describe("projection router — MC edge cases", () => {
       });
 
       expect(response.result).not.toBeNull();
-      expect(response.simulationInputs.glidePath).toHaveLength(0);
+      expect(response.simulationInputs!.glidePath).toHaveLength(0);
     } finally {
       cleanup();
     }
@@ -1654,12 +1660,12 @@ describe("projection router — MC edge cases", () => {
       });
 
       expect(response.result).not.toBeNull();
-      expect(response.simulationInputs.hasAssetClassOverrides).toBe(true);
+      expect(response.simulationInputs!.hasAssetClassOverrides).toBe(true);
       // Both overrides should be active
-      const stockClass = response.simulationInputs.assetClasses.find(
+      const stockClass = response.simulationInputs!.assetClasses.find(
         (ac: { id: number }) => ac.id === 1,
       );
-      const bondClass = response.simulationInputs.assetClasses.find(
+      const bondClass = response.simulationInputs!.assetClasses.find(
         (ac: { id: number }) => ac.id === 2,
       );
       expect(stockClass?.meanReturn).toBeCloseTo(0.11);
@@ -1694,7 +1700,7 @@ describe("projection router — MC edge cases", () => {
       });
 
       expect(response.result).not.toBeNull();
-      const stockClass = response.simulationInputs.assetClasses.find(
+      const stockClass = response.simulationInputs!.assetClasses.find(
         (ac: { id: number }) => ac.id === 1,
       );
       expect(stockClass?.meanReturn).toBeCloseTo(0.15);

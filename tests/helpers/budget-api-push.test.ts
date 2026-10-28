@@ -129,7 +129,7 @@ describe("pushSnapshotToBudgetApi — aggregation + create mode", () => {
     });
     expect(client.createTransaction).toHaveBeenCalledTimes(1);
     const call = (client.createTransaction as ReturnType<typeof vi.fn>).mock
-      .calls[0][0];
+      .calls[0]![0];
     // total 1500 - live 1200 = 300
     expect(call.amount).toBe(300);
     expect(call.memo).toContain("snapshot:7");
@@ -166,7 +166,7 @@ describe("pushSnapshotToBudgetApi — aggregation + create mode", () => {
     });
 
     const call = (client.createTransaction as ReturnType<typeof vi.fn>).mock
-      .calls[0][0];
+      .calls[0]![0];
     // Not double-counted: 1000, not 2000.
     expect(call.amount).toBe(1000);
     expect(call.memo).toContain("Alice IRA");

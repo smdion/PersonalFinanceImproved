@@ -26,10 +26,10 @@ describe("buildSocialSecurityEntries", () => {
       ],
       "Single",
     );
-    expect(a.annualAmount).toBe(24000);
-    expect(b.annualAmount).toBe(18000);
-    expect(a.startAge).toBe(62);
-    expect(b.startAge).toBe(70);
+    expect(a!.annualAmount).toBe(24000);
+    expect(b!.annualAmount).toBe(18000);
+    expect(a!.startAge).toBe(62);
+    expect(b!.startAge).toBe(70);
   });
 
   it("PIA opted-in -> claiming-age-adjusted own benefit", () => {
@@ -44,7 +44,7 @@ describe("buildSocialSecurityEntries", () => {
       ],
       "Single",
     );
-    expect(a.annualAmount).toBeCloseTo(48000 * 0.7, 2);
+    expect(a!.annualAmount).toBeCloseTo(48000 * 0.7, 2);
   });
 
   it("MFJ + 2: the low earner is bumped to 50% of the worker's PIA (greater-of)", () => {
@@ -65,10 +65,10 @@ describe("buildSocialSecurityEntries", () => {
     );
     // Alex: own $48k * 0.70 = $33,600. Spousal off Sam's record needs
     // Sam to have a PIA — Sam doesn't, so Alex keeps own.
-    expect(alex.annualAmount).toBeCloseTo(33600, 2);
+    expect(alex!.annualAmount).toBeCloseTo(33600, 2);
     // Sam: own flat $21,600 vs 50% of Alex's $48k PIA (claimed at FRA,
     // unreduced) = $24,000 -> bumped to $24,000.
-    expect(sam.annualAmount).toBeCloseTo(24000, 2);
+    expect(sam!.annualAmount).toBeCloseTo(24000, 2);
   });
 
   it("MFJ + 2, both opted into PIA: exact own+excess formula for an early claimer", () => {
@@ -98,7 +98,7 @@ describe("buildSocialSecurityEntries", () => {
       ],
       "MFJ",
     );
-    expect(low.annualAmount).toBeCloseTo(16200, 2);
+    expect(low!.annualAmount).toBeCloseTo(16200, 2);
   });
 
   it("MFJ + 2: no spousal top-up before the worker has filed", () => {
@@ -117,7 +117,7 @@ describe("buildSocialSecurityEntries", () => {
       ],
       "MFJ",
     );
-    expect(sam.annualAmount).toBe(21600); // own flat, no spousal
+    expect(sam!.annualAmount).toBe(21600); // own flat, no spousal
   });
 
   it("does not apply spousal math for Single / HOH / 3+ people", () => {
@@ -154,11 +154,11 @@ describe("buildSocialSecurityEntries", () => {
       "Single",
       3, // delay everyone 3 years
     );
-    expect(a.startAge).toBe(65); // 62 + 3
-    expect(b.startAge).toBe(70); // 69 + 3, clamped at 70
+    expect(a!.startAge).toBe(65); // 62 + 3
+    expect(b!.startAge).toBe(70); // 69 + 3, clamped at 70
     // Person A now claims at 65 (24mo early, FRA 67 -> 0.8667 multiplier).
-    expect(a.annualAmount).toBeCloseTo(48000 * (1 - 24 * (5 / 9 / 100)), 0);
+    expect(a!.annualAmount).toBeCloseTo(48000 * (1 - 24 * (5 / 9 / 100)), 0);
     // Person B: no PIA, flat unchanged by the shift.
-    expect(b.annualAmount).toBe(18000);
+    expect(b!.annualAmount).toBe(18000);
   });
 });

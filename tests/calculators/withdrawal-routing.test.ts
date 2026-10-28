@@ -16,10 +16,10 @@ import type { AccountCategory, AccountBalances } from "@/lib/calculators/types";
 import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
 import { shippedTaxTables } from "../helpers/tax-data";
 
-function slotFor(
-  slots: { category: string; withdrawal: number }[],
-  cat: string,
-) {
+/** Read only with a filing status; these tests mostly route without one. */
+const LTCG = shippedTaxTables().ltcgBrackets;
+
+function slotFor<T extends { category: string }>(slots: T[], cat: string) {
   return slots.find((s) => s.category === cat);
 }
 
@@ -936,6 +936,7 @@ function lockedBalances(overrides: Partial<AccountBalances> = {}): {
     penaltyExposedRothStillExcluded: penaltyExposedRoth,
     penaltyExposedTotalStillExcluded: penaltyExposedTotal,
     totalPenaltyExposedStillExcluded: 100000,
+    reachableByCategory: {}, // no reachability cap
   };
   return { balances, eligibility };
 }
@@ -951,7 +952,7 @@ describe("routeForMode (Tier B eligibility gate)", () => {
       20000,
       config,
       balances,
-      { taxableSS: 0 },
+      { ltcgBrackets: LTCG, taxableSS: 0 },
       eligibility,
     );
     expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBe(0);
@@ -1005,6 +1006,7 @@ describe("routeForMode (Tier B eligibility gate)", () => {
       penaltyExposedRothStillExcluded: lockedRoth,
       penaltyExposedTotalStillExcluded: lockedTotal,
       totalPenaltyExposedStillExcluded: 100000,
+      reachableByCategory: {}, // no reachability cap
     };
     const config = makeDecumulationConfig({
       withdrawalRoutingMode: "waterfall",
@@ -1017,7 +1019,7 @@ describe("routeForMode (Tier B eligibility gate)", () => {
       20000,
       config,
       balances,
-      { taxableSS: 0 },
+      { ltcgBrackets: LTCG, taxableSS: 0 },
       fullyLockedEligibility,
     );
     expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBe(0);
@@ -1042,7 +1044,7 @@ describe("routeForMode (Tier B eligibility gate)", () => {
       90000,
       config,
       balances,
-      { taxableSS: 0 },
+      { ltcgBrackets: LTCG, taxableSS: 0 },
       eligibility,
     );
     expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBe(0);
@@ -1066,7 +1068,7 @@ describe("routeForMode (Tier B eligibility gate)", () => {
       20000,
       config,
       balances,
-      { taxableSS: 0 },
+      { ltcgBrackets: LTCG, taxableSS: 0 },
       eligibility,
     );
     // Configured order wins: 401k (first in withdrawalOrder) drawn from
@@ -1076,6 +1078,7 @@ describe("routeForMode (Tier B eligibility gate)", () => {
     expect(slotFor(result.slots, "brokerage")?.withdrawal ?? 0).toBe(0);
 
     const withoutEligibility = routeForMode(20000, config, balances, {
+      ltcgBrackets: LTCG,
       taxableSS: 0,
     });
     expect(result.slots).toEqual(withoutEligibility.slots);
@@ -1096,10 +1099,11 @@ describe("routeForMode (Tier B eligibility gate)", () => {
       20000,
       config,
       balances,
-      { taxableSS: 0 },
+      { ltcgBrackets: LTCG, taxableSS: 0 },
       noLock,
     );
     const withoutRecord = routeForMode(20000, config, balances, {
+      ltcgBrackets: LTCG,
       taxableSS: 0,
     });
     expect(withRecord.slots).toEqual(withoutRecord.slots);
@@ -1128,7 +1132,7 @@ describe("routeForMode (Tier B eligibility gate)", () => {
       20000,
       config,
       balances,
-      { taxableSS: 0 },
+      { ltcgBrackets: LTCG, taxableSS: 0 },
       eligibility,
     );
     expect(slotFor(result.slots, "brokerage")?.withdrawal).toBe(10000);
@@ -1162,7 +1166,7 @@ describe("routeForMode (Tier B eligibility gate)", () => {
         90000,
         config,
         balances,
-        { taxableSS: 0, taxBrackets: TEST_BRACKETS },
+        { ltcgBrackets: LTCG, taxableSS: 0, taxBrackets: TEST_BRACKETS },
         eligibility,
       );
       expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBe(0);
@@ -1183,7 +1187,10 @@ describe("routeForMode (Tier B eligibility gate)", () => {
       withdrawalRoutingMode: "waterfall",
       withdrawalOrder: ["401k"],
     });
-    const result = routeForMode(50000, config, balances, { taxableSS: 0 });
+    const result = routeForMode(50000, config, balances, {
+      ltcgBrackets: LTCG,
+      taxableSS: 0,
+    });
     expect(result.unmetNeed).toBeGreaterThan(0);
     expect(result.penaltyAvoidedShortfall ?? 0).toBe(0);
   });
@@ -1215,15 +1222,17 @@ describe("routeForMode (Tier B eligibility gate)", () => {
       penaltyExposedRothStillExcluded: zeroByCat(),
       penaltyExposedTotalStillExcluded: zeroByCat(),
       totalPenaltyExposedStillExcluded: 0,
+      reachableByCategory: {}, // no reachability cap
     };
     const withZeroExposure = routeForMode(
       50000,
       config,
       balances,
-      { taxableSS: 0 },
+      { ltcgBrackets: LTCG, taxableSS: 0 },
       zeroExposure,
     );
     const withNoExposureArg = routeForMode(50000, config, balances, {
+      ltcgBrackets: LTCG,
       taxableSS: 0,
     });
     expect(withZeroExposure.slots).toEqual(withNoExposureArg.slots);
@@ -1241,10 +1250,11 @@ describe("routeForMode (Tier B eligibility gate)", () => {
       50000,
       config,
       balances,
-      { taxableSS: 0 },
+      { ltcgBrackets: LTCG, taxableSS: 0 },
       eligibility,
     );
     const withNoEligibilityArg = routeForMode(50000, config, balances, {
+      ltcgBrackets: LTCG,
       taxableSS: 0,
     });
     expect(withEligibility.slots).toEqual(withNoEligibilityArg.slots);
@@ -1285,7 +1295,7 @@ describe("routeForMode (nonRetirement exclusion, R49)", () => {
       50000,
       config,
       balances,
-      { taxableSS: 0 },
+      { ltcgBrackets: LTCG, taxableSS: 0 },
       undefined,
       nonRetirement,
     );
@@ -1309,7 +1319,7 @@ describe("routeForMode (nonRetirement exclusion, R49)", () => {
       50000,
       config,
       balances,
-      { taxableSS: 0 },
+      { ltcgBrackets: LTCG, taxableSS: 0 },
       eligibility, // 401k fully penalty-exposed, still excluded
       nonRetirement, // brokerage 90% Portfolio-parented
     );
@@ -1334,13 +1344,14 @@ describe("routeForMode (nonRetirement exclusion, R49)", () => {
       withdrawalOrder: ["brokerage"],
     });
     const withUndefined = routeForMode(50000, config, balances, {
+      ltcgBrackets: LTCG,
       taxableSS: 0,
     });
     const withAllZero = routeForMode(
       50000,
       config,
       balances,
-      { taxableSS: 0 },
+      { ltcgBrackets: LTCG, taxableSS: 0 },
       undefined,
       nonRetirementFor("brokerage", 0),
     );
@@ -1387,6 +1398,7 @@ describe("routeForMode (waterfall + Roth-bracket-overlay surfaces bracketTraditi
     });
     const balances = makeAccountBalances({ preTax: 300000 });
     const result = routeForMode(80000, config, balances, {
+      ltcgBrackets: LTCG,
       taxableSS: 0,
     });
     expect(result.traditionalCap).toBeUndefined();
@@ -1398,6 +1410,7 @@ describe("routeForMode (waterfall + Roth-bracket-overlay surfaces bracketTraditi
     });
     const balances = makeAccountBalances({ preTax: 300000 });
     const result = routeForMode(80000, config, balances, {
+      ltcgBrackets: LTCG,
       rothBracketTarget: 0.22,
       taxableSS: 0,
     });
@@ -1459,6 +1472,7 @@ function allowedAccountEligibility(): EligibilityRecord {
     penaltyExposedRothStillExcluded: { ...zero },
     penaltyExposedTotalStillExcluded: { ...zero },
     totalPenaltyExposedStillExcluded: 0,
+    reachableByCategory: {}, // no reachability cap
   };
 }
 
@@ -1479,7 +1493,7 @@ describe("routeForMode (R44 — true last-resort for R41-allowed penalty exposur
       20000, // well within brokerage's 60000 alone
       config,
       balances,
-      { taxableSS: 0 },
+      { ltcgBrackets: LTCG, taxableSS: 0 },
       allowedAccountEligibility(),
     );
     expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBe(0);
@@ -1503,7 +1517,7 @@ describe("routeForMode (R44 — true last-resort for R41-allowed penalty exposur
       90000, // exceeds brokerage's 60000 alone by 30000
       config,
       balances,
-      { taxableSS: 0 },
+      { ltcgBrackets: LTCG, taxableSS: 0 },
       allowedAccountEligibility(),
     );
     // Every non-allowed dollar (brokerage) drawn first...
@@ -1547,7 +1561,7 @@ describe("routeForMode (R44 — true last-resort for R41-allowed penalty exposur
       100000,
       config,
       balances,
-      { taxableSS: 0 },
+      { ltcgBrackets: LTCG, taxableSS: 0 },
       eligibility,
     );
     expect(slotFor(result.slots, "brokerage")?.withdrawal).toBe(60000);
@@ -1573,7 +1587,7 @@ describe("routeForMode (R44 — true last-resort for R41-allowed penalty exposur
       90000,
       config,
       balances,
-      { taxableSS: 0 },
+      { ltcgBrackets: LTCG, taxableSS: 0 },
       allowedAccountEligibility(),
     );
     const totalDrawn = twoPass.slots.reduce((s, sl) => s + sl.withdrawal, 0);
@@ -1636,7 +1650,12 @@ describe("routeForMode (R44 — true last-resort for R41-allowed penalty exposur
       60000,
       config,
       balances,
-      { taxBrackets: TEST_BRACKETS, rothBracketTarget: 0.12, taxableSS: 0 },
+      {
+        taxBrackets: TEST_BRACKETS,
+        rothBracketTarget: 0.12,
+        ltcgBrackets: LTCG,
+        taxableSS: 0,
+      },
       eligibility,
     );
     const total = (result.slots ?? []).reduce((s, sl) => s + sl.withdrawal, 0);
@@ -1656,7 +1675,7 @@ describe("routeForMode (R44 — true last-resort for R41-allowed penalty exposur
       20000,
       config,
       balances,
-      { taxableSS: 0 },
+      { ltcgBrackets: LTCG, taxableSS: 0 },
       eligibility,
     );
     expect(slotFor(result.slots, "401k")?.withdrawal ?? 0).toBe(0);

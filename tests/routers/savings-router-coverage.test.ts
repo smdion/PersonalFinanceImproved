@@ -1116,12 +1116,12 @@ describe("savings.transfers", () => {
     expect(result.pairId).toBeDefined();
     expect(result.withdrawal).toBeDefined();
     expect(result.deposit).toBeDefined();
-    expect(result.withdrawal.goalId).toBe(goalId1);
-    expect(result.deposit.goalId).toBe(goalId2);
-    expect(Number(result.withdrawal.amount)).toBe(-1000);
-    expect(Number(result.deposit.amount)).toBe(1000);
-    expect(result.withdrawal.transferPairId).toBe(result.pairId);
-    expect(result.deposit.transferPairId).toBe(result.pairId);
+    expect(result.withdrawal!.goalId).toBe(goalId1);
+    expect(result.deposit!.goalId).toBe(goalId2);
+    expect(Number(result.withdrawal!.amount)).toBe(-1000);
+    expect(Number(result.deposit!.amount)).toBe(1000);
+    expect(result.withdrawal!.transferPairId).toBe(result.pairId);
+    expect(result.deposit!.transferPairId).toBe(result.pairId);
   });
 
   it("creates a recurring transfer", async () => {
@@ -1134,8 +1134,8 @@ describe("savings.transfers", () => {
       isRecurring: true,
       recurrenceMonths: 1,
     });
-    expect(result.withdrawal.isRecurring).toBe(true);
-    expect(result.deposit.recurrenceMonths).toBe(1);
+    expect(result.withdrawal!.isRecurring).toBe(true);
+    expect(result.deposit!.recurrenceMonths).toBe(1);
   });
 
   it("deletes a transfer pair", async () => {
@@ -1199,7 +1199,7 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
       isRecurring: false,
     });
     const result = await caller.savings.plannedTransactions.settle({
-      plannedTxId: tx.id,
+      plannedTxId: tx!.id,
       occurrenceMonth: "2026-09",
     });
     expect(result).toEqual({ ok: true });
@@ -1214,12 +1214,12 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
       isRecurring: false,
     });
     await caller.savings.plannedTransactions.settle({
-      plannedTxId: tx.id,
+      plannedTxId: tx!.id,
       occurrenceMonth: "2026-10",
     });
     await expect(
       caller.savings.plannedTransactions.settle({
-        plannedTxId: tx.id,
+        plannedTxId: tx!.id,
         occurrenceMonth: "2026-10",
       }),
     ).rejects.toThrow(/already settled/i);
@@ -1234,7 +1234,7 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
       description: "Rebalance",
     });
     await caller.savings.plannedTransactions.settle({
-      plannedTxId: created.withdrawal.id,
+      plannedTxId: created.withdrawal!.id,
       occurrenceMonth: "2026-12",
     });
     // The deposit leg should now also be settled — verify via computeSummary
@@ -1243,13 +1243,13 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
     // reappears in the combined balance).
     const summary = await caller.savings.computeSummary();
     const depositTx = summary.plannedTransactions.find(
-      (t) => t.id === created.deposit.id,
+      (t) => t.id === created.deposit!.id,
     );
     expect(depositTx?.settledOccurrences).toContain("2026-12");
     // And settling the already-settled deposit leg directly should now reject.
     await expect(
       caller.savings.plannedTransactions.settle({
-        plannedTxId: created.deposit.id,
+        plannedTxId: created.deposit!.id,
         occurrenceMonth: "2026-12",
       }),
     ).rejects.toThrow(/already settled/i);
@@ -1272,14 +1272,14 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
     });
     const result = await caller.savings.plannedTransactions.settleMany({
       occurrences: [
-        { plannedTxId: tx1.id, occurrenceMonth: "2027-01" },
-        { plannedTxId: tx2.id, occurrenceMonth: "2027-02" },
+        { plannedTxId: tx1!.id, occurrenceMonth: "2027-01" },
+        { plannedTxId: tx2!.id, occurrenceMonth: "2027-02" },
       ],
     });
     expect(result).toEqual({ ok: true });
     const summary = await caller.savings.computeSummary();
-    const t1 = summary.plannedTransactions.find((t) => t.id === tx1.id);
-    const t2 = summary.plannedTransactions.find((t) => t.id === tx2.id);
+    const t1 = summary.plannedTransactions.find((t) => t.id === tx1!.id);
+    const t2 = summary.plannedTransactions.find((t) => t.id === tx2!.id);
     expect(t1?.settledOccurrences).toContain("2027-01");
     expect(t2?.settledOccurrences).toContain("2027-02");
   });
@@ -1294,16 +1294,16 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
       recurrenceMonths: 1,
     });
     await caller.savings.plannedTransactions.settle({
-      plannedTxId: tx.id,
+      plannedTxId: tx!.id,
       occurrenceMonth: "2027-03",
     });
     const summary = await caller.savings.computeSummary();
-    const found = summary.plannedTransactions.find((t) => t.id === tx.id);
+    const found = summary.plannedTransactions.find((t) => t.id === tx!.id);
     expect(found?.settledOccurrences).toEqual(["2027-03"]);
     // A later occurrence of the same recurring row must still be settleable
     // independently — proves settlement is per-occurrence, not per-row.
     const nextMonth = await caller.savings.plannedTransactions.settle({
-      plannedTxId: tx.id,
+      plannedTxId: tx!.id,
       occurrenceMonth: "2027-04",
     });
     expect(nextMonth).toEqual({ ok: true });
@@ -1373,7 +1373,7 @@ describe("savings.plannedTransactions.getSettlementSuggestions", () => {
     const result =
       await caller.savings.plannedTransactions.getSettlementSuggestions();
     expect(result.suggestions).toContainEqual({
-      plannedTxId: tx.id,
+      plannedTxId: tx!.id,
       occurrenceMonth: "2026-08",
     });
   });
@@ -1403,7 +1403,7 @@ describe("savings.plannedTransactions.getSettlementSuggestions", () => {
     const result =
       await caller.savings.plannedTransactions.getSettlementSuggestions();
     expect(
-      result.suggestions.find((s) => s.plannedTxId === tx.id),
+      result.suggestions.find((s) => s.plannedTxId === tx!.id),
     ).toBeUndefined();
   });
 
@@ -1432,7 +1432,7 @@ describe("savings.plannedTransactions.getSettlementSuggestions", () => {
     const result =
       await caller.savings.plannedTransactions.getSettlementSuggestions();
     expect(
-      result.suggestions.find((s) => s.plannedTxId === tx.id),
+      result.suggestions.find((s) => s.plannedTxId === tx!.id),
     ).toBeUndefined();
   });
 
@@ -1445,7 +1445,7 @@ describe("savings.plannedTransactions.getSettlementSuggestions", () => {
       isRecurring: false,
     });
     await caller.savings.plannedTransactions.settle({
-      plannedTxId: tx.id,
+      plannedTxId: tx!.id,
       occurrenceMonth: "2026-10",
     });
     mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
@@ -1465,7 +1465,7 @@ describe("savings.plannedTransactions.getSettlementSuggestions", () => {
     const result =
       await caller.savings.plannedTransactions.getSettlementSuggestions();
     expect(
-      result.suggestions.find((s) => s.plannedTxId === tx.id),
+      result.suggestions.find((s) => s.plannedTxId === tx!.id),
     ).toBeUndefined();
   });
 });
@@ -1902,7 +1902,7 @@ describe("savings.extraPaycheckRouting", () => {
     >;
     // Untouched — browsing/editing a non-active profile must never cascade.
     expect(
-      otherSalaries[String(otherJobId)].extraPaycheckRouting
+      otherSalaries[String(otherJobId)]!.extraPaycheckRouting
         ?.baseNetPayPerCheck,
     ).toBe(999999);
   });

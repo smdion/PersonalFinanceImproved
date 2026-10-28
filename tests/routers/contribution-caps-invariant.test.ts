@@ -138,10 +138,10 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
   });
 
   it("the engine payload: year-0 amount and the spec", async () => {
-    const data = await fetchRetirementData(t.db, {
+    const data = await fetchRetirementData(t.rawDb, {
       contributionProfileId: profileId,
     });
-    const payload = (await buildEnginePayload(t.db, data, {
+    const payload = (await buildEnginePayload(t.rawDb, data, {
       contributionProfileId: profileId,
     }))!;
     expect(payload.baseEngineInput.baseYearContributions!["401k"]).toBeCloseTo(
@@ -154,10 +154,10 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
   });
 
   it("the engine payload: the active profile capped at each later year's ages", async () => {
-    const data = await fetchRetirementData(t.db, {
+    const data = await fetchRetirementData(t.rawDb, {
       contributionProfileId: profileId,
     });
-    const payload = (await buildEnginePayload(t.db, data, {
+    const payload = (await buildEnginePayload(t.rawDb, data, {
       contributionProfileId: profileId,
     }))!;
     // 36,000 configured: 24,500 now; catch-up from 50 (2040), the larger
@@ -419,10 +419,10 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
           })),
         )
         .run();
-      const data = await fetchRetirementData(t.db, {
+      const data = await fetchRetirementData(t.rawDb, {
         contributionProfileId: profileId,
       });
-      const payload = (await buildEnginePayload(t.db, data, {
+      const payload = (await buildEnginePayload(t.rawDb, data, {
         contributionProfileId: profileId,
       }))!;
       expect(
@@ -452,10 +452,10 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
 
     it("the projection caps the switch at each year's ages", async () => {
       await setValue("30"); // 36,000
-      const data = await fetchRetirementData(t.db, {
+      const data = await fetchRetirementData(t.rawDb, {
         contributionProfileId: profileId,
       });
-      const payload = (await buildEnginePayload(t.db, data, {
+      const payload = (await buildEnginePayload(t.rawDb, data, {
         contributionProfileId: profileId,
       }))!;
       const switches = payload.baseEngineInput.profileSwitches!.map((s) => [

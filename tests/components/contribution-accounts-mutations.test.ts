@@ -163,7 +163,7 @@ describe("useContributionAccountsMutations", () => {
     result.current.handlePerfUpdate(basePerfAccount, {
       institution: "Vanguard",
     });
-    expect(mutations.updatePerf.mutate).toHaveBeenCalledWith(
+    expect(mutations.updatePerf!.mutate).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 1,
         institution: "Vanguard",
@@ -188,7 +188,7 @@ describe("useContributionAccountsMutations", () => {
       { ...basePerfAccount, subType: "roth", label: "My Account" },
       { subType: null, label: null },
     );
-    expect(mutations.updatePerf.mutate).toHaveBeenCalledWith(
+    expect(mutations.updatePerf!.mutate).toHaveBeenCalledWith(
       expect.objectContaining({ subType: null, label: null }),
     );
   });
@@ -199,7 +199,7 @@ describe("useContributionAccountsMutations", () => {
       useContributionAccountsMutations({ allContribs: [] }),
     );
     result.current.handlePerfUpdate(basePerfAccount, { ownerPersonId: null });
-    expect(mutations.updatePerf.mutate).toHaveBeenCalledWith(
+    expect(mutations.updatePerf!.mutate).toHaveBeenCalledWith(
       expect.objectContaining({ ownerPersonId: null }),
     );
   });
@@ -214,12 +214,12 @@ describe("useContributionAccountsMutations", () => {
       useContributionAccountsMutations({ allContribs: [] }),
     );
     result.current.handleContribUpdate(baseContrib, { personId: null });
-    expect(mutations.updateContrib.mutate).toHaveBeenCalledWith(
+    expect(mutations.updateContrib!.mutate).toHaveBeenCalledWith(
       expect.objectContaining({ id: 1, personId: null }),
     );
     // Specifically assert it did NOT fall back to the stale personId — this
     // is exactly the bug the !== undefined fix closed.
-    const call = mutations.updateContrib.mutate.mock.calls[0]![0];
+    const call = mutations.updateContrib!.mutate.mock.calls[0]![0];
     expect(call.personId).not.toBe(baseContrib.personId);
   });
 
@@ -231,7 +231,7 @@ describe("useContributionAccountsMutations", () => {
     result.current.handleContribUpdate(baseContrib, {
       autoMaximize: true,
     });
-    expect(mutations.updateContrib.mutate).toHaveBeenCalledWith(
+    expect(mutations.updateContrib!.mutate).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 1,
         personId: 5,
@@ -249,7 +249,7 @@ describe("useContributionAccountsMutations", () => {
       autoMaximize: true,
       isActive: false,
     });
-    expect(mutations.updateContrib.mutate).toHaveBeenCalledWith(
+    expect(mutations.updateContrib!.mutate).toHaveBeenCalledWith(
       expect.objectContaining({
         id: 1,
         autoMaximize: true,
@@ -270,7 +270,7 @@ describe("useContributionAccountsMutations", () => {
       { ...baseContrib, employerMatchValue: "50" },
       { employerMatchValue: null },
     );
-    expect(mutations.updateContrib.mutate).toHaveBeenCalledWith(
+    expect(mutations.updateContrib!.mutate).toHaveBeenCalledWith(
       expect.objectContaining({ employerMatchValue: null }),
     );
   });
@@ -288,19 +288,19 @@ describe("useContributionAccountsMutations", () => {
       }),
     );
     result.current.handleContribUpdate(baseContrib, { rothRoute: "backdoor" });
-    expect(mutations.setContribProfileFields.mutate).toHaveBeenLastCalledWith({
+    expect(mutations.setContribProfileFields!.mutate).toHaveBeenLastCalledWith({
       profileId: 9,
       accountId: 1,
       fields: { rothRoute: "backdoor" },
     });
     result.current.handleContribUpdate(baseContrib, { rothRoute: "direct" });
-    expect(mutations.setContribProfileFields.mutate).toHaveBeenLastCalledWith({
+    expect(mutations.setContribProfileFields!.mutate).toHaveBeenLastCalledWith({
       profileId: 9,
       accountId: 1,
       fields: {},
       unset: ["rothRoute"],
     });
-    expect(mutations.updateContrib.mutate).not.toHaveBeenCalled();
+    expect(mutations.updateContrib!.mutate).not.toHaveBeenCalled();
   });
 
   it("handleLinkContrib finds the contrib by id and updates its performanceAccountId", async () => {
@@ -309,7 +309,7 @@ describe("useContributionAccountsMutations", () => {
       useContributionAccountsMutations({ allContribs: [baseContrib] }),
     );
     result.current.handleLinkContrib(1, 99);
-    expect(mutations.updateContrib.mutate).toHaveBeenCalledWith(
+    expect(mutations.updateContrib!.mutate).toHaveBeenCalledWith(
       expect.objectContaining({ id: 1, performanceAccountId: 99 }),
     );
   });
@@ -320,7 +320,7 @@ describe("useContributionAccountsMutations", () => {
       useContributionAccountsMutations({ allContribs: [baseContrib] }),
     );
     result.current.handleLinkContrib(1, null);
-    expect(mutations.updateContrib.mutate).toHaveBeenCalledWith(
+    expect(mutations.updateContrib!.mutate).toHaveBeenCalledWith(
       expect.objectContaining({ id: 1, performanceAccountId: null }),
     );
   });
@@ -331,7 +331,7 @@ describe("useContributionAccountsMutations", () => {
       useContributionAccountsMutations({ allContribs: [baseContrib] }),
     );
     result.current.handleLinkContrib(999, 99);
-    expect(mutations.updateContrib.mutate).not.toHaveBeenCalled();
+    expect(mutations.updateContrib!.mutate).not.toHaveBeenCalled();
   });
 
   // ---------------------------------------------------------------------

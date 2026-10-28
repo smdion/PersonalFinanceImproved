@@ -828,8 +828,8 @@ describe("contributionProfiles coverage", () => {
         });
         expect(result).not.toBeNull();
         const deduction = result!.deductionDetails[0];
-        expect(deduction.activeFields).toBeNull();
-        expect(deduction.isIncomplete).toBe(true);
+        expect(deduction!.activeFields).toBeNull();
+        expect(deduction!.isIncomplete).toBe(true);
       } finally {
         cleanup();
       }
@@ -890,7 +890,7 @@ describe("contributionProfiles coverage", () => {
             Record<string, Record<string, unknown>>
           >
         ).contributionAccounts;
-        expect(accts["1"].contributionValue).toBe("0.20");
+        expect(accts!["1"]!.contributionValue).toBe("0.20");
       } finally {
         cleanup();
       }
@@ -967,7 +967,7 @@ describe("contributionProfiles coverage", () => {
             Record<string, Record<string, unknown>>
           >
         ).contributionAccounts;
-        expect(accts["1"].contributionValue).toBe("0.2");
+        expect(accts!["1"]!.contributionValue).toBe("0.2");
       } finally {
         cleanup();
       }
@@ -998,8 +998,8 @@ describe("contributionProfiles coverage", () => {
           string,
           Record<string, Record<string, unknown>>
         >;
-        expect(activeFields.contributionAccounts["5"]).toBeDefined();
-        expect(activeFields.deductions["2"].amountPerPeriod).toBe("25.00");
+        expect(activeFields.contributionAccounts!["5"]).toBeDefined();
+        expect(activeFields.deductions!["2"]!.amountPerPeriod).toBe("25.00");
       } finally {
         cleanup();
       }
@@ -1159,7 +1159,7 @@ describe("contributionProfiles coverage", () => {
             Record<string, unknown>
           >
         ).contributionAccounts;
-        expect(contribActiveFields["10"]).toBeDefined();
+        expect(contribActiveFields!["10"]).toBeDefined();
       } finally {
         cleanup();
       }
@@ -1229,7 +1229,7 @@ describe("contributionProfiles coverage", () => {
         expect(result!.id).toBe(seeded!.id);
         expect(result!.accountDetails.length).toBe(1);
         // A profile with empty contributionActiveFields customizes nothing.
-        expect(result!.accountDetails[0].activeFields).toBeNull();
+        expect(result!.accountDetails[0]!.activeFields).toBeNull();
       } finally {
         cleanup();
       }

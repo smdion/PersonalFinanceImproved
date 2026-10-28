@@ -104,8 +104,8 @@ describe("getLatestSnapshot", () => {
     expect(result).not.toBeNull();
     expect(result!.snapshot.id).toBe(snap.id);
     expect(result!.accounts).toHaveLength(1);
-    expect(result!.accounts[0].institution).toBe("Vanguard");
-    expect(result!.accounts[0].amount).toBe(25000);
+    expect(result!.accounts[0]!.institution).toBe("Vanguard");
+    expect(result!.accounts[0]!.amount).toBe(25000);
     expect(result!.total).toBe(25000);
   });
 

@@ -141,7 +141,7 @@ describe("YnabClient", () => {
       );
       const groups = await client.getCategories();
       expect(groups).toHaveLength(1);
-      expect(groups[0].name).toBe("Bills");
+      expect(groups[0]!.name).toBe("Bills");
     });
   });
 
@@ -279,7 +279,7 @@ describe("YnabClient", () => {
         cleared: true,
       });
       expect(id).toBe("new-tx");
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const body = JSON.parse(mockFetch.mock.calls[0]![1].body);
       expect(body.transaction.amount).toBe(-50000); // dollars → milliunits
       expect(body.transaction.cleared).toBe("cleared");
     });
@@ -306,8 +306,8 @@ describe("YnabClient", () => {
       await client.createTransaction(payload);
       await client.createTransaction(payload);
 
-      const body1 = JSON.parse(mockFetch.mock.calls[0][1].body);
-      const body2 = JSON.parse(mockFetch.mock.calls[1][1].body);
+      const body1 = JSON.parse(mockFetch.mock.calls[0]![1].body);
+      const body2 = JSON.parse(mockFetch.mock.calls[1]![1].body);
       expect(body1.transaction.import_id).toMatch(/^ledgr:/);
       expect(body1.transaction.import_id.length).toBeLessThanOrEqual(36);
       expect(body1.transaction.import_id).toBe(body2.transaction.import_id);
@@ -326,7 +326,7 @@ describe("YnabClient", () => {
         memo: null,
         cleared: false,
       });
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const body = JSON.parse(mockFetch.mock.calls[0]![1].body);
       expect(body.transaction.approved).toBe(true);
     });
 
@@ -341,7 +341,7 @@ describe("YnabClient", () => {
         cleared: false,
         reconciled: true,
       });
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const body = JSON.parse(mockFetch.mock.calls[0]![1].body);
       expect(body.transaction.cleared).toBe("reconciled");
     });
   });
@@ -379,8 +379,8 @@ describe("YnabClient", () => {
       );
       const months = await client.getMonths("2026-01", "2026-02");
       expect(months).toHaveLength(2);
-      expect(months[0].month).toBe("2026-01");
-      expect(months[0].income).toBe(600); // milliunits → dollars
+      expect(months[0]!.month).toBe("2026-01");
+      expect(months[0]!.income).toBe(600); // milliunits → dollars
     });
   });
 
@@ -541,7 +541,7 @@ describe("YnabClient", () => {
       await client.updateTransaction("tx-1", {
         memo: "updated note",
       });
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const body = JSON.parse(mockFetch.mock.calls[0]![1].body);
       expect(body.transaction).toEqual({ memo: "updated note" });
       // Did NOT include amount, date, payee, etc.
       expect(body.transaction.amount).toBeUndefined();
@@ -554,7 +554,7 @@ describe("YnabClient", () => {
         amount: -100,
         cleared: true,
       });
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const body = JSON.parse(mockFetch.mock.calls[0]![1].body);
       expect(body.transaction.amount).toBe(-100_000);
       expect(body.transaction.cleared).toBe("cleared");
     });
@@ -564,7 +564,7 @@ describe("YnabClient", () => {
     it("sends partial update", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({}));
       await client.updateTransaction("tx-1", { amount: -75, cleared: false });
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const body = JSON.parse(mockFetch.mock.calls[0]![1].body);
       expect(body.transaction.amount).toBe(-75000);
       expect(body.transaction.cleared).toBe("uncleared");
     });

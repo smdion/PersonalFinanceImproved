@@ -1417,13 +1417,13 @@ describe("engine invariants", () => {
         expect(decA.length).toBe(decB.length);
         for (let i = 0; i < decA.length; i++) {
           expect(
-            decA[i].projectedExpenses,
-            `${strategy} year ${decA[i].year}: projectedExpenses should be identical regardless of post-retirement raise`,
-          ).toBeCloseTo(decB[i].projectedExpenses, 2);
+            decA[i]!.projectedExpenses,
+            `${strategy} year ${decA[i]!.year}: projectedExpenses should be identical regardless of post-retirement raise`,
+          ).toBeCloseTo(decB[i]!.projectedExpenses, 2);
           expect(
-            decA[i].allAccountsBalance,
-            `${strategy} year ${decA[i].year}: allAccountsBalance should be identical regardless of post-retirement raise`,
-          ).toBeCloseTo(decB[i].allAccountsBalance, 0);
+            decA[i]!.allAccountsBalance,
+            `${strategy} year ${decA[i]!.year}: allAccountsBalance should be identical regardless of post-retirement raise`,
+          ).toBeCloseTo(decB[i]!.allAccountsBalance, 0);
         }
       }
     });
@@ -1461,7 +1461,7 @@ describe("engine invariants", () => {
         // At least one year should differ (the raise compounds over time)
         const anyDifferent = decA.some(
           (a, i) =>
-            Math.abs(a.projectedExpenses - decB[i].projectedExpenses) > 1,
+            Math.abs(a.projectedExpenses - decB[i]!.projectedExpenses) > 1,
         );
         expect(
           anyDifferent,
