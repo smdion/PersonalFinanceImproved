@@ -792,6 +792,9 @@ export const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.9.0: debts list (Liabilities).
   d835e0d55fdd16f70497e222b3f5113f2f73365a24063a3d0430001b37d75534:
     "0004_v090_debts",
+  // v0.9.2: a Retirement Profile's filing status may be empty (= Auto).
+  fc5a04adc960cfb5f6b2aca6c670a1a7574dc29d22bfeb275698de2d92d6f0c6:
+    "0005_v092_filing_status_auto",
 };
 
 /**

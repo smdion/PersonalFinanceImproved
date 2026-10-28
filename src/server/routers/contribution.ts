@@ -1187,8 +1187,10 @@ export const contributionRouter = createTRPCRouter({
             ),
           );
 
-          // Year-to-date totals: the checks this job has paid, not the
-          // paydays before it started.
+          // Year-to-date share of a FULL year (checks paid ÷ checks a
+          // year): this page's yearly figures are full-year rates. Not the
+          // snapshot's ytdRatio, which divides by the checks this job pays
+          // this year (it projects this year's own total).
           const ytdRatioForTotals = safeDivide(
             checksPaidYtd(
               asOfDate,

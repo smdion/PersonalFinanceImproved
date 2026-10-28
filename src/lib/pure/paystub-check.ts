@@ -58,6 +58,8 @@ export type FicaRates = {
   medicare: number;
   socialSecurityWageBase: number;
   medicareWithholdingThreshold: number;
+  /** Additional Medicare's rate, withheld above the threshold. */
+  additionalMedicare: number;
 };
 
 export type PaystubFigures = Partial<{
@@ -325,9 +327,7 @@ export function checkPaystub(
     compare("netPay", stub.netPay, ledgr.netPay, PAYSTUB_TOLERANCE, () =>
       othersOff
         ? "Follows from the differences above."
-        : ledgr.additionalMedicare
-          ? "Additional Medicare (0.9%) is withheld on this check; Ledgr's per-check net pay leaves it out (it's in the year's tax)."
-          : "Something on the stub isn't in Ledgr — another deduction or pay line.",
+        : "Something on the stub isn't in Ledgr — another deduction or pay line.",
     ),
   );
 
@@ -355,25 +355,93 @@ export function paystubCheckNumber(
   return Math.min(Math.max(n, 1), periodsPerYear);
 }
 
-/** Ledgr's figures for check `n` of the year. Wages and withholding are the
- *  same on every regular check; Social Security and net pay are the
- *  check's own (the wage base stops Social Security partway through a
- *  high-pay year). */
+/** Ledgr's figures for check `n` of the year — a regular check, or the
+ *  bonus check (paid on its own, at the supplemental rate). Wages and
+ *  withholding are the same on every regular check; Social Security,
+ *  Medicare (Additional Medicare above the threshold) and net pay are the
+ *  check's own. */
 export function ledgrCheckFor(
   paycheck: PaycheckResult,
   rates: FicaRates,
   n: number,
   lineName: (name: string) => string = (name) => name,
+  kind: "regular" | "bonus" = "regular",
 ): PaystubLedgrCheck {
   const period = paycheck.yearSchedule[n - 1];
-  // Medicare wages so far this year through this check, the bonus included
-  // once paid.
-  const medicareWagesYtd =
-    Math.max(0, n - paycheck.periodsBeforeStart) * paycheck.ficaWages +
-    (paycheck.bonusPeriod !== null && paycheck.bonusPeriod <= n
-      ? paycheck.bonusEstimate.bonusFicaWages
-      : 0);
+  const bonus = paycheck.bonusEstimate;
+  // This employer's Medicare wages this year: the regular checks paid
+  // through this one, plus the bonus once it's paid.
+  const regularYtd =
+    Math.max(0, n - paycheck.periodsBeforeStart) * paycheck.ficaWages;
+  const bonusPaid =
+    kind === "bonus" ||
+    (paycheck.bonusPeriod !== null && paycheck.bonusPeriod <= n);
+  const medicareWagesYtd = regularYtd + (bonusPaid ? bonus.bonusFicaWages : 0);
+  const lineOf = (d: {
+    name: string;
+    amount: number;
+    taxTreatment: string;
+    ficaExempt: boolean;
+  }) => ({
+    name: lineName(d.name),
+    amount: d.amount,
+    pretax: isPreTax(d.taxTreatment),
+    ficaExempt: d.ficaExempt,
+  });
+  const base = {
+    additionalMedicare: medicareWagesYtd > rates.medicareWithholdingThreshold,
+    rates: { socialSecurity: rates.socialSecurity, medicare: rates.medicare },
+    hasNonCashEarnings: paycheck.earnings.some(
+      (e) => !e.isCash && e.federalTaxable,
+    ),
+  };
+  if (kind === "bonus") {
+    // The bonus check as the year schedule pays it — its Social Security
+    // room and Additional Medicare at that point in the year. A bonus with
+    // no date isn't in the schedule: the estimate (as if paid last).
+    const inSchedule =
+      paycheck.bonusPeriod !== null
+        ? paycheck.yearSchedule[paycheck.bonusPeriod - 1]
+        : undefined;
+    const fica = inSchedule
+      ? inSchedule.bonusFica
+      : bonus.bonusFica +
+        rates.additionalMedicare *
+          Math.max(
+            0,
+            Math.min(
+              bonus.bonusFicaWages,
+              medicareWagesYtd - rates.medicareWithholdingThreshold,
+            ),
+          );
+    const withholding = inSchedule
+      ? inSchedule.bonusWithholding
+      : bonus.bonusFederalWithholding;
+    // Social Security room left for the bonus: the wage base less this
+    // employer's regular wages through its check.
+    const regularThrough = inSchedule
+      ? Math.max(0, paycheck.bonusPeriod! - paycheck.periodsBeforeStart) *
+        paycheck.ficaWages
+      : regularYtd;
+    return {
+      ...base,
+      gross: bonus.bonusGross,
+      federalTaxableGross: bonus.bonusFederalTaxable,
+      ficaWages: bonus.bonusFicaWages,
+      federalWithholding: withholding,
+      netPay:
+        Math.round(
+          (bonus.bonusGross - withholding - fica - bonus.bonusContributions) *
+            100,
+        ) / 100,
+      ssStopped:
+        rates.socialSecurityWageBase - regularThrough <
+        bonus.bonusFicaWages - 0.01,
+      lines: bonus.bonusLines.map(lineOf),
+    };
+  }
   return {
+    ...base,
     gross: paycheck.gross,
     federalTaxableGross: paycheck.federalTaxableGross,
     ficaWages: paycheck.ficaWages,
@@ -384,18 +452,8 @@ export function ledgrCheckFor(
     ssStopped: period
       ? period.ficaSS < paycheck.ficaWages * rates.socialSecurity - 0.01
       : false,
-    additionalMedicare: medicareWagesYtd > rates.medicareWithholdingThreshold,
-    rates: { socialSecurity: rates.socialSecurity, medicare: rates.medicare },
     lines: [...paycheck.preTaxDeductions, ...paycheck.postTaxDeductions].map(
-      (d) => ({
-        name: lineName(d.name),
-        amount: d.amount,
-        pretax: isPreTax(d.taxTreatment),
-        ficaExempt: d.ficaExempt,
-      }),
-    ),
-    hasNonCashEarnings: paycheck.earnings.some(
-      (e) => !e.isCash && e.federalTaxable,
+      lineOf,
     ),
   };
 }

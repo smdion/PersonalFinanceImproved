@@ -201,7 +201,7 @@ export function UpdateBasisForm({
         <p className="text-caption text-muted">
           Contribution and conversion basis for {currentYear} — the tax-free,
           penalty-free portion of each Roth account. Also editable inline on
-          this page or on Retirement taxes.
+          this page or on Tax buckets &amp; basis.
         </p>
         {suggestions && suggestions.accounts.length > 0 && (
           <div className="flex flex-wrap items-center gap-2 rounded bg-blue-50 p-2 text-xs text-blue-900 dark:bg-blue-950/30 dark:text-blue-200">

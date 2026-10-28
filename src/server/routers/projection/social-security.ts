@@ -162,7 +162,7 @@ export const socialSecurityRouter = createTRPCRouter({
                 ...engineInput,
                 socialSecurityEntries: buildSocialSecurityEntries(
                   perPersonSettings,
-                  settings.filingStatus,
+                  payload.filingStatus,
                   0,
                   overrides,
                 ),

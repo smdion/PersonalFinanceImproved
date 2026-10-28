@@ -651,7 +651,7 @@ export const strategyRouter = createTRPCRouter({
                 ...variantInput,
                 socialSecurityEntries: buildSocialSecurityEntries(
                   perPersonSettings,
-                  settings.filingStatus,
+                  payload.filingStatus,
                   delta,
                 ),
               };

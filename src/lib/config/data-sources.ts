@@ -26,6 +26,9 @@ export type DataSourceDefinition = {
   rhythmLabel: string;
   /** Where to fix it. */
   focus: Focus;
+  /** false: judged by something other than its age (tax data, by
+   *  publication dates) — Settings doesn't show "last updated". */
+  showsLastUpdated?: false;
 };
 
 export type DataSourceKey =
@@ -95,5 +98,6 @@ export const DATA_SOURCES: readonly DataSourceDefinition[] = [
     rhythm: { kind: "days", days: 100_000 },
     rhythmLabel: "Yearly, with Ledgr updates",
     focus: { topic: "settings", tab: "taxdata" },
+    showsLastUpdated: false,
   },
 ];

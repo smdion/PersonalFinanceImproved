@@ -10,7 +10,8 @@
  * balances. Callers (projection router endpoints) consume the result and add
  * their own accumulation/decumulation overrides and decumulation defaults.
  */
-import { taxFilingStatusSetting } from "@/lib/pure/filing-status";
+import { retirementFilingStatus } from "@/lib/pure/filing-status";
+import { thisYearFilingStatus } from "@/server/helpers/filing-status";
 import { eq, asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import {
@@ -350,11 +351,19 @@ export async function buildEnginePayload(
   );
   if (!settings) return null;
 
-  // retirement_settings.filing_status is NOT NULL (Stage A backfill,
-  // drizzle/0021) — the job-facts fallback tier this used to need
-  // (findActiveJob(...)?.w4FilingStatus ?? "MFJ") is gone; it was only kept
-  // until that backfill landed.
-  const filingStatus = settings.filingStatus;
+  // This year's return, and retirement years' (the profile's, or "Auto" =
+  // this year's) — lib/pure/filing-status.ts. Nothing known: the cautious
+  // fallback, and the household is asked (a recommendation).
+  const thisYearFiling = await thisYearFilingStatus(db, {
+    appSettings: allAppSettings,
+    profileStatus: settings.filingStatus,
+    people,
+    salaryProfileActiveMap,
+  });
+  const filingStatus = retirementFilingStatus(
+    settings.filingStatus,
+    thisYearFiling.status,
+  );
 
   // Every per-year tax slice (withholding brackets, contribution
   // limits + standard/senior deductions, LTCG brackets, IRMAA brackets,
@@ -764,8 +773,7 @@ export async function buildEnginePayload(
   }));
   // This year's caps follow this year's return (the household setting),
   // as the paycheck's do; the projection's brackets keep the profile's.
-  const capFilingStatus =
-    taxFilingStatusSetting(allAppSettings) ?? filingStatus;
+  const capFilingStatus = thisYearFiling.status ?? "";
   const capHousehold: CapPassHousehold = {
     people: irsLimitPeople,
     limits: limitsMap,

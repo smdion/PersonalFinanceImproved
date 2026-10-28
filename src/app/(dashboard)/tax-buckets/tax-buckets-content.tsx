@@ -277,7 +277,7 @@ export function TaxBucketsContent() {
   if (isLoading) {
     return (
       <div className="p-4 sm:p-6">
-        <PageHeader title="Retirement taxes" />
+        <PageHeader title="Tax buckets & basis" />
         <Skeleton className="h-64" />
       </div>
     );
@@ -286,7 +286,7 @@ export function TaxBucketsContent() {
   if (error || !data) {
     return (
       <div className="p-4 sm:p-6">
-        <PageHeader title="Retirement taxes" />
+        <PageHeader title="Tax buckets & basis" />
         <EmptyState message="Failed to load" hint="Try refreshing the page." />
       </div>
     );
@@ -311,7 +311,7 @@ export function TaxBucketsContent() {
   return (
     <div className="space-y-6 p-4 sm:p-6">
       <PageHeader
-        title="Retirement taxes"
+        title="Tax buckets & basis"
         subtitle={
           view === "now"
             ? "What the household actually has, where, and how much is accessible penalty-free if you retire early — not a target ratio, a real liquidity check."

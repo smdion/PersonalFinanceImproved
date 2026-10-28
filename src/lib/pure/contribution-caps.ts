@@ -1,6 +1,6 @@
 /**
  * IRS-limit caps on contributions — the one rule every yearly contribution
- * figure reads (PLAN-tax-accuracy step 5). A person's employee contributions
+ * figure reads. A person's employee contributions
  * to one limit group in a tax year never exceed their limit for it; what
  * varies by account type comes from config (`irsLimitGroup`, `irsLimitKeys`,
  * `isHouseholdLimit`, `matchCountsTowardLimit`, `limitBoundedByCompensation`).

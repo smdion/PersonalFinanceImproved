@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**385 procedures across 54 routers.**
+**386 procedures across 54 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -507,7 +507,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | ---------------- | -------- | -------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `addYear`        | mutation | `adminProcedure`     | year as carried forward (replaced when the real figures ship). Tables that already have the year are left alone. |
 | `confirm`        | mutation | `adminProcedure`     | figure replaces it when it ships), but no longer needs attention.                                                |
-| `create`         | mutation | `adminProcedure`     | What Ledgr ships for this figure (null if it doesn't).                                                           |
+| `create`         | mutation | `adminProcedure`     | The documents Ledgr's figure cites, each with its link.                                                          |
 | `create`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
 | `create`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
 | `create`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
@@ -527,7 +527,8 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).                                                  |
 | `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).                                                  |
 | `resetToShipped` | mutation | `adminProcedure`     | the shipped value back now (and keeps it current from then on).                                                  |
-| `status`         | query    | `protectedProcedure` | Is the tax data current, and what was carried forward?                                                           |
+| `sectionSources` | query    | `protectedProcedure` | The documents each year's shipped tables cite, linked.                                                           |
+| `status`         | query    | `protectedProcedure` | The documents each year's shipped tables cite, linked.                                                           |
 | `update`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
 | `update`         | mutation | `adminProcedure`     | (no description)                                                                                                 |
 | `update`         | mutation | `adminProcedure`     | (no description)                                                                                                 |

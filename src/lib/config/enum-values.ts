@@ -269,6 +269,12 @@ export const utilityKindSchema = z.enum(UTILITY_KIND_VALUES);
 export const UTILITY_UNIT_VALUES = ["ccf", "gallon", "kWh"] as const;
 export type UtilityUnit = (typeof UTILITY_UNIT_VALUES)[number];
 export const utilityUnitSchema = z.enum(UTILITY_UNIT_VALUES);
+/** The unit each kind is usually billed in — the add form's starting choice. */
+export const UTILITY_USUAL_UNIT: Record<UtilityKind, UtilityUnit> = {
+  gas: "ccf",
+  water: "gallon",
+  electric: "kWh",
+};
 
 /** Who wrote a utility reading's cost: typed in, the one-time spreadsheet
  *  import, or the budget service the cost feed pulled it from. */

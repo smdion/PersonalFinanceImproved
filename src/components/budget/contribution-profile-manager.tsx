@@ -1302,8 +1302,14 @@ function ProfileInlineEditor({
       ficaExempt: d.ficaExempt,
       ...changes,
     });
+  // Over this year's limits on a profile used as a future switch: saved,
+  // with the server's warning (switchProfileLimitWarning).
+  const [limitWarning, setLimitWarning] = useState<string | null>(null);
   const updateMutation = trpc.contributionProfile.update.useMutation({
-    onSuccess: () => onSaved(),
+    onSuccess: (row) => {
+      if (row.limitWarning !== undefined) setLimitWarning(row.limitWarning);
+      onSaved();
+    },
   });
 
   // patchAccount/patchDeduction used to read-merge-write the whole
@@ -1319,8 +1325,9 @@ function ProfileInlineEditor({
   );
   const setAccountFields =
     trpc.contributionProfile.setAccountActiveFields.useMutation({
-      onSuccess: () => {
+      onSuccess: (row) => {
         setPatchError(null);
+        setLimitWarning(row.limitWarning);
         onSaved();
       },
       onError: setPatchError,
@@ -1432,6 +1439,14 @@ function ProfileInlineEditor({
         prefix="Failed to save profile"
         className="mb-3"
       />
+      {limitWarning && (
+        <p
+          role="status"
+          className="mb-3 text-xs text-amber-700 dark:text-amber-400"
+        >
+          {limitWarning}
+        </p>
+      )}
 
       <div className="mb-5 max-w-sm">
         <FormField label="Description">

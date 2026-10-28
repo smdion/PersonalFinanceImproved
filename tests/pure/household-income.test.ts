@@ -176,3 +176,33 @@ describe("bonus destinations", () => {
     ).toBe(0);
   });
 });
+
+describe("computeAnnualEarnings: part of a year", () => {
+  it("counts only the checks a job pays inside the year, and a bonus it pays", () => {
+    const input: PaycheckInput = {
+      ...PERSON_A_PAYCHECK_INPUT,
+      bonusOverride: 5_000,
+    };
+    const paycheck = calculatePaycheck(input);
+    const args = {
+      salary: input.annualSalary,
+      periodsPerYear: 26,
+      paycheck,
+      contributionAccounts: input.contributionAccounts,
+      deductions: input.deductions,
+    };
+    const full = computeAnnualEarnings(args);
+    const half = computeAnnualEarnings({
+      ...args,
+      checks: 13,
+      bonusPaid: false,
+    });
+    expect(half.salary).toBeCloseTo(full.salary / 2, 2);
+    expect(half.bonus).toBe(0);
+    expect(half.gross).toBeCloseTo(full.salary / 2 + full.otherCashPay / 2, 2);
+    expect(half.ficaWages).toBeCloseTo(paycheck.ficaWages * 13, 2);
+    expect(half.netBonus).toBe(0);
+    // Default: the whole year, bonus included.
+    expect(full.bonus).toBe(5_000);
+  });
+});

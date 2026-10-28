@@ -11,11 +11,11 @@ import { FilingStatusRow } from "@/components/taxes/filing-status-row";
 import { HelpTip } from "@/components/ui/help-tip";
 import {
   formatCurrency,
+  formatDate,
   formatPercent,
   maskAmountsInText,
 } from "@/lib/utils/format";
-import { sumBy } from "@/lib/utils/math";
-import { withheldThroughPeriod } from "@/lib/calculators/paycheck";
+import { householdWithheldSoFar } from "@/lib/calculators/paycheck";
 import type { RouterOutputs } from "@/lib/trpc";
 
 type PaycheckSummary = RouterOutputs["paycheck"]["computeSummary"];
@@ -48,13 +48,8 @@ export function TaxBreakdown({ data }: { data: PaycheckSummary }) {
   const income = data.householdIncome;
   const tax = data.householdTax;
   if (!income || !tax) return null;
-  const people = data.people.filter((d) => d.paycheck);
-  const withheld = people.map((d) =>
-    withheldThroughPeriod(
-      d.paycheck!.yearSchedule,
-      d.paycheck!.periodsElapsedYtd,
-    ),
-  );
+  // Current jobs' checks so far plus jobs that ended this year.
+  const withheld = householdWithheldSoFar(data.people);
   return (
     <Card title={`${data.taxYear} tax (projected)`}>
       <div className="space-y-1 text-sm">
@@ -109,8 +104,25 @@ export function TaxBreakdown({ data }: { data: PaycheckSummary }) {
         <div className="border-subtle my-2 border-t" />
         <Row
           label="Withheld so far (federal + FICA)"
-          value={formatCurrency(sumBy(withheld, (w) => w.federal + w.fica))}
+          value={formatCurrency(withheld.federal + withheld.fica)}
         />
+        {data.people.flatMap((d) =>
+          "yearPayNote" in d && d.yearPayNote
+            ? [
+                <p
+                  key={`pay-${d.person.id}`}
+                  className="text-faint pt-1 text-xs"
+                >
+                  {d.person.name}&apos;s job started{" "}
+                  {formatDate(d.yearPayNote.startDate, "medium")}; pay before
+                  then isn&apos;t counted
+                  {d.yearPayNote.missingEndedJob
+                    ? " — the earlier job has no complete Salary Profile entry."
+                    : " — add the earlier job, with its end date, under Historical → Jobs."}
+                </p>,
+              ]
+            : [],
+        )}
         {tax.warnings.map((w) => (
           <p key={w} className="text-faint pt-1 text-xs">
             {maskAmountsInText(w)}

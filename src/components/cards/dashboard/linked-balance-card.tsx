@@ -496,20 +496,23 @@ function LinkedBalanceCardImpl() {
               By {ROLLUP_LABELS[nextRollup]}
             </button>
           </div>
-          {accountTypeGroups.map(
-            ({ key, label, balance, drift: groupDrift }) => (
-              <div
-                key={key || "unmatched"}
-                className="text-faint flex justify-between text-xs"
-              >
-                <span>{label}</span>
-                <span className="flex items-center gap-1.5">
-                  {formatCurrency(balance)}
-                  <DriftBadge drift={groupDrift} balance={balance} />
-                </span>
-              </div>
-            ),
-          )}
+          {/* One grid for every row: a long name wraps in its own column,
+              and the balances and changes line up down the card. */}
+          <div className="text-faint grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-1.5 gap-y-1 text-xs">
+            {accountTypeGroups.map(
+              ({ key, label, balance, drift: groupDrift }) => (
+                <div key={key || "unmatched"} className="contents">
+                  <span className="break-words">{label}</span>
+                  <span className="text-right whitespace-nowrap tabular-nums">
+                    {formatCurrency(balance)}
+                  </span>
+                  <span className="text-right whitespace-nowrap tabular-nums">
+                    <DriftBadge drift={groupDrift} balance={balance} />
+                  </span>
+                </div>
+              ),
+            )}
+          </div>
         </div>
       )}
 

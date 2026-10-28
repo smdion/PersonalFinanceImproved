@@ -3,11 +3,11 @@
 /**
  * Settings → General → Data sources: every source behind the sidebar's
  * "Data" indicator, with its rhythm, last update, problems and what was
- * collected. Reads the same status queries the sidebar uses — no polling.
+ * collected. The statuses come from the sidebar's own hook
+ * (useDataSourceStatuses), so the two always agree — no polling.
  */
 import { FocusLink } from "@/components/ui/focus-link";
 import { trpc } from "@/lib/trpc";
-import { useUser, hasPermission } from "@/lib/context/user-context";
 import { Card } from "@/components/ui/card";
 import {
   budgetApiServiceLabel,
@@ -16,52 +16,43 @@ import {
   formatRelativeTime,
 } from "@/lib/utils/format";
 import { DATA_SOURCES, type DataSourceKey } from "@/lib/config/data-sources";
-import { evaluateDataSources } from "@/lib/pure/data-freshness";
+import { useDataSourceStatuses } from "@/lib/hooks/use-data-source-statuses";
 
 export function DataSourcesSettings() {
-  const { data: freshness } = trpc.settings.getDataFreshness.useQuery();
-  const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
-  const { data: simplefin } = trpc.simplefin.getStatus.useQuery();
+  // The statuses are the sidebar indicator's own (one judgement, every
+  // source — tax data included); the queries below only add detail lines.
+  const {
+    loaded,
+    statuses: list,
+    syncStatus,
+    simplefinStatus: simplefin,
+    investmentHealth: health,
+    budgetApiCanSync: budgetConnected,
+  } = useDataSourceStatuses();
   const { data: secStatus } = trpc.sec.getStatus.useQuery();
+  const { data: taxData } = trpc.settings.taxData.status.useQuery();
   const { data: stats } = trpc.simplefin.getCollectionStats.useQuery(
     undefined,
     { enabled: !!simplefin?.connected },
   );
-  const user = useUser();
-  const { data: health } = trpc.investments.getHealth.useQuery(undefined, {
-    enabled: !!simplefin?.connected && hasPermission(user, "portfolio"),
-  });
-  if (!freshness) return null;
+  if (!loaded) return null;
+  const statuses = new Map(list.map((s) => [s.source.key, s]));
 
-  const budgetConnected = !!(syncStatus?.service && syncStatus.connected);
-  const statuses = new Map(
-    evaluateDataSources({
-      balance: freshness.balanceDate
-        ? { lastUpdated: freshness.balanceDate }
-        : undefined,
-      performance: freshness.performanceDate
-        ? { lastUpdated: freshness.performanceDate }
-        : undefined,
-      basis: freshness.basisDate
-        ? { lastUpdated: freshness.basisDate }
-        : undefined,
-      budgetApi: budgetConnected
-        ? { lastUpdated: syncStatus?.lastSynced?.toString() ?? null }
-        : undefined,
-      simplefin: simplefin?.connected
-        ? {
-            lastUpdated: simplefin.lastSyncedAt?.toString() ?? null,
-            error: simplefin.lastError,
-            warnings: health?.issues.map((i) => i.message),
-          }
-        : undefined,
-      secFacts: secStatus?.connected
-        ? { lastUpdated: secStatus.lastRun, error: secStatus.lastError }
-        : undefined,
-    }).map((s) => [s.source.key, s]),
-  );
-
+  // Tax data: the years it covers and when the next year is due.
+  const taxYears = (taxData?.sections ?? [])
+    .map((s) => s.newestYear)
+    .filter((y): y is number => y !== null);
+  const nextDue = (taxData?.sections ?? [])
+    .flatMap((s) => (s.upcoming ? [s.upcoming] : []))
+    .sort((a, b) => a.due.localeCompare(b.due))[0];
   const details: Partial<Record<DataSourceKey, React.ReactNode>> = {
+    taxData: taxYears.length > 0 && (
+      <>
+        Tax years through {Math.min(...taxYears)}.
+        {nextDue &&
+          ` ${nextDue.year} figures due by ${formatDate(nextDue.due, "medium")}.`}
+      </>
+    ),
     secFacts: secStatus?.connected && (
       <>
         Expense ratios and holdings from SEC filings for{" "}
@@ -159,7 +150,7 @@ export function DataSourcesSettings() {
               <div className="text-caption text-faint">
                 {source.mode === "manual" ? "Entered by you" : "Automatic"} ·{" "}
                 {source.rhythmLabel}
-                {status?.lastUpdated && (
+                {status?.lastUpdated && source.showsLastUpdated !== false && (
                   <>
                     {" "}
                     · last updated{" "}

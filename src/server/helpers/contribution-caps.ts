@@ -14,11 +14,8 @@ import {
 } from "@/lib/pure/contribution-caps";
 import { TRPCError } from "@trpc/server";
 import { getAllPeople } from "./people";
-import { w4FilingStatusOf } from "./salary";
-import {
-  taxFilingStatusSetting,
-  type FilingStatusSource,
-} from "@/lib/pure/filing-status";
+import { thisYearFilingStatus } from "./filing-status";
+import type { FilingStatusSource } from "@/lib/pure/filing-status";
 import { accountDisplayName } from "@/lib/utils/format";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {
@@ -213,15 +210,6 @@ export function capEffectiveContribs<R extends CapPassRow>(
   });
 }
 
-/** People ids, the primary person first. */
-function primaryFirst(
-  people: readonly { id: number; isPrimaryUser: boolean }[],
-): number[] {
-  return [...people]
-    .sort((a, b) => Number(b.isPrimaryUser) - Number(a.isPrimaryUser))
-    .map((p) => p.id);
-}
-
 /**
  * The household's cap context for a request: who (birth years), the year's
  * limits, and this year's filing status (lib/pure/filing-status.ts — a W-4
@@ -239,6 +227,8 @@ export async function loadCapHousehold(
   /** The year's limits; null = load the tax year's contribution limits. */
   limits: Record<string, number> | null,
   taxYear: number,
+  /** The request's Salary Profile (What-If included) for a W-4 stand-in. */
+  salaryProfileActiveMap?: SalaryProfileActiveMap,
 ): Promise<
   CapPassHousehold & { filingStatusSource: FilingStatusSource | null }
 > {
@@ -261,15 +251,14 @@ export async function loadCapHousehold(
     resolveRetirementProfileIdFrom(appSettings, retProfiles),
     getPrimaryPerson([...people])?.id ?? null,
   );
-  // This year's return: the household setting, else the active
-  // Retirement Profile's, else the earners' W-4 (the primary person's
-  // first), else unknown — married rules off, never assumed.
-  const household = taxFilingStatusSetting(appSettings);
-  const w4 =
-    household || settings?.filingStatus
-      ? null
-      : await w4FilingStatusOf(db, primaryFirst(people));
-  const filingStatus = household ?? settings?.filingStatus ?? w4 ?? "";
+  // This year's return (server/helpers/filing-status.ts); unknown —
+  // married rules off, never assumed.
+  const thisYear = await thisYearFilingStatus(db, {
+    appSettings,
+    profileStatus: settings?.filingStatus,
+    people,
+    salaryProfileActiveMap,
+  });
   return {
     people: people.map((p) => ({
       id: p.id,
@@ -278,14 +267,8 @@ export async function loadCapHousehold(
     limits:
       limits ??
       Object.fromEntries(limitRows.map((l) => [l.limitType, Number(l.value)])),
-    filingStatus,
-    filingStatusSource: household
-      ? "household"
-      : settings?.filingStatus
-        ? "retirementProfile"
-        : w4
-          ? "w4"
-          : null,
+    filingStatus: thisYear.status ?? "",
+    filingStatusSource: thisYear.source,
     taxYear,
   };
 }
@@ -356,45 +339,45 @@ export type ContribSaveCheck = {
   touched: readonly number[];
 };
 
+/** The active Contribution Profile's id (NaN when none is set). */
+async function activeContribProfileId(db: Db): Promise<number> {
+  const [row] = await db
+    .select({ value: schema.appSettings.value })
+    .from(schema.appSettings)
+    .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID));
+  return Number(row?.value ?? NaN);
+}
+
 /**
- * Refuse a save that makes a contribution over its IRS limit, or more over
- * it — the household's rule: over the limit is an error to fix, never
- * modelled. Before and after go through the same cap pass; a save is
- * refused when a person's limit group it touches ends up further over than
- * it was (so lowering an over-limit row always saves, and an unrelated edit
- * leaves the row showing its error). Only the active Contribution Profile
- * is judged: any other one is checked where it's used (a switch year's ages
- * and pay). The message carries the most each row can be.
+ * What a save leaves over its IRS limit, one line per touched row: before
+ * and after go through the same cap pass on this year's limits, ages and
+ * pay, and a row counts when a person's limit group it touches ends up
+ * further over than it was (so lowering an over-limit row always saves,
+ * and an unrelated edit leaves the row showing its error). Each line
+ * carries the most the row can be.
  */
-export async function assertWithinIrsLimits(
+async function irsLimitProblems(
   db: Db,
   check: ContribSaveCheck,
-): Promise<void> {
-  if (check.touched.length === 0) return;
-  const [allContribs, allJobs, people, salaryMap, activeSetting] =
-    await Promise.all([
-      db.select().from(schema.contributionAccounts),
-      db.select().from(schema.jobs),
-      getAllPeople(db),
-      loadEffectiveSalaryProfile(db, null),
-      db
-        .select({ value: schema.appSettings.value })
-        .from(schema.appSettings)
-        .where(eq(schema.appSettings.key, SK_ACTIVE_CONTRIB_PROFILE_ID)),
-    ]);
-  const activeId = Number(activeSetting[0]?.value ?? NaN);
-  if (check.profileId !== null && check.profileId !== activeId) return;
+  judgedProfileId: number,
+): Promise<string[]> {
+  const [allContribs, allJobs, people, salaryMap] = await Promise.all([
+    db.select().from(schema.contributionAccounts),
+    db.select().from(schema.jobs),
+    getAllPeople(db),
+    loadEffectiveSalaryProfile(db, null),
+  ]);
   let profileFields: AccountFields = {};
   if (check.before === undefined || check.after === undefined) {
-    const [active] = Number.isFinite(activeId)
+    const [judged] = Number.isFinite(judgedProfileId)
       ? await db
           .select()
           .from(schema.contributionProfiles)
-          .where(eq(schema.contributionProfiles.id, activeId))
+          .where(eq(schema.contributionProfiles.id, judgedProfileId))
       : [];
     profileFields =
       (
-        active?.contributionActiveFields as
+        judged?.contributionActiveFields as
           { contributionAccounts?: AccountFields } | undefined
       )?.contributionAccounts ?? {};
   }
@@ -450,8 +433,64 @@ export async function assertWithinIrsLimits(
     );
     return [`${name}: ${capMessage(c)}`];
   });
+  return problems;
+}
+
+/**
+ * Refuse a save that makes a contribution over its IRS limit, or more over
+ * it — the household's rule: over the limit is an error to fix, never
+ * modelled (irsLimitProblems). Only the active Contribution Profile is
+ * refused; one used as a future switch gets a warning instead
+ * (switchProfileLimitWarning).
+ */
+export async function assertWithinIrsLimits(
+  db: Db,
+  check: ContribSaveCheck,
+): Promise<void> {
+  if (check.touched.length === 0) return;
+  const activeId = await activeContribProfileId(db);
+  if (check.profileId !== null && check.profileId !== activeId) return;
+  const problems = await irsLimitProblems(db, check, activeId);
   if (problems.length > 0)
     throw new TRPCError({ code: "BAD_REQUEST", message: problems.join(" ") });
+}
+
+/**
+ * A save to a Contribution Profile that isn't active but is a future
+ * switch in the Retirement settings ("Changes by year"): what it leaves
+ * over this year's IRS limits, as a warning — it still saves, since the
+ * switch year's limits and ages aren't this year's. The projection caps it
+ * at this year's limits (buildProfileSwitches), as judged here. Null when the profile is active, not used as a switch, or
+ * within the limits.
+ */
+export async function switchProfileLimitWarning(
+  db: Db,
+  check: ContribSaveCheck & { profileId: number },
+): Promise<string | null> {
+  if (check.touched.length === 0) return null;
+  if (check.profileId === (await activeContribProfileId(db))) return null;
+  const thisYear = new Date().getFullYear();
+  const years = [
+    ...new Set(
+      (
+        await db
+          .select({ year: schema.retirementSalaryOverrides.projectionYear })
+          .from(schema.retirementSalaryOverrides)
+          .where(
+            eq(
+              schema.retirementSalaryOverrides.contributionProfileId,
+              check.profileId,
+            ),
+          )
+      )
+        .map((r) => r.year)
+        .filter((y) => y >= thisYear),
+    ),
+  ].sort((a, b) => a - b);
+  if (years.length === 0) return null;
+  const problems = await irsLimitProblems(db, check, check.profileId);
+  if (problems.length === 0) return null;
+  return `Over this year's IRS limits — this profile is used from ${years[0]}, and the projection caps it at this year's limits. ${problems.join(" ")}`;
 }
 
 /** A ContribSaveCheck for helpers that can't import this module (it

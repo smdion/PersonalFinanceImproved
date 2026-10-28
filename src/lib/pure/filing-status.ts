@@ -1,9 +1,13 @@
 /**
- * The household's filing status for THIS year's return — the household
- * setting (SK_TAX_FILING_STATUS). This year's household tax, Roth IRA
- * check and IRS-limit caps read it; retirement years keep the active
- * Retirement Profile's status. Unset (or not a status Ledgr models): null,
- * and callers fall back to the profile's, then a W-4.
+ * Filing status, one chain for every reader:
+ * - THIS year's return: the household setting (SK_TAX_FILING_STATUS), else
+ *   the active Retirement Profile's, else a W-4 (the primary person's
+ *   first) — server/helpers/filing-status.ts resolves it. The household
+ *   tax, the Roth IRA check and the IRS-limit caps read it.
+ * - Retirement years: the active Retirement Profile's, or "Auto" (null) —
+ *   this year's.
+ * - Nothing known at all: FILING_STATUS_IF_UNKNOWN, and Ledgr asks
+ *   (a recommendation) — never a silent guess.
  */
 import {
   W4_FILING_STATUS_VALUES,
@@ -21,4 +25,18 @@ export function taxFilingStatusSetting(
   return (W4_FILING_STATUS_VALUES as readonly unknown[]).includes(v)
     ? (v as W4FilingStatus)
     : null;
+}
+
+/** Used only when nothing says what the household files as — Single's
+ *  brackets tax the most, so a projection is never flattered by a guess;
+ *  the household is asked to set it. */
+export const FILING_STATUS_IF_UNKNOWN: W4FilingStatus = "Single";
+
+/** Retirement years' filing status: the profile's, else ("Auto") this
+ *  year's, else the cautious fallback. */
+export function retirementFilingStatus(
+  profileStatus: W4FilingStatus | null | undefined,
+  thisYear: W4FilingStatus | null,
+): W4FilingStatus {
+  return profileStatus ?? thisYear ?? FILING_STATUS_IF_UNKNOWN;
 }

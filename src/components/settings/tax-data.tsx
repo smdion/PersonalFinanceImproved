@@ -22,6 +22,7 @@
  * degrading downstream.
  */
 import { useState } from "react";
+import { SourceLinks } from "./source-links";
 import { TaxDataUpdates } from "./tax-data-updates";
 import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
@@ -70,6 +71,8 @@ export const OLD_TAX_TAB_KEYS: readonly string[] = [
 
 export function TaxDataSettings() {
   const user = useUser();
+  const { data: sectionSources } =
+    trpc.settings.taxData.sectionSources.useQuery();
   const admin = isAdmin(user);
 
   const { data: limitsData } = trpc.settings.contributionLimits.list.useQuery();
@@ -227,15 +230,35 @@ export function TaxDataSettings() {
           <IrsLimitGrowthSetting />
         </div>
         <div className={section === "tax" ? "" : "hidden"}>
+          <SourceLinks
+            citations={sectionSources?.[String(activeYear)]?.withholding ?? []}
+            label="Source:"
+            className="text-caption text-faint mb-2 block"
+          />
           <TaxBracketsSettings year={activeYear} />
         </div>
         <div className={section === "ltcg" ? "" : "hidden"}>
+          <SourceLinks
+            citations={sectionSources?.[String(activeYear)]?.ltcg ?? []}
+            label="Source:"
+            className="text-caption text-faint mb-2 block"
+          />
           <LtcgBracketsSettings year={activeYear} />
         </div>
         <div className={section === "irmaa" ? "" : "hidden"}>
+          <SourceLinks
+            citations={sectionSources?.[String(activeYear)]?.irmaa ?? []}
+            label="Source:"
+            className="text-caption text-faint mb-2 block"
+          />
           <IrmaaBracketsSettings year={activeYear} />
         </div>
         <div className={section === "fpl" ? "" : "hidden"}>
+          <SourceLinks
+            citations={sectionSources?.[String(activeYear)]?.fpl ?? []}
+            label="Source:"
+            className="text-caption text-faint mb-2 block"
+          />
           <FplByHouseholdSettings year={activeYear} />
         </div>
         <div className={section === "returns" ? "" : "hidden"}>

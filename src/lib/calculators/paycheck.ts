@@ -181,6 +181,34 @@ export function withheldThroughPeriod(
   };
 }
 
+/**
+ * The household's withholding so far this year: each current job's
+ * regular checks to date (withheldThroughPeriod) plus what jobs that ended
+ * this year withheld — someone with no job now still had tax withheld.
+ */
+export function householdWithheldSoFar(
+  people: readonly {
+    paycheck: Pick<PaycheckResult, "yearSchedule" | "periodsElapsedYtd"> | null;
+    endedWithheld?: { federal: number; fica: number } | null;
+  }[],
+): { federal: number; fica: number } {
+  const parts = people.flatMap((d) => [
+    ...(d.paycheck
+      ? [
+          withheldThroughPeriod(
+            d.paycheck.yearSchedule,
+            d.paycheck.periodsElapsedYtd,
+          ),
+        ]
+      : []),
+    ...(d.endedWithheld ? [d.endedWithheld] : []),
+  ]);
+  return {
+    federal: roundToCents(sumBy(parts, (w) => w.federal)),
+    fica: roundToCents(sumBy(parts, (w) => w.fica)),
+  };
+}
+
 /** Pre-tax treatments: traditional 401k ('pre_tax') and HSA ('hsa') both reduce taxable income. */
 export function isPreTax(treatment: string): boolean {
   // lint-violation-ok: "hsa" here is the tax-treatment value (TaxTreatment enum), not an account category
@@ -464,6 +492,8 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     periodsPerYear,
     periodsElapsedYtd,
     periodsBeforeStart: beforeStart,
+    bonusBeforeStart:
+      bonusPeriodFound !== null && bonusPeriodFound <= beforeStart,
     nextPayDate,
     payFrequencyLabel,
     warnings,
@@ -557,6 +587,8 @@ function calculateBonus(
       bonusFica: 0,
       bonusContributions: 0,
       bonusFicaWages: 0,
+      bonusFederalTaxable: 0,
+      bonusLines: [],
     };
   }
 
@@ -572,9 +604,38 @@ function calculateBonus(
             (input.monthsInBonusYear / 12),
         );
 
-  // IRS supplemental flat rate (from input — typically 22% for income under $1M)
+  // The contributions the bonus check takes (accounts set to be taken from
+  // bonus checks) — percent-of-salary ones scale against bonusGross,
+  // fixed-amount ones take their regular per-period dollars.
+  const bonusLines: DeductionLine[] = input.contributionAccounts.flatMap(
+    (ca) => {
+      const amount = bonusCheckContribution(ca, bonusGross);
+      return amount > 0
+        ? [
+            {
+              name: ca.name,
+              amount,
+              taxTreatment: ca.taxTreatment,
+              ficaExempt: false,
+            },
+          ]
+        : [];
+    },
+  );
+  // The supplemental flat rate (tax data — typically 22%) applies to the
+  // bonus's federal taxable wages: gross less the pre-tax money it takes.
+  const bonusFederalTaxable = roundToCents(
+    Math.max(
+      0,
+      bonusGross -
+        sumBy(
+          bonusLines.filter((l) => isPreTax(l.taxTreatment)),
+          (l) => l.amount,
+        ),
+    ),
+  );
   const bonusFederalWithholding = roundToCents(
-    bonusGross * input.supplementalTaxRate,
+    bonusFederalTaxable * input.supplementalTaxRate,
   );
 
   // FICA on bonus. Its FICA wages are the bonus less any FICA-exempt
@@ -606,12 +667,7 @@ function calculateBonus(
   const bonusFicaMed = roundToCents(bonusFicaWages * medRate);
   const bonusFica = bonusFicaSS + bonusFicaMed;
 
-  // What the bonus check takes for contributions (accounts set to be taken
-  // from bonus checks). Percent-of-salary accounts scale against bonusGross;
-  // fixed-amount accounts take their regular per-period dollars.
-  const bonusContributions = sumBy(input.contributionAccounts, (ca) =>
-    bonusCheckContribution(ca, bonusGross),
-  );
+  const bonusContributions = sumBy(bonusLines, (l) => l.amount);
 
   const bonusNet = roundToCents(
     bonusGross - bonusFederalWithholding - bonusFica - bonusContributions,
@@ -624,6 +680,8 @@ function calculateBonus(
     bonusFica,
     bonusContributions,
     bonusFicaWages,
+    bonusFederalTaxable,
+    bonusLines,
   };
 }
 
@@ -1070,7 +1128,19 @@ function buildYearSchedule(
       ssRate,
     );
 
-    const periodMed = periodFicaBase * medRate;
+    // Employers withhold Additional Medicare on an employee's Medicare
+    // wages above the withholding threshold this year (IRC 3102(f)) — this
+    // employer's wages only, which ytdFicaBase counts.
+    const periodMed =
+      periodFicaBase * medRate +
+      input.taxBrackets.medicareAdditionalRate *
+        Math.max(
+          0,
+          Math.min(
+            periodFicaBase,
+            ytdFicaBase - input.taxBrackets.medicareAdditionalThreshold,
+          ),
+        );
 
     // Split FICA between regular and bonus portions for display
     const regularFicaBase = ficaBase;

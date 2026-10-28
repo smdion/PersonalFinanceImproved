@@ -109,6 +109,7 @@ const basePaycheck: PaycheckResult = {
   periodsPerYear: 26,
   periodsElapsedYtd: 0,
   periodsBeforeStart: 0,
+  bonusBeforeStart: false,
   nextPayDate: "2026-01-09",
   payFrequencyLabel: "Biweekly",
   warnings: [],
