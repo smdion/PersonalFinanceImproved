@@ -27,6 +27,7 @@ function view(
     job: { id: id * 10 },
     rawDeductions: rows.rawDeductions ?? [],
     rawContribs: rows.rawContribs ?? [],
+    // eslint-disable-next-line no-restricted-syntax -- a partial view: the editors read only person, job and the raw rows
   } as unknown as PaycheckPersonView;
 }
 
