@@ -13,23 +13,47 @@
 // Key: Going $1 over 400% FPL costs $15,000-$25,000+ in lost subsidies.
 // Roth and HSA withdrawals do NOT count toward MAGI.
 
+/** The largest household the Healthcare settings offer (and the
+ *  retirement-settings input accepts). */
+export const HOUSEHOLD_SIZE_MAX = 12;
+
 /**
- * Get the ACA subsidy cliff (400% of FPL) for a given household size.
- * Above this MAGI, all premium tax credits are lost.
+ * The poverty level for a household size. HHS publishes sizes 1–8 and,
+ * for a larger household, a fixed amount for each person over 8 — the
+ * same step as from 7 to 8, so it's taken from the data, not stored.
  *
  * @param fplByHousehold The poverty levels by household size
  *   (`fpl_by_household`, resolved; sizes 1–8 always present —
- *   fplByHouseholdAmountsSchema). Households over 8 use size 8.
+ *   fplByHouseholdAmountsSchema).
+ */
+export function povertyLevel(
+  householdSize: number,
+  fplByHousehold: Record<number, number>,
+): number {
+  const size = Math.max(1, Math.floor(householdSize));
+  const known = (n: number) => {
+    const fpl = fplByHousehold[n];
+    if (fpl == null)
+      throw new Error(`No poverty level for a household of ${n}`);
+    return fpl;
+  };
+  if (size <= 8) return known(size);
+  const eight = known(8);
+  const step = eight - known(7);
+  if (step <= 0)
+    throw new Error("Poverty levels must rise with household size (7 → 8)");
+  return eight + (size - 8) * step;
+}
+
+/**
+ * Get the ACA subsidy cliff (400% of FPL) for a given household size.
+ * Above this MAGI, all premium tax credits are lost.
  */
 export function getAcaSubsidyCliff(
   householdSize: number,
   fplByHousehold: Record<number, number>,
 ): number {
-  const size = Math.min(Math.max(1, householdSize), 8);
-  const fpl = fplByHousehold[size];
-  if (fpl == null)
-    throw new Error(`No poverty level for a household of ${size}`);
-  return fpl * 4;
+  return povertyLevel(householdSize, fplByHousehold) * 4;
 }
 
 /**

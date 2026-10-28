@@ -9,6 +9,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import type { Settings, UpsertSettingsMutation, IsEditable } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
+import { HOUSEHOLD_SIZE_MAX } from "@/lib/config/aca-tables";
 
 type Props = {
   settings: Settings;
@@ -102,12 +103,11 @@ export function HealthcareSection({
                 disabled={!isEditable}
                 className="rounded border px-1.5 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
               >
-                <option value="1">1</option>
-                <option value="2">2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
+                {Array.from({ length: HOUSEHOLD_SIZE_MAX }, (_, i) => (
+                  <option key={i + 1} value={String(i + 1)}>
+                    {i + 1}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

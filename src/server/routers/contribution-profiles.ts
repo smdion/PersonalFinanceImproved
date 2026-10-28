@@ -17,6 +17,7 @@
  */
 import {
   assertWithinIrsLimits,
+  switchProfileLimitWarning,
   capResolvedProfile,
   loadCapHousehold,
   touchedContribAccounts,
@@ -669,6 +670,9 @@ export const contributionProfileRouter = createTRPCRouter({
         ctx.db,
         input.contributionActiveFields,
       );
+      // Over the limits on a profile used as a future switch: saved, with
+      // a warning (switchProfileLimitWarning).
+      let limitWarning: string | null = null;
       if (input.contributionActiveFields) {
         const before =
           (
@@ -677,12 +681,14 @@ export const contributionProfileRouter = createTRPCRouter({
             }
           ).contributionAccounts ?? {};
         const after = input.contributionActiveFields.contributionAccounts ?? {};
-        await assertWithinIrsLimits(ctx.db, {
+        const check = {
           profileId: input.id,
           before,
           after,
           touched: touchedContribAccounts(before, after),
-        });
+        };
+        await assertWithinIrsLimits(ctx.db, check);
+        limitWarning = await switchProfileLimitWarning(ctx.db, check);
       }
 
       const updates: Partial<typeof schema.contributionProfiles.$inferInsert> =
@@ -698,7 +704,7 @@ export const contributionProfileRouter = createTRPCRouter({
         .set(updates)
         .where(eq(schema.contributionProfiles.id, input.id))
         .returning();
-      return rows[0]!;
+      return { ...rows[0]!, limitWarning };
     }),
 
   /**
@@ -749,7 +755,8 @@ export const contributionProfileRouter = createTRPCRouter({
         }
       }
 
-      return ctx.db.transaction((tx) =>
+      let limitWarning: string | null = null;
+      const row = await ctx.db.transaction((tx) =>
         patchProfileSubEntry(
           tx,
           input.profileId,
@@ -759,16 +766,22 @@ export const contributionProfileRouter = createTRPCRouter({
           input.unset,
           contribAccountActiveFieldsSchema,
           "contribution account fields",
-          // A value that leaves this account over its IRS limit is refused.
-          (before, after) =>
-            assertWithinIrsLimits(tx, {
+          // A value that leaves this account over its IRS limit is refused
+          // on the active profile, and warned on one used as a future switch.
+          async (before, after) => {
+            const check = {
               profileId: input.profileId,
               before,
               after,
               touched: touchedContribAccounts(before, after),
-            }),
+            };
+            await assertWithinIrsLimits(tx, check);
+            limitWarning = await switchProfileLimitWarning(tx, check);
+          },
         ),
       );
+      // Set inside the check callback, which TypeScript doesn't follow.
+      return { ...row, limitWarning: limitWarning as string | null };
     }),
 
   /**

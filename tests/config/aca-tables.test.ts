@@ -11,10 +11,16 @@ describe("getAcaSubsidyCliff", () => {
     expect(getAcaSubsidyCliff(4, FPL)).toBe(FPL[4]! * 4);
   });
 
-  it("clamps household size to 1-8 range", () => {
+  it("treats a size under 1 as 1", () => {
     expect(getAcaSubsidyCliff(0, FPL)).toBe(FPL[1]! * 4);
     expect(getAcaSubsidyCliff(-1, FPL)).toBe(FPL[1]! * 4);
-    expect(getAcaSubsidyCliff(10, FPL)).toBe(FPL[8]! * 4);
+  });
+
+  it("adds HHS's per-person step (size 8 − size 7) for each person over 8", () => {
+    const step = FPL[8]! - FPL[7]!;
+    expect(step).toBeGreaterThan(0);
+    expect(getAcaSubsidyCliff(9, FPL)).toBe((FPL[8]! + step) * 4);
+    expect(getAcaSubsidyCliff(10, FPL)).toBe((FPL[8]! + 2 * step) * 4);
   });
 
   it("throws on a missing household size (never borrows another's)", () => {

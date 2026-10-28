@@ -8,7 +8,12 @@ import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
 import { createTestCaller, seedJob, seedPerson } from "./setup";
-import { checksPaidYtd, periodsBeforeStart } from "@/lib/calculators/paycheck";
+import {
+  checksPaidYtd,
+  householdWithheldSoFar,
+  periodsBeforeStart,
+  withheldThroughPeriod,
+} from "@/lib/calculators/paycheck";
 
 const NOW = new Date("2026-08-14T12:00:00");
 const NEW_START = "2026-06-01";
@@ -67,6 +72,21 @@ describe("paycheck: a person who changed jobs this year", () => {
       0,
     );
     expect(s.people[0]!).toMatchObject({ yearPayNote: null });
+  });
+
+  it("withheld so far adds what the old job withheld to the new job's checks", async () => {
+    const s = await ctx.caller.paycheck.computeSummary();
+    const p = s.people[0]!;
+    const current = withheldThroughPeriod(
+      p.paycheck!.yearSchedule,
+      p.paycheck!.periodsElapsedYtd,
+    );
+    const ended = "endedWithheld" in p ? p.endedWithheld : null;
+    expect(ended!.federal).toBeGreaterThan(0);
+    expect(ended!.fica).toBeGreaterThan(0);
+    const all = householdWithheldSoFar(s.people);
+    expect(all.federal).toBeCloseTo(current.federal + ended!.federal, 2);
+    expect(all.fica).toBeCloseTo(current.fica + ended!.fica, 2);
   });
 });
 
@@ -136,5 +156,52 @@ describe("paycheck: no job now, one that ended this year", () => {
     expect(s.people[0]!.paycheck).toBeNull();
     expect(s.householdIncome!.salary).toBeCloseTo((90_000 * checks) / 26, 0);
     expect(s.householdTax).not.toBeNull();
+    // Its checks withheld Social Security + Medicare on every dollar (no
+    // pre-tax money, under the wage base), and federal tax.
+    const withheld = householdWithheldSoFar(s.people);
+    expect(withheld.fica).toBeCloseTo(((90_000 * checks) / 26) * 0.0765, 0);
+    expect(withheld.federal).toBeGreaterThan(0);
+  });
+});
+
+describe("paycheck: a job whose last day is later this year", () => {
+  const LAST_DAY = "2026-11-20";
+  let ctx: Awaited<ReturnType<typeof createTestCaller>>;
+  beforeAll(async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    ctx = await createTestCaller();
+    const personId = await seedPerson(ctx.db, "Example Leaver", "1962-05-05");
+    seedJob(ctx.db, personId, {
+      employerName: "Leaving Co",
+      annualSalary: "90000",
+      payPeriod: "biweekly",
+      payWeek: "even",
+      anchorPayDate: "2026-01-09",
+      startDate: "2012-03-01",
+      endDate: LAST_DAY,
+    });
+  });
+  afterAll(() => {
+    ctx.cleanup();
+    vi.useRealTimers();
+  });
+
+  it("withheld so far stops at today; the year's income runs to its last day", async () => {
+    const s = await ctx.caller.paycheck.computeSummary();
+    const toDate = checksPaidYtd(NOW, "biweekly", "2026-01-09", 26, null);
+    const toEnd = checksPaidYtd(
+      new Date(`${LAST_DAY}T12:00:00Z`),
+      "biweekly",
+      "2026-01-09",
+      26,
+      "2012-03-01",
+    );
+    expect(toEnd).toBeGreaterThan(toDate);
+    expect(s.householdIncome!.salary).toBeCloseTo((90_000 * toEnd) / 26, 0);
+    expect(householdWithheldSoFar(s.people).fica).toBeCloseTo(
+      ((90_000 * toDate) / 26) * 0.0765,
+      0,
+    );
   });
 });

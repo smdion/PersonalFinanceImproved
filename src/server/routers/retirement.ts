@@ -3,6 +3,7 @@ import {
   capResolvedProfile,
   loadCapHousehold,
 } from "@/server/helpers/contribution-caps";
+import { HOUSEHOLD_SIZE_MAX } from "@/lib/config/aca-tables";
 import type { CapPassed } from "@/lib/pure/contribution-caps";
 import {
   redundantReturnRateIds,
@@ -165,7 +166,7 @@ const retirementSettingsInput = z.object({
   rmdSmoothingMaxBracketTarget: zDecimal.nullable().optional(),
   enableIrmaaAwareness: z.boolean().optional(),
   enableAcaAwareness: z.boolean().optional(),
-  householdSize: z.number().int().min(1).max(8).optional(),
+  householdSize: z.number().int().min(1).max(HOUSEHOLD_SIZE_MAX).optional(),
   socialSecurityMonthly: zDecimal.optional(),
   ssStartAge: z.number().int().min(62).max(70).optional(),
   filingStatus: z.enum(["MFJ", "Single", "HOH"]).nullable().optional(),

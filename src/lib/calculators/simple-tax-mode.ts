@@ -134,6 +134,14 @@ export function toSimpleTaxMode(
         ...sw.retirementOnly,
       };
     }),
+    // Tax-free means no table-based tax either: with a filing status the
+    // engine taxes the pot's gains on the capital-gains brackets (not the
+    // 0 brokerage rate above) and adds NIIT; IRMAA and the ACA check read
+    // the same gains as MAGI. None of them belong in one tax-free pot.
+    filingStatus: undefined,
+    enableIrmaaAwareness: false,
+    irmaaAwareRothConversions: false,
+    enableAcaAwareness: false,
     brokerageGoals: [],
     brokerageContributionRamp: hasPortfolioBrokerage
       ? 0

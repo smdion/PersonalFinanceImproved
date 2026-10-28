@@ -305,4 +305,46 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
       ).rejects.toThrow(/^Test Person 403b: \$[\d,]+ over the IRS limit/);
     });
   });
+
+  describe("a profile used as a future switch: saved, with a warning", () => {
+    let switchProfileId: number;
+    const setValue = (contributionValue: string) =>
+      t.caller.contributionProfile.setAccountActiveFields({
+        profileId: switchProfileId,
+        accountId,
+        fields: { contributionValue, contributionMethod: "percent_of_salary" },
+      });
+
+    beforeAll(() => {
+      switchProfileId = seedContributionProfile(t.db, {
+        name: "Later",
+        contributionActiveFields: { contributionAccounts: {}, jobs: {} },
+      });
+    });
+
+    it("not used anywhere: no warning", async () => {
+      expect((await setValue("30")).limitWarning).toBeNull();
+    });
+
+    it("used from 2030: saves, warning with the year and the most it can be", async () => {
+      t.db
+        .insert(schema.retirementSalaryOverrides)
+        .values({
+          personId,
+          projectionYear: 2030,
+          overrideSalary: "120000",
+          contributionProfileId: switchProfileId,
+        })
+        .run();
+      const saved = await setValue("31");
+      expect(saved.limitWarning).toMatch(
+        /used from 2030, and the projection caps it at this year.s limits/,
+      );
+      expect(saved.limitWarning).toMatch(
+        /over the IRS limit — set it to at most 20\.41% of pay/,
+      );
+      // Within the limit: the warning clears.
+      expect((await setValue("20")).limitWarning).toBeNull();
+    });
+  });
 });

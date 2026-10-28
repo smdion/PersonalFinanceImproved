@@ -9,8 +9,7 @@
  */
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { sumBy } from "@/lib/utils/math";
-import { withheldThroughPeriod } from "@/lib/calculators/paycheck";
+import { householdWithheldSoFar } from "@/lib/calculators/paycheck";
 import type { RouterOutputs } from "@/lib/trpc";
 import type { ViewMode } from "@/lib/calculators/types/shared";
 
@@ -25,9 +24,11 @@ export function TaxesSummary({
 }) {
   const isYtd = viewMode === "ytd";
   const isBlended = viewMode === "blended";
-  const people = data?.people?.filter((d) => d.paycheck) ?? [];
+  const hasPaycheck = data?.people?.some((d) => d.paycheck) ?? false;
   const householdTax = data?.householdTax ?? null;
-  if (people.length === 0 || (!isYtd && !householdTax)) return null;
+  // householdTax is set whenever anyone had pay this year — a current job
+  // or one that ended (its withholding counts in YTD).
+  if (!householdTax && (!isYtd || !hasPaycheck)) return null;
 
   // Projected and year-end: the household tax on household annual income
   // (salary + the resolved bonus — one standard deduction, FICA per person,
@@ -36,15 +37,11 @@ export function TaxesSummary({
   let totalFica: number;
   if (isYtd) {
     // From the year schedule, which charges full Social Security until the
-    // wage base is reached (the per-check figure is the year's average).
-    const withheld = people.map((d) =>
-      withheldThroughPeriod(
-        d.paycheck!.yearSchedule,
-        d.paycheck!.periodsElapsedYtd,
-      ),
-    );
-    totalFederal = sumBy(withheld, (w) => w.federal);
-    totalFica = sumBy(withheld, (w) => w.fica);
+    // wage base is reached (the per-check figure is the year's average),
+    // plus what jobs that ended this year withheld.
+    const withheld = householdWithheldSoFar(data?.people ?? []);
+    totalFederal = withheld.federal;
+    totalFica = withheld.fica;
   } else {
     totalFederal = householdTax!.federalTax;
     totalFica = householdTax!.ficaSS + householdTax!.ficaMedicare;

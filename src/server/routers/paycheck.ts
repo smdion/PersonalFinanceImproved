@@ -5,6 +5,7 @@ import {
 } from "@/server/helpers/contribution-caps";
 import { DEFAULT_BONUS_DESTINATION } from "@/lib/config/enum-values";
 import { eq } from "drizzle-orm";
+import { roundToCents, sumBy } from "@/lib/utils/math";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../trpc";
@@ -15,6 +16,7 @@ import {
   checksPaidYtd,
   countPeriodsElapsed,
   calculateBlendedAnnual,
+  withheldThroughPeriod,
 } from "@/lib/calculators/paycheck";
 import type { SalarySegment } from "@/lib/calculators/paycheck";
 import { calculateHouseholdTax } from "@/lib/calculators/tax";
@@ -445,7 +447,9 @@ export const paycheckRouter = createTRPCRouter({
        * A person's jobs that ended this tax year, each for the checks it
        * paid up to its end (its own Salary Profile entry; none of the
        * What-If). Counted whether or not they have a job now — someone laid
-       * off or retired mid-year still earned this year.
+       * off or retired mid-year still earned this year. `endedWithheld` is
+       * what those checks withheld (federal + FICA, regular checks only, as
+       * withheldThroughPeriod).
        */
       const endedJobYears = (person: (typeof people)[number]) => {
         const endedJobs = effectiveJobs.filter(
@@ -478,21 +482,43 @@ export const paycheckRouter = createTRPCRouter({
             new Date(anchor),
           );
           return [
-            computeAnnualEarnings({
-              salary: ended.salary,
-              periodsPerYear: ended.periodsPerYear,
-              paycheck: endedPaycheck,
-              contributionAccounts: ended.contribAccounts,
-              deductions: ended.deductions,
-              checks,
-              // Only a bonus dated on or before its last day.
-              bonusPaid:
-                endedPaycheck.bonusPeriod !== null &&
-                endedPaycheck.bonusPeriod <= paydaysToEnd,
-            }),
+            {
+              // Withheld so far: its checks to today, or to its end when
+              // that's passed (the earnings count to the end either way).
+              withheld: withheldThroughPeriod(
+                endedPaycheck.yearSchedule,
+                Math.min(
+                  countPeriodsElapsed(
+                    end < asOfDate ? end : asOfDate,
+                    job.payPeriod!,
+                    new Date(anchor),
+                  ),
+                  ended.periodsPerYear,
+                ),
+              ),
+              year: computeAnnualEarnings({
+                salary: ended.salary,
+                periodsPerYear: ended.periodsPerYear,
+                paycheck: endedPaycheck,
+                contributionAccounts: ended.contribAccounts,
+                deductions: ended.deductions,
+                checks,
+                // Only a bonus dated on or before its last day.
+                bonusPaid:
+                  endedPaycheck.bonusPeriod !== null &&
+                  endedPaycheck.bonusPeriod <= paydaysToEnd,
+              }),
+            },
           ];
         });
-        return { endedJobs, endedYears };
+        return {
+          endedJobs,
+          endedYears: endedYears.map((e) => e.year),
+          endedWithheld: {
+            federal: roundToCents(sumBy(endedYears, (e) => e.withheld.federal)),
+            fica: roundToCents(sumBy(endedYears, (e) => e.withheld.fica)),
+          },
+        };
       };
 
       const results = await Promise.all(
@@ -513,10 +539,12 @@ export const paycheckRouter = createTRPCRouter({
           // No current job (or an incomplete one): the year's pay is
           // what jobs that ended this year paid — null when none did.
           const endedOnly = () => {
-            const { endedYears } = endedJobYears(person);
-            return endedYears.length > 0
-              ? sumHouseholdIncome(endedYears)
-              : null;
+            const { endedYears, endedWithheld } = endedJobYears(person);
+            return {
+              earnings:
+                endedYears.length > 0 ? sumHouseholdIncome(endedYears) : null,
+              endedWithheld,
+            };
           };
           const activeJob = findActiveJob(effectiveJobs, person.id);
           if (!activeJob) {
@@ -525,7 +553,7 @@ export const paycheckRouter = createTRPCRouter({
               job: null,
               salary: 0,
               paycheck: null,
-              earnings: endedOnly(),
+              ...endedOnly(),
               rawDeductions: [],
               rawContribs: [],
               incompleteAccountIds,
@@ -542,7 +570,7 @@ export const paycheckRouter = createTRPCRouter({
               job: jobForClient,
               salary: 0,
               paycheck: null,
-              earnings: endedOnly(),
+              ...endedOnly(),
               rawDeductions: [],
               rawContribs: [],
               incompleteAccountIds,
@@ -668,7 +696,8 @@ export const paycheckRouter = createTRPCRouter({
             checks: periodsPerYear - paycheck.periodsBeforeStart,
             bonusPaid: !paycheck.bonusBeforeStart,
           });
-          const { endedJobs, endedYears } = endedJobYears(person);
+          const { endedJobs, endedYears, endedWithheld } =
+            endedJobYears(person);
           const earnings =
             endedYears.length > 0
               ? sumHouseholdIncome([currentJobYear, ...endedYears])
@@ -721,6 +750,9 @@ export const paycheckRouter = createTRPCRouter({
             fullFormulaBonusEstimate,
             blendedAnnual,
             earnings,
+            /** What jobs that ended this year withheld (federal + FICA) —
+             *  added to the current job's withholding so far. */
+            endedWithheld,
             rawDeductions: jobDeductions,
             /** This job's other-pay lines with their per-check amount from
              *  the Salary Profile entry (0 when it sets none). */

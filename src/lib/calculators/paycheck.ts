@@ -181,6 +181,34 @@ export function withheldThroughPeriod(
   };
 }
 
+/**
+ * The household's withholding so far this year: each current job's
+ * regular checks to date (withheldThroughPeriod) plus what jobs that ended
+ * this year withheld — someone with no job now still had tax withheld.
+ */
+export function householdWithheldSoFar(
+  people: readonly {
+    paycheck: Pick<PaycheckResult, "yearSchedule" | "periodsElapsedYtd"> | null;
+    endedWithheld?: { federal: number; fica: number } | null;
+  }[],
+): { federal: number; fica: number } {
+  const parts = people.flatMap((d) => [
+    ...(d.paycheck
+      ? [
+          withheldThroughPeriod(
+            d.paycheck.yearSchedule,
+            d.paycheck.periodsElapsedYtd,
+          ),
+        ]
+      : []),
+    ...(d.endedWithheld ? [d.endedWithheld] : []),
+  ]);
+  return {
+    federal: roundToCents(sumBy(parts, (w) => w.federal)),
+    fica: roundToCents(sumBy(parts, (w) => w.fica)),
+  };
+}
+
 /** Pre-tax treatments: traditional 401k ('pre_tax') and HSA ('hsa') both reduce taxable income. */
 export function isPreTax(treatment: string): boolean {
   // lint-violation-ok: "hsa" here is the tax-treatment value (TaxTreatment enum), not an account category

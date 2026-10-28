@@ -2388,6 +2388,32 @@ describe("engine invariants", () => {
         ).toThrow(/retirement-only amounts/);
       });
 
+      it("the pot is tax-free: no capital-gains tax, NIIT, IRMAA or ACA check, whatever the filing status", () => {
+        const base = overflowInput();
+        const simple = toSimpleTaxMode(
+          {
+            ...base,
+            returnRates: [{ label: "7%", rate: 0.07 }],
+            filingStatus: "MFJ",
+            enableIrmaaAwareness: true,
+            enableAcaAwareness: true,
+          },
+          parts,
+        );
+        const decum = calculateProjection(simple).projectionByYear.filter(
+          (y): y is EngineDecumulationYear => y.phase === "decumulation",
+        );
+        expect(decum.length).toBeGreaterThan(0);
+        // The pot has grown well past its basis, so a table-based tax
+        // would show up as soon as withdrawals start.
+        expect(decum.some((y) => y.totalWithdrawal > 0)).toBe(true);
+        for (const y of decum) {
+          expect(y.taxCost).toBe(0);
+          expect(y.irmaaCost).toBe(0);
+          expect(y.niitAmount).toBe(0);
+        }
+      });
+
       it("collapses only retirement money into one tax-free pot", () => {
         const simple = toSimpleTaxMode(overflowInput(), parts);
         expect(simple.startingBalances.afterTax).toBe(110000);

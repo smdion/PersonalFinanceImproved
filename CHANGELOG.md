@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.9
 
-## [0.9.3] - 2026-10-27
+## [0.9.3] - 2026-10-28
 
 ### Changed
 
@@ -17,7 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **A Retirement Profile's filing status can be Auto** — it then follows this year's filing status (the Taxes page setting, else the W-4). Ledgr no longer assumes married filing jointly when nothing says: it uses Single (the highest tax and no spousal Social Security, so a projection is never flattered) and asks you to set it. Profiles keep the status they have; choose Auto on one to have it follow this year's. The Taxes page shows the filing status even when no one has a paycheck.
 - **The pay-stub check compares a bonus check too** — choose Bonus check to compare the bonus's own figures.
 - **Data sources shows tax data as current**, with the years it covers and when the next ones are due (it said "Not connected").
-- The Utilities page's empty state no longer mentions an import script.
+- **Add a utility from the Utilities page** — pick gas, water or electric, who bills you and the unit, then type its bills or pull them from your budget. The page no longer starts as a dead end.
+- **The ACA household size goes up to 12** (it stopped at 6). A household over 8 uses HHS's own per-person step above 8 instead of the 8-person poverty line.
+- **A Contribution Profile used as a future switch is checked against the IRS limits when you save it** — over this year's limit, it saves with a warning naming the year it's used from (the projection holds it to that year's limit).
 
 ### Fixed
 
@@ -26,6 +28,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Each check includes Additional Medicare once your year's wages pass $200,000**, as employers withhold it — net pay per check, "withheld so far" and the pay-stub check include it.
 - **Saving a Retirement Profile setting no longer resets its filing status** to the W-4's (or MFJ) when the filing status wasn't part of the change.
 - **The year-to-date projection for a job started this year** counts its checks out of the ones it pays this year, not a full year's.
+- **"Withheld so far" includes a job that ended this year** — on the Taxes page and the dashboard's year-to-date taxes, even when no one has a job now.
+- **Simple tax mode is tax-free throughout.** With a filing status set, the one pot's gains were still taxed on the capital-gains brackets (plus NIIT), and the Medicare IRMAA surcharge and ACA check still ran.
 
 ## [0.9.2] - 2026-10-26
 
