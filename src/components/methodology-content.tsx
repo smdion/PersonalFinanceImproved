@@ -1,47 +1,6 @@
 "use client";
 
-import { useState } from "react";
-
-function Section({
-  title,
-  children,
-  defaultOpen = true,
-}: {
-  title: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="overflow-hidden rounded-lg border">
-      <button
-        onClick={() => setOpen(!open)}
-        className="bg-surface-sunken text-secondary hover:bg-surface-elevated flex w-full items-center justify-between px-4 py-3 text-sm font-medium transition-colors"
-      >
-        {title}
-        <svg
-          aria-hidden="true"
-          className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </button>
-      {open && (
-        <div className="text-muted space-y-4 px-4 py-4 text-sm leading-relaxed">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
+import { ProseSection } from "@/components/ui/prose-section";
 
 export function MethodologyContent() {
   return (
@@ -51,7 +10,7 @@ export function MethodologyContent() {
         how it compares to other tools.
       </p>
 
-      <Section title="How It Works">
+      <ProseSection title="How It Works" defaultOpen>
         <p>
           A simulation runs thousands of possible futures for your portfolio.
           Instead of assuming a single fixed return every year, each trial draws
@@ -183,9 +142,9 @@ export function MethodologyContent() {
           planning, Roth conversions, healthcare costs) but use deterministic or
           simple simulation models without our multi-asset correlation modeling.
         </p>
-      </Section>
+      </ProseSection>
 
-      <Section title="Technical Details" defaultOpen={false}>
+      <ProseSection title="Technical Details">
         <h4 className="text-secondary font-semibold">Return sampling</h4>
         <p>
           Annual returns are sampled from a multivariate log-normal
@@ -590,7 +549,7 @@ export function MethodologyContent() {
           <li>Vanguard VCMM 10-Year Capital Market Forecasts</li>
           <li>JP Morgan 2026 Long-Term Capital Market Assumptions</li>
         </ul>
-      </Section>
+      </ProseSection>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
+import { ProseSection } from "@/components/ui/prose-section";
 import { SettingsLink } from "@/components/ui/settings-link";
 import {
   LayoutDashboard,
@@ -20,44 +20,7 @@ import {
   Wrench,
   Save,
   Settings,
-  ChevronRight,
-  type LucideIcon,
 } from "lucide-react";
-
-/* ── Reusable section shell ── */
-
-function Section({
-  title,
-  icon: Icon,
-  children,
-  defaultOpen = false,
-}: {
-  title: string;
-  icon?: LucideIcon;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="border-default overflow-hidden rounded-lg border">
-      <button
-        onClick={() => setOpen(!open)}
-        className="bg-surface-sunken text-secondary hover:bg-surface-elevated flex w-full items-center gap-3 px-4 py-3 text-sm font-medium transition-colors"
-      >
-        {Icon && <Icon className="h-4 w-4 shrink-0 text-blue-500" />}
-        <span className="flex-1 text-left">{title}</span>
-        <ChevronRight
-          className={`text-faint h-4 w-4 shrink-0 transition-transform duration-150 ${open ? "rotate-90" : ""}`}
-        />
-      </button>
-      {open && (
-        <div className="text-muted space-y-4 px-4 py-4 text-sm leading-relaxed">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
 
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
@@ -100,7 +63,7 @@ export function HelpContent() {
       </div>
 
       {/* ── Getting started ── */}
-      <Section title="Getting Started" defaultOpen>
+      <ProseSection title="Getting Started" defaultOpen>
         <p>
           When you first log in, the <strong>Onboarding Wizard</strong> walks
           you through the essential setup steps:
@@ -144,10 +107,10 @@ export function HelpContent() {
           meaningful cards. You can always refine things later &mdash; every
           page works independently.
         </p>
-      </Section>
+      </ProseSection>
 
       {/* ── Navigation ── */}
-      <Section title="Navigation & Layout">
+      <ProseSection title="Navigation & Layout">
         <p>
           The app is organized into a <strong>sidebar</strong> on the left with
           seven groups: <em>Cash Flow</em>, <em>Investments</em>,{" "}
@@ -190,10 +153,10 @@ export function HelpContent() {
             ).
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ── Dashboard ── */}
-      <Section title="Dashboard" icon={LayoutDashboard}>
+      <ProseSection title="Dashboard" icon={LayoutDashboard}>
         <p>
           The <NavLink href="/">Dashboard</NavLink> is your at-a-glance
           overview. It shows up to 13 cards covering the key metrics from every
@@ -248,7 +211,7 @@ export function HelpContent() {
           error, it won&rsquo;t affect the others &mdash; each card is
           independently error-isolated.
         </p>
-      </Section>
+      </ProseSection>
 
       {/* ━━ CASH FLOW ━━ */}
       <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
@@ -256,7 +219,7 @@ export function HelpContent() {
       </h3>
 
       {/* ── Paycheck ── */}
-      <Section title="Paycheck" icon={Wallet}>
+      <ProseSection title="Paycheck" icon={Wallet}>
         <p>
           The <NavLink href="/paycheck">Paycheck</NavLink> page is a
           gross-to-net calculator. It computes federal and state taxes, FICA
@@ -296,10 +259,10 @@ export function HelpContent() {
             <NavLink href="/profiles?tab=whatif">Profiles</NavLink> page.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ── Budget ── */}
-      <Section title="Budget" icon={ClipboardList}>
+      <ProseSection title="Budget" icon={ClipboardList}>
         <p>
           The <NavLink href="/budget">Budget</NavLink> page is a multi-column
           budgeting workspace. Each column is a spending level (e.g. Standard,
@@ -336,10 +299,10 @@ export function HelpContent() {
             saves nothing.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ── Expenses ── */}
-      <Section title="Expenses" icon={Receipt}>
+      <ProseSection title="Expenses" icon={Receipt}>
         <p>
           The <NavLink href="/expenses">Expenses</NavLink> page visualizes where
           your money goes.
@@ -361,7 +324,7 @@ export function HelpContent() {
             API, shows live account balances for comparison.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ━━ INVESTMENTS ━━ */}
       <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
@@ -369,7 +332,7 @@ export function HelpContent() {
       </h3>
 
       {/* ── Savings ── */}
-      <Section title="Savings" icon={PiggyBank}>
+      <ProseSection title="Savings" icon={PiggyBank}>
         <p>
           The <NavLink href="/savings">Savings</NavLink> page manages your
           savings goals and sinking funds.
@@ -455,10 +418,10 @@ export function HelpContent() {
             month&rsquo;s balance for each linked fund to history.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ── Portfolio ── */}
-      <Section title="Portfolio" icon={TrendingUp}>
+      <ProseSection title="Portfolio" icon={TrendingUp}>
         <p>
           The <NavLink href="/portfolio">Portfolio</NavLink> page is your
           investment account hub.
@@ -486,10 +449,10 @@ export function HelpContent() {
             across all investment accounts.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ── Performance ── */}
-      <Section title="Performance" icon={Trophy}>
+      <ProseSection title="Performance" icon={Trophy}>
         <p>
           The <NavLink href="/performance">Performance</NavLink> page tracks
           investment returns over time.
@@ -513,10 +476,10 @@ export function HelpContent() {
             to lock in the numbers and prevent accidental edits.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ── Brokerage ── */}
-      <Section title="Brokerage" icon={BarChart3}>
+      <ProseSection title="Brokerage" icon={BarChart3}>
         <p>
           The <NavLink href="/brokerage">Brokerage</NavLink> page projects the
           growth of your non-retirement (after-tax) investment accounts.
@@ -539,7 +502,7 @@ export function HelpContent() {
             contribution profiles to project future growth.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ━━ NET WORTH ━━ */}
       <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
@@ -547,7 +510,7 @@ export function HelpContent() {
       </h3>
 
       {/* ── House ── */}
-      <Section title="House" icon={Home}>
+      <ProseSection title="House" icon={Home}>
         <p>
           The <NavLink href="/house">House</NavLink> page tracks your primary
           residence.
@@ -572,10 +535,10 @@ export function HelpContent() {
             section (see below).
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ── Assets ── */}
-      <Section title="Assets" icon={Building2}>
+      <ProseSection title="Assets" icon={Building2}>
         <p>
           The <NavLink href="/assets">Assets</NavLink> page tracks the value of
           everything you own outside of investment accounts.
@@ -601,10 +564,10 @@ export function HelpContent() {
             API are marked so you know which are automatic vs. manual.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ── Liabilities ── */}
-      <Section title="Liabilities" icon={CreditCard}>
+      <ProseSection title="Liabilities" icon={CreditCard}>
         <p>
           The <NavLink href="/liabilities">Liabilities</NavLink> page tracks all
           your debts and loans.
@@ -638,10 +601,10 @@ export function HelpContent() {
             off are preserved for historical tracking.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ── Trends ── */}
-      <Section title="Trends" icon={TrendingUp}>
+      <ProseSection title="Trends" icon={TrendingUp}>
         <p>
           The <NavLink href="/networth">Trends</NavLink> page visualizes your
           net worth over time &mdash; the big-picture view of your financial
@@ -683,10 +646,10 @@ export function HelpContent() {
           <strong>cost basis</strong> to see your net worth with or without
           unrealized gains.
         </p>
-      </Section>
+      </ProseSection>
 
       {/* ── Historical ── */}
-      <Section title="Historical" icon={ScrollText}>
+      <ProseSection title="Historical" icon={ScrollText}>
         <p>
           The <NavLink href="/historical">Historical</NavLink> page is a
           year-over-year ledger of your financial history.
@@ -710,7 +673,7 @@ export function HelpContent() {
             &ldquo;bought house&rdquo; or &ldquo;changed jobs&rdquo;).
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ━━ UPKEEP ━━ */}
       <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
@@ -718,7 +681,7 @@ export function HelpContent() {
       </h3>
 
       {/* ── Utilities ── */}
-      <Section title="Utilities" icon={Wrench}>
+      <ProseSection title="Utilities" icon={Wrench}>
         <p>
           The <NavLink href="/upkeep/utilities">Utilities</NavLink> tracker
           keeps monthly gas, water, and electric cost &amp; usage as standalone
@@ -743,7 +706,7 @@ export function HelpContent() {
             delete a monthly reading.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ━━ PLANNING ━━ */}
       <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
@@ -751,7 +714,7 @@ export function HelpContent() {
       </h3>
 
       {/* ── Retirement ── */}
-      <Section title="Retirement" icon={Palmtree}>
+      <ProseSection title="Retirement" icon={Palmtree}>
         <p>
           The <NavLink href="/retirement">Retirement</NavLink> page is a
           full-featured retirement planner powered by simulation.
@@ -798,10 +761,10 @@ export function HelpContent() {
             scenarios for retirement spending assumptions.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ── Tools ── */}
-      <Section title="Tools" icon={Wrench}>
+      <ProseSection title="Tools" icon={Wrench}>
         <p>
           The <NavLink href="/tools">Tools</NavLink> page is your what-if
           sandbox.
@@ -825,7 +788,7 @@ export function HelpContent() {
             selling an asset after fees, taxes, and payoff amounts.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ━━ SYSTEM ━━ */}
       <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
@@ -833,7 +796,7 @@ export function HelpContent() {
       </h3>
 
       {/* ── Versions ── */}
-      <Section title="Versions" icon={Save}>
+      <ProseSection title="Versions" icon={Save}>
         <p>
           The <NavLink href="/versions">Versions</NavLink> page manages database
           versions &mdash; your safety net.
@@ -861,10 +824,10 @@ export function HelpContent() {
             before restoring.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ── Settings ── */}
-      <Section title="Settings" icon={Settings}>
+      <ProseSection title="Settings" icon={Settings}>
         <p>
           The <NavLink href="/settings">Settings</NavLink> page is where you
           configure the app. It has multiple tabs:
@@ -916,14 +879,14 @@ export function HelpContent() {
             <strong>API</strong> &mdash; Browse the tRPC API endpoint reference.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ── Cross-cutting features ── */}
       <h3 className="text-faint pt-2 text-xs font-semibold tracking-wider uppercase">
         Features
       </h3>
 
-      <Section title="Profiles and Plans">
+      <ProseSection title="Profiles and Plans">
         <p>
           Each profile is its own world — Salary (pay, bonus, W-4, schedule),
           Contributions (what goes to each account, and whether it is also taken
@@ -952,9 +915,9 @@ export function HelpContent() {
             without saving anything.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
-      <Section title="Budget API Integration (YNAB / Actual Budget)">
+      <ProseSection title="Budget API Integration (YNAB / Actual Budget)">
         <p>
           Ledgr can optionally sync with <strong>YNAB</strong> (You Need A
           Budget) or <strong>Actual Budget</strong> to pull in real spending
@@ -992,9 +955,9 @@ export function HelpContent() {
             without a budget API. You can enter all data manually.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
-      <Section title="Demo Mode">
+      <ProseSection title="Demo Mode">
         <p>
           Demo mode lets you explore Ledgr with sample data without needing to
           set up your own financial information.
@@ -1015,10 +978,10 @@ export function HelpContent() {
             &ldquo;Switch Profile&rdquo; button to try different scenarios.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
       {/* ── Tips ── */}
-      <Section title="Tips & Shortcuts">
+      <ProseSection title="Tips & Shortcuts">
         <ul className="ml-2 list-inside list-disc space-y-2">
           <li>
             <strong>Inline editing</strong> &mdash; On many pages, you can click
@@ -1053,7 +1016,7 @@ export function HelpContent() {
             sections support <Kbd>Enter</Kbd> and <Kbd>Space</Kbd> keys.
           </li>
         </ul>
-      </Section>
+      </ProseSection>
     </div>
   );
 }

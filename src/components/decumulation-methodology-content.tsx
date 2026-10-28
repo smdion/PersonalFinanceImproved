@@ -1,47 +1,6 @@
 "use client";
 
-import { useState } from "react";
-
-function Section({
-  title,
-  children,
-  defaultOpen = true,
-}: {
-  title: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="overflow-hidden rounded-lg border">
-      <button
-        onClick={() => setOpen(!open)}
-        className="bg-surface-sunken text-secondary hover:bg-surface-elevated flex w-full items-center justify-between px-4 py-3 text-sm font-medium transition-colors"
-      >
-        {title}
-        <svg
-          aria-hidden="true"
-          className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </button>
-      {open && (
-        <div className="text-muted space-y-4 px-4 py-4 text-sm leading-relaxed">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
+import { ProseSection } from "@/components/ui/prose-section";
 
 export function DecumulationMethodologyContent() {
   return (
@@ -51,7 +10,7 @@ export function DecumulationMethodologyContent() {
         conversions, and dynamic spending during retirement years.
       </p>
 
-      <Section title="How It Works">
+      <ProseSection title="How It Works" defaultOpen>
         <p>
           The decumulation engine models your <strong>retirement years</strong>{" "}
           — from retirement age to the end of your projection. Each year it
@@ -304,9 +263,9 @@ export function DecumulationMethodologyContent() {
             </span>
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
-      <Section title="Defaults" defaultOpen={false}>
+      <ProseSection title="Defaults">
         <p>
           These are the page-level defaults that apply every retirement year
           unless a change by year sets something else.
@@ -615,9 +574,9 @@ export function DecumulationMethodologyContent() {
             </tbody>
           </table>
         </div>
-      </Section>
+      </ProseSection>
 
-      <Section title="Changes by year (carry forward)" defaultOpen={false}>
+      <ProseSection title="Changes by year (carry forward)">
         <p>
           A change by year sets any decumulation setting starting at a specific
           calendar year. Like accumulation, it <strong>carries forward</strong>:
@@ -716,9 +675,9 @@ export function DecumulationMethodologyContent() {
           <br />
           Year 2055: reset → true (revert everything to defaults)
         </p>
-      </Section>
+      </ProseSection>
 
-      <Section title="Technical Details" defaultOpen={false}>
+      <ProseSection title="Technical Details">
         <h4 className="text-secondary font-semibold">Tax gross-up</h4>
         <p>
           When{" "}
@@ -854,7 +813,7 @@ export function DecumulationMethodologyContent() {
           simulation trial. The engine tracks per-account depletion separately,
           which is visible in the year-by-year projection table.
         </p>
-      </Section>
+      </ProseSection>
     </div>
   );
 }
