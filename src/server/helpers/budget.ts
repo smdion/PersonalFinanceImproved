@@ -496,7 +496,7 @@ export async function resolveLinkedBudgetItemAmounts<
     effectiveSalaryMap,
   );
   const activeContribIds = new Set(activeContribs.map((c) => c.id));
-  const activeJobs = filterActiveJobs(profileResult.jobs);
+  const activeJobs = filterActiveJobs(profileResult.jobs, new Date());
   const {
     periodsPerYear: defaultPeriodsPerYear,
     incomplete: joblessIncomplete,

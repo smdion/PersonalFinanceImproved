@@ -265,6 +265,14 @@ export function ContributionProfileManager({
                       <span className="text-faint font-normal">/yr</span>
                     </span>
                   </div>
+                  {/* Held to this year's IRS limits at this year's ages; a
+                      profile used as a switch is capped at each year's
+                      ages in the projection (its save warning names them). */}
+                  {isViewingNonActive && (
+                    <span className="text-faint">
+                      at {new Date().getFullYear()}&apos;s IRS limits and ages
+                    </span>
+                  )}
                 </div>
               </div>
               <HelpTip text="Contributions and employer match for the profile shown below. Every profile is an ordinary, editable set of contribution settings — create more to model different contribution strategies, then use them in the Relocation tool. Salary and bonus are the Salary Profile's axis, not this one. Selected independently from the budget profile above — linked per budget column instead (see each column's settings)." />

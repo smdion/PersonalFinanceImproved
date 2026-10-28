@@ -13,7 +13,15 @@
  * coverage here; this locks in the base wiring only).
  */
 import "../routers/setup-mocks";
-import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  afterEach,
+  vi,
+} from "vitest";
 import {
   createTestCaller,
   seedPerson,
@@ -972,5 +980,81 @@ describe("buildEnginePayload — spousal 'worker has filed' gate, mismatched bir
     // in 2052." The old age-only gate (65 <= 62) would wrongly withhold
     // it and leave this at 14400.
     expect(spouse.annualAmount).toBeCloseTo(15600, 2);
+  });
+});
+
+describe("buildEnginePayload — job dates bound the years worked", () => {
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let personAId: number;
+  let personBId: number;
+  let contributionProfileId: number;
+
+  beforeAll(async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-28T12:00:00"));
+    const ctx = await createTestCaller();
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+    personAId = await seedPerson(db, "Alex", "1980-01-01");
+    personBId = await seedPerson(db, "Sam", "1990-01-01");
+    await markPrimary(db, personAId);
+    await seedRetirementSettings(db, personAId);
+    await seedRetirementSettings(db, personBId);
+    // Alex's job ends in 2030; Sam has no job now and starts one in 2028.
+    const jobAId = seedJob(db, personAId, {
+      annualSalary: "150000",
+      startDate: "2015-01-01",
+      endDate: "2030-06-30",
+    });
+    const jobBId = seedJob(db, personBId, {
+      annualSalary: "90000",
+      startDate: "2028-03-01",
+    });
+    const perfA = seedPerformanceAccount(db, {
+      parentCategory: "Retirement",
+      accountType: "401k",
+      ownerPersonId: personAId,
+      name: "401k A",
+    });
+    const perfB = seedPerformanceAccount(db, {
+      parentCategory: "Retirement",
+      accountType: "401k",
+      ownerPersonId: personBId,
+      name: "401k B",
+    });
+    seedSnapshot(db, "2026-06-15", [
+      { performanceAccountId: perfA, amount: "250000", taxType: "preTax" },
+    ]);
+    contributionProfileId = await seedContributionProfileForAccounts(db, [
+      await seedContributionAccount(db, personAId, jobAId, perfA),
+      await seedContributionAccount(db, personBId, jobBId, perfB),
+    ]);
+  });
+
+  afterAll(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
+  it("follows a job that ends later and one not started yet, with their years", async () => {
+    const data = await fetchRetirementData(db, { contributionProfileId });
+    const payload = (await buildEnginePayload(db, data, {
+      contributionProfileId,
+    }))!;
+    const bei = payload.baseEngineInput;
+    expect(bei.workingYearsByPerson).toEqual({
+      [personAId]: { start: null, end: 2030 },
+      [personBId]: { start: 2028, end: null },
+    });
+    // Sam's job, salary and 401(k) are in the projection from the start.
+    expect(
+      Object.keys(bei.salaryByPerson ?? {})
+        .map(Number)
+        .sort(),
+    ).toEqual([personAId, personBId].sort());
+    expect(payload.contributionSpecs.map((s) => s.personId).sort()).toEqual(
+      [personAId, personBId].sort(),
+    );
   });
 });

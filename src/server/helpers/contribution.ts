@@ -986,7 +986,7 @@ export async function loadLiveContribData(db: Db) {
     db.select().from(schema.people),
     db.select().from(schema.performanceAccounts),
   ]);
-  const activeJobsRaw = filterActiveJobs(allJobs);
+  const activeJobsRaw = filterActiveJobs(allJobs, new Date());
   const activeContribs = allContribs.filter((c) => c.isActive);
   const perfAccountMap = new Map(allPerfAccounts.map((pa) => [pa.id, pa]));
 

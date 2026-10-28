@@ -200,6 +200,7 @@ describe("engine input snapshot guard", () => {
         "ssStartAge",
         "startingAccountBalances",
         "startingBalances",
+        "workingYearsByPerson",
       ]
     `);
 

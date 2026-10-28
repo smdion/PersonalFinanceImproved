@@ -110,22 +110,37 @@ export async function resolveRetirementProfileId(
 }
 
 /**
- * The household's planned retirement year under the active retirement
- * profile: the average of each person's birth year + planned retirement
- * age (the profile's per-person age, else the person's settings row).
- * Null when nobody has a planned age.
+ * The engine's last working year: it works while the household's age (the
+ * people's average) is under the retirement age (the last to retire's,
+ * for two or more; the one person's otherwise).
  */
-export async function householdRetirementYear(db: Db): Promise<number | null> {
+export function lastWorkingYear(
+  currentYear: number,
+  people: readonly { birthYear: number; retirementAge: number }[],
+): number {
+  const avg = (xs: number[]) =>
+    Math.round(xs.reduce((t, x) => t + x, 0) / xs.length);
+  const age = avg(people.map((p) => currentYear - p.birthYear));
+  const retirementAge =
+    people.length > 1
+      ? Math.max(...people.map((p) => p.retirementAge))
+      : avg(people.map((p) => p.retirementAge));
+  return currentYear + retirementAge - age - 1;
+}
+
+/** Each person's birth year and planned retirement age under the active
+ *  retirement profile (the profile's per-person age, else the person's
+ *  settings row); people without either are left out. */
+async function plannedRetirements(db: Db) {
   const [profileId, people, profilePeople, settings] = await Promise.all([
     resolveRetirementProfileId(db),
     db.select().from(schema.people),
     db.select().from(schema.retirementProfilePeople),
     db.select().from(schema.retirementSettings),
   ]);
-  const years: number[] = [];
-  for (const p of people) {
+  return people.flatMap((p) => {
     const born = Number(String(p.dateOfBirth).slice(0, 4));
-    if (!(born > 1900)) continue;
+    if (!(born > 1900)) return [];
     const age =
       profilePeople.find(
         (r) => r.profileId === profileId && r.personId === p.id,
@@ -136,8 +151,30 @@ export async function householdRetirementYear(db: Db): Promise<number | null> {
           (profileId === null || r.profileId === profileId),
       )?.retirementAge ??
       settings.find((r) => r.personId === p.id)?.retirementAge;
-    if (age != null) years.push(born + age);
-  }
+    return age != null ? [{ birthYear: born, retirementAge: age }] : [];
+  });
+}
+
+/** The household's last working year as the engine counts it
+ *  (lastWorkingYear); null when nobody has a planned age. */
+export async function householdLastWorkingYear(
+  db: Db,
+  currentYear: number,
+): Promise<number | null> {
+  const planned = await plannedRetirements(db);
+  return planned.length === 0 ? null : lastWorkingYear(currentYear, planned);
+}
+
+/**
+ * The household's planned retirement year under the active retirement
+ * profile: the average of each person's birth year + planned retirement
+ * age (the profile's per-person age, else the person's settings row).
+ * Null when nobody has a planned age.
+ */
+export async function householdRetirementYear(db: Db): Promise<number | null> {
+  const years = (await plannedRetirements(db)).map(
+    (p) => p.birthYear + p.retirementAge,
+  );
   return years.length === 0
     ? null
     : Math.round(years.reduce((t, y) => t + y, 0) / years.length);

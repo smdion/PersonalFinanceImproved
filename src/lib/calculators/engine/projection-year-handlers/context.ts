@@ -72,34 +72,34 @@ export function buildProjectionContext(
     }
   }
 
-  // Auto-inject $0 salary overrides at each person's individual retirement age.
-  // This makes partial retirement work: the accumulation handler sees reduced
-  // salary for the retired person, their contribution specs produce $0 via
-  // salaryFraction = 0, while the still-working person continues contributing.
+  // Each person's working years: their job's (input.workingYearsByPerson),
+  // ending by the year before their own retirement when that comes before
+  // the household's — a partial retirement. Outside them the person has no
+  // pay and their contributions stop (pre-year-setup), fixed-dollar ones
+  // included; the other person keeps working.
+  const workingYearsByPerson: Record<
+    number,
+    { start: number | null; end: number | null }
+  > = { ...input.workingYearsByPerson };
   if (input.retirementAgeByPerson && hasPerPersonSalary) {
     const baseYear = input.asOfDate.getFullYear();
+    const householdRetYear =
+      baseYear + (input.retirementAge - input.currentAge);
     for (const [pidStr, retAge] of Object.entries(
       input.retirementAgeByPerson,
     )) {
       const pid = Number(pidStr);
-      // Find this person's birth year from SS entries or perPersonBirthYears
       const personBirthYear = input.socialSecurityEntries?.find(
         (e) => e.personId === pid,
       )?.birthYear;
       if (personBirthYear == null) continue;
       const retirementYear = personBirthYear + retAge;
-      // Only inject if this person retires before the household retirement age
-      const householdRetYear =
-        baseYear + (input.retirementAge - input.currentAge);
       if (retirementYear >= householdRetYear) continue;
-      // Inject $0 salary starting at their retirement year (don't overwrite user overrides)
-      if (!perPersonSalaryOverrides.has(retirementYear)) {
-        perPersonSalaryOverrides.set(retirementYear, new Map());
-      }
-      const yearMap = perPersonSalaryOverrides.get(retirementYear)!;
-      if (!yearMap.has(pid)) {
-        yearMap.set(pid, 0);
-      }
+      const job = workingYearsByPerson[pid];
+      workingYearsByPerson[pid] = {
+        start: job?.start ?? null,
+        end: Math.min(job?.end ?? Infinity, retirementYear - 1),
+      };
     }
   }
 
@@ -192,6 +192,7 @@ export function buildProjectionContext(
     indKey,
     indParentCat,
     hasPerPersonSalary: !!hasPerPersonSalary,
+    workingYearsByPerson,
     activeStrategy,
     activeStrategyParams,
     firstYearFraction,

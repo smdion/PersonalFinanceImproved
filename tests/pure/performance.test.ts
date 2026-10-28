@@ -2,7 +2,7 @@
  * Tests for pure business logic extracted from performance router's finalizeYear.
  * Covers: resolveCategoryValues, resolvePortfolioValues, filterAccountsForNextYear,
  * buildAccountKeys, assembleNetWorthValues, computePortfolioTotal,
- * filterActiveJobsAtDate.
+ * (the dated job rule moved to lib/pure/profiles.ts — tests/pure/profiles.test.ts).
  * computeHomeImpCumulative (formerly a duplicate here as
  * computeHomeImprovementsCumulative) now lives in lib/pure/historical.ts —
  * see tests/pure/historical.test.ts.
@@ -15,7 +15,6 @@ import {
   buildAccountKeys,
   assembleNetWorthValues,
   computePortfolioTotal,
-  filterActiveJobsAtDate,
   computeGainLoss,
   aggregateAccountsByYear,
   chainReturns,
@@ -279,57 +278,6 @@ describe("computePortfolioTotal", () => {
 
   it("returns 0 for empty array", () => {
     expect(computePortfolioTotal([])).toBe(0);
-  });
-});
-
-describe("filterActiveJobsAtDate", () => {
-  const jobs = [
-    {
-      startDate: "2020-01-01",
-      endDate: "2022-12-31",
-      isSpeculative: false,
-      name: "old",
-    },
-    {
-      startDate: "2023-01-01",
-      endDate: null,
-      isSpeculative: false,
-      name: "current",
-    },
-    {
-      startDate: "2025-06-01",
-      endDate: null,
-      isSpeculative: false,
-      name: "future",
-    },
-  ];
-
-  it("returns jobs active at a given date", () => {
-    const active = filterActiveJobsAtDate(jobs, new Date("2024-06-15"));
-    expect(active).toHaveLength(1);
-    expect(active[0]!.name).toBe("current");
-  });
-
-  it("includes jobs ending on the exact date", () => {
-    const active = filterActiveJobsAtDate(jobs, new Date("2022-12-31"));
-    expect(active.map((j) => j.name)).toContain("old");
-  });
-
-  it("excludes a speculative job even though its window would otherwise match", () => {
-    const withSpeculative = [
-      ...jobs,
-      {
-        startDate: "2020-01-01",
-        endDate: null,
-        isSpeculative: true,
-        name: "spec",
-      },
-    ];
-    const active = filterActiveJobsAtDate(
-      withSpeculative,
-      new Date("2024-06-15"),
-    );
-    expect(active.map((j) => j.name)).not.toContain("spec");
   });
 });
 

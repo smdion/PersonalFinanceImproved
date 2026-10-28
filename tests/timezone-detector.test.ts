@@ -67,9 +67,9 @@ describe("timezone detector (America/Chicago, UTC-5)", () => {
     });
   });
 
-  describe("filterActiveJobsAtDate", () => {
+  describe("filterActiveJobs", () => {
     it("does not activate a job on its start DATE until CHICAGO local midnight, not UTC midnight", async () => {
-      const { filterActiveJobsAtDate } = await import("@/lib/pure/performance");
+      const { filterActiveJobs } = await import("@/lib/pure/profiles");
       const job = {
         startDate: "2026-09-07",
         endDate: null,
@@ -80,14 +80,12 @@ describe("timezone detector (America/Chicago, UTC-5)", () => {
       // A UTC-midnight parse of "2026-09-07" (00:00Z) would wrongly place
       // this asOfDate AFTER the job's start.
       const beforeChicagoMidnight = new Date("2026-09-07T02:00:00.000Z");
-      expect(filterActiveJobsAtDate([job], beforeChicagoMidnight)).toEqual([]);
+      expect(filterActiveJobs([job], beforeChicagoMidnight)).toEqual([]);
 
       // 2026-09-07T06:00:00Z is 2026-09-07 01:00 Chicago -- an hour past
       // Chicago local midnight, so the job is active now.
       const afterChicagoMidnight = new Date("2026-09-07T06:00:00.000Z");
-      expect(filterActiveJobsAtDate([job], afterChicagoMidnight)).toEqual([
-        job,
-      ]);
+      expect(filterActiveJobs([job], afterChicagoMidnight)).toEqual([job]);
     });
   });
 

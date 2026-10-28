@@ -8,6 +8,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.9
 
+## [0.9.4] - Unreleased
+
+### Added
+
+- **What fund costs add up to over time** — Benchmarks → "What it costs" shows what today's fund costs take from your balance over 10, 20 and 30 years, at your current mix's expected return, with no new money added.
+
+### Changed
+
+- **Contributions get catch-up room as people age in the projection.** Each year is capped at the IRS limits at that year's ages (room from 50, the larger catch-up at 60–63, the smaller one again from 64) — for the active Contribution Profile, a profile used as a switch in "Changes by year", and a relocation's profile from the move year. A switch profile was held to this year's limits for good. At 64, money over the smaller catch-up is now cut, as payroll stops it, instead of going to brokerage. Saving a switch profile warns with the years it's over.
+- **The Retirement page loads less** — the methodology write-ups load when you open one.
+
+### Fixed
+
+- **A job is current from its start date to its end date.** A job whose last day is later this year shows its paycheck again (it disappeared once an end date was set), and this year's income and the Paycheck page's year-end estimate count its checks up to that day. A job that hasn't started shows when it starts instead of a paycheck, and its pay isn't counted yet.
+- **Someone who retires before the household stops contributing.** Their pay already stopped in the projection, but contributions set as a fixed amount kept going until the household retired.
+- **The Paycheck page's year-end estimate for a job started this year** counts its checks from its start, as this year's income already did.
+- **The projection holds an IRA to the owner's pay.** In a two-person household the pay limit on IRA contributions (or the couple's combined pay, filing jointly) was never applied in projected years.
+- **The projection follows job dates.** A job with an end date stops — no salary, contributions or match after its last year — and one that hasn't started counts from the year it starts, not from today. A year a job starts or ends in counts as a whole year; the projection says so under its chart.
+
 ## [0.9.3] - 2026-10-28
 
 ### Changed

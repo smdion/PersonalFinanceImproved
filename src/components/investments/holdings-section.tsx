@@ -628,6 +628,7 @@ export function HoldingsSection() {
               cost={cost}
               accountFees={data.accountFees}
               invested={data.accounts.reduce((t, a) => t + a.total, 0)}
+              expectedReturn={data.expectedReturn}
             />
           </FocusTarget>
           <GlidePathCard data={data} />

@@ -12,6 +12,9 @@ import {
   canRemoveColumn,
   findActiveJob,
   filterActiveJobs,
+  projectionJobs,
+  workingYears,
+  jobYearsNote,
   resolveLinkedProfile,
   canDeletePerformanceAccount,
   resolveContribFieldDisplayState,
@@ -118,66 +121,213 @@ describe("canRemoveColumn", () => {
   });
 });
 
+// A job is current from its start date through its end date (isJobCurrent).
+const TODAY = new Date("2026-10-28T12:00:00");
+
 describe("findActiveJob", () => {
   const jobs = [
-    { personId: 1, endDate: "2023-12-31", isSpeculative: false, name: "old" },
-    { personId: 1, endDate: null, isSpeculative: false, name: "current" },
-    { personId: 2, endDate: null, isSpeculative: false, name: "other" },
+    {
+      personId: 1,
+      startDate: "2020-01-01",
+      endDate: "2023-12-31",
+      isSpeculative: false,
+      name: "old",
+    },
+    {
+      personId: 1,
+      startDate: "2024-01-01",
+      endDate: null,
+      isSpeculative: false,
+      name: "current",
+    },
+    {
+      personId: 2,
+      startDate: "2024-01-01",
+      endDate: null,
+      isSpeculative: false,
+      name: "other",
+    },
   ];
 
   it("finds active job for person", () => {
-    const job = findActiveJob(jobs, 1);
-    expect(job?.name).toBe("current");
+    expect(findActiveJob(jobs, 1, TODAY)?.name).toBe("current");
+  });
+
+  it("an earlier date finds the job held then", () => {
+    expect(findActiveJob(jobs, 1, new Date("2022-06-15"))?.name).toBe("old");
   });
 
   it("returns undefined when no active job", () => {
-    const ended = [
-      { personId: 1, endDate: "2023-01-01", isSpeculative: false },
-    ];
-    expect(findActiveJob(ended, 1)).toBeUndefined();
+    expect(findActiveJob(jobs.slice(0, 1), 1, TODAY)).toBeUndefined();
   });
 
   it("returns undefined for unknown person", () => {
-    expect(findActiveJob(jobs, 99)).toBeUndefined();
+    expect(findActiveJob(jobs, 99, TODAY)).toBeUndefined();
   });
 
-  it("never returns a speculative job, even though it has no endDate", () => {
-    // The auto-provisioned what-if peg — always endDate: null, but must
-    // never be picked up as a person's real, active job.
-    const withSpeculative = [
-      { personId: 3, endDate: null, isSpeculative: true, name: "spec" },
+  it("a job whose last day is later this year is still current", () => {
+    const ending = [
+      {
+        personId: 1,
+        startDate: "2020-01-01",
+        endDate: "2026-12-15",
+        isSpeculative: false,
+      },
     ];
-    expect(findActiveJob(withSpeculative, 3)).toBeUndefined();
+    expect(findActiveJob(ending, 1, TODAY)).toBe(ending[0]);
+  });
+
+  it("current on its first and last day", () => {
+    const job = {
+      personId: 1,
+      startDate: "2026-10-28",
+      endDate: "2026-10-28",
+      isSpeculative: false,
+    };
+    expect(findActiveJob([job], 1, TODAY)).toBe(job);
+  });
+
+  it("a job that hasn't started isn't current", () => {
+    const future = [
+      {
+        personId: 1,
+        startDate: "2027-03-01",
+        endDate: null,
+        isSpeculative: false,
+      },
+    ];
+    expect(findActiveJob(future, 1, TODAY)).toBeUndefined();
+  });
+
+  it("never returns a speculative job", () => {
+    const spec = [
+      {
+        personId: 3,
+        startDate: "2020-01-01",
+        endDate: null,
+        isSpeculative: true,
+      },
+    ];
+    expect(findActiveJob(spec, 3, TODAY)).toBeUndefined();
   });
 
   it("prefers a real active job over a speculative one for the same person", () => {
     const mixed = [
-      { personId: 4, endDate: null, isSpeculative: true, name: "spec" },
-      { personId: 4, endDate: null, isSpeculative: false, name: "real" },
+      {
+        personId: 4,
+        startDate: "2020-01-01",
+        endDate: null,
+        isSpeculative: true,
+        name: "spec",
+      },
+      {
+        personId: 4,
+        startDate: "2020-01-01",
+        endDate: null,
+        isSpeculative: false,
+        name: "real",
+      },
     ];
-    expect(findActiveJob(mixed, 4)?.name).toBe("real");
+    expect(findActiveJob(mixed, 4, TODAY)?.name).toBe("real");
   });
 });
 
 describe("filterActiveJobs", () => {
-  it("returns only jobs without endDate", () => {
-    const jobs = [
-      { endDate: null, isSpeculative: false, name: "a" },
-      { endDate: "2023-01-01", isSpeculative: false, name: "b" },
-      { endDate: null, isSpeculative: false, name: "c" },
-    ];
-    const active = filterActiveJobs(jobs);
-    expect(active).toHaveLength(2);
-    expect(active.map((j) => j.name)).toEqual(["a", "c"]);
+  const jobs = [
+    {
+      startDate: "2020-01-01",
+      endDate: "2022-12-31",
+      isSpeculative: false,
+      name: "old",
+    },
+    {
+      startDate: "2023-01-01",
+      endDate: null,
+      isSpeculative: false,
+      name: "current",
+    },
+    {
+      startDate: "2025-06-01",
+      endDate: null,
+      isSpeculative: false,
+      name: "future",
+    },
+    {
+      startDate: "2020-01-01",
+      endDate: null,
+      isSpeculative: true,
+      name: "spec",
+    },
+  ];
+
+  it("returns the jobs current on the date, never a speculative one", () => {
+    expect(
+      filterActiveJobs(jobs, new Date("2024-06-15")).map((j) => j.name),
+    ).toEqual(["current"]);
   });
 
-  it("excludes a speculative job even though it has no endDate", () => {
+  it("includes a job on its last day", () => {
+    expect(
+      filterActiveJobs(jobs, new Date("2022-12-31T18:00:00")).map(
+        (j) => j.name,
+      ),
+    ).toContain("old");
+  });
+});
+
+describe("projectionJobs", () => {
+  const job = (
+    personId: number,
+    startDate: string,
+    endDate: string | null,
+    name: string,
+  ) => ({ personId, startDate, endDate, isSpeculative: false, name });
+
+  it("each person's current job, else the next one they start", () => {
     const jobs = [
-      { endDate: null, isSpeculative: false, name: "real" },
-      { endDate: null, isSpeculative: true, name: "spec" },
+      job(1, "2020-01-01", null, "a-current"),
+      job(1, "2028-01-01", null, "a-later"),
+      job(2, "2015-01-01", "2025-06-30", "b-old"),
+      job(2, "2027-03-01", null, "b-next"),
+      job(2, "2029-03-01", null, "b-after"),
+      job(3, "2010-01-01", "2020-01-01", "c-retired"),
     ];
-    const active = filterActiveJobs(jobs);
-    expect(active.map((j) => j.name)).toEqual(["real"]);
+    expect(projectionJobs(jobs, TODAY).map((j) => j.name)).toEqual([
+      "a-current",
+      "b-next",
+    ]);
+  });
+});
+
+describe("workingYears", () => {
+  it("whole years from a later start to the last day's year", () => {
+    expect(
+      workingYears({ startDate: "2027-03-01", endDate: "2031-06-30" }, TODAY),
+    ).toEqual({ start: 2027, end: 2031 });
+  });
+
+  it("already working: no start; no end date: no end", () => {
+    expect(
+      workingYears({ startDate: "2020-01-01", endDate: "2026-12-15" }, TODAY),
+    ).toEqual({ start: null, end: 2026 });
+    expect(
+      workingYears({ startDate: "2020-01-01", endDate: null }, TODAY),
+    ).toBeNull();
+  });
+});
+
+describe("jobYearsNote", () => {
+  it("names each person's job dates, counted in whole years", () => {
+    const names: Record<number, string> = { 1: "Alex", 2: "Sam" };
+    expect(
+      jobYearsNote(
+        { 1: { start: null, end: 2027 }, 2: { start: 2028, end: null } },
+        (id) => names[id]!,
+      ),
+    ).toBe(
+      "Alex's job ends in 2027; Sam's job starts in 2028 — counted in whole years.",
+    );
+    expect(jobYearsNote({}, () => "")).toBeNull();
   });
 });
 

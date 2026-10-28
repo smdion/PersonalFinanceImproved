@@ -2,6 +2,7 @@
  * Benchmarks holdings overview and fund-facts actions. Tiingo and SEC are
  * mocked; funds, accounts and values are invented.
  */
+import { geometricMean } from "@/lib/calculators/random";
 import "./setup-mocks";
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import { eq } from "drizzle-orm";
@@ -280,6 +281,8 @@ describe("fund facts", () => {
     expect(o.allocation.unknown).toBeCloseTo(1000);
     expect(o.cost).toMatchObject({ yearlyCost: 5 });
     expect(o.cost.coveredShare).toBeCloseTo(5000 / 6000);
+    // Every class here is 7% ± 15%: the mix compounds at that rate.
+    expect(o.expectedReturn).toBeCloseTo(geometricMean(0.07, 0.15), 10);
   });
 
   it("checks a suggested stand-in's filings at most hourly, unless the last check failed", async () => {

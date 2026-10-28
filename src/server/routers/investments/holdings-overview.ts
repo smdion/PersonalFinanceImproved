@@ -18,6 +18,7 @@ import {
   valueByClass,
 } from "@/lib/pure/fund-facts";
 import { interpolateAllocations } from "@/lib/calculators/random";
+import { blendedReturnForAge } from "@/lib/pure/projection";
 import { getAge, localDateStr } from "@/lib/utils/date";
 import { getLatestMarketClose } from "@/server/helpers/market-prices";
 import { getSecConnection } from "@/lib/sec/connection";
@@ -203,6 +204,8 @@ export async function loadHoldingsOverview(db: Db) {
       .select({
         id: schema.assetClassParams.id,
         name: schema.assetClassParams.name,
+        meanReturn: schema.assetClassParams.meanReturn,
+        stdDev: schema.assetClassParams.stdDev,
       })
       .from(schema.assetClassParams)
       .where(eq(schema.assetClassParams.isActive, true))
@@ -230,6 +233,22 @@ export async function loadHoldingsOverview(db: Db) {
 
   const { buckets, unknown, total } = portfolioBuckets(valued);
   const { byClass, unlinked } = valueByClass(buckets, links);
+  // The mix's expected return (each class's compounding rate, weighted by
+  // the money in it) — what the compounded fund cost grows at.
+  const classTotal = sumBy([...byClass.values()], (v) => v);
+  const expectedReturn =
+    classTotal > 0
+      ? blendedReturnForAge(
+          assetClasses.map((a) => ({
+            id: a.id,
+            meanReturn: Number(a.meanReturn),
+            stdDev: Number(a.stdDev),
+          })),
+          Object.fromEntries(
+            [...byClass.entries()].map(([id, v]) => [id, v / classTotal]),
+          ),
+        )
+      : null;
   const byAccount = new Map<number, typeof valued>();
   for (const v of valued)
     byAccount.set(v.simplefinAccountId, [
@@ -316,6 +335,9 @@ export async function loadHoldingsOverview(db: Db) {
       })),
     },
     cost: blendedCost(valued),
+    /** The current mix's expected yearly return; null when no money's
+     *  mix is known. */
+    expectedReturn,
     /** Account fees (Performance's Fees column) — the other kind of cost,
      *  shown beside fund costs, never added into them. */
     accountFees: accountFeesForYears(

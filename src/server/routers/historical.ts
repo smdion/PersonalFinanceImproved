@@ -86,7 +86,7 @@ export const historicalRouter = createTRPCRouter({
 
       for (const person of people) {
         if (recordedYears.has(person.id)) continue;
-        const activeJob = findActiveJob(jobs, person.id);
+        const activeJob = findActiveJob(jobs, person.id, new Date());
         const comp = activeJob
           ? resolveCompensation(salaryProfileActiveMap, activeJob.id)
           : { salary: 0, bonus: 0 };
@@ -285,7 +285,7 @@ export const historicalRouter = createTRPCRouter({
           ctx.db.select().from(schema.jobs),
           loadEffectiveSalaryProfile(ctx.db, null),
         ]);
-        const activeJob = findActiveJob(jobs, input.personId);
+        const activeJob = findActiveJob(jobs, input.personId, new Date());
         const comp = activeJob
           ? resolveCompensation(salaryProfileActiveMap, activeJob.id)
           : { salary: 0, bonus: 0 };

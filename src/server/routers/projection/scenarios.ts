@@ -5,6 +5,7 @@
  * engine). Coast FIRE endpoints (`computeCoastFire`, `computeCoastFireMC`)
  * live in the sibling `coast-fire.ts` file.
  */
+import { jobYearsNote } from "@/lib/pure/profiles";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { DEFAULT_RETURN_RATE } from "@/lib/constants";
@@ -251,6 +252,11 @@ export const scenariosRouter = createTRPCRouter({
 
       return {
         result,
+        /** Job start/end dates the projection counts in whole years. */
+        jobYearsNote: jobYearsNote(
+          baseEngineInput.workingYearsByPerson ?? {},
+          (id) => nameMap.get(id) ?? "",
+        ),
         planHealth: {
           currentAge: age,
           accumulationOrder,

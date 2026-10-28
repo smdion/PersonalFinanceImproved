@@ -827,7 +827,7 @@ export async function buildYearEndHistory(
 
     // Gross income from active jobs (includes bonus — matches finalized year-end data)
     const activeJobs = mergeSalaryProfileJobFields(
-      filterActiveJobs(jobs),
+      filterActiveJobs(jobs, asOfDate),
       salaryProfileActiveMap,
     );
     const combinedGross = activeJobs.reduce((s, job) => {

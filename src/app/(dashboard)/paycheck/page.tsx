@@ -2,6 +2,7 @@
 
 /** Paycheck gross-to-net calculator that breaks down taxes, deductions, and take-home pay. */
 
+import { formatDate } from "@/lib/utils/format";
 import { useFocusReveal } from "@/lib/hooks/use-focus";
 import { DEDUCTION_PRESETS } from "@/lib/config/paycheck-presets";
 import React from "react";
@@ -235,12 +236,18 @@ export default function PaycheckPage() {
 
   // One shared derivation for the whole page — the same hook the Budget
   // page's What-If tab uses.
-  const { views, isLoading, error, sharedContribGroupOrder } =
+  const { views, rawData, isLoading, error, sharedContribGroupOrder } =
     usePaycheckPersonViews({
       contributionProfileId: displayContribId,
       salaryProfileId: displaySalaryId,
       taxYearOverride,
     });
+  // People with no job now and one that hasn't started (no paycheck yet).
+  const upcomingJobs = (rawData?.people ?? []).flatMap((d) =>
+    "upcomingJob" in d && d.upcomingJob
+      ? [{ person: d.person, job: d.upcomingJob }]
+      : [],
+  );
 
   // Get available tax years for the toggle. Sourced from contribution_limits
   // alone, matching resolveTaxParams' candidateYears() — that's the only
@@ -367,6 +374,13 @@ export default function PaycheckPage() {
         />
       </PageHeader>
 
+      {upcomingJobs.map((u) => (
+        <p key={u.person.id} className="text-muted mb-4 text-sm">
+          {u.person.name}&apos;s job at {u.job.employerName} starts{" "}
+          {formatDate(u.job.startDate, "medium")} — its pay isn&apos;t counted
+          yet.
+        </p>
+      ))}
       {views.length === 0 ? (
         <EmptyState
           message="No active jobs found."

@@ -11,6 +11,7 @@ import { buildSpecToAccountMapping } from "../individual-account-tracking";
 import { resolveReturnRateForAge } from "../growth-application";
 import { scopedBalances } from "../balance-utils";
 import { computeNonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
+import type { ContributionSpec } from "../../types";
 import type {
   PreYearSetup,
   ProjectionContext,
@@ -183,6 +184,89 @@ export function runPreYearSetup(
     }
   }
 
+  // People not at work this year (ctx.workingYearsByPerson — a job that
+  // hasn't started, one past its last year, or an early retirement): no
+  // salary, and their
+  // contributions stop (the specs this year, zeroed for them). Their
+  // tracked salary keeps growing for when they're at work. Whole years: a
+  // year a job starts or ends in counts in full.
+  // A salary the household set for the person in a year outside their
+  // working years (part-time work after retiring, say) says they're at
+  // work from then — their latest such override, while it's above $0.
+  const workingYears = ctx.workingYearsByPerson;
+  const baseYear = input.asOfDate.getFullYear();
+  const atWork = (personId: number) => {
+    const w = workingYears[personId];
+    if (!w) return true;
+    const inWindow = (y: number) =>
+      (w.start === null || y >= w.start) && (w.end === null || y <= w.end);
+    if (inWindow(year)) return true;
+    for (let y = year; y >= baseYear && !inWindow(y); y--) {
+      const own = perPersonSalaryOverrides.get(y)?.get(personId);
+      if (own !== undefined) return own > 0;
+    }
+    return false;
+  };
+  const away = isAccumulation
+    ? Object.keys(workingYears)
+        .map(Number)
+        .filter((id) => !atWork(id))
+    : [];
+  let yearSpecs: ContributionSpec[] | undefined;
+  if (away.length > 0) {
+    if (hasPerPersonSalary) {
+      for (const id of away) {
+        effectiveSalary -= effectiveSalaryByPerson.get(id) ?? 0;
+        if (effectiveSalaryByPerson.has(id)) effectiveSalaryByPerson.set(id, 0);
+      }
+      effectiveSalary = Math.max(0, effectiveSalary);
+    } else {
+      // Household salary: the one earner (salary isn't tracked per person
+      // with fewer than two) is away.
+      effectiveSalary = 0;
+    }
+    // Nobody at work (everyone with pay is away, or the one earner): no
+    // pay to save from — joint savings stop too.
+    const nobodyAtWork = hasPerPersonSalary
+      ? [...effectiveSalaryByPerson.keys()].every((id) => away.includes(id))
+      : true;
+    yearSpecs = state.contributionSpecs?.map((spec) => {
+      if (
+        nobodyAtWork ||
+        (spec.personId != null && away.includes(spec.personId))
+      )
+        return {
+          ...spec,
+          value: 0,
+          baseAnnual: 0,
+          salaryFraction: 0,
+          configuredAnnual: undefined,
+        };
+      // The others' share of this year's (smaller) household pay.
+      if (
+        hasPerPersonSalary &&
+        spec.method === "percent_of_salary" &&
+        spec.personId != null &&
+        effectiveSalary > 0
+      )
+        return {
+          ...spec,
+          salaryFraction:
+            ((effectiveSalaryByPerson.get(spec.personId) ?? 0) *
+              (spec.personPayShare ?? 1)) /
+            effectiveSalary,
+        };
+      return spec;
+    });
+  }
+  // A job starting or ending this year (its own dates, not a retirement:
+  // a person retiring next year works all of this one).
+  const jobEdgeThisYear =
+    isAccumulation &&
+    Object.values(input.workingYearsByPerson ?? {}).some(
+      (w) => w.start === year || w.end === year,
+    );
+
   // Hoisted above the expenses block (was originally computed just before
   // the strategy dispatch below) — the Rate-Seeded year-1 seed needs the
   // starting balance available at seed time, not after. Retirement money
@@ -309,5 +393,7 @@ export function runPreYearSetup(
     effectiveSalary,
     effectiveSalaryByPerson,
     hasBonusAdjustment,
+    yearSpecs,
+    jobEdgeThisYear,
   };
 }

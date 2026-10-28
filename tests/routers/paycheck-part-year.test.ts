@@ -119,6 +119,11 @@ describe("paycheck: a job started this year, no earlier job in Ledgr", () => {
     expect(s.people[0]!).toMatchObject({
       yearPayNote: { startDate: NEW_START, missingEndedJob: false },
     });
+    // The year-end estimate counts its checks from its start.
+    const p = s.people[0]!;
+    expect("blendedAnnual" in p && p.blendedAnnual!.segments).toEqual([
+      expect.objectContaining({ periods: checks }),
+    ]);
   });
 });
 
@@ -198,10 +203,56 @@ describe("paycheck: a job whose last day is later this year", () => {
       "2012-03-01",
     );
     expect(toEnd).toBeGreaterThan(toDate);
+    // Still the current job: its paycheck shows, counted once (not also
+    // as a job that ended this year).
+    const p = s.people[0]!;
+    expect(p.paycheck).not.toBeNull();
+    expect(p.job).toMatchObject({ employerName: "Leaving Co" });
+    expect("endedWithheld" in p && p.endedWithheld).toEqual({
+      federal: 0,
+      fica: 0,
+    });
     expect(s.householdIncome!.salary).toBeCloseTo((90_000 * toEnd) / 26, 0);
+    // The year-end estimate stops at its last day too.
+    const blended = "blendedAnnual" in p ? p.blendedAnnual : null;
+    expect(blended!.segments).toEqual([
+      expect.objectContaining({ periods: toEnd }),
+    ]);
     expect(householdWithheldSoFar(s.people).fica).toBeCloseTo(
       ((90_000 * toDate) / 26) * 0.0765,
       0,
     );
+  });
+});
+
+describe("paycheck: a job that hasn't started", () => {
+  let ctx: Awaited<ReturnType<typeof createTestCaller>>;
+  beforeAll(async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    ctx = await createTestCaller();
+    const personId = await seedPerson(ctx.db, "Example Joiner", "1995-09-09");
+    seedJob(ctx.db, personId, {
+      employerName: "Next Co",
+      annualSalary: "80000",
+      payPeriod: "biweekly",
+      payWeek: "even",
+      anchorPayDate: "2027-01-08",
+      startDate: "2027-01-04",
+    });
+  });
+  afterAll(() => {
+    ctx.cleanup();
+    vi.useRealTimers();
+  });
+
+  it("no paycheck yet: says when it starts, and counts no pay", async () => {
+    const s = await ctx.caller.paycheck.computeSummary();
+    const p = s.people[0]!;
+    expect(p.paycheck).toBeNull();
+    expect(p).toMatchObject({
+      upcomingJob: { employerName: "Next Co", startDate: "2027-01-04" },
+    });
+    expect(s.householdIncome?.salary ?? 0).toBe(0);
   });
 });

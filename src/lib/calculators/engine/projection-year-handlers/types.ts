@@ -138,6 +138,12 @@ export type ProjectionContext = {
   indKey: ReturnType<typeof makeIndKey>;
   indParentCat: Map<string, string>;
   hasPerPersonSalary: boolean;
+  /** Each person's working years: their job's, ending by their own
+   *  retirement (context.ts). Empty = everyone works throughout. */
+  workingYearsByPerson: Record<
+    number,
+    { start: number | null; end: number | null }
+  >;
 
   // Spending strategy config
   activeStrategy: WithdrawalStrategyType;
@@ -191,4 +197,11 @@ export type PreYearSetup = {
    *  because of a current-year bonus pin — distinct from hasSalaryOverride,
    *  which the UI ties to salary overrides specifically. */
   hasBonusAdjustment: boolean;
+  /** This year's contribution specs when someone isn't at work this year
+   *  (input.workingYearsByPerson): theirs zeroed, in spec order. Undefined
+   *  = state.contributionSpecs as they are. */
+  yearSpecs?: ContributionSpec[];
+  /** A job starts or ends this year: its whole-year approximation applies
+   *  (year 0 then runs on the specs, not this year's paycheck amounts). */
+  jobEdgeThisYear: boolean;
 };

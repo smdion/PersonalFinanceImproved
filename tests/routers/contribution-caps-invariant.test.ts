@@ -151,6 +151,28 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
     expect(spec.configuredAnnual).toBeCloseTo(CONFIGURED, 2);
   });
 
+  it("the engine payload: the active profile capped at each later year's ages", async () => {
+    const data = await fetchRetirementData(t.db, {
+      contributionProfileId: profileId,
+    });
+    const payload = (await buildEnginePayload(t.db, data, {
+      contributionProfileId: profileId,
+    }))!;
+    // 36,000 configured: 24,500 now; catch-up from 50 (2040), the larger
+    // one at 60–63 (2050), the smaller again at 64 (2054, the last
+    // working year before retiring at 65).
+    expect(
+      payload.baseEngineInput.profileSwitches!.map((s) => [
+        s.year,
+        Math.round(s.baseYearContributions["401k"]),
+      ]),
+    ).toEqual([
+      [2040, 32500],
+      [2050, 35750],
+      [2054, 32500],
+    ]);
+  });
+
   it("the contribution mix", async () => {
     const mix = (
       await loadContributionMix(
@@ -337,14 +359,89 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
         })
         .run();
       const saved = await setValue("31");
+      // 36 now, so 40–64 in 2030–2054: over every year at 31%.
       expect(saved.limitWarning).toMatch(
-        /used from 2030, and the projection caps it at this year.s limits/,
+        /^Over the IRS limits in 2030–2054 at those years' ages .* 2030: /,
       );
       expect(saved.limitWarning).toMatch(
         /over the IRS limit — set it to at most 20\.41% of pay/,
       );
       // Within the limit: the warning clears.
       expect((await setValue("20")).limitWarning).toBeNull();
+    });
+
+    it("each year at its own ages: catch-up room from 50, super catch-up 60–63", async () => {
+      // 28% = 33,600: over at 40–49 (24,500) and 50–59 (32,500), within
+      // at 60–63 (35,750), over again at 64 (32,500).
+      expect((await setValue("28")).limitWarning).toMatch(
+        /^Over the IRS limits in 2030–2049, 2054 at those years' ages/,
+      );
+    });
+
+    it("a past switch and a later one to the same profile: each capped at its years' ages", async () => {
+      await setValue("30");
+      t.db.delete(schema.retirementSalaryOverrides).run();
+      t.db
+        .insert(schema.retirementSalaryOverrides)
+        .values(
+          [2025, 2045].map((projectionYear) => ({
+            personId,
+            projectionYear,
+            overrideSalary: "120000",
+            contributionProfileId: switchProfileId,
+          })),
+        )
+        .run();
+      const data = await fetchRetirementData(t.db, {
+        contributionProfileId: profileId,
+      });
+      const payload = (await buildEnginePayload(t.db, data, {
+        contributionProfileId: profileId,
+      }))!;
+      expect(
+        payload.baseEngineInput.profileSwitches!.map((s) => [
+          s.year,
+          Math.round(s.baseYearContributions["401k"]),
+        ]),
+      ).toEqual([
+        [2025, 24500],
+        [2040, 32500],
+        [2045, 32500],
+        [2050, 35750],
+        [2054, 32500],
+      ]);
+      // Restore the 2030 switch the next test reads.
+      t.db.delete(schema.retirementSalaryOverrides).run();
+      t.db
+        .insert(schema.retirementSalaryOverrides)
+        .values({
+          personId,
+          projectionYear: 2030,
+          overrideSalary: "120000",
+          contributionProfileId: switchProfileId,
+        })
+        .run();
+    });
+
+    it("the projection caps the switch at each year's ages", async () => {
+      await setValue("30"); // 36,000
+      const data = await fetchRetirementData(t.db, {
+        contributionProfileId: profileId,
+      });
+      const payload = (await buildEnginePayload(t.db, data, {
+        contributionProfileId: profileId,
+      }))!;
+      const switches = payload.baseEngineInput.profileSwitches!.map((s) => [
+        s.year,
+        Math.round(s.baseYearContributions["401k"]),
+      ]);
+      // A further switch only where the ages change the cap: 50, 60, 64.
+      expect(switches).toEqual([
+        [2030, 24500],
+        [2040, 32500],
+        [2050, 35750],
+        [2054, 32500],
+      ]);
     });
   });
 });
