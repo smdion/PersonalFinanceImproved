@@ -6,7 +6,7 @@
  * hypothetical rows that an admin can "make real". Nothing here writes
  * except "Make real", which the tab wires to the admin-gated create.
  */
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   DEDUCTION_PRESETS,
   deductionPresetFor,
@@ -44,6 +44,121 @@ export type ContribAddition = {
  *  ContributionProfileManager and every other picker use, so a new category
  *  added to the config shows up here automatically. */
 export const SANDBOX_ACCOUNT_TYPES = getAllCategories();
+
+const LINK = "text-caption font-medium text-blue-500 hover:text-blue-700";
+const AMBER_INPUT =
+  "bg-surface-primary rounded border border-amber-400 px-1.5 py-0.5 text-xs font-medium text-amber-600";
+
+/** Alternating row shade, counting live rows then added ones. */
+const stripe = (i: number) =>
+  `border-subtle border-b ${i % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"}`;
+
+/** "▾ Title" over its contents; collapsed, one "Edit … (n total) ▸" link. */
+function EditorSection({
+  title,
+  collapsedLabel,
+  children,
+}: {
+  title: string;
+  collapsedLabel: string;
+  children: ReactNode;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  if (!expanded) {
+    return (
+      <button type="button" onClick={() => setExpanded(true)} className={LINK}>
+        {collapsedLabel} ▸
+      </button>
+    );
+  }
+  return (
+    <div className="space-y-3">
+      <button type="button" onClick={() => setExpanded(false)} className={LINK}>
+        ▾ {title}
+      </button>
+      {children}
+    </div>
+  );
+}
+
+/** One person's block: heading, "+ Add …", then their rows (or "None"). */
+function PersonTable({
+  heading,
+  addLabel,
+  onAdd,
+  empty,
+  head,
+  children,
+}: {
+  heading: string;
+  addLabel: string;
+  onAdd: () => void;
+  empty: boolean;
+  /** The header row's cells. */
+  head: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <div className="mb-1 flex items-center gap-2">
+        <span className="text-caption text-muted font-semibold">{heading}</span>
+        <button type="button" onClick={onAdd} className={LINK}>
+          {addLabel}
+        </button>
+      </div>
+      {empty ? (
+        <p className="text-caption text-faint pl-2 italic">None</p>
+      ) : (
+        <table className="w-full border-collapse text-xs">
+          <thead>
+            <tr className="border-subtle border-b">{head}</tr>
+          </thead>
+          <tbody>{children}</tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+/** An added row's actions: "Make real" (when allowed) and remove. */
+function AdditionActions({
+  onMakeReal,
+  makeRealTitle,
+  pending,
+  onRemove,
+}: {
+  /** Absent = not offered (not an admin, or no job to add it to). */
+  onMakeReal?: () => void;
+  makeRealTitle: string;
+  pending: boolean;
+  onRemove: () => void;
+}) {
+  return (
+    <td className="px-1 py-1">
+      <div className="flex items-center justify-end gap-2 whitespace-nowrap">
+        {onMakeReal && (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={onMakeReal}
+            className={`${LINK} disabled:opacity-50`}
+            title={makeRealTitle}
+          >
+            {pending ? "Saving…" : "Make real"}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onRemove}
+          className="text-caption text-red-400 hover:text-red-600"
+          title="Remove"
+        >
+          ×
+        </button>
+      </div>
+    </td>
+  );
+}
 
 /**
  * A numeric cell pre-filled with the live/resolved value that pins on
@@ -142,183 +257,127 @@ export function WhatIfDeductionsEditor({
   onMakeReal: (addition: DeductionAddition, jobId: number) => void;
   makeRealPendingId: number | null;
 }) {
-  const [expanded, setExpanded] = useState(true);
-
   if (views.length === 0) return null;
-
-  if (!expanded) {
-    const totalDeductions = views.reduce(
-      (s, v) => s + v.rawDeductions.length,
-      0,
-    );
-    return (
-      <button
-        type="button"
-        onClick={() => setExpanded(true)}
-        className="text-caption font-medium text-blue-500 hover:text-blue-700"
-      >
-        Edit deductions ({totalDeductions} total) ▸
-      </button>
-    );
-  }
-
+  const total = views.reduce((n, v) => n + v.rawDeductions.length, 0);
   return (
-    <div className="space-y-3">
-      <button
-        type="button"
-        onClick={() => setExpanded(false)}
-        className="text-caption font-medium text-blue-500 hover:text-blue-700"
-      >
-        ▾ Deductions
-      </button>
+    <EditorSection
+      title="Deductions"
+      collapsedLabel={`Edit deductions (${total} total)`}
+    >
       {views.map((v) => {
         const personAdditions = additions.filter(
           (a) => a.personId === v.person.id,
         );
         return (
-          <div key={v.person.id}>
-            <div className="mb-1 flex items-center gap-2">
-              <span className="text-caption text-muted font-semibold">
-                {v.person.name}&rsquo;s deductions
-              </span>
-              <button
-                type="button"
-                onClick={() => onAddDeduction(v.person.id)}
-                className="text-caption font-medium text-blue-500 hover:text-blue-700"
+          <PersonTable
+            key={v.person.id}
+            heading={`${v.person.name}’s deductions`}
+            addLabel="+ Add deduction"
+            onAdd={() => onAddDeduction(v.person.id)}
+            empty={v.rawDeductions.length === 0 && personAdditions.length === 0}
+            head={
+              <>
+                <th className="text-muted py-1 pr-3 pl-4 text-left font-medium">
+                  Name
+                </th>
+                <th className="text-muted w-32 px-3 py-1 text-right font-medium">
+                  $/period
+                </th>
+                <th className="text-muted w-24 px-3 py-1 text-left font-medium">
+                  Treatment
+                </th>
+                <th className="w-8" />
+              </>
+            }
+          >
+            {v.rawDeductions.map((d, rowIdx) => (
+              <tr key={d.id} className={stripe(rowIdx)}>
+                <td className="text-secondary py-1 pr-3 pl-4">
+                  {d.deductionName}
+                </td>
+                <td className="px-3 py-1 text-right">
+                  <WhatIfPinnedCell
+                    liveValue={parseFloat(d.amountPerPeriod)}
+                    pinnedValue={deductionEdits.get(d.id)}
+                    onCommit={(n) => onEditDeduction(d.id, n)}
+                    onReset={() => onResetDeduction(d.id)}
+                    step="10"
+                    width="w-24"
+                  />
+                </td>
+                <td className="text-faint px-3 py-1">
+                  {deductionPresetFor(d).short}
+                </td>
+                <td />
+              </tr>
+            ))}
+            {personAdditions.map((a, rowIdx) => (
+              <tr
+                key={a.localId}
+                className={stripe(v.rawDeductions.length + rowIdx)}
               >
-                + Add deduction
-              </button>
-            </div>
-            {v.rawDeductions.length === 0 && personAdditions.length === 0 ? (
-              <p className="text-caption text-faint pl-2 italic">None</p>
-            ) : (
-              <table className="w-full border-collapse text-xs">
-                <thead>
-                  <tr className="border-subtle border-b">
-                    <th className="text-muted py-1 pr-3 pl-4 text-left font-medium">
-                      Name
-                    </th>
-                    <th className="text-muted w-32 px-3 py-1 text-right font-medium">
-                      $/period
-                    </th>
-                    <th className="text-muted w-24 px-3 py-1 text-left font-medium">
-                      Treatment
-                    </th>
-                    <th className="w-8" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {v.rawDeductions.map((d, rowIdx) => (
-                    <tr
-                      key={d.id}
-                      className={`border-subtle border-b ${rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"}`}
-                    >
-                      <td className="text-secondary py-1 pr-3 pl-4">
-                        {d.deductionName}
-                      </td>
-                      <td className="px-3 py-1 text-right">
-                        <WhatIfPinnedCell
-                          liveValue={parseFloat(d.amountPerPeriod)}
-                          pinnedValue={deductionEdits.get(d.id)}
-                          onCommit={(n) => onEditDeduction(d.id, n)}
-                          onReset={() => onResetDeduction(d.id)}
-                          step="10"
-                          width="w-24"
-                        />
-                      </td>
-                      <td className="text-faint px-3 py-1">
-                        {deductionPresetFor(d).short}
-                      </td>
-                      <td />
-                    </tr>
-                  ))}
-                  {personAdditions.map((a, rowIdx) => (
-                    <tr
-                      key={a.localId}
-                      className={`border-subtle border-b ${(v.rawDeductions.length + rowIdx) % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"}`}
-                    >
-                      <td className="py-1 pr-3 pl-4">
-                        <input
-                          type="text"
-                          value={a.name}
-                          onChange={(e) =>
-                            onUpdateAddition(a.localId, {
-                              name: e.target.value,
-                            })
-                          }
-                          className="bg-surface-primary w-full rounded border border-amber-400 px-1.5 py-0.5 text-xs font-medium text-amber-600"
-                        />
-                      </td>
-                      <td className="px-3 py-1 text-right">
-                        <input
-                          type="number"
-                          step="10"
-                          value={a.amountPerPeriod}
-                          onChange={(e) =>
-                            onUpdateAddition(a.localId, {
-                              amountPerPeriod: parseFloat(e.target.value) || 0,
-                            })
-                          }
-                          className="bg-surface-primary w-24 rounded border border-amber-400 px-1.5 py-0.5 text-right text-xs font-medium text-amber-600 tabular-nums"
-                        />
-                      </td>
-                      <td className="px-3 py-1">
-                        <select
-                          aria-label="How your pay stub lists it"
-                          value={deductionPresetFor(a).key}
-                          onChange={(e) => {
-                            const p = DEDUCTION_PRESETS.find(
-                              (x) => x.key === e.target.value,
-                            );
-                            if (p)
-                              onUpdateAddition(a.localId, {
-                                isPretax: p.isPretax,
-                                ficaExempt: p.ficaExempt,
-                              });
-                          }}
-                          className="bg-surface-primary rounded border px-1 py-0.5 text-xs"
-                        >
-                          {DEDUCTION_PRESETS.map((p) => (
-                            <option key={p.key} value={p.key} title={p.label}>
-                              {p.short}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className="px-1 py-1">
-                        <div className="flex items-center gap-2 whitespace-nowrap">
-                          {canManagePaycheck && v.job && (
-                            <button
-                              type="button"
-                              disabled={makeRealPendingId === a.localId}
-                              onClick={() => onMakeReal(a, v.job.id)}
-                              className="text-caption font-medium text-blue-500 hover:text-blue-700 disabled:opacity-50"
-                              title="Add this as a real paycheck deduction"
-                            >
-                              {makeRealPendingId === a.localId
-                                ? "Saving…"
-                                : "Make real"}
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => onRemoveAddition(a.localId)}
-                            className="text-caption text-red-400 hover:text-red-600"
-                            title="Remove"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+                <td className="py-1 pr-3 pl-4">
+                  <input
+                    type="text"
+                    value={a.name}
+                    onChange={(e) =>
+                      onUpdateAddition(a.localId, { name: e.target.value })
+                    }
+                    className={`${AMBER_INPUT} w-full`}
+                  />
+                </td>
+                <td className="px-3 py-1 text-right">
+                  <input
+                    type="number"
+                    step="10"
+                    value={a.amountPerPeriod}
+                    onChange={(e) =>
+                      onUpdateAddition(a.localId, {
+                        amountPerPeriod: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className={`${AMBER_INPUT} w-24 text-right tabular-nums`}
+                  />
+                </td>
+                <td className="px-3 py-1">
+                  <select
+                    aria-label="How your pay stub lists it"
+                    value={deductionPresetFor(a).key}
+                    onChange={(e) => {
+                      const p = DEDUCTION_PRESETS.find(
+                        (x) => x.key === e.target.value,
+                      );
+                      if (p)
+                        onUpdateAddition(a.localId, {
+                          isPretax: p.isPretax,
+                          ficaExempt: p.ficaExempt,
+                        });
+                    }}
+                    className="bg-surface-primary rounded border px-1 py-0.5 text-xs"
+                  >
+                    {DEDUCTION_PRESETS.map((p) => (
+                      <option key={p.key} value={p.key} title={p.label}>
+                        {p.short}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <AdditionActions
+                  onMakeReal={
+                    canManagePaycheck && v.job
+                      ? () => onMakeReal(a, v.job.id)
+                      : undefined
+                  }
+                  makeRealTitle="Add this as a real paycheck deduction"
+                  pending={makeRealPendingId === a.localId}
+                  onRemove={() => onRemoveAddition(a.localId)}
+                />
+              </tr>
+            ))}
+          </PersonTable>
         );
       })}
-    </div>
+    </EditorSection>
   );
 }
 
@@ -362,205 +421,149 @@ export function WhatIfContributionsEditor({
   onMakeReal: (addition: ContribAddition) => void;
   makeRealPendingId: number | null;
 }) {
-  const [expanded, setExpanded] = useState(true);
-
   if (views.length === 0) return null;
-
-  const totalAccounts = views.reduce((s, v) => s + v.rawContribs.length, 0);
-
-  if (!expanded) {
-    return (
-      <button
-        type="button"
-        onClick={() => setExpanded(true)}
-        className="text-caption font-medium text-blue-500 hover:text-blue-700"
-      >
-        Edit contribution accounts ({totalAccounts} total) ▸
-      </button>
-    );
-  }
-
+  const total = views.reduce((n, v) => n + v.rawContribs.length, 0);
+  /** "$" before / "%" after a value, by its method. */
+  const affix = (isPercent: boolean, input: ReactNode) => (
+    <div className="flex items-center justify-end gap-1">
+      <span className="text-faint w-3 shrink-0 text-right">
+        {isPercent ? "" : "$"}
+      </span>
+      {input}
+      <span className="text-faint w-3 shrink-0 text-left">
+        {isPercent ? "%" : ""}
+      </span>
+    </div>
+  );
   return (
-    <div className="space-y-3">
-      <button
-        type="button"
-        onClick={() => setExpanded(false)}
-        className="text-caption font-medium text-blue-500 hover:text-blue-700"
-      >
-        ▾ Contribution accounts
-      </button>
+    <EditorSection
+      title="Contribution accounts"
+      collapsedLabel={`Edit contribution accounts (${total} total)`}
+    >
       {views.map((v) => {
         const personAdditions = additions.filter(
           (a) => a.personId === v.person.id,
         );
         return (
-          <div key={v.person.id}>
-            <div className="mb-1 flex items-center gap-2">
-              <span className="text-caption text-muted font-semibold">
-                {v.person.name}&rsquo;s accounts
-              </span>
-              <button
-                type="button"
-                onClick={() => onAddAccount(v.person.id)}
-                className="text-caption font-medium text-blue-500 hover:text-blue-700"
-              >
-                + Add account
-              </button>
-            </div>
-            {v.rawContribs.length === 0 && personAdditions.length === 0 ? (
-              <p className="text-caption text-faint pl-2 italic">None</p>
-            ) : (
-              <table className="w-full border-collapse text-xs">
-                <thead>
-                  <tr className="border-subtle border-b">
-                    <th className="text-muted py-1 pr-3 pl-4 text-left font-medium">
-                      Account
-                    </th>
-                    <th className="text-muted w-32 px-3 py-1 text-right font-medium">
-                      Value
-                    </th>
-                    <th className="w-24" />
-                  </tr>
-                </thead>
-                <tbody>
-                  {v.rawContribs.map((c, rowIdx) => {
-                    const isPercent =
-                      c.contributionMethod === "percent_of_salary";
-                    const liveValue = parseFloat(c.contributionValue);
-                    const activeField = activeFields.get(c.id);
-                    return (
-                      <tr
-                        key={c.id}
-                        className={`border-subtle border-b ${rowIdx % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"}`}
+          <PersonTable
+            key={v.person.id}
+            heading={`${v.person.name}’s accounts`}
+            addLabel="+ Add account"
+            onAdd={() => onAddAccount(v.person.id)}
+            empty={v.rawContribs.length === 0 && personAdditions.length === 0}
+            head={
+              <>
+                <th className="text-muted py-1 pr-3 pl-4 text-left font-medium">
+                  Account
+                </th>
+                <th className="text-muted w-32 px-3 py-1 text-right font-medium">
+                  Value
+                </th>
+                <th className="w-24" />
+              </>
+            }
+          >
+            {v.rawContribs.map((c, rowIdx) => {
+              const isPercent = c.contributionMethod === "percent_of_salary";
+              const activeField = activeFields.get(c.id);
+              return (
+                <tr key={c.id} className={stripe(rowIdx)}>
+                  <td className="text-secondary py-1 pr-3 pl-4">
+                    {accountDisplayName(
+                      { ...c, ownershipType: c.ownership },
+                      v.person.name,
+                    )}
+                  </td>
+                  <td className="px-3 py-1 text-right">
+                    {affix(
+                      isPercent,
+                      <WhatIfPinnedCell
+                        liveValue={parseFloat(c.contributionValue)}
+                        pinnedValue={
+                          activeField !== undefined
+                            ? parseFloat(activeField)
+                            : undefined
+                        }
+                        onCommit={(n) => onEdit(c.id, String(n))}
+                        onReset={() => onReset(c.id)}
+                        step={isPercent ? "0.5" : "10"}
+                        width="w-20"
+                      />,
+                    )}
+                  </td>
+                  <td />
+                </tr>
+              );
+            })}
+            {personAdditions.map((a, rowIdx) => {
+              const isPercent = a.contributionMethod === "percent_of_salary";
+              return (
+                <tr
+                  key={a.localId}
+                  className={stripe(v.rawContribs.length + rowIdx)}
+                >
+                  <td className="py-1 pr-3 pl-4">
+                    <div className="flex items-center gap-1">
+                      <select
+                        value={a.accountType}
+                        onChange={(e) =>
+                          onUpdateAddition(a.localId, {
+                            accountType: e.target.value as AccountCategory,
+                          })
+                        }
+                        className="bg-surface-primary rounded border border-amber-400 px-1 py-0.5 text-xs font-medium text-amber-600"
                       >
-                        <td className="text-secondary py-1 pr-3 pl-4">
-                          {accountDisplayName(
-                            { ...c, ownershipType: c.ownership },
-                            v.person.name,
-                          )}
-                        </td>
-                        <td className="px-3 py-1 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <span className="text-faint w-3 shrink-0 text-right">
-                              {isPercent ? "" : "$"}
-                            </span>
-                            <WhatIfPinnedCell
-                              liveValue={liveValue}
-                              pinnedValue={
-                                activeField !== undefined
-                                  ? parseFloat(activeField)
-                                  : undefined
-                              }
-                              onCommit={(n) => onEdit(c.id, String(n))}
-                              onReset={() => onReset(c.id)}
-                              step={isPercent ? "0.5" : "10"}
-                              width="w-20"
-                            />
-                            <span className="text-faint w-3 shrink-0 text-left">
-                              {isPercent ? "%" : ""}
-                            </span>
-                          </div>
-                        </td>
-                        <td />
-                      </tr>
-                    );
-                  })}
-                  {personAdditions.map((a, rowIdx) => {
-                    const isPercent =
-                      a.contributionMethod === "percent_of_salary";
-                    return (
-                      <tr
-                        key={a.localId}
-                        className={`border-subtle border-b ${(v.rawContribs.length + rowIdx) % 2 === 1 ? "bg-surface-sunken/60" : "bg-surface-primary"}`}
+                        {SANDBOX_ACCOUNT_TYPES.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </select>
+                      <select
+                        value={a.contributionMethod}
+                        onChange={(e) =>
+                          onUpdateAddition(a.localId, {
+                            contributionMethod: e.target.value as
+                              "percent_of_salary" | "fixed_annual",
+                          })
+                        }
+                        className="bg-surface-primary rounded border px-1 py-0.5 text-xs"
                       >
-                        <td className="py-1 pr-3 pl-4">
-                          <div className="flex items-center gap-1">
-                            <select
-                              value={a.accountType}
-                              onChange={(e) =>
-                                onUpdateAddition(a.localId, {
-                                  accountType: e.target
-                                    .value as AccountCategory,
-                                })
-                              }
-                              className="bg-surface-primary rounded border border-amber-400 px-1 py-0.5 text-xs font-medium text-amber-600"
-                            >
-                              {SANDBOX_ACCOUNT_TYPES.map((t) => (
-                                <option key={t} value={t}>
-                                  {t}
-                                </option>
-                              ))}
-                            </select>
-                            <select
-                              value={a.contributionMethod}
-                              onChange={(e) =>
-                                onUpdateAddition(a.localId, {
-                                  contributionMethod: e.target.value as
-                                    "percent_of_salary" | "fixed_annual",
-                                })
-                              }
-                              className="bg-surface-primary rounded border px-1 py-0.5 text-xs"
-                            >
-                              <option value="percent_of_salary">%</option>
-                              <option value="fixed_annual">$/yr</option>
-                            </select>
-                          </div>
-                        </td>
-                        <td className="px-3 py-1 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <span className="text-faint w-3 shrink-0 text-right">
-                              {isPercent ? "" : "$"}
-                            </span>
-                            <input
-                              type="number"
-                              step={isPercent ? "0.5" : "10"}
-                              value={a.contributionValue}
-                              onChange={(e) =>
-                                onUpdateAddition(a.localId, {
-                                  contributionValue: e.target.value,
-                                })
-                              }
-                              className="bg-surface-primary w-20 rounded border border-amber-400 px-1.5 py-0.5 text-right text-xs font-medium text-amber-600 tabular-nums"
-                            />
-                            <span className="text-faint w-3 shrink-0 text-left">
-                              {isPercent ? "%" : ""}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-1 py-1">
-                          <div className="flex items-center justify-end gap-2 whitespace-nowrap">
-                            {canManagePaycheck && (
-                              <button
-                                type="button"
-                                disabled={makeRealPendingId === a.localId}
-                                onClick={() => onMakeReal(a)}
-                                className="text-caption font-medium text-blue-500 hover:text-blue-700 disabled:opacity-50"
-                                title="Add this as a real contribution account"
-                              >
-                                {makeRealPendingId === a.localId
-                                  ? "Saving…"
-                                  : "Make real"}
-                              </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => onRemoveAddition(a.localId)}
-                              className="text-caption text-red-400 hover:text-red-600"
-                              title="Remove"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-          </div>
+                        <option value="percent_of_salary">%</option>
+                        <option value="fixed_annual">$/yr</option>
+                      </select>
+                    </div>
+                  </td>
+                  <td className="px-3 py-1 text-right">
+                    {affix(
+                      isPercent,
+                      <input
+                        type="number"
+                        step={isPercent ? "0.5" : "10"}
+                        value={a.contributionValue}
+                        onChange={(e) =>
+                          onUpdateAddition(a.localId, {
+                            contributionValue: e.target.value,
+                          })
+                        }
+                        className={`${AMBER_INPUT} w-20 text-right tabular-nums`}
+                      />,
+                    )}
+                  </td>
+                  <AdditionActions
+                    onMakeReal={
+                      canManagePaycheck ? () => onMakeReal(a) : undefined
+                    }
+                    makeRealTitle="Add this as a real contribution account"
+                    pending={makeRealPendingId === a.localId}
+                    onRemove={() => onRemoveAddition(a.localId)}
+                  />
+                </tr>
+              );
+            })}
+          </PersonTable>
         );
       })}
-    </div>
+    </EditorSection>
   );
 }

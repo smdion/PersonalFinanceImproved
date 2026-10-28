@@ -25,8 +25,12 @@ const ALLOWED: Record<string, { count: number; why: string }> = {
     why: "auto-max preview: today's setting vs the most it can be",
   },
   "src/app/(dashboard)/budget/what-if-tab.tsx": {
-    count: 2,
-    why: "the What-If editor: which edits are non-zero, and the value being edited",
+    count: 1,
+    why: "the What-If sandbox: which contribution edits are non-zero",
+  },
+  "src/app/(dashboard)/budget/what-if-editors.tsx": {
+    count: 1,
+    why: "the What-If editor: the live value a row's edit starts from",
   },
 };
 
