@@ -98,6 +98,8 @@ export type PaycheckResult = {
   /** The bonus is dated before the job started — not this job's, so not
    *  in this year's pay (bonusPeriod is null then too). */
   bonusBeforeStart: boolean;
+  /** A bonus amount with no month set (bonusPeriod is null then too). */
+  bonusUndated: boolean;
   nextPayDate: string; // ISO date string of next upcoming payday
   payFrequencyLabel: string; // human-readable label like "Biweekly (Even Weeks)"
   warnings: string[];

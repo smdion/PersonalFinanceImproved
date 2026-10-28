@@ -490,6 +490,8 @@ export const paycheckRouter = createTRPCRouter({
           );
           return [
             {
+              employerName: job.employerName,
+              bonusUndated: endedPaycheck.bonusUndated,
               // Withheld so far: its checks to today, or to its end when
               // that's passed (the earnings count to the end either way).
               withheld: withheldThroughPeriod(
@@ -521,6 +523,9 @@ export const paycheckRouter = createTRPCRouter({
         return {
           endedJobs,
           endedYears: endedYears.map((e) => e.year),
+          undatedBonusEmployers: endedYears
+            .filter((e) => e.bonusUndated)
+            .map((e) => e.employerName),
           endedWithheld: {
             federal: roundToCents(sumBy(endedYears, (e) => e.withheld.federal)),
             fica: roundToCents(sumBy(endedYears, (e) => e.withheld.fica)),
@@ -546,11 +551,13 @@ export const paycheckRouter = createTRPCRouter({
           // No current job (or an incomplete one): the year's pay is
           // what jobs that ended this year paid — null when none did.
           const endedOnly = () => {
-            const { endedYears, endedWithheld } = endedJobYears(person);
+            const { endedYears, endedWithheld, undatedBonusEmployers } =
+              endedJobYears(person);
             return {
               earnings:
                 endedYears.length > 0 ? sumHouseholdIncome(endedYears) : null,
               endedWithheld,
+              bonusNotCounted: undatedBonusEmployers,
             };
           };
           const activeJob = findActiveJob(effectiveJobs, person.id, asOfDate);
@@ -757,10 +764,20 @@ export const paycheckRouter = createTRPCRouter({
                       new Date(anchor),
                     ))),
           });
-          const { endedJobs, endedYears, endedWithheld } = endedJobYears(
-            person,
-            activeJob.id,
-          );
+          const {
+            endedJobs,
+            endedYears,
+            endedWithheld,
+            undatedBonusEmployers,
+          } = endedJobYears(person, activeJob.id);
+          // A job leaving this year whose bonus has no date: whether it's
+          // paid before the last day isn't known, so it isn't counted.
+          const bonusNotCounted = [
+            ...(lastDay && paycheck.bonusUndated
+              ? [activeJob.employerName]
+              : []),
+            ...undatedBonusEmployers,
+          ];
           const earnings =
             endedYears.length > 0
               ? sumHouseholdIncome([currentJobYear, ...endedYears])
@@ -788,6 +805,10 @@ export const paycheckRouter = createTRPCRouter({
              *  Ledgr, or — missingEndedJob — one whose Salary Profile entry
              *  is incomplete). */
             yearPayNote,
+            /** Employers of jobs ending this tax year whose bonus has no
+             *  date — left out of this year's income (it may be paid
+             *  after the last day). */
+            bonusNotCounted,
             /** The bonus terms actually in effect (the active Salary
              *  Profile's resolved terms, with the What-If sandbox's own
              *  edits layered on top — never a job fallback, jobs carry no

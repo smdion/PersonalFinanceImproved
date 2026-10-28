@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **Contributions get catch-up room as people age in the projection.** Each year is capped at the IRS limits at that year's ages (room from 50, the larger catch-up at 60–63, the smaller one again from 64) — for the active Contribution Profile, a profile used as a switch in "Changes by year", and a relocation's profile from the move year. A switch profile was held to this year's limits for good. At 64, money over the smaller catch-up is now cut, as payroll stops it, instead of going to brokerage. Saving a switch profile warns with the years it's over.
 - **The Retirement page loads less** — the methodology write-ups load when you open one.
+- **The Taxes page says when a bonus isn't counted.** A job ending this year whose bonus has no month leaves the bonus out of this year's income, since it may be paid after the last day — the Taxes page now names it and says to give it a month.
 
 ### Fixed
 

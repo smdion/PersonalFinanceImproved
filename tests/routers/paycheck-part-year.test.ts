@@ -256,3 +256,66 @@ describe("paycheck: a job that hasn't started", () => {
     expect(s.householdIncome?.salary ?? 0).toBe(0);
   });
 });
+
+describe("paycheck: a bonus with no date on a job ending this year", () => {
+  let ctx: Awaited<ReturnType<typeof createTestCaller>>;
+  beforeAll(async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    ctx = await createTestCaller();
+    const undated = await seedPerson(ctx.db, "Example Undated", "1962-05-05");
+    seedJob(ctx.db, undated, {
+      employerName: "Undated Co",
+      annualSalary: "90000",
+      bonusPercent: "0.10",
+      payPeriod: "biweekly",
+      payWeek: "even",
+      anchorPayDate: "2026-01-09",
+      startDate: "2012-03-01",
+      endDate: "2026-11-20",
+    });
+    const dated = await seedPerson(ctx.db, "Example Dated", "1964-07-07");
+    seedJob(ctx.db, dated, {
+      employerName: "Dated Co",
+      annualSalary: "80000",
+      bonusPercent: "0.10",
+      bonusMonth: 3,
+      bonusDayOfMonth: 15,
+      payPeriod: "biweekly",
+      payWeek: "even",
+      anchorPayDate: "2026-01-09",
+      startDate: "2010-01-04",
+      endDate: "2026-11-20",
+    });
+    const left = await seedPerson(ctx.db, "Example Left", "1966-09-09");
+    seedJob(ctx.db, left, {
+      employerName: "Left Co",
+      annualSalary: "70000",
+      bonusPercent: "0.10",
+      payPeriod: "biweekly",
+      payWeek: "even",
+      anchorPayDate: "2026-01-09",
+      startDate: "2015-01-05",
+      endDate: OLD_END,
+    });
+  });
+  afterAll(() => {
+    ctx.cleanup();
+    vi.useRealTimers();
+  });
+
+  it("says the undated bonus isn't counted; a dated one before the last day is", async () => {
+    const s = await ctx.caller.paycheck.computeSummary();
+    const byName = new Map(s.people.map((p) => [p.person.name, p]));
+    const notCounted = (name: string) => {
+      const p = byName.get(name)!;
+      return "bonusNotCounted" in p ? p.bonusNotCounted : undefined;
+    };
+    expect(notCounted("Example Undated")).toEqual(["Undated Co"]);
+    expect(notCounted("Example Dated")).toEqual([]);
+    // No job now: the ended job's undated bonus is named too.
+    expect(notCounted("Example Left")).toEqual(["Left Co"]);
+    // Only the dated bonus is in the year's income.
+    expect(s.householdIncome!.bonus).toBeCloseTo(8_000, 0);
+  });
+});
