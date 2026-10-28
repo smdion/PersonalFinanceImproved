@@ -75,6 +75,12 @@ import {
   EDIT_LOCK_KEYS,
   useEditLock,
 } from "@/components/ui/edit-lock-toggle";
+import {
+  SK_ACTIVE_CONTRIB_PROFILE_ID,
+  SK_BUDGET_ACTIVE_COLUMN,
+  SK_EFUND_BUDGET_COLUMN,
+  SK_SAVINGS_PROJECTION_YEARS,
+} from "@/lib/constants/settings-keys";
 
 export default function SavingsPage() {
   const user = useUser();
@@ -88,16 +94,19 @@ export default function SavingsPage() {
 
   // ── Persisted settings ──
   const [efundBudgetColumn, setEfundBudgetColumn] = usePersistedSetting<number>(
-    "efund_budget_column",
+    SK_EFUND_BUDGET_COLUMN,
     -1,
   );
-  const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
+  const [budgetColumn] = usePersistedSetting<number>(
+    SK_BUDGET_ACTIVE_COLUMN,
+    0,
+  );
   const [projectionYears, setProjectionYears] = usePersistedSetting<number>(
-    "savings_projection_years",
+    SK_SAVINGS_PROJECTION_YEARS,
     3,
   );
   const [rawActiveContribProfileId] = usePersistedSetting<number | null>(
-    "active_contrib_profile_id",
+    SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
   // Fetch contribution profiles list for subtitle display.

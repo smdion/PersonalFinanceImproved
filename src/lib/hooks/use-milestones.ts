@@ -14,7 +14,10 @@ import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
-import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
+import {
+  SK_EFUND_BUDGET_COLUMN,
+  SK_HIGH_INCOME_THRESHOLD,
+} from "@/lib/constants/settings-keys";
 import { buildMilestoneInput } from "@/lib/pure/milestone-input";
 import {
   evaluateMilestones,
@@ -51,7 +54,7 @@ export function useMilestones(): {
   const withBrokerageGoals = hasPermission(user, "brokerage");
   const contribInput = useContributionSummaryInput();
   const [efundBudgetColumn] = usePersistedSetting<number>(
-    "efund_budget_column",
+    SK_EFUND_BUDGET_COLUMN,
     -1,
   );
   const [highIncomeThreshold] = usePersistedSetting<number>(

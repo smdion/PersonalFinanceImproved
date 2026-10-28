@@ -31,6 +31,7 @@ import {
 } from "@/lib/pure/contributions";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
+import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
 
 type PeriodMode = "annual" | "monthly" | "per-period";
 
@@ -90,7 +91,7 @@ export function ContributionsContent() {
     number | undefined
   >(activeProfileId ?? undefined);
   const [highIncomeThreshold] = usePersistedSetting<number>(
-    "high_income_threshold",
+    SK_HIGH_INCOME_THRESHOLD,
     DEFAULT_HIGH_INCOME_THRESHOLD,
   );
   // Before the early returns (hooks): the switches are shared app-wide.

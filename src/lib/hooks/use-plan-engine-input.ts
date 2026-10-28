@@ -25,6 +25,11 @@ import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { defaultDecumulationConfig } from "@/lib/config/account-types";
+import {
+  SK_RETIREMENT_DEC_BUDGET_COL,
+  SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
+  SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
+} from "@/lib/constants/settings-keys";
 
 type PlanEngineInput = {
   contributionProfileId?: number;
@@ -80,15 +85,15 @@ export function usePlanEngineInput(): {
     },
   );
   const [decBudgetProfileId, , l1] = usePersistedSetting<number | null>(
-    "retirement_dec_budget_profile_id",
+    SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
     null,
   );
   const [decBudgetCol, , l2] = usePersistedSetting<number | null>(
-    "retirement_decumulation_budget_column",
+    SK_RETIREMENT_DEC_BUDGET_COL,
     null,
   );
   const [decExpenseOverride, , l3] = usePersistedSetting<string | null>(
-    "retirement_dec_expense_override",
+    SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
     null,
   );
   const [snapshotId, , l4] = usePersistedSetting<number | null>(

@@ -30,7 +30,10 @@ import {
   DEFAULT_HIGH_INCOME_THRESHOLD,
   OVER_LIMIT_THRESHOLD,
 } from "@/lib/constants";
-import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
+import {
+  SK_ACTIVE_CONTRIB_PROFILE_ID,
+  SK_HIGH_INCOME_THRESHOLD,
+} from "@/lib/constants/settings-keys";
 import {
   householdSavings,
   householdTotalCompensation,
@@ -45,7 +48,7 @@ import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-pr
 export function ContributionSnapshot() {
   const { viewMode } = useScenario();
   const [activeProfileId] = usePersistedSetting<number | null>(
-    "active_contrib_profile_id",
+    SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();

@@ -57,7 +57,11 @@ import {
   copySavingsGoalLinks,
   contributionPay,
 } from "@/server/helpers";
-import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
+import {
+  SK_ACTIVE_CONTRIB_PROFILE_ID,
+  SK_BUDGET_ACTIVE_COLUMN,
+  SK_EFUND_BUDGET_COLUMN,
+} from "@/lib/constants/settings-keys";
 import { buildBracketInput } from "./paycheck";
 import type { DeductionLine } from "@/lib/calculators/types";
 import type { SalaryEntryMap } from "@/server/helpers/salary";
@@ -442,13 +446,13 @@ function resolveEfundTierIndex(
 ): number {
   const settingsMap = new Map(appSettings.map((s) => [s.key, s.value]));
   const budgetActiveColumn =
-    typeof settingsMap.get("budget_active_column") === "number"
-      ? (settingsMap.get("budget_active_column") as number)
+    typeof settingsMap.get(SK_BUDGET_ACTIVE_COLUMN) === "number"
+      ? (settingsMap.get(SK_BUDGET_ACTIVE_COLUMN) as number)
       : 0;
   const efundSavedColumn =
-    typeof settingsMap.get("efund_budget_column") === "number" &&
-    (settingsMap.get("efund_budget_column") as number) >= 0
-      ? (settingsMap.get("efund_budget_column") as number)
+    typeof settingsMap.get(SK_EFUND_BUDGET_COLUMN) === "number" &&
+    (settingsMap.get(SK_EFUND_BUDGET_COLUMN) as number) >= 0
+      ? (settingsMap.get(SK_EFUND_BUDGET_COLUMN) as number)
       : null;
   const resolved = overrideTierIndex ?? efundSavedColumn ?? budgetActiveColumn;
   return columnCount && columnCount > 0

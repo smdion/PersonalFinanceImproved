@@ -24,6 +24,10 @@ import { useRecommendations } from "@/lib/hooks/use-recommendations";
 import { LoadingCard, ErrorCard } from "./utils";
 import { SavingsRateBreakdown } from "./savings-rate-breakdown";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
+import {
+  SK_HIGH_INCOME_THRESHOLD,
+  SK_SAVINGS_RATE_THRESHOLDS,
+} from "@/lib/constants/settings-keys";
 
 type CheckupStep = {
   label: string;
@@ -169,11 +173,11 @@ function FinancialCheckupCardImpl() {
   const { viewMode } = useScenario();
   const contribInput = useContributionSummaryInput();
   const [highIncomeThreshold] = usePersistedSetting<number>(
-    "high_income_threshold",
+    SK_HIGH_INCOME_THRESHOLD,
     DEFAULT_HIGH_INCOME_THRESHOLD,
   );
   const [savingsRateThresholds] = usePersistedSetting<string>(
-    "savings_rate_thresholds",
+    SK_SAVINGS_RATE_THRESHOLDS,
     "[0.25, 0.15]",
   );
   const milestones = useRecommendations();

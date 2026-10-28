@@ -14,10 +14,11 @@ import {
   buildSettledOccurrencesSet,
 } from "@/lib/pure/savings-projection";
 import { LoadingCard, ErrorCard } from "./utils";
+import { SK_EFUND_BUDGET_COLUMN } from "@/lib/constants/settings-keys";
 
 function SavingsGoalsCardImpl() {
   const [efundBudgetColumn, setEfundBudgetColumn] = usePersistedSetting<number>(
-    "efund_budget_column",
+    SK_EFUND_BUDGET_COLUMN,
     -1,
   );
   const efundTierInput =

@@ -9,7 +9,6 @@
     "src/server/auth.ts",
     "src/lib/config/enum-values.ts",
     "src/lib/db/json-schemas.ts",
-    "src/lib/constants/settings-keys.ts",
     "src/lib/db/reference-reconcile-core.ts"
   ],
   "project": ["src/**/*.{ts,tsx}", "scripts/**/*.ts", "tests/**/*.{ts,tsx}"],

@@ -38,7 +38,12 @@ import { formatPercent } from "@/lib/utils/format";
 import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
 import { IRS_LIMIT_GROWTH_RATE } from "@/lib/constants";
-import { SK_IRS_LIMIT_GROWTH_RATE } from "@/lib/constants/settings-keys";
+import {
+  SK_IRS_LIMIT_GROWTH_RATE,
+  SK_RETIREMENT_DEC_BUDGET_COL,
+  SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
+  SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
+} from "@/lib/constants/settings-keys";
 import {
   getAllStrategyKeys,
   getStrategyMeta,
@@ -94,14 +99,14 @@ export function RetirementProfileTab({
   const utils = trpc.useUtils();
   const [decBudgetProfileId, setDecBudgetProfileId] = usePersistedSetting<
     number | null
-  >("retirement_dec_budget_profile_id", null);
+  >(SK_RETIREMENT_DEC_BUDGET_PROFILE_ID, null);
   const [decBudgetCol, setDecBudgetCol] = usePersistedSetting<number | null>(
-    "retirement_decumulation_budget_column",
+    SK_RETIREMENT_DEC_BUDGET_COL,
     null,
   );
   const [decExpenseOverride, setDecExpenseOverride] = usePersistedSetting<
     string | null
-  >("retirement_dec_expense_override", null);
+  >(SK_RETIREMENT_DEC_EXPENSE_OVERRIDE, null);
   const [contribProfileId, setContribProfileId] = useActiveContribProfile();
   const contribProfilesQuery = trpc.contributionProfile.list.useQuery();
   const contribProfiles = contribProfilesQuery.data ?? [];

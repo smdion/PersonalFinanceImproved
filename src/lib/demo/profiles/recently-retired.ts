@@ -16,6 +16,10 @@ import {
   PERF_CATEGORY_RETIREMENT,
   PERF_CATEGORY_DEFAULT,
 } from "@/lib/config/display-labels";
+import {
+  SK_BUDGET_ACTIVE_COLUMN,
+  SK_EFUND_BUDGET_COLUMN,
+} from "@/lib/constants/settings-keys";
 
 export const recentlyRetiredProfile: DemoProfile = {
   slug: "recently-retired",
@@ -1612,7 +1616,7 @@ export const recentlyRetiredProfile: DemoProfile = {
 
   // ── App settings overrides ──────────────────────────────────────────────
   appSettings: [
-    { key: "budget_active_column", value: 1 },
-    { key: "efund_budget_column", value: 0 },
+    { key: SK_BUDGET_ACTIVE_COLUMN, value: 1 },
+    { key: SK_EFUND_BUDGET_COLUMN, value: 0 },
   ],
 };

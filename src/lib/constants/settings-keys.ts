@@ -37,12 +37,6 @@ export const SK_RETIREMENT_SIMULATION_AUTOLOAD =
 export const SK_RETIREMENT_MC_AUTOLOAD = "retirement_mc_autoload";
 export const SK_RETIREMENT_COASTFIRE_MC_AUTOLOAD =
   "retirement_coastfire_mc_autoload";
-export const SK_RETIREMENT_ACC_BUDGET_PROFILE_ID =
-  "retirement_acc_budget_profile_id";
-export const SK_RETIREMENT_ACC_BUDGET_COL =
-  "retirement_accumulation_budget_column";
-export const SK_RETIREMENT_ACC_EXPENSE_OVERRIDE =
-  "retirement_acc_expense_override";
 export const SK_RETIREMENT_DEC_BUDGET_PROFILE_ID =
   "retirement_dec_budget_profile_id";
 export const SK_RETIREMENT_DEC_BUDGET_COL =

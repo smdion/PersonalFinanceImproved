@@ -45,6 +45,7 @@ import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import { salaryEntryEdit } from "@/lib/db/salary-entry-edit";
 import type { BonusDestination } from "@/lib/config/enum-values";
 import { toast } from "@/lib/hooks/use-toast";
+import { SK_PAYCHECK_TAX_YEAR } from "@/lib/constants/settings-keys";
 
 export default function PaycheckPage() {
   const user = useUser();
@@ -56,7 +57,7 @@ export default function PaycheckPage() {
   );
   const [taxYearSetting, setTaxYearSetting] = usePersistedSetting<
     number | null
-  >("paycheck_tax_year", null);
+  >(SK_PAYCHECK_TAX_YEAR, null);
   const taxYearOverride = taxYearSetting ?? undefined;
   const setTaxYearOverride = (year: number | undefined) =>
     setTaxYearSetting(year ?? null);

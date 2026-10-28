@@ -39,6 +39,7 @@ import { isPortfolioParent, tracksCostBasis } from "@/lib/config/account-types";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { SkeletonTable } from "@/components/ui/skeleton";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
+import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 export function BrokerageContent() {
   const user = useUser();
@@ -63,7 +64,7 @@ export function BrokerageContent() {
   // Independent Salary Profile axis (the active profile).
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [activeProfileId] = usePersistedSetting<number | null>(
-    "active_contrib_profile_id",
+    SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
   // Brokerage planned events (persisted to DB)

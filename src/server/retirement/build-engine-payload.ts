@@ -76,6 +76,10 @@ import { resolveTaxParams, type TaxSection } from "@/lib/config/tax-params";
 import type { db as _db } from "@/lib/db";
 import { projectionJobs, workingYears } from "@/lib/pure/profiles";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
+import {
+  SK_BUDGET_ACTIVE_COLUMN,
+  SK_IRS_LIMIT_GROWTH_RATE,
+} from "@/lib/constants/settings-keys";
 
 type Db = typeof _db;
 
@@ -744,7 +748,7 @@ export async function buildEnginePayload(
   // value (empty string, bad manual edit) or an out-of-range one (an admin
   // writing `5` via the data browser) would otherwise compound through
   // Math.pow(1 + rate, year) and silently wreck every projection.
-  const limitGrowthRaw = settingsMap.get("irs_limit_growth_rate");
+  const limitGrowthRaw = settingsMap.get(SK_IRS_LIMIT_GROWTH_RATE);
   const limitGrowthParsed = toNumber(String(limitGrowthRaw));
   let irsLimitGrowthRate = IRS_LIMIT_GROWTH_RATE;
   if (limitGrowthRaw != null && Number.isFinite(limitGrowthParsed)) {
@@ -889,7 +893,7 @@ export async function buildEnginePayload(
 
   // Expenses — phase-based budget columns
   const selectedScenario = retScenarios.find((s) => s.isSelected);
-  const globalColSetting = settingsMap.get("budget_active_column");
+  const globalColSetting = settingsMap.get(SK_BUDGET_ACTIVE_COLUMN);
   const globalActiveCol =
     typeof globalColSetting === "number" ? globalColSetting : 0;
   const {
