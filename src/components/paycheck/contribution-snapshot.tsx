@@ -1,5 +1,6 @@
 "use client";
 
+import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
@@ -26,14 +27,8 @@ import {
   getAccountTypeConfig,
 } from "@/lib/config/account-types";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
-import {
-  DEFAULT_HIGH_INCOME_THRESHOLD,
-  OVER_LIMIT_THRESHOLD,
-} from "@/lib/constants";
-import {
-  SK_ACTIVE_CONTRIB_PROFILE_ID,
-  SK_HIGH_INCOME_THRESHOLD,
-} from "@/lib/constants/settings-keys";
+import { OVER_LIMIT_THRESHOLD } from "@/lib/constants";
+import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {
   householdSavings,
   householdTotalCompensation,
@@ -61,10 +56,7 @@ export function ContributionSnapshot() {
   const { data, isLoading, error } =
     trpc.contribution.computeSummary.useQuery(contribInput);
   const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
-  const [highIncomeThreshold] = usePersistedSetting<number>(
-    SK_HIGH_INCOME_THRESHOLD,
-    DEFAULT_HIGH_INCOME_THRESHOLD,
-  );
+  const { threshold: highIncomeThreshold } = useHighIncomeLine();
   const { excludeMatch, includePortfolio } = useSavingsRateOptions(
     isHighIncomeHousehold(
       householdTotalCompensation(data?.people?.filter((d) => d.result) ?? []),
@@ -72,7 +64,7 @@ export function ContributionSnapshot() {
     ),
   );
 
-  if (isLoading)
+  if (isLoading || highIncomeThreshold === undefined)
     return (
       <div className="bg-surface-elevated h-48 animate-pulse rounded-lg" />
     );

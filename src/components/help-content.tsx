@@ -198,6 +198,10 @@ export function HelpContent() {
           </li>
           <li>
             <strong>Savings Rate</strong> &mdash; Percentage of income saved.
+            The employer match counts until household pay reaches the
+            high-income line &mdash; $200k married filing jointly, $100k
+            otherwise (by this year&apos;s filing status), or your own, set
+            beside the match switch.
           </li>
           <li>
             <strong>Budget Status</strong> &mdash; Spending versus target.

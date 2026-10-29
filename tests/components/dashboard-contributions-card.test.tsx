@@ -35,6 +35,15 @@ let contribQuery: { data: unknown; isLoading: boolean; error: unknown } = {
   error: null,
 };
 
+vi.mock("@/lib/hooks/use-high-income-line", () => ({
+  useHighIncomeLine: () => ({
+    threshold: 200_000,
+    basis: "MFJ",
+    defaultThreshold: 200_000,
+    setSaved: vi.fn(),
+  }),
+}));
+
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     useUtils: () => ({

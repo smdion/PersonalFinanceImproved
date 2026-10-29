@@ -780,7 +780,7 @@ function limitStep(
   // Money Guy's step 6: reaching a 25% retirement investing rate (the
   // Retirement category only — Portfolio money is step 7's) before the
   // plans are maxed also completes the step. (Their "if you don't have a
-  // high income" has no number; the high-income threshold only decides
+  // high income" has no number; the high-income line only decides
   // whether the match counts toward the 25%.)
   const unlimitedNote =
     step === 6 && (input.retirementUnlimited ?? 0) > 0

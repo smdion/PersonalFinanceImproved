@@ -256,9 +256,23 @@ export type CustomGoalMetric = keyof typeof CUSTOM_GOAL_METRICS;
 export const MAX_CUSTOM_GOALS = 12;
 
 /**
+ * Money Guy's high-income line — at or above it the employer match stops
+ * counting toward the 25% savings rate. Money Guy names $200k for a
+ * household; $100k for one filer is the owner's reading of the same line
+ * (Money Guy's page gives only the household figure). A saved
+ * `high_income_threshold` setting replaces both.
+ */
+export const HIGH_INCOME_LINE = {
+  married: 200_000,
+  single: 100_000,
+  source:
+    "https://moneyguy.com/article/should-you-include-your-employer-match-in-the-20-25-investing-goal",
+} as const;
+
+/**
  * Money Guy's Goldilocks rule — lump sum or dollar-cost average, sized by
  * how big the money is against your invested assets ("Dollar cost averaging
- * vs lump sum", moneyguy.com, checked 2026-10-29): under 10% invest it at
+ * vs lump sum", moneyguy.com): under 10% invest it at
  * once; at 10% spread it over 5 months, one month more for each further 5%,
  * at most 12 months.
  */
@@ -394,7 +408,7 @@ const MILESTONES = [
     title: "6 · Max out retirement",
     rule: "Fill the IRS limit of every account in the Retirement category (401k/403b, IRA, HSA) with your own contributions — or reach 25% of gross pay into Retirement accounts first (Portfolio money is step 7's).",
     adaptedNote:
-      "Money Guy's step 6 is the employer plans; Ledgr counts every account you've put in the Retirement category, so step 5's IRA and HSA are part of it. Employer match isn't counted — the IRS limit is for your own deferrals (an HSA's limit includes employer money). Money Guy says hitting 25% before maxing out is enough to move on \"if you don't have a high income\" but gives no number; Ledgr's high-income threshold only decides whether the match counts toward the 25%.",
+      "Money Guy's step 6 is the employer plans; Ledgr counts every account you've put in the Retirement category, so step 5's IRA and HSA are part of it. Employer match isn't counted — the IRS limit is for your own deferrals (an HSA's limit includes employer money). Money Guy says hitting 25% before maxing out is enough to move on \"if you don't have a high income\" but gives no number; Ledgr's high-income line only decides whether the match counts toward the 25%.",
     focus: { topic: "contributionElections" },
   },
   {
@@ -458,7 +472,7 @@ const MILESTONES = [
     group: "saving",
     source: "moneyGuy",
     title: "25% savings rate",
-    rule: "Save and invest 25% of gross pay — retirement accounts, HSA and brokerage alike (a rate that rounds to 25% counts). The employer match counts until household pay passes the high-income threshold.",
+    rule: `Save and invest 25% of gross pay — retirement accounts, HSA and brokerage alike (a rate that rounds to 25% counts). The employer match counts until household pay reaches the high-income line: $${HIGH_INCOME_LINE.married / 1000}k married filing jointly, $${HIGH_INCOME_LINE.single / 1000}k otherwise, or your own (set beside the match switch).`,
     adaptedNote:
       "Money set aside for a specific future cost (college, the next car) is step 8, not part of the 25%. Starting later needs more: 6% from age 20, 10% from 25, 17% from 30, about 25% from 35.",
     focus: { topic: "savingsRate" },

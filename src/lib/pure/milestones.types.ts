@@ -219,7 +219,7 @@ export type MilestoneInput = {
     savedWithMatch: number;
     compensation: number;
     matchCounted: boolean;
-    /** At or above the household's high-income threshold. */
+    /** At or above the household's high-income line. */
     highIncome: boolean;
     highIncomeThreshold: number;
     /** Both goal groups with the match rule applied, for the breakdown. */

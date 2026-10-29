@@ -6,6 +6,7 @@
  * only — every figure is mapped by `buildMilestoneInput()` and judged by the
  * pure engine, so the Milestones page and the Financial Checkup agree.
  */
+import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
@@ -13,11 +14,7 @@ import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { useUser, hasPermission } from "@/lib/context/user-context";
-import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
-import {
-  SK_EFUND_BUDGET_COLUMN,
-  SK_HIGH_INCOME_THRESHOLD,
-} from "@/lib/constants/settings-keys";
+import { SK_EFUND_BUDGET_COLUMN } from "@/lib/constants/settings-keys";
 import { buildMilestoneInput } from "@/lib/pure/milestone-input";
 import {
   evaluateMilestones,
@@ -57,10 +54,7 @@ export function useMilestones(): {
     SK_EFUND_BUDGET_COLUMN,
     -1,
   );
-  const [highIncomeThreshold] = usePersistedSetting<number>(
-    SK_HIGH_INCOME_THRESHOLD,
-    DEFAULT_HIGH_INCOME_THRESHOLD,
-  );
+  const { threshold: highIncomeThreshold } = useHighIncomeLine();
   const yearEndTargeting = useYearEndTargetingInput();
 
   const inputs = trpc.milestones.computeInputs.useQuery(yearEndTargeting);
@@ -85,12 +79,13 @@ export function useMilestones(): {
     inputs.isLoading ||
     contribs.isLoading ||
     savings.isLoading ||
-    mortgage.isLoading;
+    mortgage.isLoading ||
+    highIncomeThreshold === undefined;
   const error = Boolean(
     inputs.error || contribs.error || savings.error || mortgage.error,
   );
   const projectionLoading = projection.isLoading;
-  if (isLoading || error || !inputs.data)
+  if (isLoading || error || !inputs.data || highIncomeThreshold === undefined)
     return { isLoading, projectionLoading, error, input: null, results: [] };
 
   const efund = savings.data?.efund;

@@ -1,5 +1,6 @@
 "use client";
 
+import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import { focusHref } from "@/lib/config/focus-topics";
 import React, { useState, memo } from "react";
 import { trpc } from "@/lib/trpc";
@@ -29,10 +30,7 @@ import {
   getAllCategories,
   getAccountTypeConfig,
 } from "@/lib/config/account-types";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
-import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
-import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
 import {
   householdSavings,
   householdTotalCompensation,
@@ -150,17 +148,15 @@ function ContributionsCardImpl() {
     ) : null;
   };
   const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
-  const [highIncomeThreshold] = usePersistedSetting<number>(
-    SK_HIGH_INCOME_THRESHOLD,
-    DEFAULT_HIGH_INCOME_THRESHOLD,
-  );
+  const { threshold: highIncomeThreshold } = useHighIncomeLine();
   const { excludeMatch, includePortfolio } = useSavingsRateOptions(
     isHighIncomeHousehold(
       householdTotalCompensation(data?.people?.filter((d) => d.result) ?? []),
       highIncomeThreshold,
     ),
   );
-  if (isLoading) return <LoadingCard title="Contributions" />;
+  if (isLoading || highIncomeThreshold === undefined)
+    return <LoadingCard title="Contributions" />;
   if (error)
     return <ErrorCard title="Contributions" message="Failed to load" />;
 

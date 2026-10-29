@@ -79,6 +79,17 @@ let milestoneInputs: unknown = undefined;
 let mcPeekData: unknown = { result: null };
 let coastFireMcPeekData: unknown = { result: null };
 
+// A line of 0 puts every household over it, so the match is left out of the
+// totals by default — what the scope test below reads.
+vi.mock("@/lib/hooks/use-high-income-line", () => ({
+  useHighIncomeLine: () => ({
+    threshold: 0,
+    basis: null,
+    defaultThreshold: 200_000,
+    setSaved: vi.fn(),
+  }),
+}));
+
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     milestones: {

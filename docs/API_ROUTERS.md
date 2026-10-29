@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**386 procedures across 54 routers.**
+**387 procedures across 54 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -75,9 +75,10 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `contribution`
 
-| Procedure        | Kind  | Auth                 | Description      |
-| ---------------- | ----- | -------------------- | ---------------- |
-| `computeSummary` | query | `protectedProcedure` | (no description) |
+| Procedure        | Kind  | Auth                 | Description                                                                                                               |
+| ---------------- | ----- | -------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `computeSummary` | query | `protectedProcedure` | saved setting, when set, wins on the client). Here so a filing-status save, which reloads `contribution`, reloads it too. |
+| `highIncomeLine` | query | `protectedProcedure` | saved setting, when set, wins on the client). Here so a filing-status save, which reloads `contribution`, reloads it too. |
 
 ## `contribution-profiles`
 
