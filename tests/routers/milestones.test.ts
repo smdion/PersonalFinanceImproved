@@ -4,6 +4,7 @@
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
 import {
   createTestCaller,
@@ -110,5 +111,47 @@ describe("milestones.computeInputs", () => {
     const result = await caller.milestones.computeInputs({});
     expect(result.checklist).toEqual({ will: true });
     expect(result.customGoals).toEqual([]);
+  });
+});
+
+describe("milestones.recordReached", () => {
+  let ctx: Awaited<ReturnType<typeof createTestCaller>>;
+
+  beforeAll(async () => {
+    ctx = await createTestCaller(viewerSession);
+    const personId = await seedPerson(ctx.db, "Test Person", "1990-01-01");
+    seedJob(ctx.db, personId);
+  });
+  afterAll(() => ctx.cleanup());
+
+  it("a viewer's visit records; what was already reached stays undated", async () => {
+    expect(await ctx.caller.milestones.firstReached()).toBeNull();
+    const first = await ctx.caller.milestones.recordReached();
+    expect(first?.since).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    // Nothing reached before recording began gets a day.
+    expect(Object.values(first!.reached).every((v) => v.length !== 10)).toBe(
+      true,
+    );
+    expect(await ctx.caller.milestones.firstReached()).toEqual(first);
+    // Bookkeeping, not an edit: nothing in the change log.
+    expect(ctx.db.select().from(schema.changeLog).all()).toEqual([]);
+  });
+
+  it("nothing new: nothing written", async () => {
+    expect(await ctx.caller.milestones.recordReached()).toBeNull();
+  });
+
+  it("one reached after recording began gets today's date", async () => {
+    const stored = (await ctx.caller.milestones.firstReached())!;
+    const [id] = Object.keys(stored.reached);
+    expect(id).toBeDefined();
+    const { [id!]: _dropped, ...rest } = stored.reached;
+    ctx.db
+      .update(schema.appSettings)
+      .set({ value: { since: stored.since, reached: rest } })
+      .where(eq(schema.appSettings.key, "milestone_first_reached"))
+      .run();
+    const next = await ctx.caller.milestones.recordReached();
+    expect(next?.reached[id!]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });

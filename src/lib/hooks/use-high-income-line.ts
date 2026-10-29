@@ -9,7 +9,10 @@
 import { trpc } from "@/lib/trpc";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
-import type { HighIncomeLineBasis } from "@/lib/pure/high-income-line";
+import {
+  effectiveHighIncomeLine,
+  type HighIncomeLineBasis,
+} from "@/lib/pure/high-income-line";
 
 export function useHighIncomeLine(): {
   threshold: number | undefined;
@@ -25,9 +28,10 @@ export function useHighIncomeLine(): {
   const { data } = trpc.contribution.highIncomeLine.useQuery(undefined, {
     staleTime: 60_000,
   });
-  const isSaved = typeof saved === "number" && saved > 0;
+  const threshold = effectiveHighIncomeLine(saved, data?.threshold);
+  const isSaved = threshold !== undefined && threshold === saved;
   return {
-    threshold: isSaved ? saved : data?.threshold,
+    threshold,
     basis: isSaved ? null : (data?.basis ?? null),
     defaultThreshold: data?.threshold,
     setSaved,

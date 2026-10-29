@@ -11,6 +11,7 @@ import { ProgressBar } from "@/components/ui/card";
 import { MILESTONE_SOURCE_LABELS } from "@/lib/config/milestones";
 import { MILESTONE_STATUS_LABELS } from "@/lib/config/display-labels";
 import { STATUS_COLORS } from "@/lib/utils/colors";
+import { formatDate } from "@/lib/utils/format";
 import type { MilestoneResult, MilestoneStatus } from "@/lib/pure/milestones";
 
 export const STATUS_STYLE: Record<
@@ -59,8 +60,11 @@ export function MilestoneRow({
   result,
   extra,
   detail,
+  firstReached,
 }: {
   result: MilestoneResult;
+  /** The day it was first reached, when recorded; `isNew` marks it. */
+  firstReached?: { date: string; isNew: boolean } | null;
   /** Extra controls in the open row (e.g. remove a custom goal). */
   extra?: ReactNode;
   /** Extra detail in the open row (e.g. the savings-rate breakdown). */
@@ -97,6 +101,13 @@ export function MilestoneRow({
             <span className="text-faint ml-1.5 text-xs">
               {MILESTONE_SOURCE_LABELS[result.source]}
             </span>
+            {firstReached?.isNew && (
+              <span
+                className={`text-caption ml-1.5 rounded-full px-1.5 py-0.5 font-medium ${STATUS_COLORS.blue.bg} ${STATUS_COLORS.blue.text}`}
+              >
+                New
+              </span>
+            )}
           </span>
           <span className="hidden min-w-0 flex-1 text-right sm:block">
             <span className="text-secondary text-sm">{result.headline}</span>
@@ -126,6 +137,11 @@ export function MilestoneRow({
             <ProgressBar value={result.progress} variant={style.bar} small />
           )}
           <p>{result.rule}</p>
+          {firstReached && (
+            <p className="text-muted">
+              First reached {formatDate(firstReached.date, "medium")}
+            </p>
+          )}
           {detail}
           {result.adaptedNote && (
             <p className="text-muted">{result.adaptedNote}</p>

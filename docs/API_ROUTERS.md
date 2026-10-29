@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**387 procedures across 54 routers.**
+**389 procedures across 54 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -198,9 +198,11 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `milestones`
 
-| Procedure       | Kind  | Auth                 | Description                                                                                      |
-| --------------- | ----- | -------------------- | ------------------------------------------------------------------------------------------------ |
-| `computeInputs` | query | `protectedProcedure` | Year-end history mapped for the Milestones engine, plus the household's own goals and checklist. |
+| Procedure       | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| --------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeInputs` | query    | `protectedProcedure` | Year-end history mapped for the Milestones engine, plus the household's own goals and checklist.                                                                                                         |
+| `firstReached`  | query    | `protectedProcedure` | When each milestone was first reached (null before any recording).                                                                                                                                       |
+| `recordReached` | mutation | `protectedProcedure` | Record milestones reached now that aren't recorded yet. Judged here, on the active profiles — never on what a page shows (it may be a What-If) or on ids a browser sends. Any signed-in viewer's visit c |
 
 ## `mortgage`
 
@@ -449,7 +451,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `list`                | query    | `protectedProcedure` | ══ APP SETTINGS ══                                                     |
 | `list`                | query    | `protectedProcedure` | Every saved Plan.                                                      |
 | `list`                | query    | `adminProcedure`     | (encrypted envelopes, or plaintext for legacy rows such as FMP).       |
-| `setDismissal`        | mutation | `adminProcedure`     | Dismiss, snooze or restore one recommendation (merged on the server).  |
+| `setDismissal`        | mutation | `adminProcedure`     | server, so two admins changing different items both stick).            |
 | `update`              | mutation | `scenarioProcedure`  | Rename a Plan or change which profiles it holds.                       |
 | `updateDataFreshness` | mutation | `adminProcedure`     | (no description)                                                       |
 | `upsert`              | mutation | `adminProcedure`     | (no description)                                                       |

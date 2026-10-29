@@ -2,6 +2,7 @@
 
 /** Milestones page body: what's next and what's been reached, the FOO
  *  ladder, then every milestone by group. */
+import { useFirstReached } from "@/lib/hooks/use-first-reached";
 import { RaiseHistoryTable } from "@/components/milestones/raise-history-table";
 import { useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -40,6 +41,7 @@ export function MilestonesContent() {
   const canEdit = isAdmin(user);
   const { isLoading, projectionLoading, error, input, results } =
     useMilestones();
+  const firstReachedOf = useFirstReached();
   const [source, setSource] = useState<MilestoneSource | null>(null);
   const [hideUnknown, setHideUnknown] = useState(false);
   const goalActions = useCustomGoalActions(input?.customGoals ?? []);
@@ -154,6 +156,7 @@ export function MilestonesContent() {
                 <MilestoneRow
                   key={r.id}
                   result={r}
+                  firstReached={firstReachedOf(r.id)}
                   detail={
                     (r.id === "savingsRate" || r.id === "pfRetirementRate") &&
                     input.savings ? (

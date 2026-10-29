@@ -78,6 +78,8 @@ export const SK_SAVINGS_RATE_INCLUDE_PORTFOLIO =
 export const SK_MILESTONE_CUSTOM_GOALS = "milestone_custom_goals";
 /** Ticked milestone checklist items (validated: milestoneChecklistSchema). */
 export const SK_MILESTONE_CHECKLIST = "milestone_checklist";
+/** When each milestone was first reached (lib/pure/milestone-first-reached.ts). */
+export const SK_MILESTONE_FIRST_REACHED = "milestone_first_reached";
 /** "moneyGuy" | "fidelity" — which income-multiple checkpoints to follow. */
 export const SK_MILESTONE_CHECKPOINT_SOURCE = "milestone_checkpoint_source";
 /** The household's own target mix by age for what it holds today —

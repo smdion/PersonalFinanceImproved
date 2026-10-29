@@ -10,6 +10,22 @@ import type { W4FilingStatus } from "@/lib/config/enum-values";
 
 export type HighIncomeLineBasis = W4FilingStatus | "people";
 
+/** The saved line when one is set (a positive number), else the default. */
+export function effectiveHighIncomeLine(
+  saved: unknown,
+  defaultThreshold: number,
+): number;
+export function effectiveHighIncomeLine(
+  saved: unknown,
+  defaultThreshold: number | undefined,
+): number | undefined;
+export function effectiveHighIncomeLine(
+  saved: unknown,
+  defaultThreshold: number | undefined,
+): number | undefined {
+  return typeof saved === "number" && saved > 0 ? saved : defaultThreshold;
+}
+
 export function defaultHighIncomeLine(
   filingStatus: W4FilingStatus | null,
   peopleCount: number,
