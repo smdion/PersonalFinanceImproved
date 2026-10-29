@@ -222,9 +222,9 @@ export function HelpContent() {
       <ProseSection title="Paycheck" icon={Wallet}>
         <p>
           The <NavLink href="/paycheck">Paycheck</NavLink> page is a
-          gross-to-net calculator. It computes federal and state taxes, FICA
-          (Social Security &amp; Medicare), and all your deductions to show your
-          actual take-home pay.
+          gross-to-net calculator. It computes federal income tax withholding,
+          FICA (Social Security &amp; Medicare), and all your deductions to show
+          your actual take-home pay. State income tax isn&apos;t included.
         </p>
         <h4 className="text-secondary font-semibold">Key features</h4>
         <ul className="ml-2 list-inside list-disc space-y-1">

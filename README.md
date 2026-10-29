@@ -29,7 +29,7 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 - **Performance & Historical** — Investment performance analytics and historical data views.
 - **Investments & Benchmarks** — Holdings and fund facts from SimpleFIN, allocation vs your target glide path, costs, and how the same money would have done in an index.
 - **Taxes** — This year's household tax, Roth IRA eligibility (MAGI), and a tax-optimization view of retirement withdrawals.
-- **Tools** — Relocation analysis: compare projected cost of living, taxes, and net outcome across locations.
+- **Tools** — Relocation analysis: compare projected cost of living and net outcome across locations.
 - **Upkeep** — Track utility services and meter readings over time.
 
 ### Platform

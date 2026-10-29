@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- **Help no longer says the Paycheck page computes state tax** — it computes federal withholding and FICA only; the README's Relocation line no longer claims a tax comparison either.
 - **A job is current from its start date to its end date.** A job whose last day is later this year shows its paycheck again (it disappeared once an end date was set), and this year's income and the Paycheck page's year-end estimate count its checks up to that day. A job that hasn't started shows when it starts instead of a paycheck, and its pay isn't counted yet.
 - **Someone who retires before the household stops contributing.** Their pay already stopped in the projection, but contributions set as a fixed amount kept going until the household retired.
 - **The Paycheck page's year-end estimate for a job started this year** counts its checks from its start, as this year's income already did.

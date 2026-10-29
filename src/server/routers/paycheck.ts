@@ -1,4 +1,4 @@
-/** Paycheck router for gross-to-net pay calculations including federal/state tax withholding, pre-tax deductions, and per-period contribution breakdowns. */
+/** Paycheck router for gross-to-net pay calculations including federal tax withholding (no state tax), pre-tax deductions, and per-period contribution breakdowns. */
 import { localDateStr } from "@/lib/utils/date";
 import {
   capForRequest,
