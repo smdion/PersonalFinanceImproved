@@ -92,6 +92,9 @@ const accountRows: AccountRow[] = [
     accountType: "401k",
     subType: null,
     isActive: true,
+    contributionBasis: null,
+    conversionBasis: null,
+    latestConversionYear: null,
     performanceAccountId: 101,
     displayOrder: 0,
     year: 2026,
@@ -116,6 +119,9 @@ const accountRows: AccountRow[] = [
     accountType: "brokerage",
     subType: null,
     isActive: true,
+    contributionBasis: null,
+    conversionBasis: null,
+    latestConversionYear: null,
     performanceAccountId: 102,
     displayOrder: 0,
     year: 2026,
@@ -427,7 +433,7 @@ describe("UpdatePerformanceForm", () => {
     // Click the override ("edit") button next to account 1's computed
     // gain/loss — it seeds the manual field with the current computed value.
     // Both rows render this button; account 1 (Fidelity) is first.
-    fireEvent.click(screen.getAllByTitle("Enter the value yourself")[0]);
+    fireEvent.click(screen.getAllByTitle("Enter the value yourself")[0]!);
     expect(screen.getByText("manual")).toBeInTheDocument();
 
     // Change the manual override input to a different value.
@@ -476,9 +482,9 @@ describe("UpdatePerformanceForm", () => {
   it("filters out accounts from other years or inactive accounts", () => {
     const rows: AccountRow[] = [
       ...accountRows,
-      { ...accountRows[0], id: 3, year: 2025, accountLabel: "Old Year" },
+      { ...accountRows[0]!, id: 3, year: 2025, accountLabel: "Old Year" },
       {
-        ...accountRows[0],
+        ...accountRows[0]!,
         id: 4,
         isActive: false,
         accountLabel: "Inactive Acct",

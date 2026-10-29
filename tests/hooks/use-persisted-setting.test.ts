@@ -48,7 +48,7 @@ describe("usePersistedSetting", () => {
     localStorage.setItem("setting:my_key", JSON.stringify("stale"));
     listQuery.mockReturnValue({ data: [{ key: "other", value: 1 }] });
     const { result } = renderHook(() =>
-      usePersistedSetting("my_key", "default"),
+      usePersistedSetting<string>("my_key", "default"),
     );
     expect(result.current[0]).toBe("default");
     expect(result.current[2]).toBe(true);
@@ -59,7 +59,10 @@ describe("usePersistedSetting", () => {
     // default first ($0 contributions, the wrong profile).
     const seen: [string, boolean][] = [];
     const { rerender } = renderHook(() => {
-      const [value, , loaded] = usePersistedSetting("my_key", "default");
+      const [value, , loaded] = usePersistedSetting<string>(
+        "my_key",
+        "default",
+      );
       seen.push([value, loaded]);
       return value;
     });
@@ -77,7 +80,7 @@ describe("usePersistedSetting", () => {
     localStorage.setItem("setting:my_key", JSON.stringify("stored-value"));
 
     const { result } = renderHook(() =>
-      usePersistedSetting("my_key", "default-value"),
+      usePersistedSetting<string>("my_key", "default-value"),
     );
 
     expect(result.current[0]).toBe("stored-value");
@@ -99,7 +102,7 @@ describe("usePersistedSetting", () => {
 
     let syncValue: string | undefined;
     function useProbe() {
-      const [value] = usePersistedSetting("my_key", "default-value");
+      const [value] = usePersistedSetting<string>("my_key", "default-value");
       // Capture the FIRST render's value before any subsequent re-render
       // (triggered by the mount effect's setState) can overwrite it.
       if (syncValue === undefined) syncValue = value;
@@ -113,7 +116,7 @@ describe("usePersistedSetting", () => {
 
   it("falls back to defaultValue when nothing is in localStorage", () => {
     const { result } = renderHook(() =>
-      usePersistedSetting("unset_key", "default-value"),
+      usePersistedSetting<string>("unset_key", "default-value"),
     );
 
     expect(result.current[0]).toBe("default-value");
@@ -125,7 +128,7 @@ describe("usePersistedSetting", () => {
     });
 
     const { result } = renderHook(() =>
-      usePersistedSetting("my_key", "default-value"),
+      usePersistedSetting<string>("my_key", "default-value"),
     );
 
     expect(result.current[0]).toBe("db-value");
@@ -133,7 +136,7 @@ describe("usePersistedSetting", () => {
 
   it("optimistically updates local state and fires the mutation on setValue", () => {
     const { result } = renderHook(() =>
-      usePersistedSetting("my_key", "default-value"),
+      usePersistedSetting<string>("my_key", "default-value"),
     );
 
     act(() => {
@@ -158,7 +161,7 @@ describe("usePersistedSetting", () => {
             ? { data: [{ key: "my_key", value: dbValue }] }
             : { data: undefined },
         );
-        return usePersistedSetting("my_key", "default-value");
+        return usePersistedSetting<string>("my_key", "default-value");
       },
       { initialProps: { dbValue: undefined as string | undefined } },
     );
@@ -204,7 +207,7 @@ describe("usePersistedSetting", () => {
   });
 
   it("invalidates the settings list query on successful upsert", () => {
-    renderHook(() => usePersistedSetting("my_key", "default-value"));
+    renderHook(() => usePersistedSetting<string>("my_key", "default-value"));
 
     act(() => {
       upsertOnSuccess?.();
@@ -227,7 +230,7 @@ describe("usePersistedSetting", () => {
   it("reverts the optimistic value and shows an error toast when writeVia rejects", async () => {
     const writeVia = vi.fn().mockRejectedValue(new Error("FORBIDDEN"));
     const { result } = renderHook(() =>
-      usePersistedSetting("my_key", "default-value", { writeVia }),
+      usePersistedSetting<string>("my_key", "default-value", { writeVia }),
     );
 
     await act(async () => {
@@ -248,7 +251,7 @@ describe("usePersistedSetting", () => {
   it("keeps the optimistic value when writeVia succeeds", async () => {
     const writeVia = vi.fn().mockResolvedValue({ success: true });
     const { result } = renderHook(() =>
-      usePersistedSetting("my_key", "default-value", { writeVia }),
+      usePersistedSetting<string>("my_key", "default-value", { writeVia }),
     );
 
     await act(async () => {
@@ -262,7 +265,7 @@ describe("usePersistedSetting", () => {
 
   it("reverts the optimistic value and shows an error toast when the default upsert path rejects", () => {
     const { result } = renderHook(() =>
-      usePersistedSetting("my_key", "default-value"),
+      usePersistedSetting<string>("my_key", "default-value"),
     );
 
     act(() => {

@@ -23,6 +23,7 @@ import type {
   ProjectionInput,
   EngineDecumulationYear,
   EngineAccumulationYear,
+  EngineYearProjection,
 } from "@/lib/calculators/types";
 import type { AccountCategory } from "@/lib/config/account-types";
 import {
@@ -42,6 +43,14 @@ const AS_OF = new Date("2025-03-07");
 const EPSILON = 0.011; // $0.011 rounding tolerance (cent + tiny float)
 
 /** Build a minimal valid engine input with sensible defaults. */
+
+/** A working year (throws if the projection put it in retirement). */
+function asAccumulation(y: EngineYearProjection): EngineAccumulationYear {
+  if (y.phase !== "accumulation")
+    throw new Error(`${y.year} is not a working year`);
+  return y;
+}
+
 function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
   return withConsistentStart(
     withCapsAge({
@@ -1562,7 +1571,7 @@ describe("engine invariants", () => {
           afterTaxBasis: (30000 + portfolio) * basisRatio,
         },
         startingAccountBalances: {
-          ...base.startingAccountBalances,
+          ...base.startingAccountBalances!,
           brokerage: {
             structure: "basis_tracking",
             balance: 30000 + portfolio,
@@ -1674,7 +1683,7 @@ describe("engine invariants", () => {
             preTax: input.startingBalances.preTax + 1_000_000,
           },
           startingAccountBalances: {
-            ...input.startingAccountBalances,
+            ...input.startingAccountBalances!,
             ira: {
               structure: "roth_traditional",
               traditional: 1_030_000,
@@ -1880,7 +1889,10 @@ describe("engine invariants", () => {
       for (const y of years) {
         const accts = y.individualAccountBalances ?? [];
         const brokerage = accts.filter((a) => a.category === "brokerage");
-        expect(y.overflowToBrokerage, `${y.year} overflow`).toBeGreaterThan(0);
+        expect(
+          asAccumulation(y).overflowToBrokerage,
+          `${y.year} overflow`,
+        ).toBeGreaterThan(0);
         expect(
           brokerage.reduce((s, a) => s + a.balance, 0),
           `${y.year} brokerage accounts = brokerage total`,
@@ -2029,7 +2041,9 @@ describe("engine invariants", () => {
           contributionRate: 0.05,
         },
       };
-      const y0 = calculateProjection(input).projectionByYear[0]!;
+      const y0 = asAccumulation(
+        calculateProjection(input).projectionByYear[0]!,
+      );
       const proRate = y0.proRateFraction ?? 1;
       const contrib = (parent: string) =>
         (y0.individualAccountBalances ?? [])
@@ -2108,7 +2122,7 @@ describe("engine invariants", () => {
             afterTaxBasis: afterTax,
           },
           startingAccountBalances: {
-            ...base.startingAccountBalances,
+            ...base.startingAccountBalances!,
             brokerage: {
               structure: "basis_tracking",
               balance: afterTax,
@@ -2480,7 +2494,7 @@ describe("engine invariants", () => {
             afterTaxBasis: 13900,
           },
           startingAccountBalances: {
-            ...base.startingAccountBalances,
+            ...base.startingAccountBalances!,
             brokerage: {
               structure: "basis_tracking",
               balance: 40000,
@@ -2616,7 +2630,7 @@ describe("engine invariants", () => {
             afterTaxBasis: 120000,
           },
           startingAccountBalances: {
-            ...small.startingAccountBalances,
+            ...small.startingAccountBalances!,
             "401k": {
               structure: "roth_traditional",
               traditional: 570000,
@@ -2781,7 +2795,7 @@ describe("engine invariants", () => {
             hsa: 0,
           },
           startingAccountBalances: {
-            ...base.startingAccountBalances,
+            ...base.startingAccountBalances!,
             "401k": {
               structure: "roth_traditional",
               traditional: 3200000,

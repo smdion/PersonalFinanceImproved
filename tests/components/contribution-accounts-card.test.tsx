@@ -60,6 +60,8 @@ const defaultProps = {
   isExpanded: false,
   onToggleExpand: vi.fn(),
   activeAccounts: [],
+  activeProfileName: null,
+  activeProfileFields: {},
 };
 
 describe("AccountCard", () => {

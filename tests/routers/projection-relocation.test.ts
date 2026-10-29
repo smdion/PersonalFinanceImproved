@@ -6,7 +6,8 @@
  * computation, engine calls, blended path, binary search, etc.).
  */
 import "./setup-mocks";
-import { vi, describe, it, expect } from "vitest";
+import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
+import type { RelocationScenarioParams } from "@/lib/db/schema";
 import {
   createTestCaller,
   seedStandardDataset,
@@ -75,8 +76,6 @@ function seedContributionAccount(
   db.insert(schema.contributionAccounts)
     .values({
       accountType: "401k",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
       taxTreatment: "pre_tax",
       employerMatchType: "none",
       isActive: true,
@@ -352,7 +351,7 @@ describe("projection.relocationScenarios", () => {
   let savedId: number;
 
   // Minimal valid relocationScenarioParamsSchema value
-  const minimalParams = {
+  const minimalParams: RelocationScenarioParams = {
     currentProfileId: 1,
     currentBudgetColumn: 0,
     currentExpenseOverride: null,
@@ -429,7 +428,7 @@ describe("projection.relocationScenarios", () => {
       expect(result).toBeDefined();
       expect(result!.name).toBe("NYC to Austin — Revised");
       expect(
-        (result!.params as typeof minimalParams).currentExpenseOverride,
+        (result!.params as RelocationScenarioParams).currentExpenseOverride,
       ).toBe(500);
     });
 
@@ -512,7 +511,7 @@ describe("projection.relocationScenarios additional coverage", () => {
 });
 
 describe("projection.relocationScenarios additional", () => {
-  const minimalParams = {
+  const minimalParams: RelocationScenarioParams = {
     currentProfileId: 1,
     currentBudgetColumn: 0,
     currentExpenseOverride: null,
