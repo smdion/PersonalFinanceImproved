@@ -485,16 +485,16 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
     expect(payload!.distributionTaxRates.standardDeduction).toBe(31500);
   });
 
-  it("each tax table carries its own year (pinned 2025; the seed has 2026-only IRMAA and FPL)", async () => {
+  it("each tax table carries its own year (pinned 2025; the seed has every 2025 table)", async () => {
     const data = await fetchRetirementData(appDb, {});
     const payload = await buildEnginePayload(appDb, data, {});
     const r = payload!.distributionTaxRates;
     expect(r.taxBracketsYear).toBe(2025);
     expect(r.ltcgBracketsYear).toBe(2025);
-    // No 2025 rows: the oldest complete year, grown from its own year —
-    // not the built-in tables.
-    expect(r.irmaaBracketsYear).toBe(2026);
-    expect(r.fplYear).toBe(2026);
+    // 2025's own IRMAA and poverty tables (the fallback to the oldest
+    // complete year is covered in tests/config/tax-params.test.ts).
+    expect(r.irmaaBracketsYear).toBe(2025);
+    expect(r.fplYear).toBe(2025);
     expect(r.irmaaBrackets).toBeDefined();
     expect(r.fplByHousehold).toBeDefined();
   });
