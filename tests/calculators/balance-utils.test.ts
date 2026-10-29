@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
+  getRothBalance,
+  getTraditionalBalance,
+} from "@/lib/config/account-balance";
+import {
   accountBalancesFromTaxBuckets,
   cloneAccountBalances,
   subtractPenaltyExposed,
@@ -61,9 +65,9 @@ describe("accountBalancesFromTaxBuckets", () => {
     // 401k and 403b share the "401k" limit group; ira has its own "ira" group
     // 2 groups total → each gets 50000
     // Both 401k and 403b get the same fraction since they're in the same group
-    const trad401k = result["401k"].traditional;
-    const trad403b = result["403b"].traditional;
-    const tradIra = result.ira.traditional;
+    const trad401k = getTraditionalBalance(result["401k"]);
+    const trad403b = getTraditionalBalance(result["403b"]);
+    const tradIra = getTraditionalBalance(result.ira);
 
     // Each limit group gets 1/2 of 100000 = 50000
     expect(trad401k).toBe(50000);
@@ -75,8 +79,8 @@ describe("accountBalancesFromTaxBuckets", () => {
     const result = accountBalancesFromTaxBuckets(
       makeBuckets({ taxFree: 60000 }),
     );
-    const roth401k = result["401k"].roth;
-    const rothIra = result.ira.roth;
+    const roth401k = getRothBalance(result["401k"]);
+    const rothIra = getRothBalance(result.ira);
 
     // 2 groups → each gets 30000
     expect(roth401k).toBe(30000);
@@ -104,11 +108,11 @@ describe("accountBalancesFromTaxBuckets", () => {
     expect(getTotalBalance(result.brokerage)).toBe(80000);
     expect(getBasis(result.brokerage)).toBe(40000);
     // preTax split across 2 groups: 100000 each
-    expect(result["401k"].traditional).toBe(100000);
-    expect(result.ira.traditional).toBe(100000);
+    expect(getTraditionalBalance(result["401k"])).toBe(100000);
+    expect(getTraditionalBalance(result.ira)).toBe(100000);
     // taxFree split across 2 groups: 50000 each
-    expect(result["401k"].roth).toBe(50000);
-    expect(result.ira.roth).toBe(50000);
+    expect(getRothBalance(result["401k"])).toBe(50000);
+    expect(getRothBalance(result.ira)).toBe(50000);
   });
 });
 
@@ -184,6 +188,7 @@ describe("subtractPenaltyExposed", () => {
       penaltyExposedRothStillExcluded: zeroByCat(),
       penaltyExposedTotalStillExcluded: total,
       totalPenaltyExposedStillExcluded: 60000,
+      reachableByCategory: {}, // no reachability cap
     };
     const result = subtractPenaltyExposed(balances, record);
     expect(getTotalBalance(result["401k"])).toBe(60000); // 100000 - 40000
@@ -212,6 +217,7 @@ describe("subtractPenaltyExposed", () => {
       penaltyExposedRothStillExcluded: zeroByCat(),
       penaltyExposedTotalStillExcluded: stillExcludedTotal,
       totalPenaltyExposedStillExcluded: 8000,
+      reachableByCategory: {}, // no reachability cap
     };
     const result = subtractPenaltyExposed(balances, record);
     // Only the disallowed $8k is excluded; the allowed $12k stays reachable.
@@ -244,6 +250,7 @@ describe("subtractPenaltyExposed", () => {
       penaltyExposedRothStillExcluded: rothStillExcluded,
       penaltyExposedTotalStillExcluded: zeroByCat(),
       totalPenaltyExposedStillExcluded: 30000,
+      reachableByCategory: {}, // no reachability cap
     };
     const result = subtractPenaltyExposed(balances, record);
     expect(
@@ -277,6 +284,7 @@ describe("subtractExcluded (R49)", () => {
       penaltyExposedRothStillExcluded: zeroByCat(),
       penaltyExposedTotalStillExcluded: zeroByCat(),
       totalPenaltyExposedStillExcluded: 0,
+      reachableByCategory: {}, // no reachability cap
     };
   }
   function emptyExclusion(): NonRetirementExclusion {

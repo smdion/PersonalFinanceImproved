@@ -24,6 +24,7 @@ import type { Permission } from "@/server/auth";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import type { SalaryProfileEntry } from "@/server/helpers/salary";
+import type { PortfolioTaxType } from "@/lib/config/enum-values";
 
 // Import schema for SQLite
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
@@ -285,7 +286,7 @@ function seedDefaultSalaryProfileEntry(
 
   if (activeProfile) {
     const salaries = {
-      ...(activeProfile.salaries as Record<string, unknown>),
+      ...(activeProfile.salaries as Record<string, SalaryProfileEntry>),
       [String(jobId)]: entry,
     };
     db.update(sqliteSchema.salaryProfiles)
@@ -504,14 +505,13 @@ export function seedPerformanceAccount(
   db: BetterSQLite3Database<typeof sqliteSchema>,
   overrides: Partial<typeof sqliteSchema.performanceAccounts.$inferInsert> = {},
 ): number {
-  const name = overrides.name ?? "401k Account";
   const institution = overrides.institution ?? "Fidelity";
   const result = db
     .insert(sqliteSchema.performanceAccounts)
     .values({
       institution,
       accountType: "401k",
-      accountLabel: `${institution} ${name}`,
+      accountLabel: `${institution} 401k Account`,
       ownershipType: "individual",
       parentCategory: "Retirement",
       ...overrides,
@@ -530,7 +530,7 @@ export function seedSnapshot(
   accounts: {
     performanceAccountId: number;
     amount: string;
-    taxType?: string;
+    taxType?: PortfolioTaxType;
     institution?: string;
     accountType?: string;
     ownerPersonId?: number | null;
@@ -580,12 +580,14 @@ export function seedContributionAccount(
   const result = db
     .insert(sqliteSchema.contributionAccounts)
     .values({
-      name: "401k Contribution",
-      category: "401k",
-      method: "percent_of_salary",
-      value: "0.10",
+      // Accounts carry no value of their own: a Contribution Profile's
+      // active fields give it one.
+      accountType: "401k",
+      parentCategory: "Retirement",
       taxTreatment: "pre_tax",
+      employerMatchType: "none",
       isActive: true,
+      ownership: "individual",
       ...overrides,
     })
     .returning({ id: sqliteSchema.contributionAccounts.id })
@@ -606,7 +608,6 @@ export function seedContributionProfile(
     .insert(sqliteSchema.contributionProfiles)
     .values({
       name: "Default Profile",
-      isActive: true,
       ...overrides,
     })
     .returning({ id: sqliteSchema.contributionProfiles.id })

@@ -40,10 +40,6 @@ vi.mock("@/lib/budget-api", async (importOriginal) => {
   };
 });
 
-async function getSchema() {
-  return await import("@/lib/db/schema");
-}
-
 type TestDb = Awaited<ReturnType<typeof createTestCaller>>["db"];
 
 /**
@@ -52,25 +48,24 @@ type TestDb = Awaited<ReturnType<typeof createTestCaller>>["db"];
 async function seedContribAccount(
   db: TestDb,
   personId: number,
-  overrides: Record<string, unknown> = {},
+  overrides: Partial<
+    typeof sqliteSchema.contributionAccounts.$inferInsert
+  > = {},
 ) {
-  const schema = await getSchema();
   return db
-    .insert(schema.contributionAccounts)
+    .insert(sqliteSchema.contributionAccounts)
     .values({
       personId,
       jobId: null,
-      accountType: "roth_ira",
+      accountType: "ira",
       parentCategory: "Retirement",
-      taxTreatment: "roth",
-      contributionMethod: "dollar_amount",
-      contributionValue: "500",
+      taxTreatment: "tax_free",
       employerMatchType: "none",
       isActive: true,
       ownership: "individual",
       ...overrides,
     })
-    .returning({ id: schema.contributionAccounts.id })
+    .returning({ id: sqliteSchema.contributionAccounts.id })
     .get();
 }
 
@@ -81,25 +76,24 @@ async function seedPayrollContribAccount(
   db: TestDb,
   personId: number,
   jobId: number,
-  overrides: Record<string, unknown> = {},
+  overrides: Partial<
+    typeof sqliteSchema.contributionAccounts.$inferInsert
+  > = {},
 ) {
-  const schema = await getSchema();
   return db
-    .insert(schema.contributionAccounts)
+    .insert(sqliteSchema.contributionAccounts)
     .values({
       personId,
       jobId,
       accountType: "401k",
       parentCategory: "Retirement",
       taxTreatment: "pre_tax",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
       employerMatchType: "none",
       isActive: true,
       ownership: "individual",
       ...overrides,
     })
-    .returning({ id: schema.contributionAccounts.id })
+    .returning({ id: sqliteSchema.contributionAccounts.id })
     .get();
 }
 
@@ -387,7 +381,7 @@ describe("budget router — listContribAccountsForLinking", () => {
       const result = await caller.budget.listContribAccountsForLinking();
       expect(result.length).toBeGreaterThanOrEqual(1);
       expect(result[0]!.id).toBeDefined();
-      expect(result[0]!.accountType).toBe("roth_ira");
+      expect(result[0]!.accountType).toBe("ira");
       expect(typeof result[0]!.displayLabel).toBe("string");
     } finally {
       cleanup();
@@ -415,7 +409,7 @@ describe("budget router — listContribAccountsForLinking", () => {
     try {
       const seed = seedStandardDataset(db);
       const perfAcctId = seedPerformanceAccount(db, {
-        accountType: "roth_ira",
+        accountType: "ira",
         institution: "Vanguard",
         accountLabel: "Vanguard Roth IRA",
         parentCategory: "Retirement",
@@ -1431,15 +1425,26 @@ describe("budget router — listProfiles weighted annual total", () => {
 
 describe("budget router — computeActiveSummary with contribution-linked items", () => {
   it("replaces amounts with contribution monthly for linked items", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    const { caller, db, sqlite, cleanup } =
+      await createTestCaller(adminSession);
     try {
       const seed = seedStandardDataset(db);
-      // Create a non-payroll contribution account with dollar amount
-      const contrib = await seedContribAccount(db, seed.personId, {
-        contributionMethod: "dollar_amount",
-        contributionValue: "600",
-        jobId: null,
+      // A non-payroll account at $600/month, through the active profile.
+      const contrib = await seedContribAccount(db, seed.personId);
+      const profileId = seedContributionProfile(db, {
+        name: "Linked Contribution",
+        contributionActiveFields: {
+          contributionAccounts: {
+            [String(contrib.id)]: {
+              contributionValue: "600",
+              contributionMethod: "fixed_monthly",
+            },
+          },
+        },
       });
+      sqlite.exec(
+        `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('${SK_ACTIVE_CONTRIB_PROFILE_ID}', '${profileId}')`,
+      );
 
       // Link it to a budget item
       await caller.budget.linkContributionAccount({
@@ -1450,8 +1455,8 @@ describe("budget router — computeActiveSummary with contribution-linked items"
       const summary = await caller.budget.computeActiveSummary();
       const item = summary.rawItems!.find((i) => i.id === seed.itemIds[0]!);
       expect(item!.contributionAccountId).toBe(contrib.id);
-      // contribAmount should be set (the computed monthly from the contribution)
-      expect(item!.contribAmount).not.toBeNull();
+      // The contribution's monthly amount, not the item's own.
+      expect(item!.contribAmount).toBeCloseTo(600, 2);
     } finally {
       cleanup();
     }
@@ -1825,23 +1830,18 @@ describe("budget router — duplicateProfile", () => {
       await caller.budget.addColumn({ label: "Travel" });
       await caller.budget.updateColumnMonths({ columnMonths: [9, 3] });
       // An API-linked + contribution-linked item on the source.
-      const contrib = await seedContribAccount(db, seed.personId, {
-        contributionMethod: "dollar_amount",
-        contributionValue: "600",
-        jobId: null,
-      });
+      const contrib = await seedContribAccount(db, seed.personId);
       await caller.budget.linkContributionAccount({
         budgetItemId: seed.itemIds[0]!,
         contributionAccountId: contrib.id,
       });
-      const schema = await getSchema();
-      db.update(schema.budgetItems)
+      db.update(sqliteSchema.budgetItems)
         .set({
           apiCategoryId: "ynab-uuid",
           apiCategoryName: "Rent",
           apiSyncDirection: "push",
         })
-        .where(eq(schema.budgetItems.id, seed.itemIds[1]!))
+        .where(eq(sqliteSchema.budgetItems.id, seed.itemIds[1]!))
         .run();
 
       const copy = await caller.budget.duplicateProfile({
@@ -1857,8 +1857,8 @@ describe("budget router — duplicateProfile", () => {
 
       const copiedItems = await db
         .select()
-        .from(schema.budgetItems)
-        .where(eq(schema.budgetItems.profileId, copy.id))
+        .from(sqliteSchema.budgetItems)
+        .where(eq(sqliteSchema.budgetItems.profileId, copy.id))
         .all();
       expect(copiedItems).toHaveLength(seed.itemIds.length);
       // API links and contribution links are external-write hazards on a
@@ -1875,9 +1875,12 @@ describe("budget router — duplicateProfile", () => {
 
       const copiedAllocations = await db
         .select()
-        .from(schema.savingsGoalProfileAllocations)
+        .from(sqliteSchema.savingsGoalProfileAllocations)
         .where(
-          eq(schema.savingsGoalProfileAllocations.budgetProfileId, copy.id),
+          eq(
+            sqliteSchema.savingsGoalProfileAllocations.budgetProfileId,
+            copy.id,
+          ),
         )
         .all();
       expect(copiedAllocations).toHaveLength(1);
@@ -1908,7 +1911,6 @@ describe("budget router — duplicateProfile", () => {
   it("bakes itemAmountActiveFields into the copy, keyed by the SOURCE item ids", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
-      const schema = await getSchema();
       const seed = seedStandardDataset(db);
 
       const copy = await caller.budget.duplicateProfile({
@@ -1921,8 +1923,8 @@ describe("budget router — duplicateProfile", () => {
 
       const copiedItems = await db
         .select()
-        .from(schema.budgetItems)
-        .where(eq(schema.budgetItems.profileId, copy.id))
+        .from(sqliteSchema.budgetItems)
+        .where(eq(sqliteSchema.budgetItems.profileId, copy.id))
         .all();
       const rent = copiedItems.find((i) => i.subcategory === "Rent");
       const groceries = copiedItems.find((i) => i.subcategory === "Groceries");
@@ -1934,8 +1936,8 @@ describe("budget router — duplicateProfile", () => {
       // never a mutation of the profile being played with.
       const sourceItems = await db
         .select()
-        .from(schema.budgetItems)
-        .where(eq(schema.budgetItems.profileId, seed.profileId))
+        .from(sqliteSchema.budgetItems)
+        .where(eq(sqliteSchema.budgetItems.profileId, seed.profileId))
         .all();
       const sourceRent = sourceItems.find((i) => i.subcategory === "Rent");
       expect((sourceRent!.amounts as number[])[0]).toBe(2000);
@@ -2221,12 +2223,10 @@ describe("budget router — item/column mutations target explicit profileId", ()
         isEssential: true,
         profileId: viewedProfileId,
       });
-
-      const schema = await getSchema();
       const items = await db
         .select()
-        .from(schema.budgetItems)
-        .where(eq(schema.budgetItems.profileId, viewedProfileId));
+        .from(sqliteSchema.budgetItems)
+        .where(eq(sqliteSchema.budgetItems.profileId, viewedProfileId));
       expect(items.every((i) => i.isEssential)).toBe(true);
     } finally {
       cleanup();
