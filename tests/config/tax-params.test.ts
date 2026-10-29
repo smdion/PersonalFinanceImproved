@@ -402,16 +402,22 @@ describe("resolveTaxParams — sectionFallback", () => {
   });
 
   it("a profile pinned below every section year uses the oldest complete year", () => {
+    const rows = seedRows({
+      fpl: [{ taxYear: 2026, amounts: { "1": 15650 } }],
+    });
     const r = resolveTaxParams(
-      seedRows({ fpl: [{ taxYear: 2026, amounts: { "1": 15650 } }] }),
+      {
+        ...rows,
+        irmaaBrackets: rows.irmaaBrackets.filter((b) => b.taxYear === 2026),
+      },
       2025,
       { sectionFallback: true },
     );
     expect(r.resolvedYear).toBe(2025);
-    // Only 2026 FPL exists (as in the seed): use it, don't fall to code.
+    // Only 2026 FPL exists here: use it, don't fall to code.
     expect(r.sectionYears?.fpl).toBe(2026);
     expect(r.fplByHousehold).toEqual({ 1: 15650 });
-    // IRMAA's only year in the seed is 2026 too.
+    // Only 2026 IRMAA here too.
     expect(r.sectionYears?.irmaa).toBe(2026);
   });
 
