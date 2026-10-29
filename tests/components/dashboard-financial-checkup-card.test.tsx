@@ -143,6 +143,7 @@ describe("FinancialCheckupCard smoke", () => {
   it("renders a loading card while the milestones are pending", () => {
     milestonesState = {
       isLoading: true,
+      projectionLoading: false,
       error: false,
       input: null,
       results: [],
@@ -155,6 +156,7 @@ describe("FinancialCheckupCard smoke", () => {
   it("renders an error card when a query errors", () => {
     milestonesState = {
       isLoading: false,
+      projectionLoading: false,
       error: true,
       input: null,
       results: [],

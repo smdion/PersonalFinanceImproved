@@ -52,6 +52,7 @@ function makeProjection(
     goalId: 1,
     current: 3000,
     target: 10000,
+    targetMode: "fixed",
     monthlyAllocation: 500,
     monthlyAllocations: [500, 500, 500],
     balances: [3500, 4000, 4500],

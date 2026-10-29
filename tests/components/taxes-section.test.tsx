@@ -26,6 +26,7 @@ vi.mock("@/components/ui/help-tip", () => ({
 function baseSettings(overrides: Partial<Settings> = {}): Settings {
   return {
     personId: 1,
+    profileId: 1,
     retirementAge: 65,
     endAge: 90,
     returnAfterRetirement: "0.05",

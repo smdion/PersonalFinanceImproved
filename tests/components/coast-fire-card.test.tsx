@@ -95,6 +95,8 @@ describe("CoastFireCard", () => {
           spendingStabilityRate: 0.8,
           confidenceThreshold: 0.9,
           warning: null,
+          stopNowPenaltyAvoidedShortfallRate: 0,
+          stopNowMedianPenaltyAvoidedShortfallPV: 0,
         }}
       />,
     );

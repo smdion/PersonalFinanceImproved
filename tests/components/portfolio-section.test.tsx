@@ -19,6 +19,7 @@ function makePortfolio(
 ): NonNullable<PreviewData["portfolio"]> {
   return {
     snapshotDate: "2026-06-01",
+    allAccounts: [],
     localAccounts: [
       {
         label: "Traditional IRA — Alice",

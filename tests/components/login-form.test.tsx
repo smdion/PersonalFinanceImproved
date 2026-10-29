@@ -136,6 +136,7 @@ describe("LoginForm (M18)", () => {
         ok: false,
         status: 401,
         url: null,
+        code: undefined,
       });
 
       render(<LoginForm hasOidc={false} />);
@@ -179,6 +180,7 @@ describe("LoginForm (M18)", () => {
         ok: false,
         status: 401,
         url: null,
+        code: undefined,
       });
 
       render(<LoginForm hasOidc={false} />);

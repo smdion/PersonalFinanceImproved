@@ -49,7 +49,6 @@ function row(overrides: Partial<TaxYearRow> = {}): TaxYearRow {
     ltcgRate: 0.15,
     effectiveTaxRate: 0.087,
     cumulativeTax: 5700,
-    endingBalance: 1000000,
     balanceByTaxType: {
       preTax: 500000,
       taxFree: 200000,
