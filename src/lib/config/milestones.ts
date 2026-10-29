@@ -255,6 +255,22 @@ export type CustomGoalMetric = keyof typeof CUSTOM_GOAL_METRICS;
 
 export const MAX_CUSTOM_GOALS = 12;
 
+/**
+ * Money Guy's Goldilocks rule — lump sum or dollar-cost average, sized by
+ * how big the money is against your invested assets ("Dollar cost averaging
+ * vs lump sum", moneyguy.com, checked 2026-10-29): under 10% invest it at
+ * once; at 10% spread it over 5 months, one month more for each further 5%,
+ * at most 12 months.
+ */
+export const GOLDILOCKS_RULE = {
+  lumpSumBelow: 0.1,
+  startMonths: 5,
+  stepShare: 0.05,
+  maxMonths: 12,
+  source:
+    "https://moneyguy.com/article/dollar-cost-averaging-vs-lump-sum-how-to-take-away-the-guess-work",
+} as const;
+
 // ---------------------------------------------------------------------------
 // The registry
 // ---------------------------------------------------------------------------

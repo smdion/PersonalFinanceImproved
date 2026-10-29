@@ -2,6 +2,7 @@
 
 /** Client content for the Brokerage page — prefetched by page.tsx. */
 
+import { investedAtStartOf } from "@/lib/pure/goldilocks";
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission } from "@/lib/context/user-context";
@@ -416,6 +417,9 @@ export function BrokerageContent() {
             }
             onAdd={(ls) => setBrokerageLumpSums((prev) => [...prev, ls])}
             allowWithdrawals
+            investedAtStartOf={(year) =>
+              investedAtStartOf(data?.result?.projectionByYear ?? [], year)
+            }
           />
         </Card>
       )}

@@ -241,6 +241,8 @@ const config = [
       "src/lib/calculators/types/**",
       "src/lib/pure/milestone-input.ts",
       "src/components/cards/dashboard/retirement-benchmarks.tsx",
+      // Money Guy's Goldilocks rule sizes a lump sum against all invested money.
+      "src/lib/pure/goldilocks.ts",
     ],
     plugins: { local: localRules },
     rules: { "local/no-all-accounts-balance": "error" },

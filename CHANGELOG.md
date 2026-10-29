@@ -8,6 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.9
 
+## [0.9.5] - Unreleased
+
+### Added
+
+- **Money Guy's Goldilocks rule for lump sums.** Adding money in Retirement's "Changes by year" or on Brokerage now says how big it is against what you'll have invested then: under 10%, invest it at once; from 10%, spread it over 5 months, one more for each further 5%, up to 12. The uninvested-cash recommendation paces a large amount the same way.
+
 ## [0.9.4] - 2026-10-29
 
 ### Added

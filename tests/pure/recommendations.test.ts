@@ -128,4 +128,30 @@ describe("recommendations that defer to a more precise one", () => {
       /under target/,
     );
   });
+
+  it("uninvested cash paces a large amount by the Goldilocks rule", async () => {
+    const { recommendationsFromCash } =
+      await import("@/lib/pure/recommendations-cash");
+    const drag = (excess: number) => [
+      { simplefinAccountId: 1, label: "Brokerage", excess, value: excess },
+    ];
+    // $60k against $300k invested = 20% → 7 months.
+    expect(
+      recommendationsFromCash({
+        drag: drag(60_000),
+        hsa: [],
+        investedAssets: 300_000,
+      })[0]!.context,
+    ).toMatch(
+      /At 20% of what's already invested, Money Guy's Goldilocks rule spreads it over 7 months\.$/,
+    );
+    // Under 10%: "invest it" stands; no pacing.
+    expect(
+      recommendationsFromCash({
+        drag: drag(5_000),
+        hsa: [],
+        investedAssets: 300_000,
+      })[0]!.context,
+    ).not.toMatch(/Goldilocks/);
+  });
 });
