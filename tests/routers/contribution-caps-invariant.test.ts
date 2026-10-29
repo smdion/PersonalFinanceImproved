@@ -79,7 +79,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
         jobs: {},
       },
     });
-    t.db.$client.exec(
+    t.sqlite.exec(
       `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('${SK_ACTIVE_CONTRIB_PROFILE_ID}', '${profileId}')`,
     );
     t.db
@@ -284,7 +284,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
         .where(eq(schema.contributionProfiles.id, profileId))
         .get()!;
       const af = profile.contributionActiveFields as {
-        contributionAccounts: Record<string, unknown>;
+        contributionAccounts: Record<string, Record<string, unknown>>;
       };
       af.contributionAccounts[String(id)] = fields;
       t.db

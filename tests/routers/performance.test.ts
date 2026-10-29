@@ -447,7 +447,7 @@ describe("performance router", () => {
       expect(updated).toBeDefined();
       expect(updated!.value).toBeTruthy();
       // Should be a valid ISO timestamp
-      expect(new Date(updated!.value).getTime()).not.toBeNaN();
+      expect(new Date(String(updated!.value)).getTime()).not.toBeNaN();
     });
   });
 
@@ -588,7 +588,7 @@ describe("performance router", () => {
         (s) => s.key === "performance_last_updated",
       );
       expect(updated).toBeDefined();
-      expect(new Date(updated!.value).getTime()).not.toBeNaN();
+      expect(new Date(String(updated!.value)).getTime()).not.toBeNaN();
     });
   });
 
@@ -1412,7 +1412,7 @@ describe("performance.performanceAccounts additional coverage", () => {
   });
 
   it("creates accounts with every valid accountType", async () => {
-    const types = ["401k", "403b", "ira", "hsa", "brokerage"];
+    const types = ["401k", "403b", "ira", "hsa", "brokerage"] as const;
     for (const t of types) {
       const result = await caller.performance.performanceAccounts.create({
         institution: `${t}-Bank`,

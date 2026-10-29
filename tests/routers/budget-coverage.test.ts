@@ -1501,10 +1501,7 @@ describe("budget router — computeActiveSummary with contribution-linked items"
         db,
         seed.personId,
         seed.jobId,
-        {
-          contributionMethod: "percent_of_salary",
-          contributionValue: "0.10",
-        },
+        {},
       );
 
       // Link to budget item
@@ -1720,10 +1717,7 @@ describe("budget router — listProfiles computes Unspent under the resolved pro
       db,
       seed.personId,
       seed.jobId,
-      {
-        contributionMethod: "percent_of_salary",
-        contributionValue: "10",
-      },
+      {},
     );
     const contribProfileId = seedContributionProfile(db, {
       name: "Max Out 401k",

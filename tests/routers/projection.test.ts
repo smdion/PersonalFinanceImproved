@@ -640,7 +640,6 @@ describe("projection router — computeProjection", () => {
     const profile = (withPortfolio: boolean, retirementPct = "10") =>
       seedContributionProfile(db, {
         name: `${withPortfolio ? "With Portfolio savings" : "Retirement only"} ${retirementPct}%`,
-        isActive: false,
         contributionActiveFields: {
           contributionAccounts: {
             [String(retirement401k.id)]: {

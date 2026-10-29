@@ -59,6 +59,8 @@ describe("TaxSummaryCard", () => {
           {
             result: null,
             deflate: (v: number) => v,
+            // The card reads result and deflate only.
+            // eslint-disable-next-line no-restricted-syntax -- a two-field slice of the projection state
           } as unknown as ProjectionState
         }
       />,

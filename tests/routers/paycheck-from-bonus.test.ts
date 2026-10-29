@@ -20,7 +20,9 @@ import {
   seedJob,
   seedContributionProfile,
 } from "./setup";
+import { eq } from "drizzle-orm";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
+import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 const SALARY = 100_000;
 const BONUS = 10_000; // 10% of salary
@@ -51,7 +53,6 @@ async function seedHousehold() {
   const profile = (fromBonus: boolean) =>
     seedContributionProfile(ctx.db, {
       name: fromBonus ? "From bonus" : "Salary only",
-      isActive: false,
       contributionActiveFields: {
         contributionAccounts: {
           [String(accountId)]: {
@@ -163,7 +164,12 @@ describe("where the bonus goes (Salary Profile entry)", () => {
       expect(await destination()).toBe("budget");
 
       const profiles = await h.caller.salaryProfile.list();
-      const active = profiles.find((p) => p.isActive) ?? profiles[0]!;
+      const activeId = h.db
+        .select()
+        .from(sqliteSchema.appSettings)
+        .where(eq(sqliteSchema.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID))
+        .get()?.value;
+      const active = profiles.find((p) => p.id === activeId)!;
       const jobId = Number(Object.keys(active.salaries)[0]);
       await h.caller.salaryProfile.patchEntry({
         id: active.id,

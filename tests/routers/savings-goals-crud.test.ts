@@ -269,10 +269,9 @@ describe("savings.savingsGoals additional coverage", () => {
   });
 
   it("creating a goal seeds a $0/no-percent funding row for every existing budget profile", async () => {
-    let [profile] = await caller.budget.listProfiles();
-    if (!profile) {
-      profile = await caller.budget.createProfile({ name: "Funding Test" });
-    }
+    const [existing] = await caller.budget.listProfiles();
+    const profile =
+      existing ?? (await caller.budget.createProfile({ name: "Funding Test" }));
     const created = await caller.savings.savingsGoals.create({
       name: "Seeded Funding Goal",
       priority: 22,

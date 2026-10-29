@@ -99,15 +99,12 @@ describe("debts router", () => {
   });
 
   it("as of a past Dec 31 (finalizing that year), a debt paid off since still counts", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    const { caller, rawDb, cleanup } = await createTestCaller(adminSession);
     try {
       const d = await caller.debts.create(loan);
       await caller.debts.markPaidOff({ id: d!.id, date: "2026-02-15" });
       const at = (asOf: Date) =>
-        getEffectiveOtherLiabilities(
-          db as Parameters<typeof getEffectiveOtherLiabilities>[0],
-          { asOf },
-        ).then((r) => r.itemized);
+        getEffectiveOtherLiabilities(rawDb, { asOf }).then((r) => r.itemized);
       expect(await at(new Date(2025, 11, 31))).toBe(20000);
       expect(await at(new Date(2026, 11, 31))).toBe(0);
     } finally {

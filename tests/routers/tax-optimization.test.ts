@@ -15,7 +15,7 @@
  * snapshot is stable run-to-run.
  */
 import "./setup-mocks";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, assert } from "vitest";
 import { createTestCaller, adminSession, seedStandardDataset } from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
@@ -164,8 +164,9 @@ describe("projection router — withdrawal routing DB fallback", () => {
       // tell whether a waterfall household matches one of the named
       // presets (withdrawal-comparison.tsx's "same as your current plan"
       // annotation) rather than just sharing a routing mode.
-      expect(Array.isArray(currentPlan?.withdrawalOrder)).toBe(true);
-      expect(currentPlan?.withdrawalOrder.length).toBeGreaterThan(0);
+      assert(currentPlan && "withdrawalOrder" in currentPlan);
+      expect(Array.isArray(currentPlan.withdrawalOrder)).toBe(true);
+      expect(currentPlan.withdrawalOrder.length).toBeGreaterThan(0);
     } finally {
       cleanup();
     }

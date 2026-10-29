@@ -13,7 +13,7 @@
  * - auth (viewer access)
  */
 import "./setup-mocks";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, assert } from "vitest";
 import {
   createTestCaller,
   seedPerson,
@@ -1208,10 +1208,10 @@ describe("retirement router -- contribution profiles", () => {
 
     expect(resultLive.result).not.toBeNull();
     expect(resultProfile.result).not.toBeNull();
-    const cpLive = (resultLive as Record<string, unknown>)
-      .currentContribProfile as Record<string, number>;
-    const cpProfile = (resultProfile as Record<string, unknown>)
-      .currentContribProfile as Record<string, number>;
+    assert("currentContribProfile" in resultLive);
+    assert("currentContribProfile" in resultProfile);
+    const cpLive = resultLive.currentContribProfile!;
+    const cpProfile = resultProfile.currentContribProfile!;
     // Salary is the live baseline on BOTH arms — the profile only moves the
     // contribution rate (0.10 live -> 0.15), so contributions must differ
     // while combined salary stays put.
@@ -1841,14 +1841,15 @@ describe("computeRelocationAnalysis -- per-arm payPeriod resolution", () => {
       const on = await profileWith("From bonus", true);
       const off = await profileWith("Salary only", false);
 
-      const result = (await caller.retirement.computeRelocationAnalysis({
+      const result = await caller.retirement.computeRelocationAnalysis({
         currentProfileId: budgetId,
         currentBudgetColumn: 0,
         relocationProfileId: budgetId,
         relocationBudgetColumn: 0,
         currentContributionProfileId: on.id,
         relocationContributionProfileId: off.id,
-      })) as Record<string, { annualContributions: number }>;
+      });
+      assert("currentContribProfile" in result);
       // 10% of $100,000, plus 10% of the $10,000 bonus when taken from it.
       expect(result.currentContribProfile!.annualContributions).toBeCloseTo(
         11_000,

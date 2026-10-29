@@ -1061,10 +1061,10 @@ describe("budget router", () => {
 
     it("rejects an invalid sync direction value", async () => {
       await expect(
-        // @ts-expect-error intentionally wrong value
         caller.budget.setSyncDirection({
           budgetItemId: itemIds[0]!,
           service: "ynab",
+          // @ts-expect-error intentionally wrong value
           syncDirection: "invalid",
         }),
       ).rejects.toThrow();

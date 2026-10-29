@@ -1728,7 +1728,7 @@ describe("savings.extraPaycheckRouting", () => {
         salaries: {
           ...salaries,
           [String(scheduleJobId)]: {
-            ...salaries[String(scheduleJobId)],
+            ...salaries[String(scheduleJobId)]!,
             payPeriod: "weekly",
             anchorPayDate: "2025-01-10",
           },

@@ -35,9 +35,9 @@ function row(
     hsaCoverageType: "family",
     isRoth: false,
     accountLabel: "HSA",
-    ...overrides,
-
     capPassed: true,
+    ...overrides,
+    // eslint-disable-next-line no-restricted-syntax -- a hand-built row standing in for the cap pass's output
   } as unknown as ContribRowWithActiveFields & CapPassed;
 }
 

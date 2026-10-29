@@ -563,7 +563,7 @@ export function seedSnapshot(
 export function seedAppSetting(
   db: BetterSQLite3Database<typeof sqliteSchema>,
   key: string,
-  value: string,
+  value: (typeof sqliteSchema.appSettings.$inferInsert)["value"],
 ): void {
   db.insert(sqliteSchema.appSettings).values({ key, value }).run();
 }

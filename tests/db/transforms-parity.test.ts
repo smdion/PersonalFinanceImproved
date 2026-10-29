@@ -164,7 +164,8 @@ describe("contribution.ts — PG string mode", () => {
     // contribution_accounts decimal columns per schema-pg.ts:
     //   contribution_value, employer_match_value, employer_max_match_pct,
     //   target_annual, prior_year_contrib_amount
-    const row: ContribRowWithActiveFields = {
+    const row: ContribRowWithActiveFields & CapPassed = {
+      capPassed: true,
       id: 1,
       personId: 1,
       jobId: 10,
@@ -182,7 +183,6 @@ describe("contribution.ts — PG string mode", () => {
       isRoth: false,
       accountLabel: "Fidelity 401k",
       include401kInBonus: false,
-      capPassed: true,
     } as unknown as ContribRowWithActiveFields & CapPassed;
 
     const [acct] = buildContribAccounts([row], [], 100000, 26, {
@@ -252,7 +252,6 @@ describe("paycheck-input.ts — PG string mode", () => {
       payWeek: "even",
       anchorPayDate: "2026-01-02",
       startDate: "2020-01-01",
-      include401kInBonus: false,
       bonusMonth: 3,
       bonusDayOfMonth: 15,
       additionalFedWithholding: "125.00", // jobs.additional_fed_withholding style string

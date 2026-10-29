@@ -495,8 +495,6 @@ describe("contributionProfiles coverage", () => {
         seedJob(db, personId, { annualSalary: "100000" });
         seedContribAccount(db, {
           personId,
-          contributionMethod: "percent_of_salary",
-          contributionValue: "0.10",
           employerMatchType: "percent_of_contribution",
           employerMatchValue: "0.50",
           employerMaxMatchPct: "0.06",
@@ -1277,8 +1275,6 @@ describe("contributionProfiles coverage", () => {
           accountType: "brokerage",
           parentCategory: "Portfolio",
           taxTreatment: "after_tax",
-          contributionMethod: "fixed_amount",
-          contributionValue: "500",
           employerMatchType: "none",
         });
 

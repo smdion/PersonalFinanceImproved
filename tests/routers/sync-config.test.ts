@@ -160,7 +160,9 @@ describe("sync config router — skip/unskip with connection", () => {
       const rows = db.select().from(schema.apiConnections).all();
       const row = rows.find((r) => r.service === service);
       if (!row) return null;
-      return row as unknown;
+      return row as unknown as Awaited<
+        ReturnType<typeof mockedGetApiConnection>
+      >;
     });
   });
 

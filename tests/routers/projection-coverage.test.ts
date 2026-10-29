@@ -7,7 +7,7 @@
  * Supplements projection.test.ts without duplicating its tests.
  */
 import "./setup-mocks";
-import { vi, describe, it, expect } from "vitest";
+import { vi, describe, it, expect, assert } from "vitest";
 import {
   createTestCaller,
   seedStandardDataset,
@@ -1068,6 +1068,8 @@ describe("projection router — computeStrategyComparison", () => {
 
       const response = await caller.projection.computeStrategyComparison();
 
+      // The full comparison, not the empty early return.
+      assert("retirementAge" in response);
       expect(response.strategies.length).toBeGreaterThan(0);
       expect(response.activeStrategy).toBe("fixed");
       expect(response.retirementAge).toBe(65);

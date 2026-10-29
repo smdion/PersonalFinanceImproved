@@ -352,6 +352,7 @@ describe("projection.relocationScenarios", () => {
 
   // Minimal valid relocationScenarioParamsSchema value
   const minimalParams: RelocationScenarioParams = {
+    moveYear: null,
     currentProfileId: 1,
     currentBudgetColumn: 0,
     currentExpenseOverride: null,
@@ -512,6 +513,7 @@ describe("projection.relocationScenarios additional coverage", () => {
 
 describe("projection.relocationScenarios additional", () => {
   const minimalParams: RelocationScenarioParams = {
+    moveYear: null,
     currentProfileId: 1,
     currentBudgetColumn: 0,
     currentExpenseOverride: null,

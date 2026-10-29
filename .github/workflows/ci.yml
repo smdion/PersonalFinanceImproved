@@ -35,6 +35,9 @@ jobs:
       - name: Type-check
         run: npx tsc --noEmit
 
+      - name: Type-check tests
+        run: pnpm check:types-tests
+
       - name: Lint
         run: pnpm run lint
 

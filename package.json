@@ -30,6 +30,7 @@
     "setup": "bash scripts/setup-dev.sh",
     "check:file-size": "bash scripts/check-file-size.sh",
     "check:dead-code": "knip --no-progress",
+    "check:types-tests": "tsc -p tsconfig.tests.json",
     "check:known-diffs": "tsx scripts/check-known-diffs.ts",
     "release": "bash scripts/release.sh",
     "deploy": "bash scripts/deploy.sh",

@@ -425,7 +425,7 @@ describe("networth.portfolioSnapshots.getLatest", () => {
       {
         performanceAccountId: perfAcctId,
         amount: "75000",
-        taxType: "rothAfterTax",
+        taxType: "taxFree",
       },
     ]);
 

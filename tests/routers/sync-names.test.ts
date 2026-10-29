@@ -578,8 +578,8 @@ describe("sync-names coverage", () => {
       try {
         await seedBudgetProfile(db);
         await expect(
+          // @ts-expect-error intentionally omitted — service is required
           caller.sync.syncAllNames({
-            // @ts-expect-error intentionally omitted — service is required
             direction: "pull",
           }),
         ).rejects.toThrow();

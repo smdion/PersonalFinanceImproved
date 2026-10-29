@@ -10,6 +10,7 @@
  */
 import "./setup-mocks";
 import { describe, it, expect } from "vitest";
+import { shippedTaxTables } from "../helpers/tax-data";
 import { buildDecumulationDefaults } from "@/server/routers/projection/_shared";
 import {
   getDefaultDecumulationOrder,
@@ -44,13 +45,14 @@ function makeSettings(overrides: Record<string, unknown> = {}) {
 }
 
 const NO_CLIENT = { withdrawalTaxPreference: {} };
-const RATES = {
-  traditional: 0.22,
+const RATES: Parameters<typeof buildDecumulationDefaults>[2] = {
+  traditionalFallbackRate: 0.22,
   roth: 0,
   hsa: 0,
   brokerage: 0.15,
-  taxDataYear: 2025,
-} as Parameters<typeof buildDecumulationDefaults>[2];
+  taxDataYear: 2026,
+  ...shippedTaxTables(2026),
+};
 
 describe("buildDecumulationDefaults — withdrawalOrder / withdrawalSplits resolution", () => {
   it("falls back to the config default when neither client nor settings supply one", () => {

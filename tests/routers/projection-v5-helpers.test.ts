@@ -251,7 +251,8 @@ describe("runStressTestScenarios (M2)", () => {
       withdrawalRate: 0.04,
       withdrawalRoutingMode: "bracket_filling",
       withdrawalOrder: [],
-      withdrawalSplits: {},
+      // bracket_filling doesn't read splits.
+      withdrawalSplits: { "401k": 0, "403b": 0, ira: 0, hsa: 0, brokerage: 0 },
       withdrawalTaxPreference: {},
       distributionTaxRates,
       withdrawalStrategy: "fixed",
