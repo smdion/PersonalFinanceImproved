@@ -1,5 +1,6 @@
 import "../helpers/setup-mocks";
 import { describe, it, expect } from "vitest";
+import { salaryEntry } from "./salary-entry";
 import {
   computeBonusGross,
   contributionPay,
@@ -199,13 +200,13 @@ describe("resolveCompensation", () => {
     const map: SalaryProfileActiveMap = new Map([
       [
         1,
-        {
+        salaryEntry({
           salary: 120000,
           bonusPercent: 0.1,
           bonusMultiplier: 1,
           monthsInBonusYear: 12,
           bonusOverride: null,
-        },
+        }),
       ],
     ]);
     const comp = resolveCompensation(map, 1);
@@ -218,12 +219,12 @@ describe("resolveCompensation", () => {
     const map: SalaryProfileActiveMap = new Map([
       [
         1,
-        {
+        salaryEntry({
           salary: 100000,
           bonusPercent: 0.1,
           bonusMultiplier: 1,
           monthsInBonusYear: 6,
-        },
+        }),
       ],
     ]);
     expect(resolveCompensation(map, 1).bonus).toBe(5000);
@@ -233,12 +234,12 @@ describe("resolveCompensation", () => {
     const map: SalaryProfileActiveMap = new Map([
       [
         11,
-        {
+        salaryEntry({
           salary: 90000,
           bonusPercent: 0,
           bonusMultiplier: 1,
           monthsInBonusYear: 12,
-        },
+        }),
       ],
     ]);
     expect(resolveCompensation(map, 1).salary).toBe(0);
@@ -259,12 +260,12 @@ describe("applySalaryProfileRow", () => {
   });
 
   it("loads a stored profile into a jobId-keyed map", () => {
-    const entry = {
+    const entry = salaryEntry({
       salary: 100000,
       bonusPercent: 0.05,
       bonusMultiplier: 1,
       monthsInBonusYear: 12,
-    };
+    });
     const map = applySalaryProfileRow({ salaries: { "7": entry } });
     expect(map.get(7)).toEqual(entry);
   });

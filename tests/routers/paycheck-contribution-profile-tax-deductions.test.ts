@@ -95,6 +95,7 @@ describe("paycheck.computeSummary — tax-input active fields", () => {
               additionalFedWithholding: 100,
               bonusMonth: null,
               bonusDayOfMonth: null,
+              extraPaycheckRouting: null,
             },
           },
         })
@@ -153,6 +154,7 @@ describe("paycheck.computeSummary — tax-input active fields", () => {
               additionalFedWithholding: 0,
               bonusMonth: null,
               bonusDayOfMonth: null,
+              extraPaycheckRouting: null,
             },
           },
         })
@@ -360,7 +362,7 @@ describe("computeJobNetPayPerCheck / extraPaycheckRouting — Salary Profile res
         payPeriod: "biweekly",
         payWeek: "even",
         anchorPayDate: "2026-01-02",
-        additionalFedWithholding: "500",
+        additionalFedWithholding: 500,
       });
       const goalId = seedSavingsGoal(db);
 
@@ -464,7 +466,7 @@ describe("applyContributionAccountEdit — periodsPerYear resolves from the glob
     // used to let it is deleted). Two different Contribution Profiles
     // editing the same jobless account must resolve the SAME
     // periodsPerYear, from the one globally-active Salary Profile.
-    const { db, cleanup } = await createTestCaller(adminSession);
+    const { db, rawDb, cleanup } = await createTestCaller(adminSession);
     try {
       const personId = await seedPerson(db, "BudgetLinkPerson");
       seedJob(db, personId, { payPeriod: "biweekly" });
@@ -505,7 +507,7 @@ describe("applyContributionAccountEdit — periodsPerYear resolves from the glob
 
       const monthlyAmount = 1000;
       await applyContributionAccountEdit(
-        db,
+        rawDb,
         accountId,
         monthlyAmount,
         profileAId,
@@ -514,7 +516,7 @@ describe("applyContributionAccountEdit — periodsPerYear resolves from the glob
       const valueA = await readContributionValue(db, profileAId, accountId);
 
       await applyContributionAccountEdit(
-        db,
+        rawDb,
         accountId,
         monthlyAmount,
         profileBId,

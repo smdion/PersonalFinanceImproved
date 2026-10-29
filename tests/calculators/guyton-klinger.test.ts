@@ -25,7 +25,6 @@ function makeGKInput(
     projectedExpenses: 50000,
     portfolioBalance: 1000000,
     effectiveInflation: 0.03,
-    cpiInflation: 0.03,
     hasBudgetOverride: false,
     isFirstDecumulationYear: false,
     yearIndex: 1,
@@ -70,7 +69,6 @@ describe("applyGuytonKlinger", () => {
           priorYearReturn: -0.15,
           projectedExpenses: 51500, // 50000 * 1.03
           effectiveInflation: 0.03,
-          cpiInflation: 0.03,
           yearIndex: 2,
         }),
       );
@@ -91,7 +89,6 @@ describe("applyGuytonKlinger", () => {
           priorYearReturn: -0.15,
           projectedExpenses: 51500,
           effectiveInflation: 0.03,
-          cpiInflation: 0.03,
         }),
       );
       // Should NOT trigger skip_inflation
@@ -105,7 +102,6 @@ describe("applyGuytonKlinger", () => {
           hasBudgetOverride: true,
           projectedExpenses: 51500,
           effectiveInflation: 0.03,
-          cpiInflation: 0.03,
         }),
       );
       // Budget override takes precedence — no inflation undo
@@ -119,7 +115,6 @@ describe("applyGuytonKlinger", () => {
           yearIndex: 0,
           projectedExpenses: 51500,
           effectiveInflation: 0.03,
-          cpiInflation: 0.03,
         }),
       );
       expect(result.guardrailTriggered).not.toBe("skip_inflation");

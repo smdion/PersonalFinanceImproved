@@ -26,6 +26,7 @@
  * this must catch.
  */
 import "./setup-mocks";
+import { salaryEntry } from "../helpers/salary-entry";
 import { describe, it, expect, vi } from "vitest";
 
 vi.mock("@/lib/budget-api", () => ({
@@ -104,12 +105,12 @@ describe("combinedIncome agrees with resolveProfile's totalComp", () => {
       // A job has no salary/bonus of its own — only the one with an entry
       // in this profile earns anything; the other contributes $0.
       const salaries: SalaryEntryMap = {
-        [String(jobWithEntry)]: {
+        [String(jobWithEntry)]: salaryEntry({
           salary: ENTRY_SALARY,
           bonusPercent: BONUS_PERCENT,
           bonusMultiplier: 1,
           monthsInBonusYear: 12,
-        },
+        }),
       };
       const profileId = activateProfile(db, "Entry Salary", salaries);
 
@@ -147,12 +148,12 @@ describe("combinedIncome agrees with resolveProfile's totalComp", () => {
       });
 
       const salaries: SalaryEntryMap = {
-        [String(jobId)]: {
+        [String(jobId)]: salaryEntry({
           salary: LIVE_SALARY,
           bonusPercent: 0.3,
           bonusMultiplier: 2,
           monthsInBonusYear: 12,
-        },
+        }),
       };
       const profileId = activateProfile(db, "Big Bonus", salaries);
 

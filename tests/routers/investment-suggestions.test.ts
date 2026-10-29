@@ -5,6 +5,7 @@
  * paycheck setup funds with an employer contribution.
  */
 import "./setup-mocks";
+import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
@@ -55,7 +56,7 @@ describe("investment suggestions", () => {
       ownerPersonId: null,
       parentCategory: "Portfolio",
     });
-    const sub = (taxType: string, owner: number) => ({
+    const sub = (taxType: PortfolioTaxType, owner: number) => ({
       performanceAccountId: ira,
       amount: "10000",
       taxType,
@@ -442,7 +443,7 @@ describe("investment suggestions", () => {
       .all()
       .find((p) => p.name === "Now")!;
     const fields = profile.contributionActiveFields as {
-      contributionAccounts: Record<string, unknown>;
+      contributionAccounts: Record<string, Record<string, unknown>>;
     };
     fields.contributionAccounts[contrib] = {
       contributionMethod: "fixed_annual",

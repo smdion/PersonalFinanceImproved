@@ -57,6 +57,7 @@ describe("paycheck/contribution computeSummary honor a different Salary Profile'
           additionalFedWithholding: 0,
           bonusMonth: null,
           bonusDayOfMonth: null,
+          extraPaycheckRouting: null,
         },
       };
       const profileId = db
@@ -114,6 +115,7 @@ describe("paycheck/contribution computeSummary honor a different Salary Profile'
           additionalFedWithholding: 0,
           bonusMonth: null,
           bonusDayOfMonth: null,
+          extraPaycheckRouting: null,
         },
       };
       const profileId = db
@@ -168,6 +170,7 @@ describe("sandboxSalaryEntries is the highest precedence tier", () => {
           additionalFedWithholding: 0,
           bonusMonth: null,
           bonusDayOfMonth: null,
+          extraPaycheckRouting: null,
         },
       };
       const profileId = db
@@ -224,6 +227,7 @@ describe("sandboxSalaryEntries is the highest precedence tier", () => {
           additionalFedWithholding: 0,
           bonusMonth: null,
           bonusDayOfMonth: null,
+          extraPaycheckRouting: null,
         },
       };
       const profileId = db

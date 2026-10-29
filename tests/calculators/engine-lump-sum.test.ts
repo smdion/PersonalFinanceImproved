@@ -31,7 +31,7 @@ function makeCtx(
     hasIndividualAccounts: false,
     indAccts: [],
     // Keyed by category alone — this test\'s indBal is keyed the same way.
-    indKey: (ia) => (ia as { category: string }).category,
+    indKey: (ia: object) => (ia as { category: string }).category,
     rmdStartAgeByPerson: new Map(),
     ...overrides,
     // eslint-disable-next-line no-restricted-syntax -- test-only stub for complex engine types
@@ -201,7 +201,7 @@ describe("applyLumpSums", () => {
       hasIndividualAccounts: true,
       indAccts,
       // Keyed by category alone — this test\'s indBal is keyed the same way.
-      indKey: (ia) => (ia as { category: string }).category,
+      indKey: (ia: object) => (ia as { category: string }).category,
     });
     const state = makeState({ indBal });
     const ls: LumpSum[] = [{ amount: 10000, targetAccount: "401k" }];
@@ -250,7 +250,7 @@ describe("updatePerPersonTradBalance", () => {
       hasIndividualAccounts: true,
       indAccts,
       // Keyed by category alone — this test\'s indBal is keyed the same way.
-      indKey: (ia) => (ia as { category: string }).category,
+      indKey: (ia: object) => (ia as { category: string }).category,
     });
     const state = makeState({ indBal });
     updatePerPersonTradBalance(ctx, state);
@@ -268,7 +268,7 @@ describe("updatePerPersonTradBalance", () => {
       hasIndividualAccounts: true,
       indAccts,
       // Keyed by category alone — this test\'s indBal is keyed the same way.
-      indKey: (ia) => (ia as { category: string }).category,
+      indKey: (ia: object) => (ia as { category: string }).category,
     });
     const state = makeState({ indBal });
     updatePerPersonTradBalance(ctx, state);

@@ -4,6 +4,7 @@
  * account-delete guard. Invented funds and accounts only.
  */
 import "./setup-mocks";
+import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import {
@@ -188,7 +189,11 @@ describe("holding periods — an account reported per part", () => {
     // Alex's Traditional part held money years ago and is gone from the
     // latest snapshot — its history must still be enterable.
     closedPart = `${split}_preTax__${alex}`;
-    const part = (taxType: string, owner: number, amount: string) => ({
+    const part = (
+      taxType: PortfolioTaxType,
+      owner: number,
+      amount: string,
+    ) => ({
       performanceAccountId: split,
       amount,
       taxType,

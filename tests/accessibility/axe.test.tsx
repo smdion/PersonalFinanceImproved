@@ -92,7 +92,7 @@ describe("Accessibility — axe-core", () => {
 
   it("Collapsible Card renders without violations", async () => {
     const { container } = render(
-      <Card title="Collapsible" isCollapsible defaultOpen={true}>
+      <Card title="Collapsible" isCollapsible isDefaultOpen={true}>
         <p>Expandable content</p>
       </Card>,
     );

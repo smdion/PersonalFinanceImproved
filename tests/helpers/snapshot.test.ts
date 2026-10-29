@@ -82,7 +82,6 @@ describe("getLatestSnapshot", () => {
       .insert(ctx.schema.portfolioSnapshots)
       .values({
         snapshotDate: "2025-12-31",
-        totalBalance: "100000",
       })
       .run();
 
@@ -94,7 +93,7 @@ describe("getLatestSnapshot", () => {
       .values({
         snapshotId: snap.id,
         institution: "Vanguard",
-        taxType: "roth",
+        taxType: "taxFree",
         accountType: "ira",
         amount: "25000",
       })
@@ -115,7 +114,6 @@ describe("getLatestSnapshot", () => {
       .insert(ctx.schema.portfolioSnapshots)
       .values({
         snapshotDate: "2026-03-15",
-        totalBalance: "120000",
       })
       .run();
 
@@ -146,14 +144,14 @@ describe("getLatestSnapshot", () => {
         {
           snapshotId: snap.id,
           institution: "Fidelity",
-          taxType: "traditional",
+          taxType: "preTax",
           accountType: "401k",
           amount: "50000",
         },
         {
           snapshotId: snap.id,
           institution: "Schwab",
-          taxType: "taxable",
+          taxType: "afterTax",
           accountType: "brokerage",
           amount: "30000",
         },
