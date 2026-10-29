@@ -840,7 +840,7 @@ export function routeWithdrawalsBracketFilling(
 // estimate can never route differently for the same inputs.
 // ---------------------------------------------------------------------------
 
-export interface RouteBracketInfo {
+interface RouteBracketInfo {
   taxBrackets?: WithholdingBracket[];
   rothBracketTarget?: number;
   /** The rate a same-year Roth conversion will actually target, when it
@@ -935,7 +935,7 @@ export function computeBracketTraditionalCap(
   return roundToCents(Math.max(0, incomeCap - bracketInfo.taxableSS));
 }
 
-export type RouteResult = {
+type RouteResult = {
   slots: DecumulationSlot[];
   warnings: string[];
   traditionalCap?: number;
@@ -996,7 +996,7 @@ export type RouteResult = {
  * the same config) when no rothBracketTarget is configured or there's no
  * bracket data to compute a cap from.
  */
-export function applyRothBracketOverlay(
+function applyRothBracketOverlay(
   config: ResolvedDecumulationConfig,
   bracketInfo: RouteBracketInfo,
 ): ResolvedDecumulationConfig {

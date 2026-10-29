@@ -43,6 +43,7 @@ const holding = (standInPreview: Holding["standInPreview"]): Holding => ({
   symbolConfirmed: false,
   name: "Example Plan Index Fund",
   shares: 10,
+  avgCostPerShare: null,
   value: 1000,
   valueBasis: "reported",
   valuedOn: "2026-10-09",

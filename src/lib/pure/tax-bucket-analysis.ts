@@ -31,7 +31,7 @@ import {
 
 export type PersonInfo = { id: number; name: string; birthYear: number };
 
-export type PerformanceAccountInfo = {
+type PerformanceAccountInfo = {
   id: number;
   accountType: AccountCategory;
   ownerPersonId: number | null;
@@ -44,7 +44,7 @@ export type PerformanceAccountInfo = {
 };
 
 /** A job funding a performanceAccountId, via contributionAccounts. */
-export type JobLinkInfo = {
+type JobLinkInfo = {
   performanceAccountId: number;
   endDate: Date | null;
   isSpeculative: boolean;
@@ -53,7 +53,7 @@ export type JobLinkInfo = {
 /** The already-selected "current" row for one (account, owner) pair — see
  *  src/lib/pure/roth-basis-rollover.ts's buildCurrentRothBasisMap, which the
  *  router uses before calling into this module. */
-export type RothBasisRow = {
+type RothBasisRow = {
   performanceAccountId: number;
   ownerPersonId: number;
   year: number;

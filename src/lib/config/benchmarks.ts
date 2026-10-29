@@ -7,7 +7,7 @@ import type { CompositionBucket } from "@/lib/config/enum-values";
  * Data, not code: another benchmark is one more entry. A target-date
  * entry picks its fund from the household's planned retirement year.
  */
-export type BenchmarkDefinition = {
+type BenchmarkDefinition = {
   key: string;
   label: string;
   /** Plain description for the methodology page and tooltips. */
@@ -88,7 +88,7 @@ export const BENCHMARKS: readonly BenchmarkDefinition[] = [
   },
 ];
 
-export type ResolvedBenchmark = {
+type ResolvedBenchmark = {
   key: string;
   /** e.g. "Target-date 2055 fund" for a target-date entry. */
   label: string;

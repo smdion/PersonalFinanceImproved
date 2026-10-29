@@ -13,7 +13,16 @@
  * coverage here; this locks in the base wiring only).
  */
 import "../routers/setup-mocks";
-import { describe, it, expect, beforeAll, afterAll, afterEach } from "vitest";
+import type { Db } from "@/server/helpers/transforms";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  afterEach,
+  vi,
+} from "vitest";
 import {
   createTestCaller,
   seedPerson,
@@ -158,6 +167,7 @@ async function seedContributionProfileForAccounts(
 
 describe("buildEnginePayload — single-person household", () => {
   let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let appDb: Db;
   let cleanup: () => void;
   let personId: number;
   let contributionProfileId: number;
@@ -165,6 +175,7 @@ describe("buildEnginePayload — single-person household", () => {
   beforeAll(async () => {
     const ctx = await createTestCaller();
     db = ctx.db;
+    appDb = ctx.rawDb;
     cleanup = ctx.cleanup;
 
     personId = await seedPerson(db, "Alex", "1985-06-15");
@@ -197,44 +208,45 @@ describe("buildEnginePayload — single-person household", () => {
   afterAll(() => cleanup());
 
   it("resolves currentAge and retirementAge from settings", async () => {
-    const data = await fetchRetirementData(db, { contributionProfileId });
-    const payload = await buildEnginePayload(db, data, {
+    const data = await fetchRetirementData(appDb, { contributionProfileId });
+    const payload = await buildEnginePayload(appDb, data, {
       contributionProfileId,
     });
 
     // Age is derived from dateOfBirth at fetch time — assert it's in the
     // right ballpark rather than hardcoding an exact age that drifts with
     // "today"'s date.
-    expect(payload.age).toBeGreaterThanOrEqual(39);
-    expect(payload.age).toBeLessThanOrEqual(41);
-    expect(payload.baseEngineInput.retirementAge).toBe(65);
-    expect(payload.hasMultiplePeople).toBe(false);
+    expect(payload!.age).toBeGreaterThanOrEqual(39);
+    expect(payload!.age).toBeLessThanOrEqual(41);
+    expect(payload!.baseEngineInput.retirementAge).toBe(65);
+    expect(payload!.hasMultiplePeople).toBe(false);
   });
 
   it("aggregates starting balances from the latest snapshot", async () => {
-    const data = await fetchRetirementData(db, { contributionProfileId });
-    const payload = await buildEnginePayload(db, data, {
+    const data = await fetchRetirementData(appDb, { contributionProfileId });
+    const payload = await buildEnginePayload(appDb, data, {
       contributionProfileId,
     });
 
-    expect(payload.portfolioTotal).toBe(250000);
-    expect(payload.baseEngineInput.startingBalances.preTax).toBe(250000);
+    expect(payload!.portfolioTotal).toBe(250000);
+    expect(payload!.baseEngineInput.startingBalances.preTax).toBe(250000);
   });
 
   it("builds a contribution spec with the seeded personId", async () => {
-    const data = await fetchRetirementData(db, { contributionProfileId });
-    const payload = await buildEnginePayload(db, data, {
+    const data = await fetchRetirementData(appDb, { contributionProfileId });
+    const payload = await buildEnginePayload(appDb, data, {
       contributionProfileId,
     });
 
-    expect(payload.contributionSpecs.length).toBeGreaterThan(0);
-    expect(payload.contributionSpecs[0]?.personId).toBe(personId);
-    expect(payload.contributionSpecs[0]?.category).toBe("401k");
+    expect(payload!.contributionSpecs.length).toBeGreaterThan(0);
+    expect(payload!.contributionSpecs[0]?.personId).toBe(personId);
+    expect(payload!.contributionSpecs[0]?.category).toBe("401k");
   });
 });
 
 describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
   let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let appDb: Db;
   let cleanup: () => void;
   let personAId: number;
   let personBId: number;
@@ -243,6 +255,7 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
   beforeAll(async () => {
     const ctx = await createTestCaller();
     db = ctx.db;
+    appDb = ctx.rawDb;
     cleanup = ctx.cleanup;
 
     // Person A: age ~40. Person B: age ~61 (catch-up eligible territory).
@@ -262,13 +275,13 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
       parentCategory: "Retirement",
       accountType: "401k",
       ownerPersonId: personAId,
-      name: "401k A",
+      accountLabel: "401k A",
     });
     const perfAcctB = seedPerformanceAccount(db, {
       parentCategory: "Retirement",
       accountType: "401k",
       ownerPersonId: personBId,
-      name: "401k B",
+      accountLabel: "401k B",
     });
     seedSnapshot(db, "2025-06-15", [
       { performanceAccountId: perfAcctA, amount: "250000", taxType: "preTax" },
@@ -295,22 +308,22 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
   afterAll(() => cleanup());
 
   it("marks hasMultiplePeople and includes both people in perPersonSettings", async () => {
-    const data = await fetchRetirementData(db, { contributionProfileId });
-    const payload = await buildEnginePayload(db, data, {
+    const data = await fetchRetirementData(appDb, { contributionProfileId });
+    const payload = await buildEnginePayload(appDb, data, {
       contributionProfileId,
     });
 
-    expect(payload.hasMultiplePeople).toBe(true);
-    expect(payload.perPersonSettings.length).toBe(2);
+    expect(payload!.hasMultiplePeople).toBe(true);
+    expect(payload!.perPersonSettings.length).toBe(2);
   });
 
   it("sends both people's birth years for the IRS-limit caps (H10)", async () => {
-    const data = await fetchRetirementData(db, { contributionProfileId });
-    const payload = await buildEnginePayload(db, data, {
+    const data = await fetchRetirementData(appDb, { contributionProfileId });
+    const payload = await buildEnginePayload(appDb, data, {
       contributionProfileId,
     });
 
-    const people = payload.baseEngineInput.irsLimitCaps.people;
+    const people = payload!.baseEngineInput.irsLimitCaps.people;
     expect(people.length).toBe(2);
     expect(people.every((p) => p.birthYear !== null)).toBe(true);
     expect(people.map((p) => p.id).sort()).toEqual(
@@ -319,24 +332,24 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
   });
 
   it("builds one contribution spec per person, each tagged with its own personId", async () => {
-    const data = await fetchRetirementData(db, { contributionProfileId });
-    const payload = await buildEnginePayload(db, data, {
+    const data = await fetchRetirementData(appDb, { contributionProfileId });
+    const payload = await buildEnginePayload(appDb, data, {
       contributionProfileId,
     });
 
-    const specPersonIds = payload.contributionSpecs
+    const specPersonIds = payload!.contributionSpecs
       .map((s) => s.personId)
       .sort();
     expect(specPersonIds).toEqual([personAId, personBId].sort());
   });
 
   it("aggregates starting balances across both people", async () => {
-    const data = await fetchRetirementData(db, { contributionProfileId });
-    const payload = await buildEnginePayload(db, data, {
+    const data = await fetchRetirementData(appDb, { contributionProfileId });
+    const payload = await buildEnginePayload(appDb, data, {
       contributionProfileId,
     });
 
-    expect(payload.portfolioTotal).toBe(650000);
+    expect(payload!.portfolioTotal).toBe(650000);
   });
 });
 
@@ -350,11 +363,13 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
 // ---------------------------------------------------------------------------
 describe("buildEnginePayload — irmaa_brackets wiring (R43)", () => {
   let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let appDb: Db;
   let cleanup: () => void;
 
   beforeAll(async () => {
     const ctx = await createTestCaller();
     db = ctx.db;
+    appDb = ctx.rawDb;
     cleanup = ctx.cleanup;
     const personId = await seedPerson(db, "Sam", "1980-01-10");
     await markPrimary(db, personId);
@@ -364,8 +379,8 @@ describe("buildEnginePayload — irmaa_brackets wiring (R43)", () => {
   afterAll(() => cleanup());
 
   it("surfaces the seeded irmaa_brackets rows on distributionTaxRates", async () => {
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
     const irmaa = payload!.distributionTaxRates.irmaaBrackets;
     expect(irmaa).toBeDefined();
     // Seed Single tier 1 threshold (CMS 2026).
@@ -400,8 +415,8 @@ describe("buildEnginePayload — irmaa_brackets wiring (R43)", () => {
       )
       .run();
 
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
     const irmaa = payload!.distributionTaxRates.irmaaBrackets;
     expect(irmaa!.Single?.[0]?.magiThreshold).toBe(999000);
     expect(irmaa!.Single?.[0]?.annualSurcharge).toBe(4321);
@@ -416,12 +431,14 @@ describe("buildEnginePayload — irmaa_brackets wiring (R43)", () => {
 // ---------------------------------------------------------------------------
 describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
   let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let appDb: Db;
   let cleanup: () => void;
   let profileId: number;
 
   beforeAll(async () => {
     const ctx = await createTestCaller();
     db = ctx.db;
+    appDb = ctx.rawDb;
     cleanup = ctx.cleanup;
     const schema = await getSchema();
     const personId = await seedPerson(db, "Jo", "1975-03-03");
@@ -445,8 +462,8 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
   afterAll(() => cleanup());
 
   it("NULL pin => resolved year is the newest seeded year (2026)", async () => {
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
     expect(payload!.distributionTaxRates.taxDataYear).toBe(2026);
     expect(payload!.distributionTaxRates.standardDeduction).toBe(32200);
   });
@@ -461,16 +478,16 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
       .where(eq(schema.retirementProfiles.id, profileId))
       .run();
 
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
     expect(payload!.distributionTaxRates.taxDataYear).toBe(2025);
     // 2025 MFJ standard deduction is 31500 (OBBBA); 2026 is 32200.
     expect(payload!.distributionTaxRates.standardDeduction).toBe(31500);
   });
 
   it("each tax table carries its own year (pinned 2025; the seed has every 2025 table)", async () => {
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
     const r = payload!.distributionTaxRates;
     expect(r.taxBracketsYear).toBe(2025);
     expect(r.ltcgBracketsYear).toBe(2025);
@@ -519,8 +536,8 @@ describe("buildEnginePayload — tax_params_year profile pin (R43)", () => {
       .where(eq(schema.retirementProfiles.id, profileId))
       .run();
 
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
     expect(payload!.distributionTaxRates.taxDataYear).toBe(2026);
     expect(payload!.distributionTaxRates.standardDeduction).toBe(32200);
 
@@ -545,8 +562,8 @@ describe("buildEnginePayload — no withholding tables at all", () => {
       await seedRetirementSettings(ctx.db, personId, { filingStatus: "MFJ" });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (ctx.db as any).delete(schema.taxBrackets).run();
-      const data = await fetchRetirementData(ctx.db, {});
-      await expect(buildEnginePayload(ctx.db, data, {})).rejects.toThrow(
+      const data = await fetchRetirementData(ctx.rawDb, {});
+      await expect(buildEnginePayload(ctx.rawDb, data, {})).rejects.toThrow(
         /withholding/,
       );
     } finally {
@@ -566,6 +583,7 @@ describe("buildEnginePayload — no withholding tables at all", () => {
 // socialSecurityEntries in build-engine-payload.ts.
 describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
   let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let appDb: Db;
   let cleanup: () => void;
   let personId: number;
   let profileId: number;
@@ -573,6 +591,7 @@ describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
   beforeAll(async () => {
     const ctx = await createTestCaller();
     db = ctx.db;
+    appDb = ctx.rawDb;
     cleanup = ctx.cleanup;
     const schema = await getSchema();
 
@@ -643,8 +662,8 @@ describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
   }
 
   it("without PIA set, a single-person household stays on the scalar path (no socialSecurityEntries)", async () => {
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
 
     expect(payload!.baseEngineInput.socialSecurityEntries).toBeUndefined();
     expect(payload!.baseEngineInput.socialSecurityAnnual).toBe(36000);
@@ -654,8 +673,8 @@ describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
   it("with PIA set, a single-person household stays on the scalar path with the claiming-age-adjusted amount — socialSecurityEntries is still undefined", async () => {
     await setPia("4000"); // PIA $4000/mo = $48000/yr at FRA
 
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
 
     // The load-bearing regression check: entries must NOT be populated for
     // a single-person household just because PIA is set.
@@ -675,8 +694,8 @@ describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
   it("an empty-string PIA (blank form field) is treated as not-opted-in, not NaN", async () => {
     await setPia("");
 
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
 
     expect(payload!.baseEngineInput.socialSecurityAnnual).toBe(36000);
     expect(Number.isNaN(payload!.baseEngineInput.socialSecurityAnnual)).toBe(
@@ -689,8 +708,8 @@ describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
   it('a "0" PIA is treated as not-opted-in, not a $0 benefit', async () => {
     await setPia("0");
 
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
 
     // Falls back to the flat socialSecurityMonthly (36000), NOT 0.
     expect(payload!.baseEngineInput.socialSecurityAnnual).toBe(36000);
@@ -728,8 +747,8 @@ describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
       .where(eq(schema.retirementProfilePeople.personId, personId))
       .run();
 
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
 
     // The emitted ssStartAge must be 70 (the live, per-person value) —
     // NOT 67 (the stale retirement_settings value) — and the amount must
@@ -747,6 +766,7 @@ describe("buildEnginePayload — socialSecurityPia (opt-in, step 5)", () => {
 
 describe("buildEnginePayload — socialSecurityPia, two-person household", () => {
   let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let appDb: Db;
   let cleanup: () => void;
   let personAId: number;
   let personBId: number;
@@ -755,6 +775,7 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
   beforeAll(async () => {
     const ctx = await createTestCaller();
     db = ctx.db;
+    appDb = ctx.rawDb;
     cleanup = ctx.cleanup;
     const schema = await getSchema();
 
@@ -804,16 +825,16 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
   afterAll(() => cleanup());
 
   it("multi-person households already populated entries before this feature — that's unaffected by PIA either way", async () => {
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
 
     const entries = payload!.baseEngineInput.socialSecurityEntries;
     expect(entries).toHaveLength(2);
   });
 
   it("the PIA person gets their own claiming-age-adjusted benefit (spousal doesn't beat it — the other has no PIA)", async () => {
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
 
     const alex = payload!.baseEngineInput.socialSecurityEntries!.find(
       (e) => e.personId === personAId,
@@ -825,8 +846,8 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
   });
 
   it("the non-PIA spouse gets the GREATER of their flat benefit or 50% of the PIA spouse's PIA (MFJ + 2 people)", async () => {
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
 
     const sam = payload!.baseEngineInput.socialSecurityEntries!.find(
       (e) => e.personId === personBId,
@@ -852,8 +873,8 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
       .where(eq(schema.retirementProfilePeople.personId, personAId))
       .run();
 
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
     const sam = payload!.baseEngineInput.socialSecurityEntries!.find(
       (e) => e.personId === personBId,
     )!;
@@ -875,8 +896,8 @@ describe("buildEnginePayload — socialSecurityPia, two-person household", () =>
       .set({ filingStatus: "Single" })
       .run();
 
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
     const sam = payload!.baseEngineInput.socialSecurityEntries!.find(
       (e) => e.personId === personBId,
     )!;
@@ -902,6 +923,7 @@ describe("buildEnginePayload — spousal 'worker has filed' gate, mismatched bir
   // the spousal reduction SCHEDULE is identical for both — isolating the
   // filed-gate itself as the only variable.
   let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let appDb: Db;
   let cleanup: () => void;
 
   afterAll(() => cleanup());
@@ -909,6 +931,7 @@ describe("buildEnginePayload — spousal 'worker has filed' gate, mismatched bir
   it("uses calendar years, not ages: an older worker who already filed decades earlier still triggers a younger spouse's top-up", async () => {
     const ctx = await createTestCaller();
     db = ctx.db;
+    appDb = ctx.rawDb;
     cleanup = ctx.cleanup;
     const schema = await getSchema();
 
@@ -959,8 +982,8 @@ describe("buildEnginePayload — spousal 'worker has filed' gate, mismatched bir
       ])
       .run();
 
-    const data = await fetchRetirementData(db, {});
-    const payload = await buildEnginePayload(db, data, {});
+    const data = await fetchRetirementData(appDb, {});
+    const payload = await buildEnginePayload(appDb, data, {});
     const spouse = payload!.baseEngineInput.socialSecurityEntries!.find(
       (e) => e.personId === spouseId,
     )!;
@@ -972,5 +995,83 @@ describe("buildEnginePayload — spousal 'worker has filed' gate, mismatched bir
     // in 2052." The old age-only gate (65 <= 62) would wrongly withhold
     // it and leave this at 14400.
     expect(spouse.annualAmount).toBeCloseTo(15600, 2);
+  });
+});
+
+describe("buildEnginePayload — job dates bound the years worked", () => {
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let appDb: Db;
+  let cleanup: () => void;
+  let personAId: number;
+  let personBId: number;
+  let contributionProfileId: number;
+
+  beforeAll(async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-28T12:00:00"));
+    const ctx = await createTestCaller();
+    db = ctx.db;
+    appDb = ctx.rawDb;
+    cleanup = ctx.cleanup;
+    personAId = await seedPerson(db, "Alex", "1980-01-01");
+    personBId = await seedPerson(db, "Sam", "1990-01-01");
+    await markPrimary(db, personAId);
+    await seedRetirementSettings(db, personAId);
+    await seedRetirementSettings(db, personBId);
+    // Alex's job ends in 2030; Sam has no job now and starts one in 2028.
+    const jobAId = seedJob(db, personAId, {
+      annualSalary: "150000",
+      startDate: "2015-01-01",
+      endDate: "2030-06-30",
+    });
+    const jobBId = seedJob(db, personBId, {
+      annualSalary: "90000",
+      startDate: "2028-03-01",
+    });
+    const perfA = seedPerformanceAccount(db, {
+      parentCategory: "Retirement",
+      accountType: "401k",
+      ownerPersonId: personAId,
+      accountLabel: "401k A",
+    });
+    const perfB = seedPerformanceAccount(db, {
+      parentCategory: "Retirement",
+      accountType: "401k",
+      ownerPersonId: personBId,
+      accountLabel: "401k B",
+    });
+    seedSnapshot(db, "2026-06-15", [
+      { performanceAccountId: perfA, amount: "250000", taxType: "preTax" },
+    ]);
+    contributionProfileId = await seedContributionProfileForAccounts(db, [
+      await seedContributionAccount(db, personAId, jobAId, perfA),
+      await seedContributionAccount(db, personBId, jobBId, perfB),
+    ]);
+  });
+
+  afterAll(() => {
+    cleanup();
+    vi.useRealTimers();
+  });
+
+  it("follows a job that ends later and one not started yet, with their years", async () => {
+    const data = await fetchRetirementData(appDb, { contributionProfileId });
+    const payload = (await buildEnginePayload(appDb, data, {
+      contributionProfileId,
+    }))!;
+    const bei = payload.baseEngineInput;
+    expect(bei.workingYearsByPerson).toEqual({
+      [personAId]: { start: null, end: 2030 },
+      [personBId]: { start: 2028, end: null },
+    });
+    // Sam's job, salary and 401(k) are in the projection from the start.
+    expect(
+      Object.keys(bei.salaryByPerson ?? {})
+        .map(Number)
+        .sort(),
+    ).toEqual([personAId, personBId].sort());
+    expect(payload.contributionSpecs.map((s) => s.personId).sort()).toEqual(
+      [personAId, personBId].sort(),
+    );
   });
 });

@@ -24,7 +24,7 @@ export type StoredTransaction = IncomingTransaction & {
   voided: boolean;
 };
 
-export type ReconcilePlan = {
+type ReconcilePlan = {
   inserts: IncomingTransaction[];
   updates: Array<{ id: number; next: IncomingTransaction }>;
   /** Ids to soft-void. */

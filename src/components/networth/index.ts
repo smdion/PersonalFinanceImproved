@@ -7,4 +7,3 @@ export { AssetsLiabilitiesCards } from "./assets-liabilities-cards";
 export { MetricsRow } from "./metrics-row";
 export { YoYTable } from "./yoy-table";
 export { FinancialIndependenceCard } from "./financial-independence-card";
-export type { HistoryRow } from "./types";

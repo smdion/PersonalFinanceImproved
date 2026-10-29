@@ -72,7 +72,7 @@ function assertSafeRemoteUrl(rawUrl: string, context: string): URL {
   return url;
 }
 
-export type SimplefinHolding = {
+type SimplefinHolding = {
   id: string;
   /** Symbol as sent — may be empty or a plan pseudo-symbol. */
   symbol: string;
@@ -83,7 +83,7 @@ export type SimplefinHolding = {
   costBasisPerShare: number | null;
 };
 
-export type SimplefinTransaction = {
+type SimplefinTransaction = {
   id: string;
   /** Unix seconds. */
   posted: number;
@@ -227,7 +227,7 @@ export async function claimSetupToken(setupToken: string): Promise<string> {
   return accessUrl.trim();
 }
 
-export type GetAccountsResult = {
+type GetAccountsResult = {
   accounts: SimplefinAccount[];
   /**
    * Non-fatal provider errors (e.g. one linked institution needs re-auth)
@@ -250,7 +250,7 @@ export type GetAccountsResult = {
   accountIdsWithErrors: string[];
 };
 
-export type GetAccountsOptions = {
+type GetAccountsOptions = {
   /**
    * Request holdings and transactions posted on or after this date
    * (protocol v2, pending included). Omit for a balances-only request.

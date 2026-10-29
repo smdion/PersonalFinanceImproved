@@ -75,7 +75,7 @@ export type RoutingMode = "waterfall" | "percentage" | "bracket_filling";
  * HSA is always pre-tax (similar to traditional but with unique tax benefits).
  * Brokerage is always after-tax (no special tax treatment on contributions).
  */
-export type RoutingTaxType = "traditional" | "roth";
+type RoutingTaxType = "traditional" | "roth";
 
 /**
  * Per-account Roth fraction (0–1) for accounts that support tax treatment choice.

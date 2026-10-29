@@ -31,7 +31,7 @@ export type PaycheckFieldKind =
   /** Employer, title, contribution accounts, links, removing rows (admin). */
   | "setup";
 
-export type PaycheckEditTarget =
+type PaycheckEditTarget =
   | { target: "salaryProfile"; label: string }
   | { target: "contributionProfile"; label: string }
   | { target: "setup"; label: string }

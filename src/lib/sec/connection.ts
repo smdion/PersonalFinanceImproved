@@ -12,7 +12,7 @@ type Db = typeof import("@/lib/db").db;
 
 const SEC_SERVICE = "sec";
 
-export type SecConfig = { contactEmail: string };
+type SecConfig = { contactEmail: string };
 
 export async function getSecConnection(db: Db) {
   const rows = await db

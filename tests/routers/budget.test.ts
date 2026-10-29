@@ -27,9 +27,10 @@ import {
 function seedLinkableContributionAccount(
   db: Awaited<ReturnType<typeof createTestCaller>>["db"],
   personId: number,
-  overrides: Partial<
-    typeof sqliteSchema.contributionAccounts.$inferInsert
-  > = {},
+  overrides: Partial<typeof sqliteSchema.contributionAccounts.$inferInsert> & {
+    contributionMethod?: string;
+    contributionValue?: string;
+  } = {},
 ): number {
   // Accounts carry no value of their own — contributionMethod/Value are
   // stripped here and given to the account via a Contribution Profile's
@@ -1060,10 +1061,10 @@ describe("budget router", () => {
 
     it("rejects an invalid sync direction value", async () => {
       await expect(
-        // @ts-expect-error intentionally wrong value
         caller.budget.setSyncDirection({
           budgetItemId: itemIds[0]!,
           service: "ynab",
+          // @ts-expect-error intentionally wrong value
           syncDirection: "invalid",
         }),
       ).rejects.toThrow();

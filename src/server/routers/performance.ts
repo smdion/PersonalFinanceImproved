@@ -1562,7 +1562,7 @@ export const performanceRouter = createTRPCRouter({
         let grossIncome = 0;
         let anyIncomeRecorded = false;
         for (const person of allPeople) {
-          const activeJob = findActiveJob(allJobs, person.id);
+          const activeJob = findActiveJob(allJobs, person.id, new Date());
           const income = resolvePersonYearIncome(
             year,
             currentYear,

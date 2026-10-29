@@ -3,7 +3,7 @@
  * Data-driven: components import entries by key — no inline jargon definitions.
  */
 
-export type GlossaryEntry = {
+type GlossaryEntry = {
   /** Display label as used in the UI */
   label: string;
   /** Plain-language alternative (short, for subtitles) */

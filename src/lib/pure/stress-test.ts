@@ -22,7 +22,7 @@ import {
   DEFAULT_WITHDRAWAL_RATE,
 } from "@/lib/constants";
 
-export interface StressTestParams {
+interface StressTestParams {
   /** Nominal annual return rate (e.g. 0.05 = 5%). */
   returnRate: number;
   /** Annual inflation rate (e.g. 0.04 = 4%). */

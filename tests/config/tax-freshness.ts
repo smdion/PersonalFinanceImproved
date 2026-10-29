@@ -24,7 +24,7 @@ export function currentTaxYear(): number {
 
 type FreshnessLevel = "current" | "warning" | "expired";
 
-export type TaxFreshnessEntry = {
+type TaxFreshnessEntry = {
   /** Human-readable name of the parameter set. */
   name: string;
   /** Last tax year these values were verified against IRS/SSA/CMS publications. */

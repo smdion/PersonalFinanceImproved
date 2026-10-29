@@ -17,8 +17,11 @@ function account(
 ): SimplefinAccountListItem {
   return {
     id: 1,
+    orgName: "Example Bank",
     isIncluded: true,
     lastBalance: 0,
+    lastBalanceDate: null,
+    lastSeenAt: "2026-06-01",
     linkedPerformanceAccountId: null,
     change: null,
     taxType: null,

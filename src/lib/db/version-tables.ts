@@ -7,7 +7,7 @@
  * Adding a new table = one entry here. Zero logic changes.
  */
 
-export type VersionTableEntry = {
+type VersionTableEntry = {
   /** PostgreSQL table name (snake_case). */
   name: string;
   /** FK dependency tier: 0 = no FKs, 1 = depends on tier 0, 2 = depends on tier 1, 3 = depends on tier 2. */

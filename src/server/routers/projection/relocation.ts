@@ -8,6 +8,7 @@
  * comparison table, and (when moveYear is provided) a blended projection
  * that switches from the current path to the relocation path at moveYear.
  */
+import { ageStepAt } from "@/server/retirement/payload/profile-switches";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { z } from "zod/v4";
 import { eq, desc } from "drizzle-orm";
@@ -375,7 +376,9 @@ export const relocationProjectionRouter = createTRPCRouter({
             ...(currentBase.profileSwitches ?? []).filter(
               (ps) => ps.year < moveYear,
             ),
-            {
+            // The relocation profile as capped by the move year's ages
+            // (its latest age step by then), else as capped today.
+            ageStepAt(relocPayload.activeAgeSteps, moveYear) ?? {
               year: moveYear,
               contributionSpecs: relocBase.contributionSpecs ?? [],
               employerMatchRateByCategory:

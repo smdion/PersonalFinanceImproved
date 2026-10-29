@@ -66,10 +66,12 @@ describe("resolveAccumulationConfig", () => {
     expect(config.accountSplits.hsa).toBe(0.15);
   });
 
-  it("merges accountCaps — null removes a cap", () => {
+  it("merges accountCaps — a cap holds until a reset", () => {
+    // The app writes caps as numbers only (the router's schema); a reset is
+    // how a cap is removed.
     const overrides: AccumulationOverride[] = [
       { year: 2025, accountCaps: { "401k": 15000 } },
-      { year: 2027, accountCaps: { "401k": null } },
+      { year: 2027, reset: true },
     ];
     const config2026 = resolveAccumulationConfig(2026, defaults, overrides);
     expect(config2026.accountCaps["401k"]).toBe(15000);
@@ -104,7 +106,7 @@ describe("resolveAccumulationConfig", () => {
     const overrides: AccumulationOverride[] = [
       {
         year: 2025,
-        lumpSums: [{ amount: 50000, taxBucket: "afterTax" as unknown }],
+        lumpSums: [{ amount: 50000, targetAccount: "brokerage" }],
       },
     ];
     const config2025 = resolveAccumulationConfig(2025, defaults, overrides);
@@ -206,7 +208,9 @@ describe("resolveDecumulationConfig", () => {
     const overrides: DecumulationOverride[] = [
       {
         year: 2050,
-        lumpSums: [{ amount: 100000, taxBucket: "preTax" as unknown }],
+        lumpSums: [
+          { amount: 100000, targetAccount: "401k", taxType: "traditional" },
+        ],
       },
     ];
     const config2050 = resolveDecumulationConfig(2050, defaults, overrides);

@@ -43,13 +43,13 @@ import {
 } from "./social-security";
 import { ACCOUNT_TYPE_CONFIG } from "./account-types";
 
-export type FixedByLawItem = {
+type FixedByLawItem = {
   label: string;
   value: string;
   /** The law (or regulation) that sets it. */
   citation: string;
 };
-export type FixedByLawGroup = { label: string; items: FixedByLawItem[] };
+type FixedByLawGroup = { label: string; items: FixedByLawItem[] };
 
 const money = (n: number) => formatCurrency(n, 0);
 const pct = (r: number) =>

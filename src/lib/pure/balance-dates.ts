@@ -9,13 +9,13 @@
  */
 import { tradingDaysBetween, valuationDateFor } from "./market-calendar";
 
-export type AccountBalanceDate = {
+type AccountBalanceDate = {
   institution: string;
   /** When the balance is from — the institution's as-of time, or when Ledgr saw it if not reported. */
   reportedAt: Date;
 };
 
-export type InstitutionBalanceDate = {
+type InstitutionBalanceDate = {
   institution: string;
   /** Valuation date (YYYY-MM-DD) of the institution's least current account. */
   asOf: string;
@@ -23,7 +23,7 @@ export type InstitutionBalanceDate = {
   tradingDaysBehind: number;
 };
 
-export type BalanceDateSummary = {
+type BalanceDateSummary = {
   /** Least current first. */
   institutions: InstitutionBalanceDate[];
   oldest: string | null;

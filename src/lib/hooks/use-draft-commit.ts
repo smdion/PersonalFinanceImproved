@@ -28,7 +28,7 @@
 
 import { useCallback, useState } from "react";
 
-export interface UseDraftCommitReturn {
+interface UseDraftCommitReturn {
   /** Raw in-progress text per key. Read directly (`drafts.foo ?? fallback`)
    *  for display, same as the hand-rolled state it replaces. */
   drafts: Record<string, string>;

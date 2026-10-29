@@ -84,12 +84,12 @@ export interface RmdSmoothingInput {
   postRetirementInflationRate: number;
 }
 
-export interface RmdSmoothingPersonResult {
+interface RmdSmoothingPersonResult {
   personId: number;
   thisYearSmoothingTarget: number;
 }
 
-export interface RmdSmoothingResult {
+interface RmdSmoothingResult {
   byPerson: RmdSmoothingPersonResult[];
   /** Sum of every person's `thisYearSmoothingTarget` — the single
    *  household-level minimum fed into `performRothConversion`'s existing

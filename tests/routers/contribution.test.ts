@@ -4,6 +4,7 @@
  * Tests the contribution computation pipeline with various data states.
  */
 import "./setup-mocks";
+import type { SalaryProfileEntry } from "@/server/helpers/salary";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import {
   createTestCaller,
@@ -28,24 +29,10 @@ type TestDb = BetterSQLite3Database<typeof schema>;
 
 /** A complete 16-field Salary Profile entry — every field required. */
 function completeSalaryEntry(
-  overrides: Partial<{
-    salary: number;
-    bonusPercent: number;
-    bonusMultiplier: number;
-    monthsInBonusYear: number;
-    bonusOverride: number | null;
-    payPeriod: "weekly" | "biweekly" | "semimonthly" | "monthly";
-    payWeek: "even" | "odd" | "na";
-    anchorPayDate: string | null;
-    budgetPeriodsPerMonth: number | null;
-    w4FilingStatus: "MFJ" | "Single" | "HOH";
-    w4Box2cChecked: boolean;
-    additionalFedWithholding: number;
-    bonusMonth: number | null;
-    bonusDayOfMonth: number | null;
-  }> = {},
-) {
+  overrides: Partial<SalaryProfileEntry> = {},
+): SalaryProfileEntry {
   return {
+    extraPaycheckRouting: null,
     salary: 0,
     bonusPercent: 0,
     bonusMultiplier: 1,
@@ -99,6 +86,9 @@ describe("contribution router", () => {
       accountType: string;
       /** Also taken from bonus checks (this profile's election). */
       fromBonus?: boolean;
+      /** Written to the default profile's active fields, not the account. */
+      contributionValue?: string | number;
+      contributionMethod?: string;
     },
   ): number {
     const { contributionValue, contributionMethod, fromBonus, ...rest } =
@@ -124,8 +114,8 @@ describe("contribution router", () => {
       .where(eq(schema.contributionProfiles.id, defaultProfileId))
       .get()!;
     const activeFields = profile.contributionActiveFields as {
-      contributionAccounts: Record<string, unknown>;
-      jobs: Record<string, unknown>;
+      contributionAccounts: Record<string, Record<string, unknown>>;
+      jobs: Record<string, Record<string, unknown>>;
     };
     dbArg
       .update(schema.contributionProfiles)
@@ -546,7 +536,6 @@ describe("contribution router", () => {
       personId = await seedPerson(db, "Brokerage-Person", "1991-09-01");
       seedJob(db, personId, { annualSalary: "130000" });
       perfAcctId = seedPerformanceAccount(db, {
-        name: "Brokerage",
         institution: "Vanguard",
         accountType: "brokerage",
         parentCategory: "Portfolio",
@@ -558,7 +547,7 @@ describe("contribution router", () => {
         accountType: "brokerage",
         contributionMethod: "fixed_monthly",
         contributionValue: "1000",
-        taxTreatment: "taxable",
+        taxTreatment: "after_tax",
         employerMatchType: "none",
         parentCategory: "Portfolio",
         performanceAccountId: perfAcctId,
@@ -623,7 +612,7 @@ describe("contribution router", () => {
         accountType: "brokerage",
         contributionMethod: "fixed_monthly",
         contributionValue: "500",
-        taxTreatment: "taxable",
+        taxTreatment: "after_tax",
         employerMatchType: "none",
         parentCategory: "Portfolio",
       });
@@ -733,7 +722,7 @@ describe("contribution router", () => {
         accountType: "brokerage",
         contributionMethod: "fixed_monthly",
         contributionValue: "2000",
-        taxTreatment: "taxable",
+        taxTreatment: "after_tax",
         employerMatchType: "none",
         parentCategory: "Portfolio",
         ownership: "joint",
@@ -867,7 +856,6 @@ describe("contribution router", () => {
       personId = await seedPerson(db, "PerfAcct-Label", "1991-03-15");
       seedJob(db, personId, { annualSalary: "100000" });
       const perfId = seedPerformanceAccount(db, {
-        name: "Growth",
         institution: "Fidelity",
         accountType: "brokerage",
         parentCategory: "Portfolio",
@@ -880,7 +868,7 @@ describe("contribution router", () => {
         accountType: "brokerage",
         contributionMethod: "fixed_monthly",
         contributionValue: "300",
-        taxTreatment: "taxable",
+        taxTreatment: "after_tax",
         employerMatchType: "none",
         parentCategory: "Portfolio",
         performanceAccountId: perfId,

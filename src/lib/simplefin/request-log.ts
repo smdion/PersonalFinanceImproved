@@ -17,7 +17,7 @@ export const SIMPLEFIN_MANUAL_SYNC_MIN_GAP_MS = 10 * 60 * 1000;
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export type SimplefinRequestOutcome =
+type SimplefinRequestOutcome =
   "ok" | "error" | "timeout" | "replay" | "skipped_quota";
 
 export async function recordSimplefinRequest(

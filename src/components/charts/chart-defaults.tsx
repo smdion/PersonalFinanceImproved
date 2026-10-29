@@ -82,5 +82,3 @@ export const chartMargin = {
 } as const;
 
 /* ── Formatters ─────────────────────────────────────────────────── */
-
-export { compactCurrency, compactNumber } from "@/lib/utils/format";

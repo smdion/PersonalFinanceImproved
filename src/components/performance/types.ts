@@ -94,19 +94,6 @@ export type MasterAccount = {
   costBasis?: string;
 };
 
-export type CreateAccountData = {
-  year: number;
-  performanceAccountId: number;
-  beginningBalance: string;
-  totalContributions: string;
-  yearlyGainLoss: string;
-  endingBalance: string;
-  employerContributions: string;
-  fees: string;
-  distributions: string;
-  rollovers: string;
-};
-
 export type EditableCellProps = {
   value: number;
   formatter: (v: number) => string;
@@ -145,20 +132,6 @@ export type YearRowProps = {
   canEdit?: boolean;
   /** Open an account row's notes, estimates and checks. */
   onOpenNotes?: (account: AccountRow) => void;
-};
-
-export type AddAccountFormProps = {
-  year: number;
-  parentCategory: string;
-  masterAccounts: MasterAccount[];
-  onSave: (data: CreateAccountData) => void;
-  onCancel: () => void;
-  isSaving: boolean;
-};
-
-export type YoYComparisonProps = {
-  years: Set<number>;
-  data: AnnualRow[];
 };
 
 export type UpdateFormRow = {
@@ -213,10 +186,4 @@ export type LifetimeTotals = {
   contributions: number;
   match: number;
   fees: number;
-};
-
-export type AccountFilterState = {
-  selectedAccountIds: Set<number>;
-  /** null = "Since Inception" */
-  yearRange: { start: number; end: number } | null;
 };

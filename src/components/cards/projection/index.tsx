@@ -12,9 +12,6 @@ import {
   ControlZone,
   ZoneSecondaryRow,
 } from "./pill-btn";
-import { MethodologyContent } from "@/components/methodology-content";
-import { AccumulationMethodologyContent } from "@/components/accumulation-methodology-content";
-import { DecumulationMethodologyContent } from "@/components/decumulation-methodology-content";
 import { ValidationContent } from "@/components/validation-content";
 // formatCurrency import removed — no longer used inline
 import { formatPercent } from "@/lib/utils/format";
@@ -46,6 +43,23 @@ const SpendingStabilityChart = dynamic(
     })),
   { loading: () => <ProjectionChartSkeleton />, ssr: false },
 );
+// The methodology write-ups (~1,900 lines of prose) load only when one of
+// their slide panels is opened (closed panels render nothing).
+const MethodologyContent = dynamic(() =>
+  import("@/components/methodology-content").then((m) => ({
+    default: m.MethodologyContent,
+  })),
+);
+const AccumulationMethodologyContent = dynamic(() =>
+  import("@/components/accumulation-methodology-content").then((m) => ({
+    default: m.AccumulationMethodologyContent,
+  })),
+);
+const DecumulationMethodologyContent = dynamic(() =>
+  import("@/components/decumulation-methodology-content").then((m) => ({
+    default: m.DecumulationMethodologyContent,
+  })),
+);
 import { McResultsSection } from "./projection-mc-results";
 import { ProjectionLoader } from "./projection-loader";
 import {
@@ -56,8 +70,6 @@ import {
 // ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
-
-export { type EngineContribRate } from "./use-projection-state";
 
 export function ProjectionCard(props: {
   people?: { id: number; name: string; birthYear: number }[];
@@ -1288,6 +1300,13 @@ export function ProjectionCard(props: {
                 ) : (
                   <ProjectionChart state={state} />
                 )}
+                {engineQuery.data &&
+                  "jobYearsNote" in engineQuery.data &&
+                  engineQuery.data.jobYearsNote && (
+                    <p className="text-caption text-faint mt-1">
+                      {engineQuery.data.jobYearsNote}
+                    </p>
+                  )}
               </div>
             </div>
           )}

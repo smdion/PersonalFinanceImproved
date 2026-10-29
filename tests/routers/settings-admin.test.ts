@@ -7,6 +7,7 @@
  *   - apiConnections.list / upsert / delete
  *   - getDataFreshness
  *   - rbacGroups.get
+ *   - settings/_shared's validation schemas (zDecimal, settingValue)
  *
  * savingsGoals, performanceAccounts, portfolioSnapshots, and
  * relocationScenarios CRUD moved out to savings.ts/performance.ts/
@@ -32,6 +33,7 @@ import {
   adminSession,
   viewerSession,
 } from "./setup";
+import { zDecimal, settingValue } from "@/server/routers/settings/_shared";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -962,5 +964,61 @@ describe("settings.appSettings.setDismissal", () => {
     } finally {
       cleanup();
     }
+  });
+});
+
+describe("settings/_shared: zDecimal validation", () => {
+  it("accepts a valid decimal string", () => {
+    expect(zDecimal.safeParse("123.45").success).toBe(true);
+  });
+
+  it("accepts an integer string", () => {
+    expect(zDecimal.safeParse("100").success).toBe(true);
+  });
+
+  it("accepts negative numbers", () => {
+    expect(zDecimal.safeParse("-50.25").success).toBe(true);
+  });
+
+  it("accepts zero", () => {
+    expect(zDecimal.safeParse("0").success).toBe(true);
+  });
+
+  it("rejects non-numeric string", () => {
+    expect(zDecimal.safeParse("abc").success).toBe(false);
+  });
+
+  it("rejects empty string", () => {
+    expect(zDecimal.safeParse("").success).toBe(false);
+  });
+
+  it("rejects whitespace-only string", () => {
+    expect(zDecimal.safeParse("   ").success).toBe(false);
+  });
+});
+
+describe("settings/_shared: settingValue validation", () => {
+  it("accepts a string value", () => {
+    expect(settingValue.safeParse("hello").success).toBe(true);
+  });
+
+  it("accepts a number value", () => {
+    expect(settingValue.safeParse(42).success).toBe(true);
+  });
+
+  it("accepts a boolean value", () => {
+    expect(settingValue.safeParse(true).success).toBe(true);
+  });
+
+  it("accepts null", () => {
+    expect(settingValue.safeParse(null).success).toBe(true);
+  });
+
+  it("accepts an object", () => {
+    expect(settingValue.safeParse({ key: "value" }).success).toBe(true);
+  });
+
+  it("accepts an array", () => {
+    expect(settingValue.safeParse([1, 2, 3]).success).toBe(true);
   });
 });

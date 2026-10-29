@@ -17,7 +17,7 @@ export const DEMO_PROFILES: Record<string, DemoProfile> = {
 };
 
 /** Ordered list of profile slugs for display. */
-export const DEMO_PROFILE_ORDER = [
+const DEMO_PROFILE_ORDER = [
   "single-income",
   "dual-income-family",
   "early-retirement",

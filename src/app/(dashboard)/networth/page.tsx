@@ -60,6 +60,10 @@ import { SpreadsheetView } from "@/components/networth/spreadsheet";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
+import {
+  SK_ACTIVE_CONTRIB_PROFILE_ID,
+  SK_BUDGET_ACTIVE_COLUMN,
+} from "@/lib/constants/settings-keys";
 
 export default function NetWorthPage() {
   const utils = trpc.useUtils();
@@ -74,9 +78,12 @@ export default function NetWorthPage() {
       retry: false,
     });
   const primaryBirthYear = historyData?.primaryBirthYear;
-  const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
+  const [budgetColumn] = usePersistedSetting<number>(
+    SK_BUDGET_ACTIVE_COLUMN,
+    0,
+  );
   const [activeContribProfileId] = usePersistedSetting<number | null>(
-    "active_contrib_profile_id",
+    SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
   const [rawActiveSalaryProfileId] = useActiveSalaryProfile();

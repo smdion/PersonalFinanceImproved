@@ -38,7 +38,7 @@ export function getApiAccountBalanceMapFromAccounts(
 // 2. Resolve a single account's balance: API vs snapshot
 // ---------------------------------------------------------------------------
 
-export type ResolvedBalance = {
+type ResolvedBalance = {
   balance: number;
   source: "api" | "snapshot";
 };

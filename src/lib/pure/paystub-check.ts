@@ -73,7 +73,7 @@ export type PaystubFigures = Partial<{
   netPay: number;
 }>;
 
-export type PaystubFindingKey =
+type PaystubFindingKey =
   | "gross"
   | "federalTaxableWages"
   | "socialSecurityWages"

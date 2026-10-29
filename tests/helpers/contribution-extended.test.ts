@@ -53,6 +53,9 @@ function makeContribRow(
     employerMatchType: null,
     employerMatchValue: null,
     employerMaxMatchPct: null,
+    fromBonus: undefined as boolean | undefined,
+    // Rows as the IRS-limit cap pass leaves them (none over a limit here).
+    capPassed: true as const,
     ...overrides,
   };
 }
@@ -307,7 +310,7 @@ describe("applyContribActiveFields", () => {
     const result = applyContribActiveFields([baseRow], {
       "1": { contributionValue: "15", contributionMethod: "percent_of_salary" },
     });
-    expect(result[0].contributionValue).toBe("15");
+    expect(result[0]!.contributionValue).toBe("15");
   });
 
   it("filters out rows with isActive=false active field", () => {
@@ -335,8 +338,8 @@ describe("applyContribActiveFields", () => {
       "2": { contributionValue: "10", contributionMethod: "percent_of_salary" },
     });
     expect(result).toHaveLength(2);
-    expect(result[0].contributionValue).toBe("20");
-    expect(result[1].contributionValue).toBe("10");
+    expect(result[0]!.contributionValue).toBe("20");
+    expect(result[1]!.contributionValue).toBe("10");
   });
 
   it("overlay mode keeps an already-resolved row when this layer has no entry for it", () => {
@@ -347,7 +350,7 @@ describe("applyContribActiveFields", () => {
     };
     const result = applyContribActiveFields([resolved], {}, true);
     expect(result).toHaveLength(1);
-    expect(result[0].contributionValue).toBe("10");
+    expect(result[0]!.contributionValue).toBe("10");
   });
 
   it("overlay mode overrides an already-resolved row when this layer has an entry", () => {
@@ -361,7 +364,7 @@ describe("applyContribActiveFields", () => {
       { "1": { contributionValue: "999", contributionMethod: "fixed_annual" } },
       true,
     );
-    expect(result[0].contributionValue).toBe("999");
+    expect(result[0]!.contributionValue).toBe("999");
   });
 });
 
@@ -482,6 +485,7 @@ describe("resolveProfile", () => {
         additionalFedWithholding: 0,
         bonusMonth: null,
         bonusDayOfMonth: null,
+        extraPaycheckRouting: null,
       },
     ],
   ]);
@@ -514,6 +518,9 @@ describe("resolveProfile", () => {
     payPeriod: "biweekly",
     endDate: null,
     employerName: "OldCorp",
+    title: null,
+    startDate: "2020-01-01",
+    isSpeculative: false,
   } as (typeof import("@/lib/db/schema").jobs)["$inferSelect"];
 
   const liveJobSalary = {
@@ -536,8 +543,8 @@ describe("resolveProfile", () => {
       salaryProfileActiveMap,
     );
 
-    expect(result.jobSalaries[0].salary).toBe(120000);
-    expect(result.jobSalaries[0].totalComp).toBe(130000);
+    expect(result.jobSalaries[0]!.salary).toBe(120000);
+    expect(result.jobSalaries[0]!.totalComp).toBe(130000);
     expect(result.combinedSalary).toBe(120000);
   });
 
@@ -571,7 +578,7 @@ describe("resolveProfile", () => {
       salaryProfileActiveMap,
     );
 
-    expect(result.activeContribs[0].contributionValue).toBe("15");
+    expect(result.activeContribs[0]!.contributionValue).toBe("15");
   });
 
   it("filters out contributions deactivated by override", () => {
@@ -606,8 +613,8 @@ describe("resolveProfile", () => {
       salaryProfileActiveMap,
     );
 
-    expect(result.patchedJobs[0].payPeriod).toBe("biweekly");
-    expect(result.patchedJobs[0].w4FilingStatus).toBe("MFJ");
+    expect(result.patchedJobs[0]!.payPeriod).toBe("biweekly");
+    expect(result.patchedJobs[0]!.w4FilingStatus).toBe("MFJ");
   });
 });
 
@@ -636,10 +643,10 @@ describe("buildContributionDisplaySpecs", () => {
     );
 
     expect(specs).toHaveLength(1);
-    expect(specs[0].category).toBe("401k");
-    expect(specs[0].baseAnnual).toBe(12000);
-    expect(specs[0].ownerName).toBe("Alice");
-    expect(specs[0].personId).toBe(1);
+    expect(specs[0]!.category).toBe("401k");
+    expect(specs[0]!.baseAnnual).toBe(12000);
+    expect(specs[0]!.ownerName).toBe("Alice");
+    expect(specs[0]!.personId).toBe(1);
   });
 
   it("filters out zero-value contributions", () => {
@@ -691,7 +698,7 @@ describe("buildContributionDisplaySpecs", () => {
     const totalMatch = specs.reduce((s, sp) => s + sp.matchAnnual, 0);
     expect(totalMatch).toBeCloseTo(7200);
     // Pre-tax has 2x the contribution, so should get 2x the match
-    expect(specs[0].matchAnnual).toBeCloseTo(specs[1].matchAnnual * 2, 0);
+    expect(specs[0]!.matchAnnual).toBeCloseTo(specs[1]!.matchAnnual * 2, 0);
   });
 
   it("throws when two sibling rows both carry real match config", () => {

@@ -146,33 +146,6 @@ export function jsonbLiteral(val: unknown): string {
 }
 
 // ---------------------------------------------------------------------------
-// Column introspection (for import)
-// ---------------------------------------------------------------------------
-
-/** Get jsonb/json column names for a table. */
-export async function getJsonColumns(
-  client: {
-    query: (
-      sql: string,
-      params?: unknown[],
-    ) => Promise<{ rows: { column_name: string }[] }>;
-  },
-  tableName: string,
-): Promise<Set<string>> {
-  if (isPostgres()) {
-    const { rows } = await client.query(
-      `SELECT column_name FROM information_schema.columns
-       WHERE table_schema = 'public' AND table_name = $1 AND data_type = 'jsonb'`,
-      [tableName],
-    );
-    return new Set(rows.map((r) => r.column_name));
-  }
-  // SQLite: no introspection for json columns — we'll use schema metadata instead
-  // For now, return empty set (json columns are stored as text in SQLite)
-  return new Set();
-}
-
-// ---------------------------------------------------------------------------
 // Column name validation (prevents SQL injection in backup import/restore)
 // ---------------------------------------------------------------------------
 

@@ -13,10 +13,10 @@ import { DEFAULT_ENDOWMENT_ROLLING_YEARS } from "../constants";
 // Param field descriptor — drives UI rendering
 // ---------------------------------------------------------------------------
 
-export type ParamFieldType = "percent" | "number" | "boolean";
+type ParamFieldType = "percent" | "number" | "boolean";
 
 /** Analyzer lever — how adjusting this param affects retirement outcomes. */
-export type ParamLever = {
+type ParamLever = {
   /** Change to apply. Relative: -0.5 = halve current value.
    *  Absolute: -0.005 = subtract 0.5 percentage points. */
   delta: number;
@@ -26,7 +26,7 @@ export type ParamLever = {
   targets: readonly ("survival" | "smoothness")[];
 };
 
-export type ParamField = {
+type ParamField = {
   key: string;
   label: string;
   type: ParamFieldType;
@@ -46,10 +46,10 @@ export type ParamField = {
 // ---------------------------------------------------------------------------
 
 /** How the strategy determines annual spending — drives UI visibility of budget/rate controls. */
-export type IncomeSource = "budget" | "rate" | "formula";
+type IncomeSource = "budget" | "rate" | "formula";
 
 /** Strategy guide content — rendered by the Strategy Guide panel. */
-export type StrategyGuide = {
+type StrategyGuide = {
   /** How the strategy works (plain language). */
   how: string;
   /** Key strengths. */
@@ -62,7 +62,7 @@ export type StrategyGuide = {
   stabilityNote: string;
 };
 
-export type WithdrawalStrategyConfig = {
+type WithdrawalStrategyConfig = {
   /** Display name for UI dropdown. */
   label: string;
   /** Abbreviated label for chart legends. */

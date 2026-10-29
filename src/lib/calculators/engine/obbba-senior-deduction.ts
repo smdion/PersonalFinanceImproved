@@ -21,7 +21,7 @@
  * deduction convention in this engine), not silently zeroed by accident.
  */
 
-export type ObbbaSeniorDeductionInput = {
+type ObbbaSeniorDeductionInput = {
   /** Household members 65+ in the projection year this deduction applies to. */
   seniorCount: number;
   /** Prior year's MAGI — the phaseout basis. Undefined in decumulation year 1

@@ -13,20 +13,20 @@ import {
   tracksCostBasis,
 } from "@/lib/config/account-types";
 
-export type RmdTargetPerfAccount = {
+type RmdTargetPerfAccount = {
   id: number;
   isActive: boolean;
   accountType: string;
   parentCategory: string;
 };
 
-export type RmdTargetEntry = {
+type RmdTargetEntry = {
   category: string;
   parentCategory?: string;
   performanceAccountIds?: number[];
 };
 
-export type RmdExcessTargetResolution = {
+type RmdExcessTargetResolution = {
   /** The chosen account's performance id, when it still qualifies. */
   targetPerformanceAccountId: number | null;
   /** Add a projection-only retirement brokerage (the household has no

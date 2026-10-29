@@ -16,7 +16,13 @@ import { describe, it, expect } from "vitest";
 import { estimateWithdrawalTaxCost } from "@/lib/calculators/engine/tax-gross-up";
 import { routeForMode } from "@/lib/calculators/engine/withdrawal-routing";
 import { computeTaxFromSlots } from "@/lib/calculators/engine/tax-estimation";
-import { getAllCategories, zeroBalance } from "@/lib/config/account-types";
+import {
+  getAllCategories,
+  setBalance,
+  setBasis,
+  setTraditional,
+  zeroBalance,
+} from "@/lib/config/account-types";
 import type { AccountBalances } from "@/lib/calculators/types";
 
 import {
@@ -256,9 +262,9 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
     // Both 401k and brokerage need real balance so redistribution (when one
     // target is unfunded) can't mask the split's effect.
     const acctBal = zeroedBalances();
-    acctBal["401k"].traditional = 300000;
-    acctBal.brokerage.balance = 300000;
-    acctBal.brokerage.basis = 300000; // 0 gains -- isolates the traditional-vs-brokerage tax gap
+    setTraditional(acctBal["401k"], 300000);
+    setBalance(acctBal.brokerage, 300000);
+    setBasis(acctBal.brokerage, 300000); // 0 gains -- isolates the traditional-vs-brokerage tax gap
     const balances = makeTaxBuckets({
       preTax: 300000,
       taxFree: 0,
@@ -355,7 +361,7 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
     // it can't be silently backfilled by a sibling traditional account --
     // makeAccountBalances' even 401k/403b/ira split would mask that.
     const acctBal = zeroedBalances();
-    acctBal["401k"].traditional = 500000;
+    setTraditional(acctBal["401k"], 500000);
     const balances = makeTaxBuckets({
       preTax: 500000,
       taxFree: 0,

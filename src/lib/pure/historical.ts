@@ -6,13 +6,13 @@ import { toNumber } from "@/server/helpers/transforms";
 import { sumBy } from "@/lib/utils/math";
 
 /** A job's salary change record. */
-export type SalaryChange = {
+type SalaryChange = {
   effectiveDate: string;
   newSalary: number;
 };
 
 /** A job timeline entry. */
-export type JobTimeline = {
+type JobTimeline = {
   startDate: string;
   endDate: string | null;
   salary: number;
@@ -60,7 +60,7 @@ export function buildSalaryByYear(
 }
 
 /** An other-asset item from the DB. */
-export type OtherAssetItem = {
+type OtherAssetItem = {
   id?: number;
   name: string;
   year: number;

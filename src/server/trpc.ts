@@ -15,7 +15,7 @@ import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { notifyMutationSucceeded } from "./mutation-events";
 
-export type AuthLevel = "public" | "protected" | "admin" | Permission;
+type AuthLevel = "public" | "protected" | "admin" | Permission;
 
 type ProcedureMeta = { auth: AuthLevel };
 

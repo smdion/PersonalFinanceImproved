@@ -8,14 +8,14 @@
  */
 import { accountDisplayName } from "@/lib/utils/format";
 
-export type PortfolioLabelAccount = {
+type PortfolioLabelAccount = {
   accountType: string;
   subType: string | null;
   label: string | null;
   institution: string;
 };
 
-export type PortfolioLabelPerf =
+type PortfolioLabelPerf =
   | {
       displayName: string | null;
       accountLabel: string | null;

@@ -177,6 +177,7 @@ describe("LumpSumBadge", () => {
     amount: "50000",
     targetAccount: "brokerage" as const,
     targetAccountName: "Brokerage - Joint",
+    targetOwnerName: "",
     taxType: "" as const,
     label: "Inheritance",
   };

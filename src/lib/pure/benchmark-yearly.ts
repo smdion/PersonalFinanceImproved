@@ -36,7 +36,7 @@ export function previousMonth(year: number, month: number): [number, number] {
   return month === 1 ? [year - 1, 12] : [year, month - 1];
 }
 
-export type IndexYear = {
+type IndexYear = {
   year: number;
   begin: number;
   end: number;

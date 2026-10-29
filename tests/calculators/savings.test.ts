@@ -3,8 +3,6 @@ import { calculateSavings } from "@/lib/calculators/savings";
 import type { SavingsInput, SavingsGoalInput } from "@/lib/calculators/types";
 import { AS_OF_DATE } from "./fixtures";
 
-const AS_OF_DATE = new Date("2025-03-07");
-
 function makeGoal(overrides: Partial<SavingsGoalInput> = {}): SavingsGoalInput {
   return {
     id: 1,

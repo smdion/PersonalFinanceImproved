@@ -8,7 +8,10 @@ import {
   usePersistedSetting,
 } from "@/lib/hooks/use-persisted-setting";
 import { useUser, isAdmin } from "@/lib/context/user-context";
-import { SK_SETTINGS_DEBUG_SECTION } from "@/lib/constants/settings-keys";
+import {
+  SK_DIAG_MODE,
+  SK_SETTINGS_DEBUG_SECTION,
+} from "@/lib/constants/settings-keys";
 import { Button } from "@/components/ui/button";
 import { STATUS_COLORS } from "@/lib/utils/colors";
 import { formatDate } from "@/lib/utils/format";
@@ -82,7 +85,7 @@ export function DebugSettings() {
 
 function DiagnosticsSection() {
   const admin = isAdmin(useUser());
-  const [diagMode, setDiagMode] = usePersistedToggle("diag_mode", false);
+  const [diagMode, setDiagMode] = usePersistedToggle(SK_DIAG_MODE, false);
 
   return (
     <div>

@@ -21,6 +21,7 @@ const rates: FicaRates = {
   medicare: tb.medicareRate,
   socialSecurityWageBase: tb.socialSecurityWageBase,
   medicareWithholdingThreshold: tb.medicareAdditionalThreshold,
+  additionalMedicare: tb.medicareAdditionalRate,
 };
 const paycheck = calculatePaycheck(PERSON_A_PAYCHECK_INPUT);
 // The panel compares this year's checks.

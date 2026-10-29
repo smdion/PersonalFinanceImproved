@@ -11,7 +11,7 @@
  */
 import type { MonteCarloPercentileBand } from "@/lib/calculators/types";
 
-export type NestEggDisplay =
+type NestEggDisplay =
   | {
       kind: "simulated";
       median: number;

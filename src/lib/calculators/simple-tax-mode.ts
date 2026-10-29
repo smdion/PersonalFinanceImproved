@@ -28,9 +28,6 @@ import type {
   RetirementContribSlice,
   TaxBuckets,
 } from "./types";
-
-export type { RetirementContribSlice };
-
 export type SimpleTaxModeParts = {
   /** Starting balances of retirement money (by tax type). */
   retirementBuckets: TaxBuckets;

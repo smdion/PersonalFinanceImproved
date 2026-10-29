@@ -33,7 +33,7 @@ export function useClearParams(): (params: readonly string[]) => void {
 }
 
 /** The focus a link opened this page with — read from the URL every render. */
-export function useFocus(): {
+function useFocus(): {
   topic: FocusKey | null;
   idValue: string | null;
   clearFocus: () => void;

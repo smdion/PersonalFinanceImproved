@@ -16,7 +16,7 @@
 import type { AccountCategory } from "./account-types.types";
 import type { PortfolioTaxType } from "./enum-values";
 
-export type SimplefinAccountKind = {
+type SimplefinAccountKind = {
   pattern: RegExp;
   accountType: AccountCategory;
   /** Null when the name doesn't say (e.g. a plan with several tax buckets). */

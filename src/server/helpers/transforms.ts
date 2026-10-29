@@ -79,7 +79,7 @@ export function getBudgetFrequencyNote(
   return config.budgetNote;
 }
 
-export type TaxTypeBreakdown = Record<string, number>;
+type TaxTypeBreakdown = Record<string, number>;
 
 /**
  * Break down snapshot accounts by tax type.

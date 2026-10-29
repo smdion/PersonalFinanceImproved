@@ -23,6 +23,8 @@ export interface TestDbContext {
   db: BetterSQLite3Database<typeof sqliteSchema>;
   rawDb: DbType;
   schema: typeof sqliteSchema;
+  /** The same tables typed as the app's schema — use with `rawDb`. */
+  appSchema: typeof pgSchema;
   cleanup: () => void;
 }
 
@@ -83,7 +85,14 @@ export async function createTestDb(): Promise<TestDbContext> {
     }
   };
 
-  return { db, rawDb, schema: sqliteSchema, cleanup };
+  return {
+    db,
+    rawDb,
+    schema: sqliteSchema,
+
+    appSchema: sqliteSchema as unknown as typeof pgSchema,
+    cleanup,
+  };
 }
 
 /**
@@ -92,7 +101,7 @@ export async function createTestDb(): Promise<TestDbContext> {
  * a later schema snapshot, causing 0001 to re-add tables/columns 0000 already
  * created. Mirrors the savepoint logic in db-migrate.ts.
  */
-export function applyMigrationsIdempotent(
+function applyMigrationsIdempotent(
   sqlite: InstanceType<typeof Database>,
   migrationsFolder = "./drizzle-sqlite",
 ): void {

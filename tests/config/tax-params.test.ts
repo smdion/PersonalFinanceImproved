@@ -78,7 +78,7 @@ describe("resolveTaxParams — parity with pre-R43 resolution", () => {
     const expectMfjFalse = rows.withholdingBrackets.find(
       (b) => b.taxYear === 2026 && b.filingStatus === "MFJ" && !b.w4Checkbox,
     )!.brackets;
-    expect(r.withholdingBrackets!.MFJ.false).toEqual(expectMfjFalse);
+    expect(r.withholdingBrackets!.MFJ!.false).toEqual(expectMfjFalse);
 
     const expectLimits: Record<string, number> = {};
     for (const l of rows.contributionLimits)
@@ -125,7 +125,7 @@ describe("resolveTaxParams — Oct-Jan drift window (F2-4)", () => {
     const r = resolveTaxParams(rows, 2026, { onMissing: "nearest" });
     expect(r.resolvedYear).toBe(2026);
     // brackets, limits, ltcg all come from 2026 — not 2027 brackets + 2026 limits
-    expect(r.withholdingBrackets!.MFJ.false.length).toBe(8);
+    expect(r.withholdingBrackets!.MFJ!.false.length).toBe(8);
     expect(r.limits.standard_deduction_mfj).toBeGreaterThan(0);
   });
 
@@ -145,7 +145,7 @@ describe("resolveTaxParams — Oct-Jan drift window (F2-4)", () => {
   it("requesting 2027 (nearest, no contribution_limits for 2027): falls back entirely to 2026, not a split vintage", () => {
     const r = resolveTaxParams(rows, 2027, { onMissing: "nearest" });
     expect(r.resolvedYear).toBe(2026);
-    expect(r.withholdingBrackets!.MFJ.false.length).toBe(8);
+    expect(r.withholdingBrackets!.MFJ!.false.length).toBe(8);
     expect(r.limits.standard_deduction_mfj).toBeGreaterThan(0);
   });
 
@@ -264,7 +264,7 @@ describe("resolveTaxParams — LTCG top bracket", () => {
   it("preserves threshold: null (never coerces to 0)", () => {
     const r = resolveTaxParams(seedRows(), 2026);
     const mfj = r.ltcgByStatus!.MFJ;
-    expect(mfj[mfj.length - 1]!.threshold).toBeNull();
+    expect(mfj![mfj!.length - 1]!.threshold).toBeNull();
   });
 });
 
@@ -321,7 +321,7 @@ describe("resolveTaxParams — synthetic future year structural invariants", () 
   it("every withholding row: 7 statutory rates in order", () => {
     for (const fs of ["MFJ", "Single", "HOH"] as const) {
       for (const cb of ["false", "true"] as const) {
-        const b = r.withholdingBrackets![fs][cb];
+        const b = r.withholdingBrackets![fs]![cb];
         expect(b.map((x) => x.rate)).toEqual([
           0, 0.1, 0.12, 0.22, 0.24, 0.32, 0.35, 0.37,
         ]);
@@ -331,7 +331,7 @@ describe("resolveTaxParams — synthetic future year structural invariants", () 
 
   it("every withholding row: thresholds strictly increase", () => {
     for (const fs of ["MFJ", "Single", "HOH"] as const) {
-      const b = r.withholdingBrackets![fs].false;
+      const b = r.withholdingBrackets![fs]!.false;
       for (let i = 1; i < b.length; i++) {
         expect(b[i]!.threshold).toBeGreaterThan(b[i - 1]!.threshold);
       }
@@ -340,7 +340,7 @@ describe("resolveTaxParams — synthetic future year structural invariants", () 
 
   it("every withholding row: baseWithholding forward-cascade holds", () => {
     for (const fs of ["MFJ", "Single", "HOH"] as const) {
-      const b = r.withholdingBrackets![fs].false;
+      const b = r.withholdingBrackets![fs]!.false;
       for (let i = 1; i < b.length; i++) {
         const expected =
           b[i - 1]!.baseWithholding +

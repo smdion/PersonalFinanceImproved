@@ -12,7 +12,7 @@ const DEPOSIT_MATCH_TOLERANCE = 0.1;
 /** Paydays needed before judging a pace. */
 const MIN_PAYDAYS = 3;
 
-export type DepositVerdict =
+type DepositVerdict =
   /** The feed sends no transactions (balance only, or not linked). */
   | "unknown"
   /** No setup and no deposits — nothing to compare. */
@@ -27,7 +27,7 @@ export type DepositVerdict =
   | "lower"
   | "higher";
 
-export type DepositCheck = {
+type DepositCheck = {
   verdict: DepositVerdict;
   /** Newest first, at most three. */
   recent: { day: string; amount: number }[];

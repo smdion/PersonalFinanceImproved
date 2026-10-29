@@ -359,7 +359,6 @@ describe("brokerage goals integration", () => {
       asOfDate: AS_OF,
       goals,
       engineYears: engineResult.projectionByYear,
-      parentCategoryFilter: "Portfolio",
     });
 
     expect(bgResult.goals).toHaveLength(1);

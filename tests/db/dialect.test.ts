@@ -17,7 +17,6 @@ describe("dialect detection", () => {
     const mod = await import("@/lib/db/dialect");
     expect(mod.getDialect()).toBe("postgresql");
     expect(mod.isPostgres()).toBe(true);
-    expect(mod.isSQLite()).toBe(false);
   });
 
   it("detects postgres:// as postgresql", async () => {
@@ -32,7 +31,6 @@ describe("dialect detection", () => {
     const mod = await import("@/lib/db/dialect");
     expect(mod.getDialect()).toBe("sqlite");
     expect(mod.isPostgres()).toBe(false);
-    expect(mod.isSQLite()).toBe(true);
   });
 
   it("defaults to sqlite for non-postgres URLs", async () => {

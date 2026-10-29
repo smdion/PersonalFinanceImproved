@@ -468,8 +468,6 @@ describe("projection router — computeProjection", () => {
     db.insert(schema.contributionAccounts)
       .values({
         accountType: "401k",
-        contributionMethod: "percent_of_salary",
-        contributionValue: "0.10",
         taxTreatment: "pre_tax",
         employerMatchType: "none",
         isActive: true,
@@ -515,7 +513,7 @@ describe("projection router — computeProjection", () => {
     expect(response.result).not.toBeNull();
     expect(response.combinedSalary).toBe(120000);
     expect(response.people).toHaveLength(1);
-    expect(response.primaryPersonId).toBe(response.people[0]!.id);
+    expect(response.primaryPersonId).toBe(response.people![0]!.id);
     expect(response.annualExpenses).toBeGreaterThan(0);
     expect(response.result!.projectionByYear.length).toBeGreaterThan(0);
     // The payload's buckets, per-category balances and accounts describe
@@ -553,7 +551,7 @@ describe("projection router — computeProjection", () => {
 
   it("echoes the saved unspent-RMD account (the Retirement settings picker reads it)", async () => {
     const brokerage = seedPerformanceAccount(db, {
-      name: "Echo brokerage",
+      accountLabel: "Echo brokerage",
       accountType: "brokerage",
       parentCategory: "Retirement",
     });
@@ -577,7 +575,7 @@ describe("projection router — computeProjection", () => {
 
   it("a saved unspent-RMD account that's no longer a Retirement brokerage falls back with a warning", async () => {
     const moved = seedPerformanceAccount(db, {
-      name: "Moved brokerage",
+      accountLabel: "Moved brokerage",
       accountType: "brokerage",
       parentCategory: "Portfolio",
     });
@@ -621,7 +619,7 @@ describe("projection router — computeProjection", () => {
       .where(eq(schema.contributionAccounts.id, retirement401k.id))
       .run();
     const portfolioPerf = seedPerformanceAccount(db, {
-      name: "Long-term brokerage",
+      accountLabel: "Long-term brokerage",
       accountType: "brokerage",
       parentCategory: "Portfolio",
     });
@@ -642,7 +640,6 @@ describe("projection router — computeProjection", () => {
     const profile = (withPortfolio: boolean, retirementPct = "10") =>
       seedContributionProfile(db, {
         name: `${withPortfolio ? "With Portfolio savings" : "Retirement only"} ${retirementPct}%`,
-        isActive: false,
         contributionActiveFields: {
           contributionAccounts: {
             [String(retirement401k.id)]: {

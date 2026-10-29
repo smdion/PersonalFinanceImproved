@@ -9,7 +9,7 @@ import { tipColorClass } from "./utils";
  * Renders a single tooltip line item (contribution, withdrawal, balance, etc.).
  * Recursive: renders child items (match, sub-items) as nested rows.
  */
-export function renderLineItem(
+function renderLineItem(
   item: TooltipLineItem,
   idx: number,
   nested = false,

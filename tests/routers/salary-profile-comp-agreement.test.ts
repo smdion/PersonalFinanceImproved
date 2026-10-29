@@ -26,6 +26,7 @@
  * this must catch.
  */
 import "./setup-mocks";
+import { salaryEntry } from "../helpers/salary-entry";
 import { describe, it, expect, vi } from "vitest";
 
 vi.mock("@/lib/budget-api", () => ({
@@ -92,7 +93,7 @@ describe("combinedIncome agrees with resolveProfile's totalComp", () => {
   }
 
   it("agrees for a job with a complete entry earning a bonus", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    const { caller, db, rawDb, cleanup } = await createTestCaller(adminSession);
     try {
       const withEntry = await seedPerson(db, "WithEntry");
       const withoutEntry = await seedPerson(db, "WithoutEntry");
@@ -104,17 +105,17 @@ describe("combinedIncome agrees with resolveProfile's totalComp", () => {
       // A job has no salary/bonus of its own — only the one with an entry
       // in this profile earns anything; the other contributes $0.
       const salaries: SalaryEntryMap = {
-        [String(jobWithEntry)]: {
+        [String(jobWithEntry)]: salaryEntry({
           salary: ENTRY_SALARY,
           bonusPercent: BONUS_PERCENT,
           bonusMultiplier: 1,
           monthsInBonusYear: 12,
-        },
+        }),
       };
       const profileId = activateProfile(db, "Entry Salary", salaries);
 
       const view = await caller.salaryProfile.getById({ id: profileId });
-      const computed = await resolvedTotalComp(db);
+      const computed = await resolvedTotalComp(rawDb);
 
       // The assertion that would have caught the bug.
       expect(view!.combinedIncome).toBeCloseTo(computed, 6);
@@ -139,7 +140,7 @@ describe("combinedIncome agrees with resolveProfile's totalComp", () => {
   });
 
   it("agrees for a bigger bonus multiplier", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    const { caller, db, rawDb, cleanup } = await createTestCaller(adminSession);
     try {
       const personId = await seedPerson(db, "BigBonus");
       const jobId = seedJob(db, personId, {
@@ -147,17 +148,20 @@ describe("combinedIncome agrees with resolveProfile's totalComp", () => {
       });
 
       const salaries: SalaryEntryMap = {
-        [String(jobId)]: {
+        [String(jobId)]: salaryEntry({
           salary: LIVE_SALARY,
           bonusPercent: 0.3,
           bonusMultiplier: 2,
           monthsInBonusYear: 12,
-        },
+        }),
       };
       const profileId = activateProfile(db, "Big Bonus", salaries);
 
       const view = await caller.salaryProfile.getById({ id: profileId });
-      expect(view!.combinedIncome).toBeCloseTo(await resolvedTotalComp(db), 6);
+      expect(view!.combinedIncome).toBeCloseTo(
+        await resolvedTotalComp(rawDb),
+        6,
+      );
       expect(view!.combinedIncome).toBeCloseTo(
         LIVE_SALARY + LIVE_SALARY * 0.3 * 2,
         6,
@@ -168,14 +172,17 @@ describe("combinedIncome agrees with resolveProfile's totalComp", () => {
   });
 
   it("agrees when the profile has no entries at all", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    const { caller, db, rawDb, cleanup } = await createTestCaller(adminSession);
     try {
       const personId = await seedPerson(db, "NoEntry");
       seedJob(db, personId, { annualSalary: String(LIVE_SALARY) });
       const profileId = activateProfile(db, "Nothing", {});
 
       const view = await caller.salaryProfile.getById({ id: profileId });
-      expect(view!.combinedIncome).toBeCloseTo(await resolvedTotalComp(db), 6);
+      expect(view!.combinedIncome).toBeCloseTo(
+        await resolvedTotalComp(rawDb),
+        6,
+      );
       // No entry means $0 — a job has no live salary to fall back to.
       expect(view!.combinedIncome).toBe(0);
     } finally {

@@ -34,7 +34,7 @@ import type { PushSnapshotMode } from "@/server/helpers/budget-api-push";
  * balances. The single rule for "the year's snapshot", shared by the sync
  * below and the Performance checks so they can't disagree.
  */
-export async function lastSnapshotPerYear(
+async function lastSnapshotPerYear(
   db: DbType,
 ): Promise<Map<number, { id: number; date: string }>> {
   const all = await db
@@ -116,8 +116,7 @@ export async function loadYearEndSnapshots(
  * Must run inside the same transaction as the balance write. Says whether
  * Performance followed the snapshot, or why not.
  */
-export type SnapshotPerformanceSync =
-  "synced" | "earlier-snapshot" | "year-finalized";
+type SnapshotPerformanceSync = "synced" | "earlier-snapshot" | "year-finalized";
 
 export async function refreshSnapshotYearDerivatives(
   tx: DbType,
@@ -181,7 +180,7 @@ export async function refreshSnapshotYearDerivatives(
   return "synced";
 }
 
-export type SnapshotPushResult = {
+type SnapshotPushResult = {
   pushed: boolean;
   accountsPushed: number;
   accountsSkipped?: number;

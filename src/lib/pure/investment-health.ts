@@ -7,7 +7,7 @@ import {
   HOLDINGS_STALE_DAYS,
 } from "@/lib/config/investment-health";
 
-export type AccountHealthInput = {
+type AccountHealthInput = {
   label: string;
   /** Latest day holdings were reported (YYYY-MM-DD), or null if never. */
   holdingsAsOf: string | null;
@@ -17,7 +17,7 @@ export type AccountHealthInput = {
   balance: number | null;
 };
 
-export type HealthIssue = {
+type HealthIssue = {
   account: string;
   kind: "holdings_stale" | "holdings_gap";
   message: string;

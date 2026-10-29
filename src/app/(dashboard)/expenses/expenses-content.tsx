@@ -25,6 +25,10 @@ import {
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
+import {
+  SK_ACTIVE_CONTRIB_PROFILE_ID,
+  SK_BUDGET_ACTIVE_COLUMN,
+} from "@/lib/constants/settings-keys";
 
 // Code-split the recharts-heavy chart row. Both
 // charts share a single chunk so the recharts payload is fetched once on
@@ -77,10 +81,13 @@ export function ExpensesContent() {
     "month",
   );
   const [activeContribProfileId] = usePersistedSetting<number | null>(
-    "active_contrib_profile_id",
+    SK_ACTIVE_CONTRIB_PROFILE_ID,
     null,
   );
-  const [activeColumn] = usePersistedSetting<number>("budget_active_column", 0);
+  const [activeColumn] = usePersistedSetting<number>(
+    SK_BUDGET_ACTIVE_COLUMN,
+    0,
+  );
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   // ── Data queries ──

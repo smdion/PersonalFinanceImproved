@@ -7,6 +7,7 @@ import {
 } from "@/lib/calculators/engine/tax-estimation";
 
 import { makeTaxBuckets, TEST_BRACKETS } from "./fixtures/engine-fixtures";
+import { shippedTaxTables } from "../helpers/tax-data";
 import type { DecumulationSlot } from "@/lib/calculators/types";
 
 function makeSlot(
@@ -164,6 +165,7 @@ describe("computeTaxFromSlots", () => {
     hsa: 0,
     brokerage: 0.15,
     taxBrackets: TEST_BRACKETS,
+    ltcgBrackets: shippedTaxTables().ltcgBrackets,
   };
 
   it("returns zero tax cost for empty slots", () => {

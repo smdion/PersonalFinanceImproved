@@ -1,47 +1,6 @@
 "use client";
 
-import { useState } from "react";
-
-function Section({
-  title,
-  children,
-  defaultOpen = true,
-}: {
-  title: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="overflow-hidden rounded-lg border">
-      <button
-        onClick={() => setOpen(!open)}
-        className="bg-surface-sunken text-secondary hover:bg-surface-elevated flex w-full items-center justify-between px-4 py-3 text-sm font-medium transition-colors"
-      >
-        {title}
-        <svg
-          aria-hidden="true"
-          className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </button>
-      {open && (
-        <div className="text-muted space-y-4 px-4 py-4 text-sm leading-relaxed">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
+import { ProseSection } from "@/components/ui/prose-section";
 
 export function ValidationContent() {
   return (
@@ -52,7 +11,7 @@ export function ValidationContent() {
         mathematical invariants, and statistical validation.
       </p>
 
-      <Section title="Validated Against Published Research">
+      <ProseSection title="Validated Against Published Research" defaultOpen>
         <h4 className="text-secondary font-semibold">
           Trinity Study (Cooley et al. 1998)
         </h4>
@@ -182,9 +141,9 @@ export function ValidationContent() {
             </tbody>
           </table>
         </div>
-      </Section>
+      </ProseSection>
 
-      <Section title="Validated Against IRS Tax Law" defaultOpen={false}>
+      <ProseSection title="Validated Against IRS Tax Law">
         <p>
           Tax calculations are verified against{" "}
           <strong>IRS Rev. Proc. 2024-40</strong> (2025 tax tables) with exact
@@ -230,9 +189,9 @@ export function ValidationContent() {
           to Age 100 = 6.4. The engine computes RMD = prior year traditional
           balance &divide; factor, validated within 5% or $50.
         </p>
-      </Section>
+      </ProseSection>
 
-      <Section title="Validated Against Financial Math" defaultOpen={false}>
+      <ProseSection title="Validated Against Financial Math">
         <p>
           Before any tax or allocation complexity, the core engine is verified
           against hand-calculable formulas:
@@ -287,9 +246,9 @@ export function ValidationContent() {
             </tbody>
           </table>
         </div>
-      </Section>
+      </ProseSection>
 
-      <Section title="Institutional Asset Assumptions" defaultOpen={false}>
+      <ProseSection title="Institutional Asset Assumptions">
         <p>
           Return and volatility inputs are compared against three institutional
           sources to ensure they fall within published ranges:
@@ -345,9 +304,9 @@ export function ValidationContent() {
           apply multipliers (Conservative uses lower forward-looking returns +
           higher volatility for stress testing).
         </p>
-      </Section>
+      </ProseSection>
 
-      <Section title="29 Mathematical Invariants" defaultOpen={false}>
+      <ProseSection title="29 Mathematical Invariants">
         <p>
           Using <strong>property-based testing</strong> (fast-check), we
           generate hundreds of random valid inputs and prove that mathematical
@@ -403,9 +362,9 @@ export function ValidationContent() {
           <li>Same input always produces identical output</li>
           <li>Engine never mutates its input object</li>
         </ul>
-      </Section>
+      </ProseSection>
 
-      <Section title="Simulation Statistical Validity" defaultOpen={false}>
+      <ProseSection title="Simulation Statistical Validity">
         <p>
           The simulation infrastructure itself is validated for correct
           statistical behavior:
@@ -448,9 +407,9 @@ export function ValidationContent() {
             </tbody>
           </table>
         </div>
-      </Section>
+      </ProseSection>
 
-      <Section title="Sensitivity Curves" defaultOpen={false}>
+      <ProseSection title="Sensitivity Curves">
         <p>
           The engine produces expected monotonic relationships that match
           academic literature. If it ever produced a non-monotonic curve, it
@@ -500,9 +459,9 @@ export function ValidationContent() {
             retirement &mdash; realistic scenario
           </li>
         </ol>
-      </Section>
+      </ProseSection>
 
-      <Section title="Test Coverage Summary" defaultOpen={false}>
+      <ProseSection title="Test Coverage Summary">
         <p>
           The engine is backed by <strong>362 automated tests</strong> across 26
           test files:
@@ -613,7 +572,7 @@ export function ValidationContent() {
           hundreds of randomly generated scenarios to prove its math holds
           universally.
         </p>
-      </Section>
+      </ProseSection>
     </div>
   );
 }

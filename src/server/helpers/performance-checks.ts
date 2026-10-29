@@ -18,7 +18,7 @@ import { toNumber, type DbOrTx } from "@/server/helpers/transforms";
 
 type AccountPerfRow = typeof schema.accountPerformance.$inferSelect;
 
-export function toCheckRow(r: AccountPerfRow): CheckRow {
+function toCheckRow(r: AccountPerfRow): CheckRow {
   return {
     id: r.id,
     year: r.year,

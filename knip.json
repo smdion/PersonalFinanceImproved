@@ -1,0 +1,21 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "src/proxy.ts",
+    "src/instrumentation.node.ts",
+    "scripts/**/*.ts",
+    "drizzle-sqlite.config.ts",
+    "src/lib/db/schema.ts",
+    "src/server/auth.ts",
+    "src/lib/config/enum-values.ts",
+    "src/lib/db/json-schemas.ts",
+    "src/lib/db/reference-reconcile-core.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx}", "scripts/**/*.ts", "tests/**/*.{ts,tsx}"],
+  "ignore": ["src/lib/db/sqlite/**", "src/lib/db/schema-sqlite.ts"],
+  "ignoreDependencies": ["tailwindcss", "postcss-load-config", "xlsx"],
+  "rules": {
+    "duplicates": "off"
+  },
+  "ignoreExportsUsedInFile": true
+}

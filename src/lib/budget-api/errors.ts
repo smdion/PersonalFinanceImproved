@@ -8,7 +8,7 @@
  * subclass so the sync layer + UI can react appropriately.
  */
 
-export type BudgetApiErrorCode =
+type BudgetApiErrorCode =
   | "auth" // 401, 403 — token revoked or wrong scope
   | "rate-limit" // 429 — back off and retry
   | "client" // other 4xx — bad request, malformed payload, etc.

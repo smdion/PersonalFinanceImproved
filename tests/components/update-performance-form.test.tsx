@@ -92,6 +92,9 @@ const accountRows: AccountRow[] = [
     accountType: "401k",
     subType: null,
     isActive: true,
+    contributionBasis: null,
+    conversionBasis: null,
+    latestConversionYear: null,
     performanceAccountId: 101,
     displayOrder: 0,
     year: 2026,
@@ -116,6 +119,9 @@ const accountRows: AccountRow[] = [
     accountType: "brokerage",
     subType: null,
     isActive: true,
+    contributionBasis: null,
+    conversionBasis: null,
+    latestConversionYear: null,
     performanceAccountId: 102,
     displayOrder: 0,
     year: 2026,
@@ -187,7 +193,7 @@ describe("UpdatePerformanceForm", () => {
     expect(screen.getByText(/No SimpleFIN feed/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
-    const input = batchMutate.mock.calls[0][0] as {
+    const input = batchMutate.mock.calls[0]![0] as {
       accounts: {
         id: number;
         totalContributions: string;
@@ -275,7 +281,7 @@ describe("UpdatePerformanceForm", () => {
       screen.getByText(/Kept the figures you'd already edited/),
     ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
-    const { accounts } = batchMutate.mock.calls[0][0] as {
+    const { accounts } = batchMutate.mock.calls[0]![0] as {
       accounts: { id: number; totalContributions: string }[];
     };
     expect(accounts.find((a) => a.id === 1)!.totalContributions).toBe(
@@ -359,7 +365,7 @@ describe("UpdatePerformanceForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
 
     expect(batchMutate).toHaveBeenCalledTimes(1);
-    const { accounts } = batchMutate.mock.calls[0][0] as {
+    const { accounts } = batchMutate.mock.calls[0]![0] as {
       accounts: { id: number; yearlyGainLoss: string; endingBalance: string }[];
     };
     expect(accounts).toHaveLength(2);
@@ -402,7 +408,7 @@ describe("UpdatePerformanceForm", () => {
     fireEvent.click(screen.getByRole("button", { name: "Use that" }));
     expect(screen.queryByText(/Last year ended at/)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
-    const { accounts } = batchMutate.mock.calls[0][0] as {
+    const { accounts } = batchMutate.mock.calls[0]![0] as {
       accounts: {
         id: number;
         beginningBalance: string;
@@ -427,7 +433,7 @@ describe("UpdatePerformanceForm", () => {
     // Click the override ("edit") button next to account 1's computed
     // gain/loss — it seeds the manual field with the current computed value.
     // Both rows render this button; account 1 (Fidelity) is first.
-    fireEvent.click(screen.getAllByTitle("Enter the value yourself")[0]);
+    fireEvent.click(screen.getAllByTitle("Enter the value yourself")[0]!);
     expect(screen.getByText("manual")).toBeInTheDocument();
 
     // Change the manual override input to a different value.
@@ -438,7 +444,7 @@ describe("UpdatePerformanceForm", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Save Update" }));
 
-    const { accounts } = batchMutate.mock.calls[0][0] as {
+    const { accounts } = batchMutate.mock.calls[0]![0] as {
       accounts: { id: number; yearlyGainLoss: string }[];
     };
     const acct1 = accounts.find((a) => a.id === 1)!;
@@ -476,9 +482,9 @@ describe("UpdatePerformanceForm", () => {
   it("filters out accounts from other years or inactive accounts", () => {
     const rows: AccountRow[] = [
       ...accountRows,
-      { ...accountRows[0], id: 3, year: 2025, accountLabel: "Old Year" },
+      { ...accountRows[0]!, id: 3, year: 2025, accountLabel: "Old Year" },
       {
-        ...accountRows[0],
+        ...accountRows[0]!,
         id: 4,
         isActive: false,
         accountLabel: "Inactive Acct",

@@ -11,7 +11,7 @@
 import type { BudgetAccount } from "./types";
 import type { AccountMapping } from "@/lib/db/schema";
 
-export interface DriftReport {
+interface DriftReport {
   /** Mappings whose remote account no longer exists in the latest fetch. */
   brokenMappings: BrokenMapping[];
   /** Accounts that exist in the new fetch but didn't in the cache (informational). */
@@ -20,7 +20,7 @@ export interface DriftReport {
   renamedAccounts: RenamedAccount[];
 }
 
-export interface BrokenMapping {
+interface BrokenMapping {
   remoteAccountId: string;
   /** The local-side identifier (mortgage:1, asset:5, etc.). */
   localId: string;
@@ -29,7 +29,7 @@ export interface BrokenMapping {
   reason: "deleted" | "id-changed";
 }
 
-export interface RenamedAccount {
+interface RenamedAccount {
   remoteAccountId: string;
   oldName: string;
   newName: string;

@@ -11,15 +11,6 @@ import { buildWatchlist } from "./aca-irmaa-narrative";
 import { buildActionItems } from "./action-items";
 import { buildYearTableRows } from "./year-table";
 import type { ReportNarrative } from "./types";
-
-export type { ReportNarrative } from "./types";
-export { checkReportGate, reportGateFailureMessage } from "./mc-freshness";
-export type {
-  ReportGateInput,
-  ReportGateResult,
-  ReportGateFailure,
-} from "./mc-freshness";
-
 /**
  * Build the full advisor-report narrative. Callers should only invoke this
  * after `checkReportGate` has passed — `mcResult` is required (not

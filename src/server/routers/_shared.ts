@@ -53,8 +53,6 @@ export const zYearEndTargeting = z
   })
   .optional();
 
-export type YearEndTargetingInput = z.infer<typeof zYearEndTargeting>;
-
 /** Guardrail on the sandbox record's size — see zSandboxSalaryEntries. */
 const MAX_SANDBOX_PEOPLE = 10;
 

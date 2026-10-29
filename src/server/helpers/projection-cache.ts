@@ -397,7 +397,7 @@ export function hashEngineInput(
   return createHash("sha256").update(JSON.stringify(canonical)).digest("hex");
 }
 
-export interface ProjectionCacheHit<TResult> {
+interface ProjectionCacheHit<TResult> {
   result: TResult;
   seed: number | null;
   computedAt: Date;

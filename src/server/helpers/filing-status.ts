@@ -13,7 +13,7 @@ import { w4FilingStatusOf, type SalaryProfileActiveMap } from "./salary";
 import type { Db } from "./transforms";
 
 /** People ids, the primary person first (whose W-4 stands in first). */
-export function primaryFirst(
+function primaryFirst(
   people: readonly { id: number; isPrimaryUser: boolean }[],
 ): number[] {
   return [...people]

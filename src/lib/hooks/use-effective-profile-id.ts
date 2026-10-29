@@ -1,14 +1,13 @@
 "use client";
 
-export type EffectiveProfileSource = "user-selection" | "global-default";
+type EffectiveProfileSource = "user-selection" | "global-default";
 
-export type EffectiveProfileId = {
+type EffectiveProfileId = {
   profileId: number | null;
   source: EffectiveProfileSource;
 };
 
-export type EffectiveProfileKind =
-  "budget" | "contribution" | "salary" | "retirement";
+type EffectiveProfileKind = "budget" | "contribution" | "salary" | "retirement";
 
 /**
  * The single resolver for "which Budget/Contribution/Salary/Retirement

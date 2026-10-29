@@ -42,6 +42,7 @@ function makeExposure(
         penaltyFreeAmount: e.penaltyFreeAmount,
         penaltyExposedAmount: e.penaltyExposedAmount,
         reason: "test fixture",
+        allowPenalizedWithdrawals: false,
       },
     ]),
   );
@@ -51,6 +52,12 @@ function makeExposure(
     penaltyExposedTrad: {} as Record<AccountCategory, number>,
     penaltyExposedRoth: {} as Record<AccountCategory, number>,
     penaltyExposedTotal: {} as Record<AccountCategory, number>,
+    // No account allows a penalized draw.
+    penaltyExposedTradStillExcluded: {} as Record<AccountCategory, number>,
+    penaltyExposedRothStillExcluded: {} as Record<AccountCategory, number>,
+    penaltyExposedTotalStillExcluded: {} as Record<AccountCategory, number>,
+    totalPenaltyExposedStillExcluded: 0,
+    reachableByCategory: {},
   };
 }
 

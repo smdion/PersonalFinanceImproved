@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-export type ActiveProfileKind = "contribution" | "salary" | "retirement";
+type ActiveProfileKind = "contribution" | "salary" | "retirement";
 
 // Repairs already attempted this page load, shared by every hook instance.
 // The dashboard mounts ~20 consumers of these hooks; per-instance tracking

@@ -19,16 +19,6 @@ export function Skeleton({ className = "h-4 w-full" }: SkeletonProps) {
   );
 }
 
-/** Skeleton for a dashboard-style metric card (value + label). */
-export function SkeletonMetric({ className = "" }: SkeletonProps) {
-  return (
-    <div className={`space-y-2 ${className}`} aria-hidden="true">
-      <div className="bg-surface-strong h-8 w-1/2 animate-pulse rounded" />
-      <div className="bg-surface-elevated h-4 w-3/4 animate-pulse rounded" />
-    </div>
-  );
-}
-
 /** Skeleton for a table with configurable row count. */
 export function SkeletonTable({
   rows = 5,

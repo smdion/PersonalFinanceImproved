@@ -26,7 +26,7 @@ import { toNumber, type DbOrTx } from "@/server/helpers/transforms";
 type AccountPerfRow = typeof schema.accountPerformance.$inferSelect;
 type AnnualRow = typeof schema.annualPerformance.$inferSelect;
 
-export const EDITABLE_ACCOUNT_FIELDS = [
+const EDITABLE_ACCOUNT_FIELDS = [
   "beginningBalance",
   "totalContributions",
   "employerContributions",
@@ -36,7 +36,7 @@ export const EDITABLE_ACCOUNT_FIELDS = [
   "endingBalance",
   "yearlyGainLoss",
 ] as const;
-export type EditableAccountField = (typeof EDITABLE_ACCOUNT_FIELDS)[number];
+type EditableAccountField = (typeof EDITABLE_ACCOUNT_FIELDS)[number];
 export type AccountEdit = Partial<Record<EditableAccountField, string>>;
 
 const ANNUAL_FIELDS = [
@@ -54,7 +54,7 @@ const ANNUAL_FIELDS = [
   "lifetimeMatch",
 ] as const;
 
-export type FieldChange = {
+type FieldChange = {
   field: string;
   from: number | null;
   to: number | null;

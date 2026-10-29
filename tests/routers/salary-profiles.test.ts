@@ -10,6 +10,7 @@
  * no salary of its own to fall back to.
  */
 import "./setup-mocks";
+import type { SalaryProfileEntry } from "@/server/helpers/salary";
 import { vi, describe, it, expect } from "vitest";
 
 vi.mock("@/lib/budget-api", () => ({
@@ -36,24 +37,8 @@ import { canDeleteSalaryProfile } from "@/lib/pure/profiles";
 
 /** A complete entry — every field required, matching the stored shape. */
 function entry(
-  overrides: Partial<{
-    salary: number;
-    bonusPercent: number;
-    bonusMultiplier: number;
-    monthsInBonusYear: number;
-    bonusOverride: number | null;
-    payPeriod: "weekly" | "biweekly" | "semimonthly" | "monthly";
-    payWeek: "even" | "odd" | "na";
-    anchorPayDate: string | null;
-    budgetPeriodsPerMonth: number | null;
-    w4FilingStatus: "MFJ" | "Single" | "HOH";
-    w4Box2cChecked: boolean;
-    additionalFedWithholding: number;
-    bonusMonth: number | null;
-    bonusDayOfMonth: number | null;
-    extraPaycheckRouting: Record<string, unknown> | null;
-  }> = {},
-) {
+  overrides: Partial<SalaryProfileEntry> = {},
+): SalaryProfileEntry {
   return {
     salary: 0,
     bonusPercent: 0,
@@ -413,8 +398,6 @@ describe("salaryProfile router", () => {
         db.insert(sqliteSchema.scenarios)
           .values({
             name: "My Plan",
-            overrides: {},
-            isBaseline: false,
             salaryProfileId: profileId,
           })
           .run();
@@ -524,8 +507,14 @@ describe("salaryProfile router", () => {
             [String(jobId)]: entry({
               salary: 150000,
               extraPaycheckRouting: {
-                rules: [{ month: 6, amount: 500 }],
-                overrides: {},
+                rules: [
+                  {
+                    from: "2026-01",
+                    to: null,
+                    splits: [{ goalId: 1, pct: 100 }],
+                  },
+                ],
+                overrides: [],
                 baseNetPayPerCheck: 3000,
                 payPeriod: "biweekly",
                 anchorPayDate: "2025-01-03",

@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   accountRollup,
   blendedCost,
+  compoundedFundCost,
   combineHoldings,
   fundsInBucket,
   effectiveFacts,
@@ -222,5 +223,21 @@ describe("fundsInBucket", () => {
       [2, 250],
     ]);
     expect(r[0]!.share).toBeCloseTo(600 / 850);
+  });
+});
+
+describe("compoundedFundCost", () => {
+  it("is the growth given up: balance × ((1+r)^n − (1+r−e)^n)", () => {
+    const [ten, , thirty] = compoundedFundCost(100000, 0.06, 0.01);
+    expect(ten!.years).toBe(10);
+    expect(ten!.cost).toBeCloseTo(100000 * (1.06 ** 10 - 1.05 ** 10), 6);
+    expect(ten!.share).toBeCloseTo(1 - (1.05 / 1.06) ** 10, 10);
+    expect(thirty!.years).toBe(30);
+    expect(thirty!.cost).toBeGreaterThan(ten!.cost);
+  });
+
+  it("costs nothing with no expense ratio or no balance", () => {
+    expect(compoundedFundCost(100000, 0.06, 0, [20])[0]!.cost).toBe(0);
+    expect(compoundedFundCost(0, 0.06, 0.01, [20])[0]!.cost).toBe(0);
   });
 });

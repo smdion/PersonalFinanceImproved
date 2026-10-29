@@ -51,7 +51,7 @@ export function resolveSsStartAgeBaseline(
     : baseEngineInputSsStartAge;
 }
 
-export const lumpSumSchema = z
+const lumpSumSchema = z
   .array(
     z.object({
       amount: z.number().positive(),
@@ -191,7 +191,7 @@ export const accumulationOverrideSchema =
 export const decumulationOverrideSchema =
   decumulationOverrideArraySchema.optional();
 
-export type ResolvedProjectionOverrides = {
+type ResolvedProjectionOverrides = {
   accumulationOverrides: z.infer<typeof accumulationOverrideArraySchema>;
   decumulationOverrides: z.infer<typeof decumulationOverrideArraySchema>;
 };

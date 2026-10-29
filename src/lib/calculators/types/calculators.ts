@@ -98,6 +98,8 @@ export type PaycheckResult = {
   /** The bonus is dated before the job started — not this job's, so not
    *  in this year's pay (bonusPeriod is null then too). */
   bonusBeforeStart: boolean;
+  /** A bonus amount with no month set (bonusPeriod is null then too). */
+  bonusUndated: boolean;
   nextPayDate: string; // ISO date string of next upcoming payday
   payFrequencyLabel: string; // human-readable label like "Biweekly (Even Weeks)"
   warnings: string[];
@@ -130,7 +132,7 @@ export type BlendedAnnualTotals = {
 
 // --- Budget ---
 
-export type BudgetItemInput = {
+type BudgetItemInput = {
   category: string;
   label: string;
   amounts: number[];
@@ -278,7 +280,7 @@ export type MortgageWhatIfResult = {
   monthsSaved: number;
 };
 
-export type LoanHistoryEntry = {
+type LoanHistoryEntry = {
   loanId: number;
   name: string;
   isActive: boolean;
@@ -390,35 +392,5 @@ export type EFundResult = {
   targetAmount: number; // targetMonths × essentialMonthlyExpenses
   neededAfterRepay: number; // targetAmount - balanceWithRepay (negative = ahead of target)
   progress: number; // monthsCoveredWithRepay / targetMonths
-  warnings: string[];
-};
-
-// --- Expense YoY ---
-
-export type ExpenseYoYInput = {
-  currentPeriod: { category: string; subcategory: string; amount: number }[];
-  priorPeriod: { category: string; subcategory: string; amount: number }[];
-  asOfDate: Date;
-};
-
-export type ExpenseYoYResult = {
-  categories: {
-    category: string;
-    currentTotal: number;
-    priorTotal: number;
-    dollarChange: number;
-    percentChange: number | null; // null if prior was zero
-    subcategories: {
-      subcategory: string;
-      current: number;
-      prior: number;
-      dollarChange: number;
-      percentChange: number | null;
-    }[];
-  }[];
-  grandCurrentTotal: number;
-  grandPriorTotal: number;
-  grandDollarChange: number;
-  grandPercentChange: number | null;
   warnings: string[];
 };

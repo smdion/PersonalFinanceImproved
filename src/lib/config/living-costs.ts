@@ -1,5 +1,5 @@
 /** Dave Ramsey recommended percentage ranges (of net take-home pay). */
-export type RamseyRange = { name: string; low: number; high: number };
+type RamseyRange = { name: string; low: number; high: number };
 
 export const RAMSEY_RANGES: RamseyRange[] = [
   { name: "Housing", low: 0.25, high: 0.35 },

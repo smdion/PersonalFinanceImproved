@@ -38,7 +38,7 @@ export type SsPerson = {
   ssStartAge: number;
 };
 
-export type SsEntry = {
+type SsEntry = {
   personId: number;
   personName: string;
   annualAmount: number;

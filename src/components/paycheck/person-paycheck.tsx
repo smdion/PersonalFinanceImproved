@@ -50,7 +50,7 @@ import type {
  * `kind: "readonly"` disables in-place editing throughout the tree and omits
  * the add/delete affordances entirely.
  */
-export type PersonPaycheckInteraction =
+type PersonPaycheckInteraction =
   | {
       kind: "live";
       handlers: {

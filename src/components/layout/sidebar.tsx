@@ -54,9 +54,9 @@ import { BRAND_COLORS } from "@/lib/utils/colors";
 
 // ── Navigation data structure ──
 
-export type NavItem = { href: string; label: string; Icon: LucideIcon };
-export type NavGroup = { label: string; Icon: LucideIcon; items: NavItem[] };
-export type NavEntry = NavItem | NavGroup;
+type NavItem = { href: string; label: string; Icon: LucideIcon };
+type NavGroup = { label: string; Icon: LucideIcon; items: NavItem[] };
+type NavEntry = NavItem | NavGroup;
 
 function isGroup(entry: NavEntry): entry is NavGroup {
   return "items" in entry;

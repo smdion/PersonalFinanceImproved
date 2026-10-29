@@ -183,7 +183,7 @@ export function buildSpecToAccountMapping(
 // Accumulation: Distribute Contributions to Individual Accounts
 // ---------------------------------------------------------------------------
 
-export interface DistributeContributionsInput {
+interface DistributeContributionsInput {
   slots: AccumulationSlot[];
   contributionSpecs: ContributionSpec[];
   indAccts: IndividualAccountInput[];
@@ -202,7 +202,7 @@ export interface DistributeContributionsInput {
   employerMatchByParentCat?: Map<AccountCategory, Map<string, number>>;
 }
 
-export interface DistributeContributionsResult {
+interface DistributeContributionsResult {
   indContribs: Map<string, number>;
   indMatch: Map<string, number>;
   indIntentional: Map<string, number>;

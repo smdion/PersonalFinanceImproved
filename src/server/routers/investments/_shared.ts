@@ -54,7 +54,7 @@ import {
 
 type Db = typeof import("@/lib/db").db;
 
-export type AccountInfo = {
+type AccountInfo = {
   id: number;
   institution: string;
   accountName: string;
@@ -95,10 +95,10 @@ export const countedFeed = and(
 );
 
 /** A counted SimpleFIN feed: its link, balance, and the day the balance is from. */
-export type ContextFeed = FeedAccount & { balanceDay: string | null };
+type ContextFeed = FeedAccount & { balanceDay: string | null };
 
 /** What every investments view starts from — loaded once, in one place. */
-export type FeedContext = {
+type FeedContext = {
   feeds: ContextFeed[];
   /** The latest snapshot's sub-accounts. */
   subs: SubAccount[];
@@ -266,7 +266,7 @@ export async function loadAccounts(db: Db): Promise<Map<number, AccountInfo>> {
   );
 }
 
-export type BalanceHistory = Map<number, { day: string; balance: number }[]>;
+type BalanceHistory = Map<number, { day: string; balance: number }[]>;
 
 /** Each account's stored balances by UTC day, ascending — input to {@link balanceAsOf}. */
 export async function loadBalanceHistory(db: Db): Promise<BalanceHistory> {
@@ -283,7 +283,7 @@ export async function loadBalanceHistory(db: Db): Promise<BalanceHistory> {
   return history;
 }
 
-export type ClassifiedTransactionRow = {
+type ClassifiedTransactionRow = {
   id: number;
   simplefinAccountId: number;
   institution: string;

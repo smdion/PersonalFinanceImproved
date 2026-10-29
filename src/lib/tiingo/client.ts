@@ -23,7 +23,7 @@ function requestJson<T>(path: string, apiKey: string): Promise<T> {
   });
 }
 
-export type TiingoTickerMeta = {
+type TiingoTickerMeta = {
   ticker: string;
   name: string;
   startDate: string;
@@ -49,7 +49,7 @@ export async function testApiKey(apiKey: string): Promise<TiingoTickerMeta> {
   return getTickerMeta(apiKey, TEST_TICKER);
 }
 
-export type TiingoMonthlyPrice = {
+type TiingoMonthlyPrice = {
   /** Month-end trading day, YYYY-MM-DD. */
   date: string;
   /** Close adjusted for splits and with dividends reinvested — total return. */

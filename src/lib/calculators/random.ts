@@ -10,7 +10,7 @@ import { safeDivide } from "../utils/math";
 // Seeded PRNG (mulberry32) — fast, deterministic, 32-bit state
 // ---------------------------------------------------------------------------
 
-export type PRNG = () => number;
+type PRNG = () => number;
 
 /**
  * Create a seeded pseudo-random number generator (mulberry32).
@@ -34,7 +34,7 @@ export function createPRNG(seed: number): PRNG {
  * Sample from a standard normal distribution (mean=0, stdDev=1).
  * Uses the Box-Muller transform for exact normal samples.
  */
-export function sampleNormal(rng: PRNG): number {
+function sampleNormal(rng: PRNG): number {
   const u1 = rng();
   const u2 = rng();
   // Box-Muller: avoid log(0) by clamping u1 away from 0
@@ -62,9 +62,9 @@ export function sampleNormalMeanStd(
  * Convert an arithmetic mean/stdDev return pair into log-space parameters
  * for a log-normal distribution: ln(1 + R) ~ Normal(m, s²), where
  *   s² = ln(1 + σ²/(1+μ)²),  m = ln(1 + μ) - s²/2
- * This ensures the arithmetic mean E[1+R] = 1+μ. Shared by geometricMean,
- * sampleLogNormalReturn, and sampleCorrelatedReturns — previously each
- * re-derived this parameterization independently.
+ * This ensures the arithmetic mean E[1+R] = 1+μ. Shared by geometricMean
+ * and sampleCorrelatedReturns — previously each re-derived this
+ * parameterization independently.
  */
 function logNormalParams(
   meanReturn: number,
@@ -91,32 +91,6 @@ function logNormalParams(
 export function geometricMean(meanReturn: number, stdDev: number): number {
   const { m } = logNormalParams(meanReturn, stdDev);
   return Math.exp(m) - 1;
-}
-
-/**
- * Sample an annual return from a log-normal distribution.
- *
- * If arithmetic mean return = μ and annual volatility = σ, then:
- *   ln(1 + R) ~ Normal(m, s²)
- *   where s² = ln(1 + σ²/(1+μ)²),  m = ln(1 + μ) - s²/2
- *
- * This ensures the arithmetic mean E[1+R] = 1+μ.
- * The geometric mean (median compounding rate) is lower due to volatility drag:
- *   Median[1+R] = (1+μ) · exp(-s²/2)
- *
- * @param rng - Seeded PRNG
- * @param meanReturn - Expected arithmetic mean return (e.g. 0.10 for 10%)
- * @param stdDev - Annual volatility (e.g. 0.15 for 15%)
- * @returns Annual return as decimal (e.g. 0.12 for 12% gain, -0.08 for 8% loss)
- */
-export function sampleLogNormalReturn(
-  rng: PRNG,
-  meanReturn: number,
-  stdDev: number,
-): number {
-  const { s, m } = logNormalParams(meanReturn, stdDev);
-  const logReturn = sampleNormalMeanStd(rng, m, Math.sqrt(s));
-  return Math.exp(logReturn) - 1;
 }
 
 // ---------------------------------------------------------------------------
@@ -159,7 +133,7 @@ export function choleskyDecomposition(matrix: number[][]): number[][] {
 // Correlated multi-asset return sampling
 // ---------------------------------------------------------------------------
 
-export type AssetClassParams = {
+type AssetClassParams = {
   id: number;
   name: string;
   meanReturn: number; // Arithmetic mean (e.g. 0.10 for 10%)

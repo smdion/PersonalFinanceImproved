@@ -18,10 +18,12 @@ vi.mock("@/components/ui/help-tip", () => ({
 // tax-optimization.test.tsx's own mock). Every existing test in this file
 // leaves PIA unset, so ClaimingAgeExplorer never mounts and this mock is
 // inert for them; only the new PIA-specific tests below actually invoke it.
-const claimingAgeSweepQuery = vi.fn(() => ({
-  data: undefined,
-  isLoading: false,
-}));
+const claimingAgeSweepQuery = vi.fn(
+  (..._args: unknown[]): { data: unknown; isLoading: boolean } => ({
+    data: undefined,
+    isLoading: false,
+  }),
+);
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     projection: {
@@ -171,6 +173,8 @@ describe("SocialSecuritySection smoke", () => {
             birthYear: 1990,
             retirementAge: 65,
             endAge: 95,
+            salaryAnnualIncrease: "0.03",
+            ruleOf55Override: true,
             socialSecurityMonthly: "2000",
           },
           {
@@ -179,6 +183,8 @@ describe("SocialSecuritySection smoke", () => {
             birthYear: 1992,
             retirementAge: 67,
             endAge: 95,
+            salaryAnnualIncrease: "0.03",
+            ruleOf55Override: true,
             socialSecurityMonthly: "1500",
           },
         ]}
@@ -222,6 +228,8 @@ describe("SocialSecuritySection smoke", () => {
             birthYear: 1990,
             retirementAge: 65,
             endAge: 95,
+            salaryAnnualIncrease: "0.03",
+            ruleOf55Override: true,
             ssStartAge: 67,
             socialSecurityMonthly: "2000",
             socialSecurityPia: "3200",
@@ -248,6 +256,8 @@ describe("SocialSecuritySection smoke", () => {
             birthYear: 1990,
             retirementAge: 65,
             endAge: 95,
+            salaryAnnualIncrease: "0.03",
+            ruleOf55Override: true,
             socialSecurityMonthly: "2000",
             socialSecurityPia: "0",
           },
@@ -272,6 +282,8 @@ describe("SocialSecuritySection smoke", () => {
             birthYear: 1990,
             retirementAge: 65,
             endAge: 95,
+            salaryAnnualIncrease: "0.03",
+            ruleOf55Override: true,
             socialSecurityMonthly: "2000",
             socialSecurityPia: "3000",
           },
@@ -281,6 +293,8 @@ describe("SocialSecuritySection smoke", () => {
             birthYear: 1992,
             retirementAge: 67,
             endAge: 95,
+            salaryAnnualIncrease: "0.03",
+            ruleOf55Override: true,
             socialSecurityMonthly: "1500",
             // No PIA for Bob.
           },
@@ -329,6 +343,8 @@ describe("SocialSecuritySection smoke", () => {
             birthYear: 1990,
             retirementAge: 65,
             endAge: 95,
+            salaryAnnualIncrease: "0.03",
+            ruleOf55Override: true,
             ssStartAge: 67,
             socialSecurityMonthly: "2000",
             socialSecurityPia: "3200",
@@ -386,6 +402,8 @@ describe("SocialSecuritySection smoke", () => {
             birthYear: 1990,
             retirementAge: 65,
             endAge: 95,
+            salaryAnnualIncrease: "0.03",
+            ruleOf55Override: true,
             ssStartAge: 67,
             socialSecurityMonthly: "2000",
             socialSecurityPia: "3200",
@@ -420,6 +438,7 @@ describe("PerPhaseBudgetSection smoke", () => {
     setDecExpenseOverride: vi.fn(),
     setDecBudgetProfileId: vi.fn(),
     setDecBudgetCol: vi.fn(),
+    isEditable: true,
   };
 
   it("renders nothing when there are no budget profiles (empty state)", () => {

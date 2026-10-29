@@ -508,7 +508,7 @@ export const contributionRouter = createTRPCRouter({
 
       const results: PersonSnapshot[] = await Promise.all(
         people.map(async (person) => {
-          const activeJob = findActiveJob(effectiveJobs, person.id);
+          const activeJob = findActiveJob(effectiveJobs, person.id, asOfDate);
           // No active job, or no entry for it in the active Salary Profile
           // — same safe "nothing resolves" state either way.
           if (!activeJob || activeJob.payPeriod == null) {

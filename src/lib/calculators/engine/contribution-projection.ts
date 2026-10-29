@@ -11,7 +11,7 @@ import type { ContributionSpec } from "../types";
 import { safeDivide } from "../../utils/math";
 import { getAccountTypeConfig } from "../../config/account-types";
 
-export interface ProjectSpecAmountParams {
+interface ProjectSpecAmountParams {
   projectedSalary: number;
   /** Salary the growth factor is measured against — `currentSalary` in
    *  individual-account-tracking.ts, `baseSalary` in contribution-routing.ts. */

@@ -36,9 +36,9 @@ import {
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import { formatCurrency, formatList } from "@/lib/utils/format";
 
-export type RothIraVerdict = "direct" | "tooClose" | "backdoor";
+type RothIraVerdict = "direct" | "tooClose" | "backdoor";
 
-export type RothIraPersonInput = {
+type RothIraPersonInput = {
   personId: number;
   name: string;
   /** Wages (salary + bonus) — taxable compensation for the IRA limit. */
@@ -51,14 +51,14 @@ export type RothIraPersonInput = {
   iraRoom?: number | null;
 };
 
-export type RothIraPersonResult = {
+type RothIraPersonResult = {
   personId: number;
   name: string;
   /** Most this person can put into a Roth IRA directly at this MAGI (Pub 590-A Worksheet 2-2). */
   maxDirect: number;
 };
 
-export type RothIraResult = {
+type RothIraResult = {
   magi: number;
   phaseOutStart: number;
   phaseOutEnd: number;
@@ -186,7 +186,7 @@ export function preTaxIraByPerson(
 }
 
 /** What the Roth IRA MAGI is built from — shown beside the figure. */
-export type RothIraMagiParts = {
+type RothIraMagiParts = {
   /** Salary + bonus − pre-tax payroll money (the tax's AGI). */
   wageAgi: number;
   /** HSA money paid in outside payroll — above-the-line. */
@@ -195,7 +195,7 @@ export type RothIraMagiParts = {
   investmentIncome: number;
 };
 
-export function rothIraMagi(parts: RothIraMagiParts): number {
+function rothIraMagi(parts: RothIraMagiParts): number {
   return Math.round(
     parts.wageAgi - parts.hsaOutsidePayroll + parts.investmentIncome,
   );
@@ -295,7 +295,7 @@ export function buildRothIraView(args: {
   };
 }
 
-export type RothIraSummary = {
+type RothIraSummary = {
   filingStatus: string;
   /** null when the tax data lacks the year's phase-out rows. */
   phaseOut: { start: number; end: number } | null;

@@ -16,7 +16,7 @@
 
 import { compactCurrency } from "@/lib/utils/format";
 
-export interface ProjectionBand {
+interface ProjectionBand {
   /** Point estimate (deterministic projection result). */
   point: number;
   /** Lower bound (~25th percentile of historical distribution). */

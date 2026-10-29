@@ -44,7 +44,3 @@ export const WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS: Record<RoutingMode, string> =
     waterfall: "Drain accounts in a fixed priority order you set.",
     percentage: "Split withdrawals by fixed percentages across accounts.",
   };
-
-export function withdrawalRoutingModeLabel(mode: RoutingMode): string {
-  return WITHDRAWAL_ROUTING_MODE_LABELS[mode];
-}

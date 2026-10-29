@@ -15,7 +15,7 @@ import { HOLDING_PERIODS } from "@/lib/config/benchmarks";
 import { tradingDaysBetween } from "@/lib/pure/market-calendar";
 import { sumBy } from "@/lib/utils/math";
 
-export type PeriodBasis = "observed" | "user" | "inferred";
+type PeriodBasis = "observed" | "user" | "inferred";
 
 export type HoldingPeriod = {
   /** Stored periods only. */
@@ -124,7 +124,7 @@ function withinObservedGap(earlier: string, later: string): boolean {
 
 /** Each account's holdings per day across all its feeds (its parts
  *  pooled by value — the account's real mix). */
-export function holdingsByAccountDay(
+function holdingsByAccountDay(
   positions: readonly DailyPosition[],
 ): Map<number, { day: string; positions: DailyPosition[] }[]> {
   return holdingsByDay(positions, (p) => p.performanceAccountId);
@@ -354,7 +354,7 @@ export function partSharesOn(
   return out;
 }
 
-export type PeriodProblem =
+type PeriodProblem =
   | "weightsDontSum"
   | "badWeight"
   | "endBeforeStart"

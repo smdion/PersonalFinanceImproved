@@ -2,6 +2,7 @@
 import React, { useRef } from "react";
 import { useScrollToFocus } from "@/components/ui/focus-target";
 import { Tooltip } from "@/components/ui/tooltip";
+import { BalanceCell } from "./balance-cell";
 import {
   accountTextColor,
   taxTypeTextColor,
@@ -324,7 +325,7 @@ function ownerAccountLabel(ia: { name: string; ownerName?: string }): string {
   return `${ia.ownerName} — ${ia.name}`;
 }
 
-export type DecumulationRowProps = {
+type DecumulationRowProps = {
   /** A link landed on this year — scrolled to and ringed. */
   focused?: boolean;
   yr: EngineDecumulationYear;
@@ -1127,9 +1128,11 @@ export function DecumulationRow({
               0,
             );
             return (
-              <Tooltip
+              <BalanceCell
                 key={bucket}
-                content={(() => {
+                amount={deflate(bal, yr.year)}
+                color={taxTypeTextColor(bucket)}
+                tooltip={(() => {
                   const wdLineItems: TooltipLineItem[] = [];
                   // Per-account items in BOTH household and person-filtered
                   // views — previously the household view fell back to a
@@ -1231,14 +1234,7 @@ export function DecumulationRow({
                         : undefined,
                   });
                 })()}
-                side="top"
-              >
-                <td
-                  className={`px-2 py-1.5 text-right ${taxTypeTextColor(bucket)}`}
-                >
-                  {formatCurrency(deflate(bal, yr.year))}
-                </td>
-              </Tooltip>
+              />
             );
           })
       ) : (
@@ -1401,9 +1397,11 @@ export function DecumulationRow({
                   color: "red",
                 });
               return (
-                <Tooltip
+                <BalanceCell
                   key={col.key}
-                  content={renderTooltip({
+                  amount={deflate(bal, yr.year)}
+                  color={col.color}
+                  tooltip={renderTooltip({
                     kind: "money",
                     header: `${col.label}: ${pct}% of portfolio`,
                     meta: `${yr.year} · BoY: ${formatCurrency(decBoyBal)} → EoY: ${formatCurrency(decDeflatedBal)} · ${formatPercent(yr.returnRate, 1)} return`,
@@ -1427,12 +1425,7 @@ export function DecumulationRow({
                       },
                     ],
                   })}
-                  side="top"
-                >
-                  <td className={`px-2 py-1.5 text-right ${col.color}`}>
-                    {formatCurrency(deflate(bal, yr.year))}
-                  </td>
-                </Tooltip>
+                />
               );
             })}
         </>

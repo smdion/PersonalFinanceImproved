@@ -67,7 +67,7 @@ export async function loadContributionMix(
     db,
     Number.isFinite(profileId) ? profileId : null,
     contribs,
-    filterActiveJobs(allJobs),
+    filterActiveJobs(allJobs, asOf),
     salaryMap,
   );
   // Capped over all of a person's rows (a limit spans accounts), then the

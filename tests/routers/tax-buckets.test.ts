@@ -62,9 +62,7 @@ describe("taxBuckets router", () => {
       },
     ]);
 
-    const result = await caller.taxBuckets.computeBreakdown({
-      targetRetirementAges: [{ personId, age: 55 }],
-    });
+    const result = await caller.taxBuckets.computeBreakdown();
 
     expect(result.portfolioByTaxType.preTax).toBe(200000);
     expect(result.portfolioByTaxType.taxFree).toBe(90000);
@@ -140,9 +138,7 @@ describe("taxBuckets router", () => {
       latestConversionYear: null,
     });
 
-    const first = await caller.taxBuckets.computeBreakdown({
-      targetRetirementAges: [{ personId, age: 55 }],
-    });
+    const first = await caller.taxBuckets.computeBreakdown();
     const entry1 = first.accounts.find(
       (a) => a.performanceAccountId === perfAcctId,
     )!;
@@ -159,9 +155,7 @@ describe("taxBuckets router", () => {
       latestConversionYear: null,
     });
 
-    const second = await caller.taxBuckets.computeBreakdown({
-      targetRetirementAges: [{ personId, age: 55 }],
-    });
+    const second = await caller.taxBuckets.computeBreakdown();
     const entry2 = second.accounts.find(
       (a) => a.performanceAccountId === perfAcctId,
     )!;
@@ -222,9 +216,7 @@ describe("taxBuckets router", () => {
       separationDate: "2030-01-01", // person is 50 that year — not Rule-of-55 eligible
     });
 
-    const result = await caller.taxBuckets.computeBreakdown({
-      targetRetirementAges: [{ personId, age: 65 }],
-    });
+    const result = await caller.taxBuckets.computeBreakdown();
     const entry = result.accounts.find(
       (a) => a.performanceAccountId === perfAcctId,
     )!;
@@ -290,12 +282,7 @@ describe("taxBuckets router", () => {
     });
     expect(result.success).toBe(true);
 
-    const breakdown = await caller.taxBuckets.computeBreakdown({
-      targetRetirementAges: [
-        { personId: person1Id, age: 55 },
-        { personId: person2Id, age: 55 },
-      ],
-    });
+    const breakdown = await caller.taxBuckets.computeBreakdown();
     const entry1 = breakdown.accounts.find(
       (a) => a.performanceAccountId === acct1Id,
     )!;
@@ -327,9 +314,7 @@ describe("taxBuckets router", () => {
       ],
     });
     expect(revised.success).toBe(true);
-    const afterUpdate = await caller.taxBuckets.computeBreakdown({
-      targetRetirementAges: [{ personId: person1Id, age: 55 }],
-    });
+    const afterUpdate = await caller.taxBuckets.computeBreakdown();
     const entry1Updated = afterUpdate.accounts.find(
       (a) => a.performanceAccountId === acct1Id,
     )!;

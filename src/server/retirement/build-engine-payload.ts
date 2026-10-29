@@ -33,6 +33,7 @@ import { getAllPeople } from "@/server/helpers/people";
 import {
   resolveRetirementProfileIdFrom,
   pickProfileSettingsRow,
+  lastWorkingYear,
 } from "@/server/helpers/retirement-profile";
 import type { AccountCategory } from "@/lib/calculators/types";
 import {
@@ -65,14 +66,20 @@ import {
 import { resolvePhaseExpenses } from "./payload/budget-expenses";
 import {
   buildProfileSwitches,
+  capAgeSteps,
   loadSwitchProfiles,
+  profileSwitchFrom,
 } from "./payload/profile-switches";
 import { retirementContributions } from "./payload/retirement-contributions";
 import { buildIndividualAccounts } from "./payload/individual-accounts";
 import { resolveTaxParams, type TaxSection } from "@/lib/config/tax-params";
 import type { db as _db } from "@/lib/db";
-import { filterActiveJobs } from "@/lib/pure/profiles";
+import { projectionJobs, workingYears } from "@/lib/pure/profiles";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
+import {
+  SK_BUDGET_ACTIVE_COLUMN,
+  SK_IRS_LIMIT_GROWTH_RATE,
+} from "@/lib/constants/settings-keys";
 
 type Db = typeof _db;
 
@@ -586,7 +593,15 @@ export async function buildEnginePayload(
   // above); the Contribution Profile contributes no salary — the two are
   // independent.
   const asOfDate = referenceDate;
-  const activeJobs = filterActiveJobs(patchedJobs);
+  // Each person's current job, or the next one they start; its dates bound
+  // the years it's worked (workingYearsByPerson, below).
+  const activeJobs = projectionJobs(patchedJobs, asOfDate);
+  const workingYearsByPerson = Object.fromEntries(
+    activeJobs.flatMap((j) => {
+      const w = workingYears(j, asOfDate);
+      return w ? [[j.personId, w] as const] : [];
+    }),
+  );
   // Uses getSalariesForJobs helper (deduplicates the parallel-fetch pattern).
   // Post-process to compute totalComp. A Salary Profile entry is now a complete, all-or-nothing
   // number (see resolveCompensation's docblock) — there is no more
@@ -733,7 +748,7 @@ export async function buildEnginePayload(
   // value (empty string, bad manual edit) or an out-of-range one (an admin
   // writing `5` via the data browser) would otherwise compound through
   // Math.pow(1 + rate, year) and silently wreck every projection.
-  const limitGrowthRaw = settingsMap.get("irs_limit_growth_rate");
+  const limitGrowthRaw = settingsMap.get(SK_IRS_LIMIT_GROWTH_RATE);
   const limitGrowthParsed = toNumber(String(limitGrowthRaw));
   let irsLimitGrowthRate = IRS_LIMIT_GROWTH_RATE;
   if (limitGrowthRaw != null && Number.isFinite(limitGrowthParsed)) {
@@ -878,7 +893,7 @@ export async function buildEnginePayload(
 
   // Expenses — phase-based budget columns
   const selectedScenario = retScenarios.find((s) => s.isSelected);
-  const globalColSetting = settingsMap.get("budget_active_column");
+  const globalColSetting = settingsMap.get(SK_BUDGET_ACTIVE_COLUMN);
   const globalActiveCol =
     typeof globalColSetting === "number" ? globalColSetting : 0;
   const {
@@ -926,41 +941,45 @@ export async function buildEnginePayload(
   };
 
   // Build per-account contribution specs via shared helper (single source of truth)
+  const toContribDataRow = (c: (typeof activeContribs)[number]) => ({
+    id: c.id,
+    personId: c.personId,
+    jobId: c.jobId,
+    accountType: c.accountType as AccountCategory,
+    subType: c.subType,
+    label: c.label ?? null,
+    parentCategory: c.parentCategory ?? null,
+    contributionMethod: c.contributionMethod,
+    contributionValue: c.contributionValue,
+    taxTreatment: c.taxTreatment,
+    employerMatchType: c.employerMatchType,
+    employerMatchValue: c.employerMatchValue,
+    employerMaxMatchPct: c.employerMaxMatchPct,
+    isPayrollDeducted: c.isPayrollDeducted,
+    fromBonus: c.fromBonus,
+    performanceAccountId: c.performanceAccountId,
+    targetAnnual: c.targetAnnual,
+    allocationPriority: c.allocationPriority,
+    hsaCoverageType: c.hsaCoverageType,
+    capPassed: c.capPassed,
+    cappedValue: c.cappedValue,
+    cap: c.cap,
+  });
+  const contribDataJobs = activeJobs.map((j) => ({
+    id: j.id,
+    personId: j.personId,
+    payPeriod: j.payPeriod,
+  }));
   const defaultContribData = buildProfileContribData(
-    activeContribs.map((c) => ({
-      id: c.id,
-      personId: c.personId,
-      jobId: c.jobId,
-      accountType: c.accountType as AccountCategory,
-      subType: c.subType,
-      label: c.label ?? null,
-      parentCategory: c.parentCategory ?? null,
-      contributionMethod: c.contributionMethod,
-      contributionValue: c.contributionValue,
-      taxTreatment: c.taxTreatment,
-      employerMatchType: c.employerMatchType,
-      employerMatchValue: c.employerMatchValue,
-      employerMaxMatchPct: c.employerMaxMatchPct,
-      isPayrollDeducted: c.isPayrollDeducted,
-      fromBonus: c.fromBonus,
-      performanceAccountId: c.performanceAccountId,
-      targetAnnual: c.targetAnnual,
-      allocationPriority: c.allocationPriority,
-      hsaCoverageType: c.hsaCoverageType,
-      capPassed: c.capPassed,
-      cappedValue: c.cappedValue,
-      cap: c.cap,
-    })),
-    activeJobs.map((j) => ({
-      id: j.id,
-      personId: j.personId,
-      payPeriod: j.payPeriod,
-    })),
+    activeContribs.map(toContribDataRow),
+    contribDataJobs,
     jobSalaries,
     profileContribCtx,
   );
   const contributionSpecs = defaultContribData.contributionSpecs;
 
+  // The engine's last working year (its retirement age, below).
+  const lastAccumulationYear = lastWorkingYear(currentYear, perPersonSettings);
   const { profileSwitches, perPersonSalaryAdds, householdSalaryAdds } =
     buildProfileSwitches({
       profileSwitchOverrides,
@@ -975,7 +994,38 @@ export async function buildEnginePayload(
       hasMultiplePeople,
       profileContribCtx,
       capHousehold,
+      lastAccumulationYear,
     });
+  // The active profile, capped at each later year's ages until the first
+  // Contribution Profile switch: a year whose ages cap it differently
+  // (catch-up room from 50, the larger one at 60–63, the smaller again
+  // from 64) switches to it capped then.
+  const firstContribSwitchYear = Math.min(
+    ...profileSwitchOverrides
+      .filter(
+        (o) =>
+          o.contributionProfileId &&
+          switchProfileMap.has(o.contributionProfileId),
+      )
+      .map((o) => o.projectionYear),
+  );
+  const activeAgeSteps = capAgeSteps(
+    activeContribs,
+    { ...capHousehold, activeJobs, jobSalaries },
+    currentYear,
+    Math.min(firstContribSwitchYear - 1, lastAccumulationYear),
+  )
+    .slice(1)
+    .map((step) =>
+      profileSwitchFrom(
+        step.year,
+        step.capped.map(toContribDataRow),
+        { activeJobs: contribDataJobs, jobSalaries },
+        profileContribCtx,
+      ),
+    );
+  profileSwitches.push(...activeAgeSteps);
+  profileSwitches.sort((a, b) => a.year - b.year);
   // A switch row that pins a salary adds to the salary overrides, after
   // the plain rows — the order the engine has always received them in.
   perPersonSalaryOverrides.push(...perPersonSalaryAdds);
@@ -1089,6 +1139,10 @@ export async function buildEnginePayload(
     salaryCap: settings.salaryCap ? toNumber(settings.salaryCap) : null,
     salaryOverrides: dbSalaryOverrides,
     salaryByPerson: hasMultiplePeople ? salaryByPerson : undefined,
+    workingYearsByPerson:
+      Object.keys(workingYearsByPerson).length > 0
+        ? workingYearsByPerson
+        : undefined,
     perPersonSalaryOverrides: hasMultiplePeople
       ? perPersonSalaryOverrides
       : undefined,
@@ -1205,6 +1259,8 @@ export async function buildEnginePayload(
   return {
     // Computed intermediates needed by callers
     primaryPerson,
+    /** The active profile's later age steps (also in profileSwitches). */
+    activeAgeSteps,
     settings,
     filingStatus,
     people,

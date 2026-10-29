@@ -20,7 +20,7 @@ import type { Context } from "../trpc";
 type DbType =
   Context["db"] | Parameters<Parameters<Context["db"]["transaction"]>[0]>[0];
 
-export interface ResolvedGoalAllocation {
+interface ResolvedGoalAllocation {
   goalId: number;
   allocationPercent: number | null;
   monthlyContribution: number;

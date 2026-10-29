@@ -10,7 +10,7 @@ import {
   PERF_CATEGORY_PORTFOLIO,
 } from "@/lib/config/display-labels";
 
-export const CATEGORY_HELP: Record<string, string> = {
+const CATEGORY_HELP: Record<string, string> = {
   [PERF_CATEGORY_DEFAULT]: "401k, 403b, and IRA accounts",
   [PERF_CATEGORY_HSA]: "Health Savings Accounts",
   [PERF_CATEGORY_BROKERAGE]: "Taxable brokerage and ESPP accounts",
@@ -78,7 +78,7 @@ type BasisToggleGroupProps = {
  *  independent toggle — it hides every OTHER column (Beginning through
  *  Return) so just Year + whichever of Basis/Unrealized are on show,
  *  without changing what Basis/Unrealized themselves are set to. */
-export function BasisToggleGroup({
+function BasisToggleGroup({
   showBasis,
   onToggleBasis,
   showUnrealized,

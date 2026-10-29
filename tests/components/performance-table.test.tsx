@@ -63,6 +63,9 @@ const accountRows: AccountRow[] = [
     performanceAccountId: 101,
     displayOrder: 0,
     year: 2025,
+    contributionBasis: null,
+    conversionBasis: null,
+    latestConversionYear: null,
   },
 ];
 
@@ -94,6 +97,9 @@ function renderTable(
     onToggleYear,
     editingCell: null,
     editValue: "",
+    showBasis: false,
+    showUnrealized: false,
+    onlyBasis: false,
     onStartEdit: vi.fn(),
     onEditValueChange: vi.fn(),
     onSaveEdit: vi.fn(),

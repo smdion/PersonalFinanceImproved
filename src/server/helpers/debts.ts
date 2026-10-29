@@ -20,9 +20,9 @@ import { parseAppSettings } from "./settings";
 import { toNumber } from "./transforms";
 import type { DbOrTx } from "./transforms";
 
-export type OpenDebt = typeof schema.debts.$inferSelect;
+type OpenDebt = typeof schema.debts.$inferSelect;
 
-export type OtherLiabilities = {
+type OtherLiabilities = {
   manual: number;
   itemized: number;
   creditCardMapped: number;

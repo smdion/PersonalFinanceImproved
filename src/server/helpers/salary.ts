@@ -84,7 +84,7 @@ export function applyActiveBonusTerms(
  * dropping anything absent, null, or non-finite. Returns undefined when
  * nothing is set.
  */
-export function pinnedFields(
+function pinnedFields(
   entry: SalaryOverrideEntry | null | undefined,
 ): SalaryOverrideEntry | undefined {
   if (!entry) return undefined;
@@ -411,7 +411,7 @@ export function applySalaryProfileRow(
 /** A job merged with its resolved Salary Profile entry's non-comp fields —
  *  every field is `undefined` when the job has no entry in the active
  *  Salary Profile (an incomplete/absent state), never a fallback value. */
-export type JobWithSalaryFields<J> = J & {
+type JobWithSalaryFields<J> = J & {
   payPeriod: PayPeriod | undefined;
   payWeek: PayWeek | undefined;
   anchorPayDate: string | null | undefined;

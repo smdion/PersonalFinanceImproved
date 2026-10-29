@@ -269,3 +269,29 @@ export function fundsInBucket<H extends ValuedHolding & { securityId: number }>(
     .map((r) => ({ ...r, share: total > 0 ? r.value / total : 0 }))
     .sort((x, y) => y.value - x.value);
 }
+
+/** The horizons the compounded fund cost is shown for (years). */
+const FEE_PROJECTION_YEARS = [10, 20, 30] as const;
+
+/**
+ * What a fund cost compounds to: today's balance grown at the expected
+ * return, with and without the expense ratio taken each year — no new
+ * money. `cost` is the growth given up; `share` is that as a share of
+ * what the balance would have grown to without it.
+ */
+export function compoundedFundCost(
+  balance: number,
+  expectedReturn: number,
+  expenseRatio: number,
+  years: readonly number[] = FEE_PROJECTION_YEARS,
+): { years: number; cost: number; share: number }[] {
+  return years.map((n) => {
+    const gross = Math.pow(1 + expectedReturn, n);
+    const net = Math.pow(1 + expectedReturn - expenseRatio, n);
+    return {
+      years: n,
+      cost: balance * (gross - net),
+      share: gross > 0 ? 1 - net / gross : 0,
+    };
+  });
+}

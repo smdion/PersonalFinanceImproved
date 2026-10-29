@@ -102,6 +102,18 @@ export type ProjectionInput = {
    * the year's `effectiveSalary`, never to `state.projectedSalary`.
    */
   currentYearBonusAdjustment?: Record<number, number>;
+  /**
+   * Each working person's years at work, from their job's dates, in whole
+   * years: `start` = the year a job that hasn't started yet begins (null =
+   * already working), `end` = its last year (null = no end). Outside them
+   * the person earns nothing and their contributions (and the match on
+   * them) stop; their salary keeps growing underneath. A year a job starts
+   * or ends in counts as a whole year. Absent = everyone works throughout.
+   */
+  workingYearsByPerson?: Record<
+    number,
+    { start: number | null; end: number | null }
+  >;
 
   // --- IRS limits ---
   /**

@@ -494,6 +494,7 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
     periodsBeforeStart: beforeStart,
     bonusBeforeStart:
       bonusPeriodFound !== null && bonusPeriodFound <= beforeStart,
+    bonusUndated: input.bonusMonth == null && bonusEstimate.bonusGross > 0,
     nextPayDate,
     payFrequencyLabel,
     warnings,

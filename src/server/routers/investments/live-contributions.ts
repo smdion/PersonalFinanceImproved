@@ -27,7 +27,7 @@ import { loadPerformanceSuggestions } from "./fills";
 
 type Db = Parameters<typeof loadFeedContext>[0];
 
-export type LiveContribution = {
+type LiveContribution = {
   performanceAccountId: number;
   label: string;
   recorded: { employee: number; employer: number };

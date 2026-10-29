@@ -42,7 +42,7 @@ export interface RmdEnforcementInput {
   nonRetirement?: NonRetirementExclusion;
 }
 
-export interface RmdEnforcementResult {
+interface RmdEnforcementResult {
   rmdAmount: number;
   rmdOverrodeRouting: boolean;
   totalTraditionalWithdrawal: number;

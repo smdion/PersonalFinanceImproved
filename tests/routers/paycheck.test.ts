@@ -435,10 +435,7 @@ describe("settings.people.create auto-provisions a speculative job", () => {
     await caller.settings.jobs.create({
       personId: person!.id,
       employerName: "Real Co",
-      payPeriod: "biweekly",
-      payWeek: "even",
       startDate: "2022-01-01",
-      w4FilingStatus: "Single",
     });
     await expect(
       caller.settings.people.delete({ id: person!.id }),
@@ -522,10 +519,7 @@ describe("settings.jobs CRUD", () => {
       id,
       personId,
       employerName: "Acme Corp Renamed",
-      payPeriod: "biweekly",
-      payWeek: "even",
       startDate: "2022-01-15",
-      w4FilingStatus: "Single",
     });
     expect(updated!.employerName).toBe("Acme Corp Renamed");
     expect(updated).not.toHaveProperty("annualSalary");
@@ -535,11 +529,8 @@ describe("settings.jobs CRUD", () => {
     const job = await caller.settings.jobs.create({
       personId,
       employerName: "Old Corp",
-      payPeriod: "monthly",
-      payWeek: "na",
       startDate: "2018-06-01",
       endDate: "2021-12-31",
-      w4FilingStatus: "MFJ",
     });
     expect(job!.endDate).toBe("2021-12-31");
   });
@@ -584,7 +575,6 @@ describe("settings.deductions CRUD", () => {
     const ded = await caller.settings.deductions.create({
       jobId,
       deductionName: "Health Insurance",
-      amountPerPeriod: "250.00",
       isPretax: true,
       ficaExempt: true,
     });
@@ -598,7 +588,6 @@ describe("settings.deductions CRUD", () => {
     const ded = await caller.settings.deductions.create({
       jobId,
       deductionName: "Parking",
-      amountPerPeriod: "50.00",
       isPretax: false,
     });
     expect(ded!.deductionName).toBe("Parking");
@@ -1087,7 +1076,7 @@ describe("paycheck router — household income and tax include the bonus", () =>
       payWeek: "even",
       startDate: "2020-01-01",
       w4FilingStatus: "MFJ",
-      bonusOverride: "12000",
+      bonusOverride: 12000,
     });
     seedJob(ctx.db, person2, {
       employerName: "CompanyB",
@@ -1264,8 +1253,6 @@ describe("settings.contributionAccounts — no performanceAccountId", () => {
       personId,
       accountType: "brokerage",
       taxTreatment: "after_tax",
-      contributionMethod: "fixed_monthly",
-      contributionValue: "500",
       employerMatchType: "none",
       parentCategory: "Portfolio",
     });
@@ -1301,8 +1288,6 @@ describe("settings.contributionAccounts — update priorYearContrib validation",
       personId,
       accountType: "401k",
       taxTreatment: "pre_tax",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
       employerMatchType: "none",
     });
     acctId401k = acct401k!.id;
@@ -1312,8 +1297,6 @@ describe("settings.contributionAccounts — update priorYearContrib validation",
       personId,
       accountType: "ira",
       taxTreatment: "tax_free",
-      contributionMethod: "fixed_annual",
-      contributionValue: "7000",
       employerMatchType: "none",
     });
     acctIdIra = acctIra!.id;
@@ -1328,8 +1311,6 @@ describe("settings.contributionAccounts — update priorYearContrib validation",
         personId,
         accountType: "401k",
         taxTreatment: "pre_tax",
-        contributionMethod: "percent_of_salary",
-        contributionValue: "0.10",
         employerMatchType: "none",
         priorYearContribAmount: "5000",
       }),
@@ -1342,8 +1323,6 @@ describe("settings.contributionAccounts — update priorYearContrib validation",
       personId,
       accountType: "ira",
       taxTreatment: "tax_free",
-      contributionMethod: "fixed_annual",
-      contributionValue: "7000",
       employerMatchType: "none",
       priorYearContribAmount: "3000",
     });
@@ -1380,8 +1359,6 @@ describe("settings.contributionAccounts — update with performanceAccountId", (
       personId,
       accountType: "brokerage",
       taxTreatment: "after_tax",
-      contributionMethod: "fixed_monthly",
-      contributionValue: "500",
       employerMatchType: "none",
       parentCategory: "Retirement", // intentionally wrong
     });
@@ -1392,8 +1369,6 @@ describe("settings.contributionAccounts — update with performanceAccountId", (
       personId,
       accountType: "brokerage",
       taxTreatment: "after_tax",
-      contributionMethod: "fixed_monthly",
-      contributionValue: "500",
       employerMatchType: "none",
       performanceAccountId: perfAcctId,
     });
@@ -1506,8 +1481,6 @@ describe("settings.contributionAccounts.setPriorYearAmount", () => {
       personId,
       accountType: "ira",
       taxTreatment: "pre_tax",
-      contributionMethod: "fixed_annual",
-      contributionValue: "7000",
       employerMatchType: "none",
     });
 
@@ -1527,8 +1500,6 @@ describe("settings.contributionAccounts.setPriorYearAmount", () => {
       personId,
       accountType: "hsa",
       taxTreatment: "hsa",
-      contributionMethod: "fixed_annual",
-      contributionValue: "4150",
       employerMatchType: "none",
     });
 
@@ -1546,8 +1517,6 @@ describe("settings.contributionAccounts.setPriorYearAmount", () => {
       personId,
       accountType: "401k",
       taxTreatment: "pre_tax",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
       employerMatchType: "none",
     });
 

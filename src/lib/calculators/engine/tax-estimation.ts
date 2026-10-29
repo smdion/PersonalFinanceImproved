@@ -60,7 +60,7 @@ export type WithholdingBracket = {
  * baseWithholding,rate}`'s baseWithholding-shortcut shape (shifting
  * `threshold` alone without recomputing `baseWithholding` would be wrong).
  */
-export function toOrdinaryBracketIncome(
+function toOrdinaryBracketIncome(
   grossOrdinaryIncome: number,
   brackets: WithholdingBracket[],
   standardDeduction: number | undefined,
@@ -265,7 +265,7 @@ export function computeTaxableSS(
 // Tax cost from a completed set of withdrawal slots
 // ---------------------------------------------------------------------------
 
-export interface ComputeTaxFromSlotsInput {
+interface ComputeTaxFromSlotsInput {
   /** The routed withdrawal, from any of withdrawal-routing.ts's route*
    *  functions — real execution or a candidate estimate, this function
    *  doesn't care which. */
@@ -320,7 +320,7 @@ export interface ComputeTaxFromSlotsInput {
   filingStatus: FilingStatusType | null | undefined;
 }
 
-export interface ComputeTaxFromSlotsResult {
+interface ComputeTaxFromSlotsResult {
   taxCost: number;
   actualTraditionalRate: number;
   /** `totalTraditionalWithdrawal + rothTaxableGrowth + taxableSS` — the

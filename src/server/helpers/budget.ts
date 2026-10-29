@@ -17,6 +17,7 @@ import type { ActiveBudgetApi } from "@/lib/budget-api/types";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_SALARY_PROFILE_ID,
+  SK_BUDGET_ACTIVE_COLUMN,
 } from "@/lib/constants/settings-keys";
 import {
   filterActiveJobs,
@@ -39,7 +40,7 @@ import {
 } from "./contribution";
 
 /** No TTL — cached YNAB data is kept until the user manually triggers a resync. */
-export const BUDGET_CACHE_MAX_AGE_MS = undefined;
+const BUDGET_CACHE_MAX_AGE_MS = undefined;
 
 /**
  * The active-profile predicate, for callers that already have every profile
@@ -496,7 +497,7 @@ export async function resolveLinkedBudgetItemAmounts<
     effectiveSalaryMap,
   );
   const activeContribIds = new Set(activeContribs.map((c) => c.id));
-  const activeJobs = filterActiveJobs(profileResult.jobs);
+  const activeJobs = filterActiveJobs(profileResult.jobs, new Date());
   const {
     periodsPerYear: defaultPeriodsPerYear,
     incomplete: joblessIncomplete,
@@ -594,7 +595,7 @@ export async function getAnnualExpensesFromBudget(
   );
 
   // Use the shared budget_active_column setting (same as budget page, savings page, dashboard)
-  const columnSetting = settingsMap.get("budget_active_column");
+  const columnSetting = settingsMap.get(SK_BUDGET_ACTIVE_COLUMN);
   const column =
     targeting?.budgetColumn ??
     (typeof columnSetting === "number" ? columnSetting : 0);

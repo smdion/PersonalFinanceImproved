@@ -91,8 +91,6 @@ function seedFullProjectionData(
   db.insert(schema.contributionAccounts)
     .values({
       accountType: "401k",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
       taxTreatment: "pre_tax",
       employerMatchType: "none",
       isActive: true,
@@ -215,8 +213,6 @@ async function seedMfjPiaHousehold(
   db.insert(schema.contributionAccounts)
     .values({
       accountType: "401k",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
       taxTreatment: "pre_tax",
       employerMatchType: "none",
       isActive: true,
@@ -231,7 +227,7 @@ async function seedMfjPiaHousehold(
 
 describe("projection router — sweepSocialSecurityClaimingAges, MFJ two-person household", () => {
   it("rebuilds the WHOLE household's entries per candidate age (spousal top-up responds to the swept worker's age), matching a direct call exactly", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    const { caller, db, rawDb, cleanup } = await createTestCaller(adminSession);
     try {
       const { workerId } = await seedMfjPiaHousehold(db);
 
@@ -241,8 +237,8 @@ describe("projection router — sweepSocialSecurityClaimingAges, MFJ two-person 
         ages: [62, 70],
       });
 
-      const data = await fetchRetirementData(db, {});
-      const payload = await buildEnginePayload(db, data, {});
+      const data = await fetchRetirementData(rawDb, {});
+      const payload = await buildEnginePayload(rawDb, data, {});
       if (!payload) throw new Error("expected a payload for seeded data");
       const {
         settings,
@@ -360,7 +356,7 @@ describe("projection router — sweepSocialSecurityClaimingAges", () => {
   });
 
   it("returns exactly what a direct call to sweepClaimingAges produces for the same resolved engine input", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    const { caller, db, rawDb, cleanup } = await createTestCaller(adminSession);
     try {
       const { personId } = seedFullProjectionData(db);
 
@@ -370,8 +366,8 @@ describe("projection router — sweepSocialSecurityClaimingAges", () => {
         ages: [62, 67],
       });
 
-      const data = await fetchRetirementData(db, {});
-      const payload = await buildEnginePayload(db, data, {});
+      const data = await fetchRetirementData(rawDb, {});
+      const payload = await buildEnginePayload(rawDb, data, {});
       if (!payload) throw new Error("expected a payload for seeded data");
       const {
         settings,

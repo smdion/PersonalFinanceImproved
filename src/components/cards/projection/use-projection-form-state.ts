@@ -25,6 +25,7 @@ import type {
 import { emptyAccumForm, emptyDecumForm } from "./types";
 import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
 import { MC_DEFAULT_TRIALS } from "@/lib/constants";
+import { SK_DIAG_MODE } from "@/lib/constants/settings-keys";
 
 export function useProjectionFormState() {
   // --- Withdrawal config ---
@@ -239,7 +240,7 @@ export function useProjectionFormState() {
   const [fanBandRange, setFanBandRange] = useState<
     "off" | "p25-p75" | "p10-p90" | "p5-p95"
   >("p25-p75");
-  const [diagMode] = usePersistedToggle("diag_mode", false);
+  const [diagMode] = usePersistedToggle(SK_DIAG_MODE, false);
   const [showMethodology, setShowMethodology] = useState(false);
   const [showAccumMethodology, setShowAccumMethodology] = useState(false);
   const [showDecumMethodology, setShowDecumMethodology] = useState(false);

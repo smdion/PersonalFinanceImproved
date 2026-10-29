@@ -10,7 +10,7 @@
 import type { InvestmentTransactionKind } from "@/lib/config/enum-values";
 import { classifySimplefinTransaction } from "./simplefin-transactions";
 
-export type StoredTransactionForKind = {
+type StoredTransactionForKind = {
   amount: number;
   description: string;
   kindOverride: InvestmentTransactionKind | null;

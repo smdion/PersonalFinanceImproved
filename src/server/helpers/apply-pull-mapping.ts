@@ -11,7 +11,7 @@ import type { AccountMapping } from "@/lib/db/schema";
 import type { Db } from "./transforms";
 import { localDateStr } from "@/lib/utils/date";
 
-export type ApplyPullMappingResult =
+type ApplyPullMappingResult =
   | { applied: false }
   | { applied: true; kind: "mortgagePropertyValue" | "mortgageLoanBalance" }
   | { applied: true; kind: "asset" };

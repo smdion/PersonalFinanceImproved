@@ -65,6 +65,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   // Restore the original env so subsequent test files start clean.
   for (const key of Object.keys(process.env)) {
     if (!(key in ORIGINAL_ENV)) delete process.env[key];
@@ -75,7 +76,7 @@ afterEach(() => {
 describe("env.ts production invariants", () => {
   describe("valid production env", () => {
     it("loads cleanly when all required vars are present", async () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       process.env.CRON_SECRET = VALID_CRON_SECRET;
       process.env.ENCRYPTION_KEY = VALID_ENCRYPTION_KEY;
       // SQLite path — DATABASE_URL is optional in sqlite mode.
@@ -87,7 +88,7 @@ describe("env.ts production invariants", () => {
 
   describe("CRON_SECRET", () => {
     it("throws when missing in production", async () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       process.env.ENCRYPTION_KEY = VALID_ENCRYPTION_KEY;
       process.env.SQLITE_PATH = "data/ledgr.db";
       // CRON_SECRET intentionally unset.
@@ -98,7 +99,7 @@ describe("env.ts production invariants", () => {
     });
 
     it("is not enforced when NODE_ENV is not 'production'", async () => {
-      process.env.NODE_ENV = "development";
+      vi.stubEnv("NODE_ENV", "development");
       process.env.SQLITE_PATH = "data/ledgr.db";
       // No CRON_SECRET, no ENCRYPTION_KEY — dev mode.
 
@@ -106,7 +107,7 @@ describe("env.ts production invariants", () => {
     });
 
     it("rejects a CRON_SECRET shorter than 32 chars via the Zod schema", async () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       process.env.CRON_SECRET = "short"; // under 32 chars
       process.env.ENCRYPTION_KEY = VALID_ENCRYPTION_KEY;
       process.env.SQLITE_PATH = "data/ledgr.db";
@@ -120,7 +121,7 @@ describe("env.ts production invariants", () => {
 
   describe("ENCRYPTION_KEY", () => {
     it("throws when missing in production", async () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       process.env.CRON_SECRET = VALID_CRON_SECRET;
       process.env.SQLITE_PATH = "data/ledgr.db";
       // ENCRYPTION_KEY intentionally unset.
@@ -131,7 +132,7 @@ describe("env.ts production invariants", () => {
     });
 
     it("throws when the key decodes to the wrong byte length", async () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       process.env.CRON_SECRET = VALID_CRON_SECRET;
       // 16-byte key — decodes to 16 bytes, not 32.
       process.env.ENCRYPTION_KEY = Buffer.alloc(16, "x").toString("base64");
@@ -143,7 +144,7 @@ describe("env.ts production invariants", () => {
     });
 
     it("accepts a valid 32-byte base64 key", async () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       process.env.CRON_SECRET = VALID_CRON_SECRET;
       process.env.ENCRYPTION_KEY = VALID_ENCRYPTION_KEY;
       process.env.SQLITE_PATH = "data/ledgr.db";
@@ -154,7 +155,7 @@ describe("env.ts production invariants", () => {
 
   describe("ALLOW_DEV_MODE safeguard", () => {
     it("throws when ALLOW_DEV_MODE=true is set in production", async () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       process.env.CRON_SECRET = VALID_CRON_SECRET;
       process.env.ENCRYPTION_KEY = VALID_ENCRYPTION_KEY;
       process.env.SQLITE_PATH = "data/ledgr.db";
@@ -166,7 +167,7 @@ describe("env.ts production invariants", () => {
     });
 
     it("allows ALLOW_DEV_MODE=true in development", async () => {
-      process.env.NODE_ENV = "development";
+      vi.stubEnv("NODE_ENV", "development");
       process.env.SQLITE_PATH = "data/ledgr.db";
       process.env.ALLOW_DEV_MODE = "true";
 
@@ -176,7 +177,7 @@ describe("env.ts production invariants", () => {
 
   describe("build-phase carve-out (NEXT_PHASE)", () => {
     it("skips all production invariants when NEXT_PHASE=phase-production-build", async () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       process.env.NEXT_PHASE = "phase-production-build";
       process.env.SQLITE_PATH = "data/ledgr.db";
       // Missing CRON_SECRET, ENCRYPTION_KEY, AUTH_AUTHENTIK_* — all OK
@@ -188,7 +189,7 @@ describe("env.ts production invariants", () => {
 
   describe("DEMO_ONLY carve-out", () => {
     it("skips all production invariants when DEMO_ONLY=true", async () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       process.env.DEMO_ONLY = "true";
       process.env.SQLITE_PATH = "data/ledgr.db";
       // Missing CRON_SECRET, ENCRYPTION_KEY — load-bearing carve-out:
@@ -201,7 +202,7 @@ describe("env.ts production invariants", () => {
     });
 
     it("allows ALLOW_DEV_MODE=true when DEMO_ONLY=true (neither check runs)", async () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       process.env.DEMO_ONLY = "true";
       process.env.ALLOW_DEV_MODE = "true";
       process.env.SQLITE_PATH = "data/ledgr.db";

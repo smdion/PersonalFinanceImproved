@@ -40,7 +40,7 @@ const sqliteSchema = baseSchema.extend({
   SQLITE_PATH: z.string().optional(), // default: data/ledgr.db
 });
 
-export type Env = z.infer<typeof pgSchema> & { SQLITE_PATH?: string };
+type Env = z.infer<typeof pgSchema> & { SQLITE_PATH?: string };
 
 function validateEnv(): Env {
   const schema = getDialect() === "postgresql" ? pgSchema : sqliteSchema;

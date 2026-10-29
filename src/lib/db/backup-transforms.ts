@@ -330,7 +330,7 @@ export const KNOWN_SCHEMA_VERSIONS = [
   ...V08_SCHEMA_TAGS,
 ] as const;
 
-export type KnownSchemaVersion = (typeof KNOWN_SCHEMA_VERSIONS)[number];
+type KnownSchemaVersion = (typeof KNOWN_SCHEMA_VERSIONS)[number];
 
 /**
  * Maps SQLite journal tags to their PG equivalents so the cumulative
@@ -1004,7 +1004,7 @@ function transformV07xToCurrent(tables: TableData): TableData {
 // Public API
 // ---------------------------------------------------------------------------
 
-export type TransformResult = {
+type TransformResult = {
   tables: TableData;
   transformed: boolean;
   sourceVersion: string;

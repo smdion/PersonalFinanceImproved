@@ -77,16 +77,6 @@ export function taxDataBrackets(section: "ltcg" | "irmaa"): {
   );
 }
 
-/** `fpl_by_household` rows. */
-export function taxDataFpl(): {
-  taxYear: number;
-  amounts: Record<string, number>;
-}[] {
-  return years().flatMap(([taxYear, d]) =>
-    d.fpl ? [{ taxYear, amounts: d.fpl.amounts }] : [],
-  );
-}
-
 /** The engine's yearly tax tables (and the QCD limit) for one year of the
  *  shipped file, in the shapes `distributionTaxRates` takes — pinned to a year (default 2026)
  *  so a new data release doesn't move every engine test. */

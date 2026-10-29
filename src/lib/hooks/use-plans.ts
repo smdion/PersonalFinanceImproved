@@ -22,7 +22,7 @@ import { useActiveRetirementProfile } from "./use-active-retirement-profile";
 import { useBudgetProfilesList } from "./use-budget-profiles-list";
 
 /** Every saved Plan (a named set of profiles). */
-export function usePlanList() {
+function usePlanList() {
   const { data: plans = [] } = trpc.settings.scenarios.list.useQuery(
     undefined,
     { staleTime: 30_000 },

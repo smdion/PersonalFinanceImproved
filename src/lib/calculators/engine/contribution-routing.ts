@@ -427,7 +427,7 @@ export function routePercentage(
 }
 
 /** What the IRS-limit caps run on for one projected year. */
-export type YearCapInput = {
+type YearCapInput = {
   /** Limits already grown to the year; taxYear = the year (Dec-31 ages). */
   ctx: Omit<CapContext, "people">;
   people: readonly { id: number; birthYear: number | null }[];
@@ -439,7 +439,7 @@ export type YearCapInput = {
   wagesByPerson: ReadonlyMap<number, number> | null;
 };
 
-export type CappedSpecs = {
+type CappedSpecs = {
   /** Per spec, in spec order. */
   capped: CappedContribution[];
   groupLimits: Map<string, number>;

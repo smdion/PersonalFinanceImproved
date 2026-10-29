@@ -23,7 +23,7 @@ import { createHash } from "node:crypto";
  * the same fields produce the same key, so the upstream API can
  * deduplicate.
  */
-export interface TransactionFingerprint {
+interface TransactionFingerprint {
   /** Remote account ID (YNAB account UUID, Actual account name). */
   accountId: string;
   /** ISO date (YYYY-MM-DD). */

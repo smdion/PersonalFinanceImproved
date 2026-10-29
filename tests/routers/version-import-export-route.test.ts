@@ -45,13 +45,14 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   process.env = ORIGINAL_ENV;
 });
 
 describe("T27 — /api/versions/export ALLOW_DEV_MODE bypass", () => {
   it("rejects an unauthenticated request when NODE_ENV=production, even with ALLOW_DEV_MODE=true", async () => {
     process.env.ALLOW_DEV_MODE = "true";
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
 
     const { GET } = await import("@/app/api/versions/export/route");
     const res = await GET();
@@ -60,7 +61,7 @@ describe("T27 — /api/versions/export ALLOW_DEV_MODE bypass", () => {
 
   it("allows an unauthenticated request when ALLOW_DEV_MODE=true and NODE_ENV=development", async () => {
     process.env.ALLOW_DEV_MODE = "true";
-    process.env.NODE_ENV = "development";
+    vi.stubEnv("NODE_ENV", "development");
 
     const { GET } = await import("@/app/api/versions/export/route");
     const res = await GET();
@@ -69,7 +70,7 @@ describe("T27 — /api/versions/export ALLOW_DEV_MODE bypass", () => {
 
   it("rejects an unauthenticated request when ALLOW_DEV_MODE is unset in production", async () => {
     delete process.env.ALLOW_DEV_MODE;
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
 
     const { GET } = await import("@/app/api/versions/export/route");
     const res = await GET();
@@ -89,7 +90,7 @@ function emptyFormData(): FormData {
 describe("T27 — /api/versions/import ALLOW_DEV_MODE bypass", () => {
   it("rejects an unauthenticated request when NODE_ENV=production, even with ALLOW_DEV_MODE=true", async () => {
     process.env.ALLOW_DEV_MODE = "true";
-    process.env.NODE_ENV = "production";
+    vi.stubEnv("NODE_ENV", "production");
 
     const { POST } = await import("@/app/api/versions/import/route");
     const request = new Request("http://localhost/api/versions/import", {
@@ -102,7 +103,7 @@ describe("T27 — /api/versions/import ALLOW_DEV_MODE bypass", () => {
 
   it("allows an unauthenticated request past the auth gate when ALLOW_DEV_MODE=true and NODE_ENV=development", async () => {
     process.env.ALLOW_DEV_MODE = "true";
-    process.env.NODE_ENV = "development";
+    vi.stubEnv("NODE_ENV", "development");
 
     const { POST } = await import("@/app/api/versions/import/route");
     const request = new Request("http://localhost/api/versions/import", {
@@ -124,7 +125,7 @@ describe("T3 — DEMO_ONLY guard", () => {
   it("export route rejects with 403 when DEMO_ONLY=true, even with ALLOW_DEV_MODE=true", async () => {
     process.env.DEMO_ONLY = "true";
     process.env.ALLOW_DEV_MODE = "true";
-    process.env.NODE_ENV = "development";
+    vi.stubEnv("NODE_ENV", "development");
 
     const { GET } = await import("@/app/api/versions/export/route");
     const res = await GET();
@@ -134,7 +135,7 @@ describe("T3 — DEMO_ONLY guard", () => {
   it("import route rejects with 403 when DEMO_ONLY=true, even with ALLOW_DEV_MODE=true", async () => {
     process.env.DEMO_ONLY = "true";
     process.env.ALLOW_DEV_MODE = "true";
-    process.env.NODE_ENV = "development";
+    vi.stubEnv("NODE_ENV", "development");
 
     const { POST } = await import("@/app/api/versions/import/route");
     const request = new Request("http://localhost/api/versions/import", {

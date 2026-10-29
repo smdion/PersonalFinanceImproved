@@ -39,45 +39,45 @@ import type { HsaCoverageType, W4FilingStatus } from "./enum-values";
  * dependency on the DB layer. Structurally identical to the same-named
  * types in `db/schema-pg.ts` and the Zod schemas in `db/json-schemas.ts`.
  */
-export type TaxBracketEntry = {
+type TaxBracketEntry = {
   threshold: number;
   baseWithholding: number;
   rate: number;
 };
-export type LtcgBracketEntry = { threshold: number | null; rate: number };
-export type IrmaaBracketEntry = {
+type LtcgBracketEntry = { threshold: number | null; rate: number };
+type IrmaaBracketEntry = {
   magiThreshold: number;
   annualSurcharge: number;
 };
 
 // ── Input row shapes (already fetched from the DB by the caller) ───────
 
-export interface TaxParamsVintageRow {
+interface TaxParamsVintageRow {
   taxYear: number;
   version: number;
 }
-export interface ContributionLimitRow {
+interface ContributionLimitRow {
   taxYear: number;
   limitType: string;
   value: number | string;
 }
-export interface WithholdingBracketRow {
+interface WithholdingBracketRow {
   taxYear: number;
   filingStatus: string;
   w4Checkbox: boolean;
   brackets: TaxBracketEntry[];
 }
-export interface LtcgBracketRow {
+interface LtcgBracketRow {
   taxYear: number;
   filingStatus: string;
   brackets: LtcgBracketEntry[];
 }
-export interface IrmaaBracketRow {
+interface IrmaaBracketRow {
   taxYear: number;
   filingStatus: string;
   brackets: IrmaaBracketEntry[];
 }
-export interface FplRow {
+interface FplRow {
   taxYear: number;
   amounts: Record<string, number>;
 }
@@ -91,7 +91,7 @@ export interface TaxParamsRowSets {
   fpl: FplRow[];
 }
 
-export interface ResolveTaxParamsOptions {
+interface ResolveTaxParamsOptions {
   /**
    * How to handle a `requestedYear` that has no data. Default "nearest".
    *  - "nearest" (retirement): newest year <= requestedYear, else oldest.
@@ -123,7 +123,7 @@ export type TaxSection = "withholding" | "ltcg" | "irmaa" | "fpl";
 
 // ── Output shape ─────────────────────────────────────────────────────
 
-export interface ResolvedTaxParams {
+interface ResolvedTaxParams {
   /** The year whose value rows were actually used. */
   resolvedYear: number;
   /** `tax_params.version` for `resolvedYear`, or 0 when no vintage row exists. */

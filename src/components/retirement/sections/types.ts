@@ -163,19 +163,6 @@ export type UpsertProfilePersonMutation = {
   }) => void;
 };
 
-/** `retirementSettings.upsertPersonRaiseRate` pass-through — writes ONLY
- *  `salary_annual_increase` for one (profile, person), used by the per-person
- *  "Pre-Retirement Raise" control when the household has more than one person.
- *  `wholePercent` is a decimal string ("0.03"), same convention as
- *  `buildSettingsPatch`'s other percent fields. */
-export type UpsertPersonRaiseRateMutation = {
-  mutate: (input: {
-    profileId: number;
-    personId: number;
-    salaryAnnualIncrease: string;
-  }) => void;
-};
-
 /** `retirementProfilePeople.upsertHouseholdFields` pass-through — fields
  *  the UI presents as ONE household-wide control (Plan Through, SS Start
  *  Age) but that are stored per-person; fans the edit to every person in

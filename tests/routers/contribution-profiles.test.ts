@@ -403,9 +403,7 @@ function seedContribAccount(
       accountType: "401k",
       parentCategory: "Retirement",
       taxTreatment: "pre_tax",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
-      employerMatchType: "percent",
+      employerMatchType: "percent_of_contribution",
       employerMatchValue: "0.50",
       employerMaxMatchPct: "0.06",
       isActive: true,
@@ -497,9 +495,7 @@ describe("contributionProfiles coverage", () => {
         seedJob(db, personId, { annualSalary: "100000" });
         seedContribAccount(db, {
           personId,
-          contributionMethod: "percent_of_salary",
-          contributionValue: "0.10",
-          employerMatchType: "percent",
+          employerMatchType: "percent_of_contribution",
           employerMatchValue: "0.50",
           employerMaxMatchPct: "0.06",
         });
@@ -594,7 +590,7 @@ describe("contributionProfiles coverage", () => {
           personId,
           jobId,
           accountType: "401k",
-          taxTreatment: "roth",
+          taxTreatment: "tax_free",
           employerMatchType: "none",
           label: null,
         });
@@ -628,7 +624,6 @@ describe("contributionProfiles coverage", () => {
         const jobId = seedJob(db, personId, { employerName: "Fidelity" });
         // Create a perf account that matches by type + person
         seedPerformanceAccount(db, {
-          name: "401k",
           institution: "Fidelity",
           accountType: "401k",
           accountLabel: "Alex 401k",
@@ -665,7 +660,6 @@ describe("contributionProfiles coverage", () => {
         const personId = await seedPerson(db, "Alex");
         const jobId = seedJob(db, personId, { employerName: "TechCorp" });
         const perfId = seedPerformanceAccount(db, {
-          name: "Linked 401k",
           institution: "Vanguard",
           accountType: "401k",
           accountLabel: "Vanguard 401k",
@@ -828,8 +822,8 @@ describe("contributionProfiles coverage", () => {
         });
         expect(result).not.toBeNull();
         const deduction = result!.deductionDetails[0];
-        expect(deduction.activeFields).toBeNull();
-        expect(deduction.isIncomplete).toBe(true);
+        expect(deduction!.activeFields).toBeNull();
+        expect(deduction!.isIncomplete).toBe(true);
       } finally {
         cleanup();
       }
@@ -890,7 +884,7 @@ describe("contributionProfiles coverage", () => {
             Record<string, Record<string, unknown>>
           >
         ).contributionAccounts;
-        expect(accts["1"].contributionValue).toBe("0.20");
+        expect(accts!["1"]!.contributionValue).toBe("0.20");
       } finally {
         cleanup();
       }
@@ -967,7 +961,7 @@ describe("contributionProfiles coverage", () => {
             Record<string, Record<string, unknown>>
           >
         ).contributionAccounts;
-        expect(accts["1"].contributionValue).toBe("0.2");
+        expect(accts!["1"]!.contributionValue).toBe("0.2");
       } finally {
         cleanup();
       }
@@ -998,8 +992,8 @@ describe("contributionProfiles coverage", () => {
           string,
           Record<string, Record<string, unknown>>
         >;
-        expect(activeFields.contributionAccounts["5"]).toBeDefined();
-        expect(activeFields.deductions["2"].amountPerPeriod).toBe("25.00");
+        expect(activeFields.contributionAccounts!["5"]).toBeDefined();
+        expect(activeFields.deductions!["2"]!.amountPerPeriod).toBe("25.00");
       } finally {
         cleanup();
       }
@@ -1050,8 +1044,6 @@ describe("contributionProfiles coverage", () => {
         db.insert(sqliteSchema.scenarios)
           .values({
             name: "My Plan",
-            overrides: {},
-            isBaseline: false,
             contributionProfileId: profileId,
           })
           .run();
@@ -1159,7 +1151,7 @@ describe("contributionProfiles coverage", () => {
             Record<string, unknown>
           >
         ).contributionAccounts;
-        expect(contribActiveFields["10"]).toBeDefined();
+        expect(contribActiveFields!["10"]).toBeDefined();
       } finally {
         cleanup();
       }
@@ -1176,7 +1168,7 @@ describe("contributionProfiles coverage", () => {
         seedJob(db, personId, { annualSalary: "100000" });
         const acctId = seedContribAccount(db, {
           personId,
-          employerMatchType: "percent",
+          employerMatchType: "percent_of_contribution",
           employerMatchValue: "0.50",
           employerMaxMatchPct: "0.06",
         });
@@ -1229,7 +1221,7 @@ describe("contributionProfiles coverage", () => {
         expect(result!.id).toBe(seeded!.id);
         expect(result!.accountDetails.length).toBe(1);
         // A profile with empty contributionActiveFields customizes nothing.
-        expect(result!.accountDetails[0].activeFields).toBeNull();
+        expect(result!.accountDetails[0]!.activeFields).toBeNull();
       } finally {
         cleanup();
       }
@@ -1282,9 +1274,7 @@ describe("contributionProfiles coverage", () => {
           personId,
           accountType: "brokerage",
           parentCategory: "Portfolio",
-          taxTreatment: "taxable",
-          contributionMethod: "fixed_amount",
-          contributionValue: "500",
+          taxTreatment: "after_tax",
           employerMatchType: "none",
         });
 
@@ -1321,7 +1311,6 @@ describe("contributionProfiles coverage", () => {
         seedJob(db, personId);
         // Perf account has a DIFFERENT ownerPersonId but label contains the person name
         seedPerformanceAccount(db, {
-          name: "401k",
           institution: "Fidelity",
           accountType: "401k",
           accountLabel: "Jordan Old 401k",
@@ -1394,8 +1383,6 @@ describe("contributionProfiles coverage", () => {
         seedJob(db, personId, { annualSalary: "100000" });
         seedContribAccount(db, {
           personId,
-          contributionMethod: "percent_of_salary",
-          contributionValue: "0.10",
           employerMatchType: "none",
         });
 

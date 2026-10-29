@@ -5,6 +5,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { FULL_SHARE } from "@/lib/constants";
 import { COST_KINDS } from "@/lib/config/performance-help";
 import { allInYearlyCost } from "@/lib/pure/performance";
+import { compoundedFundCost } from "@/lib/pure/fund-facts";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 
@@ -12,12 +13,15 @@ import { safeDivide } from "@/lib/utils/math";
  * What investing costs, as two kinds that are never mixed: fund costs
  * (expense ratios, inside the funds' prices — a rate on today's balance)
  * and account fees (charged to the accounts — actual amounts recorded in
- * Performance). The headline adds a year of each.
+ * Performance). The headline adds a year of each. Fund costs also show
+ * compounded: the growth today's balance gives up over 10–30 years at the
+ * current mix's expected return.
  */
 export function WhatItCostsCard({
   cost,
   accountFees,
   invested,
+  expectedReturn,
 }: {
   cost: {
     expenseRatio: number | null;
@@ -31,9 +35,21 @@ export function WhatItCostsCard({
   };
   /** Value of the holdings the fund costs are measured on. */
   invested: number;
+  /** The current mix's expected yearly return; null when not known. */
+  expectedReturn: number | null;
 }) {
   const fundYearly = cost.expenseRatio === null ? null : cost.yearlyCost;
   const allIn = allInYearlyCost(fundYearly, accountFees);
+  const compounded =
+    cost.expenseRatio !== null &&
+    cost.expenseRatio > 0 &&
+    expectedReturn !== null
+      ? compoundedFundCost(
+          safeDivide(cost.yearlyCost, cost.expenseRatio),
+          expectedReturn,
+          cost.expenseRatio,
+        )
+      : null;
   const feesYearShown =
     accountFees.lastYear !== null ? accountFees.year - 1 : accountFees.year;
 
@@ -80,6 +96,31 @@ export function WhatItCostsCard({
               cost.coveredShare < FULL_SHARE &&
               ` Covers ${formatPercent(cost.coveredShare, 0)} of your money (funds without a known expense ratio aren't included).`}
           </p>
+          {compounded && (
+            <div className="mt-2">
+              <div className="grid grid-cols-3 gap-x-3">
+                {compounded.map((c) => (
+                  <div key={c.years}>
+                    <div className="text-caption text-faint">
+                      Over {c.years} years
+                    </div>
+                    <div className="text-primary tabular-nums">
+                      {formatCurrency(c.cost, 0)}
+                    </div>
+                    <div className="text-caption text-faint tabular-nums">
+                      {formatPercent(c.share, 1)} of the growth
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-caption text-muted mt-1">
+                What fund costs take from today&apos;s balance as it grows at
+                your mix&apos;s expected return (
+                {formatPercent(expectedReturn!, 1)} a year), with no new money
+                added.
+              </p>
+            </div>
+          )}
         </div>
         <div>
           <div className="flex items-baseline justify-between gap-3">

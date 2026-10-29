@@ -3,8 +3,6 @@ import { calculateBudget } from "@/lib/calculators/budget";
 import type { BudgetInput } from "@/lib/calculators/types";
 import { AS_OF_DATE } from "./fixtures";
 
-const AS_OF_DATE = new Date("2025-03-07");
-
 describe("calculateBudget", () => {
   const input: BudgetInput = {
     columnLabels: ["Standard", "Tight", "Emergency"],

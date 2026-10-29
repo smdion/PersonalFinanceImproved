@@ -13,7 +13,7 @@
 import type { FilingStatusType } from "../calculators/types";
 
 /** Provisional-income thresholds by filing status, in dollars. */
-export type SsTaxThresholds = { tier1: number; tier2: number };
+type SsTaxThresholds = { tier1: number; tier2: number };
 
 /** SS taxation thresholds by filing status (unchanged since 1993). */
 export const SS_TAX_THRESHOLDS: Record<FilingStatusType, SsTaxThresholds> = {

@@ -26,7 +26,7 @@ import type { EngineDecumulationYear, ProjectionResult } from "./types";
  *    (what's reachable couldn't cover it). */
 export type PlanFailureReason = "depleted" | "penaltyGap" | "shortfall";
 
-export type PlanOutcome =
+type PlanOutcome =
   | {
       succeeded: true;
       failureAge: null;

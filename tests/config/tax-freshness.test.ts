@@ -239,20 +239,20 @@ describe("tax_brackets seed data structural invariants", () => {
 describe("LTCG bracket values", () => {
   // Source: IRS Revenue Procedure 2025-32 (2026 tax year)
   it("MFJ 0% threshold = $98,900", () => {
-    expect(LTCG_BRACKETS.MFJ[0]!.threshold).toBe(98900);
+    expect(LTCG_BRACKETS.MFJ![0]!.threshold).toBe(98900);
   });
 
   it("MFJ 15% threshold = $613,700", () => {
-    expect(LTCG_BRACKETS.MFJ[1]!.threshold).toBe(613700);
+    expect(LTCG_BRACKETS.MFJ![1]!.threshold).toBe(613700);
   });
 
   it("Single 0% threshold = $49,450", () => {
-    expect(LTCG_BRACKETS.Single[0]!.threshold).toBe(49450);
+    expect(LTCG_BRACKETS.Single![0]!.threshold).toBe(49450);
   });
 
   it("rates are 0%, 15%, 20%", () => {
     for (const status of ["MFJ", "Single", "HOH"] as const) {
-      const rates = LTCG_BRACKETS[status].map((b) => b.rate);
+      const rates = LTCG_BRACKETS[status]!.map((b) => b.rate);
       expect(rates).toEqual([0, 0.15, 0.2]);
     }
   });
@@ -368,16 +368,16 @@ describe("IRMAA bracket values", () => {
   });
 
   it("MFJ tier 1 threshold = $218,000", () => {
-    expect(IRMAA_BRACKETS.MFJ[0]!.magiThreshold).toBe(218000);
+    expect(IRMAA_BRACKETS.MFJ![0]!.magiThreshold).toBe(218000);
   });
 
   it("Single tier 1 threshold = $109,000 (half of MFJ)", () => {
-    expect(IRMAA_BRACKETS.Single[0]!.magiThreshold).toBe(109000);
+    expect(IRMAA_BRACKETS.Single![0]!.magiThreshold).toBe(109000);
   });
 
   it("surcharges increase monotonically", () => {
     for (const status of ["MFJ", "Single", "HOH"] as const) {
-      const surcharges = IRMAA_BRACKETS[status].map((b) => b.annualSurcharge);
+      const surcharges = IRMAA_BRACKETS[status]!.map((b) => b.annualSurcharge);
       for (let i = 1; i < surcharges.length; i++) {
         expect(surcharges[i]).toBeGreaterThan(surcharges[i - 1]!);
       }

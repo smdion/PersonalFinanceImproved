@@ -3,9 +3,11 @@
  * No DB or I/O dependency.
  */
 
+import { localMidnight, parseLocalDateOnly } from "@/lib/utils/date";
+
 // --- Profile deletion guards ---
 
-export type DeletionCheck = { allowed: boolean; reason?: string };
+type DeletionCheck = { allowed: boolean; reason?: string };
 
 /**
  * Check if a budget profile can be deleted.
@@ -115,6 +117,8 @@ export function canRemoveColumn(
 /** Minimal job shape for active detection. */
 export type JobLike = {
   personId: number;
+  /** Date-only (YYYY-MM-DD), as stored. */
+  startDate: string;
   endDate: string | null;
   /** A speculative job is a permanent, auto-provisioned peg for Salary
    *  Profiles to pin what-if scenarios against — it never ends (endDate is
@@ -123,32 +127,110 @@ export type JobLike = {
 };
 
 /**
- * Find the active job for a person. Active = no endDate AND not speculative.
- * Centralizes the duplicated `!j.endDate` pattern across routers.
+ * A job is current from its start date through its end date (both days
+ * included; no end date = still current), never when speculative. The one
+ * rule for "a person's job": every caller says which day it means — today
+ * for this year's figures, the projection's or snapshot's own date for
+ * theirs.
  */
-export function findActiveJob<T extends JobLike>(
-  jobs: T[],
-  personId: number,
-): T | undefined {
-  return jobs.find(
-    (j) => j.personId === personId && !j.endDate && !j.isSpeculative,
+function isJobCurrent(job: Omit<JobLike, "personId">, asOf: Date): boolean {
+  // Date-only strings parse in local time, so a job that starts/ends on
+  // `asOf` compares as the same calendar day (UTC parsing would put it
+  // ~5–8h earlier in any US timezone).
+  const day = localMidnight(asOf);
+  return (
+    !job.isSpeculative &&
+    parseLocalDateOnly(job.startDate) <= day &&
+    (!job.endDate || parseLocalDateOnly(job.endDate) >= day)
   );
 }
 
+/** The person's current job on `asOf` (isJobCurrent). */
+export function findActiveJob<T extends JobLike>(
+  jobs: readonly T[],
+  personId: number,
+  asOf: Date,
+): T | undefined {
+  return jobs.find((j) => j.personId === personId && isJobCurrent(j, asOf));
+}
+
+/** Every current job on `asOf` (isJobCurrent). */
+export function filterActiveJobs<T extends Omit<JobLike, "personId">>(
+  jobs: readonly T[],
+  asOf: Date,
+): T[] {
+  return jobs.filter((j) => isJobCurrent(j, asOf));
+}
+
 /**
- * Filter to only active jobs (no endDate, not speculative). For use when
- * personId filtering isn't needed.
+ * The jobs a projection follows from `asOf`: each person's current job, or
+ * — with none — the next one they start (isJobCurrent). A job's own dates
+ * then bound the years it's worked (workingYears).
  */
-export function filterActiveJobs<
-  T extends { endDate: string | null; isSpeculative: boolean },
->(jobs: T[]): T[] {
-  return jobs.filter((j) => !j.endDate && !j.isSpeculative);
+export function projectionJobs<T extends JobLike>(
+  jobs: readonly T[],
+  asOf: Date,
+): T[] {
+  const people = [...new Set(jobs.map((j) => j.personId))];
+  return people.flatMap((personId) => {
+    const current = findActiveJob(jobs, personId, asOf);
+    if (current) return [current];
+    const day = localMidnight(asOf);
+    const next = jobs
+      .filter(
+        (j) =>
+          j.personId === personId &&
+          !j.isSpeculative &&
+          parseLocalDateOnly(j.startDate) > day,
+      )
+      .sort((a, b) => a.startDate.localeCompare(b.startDate))[0];
+    return next ? [next] : [];
+  });
+}
+
+/**
+ * A projection job's working years, whole years (the engine's
+ * workingYearsByPerson): `start` = the year it starts when that's after
+ * `asOf` (null = already working), `end` = the year of its last day (null =
+ * no end). Null when it's worked throughout.
+ */
+export function workingYears(
+  job: Pick<JobLike, "startDate" | "endDate">,
+  asOf: Date,
+): { start: number | null; end: number | null } | null {
+  const start =
+    parseLocalDateOnly(job.startDate) > localMidnight(asOf)
+      ? Number(job.startDate.slice(0, 4))
+      : null;
+  const end = job.endDate ? Number(job.endDate.slice(0, 4)) : null;
+  return start === null && end === null ? null : { start, end };
+}
+
+/** The projection's note on job dates it rounds to whole years (null when
+ *  every job runs throughout). */
+export function jobYearsNote(
+  working: Readonly<
+    Record<number, { start: number | null; end: number | null }>
+  >,
+  nameOf: (personId: number) => string,
+): string | null {
+  const parts = Object.entries(working).map(([id, w]) => {
+    const whose = `${nameOf(Number(id))}'s job`;
+    if (w.start !== null && w.end !== null)
+      return `${whose} runs ${w.start}–${w.end}`;
+    return w.start !== null
+      ? `${whose} starts in ${w.start}`
+      : `${whose} ends in ${w.end}`;
+  });
+  return parts.length === 0
+    ? null
+    : `${parts.join("; ")} — counted in whole years.`;
 }
 
 // --- Profile linking ---
 
 /** Minimal profile shape for resolution. */
-export type ProfileLike = {
+type ProfileLike = {
   id: number;
   isActive: boolean;
 };
@@ -182,7 +264,7 @@ export type ContribAccountActiveFields = {
   isActive?: boolean;
 } | null;
 
-export type ContribFieldDisplayState = {
+type ContribFieldDisplayState = {
   /** True when this profile has a resolvable `contributionValue` for the
    *  account, including an explicit value of "0" — absence, not zero, is
    *  what excludes a row (matches getIncompleteContribAccountIds's own

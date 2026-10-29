@@ -59,7 +59,7 @@ export function buildCurrentRothBasisMap(
   return result;
 }
 
-export type SeedRothBasisRow = {
+type SeedRothBasisRow = {
   performanceAccountId: number;
   ownerPersonId: number;
   year: number;

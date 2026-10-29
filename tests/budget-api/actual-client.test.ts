@@ -132,10 +132,10 @@ describe("ActualClient", () => {
       }
 
       const accounts = await client.getAccounts();
-      expect(accounts[0].type).toBe("savings");
-      expect(accounts[1].type).toBe("creditCard");
-      expect(accounts[2].type).toBe("tracking");
-      expect(accounts[3].type).toBe("other");
+      expect(accounts[0]!.type).toBe("savings");
+      expect(accounts[1]!.type).toBe("creditCard");
+      expect(accounts[2]!.type).toBe("tracking");
+      expect(accounts[3]!.type).toBe("other");
     });
   });
 
@@ -172,8 +172,8 @@ describe("ActualClient", () => {
 
       const months = await client.getMonths("2026-01", "2026-02");
       expect(months).toHaveLength(2);
-      expect(months[0].month).toBe("2026-01");
-      expect(months[0].income).toBe(6000); // 600000 cents = $6000
+      expect(months[0]!.month).toBe("2026-01");
+      expect(months[0]!.income).toBe(6000); // 600000 cents = $6000
       // 2025-12 is out of range — only 3 fetch calls total (list + 2 details).
       expect(mockFetch).toHaveBeenCalledTimes(3);
     });
@@ -220,7 +220,7 @@ describe("ActualClient", () => {
         memo: "Test",
         cleared: true,
       });
-      const postBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const postBody = JSON.parse(mockFetch.mock.calls[0]![1].body);
       expect(postBody.transaction.account).toBe("acct-1");
       expect(postBody.transaction.amount).toBe(-5000); // dollars → cents
       expect(postBody.transaction.cleared).toBe(true);
@@ -262,7 +262,7 @@ describe("ActualClient", () => {
       });
       expect(id).toBe("real-tx-id");
       expect(mockFetch).toHaveBeenCalledTimes(2);
-      expect(mockFetch.mock.calls[1][0]).toContain(
+      expect(mockFetch.mock.calls[1]![0]).toContain(
         "/accounts/acct-1/transactions?since_date=2026-01-20",
       );
     });
@@ -359,7 +359,7 @@ describe("ActualClient", () => {
         amount: -50,
         reconciled: true,
       });
-      const postBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const postBody = JSON.parse(mockFetch.mock.calls[0]![1].body);
       expect(postBody.transaction.reconciled).toBe(true);
       expect(postBody.transaction.cleared).toBe(true);
     });
@@ -372,7 +372,7 @@ describe("ActualClient", () => {
         amount: -75,
         memo: "Updated",
       });
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const body = JSON.parse(mockFetch.mock.calls[0]![1].body);
       expect(body.transaction.amount).toBe(-7500);
       expect(body.transaction.notes).toBe("Updated");
     });
@@ -380,7 +380,7 @@ describe("ActualClient", () => {
     it("sets cleared: true when reconciled: true is sent, even without an explicit cleared field", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({}));
       await client.updateTransaction("tx-1", { reconciled: true });
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const body = JSON.parse(mockFetch.mock.calls[0]![1].body);
       expect(body.transaction.reconciled).toBe(true);
       expect(body.transaction.cleared).toBe(true);
     });
@@ -397,10 +397,10 @@ describe("ActualClient", () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" })); // PUT
       await client.updateCategoryGoalTarget("cat-1", 250);
       const [getCall, putCall] = mockFetch.mock.calls;
-      expect(getCall[0]).toContain("/notes/category/cat-1");
-      expect(putCall[0]).toContain("/notes/category/cat-1");
-      expect(putCall[1].method).toBe("PUT");
-      expect(JSON.parse(putCall[1].body).data).toBe("#template 250");
+      expect(getCall![0]).toContain("/notes/category/cat-1");
+      expect(putCall![0]).toContain("/notes/category/cat-1");
+      expect(putCall![1].method).toBe("PUT");
+      expect(JSON.parse(putCall![1].body).data).toBe("#template 250");
     });
 
     it("replaces just the amount when a matching-shape #template already exists, preserving other note text", async () => {
@@ -410,7 +410,7 @@ describe("ActualClient", () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" }));
       await client.updateCategoryGoalTarget("cat-1", 175);
       const putCall = mockFetch.mock.calls[1];
-      expect(JSON.parse(putCall[1].body).data).toBe(
+      expect(JSON.parse(putCall![1].body).data).toBe(
         "Rent category\n#template 175",
       );
     });
@@ -441,7 +441,7 @@ describe("ActualClient", () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" }));
       await client.updateCategoryTargetBalance("cat-1", 5000);
       const putCall = mockFetch.mock.calls[1];
-      expect(JSON.parse(putCall[1].body).data).toBe("#template up to 5000");
+      expect(JSON.parse(putCall![1].body).data).toBe("#template up to 5000");
     });
 
     it("a fixed-amount template does not satisfy a target-balance write — treated as conflict, not replaced", async () => {
@@ -649,8 +649,8 @@ describe("ActualClient", () => {
         "Rent",
         "Groceries",
       ]);
-      expect(detail.categories[0].groupName).toBe("Housing");
-      expect(detail.categories[1].groupName).toBe("Food");
+      expect(detail.categories[0]!.groupName).toBe("Housing");
+      expect(detail.categories[1]!.groupName).toBe("Food");
     });
 
     // Live-user bug, 2026-08-30: every caller in this codebase
@@ -717,7 +717,7 @@ describe("ActualClient", () => {
       );
       mockFetch.mockReturnValueOnce(jsonResponse({ data: "#template 450" }));
       const detail = await client.getMonthDetail("2026-01");
-      expect(detail.categories[0].goalTarget).toBe(450);
+      expect(detail.categories[0]!.goalTarget).toBe(450);
       const noteCall = mockFetch.mock.calls[1]!;
       expect(noteCall[0]).toContain("/notes/category/c1");
     });
@@ -755,7 +755,7 @@ describe("ActualClient", () => {
         jsonResponse({ data: "Just a free-text note, no goal" }),
       );
       const detail = await client.getMonthDetail("2026-01");
-      expect(detail.categories[0].goalTarget).toBe(300);
+      expect(detail.categories[0]!.goalTarget).toBe(300);
     });
 
     it("does not blow up the whole call when a single category's note fetch fails -- degrades to the structured value", async () => {
@@ -793,7 +793,7 @@ describe("ActualClient", () => {
       // exponential-backoff retries (no fake timers in this test file).
       mockFetch.mockReturnValueOnce(jsonResponse({ error: "not found" }, 404));
       const detail = await client.getMonthDetail("2026-01");
-      expect(detail.categories[0].goalTarget).toBe(300);
+      expect(detail.categories[0]!.goalTarget).toBe(300);
     });
   });
 
@@ -1092,7 +1092,7 @@ describe("ActualClient", () => {
       const c = new ActualClient("http://actual.local/", "key", "sync-id");
       mockFetch.mockReturnValueOnce(jsonResponse({ data: [] }));
       c.testConnection();
-      const url = mockFetch.mock.calls[0][0];
+      const url = mockFetch.mock.calls[0]![0];
       expect(url).not.toContain("//v1");
     });
   });

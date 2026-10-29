@@ -22,6 +22,7 @@
  * Retirement page's decumulation override form.
  */
 import { describe, it, expect } from "vitest";
+import type { EngineDecumulationYear } from "@/lib/calculators/types";
 import { calculateProjection } from "@/lib/calculators/engine";
 import type { ProjectionInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
@@ -165,10 +166,12 @@ describe("Roth conversion target priority (rothBracketTarget fallback in perform
     );
 
     const baselineYear = baseline.projectionByYear.find(
-      (y) => y.year === 2026 && y.phase === "decumulation",
+      (y): y is EngineDecumulationYear =>
+        y.year === 2026 && y.phase === "decumulation",
     );
     const overrideYear = withOverride.projectionByYear.find(
-      (y) => y.year === 2026 && y.phase === "decumulation",
+      (y): y is EngineDecumulationYear =>
+        y.year === 2026 && y.phase === "decumulation",
     );
     expect(baselineYear).toBeDefined();
     expect(overrideYear).toBeDefined();

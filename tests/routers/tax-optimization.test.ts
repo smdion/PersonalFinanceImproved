@@ -15,7 +15,7 @@
  * snapshot is stable run-to-run.
  */
 import "./setup-mocks";
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, assert } from "vitest";
 import { createTestCaller, adminSession, seedStandardDataset } from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
@@ -66,8 +66,6 @@ function seedTaxOptHousehold(db: BetterSQLite3Database<typeof sqliteSchema>) {
   db.insert(schema.contributionAccounts)
     .values({
       accountType: "401k",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
       taxTreatment: "pre_tax",
       employerMatchType: "none",
       isActive: true,
@@ -166,8 +164,9 @@ describe("projection router — withdrawal routing DB fallback", () => {
       // tell whether a waterfall household matches one of the named
       // presets (withdrawal-comparison.tsx's "same as your current plan"
       // annotation) rather than just sharing a routing mode.
-      expect(Array.isArray(currentPlan?.withdrawalOrder)).toBe(true);
-      expect(currentPlan?.withdrawalOrder.length).toBeGreaterThan(0);
+      assert(currentPlan && "withdrawalOrder" in currentPlan);
+      expect(Array.isArray(currentPlan.withdrawalOrder)).toBe(true);
+      expect(currentPlan.withdrawalOrder.length).toBeGreaterThan(0);
     } finally {
       cleanup();
     }
@@ -206,7 +205,7 @@ describe("projection router — compareWithdrawalStrategies", () => {
         .sort((a, b) => a.lifetimeTax - b.lifetimeTax)[0];
       // baselineLabel is only forced to the overall-cheapest when at least
       // one strategy doesn't deplete; this fixture doesn't deplete.
-      expect(res.baselineLabel).toBe(cheapest.label);
+      expect(res.baselineLabel).toBe(cheapest!.label);
     } finally {
       cleanup();
     }
@@ -256,8 +255,8 @@ describe("projection router — rothConversionWhatIf", () => {
       };
       expect(r.candidates.length).toBeGreaterThan(0);
       for (let i = 1; i < r.candidates.length; i++) {
-        expect(r.candidates[i].netCost).toBeGreaterThanOrEqual(
-          r.candidates[i - 1].netCost,
+        expect(r.candidates[i]!.netCost).toBeGreaterThanOrEqual(
+          r.candidates[i - 1]!.netCost,
         );
       }
     } finally {
@@ -272,9 +271,9 @@ describe("projection router — rothConversionWhatIf", () => {
 
       // Baseline projection to learn the horizon + starting Traditional balance.
       const base = await caller.projection.projectTaxYears({});
-      const firstYear = base.rows[0].year;
-      const lastYear = base.rows[base.rows.length - 1].year;
-      const startingTraditional = base.rows[0].balanceByTaxType.preTax;
+      const firstYear = base.rows[0]!.year;
+      const lastYear = base.rows[base.rows.length - 1]!.year;
+      const startingTraditional = base.rows[0]!.balanceByTaxType.preTax;
 
       const res = await caller.projection.rothConversionWhatIf({
         mode: "explicit",

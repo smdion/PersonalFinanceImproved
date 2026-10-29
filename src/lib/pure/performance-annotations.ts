@@ -39,7 +39,7 @@ export const acceptedCheckSchema = z.object({
   note: z.string().trim().min(1).max(280),
   on: dateSchema,
 });
-export type AcceptedCheck = z.infer<typeof acceptedCheckSchema>;
+type AcceptedCheck = z.infer<typeof acceptedCheckSchema>;
 export type AcceptedChecks = Partial<Record<PerfCheckKind, AcceptedCheck>>;
 export const perfCheckKindSchema = z.enum(PERF_CHECK_KINDS);
 

@@ -3,10 +3,7 @@ import type { CappedContribution } from "@/lib/pure/contribution-caps";
 import type { ViewMode } from "@/lib/context/scenario-context";
 import type { PaycheckResult } from "@/lib/calculators/types";
 import type { AccountCategory } from "@/lib/config/account-types";
-import {
-  getAllCategories,
-  ACCOUNT_TYPE_CONFIG,
-} from "@/lib/config/account-types";
+import { getAllCategories } from "@/lib/config/account-types";
 
 // Raw DB row types for inline editing
 export type RawDeduction = {
@@ -133,14 +130,6 @@ export type JointContrib = {
 
 /** Account category options for dropdowns — derived from config */
 export const WATERFALL_CATEGORIES: AccountCategory[] = getAllCategories();
-
-/** Sub-type options by account category — derived from config */
-export const SUB_TYPE_OPTIONS: Partial<Record<AccountCategory, string[]>> =
-  Object.fromEntries(
-    getAllCategories()
-      .filter((c) => ACCOUNT_TYPE_CONFIG[c].subTypeOptions.length > 0)
-      .map((c) => [c, ACCOUNT_TYPE_CONFIG[c].subTypeOptions]),
-  );
 
 export type { PaycheckResult, ViewMode, AccountCategory };
 

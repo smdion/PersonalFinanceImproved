@@ -17,7 +17,7 @@ import { accountFlowsSince, type FlowRow } from "./snapshot-flows";
 import { liveCoversAccount } from "./simplefin-feeds";
 import type { UnplacedFeed } from "./snapshot-suggestions";
 
-export type InsightFeed = {
+type InsightFeed = {
   id: number;
   subKey: string | null;
   balance: number;
@@ -145,5 +145,3 @@ export function accountInsight(a: InsightInput) {
     ),
   };
 }
-
-export type AccountInsight = ReturnType<typeof accountInsight>;

@@ -23,7 +23,7 @@ export type OAItem = { name: string; value: number; note: string | null };
 // Constants
 // ---------------------------------------------------------------------------
 
-export const STICKY_COL_W = 80; // px per sticky-left column
+const STICKY_COL_W = 80; // px per sticky-left column
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -38,7 +38,7 @@ export function changeColor(value: number | null): string {
 // Note Components
 // ---------------------------------------------------------------------------
 
-export function NoteIndicator({ note }: { note: string }) {
+function NoteIndicator({ note }: { note: string }) {
   return (
     <span className="group/note relative ml-0.5 inline-block">
       <span className="inline-block h-0 w-0 cursor-help border-b-[5px] border-l-[5px] border-b-transparent border-l-amber-400" />

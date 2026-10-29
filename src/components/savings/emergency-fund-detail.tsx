@@ -18,7 +18,7 @@ interface EfundData {
   neededAfterRepay: number;
 }
 
-export interface ReimbursementData {
+interface ReimbursementData {
   items: { amount: number; description: string }[];
   total: number;
   balance: number;

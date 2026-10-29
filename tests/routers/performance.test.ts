@@ -185,7 +185,7 @@ describe("performance router", () => {
       perfAccountId = seedPerformanceAccount(db, {
         institution: "Schwab",
         accountType: "401k",
-        name: "Main 401k",
+        accountLabel: "Main 401k",
         parentCategory: "Retirement",
         ownershipType: "individual",
       });
@@ -228,7 +228,7 @@ describe("performance router", () => {
       });
 
       expect(row!.institution).toBe("Schwab");
-      expect(row!.accountLabel).toContain("Schwab");
+      expect(row!.accountLabel).toBe("Main 401k");
       expect(row!.parentCategory).toBe("Retirement");
     });
 
@@ -447,7 +447,7 @@ describe("performance router", () => {
       expect(updated).toBeDefined();
       expect(updated!.value).toBeTruthy();
       // Should be a valid ISO timestamp
-      expect(new Date(updated!.value).getTime()).not.toBeNaN();
+      expect(new Date(String(updated!.value)).getTime()).not.toBeNaN();
     });
   });
 
@@ -588,7 +588,7 @@ describe("performance router", () => {
         (s) => s.key === "performance_last_updated",
       );
       expect(updated).toBeDefined();
-      expect(new Date(updated!.value).getTime()).not.toBeNaN();
+      expect(new Date(String(updated!.value)).getTime()).not.toBeNaN();
     });
   });
 
@@ -604,7 +604,7 @@ describe("performance router", () => {
       perfAcct2Id = seedPerformanceAccount(db, {
         institution: "Fidelity",
         accountType: "hsa",
-        name: "HSA Account",
+        accountLabel: "HSA Account",
         parentCategory: "Retirement",
         ownershipType: "individual",
       });
@@ -1412,7 +1412,7 @@ describe("performance.performanceAccounts additional coverage", () => {
   });
 
   it("creates accounts with every valid accountType", async () => {
-    const types = ["401k", "403b", "ira", "hsa", "brokerage"];
+    const types = ["401k", "403b", "ira", "hsa", "brokerage"] as const;
     for (const t of types) {
       const result = await caller.performance.performanceAccounts.create({
         institution: `${t}-Bank`,

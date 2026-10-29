@@ -1,7 +1,7 @@
 // Relocation decision tool types.
 
 /** Year-specific expense adjustment for relocation analysis. */
-export type RelocationYearAdjustment = {
+type RelocationYearAdjustment = {
   year: number;
   /** Monthly expense override for the relocation scenario in that year. When using a budget profile, this is resolved server-side. */
   monthlyExpenses: number;

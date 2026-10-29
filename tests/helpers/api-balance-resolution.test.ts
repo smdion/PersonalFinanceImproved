@@ -69,8 +69,8 @@ describe("resolveAccountBalance", () => {
     expect(result).toEqual({ balance: 2000, source: "api" });
   });
 
-  it("falls back to snapshot balance when mapping.performanceAccountId is null", () => {
-    const mapping = makeMapping({ performanceAccountId: null });
+  it("falls back to snapshot balance when the mapping has no performanceAccountId", () => {
+    const mapping = makeMapping({ performanceAccountId: undefined });
     const result = resolveAccountBalance(
       1000,
       mapping,

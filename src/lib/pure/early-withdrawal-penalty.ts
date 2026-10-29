@@ -24,7 +24,7 @@ import {
 } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
 
-export type EarlyWithdrawalPenalty = {
+type EarlyWithdrawalPenalty = {
   /** Sum of every account's penalty cost this year. */
   penaltyCost: number;
   /** Sum of every account's penalized (penalty-exposed and actually

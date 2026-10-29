@@ -24,7 +24,7 @@ import { roundToCents, sumBy } from "@/lib/utils/math";
 import { isHsaTreatment } from "@/lib/config/account-types";
 import type { BonusDestination } from "@/lib/config/enum-values";
 
-export type AnnualEarnings = {
+type AnnualEarnings = {
   salary: number;
   /** The resolved bonus: the set (actual) bonus if there is one, else the formula. */
   bonus: number;

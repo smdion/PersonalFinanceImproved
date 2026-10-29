@@ -33,6 +33,7 @@ const WithdrawalComparisonCard = dynamic(
 );
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { PlanHealthCard } from "@/components/cards/plan-health";
+import { SK_RETIREMENT_COMPARISON_EXPANDED } from "@/lib/constants/settings-keys";
 
 export function RetirementContent() {
   const user = useUser();
@@ -100,7 +101,7 @@ export function RetirementContent() {
     projectionQuery.isLoading || (!queryEnabled && !projectionQuery.data);
   // Lazy-load strategy comparison only when expanded
   const [comparisonExpanded, setComparisonExpanded] =
-    usePersistedSetting<boolean>("retirement_comparison_expanded", false);
+    usePersistedSetting<boolean>(SK_RETIREMENT_COMPARISON_EXPANDED, false);
   const comparisonInput = baseInput;
   const { data: comparisonData, isLoading: comparisonLoading } =
     trpc.projection.computeStrategyComparison.useQuery(comparisonInput, {

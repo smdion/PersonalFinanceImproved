@@ -119,6 +119,11 @@ describe("paycheck: a job started this year, no earlier job in Ledgr", () => {
     expect(s.people[0]!).toMatchObject({
       yearPayNote: { startDate: NEW_START, missingEndedJob: false },
     });
+    // The year-end estimate counts its checks from its start.
+    const p = s.people[0]!;
+    expect("blendedAnnual" in p && p.blendedAnnual!.segments).toEqual([
+      expect.objectContaining({ periods: checks }),
+    ]);
   });
 });
 
@@ -198,10 +203,119 @@ describe("paycheck: a job whose last day is later this year", () => {
       "2012-03-01",
     );
     expect(toEnd).toBeGreaterThan(toDate);
+    // Still the current job: its paycheck shows, counted once (not also
+    // as a job that ended this year).
+    const p = s.people[0]!;
+    expect(p.paycheck).not.toBeNull();
+    expect(p.job).toMatchObject({ employerName: "Leaving Co" });
+    expect("endedWithheld" in p && p.endedWithheld).toEqual({
+      federal: 0,
+      fica: 0,
+    });
     expect(s.householdIncome!.salary).toBeCloseTo((90_000 * toEnd) / 26, 0);
+    // The year-end estimate stops at its last day too.
+    const blended = "blendedAnnual" in p ? p.blendedAnnual : null;
+    expect(blended!.segments).toEqual([
+      expect.objectContaining({ periods: toEnd }),
+    ]);
     expect(householdWithheldSoFar(s.people).fica).toBeCloseTo(
       ((90_000 * toDate) / 26) * 0.0765,
       0,
     );
+  });
+});
+
+describe("paycheck: a job that hasn't started", () => {
+  let ctx: Awaited<ReturnType<typeof createTestCaller>>;
+  beforeAll(async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    ctx = await createTestCaller();
+    const personId = await seedPerson(ctx.db, "Example Joiner", "1995-09-09");
+    seedJob(ctx.db, personId, {
+      employerName: "Next Co",
+      annualSalary: "80000",
+      payPeriod: "biweekly",
+      payWeek: "even",
+      anchorPayDate: "2027-01-08",
+      startDate: "2027-01-04",
+    });
+  });
+  afterAll(() => {
+    ctx.cleanup();
+    vi.useRealTimers();
+  });
+
+  it("no paycheck yet: says when it starts, and counts no pay", async () => {
+    const s = await ctx.caller.paycheck.computeSummary();
+    const p = s.people[0]!;
+    expect(p.paycheck).toBeNull();
+    expect(p).toMatchObject({
+      upcomingJob: { employerName: "Next Co", startDate: "2027-01-04" },
+    });
+    expect(s.householdIncome?.salary ?? 0).toBe(0);
+  });
+});
+
+describe("paycheck: a bonus with no date on a job ending this year", () => {
+  let ctx: Awaited<ReturnType<typeof createTestCaller>>;
+  beforeAll(async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(NOW);
+    ctx = await createTestCaller();
+    const undated = await seedPerson(ctx.db, "Example Undated", "1962-05-05");
+    seedJob(ctx.db, undated, {
+      employerName: "Undated Co",
+      annualSalary: "90000",
+      bonusPercent: "0.10",
+      payPeriod: "biweekly",
+      payWeek: "even",
+      anchorPayDate: "2026-01-09",
+      startDate: "2012-03-01",
+      endDate: "2026-11-20",
+    });
+    const dated = await seedPerson(ctx.db, "Example Dated", "1964-07-07");
+    seedJob(ctx.db, dated, {
+      employerName: "Dated Co",
+      annualSalary: "80000",
+      bonusPercent: "0.10",
+      bonusMonth: 3,
+      bonusDayOfMonth: 15,
+      payPeriod: "biweekly",
+      payWeek: "even",
+      anchorPayDate: "2026-01-09",
+      startDate: "2010-01-04",
+      endDate: "2026-11-20",
+    });
+    const left = await seedPerson(ctx.db, "Example Left", "1966-09-09");
+    seedJob(ctx.db, left, {
+      employerName: "Left Co",
+      annualSalary: "70000",
+      bonusPercent: "0.10",
+      payPeriod: "biweekly",
+      payWeek: "even",
+      anchorPayDate: "2026-01-09",
+      startDate: "2015-01-05",
+      endDate: OLD_END,
+    });
+  });
+  afterAll(() => {
+    ctx.cleanup();
+    vi.useRealTimers();
+  });
+
+  it("says the undated bonus isn't counted; a dated one before the last day is", async () => {
+    const s = await ctx.caller.paycheck.computeSummary();
+    const byName = new Map(s.people.map((p) => [p.person.name, p]));
+    const notCounted = (name: string) => {
+      const p = byName.get(name)!;
+      return "bonusNotCounted" in p ? p.bonusNotCounted : undefined;
+    };
+    expect(notCounted("Example Undated")).toEqual(["Undated Co"]);
+    expect(notCounted("Example Dated")).toEqual([]);
+    // No job now: the ended job's undated bonus is named too.
+    expect(notCounted("Example Left")).toEqual(["Left Co"]);
+    // Only the dated bonus is in the year's income.
+    expect(s.householdIncome!.bonus).toBeCloseTo(8_000, 0);
   });
 });

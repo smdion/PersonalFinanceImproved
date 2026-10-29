@@ -16,10 +16,6 @@ export type PortfolioSnapshot = {
   total: number;
 };
 
-export type PortfolioQuickLookStats = NonNullable<
-  ReturnType<typeof derivePortfolioQuickLookStats>
->;
-
 export function derivePortfolioQuickLookStats(
   snapshots: PortfolioSnapshot[],
   now: Date = new Date(),

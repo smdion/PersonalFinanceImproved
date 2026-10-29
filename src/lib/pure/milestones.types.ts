@@ -103,7 +103,7 @@ export type MilestoneChecklist = Partial<
   Record<MilestoneChecklistItem, boolean>
 >;
 
-export const customGoalSchema = z.object({
+const customGoalSchema = z.object({
   id: z.string().min(1).max(40),
   label: z.string().trim().min(1).max(60),
   metric: z.enum(

@@ -163,9 +163,9 @@ describe("T24 — per-person catch-up gating (H10)", () => {
 
     const result = calculateProjection(input);
     const year0 = result.projectionByYear[0];
-    if (year0.phase !== "accumulation")
+    if (year0!.phase !== "accumulation")
       throw new Error("expected year 0 to be accumulation phase");
-    const slot401k = year0.slots.find((s) => s.category === "401k");
+    const slot401k = year0!.slots.find((s) => s.category === "401k");
     if (!slot401k) throw new Error("expected a 401k slot in year 0");
 
     // Each person's own limit: person 1 23,500 (too young for catch-up),
@@ -197,9 +197,9 @@ describe("T24 — per-person catch-up gating (H10)", () => {
 
     const result = calculateProjection(input);
     const year0 = result.projectionByYear[0];
-    if (year0.phase !== "accumulation")
+    if (year0!.phase !== "accumulation")
       throw new Error("expected year 0 to be accumulation phase");
-    const slot401k = year0.slots.find((s) => s.category === "401k");
+    const slot401k = year0!.slots.find((s) => s.category === "401k");
     if (!slot401k) throw new Error("expected a 401k slot in year 0");
 
     expect(slot401k.irsLimit).toBe(23500 + 7500);

@@ -12,9 +12,9 @@ import type { Db, DbOrTx } from "./transforms";
 
 const FILL_LEDGER_KEY = "simplefin_fill_ledger";
 
-export type FillScope = "performance" | "basis";
+type FillScope = "performance" | "basis";
 
-export type FillRecord = {
+type FillRecord = {
   /** Row id → the day its stored figures ran through before the first fill. */
   baselines: Record<string, string>;
   /** Transaction id → how it was counted ("removed" once taken back out). */

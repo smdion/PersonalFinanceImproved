@@ -317,7 +317,7 @@ function emptyForm(): RuleForm {
   return { from: "", to: "", splits: [{ goalId: 0, pct: "100" }] };
 }
 
-export function ExtraPaycheckJobPanel({
+function ExtraPaycheckJobPanel({
   job,
   goals,
   netPayPerCheck,

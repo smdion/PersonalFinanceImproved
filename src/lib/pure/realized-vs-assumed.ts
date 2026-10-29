@@ -11,7 +11,7 @@
 import { chainReturns } from "./performance";
 import { returnRateAtAge } from "./return-rate-breakpoints";
 
-export type ReturnRateRow = { age: number; rate: number };
+type ReturnRateRow = { age: number; rate: number };
 
 /** The table's rate for `age`: highest age at or below it, else the lowest. */
 export function assumedRateAt(
@@ -27,7 +27,7 @@ export function assumedRateAt(
   );
 }
 
-export type RealizedVsAssumedYear = {
+type RealizedVsAssumedYear = {
   year: number;
   /** Household average age that year. */
   age: number;

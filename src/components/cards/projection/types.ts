@@ -153,7 +153,7 @@ export type TooltipData =
 // Accumulation override form types
 // ---------------------------------------------------------------------------
 
-export type LumpSumFormEntry = {
+type LumpSumFormEntry = {
   id: string;
   amount: string;
   targetAccount: AccountCategory;
@@ -310,129 +310,10 @@ export type DecumOverride = {
 };
 
 // ---------------------------------------------------------------------------
-// Override → Form converters (for edit mode)
-// ---------------------------------------------------------------------------
-
-export function accumOverrideToForm(o: AccumOverride): AccumOverrideForm {
-  return {
-    year: String(o.year),
-    personName: o.personName ?? "",
-    contributionRate:
-      o.contributionRate != null ? String(o.contributionRate * 100) : "",
-    routingMode: o.routingMode ?? "",
-    accountOrder: o.accountOrder ?? getDefaultAccumulationOrder(),
-    accountSplits: (o.accountSplits
-      ? Object.fromEntries(
-          Object.entries(o.accountSplits).map(([k, v]) => [
-            k,
-            v > 0 ? String(v * 100) : "",
-          ]),
-        )
-      : buildCategoryRecord(() => "")) as Record<AccountCategory, string>,
-    taxSplits: o.taxSplits
-      ? Object.fromEntries(
-          Object.entries(o.taxSplits).map(([k, v]) => [
-            k,
-            v > 0 ? String(v * 100) : "",
-          ]),
-        )
-      : Object.fromEntries(
-          categoriesWithTaxPreference().map((cat) => [
-            getLimitGroup(cat) ?? cat,
-            "",
-          ]),
-        ),
-    accountCaps: (o.accountCaps
-      ? Object.fromEntries(
-          Object.entries(o.accountCaps).map(([k, v]) => [
-            k,
-            // Use != null (not > 0) so a cap of exactly $0 round-trips correctly.
-            v != null ? String(v) : "",
-          ]),
-        )
-      : buildCategoryRecord(() => "")) as Record<AccountCategory, string>,
-    taxTypeCaps: {
-      traditional:
-        o.taxTypeCaps?.traditional != null
-          ? String(o.taxTypeCaps.traditional)
-          : "",
-      roth: o.taxTypeCaps?.roth != null ? String(o.taxTypeCaps.roth) : "",
-    },
-    lumpSums: (o.lumpSums ?? []).map((ls) => ({
-      id: ls.id,
-      amount: String(ls.amount),
-      targetAccount: ls.targetAccount,
-      targetAccountName: ls.targetAccountName ?? "",
-      targetOwnerName: ls.targetOwnerName ?? "",
-      taxType: ls.taxType ?? "",
-      label: ls.label ?? "",
-    })),
-    reset: o.reset ?? false,
-    notes: o.notes ?? "",
-  };
-}
-
-export function decumOverrideToForm(o: DecumOverride): DecumOverrideForm {
-  return {
-    year: String(o.year),
-    personName: o.personName ?? "",
-    withdrawalRoutingMode: o.withdrawalRoutingMode ?? "",
-    withdrawalOrder: o.withdrawalOrder ?? getDefaultDecumulationOrder(),
-    withdrawalSplits: (o.withdrawalSplits
-      ? Object.fromEntries(
-          Object.entries(o.withdrawalSplits).map(([k, v]) => [
-            k,
-            v > 0 ? String(v * 100) : "",
-          ]),
-        )
-      : buildCategoryRecord(() => "")) as Record<AccountCategory, string>,
-    withdrawalTaxPreference: (o.withdrawalTaxPreference
-      ? Object.fromEntries(
-          Object.entries(o.withdrawalTaxPreference).map(([k, v]) => [k, v]),
-        )
-      : Object.fromEntries(
-          categoriesWithTaxPreference().map((cat) => [cat, "" as const]),
-        )) as Record<AccountCategory, "traditional" | "roth" | "">,
-    withdrawalAccountCaps: (o.withdrawalAccountCaps
-      ? Object.fromEntries(
-          Object.entries(o.withdrawalAccountCaps).map(([k, v]) => [
-            k,
-            // Use != null (not > 0) so a cap of exactly $0 round-trips correctly.
-            v != null ? String(v) : "",
-          ]),
-        )
-      : buildCategoryRecord(() => "")) as Record<AccountCategory, string>,
-    withdrawalTaxTypeCaps: {
-      traditional:
-        o.withdrawalTaxTypeCaps?.traditional != null
-          ? String(o.withdrawalTaxTypeCaps.traditional)
-          : "",
-      roth:
-        o.withdrawalTaxTypeCaps?.roth != null
-          ? String(o.withdrawalTaxTypeCaps.roth)
-          : "",
-    },
-    rothConversionTarget:
-      o.rothConversionTarget != null ? String(o.rothConversionTarget) : "",
-    lumpSums: (o.lumpSums ?? []).map((ls) => ({
-      id: ls.id,
-      amount: String(ls.amount),
-      targetAccount: ls.targetAccount,
-      targetAccountName: ls.targetAccountName ?? "",
-      targetOwnerName: ls.targetOwnerName ?? "",
-      taxType: ls.taxType ?? "",
-      label: ls.label ?? "",
-    })),
-    reset: o.reset ?? false,
-    notes: o.notes ?? "",
-  };
-}
-
-// ---------------------------------------------------------------------------
 // Account split types
 // ---------------------------------------------------------------------------
 
-export type AccountSplit = {
+type AccountSplit = {
   name: string;
   category: string;
   taxType: string;

@@ -233,7 +233,7 @@ describe("sync mappings — resyncPortfolioPush", () => {
   });
 
   it("blocks non-latest snapshot resync without confirmNonLatest", async () => {
-    const perfId = seedPerformanceAccount(db, { name: "Resync Old" });
+    const perfId = seedPerformanceAccount(db, { accountLabel: "Resync Old" });
     const olderSnap = seedSnapshot(db, "2026-01-01", [
       { performanceAccountId: perfId, amount: "1000" },
     ]);
@@ -266,7 +266,9 @@ describe("sync mappings — resyncPortfolioPush", () => {
   });
 
   it("deletes prior tagged transactions and posts fresh ones in resync mode", async () => {
-    const perfId = seedPerformanceAccount(db, { name: "Resync Latest" });
+    const perfId = seedPerformanceAccount(db, {
+      accountLabel: "Resync Latest",
+    });
     const snapId = seedSnapshot(db, "2026-04-01", [
       { performanceAccountId: perfId, amount: "10000" },
     ]);
@@ -323,7 +325,9 @@ describe("sync mappings — resyncPortfolioPush", () => {
   });
 
   it("aborts before posting when cleanup delete fails partway", async () => {
-    const perfId = seedPerformanceAccount(db, { name: "Resync Cleanup Fail" });
+    const perfId = seedPerformanceAccount(db, {
+      accountLabel: "Resync Cleanup Fail",
+    });
     const snapId = seedSnapshot(db, "2026-04-05", [
       { performanceAccountId: perfId, amount: "5000" },
     ]);
@@ -373,7 +377,7 @@ describe("sync mappings — resyncPortfolioPush", () => {
   });
 
   it("returns no-op when no mappings configured", async () => {
-    const perfId = seedPerformanceAccount(db, { name: "No Map" });
+    const perfId = seedPerformanceAccount(db, { accountLabel: "No Map" });
     const snapId = seedSnapshot(db, "2026-04-09", [
       { performanceAccountId: perfId, amount: "1" },
     ]);

@@ -31,7 +31,6 @@ async function seedProfiles(db: Ctx["db"], suffix: string, active = false) {
     salaryProfileId: seedSalaryProfile(db, { name: `Salary ${suffix}` }),
     contributionProfileId: seedContributionProfile(db, {
       name: `Contrib ${suffix}`,
-      isActive: false,
     }),
     budgetProfileId: await seedBudgetProfile(db, `Budget ${suffix}`, active),
     retirementProfileId: await seedRetirementProfile(db, `Retire ${suffix}`),

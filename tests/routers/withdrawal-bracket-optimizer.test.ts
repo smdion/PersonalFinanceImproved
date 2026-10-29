@@ -77,8 +77,6 @@ function seedFullProjectionData(
   db.insert(schema.contributionAccounts)
     .values({
       accountType: "401k",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
       taxTreatment: "pre_tax",
       employerMatchType: "none",
       isActive: true,
@@ -124,7 +122,7 @@ describe("projection router — computeWithdrawalBracketOptimizer", () => {
   });
 
   it("returns exactly what a direct call to optimizeRothBracketTarget produces for the same resolved engine input", async () => {
-    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    const { caller, db, rawDb, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
 
@@ -136,8 +134,8 @@ describe("projection router — computeWithdrawalBracketOptimizer", () => {
       // fetchRetirementData/buildEnginePayload doesn't change the search's
       // own answer (the router should be a thin pass-through, not doing
       // any of its own transformation on the result).
-      const data = await fetchRetirementData(db, {});
-      const payload = await buildEnginePayload(db, data, {});
+      const data = await fetchRetirementData(rawDb, {});
+      const payload = await buildEnginePayload(rawDb, data, {});
       if (!payload) throw new Error("expected a payload for seeded data");
       const { settings, distributionTaxRates, baseEngineInput } = payload;
       const engineInput = {

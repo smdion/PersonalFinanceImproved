@@ -30,7 +30,7 @@ export type FeedService = {
   billingLagMonths: number;
 };
 
-export type ExistingReading = {
+type ExistingReading = {
   serviceId: number;
   year: number;
   month: number;
@@ -38,7 +38,7 @@ export type ExistingReading = {
   source: UtilitySource | null;
 };
 
-export type FeedMonth = {
+type FeedMonth = {
   serviceId: number;
   year: number;
   month: number;
@@ -48,12 +48,12 @@ export type FeedMonth = {
   payments: number;
 };
 
-export type FeedChange = FeedMonth & {
+type FeedChange = FeedMonth & {
   /** The cost recorded now; null when the month has no reading. */
   previous: number | null;
 };
 
-export type FeedConflict = FeedMonth & {
+type FeedConflict = FeedMonth & {
   previous: number;
   /** Who wrote the recorded cost (null = before sources were tracked,
    *  treated as typed in). */

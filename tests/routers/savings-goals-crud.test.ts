@@ -36,7 +36,6 @@ describe("savings.savingsGoals", () => {
       const result = await caller.savings.savingsGoals.create({
         name: "Emergency Fund",
         targetAmount: "15000",
-        monthlyContribution: "750",
         priority: 1,
         isActive: true,
         isEmergencyFund: true,
@@ -53,7 +52,6 @@ describe("savings.savingsGoals", () => {
         name: "Vacation 2027",
         targetAmount: "5000",
         targetDate: "2027-06-01",
-        monthlyContribution: "300",
         priority: 2,
         isActive: true,
         isEmergencyFund: false,
@@ -68,7 +66,6 @@ describe("savings.savingsGoals", () => {
     it("creates an ongoing-mode goal", async () => {
       const result = await caller.savings.savingsGoals.create({
         name: "Monthly Savings Buffer",
-        monthlyContribution: "500",
         priority: 3,
         isActive: true,
         targetMode: "ongoing",
@@ -80,7 +77,6 @@ describe("savings.savingsGoals", () => {
     it("creates a bucket-mode goal", async () => {
       const result = await caller.savings.savingsGoals.create({
         name: "Holding Bucket",
-        monthlyContribution: "0",
         priority: 4,
         isActive: true,
         targetMode: "bucket",
@@ -92,7 +88,6 @@ describe("savings.savingsGoals", () => {
     it("update rejects invalid targetMode", async () => {
       const created = await caller.savings.savingsGoals.create({
         name: "Mode Test Goal",
-        monthlyContribution: "0",
         priority: 5,
         isActive: true,
         targetMode: "fixed",
@@ -144,7 +139,6 @@ describe("savings.savingsGoals", () => {
         id: vacationId,
         name: "Europe Trip 2027",
         targetAmount: "8000",
-        monthlyContribution: "500",
         priority: 2,
         isActive: false,
         isEmergencyFund: false,
@@ -166,7 +160,6 @@ describe("savings.savingsGoals", () => {
         id: emergencyFundId,
         name: "Emergency Fund",
         targetAmount: "20000",
-        monthlyContribution: "750",
         priority: 1,
         isActive: true,
         isEmergencyFund: true,
@@ -182,7 +175,6 @@ describe("savings.savingsGoals", () => {
       const created = await caller.savings.savingsGoals.create({
         name: "Throwaway Goal",
         targetAmount: "500",
-        monthlyContribution: "50",
         priority: 99,
         isActive: true,
       });
@@ -202,7 +194,6 @@ describe("savings.savingsGoals", () => {
 
       const tmp = await caller.savings.savingsGoals.create({
         name: "Ephemeral Goal",
-        monthlyContribution: "0",
         priority: 100,
         isActive: true,
       });
@@ -215,13 +206,11 @@ describe("savings.savingsGoals", () => {
     it("keeps a deleted goal's sub-goals, as top-level goals", async () => {
       const parent = await caller.savings.savingsGoals.create({
         name: "Parent Goal",
-        monthlyContribution: "0",
         priority: 101,
         isActive: true,
       });
       const child = await caller.savings.savingsGoals.create({
         name: "Child Goal",
-        monthlyContribution: "0",
         priority: 102,
         isActive: true,
         parentGoalId: parent!.id,
@@ -280,10 +269,9 @@ describe("savings.savingsGoals additional coverage", () => {
   });
 
   it("creating a goal seeds a $0/no-percent funding row for every existing budget profile", async () => {
-    let [profile] = await caller.budget.listProfiles();
-    if (!profile) {
-      profile = await caller.budget.createProfile({ name: "Funding Test" });
-    }
+    const [existing] = await caller.budget.listProfiles();
+    const profile =
+      existing ?? (await caller.budget.createProfile({ name: "Funding Test" }));
     const created = await caller.savings.savingsGoals.create({
       name: "Seeded Funding Goal",
       priority: 22,

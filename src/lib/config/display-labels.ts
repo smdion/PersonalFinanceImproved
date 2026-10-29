@@ -44,15 +44,6 @@ export const CONTRIBUTION_METHOD_LABELS_SHORT: Record<string, string> = {
   fixed_annual: "$/year",
 };
 
-/** Amount suffix appended after a formatted contribution dollar figure
- *  (e.g. "$500/mo"). No entry for percent_of_salary — that method renders
- *  as "X% of salary" instead of a dollar amount. */
-export const CONTRIBUTION_METHOD_AMOUNT_SUFFIXES: Record<string, string> = {
-  fixed_per_period: "/period",
-  fixed_monthly: "/mo",
-  fixed_annual: "/yr",
-};
-
 export const TAX_TREATMENT_LABELS: Record<string, string> = {
   pre_tax: "Traditional",
   tax_free: "Roth",
@@ -131,7 +122,6 @@ export const TAX_BUCKET_DESCRIPTIONS: Record<string, string> = {
   hsa: "HSA contributions. Triple tax-advantaged.",
   afterTax: "After-tax brokerage contributions. Capital gains tax on growth.",
 };
-
 /** Canonical engine-internal tax bucket keys, in display order. */
 export const TAX_BUCKET_KEYS = [
   "preTax",
@@ -139,7 +129,7 @@ export const TAX_BUCKET_KEYS = [
   "hsa",
   "afterTax",
 ] as const;
-export type TaxBucketKey = (typeof TAX_BUCKET_KEYS)[number];
+type TaxBucketKey = (typeof TAX_BUCKET_KEYS)[number];
 
 /** Build a fresh zero-initialized tax-bucket counter map. */
 export function emptyTaxBucketMap(): Record<TaxBucketKey, number> {
@@ -147,7 +137,7 @@ export function emptyTaxBucketMap(): Record<TaxBucketKey, number> {
 }
 
 /** Short tax treatment labels for compact display (contribution profiles, badges). */
-export const TAX_TREATMENT_SHORT_LABELS: Record<string, string> = {
+const TAX_TREATMENT_SHORT_LABELS: Record<string, string> = {
   pre_tax: "Trad",
   tax_free: "Roth",
   after_tax: "After-Tax",
@@ -256,7 +246,7 @@ export function displayLabel(map: Record<string, string>, key: string): string {
 // Wealth score tier labels (shared by MetricsRow + Financial Checkup)
 // ---------------------------------------------------------------------------
 
-export type WealthTier = "paw" | "aaw" | "uaw";
+type WealthTier = "paw" | "aaw" | "uaw";
 
 /** Derive the wealth tier and display label from a wealth-formula score
  *  (net worth ÷ expected net worth). PAW at 2× or more, UAW at ½ or less,

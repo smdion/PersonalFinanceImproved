@@ -28,7 +28,7 @@
 
 import { useCallback, useState, type KeyboardEvent } from "react";
 
-export interface UseInlineNumberEditReturn<TKey> {
+interface UseInlineNumberEditReturn<TKey> {
   editingKey: TKey | null;
   editValue: string;
   setEditValue: (v: string) => void;

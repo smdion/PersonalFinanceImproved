@@ -16,7 +16,7 @@
  * its color from the account-types config.
  */
 
-export type BadgeColor =
+type BadgeColor =
   "gray" | "blue" | "green" | "amber" | "red" | "purple" | "indigo";
 
 // Filled: tinted background + readable foreground. `-100` bg / `-700`–`-800`
@@ -100,7 +100,7 @@ export function Badge({
 // The one small solid indicator for legends and status rows. Solid `-500`
 // fills read in both themes (dark `-500` primitives are lightened).
 
-export type DotColor =
+type DotColor =
   "gray" | "blue" | "green" | "amber" | "red" | "purple" | "indigo";
 
 const DOT_FILL: Record<DotColor, string> = {

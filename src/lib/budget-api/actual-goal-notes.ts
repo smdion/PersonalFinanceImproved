@@ -19,7 +19,7 @@
  * `updateCategoryTargetBalance` (refill-to-a-balance-cap) respectively. */
 export type ActualTemplateShape = "fixed" | "target-balance";
 
-export type MergeGoalResult =
+type MergeGoalResult =
   { ok: true; note: string } | { ok: false; reason: string };
 
 // Matches ONLY the exact bare shapes Ledgr writes — deliberately narrow.

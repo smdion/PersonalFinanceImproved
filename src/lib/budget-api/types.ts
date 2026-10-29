@@ -68,7 +68,7 @@ export type BudgetMonthDetail = {
 
 /** A transaction from the budget API */
 /** One part of a split transaction. */
-export type BudgetSubTransaction = {
+type BudgetSubTransaction = {
   categoryId: string | null;
   categoryName: string | null;
   /** Dollars, signed (outflow negative). */
@@ -134,16 +134,11 @@ export type ActualConfig = {
   externalUrl?: string;
 };
 
-export type BudgetApiConfig = YnabConfig | ActualConfig;
-
 /** Budget API service identifier */
 export type BudgetApiService = "ynab" | "actual";
 
 /** The active budget API setting stored in app_settings */
 export type ActiveBudgetApi = "none" | "ynab" | "actual";
-
-/** Sync direction for linked items */
-export type ApiSyncDirection = "pull" | "push" | "both";
 
 /** Result of a delta sync operation */
 export type DeltaSyncResult<T> = {

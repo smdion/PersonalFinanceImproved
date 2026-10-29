@@ -14,7 +14,7 @@ import type { RelocationResult as CalculatorRelocationResult } from "@/lib/calcu
 /** Budget profile summary entry within `budgetInfo.profiles`. Server builds
  *  this from `budgetProfiles` rows — shape: retirement.ts profileSummaries.
  */
-export type RelocationBudgetProfile = {
+type RelocationBudgetProfile = {
   id: number;
   name: string;
   isActive: boolean;
@@ -103,7 +103,7 @@ export type EngineProjectionRow = {
 };
 
 /** Single row in the blended projection (current path → relocation path at moveYear). */
-export type BlendedProjectionRow = {
+type BlendedProjectionRow = {
   year: number;
   age: number;
   /** Portfolio balance at end of year (single blended-path value). */

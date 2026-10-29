@@ -38,6 +38,7 @@ import { asc, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { findActiveJob, type JobLike } from "@/lib/pure/profiles";
 import {
+  householdLastWorkingYear,
   pickProfileSettingsRow,
   resolveRetirementProfileIdFrom,
 } from "./retirement-profile";
@@ -284,8 +285,15 @@ export function capForRequest<R extends CapPassRow>(
   salaryProfileActiveMap: SalaryProfileActiveMap,
   salaryActiveMap: SalaryActiveMap,
 ): (R & CappedRowFields)[] {
+  // The job current in the tax year: today in this one, its last day in
+  // another (a later year's cap sees the job held then).
+  const now = new Date();
+  const asOf =
+    household.taxYear === now.getFullYear()
+      ? now
+      : new Date(household.taxYear, 11, 31);
   const activeJobs = household.people.flatMap((p) => {
-    const job = findActiveJob([...jobs], p.id);
+    const job = findActiveJob(jobs, p.id, asOf);
     return job ? [job] : [];
   });
   return capEffectiveContribs(rows, {
@@ -326,7 +334,7 @@ export type ContribRowPatch = Partial<
 >;
 
 /** What a contribution save changes, before and after. */
-export type ContribSaveCheck = {
+type ContribSaveCheck = {
   /** The Contribution Profile the fields belong to; null = an account edit,
    *  judged under the active profile. */
   profileId: number | null;
@@ -350,17 +358,18 @@ async function activeContribProfileId(db: Db): Promise<number> {
 
 /**
  * What a save leaves over its IRS limit, one line per touched row: before
- * and after go through the same cap pass on this year's limits, ages and
- * pay, and a row counts when a person's limit group it touches ends up
+ * and after go through the same cap pass on this year's limits and pay,
+ * at the ages of the year asked for (this year unless a switch is judged
+ * later), and a row counts when a person's limit group it touches ends up
  * further over than it was (so lowering an over-limit row always saves,
  * and an unrelated edit leaves the row showing its error). Each line
- * carries the most the row can be.
+ * carries the most the row can be. Loads once; the judge runs per year.
  */
-async function irsLimitProblems(
+async function irsLimitJudge(
   db: Db,
   check: ContribSaveCheck,
   judgedProfileId: number,
-): Promise<string[]> {
+): Promise<(agesAsOf: number) => string[]> {
   const [allContribs, allJobs, people, salaryMap] = await Promise.all([
     db.select().from(schema.contributionAccounts),
     db.select().from(schema.jobs),
@@ -389,57 +398,59 @@ async function irsLimitProblems(
       message: `The ${taxYear} IRS contribution limits aren't in the tax data yet, so this contribution can't be checked against them.`,
     });
   const jobs = mergeSalaryProfileJobFields(allJobs, salaryMap);
-  const passFor = (
-    fields: AccountFields,
-    rowsAfter?: ReadonlyMap<number, ContribRowPatch>,
-  ) =>
-    capForRequest(
-      applyContribActiveFields(
-        allContribs
-          .map((c) => ({ ...c, ...rowsAfter?.get(c.id) }))
-          .filter((c) => c.isActive),
-        fields,
-      ),
-      household,
-      jobs,
-      salaryMap,
-      new Map(),
-    );
-  const before = passFor(check.before ?? profileFields);
-  const after = passFor(check.after ?? profileFields, check.rowsAfter);
-  const keyOf = (c: (typeof after)[number]) =>
-    `${c.personId ?? "joint"}:${getLimitGroup(c.accountType)}`;
-  const overBy = (rows: typeof after) => {
-    const m = new Map<string, number>();
-    for (const c of rows)
-      if (c.cap) m.set(keyOf(c), (m.get(keyOf(c)) ?? 0) + c.cap.overBy);
-    return m;
-  };
-  const was = overBy(before);
-  const now = overBy(after);
   const nameOf = new Map(people.map((p) => [p.id, p.name]));
-  const problems = after.flatMap((c) => {
-    if (!check.touched.includes(c.id) || !c.cap) return [];
-    if ((now.get(keyOf(c)) ?? 0) <= (was.get(keyOf(c)) ?? 0) + 0.01) return [];
-    const owner = c.personId != null ? nameOf.get(c.personId) : undefined;
-    const name = accountDisplayName(
-      {
-        accountType: c.accountType,
-        subType: c.subType,
-        label: c.label,
-        ownershipType: c.ownership,
-      },
-      owner,
-    );
-    return [`${name}: ${capMessage(c)}`];
-  });
-  return problems;
+  return (agesAsOf) => {
+    const passFor = (
+      fields: AccountFields,
+      rowsAfter?: ReadonlyMap<number, ContribRowPatch>,
+    ) =>
+      capForRequest(
+        applyContribActiveFields(
+          allContribs
+            .map((c) => ({ ...c, ...rowsAfter?.get(c.id) }))
+            .filter((c) => c.isActive),
+          fields,
+        ),
+        { ...household, taxYear: agesAsOf },
+        jobs,
+        salaryMap,
+        new Map(),
+      );
+    const before = passFor(check.before ?? profileFields);
+    const after = passFor(check.after ?? profileFields, check.rowsAfter);
+    const keyOf = (c: (typeof after)[number]) =>
+      `${c.personId ?? "joint"}:${getLimitGroup(c.accountType)}`;
+    const overBy = (rows: typeof after) => {
+      const m = new Map<string, number>();
+      for (const c of rows)
+        if (c.cap) m.set(keyOf(c), (m.get(keyOf(c)) ?? 0) + c.cap.overBy);
+      return m;
+    };
+    const was = overBy(before);
+    const now = overBy(after);
+    return after.flatMap((c) => {
+      if (!check.touched.includes(c.id) || !c.cap) return [];
+      if ((now.get(keyOf(c)) ?? 0) <= (was.get(keyOf(c)) ?? 0) + 0.01)
+        return [];
+      const owner = c.personId != null ? nameOf.get(c.personId) : undefined;
+      const name = accountDisplayName(
+        {
+          accountType: c.accountType,
+          subType: c.subType,
+          label: c.label,
+          ownershipType: c.ownership,
+        },
+        owner,
+      );
+      return [`${name}: ${capMessage(c)}`];
+    });
+  };
 }
 
 /**
  * Refuse a save that makes a contribution over its IRS limit, or more over
  * it — the household's rule: over the limit is an error to fix, never
- * modelled (irsLimitProblems). Only the active Contribution Profile is
+ * modelled (irsLimitJudge). Only the active Contribution Profile is
  * refused; one used as a future switch gets a warning instead
  * (switchProfileLimitWarning).
  */
@@ -450,18 +461,22 @@ export async function assertWithinIrsLimits(
   if (check.touched.length === 0) return;
   const activeId = await activeContribProfileId(db);
   if (check.profileId !== null && check.profileId !== activeId) return;
-  const problems = await irsLimitProblems(db, check, activeId);
+  const problems = (await irsLimitJudge(db, check, activeId))(
+    new Date().getFullYear(),
+  );
   if (problems.length > 0)
     throw new TRPCError({ code: "BAD_REQUEST", message: problems.join(" ") });
 }
 
 /**
- * A save to a Contribution Profile that isn't active but is a future
- * switch in the Retirement settings ("Changes by year"): what it leaves
- * over this year's IRS limits, as a warning — it still saves, since the
- * switch year's limits and ages aren't this year's. The projection caps it
- * at this year's limits (buildProfileSwitches), as judged here. Null when the profile is active, not used as a switch, or
- * within the limits.
+ * A save to a Contribution Profile that isn't active but is a switch in
+ * the Retirement settings ("Changes by year"): what it leaves over the IRS
+ * limits in the years it's in effect, as a warning — it still saves. Each
+ * year is judged at that year's ages on today's limits and pay, as the
+ * projection caps it (buildProfileSwitches). A switch is in effect from its
+ * year until the next Contribution Profile switch, through the last
+ * working year. Null when the profile is active, not used as a switch, or
+ * within the limits every year.
  */
 export async function switchProfileLimitWarning(
   db: Db,
@@ -470,27 +485,56 @@ export async function switchProfileLimitWarning(
   if (check.touched.length === 0) return null;
   if (check.profileId === (await activeContribProfileId(db))) return null;
   const thisYear = new Date().getFullYear();
-  const years = [
-    ...new Set(
-      (
-        await db
-          .select({ year: schema.retirementSalaryOverrides.projectionYear })
-          .from(schema.retirementSalaryOverrides)
-          .where(
-            eq(
-              schema.retirementSalaryOverrides.contributionProfileId,
-              check.profileId,
-            ),
-          )
-      )
-        .map((r) => r.year)
-        .filter((y) => y >= thisYear),
-    ),
-  ].sort((a, b) => a - b);
-  if (years.length === 0) return null;
-  const problems = await irsLimitProblems(db, check, check.profileId);
-  if (problems.length === 0) return null;
-  return `Over this year's IRS limits — this profile is used from ${years[0]}, and the projection caps it at this year's limits. ${problems.join(" ")}`;
+  const [switchRows, profiles, lastYear] = await Promise.all([
+    db
+      .select({
+        year: schema.retirementSalaryOverrides.projectionYear,
+        profileId: schema.retirementSalaryOverrides.contributionProfileId,
+      })
+      .from(schema.retirementSalaryOverrides),
+    db
+      .select({ id: schema.contributionProfiles.id })
+      .from(schema.contributionProfiles),
+    householdLastWorkingYear(db, thisYear),
+  ]);
+  const lastWorkingYear = lastYear ?? thisYear;
+  // Rows naming a profile that still exists (as the projection reads them).
+  const profileIds = new Set(profiles.map((p) => p.id));
+  const contribSwitches = switchRows.filter(
+    (r) => r.profileId != null && profileIds.has(r.profileId),
+  );
+  const years = new Set<number>();
+  for (const row of contribSwitches) {
+    if (row.profileId !== check.profileId) continue;
+    const next = Math.min(
+      ...contribSwitches.filter((o) => o.year > row.year).map((o) => o.year),
+    );
+    for (
+      let y = Math.max(row.year, thisYear);
+      y <= Math.min(next - 1, lastWorkingYear);
+      y++
+    )
+      years.add(y);
+  }
+  if (years.size === 0) return null;
+  const judge = await irsLimitJudge(db, check, check.profileId);
+  const over = [...years]
+    .sort((a, b) => a - b)
+    .map((y) => ({ year: y, problems: judge(y) }))
+    .filter((o) => o.problems.length > 0);
+  if (over.length === 0) return null;
+  const first = over[0]!;
+  // The years over, as runs: "2038–2049, 2054".
+  const runs: [number, number][] = [];
+  for (const { year } of over) {
+    const run = runs[runs.length - 1];
+    if (run && run[1] === year - 1) run[1] = year;
+    else runs.push([year, year]);
+  }
+  const when = runs
+    .map(([a, b]) => (a === b ? `${a}` : `${a}–${b}`))
+    .join(", ");
+  return `Over the IRS limits in ${when} at those years' ages (judged on today's limits and pay) — the projection cuts it to the limit then. ${first.year}: ${first.problems.join(" ")}`;
 }
 
 /** A ContribSaveCheck for helpers that can't import this module (it

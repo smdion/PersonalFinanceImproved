@@ -14,7 +14,7 @@ import { HALF_CENT } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
 import { tracksCostBasis } from "@/lib/config/account-types";
 
-export type BasisHistoryRow = {
+type BasisHistoryRow = {
   performanceAccountId: number;
   ownerPersonId: number | null;
   year: number;
@@ -22,7 +22,7 @@ export type BasisHistoryRow = {
   latestConversionYear: number | null;
 };
 
-export type BasisGap = {
+type BasisGap = {
   performanceAccountId: number;
   ownerPersonId: number | null;
   /** The year whose row is short. */

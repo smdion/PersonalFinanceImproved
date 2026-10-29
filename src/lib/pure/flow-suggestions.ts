@@ -27,7 +27,7 @@ export type FlowRow = {
   transfer: { conversion: boolean } | null;
 };
 
-export type FlowTotals = {
+type FlowTotals = {
   contributions: number;
   /** Money taken out, as a positive amount. */
   distributions: number;
@@ -171,7 +171,7 @@ export type ContributionMix = {
   employerRoth: number;
 };
 
-export type ContributionSplit = {
+type ContributionSplit = {
   employee: number;
   employer: number;
   /** The employee's Roth part (Roth contribution basis). */
@@ -268,7 +268,7 @@ export type SubAccountRef = {
   ownerPersonId: number | null;
 };
 
-export type FeedAttribution = {
+type FeedAttribution = {
   /** "ambiguous": linked to the whole account, but the account is tracked per person. */
   status: "linked" | "none" | "ambiguous";
   feedIds: number[];

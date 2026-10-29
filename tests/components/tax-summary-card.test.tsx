@@ -19,6 +19,7 @@ vi.mock("@/lib/utils/format", () => ({
 }));
 
 import { TaxSummaryCard } from "@/components/cards/projection/tax-summary-card";
+import type { ProjectionState } from "@/components/cards/projection/projection-table-types";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function makeState(years: any[]): any {
@@ -51,7 +52,18 @@ describe("TaxSummaryCard", () => {
 
   it("renders nothing when result is null", () => {
     const { container } = render(
-      <TaxSummaryCard state={{ result: null, deflate: (v: number) => v }} />,
+      <TaxSummaryCard
+        // The card reads result and deflate only.
+
+        state={
+          {
+            result: null,
+            deflate: (v: number) => v,
+            // The card reads result and deflate only.
+            // eslint-disable-next-line no-restricted-syntax -- a two-field slice of the projection state
+          } as unknown as ProjectionState
+        }
+      />,
     );
     expect(container.firstChild).toBeNull();
   });

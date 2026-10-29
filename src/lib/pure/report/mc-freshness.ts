@@ -63,7 +63,7 @@ export interface ReportGateInput {
   };
 }
 
-export interface ReportGateResult {
+interface ReportGateResult {
   ok: boolean;
   /** First failing check, in the order a household should fix them —
    *  scenario/tax-mode are manual-switch fixes, the rest resolve by

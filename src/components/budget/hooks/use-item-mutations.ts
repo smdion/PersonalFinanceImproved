@@ -218,5 +218,3 @@ export function useItemMutations({ selectedColumnRef }: UseItemMutationsOpts) {
     convertToGoal,
   };
 }
-
-export type ItemMutations = ReturnType<typeof useItemMutations>;

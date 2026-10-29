@@ -9,8 +9,11 @@ import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-proj
 
 const noopDeflate = (v: number) => v;
 
+/** A decumulation year with only the fields the narrative reads. */
 function decumYear(
-  overrides: Partial<EngineDecumulationYear> = {},
+  overrides: Omit<Partial<EngineDecumulationYear>, "config"> & {
+    config?: Partial<EngineDecumulationYear["config"]>;
+  } = {},
 ): EngineDecumulationYear {
   return {
     year: 2040,
@@ -195,8 +198,22 @@ describe("buildWithdrawalStrategyNarrative", () => {
       recommendedTarget: 0.12,
       currentTarget: 0.22,
       candidates: [
-        { target: 0.12, netCost: 3000, shortfallScore: 0, depleted: false },
-        { target: 0.22, netCost: 5000, shortfallScore: 0, depleted: false },
+        {
+          target: 0.12,
+          netCost: 3000,
+          shortfallScore: 0,
+          depleted: false,
+          lifetimeTax: 0,
+          traditionalEnd: 0,
+        },
+        {
+          target: 0.22,
+          netCost: 5000,
+          shortfallScore: 0,
+          depleted: false,
+          lifetimeTax: 0,
+          traditionalEnd: 0,
+        },
       ],
     };
     const section = buildWithdrawalStrategyNarrative(

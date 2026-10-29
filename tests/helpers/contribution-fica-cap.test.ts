@@ -8,6 +8,7 @@ import "./setup-mocks";
 import { describe, it, expect } from "vitest";
 import { buildContribAccounts } from "@/server/helpers/contribution";
 import type { ContribRowWithActiveFields } from "@/server/helpers/contribution";
+import type { CapPassed } from "@/lib/pure/contribution-caps";
 
 const limits = {
   hsa_individual_limit: 4000,
@@ -18,7 +19,7 @@ const limits = {
 
 function row(
   overrides: Partial<Record<string, unknown>>,
-): ContribRowWithActiveFields {
+): ContribRowWithActiveFields & CapPassed {
   return {
     id: 1,
     personId: 1,
@@ -34,12 +35,13 @@ function row(
     hsaCoverageType: "family",
     isRoth: false,
     accountLabel: "HSA",
+    capPassed: true,
     ...overrides,
-    // eslint-disable-next-line no-restricted-syntax -- test-only stub; only the fields the builder reads
-  } as unknown as ContribRowWithActiveFields;
+    // eslint-disable-next-line no-restricted-syntax -- a hand-built row standing in for the cap pass's output
+  } as unknown as ContribRowWithActiveFields & CapPassed;
 }
 
-const build = (r: ContribRowWithActiveFields, ageAtYearEnd = 40) =>
+const build = (r: ContribRowWithActiveFields & CapPassed, ageAtYearEnd = 40) =>
   buildContribAccounts([r], [], 100000, 26, { limits, ageAtYearEnd })[0]!;
 
 describe("buildContribAccounts — ficaExemptAnnualCap", () => {
@@ -88,7 +90,7 @@ describe("buildContribAccounts — employer match on bonus checks", () => {
       hsaCoverageType: null,
       fromBonus,
     });
-  const buildWithBonus = (r: ContribRowWithActiveFields) =>
+  const buildWithBonus = (r: ContribRowWithActiveFields & CapPassed) =>
     buildContribAccounts(
       [r],
       [],

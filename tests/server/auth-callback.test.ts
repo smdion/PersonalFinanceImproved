@@ -209,15 +209,11 @@ describe("assignRoleAndPermissions (M18 / auth.ts contract)", () => {
   });
 
   describe("dev credentials provider", () => {
-    const ORIGINAL_NODE_ENV = process.env.NODE_ENV;
-    afterEach(() => {
-      // Restore so other tests aren't affected
-      if (ORIGINAL_NODE_ENV === undefined) delete process.env.NODE_ENV;
-      else process.env.NODE_ENV = ORIGINAL_NODE_ENV;
-    });
+    // Restore so other tests aren't affected
+    afterEach(() => vi.unstubAllEnvs());
 
     it("grants admin in development", async () => {
-      process.env.NODE_ENV = "development";
+      vi.stubEnv("NODE_ENV", "development");
       const result = await assignRoleAndPermissions(
         token,
         { id: "dev:1", name: "Dev" },
@@ -229,7 +225,7 @@ describe("assignRoleAndPermissions (M18 / auth.ts contract)", () => {
     });
 
     it("does NOT grant admin in production (falls through to safe default)", async () => {
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       const result = await assignRoleAndPermissions(
         token,
         { id: "dev:2", name: "Dev" },

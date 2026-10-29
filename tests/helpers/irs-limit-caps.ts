@@ -8,7 +8,7 @@
  * production; a fixture with no specs routes a household total, so its
  * people hold every group it set a limit for.
  */
-import type { EngineInput } from "@/lib/calculators/types";
+import type { ProjectionInput } from "@/lib/calculators/types";
 
 const KEYS: Record<
   string,
@@ -40,7 +40,7 @@ export function capsFromBaseLimits(legacy: {
   >;
   /** The one person's age now, when there are no participants. */
   currentAge?: number;
-}): EngineInput["irsLimitCaps"] {
+}): ProjectionInput["irsLimitCaps"] {
   const byId = new Map<number, number | null>();
   for (const list of Object.values(legacy.catchupGroupParticipants ?? {}))
     for (const p of list) byId.set(p.personId, p.birthYear);
@@ -85,7 +85,7 @@ export function capsFromBaseLimits(legacy: {
  */
 export function withCapsAge<
   T extends {
-    irsLimitCaps: EngineInput["irsLimitCaps"];
+    irsLimitCaps: ProjectionInput["irsLimitCaps"];
     currentAge?: number;
     asOfDate?: Date;
     filingStatus?: string;

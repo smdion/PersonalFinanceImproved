@@ -12,6 +12,7 @@
  * this file moved alongside it.
  */
 import "./setup-mocks";
+import type { AccountCategory } from "@/lib/calculators/types";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import {
@@ -106,7 +107,7 @@ describe("retirement.retirementSettings", () => {
     it("takes an active Retirement brokerage and refuses anything else", async () => {
       const brokerage = (parentCategory: string) =>
         seedPerformanceAccount(db, {
-          name: `${parentCategory} brokerage`,
+          accountLabel: `${parentCategory} brokerage`,
           accountType: "brokerage",
           parentCategory,
         });
@@ -161,7 +162,7 @@ describe("retirement.retirementSettings", () => {
 
     it("an unrelated edit keeps it; deactivating or moving it to Portfolio clears it", async () => {
       const id = seedPerformanceAccount(db, {
-        name: "Changing brokerage",
+        accountLabel: "Changing brokerage",
         accountType: "brokerage",
         parentCategory: "Retirement",
       });
@@ -199,7 +200,13 @@ describe("retirement.retirementSettings", () => {
     });
 
     it("round-trips a persisted withdrawalOrder / withdrawalSplits and can clear them to null", async () => {
-      const order = ["brokerage", "401k", "403b", "ira", "hsa"];
+      const order: AccountCategory[] = [
+        "brokerage",
+        "401k",
+        "403b",
+        "ira",
+        "hsa",
+      ];
       const splits = {
         "401k": 0.4,
         "403b": 0,

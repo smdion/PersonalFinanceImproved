@@ -36,7 +36,7 @@
  */
 import { roundToCents } from "../../utils/math";
 
-export interface QcdPersonInput {
+interface QcdPersonInput {
   personId: number;
   /** This person's Traditional balance held specifically in IRA-category
    *  accounts — the only portion eligible for QCD.
@@ -49,7 +49,7 @@ export interface QcdPersonInput {
   iraTraditionalBalance: number;
 }
 
-export interface QcdPersonResult {
+interface QcdPersonResult {
   personId: number;
   qcdAmount: number;
 }

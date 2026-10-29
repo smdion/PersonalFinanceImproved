@@ -14,10 +14,7 @@ import {
   makeContributionSpec,
 } from "./fixtures/engine-fixtures";
 
-function slotFor(
-  slots: { category: string; employeeContrib: number }[],
-  cat: string,
-) {
+function slotFor<T extends { category: string }>(slots: T[], cat: string) {
   return slots.find((s) => s.category === cat);
 }
 

@@ -7,7 +7,7 @@ export type BalanceStructure =
   "roth_traditional" | "single_bucket" | "basis_tracking";
 
 /** How withdrawals from this account type are taxed. */
-export type WithdrawalTaxType = "income" | "none" | "capital_gains";
+type WithdrawalTaxType = "income" | "none" | "capital_gains";
 
 /** Display grouping for paycheck/contribution views. */
 export type DisplayGroup = "retirement" | "hsa" | "taxable";
@@ -16,7 +16,7 @@ export type DisplayGroup = "retirement" | "hsa" | "taxable";
 // IRS limit key mapping
 // ---------------------------------------------------------------------------
 
-export type IrsLimitKeys = {
+type IrsLimitKeys = {
   base: string;
   catchup: string;
   superCatchup?: string;
@@ -30,7 +30,7 @@ export type IrsLimitKeys = {
 // Color set
 // ---------------------------------------------------------------------------
 
-export type ColorSet = {
+type ColorSet = {
   bg: string;
   bgLight: string;
   border: string;
@@ -146,14 +146,6 @@ export type AccountTypeConfig = {
   >;
 };
 
-// ---------------------------------------------------------------------------
-// Balance discriminated union types
-// ---------------------------------------------------------------------------
-
-export type RothTraditionalBalance = { traditional: number; roth: number };
-export type SingleBucketBalance = number;
-export type BasisTrackingBalance = { balance: number; basis: number };
-
 export type AccountBalance =
   | { structure: "roth_traditional"; traditional: number; roth: number }
   | { structure: "single_bucket"; balance: number }
@@ -185,8 +177,13 @@ export type AccountCategory = "401k" | "403b" | "ira" | "hsa" | "brokerage";
 // Zod-compatible enum helpers (type-level only — runtime values live in main)
 // ---------------------------------------------------------------------------
 
-export const ACCOUNT_CATEGORY_VALUES: [AccountCategory, ...AccountCategory[]] =
-  ["401k", "403b", "ira", "hsa", "brokerage"];
+const ACCOUNT_CATEGORY_VALUES: [AccountCategory, ...AccountCategory[]] = [
+  "401k",
+  "403b",
+  "ira",
+  "hsa",
+  "brokerage",
+];
 
 /** Zod-compatible tuple for z.enum() — import { accountCategoryEnum } and use z.enum(accountCategoryEnum()) */
 export function accountCategoryEnum(): [AccountCategory, ...AccountCategory[]] {

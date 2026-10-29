@@ -5,7 +5,6 @@
 import { toNumber } from "@/server/helpers/transforms";
 import { sumBy, safeDivide } from "@/lib/utils/math";
 import { HALF_CENT } from "@/lib/constants";
-import { parseLocalDateOnly } from "@/lib/utils/date";
 
 /**
  * Modified Dietz return: gainLoss / (beginBal + netFlows/2).
@@ -483,7 +482,7 @@ export function rebaseLockedReturn(
 }
 
 /** Minimal account shape for next-year seeding decisions. */
-export type SeedableAccount = {
+type SeedableAccount = {
   isActive: boolean;
   performanceAccountId: number | null;
 };
@@ -520,7 +519,7 @@ export function buildAccountKeys(
 }
 
 /** The net worth values structure for a finalized year. */
-export type NetWorthValues = {
+type NetWorthValues = {
   yearEndDate: string;
   grossIncome: string;
   portfolioTotal: string;
@@ -569,28 +568,6 @@ export function computePortfolioTotal(
   accounts: { endingBalance: string | null }[],
 ): number {
   return sumBy(accounts, (a) => toNumber(a.endingBalance));
-}
-
-/**
- * Find active jobs at a given date.
- */
-export function filterActiveJobsAtDate<
-  T extends {
-    startDate: string;
-    endDate: string | null;
-    isSpeculative: boolean;
-  },
->(jobs: T[], asOfDate: Date): T[] {
-  return jobs.filter(
-    (j) =>
-      !j.isSpeculative &&
-      // `startDate`/`endDate` are date-only strings — parse in local time so
-      // a job that starts/ends on `asOfDate` compares as the same calendar
-      // day, not ~5-8h earlier (which `new Date("YYYY-MM-DD")` UTC parsing
-      // would make it in any US timezone).
-      parseLocalDateOnly(j.startDate) <= asOfDate &&
-      (!j.endDate || parseLocalDateOnly(j.endDate) >= asOfDate),
-  );
 }
 
 /**

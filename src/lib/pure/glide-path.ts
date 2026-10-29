@@ -12,7 +12,7 @@
  * non-blocking and the user can override.
  */
 
-export type GlidePathWarning = {
+type GlidePathWarning = {
   severity: "info" | "warn" | "danger";
   /** The user's current stock % (0-100). */
   currentStockPercent: number;

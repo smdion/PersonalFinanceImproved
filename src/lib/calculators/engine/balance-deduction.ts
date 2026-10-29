@@ -37,7 +37,7 @@ import type { IndKeyFn } from "./individual-account-tracking";
 // Withdrawal Deduction
 // ---------------------------------------------------------------------------
 
-export interface DeductWithdrawalsInput {
+interface DeductWithdrawalsInput {
   slots: DecumulationSlot[];
   balances: TaxBuckets;
   acctBal: AccountBalances;

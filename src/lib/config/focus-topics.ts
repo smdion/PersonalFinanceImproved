@@ -15,14 +15,10 @@ export const FOCUS_ID_PARAM = "focusId";
 
 // --- Page state a focus can set (each page reads its own key) ---
 
-export const TAX_BUCKET_VIEWS = ["now", "atRetirement"] as const;
-export const RETIREMENT_TABS = [
-  "projection",
-  "comparison",
-  "planHealth",
-] as const;
-export const SAVINGS_MASTER_TABS = ["plan", "manage"] as const;
-export const SAVINGS_EDIT_TABS = [
+const TAX_BUCKET_VIEWS = ["now", "atRetirement"] as const;
+const RETIREMENT_TABS = ["projection", "comparison", "planHealth"] as const;
+const SAVINGS_MASTER_TABS = ["plan", "manage"] as const;
+const SAVINGS_EDIT_TABS = [
   "allocations",
   "transactions",
   "extraPaychecks",
@@ -104,7 +100,7 @@ export type Focus =
   | SettingsFocus;
 
 export type FocusKey = Focus["topic"];
-export type FocusOf<K extends FocusKey> = Extract<Focus, { topic: K }>;
+type FocusOf<K extends FocusKey> = Extract<Focus, { topic: K }>;
 /** A topic's id fields (empty for topics without one). */
 export type FocusIds<K extends FocusKey> = Omit<FocusOf<K>, "topic">;
 

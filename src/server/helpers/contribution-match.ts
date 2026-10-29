@@ -66,7 +66,7 @@ export type GroupableMatchRow = {
   employerMatchTaxTreatment: MatchTaxTreatment;
 };
 
-export type GroupedMatchResult = {
+type GroupedMatchResult = {
   matchAnnual: number;
   /** The match at the plan's cap (contributing at least the capped
    *  percent of pay) — the most the employer would put in. */

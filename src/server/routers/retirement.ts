@@ -456,7 +456,7 @@ export const retirementRouter = createTRPCRouter({
         null,
       );
       const activeJobs = mergeSalaryProfileJobFields(
-        filterActiveJobs(allJobs),
+        filterActiveJobs(allJobs, asOfDate),
         salaryProfileActiveMap,
       );
       const jobSalaries = activeJobs.map((j) => {

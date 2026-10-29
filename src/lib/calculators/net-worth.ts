@@ -54,7 +54,7 @@ export function wealthFormulaIncome(row: {
   return row.grossIncome > 0 ? row.grossIncome : Math.max(0, row.combinedAgi);
 }
 
-export function computeFiTarget(
+function computeFiTarget(
   annualExpenses: number,
   withdrawalRate: number,
 ): number {

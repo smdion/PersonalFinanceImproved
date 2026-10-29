@@ -105,10 +105,11 @@ export function runAccumulationYear(
     OVERFLOW_CATEGORY,
     TAX_ADVANTAGED,
   } = ctx;
+  // This year's specs: someone not at work this year has theirs zeroed.
+  const contributionSpecs = setup.yearSpecs ?? state.contributionSpecs;
   const {
     balances,
     acctBal,
-    contributionSpecs,
     activeEmployerMatchRateByCategory,
     activeBaseYearContributions,
     activeBaseYearEmployerMatch,
@@ -141,8 +142,12 @@ export function runAccumulationYear(
 
   // Year 0 with real contribution data: use actual per-account amounts
   // instead of salary x rate which can create artificial overflow
+  // (Not when a job starts or ends this year, or someone isn't at work:
+  // this year's paycheck amounts don't know that; the specs do.)
   const useRealContribs =
     yearIndex === 0 &&
+    !setup.jobEdgeThisYear &&
+    !setup.yearSpecs &&
     activeBaseYearContributions &&
     activeBaseYearEmployerMatch;
 
@@ -216,6 +221,34 @@ export function runAccumulationYear(
           ),
     ]),
   ) as Record<AccountCategory, number>;
+  // Someone isn't at work this year: each spec's match moves with its own
+  // person's pay (its share of the category's base-year match, grown with
+  // that person's salary), not the household rate on what's left.
+  if (
+    setup.yearSpecs &&
+    hasPerPersonSalary &&
+    activeBaseYearEmployerMatch &&
+    contributionSpecs
+  ) {
+    const baseSalaryByPerson = input.salaryByPerson ?? {};
+    const payRatio = (personId: number | null | undefined) =>
+      personId == null
+        ? safeDivide(projectedSalary, currentSalary, 0)
+        : safeDivide(
+            projectedSalaryByPerson?.get(personId) ?? 0,
+            baseSalaryByPerson[personId] ?? 0,
+            0,
+          );
+    for (const cat of getAllCategories()) yearEmployerMatch[cat] = 0;
+    for (const spec of contributionSpecs)
+      yearEmployerMatch[spec.category] +=
+        (spec.employerShare ?? 0) *
+        (activeBaseYearEmployerMatch[spec.category] ?? 0) *
+        payRatio(spec.personId) *
+        proRate;
+    for (const cat of getAllCategories())
+      yearEmployerMatch[cat] = roundToCents(yearEmployerMatch[cat]);
+  }
 
   // IRS limits: every key grows at the limit growth rate; the specs are
   // capped per person (ages at Dec 31 of this year), and every path sizes
@@ -245,12 +278,7 @@ export function runAccumulationYear(
           employerMatch: yearEmployerMatch,
           wagesByPerson:
             hasPerPersonSalary && projectedSalaryByPerson
-              ? new Map(
-                  Object.entries(projectedSalaryByPerson).map(([id, v]) => [
-                    Number(id),
-                    v,
-                  ]),
-                )
+              ? new Map(projectedSalaryByPerson)
               : null,
         },
       )

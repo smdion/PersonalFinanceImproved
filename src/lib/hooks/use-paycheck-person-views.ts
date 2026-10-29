@@ -117,7 +117,7 @@ export type PaycheckPersonView = {
   incompleteAccountIds: number[];
 };
 
-export type UsePaycheckPersonViewsOptions = {
+type UsePaycheckPersonViewsOptions = {
   contributionProfileId: number | null;
   salaryProfileId: number | null;
   taxYearOverride?: number;

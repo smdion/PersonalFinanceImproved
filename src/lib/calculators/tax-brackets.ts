@@ -13,13 +13,13 @@
  * structured," not interchangeable.
  */
 
-export interface TaxBracket {
+interface TaxBracket {
   min: number;
   max: number | null;
   rate: number;
 }
 
-export interface BracketTaxResult {
+interface BracketTaxResult {
   /** Unrounded total tax — callers round as appropriate for their own display precision. */
   total: number;
   /** Rate of the last bracket that contributed a positive taxable slice (0 if none did). */

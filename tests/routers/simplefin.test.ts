@@ -160,12 +160,12 @@ describe("simplefin router", () => {
       } = await createTestCaller();
       try {
         seedPerformanceAccount(matchDb, {
-          name: "Active Acct",
+          accountLabel: "Active Acct",
           institution: "Fidelity",
           isActive: true,
         });
         seedPerformanceAccount(matchDb, {
-          name: "Inactive Acct",
+          accountLabel: "Inactive Acct",
           institution: "Fidelity",
           isActive: false,
         });
@@ -218,7 +218,7 @@ describe("simplefin router", () => {
       } = await createTestCaller();
       try {
         const perfId = seedPerformanceAccount(matchDb, {
-          name: "Inactive",
+          accountLabel: "Inactive",
           isActive: false,
         });
         const row = matchDb
@@ -250,7 +250,9 @@ describe("simplefin router", () => {
         cleanup: matchCleanup,
       } = await createTestCaller();
       try {
-        const perfId = seedPerformanceAccount(matchDb, { name: "Shared" });
+        const perfId = seedPerformanceAccount(matchDb, {
+          accountLabel: "Shared",
+        });
         seedSnapshot(matchDb, "2025-07-01", [
           { performanceAccountId: perfId, amount: "100.00" },
         ]);
@@ -307,7 +309,9 @@ describe("simplefin router", () => {
         cleanup: matchCleanup,
       } = await createTestCaller();
       try {
-        const perfId = seedPerformanceAccount(matchDb, { name: "Matched" });
+        const perfId = seedPerformanceAccount(matchDb, {
+          accountLabel: "Matched",
+        });
         seedSnapshot(matchDb, "2025-06-01", [
           { performanceAccountId: perfId, amount: "1000.50" },
         ]);
@@ -362,7 +366,7 @@ describe("simplefin router", () => {
       } = await createTestCaller();
       try {
         const perfId = seedPerformanceAccount(matchDb, {
-          name: "Roth 401k",
+          accountLabel: "Roth 401k",
           parentCategory: "Retirement",
         });
         seedSnapshot(matchDb, "2025-08-01", [
@@ -405,7 +409,7 @@ describe("simplefin router", () => {
       } = await createTestCaller();
       try {
         const perfId = seedPerformanceAccount(matchDb, {
-          name: "IRA",
+          accountLabel: "IRA",
           accountType: "ira",
         });
         seedSnapshot(matchDb, "2025-08-01", [
@@ -447,7 +451,7 @@ describe("simplefin router", () => {
       } = await createTestCaller();
       try {
         const perfId = seedPerformanceAccount(matchDb, {
-          name: "Split 401k",
+          accountLabel: "Split 401k",
           parentCategory: "Retirement",
         });
         // Same performanceAccountId, two snapshot rows with different tax types —

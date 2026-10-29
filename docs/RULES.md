@@ -102,7 +102,7 @@ correct workflow:
 
 This keeps the data-driven boundary intact: call sites stay generic, and the
 config file remains the only place that knows what each field means.
-Examples: `isInLimit401kGroup` (reads `irsLimitGroup === "401k"`),
+Examples: `getLimitGroup` (reads `irsLimitGroup`),
 `tracksCostBasis` (reads `balanceStructure === "basis_tracking"`).
 
 ### Contribution Stubs

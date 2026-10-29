@@ -24,10 +24,6 @@ import {
 } from "@/lib/config/account-types";
 import { TAX_BUCKET_DESCRIPTIONS } from "@/lib/config/display-labels";
 import { catDisplayLabel, _singleBucketCategories, isAccumYear } from "./utils";
-export {
-  type ProjectionTableProps,
-  type ProjectionState,
-} from "./projection-table-types";
 import type { ProjectionTableProps } from "./projection-table-types";
 import { type RenderMcCellOptions } from "./projection-table-mc-cell";
 import { AccumulationRow } from "./projection-table-accum-row";

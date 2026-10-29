@@ -79,7 +79,9 @@ describe("computeTaxBucketAnalysis", () => {
           contributionBasis: 40000,
           conversionBasis: 0,
           latestConversionYear: null,
-          asOfDate: new Date("2026-01-01"),
+          year: 2026,
+          isSeeded: false,
+          updatedAt: new Date("2026-01-01"),
         },
         {
           performanceAccountId: 5,
@@ -87,11 +89,12 @@ describe("computeTaxBucketAnalysis", () => {
           contributionBasis: 20000,
           conversionBasis: 0,
           latestConversionYear: null,
-          asOfDate: new Date("2026-01-01"),
+          year: 2026,
+          isSeeded: false,
+          updatedAt: new Date("2026-01-01"),
         },
       ],
       people,
-      targetRetirementAgeByPerson: { 1: 55, 2: 55 },
       currentDate: new Date("2026-01-01"),
     });
 
@@ -249,11 +252,12 @@ describe("computeTaxBucketAnalysis", () => {
           contributionBasis: 30000,
           conversionBasis: 0,
           latestConversionYear: null,
-          asOfDate: new Date("2026-01-01"),
+          year: 2026,
+          isSeeded: false,
+          updatedAt: new Date("2026-01-01"),
         },
       ],
       people,
-      targetRetirementAgeByPerson: { 1: 65 }, // target age irrelevant — real endDate wins
       currentDate: new Date("2050-01-01"), // long after separation — dormant plan
     });
 

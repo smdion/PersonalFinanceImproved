@@ -18,6 +18,7 @@ import type {
 import { accountBalancesFromTaxBuckets } from "@/lib/calculators/engine/balance-utils";
 import { buildCategoryRecord } from "@/lib/config/account-types";
 import { roundToCents } from "@/lib/utils/math";
+import { RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK } from "@/lib/constants";
 import type { WithholdingBracket } from "@/lib/calculators/engine/tax-estimation";
 
 // ---------------------------------------------------------------------------
@@ -101,7 +102,13 @@ export function makeDecumulationConfig(
     withdrawalAccountCaps: buildCategoryRecord(() => null),
     withdrawalTaxTypeCaps: { traditional: null, roth: null },
     lumpSums: [],
+    // Resolved defaults (resolveDecumulationConfig).
     avoidPenalizedWithdrawals: true,
+    rmdExcessHandling: "reinvest",
+    qcdMaximize: false,
+    rmdSmoothingEnabled: false,
+    rmdSmoothingMaxBracketTarget: RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK,
+    discretionaryWithdrawalOrder: "roth_first",
     ...overrides,
   };
 }
@@ -280,7 +287,7 @@ export function makeIndividualAccount(
 // ---------------------------------------------------------------------------
 
 /** The tax buckets a set of per-category balances adds up to. */
-export function taxBucketsFromAccountBalances(a: AccountBalances): TaxBuckets {
+function taxBucketsFromAccountBalances(a: AccountBalances): TaxBuckets {
   const b: TaxBuckets = {
     preTax: 0,
     taxFree: 0,

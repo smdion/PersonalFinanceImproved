@@ -11,7 +11,7 @@
 import { introspectSchema, type SchemaField } from "@/lib/utils/zod-introspect";
 
 import type { AuthLevel, ApiEndpoint } from "@/lib/types/api-docs";
-export type { AuthLevel, ApiEndpoint };
+export type { ApiEndpoint };
 
 export function walkRouter(
   record: Record<string, unknown>,

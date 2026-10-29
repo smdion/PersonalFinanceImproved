@@ -2,8 +2,9 @@
  * The cross-consumer invariant for IRS-limit caps: one person configured
  * over their 401(k) limit, and every figure that reads this year's
  * contribution — the contribution summary, the paycheck (per check and
- * pre-tax income), the engine payload (year-0 amounts and specs) and the
- * contribution mix — shows the same capped amount. A grep can't see
+ * pre-tax income), the engine payload (year-0 amounts and specs), a budget
+ * line linked to the account, and the contribution mix — shows the same
+ * capped amount. A grep can't see
  * `perPeriod × periods`; this can. The pay-stub check alone keeps the
  * configured amount (what payroll actually deducts).
  *
@@ -16,6 +17,7 @@ import {
   createTestCaller,
   seedStandardDataset,
   seedContributionProfile,
+  seedBudgetItem,
 } from "./setup";
 import {
   buildEnginePayload,
@@ -77,7 +79,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
         jobs: {},
       },
     });
-    t.db.$client.exec(
+    t.sqlite.exec(
       `INSERT OR REPLACE INTO app_settings (key, value) VALUES ('${SK_ACTIVE_CONTRIB_PROFILE_ID}', '${profileId}')`,
     );
     t.db
@@ -136,10 +138,10 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
   });
 
   it("the engine payload: year-0 amount and the spec", async () => {
-    const data = await fetchRetirementData(t.db, {
+    const data = await fetchRetirementData(t.rawDb, {
       contributionProfileId: profileId,
     });
-    const payload = (await buildEnginePayload(t.db, data, {
+    const payload = (await buildEnginePayload(t.rawDb, data, {
       contributionProfileId: profileId,
     }))!;
     expect(payload.baseEngineInput.baseYearContributions!["401k"]).toBeCloseTo(
@@ -149,6 +151,53 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
     const spec = payload.contributionSpecs.find((s) => s.category === "401k")!;
     expect(spec.baseAnnual).toBeCloseTo(LIMIT, 2);
     expect(spec.configuredAnnual).toBeCloseTo(CONFIGURED, 2);
+  });
+
+  it("the engine payload: the active profile capped at each later year's ages", async () => {
+    const data = await fetchRetirementData(t.rawDb, {
+      contributionProfileId: profileId,
+    });
+    const payload = (await buildEnginePayload(t.rawDb, data, {
+      contributionProfileId: profileId,
+    }))!;
+    // 36,000 configured: 24,500 now; catch-up from 50 (2040), the larger
+    // one at 60–63 (2050), the smaller again at 64 (2054, the last
+    // working year before retiring at 65).
+    expect(
+      payload.baseEngineInput.profileSwitches!.map((s) => [
+        s.year,
+        Math.round(s.baseYearContributions["401k"]),
+      ]),
+    ).toEqual([
+      [2040, 32500],
+      [2050, 35750],
+      [2054, 32500],
+    ]);
+  });
+
+  it("a budget line linked to the account (budget summary and profile list)", async () => {
+    const budgetProfileId = t.db
+      .select({ id: schema.budgetProfiles.id })
+      .from(schema.budgetProfiles)
+      .where(eq(schema.budgetProfiles.isActive, true))
+      .get()!.id;
+    const itemId = seedBudgetItem(t.db, budgetProfileId, {
+      category: "Investing",
+      subcategory: "401(k)",
+      amounts: [999], // never read once linked
+      contributionAccountId: accountId,
+    });
+    const summary = await t.caller.budget.computeActiveSummary();
+    const item = summary.rawItems!.find((i) => i.id === itemId)!;
+    expect(item.contribAmounts![0]).toBeCloseTo(LIMIT / 12, 2);
+    const listed = (await t.caller.budget.listProfiles()).find(
+      (p) => p.id === budgetProfileId,
+    )!;
+    expect(JSON.stringify(listed)).not.toContain(String(CONFIGURED / 12));
+    t.db
+      .delete(schema.budgetItems)
+      .where(eq(schema.budgetItems.id, itemId))
+      .run();
   });
 
   it("the contribution mix", async () => {
@@ -235,7 +284,7 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
         .where(eq(schema.contributionProfiles.id, profileId))
         .get()!;
       const af = profile.contributionActiveFields as {
-        contributionAccounts: Record<string, unknown>;
+        contributionAccounts: Record<string, Record<string, unknown>>;
       };
       af.contributionAccounts[String(id)] = fields;
       t.db
@@ -337,14 +386,89 @@ describe("IRS-limit caps — every consumer shows the capped amount", () => {
         })
         .run();
       const saved = await setValue("31");
+      // 36 now, so 40–64 in 2030–2054: over every year at 31%.
       expect(saved.limitWarning).toMatch(
-        /used from 2030, and the projection caps it at this year.s limits/,
+        /^Over the IRS limits in 2030–2054 at those years' ages .* 2030: /,
       );
       expect(saved.limitWarning).toMatch(
         /over the IRS limit — set it to at most 20\.41% of pay/,
       );
       // Within the limit: the warning clears.
       expect((await setValue("20")).limitWarning).toBeNull();
+    });
+
+    it("each year at its own ages: catch-up room from 50, super catch-up 60–63", async () => {
+      // 28% = 33,600: over at 40–49 (24,500) and 50–59 (32,500), within
+      // at 60–63 (35,750), over again at 64 (32,500).
+      expect((await setValue("28")).limitWarning).toMatch(
+        /^Over the IRS limits in 2030–2049, 2054 at those years' ages/,
+      );
+    });
+
+    it("a past switch and a later one to the same profile: each capped at its years' ages", async () => {
+      await setValue("30");
+      t.db.delete(schema.retirementSalaryOverrides).run();
+      t.db
+        .insert(schema.retirementSalaryOverrides)
+        .values(
+          [2025, 2045].map((projectionYear) => ({
+            personId,
+            projectionYear,
+            overrideSalary: "120000",
+            contributionProfileId: switchProfileId,
+          })),
+        )
+        .run();
+      const data = await fetchRetirementData(t.rawDb, {
+        contributionProfileId: profileId,
+      });
+      const payload = (await buildEnginePayload(t.rawDb, data, {
+        contributionProfileId: profileId,
+      }))!;
+      expect(
+        payload.baseEngineInput.profileSwitches!.map((s) => [
+          s.year,
+          Math.round(s.baseYearContributions["401k"]),
+        ]),
+      ).toEqual([
+        [2025, 24500],
+        [2040, 32500],
+        [2045, 32500],
+        [2050, 35750],
+        [2054, 32500],
+      ]);
+      // Restore the 2030 switch the next test reads.
+      t.db.delete(schema.retirementSalaryOverrides).run();
+      t.db
+        .insert(schema.retirementSalaryOverrides)
+        .values({
+          personId,
+          projectionYear: 2030,
+          overrideSalary: "120000",
+          contributionProfileId: switchProfileId,
+        })
+        .run();
+    });
+
+    it("the projection caps the switch at each year's ages", async () => {
+      await setValue("30"); // 36,000
+      const data = await fetchRetirementData(t.rawDb, {
+        contributionProfileId: profileId,
+      });
+      const payload = (await buildEnginePayload(t.rawDb, data, {
+        contributionProfileId: profileId,
+      }))!;
+      const switches = payload.baseEngineInput.profileSwitches!.map((s) => [
+        s.year,
+        Math.round(s.baseYearContributions["401k"]),
+      ]);
+      // A further switch only where the ages change the cap: 50, 60, 64.
+      expect(switches).toEqual([
+        [2030, 24500],
+        [2040, 32500],
+        [2050, 35750],
+        [2054, 32500],
+      ]);
     });
   });
 });

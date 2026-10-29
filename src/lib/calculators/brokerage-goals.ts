@@ -27,7 +27,7 @@ export type BrokerageGoalInput = {
   priority: number;
 };
 
-export type BrokerageGoalsInput = {
+type BrokerageGoalsInput = {
   asOfDate: Date;
   goals: BrokerageGoalInput[];
   /** Engine projection years (accumulation + decumulation). */
@@ -36,7 +36,7 @@ export type BrokerageGoalsInput = {
 
 // --- Output ---
 
-export type BrokerageGoalWithdrawal = {
+type BrokerageGoalWithdrawal = {
   goalId: number;
   name: string;
   amount: number;
@@ -45,7 +45,7 @@ export type BrokerageGoalWithdrawal = {
   taxCost: number;
 };
 
-export type BrokerageIndividualAccount = {
+type BrokerageIndividualAccount = {
   name: string;
   category: string;
   balance: number;
@@ -98,7 +98,7 @@ export type BrokerageGoalStatus = {
   taxCost: number;
 };
 
-export type BrokerageGoalsResult = {
+type BrokerageGoalsResult = {
   projectionByYear: BrokerageGoalYear[];
   goals: BrokerageGoalStatus[];
   warnings: string[];

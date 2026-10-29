@@ -3,11 +3,16 @@
  * Profile from a given year. `loadSwitchProfiles` fetches the profiles the
  * rows name; `buildProfileSwitches` turns each row into the engine's
  * `ProfileSwitch` (that profile's contribution specs, match and rate) and
- * the salary override a switched Salary Profile adds for that year.
+ * the salary override a switched Salary Profile adds for that year. A
+ * switch is capped at the IRS limits at each later year's ages, so one
+ * row can add further switches to the same profile (catch-up room).
  */
 import {
   capEffectiveContribs,
+  type CappedRowFields,
+  type CapPassContext,
   type CapPassHousehold,
+  type CapPassRow,
 } from "@/server/helpers/contribution-caps";
 import { inArray } from "drizzle-orm";
 import type { db as _db } from "@/lib/db";
@@ -95,6 +100,7 @@ export function buildProfileSwitches<
   hasMultiplePeople,
   profileContribCtx,
   capHousehold,
+  lastAccumulationYear,
 }: {
   profileSwitchOverrides: readonly SalaryOverrideRow[];
   switchProfileMap: Awaited<
@@ -117,6 +123,9 @@ export function buildProfileSwitches<
   /** The household's cap context — each switch's rows are capped like the
    *  active profile's, on that profile's pay. */
   capHousehold: CapPassHousehold;
+  /** The last working year (lastWorkingYear) — a switch's later
+   *  catch-up room is looked for up to here. */
+  lastAccumulationYear: number;
 }) {
   const perPersonSalaryAdds: {
     personId: number;
@@ -366,60 +375,135 @@ export function buildProfileSwitches<
       switchedSalaryProfileActiveMap,
     );
 
-    const data = buildProfileContribData(
-      capEffectiveContribs(
-        resolved.activeContribs.map((c) => ({
-          ...c,
-          accountType: c.accountType as AccountCategory,
-        })),
-        {
-          ...capHousehold,
-          activeJobs: resolved.activeJobs,
-          jobSalaries: resolved.jobSalaries,
-        },
+    // The switch runs until the next Contribution Profile switch (whoever
+    // its row is for) or the last working year. A switch in the past or
+    // this year is capped at this year's ages.
+    const nextSwitchYear = Math.min(
+      ...profileSwitchOverrides
+        .filter(
+          (o) =>
+            o.contributionProfileId &&
+            switchProfileMap.has(o.contributionProfileId) &&
+            o.projectionYear > override.projectionYear,
+        )
+        .map((o) => o.projectionYear),
+    );
+    const steps = capAgeSteps(
+      resolved.activeContribs.map((c) => ({
+        ...c,
+        accountType: c.accountType as AccountCategory,
+      })),
+      {
+        ...capHousehold,
+        activeJobs: resolved.activeJobs,
+        jobSalaries: resolved.jobSalaries,
+      },
+      Math.max(override.projectionYear, currentYear),
+      Math.min(nextSwitchYear - 1, lastAccumulationYear),
+    );
+    steps.forEach((step, i) =>
+      profileSwitches.push(
+        profileSwitchFrom(
+          i === 0 ? override.projectionYear : step.year,
+          step.capped,
+          resolved,
+          profileContribCtx,
+        ),
       ),
-      resolved.activeJobs,
-      resolved.jobSalaries,
-      profileContribCtx,
     );
-
-    // Compute per-profile contribution rate ceiling (retirement
-    // contributions only — see retirementContributions)
-    const switchedTotalComp = sumBy(resolved.jobSalaries, (js) => js.totalComp);
-    const switchedContribRate = safeDivide(
-      retirementContributions(data.contributionSpecs),
-      switchedTotalComp,
-      0,
-    );
-
-    // Contribution rate ceiling for the switched profile:
-    // - Both comp AND contribs > 0: compute the real ratio
-    // - Comp > 0 but contribs = 0: the profile is INTENTIONALLY zero (e.g. a
-    //   "Coast FIRE" profile — user is saying "stop contributing"). Use 0
-    //   so the engine's rate path produces zero contributions. Before: this
-    //   silently fell back to 0.25 which defeated the profile's intent.
-    // - No comp (missing data): keep the fallback to avoid surprising behavior
-    //   on broken profiles.
-    const rateForSwitch =
-      switchedContribRate > 0
-        ? switchedContribRate
-        : switchedTotalComp > 0
-          ? 0
-          : FALLBACK_CONTRIBUTION_RATE;
-
-    profileSwitches.push({
-      year: override.projectionYear,
-      contributionSpecs: data.contributionSpecs,
-      employerMatchRateByCategory: data.employerMatchRateByCategory,
-      baseYearContributions: data.baseYearContributions,
-      baseYearEmployerMatch: data.baseYearEmployerMatch,
-      employerMatchByParentCat: data.employerMatchByParentCat,
-      contributionRate: rateForSwitch,
-      retirementOnly: data.retirementOnly,
-    });
   }
 
   // Sort profile switches by year
   profileSwitches.sort((a, b) => a.year - b.year);
   return { profileSwitches, perPersonSalaryAdds, householdSalaryAdds };
+}
+
+/**
+ * A profile's rows capped at the IRS limits at each year's ages from
+ * `fromYear` through `lastYear` (catch-up room from 50, the larger one at
+ * 60–63): the first year always, then each year whose ages cap the rows
+ * differently from the year before. Limits and pay stay today's — the
+ * engine grows both and caps the growth itself (capSpecs).
+ */
+export function capAgeSteps<R extends CapPassRow>(
+  rows: readonly R[],
+  ctx: CapPassContext,
+  fromYear: number,
+  lastYear: number,
+): { year: number; capped: (R & CappedRowFields)[] }[] {
+  const steps: { year: number; capped: (R & CappedRowFields)[] }[] = [];
+  let previous: string | null = null;
+  for (let year = fromYear; previous === null || year <= lastYear; year++) {
+    const capped = capEffectiveContribs(rows, { ...ctx, taxYear: year });
+    const cut = JSON.stringify(capped.map((c) => c.cappedValue ?? null));
+    if (cut === previous) continue;
+    previous = cut;
+    steps.push({ year, capped });
+  }
+  return steps;
+}
+
+/** The engine's switch to a profile's capped rows from `year`: its specs,
+ *  match and retirement contribution rate on that profile's pay. */
+export function profileSwitchFrom(
+  year: number,
+  capped: Parameters<typeof buildProfileContribData>[0],
+  resolved: {
+    activeJobs: Parameters<typeof buildProfileContribData>[1];
+    jobSalaries: Parameters<typeof buildProfileContribData>[2] &
+      readonly { totalComp: number }[];
+  },
+  profileContribCtx: Parameters<typeof buildProfileContribData>[3],
+): ProfileSwitch {
+  const data = buildProfileContribData(
+    capped,
+    resolved.activeJobs,
+    resolved.jobSalaries,
+    profileContribCtx,
+  );
+
+  // Compute per-profile contribution rate ceiling (retirement
+  // contributions only — see retirementContributions)
+  const switchedTotalComp = sumBy(resolved.jobSalaries, (js) => js.totalComp);
+  const switchedContribRate = safeDivide(
+    retirementContributions(data.contributionSpecs),
+    switchedTotalComp,
+    0,
+  );
+
+  // Contribution rate ceiling for the switched profile:
+  // - Both comp AND contribs > 0: compute the real ratio
+  // - Comp > 0 but contribs = 0: the profile is INTENTIONALLY zero (e.g. a
+  //   "Coast FIRE" profile — user is saying "stop contributing"). Use 0
+  //   so the engine's rate path produces zero contributions. Before: this
+  //   silently fell back to 0.25 which defeated the profile's intent.
+  // - No comp (missing data): keep the fallback to avoid surprising behavior
+  //   on broken profiles.
+  const rateForSwitch =
+    switchedContribRate > 0
+      ? switchedContribRate
+      : switchedTotalComp > 0
+        ? 0
+        : FALLBACK_CONTRIBUTION_RATE;
+
+  return {
+    year,
+    contributionSpecs: data.contributionSpecs,
+    employerMatchRateByCategory: data.employerMatchRateByCategory,
+    baseYearContributions: data.baseYearContributions,
+    baseYearEmployerMatch: data.baseYearEmployerMatch,
+    employerMatchByParentCat: data.employerMatchByParentCat,
+    contributionRate: rateForSwitch,
+    retirementOnly: data.retirementOnly,
+  };
+}
+
+/** A profile's age steps as of `year`: the latest step by then, moved to
+ *  start at `year` (undefined before the first). */
+export function ageStepAt(
+  steps: readonly ProfileSwitch[],
+  year: number,
+): ProfileSwitch | undefined {
+  const step = steps.filter((s) => s.year <= year).at(-1);
+  return step ? { ...step, year } : undefined;
 }

@@ -1,47 +1,6 @@
 "use client";
 
-import { useState } from "react";
-
-function Section({
-  title,
-  children,
-  defaultOpen = true,
-}: {
-  title: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div className="overflow-hidden rounded-lg border">
-      <button
-        onClick={() => setOpen(!open)}
-        className="bg-surface-sunken text-secondary hover:bg-surface-elevated flex w-full items-center justify-between px-4 py-3 text-sm font-medium transition-colors"
-      >
-        {title}
-        <svg
-          aria-hidden="true"
-          className={`h-4 w-4 transition-transform ${open ? "rotate-180" : ""}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M19 9l-7 7-7-7"
-          />
-        </svg>
-      </button>
-      {open && (
-        <div className="text-muted space-y-4 px-4 py-4 text-sm leading-relaxed">
-          {children}
-        </div>
-      )}
-    </div>
-  );
-}
+import { ProseSection } from "@/components/ui/prose-section";
 
 export function AccumulationMethodologyContent() {
   return (
@@ -51,7 +10,7 @@ export function AccumulationMethodologyContent() {
         balances, and applies your changes by year during working years.
       </p>
 
-      <Section title="How It Works">
+      <ProseSection title="How It Works" defaultOpen>
         <p>
           The accumulation engine models your <strong>working years</strong> —
           from your current age to retirement. Each year it computes your
@@ -134,9 +93,9 @@ export function AccumulationMethodologyContent() {
           contributions are Roth and 30% are Traditional. HSA contributions are
           always pre-tax, and brokerage contributions are always after-tax.
         </p>
-      </Section>
+      </ProseSection>
 
-      <Section title="Defaults" defaultOpen={false}>
+      <ProseSection title="Defaults">
         <p>
           These are the page-level defaults that apply every year unless a
           change by year sets something else. They are loaded from your saved
@@ -228,9 +187,9 @@ export function AccumulationMethodologyContent() {
             brokerage contribution that increases each year
           </li>
         </ul>
-      </Section>
+      </ProseSection>
 
-      <Section title="Changes by year (carry forward)" defaultOpen={false}>
+      <ProseSection title="Changes by year (carry forward)">
         <p>
           A change by year sets any accumulation setting starting at a specific
           calendar year. It <strong>carries forward</strong>: once set, a field
@@ -329,9 +288,9 @@ export function AccumulationMethodologyContent() {
           Traditional. From 2033 onward, everything reverts to whatever your
           page-level defaults are.
         </p>
-      </Section>
+      </ProseSection>
 
-      <Section title="Technical Details" defaultOpen={false}>
+      <ProseSection title="Technical Details">
         <h4 className="text-secondary font-semibold">
           Year 0 special handling
         </h4>
@@ -411,7 +370,7 @@ export function AccumulationMethodologyContent() {
           Match amounts are tracked separately from employee contributions for
           accurate reporting.
         </p>
-      </Section>
+      </ProseSection>
     </div>
   );
 }

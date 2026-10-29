@@ -29,7 +29,7 @@ import type { PushPreviewItem } from "@/components/ui/push-preview-modal";
 
 /** Non-column tiers of docs/RULES.md's profile precedence, supplied by the
  *  page ([column profile] → local selection → active). */
-export type ProfileResolutionTiers = {
+type ProfileResolutionTiers = {
   localSelectionId: number | null;
   globalDefaultId: number | null;
 };

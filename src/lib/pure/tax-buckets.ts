@@ -44,7 +44,7 @@ export type TaxBucketSnapshotAccount = {
   accountLabel: string | null;
 };
 
-export type TaxBucketPerfAccount = {
+type TaxBucketPerfAccount = {
   id: number;
   isActive: boolean;
   accountType: string;
@@ -61,7 +61,7 @@ export type TaxBucketPerfAccount = {
  *  (Rollover, Employer Match, ...) differently than the name-based grouping
  *  the engine payload uses, which can silently drop or double-count a
  *  projected balance when the two sides are joined by name in v2. */
-export type AccountRollupEntry = {
+type AccountRollupEntry = {
   name: string;
   /** Null only when a merged group of same-(name,category,taxType,owner)
    *  rows spans more than one real performance account — rare, since that
@@ -76,7 +76,7 @@ export type AccountRollupEntry = {
   amount: number;
 };
 
-export type AccountBreakdownEntry = {
+type AccountBreakdownEntry = {
   name: string;
   amount: number;
   taxType: string;

@@ -278,6 +278,7 @@ describe("ledgrCheckFor: Ledgr's figures for one check", () => {
           taxTreatment: "pre_tax" as const,
           isPayrollDeducted: true,
           fromBonus: true,
+          ficaExemptAnnualCap: null,
           group: "retirement",
           employerMatch: 0,
           employerMatchTaxTreatment: "pre_tax" as const,

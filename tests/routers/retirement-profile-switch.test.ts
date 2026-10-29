@@ -23,6 +23,7 @@
  * one, which is a new way to get this wrong under the presence encoding.
  */
 import "./setup-mocks";
+import type { SalaryEntryMap } from "@/server/helpers/salary";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { createTestCaller, seedJob, seedPerformanceAccount } from "./setup";
 import {
@@ -139,7 +140,10 @@ describe("retirement profile-switch salary injection", () => {
           // Pins bonus terms but NOT salary — has a profile entry, yet
           // nothing here to grow.
           [String(caseyId)]: { bonusPercent: 0.4 },
-        },
+          // Partial entries on purpose: the older stored shape this
+          // regression test reproduces (writes are complete entries now).
+          // eslint-disable-next-line no-restricted-syntax -- see above
+        } as unknown as SalaryEntryMap,
       })
       .returning({ id: schema.salaryProfiles.id })
       .get().id;
@@ -157,8 +161,8 @@ describe("retirement profile-switch salary injection", () => {
         .run();
     }
 
-    const data = await fetchRetirementData(testCaller.db, {});
-    const result = await buildEnginePayload(testCaller.db, data, {});
+    const data = await fetchRetirementData(testCaller.rawDb, {});
+    const result = await buildEnginePayload(testCaller.rawDb, data, {});
     if (!result) throw new Error("buildEnginePayload returned null");
     payload = result;
   });

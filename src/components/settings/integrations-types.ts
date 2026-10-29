@@ -26,7 +26,7 @@ export type BudgetMatch = {
   contributionAccountId: number | null;
 };
 
-export type SavingsMatch = {
+type SavingsMatch = {
   goalId: number;
   goalName: string;
   status: "linked" | "suggested" | "unmatched" | "orphaned";

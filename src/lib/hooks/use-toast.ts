@@ -16,7 +16,7 @@ export interface ToastAction {
   onClick: () => void;
 }
 
-export type Toast = {
+type Toast = {
   id: string;
   message: string;
   variant: ToastVariant;

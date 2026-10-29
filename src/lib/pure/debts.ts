@@ -5,7 +5,7 @@
  */
 import { loanPayoffMonths } from "@/lib/utils/math";
 
-export type DebtPayoffEstimate = {
+type DebtPayoffEstimate = {
   /** Months from the balance's date; null when not estimable. */
   months: number | null;
   /** YYYY-MM; null when not estimable. */

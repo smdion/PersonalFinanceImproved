@@ -123,6 +123,21 @@ export function TaxBreakdown({ data }: { data: PaycheckSummary }) {
               ]
             : [],
         )}
+        {data.people.flatMap((d) =>
+          "bonusNotCounted" in d
+            ? d.bonusNotCounted.map((employer) => (
+                <p
+                  key={`bonus-${d.person.id}-${employer}`}
+                  className="text-faint pt-1 text-xs"
+                >
+                  {d.person.name}&apos;s bonus from {employer} isn&apos;t
+                  counted: the job ends this year and the bonus has no month, so
+                  it may be paid after the last day. Give it a month in the
+                  Salary Profile to count it.
+                </p>
+              ))
+            : [],
+        )}
         {tax.warnings.map((w) => (
           <p key={w} className="text-faint pt-1 text-xs">
             {maskAmountsInText(w)}

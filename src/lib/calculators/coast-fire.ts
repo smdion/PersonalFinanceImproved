@@ -54,9 +54,9 @@ import type {
 import { roundToCents } from "../utils/math";
 import { getAllCategories } from "../config/account-types";
 
-export type CoastFireStatus = "already_coast" | "found" | "unreachable";
+type CoastFireStatus = "already_coast" | "found" | "unreachable";
 
-export type CoastFireResult = {
+type CoastFireResult = {
   /** The earliest age at which contributions can stop. Null if unreachable. */
   coastFireAge: number | null;
   status: CoastFireStatus;

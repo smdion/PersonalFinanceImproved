@@ -33,13 +33,13 @@ export interface ProjectionGoalInput {
   currentMonthBudgeted?: number | null;
 }
 
-export interface AllocationOverride {
+interface AllocationOverride {
   goalId: number;
   monthDate: string;
   amount: number;
 }
 
-export interface MonthEventOut {
+interface MonthEventOut {
   /** `${plannedTxId}:${occurrenceMonth}` — stable across re-renders, unlike the
    *  old sequential `ev-${n}` id, and usable directly as a React key. */
   id: string;
@@ -50,7 +50,7 @@ export interface MonthEventOut {
   description: string;
 }
 
-export interface SavingsProjectionResult {
+interface SavingsProjectionResult {
   monthDates: Date[];
   balances: number[];
   monthEvents: (MonthEventOut[] | null)[];
@@ -135,7 +135,7 @@ function expandPlannedTransactions(
   return txByGoalMonth;
 }
 
-export interface ProjectGoalBalancesOptions {
+interface ProjectGoalBalancesOptions {
   now: Date;
   projectionMonths: number;
   plannedTransactions: PlannedTransaction[];

@@ -11,6 +11,8 @@
  *   - allocationOverrides.upsertMonth / upsertMonthRange / batchUpsert
  */
 import "./setup-mocks";
+import type Database from "better-sqlite3";
+import type { SalaryProfileEntry } from "@/server/helpers/salary";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
 import { and, eq, type SQL } from "drizzle-orm";
@@ -72,9 +74,7 @@ function linkGoal(
 /** Patch rawDb.execute so computeSummary's raw balance query works in SQLite. */
 function patchExecute(
   rawDb: Record<string, unknown>,
-  sqliteClient: {
-    prepare: (sql: string) => { all: (...params: unknown[]) => unknown[] };
-  },
+  sqliteClient: Database.Database,
 ): void {
   const dialect = new SQLiteSyncDialect();
   rawDb["execute"] = (sqlObj: SQL) => {
@@ -158,7 +158,6 @@ describe("savings.computeSummary", () => {
       seedSavingsGoal(freshCtx.db, {
         name: "Emergency Fund",
         targetAmount: "20000",
-        monthlyContribution: "500",
         isEmergencyFund: true,
         targetMonths: 6,
         isActive: true,
@@ -184,7 +183,6 @@ describe("savings.computeSummary", () => {
       const _goalId = seedSavingsGoal(freshCtx.db, {
         name: "API Goal",
         targetAmount: "5000",
-        monthlyContribution: "200",
         isActive: true,
         priority: 1,
       });
@@ -269,7 +267,6 @@ describe("savings.listApiBalances", () => {
       const linkedGoalId = seedSavingsGoal(ctx.db, {
         name: "Linked Goal",
         targetAmount: "5000",
-        monthlyContribution: "200",
       });
       linkGoal(ctx.db, linkedGoalId, "ynab", "cat-abc", "Test Category");
 
@@ -910,7 +907,6 @@ describe("savings.listEfundReimbursements", () => {
         name: "E-Fund",
         isEmergencyFund: true,
         targetAmount: "15000",
-        monthlyContribution: "500",
         // no reimbursementApiCategoryId
       });
 
@@ -931,7 +927,6 @@ describe("savings.listEfundReimbursements", () => {
         name: "E-Fund",
         isEmergencyFund: true,
         targetAmount: "15000",
-        monthlyContribution: "500",
       });
       linkGoal(
         ctx.db,
@@ -987,7 +982,6 @@ describe("savings.listEfundReimbursements", () => {
         name: "E-Fund",
         isEmergencyFund: true,
         targetAmount: "15000",
-        monthlyContribution: "500",
       });
       linkGoal(
         ctx.db,
@@ -1036,7 +1030,6 @@ describe("savings.listEfundReimbursements", () => {
         name: "E-Fund",
         isEmergencyFund: true,
         targetAmount: "15000",
-        monthlyContribution: "500",
       });
       linkGoal(
         ctx.db,
@@ -1094,12 +1087,10 @@ describe("savings.transfers", () => {
     goalId1 = seedSavingsGoal(db, {
       name: "Fund A",
       targetAmount: "10000",
-      monthlyContribution: "500",
     });
     goalId2 = seedSavingsGoal(db, {
       name: "Fund B",
       targetAmount: "5000",
-      monthlyContribution: "200",
     });
   });
 
@@ -1116,12 +1107,12 @@ describe("savings.transfers", () => {
     expect(result.pairId).toBeDefined();
     expect(result.withdrawal).toBeDefined();
     expect(result.deposit).toBeDefined();
-    expect(result.withdrawal.goalId).toBe(goalId1);
-    expect(result.deposit.goalId).toBe(goalId2);
-    expect(Number(result.withdrawal.amount)).toBe(-1000);
-    expect(Number(result.deposit.amount)).toBe(1000);
-    expect(result.withdrawal.transferPairId).toBe(result.pairId);
-    expect(result.deposit.transferPairId).toBe(result.pairId);
+    expect(result.withdrawal!.goalId).toBe(goalId1);
+    expect(result.deposit!.goalId).toBe(goalId2);
+    expect(Number(result.withdrawal!.amount)).toBe(-1000);
+    expect(Number(result.deposit!.amount)).toBe(1000);
+    expect(result.withdrawal!.transferPairId).toBe(result.pairId);
+    expect(result.deposit!.transferPairId).toBe(result.pairId);
   });
 
   it("creates a recurring transfer", async () => {
@@ -1134,8 +1125,8 @@ describe("savings.transfers", () => {
       isRecurring: true,
       recurrenceMonths: 1,
     });
-    expect(result.withdrawal.isRecurring).toBe(true);
-    expect(result.deposit.recurrenceMonths).toBe(1);
+    expect(result.withdrawal!.isRecurring).toBe(true);
+    expect(result.deposit!.recurrenceMonths).toBe(1);
   });
 
   it("deletes a transfer pair", async () => {
@@ -1179,12 +1170,10 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
     goalId1 = seedSavingsGoal(db, {
       name: "Settle Fund A",
       targetAmount: "10000",
-      monthlyContribution: "500",
     });
     goalId2 = seedSavingsGoal(db, {
       name: "Settle Fund B",
       targetAmount: "5000",
-      monthlyContribution: "200",
     });
   });
 
@@ -1199,7 +1188,7 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
       isRecurring: false,
     });
     const result = await caller.savings.plannedTransactions.settle({
-      plannedTxId: tx.id,
+      plannedTxId: tx!.id,
       occurrenceMonth: "2026-09",
     });
     expect(result).toEqual({ ok: true });
@@ -1214,12 +1203,12 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
       isRecurring: false,
     });
     await caller.savings.plannedTransactions.settle({
-      plannedTxId: tx.id,
+      plannedTxId: tx!.id,
       occurrenceMonth: "2026-10",
     });
     await expect(
       caller.savings.plannedTransactions.settle({
-        plannedTxId: tx.id,
+        plannedTxId: tx!.id,
         occurrenceMonth: "2026-10",
       }),
     ).rejects.toThrow(/already settled/i);
@@ -1234,7 +1223,7 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
       description: "Rebalance",
     });
     await caller.savings.plannedTransactions.settle({
-      plannedTxId: created.withdrawal.id,
+      plannedTxId: created.withdrawal!.id,
       occurrenceMonth: "2026-12",
     });
     // The deposit leg should now also be settled — verify via computeSummary
@@ -1243,13 +1232,13 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
     // reappears in the combined balance).
     const summary = await caller.savings.computeSummary();
     const depositTx = summary.plannedTransactions.find(
-      (t) => t.id === created.deposit.id,
+      (t) => t.id === created.deposit!.id,
     );
     expect(depositTx?.settledOccurrences).toContain("2026-12");
     // And settling the already-settled deposit leg directly should now reject.
     await expect(
       caller.savings.plannedTransactions.settle({
-        plannedTxId: created.deposit.id,
+        plannedTxId: created.deposit!.id,
         occurrenceMonth: "2026-12",
       }),
     ).rejects.toThrow(/already settled/i);
@@ -1272,14 +1261,14 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
     });
     const result = await caller.savings.plannedTransactions.settleMany({
       occurrences: [
-        { plannedTxId: tx1.id, occurrenceMonth: "2027-01" },
-        { plannedTxId: tx2.id, occurrenceMonth: "2027-02" },
+        { plannedTxId: tx1!.id, occurrenceMonth: "2027-01" },
+        { plannedTxId: tx2!.id, occurrenceMonth: "2027-02" },
       ],
     });
     expect(result).toEqual({ ok: true });
     const summary = await caller.savings.computeSummary();
-    const t1 = summary.plannedTransactions.find((t) => t.id === tx1.id);
-    const t2 = summary.plannedTransactions.find((t) => t.id === tx2.id);
+    const t1 = summary.plannedTransactions.find((t) => t.id === tx1!.id);
+    const t2 = summary.plannedTransactions.find((t) => t.id === tx2!.id);
     expect(t1?.settledOccurrences).toContain("2027-01");
     expect(t2?.settledOccurrences).toContain("2027-02");
   });
@@ -1294,16 +1283,16 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
       recurrenceMonths: 1,
     });
     await caller.savings.plannedTransactions.settle({
-      plannedTxId: tx.id,
+      plannedTxId: tx!.id,
       occurrenceMonth: "2027-03",
     });
     const summary = await caller.savings.computeSummary();
-    const found = summary.plannedTransactions.find((t) => t.id === tx.id);
+    const found = summary.plannedTransactions.find((t) => t.id === tx!.id);
     expect(found?.settledOccurrences).toEqual(["2027-03"]);
     // A later occurrence of the same recurring row must still be settleable
     // independently — proves settlement is per-occurrence, not per-row.
     const nextMonth = await caller.savings.plannedTransactions.settle({
-      plannedTxId: tx.id,
+      plannedTxId: tx!.id,
       occurrenceMonth: "2027-04",
     });
     expect(nextMonth).toEqual({ ok: true });
@@ -1373,7 +1362,7 @@ describe("savings.plannedTransactions.getSettlementSuggestions", () => {
     const result =
       await caller.savings.plannedTransactions.getSettlementSuggestions();
     expect(result.suggestions).toContainEqual({
-      plannedTxId: tx.id,
+      plannedTxId: tx!.id,
       occurrenceMonth: "2026-08",
     });
   });
@@ -1403,7 +1392,7 @@ describe("savings.plannedTransactions.getSettlementSuggestions", () => {
     const result =
       await caller.savings.plannedTransactions.getSettlementSuggestions();
     expect(
-      result.suggestions.find((s) => s.plannedTxId === tx.id),
+      result.suggestions.find((s) => s.plannedTxId === tx!.id),
     ).toBeUndefined();
   });
 
@@ -1432,7 +1421,7 @@ describe("savings.plannedTransactions.getSettlementSuggestions", () => {
     const result =
       await caller.savings.plannedTransactions.getSettlementSuggestions();
     expect(
-      result.suggestions.find((s) => s.plannedTxId === tx.id),
+      result.suggestions.find((s) => s.plannedTxId === tx!.id),
     ).toBeUndefined();
   });
 
@@ -1445,7 +1434,7 @@ describe("savings.plannedTransactions.getSettlementSuggestions", () => {
       isRecurring: false,
     });
     await caller.savings.plannedTransactions.settle({
-      plannedTxId: tx.id,
+      plannedTxId: tx!.id,
       occurrenceMonth: "2026-10",
     });
     mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
@@ -1465,7 +1454,7 @@ describe("savings.plannedTransactions.getSettlementSuggestions", () => {
     const result =
       await caller.savings.plannedTransactions.getSettlementSuggestions();
     expect(
-      result.suggestions.find((s) => s.plannedTxId === tx.id),
+      result.suggestions.find((s) => s.plannedTxId === tx!.id),
     ).toBeUndefined();
   });
 });
@@ -1489,12 +1478,10 @@ describe("savings.allocationOverrides advanced", () => {
     goalId = seedSavingsGoal(db, {
       name: "Override Goal A",
       targetAmount: "10000",
-      monthlyContribution: "500",
     });
     goalId2 = seedSavingsGoal(db, {
       name: "Override Goal B",
       targetAmount: "5000",
-      monthlyContribution: "200",
     });
   });
 
@@ -1629,7 +1616,6 @@ describe("savings.extraPaycheckRouting", () => {
           splits: [{ goalId, pct: 100 }],
         },
       ],
-      baseNetPayPerCheck: 3000,
     });
     expect(result).toEqual({ ok: true });
   });
@@ -1645,7 +1631,6 @@ describe("savings.extraPaycheckRouting", () => {
             splits: [{ goalId, pct: 50 }],
           },
         ],
-        baseNetPayPerCheck: 3000,
       }),
     ).rejects.toThrow();
   });
@@ -1663,12 +1648,14 @@ describe("savings.extraPaycheckRouting", () => {
     // paycheck-input construction with paycheck.ts router's equivalent.
     // seedJob's defaults: $120,000 salary, biweekly, MFJ, no
     // deductions/contributions, bonusPercent 0.
-    await caller.savings.extraPaycheckRouting.save({
+    // A client sending its own figure (not in the input type any more) —
+    // deliberately wrong, to prove the server ignores it and recomputes.
+    const withClientFigure = {
       jobId,
       rules: [{ from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] }],
-      // Deliberately wrong — proves the server ignores this and recomputes.
       baseNetPayPerCheck: 999999,
-    });
+    };
+    await caller.savings.extraPaycheckRouting.save(withClientFigure);
     const routing = getRouting(jobId) as { baseNetPayPerCheck?: number } | null;
     const baseNetPayPerCheck = routing?.baseNetPayPerCheck;
     expect(baseNetPayPerCheck).not.toBe(999999);
@@ -1733,7 +1720,7 @@ describe("savings.extraPaycheckRouting", () => {
       .get()!;
     const salaries = activeSalaryProfile.salaries as Record<
       string,
-      Record<string, unknown>
+      SalaryProfileEntry
     >;
     await db
       .update(sqliteSchemaTables.salaryProfiles)
@@ -1741,7 +1728,7 @@ describe("savings.extraPaycheckRouting", () => {
         salaries: {
           ...salaries,
           [String(scheduleJobId)]: {
-            ...salaries[String(scheduleJobId)],
+            ...salaries[String(scheduleJobId)]!,
             payPeriod: "weekly",
             anchorPayDate: "2025-01-10",
           },
@@ -1797,7 +1784,7 @@ describe("savings.extraPaycheckRouting", () => {
       .get()!;
     const salaries = activeSalaryProfile.salaries as Record<
       string,
-      Record<string, unknown>
+      SalaryProfileEntry
     >;
 
     // A real correction (not a what-if) — increasing withholding on the
@@ -1902,7 +1889,7 @@ describe("savings.extraPaycheckRouting", () => {
     >;
     // Untouched — browsing/editing a non-active profile must never cascade.
     expect(
-      otherSalaries[String(otherJobId)].extraPaycheckRouting
+      otherSalaries[String(otherJobId)]!.extraPaycheckRouting
         ?.baseNetPayPerCheck,
     ).toBe(999999);
   });

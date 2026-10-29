@@ -33,6 +33,7 @@ import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
+import { SK_BUDGET_ACTIVE_COLUMN } from "@/lib/constants/settings-keys";
 
 type BudgetSummaryData = NonNullable<
   RouterOutputs["budget"]["computeActiveSummary"]
@@ -93,7 +94,10 @@ function BudgetSummary({
 
 function LivingCostsCardImpl() {
   const fullYearNote = useFullYearNote();
-  const [budgetColumn] = usePersistedSetting<number>("budget_active_column", 0);
+  const [budgetColumn] = usePersistedSetting<number>(
+    SK_BUDGET_ACTIVE_COLUMN,
+    0,
+  );
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   const [rawActiveSalaryProfileId] = useActiveSalaryProfile();

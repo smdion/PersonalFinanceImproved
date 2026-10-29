@@ -39,7 +39,7 @@ const TIMEOUT_MS = 15_000;
 const MAX_BYTES = 1024 * 1024;
 const USER_AGENT = "Ledgr self-hosted personal finance (tax-data updates)";
 
-export type TaxDataCheckResult =
+type TaxDataCheckResult =
   | "off"
   | "current" // nothing newer than this install has (or nothing published)
   | "pending" // a verified update is waiting for an admin
@@ -49,14 +49,14 @@ export type TaxDataCheckResult =
   | "rate-limited"
   | "error";
 
-export type TaxDataLastCheck = {
+type TaxDataLastCheck = {
   at: string;
   result: TaxDataCheckResult;
   detail?: string;
 };
 
 /** Where to fetch from (tests point this at a fake). */
-export type TaxDataSource = {
+type TaxDataSource = {
   fetch?: typeof fetch;
   downloadBase?: string;
 };

@@ -87,7 +87,6 @@ describe("savings.plannedTransactions", () => {
     goalId = seedSavingsGoal(db, {
       name: "Vacation Fund",
       targetAmount: "5000",
-      monthlyContribution: "200",
     });
   });
 
@@ -105,10 +104,10 @@ describe("savings.plannedTransactions", () => {
         isRecurring: false,
       });
       expect(result).toBeDefined();
-      expect(result.goalId).toBe(goalId);
-      expect(result.description).toBe("Vacation deposit");
-      expect(result.transactionDate).toBe("2026-06-01");
-      expect(result.isRecurring).toBe(false);
+      expect(result!.goalId).toBe(goalId);
+      expect(result!.description).toBe("Vacation deposit");
+      expect(result!.transactionDate).toBe("2026-06-01");
+      expect(result!.isRecurring).toBe(false);
     });
 
     it("creates a recurring planned transaction with recurrenceMonths", async () => {
@@ -121,8 +120,8 @@ describe("savings.plannedTransactions", () => {
         recurrenceMonths: 12,
       });
       expect(result).toBeDefined();
-      expect(result.isRecurring).toBe(true);
-      expect(result.recurrenceMonths).toBe(12);
+      expect(result!.isRecurring).toBe(true);
+      expect(result!.recurrenceMonths).toBe(12);
     });
 
     it("creates a withdrawal with a negative amount", async () => {
@@ -134,7 +133,7 @@ describe("savings.plannedTransactions", () => {
         isRecurring: false,
       });
       expect(result).toBeDefined();
-      expect(result.amount).toBe("-500");
+      expect(result!.amount).toBe("-500");
     });
 
     it("rejects an invalid date format", async () => {
@@ -187,7 +186,7 @@ describe("savings.plannedTransactions", () => {
         description: "Original description",
         isRecurring: false,
       });
-      txId = tx.id;
+      txId = tx!.id;
     });
 
     it("updates the description and amount", async () => {
@@ -200,9 +199,9 @@ describe("savings.plannedTransactions", () => {
         isRecurring: false,
       });
       expect(result).toBeDefined();
-      expect(result.id).toBe(txId);
-      expect(result.amount).toBe("350");
-      expect(result.description).toBe("Updated description");
+      expect(result!.id).toBe(txId);
+      expect(result!.amount).toBe("350");
+      expect(result!.description).toBe("Updated description");
     });
 
     it("updates recurring flag and recurrenceMonths", async () => {
@@ -215,8 +214,8 @@ describe("savings.plannedTransactions", () => {
         isRecurring: true,
         recurrenceMonths: 6,
       });
-      expect(result.isRecurring).toBe(true);
-      expect(result.recurrenceMonths).toBe(6);
+      expect(result!.isRecurring).toBe(true);
+      expect(result!.recurrenceMonths).toBe(6);
     });
 
     it("updates the transaction date", async () => {
@@ -228,7 +227,7 @@ describe("savings.plannedTransactions", () => {
         description: "Updated description",
         isRecurring: false,
       });
-      expect(result.transactionDate).toBe("2026-10-01");
+      expect(result!.transactionDate).toBe("2026-10-01");
     });
 
     it("rejects update with invalid date format", async () => {
@@ -257,7 +256,7 @@ describe("savings.plannedTransactions", () => {
         isRecurring: false,
       });
       await expect(
-        caller.savings.plannedTransactions.delete({ id: tx.id }),
+        caller.savings.plannedTransactions.delete({ id: tx!.id }),
       ).resolves.toBeDefined();
     });
 
@@ -288,12 +287,10 @@ describe("savings.allocationOverrides", () => {
     goalId = seedSavingsGoal(db, {
       name: "House Fund",
       targetAmount: "50000",
-      monthlyContribution: "1000",
     });
     goalId2 = seedSavingsGoal(db, {
       name: "Car Fund",
       targetAmount: "20000",
-      monthlyContribution: "400",
     });
   });
 
@@ -309,9 +306,9 @@ describe("savings.allocationOverrides", () => {
         amount: 800,
       });
       expect(result).toBeDefined();
-      expect(result.goalId).toBe(goalId);
-      expect(result.monthDate).toBe("2026-04-01");
-      expect(Number(result.amount)).toBe(800);
+      expect(result!.goalId).toBe(goalId);
+      expect(result!.monthDate).toBe("2026-04-01");
+      expect(Number(result!.amount)).toBe(800);
     });
 
     it("updates an existing override for the same goal and month", async () => {
@@ -326,7 +323,7 @@ describe("savings.allocationOverrides", () => {
         amount: 750,
       });
       expect(result).toBeDefined();
-      expect(Number(result.amount)).toBe(750);
+      expect(Number(result!.amount)).toBe(750);
     });
 
     it("inserts separate overrides for different months of the same goal", async () => {
@@ -340,8 +337,8 @@ describe("savings.allocationOverrides", () => {
         monthDate: "2026-07-01",
         amount: 700,
       });
-      expect(r1.monthDate).toBe("2026-06-01");
-      expect(r2.monthDate).toBe("2026-07-01");
+      expect(r1!.monthDate).toBe("2026-06-01");
+      expect(r2!.monthDate).toBe("2026-07-01");
     });
 
     it("inserts overrides for different goals on the same month", async () => {
@@ -355,8 +352,8 @@ describe("savings.allocationOverrides", () => {
         monthDate: "2026-08-01",
         amount: 200,
       });
-      expect(r1.goalId).toBe(goalId);
-      expect(r2.goalId).toBe(goalId2);
+      expect(r1!.goalId).toBe(goalId);
+      expect(r2!.goalId).toBe(goalId2);
     });
 
     it("rejects invalid monthDate format", async () => {
@@ -416,7 +413,7 @@ describe("savings.allocationOverrides", () => {
         monthDate: "2026-10-01",
         amount: 200,
       });
-      expect(Number(r.amount)).toBe(200);
+      expect(Number(r!.amount)).toBe(200);
     });
   });
 
@@ -498,7 +495,6 @@ describe("savings.linkGoalToApi / unlinkGoalFromApi", () => {
     goalId = seedSavingsGoal(db, {
       name: "Sinking Fund",
       targetAmount: "3000",
-      monthlyContribution: "150",
     });
   });
 
@@ -551,7 +547,6 @@ describe("savings.linkGoalToApi / unlinkGoalFromApi", () => {
       const dualGoalId = seedSavingsGoal(db, {
         name: "Dual-Service Goal",
         targetAmount: "5000",
-        monthlyContribution: "200",
       });
       await caller.savings.linkGoalToApi({
         goalId: dualGoalId,
@@ -606,7 +601,6 @@ describe("savings.linkGoalToApi / unlinkGoalFromApi", () => {
       const freshGoalId = seedSavingsGoal(db, {
         name: "Never Linked Goal",
         targetAmount: "1000",
-        monthlyContribution: "50",
       });
       const result = await caller.savings.unlinkGoalFromApi({
         goalId: freshGoalId,
@@ -658,21 +652,21 @@ describe("savings.convertBudgetItemToGoal", () => {
       service: "ynab",
     });
     expect(result).toBeDefined();
-    expect(result.name).toBe("New Car Savings Goal");
+    expect(result!.name).toBe("New Car Savings Goal");
     // The raw (dead) columns on the newly-created goal stay null — the
     // link lives in savings_goal_category_links instead.
-    expect(result.apiCategoryId).toBeNull();
+    expect(result!.apiCategoryId).toBeNull();
 
     const { loadSavingsGoalLinks } =
       await import("@/server/helpers/category-links");
     const rawDb = db as unknown as Parameters<typeof loadSavingsGoalLinks>[0];
     const links = await loadSavingsGoalLinks(
       rawDb,
-      [result.id],
+      [result!.id],
       "ynab",
       "primary",
     );
-    expect(links.get(result.id)).toMatchObject({
+    expect(links.get(result!.id)).toMatchObject({
       categoryId: "ynab-cat-car-001",
       categoryName: "New Car Fund",
     });
@@ -691,19 +685,19 @@ describe("savings.convertBudgetItemToGoal", () => {
       targetMode: "ongoing",
       service: "ynab",
     });
-    expect(result.name).toBe("Rainy Day Goal");
-    expect(result.apiCategoryId).toBeNull();
+    expect(result!.name).toBe("Rainy Day Goal");
+    expect(result!.apiCategoryId).toBeNull();
 
     const { loadSavingsGoalLinks } =
       await import("@/server/helpers/category-links");
     const rawDb = db as unknown as Parameters<typeof loadSavingsGoalLinks>[0];
     const links = await loadSavingsGoalLinks(
       rawDb,
-      [result.id],
+      [result!.id],
       "ynab",
       "primary",
     );
-    expect(links.has(result.id)).toBe(false);
+    expect(links.has(result!.id)).toBe(false);
   });
 
   it("applies the given targetMode to the resulting goal", async () => {
@@ -718,7 +712,7 @@ describe("savings.convertBudgetItemToGoal", () => {
       monthlyContribution: "50",
       targetMode: "ongoing",
     });
-    expect(result.targetMode).toBe("ongoing");
+    expect(result!.targetMode).toBe("ongoing");
   });
 
   it("converts a budget item to a bucket goal", async () => {
@@ -733,7 +727,7 @@ describe("savings.convertBudgetItemToGoal", () => {
       monthlyContribution: "0",
       targetMode: "bucket",
     });
-    expect(result.targetMode).toBe("bucket");
+    expect(result!.targetMode).toBe("bucket");
   });
 
   it("throws NOT_FOUND for a non-existent budget item", async () => {
@@ -794,7 +788,6 @@ describe("savings.convertGoalToBudgetItem", () => {
     const goalId = seedSavingsGoal(db, {
       name: "Convertible Goal",
       targetAmount: "8000",
-      monthlyContribution: "400",
     });
     await caller.savings.linkGoalToApi({
       goalId,
@@ -832,7 +825,6 @@ describe("savings.convertGoalToBudgetItem", () => {
     const goalId = seedSavingsGoal(db, {
       name: "Essential Goal",
       targetAmount: "2000",
-      monthlyContribution: "100",
     });
     const result = await caller.savings.convertGoalToBudgetItem({
       goalId,
@@ -840,7 +832,7 @@ describe("savings.convertGoalToBudgetItem", () => {
       subcategory: "Insurance",
       isEssential: true,
     });
-    expect(result.isEssential).toBe(true);
+    expect(result!.isEssential).toBe(true);
   });
 
   it("throws NOT_FOUND for a non-existent goal", async () => {
@@ -861,7 +853,6 @@ describe("savings.convertGoalToBudgetItem", () => {
       const freshGoalId = seedSavingsGoal(freshCtx.db, {
         name: "Homeless Goal",
         targetAmount: "1000",
-        monthlyContribution: "50",
       });
       await expect(
         freshCtx.caller.savings.convertGoalToBudgetItem({
@@ -881,7 +872,6 @@ describe("savings.convertGoalToBudgetItem", () => {
     const goalId = seedSavingsGoal(db, {
       name: "One-Time Goal",
       targetAmount: "500",
-      monthlyContribution: "50",
     });
     await caller.savings.convertGoalToBudgetItem({
       goalId,
@@ -918,7 +908,6 @@ describe("savings.linkReimbursementCategory", () => {
     efundGoalId = seedSavingsGoal(db, {
       name: "Emergency Fund",
       targetAmount: "15000",
-      monthlyContribution: "500",
       isEmergencyFund: true,
     });
   });
@@ -956,7 +945,6 @@ describe("savings.linkReimbursementCategory", () => {
     const regularGoalId = seedSavingsGoal(db, {
       name: "Regular Goal",
       targetAmount: "5000",
-      monthlyContribution: "200",
       isEmergencyFund: false,
     });
     const result = await caller.savings.linkReimbursementCategory({
@@ -1027,12 +1015,10 @@ describe("savings.transfers", () => {
     fromGoalId = seedSavingsGoal(db, {
       name: "Source Goal",
       targetAmount: "20000",
-      monthlyContribution: "800",
     });
     toGoalId = seedSavingsGoal(db, {
       name: "Destination Goal",
       targetAmount: "10000",
-      monthlyContribution: "300",
     });
   });
 
@@ -1054,8 +1040,8 @@ describe("savings.transfers", () => {
       expect(result.pairId).toMatch(/^xfer_/);
       expect(result.withdrawal).toBeDefined();
       expect(result.deposit).toBeDefined();
-      expect(result.withdrawal.goalId).toBe(fromGoalId);
-      expect(result.deposit.goalId).toBe(toGoalId);
+      expect(result.withdrawal!.goalId).toBe(fromGoalId);
+      expect(result.deposit!.goalId).toBe(toGoalId);
     });
 
     it("withdrawal is negative and deposit is positive for the same amount", async () => {
@@ -1067,8 +1053,8 @@ describe("savings.transfers", () => {
         description: "Large transfer",
         isRecurring: false,
       });
-      expect(Number(result.withdrawal.amount)).toBe(-1000);
-      expect(Number(result.deposit.amount)).toBe(1000);
+      expect(Number(result.withdrawal!.amount)).toBe(-1000);
+      expect(Number(result.deposit!.amount)).toBe(1000);
     });
 
     it("both legs share the same transferPairId", async () => {
@@ -1080,8 +1066,8 @@ describe("savings.transfers", () => {
         description: "Pair check",
         isRecurring: false,
       });
-      expect(result.withdrawal.transferPairId).toBe(result.pairId);
-      expect(result.deposit.transferPairId).toBe(result.pairId);
+      expect(result.withdrawal!.transferPairId).toBe(result.pairId);
+      expect(result.deposit!.transferPairId).toBe(result.pairId);
     });
 
     it("creates a recurring transfer with recurrenceMonths on both legs", async () => {
@@ -1094,10 +1080,10 @@ describe("savings.transfers", () => {
         isRecurring: true,
         recurrenceMonths: 3,
       });
-      expect(result.withdrawal.isRecurring).toBe(true);
-      expect(result.deposit.isRecurring).toBe(true);
-      expect(result.withdrawal.recurrenceMonths).toBe(3);
-      expect(result.deposit.recurrenceMonths).toBe(3);
+      expect(result.withdrawal!.isRecurring).toBe(true);
+      expect(result.deposit!.isRecurring).toBe(true);
+      expect(result.withdrawal!.recurrenceMonths).toBe(3);
+      expect(result.deposit!.recurrenceMonths).toBe(3);
     });
 
     it("rejects a zero amount (must be positive)", async () => {
@@ -1268,7 +1254,6 @@ describe("savings.computeSummary", () => {
     const goalId = seedSavingsGoal(db, {
       name: "Amount Type Check Goal",
       targetAmount: "2000",
-      monthlyContribution: "100",
     });
     await caller.savings.plannedTransactions.create({
       goalId,
@@ -1287,7 +1272,6 @@ describe("savings.computeSummary", () => {
     const goalId = seedSavingsGoal(db, {
       name: "Override Amount Type Goal",
       targetAmount: "1000",
-      monthlyContribution: "50",
     });
     await caller.savings.allocationOverrides.upsert({
       goalId,
@@ -1315,7 +1299,6 @@ describe("savings.computeSummary", () => {
       seedSavingsGoal(freshCtx.db, {
         name: "Emergency Fund",
         targetAmount: "12000",
-        monthlyContribution: "600",
         isEmergencyFund: true,
         targetMonths: 3,
       });
@@ -1342,7 +1325,6 @@ describe("savings.computeSummary", () => {
       const goalId = seedSavingsGoal(freshCtx.db, {
         name: "Goal With TX",
         targetAmount: "5000",
-        monthlyContribution: "250",
       });
       await freshCtx.caller.savings.plannedTransactions.create({
         goalId,
@@ -1353,8 +1335,8 @@ describe("savings.computeSummary", () => {
       });
       const result = await freshCtx.caller.savings.computeSummary();
       expect(result.plannedTransactions.length).toBe(1);
-      expect(result.plannedTransactions[0].goalId).toBe(goalId);
-      expect(result.plannedTransactions[0].description).toBe(
+      expect(result.plannedTransactions[0]!.goalId).toBe(goalId);
+      expect(result.plannedTransactions[0]!.description).toBe(
         "Summary check tx",
       );
     } finally {
@@ -1376,7 +1358,6 @@ describe("savings.computeSummary", () => {
       const goalId = seedSavingsGoal(freshCtx.db, {
         name: "Goal With Override",
         targetAmount: "3000",
-        monthlyContribution: "150",
       });
       await freshCtx.caller.savings.allocationOverrides.upsert({
         goalId,
@@ -1385,8 +1366,8 @@ describe("savings.computeSummary", () => {
       });
       const result = await freshCtx.caller.savings.computeSummary();
       expect(result.allocationOverrides.length).toBe(1);
-      expect(result.allocationOverrides[0].goalId).toBe(goalId);
-      expect(result.allocationOverrides[0].amount).toBe(175);
+      expect(result.allocationOverrides[0]!.goalId).toBe(goalId);
+      expect(result.allocationOverrides[0]!.amount).toBe(175);
     } finally {
       freshCtx.cleanup();
     }

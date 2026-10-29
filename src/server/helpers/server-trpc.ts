@@ -32,7 +32,7 @@ import { appRouter } from "../routers";
  * per-query throttle): prefetchForPage charges the page load once instead,
  * so a page that prefetches a dozen queries costs one request, not twelve.
  */
-export async function createServerHelpers() {
+async function createServerHelpers() {
   const ctx = await createContext();
   return {
     ctx,

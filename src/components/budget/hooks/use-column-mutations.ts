@@ -36,5 +36,3 @@ export function useColumnMutations() {
     updateColumnMonths,
   };
 }
-
-export type ColumnMutations = ReturnType<typeof useColumnMutations>;

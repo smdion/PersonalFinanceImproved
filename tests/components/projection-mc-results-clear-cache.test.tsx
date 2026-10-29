@@ -88,7 +88,7 @@ describe("McResultsSection — Clear Cache client-invalidation", () => {
     // deletes the server-side rows.
     const [, options] = (
       state.clearProjectionCacheMutation.mutate as ReturnType<typeof vi.fn>
-    ).mock.calls[0];
+    ).mock.calls[0]!;
     options.onSuccess({ cleared: 5 });
 
     expect(mockInvalidate).toHaveBeenCalledTimes(1);

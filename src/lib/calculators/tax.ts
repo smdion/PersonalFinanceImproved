@@ -38,14 +38,14 @@ import { formatCurrency } from "../utils/format";
 import { sumBracketTax } from "./tax-brackets";
 
 /** One person's earnings for the year, as the tax sees them (see computeAnnualEarnings). */
-export type TaxEarnings = {
+type TaxEarnings = {
   /** Federal income-tax wages: taxable pay (incl. imputed income) less pre-tax money. */
   federalWages: number;
   /** Social Security / Medicare wages: gross less Section 125 deductions and FICA-exempt payroll contributions, plus FICA-taxable benefits. */
   ficaWages: number;
 };
 
-export type HouseholdTaxInput = {
+type HouseholdTaxInput = {
   people: TaxEarnings[];
   /** Liability brackets (non-2(c)) with the filing status's standard deduction. */
   taxBrackets: TaxBracketInput;
@@ -55,7 +55,7 @@ export type HouseholdTaxInput = {
   medicareLiabilityThreshold: number | null;
 };
 
-export type HouseholdTaxResult = {
+type HouseholdTaxResult = {
   /** Σ federal wages: the AGI the tax is figured on (wages only — no investment income). */
   wageAgi: number;
   taxableIncome: number;

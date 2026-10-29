@@ -19,7 +19,7 @@ export interface SavingsGoalForAllocation {
 /** Minimal shape of a budget.computeActiveSummary-style response needed to
  *  derive a single "monthly spend" figure — weighted-blended when the
  *  profile uses month-weighted modes, otherwise the flat column total. */
-export interface BudgetMonthlyTotalSource {
+interface BudgetMonthlyTotalSource {
   result: { totalMonthly: number } | null;
   columnMonths?: number[] | null;
   weightedAnnualTotal?: number | null;

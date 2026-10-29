@@ -7,6 +7,7 @@
  * $20,000 bonus, a 6% 401(k) matched 100% up to 4% of pay.
  */
 import "./setup-mocks";
+import type { CapPassed } from "@/lib/pure/contribution-caps";
 import { describe, it, expect } from "vitest";
 import {
   aggregateContributionsByCategory,
@@ -44,6 +45,8 @@ function k401(
     employerMaxMatchPct: "0.04",
     isPayrollDeducted: null as boolean | null,
     fromBonus: false as boolean | undefined,
+    // As the IRS-limit cap pass leaves them (none over a limit here).
+    capPassed: true as const,
     ...over,
   };
 }
@@ -209,8 +212,8 @@ describe("employer match — each account's own election", () => {
     const limits = { hsa_individual_limit: 4_300, hsa_family_limit: 8_550 };
     const accounts = buildContribAccounts(
       [
-        k as unknown as ContribRowWithActiveFields,
-        hsa as unknown as ContribRowWithActiveFields,
+        k as unknown as ContribRowWithActiveFields & CapPassed,
+        hsa as unknown as ContribRowWithActiveFields & CapPassed,
       ],
       [],
       SALARY,

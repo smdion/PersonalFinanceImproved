@@ -86,6 +86,7 @@ const holding: Holding = {
   symbolConfirmed: true,
   name: "Example Index Fund",
   shares: 10,
+  avgCostPerShare: null,
   value: 1000,
   valueBasis: "priced",
   valuedOn: "2026-10-10",
@@ -93,6 +94,7 @@ const holding: Holding = {
   factsBasis: "standin",
   factsSeriesName: "Example Registered Fund",
   standInPending: true,
+  standInPreview: null,
 };
 
 describe("AccountLiveSection", () => {

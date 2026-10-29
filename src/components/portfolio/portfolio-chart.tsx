@@ -58,7 +58,7 @@ type ChartPoint = {
 };
 
 /** A day after the latest snapshot: change from it across fully linked accounts. */
-export type LivePoint = { date: string; change: number; accounts: number };
+type LivePoint = { date: string; change: number; accounts: number };
 
 const shortLabel = (date: string) =>
   new Date(date + "T00:00:00").toLocaleDateString("en-US", {

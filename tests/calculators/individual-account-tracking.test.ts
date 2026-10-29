@@ -32,6 +32,28 @@ import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
 import { initRothBasisState } from "@/lib/pure/roth-basis-tracking";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
 
+/** No account allows a penalized draw: what's "still excluded" is all of
+ *  the exposure, and nothing caps what a category can reach. */
+function noAllowance(
+  r: Omit<
+    EligibilityRecord,
+    | "penaltyExposedTradStillExcluded"
+    | "penaltyExposedRothStillExcluded"
+    | "penaltyExposedTotalStillExcluded"
+    | "totalPenaltyExposedStillExcluded"
+    | "reachableByCategory"
+  >,
+): EligibilityRecord {
+  return {
+    ...r,
+    penaltyExposedTradStillExcluded: r.penaltyExposedTrad,
+    penaltyExposedRothStillExcluded: r.penaltyExposedRoth,
+    penaltyExposedTotalStillExcluded: r.penaltyExposedTotal,
+    totalPenaltyExposedStillExcluded: r.totalPenaltyExposed,
+    reachableByCategory: {},
+  };
+}
+
 describe("makeIndKey", () => {
   it("creates composite key from name, category, and taxType", () => {
     const fn = makeIndKey();
@@ -84,7 +106,7 @@ describe("buildSpecToAccountMapping", () => {
   const indKey = makeIndKey();
 
   it("matches spec to account by exact category + owner + taxType", () => {
-    const specs = [
+    const specs: ContributionSpec[] = [
       {
         category: "401k" as AccountCategory,
         name: "Alice 401k",
@@ -123,7 +145,7 @@ describe("buildSpecToAccountMapping", () => {
   });
 
   it("falls back to unowned account when no exact owner match", () => {
-    const specs = [
+    const specs: ContributionSpec[] = [
       {
         category: "ira" as AccountCategory,
         name: "IRA",
@@ -155,7 +177,7 @@ describe("buildSpecToAccountMapping", () => {
   });
 
   it("returns empty mapping when no accounts match", () => {
-    const specs = [
+    const specs: ContributionSpec[] = [
       {
         category: "hsa" as AccountCategory,
         name: "HSA",
@@ -277,7 +299,7 @@ describe("distributeWithdrawals", () => {
     indBal.set(indKey(eligible), 20000);
     indBal.set(indKey(locked), 100000);
 
-    const eligibility: EligibilityRecord = {
+    const eligibility: EligibilityRecord = noAllowance({
       byKey: new Map([
         [
           indKey(eligible),
@@ -288,6 +310,7 @@ describe("distributeWithdrawals", () => {
             penaltyFreeAmount: 20000,
             penaltyExposedAmount: 0,
             reason: "Eligible — Rule of 55 met",
+            allowPenalizedWithdrawals: false,
           },
         ],
         [
@@ -299,6 +322,7 @@ describe("distributeWithdrawals", () => {
             penaltyFreeAmount: 0,
             penaltyExposedAmount: 100000,
             reason: "Locked until Rule of 55 or age 59½",
+            allowPenalizedWithdrawals: false,
           },
         ],
       ]),
@@ -324,7 +348,7 @@ describe("distributeWithdrawals", () => {
         hsa: 0,
         brokerage: 0,
       },
-    };
+    });
 
     // Withdrawal need ($12k) fits entirely within the eligible account's
     // balance ($20k) — the locked account should supply nothing at all.
@@ -426,6 +450,8 @@ describe("distributeWithdrawals", () => {
       penaltyExposedTradStillExcluded: zeroByCat(20000),
       penaltyExposedRothStillExcluded: zeroByCat(),
       penaltyExposedTotalStillExcluded: zeroByCat(20000),
+      totalPenaltyExposedStillExcluded: 20000,
+      reachableByCategory: {}, // no reachability cap
     };
 
     // routeForMode already decided the category needs $15k, which the
@@ -529,6 +555,7 @@ describe("distributeWithdrawals", () => {
       penaltyExposedRothStillExcluded: zeroByCat(),
       penaltyExposedTotalStillExcluded: zeroByCat(50000),
       totalPenaltyExposedStillExcluded: 50000,
+      reachableByCategory: {}, // no reachability cap
     };
 
     // routeForMode already decided the category needs $20k, entirely from
@@ -571,7 +598,7 @@ describe("distributeWithdrawals", () => {
     const indBal = new Map<string, number>();
     indBal.set(indKey(accounts[0]!), 60000);
     indBal.set(indKey(accounts[1]!), 40000);
-    const eligibility: EligibilityRecord = {
+    const eligibility: EligibilityRecord = noAllowance({
       byKey: new Map(),
       totalPenaltyExposed: 0,
       penaltyExposedTrad: {
@@ -595,7 +622,7 @@ describe("distributeWithdrawals", () => {
         hsa: 0,
         brokerage: 0,
       },
-    };
+    });
     const slots: DecumulationSlot[] = [
       makeDecumulationSlot("401k", {
         withdrawal: 10000,
@@ -1719,7 +1746,7 @@ describe("buildIndividualYearBalances", () => {
       [kLocked, 50000],
       [kNoData, 10000],
     ]);
-    const eligibility: EligibilityRecord = {
+    const eligibility: EligibilityRecord = noAllowance({
       byKey: new Map([
         [
           kLocked,
@@ -1730,6 +1757,7 @@ describe("buildIndividualYearBalances", () => {
             penaltyFreeAmount: 0,
             penaltyExposedAmount: 50000,
             reason: "Locked until Rule of 55 or age 59½ (currently 40)",
+            allowPenalizedWithdrawals: false,
           },
         ],
       ]),
@@ -1755,7 +1783,7 @@ describe("buildIndividualYearBalances", () => {
         hsa: 0,
         brokerage: 0,
       },
-    };
+    });
 
     const result = buildIndividualYearBalances(
       accounts,

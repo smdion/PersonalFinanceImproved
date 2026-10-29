@@ -795,7 +795,7 @@ export function lumpSumTotal(lumpSums: LumpSum[]): number {
 // independently drift on color/wording.)
 // ---------------------------------------------------------------------------
 
-export type StrategyEventStyle = {
+type StrategyEventStyle = {
   color: string;
   label: string;
   tooltipText: string;

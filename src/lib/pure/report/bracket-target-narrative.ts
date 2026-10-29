@@ -36,7 +36,7 @@ function findCandidate(
  *  Security already occupying part of that bracket). `standardDeduction`
  *  is the household's filing-status deduction (not stored per-year on the
  *  engine output — callers read it off the resolved settings/config). */
-export type BracketCeilingMathInput = {
+type BracketCeilingMathInput = {
   bracketTraditionalCap: number;
   taxableSS: number;
   standardDeduction?: number | null;
@@ -172,7 +172,7 @@ export function describeBracketTargetChoice(
  *  withdrawal-cost-ranking.ts), computed BEFORE the household's
  *  `discretionaryWithdrawalOrder` decides which drains first and before
  *  either is actually drawn from. */
-export type DiscretionaryCapacityInput = {
+type DiscretionaryCapacityInput = {
   rothBasisCapacity: number;
   /** Withdrawal dollars, not raw LTCG gains room — already adjusted for
    *  brokerage's basis ratio (a $1 gain requires drawing more than $1 when

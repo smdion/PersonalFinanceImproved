@@ -3,6 +3,12 @@ import {
   PERF_CATEGORY_RETIREMENT,
   PERF_CATEGORY_DEFAULT,
 } from "@/lib/config/display-labels";
+import {
+  SK_BUDGET_ACTIVE_COLUMN,
+  SK_EFUND_BUDGET_COLUMN,
+  SK_MILESTONE_CHECKLIST,
+  SK_MILESTONE_CUSTOM_GOALS,
+} from "@/lib/constants/settings-keys";
 
 export const dualIncomeFamilyProfile: DemoProfile = {
   slug: "dual-income-family",
@@ -839,10 +845,10 @@ export const dualIncomeFamilyProfile: DemoProfile = {
   ],
 
   appSettings: [
-    { key: "budget_active_column", value: 1 },
-    { key: "efund_budget_column", value: 0 },
+    { key: SK_BUDGET_ACTIVE_COLUMN, value: 1 },
+    { key: SK_EFUND_BUDGET_COLUMN, value: 0 },
     {
-      key: "milestone_custom_goals",
+      key: SK_MILESTONE_CUSTOM_GOALS,
       value: [
         {
           id: "demo-half-million",
@@ -855,7 +861,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
       ],
     },
     {
-      key: "milestone_checklist",
+      key: SK_MILESTONE_CHECKLIST,
       value: { deductibles: true, will: true },
     },
   ],

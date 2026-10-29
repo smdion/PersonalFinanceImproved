@@ -48,7 +48,6 @@ async function mixFor(fromBonus: boolean, asOf: Date) {
     .get().id;
   const profileId = seedContributionProfile(db, {
     name: "Mix profile",
-    isActive: false,
     contributionActiveFields: {
       contributionAccounts: {
         [String(accountId)]: {

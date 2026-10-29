@@ -21,16 +21,16 @@ import type {
   ApiSyncDirection,
 } from "@/lib/config/enum-values";
 
-export type SavingsGoalLinkRole = "primary" | "reimbursement";
+type SavingsGoalLinkRole = "primary" | "reimbursement";
 
-export type BudgetItemLink = {
+type BudgetItemLink = {
   categoryId: string;
   categoryName: string | null;
   lastSyncedAt: Date | null;
   syncDirection: ApiSyncDirection | null;
 };
 
-export type SavingsGoalLink = {
+type SavingsGoalLink = {
   categoryId: string;
   categoryName: string | null;
   lastSyncedAt: Date | null;

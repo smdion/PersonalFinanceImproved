@@ -64,7 +64,7 @@ import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
 
 /** Input for the convergence estimation. */
-export interface TaxEstimationInput {
+interface TaxEstimationInput {
   /** After-tax spending need (expenses - SS income) */
   afterTaxNeed: number;
   /** Social Security income for this year */
@@ -136,7 +136,7 @@ export interface TaxEstimationInput {
 }
 
 /** Output from the convergence estimation. */
-export interface TaxEstimationResult {
+interface TaxEstimationResult {
   /** Final taxable Social Security amount */
   taxableSS: number;
   /** Estimated tax cost */

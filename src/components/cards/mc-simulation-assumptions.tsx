@@ -63,7 +63,7 @@ export type AssetClassOverride = {
 // SimulationAssumptions
 // ---------------------------------------------------------------------------
 
-export type OutcomeDistribution = {
+type OutcomeDistribution = {
   successRate: number;
   medianEndBalance: number;
   p5EndBalance: number;

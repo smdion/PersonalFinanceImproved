@@ -25,8 +25,10 @@ import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import {
-  SK_ACTIVE_SALARY_PROFILE_ID,
   SK_ACTIVE_CONTRIB_PROFILE_ID,
+  SK_ACTIVE_SALARY_PROFILE_ID,
+  SK_BUDGET_ACTIVE_COLUMN,
+  SK_BUDGET_NAME_COL_WIDTH,
 } from "@/lib/constants/settings-keys";
 import { useCloneProfile } from "@/lib/hooks/use-clone-profile";
 import {
@@ -81,11 +83,11 @@ export function BudgetContent({
   const user = useUser();
   const canEdit = hasPermission(user, "budget");
   const [activeColumn, setActiveColumn] = usePersistedSetting<number>(
-    "budget_active_column",
+    SK_BUDGET_ACTIVE_COLUMN,
     0,
   );
   const [nameColWidth, setNameColWidth] = usePersistedSetting<number>(
-    "budget_name_col_width",
+    SK_BUDGET_NAME_COL_WIDTH,
     192,
   );
 

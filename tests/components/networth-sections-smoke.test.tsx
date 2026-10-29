@@ -37,7 +37,7 @@ let projectedFi: {
   hasProjection: boolean;
   isScenario: boolean;
   fi: { year: number; age: number } | null;
-} = { isLoading: false, hasProjection: false, fi: null };
+} = { isLoading: false, hasProjection: false, isScenario: false, fi: null };
 vi.mock("@/lib/hooks/use-dashboard-projection", () => ({
   useProjectedFiYear: () => projectedFi,
 }));
@@ -137,6 +137,7 @@ describe("FinancialIndependenceCard smoke", () => {
     projectedFi = {
       isLoading: false,
       hasProjection: false,
+      isScenario: false,
       fi: null,
     };
     render(<FinancialIndependenceCard {...baseProps} />);
@@ -147,6 +148,7 @@ describe("FinancialIndependenceCard smoke", () => {
     projectedFi = {
       isLoading: false,
       hasProjection: true,
+      isScenario: false,
       fi: null,
     };
     render(<FinancialIndependenceCard {...baseProps} />);
@@ -159,6 +161,7 @@ describe("FinancialIndependenceCard smoke", () => {
     projectedFi = {
       isLoading: false,
       hasProjection: true,
+      isScenario: false,
       fi: { year: 2045, age: 55 },
     };
     render(<FinancialIndependenceCard {...baseProps} />);
@@ -170,6 +173,7 @@ describe("FinancialIndependenceCard smoke", () => {
     projectedFi = {
       isLoading: false,
       hasProjection: true,
+      isScenario: false,
       fi: null,
     };
     render(<FinancialIndependenceCard {...baseProps} fiProgress={1.1} />);

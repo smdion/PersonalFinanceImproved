@@ -49,7 +49,7 @@ export function resolveReturnRateForAge(
 // Types
 // ---------------------------------------------------------------------------
 
-export interface GrowthInput {
+interface GrowthInput {
   /** Effective return rate for this period (may be pro-rated for year 0). */
   effectiveReturn: number;
   /** Aggregate tax bucket balances (mutated in place). */

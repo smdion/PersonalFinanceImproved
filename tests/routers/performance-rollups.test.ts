@@ -97,11 +97,14 @@ const row = (year: number, category: string) =>
 
 beforeEach(async () => {
   t = await createTestCaller();
-  k401 = seedPerformanceAccount(t.db, { accountType: "401k", name: "K" });
+  k401 = seedPerformanceAccount(t.db, {
+    accountType: "401k",
+    accountLabel: "K",
+  });
   brokerage = seedPerformanceAccount(t.db, {
     accountType: "brokerage",
     parentCategory: "Portfolio",
-    name: "B",
+    accountLabel: "B",
   });
 });
 afterEach(() => t.cleanup());

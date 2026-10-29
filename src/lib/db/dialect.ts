@@ -2,7 +2,7 @@
 // DATABASE_URL present and starts with postgres:// or postgresql:// → PostgreSQL.
 // Absent or anything else → SQLite (default).
 
-export type Dialect = "postgresql" | "sqlite";
+type Dialect = "postgresql" | "sqlite";
 
 export function getDialect(): Dialect {
   const url = process.env.DATABASE_URL;
@@ -17,8 +17,4 @@ export function getDialect(): Dialect {
 
 export function isPostgres(): boolean {
   return getDialect() === "postgresql";
-}
-
-export function isSQLite(): boolean {
-  return getDialect() === "sqlite";
 }

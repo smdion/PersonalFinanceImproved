@@ -47,10 +47,6 @@ export const INTEGRATIONS_SECTIONS = [
   { key: "taxData", label: "Tax data updates" },
   { key: "syncBehavior", label: "Sync Behavior" },
 ] as const;
-
-export type SettingsTabKey =
-  | (typeof SETTINGS_TABS)[number]["key"]
-  | (typeof ADMIN_SETTINGS_TABS)[number]["key"];
 export type GeneralSectionKey = (typeof GENERAL_SECTIONS)[number]["key"];
 export type TaxDataSectionKey = (typeof TAX_DATA_SECTIONS)[number]["key"];
 export type IntegrationsSectionKey =
