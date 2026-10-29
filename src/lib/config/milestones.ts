@@ -256,6 +256,20 @@ export type CustomGoalMetric = keyof typeof CUSTOM_GOAL_METRICS;
 export const MAX_CUSTOM_GOALS = 12;
 
 /**
+ * Money Guy's 60/40 rule for raises: at least 60% of any income boost goes
+ * to saving and investing, at most 40% to lifestyle. Judged on salary (a
+ * bonus swings year to year) and only for a raise of at least
+ * `minRaiseShare` of last year's salary, so a rounding-sized change isn't
+ * judged.
+ */
+export const RAISE_RULE = {
+  saveShare: 0.6,
+  minRaiseShare: 0.01,
+  source:
+    "https://moneyguy.com/episode/the-1m-mistake-almost-everyone-makes-in-their-30s/",
+} as const;
+
+/**
  * Money Guy's high-income line — at or above it the employer match stops
  * counting toward the 25% savings rate. Money Guy names $200k for a
  * household; $100k for one filer is the owner's reading of the same line
@@ -475,6 +489,16 @@ const MILESTONES = [
     rule: `Save and invest 25% of gross pay — retirement accounts, HSA and brokerage alike (a rate that rounds to 25% counts). The employer match counts until household pay reaches the high-income line: $${HIGH_INCOME_LINE.married / 1000}k married filing jointly, $${HIGH_INCOME_LINE.single / 1000}k otherwise, or your own (set beside the match switch).`,
     adaptedNote:
       "Money set aside for a specific future cost (college, the next car) is step 8, not part of the 25%. Starting later needs more: 6% from age 20, 10% from 25, 17% from 30, about 25% from 35.",
+    focus: { topic: "savingsRate" },
+  },
+  {
+    id: "saveRaises",
+    group: "saving",
+    source: "moneyGuy",
+    title: "Save your raises (60/40)",
+    rule: "Put at least 60% of each raise toward saving and investing; let the other 40% raise your lifestyle.",
+    adaptedNote:
+      "Ledgr compares finalized years: the change in what you contributed yourself (every account, employer money left out) against the change in household salary. Bonuses aren't judged. A lump deposit (a house sale, an inheritance) counts as saving, so a year with one can look better than it was; a new job mid-year shows up across two years.",
     focus: { topic: "savingsRate" },
   },
   {

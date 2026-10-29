@@ -21,6 +21,7 @@ import {
   type SavingsTargetSource,
 } from "@/lib/config/milestones";
 import type { HouseholdSavings } from "@/lib/pure/contributions";
+import type { RaiseYear } from "@/lib/pure/raise-history";
 import type { CompositionBucket, DebtKind } from "@/lib/config/enum-values";
 
 // ---------------------------------------------------------------------------
@@ -280,6 +281,9 @@ export type MilestoneInput = {
       switchable?: boolean;
     }[];
   } | null;
+  /** Each judged raise, oldest first (lib/pure/raise-history.ts); null/
+   *  absent when there's no salary or finalized contribution history. */
+  raises?: RaiseYear[] | null;
   /** The Liabilities debts list; null/absent before it's loaded. */
   debts?: MilestoneDebt[] | null;
   /** The other-debt figures that aren't itemized: the typed lump and the

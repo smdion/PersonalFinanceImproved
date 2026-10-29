@@ -4,6 +4,7 @@
  * summaries) into the MilestoneInput that evaluateMilestones() judges.
  * Split from milestones.ts, which holds the rules themselves.
  */
+import type { RaiseYear } from "@/lib/pure/raise-history";
 import {
   getAccountTypeConfig,
   getAllCategories,
@@ -460,6 +461,7 @@ export function buildMilestoneInput(raw: {
     savingsTargetSource: SavingsTargetSource;
     debts?: MilestoneDebt[] | null;
     otherDebt?: { manual: number; creditCardMapped: number } | null;
+    raises?: RaiseYear[] | null;
   };
   contributions: {
     people: (Omit<SavingsRatePerson, "accountTypes"> & {
@@ -650,6 +652,7 @@ export function buildMilestoneInput(raw: {
     customGoals: inputs.customGoals,
     debts: inputs.debts ?? null,
     otherDebt: inputs.otherDebt ?? null,
+    raises: inputs.raises ?? null,
     checkpointSource: inputs.checkpointSource,
     savingsTargetSource: inputs.savingsTargetSource,
     megaBackdoor: mega,

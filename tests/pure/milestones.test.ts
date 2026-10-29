@@ -2042,3 +2042,48 @@ describe("FOO steps 3 and 9 with the debts list", () => {
     });
   });
 });
+
+describe("save your raises (60/40)", () => {
+  const raise = (year: number, share: number, estimated = false) => ({
+    year,
+    raise: 10_000,
+    savingChange: share * 10_000,
+    share,
+    estimated,
+  });
+
+  it("judged on the latest raise, with every raise counted in the note", () => {
+    const r = byId(
+      run({ raises: [raise(2023, 0.8), raise(2024, 0.6)] }),
+      "saveRaises",
+    );
+    expect(r.status).toBe("reached");
+    expect(r.reachedYear).toBe(2024);
+    expect(r.headline).toBe("Saved 60% of the 2024 raise");
+    expect(r.note).toBe("2 of 2 raises at 60% or more");
+    expect(r.impact).toBeNull();
+  });
+
+  it("behind: the yearly amount that closes the gap", () => {
+    const r = byId(run({ raises: [raise(2024, 0.2, true)] }), "saveRaises");
+    expect(r.status).toBe("behind");
+    expect(r.nextStep).toBe(
+      "Contribute $4,000 more a year to save 60% of the 2024 raise",
+    );
+    expect(r.impact).toEqual({ kind: "perYear", amount: 4_000 });
+    expect(r.note).toContain("contributions still estimated");
+  });
+
+  it("saving less after a raise says how much less", () => {
+    const r = byId(run({ raises: [raise(2024, -0.5)] }), "saveRaises");
+    expect(r.headline).toBe("Saved $5,000 less after the 2024 raise");
+    expect(r.progress).toBe(0);
+  });
+
+  it("not judged without history or without a raise", () => {
+    expect(byId(run({ raises: null }), "saveRaises").status).toBe("unknown");
+    expect(byId(run({ raises: [] }), "saveRaises").headline).toBe(
+      "No raise to judge yet",
+    );
+  });
+});

@@ -2,6 +2,7 @@
 
 /** Milestones page body: what's next and what's been reached, the FOO
  *  ladder, then every milestone by group. */
+import { RaiseHistoryTable } from "@/components/milestones/raise-history-table";
 import { useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -164,6 +165,8 @@ export function MilestonesContent() {
                         highIncome={input.savings.highIncome}
                         highIncomeThreshold={input.savings.highIncomeThreshold}
                       />
+                    ) : r.id === "saveRaises" && input.raises ? (
+                      <RaiseHistoryTable raises={input.raises} />
                     ) : undefined
                   }
                   extra={

@@ -35,6 +35,7 @@ import {
   GOAL_HORIZON_YEARS,
   PF_FUND_EXPENSE_RATIO,
   PF_RETIREMENT_RATE,
+  RAISE_RULE,
   type BuiltInMilestoneId,
   type CheckpointSource,
   type CustomGoalMetric,
@@ -61,6 +62,7 @@ import {
 } from "@/lib/utils/format";
 import { calculateLoanMonthlyPayment, safeDivide } from "@/lib/utils/math";
 import { isHighInterestDebt } from "@/lib/config/debts";
+import { meetsRaiseRule } from "@/lib/pure/raise-history";
 import type {
   CustomGoal,
   MatchShortfall,
@@ -694,6 +696,45 @@ function savingsRate(input: MilestoneInput): MilestoneResult {
           return first ? ` — ${first}` : "";
         })()}`,
     impact: met ? null : { kind: "perYear", amount: gapPerMonth * 12 },
+  });
+}
+
+/** Money Guy's 60/40: judged on the latest raise; the page lists them all. */
+function saveRaises(input: MilestoneInput): MilestoneResult {
+  const raises = input.raises;
+  if (!raises || raises.length === 0) {
+    return result("saveRaises", {
+      status: "unknown",
+      headline: raises
+        ? "No raise to judge yet"
+        : "Needs salary history and finalized Performance years",
+    });
+  }
+  const latest = raises[raises.length - 1]!;
+  const met = meetsRaiseRule(latest);
+  const metCount = raises.filter(meetsRaiseRule).length;
+  const shortfall = RAISE_RULE.saveShare * latest.raise - latest.savingChange;
+  return result("saveRaises", {
+    status: met ? "reached" : "behind",
+    value: { kind: "percent", amount: latest.share },
+    target: { kind: "percent", amount: RAISE_RULE.saveShare },
+    progress: Math.min(1, Math.max(0, latest.share / RAISE_RULE.saveShare)),
+    headline:
+      latest.savingChange < 0
+        ? `Saved ${formatCurrency(-latest.savingChange, 0)} less after the ${latest.year} raise`
+        : `Saved ${formatPercent(latest.share, 0)} of the ${latest.year} raise`,
+    short: `${formatPercent(latest.share, 0)} of the ${latest.year} raise`,
+    note: [
+      `${metCount} of ${raises.length} raise${raises.length === 1 ? "" : "s"} at ${formatPercent(RAISE_RULE.saveShare, 0)} or more`,
+      latest.estimated ? "contributions still estimated" : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    reachedYear: met ? latest.year : null,
+    nextStep: met
+      ? null
+      : `Contribute ${formatCurrency(shortfall, 0)} more a year to save ${formatPercent(RAISE_RULE.saveShare, 0)} of the ${latest.year} raise`,
+    impact: met ? null : { kind: "perYear", amount: shortfall },
   });
 }
 
@@ -1685,6 +1726,7 @@ export function evaluateMilestones(input: MilestoneInput): MilestoneResult[] {
     input.savingsTargetSource === "personalFinance"
       ? pfRetirementRate(input)
       : savings,
+    saveRaises(input),
     megaBackdoor(input),
     goalHorizon(input),
     efund,
