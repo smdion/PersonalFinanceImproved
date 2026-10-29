@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
 import {
   taxGrowthYears,
   taxGrowthFactor,
@@ -385,7 +386,8 @@ describe("end-to-end: bracketTraditionalCap actually grows through the real engi
     // threshold)... asserted structurally instead of hand-deriving twice:
     // must be IDENTICAL across both years below when taxDataYear is unset.
     const laterYear = result.projectionByYear.find(
-      (y) => y.phase === "decumulation" && y.year === firstDecumYear.year + 10,
+      (y): y is EngineDecumulationYear =>
+        y.phase === "decumulation" && y.year === firstDecumYear.year + 10,
     )!;
     expect(laterYear.bracketTraditionalCap).toBeCloseTo(
       firstDecumYear.bracketTraditionalCap!,
@@ -416,7 +418,8 @@ describe("end-to-end: bracketTraditionalCap actually grows through the real engi
     expect(grownYear.bracketTraditionalCap).toBeCloseTo(expectedCap, 0);
     // And it keeps growing further into the projection, not just a one-time bump.
     const laterGrownYear = grownResult.projectionByYear.find(
-      (y) => y.phase === "decumulation" && y.year === grownYear.year + 5,
+      (y): y is EngineDecumulationYear =>
+        y.phase === "decumulation" && y.year === grownYear.year + 5,
     )!;
     expect(laterGrownYear.bracketTraditionalCap!).toBeGreaterThan(
       grownYear.bracketTraditionalCap!,
@@ -863,7 +866,8 @@ describe("end-to-end: IRMAA brackets grow through both the check and Roth-conver
   it("checkIrmaa's irmaaCost reflects the grown (current-year) threshold, not the frozen one", () => {
     const r = calculateProjection(makeIrmaaHouseholdInput());
     const y2028 = r.projectionByYear.find(
-      (y) => y.phase === "decumulation" && y.year === 2028,
+      (y): y is EngineDecumulationYear =>
+        y.phase === "decumulation" && y.year === 2028,
     )!;
     // Verified by mutation: with grownIrmaaBracketsForCheck correctly
     // wired, this household's MAGI clears the (grown) first IRMAA tier by
@@ -875,7 +879,8 @@ describe("end-to-end: IRMAA brackets grow through both the check and Roth-conver
   it("performRothConversion's IRMAA-aware cap uses the grown (year+2) threshold, materially changing rothConversionAmount", () => {
     const r = calculateProjection(makeIrmaaHouseholdInput());
     const y2026 = r.projectionByYear.find(
-      (y) => y.phase === "decumulation" && y.year === 2026,
+      (y): y is EngineDecumulationYear =>
+        y.phase === "decumulation" && y.year === 2026,
     )!;
     // Verified by mutation: with grownIrmaaBracketsForCap correctly wired,
     // the cap allows $3,312.86 of conversion this year. Omitting the
@@ -1027,10 +1032,12 @@ describe("end-to-end: ACA subsidy cliff grows through checkAca", () => {
   it("acaSubsidyPreserved reflects the grown (current-year) cliff, staying true through 2029 instead of flipping false by 2028", () => {
     const r = calculateProjection(makeAcaHouseholdInput());
     const y2028 = r.projectionByYear.find(
-      (y) => y.phase === "decumulation" && y.year === 2028,
+      (y): y is EngineDecumulationYear =>
+        y.phase === "decumulation" && y.year === 2028,
     )!;
     const y2029 = r.projectionByYear.find(
-      (y) => y.phase === "decumulation" && y.year === 2029,
+      (y): y is EngineDecumulationYear =>
+        y.phase === "decumulation" && y.year === 2029,
     )!;
     expect(y2028.acaSubsidyPreserved).toBe(true);
     expect(y2029.acaSubsidyPreserved).toBe(true);
@@ -1043,13 +1050,9 @@ describe("taxTableYears — each table grows from its own year", () => {
     expect(
       taxTableYears({
         taxDataYear: 2027,
-        taxBrackets: [],
         taxBracketsYear: 2026,
-        ltcgBrackets: {},
         ltcgBracketsYear: 2026,
-        irmaaBrackets: {},
         irmaaBracketsYear: 2025,
-        fplByHousehold: {},
         fplYear: 2027,
       }),
     ).toEqual({

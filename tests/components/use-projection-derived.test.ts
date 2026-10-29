@@ -8,6 +8,7 @@
  * fields is read by this hook.
  */
 import { describe, it, expect } from "vitest";
+import type { AccountCategory } from "@/lib/calculators/types";
 import { renderHook } from "@testing-library/react";
 import type {
   EngineYearProjection,
@@ -32,7 +33,7 @@ async function importHook() {
 function makeIndividualAccount(
   overrides: Partial<{
     name: string;
-    category: string;
+    category: AccountCategory;
     taxType: string;
     parentCategory: string;
     balance: number;
@@ -45,7 +46,7 @@ function makeIndividualAccount(
 ) {
   return {
     name: "401k A",
-    category: "401k",
+    category: "401k" as AccountCategory,
     taxType: "preTax",
     parentCategory: "Retirement",
     balance: 10000,

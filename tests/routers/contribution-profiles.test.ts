@@ -626,7 +626,6 @@ describe("contributionProfiles coverage", () => {
         const jobId = seedJob(db, personId, { employerName: "Fidelity" });
         // Create a perf account that matches by type + person
         seedPerformanceAccount(db, {
-          accountLabel: "401k",
           institution: "Fidelity",
           accountType: "401k",
           accountLabel: "Alex 401k",
@@ -663,7 +662,6 @@ describe("contributionProfiles coverage", () => {
         const personId = await seedPerson(db, "Alex");
         const jobId = seedJob(db, personId, { employerName: "TechCorp" });
         const perfId = seedPerformanceAccount(db, {
-          accountLabel: "Linked 401k",
           institution: "Vanguard",
           accountType: "401k",
           accountLabel: "Vanguard 401k",
@@ -1317,7 +1315,6 @@ describe("contributionProfiles coverage", () => {
         seedJob(db, personId);
         // Perf account has a DIFFERENT ownerPersonId but label contains the person name
         seedPerformanceAccount(db, {
-          accountLabel: "401k",
           institution: "Fidelity",
           accountType: "401k",
           accountLabel: "Jordan Old 401k",

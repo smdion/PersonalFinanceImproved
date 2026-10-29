@@ -11,6 +11,8 @@
  *   - allocationOverrides.upsertMonth / upsertMonthRange / batchUpsert
  */
 import "./setup-mocks";
+import type Database from "better-sqlite3";
+import type { SalaryProfileEntry } from "@/server/helpers/salary";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import { SQLiteSyncDialect } from "drizzle-orm/sqlite-core";
 import { and, eq, type SQL } from "drizzle-orm";
@@ -72,9 +74,7 @@ function linkGoal(
 /** Patch rawDb.execute so computeSummary's raw balance query works in SQLite. */
 function patchExecute(
   rawDb: Record<string, unknown>,
-  sqliteClient: {
-    prepare: (sql: string) => { all: (...params: unknown[]) => unknown[] };
-  },
+  sqliteClient: Database.Database,
 ): void {
   const dialect = new SQLiteSyncDialect();
   rawDb["execute"] = (sqlObj: SQL) => {
@@ -1616,7 +1616,6 @@ describe("savings.extraPaycheckRouting", () => {
           splits: [{ goalId, pct: 100 }],
         },
       ],
-      baseNetPayPerCheck: 3000,
     });
     expect(result).toEqual({ ok: true });
   });
@@ -1632,7 +1631,6 @@ describe("savings.extraPaycheckRouting", () => {
             splits: [{ goalId, pct: 50 }],
           },
         ],
-        baseNetPayPerCheck: 3000,
       }),
     ).rejects.toThrow();
   });
@@ -1650,12 +1648,14 @@ describe("savings.extraPaycheckRouting", () => {
     // paycheck-input construction with paycheck.ts router's equivalent.
     // seedJob's defaults: $120,000 salary, biweekly, MFJ, no
     // deductions/contributions, bonusPercent 0.
-    await caller.savings.extraPaycheckRouting.save({
+    // A client sending its own figure (not in the input type any more) —
+    // deliberately wrong, to prove the server ignores it and recomputes.
+    const withClientFigure = {
       jobId,
       rules: [{ from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] }],
-      // Deliberately wrong — proves the server ignores this and recomputes.
       baseNetPayPerCheck: 999999,
-    });
+    };
+    await caller.savings.extraPaycheckRouting.save(withClientFigure);
     const routing = getRouting(jobId) as { baseNetPayPerCheck?: number } | null;
     const baseNetPayPerCheck = routing?.baseNetPayPerCheck;
     expect(baseNetPayPerCheck).not.toBe(999999);
@@ -1720,7 +1720,7 @@ describe("savings.extraPaycheckRouting", () => {
       .get()!;
     const salaries = activeSalaryProfile.salaries as Record<
       string,
-      Record<string, unknown>
+      SalaryProfileEntry
     >;
     await db
       .update(sqliteSchemaTables.salaryProfiles)
@@ -1784,7 +1784,7 @@ describe("savings.extraPaycheckRouting", () => {
       .get()!;
     const salaries = activeSalaryProfile.salaries as Record<
       string,
-      Record<string, unknown>
+      SalaryProfileEntry
     >;
 
     // A real correction (not a what-if) — increasing withholding on the
