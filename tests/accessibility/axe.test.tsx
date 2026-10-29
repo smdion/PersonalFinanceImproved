@@ -92,7 +92,7 @@ describe("Accessibility — axe-core", () => {
 
   it("Collapsible Card renders without violations", async () => {
     const { container } = render(
-      <Card title="Collapsible" collapsible defaultOpen={true}>
+      <Card title="Collapsible" isCollapsible defaultOpen={true}>
         <p>Expandable content</p>
       </Card>,
     );
@@ -105,7 +105,7 @@ describe("Accessibility — axe-core", () => {
       <Metric
         value="$12,345"
         label="Net Worth"
-        trend={{ value: "+3.2%", positive: true }}
+        trend={{ value: "+3.2%", isPositive: true }}
       />,
     );
     const violations = await getViolations(container);

@@ -321,9 +321,6 @@ describe("YnabClient", () => {
         accountId: "a",
         date: "2026-01-20",
         amount: -10,
-        payeeName: null,
-        categoryId: null,
-        memo: null,
         cleared: false,
       });
       const body = JSON.parse(mockFetch.mock.calls[0]![1].body);

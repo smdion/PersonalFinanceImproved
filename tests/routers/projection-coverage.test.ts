@@ -139,8 +139,6 @@ function seedFullProjectionData(
   db.insert(schema.contributionAccounts)
     .values({
       accountType: "401k",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
       taxTreatment: "pre_tax",
       employerMatchType: "none",
       isActive: true,
@@ -579,8 +577,6 @@ describe("projection router — computeMonteCarloProjection", () => {
       db.insert(schema.contributionAccounts)
         .values({
           accountType: "brokerage",
-          contributionMethod: "percent_of_salary",
-          contributionValue: "0.05",
           taxTreatment: "after_tax",
           employerMatchType: "none",
           isActive: true,
@@ -1480,7 +1476,7 @@ describe("projection router — computeProjection edge cases", () => {
         .insert(schema.contributionAccounts)
         .values({
           accountType: "401k",
-          taxTreatment: "roth",
+          taxTreatment: "tax_free",
           employerMatchType: "none",
           isActive: true,
           personId,
@@ -1588,7 +1584,6 @@ describe("projection router — MC edge cases", () => {
         preset: "custom",
         seed: 42,
         decumulationDefaults: {
-          withdrawalRate: 0.035,
           withdrawalRoutingMode: "waterfall",
         },
       });

@@ -66,8 +66,6 @@ function seedTaxOptHousehold(db: BetterSQLite3Database<typeof sqliteSchema>) {
   db.insert(schema.contributionAccounts)
     .values({
       accountType: "401k",
-      contributionMethod: "percent_of_salary",
-      contributionValue: "0.10",
       taxTreatment: "pre_tax",
       employerMatchType: "none",
       isActive: true,

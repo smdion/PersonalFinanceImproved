@@ -497,7 +497,7 @@ describe("contributionProfiles coverage", () => {
           personId,
           contributionMethod: "percent_of_salary",
           contributionValue: "0.10",
-          employerMatchType: "percent",
+          employerMatchType: "percent_of_contribution",
           employerMatchValue: "0.50",
           employerMaxMatchPct: "0.06",
         });
@@ -592,7 +592,7 @@ describe("contributionProfiles coverage", () => {
           personId,
           jobId,
           accountType: "401k",
-          taxTreatment: "roth",
+          taxTreatment: "tax_free",
           employerMatchType: "none",
           label: null,
         });
@@ -1170,7 +1170,7 @@ describe("contributionProfiles coverage", () => {
         seedJob(db, personId, { annualSalary: "100000" });
         const acctId = seedContribAccount(db, {
           personId,
-          employerMatchType: "percent",
+          employerMatchType: "percent_of_contribution",
           employerMatchValue: "0.50",
           employerMaxMatchPct: "0.06",
         });
@@ -1276,7 +1276,7 @@ describe("contributionProfiles coverage", () => {
           personId,
           accountType: "brokerage",
           parentCategory: "Portfolio",
-          taxTreatment: "taxable",
+          taxTreatment: "after_tax",
           contributionMethod: "fixed_amount",
           contributionValue: "500",
           employerMatchType: "none",

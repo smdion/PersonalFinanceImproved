@@ -67,7 +67,7 @@ describe("engine input snapshot guard", () => {
         accountType: "401k",
         parentCategory: "Retirement",
         taxTreatment: "pre_tax",
-        employerMatchType: "percent_of_contrib",
+        employerMatchType: "percent_of_contribution",
         employerMatchValue: "0.50",
         employerMaxMatchPct: "0.06",
         isActive: true,

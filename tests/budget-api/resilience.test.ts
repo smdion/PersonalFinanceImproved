@@ -301,6 +301,7 @@ describe("detectDrift", () => {
     id,
     name,
     balance: 1000,
+    clearedBalance: 1000,
     onBudget: true,
     closed: false,
     type: "checking",

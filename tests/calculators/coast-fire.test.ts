@@ -6,6 +6,7 @@
  */
 import { withConsistentStart } from "./fixtures/engine-fixtures";
 import { describe, it, expect } from "vitest";
+import type { EngineAccumulationYear } from "@/lib/calculators/types";
 import {
   buildCoastFireProfileSwitches,
   findCoastFireAge,
@@ -996,7 +997,7 @@ describe("findCoastFireAge — contributions stop on the per-account (spec) path
       profileSwitches: buildCoastFireProfileSwitches(input, input.currentAge),
     });
     for (const y of result.projectionByYear.filter(
-      (r) =>
+      (r): r is EngineAccumulationYear =>
         r.phase === "accumulation" && r.year > input.asOfDate.getFullYear(),
     ))
       expect(y.totalEmployee + y.totalEmployer, `${y.year}`).toBe(0);

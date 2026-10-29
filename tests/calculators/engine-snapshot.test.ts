@@ -581,7 +581,6 @@ describe("engine snapshot parity", () => {
       decumulationOverrides: [
         {
           year: 2060,
-          withdrawalRate: 0.03,
           notes: "Conservative early retirement",
         },
         { year: 2070, reset: true, notes: "Revert to defaults" },
@@ -1093,12 +1092,6 @@ describe("engine snapshot parity", () => {
       retirementAge: 65,
       projectionEndAge: 90,
       currentSalary: 160000,
-      catchupLimits: {
-        "401k": 7500,
-        ira: 1000,
-        hsa: 1000,
-        "401k_super": 11250,
-      },
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
@@ -2244,10 +2237,9 @@ describe("engine snapshot parity", () => {
       decumulationOverrides: [
         {
           year: 2040,
-          withdrawalRate: 0.035,
           notes: "Conservative early retirement",
         },
-        { year: 2050, withdrawalRate: 0.045, notes: "Loosen up at 70" },
+        { year: 2050, notes: "Loosen up at 70" },
       ],
     });
     const result = calculateProjection(input);
@@ -2382,12 +2374,6 @@ describe("engine snapshot parity", () => {
       retirementAge: 67,
       projectionEndAge: 90,
       currentSalary: 180000,
-      catchupLimits: {
-        "401k": 7500,
-        ira: 1000,
-        hsa: 1000,
-        "401k_super": 11250,
-      },
     });
     const result = calculateProjection(input);
     const metrics = extractMetrics(result);
