@@ -485,6 +485,7 @@ describe("resolveProfile", () => {
         additionalFedWithholding: 0,
         bonusMonth: null,
         bonusDayOfMonth: null,
+        extraPaycheckRouting: null,
       },
     ],
   ]);
@@ -517,6 +518,9 @@ describe("resolveProfile", () => {
     payPeriod: "biweekly",
     endDate: null,
     employerName: "OldCorp",
+    title: null,
+    startDate: "2020-01-01",
+    isSpeculative: false,
   } as (typeof import("@/lib/db/schema").jobs)["$inferSelect"];
 
   const liveJobSalary = {

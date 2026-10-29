@@ -17,6 +17,8 @@
  */
 import "./setup-mocks";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
+import type { SalaryProfileEntry } from "@/server/helpers/salary";
 import { createTestDb, type TestDbContext } from "./db-harness";
 import { materializeBudgetIncomeAdjustments } from "@/server/helpers/budget-income-materializer";
 import { eq } from "drizzle-orm";
@@ -114,19 +116,19 @@ describe("materializeBudgetIncomeAdjustments", () => {
   });
 
   /** Patch job 1's extraPaycheckRouting in the active Salary Profile entry. */
-  function updateRouting(routing: Record<string, unknown> | null): void {
+  function updateRouting(routing: ExtraPaycheckRoutingData | null): void {
     const [row] = ctx.db
       .select()
       .from(ctx.schema.salaryProfiles)
       .where(eq(ctx.schema.salaryProfiles.id, salaryProfileId))
       .all();
-    const salaries = row!.salaries as Record<string, Record<string, unknown>>;
+    const salaries = row!.salaries as Record<string, SalaryProfileEntry>;
     ctx.db
       .update(ctx.schema.salaryProfiles)
       .set({
         salaries: {
           ...salaries,
-          "1": { ...salaries["1"], extraPaycheckRouting: routing },
+          "1": { ...salaries["1"]!, extraPaycheckRouting: routing },
         },
       })
       .where(eq(ctx.schema.salaryProfiles.id, salaryProfileId))

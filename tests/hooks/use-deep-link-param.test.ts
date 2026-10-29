@@ -26,7 +26,7 @@ describe("useDeepLinkParam", () => {
     search = new URLSearchParams("tab=integrations&section=sec");
     const save = vi.fn();
     const { result } = renderHook(() =>
-      useDeepLinkParam("tab", KEYS, ["general", save]),
+      useDeepLinkParam<string>("tab", KEYS, ["general", save]),
     );
     expect(result.current[0]).toBe("integrations");
     expect(save).not.toHaveBeenCalled();
@@ -44,7 +44,7 @@ describe("useDeepLinkParam", () => {
     search = new URLSearchParams("tab=integrations&section=sec&x=1");
     const save = vi.fn();
     const { result } = renderHook(() =>
-      useDeepLinkParam("tab", KEYS, ["general", save], ["section"]),
+      useDeepLinkParam<string>("tab", KEYS, ["general", save], ["section"]),
     );
     act(() => result.current[1]("taxdata"));
     expect(replace).toHaveBeenCalledWith("/settings?x=1", { scroll: false });
@@ -55,7 +55,7 @@ describe("useDeepLinkParam", () => {
     search = new URLSearchParams();
     const save = vi.fn();
     const { result } = renderHook(() =>
-      useDeepLinkParam("tab", KEYS, ["general", save]),
+      useDeepLinkParam<string>("tab", KEYS, ["general", save]),
     );
     act(() => result.current[1]("taxdata"));
     expect(replace).not.toHaveBeenCalled();

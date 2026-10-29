@@ -18,6 +18,8 @@ const mix = new Map<number, AccountContributionMix>([
     1,
     {
       ...m(3000, 9000),
+      remainingThisYear: 0, // mixFor reads the split only
+      perContribution: 0,
       byPerson: new Map([
         [10, m(1000, 6000)],
         [20, m(2000, 3000)],

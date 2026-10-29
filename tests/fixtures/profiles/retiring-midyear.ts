@@ -62,14 +62,20 @@ export function makeRetiringMidyearInput(
       contributionRate: 0.1,
       routingMode: "waterfall",
       accountOrder: ["401k"],
-      accountSplits: { "401k": 1.0 },
+      accountSplits: { "401k": 1.0, "403b": 0, hsa: 0, ira: 0, brokerage: 0 },
       taxSplits: { "401k": 1.0 },
     },
     decumulationDefaults: {
       withdrawalRate: 0.04,
       withdrawalRoutingMode: "waterfall",
       withdrawalOrder: ["401k"],
-      withdrawalSplits: { "401k": 1.0 },
+      withdrawalSplits: {
+        "401k": 1.0,
+        "403b": 0,
+        hsa: 0,
+        ira: 0,
+        brokerage: 0,
+      },
       withdrawalTaxPreference: { "401k": "traditional" },
       distributionTaxRates: {
         ...shippedTaxTables(),

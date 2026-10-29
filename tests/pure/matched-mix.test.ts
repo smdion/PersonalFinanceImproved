@@ -206,7 +206,10 @@ describe("matchedMixLevels", () => {
       const r = matchedMixLevels({
         ...split,
         // The pooled first day (Mar 2) has only part A's holdings.
-        observedDaily: new Map([
+        observedDaily: new Map<
+          number,
+          { day: string; weights: Record<number, number> }[]
+        >([
           [
             1,
             [

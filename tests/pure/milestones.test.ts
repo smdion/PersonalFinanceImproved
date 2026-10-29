@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
+  DEFAULT_CHECKPOINT_SOURCE,
+  DEFAULT_SAVINGS_TARGET_SOURCE,
+} from "@/lib/config/milestones";
+import {
   currentFooStep,
   evaluateMilestones,
   firstReachedYear,
@@ -1205,6 +1209,8 @@ describe("input builders", () => {
     };
     const base = {
       inputs: {
+        checkpointSource: DEFAULT_CHECKPOINT_SOURCE,
+        savingsTargetSource: DEFAULT_SAVINGS_TARGET_SOURCE,
         asOfYear: 2026,
         years: [makeYear({ cash: 12_000 })],
         fiTarget: 1_000_000,

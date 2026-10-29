@@ -79,7 +79,6 @@ describe("computeTaxBucketAnalysis", () => {
           contributionBasis: 40000,
           conversionBasis: 0,
           latestConversionYear: null,
-          asOfDate: new Date("2026-01-01"),
         },
         {
           performanceAccountId: 5,
@@ -87,7 +86,6 @@ describe("computeTaxBucketAnalysis", () => {
           contributionBasis: 20000,
           conversionBasis: 0,
           latestConversionYear: null,
-          asOfDate: new Date("2026-01-01"),
         },
       ],
       people,
@@ -249,7 +247,6 @@ describe("computeTaxBucketAnalysis", () => {
           contributionBasis: 30000,
           conversionBasis: 0,
           latestConversionYear: null,
-          asOfDate: new Date("2026-01-01"),
         },
       ],
       people,

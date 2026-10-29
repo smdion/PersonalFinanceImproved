@@ -133,14 +133,12 @@ describe("getAnnualExpensesFromBudget", () => {
           category: "Housing",
           subcategory: "Rent",
           amounts: [2000],
-          isLinked: false,
         },
         {
           profileId: profile.id,
           category: "Food",
           subcategory: "Groceries",
           amounts: [500],
-          isLinked: false,
         },
       ])
       .run();
@@ -170,14 +168,12 @@ describe("getAnnualExpensesFromBudget", () => {
           category: "Housing",
           subcategory: "Rent",
           amounts: [2000, 2500],
-          isLinked: false,
         },
         {
           profileId: profile.id,
           category: "Food",
           subcategory: "Groceries",
           amounts: [500, 600],
-          isLinked: false,
         },
       ])
       .run();

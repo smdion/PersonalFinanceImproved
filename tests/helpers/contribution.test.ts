@@ -304,12 +304,11 @@ describe("computeGroupedEmployerMatch", () => {
       makeRow({
         id: 1,
         annual: 12000,
-        taxTreatment: "pre_tax",
         employerMatchType: "percent_of_contribution",
         employerMatchValue: 100,
         employerMaxMatchPct: 0.06,
       }),
-      makeRow({ id: 2, annual: 6000, taxTreatment: "tax_free" }),
+      makeRow({ id: 2, annual: 6000 }),
     ];
     const result = computeGroupedEmployerMatch(rows);
     expect(result.get(1)!.matchAnnual).toBeCloseTo(4800);

@@ -48,6 +48,7 @@
 // hand-built PG-style string rows — no real database is touched.
 import "../helpers/setup-mocks";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { CapPassed } from "@/lib/pure/contribution-caps";
 import { getTableName } from "drizzle-orm";
 
 import { resolvePersonYearIncome } from "@/server/helpers/salary";
@@ -181,7 +182,8 @@ describe("contribution.ts — PG string mode", () => {
       isRoth: false,
       accountLabel: "Fidelity 401k",
       include401kInBonus: false,
-    } as unknown as ContribRowWithActiveFields;
+      capPassed: true,
+    } as unknown as ContribRowWithActiveFields & CapPassed;
 
     const [acct] = buildContribAccounts([row], [], 100000, 26, {
       limits: {},
@@ -247,7 +249,7 @@ describe("paycheck-input.ts — PG string mode", () => {
   it("buildPaycheckInputForJob normalizes additionalFedWithholding + bonus terms", () => {
     const job: JobForPaycheckInput = {
       payPeriod: "biweekly",
-      payWeek: "week1",
+      payWeek: "even",
       anchorPayDate: "2026-01-02",
       startDate: "2020-01-01",
       include401kInBonus: false,
