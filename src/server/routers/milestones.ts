@@ -46,6 +46,7 @@ import { zYearEndTargeting } from "./_shared";
 import type { MilestoneDebt } from "@/lib/pure/milestones";
 import { debtPayoffEstimate } from "@/lib/pure/debts";
 import { raiseHistory } from "@/lib/pure/raise-history";
+import { downYears } from "@/lib/pure/always-buying";
 import { parseEstimatedFields } from "@/lib/pure/performance-annotations";
 import { getAge, localDateStr } from "@/lib/utils/date";
 import { toNumber } from "@/server/helpers";
@@ -54,41 +55,40 @@ import {
   isOpenDebt,
 } from "@/server/helpers/debts";
 
-/** The 60/40 inputs: household salary a year, and the household's own
- *  contributions (every account, employer money out) for each past year
- *  whose Performance rows are all finalized. */
-function raisesFrom(
-  salaryRows: readonly { year: number; salary: string }[],
+/** Each past year whose Performance rows are all finalized: the
+ *  household's own contributions (every account, employer money out), its
+ *  recorded investment gain, and whether contributions are still estimated.
+ *  What the 60/40 and Always Be Buying rules compare year to year. */
+function finalizedYears(
   perfRows: readonly {
     year: number;
     totalContributions: string;
     employerContributions: string;
+    yearlyGainLoss: string;
     isFinalized: boolean;
     estimatedFields: unknown;
   }[],
   asOfYear: number,
 ) {
-  const salary = new Map<number, number>();
-  for (const r of salaryRows)
-    if (r.year < asOfYear)
-      salary.set(r.year, (salary.get(r.year) ?? 0) + toNumber(r.salary));
-  const saving = new Map<
+  const years = new Map<
     number,
-    { employee: number; estimated: boolean; finalized: boolean }
+    { employee: number; gain: number; estimated: boolean; finalized: boolean }
   >();
   for (const r of perfRows) {
     if (r.year >= asOfYear) continue;
-    const y = saving.get(r.year) ?? {
+    const y = years.get(r.year) ?? {
       employee: 0,
+      gain: 0,
       estimated: false,
       finalized: true,
     };
     const est = parseEstimatedFields(r.estimatedFields);
-    saving.set(r.year, {
+    years.set(r.year, {
       employee:
         y.employee +
         toNumber(r.totalContributions) -
         toNumber(r.employerContributions),
+      gain: y.gain + toNumber(r.yearlyGainLoss),
       estimated:
         y.estimated ||
         est.includes("employeeContrib") ||
@@ -96,8 +96,20 @@ function raisesFrom(
       finalized: y.finalized && r.isFinalized,
     });
   }
-  for (const [year, y] of saving) if (!y.finalized) saving.delete(year);
-  return raiseHistory(salary, saving);
+  for (const [year, y] of years) if (!y.finalized) years.delete(year);
+  return years;
+}
+
+/** Household salary a year (past years). */
+function salaryByYear(
+  salaryRows: readonly { year: number; salary: string }[],
+  asOfYear: number,
+) {
+  const salary = new Map<number, number>();
+  for (const r of salaryRows)
+    if (r.year < asOfYear)
+      salary.set(r.year, (salary.get(r.year) ?? 0) + toNumber(r.salary));
+  return salary;
 }
 
 /** Year-end history mapped for the Milestones engine, plus the household's
@@ -140,6 +152,7 @@ async function loadMilestoneInputs(
         year: schema.accountPerformance.year,
         totalContributions: schema.accountPerformance.totalContributions,
         employerContributions: schema.accountPerformance.employerContributions,
+        yearlyGainLoss: schema.accountPerformance.yearlyGainLoss,
         isFinalized: schema.accountPerformance.isFinalized,
         estimatedFields: schema.accountPerformance.estimatedFields,
       })
@@ -147,6 +160,8 @@ async function loadMilestoneInputs(
   ]);
   const setting = (key: string) =>
     settingRows.find((r) => r.key === key)?.value ?? null;
+  const asOfYear = asOfDate.getFullYear();
+  const ownYears = finalizedYears(perfRows, asOfYear);
   const current =
     history.find((h) => h.isCurrent) ?? history[history.length - 1];
   // Each debt judged at its owner's age today, by birthday (a joint
@@ -189,7 +204,8 @@ async function loadMilestoneInputs(
   });
   return {
     asOfYear: asOfDate.getFullYear(),
-    raises: raisesFrom(salaryRows, perfRows, asOfDate.getFullYear()),
+    raises: raiseHistory(salaryByYear(salaryRows, asOfYear), ownYears),
+    downYears: downYears(ownYears),
     years: history.map((row) =>
       milestoneYearFromHistory({
         ...row,
@@ -266,22 +282,31 @@ async function activeMilestoneInput(ctx: Context) {
     settingRows.find((r) => r.key === key)?.value ?? null;
   const efundColumn = setting(SK_EFUND_BUDGET_COLUMN);
   const optional = <T>(p: Promise<T>) => p.catch(() => null);
-  const [inputs, contributions, savings, mortgage, holdings, goals, line] =
-    await Promise.all([
-      loadMilestoneInputs(ctx.db, undefined),
-      createCallerFactory(contributionRouter)(inner).computeSummary(),
-      createCallerFactory(savingsRouter)(inner).computeSummary(
-        typeof efundColumn === "number" && efundColumn >= 0
-          ? { budgetTierOverride: efundColumn }
-          : undefined,
-      ),
-      createCallerFactory(mortgageRouter)(inner).computeActiveSummary(),
-      optional(
-        createCallerFactory(investmentsRouter)(inner).getHoldingsOverview(),
-      ),
-      optional(createCallerFactory(brokerageRouter)(inner).listGoals()),
-      householdHighIncomeLine(ctx.db),
-    ]);
+  const [
+    inputs,
+    contributions,
+    savings,
+    mortgage,
+    holdings,
+    buyingMonths,
+    goals,
+    line,
+  ] = await Promise.all([
+    loadMilestoneInputs(ctx.db, undefined),
+    createCallerFactory(contributionRouter)(inner).computeSummary(),
+    createCallerFactory(savingsRouter)(inner).computeSummary(
+      typeof efundColumn === "number" && efundColumn >= 0
+        ? { budgetTierOverride: efundColumn }
+        : undefined,
+    ),
+    createCallerFactory(mortgageRouter)(inner).computeActiveSummary(),
+    optional(
+      createCallerFactory(investmentsRouter)(inner).getHoldingsOverview(),
+    ),
+    optional(createCallerFactory(investmentsRouter)(inner).getBuyingMonths()),
+    optional(createCallerFactory(brokerageRouter)(inner).listGoals()),
+    householdHighIncomeLine(ctx.db),
+  ]);
   const efund = savings.efund;
   return buildMilestoneInput({
     inputs,
@@ -300,6 +325,7 @@ async function activeMilestoneInput(ctx: Context) {
     mortgage,
     projection: null,
     holdings,
+    buyingMonths,
     brokerageGoals:
       goals?.map((g) => ({ name: g.name, targetYear: g.targetYear })) ?? null,
   });

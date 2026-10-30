@@ -22,6 +22,7 @@ import {
 } from "@/lib/config/milestones";
 import type { HouseholdSavings } from "@/lib/pure/contributions";
 import type { RaiseYear } from "@/lib/pure/raise-history";
+import type { BuyingMonth, DownYear } from "@/lib/pure/always-buying";
 import type { CompositionBucket, DebtKind } from "@/lib/config/enum-values";
 
 // ---------------------------------------------------------------------------
@@ -284,6 +285,9 @@ export type MilestoneInput = {
   /** Each judged raise, oldest first (lib/pure/raise-history.ts); null/
    *  absent when there's no salary or finalized contribution history. */
   raises?: RaiseYear[] | null;
+  /** Always Be Buying: SimpleFIN months (null when not linked or not
+   *  visible to this viewer) and the losing years on record. */
+  buying?: { months: BuyingMonth[] | null; downYears: DownYear[] } | null;
   /** The Liabilities debts list; null/absent before it's loaded. */
   debts?: MilestoneDebt[] | null;
   /** The other-debt figures that aren't itemized: the typed lump and the

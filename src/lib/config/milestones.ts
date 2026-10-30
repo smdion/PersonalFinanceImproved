@@ -256,6 +256,18 @@ export type CustomGoalMetric = keyof typeof CUSTOM_GOAL_METRICS;
 export const MAX_CUSTOM_GOALS = 12;
 
 /**
+ * Money Guy's "Always Be Buying": invest on a schedule whatever the market
+ * does. Judged two ways — month by month where SimpleFIN shows deposits
+ * (the last `recentMonths` covered months), and in each year the
+ * household's investments lost money, whether its own contributions held
+ * at `heldUpShare` or more of the year before.
+ */
+export const ALWAYS_BUYING_RULE = {
+  recentMonths: 12,
+  heldUpShare: 0.9,
+} as const;
+
+/**
  * Money Guy's 60/40 rule for raises: at least 60% of any income boost goes
  * to saving and investing, at most 40% to lifestyle. Judged on salary (a
  * bonus swings year to year) and only for a raise of at least
@@ -489,6 +501,16 @@ const MILESTONES = [
     rule: `Save and invest 25% of gross pay — retirement accounts, HSA and brokerage alike (a rate that rounds to 25% counts). The employer match counts until household pay reaches the high-income line: $${HIGH_INCOME_LINE.married / 1000}k married filing jointly, $${HIGH_INCOME_LINE.single / 1000}k otherwise, or your own (set beside the match switch).`,
     adaptedNote:
       "Money set aside for a specific future cost (college, the next car) is step 8, not part of the 25%. Starting later needs more: 6% from age 20, 10% from 25, 17% from 30, about 25% from 35.",
+    focus: { topic: "savingsRate" },
+  },
+  {
+    id: "alwaysBuying",
+    group: "saving",
+    source: "moneyGuy",
+    title: "Always Be Buying",
+    rule: "Keep investing on a schedule — especially when the market falls. Stopping in a downturn is the mistake this guards against.",
+    adaptedNote:
+      "Two checks. Months: where SimpleFIN shows deposits, a month with none breaks the streak (a month a feed didn't report is left out, not counted against you; the feed can't tell employer money from yours). Years: in each year your investments lost money, your own contributions (from Performance, employer money left out) should hold at 90% of the year before — a job change can cause a drop too.",
     focus: { topic: "savingsRate" },
   },
   {

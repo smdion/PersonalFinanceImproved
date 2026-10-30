@@ -54,10 +54,11 @@ describe("milestones.computeInputs", () => {
       db.insert(schema.historicalSalaries)
         .values({ personId, year, salary: String(salary) })
         .run();
-    for (const [year, total, employer, finalized] of [
-      [thisYear - 2, 25_000, 5_000, true],
-      [thisYear - 1, 32_000, 5_000, true],
-      [thisYear, 40_000, 5_000, false],
+    // Last year lost money: a down year for Always Be Buying.
+    for (const [year, total, employer, finalized, gain] of [
+      [thisYear - 2, 25_000, 5_000, true, 8_000],
+      [thisYear - 1, 32_000, 5_000, true, -5_000],
+      [thisYear, 40_000, 5_000, false, -1_000],
     ] as const)
       db.insert(schema.accountPerformance)
         .values({
@@ -70,7 +71,7 @@ describe("milestones.computeInputs", () => {
           beginningBalance: "0",
           totalContributions: String(total),
           employerContributions: String(employer),
-          yearlyGainLoss: "0",
+          yearlyGainLoss: String(gain),
           endingBalance: "0",
           isFinalized: finalized,
         })
@@ -103,6 +104,20 @@ describe("milestones.computeInputs", () => {
         savingChange: 7_000,
         share: 0.7,
         estimated: false,
+      },
+    ]);
+  });
+
+  it("returns each losing past year with own contributions against the year before", async () => {
+    const result = await caller.milestones.computeInputs({});
+    const thisYear = new Date().getFullYear();
+    expect(result.downYears).toEqual([
+      {
+        year: thisYear - 1,
+        gain: -5_000,
+        contributed: 27_000,
+        prior: 20_000,
+        heldUp: true,
       },
     ]);
   });

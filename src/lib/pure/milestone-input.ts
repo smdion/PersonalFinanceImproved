@@ -5,6 +5,7 @@
  * Split from milestones.ts, which holds the rules themselves.
  */
 import type { RaiseYear } from "@/lib/pure/raise-history";
+import type { BuyingMonth, DownYear } from "@/lib/pure/always-buying";
 import {
   getAccountTypeConfig,
   getAllCategories,
@@ -462,6 +463,7 @@ export function buildMilestoneInput(raw: {
     debts?: MilestoneDebt[] | null;
     otherDebt?: { manual: number; creditCardMapped: number } | null;
     raises?: RaiseYear[] | null;
+    downYears?: DownYear[];
   };
   contributions: {
     people: (Omit<SavingsRatePerson, "accountTypes"> & {
@@ -478,6 +480,8 @@ export function buildMilestoneInput(raw: {
     filingStatus?: string;
   } | null;
   highIncomeThreshold: number;
+  /** SimpleFIN deposit months (investments.getBuyingMonths). */
+  buyingMonths?: BuyingMonth[] | null;
   brokerageGoals?: { name: string; targetYear: number }[] | null;
   efundMonths: number | null;
   efundEssentialMonthly?: number | null;
@@ -653,6 +657,10 @@ export function buildMilestoneInput(raw: {
     debts: inputs.debts ?? null,
     otherDebt: inputs.otherDebt ?? null,
     raises: inputs.raises ?? null,
+    buying: {
+      months: raw.buyingMonths ?? null,
+      downYears: inputs.downYears ?? [],
+    },
     checkpointSource: inputs.checkpointSource,
     savingsTargetSource: inputs.savingsTargetSource,
     megaBackdoor: mega,

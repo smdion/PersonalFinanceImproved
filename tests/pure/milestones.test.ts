@@ -2087,3 +2087,71 @@ describe("save your raises (60/40)", () => {
     );
   });
 });
+
+describe("Always Be Buying", () => {
+  const months = (states: ("invested" | "notInvested" | "unknown")[]) =>
+    states.map((state, i) => ({
+      month: `2026-${String(i + 1).padStart(2, "0")}`,
+      state,
+    }));
+  const down = (year: number, heldUp: boolean) => ({
+    year,
+    gain: -10_000,
+    contributed: heldUp ? 20_000 : 10_000,
+    prior: 20_000,
+    heldUp,
+  });
+
+  it("reached: every covered month bought and the latest losing year held up", () => {
+    const r = byId(
+      run({
+        buying: {
+          months: months(["invested", "unknown", "invested"]),
+          downYears: [down(2022, true)],
+        },
+      }),
+      "alwaysBuying",
+    );
+    expect(r.status).toBe("reached");
+    expect(r.headline).toBe(
+      "Bought every month of the last 2 · kept buying through 2022's loss",
+    );
+    expect(r.note).toBe("1 of 1 losing year held up");
+  });
+
+  it("a covered month without a deposit is behind", () => {
+    const r = byId(
+      run({
+        buying: { months: months(["invested", "notInvested"]), downYears: [] },
+      }),
+      "alwaysBuying",
+    );
+    expect(r.status).toBe("behind");
+    expect(r.headline).toBe("1 of the last 2 months without a deposit");
+    expect(r.nextStep).toContain("automatic investment every month");
+  });
+
+  it("contributions that dropped in the latest losing year are behind", () => {
+    const r = byId(
+      run({
+        buying: {
+          months: null,
+          downYears: [down(2020, true), down(2022, false)],
+        },
+      }),
+      "alwaysBuying",
+    );
+    expect(r.status).toBe("behind");
+    expect(r.headline).toBe(
+      "Contributed 50% of the year before in 2022, a losing year",
+    );
+    expect(r.note).toBe("1 of 2 losing years held up");
+  });
+
+  it("not judged with nothing to go on", () => {
+    expect(
+      byId(run({ buying: { months: [], downYears: [] } }), "alwaysBuying")
+        .status,
+    ).toBe("unknown");
+  });
+});

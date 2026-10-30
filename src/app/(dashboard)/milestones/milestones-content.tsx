@@ -4,6 +4,7 @@
  *  ladder, then every milestone by group. */
 import { useFirstReached } from "@/lib/hooks/use-first-reached";
 import { RaiseHistoryTable } from "@/components/milestones/raise-history-table";
+import { AlwaysBuyingDetail } from "@/components/milestones/always-buying-detail";
 import { useState } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
@@ -170,6 +171,11 @@ export function MilestonesContent() {
                       />
                     ) : r.id === "saveRaises" && input.raises ? (
                       <RaiseHistoryTable raises={input.raises} />
+                    ) : r.id === "alwaysBuying" && input.buying ? (
+                      <AlwaysBuyingDetail
+                        months={input.buying.months}
+                        downYears={input.buying.downYears}
+                      />
                     ) : undefined
                   }
                   extra={

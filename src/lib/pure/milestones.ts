@@ -63,6 +63,7 @@ import {
 import { calculateLoanMonthlyPayment, safeDivide } from "@/lib/utils/math";
 import { isHighInterestDebt } from "@/lib/config/debts";
 import { meetsRaiseRule } from "@/lib/pure/raise-history";
+import { recentCoveredMonths } from "@/lib/pure/always-buying";
 import type {
   CustomGoal,
   MatchShortfall,
@@ -696,6 +697,51 @@ function savingsRate(input: MilestoneInput): MilestoneResult {
           return first ? ` — ${first}` : "";
         })()}`,
     impact: met ? null : { kind: "perYear", amount: gapPerMonth * 12 },
+  });
+}
+
+/** Money Guy's Always Be Buying: the last covered SimpleFIN months and the
+ *  latest losing year on record. */
+function alwaysBuying(input: MilestoneInput): MilestoneResult {
+  const recent = recentCoveredMonths(input.buying?.months ?? []);
+  const down = input.buying?.downYears ?? [];
+  const latestDown = down[down.length - 1];
+  if (recent.length === 0 && !latestDown) {
+    return result("alwaysBuying", {
+      status: "unknown",
+      headline: "Needs SimpleFIN deposits or a losing year on record",
+    });
+  }
+  const missed = recent.filter((m) => m.state === "notInvested").length;
+  const droppedInDown = latestDown !== undefined && !latestDown.heldUp;
+  const held = down.filter((d) => d.heldUp).length;
+  const downText = latestDown
+    ? latestDown.heldUp
+      ? `kept buying through ${latestDown.year}'s loss`
+      : `contributed ${formatPercent(safeDivide(latestDown.contributed, latestDown.prior, 0), 0)} of the year before in ${latestDown.year}, a losing year`
+    : null;
+  const monthText =
+    recent.length === 0
+      ? null
+      : missed === 0
+        ? `bought every month of the last ${recent.length}`
+        : `${missed} of the last ${recent.length} months without a deposit`;
+  const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+  const headline = [monthText, downText].filter(Boolean).join(" · ");
+  return result("alwaysBuying", {
+    status: missed > 0 || droppedInDown ? "behind" : "reached",
+    headline: cap(headline),
+    short: cap(monthText ?? downText ?? ""),
+    note:
+      down.length > 0
+        ? `${held} of ${down.length} losing year${down.length === 1 ? "" : "s"} held up`
+        : null,
+    nextStep:
+      missed > 0
+        ? "Set up an automatic investment every month, so no month goes without one"
+        : droppedInDown
+          ? "Keep contributions steady when the market falls — that's when buying matters most"
+          : null,
   });
 }
 
@@ -1727,6 +1773,7 @@ export function evaluateMilestones(input: MilestoneInput): MilestoneResult[] {
       ? pfRetirementRate(input)
       : savings,
     saveRaises(input),
+    alwaysBuying(input),
     megaBackdoor(input),
     goalHorizon(input),
     efund,

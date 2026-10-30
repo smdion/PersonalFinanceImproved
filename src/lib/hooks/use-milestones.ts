@@ -69,6 +69,9 @@ export function useMilestones(): {
   const holdings = trpc.investments.getHoldingsOverview.useQuery(undefined, {
     enabled: withHoldings,
   });
+  const buyingMonths = trpc.investments.getBuyingMonths.useQuery(undefined, {
+    enabled: withHoldings,
+  });
   const brokerageGoals = trpc.brokerage.listGoals.useQuery(undefined, {
     enabled: withBrokerageGoals,
   });
@@ -109,6 +112,7 @@ export function useMilestones(): {
         }
       : null,
     holdings: withHoldings ? (holdings.data ?? null) : null,
+    buyingMonths: withHoldings ? (buyingMonths.data ?? null) : null,
     brokerageGoals: !withBrokerageGoals
       ? null
       : (brokerageGoals.data?.map((g) => ({
