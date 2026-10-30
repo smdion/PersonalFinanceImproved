@@ -128,6 +128,16 @@ export const debts = sqliteTable(
     paidOffDate: text("paid_off_date"),
     notes: text("notes"),
     sortOrder: integer("sort_order").notNull().default(0),
+    /** What was paid for the thing the loan bought (a car's price) — the
+     *  20/3/8 rule's down payment is this less `originalAmount`. */
+    purchasePrice: text("purchase_price"),
+    /** The loan's term in months, as written. */
+    termMonths: integer("term_months"),
+    /** The balance pulled from a mapped budget account (as
+     *  mortgage_loans.api_balance) and the day it's from; used instead of
+     *  `balance` while set, cleared when the mapping goes. */
+    apiBalance: text("api_balance"),
+    apiBalanceDate: text("api_balance_date"),
   },
   (table) => [index("debts_owner_person_id_idx").on(table.ownerPersonId)],
 );
