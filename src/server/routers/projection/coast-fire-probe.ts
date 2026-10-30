@@ -11,6 +11,7 @@
  * already at 521 lines, over RULES.md §8's ~500-line Composed Router
  * guideline.
  */
+import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { eq, asc, sql } from "drizzle-orm";
 import { queryRaw } from "@/lib/db/compat";
@@ -209,6 +210,15 @@ export const coastFireProbeRouter = createTRPCRouter({
       const mcGlidePath = Array.from(gpByAge.entries())
         .sort(([a], [b]) => a - b)
         .map(([gpAge, allocations]) => ({ age: gpAge, allocations }));
+      // VPW sizes by the stock share of the glide path the trials use.
+      const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
+      const mcStockShareByAge =
+        stockShareByAge(
+          mcGlidePath,
+          classifyAssetClasses(classBuckets),
+          engineInput.currentAge,
+          engineInput.projectionEndAge,
+        ) ?? undefined;
       const inflationRisk = {
         meanRate: toNumber(preset.inflationMean),
         stdDev: toNumber(preset.inflationStdDev),
@@ -229,6 +239,7 @@ export const coastFireProbeRouter = createTRPCRouter({
         mcAssetClasses,
         mcCorrelations,
         mcGlidePath,
+        mcStockShareByAge,
         inflationRisk,
         probeAge: input.probeAge,
       });
@@ -247,6 +258,7 @@ export const coastFireProbeRouter = createTRPCRouter({
         {
           engineInput: {
             ...engineInput,
+            stockShareByAge: mcStockShareByAge,
             profileSwitches: buildCoastFireProfileSwitches(
               engineInput,
               input.probeAge,

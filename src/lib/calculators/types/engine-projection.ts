@@ -237,6 +237,10 @@ export type ProjectionInput = {
   /** Birth year of primary person — used for RMD start age (SECURE 2.0).
    *  When omitted, RMDs are not enforced (backward-compatible). */
   birthYear?: number;
+  /** Stock share of the portfolio (0–1) by age, from the allocation glide
+   *  path (lib/pure/stock-share.ts) — what VPW sizes its percentage by.
+   *  Absent: no allocation, the strategy's own stock share applies. */
+  stockShareByAge?: Record<number, number>;
   /** Filing status — used for accurate SS taxation and LTCG brackets.
    *  When omitted, falls back to flat 85% SS taxation and flat LTCG rate. */
   filingStatus?: FilingStatusType;
@@ -359,8 +363,18 @@ export type EngineDecumulationYear = {
    *  Spending Decline) this is overwritten by that strategy's own
    *  guardrail-adjusted target every year — use `budgetOnlyExpenses`
    *  instead when you need the household's actual stated budget,
-   *  untouched by the strategy. */
+   *  untouched by the strategy. For a portfolio-sized strategy with Social
+   *  Security on top (`withdrawalSized`), this is the strategy's GROSS
+   *  withdrawal, not spending — read `spending` for what the household
+   *  spends. */
   projectedExpenses: number;
+  /** What the household spends this year: what the withdrawal delivered
+   *  after tax and penalty, less RMD money reinvested, plus Social
+   *  Security. Every "spending" / "expenses" reader reads this. */
+  spending: number;
+  /** The strategy sized the gross portfolio withdrawal and Social Security
+   *  comes on top (the household's switch off). */
+  withdrawalSized: boolean;
   /** The TRUE budget trajectory (inflation/raise growth + manual per-year
    *  overrides only — never a reactive strategy's guardrail adjustment).
    *  For Fixed (which never dispatches to a reactive strategy) this always
@@ -398,7 +412,8 @@ export type EngineDecumulationYear = {
   ssIncome: number;
   /** Per-person SS income breakdown (populated when socialSecurityEntries is provided). */
   ssIncomeByPerson?: { personId: number; personName: string; amount: number }[];
-  /** After-tax expense need (projectedExpenses - ssIncome). */
+  /** After-tax expense need (projectedExpenses - ssIncome; with
+   *  `withdrawalSized`, what the fixed withdrawal delivers after tax). */
   afterTaxNeed: number;
   /** Gross-up multiplier: 1 / (1 - effectiveTaxRate). */
   grossUpFactor: number;

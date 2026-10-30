@@ -3,8 +3,8 @@
  *
  * Data-driven from the withdrawal strategy registry: given the active
  * strategy, we look up its `paramFields` (boolean / number / percent / the
- * special rollingYears variant) and render the matching editor with a
- * registry-defined db-column map. Previously lived as an IIFE inside the
+ * special rollingYears variant) and render the matching editor, reading
+ * and writing each field's own column (`paramFields[].column`). Previously lived as an IIFE inside the
  * Decumulation Plan JSX — now a sibling sub-component so Decumulation's
  * orchestrator stays compact.
  */
@@ -35,40 +35,6 @@ export function StrategyParamsSection({
   const meta = getStrategyMeta(strategyKey);
   if (meta.paramFields.length === 0) return null;
 
-  // Map registry param keys to DB column names for reading/writing
-  const paramToDbColumn: Record<string, string> = {
-    // GK
-    upperGuardrail: "gkUpperGuardrail",
-    lowerGuardrail: "gkLowerGuardrail",
-    increasePercent: "gkIncreasePct",
-    decreasePercent: "gkDecreasePct",
-    skipInflationAfterLoss: "gkSkipInflationAfterLoss",
-    // Spending Decline
-    annualDeclineRate: "sdAnnualDeclineRate",
-    // Constant Percentage
-    withdrawalPercent:
-      strategyKey === "constant_percentage"
-        ? "cpWithdrawalPercent"
-        : strategyKey === "endowment"
-          ? "enWithdrawalPercent"
-          : "cpWithdrawalPercent",
-    floorPercent:
-      strategyKey === "constant_percentage"
-        ? "cpFloorPercent"
-        : strategyKey === "endowment"
-          ? "enFloorPercent"
-          : strategyKey === "vanguard_dynamic"
-            ? "vdFloorPercent"
-            : "cpFloorPercent",
-    // Endowment
-    rollingYears: "enRollingYears",
-    // Vanguard Dynamic
-    basePercent: "vdBasePercent",
-    ceilingPercent: "vdCeilingPercent",
-    // RMD
-    rmdMultiplier: "rmdMultiplier",
-  };
-
   // Partition fields into layout items: grouped pairs or standalone
   type LayoutItem =
     | {
@@ -98,8 +64,8 @@ export function StrategyParamsSection({
   }
 
   const renderField = (field: (typeof meta.paramFields)[number]) => {
-    const dbCol = paramToDbColumn[field.key];
-    if (!dbCol || !settings) return null;
+    const dbCol = field.column;
+    if (!settings) return null;
     const currentVal = (settings as Record<string, unknown>)[dbCol];
 
     if (field.type === "boolean") {

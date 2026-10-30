@@ -32,6 +32,7 @@ export function applyVanguardDynamic(
     const spending = roundToCents(raw);
     return {
       projectedExpenses: spending,
+      amountKind: "portfolio_withdrawal",
       action: null,
       updatedState: { priorYearSpending: spending },
     };
@@ -56,6 +57,7 @@ export function applyVanguardDynamic(
 
   return {
     projectedExpenses: spending,
+    amountKind: "portfolio_withdrawal",
     action,
     updatedState: { priorYearSpending: spending },
   };

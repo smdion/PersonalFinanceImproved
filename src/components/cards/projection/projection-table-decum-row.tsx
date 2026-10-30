@@ -1060,12 +1060,14 @@ export function DecumulationRow({
                     taxCost: deflate(dyr.taxCost, yr.year),
                   }
                 : undefined,
-            budget: budgetProfileName
-              ? {
-                  profile: budgetProfileName,
-                  amount: deflate(dyr.projectedExpenses, yr.year),
-                }
-              : undefined,
+            // A withdrawal-sized year isn't driven by the budget.
+            budget:
+              budgetProfileName && !dyr.withdrawalSized
+                ? {
+                    profile: budgetProfileName,
+                    amount: deflate(dyr.projectedExpenses, yr.year),
+                  }
+                : undefined,
             overrideNote: decumOverrideNotes
               ? `Changed this year: ${decumOverrideNotes}`
               : undefined,
@@ -1499,19 +1501,16 @@ export function DecumulationRow({
         {diagMode && dyr.grossUpFactor != null && (
           <Tooltip
             lines={[
-              `Expenses: ${formatCurrency(deflate(dyr.projectedExpenses, yr.year))}`,
+              dyr.withdrawalSized
+                ? `Strategy withdrawal: ${formatCurrency(deflate(dyr.projectedExpenses, yr.year))} (Social Security on top)`
+                : `Expenses: ${formatCurrency(deflate(dyr.projectedExpenses, yr.year))}`,
               `SS Income: ${formatCurrency(deflate(dyr.ssIncome ?? 0, yr.year))}`,
+              `Spending: ${formatCurrency(deflate(dyr.spending, yr.year))} (after tax, Social Security included)`,
               `After-tax need: ${formatCurrency(deflate(dyr.afterTaxNeed ?? 0, yr.year))}`,
               `Tax rate: ${formatPercent(dyr.effectiveTaxRate, 2)} (trad ${formatPercent(dyr.estTraditionalPortion ?? 0, 0)} of retirement money)`,
               `Gross-up: ×${(dyr.grossUpFactor ?? 1).toFixed(3)}`,
               `Target withdrawal: ${formatCurrency(deflate(dyr.targetWithdrawal, yr.year))}`,
               `Actual withdrawal: ${formatCurrency(deflate(dyr.totalWithdrawal, yr.year))}`,
-              ...(dyr.projectedExpenses > 0 &&
-              dyr.totalWithdrawal < dyr.projectedExpenses
-                ? [
-                    `SHORTFALL: ${formatCurrency(deflate(dyr.projectedExpenses - dyr.totalWithdrawal, yr.year))}/yr unfunded`,
-                  ]
-                : []),
               ...(dyr.bracketTraditionalCap != null
                 ? [
                     `Bracket trad cap: ${formatCurrency(deflate(dyr.bracketTraditionalCap, yr.year))}`,

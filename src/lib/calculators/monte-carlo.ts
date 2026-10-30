@@ -10,6 +10,7 @@
  * correlated log-normal distributions based on asset class parameters and a
  * glide path that shifts allocations over time.
  */
+import { strategySpending } from "./strategy-spending";
 import { assessPlan, type PlanFailureReason } from "./plan-outcome";
 import { calculateProjection } from "./engine";
 import { resolveReturnRateForAge } from "./engine/growth-application";
@@ -387,12 +388,15 @@ export function calculateMonteCarlo(
       // Forgo/Spending-Decline it's overwritten by that strategy's own
       // guardrail target every year, which silently collapsed "vs budget"
       // into being identical to "vs strategy" (both KPI rings showing the same percentage).
+      // Compared with what the strategy has the household spend
+      // (strategySpending) — the budget is spending, while the gross
+      // withdrawal is net of Social Security and gross of tax.
       if (retirementBudget !== null) {
         const isBudgetStable = decYears.every((y) => {
           const baseline = y.budgetOnlyExpenses;
           return (
             baseline === 0 ||
-            y.totalWithdrawal >= MC_SPENDING_STABILITY_THRESHOLD * baseline
+            strategySpending(y) >= MC_SPENDING_STABILITY_THRESHOLD * baseline
           );
         });
         if (isBudgetStable) budgetStableCount++;
@@ -408,7 +412,7 @@ export function calculateMonteCarlo(
         );
         if (retirementBudget !== null) {
           budgetRatiosByDecYear[di]!.push(
-            safeDivide(yr.totalWithdrawal, yr.budgetOnlyExpenses, 0),
+            safeDivide(strategySpending(yr), yr.budgetOnlyExpenses, 0),
           );
         }
       }

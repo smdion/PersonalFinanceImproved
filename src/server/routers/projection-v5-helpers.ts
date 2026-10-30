@@ -11,14 +11,17 @@
  *     optimistic). Called from projection.computeStressTest.
  */
 
+import {
+  classifyAssetClasses,
+  glidePathFromRows,
+  stockShareByAge,
+} from "@/lib/pure/stock-share";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
-import { asc, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { db } from "@/lib/db";
 import { calculateProjection } from "@/lib/calculators/engine";
 import { getStressTestScenarios } from "@/lib/pure/stress-test";
 import { roundToCents } from "@/lib/utils/math";
-import { toNumber } from "@/server/helpers";
 
 type DbType = typeof db;
 
@@ -54,107 +57,28 @@ export function buildAccumulationOrder(
   return order;
 }
 
-/** Row shapes this helper consumes from the drizzle queries. Exported so
- *  tests can supply plain arrays without casting through the full db
- *  type. */
-export interface GlidePathRow {
-  age: number;
-  assetClassId: number;
-  allocation: string | null;
-}
-
-export interface AssetClassRow {
-  id: number;
-  name: string;
-}
-
 /**
- * Pure core of the glide-path lookup: given the glide-path table rows
- * and the active asset-class list, bracket-interpolate at currentAge and
- * sum the equity classes. Exported for direct unit testing — the db-bound
- * wrapper below just fetches the two arrays and delegates.
- *
- * Returns null when the inputs are unusable (no glide path, no equity
- * classes) so the PlanHealthCard skips the glide-path warning.
- */
-export function computeStockPercentFromGlidePath(
-  gpRows: readonly GlidePathRow[],
-  classRows: readonly AssetClassRow[],
-  currentAge: number,
-): number | null {
-  if (gpRows.length === 0 || classRows.length === 0) return null;
-
-  const stockClassIds = new Set<number>(
-    classRows.filter((c) => /equit|stock/i.test(c.name)).map((c) => c.id),
-  );
-  if (stockClassIds.size === 0) return null;
-
-  // Group glide path by age, then bracket-interpolate at currentAge.
-  const byAge = new Map<number, Record<number, number>>();
-  for (const r of gpRows) {
-    if (!byAge.has(r.age)) byAge.set(r.age, {});
-    byAge.get(r.age)![r.assetClassId] = toNumber(r.allocation);
-  }
-  const ages = Array.from(byAge.keys()).sort((a, b) => a - b);
-  if (ages.length === 0) return null;
-
-  let lowerAge = ages[0]!;
-  let upperAge = ages[ages.length - 1]!;
-  if (currentAge <= lowerAge) {
-    upperAge = lowerAge;
-  } else if (currentAge >= upperAge) {
-    lowerAge = upperAge;
-  } else {
-    for (let i = 0; i < ages.length - 1; i++) {
-      if (currentAge >= ages[i]! && currentAge <= ages[i + 1]!) {
-        lowerAge = ages[i]!;
-        upperAge = ages[i + 1]!;
-        break;
-      }
-    }
-  }
-  const lowerAlloc = byAge.get(lowerAge)!;
-  const upperAlloc = byAge.get(upperAge)!;
-  const t =
-    upperAge === lowerAge ? 0 : (currentAge - lowerAge) / (upperAge - lowerAge);
-
-  let stockSum = 0;
-  for (const id of stockClassIds) {
-    const lo = lowerAlloc[id] ?? 0;
-    const hi = upperAlloc[id] ?? 0;
-    stockSum += lo + (hi - lo) * t;
-  }
-  return Math.round(stockSum * 100 * 10) / 10;
-}
-
-/**
- * currentStockAllocationPercent: db-bound wrapper around
- * computeStockPercentFromGlidePath. Fetches the active glide-path rows +
- * asset classes, then delegates to the pure function. Returns null when
- * no glide path is configured.
+ * The stock allocation (percent, one decimal) the household's glide path
+ * assumes at `currentAge` — the same stock share VPW sizes by
+ * (lib/pure/stock-share.ts: a class is stocks when any of its buckets is).
+ * Null when there's no glide path or no class is mapped to buckets, so the
+ * PlanHealthCard skips the glide-path warning.
  */
 export async function computeCurrentStockAllocationPercent(
   db: DbType,
   currentAge: number,
 ): Promise<number | null> {
-  const [gpRows, classRows] = await Promise.all([
-    db
-      .select({
-        age: schema.glidePathAllocations.age,
-        assetClassId: schema.glidePathAllocations.assetClassId,
-        allocation: schema.glidePathAllocations.allocation,
-      })
-      .from(schema.glidePathAllocations),
-    db
-      .select({
-        id: schema.assetClassParams.id,
-        name: schema.assetClassParams.name,
-      })
-      .from(schema.assetClassParams)
-      .where(eq(schema.assetClassParams.isActive, true))
-      .orderBy(asc(schema.assetClassParams.sortOrder)),
+  const [gpRows, bucketRows] = await Promise.all([
+    db.select().from(schema.glidePathAllocations),
+    db.select().from(schema.assetClassBuckets),
   ]);
-  return computeStockPercentFromGlidePath(gpRows, classRows, currentAge);
+  const share = stockShareByAge(
+    glidePathFromRows(gpRows),
+    classifyAssetClasses(bucketRows),
+    currentAge,
+    currentAge,
+  )?.[Math.floor(currentAge)];
+  return share === undefined ? null : Math.round(share * 1000) / 10;
 }
 
 // ---------------------------------------------------------------------------

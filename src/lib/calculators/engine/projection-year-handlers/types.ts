@@ -60,6 +60,10 @@ export type ProjectionLoopState = {
    *  percentage). This field is the strategy-blind
    *  budget line those two comparisons need to actually differ. */
   budgetOnlyExpenses: number;
+  /** This year's amount as the gross portfolio withdrawal (Social Security
+   *  on top) — set when the strategy sized it that way and the household's
+   *  `ssInAmount` switch is off; null = the amount is spending. */
+  portfolioWithdrawal: number | null;
   projectedSalaryByPerson: Map<number, number>;
 
   // Individual account tracking

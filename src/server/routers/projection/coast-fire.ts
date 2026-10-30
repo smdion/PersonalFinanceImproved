@@ -9,6 +9,7 @@
  * under ~500 lines (Composed Router convention, RULES.md §8). Shared
  * schemas + helpers remain in `_shared.ts`.
  */
+import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { eq, asc, sql } from "drizzle-orm";
 import { queryRaw } from "@/lib/db/compat";
@@ -342,6 +343,15 @@ export const coastFireRouter = createTRPCRouter({
       const mcGlidePath = Array.from(gpByAge.entries())
         .sort(([a], [b]) => a - b)
         .map(([gpAge, allocations]) => ({ age: gpAge, allocations }));
+      // VPW sizes by the stock share of the glide path the trials use.
+      const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
+      const mcStockShareByAge =
+        stockShareByAge(
+          mcGlidePath,
+          classifyAssetClasses(classBuckets),
+          engineInput.currentAge,
+          engineInput.projectionEndAge,
+        ) ?? undefined;
       const inflationRisk = {
         meanRate: toNumber(preset.inflationMean),
         stdDev: toNumber(preset.inflationStdDev),
@@ -357,6 +367,7 @@ export const coastFireRouter = createTRPCRouter({
         mcAssetClasses,
         mcCorrelations,
         mcGlidePath,
+        mcStockShareByAge,
         inflationRisk,
       });
       // peekOnly always reads the real cache regardless of forceRefresh —
@@ -395,6 +406,7 @@ export const coastFireRouter = createTRPCRouter({
           {
             engineInput: {
               ...engineInput,
+              stockShareByAge: mcStockShareByAge,
               profileSwitches: buildCoastFireProfileSwitches(
                 engineInput,
                 coastAge,

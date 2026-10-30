@@ -9,6 +9,7 @@
  * The projection is the fixed-return run: a bad market in these years is
  * exactly how a bridge fails, so callers label it "at assumed returns".
  */
+import { strategySpending } from "@/lib/calculators/strategy-spending";
 import {
   isHsaCategory,
   isIraCategory,
@@ -196,7 +197,7 @@ export function retirementBridge(
     cushion,
     strategyCut: roundToCents(
       sumBy(bridge, (y) =>
-        Math.max(0, y.budgetOnlyExpenses - y.projectedExpenses),
+        Math.max(0, y.budgetOnlyExpenses - strategySpending(y)),
       ),
     ),
     penaltyCost: roundToCents(sumBy(bridge, (y) => y.penaltyCost ?? 0)),

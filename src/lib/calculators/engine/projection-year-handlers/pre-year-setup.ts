@@ -354,6 +354,7 @@ export function runPreYearSetup(
 
   // --- Spending Strategy Dispatch ---
   let strategyAction: string | null = null;
+  state.portfolioWithdrawal = null;
 
   if (!isAccumulation && activeStrategy !== "fixed") {
     // Use primary person's actual age for RMD factor lookup (not household average)
@@ -368,9 +369,22 @@ export function runPreYearSetup(
       yearIndex,
       age,
       primaryPersonAge: primaryAge,
+      // A couple's VPW uses the younger spouse's age.
+      youngestAge:
+        input.perPersonBirthYears && input.perPersonBirthYears.length > 0
+          ? ageInYear(Math.max(...input.perPersonBirthYears), year)
+          : undefined,
+      stockShare: input.stockShareByAge?.[Math.round(age)],
       crossYearState: state.spendingState,
     });
     state.projectedExpenses = result.projectedExpenses;
+    // A portfolio-sized amount is the gross withdrawal (Social Security on
+    // top) unless the household says Social Security comes out of it.
+    if (
+      result.amountKind === "portfolio_withdrawal" &&
+      activeStrategyParams.ssInAmount !== true
+    )
+      state.portfolioWithdrawal = result.projectedExpenses;
     strategyAction = result.action;
     Object.assign(state.spendingState, result.updatedState);
   }

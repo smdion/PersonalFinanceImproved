@@ -218,7 +218,10 @@ export function runDecumulationYear(
   } else {
     ssIncome = age >= ssStartAge ? socialSecurityAnnual : 0;
   }
-  const afterTaxNeed = roundToCents(
+  // The year's after-tax need: spending less Social Security — or, when
+  // the strategy sized the gross withdrawal (Social Security on top), what
+  // that withdrawal delivers after tax (set from the estimate below).
+  let afterTaxNeed = roundToCents(
     Math.max(0, state.projectedExpenses - ssIncome),
   );
 
@@ -552,6 +555,7 @@ export function runDecumulationYear(
   // SS convergence + gross-up estimation (extracted to tax-gross-up module)
   const taxEst = estimateWithdrawalTaxCost({
     afterTaxNeed,
+    fixedGrossWithdrawal: state.portfolioWithdrawal ?? undefined,
     ssIncome,
     filingStatus,
     config,
@@ -581,6 +585,8 @@ export function runDecumulationYear(
   let { taxableSS } = taxEst;
   let { grossUpFactor } = taxEst;
   const { targetWithdrawal } = taxEst;
+  if (taxEst.derivedAfterTaxNeed !== undefined)
+    afterTaxNeed = taxEst.derivedAfterTaxNeed;
 
   // Build per-account, per-tax-type balances for withdrawal routing
   // Uses real per-account balances tracked through accumulation
@@ -864,7 +870,12 @@ export function runDecumulationYear(
   // so RMD enforcement itself never changes penaltyCost, but this recompute
   // must still reflect whatever penaltyCost already was (nonzero only when
   // avoidPenalizedWithdrawals is off).
-  if (rmdOverrodeRouting && afterTaxNeed > 0) {
+  // (Nothing is grossed up when the strategy fixed the gross withdrawal.)
+  if (
+    rmdOverrodeRouting &&
+    afterTaxNeed > 0 &&
+    state.portfolioWithdrawal === null
+  ) {
     const postRmdTotalCost = roundToCents(taxCost + penaltyCost);
     const postRmdEffRate = postRmdTotalCost / (afterTaxNeed + postRmdTotalCost);
     // Not a safeDivide candidate: the guard
@@ -959,7 +970,10 @@ export function runDecumulationYear(
       returnRateMap: ctx.returnRateMap,
       totalTraditionalWithdrawal,
       totalWithdrawal,
-      currentProjectedAnnualSpendingNeed: state.projectedExpenses,
+      // What leaves the portfolio this year — not spending, which Social
+      // Security partly covers (and which a portfolio-sized strategy with
+      // Social Security on top doesn't size at all).
+      currentProjectedAnnualSpendingNeed: targetWithdrawal,
       postRetirementInflationRate: ctx.validatedPostRetirementInflation,
     });
     if (smoothingResult.householdSmoothingTarget > 0) {
@@ -1147,8 +1161,14 @@ export function runDecumulationYear(
   const deliveredAfterTax = roundToCents(
     totalWithdrawal - taxCost - penaltyCost,
   );
+  // A withdrawal-sized year (Social Security on top) has no spending need
+  // of its own: its shortfall is the part of the strategy's amount that
+  // couldn't leave the portfolio — not tax that changed after routing
+  // (conversion-year capital gains, NIIT), which only lowers what's spent.
   const fundingShortfall = roundToCents(
-    Math.max(0, afterTaxNeed - deliveredAfterTax),
+    state.portfolioWithdrawal !== null
+      ? Math.max(0, state.portfolioWithdrawal - totalWithdrawal)
+      : Math.max(0, afterTaxNeed - deliveredAfterTax),
   );
   // Materiality floor, not a correctness tolerance. NIIT and the
   // conversion-year LTCG recompute both run
@@ -1449,6 +1469,12 @@ export function runDecumulationYear(
     age,
     phase: "decumulation",
     projectedExpenses: roundToCents(state.projectedExpenses),
+    spending: roundToCents(
+      deliveredAfterTax -
+        (config.rmdExcessHandling === "reinvest" ? rmdExcessAmount : 0) +
+        ssIncome,
+    ),
+    withdrawalSized: state.portfolioWithdrawal !== null,
     budgetOnlyExpenses: roundToCents(state.budgetOnlyExpenses),
     hasBudgetOverride: budgetOverrideMap.has(year),
     brokerageContribution: decumBrokerageContrib,

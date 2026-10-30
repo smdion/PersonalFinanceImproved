@@ -1,6 +1,7 @@
 "use client";
 
 import { ProseSection } from "@/components/ui/prose-section";
+import { getAllStrategyKeys } from "@/lib/config/withdrawal-strategies";
 
 export function DecumulationMethodologyContent() {
   return (
@@ -262,7 +263,39 @@ export function DecumulationMethodologyContent() {
               between Fixed Real and Constant Percentage.
             </span>
           </li>
+          <li>
+            <strong>Variable Percentage Withdrawal (VPW)</strong> — the
+            Bogleheads method: each year withdraw a percentage of the balance
+            set by your age (the younger spouse&apos;s, for a couple) and your
+            stock share — the payment that would spend the portfolio by age 100
+            at 5% real for stocks and 1.9% for bonds. It matches the published
+            VPW table to the tenth of a percent, and &ldquo;stops growing when
+            it reaches 10%.&rdquo; The stock share each year comes from your
+            allocation glide path (60% when you have no asset classes).
+            <br />
+            <span className="text-faint text-label">
+              Best for: retirees who want to spend their savings down on
+              purpose, with Social Security or a pension as the floor.
+              Bogleheads suggests an annuity around 80 for living past 100,
+              which Ledgr doesn&apos;t model.
+            </span>
+          </li>
         </ul>
+        <p>
+          <strong>Social Security and the portfolio-sized strategies.</strong>{" "}
+          Constant Percentage, Endowment, Vanguard Dynamic, RMD Spending (from
+          the RMD age) and VPW size what leaves the portfolio. As published,
+          that amount is the withdrawal: tax comes out of it and Social Security
+          comes on top, so you spend the withdrawal after tax plus Social
+          Security. Each has a switch, &ldquo;Social Security comes out of this
+          amount,&rdquo; for treating the amount as your spending instead —
+          Social Security then pays part of it and less leaves the portfolio
+          once it starts (how Ledgr ran them before v0.9.5, and what profiles
+          from before keep). With the switch off, the &ldquo;gross up for
+          taxes&rdquo; setting has no effect: nothing is grossed up. Roth
+          conversion tax is paid from brokerage either way, outside the
+          withdrawal.
+        </p>
       </ProseSection>
 
       <ProseSection title="Defaults">
@@ -339,10 +372,8 @@ export function DecumulationMethodologyContent() {
                 </td>
                 <td className="pr-3">Enum</td>
                 <td>
-                  One of 8 spending strategies: fixed,
-                  forgo_inflation_after_loss, rmd_spending, guyton_klinger,
-                  spending_decline, constant_percentage, endowment,
-                  vanguard_dynamic
+                  One of {getAllStrategyKeys().length} spending strategies:{" "}
+                  {getAllStrategyKeys().join(", ")}
                 </td>
               </tr>
             </tbody>

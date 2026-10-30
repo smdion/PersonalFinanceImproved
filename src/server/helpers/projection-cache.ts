@@ -352,8 +352,12 @@ import { log } from "@/lib/logger";
  *  58: the built-in LTCG/IRMAA/FPL tables are gone (the payload always
  *  supplies them; years follow one rule); the QCD limit comes from the
  *  tax data (it was a stale $115,000 constant); discretionary tiers carry
- *  `includesNiit`. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 58;
+ *  `includesNiit`.
+ *  59: decumulation years carry `spending` and `withdrawalSized` — a
+ *  portfolio-sized strategy can size the gross withdrawal with Social
+ *  Security on top (per-strategy `ssInAmount`); VPW strategy;
+ *  `stockShareByAge` input. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 59;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

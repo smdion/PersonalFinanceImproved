@@ -1,4 +1,5 @@
 /** Retirement router for readiness analysis including savings rates, employer matches, tax bucket projections, relocation comparisons, profile-switching scenarios, and retirement-settings/scenario/override/return-rate CRUD. */
+import { getStrategyMeta } from "@/lib/config/withdrawal-strategies";
 import {
   capResolvedProfile,
   loadCapHousehold,
@@ -63,6 +64,12 @@ import {
   pickProfileSettingsRow,
   resolveRetirementProfileId,
 } from "@/server/helpers/retirement-profile";
+
+/** VPW's end age as its editor bounds it (config paramFields). */
+const VPW_END_AGE_FIELD = (() => {
+  const f = getStrategyMeta("vpw").paramFields.find((p) => p.key === "endAge");
+  return { min: f?.min ?? 90, max: f?.max ?? 110 };
+})();
 
 // --- CRUD Zod schemas ---
 
@@ -152,6 +159,23 @@ const retirementSettingsInput = z.object({
   vdCeilingPercent: zDecimal.optional(),
   vdFloorPercent: zDecimal.optional(),
   rmdMultiplier: zDecimal.optional(),
+  /** VPW: the most the percentage reaches, and the age the table runs to
+   *  (null = the config default). */
+  vpwCap: zDecimal.nullable().optional(),
+  vpwEndAge: z
+    .number()
+    .int()
+    .min(VPW_END_AGE_FIELD.min)
+    .max(VPW_END_AGE_FIELD.max)
+    .nullable()
+    .optional(),
+  /** Per portfolio-sized strategy: Social Security comes out of the
+   *  strategy's amount (true) or on top of it (false / null). */
+  cpSsInAmount: z.boolean().nullable().optional(),
+  enSsInAmount: z.boolean().nullable().optional(),
+  vdSsInAmount: z.boolean().nullable().optional(),
+  rmdSsInAmount: z.boolean().nullable().optional(),
+  vpwSsInAmount: z.boolean().nullable().optional(),
   rmdExcessHandling: z.enum(["reinvest", "spend"]).optional(),
   /** Where reinvested RMD money goes — a Retirement brokerage's performance
    *  account; null = spread across the Retirement brokerages. */

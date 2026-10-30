@@ -17,6 +17,10 @@
 "use client";
 
 import {
+  getStrategyMeta,
+  type WithdrawalStrategyType,
+} from "@/lib/config/withdrawal-strategies";
+import {
   W4_FILING_STATUS_VALUES,
   type W4FilingStatus,
 } from "@/lib/config/enum-values";
@@ -259,6 +263,15 @@ export function TaxesSection({
               {(settings?.grossUpForTaxes ?? true) ? "On" : "Off"}
             </button>
           </div>
+          {withdrawalSized(settings) && (
+            <span className="text-caption text-faint">
+              {settings?.withdrawalStrategy === "rmd_spending"
+                ? "From the RMD age, no effect: "
+                : "No effect with this strategy: "}
+              it sets the withdrawal itself, tax comes out of it, and Social
+              Security comes on top.
+            </span>
+          )}
         </div>
         <div>
           <span className="text-muted">
@@ -553,4 +566,18 @@ export function TaxesSection({
       </div>
     </div>
   );
+}
+
+/** The active strategy sizes the portfolio withdrawal with Social Security
+ *  on top (its "comes out of this amount" switch off) — nothing is grossed
+ *  up then. */
+function withdrawalSized(settings: Settings | undefined): boolean {
+  if (!settings) return false;
+  const meta = getStrategyMeta(
+    (settings.withdrawalStrategy ?? "fixed") as WithdrawalStrategyType,
+  );
+  const field = meta.paramFields.find((f) => f.key === "ssInAmount");
+  if (!field) return false;
+  const stored = (settings as Record<string, unknown>)[field.column];
+  return stored == null ? field.default !== true : stored !== true;
 }

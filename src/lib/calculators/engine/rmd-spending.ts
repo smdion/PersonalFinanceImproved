@@ -46,6 +46,7 @@ export function applyRmdSpending(
 
   return {
     projectedExpenses: spending,
+    amountKind: "portfolio_withdrawal",
     action: "rmd_based",
     updatedState: {},
   };

@@ -1,6 +1,7 @@
 "use client";
 
 /** Monte Carlo results — loading spinner, errors, warnings, depletion callout, and compact summary bar. */
+import { strategySpending } from "@/lib/calculators/strategy-spending";
 import {
   dominantFailureReason,
   planFailurePhrase,
@@ -18,6 +19,7 @@ import {
   formatRelativeTime,
   maskAmountsInText,
 } from "@/lib/utils/format";
+import type { EngineDecumulationYear } from "@/lib/calculators/types";
 import type { ProjectionState } from "./projection-table-types";
 
 /** Compact depletion callout (1-liner) shown when MC has a depletion age. */
@@ -157,16 +159,14 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
 
               // First decumulation year — the same year Guyton-Klinger's
               // anchor rate below is captured from, and also the source
-              // for the "starting income" tile: `projectedExpenses` is the
-              // ACTIVE strategy's own computed first-year spending (per
+              // for the "starting income" tile: `spending` is what the
+              // household spends that year under the ACTIVE strategy (per
               // coast-fire.ts's docblock — for every strategy but the 4
               // budget-continuation ones this is real, strategy-computed
               // math, not an echo of a flat rate setting), so this reflects
               // whatever withdrawal strategy/override is actually driving
               // the household's plan, not si.withdrawalRate.
-              let firstDecumYear:
-                NonNullable<typeof result>["projectionByYear"][number] | null =
-                null;
+              let firstDecumYear: EngineDecumulationYear | null = null;
               let priorAccumEnd: number | null = null;
               if (result) {
                 const years = result.projectionByYear;
@@ -360,7 +360,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                           <div className="flex items-center justify-center gap-0.5 font-semibold tabular-nums">
                             {formatCurrency(
                               deflate(
-                                firstDecumYear.projectedExpenses,
+                                strategySpending(firstDecumYear),
                                 firstDecumYear.year,
                               ),
                             )}

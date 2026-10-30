@@ -72,8 +72,7 @@ export interface RmdSmoothingInput {
    *  computation reruns fresh annually. */
   totalTraditionalWithdrawal: number;
   totalWithdrawal: number;
-  /** THIS year's projected annual spending need (e.g. `afterTaxNeed` or
-   *  `state.projectedExpenses`) — projected forward via simple compounding
+  /** THIS year's portfolio withdrawal (`targetWithdrawal`) — projected forward via simple compounding
    *  inflation (NOT the full spending-strategy dispatch a real future year
    *  would run; that's exactly the nested-re-simulation cost this design
    *  avoids). */

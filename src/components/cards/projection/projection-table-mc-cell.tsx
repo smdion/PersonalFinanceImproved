@@ -56,7 +56,9 @@ export function renderMcCell(
     );
     parts.push(`Standalone: ${formatCurrency(detBal)}`);
     parts.push(
-      `Expenses: ${formatCurrency(deflate(mcDetYr.projectedExpenses, yr.year))}/yr`,
+      mcDetYr.phase === "decumulation"
+        ? `Spending: ${formatCurrency(deflate(mcDetYr.spending, yr.year))}/yr`
+        : `Expenses: ${formatCurrency(deflate(mcDetYr.projectedExpenses, yr.year))}/yr`,
     );
     if (mcDetYr.phase === "accumulation") {
       const accYr = mcDetYr as EngineAccumulationYear;

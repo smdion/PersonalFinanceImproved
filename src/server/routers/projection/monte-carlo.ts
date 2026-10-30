@@ -5,6 +5,7 @@
  * projection engine) and the scenario-scoped mutations that edit the MC
  * input tables: `updateGlidePathAllocations` and `updateClampBounds`.
  */
+import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -412,9 +413,18 @@ export const monteCarloRouter = createTRPCRouter({
         });
         mcDeterministicRates.push({ label: `Age ${a}`, rate: blended });
       }
+      // VPW sizes by the stock share of the glide path this run simulates.
+      const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
       const mcEngineInput = {
         ...simInput,
         returnRates: mcDeterministicRates,
+        stockShareByAge:
+          stockShareByAge(
+            mcGlidePath,
+            classifyAssetClasses(classBuckets),
+            simInput.currentAge,
+            simInput.projectionEndAge,
+          ) ?? undefined,
       };
 
       // Cache key covers every input that feeds the trials themselves —

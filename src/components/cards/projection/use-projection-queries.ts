@@ -274,9 +274,11 @@ export function useProjectionQueries(
     utils.projection.computeMonteCarloProjection.invalidate();
     utils.projection.computeStrategyComparison.invalidate();
   };
+  // The glide path also sets the stock share VPW sizes by — every
+  // projection reads it, not just the Simulation.
   const updateGlidePath =
     trpc.projection.updateGlidePathAllocations.useMutation({
-      onSuccess: invalidateMc,
+      onSuccess: invalidateEngine,
     });
   const updateInflationRisk = trpc.projection.updateInflationRisk.useMutation({
     onSuccess: invalidateMc,

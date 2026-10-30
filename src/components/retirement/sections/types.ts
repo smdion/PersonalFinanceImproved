@@ -75,6 +75,13 @@ export type Settings = {
   vdCeilingPercent?: string | null;
   vdFloorPercent?: string | null;
   rmdMultiplier?: string | null;
+  vpwCap?: string | null;
+  vpwEndAge?: number | null;
+  cpSsInAmount?: boolean | null;
+  enSsInAmount?: boolean | null;
+  vdSsInAmount?: boolean | null;
+  rmdSsInAmount?: boolean | null;
+  vpwSsInAmount?: boolean | null;
   /** What to do with RMD-forced withdrawal beyond stated spending
    *  need — "reinvest" (default) or "spend". */
   rmdExcessHandling?: string | null;

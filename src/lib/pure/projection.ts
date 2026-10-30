@@ -3,7 +3,6 @@
  * No DB or I/O dependency.
  */
 import { geometricMean } from "@/lib/calculators/random";
-import type { GlidePathEntry } from "@/lib/calculators/random";
 
 /** Minimal asset class shape for blending calculations. */
 type BlendableAssetClass = {
@@ -11,20 +10,6 @@ type BlendableAssetClass = {
   meanReturn: number;
   stdDev: number;
 };
-
-/**
- * Interpolate allocation weights for a given age from a glide path.
- * Finds the nearest entry at-or-above the target age, or uses the first entry.
- */
-export function interpolateAllocations(
-  glidePath: GlidePathEntry[],
-  age: number,
-): Record<number, number> {
-  // This delegates to the engine's interpolation, but we replicate the simple
-  // lookup here for the deterministic rate blending (which doesn't need full engine).
-  const entry = glidePath.find((gp) => gp.age >= age) ?? glidePath[0];
-  return entry?.allocations ?? {};
-}
 
 /**
  * Compute a blended deterministic return rate for a single age point.
@@ -38,27 +23,6 @@ export function blendedReturnForAge(
     const w = allocations[ac.id] ?? 0;
     return w > 0 ? sum + w * geometricMean(ac.meanReturn, ac.stdDev) : sum;
   }, 0);
-}
-
-/**
- * Build MC-aligned deterministic return rates across an age range.
- * Returns per-age blended geometric-mean returns for the deterministic comparison line.
- */
-export function blendDeterministicRates(
-  assetClasses: BlendableAssetClass[],
-  glidePath: GlidePathEntry[],
-  startAge: number,
-  endAge: number,
-): { label: string; rate: number }[] {
-  const rates: { label: string; rate: number }[] = [];
-  for (let a = startAge; a <= endAge; a++) {
-    const allocations = interpolateAllocations(glidePath, a);
-    rates.push({
-      label: `Age ${a}`,
-      rate: blendedReturnForAge(assetClasses, allocations),
-    });
-  }
-  return rates;
 }
 
 /**

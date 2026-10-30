@@ -850,6 +850,12 @@ export function buildStrategyEventStyle(
       label: vdCeilingPct ? `▲ capped @${vdCeilingPct}` : "▲ capped",
       tooltipText: `Year-over-year ceiling reached${vdCeilingPct ? ` (max +${vdCeilingPct}/yr)` : ""} — raise capped, spending still rose just not as much as your balance alone would set`,
     },
+    vpw_cap: {
+      color: CHART_COLORS.guardrailIncreaseMarker,
+      label: "▲ at cap",
+      tooltipText:
+        "VPW's percentage has reached its cap — it holds there from now on",
+    },
     floor_applied: {
       color: CHART_COLORS.guardrailSkipInflationMarker,
       label:

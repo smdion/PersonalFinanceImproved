@@ -3769,7 +3769,7 @@ exports[`engine snapshot parity > fixture 68: rmdSmoothingEnabled converts pre-R
   ],
   "finalYear": {
     "age": 79,
-    "allAccountsBalance": 5027879.8,
+    "allAccountsBalance": 4935891.21,
   },
   "firstOverflowAge": null,
   "firstOverflowAmount": null,

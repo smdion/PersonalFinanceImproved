@@ -456,3 +456,55 @@ describe("estimateWithdrawalTaxCost matches real routing (regression for Batch 2
     expect(est.estTax).toBe(taxResult.taxCost);
   });
 });
+
+describe("estimateWithdrawalTaxCost — a fixed gross withdrawal (Social Security on top)", () => {
+  const base = {
+    afterTaxNeed: 999_999, // ignored when the withdrawal is fixed
+    ssIncome: 30000,
+    filingStatus: "MFJ" as const,
+    config: makeDecumulationConfig({
+      withdrawalRoutingMode: "bracket_filling",
+    }),
+    taxRates: {
+      grossUpForTaxes: true,
+      traditionalFallbackRate: 0.15,
+      roth: 0,
+      hsa: 0,
+      brokerage: 0.15,
+      taxBrackets: TEST_BRACKETS,
+      ltcgBrackets: shippedTaxTables().ltcgBrackets,
+      rothBracketTarget: 0.22,
+    },
+    balances: makeTaxBuckets(),
+    acctBal: makeAccountBalances(),
+    totalBalance: 1050000,
+  };
+
+  it("withdraws exactly the amount, grosses nothing up, and derives the after-tax need it delivers", () => {
+    const r = estimateWithdrawalTaxCost({
+      ...base,
+      fixedGrossWithdrawal: 60000,
+    });
+    expect(r.targetWithdrawal).toBe(60000);
+    expect(r.grossUpFactor).toBe(1);
+    expect(r.derivedAfterTaxNeed).toBeCloseTo(
+      60000 - r.estTax - r.estPenalty,
+      2,
+    );
+    expect(r.estTax).toBeGreaterThan(0);
+  });
+
+  it("never more than the balance", () => {
+    const r = estimateWithdrawalTaxCost({
+      ...base,
+      fixedGrossWithdrawal: 5_000_000,
+    });
+    expect(r.targetWithdrawal).toBe(1050000);
+  });
+
+  it("the normal path is unchanged without it", () => {
+    const r = estimateWithdrawalTaxCost({ ...base, afterTaxNeed: 40000 });
+    expect(r.derivedAfterTaxNeed).toBeUndefined();
+    expect(r.targetWithdrawal).toBeGreaterThan(40000);
+  });
+});

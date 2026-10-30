@@ -14,6 +14,7 @@ import {
 import { describe, it, expect } from "vitest";
 import fc from "fast-check";
 import { calculateProjection } from "@/lib/calculators/engine";
+import { assessPlan } from "@/lib/calculators/plan-outcome";
 import {
   toSimpleTaxMode,
   type SimpleTaxModeParts,
@@ -2891,5 +2892,218 @@ describe("engine invariants", () => {
         expect(spend.hasRow("Projected")).toBe(false);
       });
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Social Security in or on top of a portfolio-sized strategy's amount
+// ---------------------------------------------------------------------------
+
+describe("Social Security switch on portfolio-sized strategies", () => {
+  const PORTFOLIO_SIZED = [
+    "constant_percentage",
+    "endowment",
+    "vanguard_dynamic",
+    "rmd_spending",
+    "vpw",
+  ] as const;
+
+  const run = (
+    strategy: (typeof PORTFOLIO_SIZED)[number],
+    ssInAmount: boolean,
+    extra: Partial<ProjectionInput["decumulationDefaults"]> = {},
+  ) => {
+    const base = makeInput();
+    const input = makeInput({
+      decumulationDefaults: {
+        ...base.decumulationDefaults,
+        withdrawalStrategy: strategy,
+        strategyParams: { [strategy]: { ssInAmount } },
+        ...extra,
+      },
+    });
+    return calculateProjection(input)
+      .projectionByYear.filter((y) => y.phase === "decumulation")
+      .map((y) => y as EngineDecumulationYear);
+  };
+
+  for (const strategy of PORTFOLIO_SIZED) {
+    it(`${strategy}, on (today's behavior): the amount is spending — funded years spend exactly it`, () => {
+      for (const y of run(strategy, true)) {
+        expect(y.withdrawalSized).toBe(false);
+        if (y.unmetNeedMaterial || y.rmdExcessAmount > 0) continue;
+        expect(Math.abs(y.spending - y.projectedExpenses)).toBeLessThan(1);
+      }
+    });
+
+    it(`${strategy}, off (published): the amount leaves the portfolio and Social Security comes on top`, () => {
+      const years = run(strategy, false);
+      for (const y of years) {
+        // Before the RMD age RMD Spending follows the budget: spending.
+        if (!y.withdrawalSized) continue;
+        expect(y.targetWithdrawal).toBeCloseTo(
+          Math.min(y.projectedExpenses, y.targetWithdrawal),
+          2,
+        );
+        expect(y.spending).toBeCloseTo(
+          y.totalWithdrawal -
+            y.taxCost -
+            (y.penaltyCost ?? 0) -
+            (y.config.rmdExcessHandling === "reinvest"
+              ? y.rmdExcessAmount
+              : 0) +
+            y.ssIncome,
+          1,
+        );
+      }
+      if (strategy !== "rmd_spending")
+        expect(years.some((y) => y.withdrawalSized && y.ssIncome > 0)).toBe(
+          true,
+        );
+    });
+  }
+
+  it("once Social Security starts: on draws the amount less Social Security plus tax; off draws the amount itself", () => {
+    const on = run("constant_percentage", true);
+    const off = run("constant_percentage", false);
+    const y = on.find((r) => r.ssIncome > 0)!;
+    const z = off.find((r) => r.ssIncome > 0)!;
+    expect(y.totalWithdrawal).toBeCloseTo(
+      y.projectedExpenses - y.ssIncome + y.taxCost + (y.penaltyCost ?? 0),
+      0,
+    );
+    expect(z.totalWithdrawal).toBeCloseTo(z.projectedExpenses, 2);
+    expect(z.spending).toBeCloseTo(
+      z.projectedExpenses - z.taxCost - (z.penaltyCost ?? 0) + z.ssIncome,
+      0,
+    );
+  });
+
+  it("an RMD bigger than the withdrawal: reinvested money isn't spending, spent money is", () => {
+    const rmdInput = (handling: "reinvest" | "spend") => {
+      const base = makeInput();
+      return makeInput({
+        currentAge: 76,
+        retirementAge: 75,
+        projectionEndAge: 85,
+        currentSalary: 0,
+        birthYear: AS_OF.getFullYear() - 76,
+        socialSecurityAnnual: 30000,
+        ssStartAge: 70,
+        startingBalances: {
+          preTax: 900000,
+          taxFree: 50000,
+          afterTax: 30000,
+          afterTaxBasis: 15000,
+          hsa: 10000,
+        },
+        startingAccountBalances: {
+          "401k": {
+            structure: "roth_traditional",
+            traditional: 870000,
+            roth: 30000,
+          },
+          "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+          hsa: { structure: "single_bucket", balance: 10000 },
+          ira: {
+            structure: "roth_traditional",
+            traditional: 30000,
+            roth: 20000,
+          },
+          brokerage: {
+            structure: "basis_tracking",
+            balance: 30000,
+            basis: 15000,
+          },
+        },
+        decumulationDefaults: {
+          ...base.decumulationDefaults,
+          withdrawalStrategy: "constant_percentage",
+          // 2% of the portfolio — well under the RMD at 76.
+          strategyParams: {
+            constant_percentage: { withdrawalPercent: 0.02, floorPercent: 0.5 },
+          },
+          rmdExcessHandling: handling,
+        },
+      });
+    };
+    const first = (handling: "reinvest" | "spend") =>
+      calculateProjection(rmdInput(handling)).projectionByYear.find(
+        (y) => y.phase === "decumulation",
+      ) as EngineDecumulationYear;
+    const reinvest = first("reinvest");
+    const spend = first("spend");
+    expect(reinvest.withdrawalSized).toBe(true);
+    expect(reinvest.rmdExcessAmount).toBeGreaterThan(0);
+    expect(spend.spending - reinvest.spending).toBeCloseTo(
+      reinvest.rmdExcessAmount,
+      0,
+    );
+  });
+
+  it("VPW sizes by the glide path's stock share and the younger spouse's age", () => {
+    const base = makeInput();
+    const vpwFirst = (over: Partial<ProjectionInput>) =>
+      calculateProjection(
+        makeInput({
+          decumulationDefaults: {
+            ...base.decumulationDefaults,
+            withdrawalStrategy: "vpw",
+          },
+          ...over,
+        }),
+      ).projectionByYear.find(
+        (y) => y.phase === "decumulation",
+      ) as EngineDecumulationYear;
+    const share = (s: number) =>
+      Object.fromEntries(
+        Array.from({ length: 60 }, (_, i) => [40 + i, s]),
+      ) as Record<number, number>;
+    const bonds = vpwFirst({ stockShareByAge: share(0.3) });
+    const stocks = vpwFirst({ stockShareByAge: share(0.7) });
+    expect(stocks.targetWithdrawal).toBeGreaterThan(bonds.targetWithdrawal);
+    // A younger spouse lowers the percentage.
+    const retireYear = AS_OF.getFullYear() + (65 - 35);
+    const couple = vpwFirst({
+      stockShareByAge: share(0.3),
+      perPersonBirthYears: [retireYear - 65, retireYear - 55],
+    });
+    expect(couple.targetWithdrawal).toBeLessThan(bonds.targetWithdrawal);
+    expect(bonds.withdrawalSized).toBe(true);
+  });
+
+  it("running out fails the plan with the switch off as with it on (a binding floor)", () => {
+    const base = makeInput();
+    const run = (ssInAmount: boolean) =>
+      calculateProjection(
+        makeInput({
+          returnRates: [{ label: "1%", rate: 0.01 }],
+          decumulationDefaults: {
+            ...base.decumulationDefaults,
+            withdrawalStrategy: "constant_percentage",
+            strategyParams: {
+              constant_percentage: {
+                withdrawalPercent: 0.12,
+                floorPercent: 0.9,
+                ssInAmount,
+              },
+            },
+          },
+        }),
+      );
+    expect(assessPlan(run(true)).succeeded).toBe(false);
+    const off = run(false);
+    expect(assessPlan(off).succeeded).toBe(false);
+    // The need doesn't vanish with the money: every year after it's gone
+    // still needs the strategy's amount (after tax), unmet.
+    const gone = off.projectionByYear.filter(
+      (y): y is EngineDecumulationYear =>
+        y.phase === "decumulation" && y.retirementBalance < 1,
+    );
+    expect(gone.length).toBeGreaterThan(1);
+    for (const y of gone.slice(1)) {
+      expect(y.afterTaxNeed).toBeGreaterThan(0);
+      expect(y.unmetNeedMaterial).toBe(true);
+    }
   });
 });

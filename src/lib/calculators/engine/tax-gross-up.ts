@@ -65,8 +65,13 @@ import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penal
 
 /** Input for the convergence estimation. */
 interface TaxEstimationInput {
-  /** After-tax spending need (expenses - SS income) */
+  /** After-tax spending need (expenses - SS income). Ignored when
+   *  `fixedGrossWithdrawal` is set. */
   afterTaxNeed: number;
+  /** A portfolio-sized strategy's amount with Social Security on top: the
+   *  gross withdrawal is fixed (no solving), and the after-tax need it
+   *  delivers is derived from it (`derivedAfterTaxNeed`). */
+  fixedGrossWithdrawal?: number;
   /** Social Security income for this year */
   ssIncome: number;
   /** Filing status for SS taxation thresholds */
@@ -149,6 +154,10 @@ interface TaxEstimationResult {
   grossedUpNeed: number;
   /** Target withdrawal (capped at total balance) */
   targetWithdrawal: number;
+  /** With `fixedGrossWithdrawal`: what it delivers after tax and penalty —
+   *  the year's after-tax need, so every reader of that need (shortfall,
+   *  RMD excess, post-RMD recompute) works unchanged. */
+  derivedAfterTaxNeed?: number;
   /** Estimated early-withdrawal penalty cost — 0 whenever `hasIndTracking`
    *  is false or nothing was
    *  penalized (the overwhelming default case, since `routeForMode` already
@@ -318,6 +327,47 @@ function evaluateCost(
 }
 
 /**
+ * A fixed gross withdrawal (a portfolio-sized strategy with Social Security
+ * on top): no solving — evaluate the cost of W once, refining Social
+ * Security's taxable share from that evaluation's Traditional draw, and
+ * derive the after-tax need from the strategy's FULL amount at that cost
+ * rate. Never from what the balance or the router could deliver: a need cut
+ * down to what's there would hide running out (no shortfall, plan "funded").
+ */
+function fixedWithdrawalEstimate(
+  input: TaxEstimationInput,
+  amount: number,
+): TaxEstimationResult {
+  const { ssIncome, filingStatus, totalBalance } = input;
+  const W = roundToCents(Math.max(0, Math.min(amount, totalBalance)));
+  let taxableSS = ssIncome * 0.85;
+  let evalResult = evaluateCost(W, taxableSS, input);
+  if (filingStatus && ssIncome > 0) {
+    taxableSS = computeTaxableSS(
+      ssIncome,
+      evalResult.totalTraditionalWithdrawal,
+      filingStatus,
+    );
+    evalResult = evaluateCost(W, taxableSS, input);
+  }
+  const effectiveTaxRate = W > 0 ? evalResult.totalCost / W : 0;
+  const derivedAfterTaxNeed = roundToCents(
+    Math.max(0, amount * (1 - Math.min(1, effectiveTaxRate))),
+  );
+  return {
+    taxableSS,
+    estTax: evalResult.taxCost,
+    estPenalty: evalResult.penaltyCost,
+    effectiveTaxRate,
+    // Nothing is grossed up: the withdrawal is the amount.
+    grossUpFactor: 1,
+    grossedUpNeed: W,
+    targetWithdrawal: W,
+    derivedAfterTaxNeed,
+  };
+}
+
+/**
  * Resolves decumulation-year.ts's circular dependency — the withdrawal
  * amount depends on its own tax+penalty cost, which depends on the
  * withdrawal amount — by solving `W - cost(W) = afterTaxNeed` for W.
@@ -350,8 +400,10 @@ function evaluateCost(
 export function estimateWithdrawalTaxCost(
   input: TaxEstimationInput,
 ): TaxEstimationResult {
-  const { afterTaxNeed, ssIncome, filingStatus, totalBalance, taxRates } =
-    input;
+  const { ssIncome, filingStatus, totalBalance, taxRates } = input;
+  if (input.fixedGrossWithdrawal !== undefined)
+    return fixedWithdrawalEstimate(input, input.fixedGrossWithdrawal);
+  const { afterTaxNeed } = input;
   const shouldGrossUp = taxRates.grossUpForTaxes !== false;
   const MAX_EVALUATIONS = 4;
   const RESIDUAL_TOLERANCE = 0.01;

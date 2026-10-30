@@ -67,6 +67,13 @@ export type ReportEngineSettings = {
   vdCeilingPercent?: NumLike | null;
   vdFloorPercent?: NumLike | null;
   rmdMultiplier?: NumLike | null;
+  vpwCap?: NumLike | null;
+  vpwEndAge?: NumLike | null;
+  cpSsInAmount?: boolean | null;
+  enSsInAmount?: boolean | null;
+  vdSsInAmount?: boolean | null;
+  rmdSsInAmount?: boolean | null;
+  vpwSsInAmount?: boolean | null;
 };
 
 /** `null`/`undefined` → `undefined`; otherwise coerce to a real number. */
@@ -152,7 +159,11 @@ export function ReportAssumptionsSummary({
   // paramFields strategy-params.tsx renders for editing, read-only here.
   // Explicit lookup (not a cast off `settings`) so this stays typed to the
   // fields ReportEngineSettings actually declares.
-  const strategyParamValues: Record<string, NumLike | null | undefined> = {
+  // Keyed by column (`paramFields[].column`).
+  const strategyParamValues: Record<
+    string,
+    NumLike | boolean | null | undefined
+  > = {
     gkUpperGuardrail: settings.gkUpperGuardrail,
     gkLowerGuardrail: settings.gkLowerGuardrail,
     gkIncreasePct: settings.gkIncreasePct,
@@ -167,11 +178,35 @@ export function ReportAssumptionsSummary({
     vdCeilingPercent: settings.vdCeilingPercent,
     vdFloorPercent: settings.vdFloorPercent,
     rmdMultiplier: settings.rmdMultiplier,
+    vpwCap: settings.vpwCap,
+    vpwEndAge: settings.vpwEndAge,
+    cpSsInAmount: settings.cpSsInAmount,
+    enSsInAmount: settings.enSsInAmount,
+    vdSsInAmount: settings.vdSsInAmount,
+    rmdSsInAmount: settings.rmdSsInAmount,
+    vpwSsInAmount: settings.vpwSsInAmount,
   };
   const strategyParamRows = (strategyCfg?.paramFields ?? [])
-    .filter((f) => typeof f.default !== "boolean")
     .map((f) => {
-      const v = num(strategyParamValues[f.key]);
+      const stored = strategyParamValues[f.column];
+      if (f.type === "boolean") {
+        const on = stored == null ? f.default === true : stored === true;
+        // The Social Security switch reads as a sentence; other switches
+        // aren't shown (as before).
+        if (f.key !== "ssInAmount") return null;
+        return (
+          <Row
+            key={f.key}
+            label="Social Security"
+            value={
+              on
+                ? "comes out of the strategy's amount"
+                : "on top of the withdrawal"
+            }
+          />
+        );
+      }
+      const v = num(stored as NumLike | null | undefined);
       if (v == null) return null;
       const formatted = f.type === "percent" ? formatPercent(v, 1) : String(v);
       return <Row key={f.key} label={f.label} value={formatted} />;

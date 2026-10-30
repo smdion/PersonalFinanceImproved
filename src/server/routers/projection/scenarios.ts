@@ -460,6 +460,13 @@ export const scenariosRouter = createTRPCRouter({
           vdCeilingPercent: settings.vdCeilingPercent,
           vdFloorPercent: settings.vdFloorPercent,
           rmdMultiplier: settings.rmdMultiplier,
+          vpwCap: settings.vpwCap,
+          vpwEndAge: settings.vpwEndAge,
+          cpSsInAmount: settings.cpSsInAmount,
+          enSsInAmount: settings.enSsInAmount,
+          vdSsInAmount: settings.vdSsInAmount,
+          rmdSsInAmount: settings.rmdSsInAmount,
+          vpwSsInAmount: settings.vpwSsInAmount,
           rmdExcessHandling: settings.rmdExcessHandling,
           rmdExcessTargetPerformanceAccountId:
             settings.rmdExcessTargetPerformanceAccountId,

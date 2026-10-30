@@ -29,6 +29,10 @@ type StrategyResult = {
   shortLabel: string;
   failureAge: number | null;
   failureReason: PlanFailureReason | null;
+  /** What the strategy has the household spend (Social Security
+   *  included) — comparable across strategies, unlike the withdrawals. */
+  year1Spending: number;
+  avgAnnualSpending: number;
   year1Withdrawal: number;
   avgAnnualWithdrawal: number;
   minAnnualWithdrawal: number;
@@ -177,7 +181,21 @@ export function WithdrawalComparisonCard({
                     Stab. (Budget)
                   </span>
                 </th>
-                <th className="px-2 py-1.5 text-right font-medium">Year 1</th>
+                <th className="px-2 py-1.5 text-right font-medium">
+                  <span title="What you spend in the first retirement year, Social Security included">
+                    Spend yr 1
+                  </span>
+                </th>
+                <th className="px-2 py-1.5 text-right font-medium">
+                  <span title="What you spend on average a year, Social Security included">
+                    Spend avg
+                  </span>
+                </th>
+                <th className="px-2 py-1.5 text-right font-medium">
+                  <span title="Withdrawn from the portfolio in the first retirement year — strategies with Social Security on top withdraw more than ones it comes out of">
+                    Year 1
+                  </span>
+                </th>
                 <th className="px-2 py-1.5 text-right font-medium">Avg/yr</th>
                 <th className="px-2 py-1.5 text-right font-medium">Min/yr</th>
                 <th className="px-2 py-1.5 text-right font-medium">Max/yr</th>
@@ -282,6 +300,12 @@ export function WithdrawalComparisonCard({
                       ) : (
                         <span className="text-faint">—</span>
                       )}
+                    </td>
+                    <td className="px-2 py-1.5 text-right tabular-nums">
+                      {formatCurrency(deflateSummary(s.year1Spending))}
+                    </td>
+                    <td className="px-2 py-1.5 text-right tabular-nums">
+                      {formatCurrency(deflateSummary(s.avgAnnualSpending))}
                     </td>
                     <td className="text-faint px-2 py-1.5 text-right tabular-nums">
                       {formatCurrency(deflateSummary(s.year1Withdrawal))}

@@ -1008,3 +1008,49 @@ describe("findCoastFireAge — contributions stop on the per-account (spec) path
     expect(findCoastFireAge(specInput()).status).not.toBe("already_coast");
   });
 });
+
+describe("findCoastFireAge — gross-up off", () => {
+  it("a stated need the strategy meets isn't failed for the tax that, by choice, isn't grossed up", () => {
+    const base = makeInput({
+      startingBalances: {
+        preTax: 3100000,
+        taxFree: 900000,
+        afterTax: 500_000,
+        afterTaxBasis: 400_000,
+        hsa: 50_000,
+      },
+      startingAccountBalances: {
+        "401k": {
+          structure: "roth_traditional",
+          traditional: 2_400_000,
+          roth: 600_000,
+        },
+        "403b": { structure: "roth_traditional", traditional: 0, roth: 0 },
+        hsa: { structure: "single_bucket", balance: 50_000 },
+        ira: {
+          structure: "roth_traditional",
+          traditional: 700_000,
+          roth: 300_000,
+        },
+        brokerage: {
+          structure: "basis_tracking",
+          balance: 500_000,
+          basis: 400_000,
+        },
+      },
+      annualExpenses: 48_000,
+      decumulationAnnualExpenses: 48_000,
+    });
+    const input = {
+      ...base,
+      decumulationDefaults: {
+        ...base.decumulationDefaults,
+        distributionTaxRates: {
+          ...base.decumulationDefaults.distributionTaxRates!,
+          grossUpForTaxes: false,
+        },
+      },
+    };
+    expect(findCoastFireAge(input).status).toBe("already_coast");
+  });
+});

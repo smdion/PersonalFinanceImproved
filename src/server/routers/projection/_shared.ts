@@ -6,15 +6,13 @@
  * here. This keeps shared pipeline code in exactly one place and removes
  * the duplicate-schema risk of spreading them across the sibling files.
  */
+import { glidePathFromRows } from "@/lib/pure/stock-share";
 import { z } from "zod/v4";
 import { eq, asc } from "drizzle-orm";
 import { toNumber } from "@/server/helpers";
 import * as schema from "@/lib/db/schema";
 import type { db as _db } from "@/lib/db";
-import {
-  DEFAULT_MC_INFLATION_RISK,
-  DEFAULT_ENDOWMENT_ROLLING_YEARS,
-} from "@/lib/constants";
+import { DEFAULT_MC_INFLATION_RISK } from "@/lib/constants";
 import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";
 import type {
   AccountCategory,
@@ -26,7 +24,11 @@ import {
   DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
   PARENT_CATEGORY_VALUES,
 } from "@/lib/config/account-types";
-import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
+import {
+  getAllStrategyKeys,
+  getStrategyMeta,
+  type WithdrawalStrategyType,
+} from "@/lib/config/withdrawal-strategies";
 
 /**
  * Baseline "current" SS claiming age for the strategy optimizer's
@@ -233,53 +235,32 @@ export async function resolveProjectionOverrides(
   };
 }
 
-/** Build strategyParams from DB settings columns. */
-export function buildStrategyParams(settings: {
-  gkUpperGuardrail: string | null;
-  gkLowerGuardrail: string | null;
-  gkIncreasePct: string | null;
-  gkDecreasePct: string | null;
-  gkSkipInflationAfterLoss: boolean;
-  sdAnnualDeclineRate: string | null;
-  cpWithdrawalPercent: string | null;
-  cpFloorPercent: string | null;
-  enWithdrawalPercent: string | null;
-  enRollingYears: number | null;
-  enFloorPercent: string | null;
-  vdBasePercent: string | null;
-  vdCeilingPercent: string | null;
-  vdFloorPercent: string | null;
-  rmdMultiplier: string | null;
-}): Partial<Record<WithdrawalStrategyType, Record<string, number | boolean>>> {
-  return {
-    guyton_klinger: {
-      upperGuardrail: toNumber(settings.gkUpperGuardrail ?? "0.80"),
-      lowerGuardrail: toNumber(settings.gkLowerGuardrail ?? "1.20"),
-      increasePercent: toNumber(settings.gkIncreasePct ?? "0.10"),
-      decreasePercent: toNumber(settings.gkDecreasePct ?? "0.10"),
-      skipInflationAfterLoss: settings.gkSkipInflationAfterLoss,
-    },
-    spending_decline: {
-      annualDeclineRate: toNumber(settings.sdAnnualDeclineRate ?? "0.02"),
-    },
-    constant_percentage: {
-      withdrawalPercent: toNumber(settings.cpWithdrawalPercent ?? "0.05"),
-      floorPercent: toNumber(settings.cpFloorPercent ?? "0.90"),
-    },
-    endowment: {
-      withdrawalPercent: toNumber(settings.enWithdrawalPercent ?? "0.05"),
-      rollingYears: settings.enRollingYears ?? DEFAULT_ENDOWMENT_ROLLING_YEARS,
-      floorPercent: toNumber(settings.enFloorPercent ?? "0.90"),
-    },
-    vanguard_dynamic: {
-      basePercent: toNumber(settings.vdBasePercent ?? "0.05"),
-      ceilingPercent: toNumber(settings.vdCeilingPercent ?? "0.05"),
-      floorPercent: toNumber(settings.vdFloorPercent ?? "0.025"),
-    },
-    rmd_spending: {
-      rmdMultiplier: toNumber(settings.rmdMultiplier ?? "1.0"),
-    },
-  };
+/**
+ * Build strategyParams from DB settings columns: each strategy's config
+ * defaults, with every param field read from its own column (config
+ * `paramFields[].column`) when set. A null column keeps the default.
+ */
+export function buildStrategyParams(
+  settings: Readonly<Record<string, unknown>>,
+): Partial<Record<WithdrawalStrategyType, Record<string, number | boolean>>> {
+  const out: Partial<
+    Record<WithdrawalStrategyType, Record<string, number | boolean>>
+  > = {};
+  for (const key of getAllStrategyKeys()) {
+    const meta = getStrategyMeta(key);
+    if (meta.paramFields.length === 0) continue;
+    const params: Record<string, number | boolean> = {
+      ...meta.defaultParams,
+    };
+    for (const field of meta.paramFields) {
+      const stored = settings[field.column];
+      if (stored == null) continue;
+      params[field.key] =
+        field.type === "boolean" ? Boolean(stored) : toNumber(String(stored));
+    }
+    out[key] = params;
+  }
+  return out;
 }
 
 /**
@@ -413,14 +394,7 @@ export async function buildMcInputs(db: Db): Promise<{
     correlation: toNumber(c.correlation),
   }));
 
-  const gpByAge = new Map<number, Record<number, number>>();
-  for (const gp of glidePathRows) {
-    if (!gpByAge.has(gp.age)) gpByAge.set(gp.age, {});
-    gpByAge.get(gp.age)![gp.assetClassId] = toNumber(gp.allocation);
-  }
-  const mcGlidePath = Array.from(gpByAge.entries())
-    .sort(([a], [b]) => a - b)
-    .map(([gpAge, allocations]) => ({ age: gpAge, allocations }));
+  const mcGlidePath = glidePathFromRows(glidePathRows);
 
   const savedInflationOverrides = (savedInflationRow?.value ?? null) as {
     meanRate?: number;
