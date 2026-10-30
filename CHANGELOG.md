@@ -8,7 +8,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.9
 
-## [0.9.5] - Unreleased
+## [0.9.5] - 2026-10-30
+
+### Upgrading
+
+- Profiles from before this version keep Social Security coming out of the portfolio-sized strategies' amounts, so those projections don't change. Turn the switch off on a strategy to use the published definition.
+- If one budget account is pulled into two places, saving your mappings asks you to keep one.
 
 ### Added
 
