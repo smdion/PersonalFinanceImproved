@@ -321,9 +321,10 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       "initialWithdrawalRate",
       "priorYearReturn",
       "priorYearSpending",
+      "priorYearSsIncome",
     ],
     guide: {
-      how: "Start with your budget, adjusted for inflation each year. If your current withdrawal rate drops below 80% of the initial rate (portfolio doing well), increase spending 10%. If it exceeds 120% (portfolio struggling), cut spending 10%. Also skips inflation after loss years.",
+      how: "Start with your budget, adjusted for inflation each year. If your current withdrawal rate drops below 80% of the initial rate (portfolio doing well), increase spending 10%. If it exceeds 120% (portfolio struggling), cut spending 10%. Also skips inflation after loss years. The withdrawal rate is what the portfolio pays — spending less Social Security — over its balance, and the 10% moves are 10% of that draw; Social Security starting moves the starting rate with it, so it's never read as a market gain.",
       strengths: [
         "Strong portfolio protection — 100% success rate in most scenarios",
         "Responds to both good and bad markets with clear, rule-based adjustments",

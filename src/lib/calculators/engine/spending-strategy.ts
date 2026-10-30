@@ -41,6 +41,8 @@ export interface SpendingStrategyInput {
   primaryPersonAge?: number;
   /** The youngest person's age (VPW: a couple uses the younger spouse's). */
   youngestAge?: number;
+  /** Social Security paid this year (what it covers of spending). */
+  ssIncome?: number;
   /** This year's stock share of the portfolio (0–1), from the allocation
    *  glide path; absent when the household has no asset classes. */
   stockShare?: number;
@@ -61,6 +63,9 @@ export interface SpendingCrossYearState {
   balanceHistory: number[];
   /** Count of decumulation years elapsed (for spending decline). */
   decumulationYearCount: number;
+  /** Social Security paid last year (Guyton-Klinger rescales its anchor
+   *  when it changes). Null before the first decumulation year. */
+  priorYearSsIncome: number | null;
 }
 
 export interface SpendingStrategyResult {
@@ -89,6 +94,7 @@ export function initialCrossYearState(): SpendingCrossYearState {
     priorYearSpending: null,
     balanceHistory: [],
     decumulationYearCount: 0,
+    priorYearSsIncome: null,
   };
 }
 

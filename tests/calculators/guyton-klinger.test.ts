@@ -24,12 +24,14 @@ function makeGKInput(
     params: DEFAULT_PARAMS,
     projectedExpenses: 50000,
     portfolioBalance: 1000000,
+    ssIncome: 0,
     effectiveInflation: 0.03,
     hasBudgetOverride: false,
     isFirstDecumulationYear: false,
     yearIndex: 1,
     initialWithdrawalRate: 0.05,
     priorYearReturn: 0.07,
+    priorSsIncome: null,
     ...overrides,
   };
 }
@@ -209,5 +211,94 @@ describe("applyGuytonKlingerStrategy (wrapper)", () => {
     const result = applyGuytonKlingerStrategy({}, input);
     // Default params: upperGuardrail=0.8, so currentRate 0.025 < 0.05*0.8=0.04 → increase
     expect(result.action).toBe("increase");
+  });
+});
+
+describe("applyGuytonKlinger — the withdrawal rate is what the portfolio pays", () => {
+  it("the initial rate leaves out what Social Security covers", () => {
+    const r = applyGuytonKlinger(
+      makeGKInput({
+        initialWithdrawalRate: null,
+        projectedExpenses: 80000,
+        ssIncome: 30000,
+      }),
+    );
+    expect(r.initialWithdrawalRate).toBeCloseTo(0.05);
+  });
+
+  it("Social Security covering spending isn't read as an overdrawn portfolio", () => {
+    // Spending 72k on 1M with 30k of Social Security: the portfolio pays
+    // 42k (4.2%) — under the 6% lower guardrail (5% × 1.2). Judged on
+    // total spending (7.2%) it would have been cut.
+    const r = applyGuytonKlinger(
+      makeGKInput({
+        projectedExpenses: 72000,
+        ssIncome: 30000,
+        initialWithdrawalRate: 0.05,
+      }),
+    );
+    expect(r.guardrailTriggered).not.toBe("decrease");
+    expect(r.projectedExpenses).toBe(72000);
+  });
+
+  it("Social Security above spending: the portfolio pays nothing, nothing to move", () => {
+    const r = applyGuytonKlinger(
+      makeGKInput({ projectedExpenses: 20000, ssIncome: 30000 }),
+    );
+    expect(r.guardrailTriggered).toBeNull();
+    expect(r.projectedExpenses).toBe(20000);
+  });
+
+  it("while Social Security covers all spending, no initial rate is anchored yet", () => {
+    const r = applyGuytonKlinger(
+      makeGKInput({
+        initialWithdrawalRate: null,
+        projectedExpenses: 25000,
+        ssIncome: 30000,
+      }),
+    );
+    expect(r.initialWithdrawalRate).toBeNull();
+    expect(r.guardrailTriggered).toBeNull();
+    expect(r.projectedExpenses).toBe(25000);
+  });
+
+  it("a cut moves spending by its share of the portfolio draw, not of all spending", () => {
+    // Portfolio pays 70k of 100k on 1M (7% > 6% lower guardrail): 10% of
+    // the 70k draw comes off, not 10% of 100k.
+    const r = applyGuytonKlinger(
+      makeGKInput({ projectedExpenses: 100000, ssIncome: 30000 }),
+    );
+    expect(r.guardrailTriggered).toBe("decrease");
+    expect(r.projectedExpenses).toBe(93000);
+  });
+
+  it("Social Security starting isn't market news: the anchor rescales, no raise", () => {
+    // Anchor 5% on a 50k draw (no SS). SS of 20k starts: the draw falls to
+    // 30k (3% < 4% upper guardrail) — without the rescale, a raise. The
+    // anchor moves by the same step (5% × 30/50 = 3%), so nothing fires.
+    const r = applyGuytonKlinger(
+      makeGKInput({
+        projectedExpenses: 50000,
+        ssIncome: 20000,
+        priorSsIncome: 0,
+        initialWithdrawalRate: 0.05,
+      }),
+    );
+    expect(r.initialWithdrawalRate).toBeCloseTo(0.03);
+    expect(r.guardrailTriggered).toBeNull();
+    expect(r.projectedExpenses).toBe(50000);
+  });
+
+  it("after the rescale the market still counts: a fallen portfolio still cuts", () => {
+    const r = applyGuytonKlinger(
+      makeGKInput({
+        projectedExpenses: 50000,
+        ssIncome: 20000,
+        priorSsIncome: 0,
+        initialWithdrawalRate: 0.05,
+        portfolioBalance: 700000, // 30k / 700k = 4.3% > 3% × 1.2
+      }),
+    );
+    expect(r.guardrailTriggered).toBe("decrease");
   });
 });

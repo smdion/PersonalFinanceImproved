@@ -6,7 +6,6 @@ import {
   dominantFailureReason,
   planFailurePhrase,
 } from "@/lib/calculators/plan-outcome";
-import { rowTotal } from "./utils";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -174,17 +173,20 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                   const y = years[i]!;
                   if (y.phase === "decumulation") {
                     firstDecumYear = y;
-                    priorAccumEnd = i > 0 ? rowTotal(years[i - 1]!) : null;
+                    // The balance GK anchors on: retirement money carried
+                    // into the year (pre-year-setup's retirementBalance).
+                    priorAccumEnd =
+                      i > 0 ? years[i - 1]!.retirementBalance : null;
                     break;
                   }
                 }
               }
 
               // Guyton-Klinger's actual starting rate (not the flat
-              // "Initial Withdrawal Rate" setting) — that year's spending ÷
-              // the portfolio balance carried in from the last accumulation
-              // year. GK uses this number (not si.withdrawalRate) to decide
-              // every future raise/cut.
+              // "Initial Withdrawal Rate" setting) — what the portfolio pays
+              // that year (spending less Social Security) ÷ the retirement
+              // balance carried in. None while Social Security covers all of
+              // it (the engine anchors later).
               let gkImpliedRate: number | null = null;
               if (
                 si.withdrawalStrategy === "guyton_klinger" &&
@@ -192,8 +194,9 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                 priorAccumEnd != null &&
                 priorAccumEnd > 0
               ) {
-                gkImpliedRate =
-                  firstDecumYear.projectedExpenses / priorAccumEnd;
+                const draw =
+                  firstDecumYear.projectedExpenses - firstDecumYear.ssIncome;
+                gkImpliedRate = draw > 0 ? draw / priorAccumEnd : null;
               }
 
               const presetBar: Record<
@@ -316,7 +319,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                           {gkImpliedRate != null ? (
                             <HelpTip
                               maxWidth={260}
-                              text={`Your Retirement Budget doesn't set a rate directly — Guyton-Klinger captures ${formatPercent(gkImpliedRate, 2)} on your first retirement year (that year's spending ÷ your projected portfolio balance) and defends THIS rate with guardrails for the rest of retirement. It's not the "Initial Withdrawal Rate" setting (${formatPercent(si.withdrawalRate, 2)}) — that field is never read by any strategy, including this one.`}
+                              text={`Your Retirement Budget doesn't set a rate directly — Guyton-Klinger captures ${formatPercent(gkImpliedRate, 2)} on your first retirement year (what the portfolio pays that year — spending less Social Security — ÷ your projected portfolio balance) and defends THIS rate with guardrails for the rest of retirement. It's not the "Initial Withdrawal Rate" setting (${formatPercent(si.withdrawalRate, 2)}) — that field is never read by any strategy, including this one.`}
                             />
                           ) : (
                             <HelpTip

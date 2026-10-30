@@ -199,7 +199,12 @@ export function DecumulationMethodologyContent() {
             withdrawal rate drops below the upper guardrail (portfolio grew),
             spending increases. When it rises above the lower guardrail
             (portfolio shrank), spending decreases. The prosperity rule skips
-            inflation adjustments after a loss year.
+            inflation adjustments after a loss year. The withdrawal rate is what
+            the portfolio pays — spending less Social Security — over its
+            balance, and a raise or cut is 10% of that portfolio draw. When
+            Social Security starts (or changes), the starting rate moves by the
+            same step: it&apos;s not market news, so it neither raises nor cuts
+            spending by itself.
             <br />
             <span className="text-faint text-label">
               Best for: retirees who want explicit rules for when to increase or

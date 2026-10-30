@@ -1696,15 +1696,25 @@ describe("engine snapshot parity", () => {
       },
     });
     const result = calculateProjection(input);
+    // The guardrail this fixture is named for still fires.
+    expect(
+      result.projectionByYear.some(
+        (y) => y.phase === "decumulation" && y.strategyAction === "increase",
+      ),
+    ).toBe(true);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(63829.79);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(6792630.12);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(10057460.09);
     expect(metrics).toMatchSnapshot();
   });
 
   it("fixture 33: Guyton-Klinger — lower guardrail triggers spending decrease", () => {
-    // Poor returns make currentRate > initialRate × lowerGuardrail → spending decreases
+    // Poor returns make currentRate > initialRate × lowerGuardrail → spending decreases.
+    // Each cut is 10% of the portfolio draw (Guyton-Klinger's rule), which
+    // at 2% returns doesn't stop the drain — the plan runs out (final 0).
+    // Cutting 10% of all spending, Social Security's share included, used
+    // to over-cut and leave $331k.
     const input = makeInput({
       currentAge: 66,
       retirementAge: 65,
@@ -1766,10 +1776,16 @@ describe("engine snapshot parity", () => {
       },
     });
     const result = calculateProjection(input);
+    // The guardrail this fixture is named for still fires.
+    expect(
+      result.projectionByYear.some(
+        (y) => y.phase === "decumulation" && y.strategyAction === "decrease",
+      ),
+    ).toBe(true);
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(85106.38);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(331352.44);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(0);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -1840,7 +1856,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(20132.45);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(464276.54);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(327569.17);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -1912,7 +1928,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(25430.46);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(408337.28);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(328322.5);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2951,7 +2967,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(10638.3);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(5730446.7);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(5987663.75);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3028,7 +3044,7 @@ describe("engine snapshot parity", () => {
     const metrics = extractMetrics(result);
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(10596.03);
-    expect(metrics.finalYear?.allAccountsBalance).toBe(2794409.88);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(2894528.43);
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3523,7 +3539,7 @@ describe("engine snapshot parity", () => {
     // stopping at the RMD) never gets to compound in the account across
     // the remaining 10-year horizon, same direction the allAccountsBalance drop
     // in fixture 66/67 shows.
-    expect(metrics.finalYear?.allAccountsBalance).toBe(2311297.52);
+    expect(metrics.finalYear?.allAccountsBalance).toBe(2359806.07);
     expect(metrics).toMatchSnapshot();
   });
 

@@ -2,6 +2,7 @@
  * runDecumulationYear — single-year decumulation-phase logic. Mutates state in
  * place and pushes a year projection to `state.projectionByYear`.
  */
+import { socialSecurityForYear } from "../social-security-income";
 import {
   followDraws,
   followInflows,
@@ -145,8 +146,6 @@ export function runDecumulationYear(
 
   const {
     decumulationDefaults,
-    socialSecurityAnnual,
-    ssStartAge,
     filingStatus,
     enableIrmaaAwareness,
     enableAcaAwareness,
@@ -200,24 +199,13 @@ export function runDecumulationYear(
       ? `[DIAG] Roth divergence: acctBal.roth=${acctBalRothTotal.toFixed(0)}, balances.taxFree=${balances.taxFree.toFixed(0)}, delta=${(balances.taxFree - acctBalRothTotal).toFixed(0)}`
       : null;
 
-  // Social Security income reduces withdrawal need
-  // Per-person SS: each person's SS kicks in at their own age
-  let ssIncome: number;
-  let ssIncomeByPerson:
-    { personId: number; personName: string; amount: number }[] | undefined;
-  if (input.socialSecurityEntries && input.socialSecurityEntries.length > 0) {
-    ssIncomeByPerson = input.socialSecurityEntries.map((entry) => {
-      const personAge = ageInYear(entry.birthYear, year);
-      return {
-        personId: entry.personId,
-        personName: entry.personName,
-        amount: personAge >= entry.startAge ? entry.annualAmount : 0,
-      };
-    });
-    ssIncome = ssIncomeByPerson.reduce((sum, e) => sum + e.amount, 0);
-  } else {
-    ssIncome = age >= ssStartAge ? socialSecurityAnnual : 0;
-  }
+  // Social Security income reduces withdrawal need (per person from each
+  // one's own start age).
+  const { ssIncome, ssIncomeByPerson } = socialSecurityForYear(
+    input,
+    year,
+    age,
+  );
   // The year's after-tax need: spending less Social Security — or, when
   // the strategy sized the gross withdrawal (Social Security on top), what
   // that withdrawal delivers after tax (set from the estimate below).

@@ -3,6 +3,7 @@
  * decumulation branch. Computes return rate, applies profile switches,
  * projects salary and expenses, dispatches the spending strategy.
  */
+import { socialSecurityForYear } from "../social-security-income";
 import { ageInYear } from "../../../utils/date";
 import { roundToCents } from "../../../utils/math";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
@@ -375,6 +376,7 @@ export function runPreYearSetup(
           ? ageInYear(Math.max(...input.perPersonBirthYears), year)
           : undefined,
       stockShare: input.stockShareByAge?.[Math.round(age)],
+      ssIncome: socialSecurityForYear(input, year, age).ssIncome,
       crossYearState: state.spendingState,
     });
     state.projectedExpenses = result.projectedExpenses;

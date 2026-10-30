@@ -356,8 +356,10 @@ import { log } from "@/lib/logger";
  *  59: decumulation years carry `spending` and `withdrawalSized` — a
  *  portfolio-sized strategy can size the gross withdrawal with Social
  *  Security on top (per-strategy `ssInAmount`); VPW strategy;
- *  `stockShareByAge` input. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 59;
+ *  `stockShareByAge` input.
+ *  60: Guyton-Klinger's guardrails judge the portfolio withdrawal rate
+ *  (spending less Social Security over the balance). */
+export const PROJECTION_CACHE_ENGINE_VERSION = 60;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;
