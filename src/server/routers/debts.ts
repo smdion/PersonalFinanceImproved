@@ -8,6 +8,7 @@ import { zDecimal, debtKindSchema } from "@/lib/config/enum-values";
 import { isCalendarDate, localDateStr } from "@/lib/utils/date";
 import { debtPayoffEstimate } from "@/lib/pure/debts";
 import {
+  debtBalance,
   getEffectiveOtherLiabilities,
   isOpenDebt,
 } from "@/server/helpers/debts";
@@ -34,6 +35,9 @@ const debtFields = {
   paidOffDate: zDate.nullable().optional(),
   notes: z.string().nullable().optional(),
   sortOrder: z.number().int().optional(),
+  /** What the loan bought cost (a car's price) — 20/3/8's down payment. */
+  purchasePrice: zMoney.nullable().optional(),
+  termMonths: z.number().int().positive().max(600).nullable().optional(),
 };
 
 export const debtsRouter = createTRPCRouter({
@@ -45,9 +49,16 @@ export const debtsRouter = createTRPCRouter({
       .orderBy(asc(schema.debts.sortOrder), asc(schema.debts.id));
     const today = localDateStr();
     return rows.map((d) => {
+      const now = debtBalance(d);
       const row = {
         ...d,
         balance: toNumber(d.balance),
+        purchasePrice:
+          d.purchasePrice == null ? null : toNumber(d.purchasePrice),
+        apiBalance: d.apiBalance == null ? null : toNumber(d.apiBalance),
+        /** What's owed now: the pulled balance while one is set. */
+        currentBalance: now.balance,
+        currentBalanceAsOf: now.asOf,
         originalAmount:
           d.originalAmount == null ? null : toNumber(d.originalAmount),
         interestRate: d.interestRate == null ? null : toNumber(d.interestRate),
@@ -55,7 +66,13 @@ export const debtsRouter = createTRPCRouter({
           d.monthlyPayment == null ? null : toNumber(d.monthlyPayment),
         open: isOpenDebt(d, today),
       };
-      return { ...row, ...debtPayoffEstimate(row, today) };
+      return {
+        ...row,
+        ...debtPayoffEstimate(
+          { ...row, balance: now.balance, balanceAsOf: now.asOf },
+          today,
+        ),
+      };
     });
   }),
 
@@ -79,6 +96,8 @@ export const debtsRouter = createTRPCRouter({
           openedDate: input.openedDate ?? null,
           paidOffDate: input.paidOffDate ?? null,
           notes: input.notes ?? null,
+          purchasePrice: input.purchasePrice ?? null,
+          termMonths: input.termMonths ?? null,
         })
         .returning();
       return row;

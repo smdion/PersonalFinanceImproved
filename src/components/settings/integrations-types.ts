@@ -113,6 +113,8 @@ export type PreviewData = {
       type: "propertyValue" | "loanBalance";
       value: number;
     }[];
+    /** Open debts — pull targets for their balance (as a loan balance). */
+    debtAccounts?: { label: string; id: number; value: number }[];
     trackingAccounts: {
       id: string;
       name: string;

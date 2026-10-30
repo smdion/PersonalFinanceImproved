@@ -36,6 +36,7 @@ type MilestoneGroup =
   | "foo"
   | "safety"
   | "housing"
+  | "borrowing"
   | "investing";
 
 export const MILESTONE_GROUPS: {
@@ -70,6 +71,11 @@ export const MILESTONE_GROUPS: {
     blurb: "Cash and protection for the unexpected.",
   },
   { key: "housing", title: "Home", blurb: "Keeping the house affordable." },
+  {
+    key: "borrowing",
+    title: "Borrowing",
+    blurb: "Keeping car and student loans in proportion.",
+  },
   {
     key: "investing",
     title: "Investing",
@@ -254,6 +260,30 @@ export const CUSTOM_GOAL_METRICS = {
 export type CustomGoalMetric = keyof typeof CUSTOM_GOAL_METRICS;
 
 export const MAX_CUSTOM_GOALS = 12;
+
+/**
+ * Money Guy's 20/3/8 rule for a car loan: at least `minDownShare` of the
+ * price down, a term of at most `maxTermMonths`, and every car payment
+ * together at most `maxPaymentShare` of gross monthly pay.
+ */
+export const CAR_RULE = {
+  minDownShare: 0.2,
+  maxTermMonths: 36,
+  maxPaymentShare: 0.08,
+  source: "https://moneyguy.com/faq/cash-to-buy-car/",
+} as const;
+
+/**
+ * Money Guy's student-loan rule: borrow no more in total than your
+ * first-year salary. Judged against the first full year of pay at or after
+ * the earliest loan's year, and only when that year is within
+ * `maxYearsAfterLoan` of it (further out, it isn't the first-year salary).
+ */
+export const STUDENT_LOAN_RULE = {
+  maxYearsAfterLoan: 5,
+  source:
+    "https://moneyguy.com/faq/how-much-student-loan-debt-is-ok-to-take-on",
+} as const;
 
 /**
  * Money Guy's "Always Be Buying": invest on a schedule whatever the market
@@ -593,6 +623,26 @@ const MILESTONES = [
   },
 
   // --- Investing (Bogleheads) ---
+  // --- Borrowing ---
+  {
+    id: "carRule",
+    group: "borrowing",
+    source: "moneyGuy",
+    title: "20/3/8 car rule",
+    rule: `Finance a car with at least ${CAR_RULE.minDownShare * 100}% down, for ${CAR_RULE.maxTermMonths / 12} years or less, and keep every car payment together under ${CAR_RULE.maxPaymentShare * 100}% of gross monthly pay.`,
+    adaptedNote:
+      "Judged on each open car loan in the debts list from its purchase price, original amount and term. Money Guy's exception for luxury cars (pay cash, or pay it off within a year) isn't something Ledgr can tell from the list.",
+    focus: { topic: "debts" },
+  },
+  {
+    id: "studentLoans",
+    group: "borrowing",
+    source: "moneyGuy",
+    title: "Student loans vs first-year pay",
+    rule: "Borrow no more for school, in total, than you earn in your first year of work.",
+    adaptedNote: `Judged per person on student loans in the debts list (their original amounts) against the first full year of salary on record at or after the earliest loan, within ${STUDENT_LOAN_RULE.maxYearsAfterLoan} years. A year a job started after January is partial, so the next one counts. Joint student loans aren't judged.`,
+    focus: { topic: "debts" },
+  },
   {
     id: "rebalance",
     group: "investing",

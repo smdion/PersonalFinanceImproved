@@ -1,6 +1,6 @@
 /**
  * Account-mapping utilities. Single source for deriving the typed ID fields
- * (`performanceAccountId` / `assetId` / `loanId` + `loanMapType`) from the
+ * (`performanceAccountId` / `assetId` / `debtId` / `loanId` + `loanMapType`) from the
  * legacy `localId` prefix string.
  *
  * The schema's typed fields are canonical. The UI carries `localId` strings
@@ -15,6 +15,7 @@ import type { AccountMapping } from "@/lib/db/schema";
 const PERFORMANCE_PREFIX = "performance:";
 const ASSET_PREFIX = "asset:";
 const MORTGAGE_PREFIX = "mortgage:";
+const DEBT_PREFIX = "debt:";
 
 /**
  * Derive typed ID fields from `localId` and return a normalized mapping.
@@ -41,6 +42,13 @@ export function mappingWithTypedIds(mapping: AccountMapping): AccountMapping {
     return { ...mapping, assetId };
   }
 
+  if (localId.startsWith(DEBT_PREFIX)) {
+    if (mapping.debtId != null) return mapping;
+    const debtId = parseIntStrict(localId.slice(DEBT_PREFIX.length));
+    if (debtId == null) return mapping;
+    return { ...mapping, debtId };
+  }
+
   if (localId.startsWith(MORTGAGE_PREFIX)) {
     if (mapping.loanId != null && mapping.loanMapType != null) return mapping;
     // Format: "mortgage:{loanId}:{propertyValue|loanBalance}"
@@ -58,6 +66,36 @@ export function mappingWithTypedIds(mapping: AccountMapping): AccountMapping {
   }
 
   return mapping;
+}
+
+/** Targets that only take a pulled balance: the Cash and Credit Card
+ *  pseudo-accounts and debts (Ledgr has no figure of its own to push). */
+export function isPullOnlyLocalId(localId: string): boolean {
+  return (
+    localId === "cash" ||
+    localId === "creditCard" ||
+    localId.startsWith(DEBT_PREFIX)
+  );
+}
+
+/** Pulls the balance into Ledgr (pull or both). */
+export function isPullMapping(m: AccountMapping): boolean {
+  return m.syncDirection === "pull" || m.syncDirection === "both";
+}
+
+/**
+ * Budget accounts whose pulled balance would land in more than one place —
+ * two pulled mappings on one remote account count it twice (say, as a
+ * credit card and again as a debt). Each such remote id, once.
+ */
+export function remotesPulledTwice(mappings: AccountMapping[]): string[] {
+  const seen = new Set<string>();
+  const twice = new Set<string>();
+  for (const m of mappings.filter(isPullMapping)) {
+    if (seen.has(m.remoteAccountId)) twice.add(m.remoteAccountId);
+    seen.add(m.remoteAccountId);
+  }
+  return [...twice];
 }
 
 /** Apply `mappingWithTypedIds` to every entry in an array. */

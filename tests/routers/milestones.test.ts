@@ -76,6 +76,31 @@ describe("milestones.computeInputs", () => {
           isFinalized: finalized,
         })
         .run();
+    // A student loan opened two years ago, and an open car loan.
+    db.insert(schema.debts)
+      .values([
+        {
+          name: "School",
+          kind: "student_loan",
+          ownerPersonId: personId,
+          balance: "20000",
+          balanceAsOf: `${thisYear}-01-01`,
+          originalAmount: "40000",
+          openedDate: `${thisYear - 2}-09-01`,
+        },
+        {
+          name: "Car",
+          kind: "auto_loan",
+          ownerPersonId: personId,
+          balance: "15000",
+          balanceAsOf: `${thisYear}-01-01`,
+          originalAmount: "24000",
+          purchasePrice: "30000",
+          termMonths: 36,
+          monthlyPayment: "700",
+        },
+      ])
+      .run();
     seedAppSetting(db, "milestone_checklist", { will: true });
     // Stored before validation existed / hand-edited: read back as empty.
     seedAppSetting(db, "milestone_custom_goals", [{ id: "x" }]);
@@ -120,6 +145,31 @@ describe("milestones.computeInputs", () => {
         heldUp: true,
       },
     ]);
+  });
+
+  it("returns the borrowing inputs: open car loans and each person's student loans against their first full salary", async () => {
+    const result = await caller.milestones.computeInputs({});
+    const thisYear = new Date().getFullYear();
+    expect(result.borrowing).toEqual({
+      carLoans: [
+        {
+          name: "Car",
+          purchasePrice: 30_000,
+          originalAmount: 24_000,
+          termMonths: 36,
+          monthlyPayment: 700,
+        },
+      ],
+      studentLoans: [
+        {
+          owner: "Test Person",
+          totalOriginal: 40_000,
+          loanYear: thisYear - 2,
+          firstSalary: { year: thisYear - 2, salary: 100_000 },
+        },
+      ],
+      jointStudentLoans: 0,
+    });
   });
 
   it("returns the validated checklist and drops unreadable goals", async () => {

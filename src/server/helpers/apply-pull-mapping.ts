@@ -1,20 +1,25 @@
 /**
  * Shared "apply one pull mapping" logic for budget-API account sync.
  *
- * Used by `syncAll`'s pull loop (assets and mortgage mappings alike); the
+ * Used by `syncAll`'s pull loop (assets, mortgage and debt mappings alike); the
  * caller passes its own `db`/`tx`, so atomicity is the caller's choice.
  */
 
-import { eq } from "drizzle-orm";
+import { and, eq, isNotNull, notInArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AccountMapping } from "@/lib/db/schema";
 import type { Db } from "./transforms";
 import { localDateStr } from "@/lib/utils/date";
+import {
+  isPullMapping,
+  mappingsWithTypedIds,
+} from "@/lib/utils/account-mapping";
 
 type ApplyPullMappingResult =
   | { applied: false }
   | { applied: true; kind: "mortgagePropertyValue" | "mortgageLoanBalance" }
-  | { applied: true; kind: "asset" };
+  | { applied: true; kind: "asset" }
+  | { applied: true; kind: "debt" };
 
 /**
  * Apply a single resolved API balance to whatever local record `mapping`
@@ -47,6 +52,23 @@ export async function applyPullMapping(
   // repeatedly overwritten by whichever mapping happened to sync last.
   if (localId === "cash" || localId === "creditCard") {
     return { applied: false };
+  }
+
+  // A debt's balance, written like the mortgage loan balance below.
+  if (mapping.debtId != null || localId.startsWith("debt:")) {
+    const debtId = mapping.debtId ?? parseInt(localId.split(":")[1]!, 10);
+    const updated = await db
+      .update(schema.debts)
+      .set({
+        apiBalance: String(Math.abs(apiBalance)),
+        apiBalanceDate: localDateStr(),
+      })
+      .where(eq(schema.debts.id, debtId))
+      .returning({ id: schema.debts.id });
+    // A deleted debt: nothing to write (as for a deleted asset).
+    return updated.length > 0
+      ? { applied: true, kind: "debt" }
+      : { applied: false };
   }
 
   // Prefer typed fields; fall back to prefix parsing for legacy mappings.
@@ -116,4 +138,42 @@ export async function applyPullMapping(
     });
   }
   return { applied: true, kind: "asset" };
+}
+
+/**
+ * Clear pulled balances nothing pulls any more — a debt or mortgage loan
+ * whose mapping was removed (or whose connection was deleted) goes back to
+ * its own balance instead of keeping the last pulled one forever.
+ */
+export async function clearUnmappedPulledBalances(db: Db): Promise<void> {
+  const conns = await db
+    .select({ accountMappings: schema.apiConnections.accountMappings })
+    .from(schema.apiConnections);
+  const pulled = mappingsWithTypedIds(
+    conns.flatMap((c) => c.accountMappings ?? []),
+  ).filter(isPullMapping);
+  const debtIds = pulled.flatMap((m) => (m.debtId != null ? [m.debtId] : []));
+  const loanIds = pulled.flatMap((m) =>
+    m.loanId != null && m.loanMapType === "loanBalance" ? [m.loanId] : [],
+  );
+  await db
+    .update(schema.debts)
+    .set({ apiBalance: null, apiBalanceDate: null })
+    .where(
+      and(
+        isNotNull(schema.debts.apiBalance),
+        debtIds.length > 0 ? notInArray(schema.debts.id, debtIds) : undefined,
+      ),
+    );
+  await db
+    .update(schema.mortgageLoans)
+    .set({ apiBalance: null, apiBalanceDate: null })
+    .where(
+      and(
+        isNotNull(schema.mortgageLoans.apiBalance),
+        loanIds.length > 0
+          ? notInArray(schema.mortgageLoans.id, loanIds)
+          : undefined,
+      ),
+    );
 }

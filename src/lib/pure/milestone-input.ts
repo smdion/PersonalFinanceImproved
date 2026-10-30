@@ -464,6 +464,7 @@ export function buildMilestoneInput(raw: {
     otherDebt?: { manual: number; creditCardMapped: number } | null;
     raises?: RaiseYear[] | null;
     downYears?: DownYear[];
+    borrowing?: MilestoneInput["borrowing"];
   };
   contributions: {
     people: (Omit<SavingsRatePerson, "accountTypes"> & {
@@ -657,6 +658,7 @@ export function buildMilestoneInput(raw: {
     debts: inputs.debts ?? null,
     otherDebt: inputs.otherDebt ?? null,
     raises: inputs.raises ?? null,
+    borrowing: inputs.borrowing ?? null,
     buying: {
       months: raw.buyingMonths ?? null,
       downYears: inputs.downYears ?? [],

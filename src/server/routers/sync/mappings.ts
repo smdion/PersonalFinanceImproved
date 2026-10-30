@@ -10,7 +10,11 @@ import {
   getActiveBudgetApi,
   getApiConnection,
 } from "@/lib/budget-api";
-import { mappingsWithTypedIds } from "@/lib/utils/account-mapping";
+import {
+  mappingsWithTypedIds,
+  remotesPulledTwice,
+} from "@/lib/utils/account-mapping";
+import { clearUnmappedPulledBalances } from "@/server/helpers/apply-pull-mapping";
 import { accountMappingSchema } from "@/lib/db/json-schemas";
 import { pushSnapshotToBudgetApi } from "@/server/helpers/budget-api-push";
 import { serviceEnum } from "./_shared";
@@ -21,7 +25,15 @@ export const syncMappingsRouter = createTRPCRouter({
     .input(
       z.object({
         service: serviceEnum,
-        mappings: z.array(accountMappingSchema),
+        mappings: z.array(accountMappingSchema).superRefine((mappings, c) => {
+          // One pulled balance per budget account: pulled into two places
+          // (a credit card and a debt, say) it would count twice.
+          for (const remote of remotesPulledTwice(mappings))
+            c.addIssue({
+              code: "custom",
+              message: `Budget account ${remote} is pulled into more than one place — keep one pull mapping for it`,
+            });
+        }),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -29,6 +41,7 @@ export const syncMappingsRouter = createTRPCRouter({
         .update(schema.apiConnections)
         .set({ accountMappings: mappingsWithTypedIds(input.mappings) })
         .where(eq(schema.apiConnections.service, input.service));
+      await clearUnmappedPulledBalances(ctx.db);
 
       return { success: true };
     }),

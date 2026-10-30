@@ -288,6 +288,28 @@ export type MilestoneInput = {
   /** Always Be Buying: SimpleFIN months (null when not linked or not
    *  visible to this viewer) and the losing years on record. */
   buying?: { months: BuyingMonth[] | null; downYears: DownYear[] } | null;
+  /** The borrowing rules' inputs (lib/pure/debt-rules.ts): open car
+   *  loans, and each person's student loans with the salary they're judged
+   *  against. Absent before it's loaded. */
+  borrowing?: {
+    carLoans: {
+      name: string;
+      purchasePrice: number | null;
+      originalAmount: number | null;
+      termMonths: number | null;
+      monthlyPayment: number | null;
+    }[];
+    studentLoans: {
+      owner: string;
+      /** Null when a loan has no original amount. */
+      totalOriginal: number | null;
+      /** The earliest loan's opened year (null: none has a date). */
+      loanYear: number | null;
+      firstSalary: { year: number; salary: number } | null;
+    }[];
+    /** Student loans with no single owner (not judged). */
+    jointStudentLoans: number;
+  } | null;
   /** The Liabilities debts list; null/absent before it's loaded. */
   debts?: MilestoneDebt[] | null;
   /** The other-debt figures that aren't itemized: the typed lump and the

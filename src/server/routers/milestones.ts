@@ -47,10 +47,12 @@ import type { MilestoneDebt } from "@/lib/pure/milestones";
 import { debtPayoffEstimate } from "@/lib/pure/debts";
 import { raiseHistory } from "@/lib/pure/raise-history";
 import { downYears } from "@/lib/pure/always-buying";
+import { firstFullSalary } from "@/lib/pure/debt-rules";
 import { parseEstimatedFields } from "@/lib/pure/performance-annotations";
 import { getAge, localDateStr } from "@/lib/utils/date";
 import { toNumber } from "@/server/helpers";
 import {
+  debtBalance,
   getEffectiveOtherLiabilities,
   isOpenDebt,
 } from "@/server/helpers/debts";
@@ -100,6 +102,63 @@ function finalizedYears(
   return years;
 }
 
+/** The borrowing rules' inputs: open car loans, and each person's student
+ *  loans (paid off or not) with the first full salary they're judged
+ *  against (lib/pure/debt-rules.ts). */
+function borrowingFrom(
+  debtRows: (typeof schema.debts.$inferSelect)[],
+  people: readonly { id: number; name: string }[],
+  salaryRows: readonly { personId: number; year: number; salary: string }[],
+  jobRows: readonly { personId: number; startDate: string }[],
+  today: string,
+) {
+  const num = (v: string | null) => (v == null ? null : toNumber(v));
+  const carLoans = debtRows
+    .filter((d) => d.kind === "auto_loan" && isOpenDebt(d, today))
+    .map((d) => ({
+      name: d.name,
+      purchasePrice: num(d.purchasePrice),
+      originalAmount: num(d.originalAmount),
+      termMonths: d.termMonths,
+      monthlyPayment: num(d.monthlyPayment),
+    }));
+  const student = debtRows.filter((d) => d.kind === "student_loan");
+  const studentLoans = people.flatMap((p) => {
+    const mine = student.filter((d) => d.ownerPersonId === p.id);
+    if (mine.length === 0) return [];
+    const years = mine
+      .map((d) => (d.openedDate ? Number(d.openedDate.slice(0, 4)) : null))
+      .filter((y): y is number => y !== null);
+    const loanYear = years.length > 0 ? Math.min(...years) : null;
+    return [
+      {
+        owner: p.name,
+        totalOriginal: mine.every((d) => d.originalAmount != null)
+          ? mine.reduce((s, d) => s + toNumber(d.originalAmount!), 0)
+          : null,
+        loanYear,
+        firstSalary:
+          loanYear === null
+            ? null
+            : firstFullSalary(
+                salaryRows
+                  .filter((r) => r.personId === p.id)
+                  .map((r) => ({ year: r.year, salary: toNumber(r.salary) })),
+                jobRows
+                  .filter((j) => j.personId === p.id)
+                  .map((j) => j.startDate),
+                loanYear,
+              ),
+      },
+    ];
+  });
+  return {
+    carLoans,
+    studentLoans,
+    jointStudentLoans: student.filter((d) => d.ownerPersonId == null).length,
+  };
+}
+
 /** Household salary a year (past years). */
 function salaryByYear(
   salaryRows: readonly { year: number; salary: string }[],
@@ -127,6 +186,7 @@ async function loadMilestoneInputs(
     otherDebt,
     salaryRows,
     perfRows,
+    jobRows,
   ] = await Promise.all([
     buildYearEndHistory(db, asOfDate, {
       budgetProfileId: input?.budgetProfileId,
@@ -157,6 +217,12 @@ async function loadMilestoneInputs(
         estimatedFields: schema.accountPerformance.estimatedFields,
       })
       .from(schema.accountPerformance),
+    db
+      .select({
+        personId: schema.jobs.personId,
+        startDate: schema.jobs.startDate,
+      })
+      .from(schema.jobs),
   ]);
   const setting = (key: string) =>
     settingRows.find((r) => r.key === key)?.value ?? null;
@@ -176,7 +242,8 @@ async function loadMilestoneInputs(
       : householdAge;
   };
   const debts: MilestoneDebt[] = debtRows.map((d) => {
-    const balance = toNumber(d.balance);
+    const now = debtBalance(d);
+    const balance = now.balance;
     const rate = d.interestRate == null ? null : toNumber(d.interestRate);
     const open = isOpenDebt(d, today);
     const est = debtPayoffEstimate(
@@ -185,7 +252,7 @@ async function loadMilestoneInputs(
         interestRate: rate,
         monthlyPayment:
           d.monthlyPayment == null ? null : toNumber(d.monthlyPayment),
-        balanceAsOf: d.balanceAsOf,
+        balanceAsOf: now.asOf,
       },
       today,
     );
@@ -206,6 +273,7 @@ async function loadMilestoneInputs(
     asOfYear: asOfDate.getFullYear(),
     raises: raiseHistory(salaryByYear(salaryRows, asOfYear), ownYears),
     downYears: downYears(ownYears),
+    borrowing: borrowingFrom(debtRows, people, salaryRows, jobRows, today),
     years: history.map((row) =>
       milestoneYearFromHistory({
         ...row,

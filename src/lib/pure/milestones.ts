@@ -36,6 +36,7 @@ import {
   PF_FUND_EXPENSE_RATIO,
   PF_RETIREMENT_RATE,
   RAISE_RULE,
+  CAR_RULE,
   type BuiltInMilestoneId,
   type CheckpointSource,
   type CustomGoalMetric,
@@ -64,6 +65,7 @@ import { calculateLoanMonthlyPayment, safeDivide } from "@/lib/utils/math";
 import { isHighInterestDebt } from "@/lib/config/debts";
 import { meetsRaiseRule } from "@/lib/pure/raise-history";
 import { recentCoveredMonths } from "@/lib/pure/always-buying";
+import { carPaymentShare, checkCarLoan } from "@/lib/pure/debt-rules";
 import type {
   CustomGoal,
   MatchShortfall,
@@ -697,6 +699,148 @@ function savingsRate(input: MilestoneInput): MilestoneResult {
           return first ? ` — ${first}` : "";
         })()}`,
     impact: met ? null : { kind: "perYear", amount: gapPerMonth * 12 },
+  });
+}
+
+/** Money Guy's 20/3/8 on every open car loan in the debts list. */
+function carRule(input: MilestoneInput, now: MilestoneYear): MilestoneResult {
+  const loans = input.borrowing?.carLoans;
+  if (!loans) {
+    return result("carRule", {
+      status: "unknown",
+      headline: "Needs the debts list",
+    });
+  }
+  if (loans.length === 0) {
+    return result("carRule", { status: "reached", headline: "No car loan" });
+  }
+  const checks = loans.map(checkCarLoan);
+  const pay = input.savings?.compensation ?? now.grossIncome;
+  const share = carPaymentShare(
+    loans.map((l) => l.monthlyPayment),
+    pay,
+  );
+  const paymentOk =
+    share === null ? null : share <= CAR_RULE.maxPaymentShare + 1e-9;
+  const misses: string[] = [];
+  for (const c of checks) {
+    if (c.downOk === false)
+      misses.push(
+        `${c.name}: ${formatPercent(c.downShare ?? 0, 0)} down (${formatPercent(CAR_RULE.minDownShare, 0)} or more)`,
+      );
+    if (c.termOk === false)
+      misses.push(
+        `${c.name}: ${c.termMonths}-month term (${CAR_RULE.maxTermMonths} or fewer)`,
+      );
+  }
+  if (paymentOk === false)
+    misses.push(
+      `car payments are ${formatPercent(share!, 1)} of gross pay (${formatPercent(CAR_RULE.maxPaymentShare, 0)} or less)`,
+    );
+  const unknown =
+    checks.some((c) => c.downOk === null || c.termOk === null) ||
+    paymentOk === null;
+  const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+  if (misses.length > 0) {
+    return result("carRule", {
+      status: "behind",
+      headline: cap(misses[0]!),
+      short: `${misses.length} part${misses.length === 1 ? "" : "s"} missed`,
+      note: misses.length > 1 ? misses.slice(1).map(cap).join(" · ") : null,
+      nextStep:
+        paymentOk === false
+          ? "Pay the car loan down early, or keep the next car cheaper"
+          : "Next car: put 20% down and borrow for 3 years or less",
+      nextStepFocus: { topic: "debts" },
+    });
+  }
+  if (unknown) {
+    return result("carRule", {
+      status: "unknown",
+      headline:
+        "Add each car loan's purchase price, original amount, term and payment to judge",
+      short: "Needs loan details",
+      nextStep: "Fill in the car loan's details in the debts list",
+      nextStepFocus: { topic: "debts" },
+    });
+  }
+  return result("carRule", {
+    status: "reached",
+    headline: `Within 20/3/8 — car payments ${formatPercent(share!, 1)} of gross pay`,
+    short: "Within 20/3/8",
+  });
+}
+
+/** Money Guy's student-loan rule, per person. */
+function studentLoans(input: MilestoneInput): MilestoneResult {
+  const b = input.borrowing;
+  if (!b) {
+    return result("studentLoans", {
+      status: "unknown",
+      headline: "Needs the debts list",
+    });
+  }
+  if (b.studentLoans.length === 0) {
+    return result("studentLoans", {
+      status: b.jointStudentLoans > 0 ? "unknown" : "reached",
+      headline:
+        b.jointStudentLoans > 0
+          ? "Give each student loan an owner to judge it"
+          : "No student loans",
+      nextStepFocus: b.jointStudentLoans > 0 ? { topic: "debts" } : undefined,
+    });
+  }
+  const judged: {
+    owner: string;
+    total: number;
+    salary: number;
+    year: number;
+  }[] = [];
+  const reasons: string[] = [];
+  for (const p of b.studentLoans) {
+    if (p.totalOriginal === null)
+      reasons.push(`${p.owner}: add each loan's original amount`);
+    else if (p.loanYear === null)
+      reasons.push(`${p.owner}: add when the loans were opened`);
+    else if (!p.firstSalary)
+      reasons.push(
+        `${p.owner}: no full year of salary on record within a few years of the loans`,
+      );
+    else
+      judged.push({
+        owner: p.owner,
+        total: p.totalOriginal,
+        salary: p.firstSalary.salary,
+        year: p.firstSalary.year,
+      });
+  }
+  const over = judged.filter((j) => j.total > j.salary);
+  const describe = (j: (typeof judged)[number]) =>
+    `${j.owner} borrowed ${formatCurrency(j.total, 0)} against ${formatCurrency(j.salary, 0)} earned in ${j.year}`;
+  if (over.length > 0) {
+    return result("studentLoans", {
+      status: "behind",
+      headline: describe(over[0]!),
+      short: `${formatCurrency(over[0]!.total - over[0]!.salary, 0)} over`,
+      note: [...over.slice(1).map(describe), ...reasons].join(" · ") || null,
+      nextStep:
+        "Pay the student loans down — and for more school, borrow no more than the first year's pay",
+      nextStepFocus: { topic: "debts" },
+    });
+  }
+  if (judged.length === 0) {
+    return result("studentLoans", {
+      status: "unknown",
+      headline: reasons[0] ?? "Not enough to judge",
+      note: reasons.slice(1).join(" · ") || null,
+      nextStepFocus: { topic: "debts" },
+    });
+  }
+  return result("studentLoans", {
+    status: "reached",
+    headline: judged.map(describe).join(" · "),
+    short: "Within first-year pay",
+    note: reasons.join(" · ") || null,
   });
 }
 
@@ -1779,6 +1923,8 @@ export function evaluateMilestones(input: MilestoneInput): MilestoneResult[] {
     efund,
     protection(input, now),
     ...housing(input, now),
+    carRule(input, now),
+    studentLoans(input),
     ...investing(input),
     fundCosts(input),
   ];

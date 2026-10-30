@@ -2,6 +2,10 @@
  * Budget expense computation helpers.
  */
 import {
+  isPullMapping,
+  mappingsWithTypedIds,
+} from "@/lib/utils/account-mapping";
+import {
   capForRequest,
   loadCapHousehold,
 } from "@/server/helpers/contribution-caps";
@@ -121,10 +125,20 @@ async function sumMappedAccountBalances(
     .select({ accountMappings: schema.apiConnections.accountMappings })
     .from(schema.apiConnections)
     .where(eq(schema.apiConnections.service, service));
-  const mapped = (conn?.accountMappings ?? []).filter(
-    (m) =>
-      m.localId === localId &&
-      (m.syncDirection === "pull" || m.syncDirection === "both"),
+  const all = (conn?.accountMappings ?? []).filter(isPullMapping);
+  // A remote also pulled into a debt or loan balance counts there, not
+  // here (mappings saved before one-pull-per-account was enforced).
+  const pulledElsewhere = new Set(
+    mappingsWithTypedIds(all)
+      .filter(
+        (m) =>
+          m.debtId != null ||
+          (m.loanId != null && m.loanMapType === "loanBalance"),
+      )
+      .map((m) => m.remoteAccountId),
+  );
+  const mapped = all.filter(
+    (m) => m.localId === localId && !pulledElsewhere.has(m.remoteAccountId),
   );
   if (mapped.length === 0) return null;
 

@@ -2155,3 +2155,100 @@ describe("Always Be Buying", () => {
     ).toBe("unknown");
   });
 });
+
+describe("borrowing: 20/3/8 and student loans", () => {
+  const borrowing = (
+    over: Partial<NonNullable<MilestoneInput["borrowing"]>> = {},
+  ) => ({ carLoans: [], studentLoans: [], jointStudentLoans: 0, ...over });
+  const car = {
+    name: "Car",
+    purchasePrice: 30_000,
+    originalAmount: 24_000,
+    termMonths: 36,
+    monthlyPayment: 600,
+  };
+
+  it("no car loan passes; one within 20/3/8 passes with its payment share", () => {
+    expect(byId(run({ borrowing: borrowing() }), "carRule").headline).toBe(
+      "No car loan",
+    );
+    const r = byId(
+      run({
+        borrowing: borrowing({ carLoans: [car] }),
+        savings: makeSavings({ compensation: 120_000 }),
+      }),
+      "carRule",
+    );
+    expect(r.status).toBe("reached");
+    expect(r.headline).toBe("Within 20/3/8 — car payments 6.0% of gross pay");
+  });
+
+  it("a long term and a heavy payment are behind, each named", () => {
+    const r = byId(
+      run({
+        borrowing: borrowing({
+          carLoans: [{ ...car, termMonths: 72, monthlyPayment: 1_200 }],
+        }),
+        savings: makeSavings({ compensation: 120_000 }),
+      }),
+      "carRule",
+    );
+    expect(r.status).toBe("behind");
+    expect(r.headline).toBe("Car: 72-month term (36 or fewer)");
+    expect(r.note).toBe("Car payments are 12.0% of gross pay (8% or less)");
+  });
+
+  it("missing details aren't judged", () => {
+    const r = byId(
+      run({
+        borrowing: borrowing({ carLoans: [{ ...car, purchasePrice: null }] }),
+        savings: makeSavings({ compensation: 120_000 }),
+      }),
+      "carRule",
+    );
+    expect(r.status).toBe("unknown");
+  });
+
+  it("student loans over the first full year's pay are behind; under it reached", () => {
+    const loan = (total: number) => ({
+      owner: "Alex",
+      totalOriginal: total,
+      loanYear: 2010,
+      firstSalary: { year: 2015, salary: 52_000 },
+    });
+    const over = byId(
+      run({ borrowing: borrowing({ studentLoans: [loan(80_000)] }) }),
+      "studentLoans",
+    );
+    expect(over.status).toBe("behind");
+    expect(over.headline).toBe(
+      "Alex borrowed $80,000 against $52,000 earned in 2015",
+    );
+    expect(
+      byId(
+        run({ borrowing: borrowing({ studentLoans: [loan(30_000)] }) }),
+        "studentLoans",
+      ).status,
+    ).toBe("reached");
+  });
+
+  it("student loans without an amount or a salary say what's missing", () => {
+    const r = byId(
+      run({
+        borrowing: borrowing({
+          studentLoans: [
+            {
+              owner: "Alex",
+              totalOriginal: null,
+              loanYear: 2010,
+              firstSalary: null,
+            },
+          ],
+        }),
+      }),
+      "studentLoans",
+    );
+    expect(r.status).toBe("unknown");
+    expect(r.headline).toBe("Alex: add each loan's original amount");
+  });
+});

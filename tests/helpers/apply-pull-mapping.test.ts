@@ -11,7 +11,10 @@
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { applyPullMapping } from "@/server/helpers/apply-pull-mapping";
+import {
+  applyPullMapping,
+  clearUnmappedPulledBalances,
+} from "@/server/helpers/apply-pull-mapping";
 import { createTestDb, type TestDbContext } from "./db-harness";
 
 describe("applyPullMapping — cash/creditCard pseudo-accounts", () => {
@@ -78,5 +81,103 @@ describe("applyPullMapping — cash/creditCard pseudo-accounts", () => {
     // above is specific to localId "cash"/"creditCard" and doesn't
     // accidentally swallow every mapping.
     expect(result).toEqual({ applied: false });
+  });
+});
+
+describe("applyPullMapping — debts, and clearing what nothing pulls", () => {
+  let ctx: TestDbContext;
+
+  beforeAll(async () => {
+    ctx = await createTestDb();
+  });
+
+  afterAll(() => ctx.cleanup());
+
+  const addDebt = () =>
+    ctx.db
+      .insert(ctx.schema.debts)
+      .values({
+        name: "Car loan",
+        kind: "auto_loan",
+        balance: "15000",
+        balanceAsOf: "2026-01-01",
+      })
+      .returning()
+      .get().id;
+
+  it("writes a debt's pulled balance (as a positive amount owed), like the mortgage's", async () => {
+    const id = addDebt();
+    const result = await applyPullMapping(ctx.rawDb, {
+      mapping: {
+        localId: `debt:${id}`,
+        localName: "Car loan",
+        remoteAccountId: "acct-car",
+        syncDirection: "pull",
+        debtId: id,
+      },
+      apiBalance: -12345.67,
+      service: "ynab",
+      currentYear: new Date().getFullYear(),
+    });
+    expect(result).toEqual({ applied: true, kind: "debt" });
+    const row = ctx.db
+      .select()
+      .from(ctx.schema.debts)
+      .all()
+      .find((d) => d.id === id)!;
+    expect(Number(row.apiBalance)).toBe(12345.67);
+    expect(row.apiBalanceDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    // What the household typed stays.
+    expect(Number(row.balance)).toBe(15000);
+  });
+
+  it("a mapping to a deleted debt writes nothing", async () => {
+    const result = await applyPullMapping(ctx.rawDb, {
+      mapping: {
+        localId: "debt:99999",
+        localName: "Gone",
+        remoteAccountId: "acct-gone",
+        syncDirection: "pull",
+      },
+      apiBalance: -1,
+      service: "ynab",
+      currentYear: new Date().getFullYear(),
+    });
+    expect(result).toEqual({ applied: false });
+  });
+
+  it("clears a pulled balance once no connection maps it", async () => {
+    const kept = addDebt();
+    const dropped = addDebt();
+    ctx.db
+      .update(ctx.schema.debts)
+      .set({ apiBalance: "100", apiBalanceDate: "2026-10-01" })
+      .run();
+    ctx.db
+      .insert(ctx.schema.apiConnections)
+      .values({
+        service: "ynab",
+        config: {},
+        accountMappings: [
+          {
+            localId: `debt:${kept}`,
+            localName: "Car loan",
+            remoteAccountId: "acct-kept",
+            syncDirection: "pull",
+          },
+        ],
+      })
+      .run();
+    await clearUnmappedPulledBalances(ctx.rawDb);
+    const byId = new Map(
+      ctx.db
+        .select()
+        .from(ctx.schema.debts)
+        .all()
+        .map((d) => [d.id, d]),
+    );
+    expect(byId.get(kept)!.apiBalance).not.toBeNull();
+    expect(byId.get(dropped)!.apiBalance).toBeNull();
+    expect(byId.get(dropped)!.apiBalanceDate).toBeNull();
   });
 });

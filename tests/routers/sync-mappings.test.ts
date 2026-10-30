@@ -69,6 +69,28 @@ describe("sync mappings — basic operations", () => {
       expect(result).toEqual({ success: true });
     });
 
+    it("refuses a budget account pulled into two places (it would count twice)", async () => {
+      await expect(
+        caller.sync.updateAccountMappings({
+          service: "ynab",
+          mappings: [
+            {
+              localId: "creditCard",
+              localName: "Credit Card",
+              remoteAccountId: "remote-card",
+              syncDirection: "pull",
+            },
+            {
+              localId: "debt:1",
+              localName: "Card loan",
+              remoteAccountId: "remote-card",
+              syncDirection: "pull",
+            },
+          ],
+        }),
+      ).rejects.toThrow(/more than one place/);
+    });
+
     it("persists mappings to the connection row", async () => {
       // Seed a connection row
       db.insert(schema.apiConnections)

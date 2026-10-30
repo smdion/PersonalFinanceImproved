@@ -10,6 +10,8 @@ import {
   expensiveRateLimitMiddleware,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
+import { localDateStr } from "@/lib/utils/date";
+import { debtBalance, isOpenDebt } from "@/server/helpers/debts";
 import { log } from "@/lib/logger";
 import {
   getClientForService,
@@ -891,6 +893,22 @@ export const syncCoreRouter = createTRPCRouter({
         });
       }
 
+      // Open debts, each a pull target for its balance (as a loan balance).
+      const today = localDateStr();
+      const debtAccounts = (await ctx.db.select().from(schema.debts))
+        .filter((d) => isOpenDebt(d, today))
+        .map((d) => {
+          const now = debtBalance(d);
+          return {
+            label: d.name,
+            id: d.id,
+            value: -now.balance,
+            enteredBalance: Number(d.balance),
+            apiBalance: d.apiBalance == null ? undefined : Number(d.apiBalance),
+            apiBalanceDate: d.apiBalanceDate,
+          };
+        });
+
       return {
         synced: true,
         fetchedAt: accountsCache.fetchedAt,
@@ -940,6 +958,7 @@ export const syncCoreRouter = createTRPCRouter({
           localAccounts: portfolioLocalAccounts,
           assetAccounts: assetLocalAccounts,
           mortgageAccounts,
+          debtAccounts,
           trackingAccounts,
           allAccounts,
           existingMappings,

@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
+  isPullOnlyLocalId,
   mappingWithTypedIds,
   mappingsWithTypedIds,
+  remotesPulledTwice,
 } from "@/lib/utils/account-mapping";
 import type { AccountMapping } from "@/lib/db/schema";
 
@@ -178,5 +180,38 @@ describe("mappingsWithTypedIds", () => {
     const result = mappingsWithTypedIds(input);
     expect(result[0]!.performanceAccountId).toBe(1);
     expect(result[1]!.assetId).toBe(2);
+  });
+});
+
+describe("debt mappings", () => {
+  const m = (
+    localId: string,
+    remoteAccountId: string,
+    syncDirection: "pull" | "push" | "both" = "pull",
+  ) => ({ localId, localName: localId, remoteAccountId, syncDirection });
+
+  it("derives debtId from debt:{id}", () => {
+    expect(mappingWithTypedIds(m("debt:7", "r1")).debtId).toBe(7);
+    expect(mappingWithTypedIds(m("debt:x", "r1")).debtId).toBeUndefined();
+  });
+
+  it("debts, cash and credit card only pull", () => {
+    expect(isPullOnlyLocalId("debt:7")).toBe(true);
+    expect(isPullOnlyLocalId("cash")).toBe(true);
+    expect(isPullOnlyLocalId("creditCard")).toBe(true);
+    expect(isPullOnlyLocalId("asset:1")).toBe(false);
+  });
+
+  it("a budget account pulled into two places is reported once; pushes don't count", () => {
+    expect(
+      remotesPulledTwice([
+        m("creditCard", "r1"),
+        m("debt:7", "r1", "both"),
+        m("debt:8", "r1"),
+        m("performance:1", "r2", "push"),
+        m("performance:2", "r2", "push"),
+        m("cash", "r3"),
+      ]),
+    ).toEqual(["r1"]);
   });
 });

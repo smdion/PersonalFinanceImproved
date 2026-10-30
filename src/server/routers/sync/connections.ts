@@ -1,5 +1,6 @@
 /** Sync connections router for CRUD operations on YNAB/Actual budget API credentials and connection status checks. */
 
+import { clearUnmappedPulledBalances } from "@/server/helpers/apply-pull-mapping";
 import { z } from "zod/v4";
 import { eq } from "drizzle-orm";
 import {
@@ -232,6 +233,8 @@ export const syncConnectionsRouter = createTRPCRouter({
       await ctx.db
         .delete(schema.apiConnections)
         .where(eq(schema.apiConnections.service, input.service));
+      // Its pulled debt and loan balances go with it.
+      await clearUnmappedPulledBalances(ctx.db);
 
       // If we're deleting the active API, reset to 'none'
       const active = await getActiveBudgetApi(ctx.db);
