@@ -30,6 +30,7 @@ import {
 } from "@/lib/config/display-labels";
 import { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
+import { HSA_DRAW_TREATMENT } from "@/lib/pure/early-access";
 import { Badge } from "@/components/ui/badge";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatPercent } from "@/lib/utils/format";
@@ -188,7 +189,8 @@ export function TaxesSection({
         </div>
         <div className="flex items-baseline gap-1.5">
           <span className="text-muted">HSA</span>
-          <span className="font-medium text-emerald-600">0%</span>
+          <span className="font-medium text-blue-600">Varies</span>
+          <HelpTip text={HSA_DRAW_TREATMENT} />
         </div>
         <div className="flex items-baseline gap-1.5">
           <span className="text-muted">Brokerage</span>

@@ -25,6 +25,7 @@ import {
   describeBracketTargetChoice,
   describeDiscretionaryCapacityMath,
 } from "@/lib/pure/report/bracket-target-narrative";
+import { HSA_DRAW_TREATMENT } from "@/lib/pure/early-access";
 import {
   getAccountSegments,
   getSegmentBalance,
@@ -236,7 +237,9 @@ function buildRoutingReasonClause(
         : "";
     return `${targetClause}${orderClause}`;
   }
-  if (!yr.discretionaryTierBreakdown?.length) return undefined;
+  // Any HSA draw says how it's treated, with or without a ranking.
+  const hsaNote = isHsaCategory(ia.category) ? HSA_DRAW_TREATMENT : undefined;
+  if (!yr.discretionaryTierBreakdown?.length) return hsaNote;
   let sourceKind: "roth" | "brokerage" | "hsa" | undefined;
   if (catCfg?.isOverflowTarget) sourceKind = "brokerage";
   else if (isHsaCategory(ia.category)) sourceKind = "hsa";
@@ -246,7 +249,7 @@ function buildRoutingReasonClause(
   const relevant = yr.discretionaryTierBreakdown.filter(
     (t) => t.source === sourceKind,
   );
-  if (relevant.length === 0) return undefined;
+  if (relevant.length === 0) return hsaNote;
   const breakdownClause = formatDiscretionaryTierBreakdown(
     relevant.map((t) => ({ ...t, amount: deflate(t.amount, yr.year) })),
   );
@@ -282,9 +285,7 @@ function buildRoutingReasonClause(
         )
       : undefined;
   if (capacityClause) onCapacityNoteUsed?.();
-  return capacityClause
-    ? `${breakdownClause} ${capacityClause}`
-    : breakdownClause;
+  return [breakdownClause, capacityClause, hsaNote].filter(Boolean).join(" ");
 }
 
 /** Merges `buildEligibilityNote` (eligibility/basis) with
@@ -1488,13 +1489,20 @@ export function DecumulationRow({
       <td className="text-caption text-faint border-subtle border-l py-1.5 pl-2 whitespace-nowrap">
         {dyr.taxCost > 0 && (
           <Tooltip
-            content="Eff. rate = total tax / total withdrawal. Traditional: marginal rate. Brokerage: LTCG rate. Roth growth beyond basis: ordinary rate. Once at the bracket cap, the engine picks whichever's cheaper that year."
+            content="Eff. rate = tax on the withdrawal / total withdrawal (tax on Social Security is shown apart). Traditional: marginal rate. Brokerage: LTCG rate. Roth growth beyond basis: ordinary rate. Once at the bracket cap, the engine picks whichever's cheaper that year."
             side="left"
             maxWidth={240}
           >
             <span className="text-red-400">
-              ~{formatCurrency(deflate(dyr.taxCost, yr.year))} tax (
-              {formatPercent(dyr.effectiveTaxRate, 1)} eff.)
+              ~{formatCurrency(deflate(dyr.taxCost - dyr.ssTaxCost, yr.year))}{" "}
+              tax ({formatPercent(dyr.effectiveTaxRate, 1)} eff.)
+              {dyr.ssTaxCost > 0 && (
+                <>
+                  {" "}
+                  + {formatCurrency(deflate(dyr.ssTaxCost, yr.year))} on Social
+                  Security
+                </>
+              )}
             </span>
           </Tooltip>
         )}
@@ -1508,6 +1516,11 @@ export function DecumulationRow({
               `Spending: ${formatCurrency(deflate(dyr.spending, yr.year))} (after tax, Social Security included)`,
               `After-tax need: ${formatCurrency(deflate(dyr.afterTaxNeed ?? 0, yr.year))}`,
               `Tax rate: ${formatPercent(dyr.effectiveTaxRate, 2)} (trad ${formatPercent(dyr.estTraditionalPortion ?? 0, 0)} of retirement money)`,
+              ...(dyr.ssTaxCost > 0
+                ? [
+                    `Tax on Social Security: ${formatCurrency(deflate(dyr.ssTaxCost, yr.year))} (not in the rate)`,
+                  ]
+                : []),
               `Gross-up: ×${(dyr.grossUpFactor ?? 1).toFixed(3)}`,
               `Target withdrawal: ${formatCurrency(deflate(dyr.targetWithdrawal, yr.year))}`,
               `Actual withdrawal: ${formatCurrency(deflate(dyr.totalWithdrawal, yr.year))}`,
@@ -1563,7 +1576,7 @@ export function DecumulationRow({
                 : []),
               ...(dyr.irmaaCost > 0
                 ? [
-                    `IRMAA: ${formatCurrency(deflate(dyr.irmaaCost, yr.year))}/yr surcharge`,
+                    `IRMAA: ${formatCurrency(deflate(dyr.irmaaCost, yr.year))}/yr surcharge (${dyr.irmaaPaid ? "on top of your budget" : "in your budget"})`,
                   ]
                 : []),
               ...(dyr.acaSubsidyPreserved

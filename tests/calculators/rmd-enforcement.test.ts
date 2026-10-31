@@ -44,6 +44,63 @@ describe("enforceRmd", () => {
     expect(result.warnings).toHaveLength(0);
   });
 
+  it("an HSA draw doesn't shrink a reported shortfall either", () => {
+    // All the Traditional money is out of reach (held outside the plan), so
+    // the HSA's $25,000 mustn't read as paying part of the $45,454.55.
+    const acctBal = makeAccountBalances({ preTax: 0, afterTax: 0 });
+    const slots = [
+      {
+        category: "hsa",
+        withdrawal: 25000,
+        traditionalWithdrawal: 25000,
+        rothWithdrawal: 0,
+      } as DecumulationSlot,
+    ];
+    const result = enforceRmd(
+      baseInput({
+        overrideRmdRequired: 45454.55,
+        slots,
+        totalTraditionalWithdrawal: 25000,
+        totalWithdrawal: 25000,
+        acctBal,
+      }),
+    );
+    expect(result.rmdShortfallAmount).toBe(45454.55);
+    expect(result.warnings[0]).toContain("only $0 available");
+    expect(result.warnings[0]).toContain("~$11364");
+  });
+
+  it("an HSA draw in the total doesn't meet the RMD", () => {
+    const acctBal = makeAccountBalances({ preTax: 0, afterTax: 0 });
+    acctBal["401k"] = {
+      structure: "roth_traditional",
+      traditional: 100000,
+      roth: 0,
+    };
+    const slots = [
+      {
+        category: "hsa",
+        withdrawal: 8000,
+        traditionalWithdrawal: 8000,
+        rothWithdrawal: 0,
+      } as DecumulationSlot,
+    ];
+    const result = enforceRmd(
+      baseInput({
+        overrideRmdRequired: 5000,
+        acctBal,
+        slots,
+        totalTraditionalWithdrawal: 8000,
+        totalWithdrawal: 8000,
+      }),
+    );
+    expect(result.rmdOverrodeRouting).toBe(true);
+    expect(result.totalWithdrawal).toBe(13000);
+    expect(
+      slots.find((s) => s.category === "401k")?.traditionalWithdrawal,
+    ).toBe(5000);
+  });
+
   it("rmdShortfallAmount is 0 when nothing is owed (no override, age under RMD start)", () => {
     const result = enforceRmd(baseInput({ age: 60, rmdStartAge: 73 }));
     expect(result.rmdAmount).toBe(0);

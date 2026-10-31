@@ -1,7 +1,15 @@
 "use client";
 
 import { ProseSection } from "@/components/ui/prose-section";
-import { getAllStrategyKeys } from "@/lib/config/withdrawal-strategies";
+import {
+  getAllStrategyKeys,
+  WITHDRAWAL_STRATEGY_CONFIG,
+} from "@/lib/config/withdrawal-strategies";
+import { HSA_DRAW_TREATMENT } from "@/lib/pure/early-access";
+import { formatPercent } from "@/lib/utils/format";
+
+/** VPW's defaults, as the paragraph below quotes them. */
+const vpw = WITHDRAWAL_STRATEGY_CONFIG.vpw.defaultParams;
 
 export function DecumulationMethodologyContent() {
   return (
@@ -258,8 +266,12 @@ export function DecumulationMethodologyContent() {
             <strong>Vanguard Dynamic Floor &amp; Ceiling (SWR ~4.7%)</strong> —
             withdraw a base percentage of the current portfolio, but cap
             year-over-year spending changes: maximum 5% increase (ceiling) and
-            maximum 2.5% decrease (floor). Your spending adjusts with the market
-            but can never swing wildly in either direction.
+            maximum 2.5% decrease (floor), both in nominal dollars. Your
+            spending adjusts with the market but can never swing wildly in
+            either direction. The published method applies these limits to
+            inflation-adjusted spending; Ledgr keeps them nominal, as with every
+            percentage-based strategy, so a floor never pushes withdrawals up in
+            a bad year.
             <br />
             <span className="text-faint text-label">
               Best for: retirees who want market-responsive spending with
@@ -272,17 +284,19 @@ export function DecumulationMethodologyContent() {
             <strong>Variable Percentage Withdrawal (VPW)</strong> — the
             Bogleheads method: each year withdraw a percentage of the balance
             set by your age (the younger spouse&apos;s, for a couple) and your
-            stock share — the payment that would spend the portfolio by age 100
-            at 5% real for stocks and 1.9% for bonds. It matches the published
-            VPW table to the tenth of a percent, and &ldquo;stops growing when
-            it reaches 10%.&rdquo; The stock share each year comes from your
-            allocation glide path (60% when you have no asset classes).
+            stock share — the payment that would spend the portfolio by age{" "}
+            {vpw.endAge} at {formatPercent(vpw.stockReturn)} real for stocks and{" "}
+            {formatPercent(vpw.bondReturn, 1)} for bonds. With the defaults it
+            matches the published VPW table to the tenth of a percent, and the
+            percentage stops growing at {formatPercent(vpw.cap)}. The stock
+            share each year comes from your allocation glide path (
+            {formatPercent(vpw.stockShare)} when you have no asset classes).
             <br />
             <span className="text-faint text-label">
               Best for: retirees who want to spend their savings down on
               purpose, with Social Security or a pension as the floor.
-              Bogleheads suggests an annuity around 80 for living past 100,
-              which Ledgr doesn&apos;t model.
+              Bogleheads suggests an annuity around 80 for living past{" "}
+              {vpw.endAge}, which Ledgr doesn&apos;t model.
             </span>
           </li>
         </ul>
@@ -731,7 +745,7 @@ export function DecumulationMethodologyContent() {
           contribution/conversion basis; a non-qualified withdrawal of growth
           beyond that basis is taxed as ordinary income (and may carry the 10%
           early-withdrawal penalty pre-59½ — see the Withdrawal Ordering
-          methodology page). HSA withdrawals are tax-free when qualified.
+          methodology page). HSA withdrawals: {HSA_DRAW_TREATMENT}
         </p>
         <p>
           Example: you need $40,000 after tax. At a 22% effective rate, the
@@ -753,10 +767,11 @@ export function DecumulationMethodologyContent() {
           whichever is cheaper. This estimate assumes your configured Roth
           conversion (if enabled) claims its usual bracket room first, so the
           two features don&apos;t both assume the same cheap room is available.
-          HSA is always last — its combined ordinary-rate-plus-20%- penalty cost
-          (when withdrawn non-medically pre-65) is realistically never the
-          cheapest option. None of this looks ahead to IRMAA or ACA cliffs, or
-          to future tax years — those are handled by the separate checks below.
+          HSA money is ranked at the ordinary rate, on the same footing as
+          non-qualified Roth growth: money still subject to the penalty is left
+          out first, unless you turn off avoiding penalized withdrawals. None of
+          this looks ahead to IRMAA or ACA cliffs, or to future tax years —
+          those are handled by the separate checks below.
         </p>
 
         <h4 className="text-secondary mt-4 font-semibold">
@@ -795,8 +810,15 @@ export function DecumulationMethodologyContent() {
           for Social Security taxation: up to 85% of benefits may be taxable
           depending on your total income. The three-tier formula (0%/50%/85%
           taxable) is computed against combined income (AGI + tax-exempt
-          interest + half of SS benefits). SS benefits start at your configured
-          start age (default 67) as a flat monthly amount.
+          interest + half of SS benefits), counting Traditional withdrawals,
+          taxable Roth growth and realized brokerage gains. The tax on that
+          taxable share is charged like the rest of your ordinary income; a
+          benefit above your spending pays it first, and a withdrawal covers the
+          rest. SS benefits start at your configured start age (default 67). You
+          enter them in today&apos;s dollars and they grow with your Inflation
+          rate every year — wage indexing up to claiming, approximately, and the
+          cost-of-living adjustment after — so in today&apos;s dollars a benefit
+          stays what you entered.
         </p>
 
         <h4 className="text-secondary mt-4 font-semibold">
@@ -805,11 +827,14 @@ export function DecumulationMethodologyContent() {
         <p>
           <strong>IRMAA</strong> (Income-Related Monthly Adjustment Amount) adds
           Medicare Part B and Part D surcharges at age 65+ based on modified AGI
-          from two years prior. The engine reports the surcharge and, when
+          from two years prior. The engine works out the surcharge and, when
           it&apos;s about to push you over the next tier, caps that year&apos;s
-          Roth conversion to stay under the cliff — this cap is the one place
-          IRMAA awareness actually changes a withdrawal number, not just a
-          warning.
+          Roth conversion to stay under the cliff. In Healthcare you choose
+          whether the surcharge is in your budget (nothing more is withdrawn) or
+          on top of it (it&apos;s added to what the year needs). The first two
+          retirement years have no income from two years prior to look back on,
+          so there it lowers what&apos;s spent instead. Standard Part B and D
+          premiums aren&apos;t modeled: put them in your budget.
         </p>
         <p>
           <strong>ACA</strong> (Affordable Care Act) subsidy cliffs apply before

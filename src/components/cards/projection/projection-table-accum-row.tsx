@@ -1,4 +1,5 @@
 /** Renders a single accumulation-phase table row with salary, contribution breakdowns, balance columns, and MC cell. */
+import { annualRaiseLabel } from "@/lib/pure/raise-rates";
 import React, { useRef } from "react";
 import { useScrollToFocus } from "@/components/ui/focus-target";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -112,6 +113,7 @@ export function AccumulationRow({
     renderTooltip,
     enginePeople,
     engineSettings,
+    enginePerPersonSettings,
     realDefaults: _realDefaults,
     contribSpecs,
     budgetProfileSummaries,
@@ -217,7 +219,7 @@ export function AccumulationRow({
           }
           if (!yr.hasSalaryOverride && engineSettings) {
             lines.push({
-              text: `Annual raise: ${formatPercent(Number(engineSettings.salaryAnnualIncrease), 1)}/yr`,
+              text: `Annual raise: ${annualRaiseLabel(Number(engineSettings.salaryAnnualIncrease), enginePerPersonSettings)}/yr`,
               style: "meta",
             });
           }

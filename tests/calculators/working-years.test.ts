@@ -305,3 +305,47 @@ describe("working years from job dates", () => {
     expect(at(years, 2033).projectedSalaryByPerson![2]).toBeCloseTo(30900, 0);
   });
 });
+
+describe("each person's own raise rate", () => {
+  const twoEarners = {
+    salaryByPerson: { 1: 90000, 2: 60000 },
+    currentSalary: 150000,
+    salaryGrowthRate: 0.03,
+    contributionSpecs: [spec(1), spec(2)],
+  };
+
+  it("each salary grows at its owner's rate, and the household total follows", () => {
+    const years = accumulation(
+      makeInput({
+        ...twoEarners,
+        salaryGrowthRateByPerson: { 1: 0.04, 2: 0 },
+      }),
+    );
+    const second = years[1]!;
+    expect(second.projectedSalaryByPerson![1]).toBeCloseTo(93600, 2);
+    expect(second.projectedSalaryByPerson![2]).toBe(60000);
+    expect(second.projectedSalary).toBeCloseTo(153600, 2);
+  });
+
+  it("no map, or a person missing from it: the household rate", () => {
+    const base = accumulation(makeInput(twoEarners));
+    const partial = accumulation(
+      makeInput({ ...twoEarners, salaryGrowthRateByPerson: { 1: 0.03 } }),
+    );
+    expect(partial[1]!.projectedSalaryByPerson).toEqual(
+      base[1]!.projectedSalaryByPerson,
+    );
+    expect(base[1]!.projectedSalaryByPerson![2]).toBeCloseTo(61800, 2);
+  });
+
+  it("the salary cap and a year's override still apply per person", () => {
+    const years = accumulation(
+      makeInput({
+        ...twoEarners,
+        salaryCap: 91000,
+        salaryGrowthRateByPerson: { 1: 0.04, 2: 0 },
+      }),
+    );
+    expect(years[1]!.projectedSalaryByPerson![1]).toBe(91000);
+  });
+});

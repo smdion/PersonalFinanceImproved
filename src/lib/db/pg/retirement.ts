@@ -295,6 +295,11 @@ export const retirementSettings = pgTable(
     enableIrmaaAwareness: boolean("enable_irmaa_awareness")
       .notNull()
       .default(false),
+    /** IRMAA surcharges are paid on top of the retirement budget, not inside
+     *  it. The surcharge only: base Part B and D premiums aren't modeled. */
+    irmaaOnTopOfBudget: boolean("irmaa_on_top_of_budget")
+      .notNull()
+      .default(false),
     /** Enable ACA subsidy awareness — cap MAGI to preserve health insurance subsidies (pre-65). */
     enableAcaAwareness: boolean("enable_aca_awareness")
       .notNull()

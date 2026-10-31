@@ -161,6 +161,7 @@ export function runStressTestScenarios(
       returnRates: flatReturnRates,
       inflationRate: scenario.inflationRate,
       salaryGrowthRate: scenario.salaryGrowthRate,
+      salaryGrowthRateByPerson: undefined, // the scenario's rate, for everyone
       decumulationDefaults: scenarioDecumulationDefaults,
       // The household's saved "Changes by year" (D6).
       accumulationOverrides: input.accumulationOverrides ?? [],

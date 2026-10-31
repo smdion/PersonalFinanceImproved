@@ -40,7 +40,7 @@ export const WITHDRAWAL_ROUTING_MODE_LABELS: Record<RoutingMode, string> = {
 export const WITHDRAWAL_ROUTING_MODE_DESCRIPTIONS: Record<RoutingMode, string> =
   {
     bracket_filling:
-      "Tax-optimal: Traditional up to your bracket ceiling, then whichever of Roth or Brokerage (graduated LTCG) costs less that year, HSA last. Includes RMDs, SS taxation, Roth conversions, and IRMAA/ACA awareness.",
+      "Tax-optimal: Traditional up to your bracket ceiling, then whichever of Roth, HSA or Brokerage (graduated LTCG) costs less that year. Includes RMDs, SS taxation, Roth conversions, and IRMAA/ACA awareness.",
     waterfall: "Drain accounts in a fixed priority order you set.",
     percentage: "Split withdrawals by fixed percentages across accounts.",
   };

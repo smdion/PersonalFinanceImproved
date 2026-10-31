@@ -221,16 +221,15 @@ export function runAccumulationYear(
           ),
     ]),
   ) as Record<AccountCategory, number>;
-  // Someone isn't at work this year: each spec's match moves with its own
+  // With pay tracked per person, each spec's match moves with its own
   // person's pay (its share of the category's base-year match, grown with
-  // that person's salary), not the household rate on what's left.
-  if (
-    setup.yearSpecs &&
-    hasPerPersonSalary &&
-    activeBaseYearEmployerMatch &&
-    contributionSpecs
-  ) {
-    const baseSalaryByPerson = input.salaryByPerson ?? {};
+  // that person's salary), not the household rate: raises differ, and
+  // someone may not be at work this year.
+  const baseSalaryByPerson = input.salaryByPerson ?? {};
+  const personPay = hasPerPersonSalary
+    ? { projected: projectedSalaryByPerson, base: baseSalaryByPerson }
+    : undefined;
+  if (!useRealContribs && hasPerPersonSalary && contributionSpecs) {
     const payRatio = (personId: number | null | undefined) =>
       personId == null
         ? safeDivide(projectedSalary, currentSalary, 0)
@@ -239,11 +238,22 @@ export function runAccumulationYear(
             baseSalaryByPerson[personId] ?? 0,
             0,
           );
-    for (const cat of getAllCategories()) yearEmployerMatch[cat] = 0;
+    // A category with no spec holding its match keeps the household rate
+    // (specs saying nothing about whose it is) — unless someone's away,
+    // when the away specs are what's left of it.
+    const owned = new Set(
+      contributionSpecs
+        .filter((s) => (s.employerShare ?? 0) > 0)
+        .map((s) => s.category),
+    );
+    for (const cat of getAllCategories())
+      if (owned.has(cat) || setup.yearSpecs) yearEmployerMatch[cat] = 0;
     for (const spec of contributionSpecs)
       yearEmployerMatch[spec.category] +=
         (spec.employerShare ?? 0) *
-        (activeBaseYearEmployerMatch[spec.category] ?? 0) *
+        (activeBaseYearEmployerMatch?.[spec.category] ??
+          Math.max(0, activeEmployerMatchRateByCategory[spec.category] ?? 0) *
+            currentSalary) *
         payRatio(spec.personId) *
         proRate;
     for (const cat of getAllCategories())
@@ -271,6 +281,7 @@ export function runAccumulationYear(
           projectedSalary,
           salaryBase: currentSalary,
           limitGrowthFactor: lgf,
+          personPay,
         },
         {
           ctx: capCtx,
@@ -462,6 +473,7 @@ export function runAccumulationYear(
     const brokerageContrib =
       slots.find((s) => isOverflowTarget(s.category))?.employeeContrib ?? 0;
     // Base year brokerage is intentional; scale proportionally with salary
+    // (no specs here, so nothing says whose it is: the household's pay).
     const baseIntentional = state.activeBaseYearContributions?.brokerage ?? 0;
     const salaryScale = safeDivide(projectedSalary, currentSalary, 1);
     const intentional = roundToCents(baseIntentional * salaryScale);
@@ -549,6 +561,7 @@ export function runAccumulationYear(
         accountsWithSpecs,
         projectedSalary,
         currentSalary,
+        personPay,
         limitGrowthRate,
         yearIndex,
         proRate,

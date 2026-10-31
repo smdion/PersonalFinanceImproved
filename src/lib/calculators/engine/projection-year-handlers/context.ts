@@ -198,6 +198,10 @@ export function buildProjectionContext(
     firstYearFraction,
     rmdStartAge,
     rmdStartAgeByPerson,
+    primaryPersonId:
+      input.primaryPersonId ??
+      input.socialSecurityEntries?.[0]?.personId ??
+      null,
     yearsToProject,
     ACCOUNT_CATEGORIES,
     OVERFLOW_CATEGORY,

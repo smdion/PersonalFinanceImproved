@@ -238,6 +238,11 @@ export const retirementSettings = sqliteTable(
     enableIrmaaAwareness: integer("enable_irmaa_awareness", { mode: "boolean" })
       .notNull()
       .default(false),
+    /** IRMAA surcharges are paid on top of the retirement budget, not inside
+     *  it. The surcharge only: base Part B and D premiums aren't modeled. */
+    irmaaOnTopOfBudget: integer("irmaa_on_top_of_budget", { mode: "boolean" })
+      .notNull()
+      .default(false),
     /** Enable ACA subsidy awareness — cap MAGI to preserve health insurance subsidies (pre-65). */
     enableAcaAwareness: integer("enable_aca_awareness", { mode: "boolean" })
       .notNull()

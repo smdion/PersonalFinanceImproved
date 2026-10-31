@@ -100,6 +100,7 @@ export type Settings = {
   rmdSmoothingMaxBracketTarget?: string | null;
   // Feature flags + filing
   enableIrmaaAwareness?: boolean;
+  irmaaOnTopOfBudget?: boolean;
   enableAcaAwareness?: boolean;
   householdSize?: number;
   filingStatus?: string | null;

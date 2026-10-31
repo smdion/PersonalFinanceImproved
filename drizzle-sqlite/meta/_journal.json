@@ -50,6 +50,20 @@
       "when": 1793318765088,
       "tag": "0006_v095_milestones",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1793412375231,
+      "tag": "0007_v095_redact_change_log",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1793416145691,
+      "tag": "0008_v095_irmaa_budget",
+      "breakpoints": true
     }
   ]
 }

@@ -91,6 +91,8 @@ export type ProjectionLoopState = {
 
   // Tax/IRMAA history
   magiHistory: number[];
+  /** The no-owner Traditional account warning is said once a projection. */
+  rmdNoOwnerWarned: boolean;
 
   // Phase tracking
   /** Set to true on the first year isAccumulation is false. Prevents the
@@ -157,6 +159,9 @@ export type ProjectionContext = {
   firstYearFraction: number;
   rmdStartAge: number | null;
   rmdStartAgeByPerson: Map<number, { startAge: number; birthYear: number }>;
+  /** Whose RMD an account with no owner counts toward (rmdOwnerOf): the
+   *  household's primary person. */
+  primaryPersonId: number | null;
   yearsToProject: number;
 
   // Constants

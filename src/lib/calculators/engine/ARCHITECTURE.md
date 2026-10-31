@@ -33,18 +33,18 @@ projection-year-handlers/    one year of work
 
 **Withdrawals and tax**
 
-| Module                         | Role                                                                                                                                                            |
-| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `tax-gross-up.ts`              | `estimateWithdrawalTaxCost`: the convergence loop that sizes a withdrawal to cover its own tax (Social Security torpedo, NIIT included), routing it as it goes. |
-| `withdrawal-routing.ts`        | Splits a withdrawal across accounts: waterfall, percentage, or bracket filling. Caps, tax preferences, penalty-locked money.                                    |
-| `withdrawal-cost-ranking.ts`   | Ranks non-Traditional sources by real cost (basis, penalty) for bracket filling beyond the Traditional cap. Public as `rankWithdrawalTiers`.                    |
-| `tax-estimation.ts`            | Bracket tax, effective/marginal rates, taxable Social Security.                                                                                                 |
-| `bracket-growth.ts`            | Grows inflation-indexed thresholds (brackets, standard deduction, LTCG, IRMAA) year by year.                                                                    |
-| `obbba-senior-deduction.ts`    | The 2025–2028 OBBBA senior deduction and its phase-out.                                                                                                         |
-| `rmd-enforcement.ts`           | Required minimum distributions after routing; shortfall spread over Traditional accounts.                                                                       |
-| `qcd.ts`                       | Qualified Charitable Distributions that satisfy part of an RMD.                                                                                                 |
-| `post-withdrawal-optimizer.ts` | Roth conversions into bracket room, IRMAA and ACA cliff checks.                                                                                                 |
-| `rmd-smoothing.ts`             | Sizes Roth conversions to shrink future RMDs toward the spending need.                                                                                          |
+| Module                         | Role                                                                                                                                                                                                               |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `tax-gross-up.ts`              | `estimateWithdrawalTaxCost`: the convergence loop that sizes a withdrawal to cover its own tax (Social Security torpedo, NIIT included), routing it as it goes.                                                    |
+| `withdrawal-routing.ts`        | Splits a withdrawal across accounts: waterfall, percentage, or bracket filling. Caps, tax preferences, penalty-locked money.                                                                                       |
+| `withdrawal-cost-ranking.ts`   | Ranks non-Traditional sources by real cost (basis, penalty) for bracket filling beyond the Traditional cap. Public as `rankWithdrawalTiers`.                                                                       |
+| `tax-estimation.ts`            | Bracket tax, effective/marginal rates, taxable Social Security.                                                                                                                                                    |
+| `bracket-growth.ts`            | Grows inflation-indexed thresholds (brackets, standard deduction, LTCG, IRMAA) year by year.                                                                                                                       |
+| `obbba-senior-deduction.ts`    | The 2025–2028 OBBBA senior deduction and its phase-out.                                                                                                                                                            |
+| `rmd-enforcement.ts`           | Required minimum distributions after routing. Multi-person households: each owner's RMD is pinned to that owner's accounts, including owner assignment; single-person: shortfall spread over Traditional accounts. |
+| `qcd.ts`                       | Qualified Charitable Distributions that satisfy part of an RMD.                                                                                                                                                    |
+| `post-withdrawal-optimizer.ts` | Roth conversions into bracket room, IRMAA and ACA cliff checks.                                                                                                                                                    |
+| `rmd-smoothing.ts`             | Sizes Roth conversions to shrink future RMDs toward the spending need.                                                                                                                                             |
 
 **Balances**
 

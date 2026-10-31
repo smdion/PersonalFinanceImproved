@@ -157,7 +157,7 @@ export const taxParams = sqliteTable(
 export type ApiConfig = Record<string, string | undefined>;
 
 export type AccountMapping = {
-  // "performance:{id}" | "asset:{id}" | "mortgage:{loanId}:{type}" (legacy
+  // "performance:{id}" | "asset:{id}" | "debt:{id}" | "mortgage:{loanId}:{type}" (legacy
   // prefix format) | "cash" | "creditCard" (fixed pseudo-accounts — many
   // mappings can share these two values, summed by getEffectiveCash /
   // getEffectiveCreditCardDebt; never resolve to a single Ledgr row the
@@ -170,5 +170,6 @@ export type AccountMapping = {
   assetId?: number; // Direct reference to otherAssetItems.id
   loanId?: number; // Direct reference to mortgageLoans.id
   loanMapType?: "propertyValue" | "loanBalance"; // What the mortgage mapping controls
+  debtId?: number; // Direct reference to debts.id (its pulled balance)
   performanceAccountId?: number; // Direct reference to performanceAccounts.id
 };

@@ -51,11 +51,11 @@ import {
 } from "../bracket-growth";
 import { resolveDecumulationConfig } from "../override-resolution";
 import { applyGrowth } from "../growth-application";
-import { computeTaxableSS, computeTaxFromSlots } from "../tax-estimation";
+import { computeTaxFromSlots, taxableSSFor } from "../tax-estimation";
 import { estimateWithdrawalTaxCost } from "../tax-gross-up";
 import { routeForMode } from "../withdrawal-routing";
 import { deriveBasisRankingInputs } from "../withdrawal-cost-ranking";
-import { enforceRmd } from "../rmd-enforcement";
+import { enforceOwnerRmds, enforceRmd, rmdOwnerOf } from "../rmd-enforcement";
 import {
   performRothConversion,
   checkIrmaa,
@@ -205,6 +205,7 @@ export function runDecumulationYear(
     input,
     year,
     age,
+    ctx.inflationRate,
   );
   // The year's after-tax need: spending less Social Security — or, when
   // the strategy sized the gross withdrawal (Social Security on top), what
@@ -212,6 +213,13 @@ export function runDecumulationYear(
   let afterTaxNeed = roundToCents(
     Math.max(0, state.projectedExpenses - ssIncome),
   );
+  // Social Security beyond spending pays the year's tax first — only the
+  // rest needs a withdrawal (tax-gross-up.ts solves with the same credit).
+  // A withdrawal-sized year has Social Security on top by definition.
+  let ssSurplus =
+    state.portfolioWithdrawal === null
+      ? Math.max(0, ssIncome - state.projectedExpenses)
+      : 0;
 
   // --- Per-person RMD (moved ahead of routing/tax gross-up) ---
   // Compute each person's RMD from their own Traditional balance and age.
@@ -220,6 +228,11 @@ export function runDecumulationYear(
   // gross-up runs -- a QCD reduces taxable income for the year, so it has
   // to be known (and deducted) before estimateWithdrawalTaxCost, not
   // after. Pure computation, no dependency on routing -- safe to hoist.
+  // Multi-person households with tracked accounts enforce each owner's RMD
+  // on that owner's accounts, whether or not one is due this year; the
+  // household calculation (primary's age on the pooled balance) is for
+  // single-person households only.
+  const perOwnerRmd = hasIndividualAccounts && rmdStartAgeByPerson.size > 0;
   let perPersonRmdTotal: number | undefined;
   let rmdByPerson:
     | {
@@ -229,9 +242,10 @@ export function runDecumulationYear(
         divisor?: number;
         priorYearEndTradBalance?: number;
         age?: number;
+        shortfall?: number;
       }[]
     | undefined;
-  if (rmdStartAgeByPerson.size > 0 && priorYearEndTradByPerson.size > 0) {
+  if (perOwnerRmd) {
     rmdByPerson = [];
     let total = 0;
     for (const [personId, { startAge, birthYear }] of rmdStartAgeByPerson) {
@@ -297,17 +311,15 @@ export function runDecumulationYear(
     for (const ia of indAccts) {
       if (
         isIraCategory(ia.category) &&
-        ia.ownerPersonId != null &&
+        rmdOwnerOf(ia, ctx.primaryPersonId) != null &&
         isPreTaxType(ia.taxType) &&
         // A Portfolio-parented IRA (nothing prevents one existing)
         // isn't retirement money -- must not inflate QCD-eligible capacity.
         isRetirementMoney(ia.parentCategory)
       ) {
         const bal = indBal.get(indKey(ia)) ?? 0;
-        iraTradByPerson.set(
-          ia.ownerPersonId,
-          (iraTradByPerson.get(ia.ownerPersonId) ?? 0) + bal,
-        );
+        const owner = rmdOwnerOf(ia, ctx.primaryPersonId)!;
+        iraTradByPerson.set(owner, (iraTradByPerson.get(owner) ?? 0) + bal);
       }
     }
     // The per-person QCD limit is CPI-indexed (IRC 408(d)(8)(G)): grown
@@ -345,7 +357,7 @@ export function runDecumulationYear(
         const personIraAccts = indAccts.filter(
           (ia) =>
             isIraCategory(ia.category) &&
-            ia.ownerPersonId === personId &&
+            rmdOwnerOf(ia, ctx.primaryPersonId) === personId &&
             isPreTaxType(ia.taxType) &&
             isRetirementMoney(ia.parentCategory),
         );
@@ -540,11 +552,48 @@ export function runDecumulationYear(
     ctx.inflationRate,
   );
 
+  const personsAge65Plus =
+    perPersonBirthYears && perPersonBirthYears.length > 0
+      ? perPersonBirthYears.filter((by) => year - by >= MEDICARE_START_AGE)
+          .length
+      : age >= MEDICARE_START_AGE
+        ? 1
+        : 0;
+  const anyPersonAge65 = personsAge65Plus > 0;
+  // IRMAA paid on top of the budget joins a need-sized year's need, so the
+  // gross-up, shortfall and RMD excess all see it. It's a cost beside the
+  // need: never in projectedExpenses (a strategy would carry it forward)
+  // and never in taxCost (the optimizer already adds irmaaCost to it). The
+  // year-N-2 MAGI is known here. The first two decumulation years have no
+  // lookback yet and fall back to this year's MAGI, which isn't known until
+  // the year is routed, so there the surcharge only lowers what's spent; a
+  // withdrawal-sized year's withdrawal stays the strategy's amount, likewise.
+  if (
+    input.irmaaOnTopOfBudget === true &&
+    state.portfolioWithdrawal === null &&
+    magiHistory.length >= 2
+  ) {
+    const irmaaInNeed =
+      checkIrmaa({
+        enableIrmaaAwareness,
+        filingStatus,
+        anyPersonAge65,
+        projectedMagi: magiHistory[magiHistory.length - 2]!,
+        rothConversionAmount: 0,
+        irmaaBrackets: grownIrmaaBracketsForCheck,
+      }).irmaaCost * personsAge65Plus;
+    afterTaxNeed = roundToCents(
+      Math.max(0, state.projectedExpenses + irmaaInNeed - ssIncome),
+    );
+    ssSurplus = Math.max(0, ssIncome - state.projectedExpenses - irmaaInNeed);
+  }
+
   // SS convergence + gross-up estimation (extracted to tax-gross-up module)
   const taxEst = estimateWithdrawalTaxCost({
     afterTaxNeed,
     fixedGrossWithdrawal: state.portfolioWithdrawal ?? undefined,
     ssIncome,
+    ssSurplus,
     filingStatus,
     config,
     // Grown ordinary tax brackets/standard deduction/LTCG brackets
@@ -682,62 +731,98 @@ export function runDecumulationYear(
 
   // --- RMD enforcement (Phase 1) ---
   // perPersonRmdTotal/rmdByPerson computed earlier now (see above --
-  // QCD needed them before tax gross-up). The override passed here is
-  // reduced by whatever QCD already satisfied directly, so enforceRmd only
-  // tops up routing to cover the REMAINING (non-QCD) RMD requirement --
-  // the QCD'd portion already left the account above, tax-free, and must
-  // not also be forced through as a second, taxable distribution.
-  const rmdRequiredAfterQcd =
-    perPersonRmdTotal != null
-      ? roundToCents(Math.max(0, perPersonRmdTotal - totalQcd))
-      : undefined;
+  // QCD needed them before tax gross-up). Each person's requirement is
+  // reduced by that person's own QCD -- one person's QCD above their own
+  // RMD never reduces another's -- so only the REMAINING (non-QCD) RMD is
+  // enforced: the QCD'd portion already left the account above, tax-free,
+  // and must not also be forced through as a second, taxable distribution.
 
   // Household-level "why is my RMD this amount" fallback — same
   // getRmdFactor/priorYearEndTradBalance enforceRmd's own internal
   // computeRmdAmount call uses when no per-person override is supplied
-  // (rmdRequiredAfterQcd undefined below), surfaced here rather than
+  // (the household path below), surfaced here rather than
   // re-derived by the UI. Only meaningful when rmdByPerson isn't
   // populated (single-person households / no per-person RMD tracking) —
   // the per-person breakdown above always wins when both exist.
   const rmdDivisor =
-    rmdStartAge != null && age >= rmdStartAge && priorYearEndTradBalance > 0
+    !perOwnerRmd &&
+    rmdStartAge != null &&
+    age >= rmdStartAge &&
+    priorYearEndTradBalance > 0
       ? (getRmdFactor(age) ?? undefined)
       : undefined;
 
   // Extracted to rmd-enforcement.ts -- enforces minimum Traditional withdrawals per IRS rules.
-  const rmdResult = enforceRmd({
-    age,
-    rmdStartAge,
-    priorYearEndTradBalance,
-    slots,
-    totalTraditionalWithdrawal,
-    totalWithdrawal,
-    acctBal,
-    overrideRmdRequired: rmdRequiredAfterQcd,
-    nonRetirement,
-  });
+  const ownerRmd = perOwnerRmd
+    ? enforceOwnerRmds({
+        owners: (rmdByPerson ?? []).map(({ personId, personName, amount }) => ({
+          personId,
+          personName,
+          required: roundToCents(
+            Math.max(
+              0,
+              amount -
+                (qcdByPerson.find((q) => q.personId === personId)?.qcdAmount ??
+                  0),
+            ),
+          ),
+        })),
+        primaryPersonId: ctx.primaryPersonId,
+        slots,
+        totalTraditionalWithdrawal,
+        totalWithdrawal,
+        acctBal,
+        indAccts,
+        indKey,
+        indBal,
+        nonRetirement,
+      })
+    : null;
+  const rmdResult =
+    ownerRmd ??
+    enforceRmd({
+      age,
+      rmdStartAge,
+      priorYearEndTradBalance,
+      slots,
+      totalTraditionalWithdrawal,
+      totalWithdrawal,
+      acctBal,
+      nonRetirement,
+    });
   const { rmdOverrodeRouting, rmdShortfallAmount } = rmdResult;
   totalTraditionalWithdrawal = rmdResult.totalTraditionalWithdrawal;
   totalWithdrawal = rmdResult.totalWithdrawal;
   routeWarnings.push(...rmdResult.warnings);
+  if (ownerRmd && rmdByPerson) {
+    rmdByPerson = rmdByPerson.map((p) => {
+      const shortfall = ownerRmd.shortfallByPerson.get(p.personId);
+      return shortfall ? { ...p, shortfall } : p;
+    });
+    if (
+      !state.rmdNoOwnerWarned &&
+      rmdByPerson.some((p) => p.personId === ctx.primaryPersonId) &&
+      indAccts.some(
+        (ia) => ia.ownerPersonId == null && isPreTaxType(ia.taxType),
+      )
+    ) {
+      state.rmdNoOwnerWarned = true;
+      routeWarnings.push(
+        "A Traditional account has no owner — its RMD is counted with the primary person's. Give it an owner so the RMD falls on the right person.",
+      );
+    }
+  }
   // The row's public rmdAmount must be the TRUE full RMD requirement, not
   // the QCD-reduced figure enforceRmd used internally to decide how much
   // MORE to force through routing -- otherwise a household with QCD
   // active would see an understated "your RMD this year" number. QCD
   // still counts toward satisfying the real RMD; it just doesn't route
   // through a taxable distribution to get there.
-  const rmdAmount =
-    perPersonRmdTotal != null ? perPersonRmdTotal : rmdResult.rmdAmount;
-
-  // Recompute taxableSS with actual Traditional withdrawal (post-RMD) for final tax cost.
-  // TODO: If muni bond income tracking is added, pass taxExemptInterest as 4th arg.
-  if (filingStatus && ssIncome > 0) {
-    taxableSS = computeTaxableSS(
-      ssIncome,
-      totalTraditionalWithdrawal,
-      filingStatus,
-    );
-  }
+  const rmdAmount = ownerRmd
+    ? (perPersonRmdTotal ?? 0)
+    : "rmdAmount" in rmdResult
+      ? rmdResult.rmdAmount
+      : 0;
 
   // Distribute withdrawals to individual accounts -- extracted to individual-account-tracking.ts
   // Moved ABOVE computeTaxFromSlots: tax computation needs
@@ -753,7 +838,14 @@ export function runDecumulationYear(
   const preWithdrawalIndBal = new Map(indBal);
   const distributeResult = hasIndividualAccounts
     ? followDraws(indAccts, indKey, indBal, brokBasis, () =>
-        distributeWithdrawals(slots, indAccts, indKey, indBal, eligibility),
+        distributeWithdrawals(
+          slots,
+          indAccts,
+          indKey,
+          indBal,
+          eligibility,
+          ownerRmd?.pins,
+        ),
       )
     : { decIndWithdrawal: new Map<string, number>(), warnings: [] };
   const decIndWithdrawal = distributeResult.decIndWithdrawal;
@@ -799,34 +891,45 @@ export function runDecumulationYear(
       : { penaltyCost: 0, penalizedAmount: 0, byKey: new Map() };
 
   // Calculate tax cost per withdrawal type -- single source of truth shared
-  // with tax-gross-up.ts's estimate.
-  const taxFromSlots = computeTaxFromSlots({
-    slots,
-    taxableSS,
-    balances,
-    taxRates: {
-      ...taxRates,
-      taxBrackets: grownTaxBrackets,
-      standardDeduction: grownStandardDeduction,
-      ltcgBrackets: grownLtcgBrackets,
-    },
-    filingStatus,
-    // Pass the authoritative post-RMD totals rather than letting this
-    // re-derive from slots: rmd-enforcement.ts tracks
-    // totalTraditionalWithdrawal incrementally (running += then
-    // roundToCents), which isn't bit-for-bit identical to a fresh
-    // roundToCents(sumBy(slots, ...)) over the same mutated slots.
-    totalTraditionalWithdrawal,
-    totalRothWithdrawal,
-    rothTaxableGrowth: rothTaxSplit.taxableGrowth,
-    penaltyCost: earlyWithdrawalPenalty.penaltyCost,
-    brokerageBasisRatio,
-  });
+  // with tax-gross-up.ts's estimate. One pricing call, used again for the
+  // post-conversion recompute below (never a hand copy of its formula).
+  const priceTax = (ss: number, brokerageTaxCostOverride?: number) =>
+    computeTaxFromSlots({
+      slots,
+      taxableSS: ss,
+      balances,
+      taxRates: {
+        ...taxRates,
+        taxBrackets: grownTaxBrackets,
+        standardDeduction: grownStandardDeduction,
+        ltcgBrackets: grownLtcgBrackets,
+      },
+      filingStatus,
+      // Pass the authoritative post-RMD totals rather than letting this
+      // re-derive from slots: rmd-enforcement.ts tracks
+      // totalTraditionalWithdrawal incrementally (running += then
+      // roundToCents), which isn't bit-for-bit identical to a fresh
+      // roundToCents(sumBy(slots, ...)) over the same mutated slots.
+      totalTraditionalWithdrawal,
+      totalRothWithdrawal,
+      rothTaxableGrowth: rothTaxSplit.taxableGrowth,
+      penaltyCost: earlyWithdrawalPenalty.penaltyCost,
+      brokerageBasisRatio,
+      brokerageTaxCostOverride,
+    });
+  // Social Security's taxable share from this year's actual (post-RMD)
+  // income — Traditional, non-qualified Roth growth and brokerage gains
+  // (taxableSSFor) — then the year priced with it. The first pass only
+  // supplies those amounts, which don't depend on taxable SS.
+  // TODO: If muni bond income tracking is added, pass taxExemptInterest.
+  let taxFromSlots = priceTax(taxableSS);
+  if (filingStatus && ssIncome > 0) {
+    taxableSS = taxableSSFor(ssIncome, taxFromSlots, filingStatus);
+    taxFromSlots = priceTax(taxableSS);
+  }
   let brokerageTaxCost = taxFromSlots.brokerageTaxCost;
   const brokerageBasisPortion = taxFromSlots.brokerageBasisPortion;
   const brokerageGainsPortion = taxFromSlots.brokerageGainsPortion;
-  const hsaWithdrawal = taxFromSlots.hsaWithdrawal;
-  const actualTraditionalRate = taxFromSlots.actualTraditionalRate;
   // This used to be re-derived locally
   // as `totalTraditionalWithdrawal + taxableSS`, silently dropping
   // non-qualified Roth growth income (rothTaxSplit.taxableGrowth) from
@@ -850,6 +953,10 @@ export function runDecumulationYear(
 
   let taxCost = taxFromSlots.taxCost;
   const penaltyCost = taxFromSlots.penaltyCost;
+  const ssTaxCost = taxFromSlots.ssTaxCost;
+  // Never more than the tax: the surplus isn't banked.
+  const surplusCredit = (tax: number) =>
+    roundToCents(Math.min(ssSurplus, Math.max(0, tax)));
 
   // Recompute grossUpFactor post-RMD for accurate diagnostics (#45).
   // Pre-RMD estimate may understate tax when RMD forces additional Traditional withdrawals.
@@ -904,7 +1011,8 @@ export function runDecumulationYear(
         rmdOverrodeRouting,
         totalWithdrawal,
         afterTaxNeed,
-        taxCost,
+        // The tax the withdrawal pays — Social Security's surplus pays the rest.
+        roundToCents(taxCost - surplusCredit(taxCost)),
         balances,
         acctBal,
         hasIndividualAccounts ? indAccts : undefined,
@@ -940,7 +1048,9 @@ export function runDecumulationYear(
       ([personId, { startAge, birthYear }]) => {
         const personTraditionalBalance = indAccts
           .filter(
-            (ia) => ia.ownerPersonId === personId && isPreTaxType(ia.taxType),
+            (ia) =>
+              rmdOwnerOf(ia, ctx.primaryPersonId) === personId &&
+              isPreTaxType(ia.taxType),
           )
           .reduce((s, ia) => s + Math.max(0, indBal.get(indKey(ia)) ?? 0), 0);
         return {
@@ -1077,23 +1187,10 @@ export function runDecumulationYear(
       filingStatus,
       grownLtcgBrackets,
     );
-    // Recompute taxCost with revised brokerage tax. This used to tax the
-    // WHOLE Roth withdrawal at
-    // taxRates.roth (0 by default) — the pre-Roth-tax-basis formula,
-    // silently un-updated when that feature split Roth withdrawals into a
-    // taxable-growth portion (taxed at actualTraditionalRate, same as
-    // computeTaxFromSlots's own formula) and a tax-free portion. In a
-    // conversion year with brokerage gains AND a non-qualified Roth
-    // growth draw, tax on that growth vanished entirely. Mirrors
-    // computeTaxFromSlots's own taxCost formula exactly, just with the
-    // revised brokerageTaxCost substituted in.
-    taxCost = roundToCents(
-      totalTraditionalWithdrawal * actualTraditionalRate +
-        taxFromSlots.rothTaxableGrowth * actualTraditionalRate +
-        taxFromSlots.rothTaxFreePortion * taxRates.roth +
-        hsaWithdrawal * taxRates.hsa +
-        brokerageTaxCost,
-    );
+    // Re-price the year with the revised brokerage tax through the same
+    // computeTaxFromSlots call — a hand copy of its formula here once
+    // dropped non-qualified Roth growth, and then taxable Social Security.
+    taxCost = priceTax(taxableSS, brokerageTaxCost).taxCost;
   } else {
     // Display-only: marginal bracket at the ceiling of the gains stack.
     // No tax is actually computed from this value.
@@ -1153,10 +1250,11 @@ export function runDecumulationYear(
   // of its own: its shortfall is the part of the strategy's amount that
   // couldn't leave the portfolio — not tax that changed after routing
   // (conversion-year capital gains, NIIT), which only lowers what's spent.
+  // (Social Security's surplus paid part of the tax: it covers the need too.)
   const fundingShortfall = roundToCents(
     state.portfolioWithdrawal !== null
       ? Math.max(0, state.portfolioWithdrawal - totalWithdrawal)
-      : Math.max(0, afterTaxNeed - deliveredAfterTax),
+      : Math.max(0, afterTaxNeed - deliveredAfterTax - surplusCredit(taxCost)),
   );
   // Materiality floor, not a correctness tolerance. NIIT and the
   // conversion-year LTCG recompute both run
@@ -1216,14 +1314,6 @@ export function runDecumulationYear(
     magiHistory.length > 2
       ? magiHistory[magiHistory.length - 3]!
       : currentYearMagi;
-  const personsAge65Plus =
-    perPersonBirthYears && perPersonBirthYears.length > 0
-      ? perPersonBirthYears.filter((by) => year - by >= MEDICARE_START_AGE)
-          .length
-      : age >= MEDICARE_START_AGE
-        ? 1
-        : 0;
-  const anyPersonAge65 = personsAge65Plus > 0;
   const irmaaResult = checkIrmaa({
     enableIrmaaAwareness,
     filingStatus,
@@ -1234,6 +1324,7 @@ export function runDecumulationYear(
   });
   // IRMAA surcharge is per-person — each Medicare-eligible person pays separately
   const irmaaCost = irmaaResult.irmaaCost * personsAge65Plus;
+  const irmaaPaid = input.irmaaOnTopOfBudget === true ? irmaaCost : 0;
   routeWarnings.push(...irmaaResult.warnings);
 
   // --- ACA Subsidy Awareness (Phase 7) ---
@@ -1353,7 +1444,6 @@ export function runDecumulationYear(
 
   // Update RMD tracking: year-end Traditional balance (after growth) for next year's RMD
   state.priorYearEndTradBalance = balances.preTax;
-  updatePerPersonTradBalance(ctx, state);
   // Update spending strategy state: prior year return + spending
   spendingState.priorYearReturn = returnRate;
   spendingState.priorYearSpending = state.projectedExpenses;
@@ -1361,6 +1451,9 @@ export function runDecumulationYear(
   const decIndGrowth = hasIndividualAccounts
     ? applyIndividualGrowth(indAccts, indKey, indBal, returnRate, true)
     : new Map<string, number>();
+  // Each owner's RMD base is year-end, after growth — like the household's
+  // above and accumulation's.
+  updatePerPersonTradBalance(ctx, state);
 
   // Use the contribution map built during the brokerage contribution block above
   const decIndContribs =
@@ -1459,6 +1552,7 @@ export function runDecumulationYear(
     projectedExpenses: roundToCents(state.projectedExpenses),
     spending: roundToCents(
       deliveredAfterTax -
+        irmaaPaid -
         (config.rmdExcessHandling === "reinvest" ? rmdExcessAmount : 0) +
         ssIncome,
     ),
@@ -1474,7 +1568,11 @@ export function runDecumulationYear(
     totalRothWithdrawal,
     totalTraditionalWithdrawal,
     taxCost,
-    effectiveTaxRate: totalWithdrawal > 0 ? taxCost / totalWithdrawal : 0,
+    // On the withdrawal: tax on Social Security is owed whether or not
+    // anything is withdrawn (`ssTaxCost`, shown on its own line).
+    effectiveTaxRate:
+      totalWithdrawal > 0 ? (taxCost - ssTaxCost) / totalWithdrawal : 0,
+    ssTaxCost,
     ssIncome,
     ssIncomeByPerson,
     afterTaxNeed,
@@ -1519,6 +1617,9 @@ export function runDecumulationYear(
     priorYearEndTradBalance,
     rmdOverrodeRouting,
     rmdShortfallAmount,
+    ...(ownerRmd && ownerRmd.rmdReassignedAmount > 0
+      ? { rmdReassignedAmount: ownerRmd.rmdReassignedAmount }
+      : {}),
     rmdExcessAmount,
     rmdSmoothingShortfall,
     qcdAmount: totalQcd,
@@ -1531,6 +1632,7 @@ export function runDecumulationYear(
     strategyAction,
     niitAmount,
     irmaaCost,
+    ...(irmaaPaid > 0 ? { irmaaPaid } : {}),
     acaSubsidyPreserved,
     acaMagiHeadroom,
     warnings: routeWarnings,

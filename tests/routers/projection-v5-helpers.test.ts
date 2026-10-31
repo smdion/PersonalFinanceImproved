@@ -113,6 +113,10 @@ describe("computeCurrentStockAllocationPercent (M6)", () => {
   });
 });
 
+type ProjectionInputArg = Parameters<
+  typeof runStressTestScenarios
+>[0]["baseEngineInput"];
+
 describe("runStressTestScenarios (M2)", () => {
   const AS_OF = new Date("2026-01-01");
 
@@ -233,6 +237,23 @@ describe("runStressTestScenarios (M2)", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("a scenario's salary growth applies to everyone, whatever each person's own rate", () => {
+    const twoEarners = {
+      ...makeBaseInput(),
+      salaryByPerson: { 1: 60000, 2: 40000 },
+      currentSalary: 100000,
+    };
+    const nestEggs = (input: ProjectionInputArg) =>
+      runStressTestScenarios({
+        baseEngineInput: input,
+        decumulationDefaults: makeDecumulationDefaults(),
+        avgRetirementAge: 65,
+      }).map((r) => r.nestEggAtRetirement);
+    expect(
+      nestEggs({ ...twoEarners, salaryGrowthRateByPerson: { 1: 0.09, 2: 0 } }),
+    ).toEqual(nestEggs(twoEarners));
   });
 
   it("returns one result per canonical scenario (conservative/baseline/optimistic)", () => {

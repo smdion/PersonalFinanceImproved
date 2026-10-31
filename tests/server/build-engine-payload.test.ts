@@ -220,6 +220,7 @@ describe("buildEnginePayload — single-person household", () => {
     expect(payload!.age).toBeLessThanOrEqual(41);
     expect(payload!.baseEngineInput.retirementAge).toBe(65);
     expect(payload!.hasMultiplePeople).toBe(false);
+    expect(payload!.baseEngineInput.salaryGrowthRateByPerson).toBeUndefined();
   });
 
   it("aggregates starting balances from the latest snapshot", async () => {
@@ -315,6 +316,15 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
 
     expect(payload!.hasMultiplePeople).toBe(true);
     expect(payload!.perPersonSettings.length).toBe(2);
+    // Each person's own raise rate reaches the engine.
+    expect(payload!.baseEngineInput.salaryGrowthRateByPerson).toEqual(
+      Object.fromEntries(
+        payload!.perPersonSettings.map((p) => [
+          p.personId,
+          Number(p.salaryAnnualIncrease),
+        ]),
+      ),
+    );
   });
 
   it("sends both people's birth years for the IRS-limit caps (H10)", async () => {
@@ -1073,5 +1083,67 @@ describe("buildEnginePayload — job dates bound the years worked", () => {
     expect(payload.contributionSpecs.map((s) => s.personId).sort()).toEqual(
       [personAId, personBId].sort(),
     );
+  });
+});
+
+describe("buildEnginePayload — the one earner isn't the primary person", () => {
+  let appDb: Db;
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let cleanup: () => void;
+  let contributionProfileId: number;
+  let spouseId: number;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    appDb = ctx.rawDb;
+    db = ctx.db;
+    cleanup = ctx.cleanup;
+    const primary = await seedPerson(ctx.db, "Primary", "1985-01-01");
+    spouseId = await seedPerson(ctx.db, "Spouse", "1986-01-01");
+    await markPrimary(db, primary);
+    await seedRetirementSettings(db, primary, { salaryAnnualIncrease: "0" });
+    await seedRetirementSettings(db, spouseId, {
+      salaryAnnualIncrease: "0.05",
+    });
+    const job = seedJob(ctx.db, spouseId, { annualSalary: "100000" });
+    const budget = await insertBudgetProfile(db, "Main Budget");
+    await insertBudgetItem(db, budget, "Essentials", "Rent", [3000]);
+    const perf = seedPerformanceAccount(ctx.db, {
+      parentCategory: "Retirement",
+      accountType: "401k",
+      ownerPersonId: spouseId,
+      accountLabel: "401k",
+    });
+    seedSnapshot(ctx.db, "2025-06-15", [
+      { performanceAccountId: perf, amount: "250000", taxType: "preTax" },
+    ]);
+    const account = await seedContributionAccount(db, spouseId, job, perf);
+    contributionProfileId = await seedContributionProfileForAccounts(db, [
+      account,
+    ]);
+  });
+
+  afterAll(() => cleanup());
+
+  it("grows that pay at the earner's own raise, and keeps their overrides", async () => {
+    const schema = await getSchema();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- dynamic schema import requires runtime cast
+    (db as any)
+      .insert(schema.retirementSalaryOverrides)
+      .values({
+        personId: spouseId,
+        projectionYear: 2040,
+        overrideSalary: "150000",
+      })
+      .run();
+    const data = await fetchRetirementData(appDb, { contributionProfileId });
+    const payload = await buildEnginePayload(appDb, data, {
+      contributionProfileId,
+    });
+    expect(payload!.hasMultiplePeople).toBe(false);
+    expect(payload!.baseEngineInput.salaryGrowthRate).toBe(0.05);
+    expect(payload!.baseEngineInput.salaryOverrides).toEqual([
+      expect.objectContaining({ year: 2040, value: 150000 }),
+    ]);
   });
 });

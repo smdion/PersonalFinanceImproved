@@ -476,6 +476,7 @@ export const scenariosRouter = createTRPCRouter({
           socialSecurityMonthly: settings.socialSecurityMonthly,
           ssStartAge: settings.ssStartAge,
           enableIrmaaAwareness: settings.enableIrmaaAwareness,
+          irmaaOnTopOfBudget: settings.irmaaOnTopOfBudget,
           enableAcaAwareness: settings.enableAcaAwareness,
           householdSize: settings.householdSize,
           filingStatus,

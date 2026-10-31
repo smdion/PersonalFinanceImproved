@@ -55,7 +55,7 @@ function singleYearDetail(flag: YearFlag): string {
     case "rmd-shortfall":
       return `Required Minimum Distribution shortfall of ${formatCurrency(flag.amount!)} — this portion couldn't be forced out as a real taxable distribution, which can trigger a 25% excise tax on the shortfall.`;
     case "irmaa":
-      return `Medicare IRMAA surcharge of ${formatCurrency(flag.amount!)} due to income in this year.`;
+      return `Medicare IRMAA surcharge of ${formatCurrency(flag.amount!)} due to income two years earlier.`;
     case "aca-lost":
       return "ACA premium subsidy was lost this year — income exceeded the subsidy cliff.";
     case "aca-close":

@@ -799,6 +799,12 @@ export const V08_MIGRATION_HASHES: Record<string, string> = {
   // per-strategy Social Security switches.
   "34805b1b06399bee36372f4a957f544c6bc9a8f2e001a290c75201e6d40c2471":
     "0006_v095_milestones",
+  // v0.9.5: credentials scrubbed from the change log (data only).
+  "343a1cdb129eb7364a0c952f416452e670fe62dbcf051751b8b98283a0804e87":
+    "0007_v095_redact_change_log",
+  // v0.9.5: IRMAA surcharges inside the budget or on top of it.
+  f9d735d3807b08de4b79ae9ee0ef0484fffde20b88824342ef2aef65a467a9e6:
+    "0008_v095_irmaa_budget",
 };
 
 /**

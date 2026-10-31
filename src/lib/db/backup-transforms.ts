@@ -97,6 +97,8 @@ const V08_SCHEMA_TAGS = [
   "0004_v090_debts", // PG + SQLite: debts table — older backups restore with no debts; no transform needed
   "0005_v092_filing_status_auto", // PG + SQLite: retirement_settings.filing_status may be null (= Auto) — older backups restore with their stored status; no transform needed
   "0006_v095_milestones", // PG + SQLite: debts purchase_price / term_months / api_balance(_date) (nullable); retirement_settings vpw_cap / vpw_end_age (null = config default) and the per-strategy *_ss_in_amount switches — older backups restore with the four existing switches on (transformV095SsInAmount), as the migration sets a live database
+  "0007_v095_redact_change_log", // PG + SQLite: data only — credentials scrubbed from change_log, which backups don't carry; no transform needed
+  "0008_v095_irmaa_budget", // PG + SQLite: retirement_settings.irmaa_on_top_of_budget (default false) — older backups restore with the default; no transform needed
 ] as const;
 
 /** First tags whose backups carry asset_class_buckets (PG, SQLite). */

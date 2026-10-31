@@ -74,6 +74,10 @@ export type ProjectionInput = {
   projectionEndAge: number;
   currentSalary: number;
   salaryGrowthRate: number;
+  /** Each person's own raise rate, by person id, for per-person salaries
+   *  (`salaryByPerson`); a person missing here grows at `salaryGrowthRate`.
+   *  A scenario that sets one household rate leaves this undefined. */
+  salaryGrowthRateByPerson?: Record<number, number>;
   salaryCap: number | null;
   salaryOverrides: RetirementYearOverride[];
   /** Per-person starting salaries (personId → annual salary).
@@ -246,6 +250,13 @@ export type ProjectionInput = {
   filingStatus?: FilingStatusType;
   /** Enable IRMAA awareness — report Medicare surcharge cliffs (65+). */
   enableIrmaaAwareness?: boolean;
+  /** IRMAA surcharges are paid on top of the retirement budget (a year's
+   *  need rises by the surcharge) rather than sitting inside it. Only the
+   *  income-based surcharge: base Part B and D premiums aren't modeled. */
+  irmaaOnTopOfBudget?: boolean;
+  /** The household's primary person: an account with no owner counts toward
+   *  this person's RMD. */
+  primaryPersonId?: number;
   /** When true, cap Roth conversions to stay below the next IRMAA cliff (default: true when IRMAA awareness is on). */
   irmaaAwareRothConversions?: boolean;
   /** Enable ACA subsidy awareness — cap MAGI to preserve health insurance subsidies (pre-65). */
@@ -405,6 +416,10 @@ export type EngineDecumulationYear = {
   totalTraditionalWithdrawal: number;
   /** Estimated tax cost on this year's withdrawals (traditional × trad rate + brokerage × brokerage rate). */
   taxCost: number;
+  /** Tax on the taxable share of Social Security (part of `taxCost`) —
+   *  owed whether or not anything is withdrawn, so it's left out of
+   *  `effectiveTaxRate` and shown on its own line. */
+  ssTaxCost: number;
   /** Bracket-estimated effective tax rate on this year's withdrawals (0–1). */
   effectiveTaxRate: number;
   // --- Diagnostic fields (for debugging withdrawal calculations) ---
@@ -544,7 +559,14 @@ export type EngineDecumulationYear = {
     divisor?: number;
     priorYearEndTradBalance?: number;
     age?: number;
+    /** What this person's own accounts couldn't pay of the RMD (never
+     *  taken from a spouse's). */
+    shortfall?: number;
   }[];
+  /** Traditional dollars routing took from the wrong owner's accounts,
+   *  moved to fall on the right owner's for their RMD. No change in income.
+   *  Absent when nothing moved. */
+  rmdReassignedAmount?: number;
   /** Household-level "why is my RMD this amount" fallback — the IRS
    *  Uniform Lifetime Table divisor for `age`, when `rmdByPerson` isn't
    *  populated (single-person households / no per-person RMD tracking).
@@ -617,8 +639,12 @@ export type EngineDecumulationYear = {
   /** NIIT amount: 3.8% × min(net investment income, MAGI - threshold). 0 if below threshold. */
   niitAmount: number;
   // --- IRMAA fields (Phase 6) ---
-  /** Annual IRMAA surcharge cost (per person, age 65+). 0 if below threshold or awareness disabled. */
+  /** Annual IRMAA surcharge, for everyone 65+ together (already multiplied
+   *  by that count). 0 if below threshold or awareness disabled. */
   irmaaCost: number;
+  /** The part of `irmaaCost` paid on top of the budget
+   *  (`irmaaOnTopOfBudget`). Absent when none is. */
+  irmaaPaid?: number;
   // --- ACA fields (Phase 7) ---
   /** Whether ACA subsidy was preserved this year (MAGI kept below cliff). */
   acaSubsidyPreserved: boolean;

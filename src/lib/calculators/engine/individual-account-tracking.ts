@@ -194,6 +194,10 @@ interface DistributeContributionsInput {
   accountsWithSpecs: Set<string>;
   projectedSalary: number;
   currentSalary: number;
+  personPay?: {
+    projected: ReadonlyMap<number, number>;
+    base: Readonly<Record<number, number>>;
+  };
   limitGrowthRate: number;
   yearIndex: number;
   proRate: number;
@@ -230,6 +234,7 @@ export function distributeContributions(
     accountsWithSpecs,
     projectedSalary,
     currentSalary,
+    personPay,
     limitGrowthRate,
     yearIndex: y,
     proRate,
@@ -259,6 +264,7 @@ export function distributeContributions(
         projectedSalary,
         salaryBase: currentSalary,
         limitGrowthFactor: lgf,
+        personPay,
         proRate,
       }),
     );
@@ -558,6 +564,7 @@ export function distributeContributions(
         projectedSalary,
         salaryBase: currentSalary,
         limitGrowthFactor: lgf,
+        personPay,
         proRate,
       }),
     );
@@ -694,6 +701,9 @@ export function distributeWithdrawals(
   indKey: IndKeyFn,
   indBal: Map<string, number>,
   eligibility?: EligibilityRecord,
+  /** Traditional draws an owner's RMD fixes to an account (rmd-enforcement.ts
+   *  `enforceOwnerRmds`): applied first; the rest of the slot fans out as usual. */
+  pins?: ReadonlyMap<string, number>,
 ): { decIndWithdrawal: Map<string, number>; warnings: string[] } {
   const decIndWithdrawal = new Map<string, number>();
   const warnings: string[] = [];
@@ -728,9 +738,18 @@ export function distributeWithdrawals(
 
       // Distribute traditional withdrawal to preTax accounts (#33/#35)
       if (slot.traditionalWithdrawal > 0 && tradAccts.length > 0) {
+        let pinned = 0;
+        for (const ia of tradAccts) {
+          const k = indKey(ia);
+          const pin = pins?.get(k) ?? 0;
+          if (pin <= 0) continue;
+          indBal.set(k, roundToCents((indBal.get(k) ?? 0) - pin));
+          decIndWithdrawal.set(k, (decIndWithdrawal.get(k) ?? 0) + pin);
+          pinned = roundToCents(pinned + pin);
+        }
         reportShortfall(
           distributeProportionallyPreferringPenaltyFree(
-            slot.traditionalWithdrawal,
+            roundToCents(slot.traditionalWithdrawal - pinned),
             tradAccts,
             indKey,
             indBal,

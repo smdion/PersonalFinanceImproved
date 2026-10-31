@@ -855,6 +855,11 @@ export async function buildEnginePayload(
       (salaryByPerson[js.job.personId] ?? 0) + js.totalCompFullFormula;
   }
   const hasMultiplePeople = Object.keys(salaryByPerson).length > 1;
+  // With one earner, salary runs at the household level on that person's
+  // terms — who may not be the primary person.
+  const earnerIds = Object.keys(salaryByPerson).map(Number);
+  const soleEarnerId =
+    earnerIds.length === 1 ? earnerIds[0]! : primaryPerson.id;
 
   // Separate salary overrides: profile-switch overrides vs plain salary
   // overrides. A row is a profile switch if it references EITHER axis — the
@@ -869,7 +874,7 @@ export async function buildEnginePayload(
 
   // Salary overrides from DB — household-level fallback (only when single person)
   const dbSalaryOverrides = plainSalaryOverrides
-    .filter((o) => !hasMultiplePeople && o.personId === primaryPerson.id)
+    .filter((o) => !hasMultiplePeople && o.personId === soleEarnerId)
     .map((o) => ({
       year: o.projectionYear,
       value: toNumber(o.overrideSalary),
@@ -1150,7 +1155,20 @@ export async function buildEnginePayload(
       : undefined,
     projectionEndAge: maxEndAge,
     currentSalary: totalCompensationFullFormula,
-    salaryGrowthRate: toNumber(settings.salaryAnnualIncrease),
+    salaryGrowthRate: toNumber(
+      (soleEarnerId !== primaryPerson.id
+        ? perPersonSettings.find((p) => p.personId === soleEarnerId)
+        : undefined
+      )?.salaryAnnualIncrease ?? settings.salaryAnnualIncrease,
+    ),
+    salaryGrowthRateByPerson: hasMultiplePeople
+      ? Object.fromEntries(
+          perPersonSettings.map((p) => [
+            p.personId,
+            toNumber(p.salaryAnnualIncrease),
+          ]),
+        )
+      : undefined,
     salaryCap: settings.salaryCap ? toNumber(settings.salaryCap) : null,
     salaryOverrides: dbSalaryOverrides,
     salaryByPerson: hasMultiplePeople ? salaryByPerson : undefined,
@@ -1265,6 +1283,8 @@ export async function buildEnginePayload(
     birthYear: new Date(primaryPerson.dateOfBirth).getFullYear(),
     filingStatus,
     enableIrmaaAwareness: settings.enableIrmaaAwareness,
+    irmaaOnTopOfBudget: settings.irmaaOnTopOfBudget,
+    primaryPersonId: primaryPerson.id,
     enableAcaAwareness: settings.enableAcaAwareness,
     householdSize: settings.householdSize,
     perPersonBirthYears: perPersonSettings.map((p) => p.birthYear),

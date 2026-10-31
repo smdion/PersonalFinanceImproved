@@ -60,6 +60,35 @@ export function HealthcareSection({
             </button>
           </div>
         </div>
+        {/* Without awareness there's no surcharge to place. */}
+        {(settings?.enableIrmaaAwareness ?? false) && (
+          <div>
+            <span className="text-muted">
+              IRMAA surcharge
+              <HelpTip text="Covers only the income-based surcharge. Standard Part B and D premiums aren't modeled: put them in your budget. On top of your budget, the surcharge raises what the year needs from the portfolio; with a percentage-of-balance strategy it comes out of what the withdrawal delivers, and Guyton-Klinger's withdrawal rate doesn't count it." />
+            </span>
+            <div className="font-medium">
+              <button
+                onClick={() => {
+                  if (!settings) return;
+                  upsertSettings.mutate(
+                    buildSettingsPatch(settings, {
+                      irmaaOnTopOfBudget: !(
+                        settings.irmaaOnTopOfBudget ?? false
+                      ),
+                    }),
+                  );
+                }}
+                disabled={!isEditable}
+                className="bg-surface-elevated text-secondary rounded px-2 py-0.5 text-sm disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {(settings?.irmaaOnTopOfBudget ?? false)
+                  ? "On top of my budget"
+                  : "In my budget"}
+              </button>
+            </div>
+          </div>
+        )}
         <div>
           <span className="text-muted">
             ACA Subsidy (Pre-65)

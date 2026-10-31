@@ -334,7 +334,9 @@ export type DecumulationDefaults = {
    *   `roth-distribution-tax.ts`. This rate is NOT a lever
    *   for non-qualified growth — that portion is always ordinary income by
    *   law, computed automatically, never configurable here.
-   * - hsa: 0% — qualified HSA withdrawals are tax-free
+   * - hsa: 0% — an extra rate on top, not the HSA's tax: routing books HSA
+   *   draws as Traditional, so they're ordinary income (HSA_DRAW_TREATMENT,
+   *   lib/pure/early-access.ts — projected as non-medical)
    * - brokerage: long-term capital gains rate (default 0.15)
    *
    * The 10%/20% early-withdrawal penalty is NOT modeled through these

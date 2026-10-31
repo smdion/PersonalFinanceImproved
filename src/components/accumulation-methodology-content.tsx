@@ -169,7 +169,8 @@ export function AccumulationMethodologyContent() {
         <ul className="list-disc space-y-1.5 pl-5">
           <li>
             <strong>salaryGrowthRate</strong> — annual salary increase rate
-            (e.g. 0.03 = 3%)
+            (e.g. 0.03 = 3%). In a two-person household each person&apos;s
+            salary grows at their own rate.
           </li>
           <li>
             <strong>salaryCap</strong> — maximum salary ceiling (null = no cap)

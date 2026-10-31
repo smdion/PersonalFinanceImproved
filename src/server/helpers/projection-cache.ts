@@ -358,8 +358,23 @@ import { log } from "@/lib/logger";
  *  Security on top (per-strategy `ssInAmount`); VPW strategy;
  *  `stockShareByAge` input.
  *  60: Guyton-Klinger's guardrails judge the portfolio withdrawal rate
- *  (spending less Social Security over the balance). */
-export const PROJECTION_CACHE_ENGINE_VERSION = 60;
+ *  (spending less Social Security over the balance).
+ *  61: Simulation trials vary inflation around the plan's own rates (the
+ *  preset mean is gone; both rates share one shock path, no 0% floor) and
+ *  carry today's-dollar outcomes deflated per trial (`today`); Guyton-
+ *  Klinger carries its anchor through years Social Security covers;
+ *  per-owner RMDs leave an HSA draw out and use year-end balances after
+ *  growth; each person's salary grows at their own raise rate, and the
+ *  match and fixed savings that scale with pay follow it (a sole earner who
+ *  isn't primary included); an ownerless IRA counts for the primary's QCD
+ *  and smoothing as for their RMD.
+ *  Social Security grows with general inflation (COLA), its taxable share
+ *  is taxed (`ssTaxCost`, in `taxCost`; a surplus over spending pays it
+ *  first) with brokerage gains and Roth growth in provisional income, and
+ *  Guyton-Klinger compares benefits in today's dollars. Each owner's RMD
+ *  falls on that owner's own accounts (`rmdByPerson[].shortfall`,
+ *  `rmdReassignedAmount`), and `irmaaOnTopOfBudget` adds `irmaaPaid`. */
+export const PROJECTION_CACHE_ENGINE_VERSION = 61;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;

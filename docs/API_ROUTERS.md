@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**390 procedures across 55 routers.**
+**389 procedures across 55 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -324,7 +324,6 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `analyzeStrategy`           | query    | `protectedProcedure` | Analyze the active strategy — run what-if MC scenarios and return ranked recommendations.                                                                                 |
 | `computeStrategyComparison` | query    | `protectedProcedure` | Compare all withdrawal strategies side-by-side. Fetches DB data once, then runs calculateProjection() for each strategy varying only withdrawalStrategy + strategyParams. |
 | `updateAssetClassOverrides` | mutation | `scenarioProcedure`  | Persist MC asset class return/volatility overrides to appSettings.                                                                                                        |
-| `updateInflationRisk`       | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                          |
 
 ## `projection/stress-test`
 
@@ -653,20 +652,20 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `version`
 
-| Procedure              | Kind     | Auth                 | Description                                                                                                              |
-| ---------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `create`               | mutation | `versionProcedure`   | Create a new manual version.                                                                                             |
-| `delete`               | mutation | `versionProcedure`   | Delete a version.                                                                                                        |
-| `dismissUpgradeBanner` | mutation | `versionProcedure`   | Dismiss the upgrade banner by removing the app_settings flag.                                                            |
-| `getById`              | query    | `protectedProcedure` | Get a single version with per-table row counts (no JSONB data).                                                          |
-| `getPreview`           | query    | `protectedProcedure` | Preview first 50 rows of a specific table from a version.                                                                |
-| `getRetention`         | query    | `protectedProcedure` | Read retention setting.                                                                                                  |
-| `getSchedule`          | query    | `protectedProcedure` | Read auto-version schedule setting.                                                                                      |
-| `getUpgradeBanner`     | query    | `protectedProcedure` | Check if a pre-upgrade backup banner should be shown.                                                                    |
-| `importDataLoss`       | query    | `versionProcedure`   | Same check for an uploaded backup file, given only its table names.                                                      |
-| `list`                 | query    | `protectedProcedure` | List all versions (metadata only, no JSONB data).                                                                        |
-| `resetAllData`         | mutation | `adminProcedure`     | Reset all user data — truncates every table except state_versions, state_version_tables, app_settings, and local_admins. |
-| `restore`              | mutation | `versionProcedure`   | Restore from a version.                                                                                                  |
-| `restoreDataLoss`      | query    | `versionProcedure`   | Tables a restore of this version would empty (it predates them), for the pre-restore warning.                            |
-| `setRetention`         | mutation | `versionProcedure`   | Update retention setting and trigger cleanup.                                                                            |
-| `setSchedule`          | mutation | `versionProcedure`   | Update auto-version schedule.                                                                                            |
+| Procedure              | Kind     | Auth                 | Description                                                                                                                                 |
+| ---------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create`               | mutation | `versionProcedure`   | Create a new manual version.                                                                                                                |
+| `delete`               | mutation | `versionProcedure`   | Delete a version.                                                                                                                           |
+| `dismissUpgradeBanner` | mutation | `versionProcedure`   | Dismiss the upgrade banner by removing the app_settings flag.                                                                               |
+| `getById`              | query    | `versionProcedure`   | Version permission: a backup's contents are every table's data.                                                                             |
+| `getPreview`           | query    | `versionProcedure`   | permission — the rows are any table's data, which elsewhere needs its own permission — and never a credential table (withheld, count only). |
+| `getRetention`         | query    | `protectedProcedure` | Read retention setting.                                                                                                                     |
+| `getSchedule`          | query    | `protectedProcedure` | Read auto-version schedule setting.                                                                                                         |
+| `getUpgradeBanner`     | query    | `protectedProcedure` | Check if a pre-upgrade backup banner should be shown.                                                                                       |
+| `importDataLoss`       | query    | `versionProcedure`   | Same check for an uploaded backup file, given only its table names.                                                                         |
+| `list`                 | query    | `protectedProcedure` | List all versions (metadata only, no JSONB data).                                                                                           |
+| `resetAllData`         | mutation | `adminProcedure`     | Reset all user data — truncates every table except state_versions, state_version_tables, app_settings, and local_admins.                    |
+| `restore`              | mutation | `versionProcedure`   | Restore from a version.                                                                                                                     |
+| `restoreDataLoss`      | query    | `versionProcedure`   | Tables a restore of this version would empty (it predates them), for the pre-restore warning.                                               |
+| `setRetention`         | mutation | `versionProcedure`   | Update retention setting and trigger cleanup.                                                                                               |
+| `setSchedule`          | mutation | `versionProcedure`   | Update auto-version schedule.                                                                                                               |
