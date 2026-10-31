@@ -10,6 +10,7 @@ import {
   portfolioProcedure,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
+import { PERF_CATEGORY_PORTFOLIO } from "@/lib/config/display-labels";
 import { roundToCents, safeDivide } from "@/lib/utils/math";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import {
@@ -263,8 +264,21 @@ export const networthRouter = createTRPCRouter({
         .limit(1);
       const latestPerformanceYear = latestAnnualRow[0]?.year ?? null;
 
+      // The last finalized year's total: the plan's fixed starting point.
+      const a = schema.annualPerformance;
+      const [finalized] = await ctx.db
+        .select({ year: a.year, balance: a.endingBalance })
+        .from(a)
+        .where(
+          and(eq(a.category, PERF_CATEGORY_PORTFOLIO), eq(a.isFinalized, true)),
+        )
+        .orderBy(desc(a.year))
+        .limit(1);
       return {
         result,
+        lastFinalized: finalized
+          ? { year: finalized.year, balance: Number(finalized.balance) }
+          : null,
         snapshotDate: snapshotData?.snapshot.snapshotDate ?? null,
         performanceLastUpdated,
         latestPerformanceYear,

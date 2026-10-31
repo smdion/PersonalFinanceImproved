@@ -11,6 +11,9 @@ vi.mock("@/components/ui/help-tip", () => ({
   HelpTip: () => null,
 }));
 
+vi.mock("@/lib/hooks/use-dashboard-projection", () => ({
+  useDashboardProjection: () => ({ data: undefined }),
+}));
 vi.mock("@/lib/hooks/use-year-end-targeting", () => ({
   useYearEndTargetingInput: () => ({}),
 }));

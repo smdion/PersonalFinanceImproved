@@ -9,6 +9,8 @@ import { formatCurrency, formatDate } from "@/lib/utils/format";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { LoadingCard, ErrorCard } from "./utils";
 import { MortgagePayoff } from "./mortgage-payoff";
+import { PlanPaceLine } from "./plan-pace-line";
+import { localDateStr } from "@/lib/utils/date";
 
 function NetWorthCardImpl() {
   const targeting = useYearEndTargetingInput();
@@ -98,6 +100,11 @@ function NetWorthCardImpl() {
             {formatCurrency(data.portfolioTotal)}
           </span>
         </div>
+        <PlanPaceLine
+          actual={data.portfolioTotal + (sinceSnapshot?.estimate?.change ?? 0)}
+          day={sinceSnapshot?.estimate ? localDateStr() : data.snapshotDate}
+          lastFinalized={data.lastFinalized ?? null}
+        />
         {data.hasHouse && (
           <div className="flex justify-between">
             <span className="text-muted">

@@ -7,9 +7,7 @@ import { Card, Metric } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useUser, hasPermission } from "@/lib/context/user-context";
-import { formatCurrency, formatPercent } from "@/lib/utils/format";
-import { planExpectedNow, yearFraction } from "@/lib/pure/plan-pace";
-import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
+import { formatCurrency } from "@/lib/utils/format";
 import { roundToCents } from "@/lib/utils/math";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types.types";
@@ -115,25 +113,6 @@ function sourceLine(
   if (!reported) return `From your ${snapshotDay} snapshot,`;
   if (!snapshot) return "From institution reports,";
   return `From your ${snapshotDay} snapshot and newer reports,`;
-}
-
-/** Where the plan expected the money by the card's close. */
-function paceOf(a: {
-  balance: number;
-  fromYear: number;
-  year: number;
-  target: string;
-  rate: number;
-  contributions: number;
-  actual: number;
-}) {
-  const expected = planExpectedNow({
-    yearStartBalance: a.balance,
-    annualRate: a.rate,
-    yearContributions: a.contributions,
-    fraction: yearFraction(a.target, a.year),
-  });
-  return { ...a, expected, gap: a.actual - expected };
 }
 
 /** "+$1,234.56" / "−$1,234.56". */
@@ -269,8 +248,6 @@ function LinkedBalanceCardImpl() {
     undefined,
     { enabled: isConnected },
   );
-  const planYears =
-    useDashboardProjection().data?.result?.projectionByYear ?? undefined;
 
   if (statusLoading) return <LoadingCard title="Current Balances" />;
   // No SimpleFIN connection configured — omit the card entirely rather
@@ -307,27 +284,6 @@ function LinkedBalanceCardImpl() {
     inSnapshot.reduce((t, b) => t + (b.current - b.snapshot), 0),
   );
   const snapshotDate = current?.snapshotDate;
-  // Only while the plan's first year is the year after the finalized one
-  // and it's still saving: otherwise the two don't line up.
-  const planYear = planYears?.[0];
-  const pace =
-    summary &&
-    target &&
-    current?.lastFinalized &&
-    planYear?.phase === "accumulation" &&
-    planYear.year === current.lastFinalized.year + 1
-      ? paceOf({
-          balance: current.lastFinalized.balance,
-          fromYear: current.lastFinalized.year,
-          year: planYear.year,
-          target,
-          rate: planYear.annualizedReturnRate,
-          contributions:
-            (planYear.totalEmployee + planYear.totalEmployer) /
-            (planYear.proRateFraction || 1),
-          actual: summary.total,
-        })
-      : null;
 
   // Coverage against every tracked account (not just the ones already
   // matched): how much of net worth this total represents.
@@ -377,20 +333,6 @@ function LinkedBalanceCardImpl() {
               {formatCurrency(Math.abs(flows.added))})
             </span>
           )}
-        </p>
-      )}
-
-      {/* Actual vs the plan, from a starting point it can't move. */}
-      {pace && (
-        <p
-          className="text-caption text-muted -mt-1 mb-2"
-          title={`Your ${pace.fromYear} ending balance grown at the plan's ${formatPercent(pace.rate, 1)} for the part of this year gone by, plus the ${formatCurrency(pace.contributions)} a year it plans to contribute. Your own contributions and returns may differ.`}
-        >
-          The plan expected {formatCurrency(pace.expected, 0)} by now ·{" "}
-          <span className={moveColor(pace.gap)}>
-            {formatCurrency(Math.abs(pace.gap), 0)}{" "}
-            {pace.gap >= 0 ? "ahead" : "behind"}
-          </span>
         </p>
       )}
 
