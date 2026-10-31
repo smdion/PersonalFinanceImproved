@@ -288,7 +288,7 @@ export async function loadHoldingsOverview(db: Db) {
           ownerPersonId: a?.ownerPersonId ?? a?.accountOwnerPersonId ?? null,
           total: rows.reduce((s, r) => s + r.value, 0),
           uninvestedCash: uninvestedCash(a, rows),
-          /** Its funds added up (null for an effectively single-fund account). */
+          /** Its funds added up (null when it holds no money). */
           rollup: accountRollup(rows),
           holdings: rows
             .sort((x, y) => y.value - x.value)

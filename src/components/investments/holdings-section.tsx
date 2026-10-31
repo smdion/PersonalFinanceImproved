@@ -171,7 +171,7 @@ function AccountHeader({
           {formatCurrency(a.total)}
         </span>
       </div>
-      {r?.mix && (
+      {r?.mix && r.multiFund && (
         <p className="text-caption text-faint mt-0.5 pl-5.5">
           All funds:{" "}
           {parts
