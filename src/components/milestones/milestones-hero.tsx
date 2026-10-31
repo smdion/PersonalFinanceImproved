@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Card, ProgressBar } from "@/components/ui/card";
 import { formatCurrency, formatNumber } from "@/lib/utils/format";
 import {
@@ -72,6 +73,18 @@ export function MilestonesHero({
             <h3 className="text-caption text-muted mb-1.5 font-medium tracking-wide uppercase">
               Next up
             </h3>
+            {/* Ties the dates to the plan they come from. */}
+            <p className="text-caption text-muted mb-2">
+              &ldquo;On pace for&rdquo; dates come from your retirement
+              projection —{" "}
+              <Link
+                href="/retirement"
+                className="text-blue-600 hover:underline"
+              >
+                see its assumptions on Retirement
+              </Link>
+              .
+            </p>
             {next.length === 0 ? (
               <p className="text-muted text-sm">
                 Every wealth milestone is reached — add a goal of your own
