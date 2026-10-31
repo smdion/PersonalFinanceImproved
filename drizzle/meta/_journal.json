@@ -71,6 +71,13 @@
       "when": 1793479912506,
       "tag": "0009_v095_holding_reports",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793482593455,
+      "tag": "0010_v095_market_closes",
+      "breakpoints": true
     }
   ]
 }

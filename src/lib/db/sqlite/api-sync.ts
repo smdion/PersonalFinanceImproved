@@ -154,6 +154,31 @@ export const simplefinBalanceSnapshots = sqliteTable(
 // built-in and user rules, so a rule change re-classifies history (RULES:
 // computed values are not stored). Only explicit overrides are stored.
 
+/**
+ * Daily closes from Tiingo, kept so a restart or a rate limit doesn't lose
+ * them and each close is fetched once. Raw close plus that day's
+ * distribution and split — total return is built from these
+ * (lib/pure/total-return.ts), never from Tiingo's adjusted close, which is
+ * re-based on each new distribution. Re-fetchable; not household data.
+ */
+export const marketCloses = sqliteTable(
+  "market_closes",
+  {
+    id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
+    ticker: text("ticker").notNull(),
+    date: text("date").notNull(),
+    close: text("close").notNull(),
+    divCash: text("div_cash").notNull().default("0"),
+    splitFactor: text("split_factor").notNull().default("1"),
+    fetchedAt: integer("fetched_at", { mode: "timestamp" })
+      .notNull()
+      .default(sql`(unixepoch())`),
+  },
+  (table) => [
+    uniqueIndex("market_closes_ticker_date_idx").on(table.ticker, table.date),
+  ],
+);
+
 /** A fund/security as an institution reports it. */
 export const securities = sqliteTable(
   "securities",

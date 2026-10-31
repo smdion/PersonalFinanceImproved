@@ -100,6 +100,7 @@ const V08_SCHEMA_TAGS = [
   "0007_v095_redact_change_log", // PG + SQLite: data only — credentials scrubbed from change_log, which backups don't carry; no transform needed
   "0008_v095_irmaa_budget", // PG + SQLite: retirement_settings.irmaa_on_top_of_budget (default false) — older backups restore with the default; no transform needed
   "0009_v095_holding_reports", // PG + SQLite: holding_observations unique per report (balance_date), not per as_of — index only; older backups' rows already differ by balance_date, no transform needed
+  "0010_v095_market_closes", // PG + SQLite: market_closes (Tiingo cache, excluded from backups) — nothing to restore, no transform needed
 ] as const;
 
 /** First tags whose backups carry asset_class_buckets (PG, SQLite). */

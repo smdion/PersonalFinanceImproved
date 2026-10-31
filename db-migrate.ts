@@ -808,6 +808,9 @@ export const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.9.5: holdings kept per report, not per assumed day (index only).
   "3191a9cd884c7a1ea667d17481dae32ee2478373fd74ba53e3b392bd5ed18e49":
     "0009_v095_holding_reports",
+  // v0.9.5: Tiingo daily closes kept (market_closes).
+  "57558a9b1f60616f4d97ba5e72c3c19871d6b86abd19b9bfdf9b75402a28c1cb":
+    "0010_v095_market_closes",
 };
 
 /**

@@ -183,7 +183,7 @@ describe("schemaLabel — what a pre-squash backup is labelled", () => {
     // The newest migration whose tables and columns match — a label, not a
     // record of what ran (0007 is data only, 0009 indexes only).
     expect(schemaLabel(journal, FOLDER, new Set(), allApplied, crypto)).toBe(
-      "0009_v095_holding_reports",
+      "0010_v095_market_closes",
     );
   });
 });

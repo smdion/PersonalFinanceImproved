@@ -215,6 +215,9 @@ export async function budgetApiRequest<T>(
   headers: Record<string, string>,
   init?: RequestInit,
   timeoutMs = 15_000,
+  /** False for an hourly/daily quota (Tiingo): a rate limit won't lift in
+   *  seconds, and each retry spends another request. */
+  resendRateLimited = true,
 ): Promise<T> {
   return retryWithBackoff(
     async () => {
@@ -240,6 +243,8 @@ export async function budgetApiRequest<T>(
       }
     },
     undefined,
-    (err) => isResendable(err, init),
+    (err) =>
+      isResendable(err, init) &&
+      (resendRateLimited || err.code !== "rate-limit"),
   );
 }

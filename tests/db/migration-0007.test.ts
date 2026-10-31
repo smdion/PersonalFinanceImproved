@@ -79,6 +79,18 @@ describe("migration 0008", () => {
   });
 });
 
+describe("migration 0010", () => {
+  it("adds market_closes, one row per ticker and day, on both dialects", () => {
+    for (const folder of ["drizzle", "drizzle-sqlite"]) {
+      const sql = fs.readFileSync(
+        path.join(folder, "0010_v095_market_closes.sql"),
+        "utf8",
+      );
+      expect(sql).toContain("market_closes_ticker_date_idx");
+    }
+  });
+});
+
 describe("migration 0009", () => {
   it("keys a feed's holdings by report, on both dialects", () => {
     for (const folder of ["drizzle", "drizzle-sqlite"]) {

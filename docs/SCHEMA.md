@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**83 tables.**
+**84 tables.**
 
 ## Mermaid diagram
 
@@ -171,6 +171,9 @@ erDiagram
     int id PK
   }
   simplefin_balance_snapshots {
+    int id PK
+  }
+  market_closes {
     int id PK
   }
   securities {
@@ -349,6 +352,7 @@ erDiagram
 - **jobs** → people
 - **local_admins**
 - **ltcg_brackets**
+- **market_closes**
 - **mc_preset_glide_paths** → mc_presets, asset_class_params
 - **mc_preset_return_overrides** → mc_presets, asset_class_params
 - **mc_presets**

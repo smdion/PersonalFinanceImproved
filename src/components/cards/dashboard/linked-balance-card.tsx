@@ -303,7 +303,7 @@ function LinkedBalanceCardImpl() {
               <span className="text-faint truncate">
                 {[
                   c.known < c.total && c.known > 0
-                    ? `${c.total - c.known} ${c.total - c.known === 1 ? "account" : "accounts"} ${c.day === target ? "pending" : "not reported"}`
+                    ? `${c.total - c.known} ${c.total - c.known === 1 ? "account" : "accounts"} ${c.day === target ? "pending" : "missing a price"}`
                     : null,
                   c.flows
                     ? `${c.flows > 0 ? "+" : "−"}${formatCurrency(Math.abs(c.flows))} paid ${c.flows > 0 ? "in" : "out"}`

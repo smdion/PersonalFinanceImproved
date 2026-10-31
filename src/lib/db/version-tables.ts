@@ -142,5 +142,6 @@ export const EXCLUDED_TABLES = [
   "projection_cache", // derived-from-inputs cache; rebuilt on demand, never user data
   "sync_request_log", // outbound-request quota ledger; operational, pruned after 30 days
   "sec_filing_cache", // normalised SEC filings by accession; re-fetchable
+  "market_closes", // Tiingo daily closes; re-fetchable
   "tax_data_updates", // fetched community tax-data files + admin decisions; not household data
 ];
