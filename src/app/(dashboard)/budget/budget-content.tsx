@@ -23,6 +23,7 @@ import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
 import { useUser, hasPermission, isAdmin } from "@/lib/context/user-context";
 import { PageHeader } from "@/components/ui/page-header";
+import { BudgetRetirementNote } from "@/components/budget/budget-retirement-note";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
@@ -391,28 +392,32 @@ export function BudgetContent({
     <BudgetPageContext.Provider value={pageCtxValue}>
       <div>
         {section === "budget" ? (
-          <PageHeader
-            title="Budget"
-            subtitle={
-              <>
-                Spends the take-home pay your Salary and Contribution profiles
-                produce; Savings allocates what&rsquo;s left.{" "}
-                <Link
-                  href="/profiles"
-                  className="text-blue-600 hover:underline dark:text-blue-400"
-                >
-                  Salary, Contribution, Savings and Retirement profiles
-                </Link>{" "}
-                have their own page.
-              </>
-            }
-          >
-            <EditLockToggle
-              locked={!editMode}
-              onToggle={toggleEditMode}
-              disabled={!canEdit || updateBatch.isPending}
-            />
-          </PageHeader>
+          <>
+            <PageHeader
+              title="Budget"
+              subtitle={
+                <>
+                  Spends the take-home pay your Salary and Contribution profiles
+                  produce; Savings allocates what&rsquo;s left.{" "}
+                  <Link
+                    href="/profiles"
+                    className="text-blue-600 hover:underline dark:text-blue-400"
+                  >
+                    Salary, Contribution, Savings and Retirement profiles
+                  </Link>{" "}
+                  have their own page.
+                </>
+              }
+            >
+              <EditLockToggle
+                locked={!editMode}
+                onToggle={toggleEditMode}
+                disabled={!canEdit || updateBatch.isPending}
+              />
+            </PageHeader>
+            {/* How this budget feeds the retirement projection. */}
+            <BudgetRetirementNote />
+          </>
         ) : (
           <>
             <PageHeader
