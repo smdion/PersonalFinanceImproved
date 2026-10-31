@@ -16,6 +16,8 @@ import {
 import { localDateStr } from "@/lib/utils/date";
 import { syncSecurityFacts } from "@/lib/sec/facts-sync";
 import { loadHoldingsOverview } from "./holdings-overview";
+import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
+import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 
 /** How far a hand-entered mix may stray from 100% (rounding). */
 const MIX_TOTAL_TOLERANCE = 0.005;
@@ -41,6 +43,18 @@ const CHECK_STANDIN_COOLDOWN_MS = 60 * 60 * 1000;
 export const investmentFundFactsRouter = createTRPCRouter({
   /** Holdings valued today, with each fund's facts; allocation vs target; blended cost. */
   /** Holdings valued today, with each fund's facts; allocation vs target; blended cost. */
+  /** Each Simulation preset's glide path — what the Retirement page's
+   *  Simulation runs on — so Benchmarks can show it beside your target mix.
+   *  Allocations by age only; no balances. */
+  getSimulationGlidePaths: portfolioProcedure.query(async ({ ctx }) =>
+    (
+      await Promise.all(
+        SIMULATION_PRESET_KEYS.map((key) => loadSimulationPreset(ctx.db, key)),
+      )
+    )
+      .filter((p) => p.found && p.glidePath.length > 0)
+      .map((p) => ({ key: p.key, label: p.label, glidePath: p.glidePath })),
+  ),
   getHoldingsOverview: portfolioProcedure.query(({ ctx }) =>
     loadHoldingsOverview(ctx.db),
   ),

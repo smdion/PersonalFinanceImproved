@@ -8,6 +8,11 @@
 import { FocusTarget } from "@/components/ui/focus-target";
 import { FULL_SHARE, NEGLIGIBLE_SHARE } from "@/lib/constants";
 import { useState } from "react";
+import Link from "next/link";
+import { useSimulationPreset } from "@/lib/hooks/use-simulation-preset";
+import type { SimulationPresetKey } from "@/lib/constants";
+import { ChevronRight } from "lucide-react";
+import { BalancedColumns } from "@/components/ui/balanced-columns";
 import {
   BUCKET_COLORS,
   HoldingRow,
@@ -107,17 +112,38 @@ function FundRow({
  * The account's name and total; for an account holding several funds, also
  * their combined mix and blended fee, in the same columns as the fund rows.
  */
-function AccountHeader({ a }: { a: OverviewAccount }) {
+function AccountHeader({
+  a,
+  open,
+  onToggle,
+}: {
+  a: OverviewAccount;
+  /** Its funds are listed below. */
+  open: boolean;
+  onToggle: () => void;
+}) {
   const r = a.rollup;
   const er = r?.cost.expenseRatio ?? null;
   const parts = r?.mix
     ? COMPOSITION_BUCKET_VALUES.filter((b) => r.mix![b] >= NEGLIGIBLE_SHARE)
     : [];
   return (
-    <div className="mb-1 text-xs">
+    <button
+      type="button"
+      aria-expanded={open}
+      onClick={onToggle}
+      className="hover:bg-surface-sunken -mx-1 mb-1 block w-[calc(100%+0.5rem)] rounded px-1 py-1 text-left text-xs"
+    >
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="text-secondary min-w-0 flex-1 font-medium">
+        <span className="text-secondary flex min-w-0 flex-1 items-center gap-1.5 font-medium">
+          <ChevronRight
+            className={`text-muted h-4 w-4 shrink-0 transition-transform ${open ? "rotate-90" : ""}`}
+            aria-hidden
+          />
           {a.label}
+          <span className="text-caption text-faint font-normal">
+            {a.holdings.length} {a.holdings.length === 1 ? "fund" : "funds"}
+          </span>
         </span>
         {r && (
           <>
@@ -146,7 +172,7 @@ function AccountHeader({ a }: { a: OverviewAccount }) {
         </span>
       </div>
       {r?.mix && (
-        <p className="text-caption text-faint mt-0.5">
+        <p className="text-caption text-faint mt-0.5 pl-5.5">
           All funds:{" "}
           {parts
             .map(
@@ -160,7 +186,7 @@ function AccountHeader({ a }: { a: OverviewAccount }) {
             ` · about ${formatCurrency(r.cost.yearlyCost)} a year in fund costs`}
         </p>
       )}
-    </div>
+    </button>
   );
 }
 
@@ -197,8 +223,13 @@ function MixBarRow({
   onToggle?: () => void;
   children?: React.ReactNode;
 }) {
+  // Off target by more than the drift that turns amber: the same left rail
+  // as a milestone that's behind.
+  const off = target !== null && Math.abs(pct - target) > 0.05;
   return (
-    <div className="text-xs">
+    <div
+      className={`border-l-2 pl-2 text-xs ${off ? "border-l-amber-500" : "border-l-transparent"}`}
+    >
       <div className="flex justify-between gap-2">
         {onToggle ? (
           <button
@@ -206,7 +237,11 @@ function MixBarRow({
             aria-expanded={expanded}
             onClick={onToggle}
           >
-            {expanded ? "▾" : "▸"} {label}
+            <ChevronRight
+              className={`mr-0.5 inline h-3.5 w-3.5 align-[-2px] transition-transform ${expanded ? "rotate-90" : ""}`}
+              aria-hidden
+            />
+            {label}
           </button>
         ) : (
           <span className="text-primary">{label}</span>
@@ -494,31 +529,98 @@ function glidePathClasses(data: Overview): GlidePathClass[] {
     }));
 }
 
+/** Which target mix the chart shows: yours today, or a Simulation
+ *  preset's glide path. */
+type GlideChoice = "target" | SimulationPresetKey;
+
 function GlidePathCard({ data }: { data: Overview }) {
   const projection = useDashboardProjection();
   const retirementAge =
     projection.data && "settings" in projection.data && projection.data.settings
       ? Number(projection.data.settings.retirementAge) || null
       : null;
+  const { data: presets } = trpc.investments.getSimulationGlidePaths.useQuery();
+  const [active] = useSimulationPreset();
+  const [choice, setChoice] = useState<GlideChoice>("target");
   if (data.glidePath.length === 0) return null;
+  const preset =
+    choice === "target"
+      ? null
+      : (presets?.find((p) => p.key === choice) ?? null);
+  const path = preset ? preset.glidePath : data.glidePath;
+  const targetTitle =
+    data.targetSource === "current"
+      ? "Your target mix today"
+      : "Glide path (from the retirement simulation)";
+  const activeLabel = presets?.find((p) => p.key === active)?.label;
   return (
     <Card
-      title={
-        data.targetSource === "current"
-          ? "Your target mix today"
-          : "Glide path (from the retirement simulation)"
+      title={preset ? `Simulation: ${preset.label}` : targetTitle}
+      headerRight={
+        presets && presets.length > 0 ? (
+          <label className="text-caption text-muted flex items-center gap-1.5">
+            Show
+            <select
+              value={choice}
+              onChange={(e) => setChoice(e.target.value as GlideChoice)}
+              className="border-strong bg-surface-primary text-primary rounded border px-1 py-0.5"
+            >
+              <option value="target">{targetTitle}</option>
+              {presets.map((p) => (
+                <option key={p.key} value={p.key}>
+                  Simulation: {p.label}
+                  {p.key === active ? " (active)" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : undefined
       }
     >
       <p className="text-caption text-faint mb-2">
-        The target mix by age that your mix is compared with. Your stocks are
-        the bottom two bands — compare the top of them (where the blues meet the
-        green) with the dashed line: Vanguard&apos;s target-date stock share,
-        shifted to your retirement age. Above the line, you hold more stock than
-        Vanguard would; below it, less.
+        {preset ? (
+          <>
+            The mix by age the retirement Simulation runs on with the{" "}
+            {preset.label} preset
+            {preset.key === active
+              ? " — the preset active on the Retirement page ("
+              : "."}
+            {preset.key === active && (
+              <>
+                <Link
+                  href="/retirement"
+                  className="text-blue-600 hover:underline"
+                >
+                  change it there
+                </Link>
+                ).
+              </>
+            )}{" "}
+          </>
+        ) : (
+          <>
+            The target mix by age that your mix is compared with. Your stocks
+            are the bottom two bands — compare the top of them (where the blues
+            meet the green) with the dashed line: Vanguard&apos;s target-date
+            stock share, shifted to your retirement age. Above the line, you
+            hold more stock than Vanguard would; below it, less.{" "}
+          </>
+        )}
+        {activeLabel && preset?.key !== active && (
+          <>
+            Your projections&apos; Simulation uses{" "}
+            <span className="text-secondary">{activeLabel}</span>
+            {" — "}
+            <Link href="/retirement" className="text-blue-600 hover:underline">
+              change it on Retirement
+            </Link>
+            .
+          </>
+        )}
       </p>
       <GlidePathChart
-        path={data.glidePath}
-        classes={glidePathClasses(data)}
+        path={path}
+        classes={glidePathClasses({ ...data, glidePath: path })}
         age={data.age}
         retirementAge={retirementAge}
       />
@@ -530,6 +632,17 @@ export function HoldingsSection() {
   const { data } = trpc.investments.getHoldingsOverview.useQuery();
   // Holdings load on the client, so nothing renders before this is read.
   const [view, setView] = useState<HoldingsView>(savedView);
+  // Each account is one line until opened: the funds are the detail.
+  const [openAccounts, setOpenAccounts] = useState<ReadonlySet<number>>(
+    () => new Set(),
+  );
+  const toggleAccount = (id: number) =>
+    setOpenAccounts((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const chooseView = (v: HoldingsView) => {
     setView(v);
     try {
@@ -599,41 +712,79 @@ export function HoldingsSection() {
               ))}
             </div>
           ) : (
-            <div className="space-y-4">
-              {data.accounts.map((a) => (
-                <div key={a.simplefinAccountId}>
-                  <AccountHeader a={a} />
-                  {a.accountType !== null && isHsaCategory(a.accountType) && (
-                    <HsaCashBuffer
-                      ownerPersonId={a.ownerPersonId}
-                      uninvestedCash={a.uninvestedCash}
+            <div className="divide-subtle divide-y">
+              {data.accounts.map((a) => {
+                const open = openAccounts.has(a.simplefinAccountId);
+                return (
+                  <div key={a.simplefinAccountId} className="py-1">
+                    <AccountHeader
+                      a={a}
+                      open={open}
+                      onToggle={() => toggleAccount(a.simplefinAccountId)}
                     />
-                  )}
-                  {a.holdings.map((h) => (
-                    <HoldingRow key={h.securityId} h={h} editable={false} />
-                  ))}
-                </div>
-              ))}
+                    {open && (
+                      <div className="pb-2 pl-5.5">
+                        {a.accountType !== null &&
+                          isHsaCategory(a.accountType) && (
+                            <HsaCashBuffer
+                              ownerPersonId={a.ownerPersonId}
+                              uninvestedCash={a.uninvestedCash}
+                            />
+                          )}
+                        {a.holdings.map((h) => (
+                          <HoldingRow
+                            key={h.securityId}
+                            h={h}
+                            editable={false}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
         </Card>
       </FocusTarget>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <FocusTarget topic="rebalance">
-          <AllocationCard data={data} />
-        </FocusTarget>
-        <div className="space-y-4">
-          <FocusTarget topic="fundCosts">
-            <WhatItCostsCard
-              cost={cost}
-              accountFees={data.accountFees}
-              invested={data.accounts.reduce((t, a) => t + a.total, 0)}
-              expectedReturn={data.expectedReturn}
-            />
-          </FocusTarget>
-          <GlidePathCard data={data} />
-        </div>
-      </div>
+      {/* The same balanced columns as Milestones and Recommendations. */}
+      <BalancedColumns
+        gap="gap-4"
+        items={[
+          {
+            key: "mix",
+            node: (
+              <FocusTarget topic="rebalance">
+                <AllocationCard data={data} />
+              </FocusTarget>
+            ),
+            weight: 4 + data.allocation.categories.length,
+          },
+          {
+            key: "cost",
+            node: (
+              <FocusTarget topic="fundCosts">
+                <WhatItCostsCard
+                  cost={cost}
+                  accountFees={data.accountFees}
+                  invested={data.accounts.reduce((t, a) => t + a.total, 0)}
+                  expectedReturn={data.expectedReturn}
+                />
+              </FocusTarget>
+            ),
+            weight: 6,
+          },
+          ...(data.glidePath.length > 0
+            ? [
+                {
+                  key: "glide",
+                  node: <GlidePathCard data={data} />,
+                  weight: 9,
+                },
+              ]
+            : []),
+        ]}
+      />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**390 procedures across 56 routers.**
+**391 procedures across 56 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -160,16 +160,17 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `investments/fund-facts`
 
-| Procedure               | Kind     | Auth                 | Description                                                                                                                                                                                   |
-| ----------------------- | -------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `checkStandIn`          | mutation | `portfolioProcedure` | Check a suggested (unconfirmed) stand-in's SEC filings now, to judge it before using it. At most once an hour per fund unless the last check failed — each check downloads several SEC files. |
-| `clearUserFacts`        | mutation | `portfolioProcedure` | Remove your own expense ratio or mix for a fund, going back to SEC's (or none).                                                                                                               |
-| `confirmStandIn`        | mutation | `portfolioProcedure` | Use the suggested stand-in's SEC filings for this fund, and fetch them now.                                                                                                                   |
-| `findStandIn`           | mutation | `portfolioProcedure` | After "Not a match": look for a stand-in again (asks SEC now).                                                                                                                                |
-| `getHoldingsOverview`   | query    | `portfolioProcedure` | Holdings valued today, with each fund's facts; allocation vs target; blended cost.                                                                                                            |
-| `linkCompositionBucket` | mutation | `portfolioProcedure` | Which asset class a fund category counts toward (null = none). Several categories may count toward one class; a category toward one class.                                                    |
-| `rejectStandIn`         | mutation | `portfolioProcedure` | Stop using a stand-in (suggested or already confirmed): no registered fund fits. Facts that came from it are removed and it isn't suggested again; your own entries are kept.                 |
-| `setUserFacts`          | mutation | `portfolioProcedure` | The household's own expense ratio and/or mix for a fund (e.g. from the plan's fee disclosure).                                                                                                |
+| Procedure                 | Kind     | Auth                 | Description                                                                                                                                                                                   |
+| ------------------------- | -------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checkStandIn`            | mutation | `portfolioProcedure` | Check a suggested (unconfirmed) stand-in's SEC filings now, to judge it before using it. At most once an hour per fund unless the last check failed — each check downloads several SEC files. |
+| `clearUserFacts`          | mutation | `portfolioProcedure` | Remove your own expense ratio or mix for a fund, going back to SEC's (or none).                                                                                                               |
+| `confirmStandIn`          | mutation | `portfolioProcedure` | Use the suggested stand-in's SEC filings for this fund, and fetch them now.                                                                                                                   |
+| `findStandIn`             | mutation | `portfolioProcedure` | After "Not a match": look for a stand-in again (asks SEC now).                                                                                                                                |
+| `getHoldingsOverview`     | query    | `portfolioProcedure` | (no description)                                                                                                                                                                              |
+| `getSimulationGlidePaths` | query    | `portfolioProcedure` | Simulation runs on — so Benchmarks can show it beside your target mix. Allocations by age only; no balances.                                                                                  |
+| `linkCompositionBucket`   | mutation | `portfolioProcedure` | Which asset class a fund category counts toward (null = none). Several categories may count toward one class; a category toward one class.                                                    |
+| `rejectStandIn`           | mutation | `portfolioProcedure` | Stop using a stand-in (suggested or already confirmed): no registered fund fits. Facts that came from it are removed and it isn't suggested again; your own entries are kept.                 |
+| `setUserFacts`            | mutation | `portfolioProcedure` | The household's own expense ratio and/or mix for a fund (e.g. from the plan's fee disclosure).                                                                                                |
 
 ## `investments/health`
 
