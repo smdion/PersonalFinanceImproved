@@ -353,6 +353,11 @@ async function computeCurrentBalances(db: Db) {
   );
   const entryMoves = marketEntries.map((a) => ({
     key: a.key,
+    // Who the card names when this account's move is missing.
+    name:
+      institutionOf((a.feedIds ?? [])[0] ?? -1) ||
+      accounts.get((a.feedIds ?? [])[0] ?? -1)?.feedName ||
+      a.label,
     moves: sessions.map((day) => ({
       day,
       move: moveIntoClose(a.positions, day),

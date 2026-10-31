@@ -10,6 +10,8 @@ import { previousTradingDay } from "./market-calendar";
 
 export type EntryMoves = {
   key: string;
+  /** Its institution: named when its move is missing. */
+  name: string;
   /** Per close: the market move, or null when it can't be told in full. */
   moves: readonly { day: string; move: number | null }[];
 };
@@ -20,6 +22,8 @@ export type CloseMovement = {
   move: number;
   known: number;
   total: number;
+  /** Institutions whose move into this close is missing, in order. */
+  missing: string[];
   /** Money in less money out that landed after the close before through
    *  this one; null when some market account sends no transactions. */
   flows: number | null;
@@ -41,12 +45,18 @@ export function dailyMovement(args: {
     const moves = args.entries.map(
       (e) => e.moves.find((m) => m.day === day)?.move ?? null,
     );
+    const missing = [
+      ...new Set(
+        args.entries.filter((_, i) => moves[i] === null).map((e) => e.name),
+      ),
+    ];
     const known = moves.filter((m): m is number => m !== null);
     return {
       day,
       move: cents(known.reduce((t, m) => t + m, 0)),
       known: known.length,
       total: moves.length,
+      missing,
       flows: args.flowsKnown
         ? cents(
             args.flows

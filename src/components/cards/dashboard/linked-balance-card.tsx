@@ -67,6 +67,25 @@ const sessionLabel = (day: string) => {
     : `${shortDay(from)}→${shortDay(day)}`;
 };
 
+/** "Fidelity", "Fidelity and Voya", "Fidelity, Voya and Vanguard". */
+const listNames = (names: readonly string[]) =>
+  names.length <= 1
+    ? (names[0] ?? "")
+    : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+
+/** Hover text for a close with accounts missing. */
+function missingReason(
+  c: { day: string; missing: readonly string[] },
+  target: string | undefined,
+): string | undefined {
+  if (c.missing.length === 0) return undefined;
+  const who = listNames(c.missing);
+  const one = c.missing.length === 1;
+  return c.day === target
+    ? `${who}'s ${shortDay(c.day)} prices aren't in yet — ${one ? "it arrives" : "they arrive"} with the next sync. The total leaves ${one ? "it" : "them"} out until then.`
+    : `${who} didn't report a price for ${shortDay(c.day)}, so ${one ? "its" : "their"} change isn't in this total.`;
+}
+
 /** "+$1,234.56" / "−$1,234.56". */
 const signed = (n: number) =>
   `${n >= 0 ? "+" : "−"}${formatCurrency(Math.abs(n))}`;
@@ -300,10 +319,15 @@ function LinkedBalanceCardImpl() {
               >
                 {c.known === 0 ? "—" : signed(c.move)}
               </span>
-              <span className="text-faint truncate">
+              <span
+                className="text-faint break-words"
+                title={missingReason(c, target)}
+              >
                 {[
-                  c.known < c.total && c.known > 0
-                    ? `${c.total - c.known} ${c.total - c.known === 1 ? "account" : "accounts"} ${c.day === target ? "pending" : "missing a price"}`
+                  c.missing.length > 0
+                    ? c.day === target
+                      ? `${listNames(c.missing)} still updating`
+                      : `excludes ${listNames(c.missing)}`
                     : null,
                   c.flows
                     ? `${c.flows > 0 ? "+" : "−"}${formatCurrency(Math.abs(c.flows))} paid ${c.flows > 0 ? "in" : "out"}`

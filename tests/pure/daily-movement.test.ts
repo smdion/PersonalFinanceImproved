@@ -6,6 +6,7 @@ describe("dailyMovement", () => {
   const entries = [
     {
       key: "ira",
+      name: "Vanguard",
       moves: [
         { day: "2026-10-30", move: -100 },
         { day: "2026-10-29", move: 40 },
@@ -13,6 +14,7 @@ describe("dailyMovement", () => {
     },
     {
       key: "401k",
+      name: "Voya",
       moves: [
         { day: "2026-10-30", move: null }, // its price isn't in yet
         { day: "2026-10-29", move: 10 },
@@ -20,7 +22,7 @@ describe("dailyMovement", () => {
     },
   ];
 
-  it("adds the known moves per close and counts what's pending", () => {
+  it("adds the known moves per close and names who's missing", () => {
     const [fri, thu] = dailyMovement({
       sessions,
       entries,
@@ -32,12 +34,14 @@ describe("dailyMovement", () => {
       move: -100,
       known: 1,
       total: 2,
+      missing: ["Voya"],
     });
     expect(thu).toMatchObject({
       day: "2026-10-29",
       move: 50,
       known: 2,
       total: 2,
+      missing: [],
     });
   });
 
