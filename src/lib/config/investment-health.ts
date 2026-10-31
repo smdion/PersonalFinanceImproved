@@ -12,3 +12,11 @@ export const HOLDINGS_STALE_DAYS = 7;
  * needs attention. Fraction of the balance.
  */
 export const HOLDINGS_BALANCE_GAP_FRACTION = 0.05;
+
+/**
+ * Money between trades is in the balance but in no fund: a deposit waiting
+ * to be invested, a sale waiting to settle. That clears in days, while a
+ * fund missing from the list stays missing — so a gap needs attention only
+ * once it has lasted this many days.
+ */
+export const HOLDINGS_GAP_GRACE_DAYS = 7;

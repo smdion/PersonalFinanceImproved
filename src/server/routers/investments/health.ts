@@ -2,7 +2,10 @@
 import { isNotNull } from "drizzle-orm";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { investmentHealthIssues } from "@/lib/pure/investment-health";
+import {
+  holdingsGapSince,
+  investmentHealthIssues,
+} from "@/lib/pure/investment-health";
 import { localDateStr } from "@/lib/utils/date";
 import { loadAccounts } from "./_shared";
 
@@ -25,32 +28,39 @@ export const investmentHealthRouter = createTRPCRouter({
       loadAccounts(ctx.db),
     ]);
 
-    // Each account's latest holdings day, the funds held that day, and the
-    // balance SimpleFIN reported in the same response.
-    const latestByAccount = new Map<number, typeof observations>();
+    // Each account's reports: the funds held each day, and the balance
+    // SimpleFIN sent in the same response.
+    const byAccount = new Map<number, Map<string, typeof observations>>();
     for (const o of observations) {
       const id = o.accountId!;
-      const current = latestByAccount.get(id);
-      if (!current || o.asOf > current[0]!.asOf) latestByAccount.set(id, [o]);
-      else if (o.asOf === current[0]!.asOf) current.push(o);
+      const days = byAccount.get(id) ?? new Map<string, typeof observations>();
+      days.set(o.asOf, [...(days.get(o.asOf) ?? []), o]);
+      byAccount.set(id, days);
     }
-    const inputs = [...latestByAccount.entries()].map(([id, rows]) => {
-      const held = rows.filter((r) => Number(r.shares) !== 0);
-      const valued = held.every((r) => r.value !== null);
-      const balanceDate = rows[0]!.balanceDate?.getTime();
-      const balance = balances.find(
-        (b) =>
-          b.simplefinAccountId === id &&
-          b.balanceDate.getTime() === balanceDate,
-      );
-      const account = accounts.get(id);
+    const inputs = [...byAccount.entries()].map(([id, days]) => {
+      const reports = [...days.entries()].map(([asOf, rows]) => {
+        const held = rows.filter((r) => Number(r.shares) !== 0);
+        const balanceDate = rows[0]!.balanceDate?.getTime();
+        const balance = balances.find(
+          (b) =>
+            b.simplefinAccountId === id &&
+            b.balanceDate.getTime() === balanceDate,
+        );
+        return {
+          asOf,
+          holdingsValue: held.every((r) => r.value !== null)
+            ? held.reduce((sum, r) => sum + Number(r.value), 0)
+            : null,
+          balance: balance ? Number(balance.balance) : null,
+        };
+      });
+      const latest = reports.reduce((a, b) => (b.asOf > a.asOf ? b : a));
       return {
-        label: account?.feedName ?? "",
-        holdingsAsOf: rows[0]!.asOf,
-        holdingsValue: valued
-          ? held.reduce((sum, r) => sum + Number(r.value), 0)
-          : null,
-        balance: balance ? Number(balance.balance) : null,
+        label: accounts.get(id)?.feedName ?? "",
+        holdingsAsOf: latest.asOf,
+        holdingsValue: latest.holdingsValue,
+        balance: latest.balance,
+        gapSince: holdingsGapSince(reports),
       };
     });
 

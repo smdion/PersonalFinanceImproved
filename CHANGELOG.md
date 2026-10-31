@@ -83,6 +83,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **The strategy comparison shows what each strategy has you spend.** "Spend yr 1" and "Spend avg" sit beside the withdrawals, which aren't comparable once some strategies put Social Security on top.
 - **Editing the glide path refreshes the projection,** not only the Simulation — VPW sizes by it.
 - **The glide-path warning reads stocks from the asset classes' bucket mapping,** the same rule as the holdings view, instead of matching class names.
+- **The holdings check no longer alarms on money between trades.** A deposit waiting to be invested is in the balance but in no fund, which read as "holdings add up to 100% less". The warning now waits until a gap has lasted over a week, and says how long.
 - **The strategy analyzer keeps a suggested setting within the range its editor allows.**
 - **The retirement report shows the strategy's own settings.** It looked them up by the wrong name and only ever showed RMD Spending's multiplier.
 - **Demo households on Vanguard Dynamic and RMD Spending** now use the published methods' definition: Social Security comes on top of the withdrawal.
