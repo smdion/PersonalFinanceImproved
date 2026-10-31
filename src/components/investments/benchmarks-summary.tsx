@@ -6,7 +6,9 @@
  * the investing milestones (cost, mix, funds) with their status. Each
  * links to its milestone; what to do about one lives on Recommendations.
  */
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
+import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { FocusLink } from "@/components/ui/focus-link";
 import { StatusIcon } from "@/components/milestones/milestone-row";
 import { useMilestones } from "@/lib/hooks/use-milestones";
@@ -25,6 +27,11 @@ export function BenchmarksSummary() {
     "benchmark_primary",
     DEFAULT_BENCHMARK_KEY,
   );
+  // The return the plan uses this year (its year 0, annualized) — so the
+  // real return reads against what the projections count on.
+  const projection = useDashboardProjection();
+  const assumed =
+    projection.data?.result?.projectionByYear[0]?.annualizedReturnRate ?? null;
   const investing = results.filter((r) => r.group === "investing");
   const primary =
     data?.benchmarks.find((b) => b.key === benchmarkKey) ?? data?.benchmarks[0];
@@ -48,6 +55,18 @@ export function BenchmarksSummary() {
               <div className="text-secondary text-xs">
                 The same deposits in the {primary.label}: {rate(them)}
               </div>
+              {assumed !== null && (
+                <div className="text-caption text-muted">
+                  Your projections assume {formatPercent(assumed, 1)} this year
+                  —{" "}
+                  <Link
+                    href="/retirement"
+                    className="text-blue-600 hover:underline"
+                  >
+                    see Retirement
+                  </Link>
+                </div>
+              )}
             </div>
           </li>
         )}
