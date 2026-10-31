@@ -6,6 +6,7 @@ import { useFirstReached } from "@/lib/hooks/use-first-reached";
 import { RaiseHistoryTable } from "@/components/milestones/raise-history-table";
 import { AlwaysBuyingDetail } from "@/components/milestones/always-buying-detail";
 import { useState } from "react";
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -21,7 +22,7 @@ import { MilestoneRow } from "@/components/milestones/milestone-row";
 import {
   BalancedColumns,
   type ColumnItem,
-} from "@/components/milestones/balanced-columns";
+} from "@/components/ui/balanced-columns";
 import { ChipToggle } from "@/components/ui/chip-toggle";
 import { SavingsRateBreakdown } from "@/components/cards/dashboard/savings-rate-breakdown";
 import { FooLadder } from "@/components/milestones/foo-ladder";
@@ -60,7 +61,14 @@ export function MilestonesContent() {
     <PageHeader
       title="Milestones"
       subtitle="What you've reached, where you stand, and what's next — The Money Guy Show's and the Bogleheads' rules, plus your own goals"
-    />
+    >
+      <Link
+        href="/recommendations"
+        className="text-caption text-blue-600 hover:underline"
+      >
+        What to do → Recommendations
+      </Link>
+    </PageHeader>
   );
   if (isLoading)
     return (
