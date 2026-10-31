@@ -25,13 +25,19 @@ export const investmentBuyingRouter = createTRPCRouter({
     const posted = rows.filter(
       (r) => counted.has(r.simplefinAccountId) && !r.pending && !r.voided,
     );
+    // Per feed — coverage is judged feed by feed (lib/pure/always-buying.ts).
     return buyingMonths({
-      contributionDays: posted
-        .filter((r) => r.kind === "contribution" && r.amount > 0)
-        .map((r) => r.posted),
-      reportDays: [...balances.entries()]
-        .filter(([id]) => counted.has(id))
-        .flatMap(([, list]) => list.map((b) => b.day)),
+      feeds: [...counted].map((id) => ({
+        contributionDays: posted
+          .filter(
+            (r) =>
+              r.simplefinAccountId === id &&
+              r.kind === "contribution" &&
+              r.amount > 0,
+          )
+          .map((r) => r.posted),
+        reportDays: (balances.get(id) ?? []).map((b) => b.day),
+      })),
       firstTransactionDay: posted.reduce<string | null>(
         (first, r) => (first === null || r.posted < first ? r.posted : first),
         null,

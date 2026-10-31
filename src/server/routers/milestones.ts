@@ -109,7 +109,11 @@ function borrowingFrom(
   debtRows: (typeof schema.debts.$inferSelect)[],
   people: readonly { id: number; name: string }[],
   salaryRows: readonly { personId: number; year: number; salary: string }[],
-  jobRows: readonly { personId: number; startDate: string }[],
+  jobRows: readonly {
+    personId: number;
+    startDate: string;
+    endDate: string | null;
+  }[],
   today: string,
 ) {
   const num = (v: string | null) => (v == null ? null : toNumber(v));
@@ -144,9 +148,7 @@ function borrowingFrom(
                 salaryRows
                   .filter((r) => r.personId === p.id)
                   .map((r) => ({ year: r.year, salary: toNumber(r.salary) })),
-                jobRows
-                  .filter((j) => j.personId === p.id)
-                  .map((j) => j.startDate),
+                jobRows.filter((j) => j.personId === p.id),
                 loanYear,
               ),
       },
@@ -221,8 +223,11 @@ async function loadMilestoneInputs(
       .select({
         personId: schema.jobs.personId,
         startDate: schema.jobs.startDate,
+        endDate: schema.jobs.endDate,
       })
-      .from(schema.jobs),
+      .from(schema.jobs)
+      // The speculative what-if job isn't pay on record.
+      .where(eq(schema.jobs.isSpeculative, false)),
   ]);
   const setting = (key: string) =>
     settingRows.find((r) => r.key === key)?.value ?? null;

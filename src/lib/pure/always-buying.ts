@@ -4,7 +4,10 @@
  * - months: whether SimpleFIN saw a deposit into a counted feed. A month
  *   counts only when the feeds covered all of it — the first, partial
  *   month, months after the latest report and months no feed reported are
- *   "unknown" and never break the streak.
+ *   "unknown" and never break the streak. Coverage is per feed: a month
+ *   without a deposit breaks only when every feed that takes deposits
+ *   reported through it — one feed going quiet can't hide its deposits
+ *   behind another that kept reporting.
  * - down years: in each finalized year the household's investments lost
  *   money, whether its own contributions held up against the year before.
  */
@@ -19,24 +22,35 @@ function nextMonth(month: string): string {
   return m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
 }
 
+/** One counted feed's days. */
+export type BuyingFeed = {
+  /** Days a deposit posted into it. */
+  contributionDays: readonly string[];
+  /** Days it reported a balance. */
+  reportDays: readonly string[];
+};
+
 /** Each whole month from the one after the first transaction through the
  *  last completed one before `today`. */
 export function buyingMonths(args: {
-  /** Days a deposit posted into a counted feed. */
-  contributionDays: readonly string[];
-  /** Days any counted feed reported a balance. */
-  reportDays: readonly string[];
+  feeds: readonly BuyingFeed[];
   /** The first transaction day any counted feed sent (null: none). */
   firstTransactionDay: string | null;
   today: string;
 }): BuyingMonth[] {
   if (!args.firstTransactionDay) return [];
-  const invested = new Set(args.contributionDays.map(monthOf));
-  const reported = new Set(args.reportDays.map(monthOf));
-  const lastReport = args.reportDays.reduce(
-    (latest, d) => (d > latest ? d : latest),
-    "",
+  const invested = new Set(
+    args.feeds.flatMap((f) => f.contributionDays.map(monthOf)),
   );
+  // The feeds whose silence would hide a deposit: those that take them
+  // (every feed, while none has yet).
+  const depositing = args.feeds.filter((f) => f.contributionDays.length > 0);
+  const watched = (depositing.length > 0 ? depositing : args.feeds).map((f) => {
+    const reported = new Set(f.reportDays.map(monthOf));
+    const last = f.reportDays.reduce((l, d) => (d > l ? d : l), "");
+    // A month is covered once a report came after it ended.
+    return (m: string) => monthOf(last) > m && reported.has(m);
+  });
   const thisMonth = monthOf(args.today);
   const out: BuyingMonth[] = [];
   for (
@@ -44,8 +58,7 @@ export function buyingMonths(args: {
     m < thisMonth;
     m = nextMonth(m)
   ) {
-    // A month is covered once a report came after it ended.
-    const covered = monthOf(lastReport) > m && reported.has(m);
+    const covered = watched.length > 0 && watched.every((c) => c(m));
     out.push({
       month: m,
       state: invested.has(m) ? "invested" : covered ? "notInvested" : "unknown",

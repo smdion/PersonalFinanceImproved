@@ -90,7 +90,8 @@ export function ContributionsContent() {
   const [selectedProfileId, setSelectedProfileId] = useState<
     number | undefined
   >(activeProfileId ?? undefined);
-  const { threshold: highIncomeThreshold } = useHighIncomeLine();
+  const { threshold: highIncomeThreshold, error: highIncomeError } =
+    useHighIncomeLine();
   // Before the early returns (hooks): the switches are shared app-wide.
   const { excludeMatch, includePortfolio, toggleMatch, togglePortfolio } =
     useSavingsRateOptions(
@@ -111,6 +112,22 @@ export function ContributionsContent() {
     { contributionProfileId: selectedProfileId },
     { enabled: !!selectedProfileId },
   );
+
+  if (highIncomeError) {
+    return (
+      <div>
+        <PageHeader
+          title="Contributions"
+          subtitle="Household contribution breakdown and savings rates"
+        />
+        <Card>
+          <p className="py-8 text-center text-sm text-red-500">
+            Failed to load the high-income line
+          </p>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading || highIncomeThreshold === undefined) {
     return (

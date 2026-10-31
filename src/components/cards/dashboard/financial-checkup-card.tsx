@@ -169,7 +169,8 @@ function checkupStatus(r: MilestoneResult): CheckupStep["status"] {
 function FinancialCheckupCardImpl() {
   const { viewMode } = useScenario();
   const contribInput = useContributionSummaryInput();
-  const { threshold: highIncomeThreshold } = useHighIncomeLine();
+  const { threshold: highIncomeThreshold, error: highIncomeError } =
+    useHighIncomeLine();
   const [savingsRateThresholds] = usePersistedSetting<string>(
     SK_SAVINGS_RATE_THRESHOLDS,
     "[0.25, 0.15]",
@@ -185,14 +186,14 @@ function FinancialCheckupCardImpl() {
   const { excludeMatch, includePortfolio, toggleMatch, togglePortfolio } =
     useSavingsRateOptions(highIncome);
 
+  if (milestones.error || contribs.error || highIncomeError)
+    return <ErrorCard title="Financial Checkup" message="Failed to load" />;
   if (
     milestones.isLoading ||
     contribs.isLoading ||
     highIncomeThreshold === undefined
   )
     return <LoadingCard title="Financial Checkup" />;
-  if (milestones.error || contribs.error)
-    return <ErrorCard title="Financial Checkup" message="Failed to load" />;
 
   const byId = new Map(milestones.results.map((r) => [r.id, r]));
   const milestoneStep = (id: string, label: string): CheckupStep[] => {

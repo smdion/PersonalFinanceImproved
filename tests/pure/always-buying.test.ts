@@ -9,9 +9,13 @@ describe("buyingMonths", () => {
   it("whole months after the first transaction, through the last completed one", () => {
     const months = buyingMonths({
       firstTransactionDay: "2026-07-14",
-      contributionDays: ["2026-07-15", "2026-08-01", "2026-10-03"],
+      feeds: [
+        {
+          contributionDays: ["2026-07-15", "2026-08-01", "2026-10-03"],
+          reportDays: ["2026-07-20", "2026-08-31", "2026-10-31", "2026-11-02"],
+        },
+      ],
       // Reported through October, but no feed reported anything in September.
-      reportDays: ["2026-07-20", "2026-08-31", "2026-10-31", "2026-11-02"],
       today: "2026-11-05",
     });
     expect(months).toEqual([
@@ -25,8 +29,12 @@ describe("buyingMonths", () => {
     expect(
       buyingMonths({
         firstTransactionDay: "2026-06-30",
-        contributionDays: ["2026-07-02"],
-        reportDays: ["2026-07-10", "2026-08-15", "2026-09-01"],
+        feeds: [
+          {
+            contributionDays: ["2026-07-02"],
+            reportDays: ["2026-07-10", "2026-08-15", "2026-09-01"],
+          },
+        ],
         today: "2026-10-20",
       }),
     ).toEqual([
@@ -41,19 +49,67 @@ describe("buyingMonths", () => {
     expect(
       buyingMonths({
         firstTransactionDay: null,
-        contributionDays: [],
-        reportDays: [],
+        feeds: [{ contributionDays: [], reportDays: [] }],
         today: "2026-10-20",
       }),
     ).toEqual([]);
     expect(
       buyingMonths({
         firstTransactionDay: "2026-11-10",
-        contributionDays: ["2026-12-05", "2027-01-05"],
-        reportDays: ["2026-12-20", "2027-01-20", "2027-02-01"],
+        feeds: [
+          {
+            contributionDays: ["2026-12-05", "2027-01-05"],
+            reportDays: ["2026-12-20", "2027-01-20", "2027-02-01"],
+          },
+        ],
         today: "2027-02-10",
       }).map((m) => m.month),
     ).toEqual(["2026-12", "2027-01"]);
+  });
+});
+
+describe("buyingMonths — coverage is per feed", () => {
+  it("a feed gone quiet keeps its months unknown though another kept reporting", () => {
+    const months = buyingMonths({
+      firstTransactionDay: "2026-06-30",
+      feeds: [
+        // The 401(k) takes the deposits, then stops reporting after July.
+        { contributionDays: ["2026-07-02"], reportDays: ["2026-07-31"] },
+        // A brokerage with no deposits keeps reporting.
+        {
+          contributionDays: [],
+          reportDays: ["2026-07-31", "2026-08-31", "2026-09-30", "2026-10-02"],
+        },
+      ],
+      today: "2026-10-20",
+    });
+    expect(months).toEqual([
+      { month: "2026-07", state: "invested" },
+      { month: "2026-08", state: "unknown" },
+      { month: "2026-09", state: "unknown" },
+    ]);
+  });
+
+  it("every depositing feed reporting through a month without a deposit breaks it", () => {
+    expect(
+      buyingMonths({
+        firstTransactionDay: "2026-06-30",
+        feeds: [
+          {
+            contributionDays: ["2026-07-02"],
+            reportDays: ["2026-07-31", "2026-08-31", "2026-09-01"],
+          },
+          {
+            contributionDays: ["2026-07-15"],
+            reportDays: ["2026-07-31", "2026-08-31", "2026-09-01"],
+          },
+        ],
+        today: "2026-09-10",
+      }),
+    ).toEqual([
+      { month: "2026-07", state: "invested" },
+      { month: "2026-08", state: "notInvested" },
+    ]);
   });
 });
 

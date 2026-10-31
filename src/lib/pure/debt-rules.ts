@@ -52,20 +52,23 @@ export function carPaymentShare(
 
 /**
  * The salary a person's student loans are judged against: the first year
- * of pay at or after the earliest loan's year that's a full year (a job
- * that started after January makes that year partial — the next counts),
- * within STUDENT_LOAN_RULE.maxYearsAfterLoan. Null when there's none.
+ * of pay at or after the earliest loan's year that's a full year, within
+ * STUDENT_LOAN_RULE.maxYearsAfterLoan. A year is full when some job ran
+ * through its January and some job through its December — a first job
+ * starting after January makes that year partial (the next counts); a
+ * second job taken mid-year, or one job following another, doesn't. Null
+ * when there's none.
  */
 export function firstFullSalary(
   salaries: readonly { year: number; salary: number }[],
-  jobStartDates: readonly string[],
+  jobs: readonly { startDate: string; endDate: string | null }[],
   loanYear: number,
 ): { year: number; salary: number } | null {
-  const partial = new Set(
-    jobStartDates
-      .filter((d) => d.slice(5) > "01-31")
-      .map((d) => Number(d.slice(0, 4))),
-  );
+  const heldOn = (start: string, end: string) =>
+    jobs.some((j) => j.startDate <= start && (j.endDate ?? "9999") >= end);
+  const full = (year: number) =>
+    heldOn(`${year}-01-31`, `${year}-01-01`) &&
+    heldOn(`${year}-12-31`, `${year}-12-01`);
   return (
     [...salaries]
       .filter(
@@ -73,7 +76,7 @@ export function firstFullSalary(
           s.salary > 0 &&
           s.year >= loanYear &&
           s.year - loanYear <= STUDENT_LOAN_RULE.maxYearsAfterLoan &&
-          !partial.has(s.year),
+          full(s.year),
       )
       .sort((a, b) => a.year - b.year)[0] ?? null
   );

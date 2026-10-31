@@ -38,6 +38,10 @@ export function applyVanguardDynamic(
     };
   }
 
+  // Nominal limits, like every rate-based strategy's floor (constant-
+  // percentage.ts): an inflation-adjusted floor would push withdrawals up
+  // in bad years, past what the portfolio sustains. The published method
+  // applies them to inflation-adjusted spending; the guide says so.
   const prior = crossYearState.priorYearSpending;
   const ceiling = prior * (1 + ceilingPercent);
   const yoyFloor = prior * (1 - floorPercent);

@@ -54,7 +54,8 @@ export function useMilestones(): {
     SK_EFUND_BUDGET_COLUMN,
     -1,
   );
-  const { threshold: highIncomeThreshold } = useHighIncomeLine();
+  const { threshold: highIncomeThreshold, error: highIncomeError } =
+    useHighIncomeLine();
   const yearEndTargeting = useYearEndTargetingInput();
 
   const inputs = trpc.milestones.computeInputs.useQuery(yearEndTargeting);
@@ -78,15 +79,22 @@ export function useMilestones(): {
 
   // The projection and holdings only add expected dates and the investing
   // rows — the rest renders without them.
-  const isLoading =
-    inputs.isLoading ||
-    contribs.isLoading ||
-    savings.isLoading ||
-    mortgage.isLoading ||
-    highIncomeThreshold === undefined;
   const error = Boolean(
-    inputs.error || contribs.error || savings.error || mortgage.error,
+    inputs.error ||
+    contribs.error ||
+    savings.error ||
+    mortgage.error ||
+    highIncomeError,
   );
+  // An error isn't still loading — callers that check loading first would
+  // otherwise show a skeleton for good.
+  const isLoading =
+    !error &&
+    (inputs.isLoading ||
+      contribs.isLoading ||
+      savings.isLoading ||
+      mortgage.isLoading ||
+      highIncomeThreshold === undefined);
   const projectionLoading = projection.isLoading;
   if (isLoading || error || !inputs.data || highIncomeThreshold === undefined)
     return { isLoading, projectionLoading, error, input: null, results: [] };

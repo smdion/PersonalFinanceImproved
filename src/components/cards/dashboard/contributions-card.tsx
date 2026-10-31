@@ -148,17 +148,18 @@ function ContributionsCardImpl() {
     ) : null;
   };
   const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
-  const { threshold: highIncomeThreshold } = useHighIncomeLine();
+  const { threshold: highIncomeThreshold, error: highIncomeError } =
+    useHighIncomeLine();
   const { excludeMatch, includePortfolio } = useSavingsRateOptions(
     isHighIncomeHousehold(
       householdTotalCompensation(data?.people?.filter((d) => d.result) ?? []),
       highIncomeThreshold,
     ),
   );
+  if (error || highIncomeError)
+    return <ErrorCard title="Contributions" message="Failed to load" />;
   if (isLoading || highIncomeThreshold === undefined)
     return <LoadingCard title="Contributions" />;
-  if (error)
-    return <ErrorCard title="Contributions" message="Failed to load" />;
 
   const people = data?.people?.filter((d) => d.accountTypes.length > 0) ?? [];
 

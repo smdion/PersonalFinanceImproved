@@ -10,7 +10,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 let saved: number | null = null;
 const setSaved = vi.fn();
 vi.mock("@/lib/hooks/use-persisted-setting", () => ({
-  usePersistedSetting: () => [saved, setSaved],
+  usePersistedSetting: () => [saved, setSaved, true],
 }));
 vi.mock("@/lib/context/user-context", () => ({
   useUser: () => ({ role: "admin" }),

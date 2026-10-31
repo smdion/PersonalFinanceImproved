@@ -56,7 +56,8 @@ export function ContributionSnapshot() {
   const { data, isLoading, error } =
     trpc.contribution.computeSummary.useQuery(contribInput);
   const [contribPeriod, setContribPeriod] = useState<ContribPeriod>("annual");
-  const { threshold: highIncomeThreshold } = useHighIncomeLine();
+  const { threshold: highIncomeThreshold, error: highIncomeError } =
+    useHighIncomeLine();
   const { excludeMatch, includePortfolio } = useSavingsRateOptions(
     isHighIncomeHousehold(
       householdTotalCompensation(data?.people?.filter((d) => d.result) ?? []),
@@ -64,15 +65,15 @@ export function ContributionSnapshot() {
     ),
   );
 
-  if (isLoading || highIncomeThreshold === undefined)
-    return (
-      <div className="bg-surface-elevated h-48 animate-pulse rounded-lg" />
-    );
-  if (error)
+  if (error || highIncomeError)
     return (
       <p className="text-sm text-red-500">
         Failed to load contribution snapshot
       </p>
+    );
+  if (isLoading || highIncomeThreshold === undefined)
+    return (
+      <div className="bg-surface-elevated h-48 animate-pulse rounded-lg" />
     );
   if (!data?.people?.length) return null;
 

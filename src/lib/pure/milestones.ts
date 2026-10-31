@@ -797,6 +797,10 @@ function studentLoans(input: MilestoneInput): MilestoneResult {
     year: number;
   }[] = [];
   const reasons: string[] = [];
+  // Loans with no owner aren't anyone's to judge — said, never dropped
+  // because someone else's loans could be judged.
+  if (b.jointStudentLoans > 0)
+    reasons.push("Give each student loan an owner to judge it");
   for (const p of b.studentLoans) {
     if (p.totalOriginal === null)
       reasons.push(`${p.owner}: add each loan's original amount`);

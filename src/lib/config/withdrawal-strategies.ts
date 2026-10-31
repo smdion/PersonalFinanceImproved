@@ -591,26 +591,26 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       {
         key: "ceilingPercent",
         column: "vdCeilingPercent",
-        label: "Ceiling (max YoY increase)",
+        label: "Ceiling (max nominal YoY increase)",
         type: "percent",
         min: 0.01,
         max: 0.15,
         step: 0.005,
         default: 0.05,
         tooltip:
-          "Maximum year-over-year spending increase (e.g. 5% = spending can grow at most 5% per year).",
+          "Maximum year-over-year increase in nominal dollars, before inflation (e.g. 5% = spending can grow at most 5% per year; at 3% inflation that's about 1.9% in real terms).",
       },
       {
         key: "floorPercent",
         column: "vdFloorPercent",
-        label: "Floor (max YoY decrease)",
+        label: "Floor (max nominal YoY decrease)",
         type: "percent",
         min: 0.01,
         max: 0.1,
         step: 0.005,
         default: 0.025,
         tooltip:
-          "Maximum year-over-year spending decrease (e.g. 2.5% = spending can fall at most 2.5% per year).",
+          "Maximum year-over-year decrease in nominal dollars, before inflation (e.g. 2.5% = spending can fall at most 2.5% per year; at 3% inflation that's about 5.4% in real terms).",
         lever: { delta: -0.4, unit: "relative", targets: ["smoothness"] },
       },
       {
@@ -625,9 +625,9 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     ],
     crossYearStateKeys: ["priorYearSpending"],
     guide: {
-      how: "Withdraw 5% of your current portfolio, but limit year-over-year changes: spending can rise at most 5% or fall at most 2.5% from the prior year. This creates a smoother income stream than pure Constant Percentage.",
+      how: "Withdraw 5% of your current portfolio, but limit year-over-year changes: spending can rise at most 5% or fall at most 2.5% from the prior year, in nominal dollars. This creates a smoother income stream than pure Constant Percentage. The limits are nominal like every percentage-based strategy's floor, so at 3% inflation the 2.5% cut is about 5.4% in real terms and the 5% raise about 1.9%. The published method applies them to inflation-adjusted spending, so results won't match its 4.7% figure exactly.",
       strengths: [
-        "Excellent downside protection — spending can only fall 2.5% per year, not 30%+",
+        "Excellent downside protection — spending can only fall 2.5% per year in nominal dollars, not 30%+",
         "Asymmetric guardrails favor stability (tighter floor than ceiling)",
         "Based on Vanguard research (2012), well-tested methodology",
         "High success rate — typically 100%",

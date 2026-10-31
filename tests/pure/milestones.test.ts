@@ -2251,4 +2251,25 @@ describe("borrowing: 20/3/8 and student loans", () => {
     expect(r.status).toBe("unknown");
     expect(r.headline).toBe("Alex: add each loan's original amount");
   });
+
+  it("a loan with no owner is still said when someone else's loans are judged", () => {
+    const r = byId(
+      run({
+        borrowing: borrowing({
+          studentLoans: [
+            {
+              owner: "Alex",
+              totalOriginal: 30_000,
+              loanYear: 2010,
+              firstSalary: { year: 2015, salary: 52_000 },
+            },
+          ],
+          jointStudentLoans: 1,
+        }),
+      }),
+      "studentLoans",
+    );
+    expect(r.status).toBe("reached");
+    expect(r.note).toBe("Give each student loan an owner to judge it");
+  });
 });
