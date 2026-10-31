@@ -39,6 +39,8 @@ import {
   decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
+  loadSavedInflationOverrides,
+  resolveInflationRisk,
   resolveProjectionOverrides,
 } from "./_shared";
 import {
@@ -352,10 +354,10 @@ export const coastFireRouter = createTRPCRouter({
           engineInput.currentAge,
           engineInput.projectionEndAge,
         ) ?? undefined;
-      const inflationRisk = {
-        meanRate: toNumber(preset.inflationMean),
-        stdDev: toNumber(preset.inflationStdDev),
-      };
+      const inflationRisk = resolveInflationRisk({
+        saved: await loadSavedInflationOverrides(ctx.db),
+        presetStdDev: toNumber(preset.inflationStdDev),
+      });
 
       // The probe seed is a fixed constant (common random numbers across
       // probes, for variance reduction within one search), not a per-run

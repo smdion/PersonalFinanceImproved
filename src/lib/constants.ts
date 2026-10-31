@@ -212,9 +212,15 @@ export const MC_SPENDING_STABILITY_THRESHOLD = 0.75;
  *  rather than letting it sit as a quiet secondary ring. */
 export const MC_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD = 0.1;
 
-/** Default inflation risk assumption for Monte Carlo simulations when no
- *  preset-specific value is configured. */
-export const DEFAULT_MC_INFLATION_RISK = { meanRate: 0.025, stdDev: 0.012 };
+/** Default inflation risk for the Simulation when no preset-specific
+ *  value is configured: the spread of each year's inflation around the
+ *  household's own rates (the rates themselves are the plan's). */
+export const DEFAULT_MC_INFLATION_RISK = { stdDev: 0.012 };
+
+/** The least a year's price level can grow in a Simulation trial (1 + its
+ *  inflation): only keeps a wild draw from reaching zero or below — not a
+ *  floor on inflation, which would bias it up. */
+export const MC_INFLATION_GROWTH_FLOOR = 0.5;
 
 /** Default number of trials for a Monte Carlo simulation run. Dropped from
  *  1000 → 500 (after the worker-thread offload

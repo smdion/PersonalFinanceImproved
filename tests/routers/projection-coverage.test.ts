@@ -710,7 +710,7 @@ describe("projection router — computeMonteCarloProjection", () => {
       db.insert(schema.appSettings)
         .values({
           key: "mc_inflation_overrides",
-          value: { meanRate: 0.035, stdDev: 0.015 } as unknown as string,
+          value: { stdDev: 0.015 } as unknown as string,
         })
         .run();
 
@@ -727,8 +727,8 @@ describe("projection router — computeMonteCarloProjection", () => {
         (ac: { id: number }) => ac.id === 1,
       );
       expect(stocks?.meanReturn).toBeCloseTo(0.11);
-      expect(response.simulationInputs!.inflationRisk.meanRate).toBeCloseTo(
-        0.035,
+      expect(response.simulationInputs!.inflationRisk.stdDev).toBeCloseTo(
+        0.015,
       );
     } finally {
       cleanup();
@@ -747,7 +747,7 @@ describe("projection router — computeMonteCarloProjection", () => {
       db.insert(schema.appSettings)
         .values({
           key: "mc_inflation_overrides",
-          value: { meanRate: 0.04 } as unknown as string,
+          value: { stdDev: 0.02 } as unknown as string,
         })
         .run();
 
@@ -755,14 +755,11 @@ describe("projection router — computeMonteCarloProjection", () => {
         numTrials: 100,
         preset: "custom",
         seed: 42,
-        inflationRisk: { meanRate: 0.02, stdDev: 0.008 },
+        inflationRisk: { stdDev: 0.008 },
       });
 
       expect(response.result).not.toBeNull();
       // The explicit inflationRisk should take priority
-      expect(response.simulationInputs!.inflationRisk.meanRate).toBeCloseTo(
-        0.02,
-      );
       expect(response.simulationInputs!.inflationRisk.stdDev).toBeCloseTo(
         0.008,
       );
@@ -1870,9 +1867,9 @@ describe("projection router — computeCoastFire", () => {
       const response = await caller.projection.computeCoastFire({});
       const r = response.result!;
       expect(r).not.toBeNull();
-      // Earliest age contributions can stop: between today (36) and the
-      // retirement age (65) for this fixture.
-      expect(r.coastFireAge).toBeGreaterThanOrEqual(36);
+      // Earliest age contributions can stop: between today (35, the
+      // engine's current age) and the retirement age (65) for this fixture.
+      expect(r.coastFireAge).toBeGreaterThanOrEqual(35);
       expect(r.coastFireAge).toBeLessThan(65);
       expect(r.projectedExpensesAtRetirementToday).toBeGreaterThan(0);
     } finally {

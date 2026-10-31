@@ -7,7 +7,6 @@
  *   strategy varying only withdrawalStrategy + strategyParams.
  * - `analyzeStrategy` — runs what-if MC scenarios on the active strategy
  *   and returns ranked recommendations.
- * - `updateInflationRisk` — persists MC preset inflation params.
  * - `updateAssetClassOverrides` — persists user asset class return/vol
  *   overrides to appSettings.
  *
@@ -753,31 +752,6 @@ export const strategyRouter = createTRPCRouter({
         strategyLabel: strategyMeta.label,
         recommendations: scored,
       };
-    }),
-
-  updateInflationRisk: scenarioProcedure
-    .input(
-      z.object({
-        preset: z.enum(["aggressive", "default", "conservative", "custom"]),
-        inflationMean: z.number(),
-        inflationStdDev: z.number(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      const { db } = ctx;
-      const key = "mc_inflation_overrides";
-      const value = {
-        meanRate: input.inflationMean,
-        stdDev: input.inflationStdDev,
-      };
-      await db
-        .insert(schema.appSettings)
-        .values({ key, value })
-        .onConflictDoUpdate({
-          target: schema.appSettings.key,
-          set: { value },
-        });
-      return { updated: true };
     }),
 
   /** Persist MC asset class return/volatility overrides to appSettings. */

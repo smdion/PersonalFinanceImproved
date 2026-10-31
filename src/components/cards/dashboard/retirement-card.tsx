@@ -1,6 +1,7 @@
 "use client";
 
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
+import { simulationDollars } from "@/lib/pure/simulation-dollars";
 import { FocusLink } from "@/components/ui/focus-link";
 import { focusHref } from "@/lib/config/focus-topics";
 import {
@@ -141,10 +142,12 @@ function RetirementCardImpl() {
     ? toDisplay(baseline.nominal, baseline.year)
     : portfolioTotal;
   const nestEggDisplay = simulatedOrBaseline({
-    bands: mcPeek?.result?.percentileBands,
+    // Today's dollars, from the Simulation's own per-trial deflation.
+    bands: mcPeek?.result
+      ? simulationDollars(mcPeek.result, "real").percentileBands
+      : null,
     baseline: nestEgg,
     targetAge: nestEggAge,
-    toDisplay,
     personFiltered: false,
   });
   const totalWithMatch = annualContributions + employerContributions;

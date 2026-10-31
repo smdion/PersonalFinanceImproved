@@ -9,7 +9,7 @@
  * - `monte-carlo.ts`  — `computeMonteCarloProjection`,
  *                       `updateGlidePathAllocations`, `updateClampBounds`
  * - `strategy.ts`     — `computeStrategyComparison`, `analyzeStrategy`,
- *                       `updateInflationRisk`, `updateAssetClassOverrides`
+ *                       `updateAssetClassOverrides`
  * - `stress-test.ts`  — `computeStressTest`
  * - `presets.ts`      — `updateInflationOverrides`
  * - `relocation.ts`   — `computeRelocationFiProjection`

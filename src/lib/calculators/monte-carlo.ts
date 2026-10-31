@@ -31,6 +31,7 @@ import type {
 } from "./types";
 import { roundToCents, sumBy, safeDivide } from "../utils/math";
 import {
+  MC_INFLATION_GROWTH_FLOOR,
   MC_RETURN_CLAMP_MIN,
   MC_RETURN_CLAMP_MAX,
   MC_SPENDING_STABILITY_THRESHOLD,
@@ -97,7 +98,7 @@ function computeDistribution(values: number[]): DistributionSummary {
  *
  * For each trial:
  * 1. Generate a random return rate sequence (correlated log-normal per asset class)
- * 2. Optionally randomize inflation
+ * 2. Optionally randomize inflation around the household's own rates
  * 3. Call calculateProjection() with those return rates
  * 4. Record end balance and depletion age
  *
@@ -171,8 +172,14 @@ export function calculateMonteCarlo(
   const endAge = engineInput.projectionEndAge;
   const numYears = endAge - startAge + 1;
 
-  // Storage for per-year balances across trials (year index → array of end balances)
+  // Storage for per-year balances across trials (year index → array of end
+  // balances), nominal and in today's dollars — each trial deflated by its
+  // own inflation before sorting, never the percentiles afterwards.
   const balancesByYear: number[][] = Array.from({ length: numYears }, () => []);
+  const balancesTodayByYear: number[][] = Array.from(
+    { length: numYears },
+    () => [],
+  );
 
   // Storage for per-decumulation-year spending ratios across trials
   // Index 0 = first decumulation year, not first projection year
@@ -188,6 +195,7 @@ export function calculateMonteCarlo(
 
   // Per-trial outcome tracking
   const terminalBalances: number[] = [];
+  const terminalBalancesToday: number[] = [];
   // Trials that failed on a penalty gap (money there but locked behind
   // early-withdrawal penalties), and every trial's verdict. Parallel arrays
   // to terminalBalances, indexed by trial.
@@ -220,9 +228,11 @@ export function calculateMonteCarlo(
     engineInput.annualExpenses ??
     null;
 
-  // Deflator for converting nominal retirement-year dollars to today's dollars
   const yearsToRetirement = engineInput.retirementAge - startAge;
-  const pvDeflator = Math.pow(1 + engineInput.inflationRate, yearsToRetirement);
+  // The household's own rates — each trial's inflation varies around them.
+  const baseInflation = engineInput.inflationRate;
+  const basePostRetirementInflation =
+    engineInput.postRetirementInflationRate ?? baseInflation;
 
   // Report progress every ~2% of trials (min every 20 trials) so the
   // callback overhead never becomes noticeable against the loop itself,
@@ -275,38 +285,46 @@ export function calculateMonteCarlo(
       trialReturnRates.push({ label: `Age ${age}`, rate: annualReturn });
     }
 
-    // Optionally randomize inflation — draw per-year rates, pass geometric mean to engine.
-    // This matches the methodology ("each year draws from a normal distribution") while
-    // staying compatible with the engine's single-rate model. Per-year sampling prevents
-    // unrealistic persistent extreme inflation scenarios (4%+ for 58 years).
-    let trialInflationRate = engineInput.inflationRate;
+    // Optionally randomize inflation: per-year shocks around the household's
+    // own rates, passed to the engine as each rate's geometric mean (the
+    // engine takes one rate per phase, so a trial's year-to-year swings
+    // average out — a trial runs a little hotter or cooler throughout).
+    // One shock path moves both rates, keeping the household's gap between
+    // the post-retirement raise and inflation. No floor beyond 1 + x > 0:
+    // truncating the draw would bias inflation up.
+    let trialInflationRate = baseInflation;
+    let trialPostRetirementInflationRate = basePostRetirementInflation;
     if (inflationRisk) {
-      let logInflationSum = 0;
+      let logPre = 0;
+      let logPost = 0;
       for (let y = 0; y < numYears; y++) {
-        const yearInflation = Math.max(
-          0,
-          sampleNormalMeanStd(
-            rng,
-            inflationRisk.meanRate,
-            inflationRisk.stdDev,
+        const shock = sampleNormalMeanStd(rng, 0, inflationRisk.stdDev);
+        logPre += Math.log(
+          Math.max(MC_INFLATION_GROWTH_FLOOR, 1 + baseInflation + shock),
+        );
+        logPost += Math.log(
+          Math.max(
+            MC_INFLATION_GROWTH_FLOOR,
+            1 + basePostRetirementInflation + shock,
           ),
         );
-        logInflationSum += Math.log(1 + yearInflation);
       }
-      trialInflationRate = Math.exp(logInflationSum / numYears) - 1;
+      trialInflationRate = Math.exp(logPre / numYears) - 1;
+      trialPostRetirementInflationRate = Math.exp(logPost / numYears) - 1;
     }
+    // Today's dollars for this trial: deflated by the inflation it ran with
+    // (the app's convention — the general rate, every year), so a hot trial
+    // reads poorer in today's dollars than a cool one with the same balance.
+    const todayDeflator = (yearIdx: number) =>
+      Math.pow(1 + trialInflationRate, Math.max(0, yearIdx));
+    const pvDeflator = todayDeflator(yearsToRetirement);
 
     // Build modified engine input for this trial.
-    // Both inflationRate (accumulation) and postRetirementInflationRate (decumulation)
-    // must use the trial's randomized inflation so the stochastic inflation control
-    // affects portfolio longevity during retirement.
     const trialInput: ProjectionInput = {
       ...engineInput,
       returnRates: trialReturnRates,
       inflationRate: trialInflationRate,
-      postRetirementInflationRate: inflationRisk
-        ? trialInflationRate
-        : engineInput.postRetirementInflationRate,
+      postRetirementInflationRate: trialPostRetirementInflationRate,
     };
 
     // Run the engine
@@ -320,15 +338,20 @@ export function calculateMonteCarlo(
       yearIdx < numYears && yearIdx < result.projectionByYear.length;
       yearIdx++
     ) {
-      balancesByYear[yearIdx]!.push(
-        roundToCents(result.projectionByYear[yearIdx]!.retirementBalance),
+      const balance = result.projectionByYear[yearIdx]!.retirementBalance;
+      balancesByYear[yearIdx]!.push(roundToCents(balance));
+      balancesTodayByYear[yearIdx]!.push(
+        roundToCents(balance / todayDeflator(yearIdx)),
       );
     }
 
     // Terminal balance
-    const lastYear =
-      result.projectionByYear[result.projectionByYear.length - 1];
+    const lastIdx = result.projectionByYear.length - 1;
+    const lastYear = result.projectionByYear[lastIdx];
     terminalBalances.push(roundToCents(lastYear?.retirementBalance ?? 0));
+    terminalBalancesToday.push(
+      roundToCents((lastYear?.retirementBalance ?? 0) / todayDeflator(lastIdx)),
+    );
 
     // One judge (plan-outcome.ts): the trial fails when retirement money
     // runs out or a year's spending goes unmet (money penalty-locked, only
@@ -338,13 +361,17 @@ export function calculateMonteCarlo(
     const outcome = assessPlan(result);
     trialSucceeded.push(outcome.succeeded);
     hadPenaltyAvoidedShortfall.push(outcome.failureReason === "penaltyGap");
-    const totalPenaltyAvoidedShortfallNominal = sumBy(
-      result.projectionByYear,
-      (y) =>
-        y.phase === "decumulation" ? (y.penaltyAvoidedShortfall ?? 0) : 0,
-    );
+    // Each year's shortfall in today's dollars by its own year — summing
+    // nominal years and dividing once by the retirement-year deflator gave
+    // retirement-year dollars.
     penaltyAvoidedShortfallAmountsPV.push(
-      safeDivide(totalPenaltyAvoidedShortfallNominal, pvDeflator, 0),
+      result.projectionByYear.reduce(
+        (sum, y, i) =>
+          y.phase === "decumulation"
+            ? sum + (y.penaltyAvoidedShortfall ?? 0) / todayDeflator(i)
+            : sum,
+        0,
+      ),
     );
 
     // Failure age and reason (the plan judge's, not depletion alone).
@@ -357,7 +384,9 @@ export function calculateMonteCarlo(
     // For strategies that use post-retirement raise (Fixed, Forgo, G-K, Decline),
     // use the engine's projectedExpenses as baseline — it already has the correct
     // inflation applied. For dynamic strategies (Vanguard, Const%, Endowment, RMD),
-    // use year-1 withdrawal grown by MC inflation.
+    // use year-1 withdrawal grown by the trial's general inflation — "did
+    // spending hold in real terms" is a price question, and these
+    // strategies don't use the post-retirement raise.
     const decYears = result.projectionByYear.filter(
       (y): y is EngineDecumulationYear => y.phase === "decumulation",
     );
@@ -448,6 +477,26 @@ export function calculateMonteCarlo(
       p90: percentile(sorted, 90),
       p95: percentile(sorted, 95),
       mean,
+    });
+  }
+
+  // The same bands in today's dollars — each trial deflated before sorting.
+  const percentileBandsToday: MonteCarloPercentileBand[] = [];
+  for (let yearIdx = 0; yearIdx < numYears; yearIdx++) {
+    const balances = balancesTodayByYear[yearIdx]!;
+    if (balances.length === 0) continue;
+    const sorted = [...balances].sort((a, b) => a - b);
+    percentileBandsToday.push({
+      year: engineInput.asOfDate.getFullYear() + yearIdx,
+      age: startAge + yearIdx,
+      p5: percentile(sorted, 5),
+      p10: percentile(sorted, 10),
+      p25: percentile(sorted, 25),
+      p50: percentile(sorted, 50),
+      p75: percentile(sorted, 75),
+      p90: percentile(sorted, 90),
+      p95: percentile(sorted, 95),
+      mean: sumBy(balances, (v) => v) / balances.length,
     });
   }
 
@@ -565,6 +614,7 @@ export function calculateMonteCarlo(
 
   // P5 worst-case
   const p5EndBalance = percentile(sortedTerminal, 5);
+  const sortedTerminalToday = [...terminalBalancesToday].sort((a, b) => a - b);
   const sortedFailures = [...failureAges].sort((a, b) => a - b);
   const p5FailureAge =
     sortedFailures.length > 0 ? percentile(sortedFailures, 5) : null;
@@ -597,6 +647,12 @@ export function calculateMonteCarlo(
     worstCase: {
       p5FailureAge,
       p5EndBalance,
+    },
+    today: {
+      percentileBands: percentileBandsToday,
+      terminalBalance: computeDistribution(terminalBalancesToday),
+      medianEndBalance: percentile(sortedTerminalToday, 50),
+      p5EndBalance: percentile(sortedTerminalToday, 5),
     },
     numTrials,
     computeTimeMs,

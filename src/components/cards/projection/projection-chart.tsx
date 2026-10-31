@@ -157,16 +157,18 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       }
     }
 
-    // MC percentile band areas
+    // MC percentile band areas — already in the shown dollars
+    // (simulationDollars: today's are deflated per trial), never deflated
+    // here.
     const band = mcBandsByYear?.get(yr.year);
     if (band) {
-      const dp5 = deflate(band.p5, yr.year);
-      const dp10 = deflate(band.p10, yr.year);
-      const dp25 = deflate(band.p25, yr.year);
-      const dp50 = deflate(band.p50, yr.year);
-      const dp75 = deflate(band.p75, yr.year);
-      const dp90 = deflate(band.p90, yr.year);
-      const dp95 = deflate(band.p95, yr.year);
+      const dp5 = band.p5;
+      const dp10 = band.p10;
+      const dp25 = band.p25;
+      const dp50 = band.p50;
+      const dp75 = band.p75;
+      const dp90 = band.p90;
+      const dp95 = band.p95;
       datum.mc_dp25 = dp25;
       datum.mc_dp75 = dp75;
       datum.mc_p50 = dp50;

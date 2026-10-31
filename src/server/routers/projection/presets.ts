@@ -14,16 +14,16 @@ export const presetsRouter = createTRPCRouter({
   /** Persist MC stochastic inflation overrides to appSettings. */
   updateInflationOverrides: scenarioProcedure
     .input(
+      // The spread of each year's inflation around the plan's own rates
+      // (the rates themselves are the plan's, not the Simulation's).
       z.object({
-        meanRate: z.number().optional(),
-        stdDev: z.number().optional(),
+        stdDev: z.number().min(0).max(0.1).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
       const key = "mc_inflation_overrides";
-      const isEmpty =
-        input.meanRate === undefined && input.stdDev === undefined;
+      const isEmpty = input.stdDev === undefined;
       if (isEmpty) {
         await db
           .delete(schema.appSettings)

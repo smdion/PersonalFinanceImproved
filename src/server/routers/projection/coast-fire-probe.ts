@@ -41,6 +41,8 @@ import {
   decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
+  loadSavedInflationOverrides,
+  resolveInflationRisk,
   resolveProjectionOverrides,
 } from "./_shared";
 import {
@@ -219,10 +221,10 @@ export const coastFireProbeRouter = createTRPCRouter({
           engineInput.currentAge,
           engineInput.projectionEndAge,
         ) ?? undefined;
-      const inflationRisk = {
-        meanRate: toNumber(preset.inflationMean),
-        stdDev: toNumber(preset.inflationStdDev),
-      };
+      const inflationRisk = resolveInflationRisk({
+        saved: await loadSavedInflationOverrides(ctx.db),
+        presetStdDev: toNumber(preset.inflationStdDev),
+      });
 
       const NUM_TRIALS = DEFAULT_SIMULATION.coastFireTrials;
       const SEED = 42;

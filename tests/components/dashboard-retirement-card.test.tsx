@@ -134,7 +134,7 @@ describe("RetirementCard dashboard cache-peek features", () => {
 
   it("shows the MC confidence badge with a relative freshness label on a peek hit", () => {
     mcPeekData = {
-      result: { successRate: 0.92 },
+      result: { successRate: 0.92, today: { percentileBands: [] } },
       simulationInputs: { computedAt: new Date().toISOString() },
     };
     coastFireMcPeekData = { result: null };
@@ -161,14 +161,18 @@ describe("RetirementCard dashboard cache-peek features", () => {
 
 describe("RetirementCard nest egg: simulated or baseline", () => {
   it("shows the Retirement page's simulated median and range, baseline alongside", () => {
-    // Inflation 0 so today's $ = nominal: the figures read straight.
+    // Inflation 0 so today's $ = nominal for the baseline; the card reads
+    // the simulation's own today's-dollar bands (deflated per trial).
     engineData.settings.annualInflation = "0";
     mcPeekData = {
       result: {
         successRate: 0.9,
-        percentileBands: [
-          { age: 65, year: 2051, p25: 400000, p50: 620000, p75: 900000 },
-        ],
+        percentileBands: [{ age: 65, year: 2051, p25: 1, p50: 2, p75: 3 }],
+        today: {
+          percentileBands: [
+            { age: 65, year: 2051, p25: 400000, p50: 620000, p75: 900000 },
+          ],
+        },
       },
       simulationInputs: { computedAt: new Date().toISOString() },
     };

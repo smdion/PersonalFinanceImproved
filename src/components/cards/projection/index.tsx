@@ -62,6 +62,7 @@ const DecumulationMethodologyContent = dynamic(() =>
 );
 import { McResultsSection } from "./projection-mc-results";
 import { ProjectionLoader } from "./projection-loader";
+import { simulationDollars } from "@/lib/pure/simulation-dollars";
 import {
   useProjectionState,
   type EngineContribRate,
@@ -175,7 +176,6 @@ export function ProjectionCard(props: {
     setPersonFilter,
     isPersonFiltered,
     updateGlidePath,
-    updateInflationRisk,
     updateClampBounds,
     updateAssetClassOverrides,
     updateInflationOverrides,
@@ -191,7 +191,6 @@ export function ProjectionCard(props: {
     enginePeople,
     engineSettings,
     enginePerPersonSettings,
-    baseYear,
     deflate,
     autoloadEnabled,
     runSimulation,
@@ -460,7 +459,6 @@ export function ProjectionCard(props: {
                   projectionResult={result}
                   mcResult={mcQuery.data.result}
                   deflate={deflate}
-                  baseYear={baseYear}
                   coastFireAge={deterministicCoastFireAge}
                   peopleNames={(people ?? enginePeople ?? []).map(
                     (p) => p.name,
@@ -1476,14 +1474,9 @@ export function ProjectionCard(props: {
               onGlidePathChange={(entries) =>
                 updateGlidePath.mutate({ entries })
               }
-              onInflationRiskChange={(meanRate, stdDev) => {
-                updateInflationRisk.mutate({
-                  preset: mcPreset,
-                  inflationMean: meanRate,
-                  inflationStdDev: stdDev,
-                });
-                updateInflationOverrides.mutate({ meanRate, stdDev });
-              }}
+              onInflationRiskChange={(stdDev) =>
+                updateInflationOverrides.mutate({ stdDev })
+              }
               onClampBoundsChange={(min, max) =>
                 updateClampBounds.mutate({
                   preset: "custom",
@@ -1493,28 +1486,12 @@ export function ProjectionCard(props: {
               }
               outcomeDistribution={{
                 successRate: mcQuery.data.result.successRate,
-                medianEndBalance: mcQuery.data.result.medianEndBalance,
-                p5EndBalance: mcQuery.data.result.worstCase.p5EndBalance,
-                terminalBalance:
-                  mcQuery.data.result.distributions.terminalBalance,
+                ...simulationDollars(mcQuery.data.result, dollarMode),
                 sustainableWithdrawalPV:
                   mcQuery.data.result.distributions.sustainableWithdrawalPV,
                 failureAge:
                   mcQuery.data.result.distributions.failureAge ?? undefined,
                 computeTimeMs: mcQuery.data.result.computeTimeMs,
-              }}
-              deflate={(amount: number) => {
-                // No early-return gate on `result` at this component's top
-                // level (unlike ProjectionChart/HeroKpis/McDepletionCallout),
-                // so engineSettings isn't guaranteed defined here the way
-                // the discriminated-return invariant covers those — fall
-                // back to no deflation rather than asserting with `!`.
-                const termYear = engineSettings
-                  ? baseYear +
-                    (engineSettings.endAge -
-                      (result?.projectionByYear[0]?.age ?? 0))
-                  : baseYear;
-                return deflate(amount, termYear);
               }}
             />
           )}

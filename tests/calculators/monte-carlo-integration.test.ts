@@ -186,7 +186,7 @@ describe("monte carlo integration", () => {
     // uses for financial content that otherwise relies on
     // toMatchSnapshot() alone).
     expect(result.successRate).toBe(1);
-    expect(result.medianEndBalance).toBeCloseTo(25352864.05, 1);
+    expect(result.medianEndBalance).toBeCloseTo(28266067.195, 1);
 
     expect(extractSummary(result)).toMatchSnapshot();
   });
@@ -208,7 +208,6 @@ describe("monte carlo integration", () => {
         { age: 65, allocations: { 1: 0.4, 2: 0.6 } },
       ],
       inflationRisk: {
-        meanRate: 0.03,
         stdDev: 0.015,
       },
     };
@@ -216,9 +215,11 @@ describe("monte carlo integration", () => {
     const result = calculateMonteCarlo(mcInput);
 
     expect(result.numTrials).toBe(50);
-    // Two inflation-heavy trials run out of retirement money at 87–88.
-    expect(result.successRate).toBe(0.96);
-    expect(result.medianEndBalance).toBe(22504932.465);
+    // Trials vary around the plan's own 2.5% (before v0.9.5 they drew
+    // around the 3% inflation-risk mean, floored at 0%, and two
+    // inflation-heavy trials ran out at 87–88).
+    expect(result.successRate).toBe(1);
+    expect(result.medianEndBalance).toBeCloseTo(28577900.78, 2);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 
@@ -247,7 +248,7 @@ describe("monte carlo integration", () => {
 
     expect(result.numTrials).toBe(50);
     expect(result.successRate).toBe(1);
-    expect(result.medianEndBalance).toBe(8880321.895);
+    expect(result.medianEndBalance).toBeCloseTo(11317872.355, 2);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 
@@ -308,7 +309,7 @@ describe("monte carlo integration", () => {
     // Near-retirement with large balances should have high success rate
     expect(result.successRate).toBeGreaterThan(0);
     expect(result.successRate).toBe(0.94);
-    expect(result.medianEndBalance).toBe(3126610.63);
+    expect(result.medianEndBalance).toBeCloseTo(3493612.625, 2);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 
@@ -669,5 +670,65 @@ describe("monte carlo integration", () => {
     expect(result.budgetStabilityRate).not.toBeNull();
     expect(result.budgetStabilityRate!).toBeLessThan(0.1);
     expect(result.budgetStabilityRate!).toBeLessThan(result.successRate);
+  });
+});
+
+describe("monte carlo inflation — trials vary around the plan's own rates (v0.9.5)", () => {
+  const mc = (
+    engineInput: ProjectionInput,
+    inflationRisk?: { stdDev: number },
+  ): MonteCarloInput => ({
+    engineInput,
+    numTrials: 20,
+    seed: 7,
+    assetClasses: [
+      { id: 1, name: "US Stocks", meanReturn: 0.1, stdDev: 0.18 },
+      { id: 2, name: "US Bonds", meanReturn: 0.04, stdDev: 0.06 },
+    ],
+    correlations: [{ classAId: 1, classBId: 2, correlation: 0.2 }],
+    glidePath: [{ age: 35, allocations: { 1: 0.6, 2: 0.4 } }],
+    inflationRisk,
+  });
+
+  it("with no spread, a trial runs at the plan's rates — the post-retirement gap kept", () => {
+    // A post-retirement raise apart from inflation: replaced by one trial
+    // rate (the old behaviour), the results would differ from the plain run.
+    const input = makeInput({
+      inflationRate: 0.025,
+      postRetirementInflationRate: 0.035,
+    });
+    const risk = calculateMonteCarlo(mc(input, { stdDev: 0 }));
+    const plain = calculateMonteCarlo(mc(input));
+    expect(risk.medianEndBalance).toBe(plain.medianEndBalance);
+    expect(risk.successRate).toBe(plain.successRate);
+  });
+
+  it("the plan's own inflation moves the Simulation", () => {
+    const low = calculateMonteCarlo(
+      mc(makeInput({ inflationRate: 0.02 }), { stdDev: 0.012 }),
+    );
+    const high = calculateMonteCarlo(
+      mc(makeInput({ inflationRate: 0.04 }), { stdDev: 0.012 }),
+    );
+    expect(high.today.medianEndBalance).toBeLessThan(
+      low.today.medianEndBalance,
+    );
+  });
+
+  it("today's dollars are each trial deflated by the inflation it ran with", () => {
+    const input = makeInput({ inflationRate: 0.03 });
+    const r = calculateMonteCarlo(mc(input, { stdDev: 0 }));
+    // No spread: every trial ran at 3%, so today's = nominal / 1.03^index.
+    r.percentileBands.forEach((b, i) => {
+      expect(r.today.percentileBands[i]!.p50).toBeCloseTo(
+        b.p50 / Math.pow(1.03, i),
+        -1,
+      );
+    });
+    const last = r.percentileBands.length - 1;
+    expect(r.today.medianEndBalance).toBeCloseTo(
+      r.medianEndBalance / Math.pow(1.03, last),
+      -1,
+    );
   });
 });

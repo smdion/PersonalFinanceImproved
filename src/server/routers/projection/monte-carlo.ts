@@ -30,11 +30,7 @@ import {
 } from "@/lib/calculators/random";
 import { toNumber } from "@/server/helpers";
 import { sumBy } from "@/lib/utils/math";
-import {
-  DEFAULT_MC_INFLATION_RISK,
-  MC_RETURN_CLAMP_MIN,
-  MC_RETURN_CLAMP_MAX,
-} from "@/lib/constants";
+import { MC_RETURN_CLAMP_MIN, MC_RETURN_CLAMP_MAX } from "@/lib/constants";
 import type {
   AccumulationOverride,
   DecumulationOverride,
@@ -50,6 +46,7 @@ import {
   decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildMcInputs,
+  resolveInflationRisk,
   resolveProjectionOverrides,
 } from "./_shared";
 import {
@@ -133,12 +130,10 @@ export const monteCarloRouter = createTRPCRouter({
         decumulationBudgetColumn: z.number().int().min(0).optional(),
         /** Manual annual expense override for decumulation (bypasses budget profile). */
         decumulationExpenseOverride: z.number().min(0).optional(),
-        /** Optional inflation risk params. */
+        /** Optional inflation risk: the spread of each year's inflation
+         *  around the plan's own rates. */
         inflationRisk: z
-          .object({
-            meanRate: z.number().min(0).max(0.2),
-            stdDev: z.number().min(0).max(0.1),
-          })
+          .object({ stdDev: z.number().min(0).max(0.1) })
           .optional(),
         /** Optional snapshot ID — use a historical portfolio snapshot instead of the latest. */
         snapshotId: z.number().int().optional(),
@@ -369,24 +364,11 @@ export const monteCarloRouter = createTRPCRouter({
         mcGlidePath = baseGlidePath;
       }
 
-      // Resolve effective inflation risk: explicit UI override > saved DB overrides > preset DB values > fallback
-      const baseInflationRisk = preset
-        ? {
-            meanRate: toNumber(preset.inflationMean),
-            stdDev: toNumber(preset.inflationStdDev),
-          }
-        : DEFAULT_MC_INFLATION_RISK;
-      const effectiveInflationRisk =
-        input.inflationRisk ??
-        (savedInflationOverrides
-          ? {
-              meanRate:
-                savedInflationOverrides.meanRate ?? baseInflationRisk.meanRate,
-              stdDev:
-                savedInflationOverrides.stdDev ?? baseInflationRisk.stdDev,
-            }
-          : null) ??
-        baseInflationRisk;
+      const effectiveInflationRisk = resolveInflationRisk({
+        ui: input.inflationRisk,
+        saved: savedInflationOverrides,
+        presetStdDev: preset ? toNumber(preset.inflationStdDev) : null,
+      });
 
       // Resolve return clamp bounds from preset (or defaults)
       const returnClampMin = preset
@@ -544,6 +526,10 @@ export const monteCarloRouter = createTRPCRouter({
             ),
           annualExpenses: annualExpensesVal,
           inflationRate: toNumber(settings.annualInflation),
+          // The rates trials vary around (inflation risk is the spread).
+          postRetirementInflationRate:
+            mcEngineInput.postRetirementInflationRate ??
+            mcEngineInput.inflationRate,
           salary: totalCompensation,
           assetClasses: mcAssetClasses,
           dbAssetClasses,

@@ -39,7 +39,10 @@ export type SimulationInputs = {
   presetDescription: string;
   blendedReturn: number;
   blendedVol: number;
-  inflationRisk: { meanRate: number; stdDev: number };
+  /** The spread of each year's inflation around the plan's own rates. */
+  inflationRisk: { stdDev: number };
+  /** The plan's post-retirement raise — it moves with each trial's inflation. */
+  postRetirementInflationRate: number;
   withdrawalRate: number;
   withdrawalStrategy?: string;
   decumulationExpenseOverride?: number;
@@ -63,6 +66,8 @@ export type AssetClassOverride = {
 // SimulationAssumptions
 // ---------------------------------------------------------------------------
 
+/** In the dollars the page shows (`simulationDollars` — today's are the
+ *  Simulation's per-trial deflation), so nothing here is deflated again. */
 type OutcomeDistribution = {
   successRate: number;
   medianEndBalance: number;
@@ -89,7 +94,6 @@ export function SimulationAssumptions({
   onInflationRiskChange,
   onClampBoundsChange,
   outcomeDistribution,
-  deflate,
 }: {
   inputs: SimulationInputs;
   numTrials: number;
@@ -99,10 +103,9 @@ export function SimulationAssumptions({
   onGlidePathChange?: (
     entries: { age: number; allocations: Record<number, number> }[],
   ) => void;
-  onInflationRiskChange?: (meanRate: number, stdDev: number) => void;
+  onInflationRiskChange?: (stdDev: number) => void;
   onClampBoundsChange?: (min: number, max: number) => void;
   outcomeDistribution?: OutcomeDistribution;
-  deflate?: (amount: number) => number;
 }) {
   const [expanded, setExpanded] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -119,7 +122,6 @@ export function SimulationAssumptions({
 
   // Inflation risk edit state
   const [editingInflation, setEditingInflation] = useState(false);
-  const [draftInflMean, setDraftInflMean] = useState("");
   const [draftInflStdDev, setDraftInflStdDev] = useState("");
 
   // Clamp bounds edit state
@@ -261,8 +263,8 @@ export function SimulationAssumptions({
               {numTrials.toLocaleString()}
             </span>{" "}
             simulated futures. Each trial randomizes annual investment returns
-            (correlated log-normal draws per asset class) and inflation (
-            {formatPercent(inputs.inflationRisk.meanRate, 1)} mean &plusmn;{" "}
+            (correlated log-normal draws per asset class) and inflation (your{" "}
+            {formatPercent(inputs.inflationRate, 1)} &plusmn;{" "}
             {formatPercent(inputs.inflationRisk.stdDev, 1)} std dev). Your
             portfolio follows a glide path that shifts from stocks to bonds as
             you age. At your current allocation, the blended expected return is{" "}
@@ -342,14 +344,9 @@ export function SimulationAssumptions({
                   <span className="text-caption text-muted whitespace-nowrap">
                     Stoch. Inflation
                   </span>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={draftInflMean}
-                    onChange={(e) => setDraftInflMean(e.target.value)}
-                    className="text-caption w-12 rounded border px-0.5 py-0.5 text-center focus:border-blue-400 focus:outline-none"
-                  />
-                  <span className="text-faint text-caption">±</span>
+                  <span className="text-caption text-muted tabular-nums">
+                    {formatPercent(inputs.inflationRate, 1)} ±
+                  </span>
                   <input
                     type="number"
                     step="0.1"
@@ -363,7 +360,6 @@ export function SimulationAssumptions({
                     onClick={() => {
                       if (onInflationRiskChange) {
                         onInflationRiskChange(
-                          parseFloat(draftInflMean) / 100,
                           parseFloat(draftInflStdDev) / 100,
                         );
                       }
@@ -385,16 +381,13 @@ export function SimulationAssumptions({
                 <div className="flex items-center gap-1">
                   <AssumptionRow
                     label="Stochastic Inflation"
-                    value={`${formatPercent(inputs.inflationRisk.meanRate, 1)} \u00B1 ${formatPercent(inputs.inflationRisk.stdDev, 1)}`}
-                    tip="Simulation inflation: each simulated year draws a random rate from a normal distribution with this mean and standard deviation. Models inflation uncertainty — some futures have low inflation, others high. Typical mean: 2-3%."
+                    value={`${formatPercent(inputs.inflationRate, 1)} \u00B1 ${formatPercent(inputs.inflationRisk.stdDev, 1)}`}
+                    tip={`Your inflation rate, varied in each trial by this standard deviation a year; your post-retirement raise (${formatPercent(inputs.postRetirementInflationRate, 1)}) moves with it. Set the rates themselves in your retirement settings — here you set only the spread. Each trial runs at its own average, and its today's dollars use its own inflation. Typical spread: about 1%.`}
                   />
                   {onInflationRiskChange && (
                     <button
                       type="button"
                       onClick={() => {
-                        setDraftInflMean(
-                          (inputs.inflationRisk.meanRate * 100).toFixed(1),
-                        );
                         setDraftInflStdDev(
                           (inputs.inflationRisk.stdDev * 100).toFixed(1),
                         );
@@ -1016,22 +1009,12 @@ export function SimulationAssumptions({
           <div className="text-muted space-y-2 px-4 py-4 text-sm">
             <AssumptionRow
               label="Median End Balance"
-              value={
-                deflate
-                  ? formatCurrency(
-                      deflate(outcomeDistribution.medianEndBalance),
-                    )
-                  : formatCurrency(outcomeDistribution.medianEndBalance)
-              }
+              value={formatCurrency(outcomeDistribution.medianEndBalance)}
               tip="50th percentile terminal portfolio value. When some scenarios deplete, the median still reflects surviving paths — which benefit from compounding — so it can appear high even with meaningful depletion risk."
             />
             <AssumptionRow
               label="P5 End Balance (worst realistic)"
-              value={
-                deflate
-                  ? formatCurrency(deflate(outcomeDistribution.p5EndBalance))
-                  : formatCurrency(outcomeDistribution.p5EndBalance)
-              }
+              value={formatCurrency(outcomeDistribution.p5EndBalance)}
               highlight={outcomeDistribution.p5EndBalance <= 0}
               tip="Only 5% of scenarios end worse than this. If this is $0, a meaningful number of simulations fully depleted."
             />
@@ -1079,9 +1062,7 @@ export function SimulationAssumptions({
                     <div
                       className={`font-medium ${val <= 0 ? "text-red-600" : "text-secondary"}`}
                     >
-                      {deflate
-                        ? formatCurrency(deflate(val))
-                        : formatCurrency(val)}
+                      {formatCurrency(val)}
                     </div>
                     <div className="text-micro text-faint">{label}</div>
                   </div>

@@ -341,6 +341,46 @@ export { buildCoastFireProfileSwitches } from "@/lib/calculators/coast-fire";
 
 type Db = typeof _db;
 
+/** The saved Simulation inflation override (Simulation assumptions). */
+export type SavedInflationOverrides = { stdDev?: number } | null;
+
+/**
+ * The Simulation's inflation risk — the spread of each year's inflation
+ * around the plan's own rates — for every route that runs trials (the
+ * Simulation, strategy comparison, Coast FIRE and its probe): this run's
+ * UI override, else the saved override, else the preset's, else the
+ * default. One resolver, so no route quietly ignores the household's
+ * setting.
+ */
+export function resolveInflationRisk(opts: {
+  ui?: { stdDev: number } | null;
+  saved: SavedInflationOverrides;
+  presetStdDev?: number | null;
+}): { stdDev: number } {
+  return {
+    stdDev:
+      opts.ui?.stdDev ??
+      opts.saved?.stdDev ??
+      opts.presetStdDev ??
+      DEFAULT_MC_INFLATION_RISK.stdDev,
+  };
+}
+
+/** Read the saved inflation override (null when none is saved). */
+export async function loadSavedInflationOverrides(
+  db: Db,
+): Promise<SavedInflationOverrides> {
+  const row = await db
+    .select({ value: schema.appSettings.value })
+    .from(schema.appSettings)
+    .where(eq(schema.appSettings.key, "mc_inflation_overrides"))
+    .then((r) => r[0] ?? null);
+  const value = (row?.value ?? null) as { stdDev?: unknown } | null;
+  return value && typeof value.stdDev === "number"
+    ? { stdDev: value.stdDev }
+    : null;
+}
+
 /**
  * Bootstrap parallel fetch of the three core MC DB tables plus the saved
  * inflation-risk override, then map them to the shapes the engine expects.
@@ -358,28 +398,27 @@ export async function buildMcInputs(db: Db): Promise<{
   }[];
   mcCorrelations: { classAId: number; classBId: number; correlation: number }[];
   mcGlidePath: { age: number; allocations: Record<number, number> }[];
-  effectiveInflationRisk: { meanRate: number; stdDev: number };
+  /** Without a preset (the routes that call this and have none). */
+  effectiveInflationRisk: { stdDev: number };
   /** Raw saved inflation override — null if none saved. Callers that surface
    *  this to the client (e.g. computeMonteCarloProjection) use this as-is. */
-  savedInflationOverrides: { meanRate?: number; stdDev?: number } | null;
+  savedInflationOverrides: SavedInflationOverrides;
 }> {
-  const BASE_INFLATION_RISK = DEFAULT_MC_INFLATION_RISK;
-
-  const [assetClasses, assetCorrelations, glidePathRows, savedInflationRow] =
-    await Promise.all([
-      db
-        .select()
-        .from(schema.assetClassParams)
-        .where(eq(schema.assetClassParams.isActive, true))
-        .orderBy(asc(schema.assetClassParams.sortOrder)),
-      db.select().from(schema.assetClassCorrelations),
-      db.select().from(schema.glidePathAllocations),
-      db
-        .select({ value: schema.appSettings.value })
-        .from(schema.appSettings)
-        .where(eq(schema.appSettings.key, "mc_inflation_overrides"))
-        .then((r) => r[0] ?? null),
-    ]);
+  const [
+    assetClasses,
+    assetCorrelations,
+    glidePathRows,
+    savedInflationOverrides,
+  ] = await Promise.all([
+    db
+      .select()
+      .from(schema.assetClassParams)
+      .where(eq(schema.assetClassParams.isActive, true))
+      .orderBy(asc(schema.assetClassParams.sortOrder)),
+    db.select().from(schema.assetClassCorrelations),
+    db.select().from(schema.glidePathAllocations),
+    loadSavedInflationOverrides(db),
+  ]);
 
   const mcAssetClasses = assetClasses.map((ac) => ({
     id: ac.id,
@@ -396,17 +435,9 @@ export async function buildMcInputs(db: Db): Promise<{
 
   const mcGlidePath = glidePathFromRows(glidePathRows);
 
-  const savedInflationOverrides = (savedInflationRow?.value ?? null) as {
-    meanRate?: number;
-    stdDev?: number;
-  } | null;
-  const effectiveInflationRisk = savedInflationOverrides
-    ? {
-        meanRate:
-          savedInflationOverrides.meanRate ?? BASE_INFLATION_RISK.meanRate,
-        stdDev: savedInflationOverrides.stdDev ?? BASE_INFLATION_RISK.stdDev,
-      }
-    : BASE_INFLATION_RISK;
+  const effectiveInflationRisk = resolveInflationRisk({
+    saved: savedInflationOverrides,
+  });
 
   return {
     mcAssetClasses,
