@@ -34,6 +34,9 @@ vi.mock("@/lib/trpc", () => ({
     mortgage: {
       computeActiveSummary: { useQuery: () => ({ data: undefined }) },
     },
+    investments: {
+      getLiveSinceSnapshot: { useQuery: () => ({ data: undefined }) },
+    },
   },
 }));
 

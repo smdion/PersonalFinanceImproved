@@ -3,9 +3,11 @@
  * part (a part's money is never pooled with another's), from the newest of
  * what it knows:
  *
- * - the feed, when its data is at least as new as the snapshot;
- * - the snapshot, when it's newer — a feed behind it says nothing about
- *   money moving, only that the feed hasn't caught up;
+ * - the snapshot, unless a feed's data is from a later market close: the
+ *   household's own figures are the most accurate for their day, and
+ *   feeds lag a day or two — a feed on the snapshot's own close, or
+ *   behind it, says nothing new;
+ * - the feed, once its data is from a later close than the snapshot;
  * - either one rolled forward to the latest close by the held shares'
  *   total-return moves, marked as an estimate. Holdings without a price
  *   stay at the base figure, and the roll says it's partial.
@@ -34,6 +36,8 @@ export type BalancePosition = {
 
 export type CurrentBalanceInput = {
   key: string;
+  /** The feeds behind this figure (none for a part no feed covers). */
+  feedIds?: readonly number[];
   performanceAccountId: number | null;
   label: string;
   /** The feeds' balance; null with no feed covering this money. */
@@ -52,6 +56,7 @@ export type CurrentBalanceInput = {
 
 export type CurrentBalance = {
   key: string;
+  feedIds: readonly number[];
   performanceAccountId: number | null;
   label: string;
   source: BalanceSource;
@@ -105,10 +110,11 @@ export function currentBalance(
 ): CurrentBalance {
   const entrySnapshotDay = a.snapshotDay ?? snapshotDay;
   const noSnapshot = a.noSnapshot === true;
+  // Strictly newer: on the snapshot's own close the snapshot wins.
   const caughtUp =
     a.reported !== null &&
     (noSnapshot ||
-      (a.reportedDay !== null && a.reportedDay >= entrySnapshotDay));
+      (a.reportedDay !== null && a.reportedDay > entrySnapshotDay));
   const base = caughtUp ? a.reported! : a.snapshot;
   const baseDay = caughtUp ? (a.reportedDay ?? "") : entrySnapshotDay;
   // Each feed's balance already holds its own days; a snapshot, its day.
@@ -117,6 +123,7 @@ export function currentBalance(
   );
   return {
     key: a.key,
+    feedIds: a.feedIds ?? [],
     performanceAccountId: a.performanceAccountId,
     label: a.label,
     source: caughtUp ? "reported" : "snapshot",
@@ -231,6 +238,7 @@ export function pairFeedsWithParts(args: {
   for (const f of feeds.filter((x) => x.performanceAccountId === null)) {
     out.push({
       key: `feed:${f.id}`,
+      feedIds: [f.id],
       performanceAccountId: null,
       label: feedName(f.id),
       reported: f.balance,
@@ -255,6 +263,7 @@ export function pairFeedsWithParts(args: {
     if (wholeAccount) {
       out.push({
         key: `account:${id}`,
+        feedIds: ids(mine),
         performanceAccountId: id,
         label: accountName(id),
         reported: total(mine),
@@ -269,6 +278,7 @@ export function pairFeedsWithParts(args: {
       const linked = mine.filter((f) => f.subKey === part.key);
       out.push({
         key: part.key,
+        feedIds: ids(linked),
         performanceAccountId: id,
         label: `${accountName(id)} — ${part.label}`,
         reported: linked.length > 0 ? total(linked) : null,

@@ -22,12 +22,21 @@ const account = (
 });
 
 describe("currentBalance", () => {
-  it("a feed at least as new as the snapshot is the balance, and compares", () => {
-    const b = currentBalance(account(), "2026-10-29");
+  it("a feed from a later close than the snapshot is the balance, and compares", () => {
+    const b = currentBalance(account(), "2026-10-28");
     expect(b).toMatchObject({
       source: "reported",
       current: 105_000,
       comparable: true,
+    });
+  });
+
+  it("on the snapshot's own close the snapshot wins — the household's figures beat a feed", () => {
+    const b = currentBalance(account(), "2026-10-29");
+    expect(b).toMatchObject({
+      source: "snapshot",
+      current: 100_000,
+      comparable: false,
     });
   });
 
@@ -51,7 +60,7 @@ describe("currentBalance", () => {
       account({
         positions: [{ shares: 500, closes, feedDay: "2026-10-29" }],
       }),
-      "2026-10-29",
+      "2026-10-28",
     );
     expect(b).toMatchObject({
       base: 105_000,
@@ -76,7 +85,7 @@ describe("currentBalance", () => {
           { shares: 10, closes, feedDay: "2026-10-29" },
         ],
       }),
-      "2026-10-28",
+      "2026-10-27",
     );
     expect(b.rolledForward).toBeCloseTo(20 + 10.1, 0);
   });
@@ -152,7 +161,7 @@ describe("summarizeCurrentBalances", () => {
 
   it("counts sources and compares only caught-up accounts", () => {
     const s = summarizeCurrentBalances([
-      currentBalance(account({ key: "a" }), "2026-10-29"),
+      currentBalance(account({ key: "a" }), "2026-10-28"),
       currentBalance(
         account({ key: "b", reportedDay: "2026-10-28", reported: 90_000 }),
         "2026-10-29",
@@ -195,7 +204,7 @@ describe("changeSinceSnapshot", () => {
   it("money the snapshot never held isn't a change", () => {
     expect(
       changeSinceSnapshot([
-        currentBalance(account(), "2026-10-29"),
+        currentBalance(account(), "2026-10-28"),
         currentBalance(
           account({ key: "x", noSnapshot: true, snapshot: 0 }),
           "2026-10-29",

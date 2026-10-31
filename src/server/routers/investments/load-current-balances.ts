@@ -24,9 +24,20 @@ import {
   reportCalendarDay,
   valuationDateFor,
 } from "@/lib/pure/market-calendar";
+import {
+  feedMovement,
+  movementByClose,
+  type FeedMovement,
+} from "@/lib/pure/daily-movement";
+import { laggedSession } from "@/lib/pure/feed-data-date";
 import { loadTrackedAccountNames } from "@/server/helpers/account-names";
 import { getDailyMarketCloses } from "@/server/helpers/market-prices";
-import { loadAccounts, loadFeedContext, loadLatestHoldings } from "./_shared";
+import {
+  loadAccounts,
+  loadClassifiedTransactions,
+  loadFeedContext,
+  loadLatestHoldings,
+} from "./_shared";
 
 type Db = Parameters<typeof loadFeedContext>[0];
 
@@ -234,6 +245,55 @@ async function computeCurrentBalances(db: Db) {
   });
 
   const balances = dated.map((a) => currentBalance(a, snapshotDay ?? ""));
+
+  // Daily movement: every report put on the close it reflects (the same
+  // dating as the latest balance), each feed's latest close against the
+  // close before it.
+  const closeOf = (id: number, reportedAt: Date) => {
+    if (positionsOfFeed(id).length === 0) return reportCalendarDay(reportedAt);
+    const learned = lagOf.get(institutionOf(id));
+    return learned?.confident
+      ? laggedSession(reportedAt, learned.lag)
+      : valuationDateFor(reportedAt);
+  };
+  const datedReports = new Map(
+    allFeeds.map((x) => [
+      x.id,
+      (reports.get(x.id) ?? []).map((r) => ({
+        day: closeOf(x.id, r.reportedAt),
+        balance: r.balance,
+      })),
+    ]),
+  );
+  const flowsFrom = addDays(
+    [...datedReports.values()]
+      .flatMap((list) => list.slice(-3).map((r) => r.day))
+      .sort()[0] ?? localDateStr(),
+    -1,
+  );
+  const flowRows = await loadClassifiedTransactions(db, { since: flowsFrom });
+  const sendsTransactions = new Set(context.lastTransactionDay.keys());
+  const moves: FeedMovement[] = allFeeds.flatMap((x) => {
+    if (!x.reportedAt) return [];
+    const m = feedMovement({
+      feedId: x.id,
+      reports: datedReports.get(x.id) ?? [],
+      latestDay: feedDates.get(x.id)!.day,
+      latestBalance: x.balance,
+      flows: sendsTransactions.has(x.id)
+        ? flowRows
+            .filter(
+              (r) =>
+                r.simplefinAccountId === x.id &&
+                !r.pending &&
+                !r.voided &&
+                (r.kind === "contribution" || r.kind === "withdrawal"),
+            )
+            .map((r) => ({ day: r.posted, amount: r.amount }))
+        : null,
+    });
+    return m ? [m] : [];
+  });
   const behindFeed = (x: (typeof allFeeds)[number]) => {
     if (snapshotDay === null || x.performanceAccountId === null) return false;
     const entry = balances.find(
@@ -248,6 +308,7 @@ async function computeCurrentBalances(db: Db) {
     snapshotDay,
     balances,
     summary: summarizeCurrentBalances(balances),
+    movement: { byFeed: moves, byClose: movementByClose(moves) },
     /** Each feed's data date, for the "as of" detail. */
     feeds: allFeeds.map((x) => {
       const d = feedDates.get(x.id)!;
@@ -258,6 +319,7 @@ async function computeCurrentBalances(db: Db) {
         basis: d.basis,
         reportedAt: d.reportedAt,
         timeKnown: d.timeKnown,
+        /** Not newer than the snapshot: its figure is used. */
         behindSnapshot: behindFeed(x),
       };
     }),

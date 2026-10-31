@@ -15,6 +15,12 @@ function NetWorthCardImpl() {
   const { data, isLoading, error } =
     trpc.networth.computeSummary.useQuery(targeting);
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
+  // The snapshot plus what's changed since — the Current Balances card's
+  // figures (hidden, no error, without the portfolio permission).
+  const { data: sinceSnapshot } =
+    trpc.investments.getLiveSinceSnapshot.useQuery(undefined, {
+      retry: false,
+    });
   const [useMarket, setUseMarket] = useState(true);
   if (isLoading) return <LoadingCard title="Net Worth" />;
   if (error) return <ErrorCard title="Net Worth" message="Failed to load" />;
@@ -64,7 +70,17 @@ function NetWorthCardImpl() {
       href="/networth"
     >
       <div className="mb-1 flex items-center justify-between">
-        <Metric value={formatCurrency(displayNW)} />
+        <div>
+          <Metric value={formatCurrency(displayNW)} />
+          {sinceSnapshot?.estimate && sinceSnapshot.estimate.change !== 0 && (
+            <p className="text-caption text-muted -mt-1">
+              ≈ {formatCurrency(displayNW + sinceSnapshot.estimate.change)} with
+              current balances ({sinceSnapshot.estimate.change >= 0 ? "+" : "−"}
+              {formatCurrency(Math.abs(sinceSnapshot.estimate.change))} since
+              the snapshot)
+            </p>
+          )}
+        </div>
         <button
           onClick={(e) => {
             e.preventDefault();

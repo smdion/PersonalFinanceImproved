@@ -154,9 +154,9 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `investments/current-balances`
 
-| Procedure            | Kind  | Auth                 | Description          |
-| -------------------- | ----- | -------------------- | -------------------- |
-| `getCurrentBalances` | query | `protectedProcedure` | per-account figures. |
+| Procedure            | Kind  | Auth                 | Description                  |
+| -------------------- | ----- | -------------------- | ---------------------------- |
+| `getCurrentBalances` | query | `protectedProcedure` | no holdings or transactions. |
 
 ## `investments/fund-facts`
 

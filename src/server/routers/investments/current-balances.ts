@@ -3,10 +3,26 @@ import { createTRPCRouter, protectedProcedure } from "../../trpc";
 import { loadCurrentBalances } from "./load-current-balances";
 
 export const investmentCurrentBalancesRouter = createTRPCRouter({
-  /** Totals and each feed's dates — no holdings, transactions or
-   *  per-account figures. */
+  /** Totals, each account's figure, each feed's dates and daily moves —
+   *  no holdings or transactions. */
   getCurrentBalances: protectedProcedure.query(async ({ ctx }) => {
-    const { snapshotDate, summary, feeds } = await loadCurrentBalances(ctx.db);
-    return { snapshotDate, summary, feeds };
+    const r = await loadCurrentBalances(ctx.db);
+    return {
+      snapshotDate: r.snapshotDate,
+      summary: r.summary,
+      feeds: r.feeds,
+      movement: r.movement,
+      // Each account's (or part's) figure, as listAccounts already shows
+      // every signed-in viewer — so rows can add up to the total.
+      balances: r.balances.map((b) => ({
+        key: b.key,
+        feedIds: b.feedIds,
+        performanceAccountId: b.performanceAccountId,
+        current: b.current,
+        snapshot: b.snapshot,
+        comparable: b.comparable,
+        noSnapshot: b.noSnapshot,
+      })),
+    };
   }),
 });

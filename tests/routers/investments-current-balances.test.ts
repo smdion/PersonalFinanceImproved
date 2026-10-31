@@ -133,9 +133,24 @@ describe("investments.getCurrentBalances", () => {
     });
   });
 
-  it("the route sends totals and dates, not per-account figures", async () => {
+  it("the route sends figures and dates, never holdings or transactions", async () => {
     const r = await ctx.caller.investments.getCurrentBalances();
-    expect(r).not.toHaveProperty("balances");
+    expect(Object.keys(r).sort()).toEqual([
+      "balances",
+      "feeds",
+      "movement",
+      "snapshotDate",
+      "summary",
+    ]);
+    expect(Object.keys(r.balances[0]!).sort()).toEqual([
+      "comparable",
+      "current",
+      "feedIds",
+      "key",
+      "noSnapshot",
+      "performanceAccountId",
+      "snapshot",
+    ]);
     expect(r.feeds).toHaveLength(2);
   });
 });
