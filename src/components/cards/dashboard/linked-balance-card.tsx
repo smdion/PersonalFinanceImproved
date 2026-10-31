@@ -373,22 +373,22 @@ function LinkedBalanceCardImpl() {
       {/* The total by group: each row's balance and its move into the
           card's close. */}
       {groups.length > 0 && (
-        <div className="border-subtle mt-3 space-y-1 border-t pt-3">
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                setRollupBy(nextRollup);
-              }}
-              className="bg-surface-elevated hover:bg-surface-strong text-muted rounded-full px-2 py-0.5 text-xs transition-colors"
-            >
-              By {ROLLUP_LABELS[nextRollup]}
-            </button>
-          </div>
-          <div className="text-faint grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-1.5 gap-y-1 text-xs">
-            <span />
+        <div className="border-subtle mt-2 border-t pt-2">
+          <div className="text-faint grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-1.5 gap-y-1 text-xs">
+            {/* The rollup switch sits in the header row's free cell. */}
+            <span>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setRollupBy(nextRollup);
+                }}
+                className="bg-surface-elevated hover:bg-surface-strong text-muted rounded-full px-2 py-0.5 text-xs transition-colors"
+              >
+                By {ROLLUP_LABELS[nextRollup]}
+              </button>
+            </span>
             <span className="text-right">Now</span>
             <span className="text-right">
               {target ? sessionLabel(target) : ""}
