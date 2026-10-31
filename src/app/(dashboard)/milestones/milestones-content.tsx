@@ -18,6 +18,11 @@ import {
   type MilestoneSource,
 } from "@/lib/config/milestones";
 import { MilestoneRow } from "@/components/milestones/milestone-row";
+import {
+  BalancedColumns,
+  type ColumnItem,
+} from "@/components/milestones/balanced-columns";
+import { ChipToggle } from "@/components/ui/chip-toggle";
 import { SavingsRateBreakdown } from "@/components/cards/dashboard/savings-rate-breakdown";
 import { FooLadder } from "@/components/milestones/foo-ladder";
 import { MilestonesHero } from "@/components/milestones/milestones-hero";
@@ -28,6 +33,10 @@ import {
   MilestoneChecklistEditor,
   useCustomGoalActions,
 } from "@/components/milestones/milestone-settings";
+
+/** Wins first, then what's coming; what's behind last (Recommendations
+ *  covers what to do about it). */
+const STATUS_RANK = { reached: 0, onTrack: 1, unknown: 2, behind: 3 } as const;
 
 const SOURCES: MilestoneSource[] = [
   "moneyGuy",
@@ -99,126 +108,156 @@ export function MilestonesContent() {
         </Card>
       )}
 
-      <div className="flex flex-wrap items-center gap-1.5 text-xs">
-        <button
-          type="button"
-          onClick={() => setSource(null)}
-          className={`rounded-full border px-2 py-0.5 ${source === null ? "border-blue-500 text-blue-700" : "text-muted"}`}
-        >
-          All
-        </button>
-        {SOURCES.map((s) => (
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-caption text-muted mr-1">Source</span>
+        {[null, ...SOURCES].map((s) => (
           <button
-            key={s}
+            key={s ?? "all"}
             type="button"
-            onClick={() => setSource(source === s ? null : s)}
-            className={`rounded-full border px-2 py-0.5 ${source === s ? "border-blue-500 text-blue-700" : "text-muted"}`}
+            onClick={() => setSource(s === null || source === s ? null : s)}
+            className={`text-caption rounded-full border px-2 py-0.5 whitespace-nowrap transition-colors ${
+              source === s
+                ? "border-blue-600 bg-blue-600 text-white"
+                : "border-default text-muted hover:text-secondary"
+            }`}
           >
-            {MILESTONE_SOURCE_LABELS[s]}
+            {s === null ? "All" : MILESTONE_SOURCE_LABELS[s]}
           </button>
         ))}
-        <label className="text-muted ml-auto flex items-center gap-1">
-          <input
-            type="checkbox"
-            checked={hideUnknown}
-            onChange={(e) => setHideUnknown(e.target.checked)}
+        <span className="ml-auto">
+          <ChipToggle
+            isChecked={hideUnknown}
+            onChange={setHideUnknown}
+            label="Hide not enough data"
           />
-          Hide &ldquo;not enough data&rdquo;
-        </label>
+        </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
-        {MILESTONE_GROUPS.filter((g) => g.key !== "foo").map((g) => {
-          const rows = shown.filter((r) => r.group === g.key);
-          const isGoals = g.key === "custom";
-          const canAddGoal =
-            isGoals && canEdit && (source === null || source === "custom");
-          if (rows.length === 0 && !canAddGoal) return null;
-          return (
-            <Card
-              key={g.key}
-              title={g.title}
-              subtitle={g.blurb}
-              headerRight={
-                g.key === "wealth" ? (
-                  <CheckpointSourcePicker
-                    source={input.checkpointSource}
-                    canEdit={canEdit}
-                  />
-                ) : g.key === "saving" ? (
-                  <SavingsTargetSourcePicker
-                    source={input.savingsTargetSource}
-                    canEdit={canEdit}
-                  />
-                ) : undefined
-              }
-            >
-              {rows.map((r) => (
-                <MilestoneRow
-                  key={r.id}
-                  result={r}
-                  firstReached={firstReachedOf(r.id)}
-                  detail={
-                    (r.id === "savingsRate" || r.id === "pfRetirementRate") &&
-                    input.savings ? (
-                      <SavingsRateBreakdown
-                        savings={input.savings.breakdown}
-                        viewMode="projected"
-                        excludeMatch={!input.savings.matchCounted}
-                        includePortfolio
-                        highIncome={input.savings.highIncome}
-                        highIncomeThreshold={input.savings.highIncomeThreshold}
-                      />
-                    ) : r.id === "saveRaises" && input.raises ? (
-                      <RaiseHistoryTable raises={input.raises} />
-                    ) : r.id === "alwaysBuying" && input.buying ? (
-                      <AlwaysBuyingDetail
-                        months={input.buying.months}
-                        downYears={input.buying.downYears}
-                      />
-                    ) : undefined
-                  }
-                  extra={
-                    isGoals && canEdit ? (
-                      <button
-                        type="button"
-                        className="text-red-600 hover:underline"
-                        disabled={goalActions.isPending}
-                        onClick={() =>
-                          goalActions.remove(r.id.replace(/^custom:/, ""))
-                        }
-                      >
-                        Remove goal
-                      </button>
-                    ) : undefined
-                  }
+      {/* Two columns that end level, whatever the cards hold. */}
+      <BalancedColumns
+        items={MILESTONE_GROUPS.filter((g) => g.key !== "foo")
+          .flatMap<ColumnItem>((g) => {
+            const rows = shown.filter((r) => r.group === g.key);
+            // The journey keeps its order — the sequence is the point.
+            const ordered =
+              g.key === "journey"
+                ? rows
+                : [...rows].sort(
+                    (a, b) => STATUS_RANK[a.status] - STATUS_RANK[b.status],
+                  );
+            const isGoals = g.key === "custom";
+            const canAddGoal =
+              isGoals && canEdit && (source === null || source === "custom");
+            if (rows.length === 0 && !canAddGoal) return [];
+            const picker =
+              g.key === "wealth" ? (
+                <CheckpointSourcePicker
+                  source={input.checkpointSource}
+                  canEdit={canEdit}
                 />
-              ))}
-              {canAddGoal && (
-                <div className="mt-2">
-                  <AddCustomGoal
-                    goals={input.customGoals}
-                    asOfYear={input.asOfYear}
-                  />
-                </div>
-              )}
-            </Card>
-          );
-        })}
-        <Card
-          title="Checklist"
-          subtitle={
-            canEdit
-              ? "Things Ledgr can't see — tick them off as they're done."
-              : "Ticked by an admin."
-          }
-        >
-          <MilestoneChecklistEditor
-            checklist={input.checklist}
-            canEdit={canEdit}
-          />
-        </Card>
-      </div>
+              ) : g.key === "saving" ? (
+                <SavingsTargetSourcePicker
+                  source={input.savingsTargetSource}
+                  canEdit={canEdit}
+                />
+              ) : null;
+            const renderRow = (r: (typeof rows)[number]) => (
+              <MilestoneRow
+                key={r.id}
+                result={r}
+                firstReached={firstReachedOf(r.id)}
+                detail={
+                  (r.id === "savingsRate" || r.id === "pfRetirementRate") &&
+                  input.savings ? (
+                    <SavingsRateBreakdown
+                      savings={input.savings.breakdown}
+                      viewMode="projected"
+                      excludeMatch={!input.savings.matchCounted}
+                      includePortfolio
+                      highIncome={input.savings.highIncome}
+                      highIncomeThreshold={input.savings.highIncomeThreshold}
+                    />
+                  ) : r.id === "saveRaises" && input.raises ? (
+                    <RaiseHistoryTable raises={input.raises} />
+                  ) : r.id === "alwaysBuying" && input.buying ? (
+                    <AlwaysBuyingDetail
+                      months={input.buying.months}
+                      downYears={input.buying.downYears}
+                    />
+                  ) : undefined
+                }
+                extra={
+                  isGoals && canEdit ? (
+                    <button
+                      type="button"
+                      className="text-red-600 hover:underline"
+                      disabled={goalActions.isPending}
+                      onClick={() =>
+                        goalActions.remove(r.id.replace(/^custom:/, ""))
+                      }
+                    >
+                      Remove goal
+                    </button>
+                  ) : undefined
+                }
+              />
+            );
+            const card = (
+              <Card
+                title={g.title}
+                subtitle={g.blurb}
+                headerRight={
+                  picker ? (
+                    <span className="hidden sm:block">{picker}</span>
+                  ) : undefined
+                }
+              >
+                {/* On a phone the rule picker gets its own line. */}
+                {picker && <div className="mb-2 sm:hidden">{picker}</div>}
+                {ordered.map((r) => renderRow(r))}
+                {canAddGoal && (
+                  <div className="mt-2">
+                    <AddCustomGoal
+                      goals={input.customGoals}
+                      asOfYear={input.asOfYear}
+                    />
+                  </div>
+                )}
+              </Card>
+            );
+            return [
+              {
+                key: g.key,
+                node: card,
+                // A first guess: header, rows, the progress bars.
+                weight:
+                  2 +
+                  rows.length * 1.2 +
+                  rows.filter((r) => r.progress !== null).length * 0.3,
+              },
+            ];
+          })
+          .concat({
+            key: "checklist",
+            // A card like the rest: it joins whichever column ends shorter.
+            node: (
+              <Card
+                title="Checklist"
+                subtitle={
+                  canEdit
+                    ? "Things Ledgr can't see — tick them off as they're done."
+                    : "Ticked by an admin."
+                }
+              >
+                <MilestoneChecklistEditor
+                  checklist={input.checklist}
+                  canEdit={canEdit}
+                />
+              </Card>
+            ),
+            weight: 2 + Object.keys(input.checklist).length * 0.6,
+          })}
+      />
     </div>
   );
 }

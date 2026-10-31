@@ -6,7 +6,13 @@ import { FocusLink } from "@/components/ui/focus-link";
 import { useScrollToFocus } from "@/components/ui/focus-target";
 import { FOCUS_HOMES } from "@/lib/config/focus-topics";
 import { useFocusMatch, useFocusReveal } from "@/lib/hooks/use-focus";
-import { Check, CircleDashed, TrendingUp, TriangleAlert } from "lucide-react";
+import {
+  Check,
+  ChevronRight,
+  CircleDashed,
+  TrendingUp,
+  TriangleAlert,
+} from "lucide-react";
 import { ProgressBar } from "@/components/ui/card";
 import { MILESTONE_SOURCE_LABELS } from "@/lib/config/milestones";
 import { MILESTONE_STATUS_LABELS } from "@/lib/config/display-labels";
@@ -19,27 +25,33 @@ export const STATUS_STYLE: Record<
   {
     chip: string;
     icon: string;
+    /** Left edge of the row: status at a glance. */
+    rail: string;
     bar: "success" | "info" | "warning" | "default";
   }
 > = {
   reached: {
     chip: `${STATUS_COLORS.green.bg} ${STATUS_COLORS.green.text}`,
     icon: STATUS_COLORS.green.text,
+    rail: "border-l-green-500",
     bar: "success",
   },
   onTrack: {
     chip: `${STATUS_COLORS.blue.bg} ${STATUS_COLORS.blue.text}`,
     icon: STATUS_COLORS.blue.text,
+    rail: "border-l-blue-500",
     bar: "info",
   },
   behind: {
     chip: `${STATUS_COLORS.amber.bg} ${STATUS_COLORS.amber.text}`,
     icon: STATUS_COLORS.amber.text,
+    rail: "border-l-amber-500",
     bar: "warning",
   },
   unknown: {
     chip: "bg-surface-elevated text-muted",
     icon: "text-faint",
+    rail: "border-l-transparent",
     bar: "default",
   },
 };
@@ -84,58 +96,73 @@ export function MilestoneRow({
       ? result.note
       : (result.note ??
         (result.expectedYear ? `Expected ${result.expectedYear}` : null));
+  // Reached and on-track read from the icon and the line under the value;
+  // only the exceptions carry a word.
+  const showPill = result.status === "behind" || result.status === "unknown";
+  const showBar =
+    result.progress !== null &&
+    result.status !== "reached" &&
+    result.status !== "unknown";
   return (
-    <div ref={rowRef} className="border-subtle border-b last:border-b-0">
+    <div
+      ref={rowRef}
+      className={`border-l-2 pl-2 ${style.rail} ${open ? "bg-surface-sunken rounded-r" : ""}`}
+    >
       <button
         type="button"
-        className="hover:bg-surface-sunken -mx-1 flex w-full items-center gap-2 rounded px-1 py-1.5 text-left"
+        className="hover:bg-surface-sunken grid w-full grid-cols-[1rem_minmax(0,1fr)_auto_1rem] items-start gap-x-2.5 rounded-r py-2 pr-1 text-left"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >
-        <StatusIcon status={result.status} />
-        {/* The title keeps a fixed share of the row and the headline wraps
-            in the rest — a long headline never squeezes the title. */}
-        <span className="flex min-w-0 flex-1 items-center gap-3">
-          <span className="text-primary min-w-0 flex-1 text-sm sm:max-w-[40%] sm:flex-none sm:basis-2/5">
+        <span className="mt-0.5">
+          <StatusIcon status={result.status} />
+        </span>
+        <span className="min-w-0">
+          <span className="text-primary block text-sm font-medium">
             {result.title}
-            <span className="text-faint ml-1.5 text-xs">
-              {MILESTONE_SOURCE_LABELS[result.source]}
-            </span>
             {firstReached?.isNew && (
               <span
-                className={`text-caption ml-1.5 rounded-full px-1.5 py-0.5 font-medium ${STATUS_COLORS.blue.bg} ${STATUS_COLORS.blue.text}`}
+                className={`text-caption ml-1.5 rounded-full bg-purple-100 px-1.5 py-0.5 font-medium text-purple-700`}
               >
                 New
               </span>
             )}
           </span>
-          <span className="hidden min-w-0 flex-1 text-right sm:block">
-            <span className="text-secondary text-sm">{result.headline}</span>
-            {when && (
-              <span className="text-micro text-faint block leading-tight">
-                {when}
-              </span>
-            )}
+          <span className="text-secondary block text-xs tabular-nums">
+            {result.headline}
+          </span>
+          {showBar && (
+            <span className="mt-1 block max-w-xs">
+              <ProgressBar
+                value={result.progress!}
+                variant={style.bar}
+                small
+                inline
+              />
+            </span>
+          )}
+          <span className="text-caption text-muted block">
+            {[when, MILESTONE_SOURCE_LABELS[result.source]]
+              .filter(Boolean)
+              .join(" · ")}
           </span>
         </span>
-        <span
-          className={`text-caption rounded-full px-1.5 py-0.5 font-medium whitespace-nowrap ${style.chip}`}
-        >
-          {MILESTONE_STATUS_LABELS[result.status]}
+        <span className="mt-0.5">
+          {showPill && (
+            <span
+              className={`text-caption rounded-full px-1.5 py-0.5 font-medium whitespace-nowrap ${style.chip}`}
+            >
+              {MILESTONE_STATUS_LABELS[result.status]}
+            </span>
+          )}
         </span>
-        <span className="text-faint text-xs" aria-hidden>
-          {open ? "▾" : "▸"}
-        </span>
+        <ChevronRight
+          className={`text-muted mt-0.5 h-4 w-4 transition-transform ${open ? "rotate-90" : ""}`}
+          aria-hidden
+        />
       </button>
       {open && (
-        <div className="text-secondary space-y-1.5 pb-3 pl-6 text-xs">
-          <p className="sm:hidden">
-            <span className="text-primary">{result.headline}</span>
-            {when ? ` · ${when}` : ""}
-          </p>
-          {result.progress !== null && result.status !== "reached" && (
-            <ProgressBar value={result.progress} variant={style.bar} small />
-          )}
+        <div className="text-secondary space-y-1.5 pr-2 pb-3 pl-7 text-xs">
           <p>{result.rule}</p>
           {firstReached && (
             <p className="text-muted">
