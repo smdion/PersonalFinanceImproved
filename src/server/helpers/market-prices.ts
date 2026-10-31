@@ -1,11 +1,16 @@
 /**
  * Market prices from Tiingo, fetched on demand and kept in memory — a
- * handful of requests a day, far inside the free tier: month-end
- * total-return series for benchmarks (12 h) and today's close for valuing
- * holdings (6 h).
+ * few requests per held fund a day, inside the free tier: month-end
+ * total-return series for benchmarks (12 h), today's close for valuing
+ * holdings (6 h) and recent daily closes for dating and rolling forward
+ * linked balances (6 h).
  */
 import "server-only";
-import { getLatestClose, getMonthlyPrices } from "@/lib/tiingo/client";
+import {
+  getDailyCloses,
+  getLatestClose,
+  getMonthlyPrices,
+} from "@/lib/tiingo/client";
 import { getTiingoApiKey } from "@/lib/tiingo/connection";
 import { log } from "@/lib/logger";
 
@@ -70,4 +75,54 @@ export async function getLatestMarketClose(
     closeCache.set(ticker, { at: Date.now(), close: null });
     return null;
   }
+}
+
+const DAILY_FAILURE_TTL_MS = 15 * 60 * 1000;
+type DailySeries = Map<string, { close: number; adjClose: number }>;
+const dailyCache = new Map<
+  string,
+  {
+    at: number;
+    ttl: number;
+    closes: Promise<DailySeries | null>;
+  }
+>();
+
+/**
+ * Day → close since the start of `from`'s month, or null when Tiingo isn't
+ * connected, doesn't know the ticker, or failed. Whole months, so a moving
+ * `from` doesn't refetch, and one shared request per ticker however many
+ * callers ask at once. A failure is retried after a few minutes.
+ */
+export async function getDailyMarketCloses(
+  db: Db,
+  ticker: string,
+  from: string,
+): Promise<DailySeries | null> {
+  const start = `${from.slice(0, 7)}-01`;
+  const key = `${ticker}:${start}`;
+  const hit = dailyCache.get(key);
+  if (hit && Date.now() - hit.at < hit.ttl) return hit.closes;
+  const apiKey = await getTiingoApiKey(db);
+  if (!apiKey) return null;
+  const entry = {
+    at: Date.now(),
+    ttl: CLOSE_TTL_MS,
+    closes: getDailyCloses(apiKey, ticker, start).then(
+      (rows): DailySeries | null =>
+        new Map(
+          rows.map((r) => [r.date, { close: r.close, adjClose: r.adjClose }]),
+        ),
+      (err: unknown) => {
+        log("warn", "daily_closes_failed", {
+          ticker,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        entry.ttl = DAILY_FAILURE_TTL_MS;
+        return null;
+      },
+    ),
+  };
+  dailyCache.set(key, entry);
+  return entry.closes;
 }

@@ -37,6 +37,9 @@ export type InsightInput = {
   snapshotDate: string | null;
   /** Stored transactions reach back to the snapshot. */
   snapshotCovered: boolean;
+  /** A feed's data is older than the snapshot: the gap between them is
+   *  lag, not a change. */
+  behindSnapshot?: boolean;
   /** First day of the deposit check's window. */
   depositsSince: string;
   /** A feed sent a transaction within the recent window. */
@@ -65,6 +68,7 @@ export function accountInsight(a: InsightInput) {
   // does (every part linked, nothing outside a part).
   const comparable =
     a.snapshotDate !== null &&
+    a.behindSnapshot !== true &&
     liveCoversAccount(
       a.parts.map((p) => p.key),
       a.feeds.map((f) => f.subKey),

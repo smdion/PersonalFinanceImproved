@@ -223,65 +223,142 @@ function DriftBadge({ drift, balance }: { drift: number; balance: number }) {
 const shortDay = (day: string) =>
   formatDate(day, "medium").replace(`, ${new Date().getFullYear()}`, "");
 
+/** "Oct 29, 9:57 PM" in the household's zone. */
+const reportTime = (at: Date | string) =>
+  new Date(at).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+
+type CurrentFeed =
+  RouterOutputs["investments"]["getCurrentBalances"]["feeds"][number];
+
+const BASIS_TEXT: Record<CurrentFeed["basis"], string> = {
+  proven: "close",
+  learned: "close (est.)",
+  assumed: "close (assumed)",
+  reported: "",
+};
+
+/** One line per feed: the market close its data is from, then the report. */
+function feedDateLine(f: CurrentFeed): string {
+  const reported = f.timeKnown
+    ? `reported ${reportTime(f.reportedAt)}`
+    : `no time reported; last seen ${reportTime(f.reportedAt)}`;
+  if (f.basis === "reported")
+    return `${f.institution} — ${f.timeKnown ? reportTime(f.reportedAt) : reported}`;
+  return `${f.institution} — ${shortDay(f.dataDay)} ${BASIS_TEXT[f.basis]}, ${reported}`;
+}
+
 function BalanceDatesFooter({
   accounts,
+  feeds,
   accountCount,
   lastSyncedAt,
 }: {
   accounts: SimplefinAccountListItem[] | undefined;
+  feeds: readonly CurrentFeed[] | undefined;
   accountCount: number;
   lastSyncedAt: Date | string | null;
 }) {
   const countLabel = `${accountCount} account${accountCount === 1 ? "" : "s"}`;
-  const summary = summarizeBalanceDates(
-    (accounts ?? [])
-      .filter((a) => a.isIncluded)
-      .map((a) => ({
-        institution: a.orgName,
-        reportedAt: new Date(a.lastBalanceDate ?? a.lastSeenAt),
-      })),
+  const market = (feeds ?? []).filter(
+    (f) => f.basis !== "reported" && f.timeKnown,
   );
-  if (!summary.oldest || !summary.newest) {
+  if (market.length === 0) {
+    const summary = summarizeBalanceDates(
+      (accounts ?? [])
+        .filter((a) => a.isIncluded)
+        .map((a) => ({
+          institution: a.orgName,
+          reportedAt: new Date(a.lastBalanceDate ?? a.lastSeenAt),
+        })),
+    );
     return (
       <p className="text-caption text-faint mt-1">
-        {lastSyncedAt
-          ? `As of ${formatDate(lastSyncedAt.toString(), "medium")}`
-          : "Not yet synced"}
+        {summary.newest
+          ? `Reported through ${shortDay(summary.newest)}`
+          : lastSyncedAt
+            ? `As of ${formatDate(lastSyncedAt.toString(), "medium")}`
+            : "Not yet synced"}
         {" · "}
         {countLabel}
       </p>
     );
   }
+  const days = market.map((f) => f.dataDay).sort();
+  const oldest = days[0]!;
+  const newest = days[days.length - 1]!;
   const range =
-    summary.oldest === summary.newest
-      ? shortDay(summary.oldest)
-      : `${shortDay(summary.oldest)}–${shortDay(summary.newest)}`;
-  const behind = summary.behind;
+    oldest === newest
+      ? shortDay(oldest)
+      : `${shortDay(oldest)}–${shortDay(newest)}`;
+  const anyEstimate = market.some((f) => f.basis !== "proven");
+  const lines = [...new Set((feeds ?? []).map(feedDateLine))];
+  const behind = [
+    ...new Set(
+      (feeds ?? []).filter((f) => f.behindSnapshot).map((f) => f.institution),
+    ),
+  ];
   return (
     <div className="mt-1">
       <Tooltip
         side="top"
-        lines={[
-          "Balances as each institution reported them:",
-          ...summary.institutions.map(
-            (i) =>
-              `${i.institution} — ${shortDay(i.asOf)}${i.tradingDaysBehind > 0 ? ` (${i.tradingDaysBehind} market day${i.tradingDaysBehind === 1 ? "" : "s"} behind)` : ""}`,
-          ),
-        ]}
+        lines={["The market close each balance is really from:", ...lines]}
       >
         <p className="text-caption text-faint w-fit cursor-help underline decoration-dotted underline-offset-2">
-          Balances as of {range} · {countLabel}
+          Data from the {range} close{oldest === newest ? "" : "s"}
+          {anyEstimate ? " (est.)" : ""} · {countLabel}
         </p>
       </Tooltip>
       {behind.length > 0 && (
         <p className="text-caption text-amber-600">
-          {behind.length === 1
-            ? `${behind[0]!.institution} is ${behind[0]!.tradingDaysBehind} market day${behind[0]!.tradingDaysBehind === 1 ? "" : "s"} behind`
-            : `${behind.map((b) => b.institution).join(" and ")} are behind`}
+          {behind.join(" and ")} {behind.length === 1 ? "is" : "are"} behind
+          your snapshot
         </p>
       )}
     </div>
   );
+}
+
+function snapshotDateLabel(
+  accounts: SimplefinAccountListItem[] | undefined,
+): string {
+  const date = accounts?.find((a) => a.snapshotDate)?.snapshotDate;
+  return date ? formatDate(date, "medium") : "your snapshot";
+}
+
+type CurrentSummary =
+  RouterOutputs["investments"]["getCurrentBalances"]["summary"];
+
+/** Under the total: which day it's estimated to, or that it's as reported. */
+function currentLabel(s: CurrentSummary): string | undefined {
+  if (!s.estimatedTo) return undefined;
+  return `${s.estimateIsPartial ? "Partly estimated" : "Estimated"} to the ${shortDay(s.estimatedTo)} close`;
+}
+
+/** How the total relates to what institutions report. */
+function SourceLine({
+  summary: s,
+  snapshotLabel,
+}: {
+  summary: CurrentSummary;
+  snapshotLabel: string;
+}) {
+  const parts = [
+    ...(s.total !== s.reportedTotal
+      ? [`Institutions report ${formatCurrency(s.reportedTotal)}`]
+      : []),
+    ...(s.behindCount > 0
+      ? [
+          `${s.behindCount} balance${s.behindCount === 1 ? "" : "s"} from your ${snapshotLabel} snapshot`,
+        ]
+      : []),
+  ];
+  if (parts.length === 0) return null;
+  return <p className="text-caption text-muted mb-2">{parts.join(" · ")}</p>;
 }
 
 function LinkedBalanceCardImpl() {
@@ -313,19 +390,23 @@ function LinkedBalanceCardImpl() {
     { since: flowsSince ?? "" },
     { enabled: isConnected && canSeeActivity && !!flowsSince },
   );
+  const { data: current } = trpc.investments.getCurrentBalances.useQuery(
+    undefined,
+    { enabled: isConnected },
+  );
   const { data: recent } = trpc.investments.getRecentChanges.useQuery(
     undefined,
     { enabled: isConnected && canSeeActivity },
   );
 
-  if (statusLoading) return <LoadingCard title="Live Balance" />;
+  if (statusLoading) return <LoadingCard title="Current Balances" />;
   // No SimpleFIN connection configured — omit the card entirely rather
   // than showing an empty/setup-nag widget. Setup lives in Settings.
   if (!isConnected) return null;
-  if (historyLoading) return <LoadingCard title="Live Balance" />;
+  if (historyLoading) return <LoadingCard title="Current Balances" />;
   if (!history || history.length === 0) {
     return (
-      <Card title="Live Balance" href="/settings">
+      <Card title="Current Balances" href="/settings">
         <p className="text-faint text-sm">
           Connected — the first daily balance will appear after the next sync.
         </p>
@@ -338,18 +419,35 @@ function LinkedBalanceCardImpl() {
   if (!latest) return null;
   const delta = previous ? latest.totalBalance - previous.totalBalance : null;
 
+  // Only accounts caught up to the snapshot compare with it: a feed behind
+  // it shows lag, not money that moved.
+  const behindPerf = new Set(
+    (accounts ?? [])
+      .filter((a) =>
+        current?.feeds.some((f) => f.id === a.id && f.behindSnapshot),
+      )
+      .map((a) => a.linkedPerformanceAccountId),
+  );
+  const comparedAccounts = accounts?.map((a) =>
+    behindPerf.has(a.linkedPerformanceAccountId) ? { ...a, change: null } : a,
+  );
   const accountTypeGroups = accounts
     ? rollupBy === "category"
-      ? summarizeByAccountType(accounts)
+      ? summarizeByAccountType(comparedAccounts!)
       : rollupBy === "institution"
-        ? summarizeByInstitution(accounts)
+        ? summarizeByInstitution(comparedAccounts!)
         : summarizeByTrackedAccount(
-            accounts,
+            comparedAccounts!,
             new Map((matchableAccounts ?? []).map((m) => [m.id, m.label])),
           )
     : [];
   const nextRollup = ROLLUPS[(ROLLUPS.indexOf(rollupBy) + 1) % ROLLUPS.length]!;
-  const drift = accounts ? summarizeDrift(accounts) : null;
+  const drift = comparedAccounts ? summarizeDrift(comparedAccounts) : null;
+  const summary = current?.summary;
+  const allBehind =
+    summary !== undefined &&
+    summary.comparedCount === 0 &&
+    summary.behindCount > 0;
   const snapshotDate = accounts?.find((a) => a.snapshotDate)?.snapshotDate;
   const snapshotLabel = snapshotDate
     ? formatDate(snapshotDate, "medium")
@@ -386,23 +484,38 @@ function LinkedBalanceCardImpl() {
     <Card
       title={
         <>
-          Live Balance
-          <HelpTip text="Daily total of accounts linked via SimpleFIN Bridge. Updates once a day and is separate from the manually-curated Net Worth figure above. Balances reflect what each institution last reported to SimpleFIN, which can itself lag your bank by a day or more — this is not a real-time figure." />
+          Current Balances
+          <HelpTip text="The most accurate figure Ledgr has for each linked account: what the institution reported or, when your snapshot is newer, your snapshot — then moved to the latest market close where the holdings can be priced (an estimate; never saved). Institutions report a day or more behind, so each account's date is the market close its data really is from." />
         </>
       }
       href="/settings"
     >
       <Metric
-        value={formatCurrency(latest.totalBalance)}
+        value={formatCurrency(summary?.total ?? latest.totalBalance)}
+        label={summary ? currentLabel(summary) : undefined}
         trend={
           delta !== null && delta !== 0
             ? {
                 isPositive: delta > 0,
-                value: `${formatCurrency(Math.abs(delta))} vs. yesterday`,
+                value: `${formatCurrency(Math.abs(delta))} reported vs. yesterday`,
               }
             : undefined
         }
       />
+
+      {summary && (
+        <SourceLine
+          summary={summary}
+          snapshotLabel={snapshotDateLabel(accounts)}
+        />
+      )}
+
+      {allBehind && (
+        <p className="text-caption text-muted mb-2">
+          Your snapshot is newer than these accounts&apos; data. The comparison
+          resumes when they catch up.
+        </p>
+      )}
 
       {/* Drift is the headline of the card body — how much your linked
           accounts have moved since your last manual snapshot, not another
@@ -433,24 +546,27 @@ function LinkedBalanceCardImpl() {
       {/* What you added vs what markets did — only when stored transactions
           reach back to the snapshot, and marked estimated while rows still
           await review. */}
-      {drift && drift.groupCount > 0 && flows?.covered && (
-        <p className="text-caption text-muted mb-1">
-          {flows.added >= 0 ? "You added " : "You took out "}
-          {formatCurrency(Math.abs(flows.added))} · markets{" "}
-          {drift.totalDrift - flows.added >= 0 ? "+" : "-"}
-          {formatCurrency(
-            Math.abs(roundToCents(drift.totalDrift - flows.added)),
-          )}
-          {flows.uncertainCount > 0 && (
-            <span className="text-faint">
-              {" "}
-              (estimated — {flows.uncertainCount}{" "}
-              {flows.uncertainCount === 1 ? "transaction" : "transactions"}{" "}
-              Ledgr wasn&apos;t sure about)
-            </span>
-          )}
-        </p>
-      )}
+      {drift &&
+        drift.groupCount > 0 &&
+        flows?.covered &&
+        behindPerf.size === 0 && (
+          <p className="text-caption text-muted mb-1">
+            {flows.added >= 0 ? "You added " : "You took out "}
+            {formatCurrency(Math.abs(flows.added))} · markets{" "}
+            {drift.totalDrift - flows.added >= 0 ? "+" : "-"}
+            {formatCurrency(
+              Math.abs(roundToCents(drift.totalDrift - flows.added)),
+            )}
+            {flows.uncertainCount > 0 && (
+              <span className="text-faint">
+                {" "}
+                (estimated — {flows.uncertainCount}{" "}
+                {flows.uncertainCount === 1 ? "transaction" : "transactions"}{" "}
+                Ledgr wasn&apos;t sure about)
+              </span>
+            )}
+          </p>
+        )}
 
       {recent && <RecentChanges data={recent} />}
 
@@ -521,6 +637,7 @@ function LinkedBalanceCardImpl() {
           institution; amber only when one falls a trading day behind. */}
       <BalanceDatesFooter
         accounts={accounts}
+        feeds={current?.feeds}
         accountCount={latest.accountCount}
         lastSyncedAt={status?.lastSyncedAt ?? null}
       />

@@ -95,7 +95,13 @@ export const countedFeed = and(
 );
 
 /** A counted SimpleFIN feed: its link, balance, and the day the balance is from. */
-type ContextFeed = FeedAccount & { balanceDay: string | null };
+type ContextFeed = FeedAccount & {
+  balanceDay: string | null;
+  /** The institution's as-of time for the balance; null when not reported. */
+  reportedAt: Date | null;
+  /** When Ledgr last saw the account (standing in for a missing as-of). */
+  lastSeenAt: Date;
+};
 
 /** What every investments view starts from — loaded once, in one place. */
 type FeedContext = {
@@ -120,6 +126,7 @@ export async function loadFeedContext(db: Db): Promise<FeedContext> {
         subKey: f.linkedSubKey,
         balance: f.lastBalance,
         balanceDate: f.lastBalanceDate,
+        lastSeenAt: f.lastSeenAt,
       })
       .from(f)
       .where(countedFeed),
@@ -144,6 +151,8 @@ export async function loadFeedContext(db: Db): Promise<FeedContext> {
       : null,
     balance: toNumber(r.balance),
     balanceDay: r.balanceDate ? utcDayOf(r.balanceDate) : null,
+    reportedAt: r.balanceDate,
+    lastSeenAt: r.lastSeenAt,
   }));
   const { unplaced } = suggestSnapshotAmounts(
     subs,
@@ -444,6 +453,7 @@ export async function loadLatestHoldings(db: Db) {
       simplefinAccountId: h.simplefinAccountId,
       securityId: h.securityId,
       asOf: h.asOf,
+      balanceDate: h.balanceDate,
       shares: h.shares,
       reportedMarketValue: h.reportedMarketValue,
       avgCostPerShare: h.avgCostPerShare,

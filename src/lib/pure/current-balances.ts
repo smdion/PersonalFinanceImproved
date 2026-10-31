@@ -1,0 +1,282 @@
+/**
+ * The most accurate balance Ledgr can give each tracked account, part by
+ * part (a part's money is never pooled with another's), from the newest of
+ * what it knows:
+ *
+ * - the feed, when its data is at least as new as the snapshot;
+ * - the snapshot, when it's newer — a feed behind it says nothing about
+ *   money moving, only that the feed hasn't caught up;
+ * - either one rolled forward to the latest close by the held shares'
+ *   total-return moves, marked as an estimate. Holdings without a price
+ *   stay at the base figure, and the roll says it's partial.
+ *
+ * Only accounts whose feed has caught up to the snapshot are compared with
+ * it. Nothing here is ever written to a snapshot or to Performance.
+ */
+import {
+  easternDay,
+  tradingDayOnOrBefore,
+  valuationDateFor,
+} from "./market-calendar";
+
+export type BalanceSource = "reported" | "snapshot";
+
+/** A fund's close on a day: `close` as quoted, `adjClose` with splits and
+ *  distributions in (what a holder's money actually did). */
+export type DailyClose = { close: number; adjClose: number };
+
+export type BalancePosition = {
+  shares: number;
+  closes: ReadonlyMap<string, DailyClose> | null;
+  /** The day its feed's balance already includes it through. */
+  feedDay: string | null;
+};
+
+export type CurrentBalanceInput = {
+  key: string;
+  performanceAccountId: number | null;
+  label: string;
+  /** The feeds' balance; null with no feed covering this money. */
+  reported: number | null;
+  /** The oldest day those feeds' data reflects; null when it can't be told. */
+  reportedDay: string | null;
+  snapshot: number;
+  /** The day this entry's snapshot figure reflects, when it's known to be
+   *  older than the snapshot's own (a figure taken from a feed). */
+  snapshotDay?: string | null;
+  /** Money with nothing to compare against: no part of the snapshot holds
+   *  it. Counts in the total, never as a change. */
+  noSnapshot?: boolean;
+  positions: readonly BalancePosition[];
+};
+
+export type CurrentBalance = {
+  key: string;
+  performanceAccountId: number | null;
+  label: string;
+  source: BalanceSource;
+  noSnapshot: boolean;
+  snapshot: number;
+  /** What the feeds say, as reported; null with no feed. */
+  reported: number | null;
+  /** The figure it starts from, and that figure's day. */
+  base: number;
+  baseDay: string;
+  /** Price moves since the base; 0 when none could be priced. */
+  rolledForward: number;
+  /** Day the rolled prices are from; null when not rolled. */
+  rolledTo: string | null;
+  /** Some holdings had no price to roll with. */
+  partialRoll: boolean;
+  current: number;
+  /** Caught up to the snapshot: its change since then means something. */
+  comparable: boolean;
+};
+
+const cents = (n: number) => Math.round(n * 100) / 100;
+
+function rollForward(
+  positions: readonly BalancePosition[],
+  fromOf: (p: BalancePosition) => string | null,
+): { amount: number; to: string | null; partial: boolean } {
+  let amount = 0;
+  let to: string | null = null;
+  let partial = false;
+  for (const p of positions) {
+    const from = fromOf(p);
+    const start = from ? p.closes?.get(from) : undefined;
+    const days = p.closes ? [...p.closes.keys()].sort() : [];
+    const latest = days.at(-1);
+    if (!start || !latest || !p.closes) {
+      partial = true;
+      continue;
+    }
+    if (latest <= from!) continue;
+    const end = p.closes.get(latest)!;
+    amount += p.shares * start.close * (end.adjClose / start.adjClose - 1);
+    if (to === null || latest > to) to = latest;
+  }
+  return { amount: cents(amount), to, partial: partial && to !== null };
+}
+
+export function currentBalance(
+  a: CurrentBalanceInput,
+  snapshotDay: string,
+): CurrentBalance {
+  const entrySnapshotDay = a.snapshotDay ?? snapshotDay;
+  const noSnapshot = a.noSnapshot === true;
+  const caughtUp =
+    a.reported !== null &&
+    (noSnapshot ||
+      (a.reportedDay !== null && a.reportedDay >= entrySnapshotDay));
+  const base = caughtUp ? a.reported! : a.snapshot;
+  const baseDay = caughtUp ? (a.reportedDay ?? "") : entrySnapshotDay;
+  // Each feed's balance already holds its own days; a snapshot, its day.
+  const rolled = rollForward(a.positions, (p) =>
+    caughtUp ? p.feedDay : entrySnapshotDay,
+  );
+  return {
+    key: a.key,
+    performanceAccountId: a.performanceAccountId,
+    label: a.label,
+    source: caughtUp ? "reported" : "snapshot",
+    noSnapshot,
+    snapshot: a.snapshot,
+    reported: a.reported,
+    base,
+    baseDay,
+    rolledForward: rolled.amount,
+    rolledTo: rolled.to,
+    partialRoll: rolled.partial,
+    current: cents(base + rolled.amount),
+    comparable: caughtUp && !noSnapshot,
+  };
+}
+
+/** Each entry's figure less what the snapshot holds of it — money the
+ *  snapshot never held isn't a change. */
+export function changeSinceSnapshot(balances: readonly CurrentBalance[]) {
+  return cents(
+    balances
+      .filter((b) => !b.noSnapshot)
+      .reduce((t, b) => t + (b.current - b.snapshot), 0),
+  );
+}
+
+/**
+ * The market day a snapshot's figures reflect. Saved on its own date, the
+ * save time decides (as for a feed's report: before the close, the prior
+ * session). Backdated, only the date is known: that day's close. Never a
+ * close later than the save.
+ */
+export function snapshotDataDay(snapshotDate: string, savedAt: Date): string {
+  const dated = tradingDayOnOrBefore(snapshotDate);
+  const saved = valuationDateFor(savedAt);
+  if (easternDay(savedAt) === snapshotDate) return saved;
+  return saved < dated ? saved : dated;
+}
+
+export function summarizeCurrentBalances(balances: readonly CurrentBalance[]): {
+  total: number;
+  reportedTotal: number;
+  /** Balances taken from the snapshot though a feed covers them. */
+  behindCount: number;
+  estimatedCount: number;
+  comparedCount: number;
+  /** Latest close anything was rolled to; null when nothing was. */
+  estimatedTo: string | null;
+  /** Some balances didn't reach `estimatedTo`, or only partly did. */
+  estimateIsPartial: boolean;
+} {
+  const rolled = balances.filter((b) => b.rolledTo !== null);
+  const estimatedTo =
+    rolled
+      .map((b) => b.rolledTo!)
+      .sort()
+      .at(-1) ?? null;
+  return {
+    total: cents(balances.reduce((t, b) => t + b.current, 0)),
+    reportedTotal: cents(balances.reduce((t, b) => t + (b.reported ?? 0), 0)),
+    behindCount: balances.filter(
+      (b) => b.source === "snapshot" && b.reported !== null,
+    ).length,
+    estimatedCount: rolled.length,
+    comparedCount: balances.filter((b) => b.comparable).length,
+    estimatedTo,
+    estimateIsPartial: rolled.some(
+      (b) => b.partialRoll || b.rolledTo !== estimatedTo,
+    ),
+  };
+}
+
+export type BalanceFeed = {
+  id: number;
+  performanceAccountId: number | null;
+  subKey: string | null;
+  balance: number;
+  /** The day its data reflects; null when it can't be told. */
+  dataDay: string | null;
+};
+
+type BalancePart = {
+  key: string;
+  performanceAccountId: number;
+  label: string;
+  amount: number;
+};
+
+/**
+ * Pair feeds with the snapshot's parts. A feed linked to a part compares
+ * with that part. A whole-account feed, or one whose part is gone (it
+ * counts for the whole account until it's relinked), compares with the
+ * whole account. A feed with no tracked account or no parts has nothing to
+ * compare with: it counts, unchanged.
+ */
+export function pairFeedsWithParts(args: {
+  feeds: readonly BalanceFeed[];
+  parts: readonly BalancePart[];
+  accountName: (performanceAccountId: number) => string;
+  feedName: (feedId: number) => string;
+  positionsOf: (feedIds: readonly number[]) => BalancePosition[];
+}): CurrentBalanceInput[] {
+  const { feeds, parts, accountName, feedName, positionsOf } = args;
+  const total = (list: readonly BalanceFeed[]) =>
+    list.reduce((t, f) => t + f.balance, 0);
+  const oldest = (list: readonly BalanceFeed[]) =>
+    list.some((f) => f.dataDay === null)
+      ? null
+      : (list.map((f) => f.dataDay!).sort()[0] ?? null);
+  const ids = (list: readonly BalanceFeed[]) => list.map((f) => f.id);
+  const out: CurrentBalanceInput[] = [];
+  for (const f of feeds.filter((x) => x.performanceAccountId === null)) {
+    out.push({
+      key: `feed:${f.id}`,
+      performanceAccountId: null,
+      label: feedName(f.id),
+      reported: f.balance,
+      reportedDay: f.dataDay,
+      snapshot: 0,
+      noSnapshot: true,
+      positions: positionsOf([f.id]),
+    });
+  }
+  const accounts = new Set(
+    feeds
+      .map((f) => f.performanceAccountId)
+      .filter((id): id is number => id !== null),
+  );
+  for (const id of accounts) {
+    const mine = feeds.filter((f) => f.performanceAccountId === id);
+    const myParts = parts.filter((p) => p.performanceAccountId === id);
+    const keys = new Set(myParts.map((p) => p.key));
+    const wholeAccount =
+      myParts.length === 0 ||
+      mine.some((f) => f.subKey === null || !keys.has(f.subKey));
+    if (wholeAccount) {
+      out.push({
+        key: `account:${id}`,
+        performanceAccountId: id,
+        label: accountName(id),
+        reported: total(mine),
+        reportedDay: oldest(mine),
+        snapshot: myParts.reduce((t, p) => t + p.amount, 0),
+        noSnapshot: myParts.length === 0,
+        positions: positionsOf(ids(mine)),
+      });
+      continue;
+    }
+    for (const part of myParts) {
+      const linked = mine.filter((f) => f.subKey === part.key);
+      out.push({
+        key: part.key,
+        performanceAccountId: id,
+        label: `${accountName(id)} — ${part.label}`,
+        reported: linked.length > 0 ? total(linked) : null,
+        reportedDay: linked.length > 0 ? oldest(linked) : null,
+        snapshot: part.amount,
+        positions: positionsOf(ids(linked)),
+      });
+    }
+  }
+  return out;
+}

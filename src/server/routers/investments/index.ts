@@ -10,6 +10,7 @@ import { investmentAccountInsightsRouter } from "./account-insights";
 import { investmentTaxInputsRouter } from "./tax-inputs";
 import { investmentHoldingPeriodsRouter } from "./holding-periods";
 import { investmentBuyingRouter } from "./buying";
+import { investmentCurrentBalancesRouter } from "./current-balances";
 
 export const investmentsRouter = mergeRouters(
   investmentHealthRouter,
@@ -21,4 +22,5 @@ export const investmentsRouter = mergeRouters(
   investmentTaxInputsRouter,
   investmentHoldingPeriodsRouter,
   investmentBuyingRouter,
+  investmentCurrentBalancesRouter,
 );

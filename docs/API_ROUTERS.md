@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**389 procedures across 55 routers.**
+**390 procedures across 56 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -151,6 +151,12 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | Procedure       | Kind  | Auth                 | Description                                                                                                 |
 | --------------- | ----- | -------------------- | ----------------------------------------------------------------------------------------------------------- |
 | `getComparison` | query | `portfolioProcedure` | Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains). |
+
+## `investments/current-balances`
+
+| Procedure            | Kind  | Auth                 | Description          |
+| -------------------- | ----- | -------------------- | -------------------- |
+| `getCurrentBalances` | query | `protectedProcedure` | per-account figures. |
 
 ## `investments/fund-facts`
 

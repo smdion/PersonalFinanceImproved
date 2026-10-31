@@ -312,7 +312,7 @@ export function AccountLiveSection({
           </p>
         ) : (
           <p className="text-muted">
-            Live balance{" "}
+            Reported balance{" "}
             <span className="text-primary font-medium">
               {formatCurrency(insight.live?.total ?? 0)}
             </span>
