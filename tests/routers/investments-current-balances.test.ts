@@ -138,6 +138,7 @@ describe("investments.getCurrentBalances", () => {
     expect(Object.keys(r).sort()).toEqual([
       "balances",
       "feeds",
+      "lastFinalized",
       "movement",
       "snapshotDate",
       "summary",

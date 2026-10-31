@@ -1,5 +1,8 @@
 /** The Current Balances card's figures (load-current-balances.ts). */
+import { and, desc, eq } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
+import * as schema from "@/lib/db/schema";
+import { PERF_CATEGORY_PORTFOLIO } from "@/lib/config/display-labels";
 import { loadCurrentBalances } from "./load-current-balances";
 
 export const investmentCurrentBalancesRouter = createTRPCRouter({
@@ -10,7 +13,20 @@ export const investmentCurrentBalancesRouter = createTRPCRouter({
     const moveOf = new Map(
       r.entryMoves.map((e) => [e.key, e.moves[0]?.move ?? null]),
     );
+    // The last finalized year's total, for "where the plan expected you".
+    const a = schema.annualPerformance;
+    const [finalized] = await ctx.db
+      .select({ year: a.year, balance: a.endingBalance })
+      .from(a)
+      .where(
+        and(eq(a.category, PERF_CATEGORY_PORTFOLIO), eq(a.isFinalized, true)),
+      )
+      .orderBy(desc(a.year))
+      .limit(1);
     return {
+      lastFinalized: finalized
+        ? { year: finalized.year, balance: Number(finalized.balance) }
+        : null,
       snapshotDate: r.snapshotDate,
       /** The close every figure is brought to. */
       target: r.target,
