@@ -5,6 +5,7 @@ import {
   recommendationsFromMilestones,
   type Recommendation,
 } from "@/lib/pure/recommendations";
+import { retirementValue } from "@/lib/pure/recommendations";
 import { makeInput, makeSavings } from "../fixtures/milestones";
 
 const recs = (overrides: Parameters<typeof makeInput>[0] = {}) =>
@@ -153,5 +154,32 @@ describe("recommendations that defer to a more precise one", () => {
         investedAssets: 300_000,
       })[0]!.context,
     ).not.toMatch(/Goldilocks/);
+  });
+});
+
+describe("retirementValue", () => {
+  const impact = (kind: "perYear" | "oneTime", amount: number) => ({
+    impact: { kind, amount },
+  });
+
+  it("grows a yearly amount at the plan's rates, year by year", () => {
+    expect(retirementValue(impact("perYear", 100), [0.1, 0.1])).toBeCloseTo(
+      210,
+    );
+  });
+
+  it("a yearly saving counts too, without an impact", () => {
+    expect(
+      retirementValue({ impact: null, yearlySaving: 100 }, [0.1, 0.1]),
+    ).toBeCloseTo(210);
+  });
+
+  it("a one-time amount is money moved, not gained: no value", () => {
+    expect(retirementValue(impact("oneTime", 108_000), [0.1])).toBeNull();
+  });
+
+  it("nothing to grow, or nothing to grow it with: no value", () => {
+    expect(retirementValue({ impact: null }, [0.1])).toBeNull();
+    expect(retirementValue(impact("perYear", 100), [])).toBeNull();
   });
 });

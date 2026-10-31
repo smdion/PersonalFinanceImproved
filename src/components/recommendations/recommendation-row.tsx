@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { Clock, TriangleAlert } from "lucide-react";
 import { MILESTONE_SOURCE_LABELS } from "@/lib/config/milestones";
 import { STATUS_COLORS } from "@/lib/utils/colors";
-import { maskAmountsInText } from "@/lib/utils/format";
+import { formatCurrency, maskAmountsInText } from "@/lib/utils/format";
 import type {
   Recommendation,
   RecommendationUrgency,
@@ -46,6 +46,7 @@ export function RecommendationRow({
   actions,
   detail,
   fromMilestone,
+  retirement,
 }: {
   recommendation: Recommendation;
   /** Extra controls (dismiss / snooze / restore), quiet until hovered. */
@@ -54,6 +55,9 @@ export function RecommendationRow({
   detail?: ReactNode;
   /** The milestone it comes from, linked back to it. */
   fromMilestone?: { id: string; title: string } | null;
+  /** What it's worth by retirement at the plan's returns, when it has a
+   *  yearly amount. */
+  retirement?: { amount: number; year: number } | null;
 }) {
   const sourceLabel =
     r.source === "ledgr" ? "Ledgr" : MILESTONE_SOURCE_LABELS[r.source];
@@ -85,6 +89,15 @@ export function RecommendationRow({
             </>
           )}
         </div>
+        {retirement && (
+          <div
+            className="text-caption text-secondary"
+            title="This yearly amount, kept invested each year until you retire, at the return rates your projections use."
+          >
+            About {maskAmountsInText(formatCurrency(retirement.amount))} by{" "}
+            {retirement.year} if invested each year
+          </div>
+        )}
         {detail}
       </div>
       <div className="flex flex-col items-end gap-0.5">

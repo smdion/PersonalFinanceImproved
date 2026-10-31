@@ -280,6 +280,8 @@ export type MilestoneInput = {
       /** Held in an account whose funds the household picks (an IRA,
        *  a taxable account) — not only in fixed workplace/HSA menus. */
       switchable?: boolean;
+      /** Dollars in the fund across accounts; absent when unknown. */
+      value?: number;
     }[];
   } | null;
   /** Each judged raise, oldest first (lib/pure/raise-history.ts); null/
@@ -371,4 +373,7 @@ export type MilestoneResult = MilestoneDefinition & {
   /** The dollars closing the gap would move — set where the gap is already
    *  worked out, so Recommendations rank by it without re-deriving it. */
   impact: MilestoneImpact | null;
+  /** A yearly saving to show in retirement terms, when it isn't the
+   *  `impact` that ranks recommendations. */
+  yearlySaving?: number;
 };

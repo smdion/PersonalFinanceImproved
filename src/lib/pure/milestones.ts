@@ -1757,8 +1757,14 @@ function fundCosts(input: MilestoneInput): MilestoneResult {
   const bar = (f: (typeof judged)[number]) =>
     PF_FUND_EXPENSE_RATIO[f.bucket as keyof typeof PF_FUND_EXPENSE_RATIO];
   const pricey = judged.filter((f) => f.expenseRatio > bar(f));
+  // What the funds above the bar cost beyond it, each year.
+  const overBar = pricey.reduce(
+    (sum, f) => sum + (f.value ?? 0) * (f.expenseRatio - bar(f)),
+    0,
+  );
   return result("fundCosts", {
     status: pricey.length ? "behind" : "reached",
+    yearlySaving: overBar > 0 ? overBar : undefined,
     value: { kind: "count", amount: judged.length - pricey.length },
     target: { kind: "count", amount: judged.length },
     progress: (judged.length - pricey.length) / judged.length,

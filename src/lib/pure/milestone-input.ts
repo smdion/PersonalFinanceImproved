@@ -304,6 +304,8 @@ export function milestoneHoldings(overview: {
       bucket: CompositionBucket;
       expenseRatio: number;
       switchable: boolean;
+      /** Across every account holding it. */
+      value: number;
     }
   >();
   for (const a of overview.accounts ?? []) {
@@ -336,6 +338,7 @@ export function milestoneHoldings(overview: {
         switchable:
           (funds.get(key)?.switchable ?? false) ||
           canSwitchFunds(a.accountType ?? null),
+        value: (funds.get(key)?.value ?? 0) + (h.value ?? 0),
       });
     }
   }

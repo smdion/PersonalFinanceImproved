@@ -20,7 +20,11 @@ import {
 import { DismissControls } from "@/components/recommendations/dismiss-controls";
 import { formatDate } from "@/lib/utils/format";
 import { useRecommendationDismissals } from "@/lib/hooks/use-recommendation-dismissals";
-import type { Recommendation } from "@/lib/pure/recommendations";
+import {
+  retirementValue,
+  type Recommendation,
+} from "@/lib/pure/recommendations";
+import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 
 /** How many lead the page before the full list. */
 const TOP_COUNT = 3;
@@ -32,6 +36,18 @@ export function RecommendationsContent() {
   const milestoneOf = new Map(
     results.map((m) => [m.id, { id: m.id, title: m.title }]),
   );
+  // A yearly amount in retirement terms, at the plan's own return rates.
+  const planYears = useDashboardProjection().data?.result?.projectionByYear;
+  const saving = (planYears ?? []).filter((y) => y.phase === "accumulation");
+  const retirementYear = saving.at(-1)?.year;
+  const retirementOf = (r: Recommendation) => {
+    const amount = retirementValue(
+      r,
+      saving.map((y) => y.annualizedReturnRate),
+    );
+    if (amount === null || retirementYear === undefined) return null;
+    return { amount: Math.round(amount / 100) * 100, year: retirementYear + 1 };
+  };
   const fromOf = (r: Recommendation) =>
     r.source === "ledgr" ? null : (milestoneOf.get(r.id) ?? null);
   const dismissals = useRecommendationDismissals();
@@ -145,6 +161,7 @@ export function RecommendationsContent() {
       key={r.id}
       recommendation={r}
       fromMilestone={fromOf(r)}
+      retirement={retirementOf(r)}
       actions={actionsFor(r)}
     />
   );
