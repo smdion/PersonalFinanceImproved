@@ -12,6 +12,7 @@ import { roundToCents } from "@/lib/utils/math";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types.types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
+import { previousTradingDay } from "@/lib/pure/market-calendar";
 import { LoadingCard } from "./utils";
 
 /** How the breakdown groups balances; the button steps through them in order. */
@@ -57,6 +58,14 @@ const shortDay = (day: string) =>
     day: "numeric",
     timeZone: "UTC",
   });
+
+/** The session a move covers, close to close: "Oct 29→30", "Oct 30→Nov 2". */
+const sessionLabel = (day: string) => {
+  const from = previousTradingDay(day);
+  return from.slice(0, 7) === day.slice(0, 7)
+    ? `${shortDay(from)}→${Number(day.slice(8))}`
+    : `${shortDay(from)}→${shortDay(day)}`;
+};
 
 /** "+$1,234.56" / "−$1,234.56". */
 const signed = (n: number) =>
@@ -277,10 +286,15 @@ function LinkedBalanceCardImpl() {
 
       {/* Each close's market move, latest first. */}
       {current && current.movement.length > 0 && (
+        <p className="text-caption text-faint">
+          Daily change by market close (not sync date)
+        </p>
+      )}
+      {current && current.movement.length > 0 && (
         <div className="text-caption mb-2 grid grid-cols-[auto_auto_minmax(0,1fr)] gap-x-2">
           {current.movement.map((c) => (
             <div key={c.day} className="contents">
-              <span className="text-muted">{shortDay(c.day)}</span>
+              <span className="text-muted">{sessionLabel(c.day)}</span>
               <span
                 className={`text-right tabular-nums ${c.known === 0 ? "text-faint" : moveColor(c.move)}`}
               >
@@ -289,7 +303,7 @@ function LinkedBalanceCardImpl() {
               <span className="text-faint truncate">
                 {[
                   c.known < c.total && c.known > 0
-                    ? `${c.total - c.known} ${c.total - c.known === 1 ? "account" : "accounts"} pending`
+                    ? `${c.total - c.known} ${c.total - c.known === 1 ? "account" : "accounts"} ${c.day === target ? "pending" : "not reported"}`
                     : null,
                   c.flows
                     ? `${c.flows > 0 ? "+" : "−"}${formatCurrency(Math.abs(c.flows))} paid ${c.flows > 0 ? "in" : "out"}`
@@ -323,7 +337,9 @@ function LinkedBalanceCardImpl() {
           <div className="text-faint grid grid-cols-[minmax(0,1fr)_auto_auto] items-baseline gap-x-1.5 gap-y-1 text-xs">
             <span />
             <span className="text-right">Now</span>
-            <span className="text-right">{target ? shortDay(target) : ""}</span>
+            <span className="text-right">
+              {target ? sessionLabel(target) : ""}
+            </span>
             {groups.map((g) => (
               <div key={g.key} className="contents">
                 <span className="break-words">{g.label}</span>
