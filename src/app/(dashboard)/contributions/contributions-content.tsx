@@ -7,6 +7,7 @@ import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { PageHeader } from "@/components/ui/page-header";
+import { CoastFireNote } from "@/components/contributions/coast-fire-note";
 import { ChipToggle } from "@/components/ui/chip-toggle";
 import { HighIncomeLineEdit } from "@/components/cards/dashboard/high-income-line-edit";
 import { Card } from "@/components/ui/card";
@@ -272,6 +273,7 @@ export function ContributionsContent() {
           </div>
         </div>
       </PageHeader>
+      <CoastFireNote />
 
       {/* Prior-year contribution window banner */}
       {priorYearWindow && (
