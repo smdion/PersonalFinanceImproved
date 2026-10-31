@@ -132,7 +132,9 @@ export function retirementBridge(
       age: y.age,
       need: y.afterTaxNeed,
       ssIncome: y.ssIncome,
-      covered: Math.min(y.afterTaxNeed, y.deliveredAfterTax ?? 0),
+      // Tax on Social Security can leave a small withdrawal delivering
+      // nothing toward the need.
+      covered: Math.max(0, Math.min(y.afterTaxNeed, y.deliveredAfterTax ?? 0)),
       short,
       cause: !short
         ? null

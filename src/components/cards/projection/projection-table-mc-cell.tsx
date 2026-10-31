@@ -74,6 +74,10 @@ export function renderMcCell(
         `Withdrawals: ${formatCurrency(deflate(decYr.totalWithdrawal, yr.year))}`,
       );
       parts.push(`Tax rate: ${formatPercent(decYr.effectiveTaxRate, 1)}`);
+      if (decYr.ssTaxCost > 0)
+        parts.push(
+          `Tax on Social Security: ${formatCurrency(deflate(decYr.ssTaxCost, yr.year))}`,
+        );
     }
     proofNote = `Simulation engine: ${parts.join(" ·")}`;
   }

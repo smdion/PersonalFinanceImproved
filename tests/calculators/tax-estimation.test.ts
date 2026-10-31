@@ -4,6 +4,7 @@ import {
   incomeCapForMarginalRate,
   computeTaxableSS,
   computeTaxFromSlots,
+  taxableSSFor,
 } from "@/lib/calculators/engine/tax-estimation";
 
 import { makeTaxBuckets, TEST_BRACKETS } from "./fixtures/engine-fixtures";
@@ -158,6 +159,25 @@ describe("computeTaxableSS", () => {
   });
 });
 
+describe("taxableSSFor", () => {
+  it("provisional income counts Roth growth and brokerage gains, not just Traditional", () => {
+    // MFJ tiers $32k/$44k. $40k SS (half: $20k) + $20k Traditional: $40k
+    // provisional, $4k taxable. $20k of gains on top reaches the second tier.
+    const trad = {
+      totalTraditionalWithdrawal: 20000,
+      rothTaxableGrowth: 0,
+      brokerageGainsPortion: 0,
+    };
+    expect(taxableSSFor(40000, trad, "MFJ")).toBe(4000);
+    expect(
+      taxableSSFor(40000, { ...trad, brokerageGainsPortion: 20000 }, "MFJ"),
+    ).toBe(19600);
+    expect(
+      taxableSSFor(40000, { ...trad, rothTaxableGrowth: 20000 }, "MFJ"),
+    ).toBe(19600);
+  });
+});
+
 describe("computeTaxFromSlots", () => {
   const baseTaxRates = {
     traditionalFallbackRate: 0.15,
@@ -178,6 +198,64 @@ describe("computeTaxFromSlots", () => {
     });
     expect(result.taxCost).toBe(0);
     expect(result.totalTraditionalWithdrawal).toBe(0);
+  });
+
+  it("charges the full tax on Traditional plus taxable Social Security (2026 MFJ)", () => {
+    // $100k of ordinary income less the $12,900 Worksheet 1A residual is
+    // $87,100: $2,480 + 12% of $43,000 = $7,640 — all of it owed, not the
+    // withdrawal's $4,584 share.
+    const result = computeTaxFromSlots({
+      slots: [
+        makeSlot("401k", { withdrawal: 60000, traditionalWithdrawal: 60000 }),
+      ],
+      taxableSS: 40000,
+      balances: makeTaxBuckets(),
+      taxRates: {
+        ...baseTaxRates,
+        standardDeduction: 32200,
+        taxBrackets: [
+          { threshold: 0, baseWithholding: 0, rate: 0 },
+          { threshold: 19300, baseWithholding: 0, rate: 0.1 },
+          { threshold: 44100, baseWithholding: 2480, rate: 0.12 },
+          { threshold: 120100, baseWithholding: 11600, rate: 0.22 },
+        ],
+      },
+      filingStatus: "MFJ",
+    });
+    expect(result.taxCost).toBeCloseTo(7640, 2);
+    expect(result.ssTaxCost).toBeCloseTo(3056, 2);
+  });
+
+  it("with no brackets, taxable Social Security pays the flat fallback rate", () => {
+    const result = computeTaxFromSlots({
+      slots: [],
+      taxableSS: 10000,
+      balances: makeTaxBuckets(),
+      taxRates: { ...baseTaxRates, taxBrackets: undefined },
+      filingStatus: "MFJ",
+    });
+    expect(result.taxCost).toBe(1500);
+    expect(result.ssTaxCost).toBe(1500);
+  });
+
+  it("a re-priced brokerage tax replaces the computed one, everything else unchanged", () => {
+    const slots = [
+      makeSlot("401k", { withdrawal: 25000, traditionalWithdrawal: 25000 }),
+    ];
+    const base = {
+      slots,
+      taxableSS: 5000,
+      balances: makeTaxBuckets(),
+      taxRates: baseTaxRates,
+      filingStatus: "MFJ" as const,
+    };
+    const plain = computeTaxFromSlots(base);
+    const repriced = computeTaxFromSlots({
+      ...base,
+      brokerageTaxCostOverride: 900,
+    });
+    expect(repriced.brokerageTaxCost).toBe(900);
+    expect(repriced.taxCost).toBeCloseTo(plain.taxCost + 900, 2);
   });
 
   it("taxes a traditional withdrawal at the bracket-estimated rate", () => {

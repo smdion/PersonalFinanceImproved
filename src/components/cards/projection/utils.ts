@@ -428,7 +428,11 @@ export function filterYearByParentCategory(
     1,
   );
   const targetWithdrawal = roundToCents(yr.targetWithdrawal * targetRatio);
-  const taxCost = roundToCents(yr.taxCost * targetRatio);
+  // Only the withdrawal's tax scales; tax on Social Security is the
+  // household's, whichever accounts this view shows.
+  const taxCost = roundToCents(
+    (yr.taxCost - yr.ssTaxCost) * targetRatio + yr.ssTaxCost,
+  );
 
   return {
     ...yr,

@@ -44,7 +44,7 @@ export function RaiseAndRateSection({
       <div className={!meta.usesPostRetirementRaise ? "opacity-40" : ""}>
         <span className="text-muted">
           Post-Retirement Raise
-          <HelpTip text="Your annual 'raise' in retirement. The base is set by your Retirement Budget — this rate grows it each year, like a cost-of-living adjustment. Independent of the Inflation rate." />
+          <HelpTip text="Your annual 'raise' in retirement. The base is set by your Retirement Budget — this rate grows it each year, like a cost-of-living adjustment. Set apart from the Inflation rate; in the Simulation it moves with each trial's inflation, keeping your gap between the two." />
         </span>
         <div className="font-medium">
           <InlineEdit

@@ -13,7 +13,10 @@ import {
   computeSpousalBenefit,
   sweepClaimingAges,
 } from "@/lib/calculators/social-security";
-import type { ProjectionInput } from "@/lib/calculators/types";
+import type {
+  EngineDecumulationYear,
+  ProjectionInput,
+} from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 
@@ -61,8 +64,8 @@ function makeSingleHousehold(): ProjectionInput {
         brokerage: 0.15,
         taxBrackets: [
           { threshold: 23850, baseWithholding: 0, rate: 0.1 },
-          { threshold: 96950, baseWithholding: 2385, rate: 0.12 },
-          { threshold: 206700, baseWithholding: 11157, rate: 0.22 },
+          { threshold: 96950, baseWithholding: 7310, rate: 0.12 },
+          { threshold: 206700, baseWithholding: 20480, rate: 0.22 },
         ],
       },
     },
@@ -667,5 +670,102 @@ describe("PIA wiring equivalence (plan §8) — engine level", () => {
 
     expect(resultB.projectionByYear).toEqual(resultA.projectionByYear);
     expect(resultB.retirementDepletionAge).toBe(resultA.retirementDepletionAge);
+  });
+});
+
+describe("Social Security in the engine (COLA and its tax)", () => {
+  const decum = (input: ProjectionInput) =>
+    calculateProjection(input).projectionByYear.filter(
+      (y): y is EngineDecumulationYear => y.phase === "decumulation",
+    );
+  const household = (
+    overrides: Partial<ProjectionInput> = {},
+  ): ProjectionInput => ({
+    ...makeSingleHousehold(),
+    socialSecurityEntries: undefined,
+    ...overrides,
+  });
+
+  it("grows with general inflation; in today's dollars it stays as entered", () => {
+    const input = household({
+      socialSecurityAnnual: 30000,
+      ssStartAge: 62,
+      inflationRate: 0.03,
+    });
+    const asOfYear = input.asOfDate.getFullYear();
+    const years = decum(input);
+    expect(years.length).toBeGreaterThan(10);
+    for (const y of years) {
+      const today = y.ssIncome / Math.pow(1.03, y.year - asOfYear);
+      expect(today).toBeCloseTo(30000, 0);
+    }
+    expect(years[10]!.ssIncome).toBeGreaterThan(years[0]!.ssIncome);
+  });
+
+  it("follows the inflation rate, not the post-retirement raise", () => {
+    const year = (postRetirementInflationRate: number) =>
+      decum(
+        household({
+          socialSecurityAnnual: 30000,
+          ssStartAge: 62,
+          inflationRate: 0.02,
+          postRetirementInflationRate,
+        }),
+      )[5]!.ssIncome;
+    expect(year(0.04)).toBe(year(0.02));
+  });
+
+  it("a benefit before it starts pays nothing", () => {
+    const years = decum(
+      household({ socialSecurityAnnual: 30000, ssStartAge: 67 }),
+    );
+    expect(years.find((y) => y.age === 66)?.ssIncome).toBe(0);
+    expect(years.find((y) => y.age === 67)?.ssIncome).toBeGreaterThan(30000);
+  });
+
+  it("taxable Social Security is taxed even in a year with no withdrawal", () => {
+    // A benefit above spending: the portfolio pays nothing for spending,
+    // and the surplus covers the tax — no draw, no shortfall.
+    const years = decum(
+      household({
+        socialSecurityAnnual: 200000,
+        ssStartAge: 62,
+        annualExpenses: 90000,
+      }),
+    );
+    const first = years[0]!;
+    expect(first.ssTaxCost).toBeGreaterThan(0);
+    expect(first.taxCost).toBe(first.ssTaxCost);
+    expect(first.totalWithdrawal).toBe(0);
+    expect(first.unmetNeed ?? 0).toBe(0);
+    expect(first.unmetNeedMaterial).toBe(false);
+    expect(first.effectiveTaxRate).toBe(0);
+  });
+
+  it("the withdrawal pays what the surplus can't", () => {
+    // Benefit a little over spending: its surplus covers part of the tax.
+    const y = decum(
+      household({
+        socialSecurityAnnual: 180000,
+        ssStartAge: 62,
+        decumulationAnnualExpenses: 179000,
+      }),
+    )[0]!;
+    const surplus = y.ssIncome - y.projectedExpenses;
+    expect(surplus).toBeGreaterThan(0);
+    expect(y.ssTaxCost).toBeGreaterThan(surplus);
+    expect(y.totalWithdrawal).toBeGreaterThan(0);
+    expect(y.totalWithdrawal + surplus - y.taxCost).toBeCloseTo(0, 0);
+    expect(y.unmetNeedMaterial).toBe(false);
+  });
+
+  it("spends the stated amount in a torpedo year: the gross-up and the real year agree", () => {
+    // A $30k benefit with a draw through the 50%/85% tiers.
+    for (const y of decum(
+      household({ socialSecurityAnnual: 30000, ssStartAge: 62 }),
+    ).slice(0, 12)) {
+      if (y.rmdExcessAmount > 0) continue;
+      expect(Math.abs(y.spending - y.projectedExpenses)).toBeLessThan(1);
+    }
   });
 });

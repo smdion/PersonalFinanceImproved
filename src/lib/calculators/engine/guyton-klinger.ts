@@ -13,7 +13,8 @@
  * that portfolio draw, not of all spending. And a change in Social Security
  * (it starting, a second person's starting) isn't market news: the anchor
  * rate is rescaled by the same step, so the guardrails react only to how
- * the portfolio has done.
+ * the portfolio has done. Benefits are compared in today's dollars, so its
+ * cost-of-living raise is never read as such a change.
  *
  * Cross-year state (initialWithdrawalRate, priorYearReturn, baseSpending)
  * is owned by the orchestrator and passed in each year.
@@ -51,6 +52,10 @@ export interface GuytonKlingerInput {
   /** Social Security paid this year — the part of spending the portfolio
    *  doesn't pay. */
   ssIncome: number;
+  /** The same benefits in today's dollars, and this year's growth since
+   *  the input's year. Omitted: `ssIncome` and 1 (no growth). */
+  ssIncomeToday?: number;
+  ssGrowthFactor?: number;
   /** Effective inflation rate applied this year. */
   effectiveInflation: number;
   /** Whether a budget override is active this year. */
@@ -64,7 +69,8 @@ export interface GuytonKlingerInput {
   initialWithdrawalRate: number | null;
   /** Prior year's return rate. Null for first year. */
   priorYearReturn: number | null;
-  /** Social Security paid last year; null in the first year. */
+  /** The Social Security the anchor reflects, in today's dollars; null in
+   *  the first year. */
   priorSsIncome: number | null;
 }
 
@@ -78,19 +84,28 @@ interface GuytonKlingerResult {
   initialWithdrawalRate: number | null;
   /** Updated base spending. */
   baseSpending: number | null;
+  /** The Social Security the anchor now reflects — next year's
+   *  `priorSsIncome`. Held at last year's through a year the portfolio
+   *  pays nothing, so the first year it pays again rescales from there. */
+  ssIncomeJudged: number | null;
 }
 
-/** The anchor rescaled for a change in Social Security: the portfolio's
- *  share of the same spending before and after the change. Unchanged when
- *  either share is zero (no rate to compare). */
+/** The anchor rescaled for a change in Social Security — a benefit starting
+ *  or stopping, compared in today's dollars so a cost-of-living raise isn't
+ *  one: the portfolio's share of the same spending before and after, both
+ *  benefits at this year's prices. Unchanged when either share is zero (no
+ *  rate to compare). */
 function rescaleForSocialSecurity(
   anchor: number,
   spending: number,
-  priorSs: number | null,
+  priorSsToday: number | null,
+  ssToday: number,
   ss: number,
+  growthFactor: number,
 ): number {
-  if (priorSs === null || priorSs === ss) return anchor;
-  const before = Math.max(0, spending - priorSs);
+  if (priorSsToday === null || Math.abs(ssToday - priorSsToday) <= 0.01)
+    return anchor;
+  const before = Math.max(0, spending - priorSsToday * growthFactor);
   const after = Math.max(0, spending - ss);
   return before > 0 && after > 0 ? anchor * (after / before) : anchor;
 }
@@ -133,9 +148,11 @@ export function applyGuytonKlinger(
       guardrailTriggered: null,
       initialWithdrawalRate,
       baseSpending: projectedExpenses,
+      ssIncomeJudged: input.ssIncomeToday ?? input.ssIncome,
     };
   }
 
+  const ssToday = input.ssIncomeToday ?? input.ssIncome;
   // What the portfolio pays of a spending figure.
   const portfolioShare = (spending: number) =>
     Math.max(0, spending - input.ssIncome);
@@ -152,6 +169,7 @@ export function applyGuytonKlinger(
         guardrailTriggered: null,
         initialWithdrawalRate: null,
         baseSpending: projectedExpenses,
+        ssIncomeJudged: input.ssIncomeToday ?? input.ssIncome,
       };
     initialWithdrawalRate = share / portfolioBalance;
     return {
@@ -159,8 +177,26 @@ export function applyGuytonKlinger(
       guardrailTriggered: null,
       initialWithdrawalRate,
       baseSpending: projectedExpenses,
+      ssIncomeJudged: input.ssIncomeToday ?? input.ssIncome,
     };
   }
+
+  // A year the portfolio pays nothing (Social Security covers all of
+  // spending) has no rate to judge — and no prosperity rule, as in the
+  // years before the first anchor. The anchor carries through unchanged,
+  // and so does the Social Security it reflects (`ssIncomeJudged`): the
+  // first year the portfolio pays again rescales from the pre-cover level,
+  // so what the market did meanwhile still counts. Dropping the anchor and
+  // re-anchoring on that first small draw would instead read ordinary
+  // spending growth as a doubled withdrawal rate — a cut a year.
+  const covered = (spending: number) => ({
+    projectedExpenses: spending,
+    guardrailTriggered,
+    initialWithdrawalRate,
+    baseSpending: spending,
+    ssIncomeJudged: input.priorSsIncome,
+  });
+  if (portfolioShare(projectedExpenses) <= 0) return covered(projectedExpenses);
 
   // Prosperity rule: skip inflation adjustment after a loss year
   if (
@@ -179,20 +215,22 @@ export function applyGuytonKlinger(
     initialWithdrawalRate,
     projectedExpenses,
     input.priorSsIncome,
+    ssToday,
     input.ssIncome,
+    input.ssGrowthFactor ?? 1,
   );
 
   // Check guardrails — moves are a share of the portfolio draw.
   const draw = portfolioShare(projectedExpenses);
+  // The prosperity rule took spending under Social Security: covered too.
+  if (draw <= 0) return covered(projectedExpenses);
   const currentRate = draw / portfolioBalance;
   if (currentRate < initialWithdrawalRate * gk.upperGuardrail) {
     // Portfolio has grown — increase spending
-    if (draw > 0) {
-      projectedExpenses = roundToCents(
-        projectedExpenses + draw * gk.increasePercent,
-      );
-      guardrailTriggered = "increase";
-    }
+    projectedExpenses = roundToCents(
+      projectedExpenses + draw * gk.increasePercent,
+    );
+    guardrailTriggered = "increase";
   } else if (currentRate > initialWithdrawalRate * gk.lowerGuardrail) {
     // Portfolio has shrunk — decrease spending
     projectedExpenses = roundToCents(
@@ -206,6 +244,7 @@ export function applyGuytonKlinger(
     guardrailTriggered,
     initialWithdrawalRate,
     baseSpending: projectedExpenses,
+    ssIncomeJudged: input.ssIncomeToday ?? input.ssIncome,
   };
 }
 
@@ -235,6 +274,8 @@ export function applyGuytonKlingerStrategy(
     projectedExpenses: input.projectedExpenses,
     portfolioBalance: input.portfolioBalance,
     ssIncome: input.ssIncome ?? 0,
+    ssIncomeToday: input.ssIncomeToday,
+    ssGrowthFactor: input.ssGrowthFactor,
     effectiveInflation: input.effectiveInflation,
     hasBudgetOverride: input.hasBudgetOverride,
     isFirstDecumulationYear:
@@ -251,7 +292,7 @@ export function applyGuytonKlingerStrategy(
     updatedState: {
       initialWithdrawalRate: gkResult.initialWithdrawalRate,
       priorYearSpending: gkResult.baseSpending,
-      priorYearSsIncome: input.ssIncome ?? 0,
+      priorYearSsIncome: gkResult.ssIncomeJudged,
     },
   };
 }

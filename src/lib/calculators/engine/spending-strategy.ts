@@ -43,6 +43,11 @@ export interface SpendingStrategyInput {
   youngestAge?: number;
   /** Social Security paid this year (what it covers of spending). */
   ssIncome?: number;
+  /** The same benefits in today's dollars, and this year's growth since
+   *  the input's year — Guyton-Klinger compares benefits in today's dollars
+   *  so a cost-of-living raise never reads as a benefit starting. */
+  ssIncomeToday?: number;
+  ssGrowthFactor?: number;
   /** This year's stock share of the portfolio (0–1), from the allocation
    *  glide path; absent when the household has no asset classes. */
   stockShare?: number;
@@ -63,8 +68,10 @@ export interface SpendingCrossYearState {
   balanceHistory: number[];
   /** Count of decumulation years elapsed (for spending decline). */
   decumulationYearCount: number;
-  /** Social Security paid last year (Guyton-Klinger rescales its anchor
-   *  when it changes). Null before the first decumulation year. */
+  /** The Social Security Guyton-Klinger's anchor reflects, in today's
+   *  dollars (it rescales when a benefit starts or stops; held through
+   *  years the portfolio pays nothing). Null before the first decumulation
+   *  year. */
   priorYearSsIncome: number | null;
 }
 

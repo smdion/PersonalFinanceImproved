@@ -808,8 +808,9 @@ describe("engine invariants", () => {
           for (const year of result.projectionByYear) {
             if (year.phase !== "decumulation") continue;
             expect(year.taxCost).toBeGreaterThanOrEqual(-EPSILON);
-            // Tax can't exceed total withdrawal (that would mean tax > 100% rate)
-            expect(year.taxCost).toBeLessThanOrEqual(
+            // The withdrawal's tax can't exceed it (that would mean tax >
+            // 100%). Tax on Social Security is owed apart from any withdrawal.
+            expect(year.taxCost - year.ssTaxCost).toBeLessThanOrEqual(
               year.totalWithdrawal + EPSILON,
             );
           }

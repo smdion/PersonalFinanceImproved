@@ -91,7 +91,7 @@ export function SocialSecuritySection({
             <div key={ps.personId}>
               <span className="text-muted">
                 {ps.name}&apos;s Benefit
-                <HelpTip text="Estimated benefit in today's dollars (find yours at ssa.gov). Grown by the Post-Retirement Raise rate each year." />
+                <HelpTip text="Estimated benefit in today's dollars (find yours at ssa.gov). It grows with your Inflation rate each year, as Social Security's cost-of-living adjustment." />
               </span>
               <div className="font-medium">
                 <InlineEdit
@@ -159,7 +159,7 @@ export function SocialSecuritySection({
           <div>
             <span className="text-muted">
               Monthly Benefit
-              <HelpTip text="Estimated benefit in today's dollars (find yours at ssa.gov). Grown by the Post-Retirement Raise rate each year." />
+              <HelpTip text="Estimated benefit in today's dollars (find yours at ssa.gov). It grows with your Inflation rate each year, as Social Security's cost-of-living adjustment." />
             </span>
             <div className="font-medium">
               <InlineEdit

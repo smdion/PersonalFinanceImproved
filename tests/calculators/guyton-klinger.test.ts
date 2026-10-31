@@ -289,6 +289,76 @@ describe("applyGuytonKlinger — the withdrawal rate is what the portfolio pays"
     expect(r.projectedExpenses).toBe(50000);
   });
 
+  it("Social Security covering all spending: the anchor carries, no raise or cut chain after", () => {
+    // 40k on 1M anchors at 4%. A 41k benefit (today's dollars, COLA'd)
+    // starts in year 1 and covers all of spending for two years; a budget
+    // step in year 3 has the portfolio paying again. Everything grows at
+    // 2.5% and the portfolio keeps pace, so nothing changed in real terms:
+    // a stale 4% anchor would read each small draw as a raise, and
+    // re-anchoring on the first small draw would read growth as a cut.
+    let state = { ...initialCrossYearState() };
+    const actions: (string | null)[] = [];
+    for (let year = 0; year <= 10; year++) {
+      const factor = Math.pow(1.025, year);
+      const real = year === 0 ? 40000 : year < 3 ? 41000 : 43000;
+      const ssToday = year >= 1 ? 41000 : 0;
+      const r = applyGuytonKlingerStrategy(DEFAULT_PARAMS, {
+        projectedExpenses: real * factor,
+        portfolioBalance: 1_000_000 * factor,
+        ssIncome: ssToday * factor,
+        ssIncomeToday: ssToday,
+        ssGrowthFactor: factor,
+        effectiveInflation: 0.025,
+        cpiInflation: 0.025,
+        hasBudgetOverride: false,
+        yearIndex: year,
+        age: 65 + year,
+        crossYearState: { ...state, priorYearReturn: 0 },
+      });
+      actions.push(r.action);
+      state = { ...state, ...r.updatedState };
+      if (year === 1) {
+        // Covered: the anchor and the Social Security it reflects both hold.
+        expect(r.updatedState.initialWithdrawalRate).toBeCloseTo(0.04);
+        expect(r.updatedState.priorYearSsIncome).toBe(0);
+      }
+    }
+    expect(actions).toEqual(Array(11).fill(null));
+  });
+
+  it("a cost-of-living raise is never read as a benefit starting", () => {
+    // Nominal benefit up 2.5%, the same in today's dollars: no rescale.
+    const r = applyGuytonKlinger(
+      makeGKInput({
+        projectedExpenses: 80000,
+        ssIncome: 30750,
+        ssIncomeToday: 30000,
+        ssGrowthFactor: 1.025,
+        priorSsIncome: 30000,
+        initialWithdrawalRate: 0.05,
+      }),
+    );
+    expect(r.initialWithdrawalRate).toBe(0.05);
+  });
+
+  it("a second person's benefit starting still rescales, at this year's prices", () => {
+    // 20k today's joined by 15k, with prices up 20%: the draw goes from
+    // 100 − 24 = 76k to 100 − 42 = 58k.
+    const r = applyGuytonKlinger(
+      makeGKInput({
+        projectedExpenses: 100000,
+        portfolioBalance: 1_500_000,
+        ssIncome: 42000,
+        ssIncomeToday: 35000,
+        ssGrowthFactor: 1.2,
+        priorSsIncome: 20000,
+        initialWithdrawalRate: 0.05,
+      }),
+    );
+    expect(r.initialWithdrawalRate).toBeCloseTo(0.05 * (58 / 76));
+    expect(r.ssIncomeJudged).toBe(35000);
+  });
+
   it("after the rescale the market still counts: a fallen portfolio still cuts", () => {
     const r = applyGuytonKlinger(
       makeGKInput({
