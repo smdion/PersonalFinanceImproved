@@ -23,6 +23,9 @@
  * configured — fixed alongside a related cache-key bug (see
  * `computeStrategyComparison`'s `inputHash` comment).
  */
+import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
+import { DEFAULT_SIMULATION } from "@/lib/constants";
+import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import { strategySpending } from "@/lib/calculators/strategy-spending";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { eq } from "drizzle-orm";
@@ -84,6 +87,9 @@ export const strategyRouter = createTRPCRouter({
     .input(
       z
         .object({
+          /** Simulation preset (the page's selector); the Default preset
+           *  when absent. */
+          preset: z.enum(SIMULATION_PRESET_KEYS).optional(),
           contributionProfileId: z.number().int().optional(),
           /** Optional Salary Profile — the independent "what if I earned X" axis. */
           salaryProfileId: z.number().int().optional(),
@@ -110,14 +116,20 @@ export const strategyRouter = createTRPCRouter({
       };
       const [
         data,
-        { mcAssetClasses, mcCorrelations, mcGlidePath, effectiveInflationRisk },
+        {
+          mcAssetClasses,
+          mcCorrelations,
+          mcGlidePath,
+          effectiveInflationRisk,
+          preset,
+        },
       ] = await Promise.all([
         fetchRetirementData(ctx.db, {
           snapshotId: input?.snapshotId,
           contributionProfileId: input?.contributionProfileId,
           salaryProfileId: input?.salaryProfileId,
         }),
-        buildMcInputs(ctx.db),
+        buildMcInputs(ctx.db, input?.preset ?? DEFAULT_SIMULATION.preset),
       ]);
 
       const payload = await buildEnginePayload(ctx.db, data, {
@@ -156,9 +168,18 @@ export const strategyRouter = createTRPCRouter({
         }, 0);
         mcReturnRates.push({ label: `Age ${a}`, rate: blended });
       }
+      const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
       const mcBaseEngineInput = {
         ...baseEngineInput,
         returnRates: mcReturnRates,
+        // VPW sizes by the stock share of the glide path this run uses.
+        stockShareByAge:
+          stockShareByAge(
+            mcGlidePath,
+            classifyAssetClasses(classBuckets),
+            baseEngineInput.currentAge,
+            baseEngineInput.projectionEndAge,
+          ) ?? undefined,
       };
       const hasMcData = mcAssetClasses.length > 0 && mcGlidePath.length > 0;
 
@@ -185,6 +206,8 @@ export const strategyRouter = createTRPCRouter({
       // its inputs, so no seed persistence is needed, unlike
       // computeMonteCarloProjection's per-run random seed.
       type StrategyComparisonResult = {
+        /** The Simulation preset behind the Success and Stability columns. */
+        presetLabel: string;
         strategies: Awaited<ReturnType<typeof buildStrategyResults>>;
         activeStrategy: WithdrawalStrategyType;
         retirementAge: number;
@@ -214,6 +237,8 @@ export const strategyRouter = createTRPCRouter({
         mcCorrelations,
         mcGlidePath,
         inflationRisk: effectiveInflationRisk,
+        returnClampMin: preset!.returnClampMin,
+        returnClampMax: preset!.returnClampMax,
       });
       const cached = input?.forceRefresh
         ? null
@@ -280,6 +305,8 @@ export const strategyRouter = createTRPCRouter({
                 correlations: mcCorrelations,
                 glidePath: mcGlidePath,
                 inflationRisk: effectiveInflationRisk,
+                returnClampMin: preset!.returnClampMin,
+                returnClampMax: preset!.returnClampMax,
               });
               successRate = mcResult.successRate;
               spendingStabilityRate = mcResult.spendingStabilityRate;
@@ -346,6 +373,7 @@ export const strategyRouter = createTRPCRouter({
       const result: StrategyComparisonResult = {
         strategies: await buildStrategyResults(),
         activeStrategy,
+        presetLabel: preset!.label,
         retirementAge: avgRetirementAge,
       };
       await writeProjectionCache(ctx.db, inputHash, result, null);
@@ -358,6 +386,9 @@ export const strategyRouter = createTRPCRouter({
     .input(
       z
         .object({
+          /** Simulation preset (the page's selector); the Default preset
+           *  when absent. */
+          preset: z.enum(SIMULATION_PRESET_KEYS).optional(),
           contributionProfileId: z.number().int().optional(),
           /** Optional Salary Profile — the independent "what if I earned X" axis. */
           salaryProfileId: z.number().int().optional(),
@@ -380,14 +411,20 @@ export const strategyRouter = createTRPCRouter({
       };
       const [
         data,
-        { mcAssetClasses, mcCorrelations, mcGlidePath, effectiveInflationRisk },
+        {
+          mcAssetClasses,
+          mcCorrelations,
+          mcGlidePath,
+          effectiveInflationRisk,
+          preset,
+        },
       ] = await Promise.all([
         fetchRetirementData(ctx.db, {
           snapshotId: input?.snapshotId,
           contributionProfileId: input?.contributionProfileId,
           salaryProfileId: input?.salaryProfileId,
         }),
-        buildMcInputs(ctx.db),
+        buildMcInputs(ctx.db, input?.preset ?? DEFAULT_SIMULATION.preset),
       ]);
 
       const payload = await buildEnginePayload(ctx.db, data, {
@@ -446,9 +483,18 @@ export const strategyRouter = createTRPCRouter({
       const userStrategyParams = buildStrategyParams(settings);
       const activeParams = userStrategyParams[activeStrategy] ?? {};
 
+      const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
       const mcBaseEngineInput = {
         ...baseEngineInput,
         returnRates: mcReturnRates,
+        // VPW sizes by the stock share of the glide path this run uses.
+        stockShareByAge:
+          stockShareByAge(
+            mcGlidePath,
+            classifyAssetClasses(classBuckets),
+            baseEngineInput.currentAge,
+            baseEngineInput.projectionEndAge,
+          ) ?? undefined,
         ...saved,
         // buildDecumulationDefaults already resolves withdrawalStrategy to
         // settings.withdrawalStrategy (= activeStrategy) and strategyParams
@@ -471,6 +517,8 @@ export const strategyRouter = createTRPCRouter({
         correlations: mcCorrelations,
         glidePath: mcGlidePath,
         inflationRisk: effectiveInflationRisk,
+        returnClampMin: preset!.returnClampMin,
+        returnClampMax: preset!.returnClampMax,
       });
       const baseline = {
         successRate: baselineMc.successRate,
@@ -697,6 +745,8 @@ export const strategyRouter = createTRPCRouter({
           correlations: mcCorrelations,
           glidePath: mcGlidePath,
           inflationRisk: effectiveInflationRisk,
+          returnClampMin: preset!.returnClampMin,
+          returnClampMax: preset!.returnClampMax,
         });
 
         const variantStability =

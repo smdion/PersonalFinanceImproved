@@ -5,11 +5,15 @@
  * projection engine) and the scenario-scoped mutations that edit the MC
  * input tables: `updateGlidePathAllocations` and `updateClampBounds`.
  */
+import {
+  loadSimulationPreset,
+  presetAssetClasses,
+} from "@/server/helpers/simulation-preset";
+import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
-import { queryRaw } from "@/lib/db/compat";
 import { z } from "zod/v4";
 import {
   createTRPCRouter,
@@ -30,7 +34,6 @@ import {
 } from "@/lib/calculators/random";
 import { toNumber } from "@/server/helpers";
 import { sumBy } from "@/lib/utils/math";
-import { MC_RETURN_CLAMP_MIN, MC_RETURN_CLAMP_MAX } from "@/lib/constants";
 import type {
   AccumulationOverride,
   DecumulationOverride,
@@ -80,7 +83,7 @@ export const monteCarloRouter = createTRPCRouter({
         seed: z.number().int().optional(),
         /** Simulation preset: controls return assumptions, volatility, inflation risk, and trial count. */
         preset: z
-          .enum(["aggressive", "default", "conservative", "custom"])
+          .enum(SIMULATION_PRESET_KEYS)
           .default(DEFAULT_SIMULATION.preset),
         /** Tax mode: 'simple' collapses to single tax-free balance (cFIREsim-comparable), 'advanced' uses full multi-account tax engine. */
         taxMode: z
@@ -162,7 +165,6 @@ export const monteCarloRouter = createTRPCRouter({
         {
           mcAssetClasses: baseMcAssetClasses,
           mcCorrelations,
-          mcGlidePath: baseGlidePath,
           savedInflationOverrides,
         },
         savedAssetOverridesRow,
@@ -247,66 +249,8 @@ export const monteCarloRouter = createTRPCRouter({
           ? toSimpleTaxMode(engineInput, payload.simpleTaxMode)
           : engineInput;
 
-      // ----- Monte Carlo: Fetch preset from DB -----
-      const isCustom = input.preset === "custom";
-
-      // Fetch preset row + its glide path + return overrides from DB
-      const [presetRows, presetGpRows, presetRoRows] = await Promise.all([
-        isCustom
-          ? Promise.resolve([])
-          : ctx.db
-              .select()
-              .from(schema.mcPresets)
-              .where(eq(schema.mcPresets.key, input.preset)),
-        isCustom
-          ? Promise.resolve([])
-          : queryRaw<{
-              preset_key: string;
-              age: number;
-              asset_class_id: number;
-              class_name: string;
-              allocation: string;
-            }>(
-              ctx.db,
-              sql`SELECT p.key AS preset_key, gp.age, gp.asset_class_id, ac.name AS class_name, gp.allocation
-                  FROM mc_preset_glide_paths gp
-                  JOIN mc_presets p ON p.id = gp.preset_id
-                  JOIN asset_class_params ac ON ac.id = gp.asset_class_id
-                  WHERE p.key = ${input.preset}
-                  ORDER BY gp.age, ac.sort_order`,
-            ),
-        isCustom
-          ? Promise.resolve([])
-          : queryRaw<{
-              asset_class_id: number;
-              class_name: string;
-              mean_return: string;
-            }>(
-              ctx.db,
-              sql`SELECT ro.asset_class_id, ac.name AS class_name, ro.mean_return
-                  FROM mc_preset_return_overrides ro
-                  JOIN mc_presets p ON p.id = ro.preset_id
-                  JOIN asset_class_params ac ON ac.id = ro.asset_class_id
-                  WHERE p.key = ${input.preset}`,
-            ),
-      ]);
-
-      const preset = presetRows[0] ?? null;
-
-      // Build override lookups: DB-saved overrides as base, UI overrides on top
-      const effectiveAssetOverrides = [...savedAssetOverrides];
-      for (const uiOvr of input.assetClassOverrides ?? []) {
-        const idx = effectiveAssetOverrides.findIndex((o) => o.id === uiOvr.id);
-        if (idx >= 0) effectiveAssetOverrides[idx] = uiOvr;
-        else effectiveAssetOverrides.push(uiOvr);
-      }
-      const overrideById = new Map(
-        effectiveAssetOverrides.map((o) => [o.id, o]),
-      );
-      const returnOverrideById = new Map(
-        presetRoRows.map((ro) => [ro.asset_class_id, toNumber(ro.mean_return)]),
-      );
-      const hasReturnOverrides = returnOverrideById.size > 0;
+      // ----- What this run's preset means (helpers/simulation-preset.ts) -----
+      const preset = await loadSimulationPreset(ctx.db, input.preset);
 
       // Validate asset class override IDs match DB
       if (input.assetClassOverrides) {
@@ -322,61 +266,20 @@ export const monteCarloRouter = createTRPCRouter({
         }
       }
 
-      // Build MC-specific inputs: UI overrides > preset return overrides > preset multiplier > DB values
-      const returnMultiplier = preset ? toNumber(preset.returnMultiplier) : 1.0;
-      const volMultiplier = preset ? toNumber(preset.volMultiplier) : 1.0;
-
-      const mcAssetClasses = baseMcAssetClasses.map((ac) => {
-        const dbReturn = ac.meanReturn;
-        const dbStdDev = ac.stdDev;
-        const uiOverride = overrideById.get(ac.id);
-        return {
-          id: ac.id,
-          name: ac.name,
-          meanReturn:
-            uiOverride?.meanReturn ??
-            (hasReturnOverrides
-              ? (returnOverrideById.get(ac.id) ??
-                dbReturn * (returnMultiplier || 0.5))
-              : isCustom
-                ? dbReturn
-                : dbReturn * returnMultiplier),
-          stdDev:
-            uiOverride?.stdDev ??
-            (isCustom ? dbStdDev : dbStdDev * volMultiplier),
-        };
-      });
-
-      // Glide path: DB preset for named presets, glide_path_allocations for custom
-      let mcGlidePath: { age: number; allocations: Record<number, number> }[];
-      if (!isCustom && presetGpRows.length > 0) {
-        // Build from mc_preset_glide_paths
-        const gpByAge = new Map<number, Record<number, number>>();
-        for (const row of presetGpRows) {
-          if (!gpByAge.has(row.age)) gpByAge.set(row.age, {});
-          gpByAge.get(row.age)![row.asset_class_id] = toNumber(row.allocation);
-        }
-        mcGlidePath = Array.from(gpByAge.entries())
-          .sort(([a], [b]) => a - b)
-          .map(([gpAge, allocations]) => ({ age: gpAge, allocations }));
-      } else {
-        // Custom: use glide_path_allocations already fetched by buildMcInputs
-        mcGlidePath = baseGlidePath;
-      }
+      const mcAssetClasses = presetAssetClasses(
+        baseMcAssetClasses,
+        preset,
+        input.assetClassOverrides,
+      );
+      const mcGlidePath = preset.glidePath;
 
       const effectiveInflationRisk = resolveInflationRisk({
         ui: input.inflationRisk,
         saved: savedInflationOverrides,
-        presetStdDev: preset ? toNumber(preset.inflationStdDev) : null,
+        presetStdDev: preset.inflationStdDev,
       });
 
-      // Resolve return clamp bounds from preset (or defaults)
-      const returnClampMin = preset
-        ? toNumber(preset.returnClampMin)
-        : MC_RETURN_CLAMP_MIN;
-      const returnClampMax = preset
-        ? toNumber(preset.returnClampMax)
-        : MC_RETURN_CLAMP_MAX;
+      const { returnClampMin, returnClampMax } = preset;
 
       // Build MC-aligned deterministic return rates using GEOMETRIC means.
       // The arithmetic mean is the expected single-year return, but deterministic compounding
@@ -537,9 +440,9 @@ export const monteCarloRouter = createTRPCRouter({
           glidePathAges: mcGlidePath.map((gp) => gp.age),
           glidePath: mcGlidePath,
           preset: input.preset,
-          presetLabel: preset?.label ?? "Custom",
+          presetLabel: preset.label,
           presetDescription:
-            preset?.description ??
+            preset.description ??
             "Raw DB values — no preset adjustments applied",
           blendedReturn,
           blendedVol,
@@ -549,12 +452,14 @@ export const monteCarloRouter = createTRPCRouter({
           decumulationExpenseOverride: input.decumulationExpenseOverride,
           accumulationExpenseOverride: input.accumulationExpenseOverride,
           taxMode: input.taxMode,
-          hasAssetClassOverrides: effectiveAssetOverrides.length > 0,
+          hasAssetClassOverrides:
+            savedAssetOverrides.length > 0 ||
+            (input.assetClassOverrides?.length ?? 0) > 0,
           correlations: mcCorrelations,
           returnClampMin,
           returnClampMax,
-          returnMultiplier,
-          volMultiplier,
+          returnMultiplier: preset.returnMultiplier,
+          volMultiplier: preset.volMultiplier,
         },
         savedOverrides: {
           assetClassOverrides: savedAssetOverrides,

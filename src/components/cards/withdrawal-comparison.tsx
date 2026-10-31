@@ -59,6 +59,8 @@ type AnalyzerInput = {
 type Props = {
   strategies: StrategyResult[];
   activeStrategy: string | null;
+  /** The Simulation preset behind the Success and Stability columns. */
+  presetLabel?: string;
   retirementAge: number;
   dollarMode: "nominal" | "real";
   onDollarModeChange: (mode: "nominal" | "real") => void;
@@ -72,6 +74,7 @@ type ChartMetric = "retirementBalance" | "withdrawal";
 export function WithdrawalComparisonCard({
   strategies,
   activeStrategy,
+  presetLabel,
   retirementAge,
   dollarMode,
   onDollarModeChange,
@@ -156,6 +159,12 @@ export function WithdrawalComparisonCard({
         </div>
       }
     >
+      {presetLabel && (
+        <p className="text-caption text-faint mb-1">
+          Success and stability use the {presetLabel} preset&apos;s returns,
+          volatility and glide path — the preset chosen for the Simulation.
+        </p>
+      )}
       {/* Table */}
       {
         <div className="overflow-x-auto">

@@ -64,6 +64,9 @@ export const SK_TAX_FILING_STATUS = "tax_filing_status";
 /** Dollars of HSA cash to keep uninvested; unset = the year's HDHP minimum deductible for the coverage. */
 export const SK_HSA_CASH_BUFFER = "hsa_cash_buffer";
 
+/** Simulation preset the Retirement page's Simulation and strategy comparison use; unset = Default. */
+export const SK_SIMULATION_PRESET = "simulation_preset";
+
 // ── Dashboard Cards ─────────────────────────────────────────────────
 export const SK_HIGH_INCOME_THRESHOLD = "high_income_threshold";
 export const SK_SAVINGS_RATE_THRESHOLDS = "savings_rate_thresholds";

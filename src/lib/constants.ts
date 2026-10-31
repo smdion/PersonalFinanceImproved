@@ -232,6 +232,15 @@ export const MC_INFLATION_GROWTH_FLOOR = 0.5;
  *  percentage points anyway. */
 export const MC_DEFAULT_TRIALS = 500;
 
+/** The Simulation presets; Custom is the household's own values. */
+export const SIMULATION_PRESET_KEYS = [
+  "aggressive",
+  "default",
+  "conservative",
+  "custom",
+] as const;
+export type SimulationPresetKey = (typeof SIMULATION_PRESET_KEYS)[number];
+
 /** The default simulation — one definition for the router's input
  *  defaults, the Retirement page's form + prefetch, and the dashboard's
  *  peeks (which send none of these and so hit the page's run only when the

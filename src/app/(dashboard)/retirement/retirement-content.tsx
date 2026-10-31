@@ -4,6 +4,7 @@
  *  retirement/page.tsx is a thin server component that prefetches the most
  *  expensive query before rendering this. */
 
+import { useSimulationPreset } from "@/lib/hooks/use-simulation-preset";
 import { useFocusedState } from "@/lib/hooks/use-focus";
 import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
@@ -102,7 +103,12 @@ export function RetirementContent() {
   // Lazy-load strategy comparison only when expanded
   const [comparisonExpanded, setComparisonExpanded] =
     usePersistedSetting<boolean>(SK_RETIREMENT_COMPARISON_EXPANDED, false);
-  const comparisonInput = baseInput;
+  // The same preset the page's Simulation uses.
+  const [simulationPreset] = useSimulationPreset();
+  const comparisonInput = useMemo(
+    () => ({ ...baseInput, preset: simulationPreset }),
+    [baseInput, simulationPreset],
+  );
   const { data: comparisonData, isLoading: comparisonLoading } =
     trpc.projection.computeStrategyComparison.useQuery(comparisonInput, {
       enabled:
@@ -281,6 +287,7 @@ export function RetirementContent() {
           <WithdrawalComparisonCard
             strategies={comparisonData.strategies}
             activeStrategy={comparisonData.activeStrategy}
+            presetLabel={comparisonData.presetLabel}
             retirementAge={comparisonData.retirementAge}
             dollarMode={dollarMode}
             onDollarModeChange={setDollarMode}

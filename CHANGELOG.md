@@ -34,6 +34,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
+- **Simulation presets mean the same thing everywhere.** The preset you pick now sets both the Simulation and the strategy comparison, and the comparison says which one it used; the choice is saved. Coast FIRE's Simulation now uses the Default preset's return overrides, your saved asset-class changes and its return limits, and the strategy comparison uses its preset's returns, volatility, glide path and limits, so their numbers can change. The year-by-year projection's stock share (for VPW) and the glide-path check read the Default preset instead of Custom.
+
 - **Social Security gets its cost-of-living raise.** Benefits stayed at today's amount for the whole projection while spending and tax brackets grew with inflation, so a benefit lost about 40% of its value over 20 years and plans read as worse funded than they were. Benefits now grow with your Inflation rate; in today's dollars they stay what you entered. The help text said they followed the Post-Retirement Raise, which was never so.
 - **Tax on Social Security is charged.** The taxable share raised your tax rate, but nobody paid the tax on that share itself — on $60k of withdrawals and $40k of taxable benefits, $4,584 of a $7,640 bill. It's now part of the year's tax. A benefit above your spending pays it first, and a withdrawal covers the rest. The projection table shows it on its own line, apart from the rate on withdrawals.
 - **How much Social Security is taxable counts brokerage gains and taxable Roth growth,** not just Traditional withdrawals, as the IRS formula does.

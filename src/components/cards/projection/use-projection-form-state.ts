@@ -1,4 +1,5 @@
 /** Form and UI state for the projection card — withdrawal config, override forms, view toggles, and MC settings. Overrides are loaded from DB on mount. */
+import { useSimulationPreset } from "@/lib/hooks/use-simulation-preset";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import {
   useCallback,
@@ -163,9 +164,8 @@ export function useProjectionFormState() {
     "deterministic" | "monteCarlo"
   >("monteCarlo");
   const [mcTrials, setMcTrials] = useState(MC_DEFAULT_TRIALS);
-  const [mcPreset, setMcPreset] = useState<
-    "aggressive" | "default" | "conservative" | "custom"
-  >(DEFAULT_SIMULATION.preset);
+  // Shared with the strategy comparison.
+  const [mcPreset, setMcPreset] = useSimulationPreset();
   // Default to Advanced (real per-account tax tracking) rather than
   // Simple (cFIREsim-style single-bucket comparison) — most households
   // have real Traditional/Roth/HSA/brokerage splits they care about

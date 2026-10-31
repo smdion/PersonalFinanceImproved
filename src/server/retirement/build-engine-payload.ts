@@ -10,11 +10,9 @@
  * balances. Callers (projection router endpoints) consume the result and add
  * their own accumulation/decumulation overrides and decumulation defaults.
  */
-import {
-  glidePathFromRows,
-  classifyAssetClasses,
-  stockShareByAge,
-} from "@/lib/pure/stock-share";
+import { DEFAULT_SIMULATION } from "@/lib/constants";
+import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
+import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import { retirementFilingStatus } from "@/lib/pure/filing-status";
 import { thisYearFilingStatus } from "@/server/helpers/filing-status";
 import { eq, asc } from "drizzle-orm";
@@ -135,7 +133,7 @@ export async function fetchRetirementData(
     salaryProfileRow,
     jobLinkRows,
     accountBasisRows,
-    glidePathRows,
+    defaultPreset,
     classBucketRows,
   ] = await Promise.all([
     getAllPeople(db),
@@ -220,9 +218,10 @@ export async function fetchRetirementData(
       })
       .from(schema.contributionAccounts),
     db.select().from(schema.accountBasis),
-    // The household's allocation glide path and which classes are stocks —
-    // VPW sizes its percentage by the stock share (lib/pure/stock-share.ts).
-    db.select().from(schema.glidePathAllocations),
+    // The Default preset's glide path and which classes are stocks — VPW
+    // sizes its percentage by the stock share (lib/pure/stock-share.ts). A
+    // Simulation run replaces this with its own preset's.
+    loadSimulationPreset(db, DEFAULT_SIMULATION.preset),
     db.select().from(schema.assetClassBuckets),
   ]);
   return {
@@ -252,7 +251,7 @@ export async function fetchRetirementData(
     salaryProfileRow,
     jobLinkRows,
     accountBasisRows,
-    glidePathRows,
+    defaultPreset,
     classBucketRows,
   };
 }
@@ -311,7 +310,7 @@ export async function buildEnginePayload(
     allAppSettings,
     jobLinkRows,
     accountBasisRows,
-    glidePathRows,
+    defaultPreset,
     classBucketRows,
   } = data;
 
@@ -1290,7 +1289,7 @@ export async function buildEnginePayload(
     perPersonBirthYears: perPersonSettings.map((p) => p.birthYear),
     stockShareByAge:
       stockShareByAge(
-        glidePathFromRows(glidePathRows),
+        defaultPreset.glidePath,
         classifyAssetClasses(classBucketRows),
         age,
         maxEndAge,

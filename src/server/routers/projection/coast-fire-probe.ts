@@ -13,8 +13,6 @@
  */
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
-import { eq, asc, sql } from "drizzle-orm";
-import { queryRaw } from "@/lib/db/compat";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import {
@@ -25,7 +23,6 @@ import {
 import * as schema from "@/lib/db/schema";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
 import { runMonteCarloOffThread } from "@/server/helpers/monte-carlo-worker-client";
-import { toNumber } from "@/server/helpers";
 import { MC_CONFIDENCE_THRESHOLD } from "@/lib/constants";
 import type {
   AccumulationOverride,
@@ -41,8 +38,7 @@ import {
   decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
-  loadSavedInflationOverrides,
-  resolveInflationRisk,
+  buildMcInputs,
   resolveProjectionOverrides,
 } from "./_shared";
 import {
@@ -113,36 +109,15 @@ export const coastFireProbeRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const [data, assetClasses, assetCorrelations, presetRows, presetGpRows] =
-        await Promise.all([
-          fetchRetirementData(ctx.db, {
-            snapshotId: input.snapshotId,
-            contributionProfileId: input.contributionProfileId,
-            salaryProfileId: input.salaryProfileId,
-          }),
-          ctx.db
-            .select()
-            .from(schema.assetClassParams)
-            .where(eq(schema.assetClassParams.isActive, true))
-            .orderBy(asc(schema.assetClassParams.sortOrder)),
-          ctx.db.select().from(schema.assetClassCorrelations),
-          ctx.db
-            .select()
-            .from(schema.mcPresets)
-            .where(eq(schema.mcPresets.key, "default")),
-          queryRaw<{
-            age: number;
-            asset_class_id: number;
-            allocation: string;
-          }>(
-            ctx.db,
-            sql`SELECT gp.age, gp.asset_class_id, gp.allocation
-                FROM mc_preset_glide_paths gp
-                JOIN mc_presets p ON p.id = gp.preset_id
-                WHERE p.key = 'default'
-                ORDER BY gp.age, gp.asset_class_id`,
-          ),
-        ]);
+      // Coast FIRE's Simulation runs on the default preset.
+      const [data, mc] = await Promise.all([
+        fetchRetirementData(ctx.db, {
+          snapshotId: input.snapshotId,
+          contributionProfileId: input.contributionProfileId,
+          salaryProfileId: input.salaryProfileId,
+        }),
+        buildMcInputs(ctx.db, DEFAULT_SIMULATION.preset),
+      ]);
 
       const payload = await buildEnginePayload(ctx.db, data, {
         contributionProfileId: input.contributionProfileId,
@@ -186,32 +161,12 @@ export const coastFireProbeRouter = createTRPCRouter({
         });
       }
 
-      const preset = presetRows[0];
-      if (!preset) {
+      if (!mc.preset?.found) {
         return { result: null, computedAt: null };
       }
 
-      const returnMultiplier = toNumber(preset.returnMultiplier);
-      const volMultiplier = toNumber(preset.volMultiplier);
-      const mcAssetClasses = assetClasses.map((ac) => ({
-        id: ac.id,
-        name: ac.name,
-        meanReturn: toNumber(ac.meanReturn) * returnMultiplier,
-        stdDev: toNumber(ac.stdDev) * volMultiplier,
-      }));
-      const mcCorrelations = assetCorrelations.map((c) => ({
-        classAId: c.classAId,
-        classBId: c.classBId,
-        correlation: toNumber(c.correlation),
-      }));
-      const gpByAge = new Map<number, Record<number, number>>();
-      for (const row of presetGpRows) {
-        if (!gpByAge.has(row.age)) gpByAge.set(row.age, {});
-        gpByAge.get(row.age)![row.asset_class_id] = toNumber(row.allocation);
-      }
-      const mcGlidePath = Array.from(gpByAge.entries())
-        .sort(([a], [b]) => a - b)
-        .map(([gpAge, allocations]) => ({ age: gpAge, allocations }));
+      const { mcAssetClasses, mcCorrelations, mcGlidePath } = mc;
+      const { returnClampMin, returnClampMax } = mc.preset;
       // VPW sizes by the stock share of the glide path the trials use.
       const classBuckets = await ctx.db.select().from(schema.assetClassBuckets);
       const mcStockShareByAge =
@@ -221,10 +176,7 @@ export const coastFireProbeRouter = createTRPCRouter({
           engineInput.currentAge,
           engineInput.projectionEndAge,
         ) ?? undefined;
-      const inflationRisk = resolveInflationRisk({
-        saved: await loadSavedInflationOverrides(ctx.db),
-        presetStdDev: toNumber(preset.inflationStdDev),
-      });
+      const inflationRisk = mc.effectiveInflationRisk;
 
       const NUM_TRIALS = DEFAULT_SIMULATION.coastFireTrials;
       const SEED = 42;
@@ -242,6 +194,8 @@ export const coastFireProbeRouter = createTRPCRouter({
         mcCorrelations,
         mcGlidePath,
         mcStockShareByAge,
+        returnClampMin,
+        returnClampMax,
         inflationRisk,
         probeAge: input.probeAge,
       });
@@ -269,6 +223,8 @@ export const coastFireProbeRouter = createTRPCRouter({
           numTrials: NUM_TRIALS,
           seed: SEED,
           assetClasses: mcAssetClasses,
+          returnClampMin,
+          returnClampMax,
           correlations: mcCorrelations,
           glidePath: mcGlidePath,
           inflationRisk,

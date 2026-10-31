@@ -1,4 +1,7 @@
-import { SK_TAX_FILING_STATUS } from "@/lib/constants/settings-keys";
+import {
+  SK_SIMULATION_PRESET,
+  SK_TAX_FILING_STATUS,
+} from "@/lib/constants/settings-keys";
 import { w4FilingStatusSchema } from "@/lib/config/enum-values";
 import { z } from "zod/v4";
 import {
@@ -56,6 +59,7 @@ import { apiConfigSchema, accountMappingSchema } from "@/lib/db/json-schemas";
 import { applyPlan } from "@/server/helpers/plans";
 import { mergeSettingAtomically } from "@/server/helpers/merge-setting";
 import { firstReachedSchema } from "@/lib/pure/milestone-first-reached";
+import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import type { Db } from "@/server/helpers/transforms";
 
 // --- Zod schemas ---
@@ -69,6 +73,7 @@ const appSettingInput = z.object({
  *  is refused instead of read back later as empty. */
 const STRUCTURED_SETTINGS: Record<string, z.ZodType> = {
   [SK_TAX_FILING_STATUS]: w4FilingStatusSchema,
+  [SK_SIMULATION_PRESET]: z.enum(SIMULATION_PRESET_KEYS),
   [SK_MILESTONE_CUSTOM_GOALS]: customGoalsSchema,
   [SK_MILESTONE_CHECKLIST]: milestoneChecklistSchema,
   [SK_MILESTONE_FIRST_REACHED]: firstReachedSchema,

@@ -11,11 +11,9 @@
  *     optimistic). Called from projection.computeStressTest.
  */
 
-import {
-  classifyAssetClasses,
-  glidePathFromRows,
-  stockShareByAge,
-} from "@/lib/pure/stock-share";
+import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
+import { DEFAULT_SIMULATION } from "@/lib/constants";
+import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import * as schema from "@/lib/db/schema";
 import type { db } from "@/lib/db";
@@ -58,8 +56,8 @@ export function buildAccumulationOrder(
 }
 
 /**
- * The stock allocation (percent, one decimal) the household's glide path
- * assumes at `currentAge` — the same stock share VPW sizes by
+ * The stock allocation (percent, one decimal) the Default preset's glide
+ * path assumes at `currentAge` — the same stock share VPW sizes by
  * (lib/pure/stock-share.ts: a class is stocks when any of its buckets is).
  * Null when there's no glide path or no class is mapped to buckets, so the
  * PlanHealthCard skips the glide-path warning.
@@ -68,12 +66,12 @@ export async function computeCurrentStockAllocationPercent(
   db: DbType,
   currentAge: number,
 ): Promise<number | null> {
-  const [gpRows, bucketRows] = await Promise.all([
-    db.select().from(schema.glidePathAllocations),
+  const [preset, bucketRows] = await Promise.all([
+    loadSimulationPreset(db, DEFAULT_SIMULATION.preset),
     db.select().from(schema.assetClassBuckets),
   ]);
   const share = stockShareByAge(
-    glidePathFromRows(gpRows),
+    preset.glidePath,
     classifyAssetClasses(bucketRows),
     currentAge,
     currentAge,

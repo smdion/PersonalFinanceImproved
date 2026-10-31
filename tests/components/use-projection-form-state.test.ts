@@ -13,6 +13,10 @@ import {
 let accumQueryData: unknown[] | undefined;
 let decumQueryData: unknown[] | undefined;
 
+vi.mock("@/lib/hooks/use-simulation-preset", () => ({
+  useSimulationPreset: () => ["default", vi.fn()],
+}));
+
 vi.mock("@/lib/trpc", () => ({
   trpc: {
     retirement: {

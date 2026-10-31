@@ -862,10 +862,8 @@ export function ProjectionCard(props: {
                                         <strong className="text-purple-300">
                                           Custom
                                         </strong>{" "}
-                                        — Raw DB values for returns, volatility,
-                                        and glide path. No preset adjustments —
-                                        edit asset_class_params and
-                                        glide_path_allocations directly.
+                                        — Your own returns, volatility and glide
+                                        path, with no preset adjustments.
                                       </span>,
                                     ]}
                                   />
@@ -878,6 +876,11 @@ export function ProjectionCard(props: {
                                 </option>
                                 <option value="custom">Custom</option>
                               </LabeledSelect>
+                              <span className="text-caption text-faint basis-full">
+                                Sets the Simulation and strategy comparison. The
+                                year-by-year projection, Coast FIRE and the
+                                glide-path check stay on Default.
+                              </span>
                               <LabeledSelect
                                 label="Trials"
                                 value={mcTrials}

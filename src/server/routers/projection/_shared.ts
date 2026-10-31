@@ -6,6 +6,12 @@
  * here. This keeps shared pipeline code in exactly one place and removes
  * the duplicate-schema risk of spreading them across the sibling files.
  */
+import {
+  loadSimulationPreset,
+  presetAssetClasses,
+  type SimulationPreset,
+} from "@/server/helpers/simulation-preset";
+import type { SimulationPresetKey } from "@/lib/constants";
 import { glidePathFromRows } from "@/lib/pure/stock-share";
 import { z } from "zod/v4";
 import { eq, asc } from "drizzle-orm";
@@ -382,14 +388,15 @@ export async function loadSavedInflationOverrides(
 }
 
 /**
- * Bootstrap parallel fetch of the three core MC DB tables plus the saved
- * inflation-risk override, then map them to the shapes the engine expects.
- *
- * Used by computeStrategyComparison, analyzeStrategy, and
- * computeMonteCarloProjection. NOT used by computeCoastFireMC (which reads
- * a preset-specific glide path keyed on mcPresets.key = 'default').
+ * The Simulation's inputs: asset classes, correlations, glide path and
+ * inflation risk, under `presetKey` (helpers/simulation-preset.ts). Without
+ * one, the raw table values — computeMonteCarloProjection applies the
+ * run's preset itself, with the run's own asset-class changes on top.
  */
-export async function buildMcInputs(db: Db): Promise<{
+export async function buildMcInputs(
+  db: Db,
+  presetKey?: SimulationPresetKey,
+): Promise<{
   mcAssetClasses: {
     id: number;
     name: string;
@@ -398,8 +405,9 @@ export async function buildMcInputs(db: Db): Promise<{
   }[];
   mcCorrelations: { classAId: number; classBId: number; correlation: number }[];
   mcGlidePath: { age: number; allocations: Record<number, number> }[];
-  /** Without a preset (the routes that call this and have none). */
   effectiveInflationRisk: { stdDev: number };
+  /** The preset used; null without `presetKey`. */
+  preset: SimulationPreset | null;
   /** Raw saved inflation override — null if none saved. Callers that surface
    *  this to the client (e.g. computeMonteCarloProjection) use this as-is. */
   savedInflationOverrides: SavedInflationOverrides;
@@ -409,6 +417,7 @@ export async function buildMcInputs(db: Db): Promise<{
     assetCorrelations,
     glidePathRows,
     savedInflationOverrides,
+    preset,
   ] = await Promise.all([
     db
       .select()
@@ -418,14 +427,18 @@ export async function buildMcInputs(db: Db): Promise<{
     db.select().from(schema.assetClassCorrelations),
     db.select().from(schema.glidePathAllocations),
     loadSavedInflationOverrides(db),
+    presetKey ? loadSimulationPreset(db, presetKey) : Promise.resolve(null),
   ]);
 
-  const mcAssetClasses = assetClasses.map((ac) => ({
+  const rawClasses = assetClasses.map((ac) => ({
     id: ac.id,
     name: ac.name,
     meanReturn: toNumber(ac.meanReturn),
     stdDev: toNumber(ac.stdDev),
   }));
+  const mcAssetClasses = preset
+    ? presetAssetClasses(rawClasses, preset)
+    : rawClasses;
 
   const mcCorrelations = assetCorrelations.map((c) => ({
     classAId: c.classAId,
@@ -433,10 +446,11 @@ export async function buildMcInputs(db: Db): Promise<{
     correlation: toNumber(c.correlation),
   }));
 
-  const mcGlidePath = glidePathFromRows(glidePathRows);
+  const mcGlidePath = preset?.glidePath ?? glidePathFromRows(glidePathRows);
 
   const effectiveInflationRisk = resolveInflationRisk({
     saved: savedInflationOverrides,
+    presetStdDev: preset?.inflationStdDev ?? null,
   });
 
   return {
@@ -444,6 +458,7 @@ export async function buildMcInputs(db: Db): Promise<{
     mcCorrelations,
     mcGlidePath,
     effectiveInflationRisk,
+    preset,
     savedInflationOverrides,
   };
 }
