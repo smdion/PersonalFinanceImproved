@@ -27,6 +27,8 @@ export const investmentCurrentBalancesRouter = createTRPCRouter({
         current: b.current,
         snapshot: b.snapshot,
         noSnapshot: b.noSnapshot,
+        /** The snapshot's figure, or an institution's newer report. */
+        source: b.source,
         /** Holds funds that move with markets. */
         market: moveOf.has(b.key),
         /** Its move into the target close; null when it can't be told. */

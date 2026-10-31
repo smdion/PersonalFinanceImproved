@@ -152,6 +152,7 @@ describe("investments.getCurrentBalances", () => {
       "noSnapshot",
       "performanceAccountId",
       "snapshot",
+      "source",
     ]);
     expect(r.feeds).toHaveLength(2);
   });

@@ -17,6 +17,7 @@ const balance = (
   current,
   snapshot: current,
   noSnapshot: false,
+  source: "snapshot" as const,
   market,
   move,
 });

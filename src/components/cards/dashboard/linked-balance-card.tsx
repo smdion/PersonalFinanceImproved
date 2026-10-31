@@ -73,6 +73,22 @@ const listNames = (names: readonly string[]) =>
     ? (names[0] ?? "")
     : `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
 
+/** "Fidelity" from "Fidelity Investments": notes stay on one line; the
+ *  full name is in the hover text. */
+const shortName = (name: string) => name.split(/\s+/)[0] ?? name;
+
+/** The note beside a close with accounts missing. */
+function missingNote(
+  c: { day: string; missing: readonly string[] },
+  target: string | undefined,
+): string | null {
+  if (c.missing.length === 0) return null;
+  const who = listNames([...new Set(c.missing.map(shortName))]);
+  return c.day === target
+    ? `${who} ${c.missing.length === 1 ? "change" : "changes"} not in yet`
+    : `excludes ${who}`;
+}
+
 /** Hover text for a close with accounts missing. */
 function missingReason(
   c: { day: string; missing: readonly string[] },
@@ -82,8 +98,21 @@ function missingReason(
   const who = listNames(c.missing);
   const one = c.missing.length === 1;
   return c.day === target
-    ? `${who}'s ${shortDay(c.day)} prices aren't in yet — ${one ? "it arrives" : "they arrive"} with the next sync. The total leaves ${one ? "it" : "them"} out until then.`
+    ? `${who}'s ${shortDay(c.day)} ${one ? "balance is" : "balances are"} in; the change needs ${one ? "its" : "their"} ${shortDay(c.day)} fund prices, which arrive with the next sync. This total leaves ${one ? "it" : "them"} out until then.`
     : `${who} didn't report a price for ${shortDay(c.day)}, so ${one ? "its" : "their"} change isn't in this total.`;
+}
+
+/** Where the total's figures come from: the snapshot, the institutions'
+ *  newer reports, or both. */
+function sourceLine(
+  balances: readonly { source: "snapshot" | "reported" }[],
+  snapshotDay: string,
+): string {
+  const snapshot = balances.some((b) => b.source === "snapshot");
+  const reported = balances.some((b) => b.source === "reported");
+  if (!reported) return `From your ${snapshotDay} snapshot,`;
+  if (!snapshot) return "From institution reports,";
+  return `From your ${snapshotDay} snapshot and newer reports,`;
 }
 
 /** "+$1,234.56" / "−$1,234.56". */
@@ -288,11 +317,15 @@ function LinkedBalanceCardImpl() {
         }
       />
 
-      {/* Snapshot → now: ties this to Net Worth. */}
+      {/* Where the total comes from, and the change since the snapshot
+          (ties this to Net Worth). */}
       {inSnapshot.length > 0 && snapshotDate && (
         <p className="text-caption text-muted mb-2">
-          <span className={moveColor(since)}>{signed(since)}</span> since your{" "}
-          {shortDay(snapshotDate)} snapshot
+          {sourceLine(inSnapshot, shortDay(snapshotDate))}{" "}
+          <span className={moveColor(since)}>{signed(since)}</span>{" "}
+          {inSnapshot.every((b) => b.source === "snapshot")
+            ? "since"
+            : `since your ${shortDay(snapshotDate)} snapshot`}
           {flows?.covered && flows.added !== 0 && (
             <span className="text-faint">
               {" "}
@@ -324,11 +357,7 @@ function LinkedBalanceCardImpl() {
                 title={missingReason(c, target)}
               >
                 {[
-                  c.missing.length > 0
-                    ? c.day === target
-                      ? `${listNames(c.missing)} still updating`
-                      : `excludes ${listNames(c.missing)}`
-                    : null,
+                  missingNote(c, target),
                   c.flows
                     ? `${c.flows > 0 ? "+" : "−"}${formatCurrency(Math.abs(c.flows))} paid ${c.flows > 0 ? "in" : "out"}`
                     : null,
