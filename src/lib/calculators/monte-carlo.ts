@@ -16,8 +16,7 @@ import { calculateProjection } from "./engine";
 import { resolveReturnRateForAge } from "./engine/growth-application";
 import {
   createPRNG,
-  sampleCorrelatedReturns,
-  blendReturns,
+  sampleBlendedReturn,
   choleskyDecomposition,
   buildCorrelationMatrix,
   sampleNormalMeanStd,
@@ -265,14 +264,15 @@ export function calculateMonteCarlo(
       let annualReturn: number;
 
       if (assetClasses.length > 0) {
-        // Sample correlated returns for each asset class (log-normal, centered on asset class means)
-        const assetReturns = sampleCorrelatedReturns(
+        // Correlated log-normal draws, centered on the asset class means and
+        // blended by this age's glide path.
+        annualReturn = sampleBlendedReturn(
           rng,
           assetClasses,
           choleskyL,
+          glidePath,
+          age,
         );
-        // Blend using glide path allocations at this age
-        annualReturn = blendReturns(assetReturns, assetClasses, glidePath, age);
       } else {
         // Fallback: use the deterministic return rate
         annualReturn = resolveReturnRateForAge(detRateMap, age);

@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**391 procedures across 56 routers.**
+**392 procedures across 56 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -148,9 +148,10 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `investments/comparison`
 
-| Procedure       | Kind  | Auth                 | Description                                                                                                 |
-| --------------- | ----- | -------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `getComparison` | query | `portfolioProcedure` | Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains). |
+| Procedure             | Kind  | Auth                 | Description                                                                                                        |
+| --------------------- | ----- | -------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `getComparison`       | query | `portfolioProcedure` | Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains).        |
+| `getYearReturnRanges` | query | `portfolioProcedure` | at the household's age that year on the chosen preset's glide path — today's assumptions, not what was known then. |
 
 ## `investments/current-balances`
 
