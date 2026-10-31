@@ -4,7 +4,7 @@ import { FocusLink } from "@/components/ui/focus-link";
 import type { ReactNode } from "react";
 import { MILESTONE_SOURCE_LABELS } from "@/lib/config/milestones";
 import { STATUS_COLORS } from "@/lib/utils/colors";
-import { compactCurrency, maskAmountsInText } from "@/lib/utils/format";
+import { maskAmountsInText } from "@/lib/utils/format";
 import type { Recommendation } from "@/lib/pure/recommendations";
 
 const URGENCY = {
@@ -50,12 +50,6 @@ export function RecommendationRow({
         </div>
         {detail}
       </div>
-      {r.impact && (
-        <span className="text-secondary text-sm whitespace-nowrap">
-          {compactCurrency(r.impact.amount)}
-          {r.impact.kind === "perYear" ? "/yr" : ""}
-        </span>
-      )}
       <FocusLink
         focus={r.focus}
         className="text-caption whitespace-nowrap text-blue-600 hover:underline"

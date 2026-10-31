@@ -632,7 +632,7 @@ describe("investing (Bogleheads)", () => {
     expect(r.nextStep).toBe(
       "Rebalance about $100k: sell Stocks; buy $60k Bonds and $40k TIPS",
     );
-    expect(r.impact).toEqual({ kind: "oneTime", amount: 100_000 });
+    expect(r.impact?.amount).toBeCloseTo(100_000, 2);
     // The same mix in a $50k household scales with it.
     const small = byId(
       holdings(
@@ -670,6 +670,26 @@ describe("investing (Bogleheads)", () => {
     expect(r.nextStep).toBe(
       "Rebalance about $100k: sell Stocks; buy $56k Bonds and $40k TIPS",
     );
+  });
+
+  it("one amount for the move: buys larger than sells set it, and it matches the impact", () => {
+    // Cash under the minimum move is left out of the sells: sells $96k,
+    // buys $100k.
+    const r = byId(
+      holdings(
+        [
+          { name: "Stocks", share: 0.696, targetShare: 0.6 },
+          { name: "Bonds", share: 0.2, targetShare: 0.3 },
+          { name: "Cash", share: 0.104, targetShare: 0.1 },
+        ],
+        { knownValue: 1_000_000 },
+      ),
+      "rebalance",
+    );
+    expect(r.nextStep).toBe(
+      "Rebalance about $100k: sell Stocks; buy $100k Bonds",
+    );
+    expect(r.impact?.amount).toBeCloseTo(100_000, 2);
   });
 
   it("lists several classes as a sentence", () => {
@@ -1899,6 +1919,8 @@ describe("FOO steps 3 and 9 with the debts list", () => {
       impact: { kind: "perYear", amount: 550 },
     });
     expect(student(33).nextStep).toMatch(/Nelnet \(5\.5%\)/);
+    // The amount is in the text itself.
+    expect(student(33).nextStep).toMatch(/about \$550 a year in interest$/);
   });
 
   it("a card on the list is a balance carried at any rate; mapped cards aren't judged", () => {

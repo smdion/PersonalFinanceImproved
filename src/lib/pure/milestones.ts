@@ -1237,7 +1237,7 @@ function highInterestDebtStep(
         ]
           .filter(Boolean)
           .join(". ") || null,
-      nextStep: `Pay off ${names.join(", ")} — above Money Guy's line for your age`,
+      nextStep: `Pay off ${names.join(", ")} — above Money Guy's line for your age${interest > 0 ? `; about ${formatCurrency(interest, 0)} a year in interest` : ""}`,
       nextStepFocus: { topic: "debts" },
       subjects: high.map((d) => d.name),
       impact: interest > 0 ? { kind: "perYear", amount: interest } : null,
@@ -1571,6 +1571,9 @@ function investing(input: MilestoneInput): MilestoneResult[] {
     const names = (cs: typeof targeted) => formatList(cs.map((c) => c.name));
     const overTotal = over.reduce((s, c) => s + dollars(c), 0);
     const underTotal = under.reduce((s, c) => s + dollars(c), 0);
+    // One amount for the move: sells and buys can differ a little, since
+    // moves too small to matter are left out of each side.
+    const moveTotal = Math.max(overTotal, underTotal);
     // Where to sell: inside tax-advantaged accounts a sale costs no tax;
     // in a taxable account it realizes gains, so new money does it better.
     const sheltered = over.reduce((s, c) => s + (c.shelteredValue ?? 0), 0);
@@ -1586,9 +1589,9 @@ function investing(input: MilestoneInput): MilestoneResult[] {
           : " — steer new contributions; selling in taxable accounts realizes gains";
     const action =
       over.length && under.length
-        ? `Rebalance about ${compactCurrency(overTotal)}: sell ${names(over)}; buy ${list(under)}${where}`
+        ? `Rebalance about ${compactCurrency(moveTotal)}: sell ${names(over)}; buy ${list(under)}${where}`
         : over.length
-          ? `Rebalance about ${compactCurrency(overTotal)}: sell ${names(over)}; buy what's under target${where}`
+          ? `Rebalance about ${compactCurrency(moveTotal)}: sell ${names(over)}; buy what's under target${where}`
           : under.length
             ? `Add about ${compactCurrency(underTotal)}: ${list(under)}`
             : null;
@@ -1617,10 +1620,7 @@ function investing(input: MilestoneInput): MilestoneResult[] {
             .filter(Boolean)
             .join(" · ") || null,
         nextStep: action,
-        impact:
-          action !== null
-            ? { kind: "oneTime", amount: Math.max(overTotal, underTotal) }
-            : null,
+        impact: action !== null ? { kind: "oneTime", amount: moveTotal } : null,
       }),
     );
   }
