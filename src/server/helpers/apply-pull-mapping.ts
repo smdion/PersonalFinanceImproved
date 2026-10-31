@@ -10,6 +10,7 @@ import * as schema from "@/lib/db/schema";
 import type { AccountMapping } from "@/lib/db/schema";
 import type { Db } from "./transforms";
 import { localDateStr } from "@/lib/utils/date";
+import { log } from "@/lib/logger";
 import {
   isPullMapping,
   mappingsWithTypedIds,
@@ -96,6 +97,25 @@ export async function applyPullMapping(
         .where(eq(schema.mortgageLoans.id, loanId));
       return { applied: true, kind: "mortgageLoanBalance" };
     }
+    return { applied: false };
+  }
+
+  // Only target kinds this pipeline knows are written. A portfolio
+  // (`performance:`) account is push-only — its balance is already in net
+  // worth from the snapshot, so falling through to the asset branch below
+  // would write it a second time as an other_asset_items row. Anything else
+  // with a prefix we don't know is skipped the same way. A localId with no
+  // prefix at all (a plain name) is a legacy asset mapping, kept working.
+  const isAssetTarget =
+    mapping.assetId != null ||
+    localId.startsWith("asset:") ||
+    !/^[a-z]+:\d/.test(localId);
+  if (mapping.performanceAccountId != null || !isAssetTarget) {
+    log("warn", "apply_pull_mapping.unsupported_target", {
+      localId,
+      localName: mapping.localName,
+      remoteAccountId: mapping.remoteAccountId,
+    });
     return { applied: false };
   }
 

@@ -403,30 +403,44 @@ export class ActualClient implements BudgetAPIClient {
     const res = await this.request<{ data: ActualAccount[] }>("/accounts");
     // Fetch balances for each account
     const accounts = res.data.map(mapAccount);
-    // Try to get balances individually (parallelized — each call already
-    // retries up to 3x with exponential backoff via budgetApiRequest).
+    // Balances one request per account, in parallel (each already retries
+    // with backoff in budgetApiRequest). The wrapper reloads the budget per
+    // request and struggles under concurrency, so a failure gets one more
+    // try on its own. Still failing, the sync stops: an account without its
+    // balance would be written as $0 into every Ledgr row mapped to it (a
+    // debt "paid off", a mortgage zeroed, cash gone) and replace the good
+    // cache — the sync's network phase throwing changes nothing locally.
+    const failed: BudgetAccount[] = [];
     await Promise.all(
       accounts.map(async (acct) => {
         try {
-          // Same endpoint/shape as getAccountBalance below — call it
-          // directly instead of re-duplicating the (previously wrong)
-          // response parsing here. This duplicate site had the identical
-          // `data.balance` bug, silently producing NaN for every account's
-          // balance (no throw, so the catch below never caught it).
+          // Same endpoint/shape as getAccountBalance below.
           const balance = await this.getAccountBalance(acct.id);
           acct.balance = balance;
           acct.clearedBalance = balance;
-        } catch (err) {
-          // Balance may already be included in the account data, but this
-          // could also be a real failure (auth, network, etc.) — log it so
-          // it's debuggable instead of failing silently.
-          log("warn", "actual_client.balance_fetch_failed", {
-            accountId: acct.id,
-            error: err instanceof Error ? err.message : String(err),
-          });
+        } catch {
+          failed.push(acct);
         }
       }),
     );
+    const unavailable: string[] = [];
+    for (const acct of failed) {
+      try {
+        const balance = await this.getAccountBalance(acct.id);
+        acct.balance = balance;
+        acct.clearedBalance = balance;
+      } catch (err) {
+        log("warn", "actual_client.balance_fetch_failed", {
+          accountId: acct.id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        unavailable.push(acct.name);
+      }
+    }
+    if (unavailable.length > 0)
+      throw new Error(
+        `Actual didn't return a balance for ${unavailable.join(", ")} — nothing was synced; try again`,
+      );
     return accounts;
   }
 
@@ -679,8 +693,28 @@ export class ActualClient implements BudgetAPIClient {
             mapTransaction({ ...t, account_name: acct.name }),
           ),
         );
-      } catch {
-        // Skip accounts with no transactions endpoint
+      } catch (err) {
+        // Only a 404 (the account no longer exists) may be skipped. Any
+        // other failure (auth, timeout, network) stops the sync: a dropped
+        // account would be cached as a complete transaction list. The sync's
+        // network phase throwing changes nothing locally.
+        if (err instanceof BudgetApiError && err.status === 404) continue;
+        log("warn", "actual_client.transactions_fetch_failed", {
+          accountId: acct.id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+        const reason = err instanceof Error ? err.message : String(err);
+        if (err instanceof BudgetApiError) {
+          throw new BudgetApiError(
+            `Actual didn't return transactions for ${acct.name} — nothing was synced: ${reason}`,
+            err.code,
+            err.status,
+            err.retryAfterSeconds,
+          );
+        }
+        throw new Error(
+          `Actual didn't return transactions for ${acct.name} — nothing was synced: ${reason}`,
+        );
       }
     }
 

@@ -1,6 +1,9 @@
 import { describe, it, expect } from "vitest";
 import {
   isPullOnlyLocalId,
+  allowedDirectionsForLocalId,
+  allowedDirectionsForMapping,
+  localTargetsPulledTwice,
   mappingWithTypedIds,
   mappingsWithTypedIds,
   remotesPulledTwice,
@@ -202,6 +205,28 @@ describe("debt mappings", () => {
     expect(isPullOnlyLocalId("asset:1")).toBe(false);
   });
 
+  it("each target allows only its own directions", () => {
+    expect(allowedDirectionsForLocalId("performance:3")).toEqual(["push"]);
+    expect(allowedDirectionsForLocalId("debt:7")).toEqual(["pull"]);
+    expect(allowedDirectionsForLocalId("cash")).toEqual(["pull"]);
+    expect(allowedDirectionsForLocalId("asset:1")).toEqual([
+      "pull",
+      "push",
+      "both",
+    ]);
+    // Legacy plain-name mapping: a real asset mapping, any direction.
+    expect(allowedDirectionsForLocalId("Savings Bond")).toHaveLength(3);
+    // The typed field counts even when the localId breadcrumb is missing.
+    expect(
+      allowedDirectionsForMapping({
+        localName: "Roth IRA",
+        remoteAccountId: "r1",
+        syncDirection: "pull",
+        performanceAccountId: 3,
+      }),
+    ).toEqual(["push"]);
+  });
+
   it("a budget account pulled into two places is reported once; pushes don't count", () => {
     expect(
       remotesPulledTwice([
@@ -213,5 +238,22 @@ describe("debt mappings", () => {
         m("cash", "r3"),
       ]),
     ).toEqual(["r1"]);
+  });
+
+  it("a Ledgr row pulled from two budget accounts is reported once; Cash and Credit Card sum by design", () => {
+    expect(
+      localTargetsPulledTwice([
+        m("debt:5", "r1"),
+        m("debt:5", "r2", "both"),
+        m("debt:5", "r3", "push"),
+        m("mortgage:3:loanBalance", "r4"),
+        m("mortgage:3:propertyValue", "r5"),
+        m("asset:2", "r6"),
+        m("cash", "r7"),
+        m("cash", "r8"),
+        m("creditCard", "r9"),
+        m("creditCard", "r10"),
+      ]),
+    ).toEqual(["debt:5"]);
   });
 });

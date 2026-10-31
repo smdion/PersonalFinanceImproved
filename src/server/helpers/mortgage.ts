@@ -21,6 +21,18 @@ export function getActiveMortgageLoan<T extends { isActive: boolean }>(
   return mortgageLoans.find((l) => l.isActive) ?? mortgageLoans[0];
 }
 
+/** `start` plus `months` calendar months (UTC, matching how the ISO date
+ *  strings parse), clamped to the target month's last day. */
+export function addMonthsClamped(start: Date, months: number): Date {
+  const total = start.getUTCMonth() + months;
+  const year = start.getUTCFullYear() + Math.floor(total / 12);
+  const month = ((total % 12) + 12) % 12;
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  const out = new Date(start);
+  out.setUTCFullYear(year, month, Math.min(start.getUTCDate(), lastDay));
+  return out;
+}
+
 /**
  * Build mortgage inputs from DB rows and compute current balance via amortization.
  * Used by networth and historical routers.
@@ -55,17 +67,20 @@ export function buildMortgageInputs(
     } else if (ep.startDate && ep.endDate) {
       const start = new Date(ep.startDate);
       const end = new Date(ep.endDate);
-      const current = new Date(start);
       // MAX_EXTRA_PAYMENTS imported from constants (50 years of monthly payments)
       let count = 0;
+      // Each date is start + n months, clamped to that month's last day —
+      // stepping with setMonth(+1) turns Jan 31 into Mar 3, then the 3rd of
+      // every later month, dropping payments from the series.
+      let current = addMonthsClamped(start, 0);
       while (current <= end && count < MAX_EXTRA_PAYMENTS) {
         extras.push({
           loanId: ep.loanId,
-          date: new Date(current),
+          date: current,
           amount: toNumber(ep.amount),
         });
-        current.setMonth(current.getMonth() + 1);
         count++;
+        current = addMonthsClamped(start, count);
       }
     }
   }

@@ -5,19 +5,32 @@ import { eq, sql } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, syncProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
+import type { AccountMapping } from "@/lib/db/schema";
 import {
   getClientForService,
   getActiveBudgetApi,
   getApiConnection,
 } from "@/lib/budget-api";
 import {
+  allowedDirectionsForMapping,
+  isPullMapping,
+  localTargetsPulledTwice,
   mappingsWithTypedIds,
   remotesPulledTwice,
 } from "@/lib/utils/account-mapping";
 import { clearUnmappedPulledBalances } from "@/server/helpers/apply-pull-mapping";
 import { accountMappingSchema } from "@/lib/db/json-schemas";
 import { pushSnapshotToBudgetApi } from "@/server/helpers/budget-api-push";
+import { formatList } from "@/lib/utils/format";
 import { serviceEnum } from "./_shared";
+
+/** Why a mapping's direction isn't allowed for its target, or null when it
+ *  is. Names the account by its localName, never a raw id. */
+function disallowedDirectionMessage(m: AccountMapping): string | null {
+  const allowed = allowedDirectionsForMapping(m);
+  if (allowed.includes(m.syncDirection)) return null;
+  return `${m.localName} can only be synced ${allowed.join(" or ")}, not ${m.syncDirection}`;
+}
 
 export const syncMappingsRouter = createTRPCRouter({
   /** Update account mappings for a service (works pre-activation). */
@@ -26,13 +39,33 @@ export const syncMappingsRouter = createTRPCRouter({
       z.object({
         service: serviceEnum,
         mappings: z.array(accountMappingSchema).superRefine((mappings, c) => {
+          // Each target takes only some directions (a portfolio account is
+          // push only, Cash/Credit Card/debts pull only).
+          for (const m of mappings) {
+            const message = disallowedDirectionMessage(m);
+            if (message) c.addIssue({ code: "custom", message });
+          }
           // One pulled balance per budget account: pulled into two places
           // (a credit card and a debt, say) it would count twice.
-          for (const remote of remotesPulledTwice(mappings))
+          for (const remote of remotesPulledTwice(mappings)) {
+            const places = mappings
+              .filter((m) => m.remoteAccountId === remote && isPullMapping(m))
+              .map((m) => m.localName);
             c.addIssue({
               code: "custom",
-              message: `Budget account ${remote} is pulled into more than one place — keep one pull mapping for it`,
+              message: `One budget account is pulled into ${formatList(places)} — keep one pull mapping for it`,
             });
+          }
+          // One pulled balance per Ledgr row: two would overwrite each
+          // other every sync, the last one silently winning.
+          for (const target of localTargetsPulledTwice(mappings)) {
+            const name =
+              mappings.find((m) => m.localId === target)?.localName ?? target;
+            c.addIssue({
+              code: "custom",
+              message: `${name} is pulled from more than one budget account — keep one pull mapping for it`,
+            });
+          }
         }),
       }),
     )
@@ -59,6 +92,16 @@ export const syncMappingsRouter = createTRPCRouter({
     )
     .mutation(async ({ ctx, input }) => {
       const currentYear = new Date().getFullYear();
+
+      // Same direction rule as updateAccountMappings, checked before any write.
+      const directionProblem = disallowedDirectionMessage({
+        localId: "asset:0",
+        localName: input.assetName,
+        remoteAccountId: input.remoteAccountId,
+        syncDirection: input.syncDirection,
+      });
+      if (directionProblem)
+        throw new TRPCError({ code: "BAD_REQUEST", message: directionProblem });
 
       // Create or update the asset item
       const insertResult = await ctx.db

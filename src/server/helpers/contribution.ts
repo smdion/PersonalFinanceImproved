@@ -109,24 +109,25 @@ export function resolveJoblessPeriodsPerYear(
 }
 
 /**
- * Resolve the periods-per-year for a single contribution row's method,
- * and whether that resolution is incomplete. Only `fixed_per_period`
- * actually consumes `periodsPerYear` (see computeAnnualContribution) — for
- * every other method this always resolves complete with an unused `0`,
- * so a missing/unresolvable job never marks a `percent_of_salary` or
+ * Resolve the periods-per-year for a single contribution row, and whether
+ * that resolution is incomplete. The job's real pay-period count is returned
+ * for every method (a bonus check's share of a fixed-monthly / fixed-annual
+ * account is one paycheck's worth — annualContributionWithBonus), but only
+ * `fixed_per_period` consumes it for its yearly amount (see
+ * computeAnnualContribution), so only that method can be incomplete: a
+ * missing/unresolvable job never marks a `percent_of_salary` or
  * `fixed_monthly` account incomplete (see the plan's method-gated
- * treatment). `job` is the row's own resolved job (by jobId, or by
- * personId for a jobless account) — `undefined` means no job could be
- * resolved for this row at all.
+ * treatment) — it just resolves `0`, which callers must not divide by.
+ * `job` is the row's own resolved job (by jobId, or by personId for a
+ * jobless account) — `undefined` means no job could be resolved for this
+ * row at all.
  */
 export function resolveContribPeriods(
   method: string,
   job: { payPeriod: string | undefined } | undefined,
 ): { periodsPerYear: number; incomplete: boolean } {
-  if (method !== "fixed_per_period")
-    return { periodsPerYear: 0, incomplete: false };
   if (!job || job.payPeriod == null)
-    return { periodsPerYear: 0, incomplete: true };
+    return { periodsPerYear: 0, incomplete: method === "fixed_per_period" };
   return {
     periodsPerYear: getPeriodsPerYear(job.payPeriod),
     incomplete: false,
@@ -471,7 +472,7 @@ export function buildContribAccounts(
     const perPeriod =
       c.contributionMethod === "fixed_per_period"
         ? contribValue
-        : annual / periodsPerYear;
+        : safeDivide(annual, periodsPerYear, 0);
 
     const match = matchByRow.get(c.id)!;
 
@@ -620,7 +621,10 @@ export function annualContributionWithBonus(
         fromBonus: c.fromBonus,
         rateOfGross: method === "percent_of_salary" ? value / 100 : null,
         perPeriodContribution:
-          method === "fixed_per_period" ? value : regular / periodsPerYear,
+          method === "fixed_per_period"
+            ? value
+            : // Never divide by an unresolved (0) pay-period count.
+              safeDivide(regular, periodsPerYear, 0),
       },
       pay.bonusGross ?? 0,
     )

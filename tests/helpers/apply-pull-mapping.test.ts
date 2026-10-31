@@ -84,6 +84,76 @@ describe("applyPullMapping — cash/creditCard pseudo-accounts", () => {
   });
 });
 
+describe("applyPullMapping — only known target kinds are written", () => {
+  let ctx: TestDbContext;
+
+  beforeAll(async () => {
+    ctx = await createTestDb();
+  });
+
+  afterAll(() => ctx.cleanup());
+
+  const year = new Date().getFullYear();
+
+  it("skips a performance: mapping instead of writing an asset row", async () => {
+    for (const mapping of [
+      {
+        localId: "performance:3",
+        localName: "Roth IRA",
+        remoteAccountId: "r1",
+        syncDirection: "pull" as const,
+      },
+      {
+        localName: "Roth IRA",
+        remoteAccountId: "r1",
+        syncDirection: "both" as const,
+        performanceAccountId: 3,
+      },
+    ]) {
+      const result = await applyPullMapping(ctx.rawDb, {
+        mapping,
+        apiBalance: 50000,
+        service: "actual",
+        currentYear: year,
+      });
+      expect(result).toEqual({ applied: false });
+    }
+    const rows = ctx.db.select().from(ctx.schema.otherAssetItems).all();
+    expect(rows.find((r) => r.name === "Roth IRA")).toBeUndefined();
+  });
+
+  it("skips an unknown prefixed target", async () => {
+    const result = await applyPullMapping(ctx.rawDb, {
+      mapping: {
+        localId: "widget:5",
+        localName: "Widget",
+        remoteAccountId: "r1",
+        syncDirection: "pull",
+      },
+      apiBalance: 10,
+      service: "actual",
+      currentYear: year,
+    });
+    expect(result).toEqual({ applied: false });
+  });
+
+  it("still writes a legacy plain-name mapping as an asset", async () => {
+    const result = await applyPullMapping(ctx.rawDb, {
+      mapping: {
+        localName: "Old Savings Bond",
+        remoteAccountId: "r2",
+        syncDirection: "pull",
+      },
+      apiBalance: 700,
+      service: "actual",
+      currentYear: year,
+    });
+    expect(result).toEqual({ applied: true, kind: "asset" });
+    const rows = ctx.db.select().from(ctx.schema.otherAssetItems).all();
+    expect(rows.find((r) => r.name === "Old Savings Bond")).toBeDefined();
+  });
+});
+
 describe("applyPullMapping — debts, and clearing what nothing pulls", () => {
   let ctx: TestDbContext;
 

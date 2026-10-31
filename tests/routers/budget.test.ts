@@ -11,6 +11,7 @@ import "./setup-mocks";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
 import { eq, asc } from "drizzle-orm";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
+import { SK_RETIREMENT_DEC_BUDGET_PROFILE_ID } from "@/lib/constants/settings-keys";
 import {
   createTestCaller,
   seedStandardDataset,
@@ -252,6 +253,51 @@ describe("budget router", () => {
 
       const profiles = await caller.budget.listProfiles();
       expect(profiles.find((p) => p.id === created!.id)).toBeUndefined();
+    });
+
+    it("clears the retirement spending-profile setting and API link that pointed at it", async () => {
+      const gone = await caller.budget.createProfile({ name: "Retire On" });
+      const keep = await caller.budget.createProfile({ name: "Keep" });
+      const key = SK_RETIREMENT_DEC_BUDGET_PROFILE_ID;
+      const setSetting = (value: unknown) =>
+        db
+          .insert(sqliteSchema.appSettings)
+          .values({ key, value })
+          .onConflictDoUpdate({
+            target: sqliteSchema.appSettings.key,
+            set: { value },
+          })
+          .run();
+      const readSetting = () =>
+        db
+          .select()
+          .from(sqliteSchema.appSettings)
+          .where(eq(sqliteSchema.appSettings.key, key))
+          .all();
+
+      // A setting pointing at another profile is left alone.
+      setSetting(keep!.id);
+      const other = await caller.budget.createProfile({ name: "Other" });
+      await caller.budget.deleteProfile({ id: other!.id });
+      expect(readSetting()).toHaveLength(1);
+
+      // The deleted profile's id is cleared, and so is the API link.
+      setSetting(gone!.id);
+      db.insert(sqliteSchema.apiConnections)
+        .values({
+          service: "test-svc",
+          config: {} as never,
+          linkedProfileId: gone!.id,
+        })
+        .run();
+      await caller.budget.deleteProfile({ id: gone!.id });
+      expect(readSetting()).toHaveLength(0);
+      const conn = db
+        .select()
+        .from(sqliteSchema.apiConnections)
+        .where(eq(sqliteSchema.apiConnections.service, "test-svc"))
+        .get();
+      expect(conn?.linkedProfileId).toBeNull();
     });
 
     it("throws for a non-existent profile id", async () => {

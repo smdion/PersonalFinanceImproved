@@ -12,6 +12,8 @@
 import React, { useState } from "react";
 import { formatCurrency } from "@/lib/utils/format";
 import {
+  allowedDirectionsForLocalId,
+  allowedDirectionsForMapping,
   isPullOnlyLocalId,
   mappingsWithTypedIds,
 } from "@/lib/utils/account-mapping";
@@ -45,6 +47,12 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
   // Cash, Credit Card and debts only pull (Ledgr has no figure of its own
   // to push to them) and can be any budget account, on-budget included.
   const newPortfolioIsCashOrCredit = isPullOnlyLocalId(
+    newPortfolioLocal.split("|")[0] ?? "",
+  );
+
+  // Directions the picked Ledgr account allows (a portfolio account is push
+  // only; Cash, Credit Card and debts pull only). Empty pick: no limit.
+  const newPortfolioAllowed = allowedDirectionsForLocalId(
     newPortfolioLocal.split("|")[0] ?? "",
   );
 
@@ -137,18 +145,25 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                   <span className="text-muted flex-1 truncate">
                     {tracking?.name ?? m.remoteAccountId.slice(0, 12) + "..."}
                   </span>
-                  {/* Cash/Credit Card are pull-only — Ledgr has no single
+                  {/* Cash/Credit Card/debts are pull-only — Ledgr has no single
                    * "Cash total" value to push TO one specific remote
-                   * account, so the direction toggle is fixed rather than
-                   * cyclable into a meaningless push/both state. */}
-                  {isPullOnlyLocalId(m.localId ?? "") ? (
+                   * account — and portfolio accounts push-only (a pull would
+                   * double-count them as an asset), so the toggle is fixed
+                   * rather than cyclable into a state the target refuses. */}
+                  {allowedDirectionsForMapping(m).length === 1 ? (
                     <Badge
-                      color="blue"
+                      color={
+                        allowedDirectionsForMapping(m)[0] === "push"
+                          ? "green"
+                          : "blue"
+                      }
                       size="sm"
                       case="normal"
                       className="whitespace-nowrap"
                     >
-                      &rarr; pull
+                      {allowedDirectionsForMapping(m)[0] === "push"
+                        ? "\u2190 push"
+                        : "\u2192 pull"}
                     </Badge>
                   ) : (
                     <button
@@ -364,7 +379,11 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                                 localId: opt.localId,
                                 localName: opt.localName,
                                 remoteAccountId: t.id,
-                                syncDirection: "pull" as const,
+                                syncDirection: allowedDirectionsForLocalId(
+                                  opt.localId,
+                                ).includes("pull")
+                                  ? ("pull" as const)
+                                  : ("push" as const),
                               },
                             ];
                             updateMappingsMut.mutate({
@@ -561,11 +580,11 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
             <label className="text-caption text-muted mb-0.5 block font-medium">
               Dir
             </label>
-            {newPortfolioIsCashOrCredit ? (
-              // Pull-only — see the fixed-direction note on existing
-              // Cash/Credit Card rows above.
+            {newPortfolioAllowed.length === 1 ? (
+              // One allowed direction — see the fixed-direction note on
+              // existing rows above.
               <div className="text-label border-strong bg-surface-sunken text-faint w-full rounded border px-1 py-1">
-                Pull
+                {newPortfolioAllowed[0] === "push" ? "Push" : "Pull"}
               </div>
             ) : (
               <select
@@ -602,9 +621,11 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                   localId,
                   localName,
                   remoteAccountId: newPortfolioRemote,
-                  syncDirection: isPullOnlyLocalId(localId)
-                    ? ("pull" as const)
-                    : newPortfolioDirection,
+                  syncDirection: allowedDirectionsForLocalId(localId).includes(
+                    newPortfolioDirection,
+                  )
+                    ? newPortfolioDirection
+                    : allowedDirectionsForLocalId(localId)[0]!,
                 },
               ];
               updateMappingsMut.mutate({

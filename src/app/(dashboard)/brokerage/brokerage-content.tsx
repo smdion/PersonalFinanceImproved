@@ -28,7 +28,6 @@ import {
 } from "@/lib/calculators/brokerage-goals";
 import type {
   AccumOverride,
-  LumpSumEvent,
   TooltipData,
 } from "@/components/cards/projection/types";
 import { renderTooltip } from "@/components/cards/projection/tooltip-renderer";
@@ -41,6 +40,7 @@ import { sumBy, safeDivide } from "@/lib/utils/math";
 import { SkeletonTable } from "@/components/ui/skeleton";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
+import { useBrokerageLumpSums } from "./use-brokerage-lump-sums";
 
 export function BrokerageContent() {
   const user = useUser();
@@ -69,44 +69,7 @@ export function BrokerageContent() {
     null,
   );
   // Brokerage planned events (persisted to DB)
-  const brokerageLumpQuery = trpc.retirement.projectionOverrides.get.useQuery({
-    overrideType: "brokerage",
-  });
-  const saveBrokerageLumps =
-    trpc.retirement.projectionOverrides.save.useMutation({
-      onSuccess: () => utils.brokerage.invalidate(),
-    });
-  const clearBrokerageLumps =
-    trpc.retirement.projectionOverrides.clear.useMutation({
-      onSuccess: () => utils.brokerage.invalidate(),
-    });
-  const [brokerageTouched, setBrokerageTouched] = useState(false);
-  const [brokerageLumpSumsLocal, setBrokerageLumpSumsLocal] = useState<
-    LumpSumEvent[]
-  >([]);
-  const brokerageLumpSums: LumpSumEvent[] = brokerageTouched
-    ? brokerageLumpSumsLocal
-    : brokerageLumpQuery.data && brokerageLumpQuery.data.length > 0
-      ? (brokerageLumpQuery.data as LumpSumEvent[])
-      : brokerageLumpSumsLocal;
-  const setBrokerageLumpSums = (
-    updater: LumpSumEvent[] | ((prev: LumpSumEvent[]) => LumpSumEvent[]),
-  ) => {
-    setBrokerageTouched(true);
-    setBrokerageLumpSumsLocal((prev) => {
-      const next = typeof updater === "function" ? updater(prev) : updater;
-      if (next.length > 0) {
-        saveBrokerageLumps.mutate({
-          overrideType: "brokerage",
-          // eslint-disable-next-line no-restricted-syntax -- Drizzle JSONB requires Record<string, unknown>[]
-          overrides: next as unknown as Record<string, unknown>[],
-        });
-      } else {
-        clearBrokerageLumps.mutate({ overrideType: "brokerage" });
-      }
-      return next;
-    });
-  };
+  const { brokerageLumpSums, setBrokerageLumpSums } = useBrokerageLumpSums();
 
   const accumOverridesFromLumpSums: AccumOverride[] = React.useMemo(() => {
     const byYear = new Map<number, AccumOverride>();

@@ -88,7 +88,80 @@ describe("sync mappings — basic operations", () => {
             },
           ],
         }),
-      ).rejects.toThrow(/more than one place/);
+      ).rejects.toThrow(
+        /pulled into Credit Card and Card loan — keep one pull mapping/,
+      );
+    });
+
+    it("refuses a Ledgr row pulled from two budget accounts (the last sync would win)", async () => {
+      await expect(
+        caller.sync.updateAccountMappings({
+          service: "ynab",
+          mappings: [
+            {
+              localId: "debt:1",
+              localName: "Card loan",
+              remoteAccountId: "remote-a",
+              syncDirection: "pull",
+            },
+            {
+              localId: "debt:1",
+              localName: "Card loan",
+              remoteAccountId: "remote-b",
+              syncDirection: "both",
+            },
+          ],
+        }),
+      ).rejects.toThrow(
+        /Card loan is pulled from more than one budget account/,
+      );
+    });
+
+    it("refuses a pull on a portfolio account, naming it by its localName", async () => {
+      for (const syncDirection of ["pull", "both"] as const) {
+        await expect(
+          caller.sync.updateAccountMappings({
+            service: "ynab",
+            mappings: [
+              {
+                localId: "performance:3",
+                localName: "Roth IRA",
+                remoteAccountId: "remote-roth",
+                syncDirection,
+              },
+            ],
+          }),
+        ).rejects.toThrow(/Roth IRA can only be synced push/);
+      }
+    });
+
+    it("refuses a push on a debt, and accepts a push on a portfolio account", async () => {
+      await expect(
+        caller.sync.updateAccountMappings({
+          service: "ynab",
+          mappings: [
+            {
+              localId: "debt:1",
+              localName: "Card loan",
+              remoteAccountId: "remote-a",
+              syncDirection: "push",
+            },
+          ],
+        }),
+      ).rejects.toThrow(/Card loan can only be synced pull/);
+      await expect(
+        caller.sync.updateAccountMappings({
+          service: "ynab",
+          mappings: [
+            {
+              localId: "performance:3",
+              localName: "Roth IRA",
+              remoteAccountId: "remote-roth",
+              syncDirection: "push",
+            },
+          ],
+        }),
+      ).resolves.toEqual({ success: true });
     });
 
     it("persists mappings to the connection row", async () => {

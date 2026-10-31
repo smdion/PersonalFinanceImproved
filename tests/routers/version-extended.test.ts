@@ -294,12 +294,24 @@ describe("version router — seeded data", () => {
       expect(result.rows).toHaveLength(3);
     });
 
-    it("returns empty for non-existent table", async () => {
+    it("refuses a table that isn't versioned", async () => {
+      await expect(
+        caller.version.getPreview({
+          versionId,
+          tableName: "nonexistent_table",
+        }),
+      ).rejects.toThrow(/Unknown table/);
+    });
+
+    it("withholds credential tables — count only, no rows", async () => {
+      seedStateVersionTable(db, versionId, "local_admins", [
+        { id: 1, email: "a@example.com", passwordHash: "hash" },
+      ]);
       const result = await caller.version.getPreview({
         versionId,
-        tableName: "nonexistent_table",
+        tableName: "local_admins",
       });
-      expect(result).toEqual({ rows: [], rowCount: 0 });
+      expect(result).toEqual({ rows: [], rowCount: 1, withheld: true });
     });
 
     it("returns empty for non-existent version", async () => {
@@ -321,11 +333,11 @@ describe("version router — seeded data", () => {
         id: i + 1,
         name: `Person ${i + 1}`,
       }));
-      seedStateVersionTable(db, bigVersionId, "big_table", manyRows);
+      seedStateVersionTable(db, bigVersionId, "people", manyRows);
 
       const result = await caller.version.getPreview({
         versionId: bigVersionId,
-        tableName: "big_table",
+        tableName: "people",
       });
       expect(result.rowCount).toBe(100);
       expect(result.rows).toHaveLength(50);
@@ -545,11 +557,15 @@ describe("version router — auth", () => {
     }
   });
 
-  it("viewer can read getById", async () => {
+  it("a viewer can't read a version's contents (getById, getPreview)", async () => {
     const ctx = await createTestCaller(viewerSession);
     try {
-      const result = await ctx.caller.version.getById({ id: 1 });
-      expect(result).toBeNull();
+      await expect(ctx.caller.version.getById({ id: 1 })).rejects.toThrow(
+        /FORBIDDEN|permission/i,
+      );
+      await expect(
+        ctx.caller.version.getPreview({ versionId: 1, tableName: "people" }),
+      ).rejects.toThrow(/FORBIDDEN|permission/i);
     } finally {
       ctx.cleanup();
     }
@@ -580,19 +596,6 @@ describe("version router — auth", () => {
     try {
       const result = await ctx.caller.version.getUpgradeBanner();
       expect(result).toBeNull();
-    } finally {
-      ctx.cleanup();
-    }
-  });
-
-  it("viewer can read getPreview", async () => {
-    const ctx = await createTestCaller(viewerSession);
-    try {
-      const result = await ctx.caller.version.getPreview({
-        versionId: 1,
-        tableName: "anything",
-      });
-      expect(result).toEqual({ rows: [], rowCount: 0 });
     } finally {
       ctx.cleanup();
     }

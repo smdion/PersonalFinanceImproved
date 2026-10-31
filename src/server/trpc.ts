@@ -13,6 +13,7 @@ import { isPostgres } from "@/lib/db/dialect";
 import { rateLimit } from "@/lib/rate-limit";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
+import { redactSecrets } from "@/lib/utils/redact-secrets";
 import { notifyMutationSucceeded } from "./mutation-events";
 
 type AuthLevel = "public" | "protected" | "admin" | Permission;
@@ -187,7 +188,8 @@ function logMutation(session: Session, path: string, rawInput: unknown) {
       recordId,
       fieldName: "*",
       oldValue: null,
-      newValue: input ?? null,
+      // Credentials never reach the audit log (redact-secrets.ts).
+      newValue: input == null ? null : redactSecrets(input),
       changedBy: getSessionUserLabel(session),
     })
     .catch((err: unknown) => {

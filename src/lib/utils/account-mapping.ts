@@ -78,6 +78,32 @@ export function isPullOnlyLocalId(localId: string): boolean {
   );
 }
 
+export type SyncDirection = AccountMapping["syncDirection"];
+
+/**
+ * The sync directions a mapping target allows — one rule per target.
+ *  - Cash, Credit Card and debts: pull only (see `isPullOnlyLocalId`).
+ *  - Portfolio (`performance:`) accounts: push only. Ledgr's snapshot is the
+ *    source of truth for them; a pull would write the balance a second time
+ *    as an asset and double-count net worth.
+ *  - Assets, mortgage rows and legacy plain-name mappings: any direction.
+ */
+export function allowedDirectionsForLocalId(localId: string): SyncDirection[] {
+  if (isPullOnlyLocalId(localId)) return ["pull"];
+  if (localId.startsWith(PERFORMANCE_PREFIX)) return ["push"];
+  return ["pull", "push", "both"];
+}
+
+/** Same rule for a stored mapping, also honouring its typed ID fields so a
+ *  mapping missing its `localId` breadcrumb can't slip past. */
+export function allowedDirectionsForMapping(
+  m: AccountMapping,
+): SyncDirection[] {
+  if (m.performanceAccountId != null) return ["push"];
+  if (m.debtId != null) return ["pull"];
+  return allowedDirectionsForLocalId(m.localId ?? "");
+}
+
 /** Pulls the balance into Ledgr (pull or both). */
 export function isPullMapping(m: AccountMapping): boolean {
   return m.syncDirection === "pull" || m.syncDirection === "both";
@@ -94,6 +120,34 @@ export function remotesPulledTwice(mappings: AccountMapping[]): string[] {
   for (const m of mappings.filter(isPullMapping)) {
     if (seen.has(m.remoteAccountId)) twice.add(m.remoteAccountId);
     seen.add(m.remoteAccountId);
+  }
+  return [...twice];
+}
+
+/** The one Ledgr row a pulled balance is written into — a debt, a loan's
+ *  balance or property value, an asset — or null for the Cash and Credit
+ *  Card pseudo-accounts, which sum every account mapped to them. */
+function pulledTarget(m: AccountMapping): string | null {
+  const t = mappingWithTypedIds(m);
+  if (t.debtId != null) return `${DEBT_PREFIX}${t.debtId}`;
+  if (t.loanId != null && t.loanMapType != null)
+    return `${MORTGAGE_PREFIX}${t.loanId}:${t.loanMapType}`;
+  if (t.assetId != null) return `${ASSET_PREFIX}${t.assetId}`;
+  return null;
+}
+
+/**
+ * Ledgr rows two pulled mappings write into — each sync, the last one
+ * written wins, silently. Each such target (its `localId` form), once.
+ */
+export function localTargetsPulledTwice(mappings: AccountMapping[]): string[] {
+  const seen = new Set<string>();
+  const twice = new Set<string>();
+  for (const m of mappings.filter(isPullMapping)) {
+    const target = pulledTarget(m);
+    if (target === null) continue;
+    if (seen.has(target)) twice.add(target);
+    seen.add(target);
   }
   return [...twice];
 }

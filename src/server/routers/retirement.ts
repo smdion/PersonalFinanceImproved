@@ -189,6 +189,8 @@ const retirementSettingsInput = z.object({
   rmdSmoothingEnabled: z.boolean().optional(),
   rmdSmoothingMaxBracketTarget: zDecimal.nullable().optional(),
   enableIrmaaAwareness: z.boolean().optional(),
+  /** IRMAA surcharges on top of the budget rather than inside it. */
+  irmaaOnTopOfBudget: z.boolean().optional(),
   enableAcaAwareness: z.boolean().optional(),
   householdSize: z.number().int().min(1).max(HOUSEHOLD_SIZE_MAX).optional(),
   socialSecurityMonthly: zDecimal.optional(),
@@ -1362,11 +1364,17 @@ export const retirementRouter = createTRPCRouter({
           .select()
           .from(schema.appSettings)
           .where(eq(schema.appSettings.key, SK_ACTIVE_RETIREMENT_PROFILE_ID));
-        const activeId = (activeSettingRows[0]?.value ?? null) as number | null;
 
         const allProfiles = await ctx.db
           .select({ id: schema.retirementProfiles.id })
           .from(schema.retirementProfiles);
+        // The resolved active profile — with the setting unset (or stale) it
+        // is implicitly the lowest id, and deleting that one would silently
+        // switch the engine to another profile.
+        const activeId = resolveRetirementProfileIdFrom(
+          activeSettingRows,
+          allProfiles,
+        );
 
         const deleteCheck = canDeleteRetirementProfile(
           activeId,

@@ -653,10 +653,9 @@ export function BudgetContent({
             apiService={apiService}
             isPending={syncFromApi.isPending}
             onConfirm={() =>
-              syncFromApi.mutate(
-                { selectedColumn: activeColumn },
-                { onSettled: () => setPullPreviewItems(null) },
-              )
+              syncFromApi.mutate(undefined, {
+                onSettled: () => setPullPreviewItems(null),
+              })
             }
             onCancel={() => setPullPreviewItems(null)}
           />
