@@ -4,15 +4,17 @@
  * each feed's data really is from (lib/pure/feed-data-date.ts). Reads only
  * — nothing here is written to a snapshot or to Performance.
  */
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNotNull, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { addDays, localDateStr } from "@/lib/utils/date";
+import { addDays } from "@/lib/utils/date";
 import {
   currentBalance,
+  moveIntoClose,
   pairFeedsWithParts,
   snapshotDataDay,
   summarizeCurrentBalances,
   type BalanceFeed,
+  type DailyClose,
 } from "@/lib/pure/current-balances";
 import {
   feedDataDay,
@@ -21,15 +23,13 @@ import {
   type DataDateBasis,
 } from "@/lib/pure/feed-data-date";
 import {
+  previousTradingDay,
   reportCalendarDay,
   valuationDateFor,
 } from "@/lib/pure/market-calendar";
-import {
-  feedMovement,
-  movementByClose,
-  type FeedMovement,
-} from "@/lib/pure/daily-movement";
-import { laggedSession } from "@/lib/pure/feed-data-date";
+import { dailyMovement } from "@/lib/pure/daily-movement";
+import { impliedUnitPrices } from "@/lib/pure/fund-prices";
+import { CASH_LIKE_SECURITY_KINDS } from "@/lib/config/enum-values";
 import { loadTrackedAccountNames } from "@/server/helpers/account-names";
 import { getDailyMarketCloses } from "@/server/helpers/market-prices";
 import {
@@ -44,6 +44,11 @@ type Db = Parameters<typeof loadFeedContext>[0];
 /** Days of closes before the oldest date in play — enough for a long
  *  weekend and a feed a few sessions behind. */
 const CLOSE_WINDOW_DAYS = 10;
+
+/** Closes shown under Daily movement. */
+const MOVEMENT_SESSIONS = 5;
+/** Calendar days those closes can span (a long weekend included). */
+const MOVEMENT_WINDOW_DAYS = 10;
 
 /** One page load asks from several places: share the work briefly. */
 const SHARE_MS = 5_000;
@@ -133,11 +138,20 @@ async function computeCurrentBalances(db: Db) {
     ...allFeeds.map((x) => valuationDateFor(seenAt(x))),
     ...(snapshotDay ? [snapshotDay] : []),
   ].sort()[0];
-  const closesFrom = addDays(earliest ?? localDateStr(), -CLOSE_WINDOW_DAYS);
+  const today = valuationDateFor(new Date());
+  const closesFrom = addDays(
+    [earliest ?? today, addDays(today, -MOVEMENT_WINDOW_DAYS)].sort()[0]!,
+    -CLOSE_WINDOW_DAYS,
+  );
+  const history = await loadHoldingHistory(db, closesFrom);
   const tickers = [
-    ...new Set(holdings.map((h) => h.ticker).filter((t): t is string => !!t)),
+    ...new Set(
+      history.flatMap((h) =>
+        h.ticker && !CASH_LIKE_SECURITY_KINDS.has(h.kind) ? [h.ticker] : [],
+      ),
+    ),
   ];
-  const closes = new Map(
+  const tickerCloses = new Map(
     (
       await Promise.all(
         tickers.map(
@@ -165,10 +179,15 @@ async function computeCurrentBalances(db: Db) {
       learnReportLag(ids.map((id) => reports.get(id) ?? [])),
     ]),
   );
-  const marketDay = (id: number, at: Date, proven: string | null) =>
+  /** The close a report with these positions shows, most certain first. */
+  const reportDay = (
+    id: number,
+    at: Date,
+    positions: Parameters<typeof provenDataDay>[0],
+  ) =>
     feedDataDay({
       reportedAt: at,
-      proven,
+      proven: provenDataDay(positions, tickerCloses, valuationDateFor(at)),
       learned: lagOf.get(institutionOf(id)) ?? null,
     });
 
@@ -182,11 +201,7 @@ async function computeCurrentBalances(db: Db) {
       );
       const dated: { day: string; basis: DataDateBasis | "reported" } =
         positions.length > 0
-          ? marketDay(
-              x.id,
-              at,
-              provenDataDay(fromThisReport, closes, valuationDateFor(at)),
-            )
+          ? reportDay(x.id, at, fromThisReport)
           : { day: reportCalendarDay(at), basis: "reported" };
       return [
         x.id,
@@ -194,6 +209,63 @@ async function computeCurrentBalances(db: Db) {
       ] as const;
     }),
   );
+
+  // Every stored report of every fund, on the close it really shows (the
+  // stored as_of assumes no lag).
+  const reportsByTime = new Map<string, typeof history>();
+  for (const h of history) {
+    const key = `${h.simplefinAccountId}:${h.balanceDate?.getTime() ?? h.asOf}`;
+    reportsByTime.set(key, [...(reportsByTime.get(key) ?? []), h]);
+  }
+  const datedHistory = [...reportsByTime.values()].flatMap((rows) => {
+    const r0 = rows[0]!;
+    const day = r0.balanceDate
+      ? reportDay(r0.simplefinAccountId, r0.balanceDate, rows).day
+      : r0.asOf;
+    return rows.map((h) => ({ ...h, day }));
+  });
+
+  // Each fund's own prices: its ticker's closes, or else the institution's
+  // reported value ÷ shares. Cash never moves.
+  const pricesOf = new Map<number, ReadonlyMap<string, DailyClose> | null>();
+  for (const id of new Set(datedHistory.map((h) => h.securityId))) {
+    const rows = datedHistory.filter((h) => h.securityId === id);
+    const { ticker, kind } = rows[0]!;
+    if (CASH_LIKE_SECURITY_KINDS.has(kind)) continue;
+    const viaTicker = ticker ? tickerCloses.get(ticker) : undefined;
+    pricesOf.set(
+      id,
+      viaTicker ??
+        (ticker
+          ? null // Tiingo didn't answer: no mixing sources for one fund
+          : impliedUnitPrices(
+              rows.map((h) => ({
+                feedId: h.simplefinAccountId,
+                day: h.day,
+                shares: h.shares,
+                value: h.reportedMarketValue,
+              })),
+            )),
+    );
+  }
+
+  // The close every balance is brought to: the latest every ticker fund
+  // has a price for (fund prices post hours after the 4 pm close), never
+  // past today's.
+  const tickerLatest = [...pricesOf]
+    .filter(([id]) => datedHistory.some((h) => h.securityId === id && h.ticker))
+    .flatMap(([, series]) =>
+      series
+        ? [
+            [...series.keys()]
+              .filter((d) => d <= today)
+              .sort()
+              .at(-1),
+          ]
+        : [],
+    )
+    .filter((d): d is string => !!d);
+  const target = tickerLatest.sort()[0] ?? today;
 
   const toPairing = (x: (typeof allFeeds)[number]): BalanceFeed => ({
     id: x.id,
@@ -213,7 +285,15 @@ async function computeCurrentBalances(db: Db) {
         .filter((h) => ids.includes(h.simplefinAccountId))
         .map((h) => ({
           shares: h.shares,
-          closes: (h.ticker ? closes.get(h.ticker) : null) ?? null,
+          sharesByDay: sharesByDay(
+            datedHistory.filter(
+              (r) =>
+                r.simplefinAccountId === h.simplefinAccountId &&
+                r.securityId === h.securityId,
+            ),
+          ),
+          closes: pricesOf.get(h.securityId) ?? null,
+          cash: CASH_LIKE_SECURITY_KINDS.has(h.kind),
           feedDay: feedDates.get(h.simplefinAccountId)?.day ?? null,
         })),
   });
@@ -230,7 +310,7 @@ async function computeCurrentBalances(db: Db) {
       );
     if (!match) return null;
     return positionsOfFeed(feedId).length > 0
-      ? marketDay(feedId, match.reportedAt, null).day
+      ? reportDay(feedId, match.reportedAt, []).day
       : reportCalendarDay(match.reportedAt);
   };
   const dated = inputs.map((a) => {
@@ -244,56 +324,40 @@ async function computeCurrentBalances(db: Db) {
       : a;
   });
 
-  const balances = dated.map((a) => currentBalance(a, snapshotDay ?? ""));
+  const balances = dated.map((a) =>
+    currentBalance(a, snapshotDay ?? "", target),
+  );
 
-  // Daily movement: every report put on the close it reflects (the same
-  // dating as the latest balance), each feed's latest close against the
-  // close before it.
-  const closeOf = (id: number, reportedAt: Date) => {
-    if (positionsOfFeed(id).length === 0) return reportCalendarDay(reportedAt);
-    const learned = lagOf.get(institutionOf(id));
-    return learned?.confident
-      ? laggedSession(reportedAt, learned.lag)
-      : valuationDateFor(reportedAt);
-  };
-  const datedReports = new Map(
-    allFeeds.map((x) => [
-      x.id,
-      (reports.get(x.id) ?? []).map((r) => ({
-        day: closeOf(x.id, r.reportedAt),
-        balance: r.balance,
-      })),
-    ]),
-  );
-  const flowsFrom = addDays(
-    [...datedReports.values()]
-      .flatMap((list) => list.slice(-3).map((r) => r.day))
-      .sort()[0] ?? localDateStr(),
-    -1,
-  );
-  const flowRows = await loadClassifiedTransactions(db, { since: flowsFrom });
+  // Daily movement: each entry's market move into each recent close, from
+  // its funds' own prices — the same path as the roll above. Money moved in
+  // or out is shown beside it, never in it.
+  const sessions: string[] = [target];
+  while (sessions.length < MOVEMENT_SESSIONS)
+    sessions.push(previousTradingDay(sessions.at(-1)!));
   const sendsTransactions = new Set(context.lastTransactionDay.keys());
-  const moves: FeedMovement[] = allFeeds.flatMap((x) => {
-    if (!x.reportedAt) return [];
-    const m = feedMovement({
-      feedId: x.id,
-      reports: datedReports.get(x.id) ?? [],
-      latestDay: feedDates.get(x.id)!.day,
-      latestBalance: x.balance,
-      flows: sendsTransactions.has(x.id)
-        ? flowRows
-            .filter(
-              (r) =>
-                r.simplefinAccountId === x.id &&
-                !r.pending &&
-                !r.voided &&
-                (r.kind === "contribution" || r.kind === "withdrawal"),
-            )
-            .map((r) => ({ day: r.posted, amount: r.amount }))
-        : null,
-    });
-    return m ? [m] : [];
+  const flowRows = await loadClassifiedTransactions(db, {
+    since: previousTradingDay(sessions.at(-1)!),
   });
+  const flows = flowRows.filter(
+    (r) =>
+      r.simplefinAccountId !== null &&
+      sendsTransactions.has(r.simplefinAccountId) &&
+      !r.pending &&
+      !r.voided &&
+      (r.kind === "contribution" || r.kind === "withdrawal"),
+  );
+  // Market accounts only: a feed reporting no holdings has nothing priced
+  // to move; a part with no feed can't be told.
+  const marketEntries = dated.filter(
+    (a) => a.positions.length > 0 || (a.feedIds ?? []).length === 0,
+  );
+  const entryMoves = marketEntries.map((a) => ({
+    key: a.key,
+    moves: sessions.map((day) => ({
+      day,
+      move: moveIntoClose(a.positions, day),
+    })),
+  }));
   const behindFeed = (x: (typeof allFeeds)[number]) => {
     if (snapshotDay === null || x.performanceAccountId === null) return false;
     const entry = balances.find(
@@ -306,9 +370,20 @@ async function computeCurrentBalances(db: Db) {
   return {
     snapshotDate: latestSnapshot?.snapshotDate ?? null,
     snapshotDay,
+    target,
     balances,
     summary: summarizeCurrentBalances(balances),
-    movement: { byFeed: moves, byClose: movementByClose(moves) },
+    movement: dailyMovement({
+      sessions,
+      entries: entryMoves,
+      // Money posted after a close counts toward the next one.
+      flows: flows.map((r) => ({ day: r.posted, amount: r.amount })),
+      flowsKnown: allFeeds.every(
+        (x) =>
+          positionsOfFeed(x.id).length === 0 || sendsTransactions.has(x.id),
+      ),
+    }),
+    entryMoves,
     /** Each feed's data date, for the "as of" detail. */
     feeds: allFeeds.map((x) => {
       const d = feedDates.get(x.id)!;
@@ -324,4 +399,40 @@ async function computeCurrentBalances(db: Db) {
       };
     }),
   };
+}
+
+/** Shares at each close, the day's last report, oldest first. */
+function sharesByDay(rows: readonly { day: string; shares: number }[]) {
+  const byDay = new Map<string, number>();
+  for (const r of rows) byDay.set(r.day, r.shares);
+  return [...byDay]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([day, shares]) => ({ day, shares }));
+}
+
+/** Every stored holdings report since `since`, with fund details. */
+async function loadHoldingHistory(db: Db, since: string) {
+  const h = schema.holdingObservations;
+  const s = schema.securities;
+  const rows = await db
+    .select({
+      simplefinAccountId: h.simplefinAccountId,
+      securityId: h.securityId,
+      asOf: h.asOf,
+      balanceDate: h.balanceDate,
+      shares: h.shares,
+      value: h.reportedMarketValue,
+      ticker: s.ticker,
+      kind: s.kind,
+    })
+    .from(h)
+    .innerJoin(s, eq(s.id, h.securityId))
+    .where(and(isNotNull(h.simplefinAccountId), gte(h.asOf, since)))
+    .orderBy(asc(h.balanceDate));
+  return rows.map((r) => ({
+    ...r,
+    simplefinAccountId: r.simplefinAccountId!,
+    shares: Number(r.shares),
+    reportedMarketValue: r.value === null ? null : Number(r.value),
+  }));
 }

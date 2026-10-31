@@ -175,6 +175,38 @@ describe("ingestInvestmentData", () => {
     expect(ctx.db.select().from(ctx.schema.securities).all()).toHaveLength(2);
   });
 
+  it("keeps every report: a later one on the same assumed day doesn't write over it", async () => {
+    const fund = (marketValue: number) => ({
+      id: "h9",
+      symbol: "EXSTX",
+      description: "Example Stock Fund",
+      shares: 10,
+      marketValue,
+      costBasisPerShare: null,
+    });
+    // Friday evening (a lagged feed: Thursday's data), then Saturday
+    // (Friday's) — both assume the Friday close.
+    await run([
+      account({
+        id: "sf-hsa",
+        balanceDate: new Date("2026-05-15T23:00:00Z"),
+        holdings: [fund(500)],
+      }),
+    ]);
+    await run([
+      account({
+        id: "sf-hsa",
+        balanceDate: new Date("2026-05-16T15:00:00Z"),
+        holdings: [fund(510)],
+      }),
+    ]);
+    const rows = observations(hsaId);
+    expect(rows.map((r) => [r.asOf, Number(r.reportedMarketValue)])).toEqual([
+      ["2026-05-15", 500],
+      ["2026-05-15", 510],
+    ]);
+  });
+
   it("records a fund that disappeared from a later non-empty list as 0 shares", async () => {
     await run([
       account({

@@ -1,32 +1,24 @@
 /**
  * The Current Balances card's rows: the same figures as its total, by
- * group, with each group's move dated by the close it ends at.
+ * group, with each group's move into the card's one close.
  */
 import { describe, it, expect } from "vitest";
 import { groupCurrentBalances } from "@/components/cards/dashboard/linked-balance-card";
 
 const balance = (
   key: string,
-  feedIds: number[],
   current: number,
-  snapshot: number,
-  noSnapshot = false,
+  move: number | null,
+  market = true,
 ) => ({
   key,
-  feedIds,
+  feedIds: [1],
   performanceAccountId: 1,
   current,
-  snapshot,
-  comparable: true,
-  noSnapshot,
-});
-
-const move = (feedId: number, day: string, m: number) => ({
-  feedId,
-  day,
-  fromDay: "2026-10-28",
-  move: m,
-  flows: 0,
+  snapshot: current,
+  noSnapshot: false,
+  market,
+  move,
 });
 
 describe("groupCurrentBalances", () => {
@@ -37,46 +29,36 @@ describe("groupCurrentBalances", () => {
         ? { key: "", label: "Not matched" }
         : { key: "401k", label: "401k" };
 
-  it("rows add up to the total, with change since the snapshot", () => {
+  it("rows add up to the total, largest first, unmatched last", () => {
     const rows = groupCurrentBalances(
       [
-        balance("ira-a", [1], 100, 90),
-        balance("ira-b", [2], 50, 50),
-        balance("401k", [3], 300, 310),
+        balance("ira-a", 100, -5),
+        balance("ira-b", 50, 2),
+        balance("x", 500, 1),
+        balance("401k", 300, 4),
       ],
-      [],
       bucket,
     );
-    expect(rows.map((r) => [r.label, r.current, r.since])).toEqual([
-      ["401k", 300, -10],
-      ["IRA", 150, 10],
+    expect(rows.map((r) => [r.label, r.current, r.move])).toEqual([
+      ["401k", 300, 4],
+      ["IRA", 150, -3],
+      ["Not matched", 500, 1],
     ]);
-    expect(rows.reduce((t, r) => t + r.current, 0)).toBe(450);
   });
 
-  it("each row's move keeps the closes it's from; money outside the snapshot isn't a change", () => {
+  it("a row with any move it can't tell shows none — never a partial sum", () => {
     const rows = groupCurrentBalances(
-      [
-        balance("ira-a", [1], 100, 90),
-        balance("ira-b", [2], 50, 50),
-        balance("x", [4], 25, 0, true),
-      ],
-      [
-        move(1, "2026-10-30", -5),
-        move(2, "2026-10-29", 2),
-        move(4, "2026-10-30", 1),
-      ],
+      [balance("ira-a", 100, -5), balance("ira-b", 50, null)],
       bucket,
     );
-    expect(rows[0]).toMatchObject({
-      label: "IRA",
-      move: -3,
-      days: ["2026-10-29", "2026-10-30"],
-    });
-    expect(rows.at(-1)).toMatchObject({
-      label: "Not matched",
-      since: null,
-      move: 1,
-    });
+    expect(rows[0]!.move).toBeNull();
+  });
+
+  it("money that doesn't move with markets doesn't block the row", () => {
+    const rows = groupCurrentBalances(
+      [balance("ira-a", 100, -5), balance("ira-cash", 50, null, false)],
+      bucket,
+    );
+    expect(rows[0]!.move).toBe(-5);
   });
 });

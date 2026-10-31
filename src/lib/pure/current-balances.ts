@@ -8,15 +8,17 @@
  *   feeds lag a day or two — a feed on the snapshot's own close, or
  *   behind it, says nothing new;
  * - the feed, once its data is from a later close than the snapshot;
- * - either one rolled forward to the latest close by the held shares'
- *   total-return moves, marked as an estimate. Holdings without a price
- *   stay at the base figure, and the roll says it's partial.
+ * - either one rolled forward to the target close (the latest every
+ *   ticker fund has a price for) by each fund's own total-return price
+ *   moves, marked as an estimate. Holdings without a price stay at the
+ *   base figure, and the roll says it's partial.
  *
  * Only accounts whose feed has caught up to the snapshot are compared with
  * it. Nothing here is ever written to a snapshot or to Performance.
  */
 import {
   easternDay,
+  previousTradingDay,
   tradingDayOnOrBefore,
   valuationDateFor,
 } from "./market-calendar";
@@ -28,8 +30,15 @@ export type BalanceSource = "reported" | "snapshot";
 export type DailyClose = { close: number; adjClose: number };
 
 export type BalancePosition = {
+  /** Shares in the feed's latest report. */
   shares: number;
+  /** Shares at the close of each day a report shows, oldest first; a move
+   *  from a day uses that day's shares (latest on or before it). */
+  sharesByDay?: readonly { day: string; shares: number }[];
+  /** The fund's own prices; null when it has none. */
   closes: ReadonlyMap<string, DailyClose> | null;
+  /** Money market or cash: worth the same at every close. */
+  cash?: boolean;
   /** The day its feed's balance already includes it through. */
   feedDay: string | null;
 };
@@ -80,33 +89,68 @@ export type CurrentBalance = {
 
 const cents = (n: number) => Math.round(n * 100) / 100;
 
-function rollForward(
+function sharesOn(p: BalancePosition, day: string): number {
+  const known = p.sharesByDay ?? [];
+  return (
+    known.filter((k) => k.day <= day).at(-1)?.shares ??
+    known[0]?.shares ??
+    p.shares
+  );
+}
+
+/**
+ * What the held shares made from one close to a later one, at each fund's
+ * own total-return prices (distributions in). The one price path: the
+ * roll to the latest close and every daily move both come from it, so the
+ * moves add up to the roll. Cash never moves. `partial`: some fund had no
+ * price for one of the two closes.
+ */
+export function priceMove(
   positions: readonly BalancePosition[],
   fromOf: (p: BalancePosition) => string | null,
-): { amount: number; to: string | null; partial: boolean } {
+  to: string,
+): { amount: number; moved: boolean; partial: boolean } {
   let amount = 0;
-  let to: string | null = null;
+  let moved = false;
   let partial = false;
   for (const p of positions) {
+    if (p.cash) continue;
     const from = fromOf(p);
+    if (from !== null && from >= to) continue;
     const start = from ? p.closes?.get(from) : undefined;
-    const days = p.closes ? [...p.closes.keys()].sort() : [];
-    const latest = days.at(-1);
-    if (!start || !latest || !p.closes) {
+    const end = p.closes?.get(to);
+    if (!start || !end) {
       partial = true;
       continue;
     }
-    if (latest <= from!) continue;
-    const end = p.closes.get(latest)!;
-    amount += p.shares * start.close * (end.adjClose / start.adjClose - 1);
-    if (to === null || latest > to) to = latest;
+    amount +=
+      sharesOn(p, from!) * start.close * (end.adjClose / start.adjClose - 1);
+    moved = true;
   }
-  return { amount: cents(amount), to, partial: partial && to !== null };
+  return { amount: cents(amount), moved, partial };
+}
+
+/**
+ * One entry's market move into the close `day` from the session before
+ * it; null when it can't be told in full (no holdings reported, or a fund
+ * with no price for either close) — a partial move would read as the
+ * whole.
+ */
+export function moveIntoClose(
+  positions: readonly BalancePosition[],
+  day: string,
+): number | null {
+  if (positions.length === 0) return null;
+  const from = previousTradingDay(day);
+  const m = priceMove(positions, () => from, day);
+  return m.partial ? null : m.amount;
 }
 
 export function currentBalance(
   a: CurrentBalanceInput,
   snapshotDay: string,
+  /** The close every balance is brought to. */
+  target: string,
 ): CurrentBalance {
   const entrySnapshotDay = a.snapshotDay ?? snapshotDay;
   const noSnapshot = a.noSnapshot === true;
@@ -118,9 +162,14 @@ export function currentBalance(
   const base = caughtUp ? a.reported! : a.snapshot;
   const baseDay = caughtUp ? (a.reportedDay ?? "") : entrySnapshotDay;
   // Each feed's balance already holds its own days; a snapshot, its day.
-  const rolled = rollForward(a.positions, (p) =>
-    caughtUp ? p.feedDay : entrySnapshotDay,
-  );
+  const rolled =
+    baseDay < target
+      ? priceMove(
+          a.positions,
+          (p) => (caughtUp ? p.feedDay : entrySnapshotDay),
+          target,
+        )
+      : { amount: 0, moved: false, partial: false };
   return {
     key: a.key,
     feedIds: a.feedIds ?? [],
@@ -133,8 +182,8 @@ export function currentBalance(
     base,
     baseDay,
     rolledForward: rolled.amount,
-    rolledTo: rolled.to,
-    partialRoll: rolled.partial,
+    rolledTo: rolled.moved ? target : null,
+    partialRoll: rolled.moved && rolled.partial,
     current: cents(base + rolled.amount),
     comparable: caughtUp && !noSnapshot,
   };

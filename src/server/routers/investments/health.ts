@@ -6,6 +6,7 @@ import {
   holdingsGapSince,
   investmentHealthIssues,
 } from "@/lib/pure/investment-health";
+import { newestReportPerDay } from "@/lib/pure/simplefin-holdings";
 import { localDateStr } from "@/lib/utils/date";
 import { loadAccounts } from "./_shared";
 
@@ -16,14 +17,15 @@ export const investmentHealthRouter = createTRPCRouter({
     const [observations, balances, accounts] = await Promise.all([
       ctx.db
         .select({
-          accountId: h.simplefinAccountId,
+          simplefinAccountId: h.simplefinAccountId,
           asOf: h.asOf,
           balanceDate: h.balanceDate,
           shares: h.shares,
           value: h.reportedMarketValue,
         })
         .from(h)
-        .where(isNotNull(h.simplefinAccountId)),
+        .where(isNotNull(h.simplefinAccountId))
+        .then(newestReportPerDay),
       ctx.db.select().from(schema.simplefinAccountBalances),
       loadAccounts(ctx.db),
     ]);
@@ -32,7 +34,7 @@ export const investmentHealthRouter = createTRPCRouter({
     // SimpleFIN sent in the same response.
     const byAccount = new Map<number, Map<string, typeof observations>>();
     for (const o of observations) {
-      const id = o.accountId!;
+      const id = o.simplefinAccountId!;
       const days = byAccount.get(id) ?? new Map<string, typeof observations>();
       days.set(o.asOf, [...(days.get(o.asOf) ?? []), o]);
       byAccount.set(id, days);

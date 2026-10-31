@@ -102,6 +102,11 @@ export function tradingDayOnOrBefore(date: string): string {
   return d;
 }
 
+/** The trading day before `date` ("YYYY-MM-DD"). */
+export function previousTradingDay(date: string): string {
+  return tradingDayOnOrBefore(addDays(date, -1));
+}
+
 /**
  * The trading day whose close a reported balance reflects: the Eastern-time
  * calendar day of the report, minus one day when reported before the 4 pm

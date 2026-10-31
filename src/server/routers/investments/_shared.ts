@@ -14,6 +14,7 @@ import {
   max,
   sql,
 } from "drizzle-orm";
+import { newestReportPerDay } from "@/lib/pure/simplefin-holdings";
 import * as schema from "@/lib/db/schema";
 import { isHsaCategory } from "@/lib/config/account-types";
 import { addDays, utcDayOf } from "@/lib/utils/date";
@@ -463,7 +464,8 @@ export async function loadLatestHoldings(db: Db) {
       kind: s.kind,
     })
     .from(h)
-    .innerJoin(s, eq(s.id, h.securityId));
+    .innerJoin(s, eq(s.id, h.securityId))
+    .then(newestReportPerDay);
   const accountLatestDay = new Map<number, string>();
   for (const r of rows) {
     if (r.simplefinAccountId === null) continue; // manual rows come later
@@ -507,6 +509,7 @@ export async function loadDailyPositions(
       simplefinAccountId: h.simplefinAccountId,
       securityId: h.securityId,
       asOf: h.asOf,
+      balanceDate: h.balanceDate,
       shares: h.shares,
       value: h.reportedMarketValue,
     })
@@ -516,7 +519,8 @@ export async function loadDailyPositions(
         sql`${h.simplefinAccountId} IS NOT NULL`,
         since !== undefined ? gte(h.asOf, since) : undefined,
       ),
-    );
+    )
+    .then(newestReportPerDay);
   const positions: DailyPosition[] = [];
   const latest = new Map<number, string>();
   for (const r of rows) {

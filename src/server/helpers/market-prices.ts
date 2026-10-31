@@ -3,7 +3,7 @@
  * few requests per held fund a day, inside the free tier: month-end
  * total-return series for benchmarks (12 h), today's close for valuing
  * holdings (6 h) and recent daily closes for dating and rolling forward
- * linked balances (6 h).
+ * linked balances (6 h; 30 min while the latest close hasn't posted).
  */
 import "server-only";
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/lib/tiingo/client";
 import { getTiingoApiKey } from "@/lib/tiingo/connection";
 import { log } from "@/lib/logger";
+import { valuationDateFor } from "@/lib/pure/market-calendar";
 
 type Db = typeof import("@/lib/db").db;
 
@@ -78,6 +79,9 @@ export async function getLatestMarketClose(
 }
 
 const DAILY_FAILURE_TTL_MS = 15 * 60 * 1000;
+/** A series still missing the latest close: inside Tiingo's hourly limit
+ *  for a household's funds. */
+const DAILY_PENDING_TTL_MS = 30 * 60 * 1000;
 type DailySeries = Map<string, { close: number; adjClose: number }>;
 const dailyCache = new Map<
   string,
@@ -109,10 +113,16 @@ export async function getDailyMarketCloses(
     at: Date.now(),
     ttl: CLOSE_TTL_MS,
     closes: getDailyCloses(apiKey, ticker, start).then(
-      (rows): DailySeries | null =>
-        new Map(
+      (rows): DailySeries | null => {
+        // Fund prices post hours after the 4 pm close: until the latest
+        // close is in, look again soon.
+        const latest = valuationDateFor(new Date());
+        if (!rows.some((r) => r.date === latest))
+          entry.ttl = DAILY_PENDING_TTL_MS;
+        return new Map(
           rows.map((r) => [r.date, { close: r.close, adjClose: r.adjClose }]),
-        ),
+        );
+      },
       (err: unknown) => {
         log("warn", "daily_closes_failed", {
           ticker,

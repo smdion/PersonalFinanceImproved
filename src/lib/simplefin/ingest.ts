@@ -137,7 +137,10 @@ async function ingestHoldings(
         lt(schema.holdingObservations.asOf, asOf),
       ),
     )
-    .orderBy(desc(schema.holdingObservations.asOf));
+    .orderBy(
+      desc(schema.holdingObservations.asOf),
+      desc(schema.holdingObservations.balanceDate),
+    );
   const previouslyHeld = new Map<string, number>();
   for (const p of prior) {
     const key = `${p.institution ?? ""}\u0000${p.sourceDescription ?? ""}`;
@@ -195,16 +198,18 @@ async function ingestHoldings(
       source: "simplefin" as const,
     };
     assertHoldingHasOneAccount(values);
+    // One row per report; a feed that sends no report time, one per day.
+    const h = schema.holdingObservations;
     await db
-      .insert(schema.holdingObservations)
+      .insert(h)
       .values(values)
       .onConflictDoUpdate({
-        target: [
-          schema.holdingObservations.simplefinAccountId,
-          schema.holdingObservations.securityId,
-          schema.holdingObservations.asOf,
-        ],
-        targetWhere: sql`${schema.holdingObservations.simplefinAccountId} IS NOT NULL`,
+        target: values.balanceDate
+          ? [h.simplefinAccountId, h.securityId, h.balanceDate]
+          : [h.simplefinAccountId, h.securityId, h.asOf],
+        targetWhere: values.balanceDate
+          ? sql`${h.simplefinAccountId} IS NOT NULL AND ${h.balanceDate} IS NOT NULL`
+          : sql`${h.simplefinAccountId} IS NOT NULL AND ${h.balanceDate} IS NULL`,
         set: {
           balanceDate: values.balanceDate,
           shares: values.shares,

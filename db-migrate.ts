@@ -805,6 +805,9 @@ export const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.9.5: IRMAA surcharges inside the budget or on top of it.
   f9d735d3807b08de4b79ae9ee0ef0484fffde20b88824342ef2aef65a467a9e6:
     "0008_v095_irmaa_budget",
+  // v0.9.5: holdings kept per report, not per assumed day (index only).
+  "3191a9cd884c7a1ea667d17481dae32ee2478373fd74ba53e3b392bd5ed18e49":
+    "0009_v095_holding_reports",
 };
 
 /**

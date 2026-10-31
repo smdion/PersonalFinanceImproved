@@ -141,12 +141,14 @@ describe("investments.getCurrentBalances", () => {
       "movement",
       "snapshotDate",
       "summary",
+      "target",
     ]);
     expect(Object.keys(r.balances[0]!).sort()).toEqual([
-      "comparable",
       "current",
       "feedIds",
       "key",
+      "market",
+      "move",
       "noSnapshot",
       "performanceAccountId",
       "snapshot",

@@ -1,82 +1,78 @@
 import { describe, it, expect } from "vitest";
-import {
-  balancesByClose,
-  feedMovement,
-  movementByClose,
-} from "@/lib/pure/daily-movement";
+import { dailyMovement } from "@/lib/pure/daily-movement";
 
-describe("daily movement by market close", () => {
-  it("a close reported twice keeps its last report", () => {
-    expect(
-      balancesByClose([
-        { day: "2026-10-28", balance: 100 },
-        { day: "2026-10-29", balance: 110 },
-        { day: "2026-10-29", balance: 111 },
-      ]),
-    ).toEqual([
-      { day: "2026-10-28", balance: 100 },
-      { day: "2026-10-29", balance: 111 },
-    ]);
-  });
+describe("dailyMovement", () => {
+  const sessions = ["2026-10-30", "2026-10-29"];
+  const entries = [
+    {
+      key: "ira",
+      moves: [
+        { day: "2026-10-30", move: -100 },
+        { day: "2026-10-29", move: 40 },
+      ],
+    },
+    {
+      key: "401k",
+      moves: [
+        { day: "2026-10-30", move: null }, // its price isn't in yet
+        { day: "2026-10-29", move: 10 },
+      ],
+    },
+  ];
 
-  it("the move is the latest close against the close before it, with money in split out", () => {
-    expect(
-      feedMovement({
-        feedId: 1,
-        reports: [
-          { day: "2026-10-28", balance: 1_000 },
-          { day: "2026-10-29", balance: 1_050 },
-        ],
-        latestDay: "2026-10-30",
-        latestBalance: 1_700,
-        flows: [
-          { day: "2026-10-29", amount: 999 }, // before the window
-          { day: "2026-10-30", amount: 625 },
-        ],
-      }),
-    ).toEqual({
-      feedId: 1,
+  it("adds the known moves per close and counts what's pending", () => {
+    const [fri, thu] = dailyMovement({
+      sessions,
+      entries,
+      flows: [],
+      flowsKnown: true,
+    });
+    expect(fri).toMatchObject({
       day: "2026-10-30",
-      fromDay: "2026-10-29",
-      move: 650,
-      flows: 625,
+      move: -100,
+      known: 1,
+      total: 2,
+    });
+    expect(thu).toMatchObject({
+      day: "2026-10-29",
+      move: 50,
+      known: 2,
+      total: 2,
     });
   });
 
-  it("nothing earlier: no move; no transactions: flows unknown", () => {
-    expect(
-      feedMovement({
-        feedId: 1,
-        reports: [{ day: "2026-10-30", balance: 1 }],
-        latestDay: "2026-10-30",
-        latestBalance: 1,
-        flows: null,
-      }),
-    ).toBeNull();
+  it("money paid in sits beside the close it landed before, never in the move", () => {
+    const [fri, thu] = dailyMovement({
+      sessions,
+      entries,
+      flows: [
+        { day: "2026-10-30", amount: 625 },
+        { day: "2026-10-29", amount: -140 },
+        { day: "2026-10-31", amount: 999 }, // after the latest close
+      ],
+      flowsKnown: true,
+    });
+    expect(fri).toMatchObject({ move: -100, flows: 625 });
+    expect(thu).toMatchObject({ move: 50, flows: -140 });
   });
 
-  it("feeds on different closes stay apart, latest first", () => {
-    const m = (
-      feedId: number,
-      day: string,
-      move: number,
-      flows: number | null,
-    ) => ({
-      feedId,
-      day,
-      fromDay: "x",
-      move,
-      flows,
+  it("a weekend's money counts toward Monday", () => {
+    const [mon] = dailyMovement({
+      sessions: ["2026-11-02"],
+      entries: [],
+      flows: [{ day: "2026-10-31", amount: 100 }],
+      flowsKnown: true,
     });
-    expect(
-      movementByClose([
-        m(1, "2026-10-30", -100, 0),
-        m(2, "2026-10-29", -50, null),
-        m(3, "2026-10-30", -25, 625),
-      ]),
-    ).toEqual([
-      { day: "2026-10-30", move: -125, flows: 625, feedIds: [1, 3] },
-      { day: "2026-10-29", move: -50, flows: null, feedIds: [2] },
-    ]);
+    expect(mon!.flows).toBe(100);
+  });
+
+  it("flows unknown when some account sends no transactions", () => {
+    const [fri] = dailyMovement({
+      sessions,
+      entries,
+      flows: [],
+      flowsKnown: false,
+    });
+    expect(fri!.flows).toBeNull();
   });
 });

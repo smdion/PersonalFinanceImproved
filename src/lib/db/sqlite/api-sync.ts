@@ -315,9 +315,12 @@ export const simplefinAccountBalances = sqliteTable(
 );
 
 /**
- * Shares held per account, security and trading day. One row per day: for
- * funds with no public ticker, the reported value ÷ shares is the only price
- * history there is. Exactly one of simplefinAccountId / performanceAccountId
+ * Shares held per account and security, one row per report (per
+ * `balanceDate`; per day for a feed that sends no report time, and for
+ * manual rows). Every report is kept: a feed a market day behind sends two
+ * reports a day apart that `asOf` would put on the same day. For funds with
+ * no public ticker, the reported value ÷ shares is the only price history
+ * there is. Exactly one of simplefinAccountId / performanceAccountId
  * is set (enforced in the app layer too — SQLite drops CHECK constraints).
  */
 export const holdingObservations = sqliteTable(
@@ -337,7 +340,9 @@ export const holdingObservations = sqliteTable(
       .references(() => securities.id, { onDelete: "restrict" }),
     /** SimpleFIN `balance-date` as sent (UTC); null for manual rows. */
     balanceDate: integer("balance_date", { mode: "timestamp" }),
-    /** Valuation date: the most recent completed US trading day for balanceDate. */
+    /** The close assumed from balanceDate's time alone — no feed lag. The
+     *  close the data really reflects is worked out on read
+     *  (lib/pure/feed-data-date.ts), since a feed's lag is learned. */
     asOf: text("as_of").notNull(),
     shares: text("shares").notNull(),
     /** As reported — evidence only, never summed as a balance. */
@@ -349,9 +354,16 @@ export const holdingObservations = sqliteTable(
       .default(sql`(unixepoch())`),
   },
   (table) => [
+    uniqueIndex("holding_observations_simplefin_report_idx")
+      .on(table.simplefinAccountId, table.securityId, table.balanceDate)
+      .where(
+        sql`${table.simplefinAccountId} IS NOT NULL AND ${table.balanceDate} IS NOT NULL`,
+      ),
     uniqueIndex("holding_observations_simplefin_idx")
       .on(table.simplefinAccountId, table.securityId, table.asOf)
-      .where(sql`${table.simplefinAccountId} IS NOT NULL`),
+      .where(
+        sql`${table.simplefinAccountId} IS NOT NULL AND ${table.balanceDate} IS NULL`,
+      ),
     uniqueIndex("holding_observations_manual_idx")
       .on(table.performanceAccountId, table.securityId, table.asOf)
       .where(sql`${table.performanceAccountId} IS NOT NULL`),

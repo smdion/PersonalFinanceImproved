@@ -181,9 +181,9 @@ describe("schemaLabel — what a pre-squash backup is labelled", () => {
 
   it("nothing recorded but the v0.9 columns present → by shape", () => {
     // The newest migration whose tables and columns match — a label, not a
-    // record of what ran (0007 is data only).
+    // record of what ran (0007 is data only, 0009 indexes only).
     expect(schemaLabel(journal, FOLDER, new Set(), allApplied, crypto)).toBe(
-      "0008_v095_irmaa_budget",
+      "0009_v095_holding_reports",
     );
   });
 });

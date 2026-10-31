@@ -25,6 +25,7 @@ import {
   sql,
 } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure, syncProcedure } from "../trpc";
+import { newestReportPerDay } from "@/lib/pure/simplefin-holdings";
 import * as schema from "@/lib/db/schema";
 import {
   getSimplefinConnection,
@@ -290,13 +291,15 @@ export const simplefinRouter = createTRPCRouter({
       await Promise.all([
         ctx.db
           .select({
-            accountId: h.simplefinAccountId,
+            simplefinAccountId: h.simplefinAccountId,
             securityId: h.securityId,
             asOf: h.asOf,
+            balanceDate: h.balanceDate,
             shares: h.shares,
           })
           .from(h)
-          .where(isNotNull(h.simplefinAccountId)),
+          .where(isNotNull(h.simplefinAccountId))
+          .then(newestReportPerDay),
         ctx.db
           .select({
             count: sql<number>`count(*)`,
@@ -325,7 +328,7 @@ export const simplefinRouter = createTRPCRouter({
     // Latest row per (account, fund); a fund whose latest row is 0 shares was sold.
     const latest = new Map<string, { asOf: string; shares: number }>();
     for (const r of holdingRows) {
-      const key = `${r.accountId}:${r.securityId}`;
+      const key = `${r.simplefinAccountId}:${r.securityId}`;
       const prev = latest.get(key);
       if (!prev || r.asOf > prev.asOf)
         latest.set(key, { asOf: r.asOf, shares: Number(r.shares) });

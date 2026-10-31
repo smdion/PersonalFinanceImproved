@@ -2,11 +2,15 @@ import { describe, it, expect } from "vitest";
 import {
   changeSinceSnapshot,
   currentBalance,
+  moveIntoClose,
   pairFeedsWithParts,
   snapshotDataDay,
   summarizeCurrentBalances,
   type CurrentBalanceInput,
 } from "@/lib/pure/current-balances";
+
+/** The close balances are brought to. */
+const T = "2026-10-30";
 
 const account = (
   over: Partial<CurrentBalanceInput> = {},
@@ -23,7 +27,7 @@ const account = (
 
 describe("currentBalance", () => {
   it("a feed from a later close than the snapshot is the balance, and compares", () => {
-    const b = currentBalance(account(), "2026-10-28");
+    const b = currentBalance(account(), "2026-10-28", T);
     expect(b).toMatchObject({
       source: "reported",
       current: 105_000,
@@ -32,7 +36,7 @@ describe("currentBalance", () => {
   });
 
   it("on the snapshot's own close the snapshot wins — the household's figures beat a feed", () => {
-    const b = currentBalance(account(), "2026-10-29");
+    const b = currentBalance(account(), "2026-10-29", T);
     expect(b).toMatchObject({
       source: "snapshot",
       current: 100_000,
@@ -41,7 +45,7 @@ describe("currentBalance", () => {
   });
 
   it("a snapshot newer than the feed wins, and the gap isn't a change", () => {
-    const b = currentBalance(account(), "2026-10-30");
+    const b = currentBalance(account(), "2026-10-30", T);
     expect(b).toMatchObject({
       source: "snapshot",
       current: 100_000,
@@ -61,6 +65,7 @@ describe("currentBalance", () => {
         positions: [{ shares: 500, closes, feedDay: "2026-10-29" }],
       }),
       "2026-10-28",
+      T,
     );
     expect(b).toMatchObject({
       base: 105_000,
@@ -86,6 +91,7 @@ describe("currentBalance", () => {
         ],
       }),
       "2026-10-27",
+      T,
     );
     expect(b.rolledForward).toBeCloseTo(20 + 10.1, 0);
   });
@@ -100,12 +106,13 @@ describe("currentBalance", () => {
         positions: [{ shares: 10, closes, feedDay: "2026-10-29" }],
       }),
       "2026-10-29",
+      T,
     );
     expect(b.rolledForward).toBe(0);
   });
 
   it("a feed whose date can't be told gives way to the snapshot", () => {
-    const b = currentBalance(account({ reportedDay: null }), "2026-10-29");
+    const b = currentBalance(account({ reportedDay: null }), "2026-10-29", T);
     expect(b).toMatchObject({ source: "snapshot", comparable: false });
   });
 
@@ -122,6 +129,7 @@ describe("currentBalance", () => {
         ],
       }),
       "2026-10-29",
+      T,
     );
     expect(b.rolledForward).toBe(0);
     expect(b.rolledTo).toBeNull();
@@ -131,8 +139,69 @@ describe("currentBalance", () => {
     const b = currentBalance(
       account({ reported: null, reportedDay: null }),
       "2026-10-29",
+      T,
     );
     expect(b).toMatchObject({ source: "snapshot", comparable: false });
+  });
+});
+
+describe("moveIntoClose", () => {
+  const close = (c: number, adj = c) => ({ close: c, adjClose: adj });
+  const closes = new Map([
+    ["2026-10-28", close(100)],
+    ["2026-10-29", close(101)],
+    ["2026-10-30", close(99)],
+  ]);
+
+  it("each close's move uses the shares held at the close before it", () => {
+    const p = {
+      shares: 20,
+      sharesByDay: [
+        { day: "2026-10-28", shares: 10 },
+        { day: "2026-10-29", shares: 20 }, // a deposit bought 10 more
+      ],
+      closes,
+      feedDay: "2026-10-29",
+    };
+    // The deposit is not a market move: 10 shares × +1, then 20 × −2.
+    expect(moveIntoClose([p], "2026-10-29")).toBe(10);
+    expect(moveIntoClose([p], "2026-10-30")).toBe(-40);
+  });
+
+  it("the daily moves add up to the roll over the same closes", () => {
+    const p = { shares: 10, closes, feedDay: "2026-10-28" };
+    const rolled = currentBalance(
+      account({ reportedDay: "2026-10-28", positions: [p] }),
+      "2026-10-27",
+      "2026-10-30",
+    ).rolledForward;
+    expect(
+      moveIntoClose([p], "2026-10-29")! + moveIntoClose([p], "2026-10-30")!,
+    ).toBeCloseTo(rolled, 2);
+  });
+
+  it("cash never moves; a fund without both closes leaves the move unknown", () => {
+    const cash = { shares: 500, closes: null, cash: true, feedDay: null };
+    expect(moveIntoClose([cash], "2026-10-30")).toBe(0);
+    const missing = {
+      shares: 1,
+      closes: new Map([["2026-10-30", close(5)]]),
+      feedDay: null,
+    };
+    expect(moveIntoClose([cash, missing], "2026-10-30")).toBeNull();
+    expect(moveIntoClose([], "2026-10-30")).toBeNull();
+  });
+
+  it("a distribution isn't a loss", () => {
+    const p = {
+      shares: 10,
+      closes: new Map([
+        ["2026-10-29", close(100, 100)],
+        ["2026-10-30", close(95, 100)],
+      ]),
+      feedDay: null,
+    };
+    expect(moveIntoClose([p], "2026-10-30")).toBe(0);
   });
 });
 
@@ -157,14 +226,16 @@ describe("summarizeCurrentBalances", () => {
         ],
       }),
       "2026-10-29",
+      to,
     );
 
   it("counts sources and compares only caught-up accounts", () => {
     const s = summarizeCurrentBalances([
-      currentBalance(account({ key: "a" }), "2026-10-28"),
+      currentBalance(account({ key: "a" }), "2026-10-28", T),
       currentBalance(
         account({ key: "b", reportedDay: "2026-10-28", reported: 90_000 }),
         "2026-10-29",
+        T,
       ),
     ]);
     expect(s).toMatchObject({
@@ -180,22 +251,17 @@ describe("summarizeCurrentBalances", () => {
     const bank = currentBalance(
       account({ key: "bank", reportedDay: "2026-10-31" }),
       "2026-10-29",
+      T,
     );
     const s = summarizeCurrentBalances([bank, rolled("a", "2026-10-30")]);
     expect(s.estimatedTo).toBe("2026-10-30");
     expect(s.estimateIsPartial).toBe(false);
   });
 
-  it("a partial roll, or balances at different days, says so", () => {
+  it("a partial roll says so", () => {
     expect(
       summarizeCurrentBalances([rolled("a", "2026-10-30", true)])
         .estimateIsPartial,
-    ).toBe(true);
-    expect(
-      summarizeCurrentBalances([
-        rolled("a", "2026-10-30"),
-        rolled("b", "2026-10-29x"),
-      ]).estimateIsPartial,
     ).toBe(true);
   });
 });
@@ -204,10 +270,11 @@ describe("changeSinceSnapshot", () => {
   it("money the snapshot never held isn't a change", () => {
     expect(
       changeSinceSnapshot([
-        currentBalance(account(), "2026-10-28"),
+        currentBalance(account(), "2026-10-28", T),
         currentBalance(
           account({ key: "x", noSnapshot: true, snapshot: 0 }),
           "2026-10-29",
+          T,
         ),
       ]),
     ).toBe(5_000);

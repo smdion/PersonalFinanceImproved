@@ -78,3 +78,16 @@ describe("migration 0008", () => {
     }
   });
 });
+
+describe("migration 0009", () => {
+  it("keys a feed's holdings by report, on both dialects", () => {
+    for (const folder of ["drizzle", "drizzle-sqlite"]) {
+      const sql = fs.readFileSync(
+        path.join(folder, "0009_v095_holding_reports.sql"),
+        "utf8",
+      );
+      expect(sql).toContain("holding_observations_simplefin_report_idx");
+      expect(sql).toMatch(/"balance_date" IS NULL/);
+    }
+  });
+});
