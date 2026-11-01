@@ -80,3 +80,61 @@ describe("dailyMovement", () => {
     expect(fri!.flows).toBeNull();
   });
 });
+
+describe("money the balances show before it's reported", () => {
+  const sessions = ["2026-10-30", "2026-10-29"];
+  const entry = (name: string, feedId: number, added: number | null) => ({
+    key: name,
+    name,
+    feedIds: [feedId],
+    moves: [
+      { day: "2026-10-30", move: -50, added },
+      { day: "2026-10-29", move: 10, added: 0 },
+    ],
+  });
+
+  it("counts a deposit no transaction has been sent for yet", () => {
+    const [fri] = dailyMovement({
+      sessions,
+      entries: [entry("Vanguard", 1, 625), entry("Fidelity", 2, 824.2)],
+      flows: [{ day: "2026-10-30", amount: 824.2 }],
+      flowsKnown: true,
+      shareChanges: [{ feedId: 2, day: "2026-10-30", amount: 824.2 }],
+    });
+    expect(fri!.flows).toBe(824.2);
+    expect(fri!.unreported).toEqual({ amount: 625, names: ["Vanguard"] });
+  });
+
+  it("nothing once the transactions arrive", () => {
+    const [fri] = dailyMovement({
+      sessions,
+      entries: [entry("Vanguard", 1, 625)],
+      flows: [{ day: "2026-10-30", amount: 625 }],
+      flowsKnown: true,
+      shareChanges: [{ feedId: 1, day: "2026-10-30", amount: 625 }],
+    });
+    expect(fri!.unreported).toBeNull();
+  });
+
+  it("a reinvested dividend that was reported doesn't count", () => {
+    const [fri] = dailyMovement({
+      sessions,
+      entries: [entry("Vanguard", 1, 120)],
+      flows: [],
+      flowsKnown: true,
+      shareChanges: [{ feedId: 1, day: "2026-10-30", amount: 120 }],
+    });
+    expect(fri!.unreported).toBeNull();
+  });
+
+  it("cents of rounding and unknown entries are ignored", () => {
+    const [fri] = dailyMovement({
+      sessions,
+      entries: [entry("A", 1, 0.02), entry("B", 2, null)],
+      flows: [],
+      flowsKnown: true,
+      shareChanges: [],
+    });
+    expect(fri!.unreported).toBeNull();
+  });
+});

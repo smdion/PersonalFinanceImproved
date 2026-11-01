@@ -146,6 +146,33 @@ export function moveIntoClose(
   return m.partial ? null : m.amount;
 }
 
+/**
+ * Money that went into (or out of) an entry between the close before `day`
+ * and `day`, read from its share counts: each fund's change in shares at
+ * that close's price (cash at face value). Share counts come with the
+ * balances, so this shows a deposit days before the institution sends it
+ * as a transaction. Reinvested dividends count too. Null when a fund has
+ * no report for `day` or no price for it.
+ */
+export function addedIntoClose(
+  positions: readonly BalancePosition[],
+  day: string,
+): number | null {
+  if (positions.length === 0) return null;
+  const from = previousTradingDay(day);
+  let added = 0;
+  for (const p of positions) {
+    const known = p.sharesByDay ?? [];
+    const onDay = known.find((k) => k.day === day);
+    if (!onDay) return null;
+    const before = known.filter((k) => k.day <= from).at(-1)?.shares ?? 0;
+    const price = p.cash ? 1 : p.closes?.get(day)?.close;
+    if (price === undefined) return null;
+    added += (onDay.shares - before) * price;
+  }
+  return cents(added);
+}
+
 export function currentBalance(
   a: CurrentBalanceInput,
   snapshotDay: string,

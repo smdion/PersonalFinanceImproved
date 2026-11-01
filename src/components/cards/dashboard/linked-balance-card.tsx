@@ -354,12 +354,24 @@ function LinkedBalanceCardImpl() {
               </span>
               <span
                 className="text-faint break-words"
-                title={missingReason(c, target)}
+                title={[
+                  missingReason(c, target),
+                  c.unreported
+                    ? 'Paid in and out comes from the transactions your institutions send, which arrive several days late. "Not reported yet" is money the balances already show going in or out, less the market\'s move.'
+                    : null,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
               >
                 {[
                   missingNote(c, target),
                   c.flows
                     ? `${c.flows > 0 ? "+" : "−"}${formatCurrency(Math.abs(c.flows))} paid ${c.flows > 0 ? "in" : "out"}`
+                    : null,
+                  // Balances show money the institutions haven't sent as
+                  // transactions yet (they arrive days later).
+                  c.unreported
+                    ? `${c.flows ? "about " : ""}${c.unreported.amount > 0 ? "+" : "−"}${formatCurrency(Math.abs(c.unreported.amount), 0)} ${c.flows ? "more " : ""}paid ${c.unreported.amount > 0 ? "in" : "out"} at ${c.unreported.names.join(", ")}, not reported yet`
                     : null,
                 ]
                   .filter(Boolean)

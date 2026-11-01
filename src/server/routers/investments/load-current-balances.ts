@@ -9,6 +9,7 @@ import * as schema from "@/lib/db/schema";
 import { addDays } from "@/lib/utils/date";
 import {
   currentBalance,
+  addedIntoClose,
   moveIntoClose,
   pairFeedsWithParts,
   snapshotDataDay,
@@ -28,6 +29,16 @@ import {
   valuationDateFor,
 } from "@/lib/pure/market-calendar";
 import { dailyMovement } from "@/lib/pure/daily-movement";
+
+/** Transactions that change share counts: money in and out, dividends and
+ *  interest (reinvested), fees. Trades and sweeps move money inside. */
+const SHARE_CHANGING_KINDS = new Set([
+  "contribution",
+  "withdrawal",
+  "dividend",
+  "interest",
+  "fee",
+]);
 import { impliedUnitPrices } from "@/lib/pure/fund-prices";
 import { CASH_LIKE_SECURITY_KINDS } from "@/lib/config/enum-values";
 import { loadTrackedAccountNames } from "@/server/helpers/account-names";
@@ -351,6 +362,41 @@ async function computeCurrentBalances(db: Db) {
   const marketEntries = dated.filter(
     (a) => a.positions.length > 0 || (a.feedIds ?? []).length === 0,
   );
+  // Each feed's balance at a close: its last report showing that close.
+  // A report's close comes from its own holdings when they prove it, else
+  // the institution's learned lag — the same dating as the holdings.
+  const dayOfReport = new Map(
+    datedHistory.map((h) => [
+      `${h.simplefinAccountId}:${h.balanceDate?.getTime()}`,
+      h.day,
+    ]),
+  );
+  const balanceAtClose = (feedId: number, day: string, exact: boolean) => {
+    const dated = (reports.get(feedId) ?? []).map((r) => ({
+      balance: r.balance,
+      day:
+        dayOfReport.get(`${feedId}:${r.reportedAt.getTime()}`) ??
+        reportDay(feedId, r.reportedAt, []).day,
+    }));
+    return (
+      dated.filter((r) => (exact ? r.day === day : r.day <= day)).at(-1)
+        ?.balance ?? null
+    );
+  };
+  /** Money in or out of an entry into a close: its one feed's balance
+   *  change less the market's move (cash held outside funds included);
+   *  else what its share counts show. */
+  const addedInto = (a: (typeof marketEntries)[number], day: string) => {
+    const feeds = a.feedIds ?? [];
+    const move = moveIntoClose(a.positions, day);
+    if (feeds.length === 1 && move !== null) {
+      const now = balanceAtClose(feeds[0]!, day, true);
+      const before = balanceAtClose(feeds[0]!, previousTradingDay(day), false);
+      if (now !== null && before !== null)
+        return Math.round((now - before - move) * 100) / 100;
+    }
+    return addedIntoClose(a.positions, day);
+  };
   const entryMoves = marketEntries.map((a) => ({
     key: a.key,
     // Who the card names when this account's move is missing.
@@ -358,9 +404,11 @@ async function computeCurrentBalances(db: Db) {
       institutionOf((a.feedIds ?? [])[0] ?? -1) ||
       accounts.get((a.feedIds ?? [])[0] ?? -1)?.feedName ||
       a.label,
+    feedIds: a.feedIds ?? [],
     moves: sessions.map((day) => ({
       day,
       move: moveIntoClose(a.positions, day),
+      added: addedInto(a, day),
     })),
   }));
   const behindFeed = (x: (typeof allFeeds)[number]) => {
@@ -387,6 +435,19 @@ async function computeCurrentBalances(db: Db) {
         (x) =>
           positionsOfFeed(x.id).length === 0 || sendsTransactions.has(x.id),
       ),
+      shareChanges: flowRows
+        .filter(
+          (r) =>
+            r.simplefinAccountId !== null &&
+            !r.pending &&
+            !r.voided &&
+            SHARE_CHANGING_KINDS.has(r.kind),
+        )
+        .map((r) => ({
+          feedId: r.simplefinAccountId!,
+          day: r.posted,
+          amount: r.amount,
+        })),
     }),
     entryMoves,
     /** Each feed's data date, for the "as of" detail. */
