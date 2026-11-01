@@ -7,6 +7,7 @@ import {
   adminSession,
   createTestCaller,
   seedPerformanceAccount,
+  seedSnapshot,
 } from "./setup";
 import {
   applyPullMapping,
@@ -200,11 +201,59 @@ describe("the live total", () => {
   });
 
   it("the rules", () => {
-    const a = { linkedLoanId: 1, isIncluded: true };
+    const a = {
+      linkedLoanId: 1,
+      linkedPerformanceAccountId: null,
+      lastBalance: -5,
+      isIncluded: true,
+    };
     expect(feedsLoan(a)).toBe(true);
     expect(countsInLiveBalance(a)).toBe(false);
-    expect(countsInLiveBalance({ ...a, linkedLoanId: null })).toBe(true);
+    expect(countsInLiveBalance({ ...a, linkedLoanId: null })).toBe(false);
+    expect(
+      countsInLiveBalance({ ...a, linkedLoanId: null, lastBalance: 5 }),
+    ).toBe(true);
     expect(feedsLoan({ ...a, isIncluded: false })).toBe(false);
+  });
+});
+
+describe("an unclaimed debt", () => {
+  it("stays out of the total and is flagged until it's linked", async () => {
+    addFeed("checking", "1000");
+    addFeed("new card", "-5000");
+    const r = await recomputeTodaySnapshotFromLocal(raw());
+    expect(r.totalBalance).toBe(1000);
+    const listed = await ctx.caller.simplefin.listAccounts();
+    expect(
+      listed.find((a) => a.accountName === "new card")?.unclaimedDebt,
+    ).toBe(true);
+    expect(
+      listed.find((a) => a.accountName === "checking")?.unclaimedDebt,
+    ).toBe(false);
+  });
+});
+
+describe("a feed linked to one part", () => {
+  it("compares with that part, not the whole account", async () => {
+    const perf = seedPerformanceAccount(ctx.db, { accountType: "ira" });
+    seedSnapshot(ctx.db, "2026-06-01", [
+      { performanceAccountId: perf, amount: "30000", taxType: "taxFree" },
+      { performanceAccountId: perf, amount: "70000", taxType: "preTax" },
+    ]);
+    const target = (await ctx.caller.simplefin.listMatchableAccounts()).find(
+      (m) => m.id === perf,
+    )!;
+    const part = target.subAccounts[0]!;
+    const id = addFeed("part", "31000");
+    await ctx.caller.simplefin.setAccountMapping({
+      id,
+      performanceAccountId: perf,
+      subKey: part.key,
+    });
+    const row = (await ctx.caller.simplefin.listAccounts()).find(
+      (a) => a.id === id,
+    )!;
+    expect(Math.abs(row.change!)).toBeLessThan(40000);
   });
 });
 

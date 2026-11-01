@@ -23,13 +23,29 @@ export function feedsLoan(a: {
   return a.linkedLoanId != null && a.isIncluded;
 }
 
+/** Unlinked and owing: a loan or card nothing has claimed yet. It's flagged
+ *  for linking, not added to the total as if it were money. */
+export function isUnclaimedDebt(a: {
+  linkedLoanId: number | null;
+  linkedPerformanceAccountId: number | null;
+  lastBalance: number | string;
+}): boolean {
+  return (
+    a.linkedLoanId == null &&
+    a.linkedPerformanceAccountId == null &&
+    Number(a.lastBalance) < 0
+  );
+}
+
 /** Whether a feed's balance adds to the live total. A loan's is a debt
  *  Ledgr already holds on the loan, not money. */
 export function countsInLiveBalance(a: {
   linkedLoanId: number | null;
+  linkedPerformanceAccountId: number | null;
+  lastBalance: number | string;
   isIncluded: boolean;
 }): boolean {
-  return a.isIncluded && a.linkedLoanId == null;
+  return a.isIncluded && a.linkedLoanId == null && !isUnclaimedDebt(a);
 }
 
 /** Servicers report about monthly: a loan feed older than this is flagged,

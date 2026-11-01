@@ -21,6 +21,7 @@ import {
   seedSnapshot,
 } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
+import { eq } from "drizzle-orm";
 
 // Keep references to mocks so we can adjust per test
 const mockGetActiveBudgetApi = vi.fn().mockResolvedValue("none");
@@ -61,6 +62,49 @@ describe("sync mappings — basic operations", () => {
   });
 
   describe("updateAccountMappings", () => {
+    it("mapping a home's value chooses it once; after that the choice stands", async () => {
+      const loan = db
+        .insert(schema.mortgageLoans)
+        .values({
+          name: "Home",
+          isActive: true,
+          principalAndInterest: "1000",
+          interestRate: "0.03",
+          termYears: 30,
+          originalLoanAmount: "200000",
+          firstPaymentDate: "2020-01-01",
+          propertyValuePurchase: "250000",
+        })
+        .returning()
+        .get();
+      const mappings = [
+        {
+          localId: `mortgage:${loan.id}:propertyValue`,
+          localName: "Home value",
+          remoteAccountId: "r-home",
+          syncDirection: "pull" as const,
+          loanId: loan.id,
+          loanMapType: "propertyValue" as const,
+        },
+      ];
+      const choice = () =>
+        db
+          .select()
+          .from(schema.mortgageLoans)
+          .where(eq(schema.mortgageLoans.id, loan.id))
+          .get()!.usePurchaseOrEstimated;
+      await caller.sync.updateAccountMappings({ service: "ynab", mappings });
+      expect(choice()).toBe("estimated");
+
+      db.update(schema.mortgageLoans)
+        .set({ usePurchaseOrEstimated: "purchase" })
+        .where(eq(schema.mortgageLoans.id, loan.id))
+        .run();
+      mockGetApiConnection.mockResolvedValue({ accountMappings: mappings });
+      await caller.sync.updateAccountMappings({ service: "ynab", mappings });
+      expect(choice()).toBe("purchase");
+    });
+
     it("succeeds with empty mappings array", async () => {
       const result = await caller.sync.updateAccountMappings({
         service: "ynab",

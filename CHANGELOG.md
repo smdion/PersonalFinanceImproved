@@ -29,6 +29,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **SimpleFIN:** a whole account is no longer suggested beside a part already linked, Current Balances' recent activity lists only counted accounts, and a day missing a fund's value no longer reads as selling it.
 - **Performance vs snapshot check** works for evening updates; utilities year-over-year compares the same months.
 - Cost basis edits save correctly, budget sync handles large budgets in batches and flags missing mapped accounts, the Strategy retirement lever re-runs the plan with the new age, and settings follow the active retirement profile.
+- **Setting a year's contribution rate to 0% pauses contributions** until you change it, along with any match that depends on them; flat employer money keeps coming. It used to mean "no limit", so contributions carried on.
+- **Stress tests keep your gap between general and post-retirement inflation.**
+- **Roth basis at retirement reflects gap-year draws**, read from the projection itself, so early access no longer looks better than it is.
+- **A new loan or card feed isn't counted as money.** An unlinked feed that owes money stays out of Current Balances and is flagged for linking.
+- **A SimpleFIN feed linked to one part of an account compares with that part,** not the whole account.
+- **Your purchase vs estimated home value choice stands.** Budget pulls update the value and no longer switch it.
+- The prior-year contribution editor shows only to those who can save it, and warnings no longer show a raw person number.
 - **Budget targets follow one rule in every integration.** A monthly push replaces only a monthly target (or none). A yearly, weekly or dated target is left alone and reported as skipped, as Actual already did; YNAB used to overwrite it. A fund taken to $0 now clears the target it had.
 - **Turning a fund into a budget item keeps its monthly funding**, and tells you if the fund had met its goal.
 - **A joint account set per paycheck with no job** is flagged when your pay schedules differ, rather than using whichever job came first. Attach a job or use a monthly amount.

@@ -19,7 +19,7 @@ import {
 } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { categoryChartHex, gainLossTextColor } from "@/lib/utils/colors";
-import { useUser, hasPermission } from "@/lib/context/user-context";
+import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useScenario } from "@/lib/context/scenario-context";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
 import { useRecommendations } from "@/lib/hooks/use-recommendations";
@@ -55,7 +55,8 @@ function periodLabel(mode: PeriodMode): string {
 export function ContributionsContent() {
   const { viewMode } = useScenario();
   const user = useUser();
-  const canEdit = hasPermission(user, "portfolio");
+  // setPriorYearAmount is admin-only.
+  const canEditPriorYear = isAdmin(user);
   const utils = trpc.useUtils();
   const { data: profiles } = trpc.contributionProfile.list.useQuery();
   const [period, setPeriod] = useState<PeriodMode>("annual");
@@ -649,7 +650,8 @@ export function ContributionsContent() {
                           Prior year ({priorYearWindow?.priorYear})
                         </td>
                         <td className="py-1.5 text-right">
-                          {canEdit && a.priorYear.contribs.length === 1 ? (
+                          {canEditPriorYear &&
+                          a.priorYear.contribs.length === 1 ? (
                             <input
                               type="number"
                               step="0.01"
@@ -676,7 +678,8 @@ export function ContributionsContent() {
                                   (e.target as HTMLInputElement).blur();
                               }}
                             />
-                          ) : canEdit && a.priorYear.contribs.length > 1 ? (
+                          ) : canEditPriorYear &&
+                            a.priorYear.contribs.length > 1 ? (
                             <span className="text-muted text-xs">
                               {formatCurrency(a.priorYear.amount)} (split)
                             </span>

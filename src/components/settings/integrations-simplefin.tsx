@@ -20,6 +20,7 @@ type SimplefinAccountListItem = {
   isIncluded: boolean;
   linkedPerformanceAccountId: number | null;
   linkedLoanId: number | null;
+  unclaimedDebt: boolean;
   linkedSubKey: string | null;
   linkedSubLabel: string | null;
   subLinkMissing: boolean;
@@ -180,6 +181,12 @@ function AccountRow({
           <PortfolioAccountsLink className="underline" /> (the account →
           Sub-accounts, one per person, if it&apos;s tracked per person); a link
           suggestion appears here after.
+        </p>
+      )}
+      {account.unclaimedDebt && account.isIncluded && (
+        <p className="text-caption mt-0.5 pl-6 text-amber-600">
+          Owes money, so it isn&apos;t counted in Current Balances. Link it if
+          it&apos;s your mortgage.
         </p>
       )}
       {account.linkedLoanId != null && (

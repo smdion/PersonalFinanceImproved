@@ -290,6 +290,10 @@ describe("Tracked Roth basis draw-down — full pipeline", () => {
         prevBasisRemaining !== undefined &&
         acct.rothBasisRemaining !== undefined
       ) {
+        expect(
+          acct.rothContributionBasisRemaining! +
+            acct.rothConversionBasisRemaining!,
+        ).toBeCloseTo(acct.rothBasisRemaining!, 1);
         expect(acct.rothBasisRemaining).toBeLessThanOrEqual(
           prevBasisRemaining + 0.01,
         );

@@ -286,8 +286,11 @@ export type IndividualAccountYearBalance = {
    *  zero) for everything else, so "no data" is never confused with
    *  "$0 left". */
   rothBasisRemaining?: number;
-  /** Basis dollars THIS year's withdrawal actually consumed (decumulation
-   *  only) — the portion of the withdrawal that was basis, not growth. */
+  /** `rothBasisRemaining`'s two parts, as the engine tracked them. */
+  rothContributionBasisRemaining?: number;
+  rothConversionBasisRemaining?: number;
+  /** Basis dollars THIS year's withdrawal actually consumed (retirement
+   *  years and gap years) — the portion that was basis, not growth. */
   rothBasisDrawn?: number;
   /** True when `rothBasisRemaining` rests on a stale (pre-projection) or
    *  auto-seeded, never-reviewed `account_basis` row — the figure may

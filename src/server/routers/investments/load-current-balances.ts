@@ -118,6 +118,7 @@ async function computeCurrentBalances(db: Db) {
             eq(f.isIncluded, true),
             isNull(f.linkedPerformanceAccountId),
             isNull(f.linkedLoanId),
+            gte(f.lastBalance, "0"),
           ),
         ),
     ]);

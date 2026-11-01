@@ -221,9 +221,10 @@ export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
  * zero base-year contributions/match, and contribution rate 0. The engine at
  * projection-year-handlers.ts:582-611 processes switches sticky-forward, so
  * every year from coastYear onward sees zero contributions AND zero employer
- * match. An accumulation override of `contributionRate: 0` would NOT do
- * this — the engine's rate ceiling treats a zero rate as "unset" — so every
- * Coast FIRE probe (this file's baseline finder included) uses this.
+ * match. An accumulation override of `contributionRate: 0` pauses only
+ * retirement contributions (Portfolio savings and flat employer money keep
+ * going), so every Coast FIRE probe (this file's baseline finder included)
+ * uses this.
  *
  * Merges with the user's own `profileSwitches`: keeps any user-authored
  * switches strictly before the coast year (so pre-coast years still reflect

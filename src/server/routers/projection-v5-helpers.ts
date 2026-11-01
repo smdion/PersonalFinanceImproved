@@ -158,6 +158,15 @@ export function runStressTestScenarios(
       ...baseEngineInput,
       returnRates: flatReturnRates,
       inflationRate: scenario.inflationRate,
+      // The household's gap between the two rates stays, as in a Simulation.
+      ...(baseEngineInput.postRetirementInflationRate != null
+        ? {
+            postRetirementInflationRate:
+              scenario.inflationRate +
+              baseEngineInput.postRetirementInflationRate -
+              baseEngineInput.inflationRate,
+          }
+        : {}),
       salaryGrowthRate: scenario.salaryGrowthRate,
       salaryGrowthRateByPerson: undefined, // the scenario's rate, for everyone
       decumulationDefaults: scenarioDecumulationDefaults,

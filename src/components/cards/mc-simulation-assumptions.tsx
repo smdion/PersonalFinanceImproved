@@ -496,9 +496,7 @@ export function SimulationAssumptions({
               <div className="text-label text-muted font-medium">
                 Asset Classes (Return / Volatility)
                 {hasOverrides && (
-                  <span className="ml-1 text-amber-600">
-                    (custom overrides)
-                  </span>
+                  <span className="ml-1 text-amber-600">(your own values)</span>
                 )}
               </div>
               {onAssetClassOverridesChange && !editing && (

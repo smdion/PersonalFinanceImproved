@@ -1801,6 +1801,8 @@ export function buildProfileContribData(
           employerMatchByCategory[cat],
           0,
         ),
+        matchNeedsContribution:
+          c.employerMatchType === "percent_of_contribution",
       };
     })
     .filter((spec): spec is ContributionSpec => spec !== null);

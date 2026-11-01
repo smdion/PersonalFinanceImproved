@@ -257,7 +257,10 @@ export function runDecumulationYear(
             personId,
             personName:
               input.socialSecurityEntries?.find((e) => e.personId === personId)
-                ?.personName ?? `Person ${personId}`,
+                ?.personName ??
+              ctx.indAccts.find((a) => a.ownerPersonId === personId)
+                ?.ownerName ??
+              "Account owner",
             amount: rmdAmount,
             // "Why is my RMD this amount" — the IRS Uniform Lifetime Table
             // divisor and the prior-year-end Traditional balance it's

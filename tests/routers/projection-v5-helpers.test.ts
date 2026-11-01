@@ -120,6 +120,20 @@ type ProjectionInputArg = Parameters<
 describe("runStressTestScenarios (M2)", () => {
   const AS_OF = new Date("2026-01-01");
 
+  it("keeps the household's gap between the two inflation rates", () => {
+    const run = (inflationRate: number, postRetirementInflationRate: number) =>
+      runStressTestScenarios({
+        baseEngineInput: {
+          ...makeBaseInput(),
+          inflationRate,
+          postRetirementInflationRate,
+        } as ProjectionInputArg,
+        decumulationDefaults: makeDecumulationDefaults(),
+      } as never).map((r) => r.sustainableWithdrawal);
+    // The scenario sets inflation, so plans with one gap read the same.
+    expect(run(0.03, 0.02)).toEqual(run(0.035, 0.025));
+  });
+
   function makeBaseInput(): Omit<
     ProjectionInput,
     "decumulationDefaults" | "accumulationOverrides" | "decumulationOverrides"

@@ -251,7 +251,8 @@ describe("sync core — syncAll", () => {
     const loans = db.select().from(schema.mortgageLoans).all();
     const updated = loans.find((l) => l.id === loan.id);
     expect(updated?.propertyValueEstimated).toBe("420000");
-    expect(updated?.usePurchaseOrEstimated).toBe("estimated");
+    // The value only: which one to use is the household's choice.
+    expect(updated?.usePurchaseOrEstimated).toBe("purchase");
   });
 
   it("pulls mortgage loan balance from tracking account", async () => {

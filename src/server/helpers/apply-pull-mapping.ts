@@ -81,10 +81,8 @@ export async function applyPullMapping(
     if (mapType === "propertyValue") {
       await db
         .update(schema.mortgageLoans)
-        .set({
-          propertyValueEstimated: String(apiBalance),
-          usePurchaseOrEstimated: "estimated",
-        })
+        // The value only: purchase vs estimated is the household's choice.
+        .set({ propertyValueEstimated: String(apiBalance) })
         .where(eq(schema.mortgageLoans.id, loanId));
       return { applied: true, kind: "mortgagePropertyValue" };
     }

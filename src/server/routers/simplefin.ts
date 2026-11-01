@@ -52,7 +52,7 @@ import { redactStoredCardSpending } from "@/lib/simplefin/ingest";
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import { suggestLinks } from "@/lib/pure/simplefin-link-suggestions";
 import { recogniseAccountKind } from "@/lib/config/simplefin-account-kinds";
-import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
+import { countsAsFeed, isUnclaimedDebt } from "@/lib/pure/simplefin-feeds";
 import {
   applyLoanFeedBalances,
   clearLoanBalance,
@@ -333,6 +333,10 @@ export const simplefinRouter = createTRPCRouter({
             and(
               eq(schema.simplefinAccounts.isIncluded, true),
               isNull(schema.simplefinAccounts.linkedLoanId),
+              or(
+                isNotNull(schema.simplefinAccounts.linkedPerformanceAccountId),
+                gte(schema.simplefinAccounts.lastBalance, "0"),
+              ),
             ),
           ),
       ]);
@@ -445,8 +449,15 @@ export const simplefinRouter = createTRPCRouter({
     // by target performanceAccountId, since more than one can point at the
     // same id. Unchecked accounts count for nothing — see countsAsFeed.
     const linkedTotalByPerfId = new Map<number, number>();
+    const linkedTotalBySubKey = new Map<string, number>();
     for (const r of rows) {
       if (!countsAsFeed(r) || r.linkedPerformanceAccountId == null) continue;
+      if (r.linkedSubKey)
+        linkedTotalBySubKey.set(
+          r.linkedSubKey,
+          (linkedTotalBySubKey.get(r.linkedSubKey) ?? 0) +
+            Number(r.lastBalance),
+        );
       linkedTotalByPerfId.set(
         r.linkedPerformanceAccountId,
         (linkedTotalByPerfId.get(r.linkedPerformanceAccountId) ?? 0) +
@@ -469,6 +480,7 @@ export const simplefinRouter = createTRPCRouter({
         lastSeenAt: r.lastSeenAt,
         linkedPerformanceAccountId: r.linkedPerformanceAccountId,
         linkedLoanId: r.linkedLoanId,
+        unclaimedDebt: isUnclaimedDebt(r),
         // The sub-account it's linked to; a key no longer in the latest
         // snapshot (edited or deactivated) is kept and flagged, and the
         // link counts for the whole account meanwhile.
@@ -497,10 +509,18 @@ export const simplefinRouter = createTRPCRouter({
           subType: null,
         };
       }
-      const snapshotBalance =
-        snapshotBalanceByPerfId.get(r.linkedPerformanceAccountId) ?? null;
-      const linkedTotal =
-        linkedTotalByPerfId.get(r.linkedPerformanceAccountId) ?? lastBalance;
+      // A feed linked to one part compares with that part, alongside only
+      // the feeds sharing its key — never the whole account's total.
+      const part = r.linkedSubKey
+        ? links.subByKey.get(r.linkedSubKey)
+        : undefined;
+      const snapshotBalance = part
+        ? part.amount
+        : (snapshotBalanceByPerfId.get(r.linkedPerformanceAccountId) ?? null);
+      const linkedTotal = part
+        ? (linkedTotalBySubKey.get(r.linkedSubKey!) ?? lastBalance)
+        : (linkedTotalByPerfId.get(r.linkedPerformanceAccountId) ??
+          lastBalance);
       return {
         ...base,
         snapshotBalance,

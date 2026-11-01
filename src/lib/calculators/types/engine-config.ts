@@ -783,6 +783,9 @@ export type ContributionSpec = {
    *  year's employer money held against the IRS limit is this share of the
    *  money the engine credits (yearEmployerMatch). Absent = 0. */
   employerShare?: number;
+  /** False for flat employer money (a set yearly amount), which keeps coming
+   *  while contributions are paused. Absent = it depends on contributing. */
+  matchNeedsContribution?: boolean;
 };
 
 // --- Engine Output Slots ---

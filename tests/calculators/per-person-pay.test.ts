@@ -126,6 +126,61 @@ describe("pay that moves apart", () => {
     expect(slot?.employeeContrib).toBeCloseTo(1200, 0);
   });
 
+  describe("a change to a 0% rate", () => {
+    const paused = (spec: Partial<ContributionSpec> = {}) => {
+      const year = 2029;
+      const specs: Partial<ContributionSpec>[] = [
+        {
+          category: "401k",
+          name: "Bo",
+          method: "percent_of_salary",
+          value: 0.05,
+          salaryFraction: 0.4,
+          baseAnnual: 3000,
+          personId: 2,
+          employerShare: 1,
+          personPayShare: 1,
+          ...spec,
+        },
+      ];
+      const base = twoEarners({}, specs);
+      const years = accumulation({
+        ...base,
+        accumulationDefaults: {
+          ...base.accumulationDefaults,
+          contributionRate: 0.05,
+        },
+        accumulationOverrides: [{ year, contributionRate: 0 }],
+      });
+      return {
+        before: years.find((r) => r.year === year - 1)!,
+        during: years.find((r) => r.year === year)!,
+        after: years.find((r) => r.year === year + 2)!,
+      };
+    };
+    const contrib = (r: EngineAccumulationYear) =>
+      r.slots.reduce((s, x) => s + x.employeeContrib, 0);
+
+    it("stops contributions and the match that depends on them, until changed", () => {
+      const { before, during, after } = paused();
+      expect(contrib(before)).toBeGreaterThan(0);
+      expect(contrib(during)).toBe(0);
+      expect(matchOn(during)).toBe(0);
+      expect(contrib(after)).toBe(0);
+    });
+
+    it("flat employer money keeps coming", () => {
+      const { during, before } = paused({ matchNeedsContribution: false });
+      expect(contrib(during)).toBe(0);
+      expect(matchOn(during)).toBeGreaterThan(matchOn(before) * 0.9);
+    });
+
+    it("match on Portfolio savings keeps coming", () => {
+      const { during } = paused({ parentCategory: "Portfolio" });
+      expect(matchOn(during)).toBeGreaterThan(0);
+    });
+  });
+
   it("raises that match keep the household figure", () => {
     const years = accumulation(
       twoEarners({ salaryGrowthRateByPerson: { 1: 0.03, 2: 0.03 } }),

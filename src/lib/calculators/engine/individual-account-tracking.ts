@@ -1161,6 +1161,12 @@ export function buildIndividualYearBalances(
           rothBasisRemaining: roundToCents(
             basisState.contributionBasis + basisState.conversionBasis,
           ),
+          rothContributionBasisRemaining: roundToCents(
+            basisState.contributionBasis,
+          ),
+          rothConversionBasisRemaining: roundToCents(
+            basisState.conversionBasis,
+          ),
           rothBasisUncertain: basisState.stale || basisState.isSeeded,
         }
       : {};

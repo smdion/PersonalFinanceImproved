@@ -70,11 +70,33 @@ export const syncMappingsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const before = await getApiConnection(ctx.db, input.service);
+      const typed = mappingsWithTypedIds(input.mappings);
       await ctx.db
         .update(schema.apiConnections)
-        .set({ accountMappings: mappingsWithTypedIds(input.mappings) })
+        .set({ accountMappings: typed })
         .where(eq(schema.apiConnections.service, input.service));
       await clearUnmappedPulledBalances(ctx.db);
+      // Mapping a home's value is the choice to use it, once. After that
+      // pulls leave the household's purchase/estimated setting alone.
+      const hadValue = new Set(
+        mappingsWithTypedIds(before?.accountMappings ?? []).flatMap((m) =>
+          m.loanMapType === "propertyValue" && m.loanId != null
+            ? [m.loanId]
+            : [],
+        ),
+      );
+      for (const m of typed)
+        if (
+          m.loanMapType === "propertyValue" &&
+          m.loanId != null &&
+          isPullMapping(m) &&
+          !hadValue.has(m.loanId)
+        )
+          await ctx.db
+            .update(schema.mortgageLoans)
+            .set({ usePurchaseOrEstimated: "estimated" })
+            .where(eq(schema.mortgageLoans.id, m.loanId));
 
       return { success: true };
     }),
