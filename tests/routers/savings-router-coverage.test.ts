@@ -975,6 +975,55 @@ describe("savings.listEfundReimbursements", () => {
     }
   });
 
+  it("reads the active e-fund goal, not a deactivated older one", async () => {
+    const ctx = await createTestCaller();
+    try {
+      seedSavingsGoal(ctx.db, {
+        name: "Old E-Fund",
+        isEmergencyFund: true,
+        isActive: false,
+        targetAmount: "5000",
+      });
+      const efundGoalId = seedSavingsGoal(ctx.db, {
+        name: "E-Fund",
+        isEmergencyFund: true,
+        targetAmount: "15000",
+      });
+      linkGoal(
+        ctx.db,
+        efundGoalId,
+        "ynab",
+        "reimb-cat-003",
+        null,
+        "reimbursement",
+      );
+      mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+      mockCacheGet.mockResolvedValueOnce({
+        data: [
+          {
+            name: "Reimbursements",
+            categories: [
+              {
+                id: "reimb-cat-003",
+                name: "Self-Loan Tracking",
+                balance: 0,
+                budgeted: 0,
+                activity: 0,
+                note: "25 - parking",
+              },
+            ],
+          },
+        ],
+      });
+      const result = await ctx.caller.savings.listEfundReimbursements();
+      expect(result!.items).toHaveLength(1);
+    } finally {
+      ctx.cleanup();
+      mockGetActiveBudgetApi.mockResolvedValue("none");
+      mockCacheGet.mockResolvedValue(null);
+    }
+  });
+
   it("skips unparseable lines and reports them", async () => {
     const ctx = await createTestCaller();
     try {

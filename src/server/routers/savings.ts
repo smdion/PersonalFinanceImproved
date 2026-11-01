@@ -2179,7 +2179,13 @@ export const savingsRouter = createTRPCRouter({
     if (active === "none") return null;
 
     // Find the e-fund goal with a linked reimbursement category
-    const goals = await ctx.db.select().from(schema.savingsGoals);
+    // The active e-fund goal, as the overview finds it: a deactivated
+    // e-fund goal with an older id must not be the one read.
+    const goals = await ctx.db
+      .select()
+      .from(schema.savingsGoals)
+      .where(eq(schema.savingsGoals.isActive, true))
+      .orderBy(asc(schema.savingsGoals.id));
     const efundGoalCandidate = goals.find((g) => g.isEmergencyFund);
     if (!efundGoalCandidate) return null;
     const reimbursementLinks = await loadSavingsGoalLinks(
