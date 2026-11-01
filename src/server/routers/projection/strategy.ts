@@ -23,6 +23,10 @@
  * configured — fixed alongside a related cache-key bug (see
  * `computeStrategyComparison`'s `inputHash` comment).
  */
+import {
+  planEndAge as planEndAgeOf,
+  planRetirementAge as planRetirementAgeOf,
+} from "@/lib/pure/household-timeline";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
@@ -149,14 +153,14 @@ export const strategyRouter = createTRPCRouter({
         settings,
         distributionTaxRates,
         baseEngineInput,
-        avgRetirementAge,
+        planRetirementAge,
       } = payload;
 
       // Build MC-aligned deterministic return rates using geometric means
       const mcReturnRates: { label: string; rate: number }[] = [];
       for (
         let a = baseEngineInput.currentAge;
-        a <= baseEngineInput.projectionEndAge;
+        a <= planEndAgeOf(baseEngineInput);
         a++
       ) {
         const allocations = interpolateAllocations(mcGlidePath, a);
@@ -178,7 +182,7 @@ export const strategyRouter = createTRPCRouter({
             mcGlidePath,
             classifyAssetClasses(classBuckets),
             baseEngineInput.currentAge,
-            baseEngineInput.projectionEndAge,
+            planEndAgeOf(baseEngineInput),
           ) ?? undefined,
       };
       const hasMcData = mcAssetClasses.length > 0 && mcGlidePath.length > 0;
@@ -374,7 +378,7 @@ export const strategyRouter = createTRPCRouter({
         strategies: await buildStrategyResults(),
         activeStrategy,
         presetLabel: preset!.label,
-        retirementAge: avgRetirementAge,
+        retirementAge: planRetirementAge,
       };
       await writeProjectionCache(ctx.db, inputHash, result, null);
       return result;
@@ -464,7 +468,7 @@ export const strategyRouter = createTRPCRouter({
       const mcReturnRates: { label: string; rate: number }[] = [];
       for (
         let a = baseEngineInput.currentAge;
-        a <= baseEngineInput.projectionEndAge;
+        a <= planEndAgeOf(baseEngineInput);
         a++
       ) {
         const allocations = interpolateAllocations(mcGlidePath, a);
@@ -493,7 +497,7 @@ export const strategyRouter = createTRPCRouter({
             mcGlidePath,
             classifyAssetClasses(classBuckets),
             baseEngineInput.currentAge,
-            baseEngineInput.projectionEndAge,
+            planEndAgeOf(baseEngineInput),
           ) ?? undefined,
         ...saved,
         // buildDecumulationDefaults already resolves withdrawalStrategy to
@@ -605,8 +609,8 @@ export const strategyRouter = createTRPCRouter({
           unit: "absolute",
           targets: ["survival", "smoothness"],
           label: "Retirement Age",
-          currentValue: baseEngineInput.retirementAge,
-          max: baseEngineInput.projectionEndAge - 5,
+          currentValue: planRetirementAgeOf(baseEngineInput),
+          max: planEndAgeOf(baseEngineInput) - 5,
         },
         {
           field: "ssStartAge",
@@ -688,7 +692,19 @@ export const strategyRouter = createTRPCRouter({
         } else {
           // Global lever — modify the engine input field directly
           if (lever.field === "retirementAge") {
-            variantInput = { ...variantInput, retirementAge: rounded };
+            // Everyone works the extra years, whoever retires first.
+            const delta = rounded - lever.currentValue;
+            variantInput = {
+              ...variantInput,
+              retirementYear: variantInput.retirementYear + delta,
+              retirementYearByPerson:
+                variantInput.retirementYearByPerson &&
+                Object.fromEntries(
+                  Object.entries(variantInput.retirementYearByPerson).map(
+                    ([id, year]) => [id, year + delta],
+                  ),
+                ),
+            };
           } else if (lever.field === "ssStartAge") {
             // "Delay claiming by N years" — shift every person's SS start
             // age by the same delta and re-derive the benefit amounts.

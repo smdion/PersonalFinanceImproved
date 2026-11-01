@@ -141,7 +141,7 @@ async function matchedMixBenchmark(
 
 export const investmentComparisonRouter = createTRPCRouter({
   /** The range of one year's return the Simulation expects for each year,
-   *  at the household's age that year on the chosen preset's glide path —
+   *  at the primary person's age that year on the chosen preset's glide path —
    *  today's assumptions, not what was known then. */
   getYearReturnRanges: portfolioProcedure
     .input(

@@ -15,6 +15,8 @@
  * merging. This returns exactly one id, and the caller reads that profile's
  * rows and nothing else.
  */
+import { planRetirementYear } from "@/lib/pure/household-timeline";
+import { projectionJobs } from "@/lib/pure/profiles";
 import { asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
@@ -109,25 +111,6 @@ export async function resolveRetirementProfileId(
   return resolveRetirementProfileIdFrom(appSettings, profiles);
 }
 
-/**
- * The engine's last working year: it works while the household's age (the
- * people's average) is under the retirement age (the last to retire's,
- * for two or more; the one person's otherwise).
- */
-export function lastWorkingYear(
-  currentYear: number,
-  people: readonly { birthYear: number; retirementAge: number }[],
-): number {
-  const avg = (xs: number[]) =>
-    Math.round(xs.reduce((t, x) => t + x, 0) / xs.length);
-  const age = avg(people.map((p) => currentYear - p.birthYear));
-  const retirementAge =
-    people.length > 1
-      ? Math.max(...people.map((p) => p.retirementAge))
-      : avg(people.map((p) => p.retirementAge));
-  return currentYear + retirementAge - age - 1;
-}
-
 /** Each person's birth year and planned retirement age under the active
  *  retirement profile (the profile's per-person age, else the person's
  *  settings row); people without either are left out. */
@@ -151,31 +134,24 @@ async function plannedRetirements(db: Db) {
           (profileId === null || r.profileId === profileId),
       )?.retirementAge ??
       settings.find((r) => r.personId === p.id)?.retirementAge;
-    return age != null ? [{ birthYear: born, retirementAge: age }] : [];
+    return age != null
+      ? [{ personId: p.id, birthYear: born, retirementAge: age }]
+      : [];
   });
 }
 
-/** The household's last working year as the engine counts it
- *  (lastWorkingYear); null when nobody has a planned age. */
-export async function householdLastWorkingYear(
-  db: Db,
-  currentYear: number,
-): Promise<number | null> {
-  const planned = await plannedRetirements(db);
-  return planned.length === 0 ? null : lastWorkingYear(currentYear, planned);
-}
-
 /**
- * The household's planned retirement year under the active retirement
- * profile: the average of each person's birth year + planned retirement
- * age (the profile's per-person age, else the person's settings row).
- * Null when nobody has a planned age.
+ * The first year of withdrawals under the active retirement profile, as the
+ * engine counts it (planRetirementYear). Null when nobody has a planned age.
  */
 export async function householdRetirementYear(db: Db): Promise<number | null> {
-  const years = (await plannedRetirements(db)).map(
-    (p) => p.birthYear + p.retirementAge,
+  const [planned, jobs] = await Promise.all([
+    plannedRetirements(db),
+    db.select().from(schema.jobs),
+  ]);
+  if (planned.length === 0) return null;
+  return planRetirementYear(
+    planned,
+    projectionJobs(jobs, new Date()).map((j) => j.personId),
   );
-  return years.length === 0
-    ? null
-    : Math.round(years.reduce((t, y) => t + y, 0) / years.length);
 }

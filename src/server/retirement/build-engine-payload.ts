@@ -10,6 +10,11 @@
  * balances. Callers (projection router endpoints) consume the result and add
  * their own accumulation/decumulation overrides and decumulation defaults.
  */
+import {
+  householdTimeline,
+  planEndAge,
+  planRetirementAge,
+} from "@/lib/pure/household-timeline";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
@@ -36,7 +41,6 @@ import { getAllPeople } from "@/server/helpers/people";
 import {
   resolveRetirementProfileIdFrom,
   pickProfileSettingsRow,
-  lastWorkingYear,
 } from "@/server/helpers/retirement-profile";
 import type { AccountCategory } from "@/lib/calculators/types";
 import {
@@ -537,25 +541,11 @@ export async function buildEnginePayload(
     };
   });
 
-  // Average age and retirement age across all people
   // When a historical snapshot is selected, use its date as the reference point
   const referenceDate = data.snapshotData?.snapshot.snapshotDate
     ? new Date(data.snapshotData.snapshot.snapshotDate)
     : new Date();
   const currentYear = referenceDate.getFullYear();
-  const avgAge = Math.round(
-    sumBy(perPersonSettings, (p) => currentYear - p.birthYear) /
-      perPersonSettings.length,
-  );
-  const avgRetirementAge = Math.round(
-    sumBy(perPersonSettings, (p) => p.retirementAge) / perPersonSettings.length,
-  );
-  // Household retirement age: when the last person retires (full decumulation)
-  const householdRetirementAge =
-    perPersonSettings.length > 1
-      ? Math.max(...perPersonSettings.map((p) => p.retirementAge))
-      : avgRetirementAge;
-  const maxEndAge = Math.max(...perPersonSettings.map((p) => p.endAge));
 
   // Budget profile summaries (for budget override "from profile" UI) — each
   // linked item's dollar amount resolved through the same contribution-
@@ -600,9 +590,6 @@ export async function buildEnginePayload(
     }),
   );
 
-  // Age (average-based for multi-person households)
-  const age = avgAge;
-
   // Salary comes from the Salary Profile (salaryProfileActiveMap, resolved
   // above); the Contribution Profile contributes no salary — the two are
   // independent.
@@ -610,6 +597,15 @@ export async function buildEnginePayload(
   // Each person's current job, or the next one they start; its dates bound
   // the years it's worked (workingYearsByPerson, below).
   const activeJobs = projectionJobs(patchedJobs, asOfDate);
+  // Every date in the plan, from each person's own age and dates.
+  const timeline = householdTimeline({
+    people: perPersonSettings,
+    primaryPersonId: primaryPerson.id,
+    earnerIds: activeJobs.map((j) => j.personId),
+    baseYear: currentYear,
+  });
+  const age = timeline.currentAge;
+  const planDates = { ...timeline, asOfDate };
   const workingYearsByPerson = Object.fromEntries(
     activeJobs.flatMap((j) => {
       const w = workingYears(j, asOfDate);
@@ -997,8 +993,7 @@ export async function buildEnginePayload(
   );
   const contributionSpecs = defaultContribData.contributionSpecs;
 
-  // The engine's last working year (its retirement age, below).
-  const lastAccumulationYear = lastWorkingYear(currentYear, perPersonSettings);
+  const lastAccumulationYear = timeline.retirementYear - 1;
   const { profileSwitches, perPersonSalaryAdds, householdSalaryAdds } =
     buildProfileSwitches({
       profileSwitchOverrides,
@@ -1144,15 +1139,11 @@ export async function buildEnginePayload(
   const baseEngineInput = {
     accumulationDefaults: derivedAccumulationDefaults,
     currentAge: age,
-    retirementAge: hasMultiplePeople
-      ? householdRetirementAge
-      : avgRetirementAge,
-    retirementAgeByPerson: hasMultiplePeople
-      ? Object.fromEntries(
-          perPersonSettings.map((ps) => [ps.personId, ps.retirementAge]),
-        )
+    retirementYear: timeline.retirementYear,
+    retirementYearByPerson: hasMultiplePeople
+      ? timeline.retirementYearByPerson
       : undefined,
-    projectionEndAge: maxEndAge,
+    projectionEndYear: timeline.projectionEndYear,
     currentSalary: totalCompensationFullFormula,
     salaryGrowthRate: toNumber(
       (soleEarnerId !== primaryPerson.id
@@ -1292,7 +1283,7 @@ export async function buildEnginePayload(
         defaultPreset.glidePath,
         classifyAssetClasses(classBucketRows),
         age,
-        maxEndAge,
+        planEndAge(planDates),
       ) ?? undefined,
     asOfDate,
   };
@@ -1310,8 +1301,10 @@ export async function buildEnginePayload(
     jobSalaries,
     allContribs,
     age,
-    avgRetirementAge,
-    maxEndAge,
+    // The plan's ages (the primary person's): rows carry these, so a page
+    // finding the retirement year by age reads the same year the engine does.
+    planRetirementAge: planRetirementAge(planDates),
+    planEndAge: planEndAge(planDates),
     totalCompensation,
     portfolioByTaxType,
     portfolioByTaxTypeByParentCat,

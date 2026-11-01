@@ -57,15 +57,15 @@ export function runPreYearSetup(
 
   const age = input.currentAge + yearIndex;
   const year = input.asOfDate.getFullYear() + yearIndex;
-  // Treat yearIndex=0 as a final partial accumulation year when the person is
-  // retiring mid-calendar-year (retirementAge === currentAge and the as-of
+  // Treat yearIndex=0 as a final partial accumulation year when the household
+  // retires mid-calendar-year (retirementYear is this year and the as-of
   // date is before year-end). This defers decumulation to yearIndex=1 so that
   // accumulation-year.ts can pro-rate contributions and growth by
   // firstYearFraction before the phase boundary is crossed.
   const isAccumulation =
-    age < input.retirementAge ||
+    year < input.retirementYear ||
     (yearIndex === 0 &&
-      age === input.retirementAge &&
+      year === input.retirementYear &&
       ctx.firstYearFraction < 1);
 
   // Get return rate for this age (fall back to closest configured age at
@@ -291,9 +291,9 @@ export function runPreYearSetup(
     scopedBalances(state.balances, nonRetirement);
 
   // Reset expenses to decumulation budget on the FIRST decumulation year.
-  // Do NOT key on `age === retirementAge`: that check fails in the mid-year
-  // case (retirementAge === currentAge) because by yearIndex=1 the age has already
-  // advanced past retirementAge. Instead, fire exactly once on the first year
+  // Do NOT key on `year === retirementYear`: that check fails in the mid-year
+  // case (retiring in the first year) because by yearIndex=1 the year has
+  // already passed it. Instead, fire exactly once on the first year
   // isAccumulation is false, tracked by state.decumulationExpensesSet.
   // Budget values are in today's dollars -- inflate to retirement-year nominal
   // dollars using CPI (inflationRate), NOT the post-retirement raise rate.

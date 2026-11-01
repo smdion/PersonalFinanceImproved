@@ -99,13 +99,10 @@ function candidateRates(input: ProjectionInput): number[] {
   return Array.from(rates).sort((a, b) => a - b);
 }
 
-/** First year the plan is in decumulation, matching how `coast-fire.ts`
- *  derives its own probe years — `currentYear + (retirementAge -
- *  currentAge)`, not a scan of `projectionByYear` (this runs BEFORE any
- *  projection exists). */
+/** First year the plan is in decumulation — the input's own year, not a
+ *  scan of `projectionByYear` (this runs BEFORE any projection exists). */
 function firstDecumulationYear(input: ProjectionInput): number {
-  const currentYear = input.asOfDate.getFullYear();
-  return currentYear + (input.retirementAge - input.currentAge);
+  return input.retirementYear;
 }
 
 /**

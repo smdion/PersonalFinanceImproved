@@ -38,7 +38,7 @@ import { asc, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { findActiveJob, type JobLike } from "@/lib/pure/profiles";
 import {
-  householdLastWorkingYear,
+  householdRetirementYear,
   pickProfileSettingsRow,
   resolveRetirementProfileIdFrom,
 } from "./retirement-profile";
@@ -485,7 +485,7 @@ export async function switchProfileLimitWarning(
   if (check.touched.length === 0) return null;
   if (check.profileId === (await activeContribProfileId(db))) return null;
   const thisYear = new Date().getFullYear();
-  const [switchRows, profiles, lastYear] = await Promise.all([
+  const [switchRows, profiles, retirementYear] = await Promise.all([
     db
       .select({
         year: schema.retirementSalaryOverrides.projectionYear,
@@ -495,9 +495,10 @@ export async function switchProfileLimitWarning(
     db
       .select({ id: schema.contributionProfiles.id })
       .from(schema.contributionProfiles),
-    householdLastWorkingYear(db, thisYear),
+    householdRetirementYear(db),
   ]);
-  const lastWorkingYear = lastYear ?? thisYear;
+  const lastWorkingYear =
+    retirementYear !== null ? retirementYear - 1 : thisYear;
   // Rows naming a profile that still exists (as the projection reads them).
   const profileIds = new Set(profiles.map((p) => p.id));
   const contribSwitches = switchRows.filter(

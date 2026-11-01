@@ -128,7 +128,7 @@ export function runAccumulationYear(
     irsLimitCaps,
     brokerageContributionRamp,
     decumulationDefaults,
-    retirementAge,
+    retirementYear,
   } = input;
 
   const config = resolveAccumulationConfig(
@@ -730,7 +730,7 @@ export function runAccumulationYear(
   );
 
   // Divergence check: last accumulation year
-  if (age === retirementAge - 1) {
+  if (year === retirementYear - 1) {
     const rothTotal = getAllCategories().reduce((s, cat) => {
       const b = acctBal[cat];
       return s + (b.structure === "roth_traditional" ? b.roth : 0);

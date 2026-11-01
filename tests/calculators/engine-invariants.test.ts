@@ -91,8 +91,8 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       accumulationOverrides: [],
       decumulationOverrides: [],
       currentAge: 35,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 30,
+      projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 150000,
       salaryGrowthRate: 0.03,
       salaryCap: null,
@@ -188,8 +188,9 @@ function arbitraryInput(): fc.Arbitrary<ProjectionInput> {
 
       return makeInput({
         currentAge: r.currentAge,
-        retirementAge,
-        projectionEndAge,
+        retirementYear: AS_OF.getFullYear() + r.yearsToRetirement,
+        projectionEndYear:
+          AS_OF.getFullYear() + projectionEndAge - r.currentAge,
         currentSalary: r.salary,
         salaryGrowthRate: r.salaryGrowthRate,
         annualExpenses: Math.min(r.annualExpenses, r.salary),
@@ -257,8 +258,8 @@ function arbitraryRetiredInput(): fc.Arbitrary<ProjectionInput> {
       const brokerBasis = Math.floor(r.brokerageBalance * 0.5);
       return makeInput({
         currentAge: r.currentAge,
-        retirementAge: r.currentAge - 1, // already retired
-        projectionEndAge: r.currentAge + r.yearsRemaining,
+        retirementYear: AS_OF.getFullYear() - 1, // already retired
+        projectionEndYear: AS_OF.getFullYear() + r.yearsRemaining,
         currentSalary: 0,
         annualExpenses: r.annualExpenses,
         returnRates: [{ label: `Age ${r.currentAge}`, rate: r.returnRate }],
@@ -307,8 +308,11 @@ function arbitraryRmdInput(): fc.Arbitrary<ProjectionInput> {
       const birthYear = AS_OF.getFullYear() - r.currentAge;
       return makeInput({
         currentAge: r.currentAge,
-        retirementAge: r.currentAge - 1,
-        projectionEndAge: r.currentAge + r.yearsRemaining,
+        retirementYear: AS_OF.getFullYear() + (r.currentAge - 1) - r.currentAge,
+        projectionEndYear:
+          AS_OF.getFullYear() +
+          (r.currentAge + r.yearsRemaining) -
+          r.currentAge,
         currentSalary: 0,
         returnRates: [{ label: `Age ${r.currentAge}`, rate: r.returnRate }],
         birthYear,
@@ -589,8 +593,10 @@ describe("engine invariants", () => {
           (r) => {
             const input = makeInput({
               currentAge: r.currentAge,
-              retirementAge: r.currentAge + 10,
-              projectionEndAge: r.currentAge + 30,
+              retirementYear:
+                AS_OF.getFullYear() + (r.currentAge + 10) - r.currentAge,
+              projectionEndYear:
+                AS_OF.getFullYear() + (r.currentAge + 30) - r.currentAge,
               currentSalary: r.salary,
               salaryGrowthRate: r.growthRate,
             });
@@ -971,8 +977,8 @@ describe("engine invariants", () => {
       // Roth conversions happen automatically when filingStatus is set and bracket room exists
       const input = makeInput({
         currentAge: 67,
-        retirementAge: 65,
-        projectionEndAge: 85,
+        retirementYear: AS_OF.getFullYear() - 2,
+        projectionEndYear: AS_OF.getFullYear() + 18,
         currentSalary: 0,
         filingStatus: "MFJ",
         birthYear: 1958,
@@ -1022,8 +1028,8 @@ describe("engine invariants", () => {
     it("11 — Roth conversion tax cost ≤ conversion amount × max marginal rate (50%)", () => {
       const input = makeInput({
         currentAge: 67,
-        retirementAge: 65,
-        projectionEndAge: 85,
+        retirementYear: AS_OF.getFullYear() - 2,
+        projectionEndYear: AS_OF.getFullYear() + 18,
         currentSalary: 0,
         filingStatus: "Single",
         birthYear: 1958,
@@ -1115,8 +1121,8 @@ describe("engine invariants", () => {
       // just that the engine runs without error and produces warnings when relevant.
       const input = makeInput({
         currentAge: 68,
-        retirementAge: 65,
-        projectionEndAge: 85,
+        retirementYear: AS_OF.getFullYear() - 3,
+        projectionEndYear: AS_OF.getFullYear() + 17,
         currentSalary: 0,
         enableIrmaaAwareness: true,
         startingBalances: {
@@ -1169,8 +1175,8 @@ describe("engine invariants", () => {
       const decreasePercent = 0.1;
       const input = makeInput({
         currentAge: 66,
-        retirementAge: 65,
-        projectionEndAge: 95,
+        retirementYear: AS_OF.getFullYear() - 1,
+        projectionEndYear: AS_OF.getFullYear() + 29,
         currentSalary: 0,
         annualExpenses: 80000,
         returnRates: [{ label: "5%", rate: 0.05 }], // modest returns to trigger guardrails
@@ -1270,8 +1276,8 @@ describe("engine invariants", () => {
           calculateProjection(input);
           // Verify primitive fields haven't changed
           expect(input.currentAge).toBe(snapshot.currentAge);
-          expect(input.retirementAge).toBe(snapshot.retirementAge);
-          expect(input.projectionEndAge).toBe(snapshot.projectionEndAge);
+          expect(input.retirementYear).toBe(snapshot.retirementYear);
+          expect(input.projectionEndYear).toBe(snapshot.projectionEndYear);
           expect(input.currentSalary).toBe(snapshot.currentSalary);
           expect(input.annualExpenses).toBe(snapshot.annualExpenses);
           expect(input.startingBalances.preTax).toBe(
@@ -1516,7 +1522,10 @@ describe("engine invariants", () => {
     // same basis ratio as the household's brokerage, so nothing but the
     // Portfolio balance itself differs.
     const retired = (portfolio: number): ProjectionInput => {
-      const base = makeInput({ currentAge: 66, retirementAge: 66 });
+      const base = makeInput({
+        currentAge: 66,
+        retirementYear: AS_OF.getFullYear(),
+      });
       const individualAccounts = [
         {
           name: "401k",
@@ -1727,7 +1736,10 @@ describe("engine invariants", () => {
       // 59½ (no Rule of 55). The category also holds $50k of Roth 401(k)
       // money no account tracks — it was drawn penalty-free as if reachable.
       const birthYear = AS_OF.getFullYear() - 55;
-      const base = makeInput({ currentAge: 55, retirementAge: 55 });
+      const base = makeInput({
+        currentAge: 55,
+        retirementYear: AS_OF.getFullYear(),
+      });
       const input: ProjectionInput = {
         ...base,
         decumulationDefaults: {
@@ -1796,7 +1808,7 @@ describe("engine invariants", () => {
     const overflowInput = (): ProjectionInput => ({
       ...makeInput({
         currentAge: 40,
-        retirementAge: 65,
+        retirementYear: AS_OF.getFullYear() + 25,
         currentSalary: 200000,
         salaryGrowthRate: 0,
         limitGrowthRate: 0,
@@ -2483,7 +2495,10 @@ describe("engine invariants", () => {
       // Retired; a Retirement brokerage at 28% basis and a Portfolio one at
       // 55%; withdrawals take brokerage first.
       const twoBrokerages = (): ProjectionInput => {
-        const base = makeInput({ currentAge: 66, retirementAge: 66 });
+        const base = makeInput({
+          currentAge: 66,
+          retirementYear: AS_OF.getFullYear(),
+        });
         return {
           ...base,
           decumulationDefaults: {
@@ -2762,8 +2777,8 @@ describe("engine invariants", () => {
       ): ProjectionInput => {
         const base = makeInput({
           currentAge: 75,
-          retirementAge: 65,
-          projectionEndAge: 78,
+          retirementYear: AS_OF.getFullYear() - 10,
+          projectionEndYear: AS_OF.getFullYear() + 3,
           birthYear: 1950,
           currentSalary: 0,
           annualExpenses: 40000,
@@ -2985,8 +3000,8 @@ describe("Social Security switch on portfolio-sized strategies", () => {
       const base = makeInput();
       return makeInput({
         currentAge: 76,
-        retirementAge: 75,
-        projectionEndAge: 85,
+        retirementYear: AS_OF.getFullYear() - 1,
+        projectionEndYear: AS_OF.getFullYear() + 9,
         currentSalary: 0,
         birthYear: AS_OF.getFullYear() - 76,
         socialSecurityAnnual: 30000,

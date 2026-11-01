@@ -43,6 +43,7 @@
  * need" — but it means their Coast FIRE result rests entirely on the plan
  * judge.
  */
+import { planRetirementAge } from "@/lib/pure/household-timeline";
 import { strategySpending } from "./strategy-spending";
 import { assessPlan } from "./plan-outcome";
 import { calculateProjection } from "./engine";
@@ -166,7 +167,8 @@ function firstRetirementYear(
  * Cost: ~log₂(retirementAge - currentAge) engine calls.
  */
 export function findCoastFireAge(input: ProjectionInput): CoastFireResult {
-  const { currentAge, retirementAge } = input;
+  const { currentAge } = input;
+  const retirementAge = planRetirementAge(input);
 
   // Edge case: user is already at or past retirement age. Coast FIRE is
   // undefined in this case — just return the current projection's outcome.

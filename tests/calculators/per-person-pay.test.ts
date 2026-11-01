@@ -54,8 +54,8 @@ function twoEarners(
     {
       currentAge: 40,
       birthYear: 1986,
-      retirementAge: 60,
-      projectionEndAge: 62,
+      retirementYear: 2046,
+      projectionEndYear: 2048,
       returnRates,
       currentSalary: 150000,
       salaryGrowthRate: 0.03,

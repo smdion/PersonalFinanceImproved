@@ -18,13 +18,13 @@ export function RealizedVsAssumedCard() {
   const { data: people } = trpc.settings.people.list.useQuery();
   if (!perf || !rates || !people) return null;
 
+  const primary = people.find((p) => p.isPrimaryUser) ?? people[0];
+  const primaryYear = Number(String(primary?.dateOfBirth ?? "").slice(0, 4));
   const { rows, realizedAnnual, assumedAnnual } = realizedVsAssumed(
     perf.annualRows
       .filter((r) => r.category === PERF_CATEGORY_PORTFOLIO)
       .map((r) => ({ year: r.year, returnPct: r.annualReturnPct })),
-    people
-      .map((p) => Number(String(p.dateOfBirth ?? "").slice(0, 4)))
-      .filter((y) => y > 1900),
+    primaryYear > 1900 ? primaryYear : null,
     rates.map((r) => ({ age: r.age, rate: Number(r.rateOfReturn) })),
     new Date().getFullYear(),
   );
@@ -38,7 +38,7 @@ export function RealizedVsAssumedCard() {
       title={
         <>
           Realized vs assumed returns{" "}
-          <HelpTip text="Your actual yearly return on all investments (this page's Portfolio return) next to the return your projections assume for your household's average age that year, from the return-rate table. Both compound into one yearly figure over the same years. Display only — projections keep their own assumptions." />
+          <HelpTip text="Your actual yearly return on all investments (this page's Portfolio return) next to the return your projections assume for the primary person's age that year, from the return-rate table. Both compound into one yearly figure over the same years. Display only — projections keep their own assumptions." />
         </>
       }
       className="mt-6"

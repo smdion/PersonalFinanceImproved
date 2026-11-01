@@ -10,6 +10,7 @@
  * correlated log-normal distributions based on asset class parameters and a
  * glide path that shifts allocations over time.
  */
+import { planEndAge, planRetirementAge } from "@/lib/pure/household-timeline";
 import { strategySpending } from "./strategy-spending";
 import { assessPlan, type PlanFailureReason } from "./plan-outcome";
 import { calculateProjection } from "./engine";
@@ -168,7 +169,7 @@ export function calculateMonteCarlo(
 
   // Projection parameters
   const startAge = engineInput.currentAge;
-  const endAge = engineInput.projectionEndAge;
+  const endAge = planEndAge(engineInput);
   const numYears = endAge - startAge + 1;
 
   // Storage for per-year balances across trials (year index → array of end
@@ -182,7 +183,7 @@ export function calculateMonteCarlo(
 
   // Storage for per-decumulation-year spending ratios across trials
   // Index 0 = first decumulation year, not first projection year
-  const numDecYears = Math.max(0, endAge - engineInput.retirementAge + 1);
+  const numDecYears = Math.max(0, endAge - planRetirementAge(engineInput) + 1);
   const stratRatiosByDecYear: number[][] = Array.from(
     { length: numDecYears },
     () => [],
@@ -227,7 +228,7 @@ export function calculateMonteCarlo(
     engineInput.annualExpenses ??
     null;
 
-  const yearsToRetirement = engineInput.retirementAge - startAge;
+  const yearsToRetirement = planRetirementAge(engineInput) - startAge;
   // The household's own rates — each trial's inflation varies around them.
   const baseInflation = engineInput.inflationRate;
   const basePostRetirementInflation =
@@ -501,9 +502,8 @@ export function calculateMonteCarlo(
   }
 
   // Spending stability ratio bands (per decumulation year)
-  const retirementStartAge = engineInput.retirementAge;
-  const retirementStartYear =
-    engineInput.asOfDate.getFullYear() + (retirementStartAge - startAge);
+  const retirementStartAge = planRetirementAge(engineInput);
+  const retirementStartYear = engineInput.retirementYear;
 
   const stratRatioBands: MonteCarloPercentileBand[] = [];
   const budgetRatioBands: MonteCarloPercentileBand[] = [];

@@ -1,6 +1,7 @@
 /** Milestones router — the year-level history and saved choices the
  *  Milestones engine (lib/pure/milestones.ts) reads. Judging happens in the
  *  pure engine; this only fetches and maps. */
+import { getPrimaryPerson } from "@/server/helpers/transforms";
 import { eq, inArray } from "drizzle-orm";
 import type { z } from "zod/v4";
 import {
@@ -236,10 +237,16 @@ async function loadMilestoneInputs(
   const current =
     history.find((h) => h.isCurrent) ?? history[history.length - 1];
   // Each debt judged at its owner's age today, by birthday (a joint
-  // debt: the household's average age, as every other milestone uses —
+  // debt: the primary person's, as every other milestone uses —
   // 0, the most lenient band, only when there are no people at all).
   const today = localDateStr(asOfDate);
-  const householdAge = current?.averageAge ?? 0;
+  const primary = getPrimaryPerson(people);
+  const primaryBirthYear = primary
+    ? Number(String(primary.dateOfBirth).slice(0, 4))
+    : null;
+  const householdAge = primaryBirthYear
+    ? asOfDate.getFullYear() - primaryBirthYear
+    : 0;
   const ageOf = (personId: number | null) => {
     const p = people.find((x) => x.id === personId);
     return p
@@ -280,10 +287,10 @@ async function loadMilestoneInputs(
     downYears: downYears(ownYears),
     borrowing: borrowingFrom(debtRows, people, salaryRows, jobRows, today),
     years: history.map((row) =>
-      milestoneYearFromHistory({
-        ...row,
-        grossIncome: wealthFormulaIncome(row),
-      }),
+      milestoneYearFromHistory(
+        { ...row, grossIncome: wealthFormulaIncome(row) },
+        primaryBirthYear,
+      ),
     ),
     fiTarget: current?.fiTarget ?? 0,
     debts,

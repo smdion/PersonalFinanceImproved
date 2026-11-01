@@ -573,9 +573,7 @@ describe("projection.relocation — move-year handoff", () => {
         moveYear: new Date().getFullYear() + 2,
       });
       for (const [input] of spy.mock.calls) {
-        const retirementYear =
-          input.asOfDate.getFullYear() +
-          (input.retirementAge - input.currentAge);
+        const { retirementYear } = input;
         for (const o of input.budgetOverrides) {
           expect(o.year).toBeLessThan(retirementYear);
         }

@@ -33,7 +33,7 @@ import type { CompositionBucket, DebtKind } from "@/lib/config/enum-values";
 export type MilestoneYear = {
   year: number;
   isCurrent: boolean;
-  /** Household age (average of the people) — the wealth formula's age. */
+  /** The primary person's age. (The wealth score keeps its own age.) */
   age: number;
   /** Market-value net worth. */
   netWorth: number;

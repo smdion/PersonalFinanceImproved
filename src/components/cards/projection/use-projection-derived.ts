@@ -527,13 +527,17 @@ export function useProjectionDerived(
   }, [result, onContributionRates]);
 
   // --- Age display ---
-  const avgBirthYear = useMemo(() => {
+  // The person being viewed, else the primary person: the plan's ages.
+  const ageBirthYear = useMemo(() => {
     const pp = people ?? enginePeople;
     if (!pp || pp.length === 0) return null;
-    return pp.reduce((s, p) => s + p.birthYear, 0) / pp.length;
-  }, [people, enginePeople]);
+    return (
+      pp.find((p) => p.id === (personFilter ?? primaryPersonId))?.birthYear ??
+      pp[0]!.birthYear
+    );
+  }, [people, enginePeople, personFilter, primaryPersonId]);
   const displayAge = (year: number) =>
-    avgBirthYear !== null ? Math.round(year - avgBirthYear) : null;
+    ageBirthYear !== null ? year - ageBirthYear : null;
 
   const focusedYear = useFocusMatch("projectionYear")?.year ?? null;
 
@@ -611,7 +615,6 @@ export function useProjectionDerived(
     baseYear,
     deflate,
     renderTooltip,
-    avgBirthYear,
     displayAge,
     getFilteredYears,
     individualAccountNames,

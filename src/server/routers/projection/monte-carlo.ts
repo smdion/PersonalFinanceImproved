@@ -5,6 +5,7 @@
  * projection engine) and the scenario-scoped mutations that edit the MC
  * input tables: `updateGlidePathAllocations` and `updateClampBounds`.
  */
+import { planEndAge as planEndAgeOf } from "@/lib/pure/household-timeline";
 import {
   loadSimulationPreset,
   presetAssetClasses,
@@ -213,8 +214,8 @@ export const monteCarloRouter = createTRPCRouter({
         settings,
         bracketData: _bracketData,
         age,
-        avgRetirementAge,
-        maxEndAge,
+        planRetirementAge,
+        planEndAge,
         totalCompensation,
         selectedScenario: _selectedScenario,
         distributionTaxRates,
@@ -288,7 +289,7 @@ export const monteCarloRouter = createTRPCRouter({
       const mcDeterministicRates: { label: string; rate: number }[] = [];
       for (
         let a = engineInput.currentAge;
-        a <= engineInput.projectionEndAge;
+        a <= planEndAgeOf(engineInput);
         a++
       ) {
         const allocations = interpolateAllocations(mcGlidePath, a);
@@ -308,7 +309,7 @@ export const monteCarloRouter = createTRPCRouter({
             mcGlidePath,
             classifyAssetClasses(classBuckets),
             simInput.currentAge,
-            simInput.projectionEndAge,
+            planEndAgeOf(simInput),
           ) ?? undefined,
       };
 
@@ -406,8 +407,8 @@ export const monteCarloRouter = createTRPCRouter({
           seed: usedSeed,
           computedAt: computedAt?.toISOString() ?? null,
           currentAge: age,
-          retirementAge: avgRetirementAge,
-          endAge: maxEndAge,
+          retirementAge: planRetirementAge,
+          endAge: planEndAge,
           // Retirement money only: what the simulation's answers count.
           startingBalance:
             retirementBuckets.preTax +

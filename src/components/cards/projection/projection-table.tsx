@@ -224,8 +224,8 @@ export function ProjectionTable({
                     <HelpTip text="Calendar year of the projection" />
                   </th>
                   <th className="text-muted px-2 py-1.5 text-left font-medium whitespace-nowrap">
-                    Avg Age
-                    <HelpTip text="Average age across all people in the plan — used to determine retirement eligibility and phase transitions" />
+                    Age
+                    <HelpTip text="The primary person's age that year. Each person's retirement, Social Security and account rules run from their own age." />
                   </th>
                   <th className="text-muted px-2 py-1.5 text-left font-medium">
                     Phase

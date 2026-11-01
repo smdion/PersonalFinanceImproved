@@ -82,11 +82,11 @@ export function TimelineSection({
               </div>
             ))}
             <div>
-              <span className="text-muted">Household Retirement</span>
+              <span className="text-muted">Withdrawals start</span>
               <div className="font-medium text-blue-600">
-                {Math.max(...perPersonSettings.map((p) => p.retirementAge))}
+                {settings.retirementYear}
                 <span className="text-caption text-faint ml-1 font-normal">
-                  when last person retires
+                  when the last person with a job retires
                 </span>
               </div>
             </div>

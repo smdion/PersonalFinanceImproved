@@ -9,6 +9,10 @@
  * under ~500 lines (Composed Router convention, RULES.md §8). Shared
  * schemas + helpers remain in `_shared.ts`.
  */
+import {
+  planEndAge as planEndAgeOf,
+  planRetirementAge as planRetirementAgeOf,
+} from "@/lib/pure/household-timeline";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { z } from "zod/v4";
@@ -156,11 +160,11 @@ export const coastFireRouter = createTRPCRouter({
       // concern and happens at the router boundary.
       const yearsToRetirement = Math.max(
         0,
-        engineInput.retirementAge - engineInput.currentAge,
+        planRetirementAgeOf(engineInput) - engineInput.currentAge,
       );
       const yearsToEnd = Math.max(
         0,
-        engineInput.projectionEndAge - engineInput.currentAge,
+        planEndAgeOf(engineInput) - engineInput.currentAge,
       );
       const retirementDeflator = Math.pow(
         1 + engineInput.inflationRate,
@@ -307,7 +311,7 @@ export const coastFireRouter = createTRPCRouter({
           mcGlidePath,
           classifyAssetClasses(classBuckets),
           engineInput.currentAge,
-          engineInput.projectionEndAge,
+          planEndAgeOf(engineInput),
         ) ?? undefined;
       const inflationRisk = mc.effectiveInflationRisk;
 
@@ -386,7 +390,7 @@ export const coastFireRouter = createTRPCRouter({
       const passes = (rate: number): boolean => rate >= CONFIDENCE;
 
       // Edge case: already past retirement.
-      if (engineInput.currentAge >= engineInput.retirementAge) {
+      if (engineInput.currentAge >= planRetirementAgeOf(engineInput)) {
         const fullResult = await probeMC(engineInput.currentAge);
         const result: CoastFireMcResult = {
           coastFireAge: engineInput.currentAge,
@@ -436,7 +440,7 @@ export const coastFireRouter = createTRPCRouter({
       }
 
       // Probe stopping the year before retirement — is the plan reachable at all?
-      const maxCoastAge = engineInput.retirementAge - 1;
+      const maxCoastAge = planRetirementAgeOf(engineInput) - 1;
       const stopLateResult = await probeMC(maxCoastAge);
       if (!passes(stopLateResult.successRate)) {
         const result: CoastFireMcResult = {

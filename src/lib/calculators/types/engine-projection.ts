@@ -56,22 +56,21 @@ export type ProjectionInput = {
 
   /**
    * Decumulation overrides, sorted by year. Same sticky-forward semantics.
-   * Used during years where age >= retirementAge.
+   * Used from `retirementYear` on.
    */
   decumulationOverrides: DecumulationOverride[];
 
   // --- Person / salary ---
+  /** The primary person's age in the first year (householdTimeline). */
   currentAge: number;
-  retirementAge: number;
-  /** Per-person retirement ages (personId → age). When provided, salary for
-   *  each person is automatically overridden to $0 at their retirement age.
-   *  The scalar `retirementAge` should be the household retirement age
-   *  (max of all values) — full decumulation starts when the last person retires.
-   *  During the gap between first and last retirement, the accumulation handler
-   *  runs with reduced contributions (retired person's specs produce $0). */
-  retirementAgeByPerson?: Record<number, number>;
-  /** End of projection (e.g. age 95). */
-  projectionEndAge: number;
+  /** The first year of withdrawals: the last earner's retirement year. */
+  retirementYear: number;
+  /** Each earner's own retirement year (personId → year). Someone retiring
+   *  before `retirementYear` has no pay from then and their contributions
+   *  stop, while the accumulation handler runs on for the others. */
+  retirementYearByPerson?: Record<number, number>;
+  /** The projection's last year. */
+  projectionEndYear: number;
   currentSalary: number;
   salaryGrowthRate: number;
   /** Each person's own raise rate, by person id, for per-person salaries

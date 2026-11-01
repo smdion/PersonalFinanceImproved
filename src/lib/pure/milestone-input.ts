@@ -62,28 +62,32 @@ function payoffYearOf(payoffDate: Date | string): number {
 /** A year-end history row → the milestones' view of it. Retirement vs
  *  brokerage follows each account's own parent category (the tax-location
  *  breakdown); rows without one fall back to the account-type config. */
-export function milestoneYearFromHistory(row: {
-  year: number;
-  isCurrent: boolean;
-  averageAge: number;
-  netWorthMarket: number;
-  portfolioTotal: number;
-  portfolioByType: Record<string, number>;
-  portfolioByTaxLocation: {
-    retirement: Record<string, number>;
-    portfolio: Record<string, number>;
-  } | null;
-  cash: number;
-  /** The year's gross income — wealthFormulaIncome(row), not averaged. */
-  grossIncome: number;
-  perfContributions: number | null;
-  perfEmployerMatch: number | null;
-  perfGainLoss: number | null;
-  aawScoreMarket: number;
-  fiProgress: number;
-  mortgageBalance: number;
-  otherLiabilities: number;
-}): MilestoneYear {
+export function milestoneYearFromHistory(
+  row: {
+    year: number;
+    isCurrent: boolean;
+    averageAge: number;
+    netWorthMarket: number;
+    portfolioTotal: number;
+    portfolioByType: Record<string, number>;
+    portfolioByTaxLocation: {
+      retirement: Record<string, number>;
+      portfolio: Record<string, number>;
+    } | null;
+    cash: number;
+    /** The year's gross income — wealthFormulaIncome(row), not averaged. */
+    grossIncome: number;
+    perfContributions: number | null;
+    perfEmployerMatch: number | null;
+    perfGainLoss: number | null;
+    aawScoreMarket: number;
+    fiProgress: number;
+    mortgageBalance: number;
+    otherLiabilities: number;
+  },
+  /** Ages count from the primary person, as the plan's do. */
+  primaryBirthYear: number | null,
+): MilestoneYear {
   const sum = (r: Record<string, number>) =>
     Object.values(r).reduce((s, v) => s + v, 0);
   let retirement = 0;
@@ -99,7 +103,8 @@ export function milestoneYearFromHistory(row: {
   return {
     year: row.year,
     isCurrent: row.isCurrent,
-    age: row.averageAge,
+    age:
+      primaryBirthYear !== null ? row.year - primaryBirthYear : row.averageAge,
     netWorth: row.netWorthMarket,
     liquid: row.portfolioTotal + row.cash,
     cash: row.cash,

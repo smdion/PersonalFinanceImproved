@@ -143,8 +143,8 @@ function makeInput(): ProjectionInput {
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 65,
-    retirementAge: 65, // retire immediately -> decumulation from year 0
-    projectionEndAge: 70,
+    retirementYear: AS_OF.getFullYear(), // retire immediately -> decumulation from year 0
+    projectionEndYear: AS_OF.getFullYear() + 5,
     currentSalary: 0,
     salaryGrowthRate: 0.03,
     salaryCap: null,

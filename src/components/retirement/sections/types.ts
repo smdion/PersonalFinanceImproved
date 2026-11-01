@@ -22,8 +22,15 @@ export type Settings = {
    *  for, not whatever the household's globally-active profile happens to
    *  be — see retirementSettings.upsert's docblock. */
   profileId: number | null;
+  /** For display: the plan's age when withdrawals start, on the scale of
+   *  each row's age. Never saved; see `ownRetirementAge`. */
   retirementAge: number;
   endAge: number;
+  /** The first year of withdrawals. */
+  retirementYear?: number;
+  /** This row's stored ages, which a save sends back unchanged. */
+  ownRetirementAge?: number;
+  ownEndAge?: number;
   returnAfterRetirement: string;
   annualInflation: string;
   postRetirementInflation?: string | null;

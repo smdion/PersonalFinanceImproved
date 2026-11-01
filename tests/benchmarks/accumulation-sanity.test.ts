@@ -7,15 +7,19 @@
  */
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/calculators/engine";
-import { makePureGrowthInput, makeStandardInput } from "./benchmark-helpers";
+import {
+  makePureGrowthInput,
+  makeStandardInput,
+  AS_OF,
+} from "./benchmark-helpers";
 
 describe("Accumulation sanity — deterministic math", () => {
   describe("Rule of 72 / compound growth", () => {
     it("$100k at 7% for 10 years ≈ $196,715", () => {
       const input = makePureGrowthInput({
         currentAge: 35,
-        retirementAge: 45,
-        projectionEndAge: 45,
+        retirementYear: AS_OF.getFullYear() + 10,
+        projectionEndYear: AS_OF.getFullYear() + 10,
         returnRates: [{ label: "7%", rate: 0.07 }],
         startingBalances: {
           preTax: 0,
@@ -38,8 +42,8 @@ describe("Accumulation sanity — deterministic math", () => {
     it("$100k at 10% for ~7.2 years doubles (Rule of 72)", () => {
       const input = makePureGrowthInput({
         currentAge: 35,
-        retirementAge: 42,
-        projectionEndAge: 42,
+        retirementYear: AS_OF.getFullYear() + 7,
+        projectionEndYear: AS_OF.getFullYear() + 7,
         returnRates: [{ label: "10%", rate: 0.1 }],
       });
       const result = calculateProjection(input);
@@ -56,8 +60,8 @@ describe("Accumulation sanity — deterministic math", () => {
     it("$150k at 3%/yr for 30 years → ~$364k", () => {
       const input = makeStandardInput({
         currentAge: 35,
-        retirementAge: 65,
-        projectionEndAge: 65,
+        retirementYear: AS_OF.getFullYear() + 30,
+        projectionEndYear: AS_OF.getFullYear() + 30,
       });
       const result = calculateProjection(input);
       const expected = 150000 * Math.pow(1.03, 30);
@@ -78,8 +82,8 @@ describe("Accumulation sanity — deterministic math", () => {
     it("$72k at 2.5%/yr for 30 years → ~$151k", () => {
       const input = makeStandardInput({
         currentAge: 35,
-        retirementAge: 65,
-        projectionEndAge: 90,
+        retirementYear: AS_OF.getFullYear() + 30,
+        projectionEndYear: AS_OF.getFullYear() + 55,
       });
       const result = calculateProjection(input);
       const expected = 72000 * Math.pow(1.025, 30);
@@ -99,8 +103,8 @@ describe("Accumulation sanity — deterministic math", () => {
     it("$1M with $40k/yr withdrawal at 0% return depletes in ~25 years", () => {
       const input = makePureGrowthInput({
         currentAge: 65,
-        retirementAge: 65,
-        projectionEndAge: 95,
+        retirementYear: AS_OF.getFullYear() + 0,
+        projectionEndYear: AS_OF.getFullYear() + 30,
         returnRates: [{ label: "0%", rate: 0 }],
         startingBalances: {
           preTax: 0,

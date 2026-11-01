@@ -218,7 +218,7 @@ describe("buildEnginePayload — single-person household", () => {
     // "today"'s date.
     expect(payload!.age).toBeGreaterThanOrEqual(39);
     expect(payload!.age).toBeLessThanOrEqual(41);
-    expect(payload!.baseEngineInput.retirementAge).toBe(65);
+    expect(payload!.planRetirementAge).toBe(65);
     expect(payload!.hasMultiplePeople).toBe(false);
     expect(payload!.baseEngineInput.salaryGrowthRateByPerson).toBeUndefined();
   });
@@ -316,6 +316,11 @@ describe("buildEnginePayload — two-person household (H10/T24 wiring)", () => {
 
     expect(payload!.hasMultiplePeople).toBe(true);
     expect(payload!.perPersonSettings.length).toBe(2);
+    // The plan runs from each person's own dates, never their average.
+    const own = payload!.perPersonSettings.map(
+      (p) => p.birthYear + p.retirementAge,
+    );
+    expect(payload!.baseEngineInput.retirementYear).toBe(Math.max(...own));
     // Each person's own raise rate reaches the engine.
     expect(payload!.baseEngineInput.salaryGrowthRateByPerson).toEqual(
       Object.fromEntries(

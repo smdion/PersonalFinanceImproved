@@ -454,7 +454,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
         <div className="text-caption text-faint mt-1">
           {alreadyRetired
             ? `Age ${currentAge} (today's $)`
-            : `Avg age ${engineSettings?.retirementAge ?? "?"}`}
+            : `At age ${engineSettings?.retirementAge ?? "?"}`}
         </div>
       </KpiCard>
 

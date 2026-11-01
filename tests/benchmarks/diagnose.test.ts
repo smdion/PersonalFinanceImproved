@@ -8,6 +8,7 @@ import {
   CORRELATIONS,
   CURRENT_GLIDE_PATH,
   make7525GlidePath,
+  AS_OF,
 } from "./benchmark-helpers";
 
 // FIRE-adjusted glide path: holds more equity through retirement.
@@ -46,8 +47,8 @@ describe("Diagnosing the gap", { timeout: 120000 }, () => {
   it("isolates each conservative factor", () => {
     const engineInput = makeTrinityInput({
       currentAge: 55,
-      retirementAge: 55,
-      projectionEndAge: 95,
+      retirementYear: AS_OF.getFullYear() + 0,
+      projectionEndYear: AS_OF.getFullYear() + 40,
       annualExpenses: 90000,
       inflationRate: 0.03,
       startingBalances: {

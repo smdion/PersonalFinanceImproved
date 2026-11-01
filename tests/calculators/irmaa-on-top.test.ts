@@ -114,7 +114,7 @@ describe("IRMAA on top of the budget", () => {
           annualExpenses: 420000,
           enableIrmaaAwareness: true,
           irmaaOnTopOfBudget: true,
-          projectionEndAge: 90,
+          projectionEndYear: 2041,
           perPersonBirthYears: [1948, 1951],
         },
       ),

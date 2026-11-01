@@ -189,9 +189,9 @@ describe("engine input snapshot guard", () => {
         "postRetirementInflationRate",
         "primaryPersonId",
         "profileSwitches",
-        "projectionEndAge",
-        "retirementAge",
-        "retirementAgeByPerson",
+        "projectionEndYear",
+        "retirementYear",
+        "retirementYearByPerson",
         "returnRates",
         "salaryByPerson",
         "salaryCap",
@@ -215,14 +215,14 @@ describe("engine input snapshot guard", () => {
     // signal is the top-level `Object.keys(bei).sort()` snapshot above,
     // which catches added/removed fields without wall-clock coupling.
     expect({
-      retirementAgeIsNumber: typeof bei.retirementAge === "number",
+      retirementYearIsNumber: typeof bei.retirementYear === "number",
       hasContributionSpecs:
         Array.isArray(bei.contributionSpecs) &&
         bei.contributionSpecs.length >= 0,
     }).toMatchInlineSnapshot(`
       {
         "hasContributionSpecs": true,
-        "retirementAgeIsNumber": true,
+        "retirementYearIsNumber": true,
       }
     `);
   });
@@ -251,12 +251,12 @@ describe("engine input snapshot guard", () => {
     // `undefined` (accessed at wrong path) — removed to avoid locking
     // a meaningless shape.
     expect({
-      avgRetirementAge: payload.avgRetirementAge,
-      maxEndAge: payload.maxEndAge,
+      planRetirementAge: payload.planRetirementAge,
+      planEndAge: payload.planEndAge,
     }).toMatchInlineSnapshot(`
       {
-        "avgRetirementAge": 65,
-        "maxEndAge": 95,
+        "planEndAge": 95,
+        "planRetirementAge": 65,
       }
     `);
   });
@@ -273,9 +273,9 @@ describe("engine input snapshot guard", () => {
     // salaryAnnualIncrease: "0.03" → salaryGrowthRate
     expect(bei.salaryGrowthRate).toBe(0.03);
     // retirementAge: 65
-    expect(bei.retirementAge).toBe(65);
-    // endAge: 95 → projectionEndAge
-    expect(bei.projectionEndAge).toBe(95);
+    expect(payload.planRetirementAge).toBe(65);
+    // endAge: 95
+    expect(payload.planEndAge).toBe(95);
     // annualSalary: "120000", no salary-change rows → currentSalary = 120000
     expect(bei.currentSalary).toBe(120000);
 

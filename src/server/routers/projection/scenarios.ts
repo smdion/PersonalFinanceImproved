@@ -132,8 +132,8 @@ export const scenariosRouter = createTRPCRouter({
         activeContribs,
         jobSalaries,
         age,
-        avgRetirementAge,
-        maxEndAge,
+        planRetirementAge,
+        planEndAge,
         totalCompensation,
         portfolioByTaxType,
         portfolioByTaxTypeByParentCat,
@@ -378,13 +378,13 @@ export const scenariosRouter = createTRPCRouter({
             const ageMatch = r.label.match(/(\d+)/);
             return { age: ageMatch ? Number(ageMatch[1]) : 0, rate: r.rate };
           });
-          const accRates = schedule.filter((r) => r.age <= avgRetirementAge);
+          const accRates = schedule.filter((r) => r.age <= planRetirementAge);
           return {
             currentRate: schedule[0]?.rate ?? null,
             retirementRate:
-              schedule.find((r) => r.age === avgRetirementAge)?.rate ?? null,
+              schedule.find((r) => r.age === planRetirementAge)?.rate ?? null,
             postRetirementRate:
-              schedule.find((r) => r.age === avgRetirementAge + 1)?.rate ??
+              schedule.find((r) => r.age === planRetirementAge + 1)?.rate ??
               null,
             avgAccumulation:
               accRates.length > 0
@@ -415,8 +415,13 @@ export const scenariosRouter = createTRPCRouter({
           })),
         primaryPersonId: primaryPerson.id,
         settings: {
-          retirementAge: avgRetirementAge,
-          endAge: maxEndAge,
+          // The plan's ages, on the same scale as each row's age. Not anyone's
+          // setting: a save sends back ownRetirementAge / ownEndAge.
+          retirementAge: planRetirementAge,
+          endAge: planEndAge,
+          retirementYear: baseEngineInput.retirementYear,
+          ownRetirementAge: settings.retirementAge,
+          ownEndAge: settings.endAge,
           annualInflation: settings.annualInflation,
           postRetirementInflation: settings.postRetirementInflation,
           salaryAnnualIncrease: settings.salaryAnnualIncrease,

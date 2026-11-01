@@ -454,8 +454,8 @@ describe("useProjectionDerived", () => {
         }),
       ),
     );
-    expect(result.current.avgBirthYear).toBe(1985);
-    expect(result.current.displayAge(2025)).toBe(40);
+    // The plan's age is one real person's, never the two averaged (40).
+    expect(result.current.displayAge(2025)).toBe(45);
   });
 
   it("displayAge returns null when there are no people", async () => {
@@ -463,7 +463,6 @@ describe("useProjectionDerived", () => {
     const { result } = renderHook(() =>
       useProjectionDerived(makeForm(), makeQueries(), makeProps()),
     );
-    expect(result.current.avgBirthYear).toBeNull();
     expect(result.current.displayAge(2025)).toBeNull();
   });
 

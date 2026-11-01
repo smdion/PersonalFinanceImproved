@@ -11,6 +11,7 @@
  *     optimistic). Called from projection.computeStressTest.
  */
 
+import { planEndAge } from "@/lib/pure/household-timeline";
 import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
@@ -111,7 +112,6 @@ interface StressTestRunInput {
    *  passing the built object down keeps this a mechanical one-field
    *  override, same shape the existing tests already exercise. */
   decumulationDefaults: ProjectionInput["decumulationDefaults"];
-  avgRetirementAge: number;
 }
 
 interface StressTestScenarioResult {
@@ -136,14 +136,14 @@ interface StressTestScenarioResult {
 export function runStressTestScenarios(
   input: StressTestRunInput,
 ): StressTestScenarioResult[] {
-  const { baseEngineInput, decumulationDefaults, avgRetirementAge } = input;
+  const { baseEngineInput, decumulationDefaults } = input;
   const stressScenarios = getStressTestScenarios();
 
   return stressScenarios.map((scenario) => {
     const flatReturnRates: { label: string; rate: number }[] = [];
     for (
       let a = baseEngineInput.currentAge;
-      a <= baseEngineInput.projectionEndAge;
+      a <= planEndAge(baseEngineInput);
       a++
     ) {
       flatReturnRates.push({ label: `Age ${a}`, rate: scenario.returnRate });
@@ -167,9 +167,11 @@ export function runStressTestScenarios(
     } as ProjectionInput);
 
     const retirementYear =
-      baseEngineInput.currentAge >= avgRetirementAge
+      baseEngineInput.retirementYear <= baseEngineInput.asOfDate.getFullYear()
         ? result.projectionByYear[0]
-        : result.projectionByYear.find((p) => p.age === avgRetirementAge);
+        : result.projectionByYear.find(
+            (p) => p.year === baseEngineInput.retirementYear,
+          );
     const nestEgg = retirementYear?.retirementBalance ?? 0;
 
     return {

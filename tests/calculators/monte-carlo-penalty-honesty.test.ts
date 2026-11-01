@@ -66,8 +66,8 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 37,
-    retirementAge: 55,
-    projectionEndAge: 95,
+    retirementYear: AS_OF.getFullYear() + 18,
+    projectionEndYear: AS_OF.getFullYear() + 58,
     currentSalary: 300000,
     salaryGrowthRate: 0.03,
     salaryCap: null,
@@ -185,6 +185,7 @@ describe("Monte Carlo honesty (acceptance criterion 11)", () => {
       // 54 today, retiring at 55: little time to build reachable money, so
       // the 55→59½ gap is real (the brokerage and Roth basis can't cover it).
       currentAge: 54,
+      retirementYear: AS_OF.getFullYear() + 1,
       individualAccounts: makeRothIndividualAccounts(1971),
     });
     const mcOpts = {
