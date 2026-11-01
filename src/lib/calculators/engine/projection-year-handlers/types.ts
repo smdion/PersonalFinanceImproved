@@ -1,6 +1,7 @@
 /**
  * Shared types for the projection year-handler functions.
  */
+import type { InflationPath } from "../inflation-path";
 import type {
   ProjectionInput,
   ProjectionResult,
@@ -122,8 +123,11 @@ export type ProjectionContext = {
 
   // Validated rates
   salaryGrowthRate: number;
-  inflationRate: number;
+  /** The plan's rate, for what must not follow a trial's realized path:
+   *  forecasts. Everything else reads `inflation`. */
+  planInflationRate: number;
   validatedPostRetirementInflation: number;
+  inflation: InflationPath;
 
   // Pre-built maps
   salaryOverrideMap: Map<number, number>;

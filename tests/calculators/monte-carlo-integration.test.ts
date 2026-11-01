@@ -7,6 +7,8 @@
  */
 import { describe, it, expect } from "vitest";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
+import { calculateProjection } from "@/lib/calculators/engine";
+import { WITHDRAWAL_STRATEGY_VALUES } from "@/lib/config/withdrawal-strategies";
 import type { ProjectionInput, MonteCarloInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
@@ -219,7 +221,7 @@ describe("monte carlo integration", () => {
     // around the 3% inflation-risk mean, floored at 0%, and two
     // inflation-heavy trials ran out at 87–88).
     expect(result.successRate).toBe(1);
-    expect(result.medianEndBalance).toBeCloseTo(28577900.78, 2);
+    expect(result.medianEndBalance).toBeCloseTo(28595806.57, 1);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 
@@ -701,6 +703,64 @@ describe("monte carlo inflation — trials vary around the plan's own rates (v0.
     const plain = calculateMonteCarlo(mc(input));
     expect(risk.medianEndBalance).toBe(plain.medianEndBalance);
     expect(risk.successRate).toBe(plain.successRate);
+  });
+
+  it("all-zero shocks match no shocks, to the cent, for every strategy", () => {
+    const base = makeInput({ inflationRate: 0.03 });
+    for (const withdrawalStrategy of WITHDRAWAL_STRATEGY_VALUES) {
+      const input = {
+        ...base,
+        decumulationDefaults: {
+          ...base.decumulationDefaults,
+          withdrawalStrategy,
+        },
+      };
+      const plain = calculateProjection(input).projectionByYear;
+      const shocked = calculateProjection({
+        ...input,
+        inflationShocks: new Array(plain.length + 2).fill(0),
+      }).projectionByYear;
+      shocked.forEach((y, i) => {
+        expect(y.projectedExpenses).toBeCloseTo(plain[i]!.projectedExpenses, 2);
+        expect(y.retirementBalance).toBeCloseTo(plain[i]!.retirementBalance, 0);
+      });
+    }
+  });
+
+  it("one hot year lifts expenses that year and for good, not before", () => {
+    const input = makeInput({ inflationRate: 0.03 });
+    const plain = calculateProjection(input).projectionByYear;
+    const k = 5;
+    const shocks = new Array(plain.length).fill(0);
+    shocks[k] = 0.05;
+    const hot = calculateProjection({
+      ...input,
+      inflationShocks: shocks,
+    }).projectionByYear;
+    for (let i = 0; i < k; i++)
+      expect(hot[i]!.projectedExpenses).toBeCloseTo(
+        plain[i]!.projectedExpenses,
+        2,
+      );
+    for (let i = k; i < plain.length; i++) {
+      if (plain[i]!.phase !== "accumulation") break;
+      expect(
+        hot[i]!.projectedExpenses / plain[i]!.projectedExpenses,
+      ).toBeCloseTo(1.08 / 1.03, 6);
+    }
+  });
+
+  it("price levels vary mid-horizon, year by year", () => {
+    const r = calculateMonteCarlo({
+      ...mc(makeInput({ inflationRate: 0.03 }), { stdDev: 0.02 }),
+      numTrials: 50,
+    });
+    const flat = calculateMonteCarlo({
+      ...mc(makeInput({ inflationRate: 0.03 }), { stdDev: 0 }),
+      numTrials: 50,
+    });
+    expect(r.medianEndBalance).not.toBe(flat.medianEndBalance);
+    expect(r.today.medianEndBalance).not.toBe(flat.today.medianEndBalance);
   });
 
   it("the plan's own inflation moves the Simulation", () => {

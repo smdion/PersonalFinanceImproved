@@ -31,6 +31,9 @@ export interface SpendingStrategyInput {
   /** CPI inflation rate — used for inflation-adjusted floors to maintain real
    *  purchasing power independently of the post-retirement raise setting. */
   cpiInflation: number;
+  /** A trial's realized CPI since retirement began; null/absent = the plan's
+   *  flat `cpiInflation` every year. */
+  cpiGrowthSinceStart?: number | null;
   /** Whether a budget override is active this year. */
   hasBudgetOverride: boolean;
   /** Year index (0-based from projection start). */

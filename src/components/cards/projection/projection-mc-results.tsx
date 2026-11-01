@@ -377,7 +377,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                           {formatPercent(si.inflationRate, 2)}
                           <HelpTip
                             maxWidth={280}
-                            text={`Your inflation rate, varied in each trial (±${formatPercent(si.inflationRisk.stdDev, 2)} standard deviation a year) — and your post-retirement raise (${formatPercent(si.postRetirementInflationRate, 2)}) moves with it, keeping your gap between the two. The engine runs each trial at that trial's average, so a trial runs a little hotter or cooler throughout rather than swinging year to year. Today's dollars use each trial's own inflation. Strategies react differently: a fixed-dollar strategy raises spending with inflation every year regardless, while a guardrail strategy like "Forgo Inflation After Loss" can skip that year's raise after a bad market year.`}
+                            text={`Your inflation rate, varied in each trial (±${formatPercent(si.inflationRisk.stdDev, 2)} standard deviation a year) — and your post-retirement raise (${formatPercent(si.postRetirementInflationRate, 2)}) moves with it, keeping your gap between the two. Each year of a trial draws its own inflation, carried through spending, Social Security and tax brackets. Today's dollars use each trial's own inflation. Strategies react differently: a fixed-dollar strategy raises spending with inflation every year regardless, while a guardrail strategy like "Forgo Inflation After Loss" can skip that year's raise after a bad market year.`}
                           />
                         </div>
                         <div className="text-micro text-faint">inflation</div>

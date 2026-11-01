@@ -38,10 +38,14 @@ export function applySpendingDecline(
   // nominal spending grows ~0.45%/yr while real spending declines 2%/yr — matching
   // the EBRI data on actual retiree consumption patterns.
   const yearCount = crossYearState.decumulationYearCount;
+  // In a trial, CPI varies by year: this year's rate raised to yearCount
+  // would apply one year's inflation to every year since retirement.
   const realDeclineFactor = (1 + input.cpiInflation) * (1 - annualDeclineRate);
   const spending = roundToCents(
     crossYearState.initialWithdrawalAmount *
-      Math.pow(realDeclineFactor, yearCount),
+      (input.cpiGrowthSinceStart != null
+        ? input.cpiGrowthSinceStart * Math.pow(1 - annualDeclineRate, yearCount)
+        : Math.pow(realDeclineFactor, yearCount)),
   );
 
   return {

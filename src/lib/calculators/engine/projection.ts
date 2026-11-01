@@ -259,9 +259,8 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
       ? roundToCents(
           firstYearOverride ??
             input.decumulationAnnualExpenses *
-              Math.pow(
-                1 + ctx.inflationRate,
-                Math.max(0, firstDecumYear.year - input.asOfDate.getFullYear()),
+              ctx.inflation.growth(
+                firstDecumYear.year - input.asOfDate.getFullYear(),
               ) *
               // A loan paid off by then: the same cut the seed took.
               (input.rateSeededDecumulationYear1

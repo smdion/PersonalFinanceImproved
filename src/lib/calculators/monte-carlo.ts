@@ -15,6 +15,7 @@ import { strategySpending } from "./strategy-spending";
 import { assessPlan, type PlanFailureReason } from "./plan-outcome";
 import { calculateProjection } from "./engine";
 import { resolveReturnRateForAge } from "./engine/growth-application";
+import { buildInflationPath } from "./engine/inflation-path";
 import {
   createPRNG,
   sampleBlendedReturn,
@@ -32,7 +33,6 @@ import type {
 } from "./types";
 import { roundToCents, sumBy, safeDivide } from "../utils/math";
 import {
-  MC_INFLATION_GROWTH_FLOOR,
   MC_RETURN_CLAMP_MIN,
   MC_RETURN_CLAMP_MAX,
   MC_SPENDING_STABILITY_THRESHOLD,
@@ -287,46 +287,34 @@ export function calculateMonteCarlo(
       trialReturnRates.push({ label: `Age ${age}`, rate: annualReturn });
     }
 
-    // Optionally randomize inflation: per-year shocks around the household's
-    // own rates, passed to the engine as each rate's geometric mean (the
-    // engine takes one rate per phase, so a trial's year-to-year swings
-    // average out — a trial runs a little hotter or cooler throughout).
-    // One shock path moves both rates, keeping the household's gap between
-    // the post-retirement raise and inflation. No floor beyond 1 + x > 0:
-    // truncating the draw would bias inflation up.
-    let trialInflationRate = baseInflation;
-    let trialPostRetirementInflationRate = basePostRetirementInflation;
-    if (inflationRisk) {
-      let logPre = 0;
-      let logPost = 0;
-      for (let y = 0; y < numYears; y++) {
-        const shock = sampleNormalMeanStd(rng, 0, inflationRisk.stdDev);
-        logPre += Math.log(
-          Math.max(MC_INFLATION_GROWTH_FLOOR, 1 + baseInflation + shock),
-        );
-        logPost += Math.log(
-          Math.max(
-            MC_INFLATION_GROWTH_FLOOR,
-            1 + basePostRetirementInflation + shock,
-          ),
-        );
-      }
-      trialInflationRate = Math.exp(logPre / numYears) - 1;
-      trialPostRetirementInflationRate = Math.exp(logPost / numYears) - 1;
-    }
+    // Optionally randomize inflation: a shock per year around the
+    // household's own rates. One shock path moves both rates, keeping the
+    // household's gap between the post-retirement raise and inflation, and
+    // the engine reads the same path. No spread = no shocks, exactly the
+    // plan's rates.
+    const inflationShocks =
+      inflationRisk && inflationRisk.stdDev > 0
+        ? Array.from({ length: numYears }, () =>
+            sampleNormalMeanStd(rng, 0, inflationRisk.stdDev),
+          )
+        : undefined;
+    const trialInflation = buildInflationPath({
+      inflationRate: baseInflation,
+      postRetirementInflationRate: basePostRetirementInflation,
+      baseYear: engineInput.asOfDate.getFullYear(),
+      shocks: inflationShocks,
+    });
     // Today's dollars for this trial: deflated by the inflation it ran with
     // (the app's convention — the general rate, every year), so a hot trial
     // reads poorer in today's dollars than a cool one with the same balance.
-    const todayDeflator = (yearIdx: number) =>
-      Math.pow(1 + trialInflationRate, Math.max(0, yearIdx));
+    const todayDeflator = (yearIdx: number) => trialInflation.growth(yearIdx);
     const pvDeflator = todayDeflator(yearsToRetirement);
 
     // Build modified engine input for this trial.
     const trialInput: ProjectionInput = {
       ...engineInput,
       returnRates: trialReturnRates,
-      inflationRate: trialInflationRate,
-      postRetirementInflationRate: trialPostRetirementInflationRate,
+      inflationShocks,
     };
 
     // Run the engine
@@ -394,12 +382,18 @@ export function calculateMonteCarlo(
     );
     if (decYears.length > 0) {
       const year1Withdrawal = decYears[0]!.totalWithdrawal;
+      // Year 1's withdrawal, kept up with the inflation this trial saw.
+      const firstDecIdx =
+        decYears[0]!.year - engineInput.asOfDate.getFullYear();
+      const inflatedYear1 = (i: number) =>
+        year1Withdrawal *
+        trialInflation.growthBetween(firstDecIdx, firstDecIdx + i);
       const isStable =
         year1Withdrawal === 0 ||
         decYears.every((y, i) => {
           const baseline = strategyUsesRaise
             ? y.targetWithdrawal
-            : year1Withdrawal * Math.pow(1 + trialInflationRate, i);
+            : inflatedYear1(i);
           // A depleted portfolio (both target and actual = 0) is NOT stable
           if (baseline === 0 && y.totalWithdrawal === 0 && i > 0) return false;
           return (
@@ -437,7 +431,7 @@ export function calculateMonteCarlo(
         const yr = decYears[di]!;
         const stratBase = strategyUsesRaise
           ? yr.targetWithdrawal
-          : year1Withdrawal * Math.pow(1 + trialInflationRate, di);
+          : inflatedYear1(di);
         stratRatiosByDecYear[di]!.push(
           safeDivide(yr.totalWithdrawal, stratBase, 0),
         );

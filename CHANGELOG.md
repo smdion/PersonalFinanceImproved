@@ -34,6 +34,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **A joint account set per paycheck with no job** is flagged when your pay schedules differ, rather than using whichever job came first. Attach a job or use a monthly amount.
 - **With no active retirement profile set**, the plan says which profile it's using instead of choosing silently.
 
+### Changed
+
+- **Simulation inflation now varies year by year inside each trial**, through spending, Social Security, tax brackets and today's dollars. Trials used to run at one average rate. Expect small changes: on a real plan the success rate held and the median moved under 1%, with a slightly wider range mid-plan.
+
 ### Added
 
 - **The projection chart's tooltip shows each year's assumptions:** plan return, the Simulation's return and volatility, inflation, and Guyton-Klinger's anchor rate.

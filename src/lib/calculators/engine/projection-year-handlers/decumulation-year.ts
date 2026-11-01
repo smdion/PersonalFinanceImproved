@@ -42,7 +42,6 @@ import {
 } from "../../../config/tax-tables";
 import { computeNiit } from "../../../config/niit";
 import {
-  taxGrowthFactor,
   growAmount,
   growWithholdingBrackets,
   growLtcgBrackets,
@@ -205,7 +204,7 @@ export function runDecumulationYear(
     input,
     year,
     age,
-    ctx.inflationRate,
+    ctx.inflation.growth(year - input.asOfDate.getFullYear()),
   );
   // The year's after-tax need: spending less Social Security — or, when
   // the strategy sized the gross withdrawal (Social Security on top), what
@@ -332,7 +331,7 @@ export function runDecumulationYear(
         personId,
         iraTraditionalBalance: iraTradByPerson.get(personId) ?? 0,
       })),
-      qcdAnnualLimit * taxGrowthFactor(year, taxDataYear, ctx.inflationRate),
+      qcdAnnualLimit * ctx.inflation.growthSinceVintage(year, taxDataYear),
     );
     totalQcd = totalQcdAmount(qcdByPerson);
     if (totalQcd > 0) {
@@ -426,15 +425,13 @@ export function runDecumulationYear(
   // don't, each still estimates year y, so `toOrdinaryBracketIncome`'s
   // residual stays correct (bracket-growth.ts).
   const tableYears = taxTableYears(taxRates);
-  const taxGrowth = taxGrowthFactor(
+  const taxGrowth = ctx.inflation.growthSinceVintage(
     year,
     tableYears.standardDeduction,
-    ctx.inflationRate,
   );
-  const bracketGrowth = taxGrowthFactor(
+  const bracketGrowth = ctx.inflation.growthSinceVintage(
     year,
     tableYears.brackets,
-    ctx.inflationRate,
   );
   const grownTaxBrackets = taxRates.taxBrackets
     ? growWithholdingBrackets(taxRates.taxBrackets, bracketGrowth)
@@ -503,7 +500,7 @@ export function runDecumulationYear(
   // Phase 2: LTCG brackets, grown from their own year.
   const grownLtcgBrackets = growLtcgBrackets(
     taxRates.ltcgBrackets,
-    taxGrowthFactor(year, tableYears.ltcg, ctx.inflationRate),
+    ctx.inflation.growthSinceVintage(year, tableYears.ltcg),
   );
 
   // Phase 3: IRMAA brackets, grown from their own year (tableYears.irmaa).
@@ -520,15 +517,14 @@ export function runDecumulationYear(
   //    threshold, not N's -- anchored on `year + 2`. Using the same
   //    factor for both would silently UNDER-cap every conversion by two
   //    years of real threshold growth.
-  const irmaaGrowthCheck = taxGrowthFactor(
+  const irmaaGrowthCheck = ctx.inflation.growthSinceVintage(
     year,
     tableYears.irmaa,
-    ctx.inflationRate,
   );
-  const irmaaGrowthCap = taxGrowthFactor(
-    year + 2,
+  const irmaaGrowthCap = ctx.inflation.growthSinceVintage(
+    year,
     tableYears.irmaa,
-    ctx.inflationRate,
+    2,
   );
   const grownIrmaaBracketsForCheck = growIrmaaBrackets(
     taxRates.irmaaBrackets,
@@ -546,10 +542,9 @@ export function runDecumulationYear(
   // IRMAA has, so `checkAca` (single call site, no conversion-capping
   // analog to IRMAA's `irmaaAwareRothConversions`) just needs "this
   // year's" vintage.
-  const fplGrowthFactor = taxGrowthFactor(
+  const fplGrowthFactor = ctx.inflation.growthSinceVintage(
     year,
     tableYears.fpl,
-    ctx.inflationRate,
   );
 
   const personsAge65Plus =
