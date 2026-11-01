@@ -585,3 +585,41 @@ describe("calculateMortgage", () => {
     });
   });
 });
+
+describe("a live balance and the date asked about", () => {
+  const loan = {
+    id: 1,
+    name: "Loan",
+    originalBalance: 280000,
+    interestRate: 0.065,
+    termMonths: 360,
+    startDate: new Date("2022-09-01"),
+    monthlyPI: 1770.09,
+    isActive: true,
+    apiBalance: 123456,
+    apiBalanceDate: new Date("2026-06-15"),
+  };
+  const at = (asOfDate: Date, currentDate?: Date) =>
+    calculateMortgage({
+      loans: [loan],
+      extraPayments: [],
+      whatIfScenarios: [],
+      asOfDate,
+      currentDate,
+    }).loans[0]!;
+
+  it("applies on and after its own date", () => {
+    expect(at(new Date("2026-06-15T12:00:00")).currentBalance).toBe(123456);
+    expect(at(new Date("2026-09-01T12:00:00")).currentBalance).toBe(123456);
+  });
+
+  it("an earlier date in the same year reads the schedule, so a change isn't $0", () => {
+    const before = at(new Date("2026-02-01T12:00:00")).currentBalance;
+    expect(before).not.toBe(123456);
+  });
+
+  it("a past year asked about today reads the schedule", () => {
+    const r = at(new Date("2025-12-31T12:00:00"), new Date("2026-11-01"));
+    expect(r.currentBalance).not.toBe(123456);
+  });
+});

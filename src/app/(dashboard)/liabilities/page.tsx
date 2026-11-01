@@ -34,6 +34,7 @@ export default function LiabilitiesPage() {
   const { data: other } = trpc.debts.summary.useQuery();
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const serviceLabel = budgetApiServiceLabel(syncStatus?.service);
+  const { data: linkableLoans } = trpc.simplefin.listLinkableLoans.useQuery();
 
   if (isLoading) {
     return (
@@ -132,8 +133,11 @@ export default function LiabilitiesPage() {
             key={loan.name}
             className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800"
           >
-            <strong>{loan.name}</strong>: {serviceLabel} balance{" "}
-            {formatCurrency(loan.apiBalance!)} vs. Calculated{" "}
+            <strong>{loan.name}</strong>:{" "}
+            {linkableLoans?.find((l) => l.id === loan.loanId)?.fedBySimplefin
+              ? "SimpleFIN"
+              : serviceLabel}{" "}
+            balance {formatCurrency(loan.apiBalance!)} vs. Calculated{" "}
             {formatCurrency(loan.calculatedBalance!)} — Difference:{" "}
             {formatCurrency(
               Math.abs(loan.apiBalance! - loan.calculatedBalance!),

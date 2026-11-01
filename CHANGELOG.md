@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **Finalizing a year works on every install.** It failed outright on SQLite. A category with no yearly row now gets one, so a year can't stay half-finalized or be finalized twice.
 - **Performance's lifetime totals keep their history.** The Retirement row now starts from what its categories have on record, and a category with no stored row in a finalized year no longer resets to zero. **Your Retirement lifetime figures may rise** if your history was imported.
+- **Past dates use the loan's schedule, not today's balance.** Finalizing an earlier year could store today's balance as Dec 31's, and Net Worth's mortgage change read $0 between two dates this year.
 - **Saving a snapshot that pulls balances from your budget app** now updates Performance and Net Worth together.
 - **A family HSA is sized at the family limit** in Contribution Profiles, and the limit always matches the coverage shown, including with two HSA rows.
 - **A person born on January 1 keeps their birth year** on servers behind UTC. The same fix covers year-end and loan dates.
@@ -28,20 +29,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **SimpleFIN:** a whole account is no longer suggested beside a part already linked, Current Balances' recent activity lists only counted accounts, and a day missing a fund's value no longer reads as selling it.
 - **Performance vs snapshot check** works for evening updates; utilities year-over-year compares the same months.
 - Cost basis edits save correctly, budget sync handles large budgets in batches and flags missing mapped accounts, the Strategy retirement lever re-runs the plan with the new age, and settings follow the active retirement profile.
-
 - **Budget targets follow one rule in every integration.** A monthly push replaces only a monthly target (or none). A yearly, weekly or dated target is left alone and reported as skipped, as Actual already did; YNAB used to overwrite it. A fund taken to $0 now clears the target it had.
 - **Turning a fund into a budget item keeps its monthly funding**, and tells you if the fund had met its goal.
 - **A joint account set per paycheck with no job** is flagged when your pay schedules differ, rather than using whichever job came first. Attach a job or use a monthly amount.
 - **Labels name the budget app you actually connected.** House and Brokerage always said YNAB, even with Actual Budget connected.
 - **With no active retirement profile set**, the plan says which profile it's using instead of choosing silently.
 
+### Added
+
+- **A mortgage servicer's SimpleFIN feed can be your loan's balance.** Link it under Settings > SimpleFIN. It replaces the balance from your budget app for that loan, its date shows on the House page, and it stays out of Current Balances.
+- **The projection chart's tooltip shows each year's assumptions:** plan return, the Simulation's return and volatility, inflation, and Guyton-Klinger's anchor rate.
+
 ### Changed
 
 - **Simulation inflation now varies year by year inside each trial**, through spending, Social Security, tax brackets and today's dollars. Trials used to run at one average rate. Expect small changes: on a real plan the success rate held and the median moved under 1%, with a slightly wider range mid-plan.
-
-### Added
-
-- **The projection chart's tooltip shows each year's assumptions:** plan return, the Simulation's return and volatility, inflation, and Guyton-Klinger's anchor rate.
 
 ### Security
 

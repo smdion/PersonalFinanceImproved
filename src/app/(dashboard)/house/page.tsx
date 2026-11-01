@@ -2,6 +2,7 @@
 
 /** Displays home value, improvement history, and equity estimates with links to the liabilities page for mortgage context. */
 
+import { loanFeedIsStale } from "@/lib/pure/simplefin-feeds";
 import { useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -29,6 +30,7 @@ export default function HousePage() {
   const { data: mortgageData, isLoading: mortgageLoading } =
     trpc.mortgage.computeActiveSummary.useQuery();
   const { data: activeBudgetApi } = trpc.sync.getActiveBudgetApi.useQuery();
+  const { data: linkableLoans } = trpc.simplefin.listLinkableLoans.useQuery();
   const { data: propTaxes, isLoading: taxesLoading } =
     trpc.assets.listPropertyTaxes.useQuery();
   const utils = trpc.useUtils();
@@ -110,6 +112,11 @@ export default function HousePage() {
     (l) => l.id === mortgageData?.activeLoanId,
   );
   const loanResult = mortgageData?.activeLoanResult ?? undefined;
+  const fedBySimplefin =
+    linkableLoans?.find((l) => l.id === loanResult?.loanId)?.fedBySimplefin ??
+    false;
+  const balanceSource = fedBySimplefin ? "simplefin" : (activeBudgetApi ?? "");
+  const feedAsOf = fedBySimplefin ? loanResult?.apiBalanceDate : undefined;
   const homeImprovements = assetData?.homeImprovements ?? [];
 
   // Group home improvements by year
@@ -194,7 +201,16 @@ export default function HousePage() {
             }
           />
           {loanResult?.apiBalance != null && (
-            <SyncBadge source={activeBudgetApi ?? ""} />
+            <SyncBadge source={balanceSource} />
+          )}
+          {feedAsOf && (
+            <p
+              className={`text-caption mt-1 ${
+                loanFeedIsStale(feedAsOf) ? "text-amber-600" : "text-muted"
+              }`}
+            >
+              As of {formatDate(feedAsOf)}
+            </p>
           )}
         </Card>
 
@@ -292,7 +308,7 @@ export default function HousePage() {
           {loanResult.apiBalance != null &&
             loanResult.calculatedBalance != null && (
               <div className="mt-3 rounded bg-blue-50 p-2 text-xs text-blue-700">
-                {budgetApiServiceLabel(activeBudgetApi)} balance:{" "}
+                {budgetApiServiceLabel(balanceSource)} balance:{" "}
                 {formatCurrency(loanResult.apiBalance)} | Calculated:{" "}
                 {formatCurrency(loanResult.calculatedBalance)} | Diff:{" "}
                 {formatCurrency(

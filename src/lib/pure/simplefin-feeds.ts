@@ -15,6 +15,35 @@ export function countsAsFeed(a: {
   return a.linkedPerformanceAccountId != null && a.isIncluded;
 }
 
+/** A feed reporting a mortgage: its balance is the loan's. */
+export function feedsLoan(a: {
+  linkedLoanId: number | null;
+  isIncluded: boolean;
+}): boolean {
+  return a.linkedLoanId != null && a.isIncluded;
+}
+
+/** Whether a feed's balance adds to the live total. A loan's is a debt
+ *  Ledgr already holds on the loan, not money. */
+export function countsInLiveBalance(a: {
+  linkedLoanId: number | null;
+  isIncluded: boolean;
+}): boolean {
+  return a.isIncluded && a.linkedLoanId == null;
+}
+
+/** Servicers report about monthly: a loan feed older than this is flagged,
+ *  and keeps its last real balance (the schedule would move net worth). */
+export const LOAN_FEED_STALE_DAYS = 45;
+
+export function loanFeedIsStale(
+  asOf: Date | string,
+  now: Date = new Date(),
+): boolean {
+  const ageMs = now.getTime() - new Date(asOf).getTime();
+  return ageMs > LOAN_FEED_STALE_DAYS * 86_400_000;
+}
+
 /**
  * How far back "recent" SimpleFIN activity reaches (SimpleFIN keeps about
  * this much history): the deposit check's window, and how long a feed may

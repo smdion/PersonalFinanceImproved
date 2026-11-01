@@ -94,7 +94,7 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "budget_income_adjustments", tier: 2 },
   { name: "account_basis", tier: 2 }, // FKs into performance_accounts (tier 1) + people (tier 0)
   { name: "savings_goal_category_links", tier: 2 }, // FK into savings_goals (tier 0)
-  { name: "simplefin_accounts", tier: 2 }, // FK into performance_accounts (tier 1)
+  { name: "simplefin_accounts", tier: 2 }, // FKs into performance_accounts (tier 1) + mortgage_loans
   { name: "holding_periods", tier: 2 }, // FK into performance_accounts (tier 1)
 
   // Tier 3 — depends on tier 2

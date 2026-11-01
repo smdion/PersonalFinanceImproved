@@ -103,6 +103,7 @@ const V08_SCHEMA_TAGS = [
   "0010_v095_market_closes", // PG + SQLite: market_closes (Tiingo cache, excluded from backups) — nothing to restore, no transform needed
   "0011_v096_budget_mortgage_link", // PG + SQLite: budget_items.mortgage_loan_id (nullable) — older backups restore with no line linked, no transform
   "0012_v096_gap_year_settings", // PG + SQLite: retirement_settings.gap_year_stop_saving / gap_year_draws (defaults) — older backups restore with today's behavior, no transform
+  "0013_v097_loan_feed", // PG + SQLite: simplefin_accounts.linked_loan_id (nullable) — older backups restore with no feed on a loan, no transform
 ] as const;
 
 /** First tags whose backups carry asset_class_buckets (PG, SQLite). */

@@ -1,4 +1,5 @@
 /** Asset management router covering home improvements, other assets, year-end history, and historical notes with API sync status. */
+import { loansFedBySimplefin } from "@/server/helpers/loan-feed";
 import { calendarYear } from "@/lib/utils/date";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -114,14 +115,19 @@ export const assetsRouter = createTRPCRouter({
             return lid === `mortgage:${activeLoan.id}:propertyValue`;
           })
         : false;
-      const mortgageSynced = activeLoan
-        ? mortgageMappings.some((m) => {
-            if (m.loanId === activeLoan.id && m.loanMapType === "loanBalance")
-              return true;
-            const lid = m.localId ?? m.localName;
-            return lid === `mortgage:${activeLoan.id}:loanBalance`;
-          })
-        : false;
+      const mortgageFromFeed =
+        activeLoan != null &&
+        (await loansFedBySimplefin(ctx.db)).has(activeLoan.id);
+      const mortgageSynced =
+        mortgageFromFeed ||
+        (activeLoan
+          ? mortgageMappings.some((m) => {
+              if (m.loanId === activeLoan.id && m.loanMapType === "loanBalance")
+                return true;
+              const lid = m.localId ?? m.localName;
+              return lid === `mortgage:${activeLoan.id}:loanBalance`;
+            })
+          : false);
 
       const allYears = yearEndHistory.map((r) => r.year);
       const currentYear = new Date().getFullYear();
@@ -243,6 +249,7 @@ export const assetsRouter = createTRPCRouter({
           houseValueSynced,
           mortgageBalance,
           mortgageSynced,
+          mortgageFromFeed,
           houseEquity: houseValue - mortgageBalance,
           homeImprovements: latestHistory?.homeImprovements ?? 0,
           otherAssetsTotal,

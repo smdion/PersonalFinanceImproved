@@ -817,6 +817,9 @@ export const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.9.6: how a year with a paycheck gone saves and draws.
   bad45447de248cb8792bc68c9381b58f20bff7da4ad1468a79f86ccd63d715f8:
     "0012_v096_gap_year_settings",
+  // v0.9.7: a SimpleFIN feed as a mortgage's balance.
+  "739d0889a3cfcfc773f0779a5a11d498375217f225b62b59674463cac297ca45":
+    "0013_v097_loan_feed",
 };
 
 /**

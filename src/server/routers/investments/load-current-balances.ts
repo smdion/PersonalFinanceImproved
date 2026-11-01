@@ -114,7 +114,11 @@ async function computeCurrentBalances(db: Db) {
         })
         .from(f)
         .where(
-          and(eq(f.isIncluded, true), isNull(f.linkedPerformanceAccountId)),
+          and(
+            eq(f.isIncluded, true),
+            isNull(f.linkedPerformanceAccountId),
+            isNull(f.linkedLoanId),
+          ),
         ),
     ]);
   const { subs } = context;

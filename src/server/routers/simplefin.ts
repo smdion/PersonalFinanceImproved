@@ -53,6 +53,11 @@ import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import { suggestLinks } from "@/lib/pure/simplefin-link-suggestions";
 import { recogniseAccountKind } from "@/lib/config/simplefin-account-kinds";
 import { countsAsFeed } from "@/lib/pure/simplefin-feeds";
+import {
+  applyLoanFeedBalances,
+  clearLoanBalance,
+  loansFedBySimplefin,
+} from "@/server/helpers/loan-feed";
 import { taxTypeLabel } from "@/lib/utils/colors";
 import { readMaybeEncrypted } from "@/lib/crypto";
 import { summarizeBalanceDates } from "@/lib/pure/balance-dates";
@@ -122,7 +127,9 @@ async function linkContext(
   const suggestions = new Map<number, LinkSuggestionView>();
   for (const s of suggestLinks(
     rows
-      .filter((r) => r.linkedPerformanceAccountId == null)
+      .filter(
+        (r) => r.linkedPerformanceAccountId == null && r.linkedLoanId == null,
+      )
       .map((r) => ({
         id: r.id,
         orgName: r.orgName,
@@ -322,7 +329,12 @@ export const simplefinRouter = createTRPCRouter({
             lastSeenAt: schema.simplefinAccounts.lastSeenAt,
           })
           .from(schema.simplefinAccounts)
-          .where(eq(schema.simplefinAccounts.isIncluded, true)),
+          .where(
+            and(
+              eq(schema.simplefinAccounts.isIncluded, true),
+              isNull(schema.simplefinAccounts.linkedLoanId),
+            ),
+          ),
       ]);
     // Same summary as the Live Balance card, so both say the same "as of".
     const balanceDates = summarizeBalanceDates(
@@ -456,6 +468,7 @@ export const simplefinRouter = createTRPCRouter({
         isIncluded: r.isIncluded,
         lastSeenAt: r.lastSeenAt,
         linkedPerformanceAccountId: r.linkedPerformanceAccountId,
+        linkedLoanId: r.linkedLoanId,
         // The sub-account it's linked to; a key no longer in the latest
         // snapshot (edited or deactivated) is kept and flagged, and the
         // link counts for the whole account meanwhile.
@@ -560,6 +573,7 @@ export const simplefinRouter = createTRPCRouter({
           .where(
             and(
               eq(schema.simplefinAccounts.id, id),
+              isNull(schema.simplefinAccounts.linkedLoanId),
               // Unlinked, or linked to this whole account (a narrower link).
               or(
                 isNull(schema.simplefinAccounts.linkedPerformanceAccountId),
@@ -636,14 +650,26 @@ export const simplefinRouter = createTRPCRouter({
         }
       }
 
+      // A feed is an account or a loan: linking one ends the other.
+      const [before] = await ctx.db
+        .select({ linkedLoanId: schema.simplefinAccounts.linkedLoanId })
+        .from(schema.simplefinAccounts)
+        .where(eq(schema.simplefinAccounts.id, input.id));
+      const endsLoanLink =
+        input.performanceAccountId != null && before?.linkedLoanId != null;
       const [row] = await ctx.db
         .update(schema.simplefinAccounts)
         .set({
           linkedPerformanceAccountId: input.performanceAccountId,
           linkedSubKey: subKey,
+          ...(endsLoanLink ? { linkedLoanId: null } : {}),
         })
         .where(eq(schema.simplefinAccounts.id, input.id))
         .returning();
+      if (endsLoanLink) {
+        await clearLoanBalance(ctx.db, before!.linkedLoanId!);
+        await recomputeTodaySnapshotFromLocal(ctx.db);
+      }
 
       if (!row) {
         throw new TRPCError({
@@ -659,6 +685,88 @@ export const simplefinRouter = createTRPCRouter({
       return {
         success: true as const,
         linkedPerformanceAccountId: row.linkedPerformanceAccountId,
+      };
+    }),
+
+  /** Loans a feed can report; `feedId` shows which are taken. */
+  listLinkableLoans: protectedProcedure.query(async ({ ctx }) => {
+    const [loans, feeds] = await Promise.all([
+      ctx.db
+        .select({
+          id: schema.mortgageLoans.id,
+          name: schema.mortgageLoans.name,
+        })
+        .from(schema.mortgageLoans)
+        .where(eq(schema.mortgageLoans.isActive, true)),
+      loansFedBySimplefin(ctx.db),
+    ]);
+    return loans.map((l) => ({ ...l, fedBySimplefin: feeds.has(l.id) }));
+  }),
+
+  /**
+   * Make a feed a mortgage's balance (or stop, with loanId null). The feed
+   * stops being an account: it leaves any tracked-account link and the live
+   * total, and it's included, or the link would do nothing.
+   */
+  setLoanLink: syncProcedure
+    .input(
+      z.object({
+        id: z.number().int(),
+        loanId: z.number().int().nullable(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [feed] = await ctx.db
+        .select()
+        .from(schema.simplefinAccounts)
+        .where(eq(schema.simplefinAccounts.id, input.id));
+      if (!feed)
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "SimpleFIN account not found",
+        });
+      if (input.loanId != null) {
+        const [loan] = await ctx.db
+          .select({ id: schema.mortgageLoans.id })
+          .from(schema.mortgageLoans)
+          .where(eq(schema.mortgageLoans.id, input.loanId));
+        if (!loan)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "That loan no longer exists",
+          });
+        const [taken] = await ctx.db
+          .select({ id: schema.simplefinAccounts.id })
+          .from(schema.simplefinAccounts)
+          .where(eq(schema.simplefinAccounts.linkedLoanId, input.loanId));
+        if (taken && taken.id !== feed.id)
+          throw new TRPCError({
+            code: "CONFLICT",
+            message: "Another SimpleFIN account already reports that loan",
+          });
+      }
+      await ctx.db.transaction(async (tx) => {
+        if (feed.linkedLoanId != null && feed.linkedLoanId !== input.loanId)
+          await clearLoanBalance(tx, feed.linkedLoanId);
+        await tx
+          .update(schema.simplefinAccounts)
+          .set(
+            input.loanId != null
+              ? {
+                  linkedLoanId: input.loanId,
+                  linkedPerformanceAccountId: null,
+                  linkedSubKey: null,
+                  isIncluded: true,
+                }
+              : { linkedLoanId: null },
+          )
+          .where(eq(schema.simplefinAccounts.id, feed.id));
+        await applyLoanFeedBalances(tx);
+      });
+      await redactStoredCardSpending(ctx.db, feed.id);
+      return {
+        success: true as const,
+        ...(await recomputeTodaySnapshotFromLocal(ctx.db)),
       };
     }),
 
@@ -681,6 +789,12 @@ export const simplefinRouter = createTRPCRouter({
           code: "NOT_FOUND",
           message: "SimpleFIN account not found",
         });
+      }
+
+      // Unchecked is unlinked as far as the loan goes; budget pulls resume.
+      if (row.linkedLoanId != null) {
+        if (input.isIncluded) await applyLoanFeedBalances(ctx.db);
+        else await clearLoanBalance(ctx.db, row.linkedLoanId);
       }
 
       return {

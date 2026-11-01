@@ -349,6 +349,7 @@ export function budgetApiServiceLabel(
 ): string {
   if (service === "actual") return "Actual Budget";
   if (service === "ynab") return "YNAB";
+  if (service === "simplefin") return "SimpleFIN";
   return "the budget API";
 }
 

@@ -254,7 +254,11 @@ export function AssetsContent() {
               <div className="border-subtle flex items-center justify-between border-b py-1.5">
                 <span className="text-muted">
                   Mortgage Balance
-                  {current.mortgageSynced && <SyncBadge source={apiLabel} />}
+                  {current.mortgageSynced && (
+                    <SyncBadge
+                      source={current.mortgageFromFeed ? "simplefin" : apiLabel}
+                    />
+                  )}
                   <ExternalLink
                     href="/liabilities"
                     label="Manage on Liabilities page"

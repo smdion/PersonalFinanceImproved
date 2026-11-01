@@ -26,6 +26,7 @@ import type {
   StandInPreview,
   TaxDataUpdateStatus,
 } from "@/lib/config/enum-values";
+import { mortgageLoans } from "./mortgages";
 import { performanceAccounts } from "./performance";
 import type { AccountMapping, ApiConfig } from "./tax-tables";
 
@@ -595,6 +596,15 @@ export const simplefinAccounts = pgTable(
      * must not be blocked by a leftover key, which readers ignore).
      */
     linkedSubKey: text("linked_sub_key"),
+    /**
+     * The mortgage loan this feed reports (a loan servicer's account). The
+     * feed's balance becomes that loan's balance while it's included.
+     * Never with linkedPerformanceAccountId (enforced by the router): a
+     * feed is an account or a loan. One feed per loan.
+     */
+    linkedLoanId: integer("linked_loan_id").references(() => mortgageLoans.id, {
+      onDelete: "set null",
+    }),
   },
   (table) => [
     index("simplefin_accounts_org_name_idx").on(
@@ -604,5 +614,6 @@ export const simplefinAccounts = pgTable(
     index("simplefin_accounts_linked_perf_account_idx").on(
       table.linkedPerformanceAccountId,
     ),
+    uniqueIndex("simplefin_accounts_linked_loan_idx").on(table.linkedLoanId),
   ],
 );

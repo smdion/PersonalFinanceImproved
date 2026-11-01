@@ -19,6 +19,7 @@ type SimplefinAccountListItem = {
   lastBalance: number;
   isIncluded: boolean;
   linkedPerformanceAccountId: number | null;
+  linkedLoanId: number | null;
   linkedSubKey: string | null;
   linkedSubLabel: string | null;
   subLinkMissing: boolean;
@@ -59,13 +60,17 @@ function groupAccountsByOrg(
 function AccountRow({
   account,
   matchableAccounts,
+  linkableLoans,
   onToggleIncluded,
   onMatch,
+  onLinkLoan,
 }: {
   account: SimplefinAccountListItem;
   matchableAccounts: MatchableAccount[];
+  linkableLoans: { id: number; name: string; fedBySimplefin: boolean }[];
   onToggleIncluded: (isIncluded: boolean) => void;
   onMatch: (performanceAccountId: number | null, subKey: string | null) => void;
+  onLinkLoan: (loanId: number | null) => void;
 }) {
   const change = account.change;
   return (
@@ -92,11 +97,23 @@ function AccountRow({
       </label>
       <div className="mt-1 flex items-center justify-between gap-2 pl-6">
         <select
-          value={linkValue(
-            account.linkedPerformanceAccountId,
-            account.subLinkMissing ? null : account.linkedSubKey,
-          )}
+          value={
+            account.linkedLoanId != null
+              ? `loan:${account.linkedLoanId}`
+              : linkValue(
+                  account.linkedPerformanceAccountId,
+                  account.subLinkMissing ? null : account.linkedSubKey,
+                )
+          }
           onChange={(e) => {
+            if (e.target.value.startsWith("loan:")) {
+              onLinkLoan(Number(e.target.value.slice(5)));
+              return;
+            }
+            if (account.linkedLoanId != null && e.target.value === "") {
+              onLinkLoan(null);
+              return;
+            }
             const [perf, ...key] = e.target.value.split("|");
             onMatch(
               perf ? Number(perf) : null,
@@ -106,6 +123,19 @@ function AccountRow({
           className="text-caption border-strong bg-surface-primary text-muted rounded border px-1.5 py-0.5"
         >
           <option value="">Not linked to a tracked account</option>
+          {linkableLoans.length > 0 && (
+            <optgroup label="Mortgage balance">
+              {linkableLoans.map((l) => (
+                <option
+                  key={l.id}
+                  value={`loan:${l.id}`}
+                  disabled={l.fedBySimplefin && l.id !== account.linkedLoanId}
+                >
+                  {l.name}
+                </option>
+              ))}
+            </optgroup>
+          )}
           {matchableAccounts.map((m) =>
             m.subAccounts.length > 1 ? (
               <optgroup key={m.id} label={m.label}>
@@ -150,6 +180,11 @@ function AccountRow({
           <PortfolioAccountsLink className="underline" /> (the account →
           Sub-accounts, one per person, if it&apos;s tracked per person); a link
           suggestion appears here after.
+        </p>
+      )}
+      {account.linkedLoanId != null && (
+        <p className="text-caption text-muted mt-0.5 pl-6">
+          Sets this loan&apos;s balance. Not counted in Current Balances.
         </p>
       )}
       {account.suggestion && (
@@ -198,6 +233,14 @@ export function SimplefinCard() {
 
   const setAccountIncludedMut = trpc.simplefin.setAccountIncluded.useMutation({
     onSuccess: invalidate,
+  });
+  const { data: linkableLoans } = trpc.simplefin.listLinkableLoans.useQuery();
+  const setLoanLinkMut = trpc.simplefin.setLoanLink.useMutation({
+    onSuccess: () => {
+      utils.simplefin.invalidate();
+      utils.mortgage.invalidate();
+      utils.assets.invalidate();
+    },
   });
   const setAccountMappingMut = trpc.simplefin.setAccountMapping.useMutation({
     onSuccess: invalidate,
@@ -412,6 +455,10 @@ export function SimplefinCard() {
                       key={account.id}
                       account={account}
                       matchableAccounts={matchableAccounts ?? []}
+                      linkableLoans={linkableLoans ?? []}
+                      onLinkLoan={(loanId) =>
+                        setLoanLinkMut.mutate({ id: account.id, loanId })
+                      }
                       onToggleIncluded={(isIncluded) =>
                         setAccountIncludedMut.mutate({
                           id: account.id,
