@@ -4,7 +4,7 @@ import {
   loadCapHousehold,
 } from "@/server/helpers/contribution-caps";
 import { getAllPeople } from "@/server/helpers/people";
-import { eq, asc, sql, lt, isNull, and } from "drizzle-orm";
+import { eq, asc, sql, lt, isNull, and, ne, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import {
@@ -647,6 +647,37 @@ const savingsGoalInput = z.object({
   targetMode: targetModeSchema.default("fixed"),
 });
 
+/**
+ * Replaces every goal's allocation override in `months` with `allocations`
+ * (one per goal). Run inside a transaction so a month is never left with
+ * only some goals' overrides.
+ */
+async function replaceMonthOverrides(
+  db: DbType,
+  months: string[],
+  allocations: { goalId: number; amount: number }[],
+): Promise<void> {
+  const goalIds = allocations.map((a) => a.goalId);
+  if (new Set(goalIds).size !== goalIds.length)
+    throw new TRPCError({
+      code: "BAD_REQUEST",
+      message: "Each fund can appear once per month",
+    });
+  if (months.length === 0) return;
+  await db
+    .delete(schema.savingsAllocationOverrides)
+    .where(inArray(schema.savingsAllocationOverrides.monthDate, months));
+  const rows = months.flatMap((monthDate) =>
+    allocations.map((a) => ({
+      goalId: a.goalId,
+      monthDate,
+      amount: String(a.amount),
+    })),
+  );
+  if (rows.length > 0)
+    await db.insert(schema.savingsAllocationOverrides).values(rows);
+}
+
 export const savingsRouter = createTRPCRouter({
   computeSummary: protectedProcedure
     .input(z.object({ budgetTierOverride: z.number().optional() }).optional())
@@ -1019,7 +1050,10 @@ export const savingsRouter = createTRPCRouter({
       )
       .mutation(async ({ ctx, input: { id, ...data } }) => {
         const [row] = await ctx.db
-          .select({ source: schema.savingsPlannedTransactions.source })
+          .select({
+            source: schema.savingsPlannedTransactions.source,
+            transferPairId: schema.savingsPlannedTransactions.transferPairId,
+          })
           .from(schema.savingsPlannedTransactions)
           .where(eq(schema.savingsPlannedTransactions.id, id));
         if (row?.source === "rule") {
@@ -1029,23 +1063,65 @@ export const savingsRouter = createTRPCRouter({
               "Auto-generated transactions cannot be edited. Manage them via the Extra Paychecks tab.",
           });
         }
-        return ctx.db
-          .update(schema.savingsPlannedTransactions)
-          .set(data)
-          .where(
-            and(
-              eq(schema.savingsPlannedTransactions.id, id),
-              eq(schema.savingsPlannedTransactions.source, "manual"),
-            ),
-          )
-          .returning()
-          .then((r) => r[0]);
+        return ctx.db.transaction(async (tx) => {
+          const updated = await tx
+            .update(schema.savingsPlannedTransactions)
+            .set(data)
+            .where(
+              and(
+                eq(schema.savingsPlannedTransactions.id, id),
+                eq(schema.savingsPlannedTransactions.source, "manual"),
+              ),
+            )
+            .returning()
+            .then((r) => r[0]);
+          // A transfer's two legs move together: the other leg takes the
+          // same date, description and recurrence, and the mirrored amount.
+          if (row?.transferPairId) {
+            const [other] = await tx
+              .select({
+                id: schema.savingsPlannedTransactions.id,
+                goalId: schema.savingsPlannedTransactions.goalId,
+              })
+              .from(schema.savingsPlannedTransactions)
+              .where(
+                and(
+                  eq(
+                    schema.savingsPlannedTransactions.transferPairId,
+                    row.transferPairId,
+                  ),
+                  ne(schema.savingsPlannedTransactions.id, id),
+                ),
+              );
+            if (other) {
+              if (other.goalId === data.goalId)
+                throw new TRPCError({
+                  code: "BAD_REQUEST",
+                  message: "A transfer can't go to the fund it comes from",
+                });
+              await tx
+                .update(schema.savingsPlannedTransactions)
+                .set({
+                  transactionDate: data.transactionDate,
+                  description: data.description,
+                  isRecurring: data.isRecurring,
+                  recurrenceMonths: data.recurrenceMonths ?? null,
+                  amount: String(-Number(data.amount)),
+                })
+                .where(eq(schema.savingsPlannedTransactions.id, other.id));
+            }
+          }
+          return updated;
+        });
       }),
     delete: savingsProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(async ({ ctx, input }) => {
         const [row] = await ctx.db
-          .select({ source: schema.savingsPlannedTransactions.source })
+          .select({
+            source: schema.savingsPlannedTransactions.source,
+            transferPairId: schema.savingsPlannedTransactions.transferPairId,
+          })
           .from(schema.savingsPlannedTransactions)
           .where(eq(schema.savingsPlannedTransactions.id, input.id));
         if (row?.source === "rule") {
@@ -1055,6 +1131,16 @@ export const savingsRouter = createTRPCRouter({
               "Auto-generated transactions cannot be deleted. Manage them via the Extra Paychecks tab.",
           });
         }
+        // Half a transfer is money from nowhere: both legs go.
+        if (row?.transferPairId)
+          return ctx.db
+            .delete(schema.savingsPlannedTransactions)
+            .where(
+              eq(
+                schema.savingsPlannedTransactions.transferPairId,
+                row.transferPairId,
+              ),
+            );
         return ctx.db
           .delete(schema.savingsPlannedTransactions)
           .where(
@@ -1254,16 +1340,14 @@ export const savingsRouter = createTRPCRouter({
       )
       .mutation(async ({ ctx, input }) => {
         if (input.monthDates.length === 0) return { ok: true };
-        const monthSet = new Set(input.monthDates);
-        const allOverrides = await ctx.db
-          .select()
-          .from(schema.savingsAllocationOverrides);
-        const toDelete = allOverrides.filter((r) => monthSet.has(r.monthDate));
-        for (const row of toDelete) {
-          await ctx.db
-            .delete(schema.savingsAllocationOverrides)
-            .where(eq(schema.savingsAllocationOverrides.id, row.id));
-        }
+        await ctx.db
+          .delete(schema.savingsAllocationOverrides)
+          .where(
+            inArray(
+              schema.savingsAllocationOverrides.monthDate,
+              input.monthDates,
+            ),
+          );
         return { ok: true };
       }),
 
@@ -1281,26 +1365,9 @@ export const savingsRouter = createTRPCRouter({
         }),
       )
       .mutation(async ({ ctx, input }) => {
-        // Delete all existing overrides for this month across all goals
-        const existing = await ctx.db
-          .select()
-          .from(schema.savingsAllocationOverrides)
-          .then((rows) => rows.filter((r) => r.monthDate === input.monthDate));
-
-        for (const row of existing) {
-          await ctx.db
-            .delete(schema.savingsAllocationOverrides)
-            .where(eq(schema.savingsAllocationOverrides.id, row.id));
-        }
-
-        // Insert new overrides (skip if amount matches default — caller handles that)
-        for (const alloc of input.allocations) {
-          await ctx.db.insert(schema.savingsAllocationOverrides).values({
-            goalId: alloc.goalId,
-            monthDate: input.monthDate,
-            amount: String(alloc.amount),
-          });
-        }
+        await ctx.db.transaction((tx) =>
+          replaceMonthOverrides(tx, [input.monthDate], input.allocations),
+        );
         return { ok: true };
       }),
 
@@ -1329,28 +1396,9 @@ export const savingsRouter = createTRPCRouter({
             (input.endMonth === null || md <= input.endMonth),
         );
 
-        for (const monthDate of targetMonths) {
-          // Delete existing overrides for this month
-          const existing = await ctx.db
-            .select()
-            .from(schema.savingsAllocationOverrides)
-            .then((rows) => rows.filter((r) => r.monthDate === monthDate));
-
-          for (const row of existing) {
-            await ctx.db
-              .delete(schema.savingsAllocationOverrides)
-              .where(eq(schema.savingsAllocationOverrides.id, row.id));
-          }
-
-          // Insert new overrides
-          for (const alloc of input.allocations) {
-            await ctx.db.insert(schema.savingsAllocationOverrides).values({
-              goalId: alloc.goalId,
-              monthDate,
-              amount: String(alloc.amount),
-            });
-          }
-        }
+        await ctx.db.transaction((tx) =>
+          replaceMonthOverrides(tx, targetMonths, input.allocations),
+        );
         return { ok: true };
       }),
   }),
@@ -1455,10 +1503,13 @@ export const savingsRouter = createTRPCRouter({
           .select({ id: schema.savingsGoals.id })
           .from(schema.savingsGoals)
           .where(eq(schema.savingsGoals.isActive, true));
-        await resetProfileAllocationsToZero(
-          ctx.db,
-          goals.map((g) => g.id),
-          input.profileId,
+        // All goals or none.
+        await ctx.db.transaction((tx) =>
+          resetProfileAllocationsToZero(
+            tx,
+            goals.map((g) => g.id),
+            input.profileId,
+          ),
         );
         return { ok: true };
       }),
@@ -1512,8 +1563,8 @@ export const savingsRouter = createTRPCRouter({
       z.object({
         budgetItemId: z.number().int(),
         goalName: z.string().min(1),
-        monthlyContribution: z.string().default("0"),
-        targetAmount: z.string().nullable().optional(),
+        monthlyContribution: zDecimal.default("0"),
+        targetAmount: zDecimal.nullable().optional(),
         targetMode: targetModeSchema.default("ongoing"),
         // Which service's link (if any) to carry over to the new goal.
         // Omitted: defensible default for a conversion action — copy the
@@ -1535,62 +1586,64 @@ export const savingsRouter = createTRPCRouter({
           message: "Budget item not found",
         });
 
-      // Create the savings goal WITHOUT the raw (dead) API-linking columns —
-      // the link, if any, is copied below via copySavingsGoalLinks.
-      const [goal] = await ctx.db
-        .insert(schema.savingsGoals)
-        .values({
-          name: input.goalName,
-          targetAmount: input.targetAmount ?? null,
-          targetMode: input.targetMode,
-        })
-        .returning();
+      return ctx.db.transaction(async (tx) => {
+        // Create the savings goal WITHOUT the raw (dead) API-linking columns —
+        // the link, if any, is copied below via copySavingsGoalLinks.
+        const [goal] = await tx
+          .insert(schema.savingsGoals)
+          .values({
+            name: input.goalName,
+            targetAmount: input.targetAmount ?? null,
+            targetMode: input.targetMode,
+          })
+          .returning();
 
-      if (goal) {
-        // A budget item can carry a link for EACH service at once
-        // (budget_item_category_links is keyed per (item, service) —
-        // that's the whole point of the join-table migration). An
-        // explicit `input.service` copies just that one (the caller knows
-        // which they mean); omitted copies every service the item is
-        // actually linked to, not just whichever one happens to be
-        // "active" — otherwise a household with both YNAB and Actual
-        // connected silently loses the inactive service's link on every
-        // conversion.
-        const servicesToCopy = input.service
-          ? [input.service]
-          : BUDGET_API_SERVICE_VALUES;
-        for (const service of servicesToCopy) {
-          await copySavingsGoalLinks(ctx.db, {
-            fromBudgetItemId: item.id,
-            toSavingsGoalId: goal.id,
-            service,
-          });
+        if (goal) {
+          // A budget item can carry a link for EACH service at once
+          // (budget_item_category_links is keyed per (item, service) —
+          // that's the whole point of the join-table migration). An
+          // explicit `input.service` copies just that one (the caller knows
+          // which they mean); omitted copies every service the item is
+          // actually linked to, not just whichever one happens to be
+          // "active" — otherwise a household with both YNAB and Actual
+          // connected silently loses the inactive service's link on every
+          // conversion.
+          const servicesToCopy = input.service
+            ? [input.service]
+            : BUDGET_API_SERVICE_VALUES;
+          for (const service of servicesToCopy) {
+            await copySavingsGoalLinks(tx, {
+              fromBudgetItemId: item.id,
+              toSavingsGoalId: goal.id,
+              service,
+            });
+          }
         }
-      }
 
-      // Funding is per-profile with no shared default — seed every existing
-      // budget profile with the converted amount (closest match to the old
-      // shared-default behavior; the user can customize per-profile after).
-      const profiles = await ctx.db
-        .select({ id: schema.budgetProfiles.id })
-        .from(schema.budgetProfiles);
-      if (goal && profiles.length > 0) {
-        await ctx.db.insert(schema.savingsGoalProfileAllocations).values(
-          profiles.map((p) => ({
-            goalId: goal.id,
-            budgetProfileId: p.id,
-            allocationPercent: null,
-            monthlyContribution: input.monthlyContribution,
-          })),
-        );
-      }
+        // Funding is per-profile with no shared default — seed every existing
+        // budget profile with the converted amount (closest match to the old
+        // shared-default behavior; the user can customize per-profile after).
+        const profiles = await tx
+          .select({ id: schema.budgetProfiles.id })
+          .from(schema.budgetProfiles);
+        if (goal && profiles.length > 0) {
+          await tx.insert(schema.savingsGoalProfileAllocations).values(
+            profiles.map((p) => ({
+              goalId: goal.id,
+              budgetProfileId: p.id,
+              allocationPercent: null,
+              monthlyContribution: input.monthlyContribution,
+            })),
+          );
+        }
 
-      // Delete the budget item
-      await ctx.db
-        .delete(schema.budgetItems)
-        .where(eq(schema.budgetItems.id, input.budgetItemId));
+        // Delete the budget item
+        await tx
+          .delete(schema.budgetItems)
+          .where(eq(schema.budgetItems.id, input.budgetItemId));
 
-      return goal;
+        return goal;
+      });
     }),
 
   /** Convert a savings goal into a budget item, transferring the API category link. */
@@ -1630,75 +1683,77 @@ export const savingsRouter = createTRPCRouter({
           message: "No active budget profile",
         });
 
-      const numCols = profile.columnLabels.length;
-      const amounts = new Array(numCols).fill(0) as number[];
+      return ctx.db.transaction(async (tx) => {
+        const numCols = profile.columnLabels.length;
+        const amounts = new Array(numCols).fill(0) as number[];
 
-      // Place at end of category
-      const existingItems = await ctx.db
-        .select({
-          sortOrder: schema.budgetItems.sortOrder,
-          category: schema.budgetItems.category,
-        })
-        .from(schema.budgetItems)
-        .where(eq(schema.budgetItems.profileId, profile.id));
-      const sameCat = existingItems.filter(
-        (i) => i.category === input.category,
-      );
-      const maxSort =
-        sameCat.length > 0
-          ? Math.max(...sameCat.map((i) => i.sortOrder))
-          : existingItems.length > 0
-            ? Math.max(...existingItems.map((i) => i.sortOrder))
-            : 0;
+        // Place at end of category
+        const existingItems = await tx
+          .select({
+            sortOrder: schema.budgetItems.sortOrder,
+            category: schema.budgetItems.category,
+          })
+          .from(schema.budgetItems)
+          .where(eq(schema.budgetItems.profileId, profile.id));
+        const sameCat = existingItems.filter(
+          (i) => i.category === input.category,
+        );
+        const maxSort =
+          sameCat.length > 0
+            ? Math.max(...sameCat.map((i) => i.sortOrder))
+            : existingItems.length > 0
+              ? Math.max(...existingItems.map((i) => i.sortOrder))
+              : 0;
 
-      // Create budget item WITHOUT the raw (dead) API-linking columns — the
-      // link, if any, is copied below.
-      const [item] = await ctx.db
-        .insert(schema.budgetItems)
-        .values({
-          profileId: profile.id,
-          category: input.category,
-          subcategory: input.subcategory,
-          amounts,
-          isEssential: input.isEssential,
-          sortOrder: maxSort + 1,
-        })
-        .returning();
+        // Create budget item WITHOUT the raw (dead) API-linking columns — the
+        // link, if any, is copied below.
+        const [item] = await tx
+          .insert(schema.budgetItems)
+          .values({
+            profileId: profile.id,
+            category: input.category,
+            subcategory: input.subcategory,
+            amounts,
+            isEssential: input.isEssential,
+            sortOrder: maxSort + 1,
+          })
+          .returning();
 
-      if (item) {
-        // Same reasoning as convertBudgetItemToGoal above: a savings goal
-        // can carry a primary link for each service at once. Explicit
-        // input.service copies just that one; omitted copies every
-        // service the goal is actually linked to.
-        const servicesToCopy = input.service
-          ? [input.service]
-          : BUDGET_API_SERVICE_VALUES;
-        for (const service of servicesToCopy) {
-          const goalLinks = await loadSavingsGoalLinks(
-            ctx.db,
-            [goal.id],
-            service,
-            "primary",
-          );
-          const goalLink = goalLinks.get(goal.id);
-          if (goalLink) {
-            await setBudgetItemLink(ctx.db, {
-              budgetItemId: item.id,
+        if (item) {
+          // Same reasoning as convertBudgetItemToGoal above: a savings goal
+          // can carry a primary link for each service at once. Explicit
+          // input.service copies just that one; omitted copies every
+          // service the goal is actually linked to.
+          const servicesToCopy = input.service
+            ? [input.service]
+            : BUDGET_API_SERVICE_VALUES;
+          for (const service of servicesToCopy) {
+            const goalLinks = await loadSavingsGoalLinks(
+              tx,
+              [goal.id],
               service,
-              categoryId: goalLink.categoryId,
-              categoryName: goalLink.categoryName,
-              syncDirection: "pull",
-              lastSyncedAt: goalLink.lastSyncedAt,
-            });
+              "primary",
+            );
+            const goalLink = goalLinks.get(goal.id);
+            if (goalLink) {
+              await setBudgetItemLink(tx, {
+                budgetItemId: item.id,
+                service,
+                categoryId: goalLink.categoryId,
+                categoryName: goalLink.categoryName,
+                syncDirection: "pull",
+                lastSyncedAt: goalLink.lastSyncedAt,
+              });
+            }
           }
         }
-      }
 
-      // Delete the savings goal (cascades to savings_monthly, planned
-      // transactions, overrides; sub-goals become top-level)
-      await deleteSavingsGoal(ctx.db, input.goalId);
+        // Delete the savings goal (cascades to savings_monthly, planned
+        // transactions, overrides; sub-goals become top-level)
+        await deleteSavingsGoal(tx, input.goalId);
 
-      return item;
+        return item;
+      });
     }),
 
   /** Get API category balances for linked savings goals (for display). */
@@ -2277,6 +2332,22 @@ export const savingsRouter = createTRPCRouter({
         }),
       )
       .mutation(async ({ ctx, input }) => {
+        if (input.fromGoalId === input.toGoalId)
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: "A transfer can't go to the fund it comes from",
+          });
+        const found = await ctx.db
+          .select({ id: schema.savingsGoals.id })
+          .from(schema.savingsGoals)
+          .where(
+            inArray(schema.savingsGoals.id, [input.fromGoalId, input.toGoalId]),
+          );
+        if (found.length !== 2)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "One of those funds no longer exists",
+          });
         const pairId = `xfer_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         const base = {
           transactionDate: input.transactionDate,
@@ -2285,27 +2356,26 @@ export const savingsRouter = createTRPCRouter({
           recurrenceMonths: input.recurrenceMonths ?? null,
           transferPairId: pairId,
         };
-        const [withdrawal, deposit] = await Promise.all([
-          ctx.db
+        // Both legs or neither.
+        return ctx.db.transaction(async (tx) => {
+          const [withdrawal] = await tx
             .insert(schema.savingsPlannedTransactions)
             .values({
               ...base,
               goalId: input.fromGoalId,
               amount: String(-input.amount),
             })
-            .returning()
-            .then((r) => r[0]),
-          ctx.db
+            .returning();
+          const [deposit] = await tx
             .insert(schema.savingsPlannedTransactions)
             .values({
               ...base,
               goalId: input.toGoalId,
               amount: String(input.amount),
             })
-            .returning()
-            .then((r) => r[0]),
-        ]);
-        return { pairId, withdrawal, deposit };
+            .returning();
+          return { pairId, withdrawal, deposit };
+        });
       }),
     delete: savingsProcedure
       .input(z.object({ transferPairId: z.string() }))

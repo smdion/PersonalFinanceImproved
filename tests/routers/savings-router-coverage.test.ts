@@ -1592,6 +1592,24 @@ describe("savings.allocationOverrides advanced", () => {
       });
       expect(result).toEqual({ ok: true });
     });
+
+    it("refuses a fund listed twice and leaves the month as it was", async () => {
+      await expect(
+        caller.savings.allocationOverrides.upsertMonth({
+          monthDate: "2027-03-01",
+          allocations: [
+            { goalId, amount: 1 },
+            { goalId, amount: 2 },
+          ],
+        }),
+      ).rejects.toThrow(/once per month/);
+      const rows = db
+        .select()
+        .from(sqliteSchemaTables.savingsAllocationOverrides)
+        .all()
+        .filter((r) => r.monthDate === "2027-03-01");
+      expect(rows.map((r) => Number(r.amount)).sort()).toEqual([0, 700]);
+    });
   });
 
   describe("upsertMonthRange", () => {

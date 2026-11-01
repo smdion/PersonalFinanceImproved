@@ -25,6 +25,7 @@ import {
 } from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
+import * as sqliteTables from "@/lib/db/schema-sqlite";
 import {
   getActiveBudgetApi,
   getClientForService,
@@ -1084,6 +1085,60 @@ describe("savings.transfers", () => {
       expect(result.deposit!.isRecurring).toBe(true);
       expect(result.withdrawal!.recurrenceMonths).toBe(3);
       expect(result.deposit!.recurrenceMonths).toBe(3);
+    });
+
+    it("refuses a transfer to the same fund, or to one that doesn't exist", async () => {
+      const base = {
+        transactionDate: "2026-09-01",
+        amount: 100,
+        description: "x",
+        isRecurring: false,
+      };
+      await expect(
+        caller.savings.transfers.create({
+          ...base,
+          fromGoalId,
+          toGoalId: fromGoalId,
+        }),
+      ).rejects.toThrow(/fund it comes from/);
+      await expect(
+        caller.savings.transfers.create({
+          ...base,
+          fromGoalId,
+          toGoalId: 999_999,
+        }),
+      ).rejects.toThrow(/no longer exists/);
+    });
+
+    it("editing one leg moves the other; deleting one leg deletes both", async () => {
+      const { pairId, withdrawal } = await caller.savings.transfers.create({
+        fromGoalId,
+        toGoalId,
+        transactionDate: "2026-10-01",
+        amount: 300,
+        description: "Pair edit",
+        isRecurring: false,
+      });
+      await caller.savings.plannedTransactions.update({
+        id: withdrawal!.id,
+        goalId: fromGoalId,
+        transactionDate: "2026-10-15",
+        amount: "-450",
+        description: "Pair edited",
+        isRecurring: false,
+      });
+      const legs = () =>
+        db
+          .select()
+          .from(sqliteTables.savingsPlannedTransactions)
+          .all()
+          .filter((t) => t.transferPairId === pairId);
+      const deposit = legs().find((t) => t.goalId === toGoalId)!;
+      expect(deposit.transactionDate).toBe("2026-10-15");
+      expect(deposit.description).toBe("Pair edited");
+      expect(Number(deposit.amount)).toBe(450);
+      await caller.savings.plannedTransactions.delete({ id: deposit.id });
+      expect(legs()).toHaveLength(0);
     });
 
     it("rejects a zero amount (must be positive)", async () => {
