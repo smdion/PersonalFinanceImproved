@@ -120,3 +120,33 @@ export const SK_TAX_DATA_LAST_CHECK = "tax_data_last_check";
 
 /** Custom Simulation return clamps: { returnClampMin, returnClampMax }. */
 export const SK_MC_CUSTOM_CLAMP_BOUNDS = "mc_custom_clamp_bounds";
+
+// ── Reset ───────────────────────────────────────────────────────────
+
+/**
+ * app_settings keys that describe the household's data rather than how the
+ * app is set up: ids of rows, history derived from them, sync state. A
+ * "reset all data" clears these with the tables; everything else (access
+ * control, preferences, assumptions, integration settings) stays.
+ */
+export const DATA_SETTING_KEYS: readonly string[] = [
+  SK_ACTIVE_CONTRIB_PROFILE_ID,
+  SK_ACTIVE_SALARY_PROFILE_ID,
+  SK_ACTIVE_RETIREMENT_PROFILE_ID,
+  SK_LAST_APPLIED_PLAN_ID,
+  SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
+  SK_MILESTONE_FIRST_REACHED,
+  SK_MILESTONE_CHECKLIST,
+  SK_MILESTONE_CUSTOM_GOALS,
+  SK_RECOMMENDATION_DISMISSALS,
+  SK_CURRENT_GLIDE_PATH,
+  "active_budget_api",
+  "current_other_liabilities",
+  "performance_last_updated",
+  "basis_last_updated",
+  "simplefin_fill_ledger",
+  "simplefin_investments_first_synced_at",
+  "simplefin_investments_synced_at",
+  "simplefin_last_error",
+  "simplefin_partial_sync_state",
+];

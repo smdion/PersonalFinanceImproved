@@ -1,6 +1,7 @@
 /** Version router for creating, listing, restoring, and deleting full database state versions used for undo/backup. */
 import { z } from "zod/v4";
-import { eq, sql, desc } from "drizzle-orm";
+import { eq, sql, desc, inArray } from "drizzle-orm";
+import { DATA_SETTING_KEYS } from "@/lib/constants/settings-keys";
 import {
   createTRPCRouter,
   adminProcedure,
@@ -238,7 +239,7 @@ export const versionRouter = createTRPCRouter({
       return { ok: true, schedule: input.schedule };
     }),
 
-  /** Reset all user data — truncates every table except state_versions, state_version_tables, app_settings, and local_admins. */
+  /** Reset all user data — truncates every table except state_versions, state_version_tables, app_settings, and local_admins, and clears the app_settings keys that describe the data (DATA_SETTING_KEYS). */
   resetAllData: adminProcedure
     .input(z.object({ confirmation: z.literal("delete") }))
     .mutation(async ({ ctx }) => {
@@ -267,9 +268,15 @@ export const versionRouter = createTRPCRouter({
         .map((r) => r.tablename)
         .filter((t) => !preserve.has(t));
 
-      if (toTruncate.length > 0) {
-        await truncateTables(ctx.db, toTruncate);
-      }
+      // One transaction: a failure part-way must not leave half the
+      // tables wiped. The settings that point at the wiped rows (active
+      // profile ids, milestone history, sync state) go with them.
+      await ctx.db.transaction(async (tx) => {
+        if (toTruncate.length > 0) await truncateTables(tx, toTruncate);
+        await tx
+          .delete(schema.appSettings)
+          .where(inArray(schema.appSettings.key, [...DATA_SETTING_KEYS]));
+      });
       // Reference data (tax tables, limits) isn't user data: put it back
       // rather than leave it empty until the next start.
       const { reconcileReferenceData } =
