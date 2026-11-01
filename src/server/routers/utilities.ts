@@ -197,14 +197,22 @@ export const utilitiesRouter = createTRPCRouter({
           };
         });
 
-      // YoY cost change, computed in ascending-year order.
+      // YoY cost change, ascending years, over the months both years have
+      // a reading for — a partial year against a full one isn't a change
+      // (in March it read as −75%).
       for (let i = 1; i < years.length; i++) {
-        const prev = years[i - 1]!.totalCost;
-        years[i]!.yoyCostPct = safeDivide(
-          years[i]!.totalCost - prev,
-          prev,
-          null,
+        const cur = years[i]!.readings;
+        const prevByMonth = new Map(
+          years[i - 1]!.readings.map((r) => [r.month, r.cost]),
         );
+        const shared = cur.filter((r) => prevByMonth.has(r.month));
+        if (shared.length === 0) continue;
+        const curCost = shared.reduce((sum, r) => sum + r.cost, 0);
+        const prevCost = shared.reduce(
+          (sum, r) => sum + prevByMonth.get(r.month)!,
+          0,
+        );
+        years[i]!.yoyCostPct = safeDivide(curCost - prevCost, prevCost, null);
       }
 
       const latest = years[years.length - 1] ?? null;
