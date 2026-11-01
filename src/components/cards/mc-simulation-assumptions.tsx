@@ -303,14 +303,19 @@ export function SimulationAssumptions({
             </div>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs md:grid-cols-4">
               <AssumptionRow
-                label="Current Age"
-                value={String(inputs.currentAge)}
+                label="Withdrawals Start"
+                value={String(
+                  new Date().getFullYear() +
+                    inputs.retirementAge -
+                    inputs.currentAge,
+                )}
               />
               <AssumptionRow
-                label="Retirement Age"
-                value={String(inputs.retirementAge)}
+                label="Plan Through"
+                value={String(
+                  new Date().getFullYear() + inputs.endAge - inputs.currentAge,
+                )}
               />
-              <AssumptionRow label="End Age" value={String(inputs.endAge)} />
               <AssumptionRow
                 label="Trials"
                 value={numTrials.toLocaleString()}

@@ -243,7 +243,7 @@ function BlendedBanner({
         retirement by age {r.retirementAge}.
         {engineResult.earliestRelocateYear != null &&
         engineResult.earliestRelocateYear > moveYear
-          ? ` The earliest viable move year is ${engineResult.earliestRelocateYear} (age ${engineResult.earliestRelocateAge}).`
+          ? ` The earliest viable move year is ${engineResult.earliestRelocateYear}.`
           : " Consider reducing relocation expenses or increasing contributions."}
       </span>
     </div>
@@ -335,8 +335,7 @@ function EarliestViableHint({
     <div className="text-faint text-xs">
       Earliest viable move year:{" "}
       <span className="text-secondary font-medium">
-        {engineResult.earliestRelocateYear} (age{" "}
-        {engineResult.earliestRelocateAge})
+        {engineResult.earliestRelocateYear}
       </span>{" "}
       — portfolio of{" "}
       {formatCurrency(engineResult.recommendedPortfolioToRelocate)} sustains
