@@ -56,8 +56,8 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 35,
-    retirementAge: 65,
-    projectionEndAge: 90,
+    retirementYear: AS_OF.getFullYear() + 30,
+    projectionEndYear: AS_OF.getFullYear() + 55,
     currentSalary: 150000,
     salaryGrowthRate: 0.03,
     salaryCap: null,
@@ -255,8 +255,8 @@ describe("monte carlo integration", () => {
   it("fixture 4: near-retirement — older person with short projection", () => {
     const engineInput = makeInput({
       currentAge: 60,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 5,
+      projectionEndYear: AS_OF.getFullYear() + 30,
       currentSalary: 180000,
       startingBalances: {
         preTax: 800000,
@@ -326,8 +326,8 @@ describe("monte carlo integration", () => {
     // smoothing computation, it isn't ignored/short-circuited).
     const engineInput = makeInput({
       currentAge: 65,
-      retirementAge: 65,
-      projectionEndAge: 80,
+      retirementYear: AS_OF.getFullYear() + 0,
+      projectionEndYear: AS_OF.getFullYear() + 15,
       birthYear: 1960,
       currentSalary: 0,
       annualExpenses: 90000,
@@ -472,8 +472,8 @@ describe("monte carlo integration", () => {
     const totalBalance = 1500000 + 1000000 + 300000; // 401k + IRA + brokerage
     const engineInput = makeInput({
       currentAge: 60,
-      retirementAge: 65,
-      projectionEndAge: 70,
+      retirementYear: AS_OF.getFullYear() + 5,
+      projectionEndYear: AS_OF.getFullYear() + 10,
       annualExpenses: 120000,
       individualAccounts: [
         {
@@ -596,8 +596,8 @@ describe("monte carlo integration", () => {
     // guardrails cut real spending below the stated budget.
     const engineInput = makeInput({
       currentAge: 64,
-      retirementAge: 65,
-      projectionEndAge: 95,
+      retirementYear: AS_OF.getFullYear() + 1,
+      projectionEndYear: AS_OF.getFullYear() + 31,
       currentSalary: 0,
       annualExpenses: 200000,
       decumulationAnnualExpenses: 200000,

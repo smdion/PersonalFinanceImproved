@@ -20,6 +20,7 @@ import {
   CORRELATIONS,
   CURRENT_GLIDE_PATH,
   make7525GlidePath,
+  AS_OF,
 } from "./benchmark-helpers";
 import { shippedTaxTables } from "../helpers/tax-data";
 
@@ -40,8 +41,8 @@ describe("cFIREsim apples-to-apples comparison", () => {
       // cFIREsim 75/25 at 4% SWR, 30 years: ~95-96% success historically
       const engineInput = makeTrinityInput({
         currentAge: 65,
-        retirementAge: 65,
-        projectionEndAge: 95,
+        retirementYear: AS_OF.getFullYear() + 0,
+        projectionEndYear: AS_OF.getFullYear() + 30,
         annualExpenses: 40000, // 4% of $1M
         inflationRate: 0.03,
       });
@@ -77,8 +78,8 @@ describe("cFIREsim apples-to-apples comparison", () => {
 
       const engineInput = makeTrinityInput({
         currentAge: 55,
-        retirementAge: 55,
-        projectionEndAge: 95,
+        retirementYear: AS_OF.getFullYear() + 0,
+        projectionEndYear: AS_OF.getFullYear() + 40,
         startingBalances: {
           preTax: 0,
           taxFree: 0,
@@ -141,8 +142,8 @@ describe("cFIREsim apples-to-apples comparison", () => {
       for (const swr of [0.03, 0.035, 0.04, 0.045, 0.05, 0.055, 0.06]) {
         const engineInput = makeTrinityInput({
           currentAge: 65,
-          retirementAge: 65,
-          projectionEndAge: 95,
+          retirementYear: AS_OF.getFullYear() + 0,
+          projectionEndYear: AS_OF.getFullYear() + 30,
           annualExpenses: 1_000_000 * swr,
           inflationRate: 0.03,
           decumulationDefaults: {
@@ -230,8 +231,8 @@ describe("cFIREsim apples-to-apples comparison", () => {
       for (const swr of [0.03, 0.035, 0.04, 0.045, 0.05]) {
         const engineInput = makeTrinityInput({
           currentAge: 65,
-          retirementAge: 65,
-          projectionEndAge: 95,
+          retirementYear: AS_OF.getFullYear() + 0,
+          projectionEndYear: AS_OF.getFullYear() + 30,
           annualExpenses: 1_000_000 * swr,
           inflationRate: 0.03,
           decumulationDefaults: {

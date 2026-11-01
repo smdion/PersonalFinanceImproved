@@ -498,7 +498,7 @@ const MILESTONES = [
     group: "wealth",
     source: "moneyGuy",
     title: "Prodigious Accumulator of Wealth",
-    rule: "Net worth at least 2× (age × gross income) ÷ (10 + years until 40).",
+    rule: "Net worth at least 2× (household average age × gross income) ÷ (10 + years until 40).",
     adaptedNote:
       "The Millionaire Next Door's original is age × income ÷ 10. Money Guy adds the years-until-40 so the formula works for people in their 20s and 30s. Under ½ is an Under Accumulator.",
     focus: { topic: "netWorth" },

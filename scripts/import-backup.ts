@@ -4,7 +4,8 @@
  * Supports cross-version imports (v0.1.x backups are auto-transformed).
  *
  * Usage:
- *   pnpm backup:import ./backup.json              # Import backup
+ *   pnpm backup:import { withAsyncTransactions } from "../src/lib/db/sqlite-transactions";
+import ./backup.json              # Import backup
  *   pnpm backup:import --dry-run ./backup.json     # Preview without writing
  */
 
@@ -154,8 +155,11 @@ async function run() {
     sqlite.pragma("foreign_keys = ON");
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const db = drizzle(sqlite, { schema: schemaSqlite }) as any;
+      const db = withAsyncTransactions(
+        drizzle(sqlite, { schema: schemaSqlite }),
+        sqlite,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ) as any;
       const { importBackup } = await import("../src/lib/db/version-logic");
       const result = await importBackup(db, {
         schemaVersion: backup.schemaVersion,

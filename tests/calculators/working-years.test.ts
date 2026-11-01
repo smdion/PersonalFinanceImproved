@@ -3,7 +3,7 @@
  * outside them they earn nothing and their contributions stop, in whole
  * years; their salary keeps growing underneath for when they're at work.
  */
-import { describe, it, expect } from "vitest";
+import { assert, describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/calculators/engine";
 import type {
   ProjectionInput,
@@ -54,8 +54,8 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 40,
-    retirementAge: 65,
-    projectionEndAge: 90,
+    retirementYear: AS_OF.getFullYear() + 25,
+    projectionEndYear: AS_OF.getFullYear() + 50,
     currentSalary: 150000,
     salaryGrowthRate: 0.03,
     salaryCap: null,
@@ -250,7 +250,7 @@ describe("working years from job dates", () => {
     const years = accumulation(
       makeInput({
         ...twoEarners,
-        retirementAgeByPerson: { 1: 65, 2: 55 },
+        retirementYearByPerson: { 1: 2050, 2: 2030 },
         socialSecurityEntries: [
           {
             personId: 1,
@@ -279,7 +279,7 @@ describe("working years from job dates", () => {
     const years = accumulation(
       makeInput({
         ...twoEarners,
-        retirementAgeByPerson: { 1: 65, 2: 55 },
+        retirementYearByPerson: { 1: 2050, 2: 2030 },
         socialSecurityEntries: [
           {
             personId: 1,
@@ -347,5 +347,55 @@ describe("each person's own raise rate", () => {
       }),
     );
     expect(years[1]!.projectedSalaryByPerson![1]).toBe(91000);
+  });
+});
+
+describe("each person's own retirement year", () => {
+  const twoEarners = {
+    salaryByPerson: { 1: 100000, 2: 100000 },
+    currentSalary: 200000,
+  };
+
+  it("ends only the earlier retiree's pay, and ages come from the input's anchor", () => {
+    const years = calculateProjection(
+      makeInput({
+        ...twoEarners,
+        currentAge: 39,
+        retirementYear: 2034,
+        retirementYearByPerson: { 1: 2030, 2: 2034 },
+      }),
+    ).projectionByYear;
+    expect(years.find((y) => y.year === 2029)!.phase).toBe("accumulation");
+    const partial = years.find((y) => y.year === 2030)!;
+    expect(partial.phase).toBe("accumulation");
+    expect(partial.age).toBe(44);
+    expect(years.find((y) => y.year === 2033)!.phase).toBe("accumulation");
+    expect(years.find((y) => y.year === 2034)!.phase).toBe("decumulation");
+  });
+
+  it("needs no Social Security entry to stop a person's pay", () => {
+    const run = (byPerson: Record<number, number>) =>
+      calculateProjection(
+        makeInput({
+          ...twoEarners,
+          socialSecurityEntries: undefined,
+          retirementYear: 2034,
+          retirementYearByPerson: byPerson,
+        }),
+      ).projectionByYear.find((y) => y.year === 2031)!;
+    const employee = (y: ReturnType<typeof run>) => {
+      assert(y.phase === "accumulation");
+      return y.totalEmployee;
+    };
+    expect(employee(run({ 1: 2030, 2: 2034 }))).toBeLessThan(
+      employee(run({ 1: 2034, 2: 2034 })),
+    );
+  });
+
+  it("runs to the projection's end year whatever the anchor age", () => {
+    const years = calculateProjection(
+      makeInput({ currentAge: 39, projectionEndYear: 2030 }),
+    ).projectionByYear;
+    expect(years.at(-1)!.year).toBe(2029);
   });
 });

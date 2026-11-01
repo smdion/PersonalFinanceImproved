@@ -1,5 +1,6 @@
 // Engine projection output types — year rows, phase results, and the full projection result.
 
+import type { GapYearDraw } from "../engine/gap-year-draw";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type {
   TaxBuckets,
@@ -52,26 +53,36 @@ export type ProjectionInput = {
    * sticky-forward (persist until the next override for that field).
    * Used during years where age < retirementAge.
    */
+  /** Spending that ends: a loan paid off (expense-endings.ts). */
+  expenseEndings?: ExpenseEnding[];
   accumulationOverrides: AccumulationOverride[];
 
   /**
    * Decumulation overrides, sorted by year. Same sticky-forward semantics.
-   * Used during years where age >= retirementAge.
+   * Used from `retirementYear` on.
    */
   decumulationOverrides: DecumulationOverride[];
 
   // --- Person / salary ---
+  /** The primary person's age in the first year (householdTimeline). */
   currentAge: number;
-  retirementAge: number;
-  /** Per-person retirement ages (personId → age). When provided, salary for
-   *  each person is automatically overridden to $0 at their retirement age.
-   *  The scalar `retirementAge` should be the household retirement age
-   *  (max of all values) — full decumulation starts when the last person retires.
-   *  During the gap between first and last retirement, the accumulation handler
-   *  runs with reduced contributions (retired person's specs produce $0). */
-  retirementAgeByPerson?: Record<number, number>;
-  /** End of projection (e.g. age 95). */
-  projectionEndAge: number;
+  /** The first year of withdrawals: the last earner's retirement year. */
+  retirementYear: number;
+  /** Each earner's own retirement year (personId → year). Someone retiring
+   *  before `retirementYear` has no pay from then and their contributions
+   *  stop, while the accumulation handler runs on for the others. */
+  retirementYearByPerson?: Record<number, number>;
+  /** Payroll tax from reference data: what a gap year's take-home takes out
+   *  of each person's pay. */
+  payrollTax?: {
+    socialSecurityRate: number;
+    medicareRate: number;
+    socialSecurityWageBase: number;
+  };
+  /** The working budget's contribution lines, a year, in today's dollars. */
+  budgetContributionLines?: number;
+  /** The projection's last year. */
+  projectionEndYear: number;
   currentSalary: number;
   salaryGrowthRate: number;
   /** Each person's own raise rate, by person id, for per-person salaries
@@ -254,6 +265,10 @@ export type ProjectionInput = {
    *  need rises by the surcharge) rather than sitting inside it. Only the
    *  income-based surcharge: base Part B and D premiums aren't modeled. */
   irmaaOnTopOfBudget?: boolean;
+  /** In a gap year (gap-year-draw.ts) nobody saves. */
+  gapYearStopSaving?: boolean;
+  /** False: a gap year doesn't draw; spending is cut to what's coming in. */
+  gapYearDraws?: boolean;
   /** The household's primary person: an account with no owner counts toward
    *  this person's RMD. */
   primaryPersonId?: number;
@@ -289,6 +304,14 @@ export type ProjectionInput = {
 /**
  * Year projection for the accumulation phase (pre-retirement).
  */
+/** A budget line that stops: its share of each phase's budget, from `year`
+ *  on. Zero for a phase whose spending was typed in, not built from lines. */
+export type ExpenseEnding = {
+  year: number;
+  accumulation: number;
+  decumulation: number;
+};
+
 export type EngineAccumulationYear = {
   year: number;
   age: number;
@@ -339,6 +362,11 @@ export type EngineAccumulationYear = {
     gainsPortion: number;
     taxCost: number;
   }[];
+  /** Set when a paycheck is gone and pay didn't cover the budget: what came
+   *  out of the accounts (gap-year-draw.ts). */
+  gapDraw?: GapYearDraw;
+  /** Nobody saved this year. Set with `gapDraw`. */
+  savingStopped?: boolean;
   /** Retirement money at end of year: every account minus the
    *  Portfolio-parented ones (savings outside the retirement plan) — what
    *  retirement answers count (depletion, success, nest egg). */

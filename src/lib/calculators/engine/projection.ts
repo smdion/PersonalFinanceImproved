@@ -24,6 +24,7 @@ import {
   getAccountTypeConfig,
   isTaxFreeBucket,
 } from "../../config/account-types";
+import { expenseEndingFactor } from "./expense-endings";
 import { resolveDecumulationConfig } from "./override-resolution";
 import {
   buildProjectionContext,
@@ -159,14 +160,14 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
   }
 
   // Date/age boundary validation
-  if (input.retirementAge <= input.currentAge) {
+  if (input.retirementYear <= input.asOfDate.getFullYear()) {
     warnings.push(
-      `Retirement age (${input.retirementAge}) is at or before current age (${input.currentAge}) — entire projection will be in decumulation.`,
+      `Retirement year (${input.retirementYear}) is this year or earlier — entire projection will be in decumulation.`,
     );
   }
-  if (input.retirementAge > input.projectionEndAge) {
+  if (input.retirementYear > input.projectionEndYear) {
     warnings.push(
-      `Retirement age (${input.retirementAge}) is beyond projection end age (${input.projectionEndAge}) — retirement phase will never be reached.`,
+      `Retirement year (${input.retirementYear}) is beyond the projection's end (${input.projectionEndYear}) — retirement phase will never be reached.`,
     );
   }
 
@@ -207,20 +208,19 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
   const sustainableWithdrawal = firstDecumYear
     ? roundToCents(firstDecumYear.targetWithdrawal)
     : // Fallback for inputs where decumulation is never reached within the
-      // projection window (e.g. retirementAge beyond projectionEndAge) —
+      // projection window (e.g. retirementYear beyond projectionEndYear) —
       // no strategy actually ran, so there's no real number to read. Same
       // `balance × withdrawalRate` reference-figure formula used before
       // this fix, applied only to this now-rare edge case. Depends on the
       // invariant (verified in pre-year-setup.ts's isAccumulation logic)
-      // that every currentAge >= retirementAge input lands in the branch
+      // that every retirementYear <= first-year input lands in the branch
       // above instead — if that invariant is ever broken, this silently
       // falls back to $0 rather than erroring.
       roundToCents(
-        (state.projectionByYear.find((p) => p.age === input.retirementAge)
+        (state.projectionByYear.find((p) => p.year === input.retirementYear)
           ?.retirementBalance ?? 0) *
           resolveDecumulationConfig(
-            input.asOfDate.getFullYear() +
-              (input.retirementAge - input.currentAge),
+            input.retirementYear,
             input.decumulationDefaults,
             ctx.sortedDecOverrides,
           ).withdrawalRate,
@@ -234,9 +234,9 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
   // loop ends, so the pre-strategy "need" value isn't otherwise retained.
   //
   // The exponent MUST be the actual first decumulation year's offset from
-  // asOfDate, not `retirementAge - currentAge` — pre-year-setup.ts's mid-year
+  // asOfDate, not `retirementYear` — pre-year-setup.ts's mid-year
   // retirement handling can defer the first decumulation year by one extra
-  // year (when retirementAge === currentAge but the current date isn't
+  // year (when retirementYear is the first year but the current date isn't
   // exactly year-start), and a naive age-based exponent silently
   // under-inflates relative to what the loop actually produced. Reading the
   // loop's own first decumulation row keeps this a single source of truth
@@ -262,7 +262,16 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
               Math.pow(
                 1 + ctx.inflationRate,
                 Math.max(0, firstDecumYear.year - input.asOfDate.getFullYear()),
-              ),
+              ) *
+              // A loan paid off by then: the same cut the seed took.
+              (input.rateSeededDecumulationYear1
+                ? 1
+                : expenseEndingFactor({
+                    endings: input.expenseEndings,
+                    phase: "decumulation",
+                    year: firstDecumYear.year,
+                    seeded: true,
+                  })),
         )
       : null;
 

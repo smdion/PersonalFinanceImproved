@@ -21,7 +21,7 @@ describe("assumedRateAt", () => {
 });
 
 describe("realizedVsAssumed", () => {
-  it("pairs each completed year with the rate for the household's average age", () => {
+  it("pairs each completed year with the rate for the primary person's age", () => {
     const r = realizedVsAssumed(
       [
         { year: 2018, returnPct: 0 }, // placeholder: doesn't start the comparison
@@ -29,7 +29,7 @@ describe("realizedVsAssumed", () => {
         { year: 2020, returnPct: 0.2 },
         { year: 2021, returnPct: 0.05 }, // current year: left out
       ],
-      [1980, 1982], // average age 38 in 2019, 39 in 2020
+      1981, // 38 in 2019, 39 in 2020
       rates,
       2021,
     );
@@ -43,7 +43,8 @@ describe("realizedVsAssumed", () => {
 
   it("is empty without people or a rate table", () => {
     expect(
-      realizedVsAssumed([{ year: 2019, returnPct: 0.1 }], [], rates, 2021).rows,
+      realizedVsAssumed([{ year: 2019, returnPct: 0.1 }], null, rates, 2021)
+        .rows,
     ).toEqual([]);
   });
 });

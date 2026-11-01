@@ -62,6 +62,7 @@ import type {
   ProjectionContext,
   ProjectionLoopState,
 } from "./types";
+import { gapShortfallFloor, runGapYearDraw } from "../gap-year-draw";
 import { updatePerPersonTradBalance } from "./helpers";
 import { applyLumpSums } from "./lump-sum";
 
@@ -128,7 +129,7 @@ export function runAccumulationYear(
     irsLimitCaps,
     brokerageContributionRamp,
     decumulationDefaults,
-    retirementAge,
+    retirementYear,
   } = input;
 
   const config = resolveAccumulationConfig(
@@ -258,6 +259,12 @@ export function runAccumulationYear(
         proRate;
     for (const cat of getAllCategories())
       yearEmployerMatch[cat] = roundToCents(yearEmployerMatch[cat]);
+  }
+  // Nobody saves this year (gap-year choice or nobody at work): no
+  // contributions and no match, whichever path sized them.
+  if (setup.savingStopped && !useRealContribs) {
+    targetContribution = 0;
+    for (const cat of getAllCategories()) yearEmployerMatch[cat] = 0;
   }
 
   // IRS limits: every key grows at the limit growth rate; the specs are
@@ -524,7 +531,9 @@ export function runAccumulationYear(
   // Apply brokerage contribution ramp (additional $X x year index, starting year 1)
   const rampYear = Math.min(yearIndex, MAX_BROKERAGE_RAMP_YEARS);
   const rampAmount =
-    (brokerageContributionRamp ?? 0) > 0 && yearIndex > 0
+    (brokerageContributionRamp ?? 0) > 0 &&
+    yearIndex > 0 &&
+    !setup.savingStopped
       ? roundToCents(brokerageContributionRamp! * rampYear)
       : 0;
   if (rampAmount > 0) {
@@ -580,6 +589,31 @@ export function runAccumulationYear(
     // employer match from (see roth-basis-tracking.ts's docblock for why
     // that's load-bearing, not incidental).
     accrueIndividualBasis(indAccts, indKey, indBasis, indContribs);
+  }
+
+  // A paycheck is gone: the budget's shortfall comes out of the accounts,
+  // before growth, as a retirement year's withdrawal does.
+  const gapRun = setup.gapYear
+    ? runGapYearDraw(ctx, state, {
+        year,
+        age,
+        fraction: proRate,
+        payByPerson: (hasPerPersonSalary
+          ? [...projectedSalaryByPerson.values()]
+          : [projectedSalary]
+        ).map((p) => p * proRate),
+        budget: state.projectedExpenses * proRate,
+        employeeContributions: totalEmployee + rampAmount,
+        pretaxContributions: totalTraditional,
+      })
+    : null;
+  const gapDraw = gapRun?.draw ?? null;
+  if (gapDraw) {
+    routeWarnings.push(...gapDraw.warnings);
+    if (gapDraw.unmetNeed >= gapShortfallFloor(gapDraw.need))
+      routeWarnings.push(
+        `${year}: $${Math.round(gapDraw.unmetNeed).toLocaleString()} of spending can't be funded with a paycheck gone: no reachable money without a penalty.`,
+      );
   }
 
   // Apply growth to each bucket (pro-rated for year 0)
@@ -689,7 +723,14 @@ export function runAccumulationYear(
           ramp: indRamp,
           basis: indBasis,
           brokerageBasis: brokBasis,
+          ...(gapRun?.accounts
+            ? {
+                withdrawal: gapRun.accounts.withdrawal,
+                draws: gapRun.accounts.draws,
+              }
+            : {}),
         },
+        gapRun?.accounts?.eligibility,
       )
     : [];
 
@@ -730,7 +771,7 @@ export function runAccumulationYear(
   );
 
   // Divergence check: last accumulation year
-  if (age === retirementAge - 1) {
+  if (year === retirementYear - 1) {
     const rothTotal = getAllCategories().reduce((s, cat) => {
       const b = acctBal[cat];
       return s + (b.structure === "roth_traditional" ? b.roth : 0);
@@ -774,6 +815,7 @@ export function runAccumulationYear(
     brokerageRampContribution: rampAmount,
     totalTaxAdvSpace,
     brokerageGoalWithdrawals: goalWithdrawals,
+    ...(gapDraw ? { gapDraw, savingStopped: setup.savingStopped } : {}),
     retirementBalance,
     allAccountsBalance,
     balanceByTaxType: { ...balances },

@@ -730,8 +730,8 @@ function makeBaseProjection(
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 35,
-    retirementAge: 65,
-    projectionEndAge: 90,
+    retirementYear: JAN_1.getFullYear() + 30,
+    projectionEndYear: JAN_1.getFullYear() + 55,
     currentSalary: 0,
     salaryGrowthRate: 0,
     salaryCap: null,
@@ -777,8 +777,8 @@ describe("retirement projection edge cases", () => {
     const result = calculateProjection(
       makeBaseProjection({
         currentAge: 65,
-        retirementAge: 65,
-        projectionEndAge: 90,
+        retirementYear: 2025 + 0,
+        projectionEndYear: 2025 + 25,
         startingBalances: {
           preTax: 0,
           taxFree: 0,
@@ -809,8 +809,8 @@ describe("retirement projection edge cases", () => {
     const result = calculateProjection(
       makeBaseProjection({
         currentAge: 70,
-        retirementAge: 65,
-        projectionEndAge: 90,
+        retirementYear: 2025 - 5,
+        projectionEndYear: 2025 + 20,
         startingBalances: {
           preTax: 0,
           taxFree: 0,
@@ -841,8 +841,8 @@ describe("retirement projection edge cases", () => {
     const result = calculateProjection(
       makeBaseProjection({
         currentAge: 65,
-        retirementAge: 65,
-        projectionEndAge: 65,
+        retirementYear: 2025 + 0,
+        projectionEndYear: 2025 + 0,
       }),
     );
     expect(result.projectionByYear).toHaveLength(0);
@@ -853,8 +853,8 @@ describe("retirement projection edge cases", () => {
     const result = calculateProjection(
       makeBaseProjection({
         currentAge: 65,
-        retirementAge: 65,
-        projectionEndAge: 95,
+        retirementYear: 2025 + 0,
+        projectionEndYear: 2025 + 30,
         startingBalances: {
           preTax: 0,
           taxFree: 0,
@@ -884,8 +884,8 @@ describe("retirement projection edge cases", () => {
       calculateProjection(
         makeBaseProjection({
           currentAge: 65,
-          retirementAge: 65,
-          projectionEndAge: 75,
+          retirementYear: 2025 + 0,
+          projectionEndYear: 2025 + 10,
           startingBalances: {
             preTax: 0,
             taxFree: 0,
@@ -933,8 +933,8 @@ describe("retirement projection edge cases", () => {
     const result = calculateProjection(
       makeBaseProjection({
         currentAge: 65,
-        retirementAge: 65,
-        projectionEndAge: 75,
+        retirementYear: 2025 + 0,
+        projectionEndYear: 2025 + 10,
         startingBalances: {
           preTax: 0,
           taxFree: 0,
@@ -971,8 +971,8 @@ describe("retirement projection edge cases", () => {
     const result = calculateProjection(
       makeBaseProjection({
         currentAge: 35,
-        retirementAge: 65,
-        projectionEndAge: 70,
+        retirementYear: 2025 + 30,
+        projectionEndYear: 2025 + 35,
         currentSalary: 200_000,
         salaryGrowthRate: 0.05,
         salaryCap: 250_000,
@@ -991,8 +991,8 @@ describe("retirement projection edge cases", () => {
     const janStart = new Date(2025, 0, 1); // Jan 1
     const accInput = {
       currentAge: 35,
-      retirementAge: 65,
-      projectionEndAge: 70,
+      retirementYear: 2025 + 30,
+      projectionEndYear: 2025 + 35,
       currentSalary: 100_000,
       accumulationDefaults: {
         contributionRate: 0.1,
@@ -1042,8 +1042,8 @@ describe("retirement projection edge cases", () => {
     const result = calculateProjection(
       makeBaseProjection({
         currentAge: 65,
-        retirementAge: 65,
-        projectionEndAge: 70,
+        retirementYear: JAN_1.getFullYear() + 0,
+        projectionEndYear: JAN_1.getFullYear() + 5,
         decumulationDefaults: {
           ...DEFAULT_DECUMULATION,
           withdrawalRoutingMode: "percentage",
@@ -1068,8 +1068,8 @@ describe("retirement projection edge cases", () => {
     const result = calculateProjection(
       makeBaseProjection({
         currentAge: 35,
-        retirementAge: 65,
-        projectionEndAge: 70,
+        retirementYear: JAN_1.getFullYear() + 30,
+        projectionEndYear: JAN_1.getFullYear() + 35,
         currentSalary: 100_000,
         annualExpenses: 50_000,
         inflationRate: 0,
@@ -1105,8 +1105,8 @@ describe("retirement projection edge cases", () => {
     const result = calculateProjection(
       makeBaseProjection({
         currentAge: 35,
-        retirementAge: 90, // never retire during projection
-        projectionEndAge: 45,
+        retirementYear: JAN_1.getFullYear() + 55, // never retires in the projection
+        projectionEndYear: JAN_1.getFullYear() + 10,
         startingBalances: {
           preTax: 0,
           taxFree: 0,
@@ -1143,8 +1143,8 @@ describe("retirement projection edge cases", () => {
     const result = calculateProjection(
       makeBaseProjection({
         currentAge: 35,
-        retirementAge: 65,
-        projectionEndAge: 70,
+        retirementYear: JAN_1.getFullYear() + 30,
+        projectionEndYear: JAN_1.getFullYear() + 35,
         currentSalary: 100_000,
         salaryGrowthRate: 0.03,
         salaryOverrides: [{ year: overrideYear, value: 200_000 }],

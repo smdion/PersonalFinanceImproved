@@ -83,8 +83,8 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       accumulationOverrides: [],
       decumulationOverrides: [],
       currentAge: 35,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 30,
+      projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 150000,
       salaryGrowthRate: 0.03,
       salaryCap: null,
@@ -326,8 +326,8 @@ describe("engine snapshot parity", () => {
   it("fixture 4: retirement phase only (age > retirement age)", () => {
     const input = makeInput({
       currentAge: 67,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() - 2,
+      projectionEndYear: AS_OF.getFullYear() + 23,
       currentSalary: 0,
       startingBalances: {
         preTax: 550000,
@@ -746,8 +746,8 @@ describe("engine snapshot parity", () => {
   it("fixture 13: asymmetric retirement ages — early retirement at 55", () => {
     const input = makeInput({
       currentAge: 40,
-      retirementAge: 55,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 15,
+      projectionEndYear: AS_OF.getFullYear() + 50,
       currentSalary: 180000,
       annualExpenses: 80000,
       startingBalances: {
@@ -787,8 +787,8 @@ describe("engine snapshot parity", () => {
     // Person born 1955, currently age 68 (year 2023), RMDs kick in at 73 = year 2028
     const input = makeInput({
       currentAge: 68,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() - 3,
+      projectionEndYear: AS_OF.getFullYear() + 22,
       birthYear: 1955,
       currentSalary: 0,
       socialSecurityAnnual: 36000,
@@ -832,8 +832,8 @@ describe("engine snapshot parity", () => {
     // Person born 1965, currently age 60 (year 2025), RMDs kick in at 75 = year 2040
     const input = makeInput({
       currentAge: 60,
-      retirementAge: 62,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 2,
+      projectionEndYear: AS_OF.getFullYear() + 30,
       birthYear: 1965,
       currentSalary: 0,
       socialSecurityAnnual: 30000,
@@ -880,8 +880,8 @@ describe("engine snapshot parity", () => {
     // Large traditional balance + bracket_filling mode → RMD overrides routing
     const input = makeInput({
       currentAge: 70,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() - 5,
+      projectionEndYear: AS_OF.getFullYear() + 20,
       birthYear: 1955,
       currentSalary: 0,
       socialSecurityAnnual: 36000,
@@ -945,8 +945,8 @@ describe("engine snapshot parity", () => {
     // RMD year with a decumulation override setting rothConversionTarget
     const input = makeInput({
       currentAge: 70,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() - 5,
+      projectionEndYear: AS_OF.getFullYear() + 20,
       birthYear: 1955,
       currentSalary: 0,
       socialSecurityAnnual: 30000,
@@ -996,8 +996,8 @@ describe("engine snapshot parity", () => {
   it("fixture 18: portfolio depletion — very low balance, high expenses", () => {
     const input = makeInput({
       currentAge: 65,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 0,
+      projectionEndYear: AS_OF.getFullYear() + 25,
       currentSalary: 0,
       socialSecurityAnnual: 18000,
       ssStartAge: 67,
@@ -1037,8 +1037,8 @@ describe("engine snapshot parity", () => {
   it("fixture 19: brokerage-heavy portfolio — goals tracking", () => {
     const input = makeInput({
       currentAge: 35,
-      retirementAge: 60,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 25,
+      projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 200000,
       annualExpenses: 90000,
       startingBalances: {
@@ -1089,8 +1089,8 @@ describe("engine snapshot parity", () => {
     // Starts at age 49, crosses age 50 and 60 during projection
     const input = makeInput({
       currentAge: 49,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 16,
+      projectionEndYear: AS_OF.getFullYear() + 41,
       currentSalary: 160000,
     });
     const result = calculateProjection(input);
@@ -1108,8 +1108,8 @@ describe("engine snapshot parity", () => {
     // With MFJ filing status, SS taxation thresholds differ from Single
     const input = makeInput({
       currentAge: 60,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 5,
+      projectionEndYear: AS_OF.getFullYear() + 30,
       filingStatus: "MFJ",
       socialSecurityAnnual: 48000,
       ssStartAge: 67,
@@ -1149,8 +1149,8 @@ describe("engine snapshot parity", () => {
   it("fixture 22: SS torpedo — Single filing status", () => {
     const input = makeInput({
       currentAge: 60,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 5,
+      projectionEndYear: AS_OF.getFullYear() + 30,
       filingStatus: "Single",
       socialSecurityAnnual: 24000,
       ssStartAge: 67,
@@ -1221,8 +1221,8 @@ describe("engine snapshot parity", () => {
     // Low annual expenses + modest SS → expect 0% LTCG rate on brokerage withdrawals
     const input = makeInput({
       currentAge: 65,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 0,
+      projectionEndYear: AS_OF.getFullYear() + 25,
       filingStatus: "MFJ",
       currentSalary: 0,
       socialSecurityAnnual: 30000,
@@ -1282,8 +1282,8 @@ describe("engine snapshot parity", () => {
   it("fixture 26: LTCG 15%/20% zone — higher income retiree", () => {
     const input = makeInput({
       currentAge: 65,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 0,
+      projectionEndYear: AS_OF.getFullYear() + 25,
       filingStatus: "MFJ",
       currentSalary: 0,
       socialSecurityAnnual: 48000,
@@ -1348,8 +1348,8 @@ describe("engine snapshot parity", () => {
     // filingStatus triggers automatic Roth conversion logic in the engine
     const input = makeInput({
       currentAge: 55,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 10,
+      projectionEndYear: AS_OF.getFullYear() + 35,
       filingStatus: "MFJ",
       currentSalary: 120000,
       annualExpenses: 70000,
@@ -1394,8 +1394,8 @@ describe("engine snapshot parity", () => {
   it("fixture 28: Roth conversion constrained near IRMAA cliff", () => {
     const input = makeInput({
       currentAge: 63,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 2,
+      projectionEndYear: AS_OF.getFullYear() + 27,
       filingStatus: "MFJ",
       enableIrmaaAwareness: true,
       currentSalary: 100000,
@@ -1444,8 +1444,8 @@ describe("engine snapshot parity", () => {
     // Early retiree age 55, no SS yet, ACA-sensitive income window
     const input = makeInput({
       currentAge: 50,
-      retirementAge: 55,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 5,
+      projectionEndYear: AS_OF.getFullYear() + 40,
       filingStatus: "MFJ",
       currentSalary: 140000,
       socialSecurityAnnual: 28000,
@@ -1495,8 +1495,8 @@ describe("engine snapshot parity", () => {
     // No brokerage, all funds in traditional; conversion still possible from cash flow
     const input = makeInput({
       currentAge: 60,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 5,
+      projectionEndYear: AS_OF.getFullYear() + 30,
       filingStatus: "Single",
       currentSalary: 80000,
       socialSecurityAnnual: 20000,
@@ -1545,8 +1545,8 @@ describe("engine snapshot parity", () => {
   it("fixture 31: RMD + Roth conversion + IRMAA — triple interaction", () => {
     const input = makeInput({
       currentAge: 72,
-      retirementAge: 65,
-      projectionEndAge: 95,
+      retirementYear: AS_OF.getFullYear() - 7,
+      projectionEndYear: AS_OF.getFullYear() + 23,
       birthYear: 1953,
       filingStatus: "MFJ",
       currentSalary: 0,
@@ -1633,8 +1633,8 @@ describe("engine snapshot parity", () => {
     // Strong returns make currentRate < initialRate × upperGuardrail → spending increases
     const input = makeInput({
       currentAge: 66,
-      retirementAge: 65,
-      projectionEndAge: 95,
+      retirementYear: AS_OF.getFullYear() - 1,
+      projectionEndYear: AS_OF.getFullYear() + 29,
       currentSalary: 0,
       annualExpenses: 60000,
       returnRates: [{ label: "10%", rate: 0.1 }], // strong returns
@@ -1717,8 +1717,8 @@ describe("engine snapshot parity", () => {
     // to over-cut and leave $331k.
     const input = makeInput({
       currentAge: 66,
-      retirementAge: 65,
-      projectionEndAge: 95,
+      retirementYear: AS_OF.getFullYear() - 1,
+      projectionEndYear: AS_OF.getFullYear() + 29,
       currentSalary: 0,
       annualExpenses: 80000,
       returnRates: [{ label: "2%", rate: 0.02 }], // poor returns
@@ -1793,8 +1793,8 @@ describe("engine snapshot parity", () => {
     // skipInflationAfterLoss = true: inflation adjustment skipped when portfolio declined
     const input = makeInput({
       currentAge: 67,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() - 2,
+      projectionEndYear: AS_OF.getFullYear() + 23,
       currentSalary: 0,
       annualExpenses: 55000,
       inflationRate: 0.03,
@@ -1863,8 +1863,8 @@ describe("engine snapshot parity", () => {
   it("fixture 35: G-K with budget override in a loss year", () => {
     const input = makeInput({
       currentAge: 68,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() - 3,
+      projectionEndYear: AS_OF.getFullYear() + 22,
       currentSalary: 0,
       annualExpenses: 60000,
       returnRates: [{ label: "3%", rate: 0.03 }],
@@ -2135,8 +2135,8 @@ describe("engine snapshot parity", () => {
     // Minimal input: no filingStatus, no birthYear, no IRMAA, no ACA
     const input = makeInput({
       currentAge: 40,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 25,
+      projectionEndYear: AS_OF.getFullYear() + 50,
       currentSalary: 100000,
       annualExpenses: 48000,
       returnRates: [{ label: "6%", rate: 0.06 }],
@@ -2152,8 +2152,8 @@ describe("engine snapshot parity", () => {
   it("fixture 41: rothConversionTarget override via raw scan", () => {
     const input = makeInput({
       currentAge: 66,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() - 1,
+      projectionEndYear: AS_OF.getFullYear() + 24,
       currentSalary: 0,
       birthYear: 1959,
       filingStatus: "MFJ",
@@ -2227,8 +2227,8 @@ describe("engine snapshot parity", () => {
   it("fixture 42: Multiple saving + withdrawal + life change overrides in same projection", () => {
     const input = makeInput({
       currentAge: 45,
-      retirementAge: 60,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 15,
+      projectionEndYear: AS_OF.getFullYear() + 45,
       currentSalary: 200000,
       accumulationOverrides: [
         { year: 2030, contributionRate: 0.35, notes: "Kids leave home" },
@@ -2269,8 +2269,8 @@ describe("engine snapshot parity", () => {
   it("fixture 43: High-income: RMD + SS + LTCG + Roth + IRMAA all active", () => {
     const input = makeInput({
       currentAge: 73,
-      retirementAge: 65,
-      projectionEndAge: 95,
+      retirementYear: AS_OF.getFullYear() - 8,
+      projectionEndYear: AS_OF.getFullYear() + 22,
       birthYear: 1952,
       filingStatus: "MFJ",
       currentSalary: 0,
@@ -2350,8 +2350,8 @@ describe("engine snapshot parity", () => {
   it("fixture 44: Brokerage ramp contribution across accumulation years", () => {
     const input = makeInput({
       currentAge: 30,
-      retirementAge: 60,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 30,
+      projectionEndYear: AS_OF.getFullYear() + 60,
       currentSalary: 120000,
       brokerageContributionRamp: 2000, // +$2k/year ramp to brokerage
     });
@@ -2366,8 +2366,8 @@ describe("engine snapshot parity", () => {
   it("fixture 45: perPersonSalaryOverrides with asymmetric salary changes", () => {
     const input = makeInput({
       currentAge: 40,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 25,
+      projectionEndYear: AS_OF.getFullYear() + 50,
       currentSalary: 250000,
       salaryByPerson: { 1: 150000, 2: 100000 },
       perPersonSalaryOverrides: [
@@ -2387,8 +2387,8 @@ describe("engine snapshot parity", () => {
   it("fixture 46: Catch-up: super catch-up ages 60-63 only", () => {
     const input = makeInput({
       currentAge: 58,
-      retirementAge: 67,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 9,
+      projectionEndYear: AS_OF.getFullYear() + 32,
       currentSalary: 180000,
     });
     const result = calculateProjection(input);
@@ -2402,8 +2402,8 @@ describe("engine snapshot parity", () => {
   it("fixture 47: Waterfall withdrawal with rothBracketTarget overlay", () => {
     const input = makeInput({
       currentAge: 66,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() - 1,
+      projectionEndYear: AS_OF.getFullYear() + 24,
       currentSalary: 0,
       filingStatus: "MFJ",
       annualExpenses: 70000,
@@ -2472,8 +2472,8 @@ describe("engine snapshot parity", () => {
   it("fixture 48: Override: accountCaps + taxTypeCaps active simultaneously", () => {
     const input = makeInput({
       currentAge: 35,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 30,
+      projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 200000,
       accumulationOverrides: [
         {
@@ -2495,8 +2495,8 @@ describe("engine snapshot parity", () => {
   it("fixture 49: Override: reset: true followed by new override in later year", () => {
     const input = makeInput({
       currentAge: 35,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 30,
+      projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 150000,
       accumulationOverrides: [
         { year: 2028, contributionRate: 0.4, notes: "Aggressive savings" },
@@ -2534,8 +2534,8 @@ describe("engine snapshot parity", () => {
   it("fixture 51: Zero-balance account category with active withdrawal routing", () => {
     const input = makeInput({
       currentAge: 67,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() - 2,
+      projectionEndYear: AS_OF.getFullYear() + 23,
       currentSalary: 0,
       annualExpenses: 50000,
       startingBalances: {
@@ -2673,8 +2673,8 @@ describe("engine snapshot parity", () => {
   it("fixture 53: Waterfall withdrawal with explicit Roth preference + rothBracketTarget", () => {
     const input = makeInput({
       currentAge: 66,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() - 1,
+      projectionEndYear: AS_OF.getFullYear() + 24,
       currentSalary: 0,
       filingStatus: "MFJ",
       annualExpenses: 65000,
@@ -2738,8 +2738,8 @@ describe("engine snapshot parity", () => {
   it("fixture 54: IRMAA awareness enabled, income near cliff", () => {
     const input = makeInput({
       currentAge: 66,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() - 1,
+      projectionEndYear: AS_OF.getFullYear() + 24,
       birthYear: 1959,
       filingStatus: "MFJ",
       currentSalary: 0,
@@ -2820,8 +2820,8 @@ describe("engine snapshot parity", () => {
     // Same as fixture 54 but with IRMAA awareness off — conversions unconstrained
     const input = makeInput({
       currentAge: 66,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() - 1,
+      projectionEndYear: AS_OF.getFullYear() + 24,
       birthYear: 1959,
       filingStatus: "MFJ",
       currentSalary: 0,
@@ -2899,8 +2899,8 @@ describe("engine snapshot parity", () => {
     // Very large traditional balance → RMD forces withdrawals above G-K spending level
     const input = makeInput({
       currentAge: 75,
-      retirementAge: 65,
-      projectionEndAge: 95,
+      retirementYear: AS_OF.getFullYear() - 10,
+      projectionEndYear: AS_OF.getFullYear() + 20,
       birthYear: 1950,
       currentSalary: 0,
       annualExpenses: 40000,
@@ -2975,8 +2975,8 @@ describe("engine snapshot parity", () => {
     // Moderate traditional balance but G-K would suggest low spending — RMD overrides
     const input = makeInput({
       currentAge: 76,
-      retirementAge: 65,
-      projectionEndAge: 95,
+      retirementYear: AS_OF.getFullYear() - 11,
+      projectionEndYear: AS_OF.getFullYear() + 19,
       birthYear: 1949,
       currentSalary: 0,
       annualExpenses: 35000,
@@ -3051,8 +3051,8 @@ describe("engine snapshot parity", () => {
   it("fixture 58: Convergence loop with withdrawalAccountCaps active", () => {
     const input = makeInput({
       currentAge: 67,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() - 2,
+      projectionEndYear: AS_OF.getFullYear() + 23,
       currentSalary: 0,
       annualExpenses: 80000,
       startingBalances: {
@@ -3120,8 +3120,8 @@ describe("engine snapshot parity", () => {
   it("fixture 59: decumulationAnnualExpenses + postRetirementInflationRate", () => {
     const input = makeInput({
       currentAge: 50,
-      retirementAge: 65,
-      projectionEndAge: 95,
+      retirementYear: AS_OF.getFullYear() + 15,
+      projectionEndYear: AS_OF.getFullYear() + 45,
       currentSalary: 180000,
       annualExpenses: 72000,
       inflationRate: 0.025,
@@ -3139,8 +3139,8 @@ describe("engine snapshot parity", () => {
   it("fixture 60: traditionalFallbackRate with different accumulation/decumulation expenses", () => {
     const input = makeInput({
       currentAge: 55,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 10,
+      projectionEndYear: AS_OF.getFullYear() + 35,
       currentSalary: 160000,
       annualExpenses: 60000,
       decumulationAnnualExpenses: 50000, // Lower expenses in retirement
@@ -3177,8 +3177,8 @@ describe("engine snapshot parity", () => {
     // Person 1 is 63, Person 2 is 58 — Person 1 hits 65 (Medicare) before Person 2
     const input = makeInput({
       currentAge: 63,
-      retirementAge: 65,
-      projectionEndAge: 95,
+      retirementYear: AS_OF.getFullYear() + 2,
+      projectionEndYear: AS_OF.getFullYear() + 32,
       birthYear: 1962,
       filingStatus: "MFJ",
       currentSalary: 220000,
@@ -3254,8 +3254,8 @@ describe("engine snapshot parity", () => {
   it("fixture 62: Negative salaryGrowthRate with multi-person household", () => {
     const input = makeInput({
       currentAge: 50,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 15,
+      projectionEndYear: AS_OF.getFullYear() + 40,
       currentSalary: 300000,
       salaryGrowthRate: -0.02, // Declining salary (wind-down career)
       salaryByPerson: { 1: 200000, 2: 100000 },
@@ -3278,8 +3278,8 @@ describe("engine snapshot parity", () => {
     // Complements fixture 2 ($85k single) at the opposite end of the income curve.
     const input = makeInput({
       currentAge: 40,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 25,
+      projectionEndYear: AS_OF.getFullYear() + 50,
       currentSalary: 250000,
       filingStatus: "Single",
       householdSize: 1,
@@ -3325,8 +3325,8 @@ describe("engine snapshot parity", () => {
     // (catch-up at 50) and fixture 4 (already retired at 67).
     const input = makeInput({
       currentAge: 60,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 5,
+      projectionEndYear: AS_OF.getFullYear() + 30,
       currentSalary: 180000,
       filingStatus: "MFJ",
       birthYear: 1966,
@@ -3391,8 +3391,8 @@ describe("engine snapshot parity", () => {
   const qcdHousehold = () =>
     makeInput({
       currentAge: 75,
-      retirementAge: 65,
-      projectionEndAge: 85,
+      retirementYear: AS_OF.getFullYear() - 10,
+      projectionEndYear: AS_OF.getFullYear() + 10,
       birthYear: 1950,
       currentSalary: 0,
       annualExpenses: 40000,
@@ -3571,8 +3571,8 @@ describe("engine snapshot parity", () => {
   it("fixture 66: qcdMaximize capped below a large RMD — remainder still forces a taxable distribution + reinvested excess", () => {
     const input = makeInput({
       currentAge: 75,
-      retirementAge: 65,
-      projectionEndAge: 78,
+      retirementYear: AS_OF.getFullYear() - 10,
+      projectionEndYear: AS_OF.getFullYear() + 3,
       birthYear: 1950,
       currentSalary: 0,
       annualExpenses: 40000,
@@ -3696,8 +3696,8 @@ describe("engine snapshot parity", () => {
   it("fixture 67: same as fixture 66 but rmdExcessHandling='spend' — lower end balance, by design", () => {
     const input = makeInput({
       currentAge: 75,
-      retirementAge: 65,
-      projectionEndAge: 78,
+      retirementYear: AS_OF.getFullYear() - 10,
+      projectionEndYear: AS_OF.getFullYear() + 3,
       birthYear: 1950,
       currentSalary: 0,
       annualExpenses: 40000,
@@ -3828,8 +3828,8 @@ describe("engine snapshot parity", () => {
   const r47HouseholdInput = (rmdSmoothingEnabled: boolean) =>
     makeInput({
       currentAge: 65,
-      retirementAge: 65,
-      projectionEndAge: 80,
+      retirementYear: AS_OF.getFullYear() + 0,
+      projectionEndYear: AS_OF.getFullYear() + 15,
       birthYear: 1960,
       currentSalary: 0,
       annualExpenses: 90000,
@@ -4003,8 +4003,8 @@ describe("engine snapshot parity", () => {
   const rateSeededHouseholdInput = (rateSeeded: boolean) =>
     makeInput({
       currentAge: 60,
-      retirementAge: 65,
-      projectionEndAge: 75,
+      retirementYear: AS_OF.getFullYear() + 5,
+      projectionEndYear: AS_OF.getFullYear() + 15,
       currentSalary: 0,
       annualExpenses: 85000,
       decumulationAnnualExpenses: 85000,

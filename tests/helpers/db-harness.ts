@@ -3,6 +3,7 @@
  * Lightweight DB harness for helper tests that need a real SQLite database
  * but don't need the full tRPC caller.
  */
+import { withAsyncTransactions } from "@/lib/db/sqlite-transactions";
 import {
   TAX_DATA_DIR,
   readTaxDataDir,
@@ -66,14 +67,8 @@ export async function createTestDb(): Promise<TestDbContext> {
   const sqlite = openTestSqlite();
   const db = drizzle(sqlite, { schema: sqliteSchema });
 
-  // Monkey-patch db.transaction so helpers using async transaction
-  // callbacks can run under the better-sqlite3 test harness — mirrors the
-  // identical patch in tests/routers/setup.ts (see its comment for why:
-  // production is Postgres, which supports async transactions natively;
-  // better-sqlite3 rejects them with "Transaction function cannot return a
-  // promise"). No real atomicity here, but the logic inside is testable.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (db as any).transaction = async (fn: (tx: unknown) => unknown) => fn(db);
+  // The same transactions a SQLite install runs: real commit and rollback.
+  withAsyncTransactions(db, sqlite);
 
   const rawDb = db as unknown as DbType;
 

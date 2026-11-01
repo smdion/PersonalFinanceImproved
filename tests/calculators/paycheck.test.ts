@@ -22,6 +22,32 @@ import type {
 } from "@/lib/calculators/types";
 import { PERSON_A_PAYCHECK_INPUT, PERSON_B_PAYCHECK_INPUT } from "./fixtures";
 
+describe("Additional Medicare in the per-check figures", () => {
+  const run = (annualSalary: number, medicareAdditionalRate: number) =>
+    calculatePaycheck({
+      ...PERSON_A_PAYCHECK_INPUT,
+      annualSalary,
+      taxBrackets: {
+        ...PERSON_A_PAYCHECK_INPUT.taxBrackets,
+        medicareAdditionalRate,
+        medicareAdditionalThreshold: 200_000,
+      },
+    });
+
+  it("under the threshold: none", () => {
+    expect(run(150_000, 0.009).ficaMedicare).toBe(run(150_000, 0).ficaMedicare);
+  });
+
+  it("over it: about 0.9% of the excess a year, averaged across the checks", () => {
+    const withIt = run(300_000, 0.009);
+    const without = run(300_000, 0);
+    const yearly = (withIt.ficaMedicare - without.ficaMedicare) * 26;
+    expect(yearly).toBeGreaterThan(800);
+    expect(yearly).toBeLessThanOrEqual(900);
+    expect(without.netPay - withIt.netPay).toBeCloseTo(yearly / 26, 2);
+  });
+});
+
 describe("calculatePaycheck", () => {
   describe("Person A — biweekly paycheck", () => {
     const result = calculatePaycheck(PERSON_A_PAYCHECK_INPUT);

@@ -29,6 +29,7 @@ import {
   make5050GlidePath,
   makeMCInput,
   makeStandardInput,
+  AS_OF,
 } from "../benchmarks/benchmark-helpers";
 import { shippedTaxTables } from "../helpers/tax-data";
 
@@ -80,7 +81,10 @@ const spec = (
 /** A working household whose buckets, per-category balances and
  *  individual accounts all describe the same money. */
 function household(): ProjectionInput {
-  const base = makeStandardInput({ currentAge: 35, retirementAge: 60 });
+  const base = makeStandardInput({
+    currentAge: 35,
+    retirementYear: AS_OF.getFullYear() + 25,
+  });
   return {
     ...base,
     birthYear: 1990,

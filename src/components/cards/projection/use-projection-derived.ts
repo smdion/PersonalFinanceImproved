@@ -1,4 +1,5 @@
 /** Memoized derived data from engine query results — person filtering, visible column detection, deflation, contribution rate schedules, tooltip rendering, and milestone-based year filtering. */
+import { planAgeLabel, yearOfPlanAge } from "@/lib/pure/household-timeline";
 import { useFocusMatch } from "@/lib/hooks/use-focus";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { useMemo, useCallback, useEffect } from "react";
@@ -526,14 +527,24 @@ export function useProjectionDerived(
     onContributionRates(rates);
   }, [result, onContributionRates]);
 
-  // --- Age display ---
-  const avgBirthYear = useMemo(() => {
-    const pp = people ?? enginePeople;
-    if (!pp || pp.length === 0) return null;
-    return pp.reduce((s, p) => s + p.birthYear, 0) / pp.length;
-  }, [people, enginePeople]);
-  const displayAge = (year: number) =>
-    avgBirthYear !== null ? Math.round(year - avgBirthYear) : null;
+  // Each person's age in a year: the plan runs on years, and an age means
+  // something different for each person.
+  const agesInYear = (year: number) =>
+    (people ?? enginePeople ?? []).map((p) => ({
+      name: p.name,
+      age: year - p.birthYear,
+    }));
+
+  const planAges = result?.projectionByYear[0];
+  const primaryName = (people ?? enginePeople)?.find(
+    (p) => p.id === primaryPersonId,
+  )?.name;
+  /** A plan age as its year and whose age it is. */
+  const ageLabel = (age: number) =>
+    planAges ? planAgeLabel(planAges, primaryName, age) : `Age ${age}`;
+  /** A plan age's calendar year. */
+  const yearOfAge = (age: number) =>
+    planAges ? yearOfPlanAge(planAges, age) : age;
 
   const focusedYear = useFocusMatch("projectionYear")?.year ?? null;
 
@@ -546,7 +557,7 @@ export function useProjectionDerived(
       milestones.add(years[0]!.year);
       milestones.add(years[years.length - 1]!.year);
       for (const yr of years) {
-        if (yr.age % 5 === 0) milestones.add(yr.year);
+        if (yr.year % 5 === 0) milestones.add(yr.year);
       }
       for (let i = 1; i < years.length; i++) {
         if (years[i]!.phase !== years[i - 1]!.phase)
@@ -611,8 +622,10 @@ export function useProjectionDerived(
     baseYear,
     deflate,
     renderTooltip,
-    avgBirthYear,
-    displayAge,
+    agesInYear,
+    ageLabel,
+    primaryName,
+    yearOfAge,
     getFilteredYears,
     individualAccountNames,
   };

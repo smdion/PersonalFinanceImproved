@@ -120,7 +120,7 @@ export function FinancialIndependenceCard({
                     ? "Set up retirement"
                     : projected.fi === null
                       ? "Not reached in the projection"
-                      : `${projected.fi.year} (age ${Math.round(projected.fi.age)})`}
+                      : String(projected.fi.year)}
             </span>
           </div>
           {projected.fi !== null && fiProgress < 1 && (

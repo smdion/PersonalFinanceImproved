@@ -71,7 +71,7 @@ export const stressTestRouter = createTRPCRouter({
         settings,
         distributionTaxRates,
         baseEngineInput,
-        avgRetirementAge,
+        planRetirementAge,
       } = payload;
 
       // Resolved via the shared builder — the household's real routing
@@ -92,7 +92,6 @@ export const stressTestRouter = createTRPCRouter({
       const scenarios = runStressTestScenarios({
         baseEngineInput,
         decumulationDefaults,
-        avgRetirementAge,
         // The household's saved "Changes by year" (D6).
         ...((await resolveProjectionOverrides(ctx.db, {})) as {
           accumulationOverrides: ProjectionInput["accumulationOverrides"];
@@ -102,7 +101,7 @@ export const stressTestRouter = createTRPCRouter({
 
       return {
         scenarios,
-        retirementAge: avgRetirementAge,
+        retirementAge: planRetirementAge,
       };
     }),
 });

@@ -88,9 +88,9 @@ const CATEGORY_ORDER = new Map(getAllCategories().map((c, i) => [c, i]));
  * Non-basis reason text (Rule of 55 / age-59½ / locked wording, none of
  * which embeds a dollar figure) is untouched.
  */
-function buildEligibilityNote(
+export function buildEligibilityNote(
   ia: IndividualAccountYearBalance,
-  year: EngineDecumulationYear,
+  year: { year: number },
   deflate: (v: number, yr: number) => number,
 ): { note?: string; noteLocked?: boolean } {
   const parts: string[] = [];
@@ -318,7 +318,10 @@ function buildFullAccountNote(
  *  prefix when the account's own name already starts with the owner's
  *  name (many real account names, e.g. "Sam IRA (Vanguard)", already
  *  include it — prefixing again produced a visibly duplicated name). */
-function ownerAccountLabel(ia: { name: string; ownerName?: string }): string {
+export function ownerAccountLabel(ia: {
+  name: string;
+  ownerName?: string;
+}): string {
   if (!ia.ownerName) return ia.name;
   if (ia.name.toLowerCase().startsWith(ia.ownerName.toLowerCase())) {
     return ia.name;
@@ -373,7 +376,6 @@ export function DecumulationRow({
     deflate,
     getPersonYearTotals,
     baseYear: _baseYear,
-    displayAge,
     renderTooltip,
     enginePeople,
     engineSettings,
@@ -419,13 +421,14 @@ export function DecumulationRow({
   const totalLumpSum = lumpSumTotal(yearLumpSums);
 
   // Detect milestone years for row highlighting
-  const ssAge = engineSettings?.ssStartAge;
-  const isSsStartRow = ssAge != null && yr.age === ssAge && dyr.ssIncome > 0;
-  const firstRmdAge = result.projectionByYear.find(
-    (y) => y.phase === "decumulation" && y.rmdAmount > 0,
-  )?.age;
+  const isSsStartRow =
+    result.projectionByYear.find(
+      (y) => y.phase === "decumulation" && y.ssIncome > 0,
+    )?.year === yr.year;
   const isRmdStartRow =
-    firstRmdAge != null && yr.age === firstRmdAge && dyr.rmdAmount > 0;
+    result.projectionByYear.find(
+      (y) => y.phase === "decumulation" && y.rmdAmount > 0,
+    )?.year === yr.year;
 
   return (
     <tr
@@ -445,11 +448,10 @@ export function DecumulationRow({
                   : ""
       }`}
     >
-      <td className="py-1.5 pr-2">{yr.year}</td>
       <Tooltip
         content={(() => {
           const pp = people ?? enginePeople;
-          if (!pp || pp.length < 2) return undefined;
+          if (!pp || pp.length === 0) return undefined;
           return renderTooltip({
             kind: "info",
             lines: pp.map((p) => ({
@@ -460,7 +462,7 @@ export function DecumulationRow({
         })()}
         side="top"
       >
-        <td className="px-2 py-1.5">{displayAge(yr.year) ?? yr.age}</td>
+        <td className="py-1.5 pr-2">{yr.year}</td>
       </Tooltip>
       <td className="px-2 py-1.5">
         <span className="text-caption font-medium text-amber-600">DRAW</span>
@@ -1586,7 +1588,9 @@ export function DecumulationRow({
                 : []),
               ...(!dyr.acaSubsidyPreserved &&
               dyr.acaMagiHeadroom === 0 &&
-              yr.age < 65
+              (people ?? enginePeople ?? []).every(
+                (p) => yr.year - p.birthYear < 65,
+              )
                 ? [`ACA: subsidy lost`]
                 : []),
             ]}

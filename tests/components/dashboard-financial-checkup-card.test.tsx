@@ -213,7 +213,7 @@ describe("FinancialCheckupCard smoke", () => {
     contribsQuery = withData(baseContribs);
     render(<FinancialCheckupCard />);
     expect(screen.getByText("FI Progress")).toBeInTheDocument();
-    expect(screen.getByText(/On pace for age \d+/)).toBeInTheDocument();
+    expect(screen.getAllByText(/On pace for \d{4}/)[0]).toBeInTheDocument();
   });
 
   it("links to Recommendations with the count and counts what's on track", () => {

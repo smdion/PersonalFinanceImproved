@@ -152,20 +152,21 @@ export default function ToolsPage() {
   const { data: retData } = trpc.projection.computeProjection.useQuery({});
   const peopleLookup =
     retData && "people" in retData ? retData.people : undefined;
-  const avgBirthYear = useMemo(
+  const primaryPersonId =
+    retData && "primaryPersonId" in retData
+      ? retData.primaryPersonId
+      : undefined;
+  const planBirthYear = useMemo(
     () =>
-      peopleLookup && peopleLookup.length > 0
-        ? peopleLookup.reduce(
-            (s: number, p: { birthYear: number }) => s + p.birthYear,
-            0,
-          ) / peopleLookup.length
-        : null,
-    [peopleLookup],
+      (
+        peopleLookup?.find((p: { id: number }) => p.id === primaryPersonId) ??
+        peopleLookup?.[0]
+      )?.birthYear ?? null,
+    [peopleLookup, primaryPersonId],
   );
   const displayAge = useCallback(
-    (year: number) =>
-      avgBirthYear !== null ? Math.round(year - avgBirthYear) : null,
-    [avgBirthYear],
+    (year: number) => (planBirthYear !== null ? year - planBirthYear : null),
+    [planBirthYear],
   );
   const ageTooltip = useCallback(
     (year: number) =>

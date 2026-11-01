@@ -8,6 +8,7 @@
  * comparison table, and (when moveYear is provided) a blended projection
  * that switches from the current path to the relocation path at moveYear.
  */
+import { planRetirementAge as planRetirementAgeOf } from "@/lib/pure/household-timeline";
 import { ageStepAt } from "@/server/retirement/payload/profile-switches";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { z } from "zod/v4";
@@ -289,7 +290,7 @@ export const relocationProjectionRouter = createTRPCRouter({
         relocPayload.settings.annualInflation ?? 0,
       );
       const currentAge = currentPayload.age;
-      const retirementAge = relocPayload.baseEngineInput.retirementAge;
+      const retirementAge = planRetirementAgeOf(relocPayload.baseEngineInput);
       // Expense schedules are keyed to the ENGINE's year 0 (the snapshot's
       // year, which can trail the calendar), so year N carries N years of
       // inflation exactly like the engine's own un-overridden expenses.

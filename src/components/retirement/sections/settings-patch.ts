@@ -30,8 +30,8 @@ export function buildSettingsPatch(
     // retirementSettings.upsert's docblock (retirement.ts) on why key
     // PRESENCE (not just value) matters here.
     profileId: current.profileId,
-    retirementAge: current.retirementAge,
-    endAge: current.endAge,
+    retirementAge: current.ownRetirementAge ?? current.retirementAge,
+    endAge: current.ownEndAge ?? current.endAge,
     returnAfterRetirement: current.returnAfterRetirement,
     annualInflation: current.annualInflation,
     salaryAnnualIncrease: current.salaryAnnualIncrease,

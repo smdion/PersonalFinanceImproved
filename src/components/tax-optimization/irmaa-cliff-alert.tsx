@@ -30,9 +30,9 @@ export function IrmaaCliffAlert({ rows }: { rows: TaxYearRow[] }) {
         {surchargeYears.length > 0 && (
           <li>
             {surchargeYears.length} year
-            {surchargeYears.length > 1 ? "s" : ""} pay an IRMAA surcharge (ages{" "}
-            {surchargeYears.at(0)?.age}–{surchargeYears.at(-1)?.age}), totalling{" "}
-            {formatCurrency(totalSurcharge)} in today-nominal dollars.
+            {surchargeYears.length > 1 ? "s" : ""} pay an IRMAA surcharge (
+            {surchargeYears.at(0)?.year}–{surchargeYears.at(-1)?.year}),
+            totalling {formatCurrency(totalSurcharge)} in today-nominal dollars.
           </li>
         )}
         {cappedYears.length > 0 && (

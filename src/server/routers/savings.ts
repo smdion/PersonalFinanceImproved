@@ -1089,8 +1089,17 @@ export const savingsRouter = createTRPCRouter({
       )
       .mutation(async ({ ctx, input }) => {
         return ctx.db.transaction(async (tx) => {
+          // Settling one leg of a transfer settles both, so the other leg in
+          // the same request is already done.
+          const done = new Set<string>();
           for (const occ of input.occurrences) {
+            if (done.has(`${occ.plannedTxId}:${occ.occurrenceMonth}`)) continue;
             await settleOccurrence(tx, occ);
+            for (const id of await resolvePairedPlannedTxIds(
+              tx,
+              occ.plannedTxId,
+            ))
+              done.add(`${id}:${occ.occurrenceMonth}`);
           }
           return { ok: true };
         });

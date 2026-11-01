@@ -78,8 +78,8 @@ function makeInput(withObbba: boolean): ProjectionInput {
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 65,
-    retirementAge: 65, // decumulation from year 0 (2025)
-    projectionEndAge: 72, // 2025 -> 2032, spans the 2028 sunset
+    retirementYear: AS_OF.getFullYear(), // decumulation from year 0 (2025)
+    projectionEndYear: AS_OF.getFullYear() + 7, // 2025 -> 2032, spans the 2028 sunset
     currentSalary: 0,
     salaryGrowthRate: 0.03,
     salaryCap: null,

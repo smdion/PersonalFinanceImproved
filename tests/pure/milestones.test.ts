@@ -230,7 +230,7 @@ describe("wealth journey", () => {
     expect(r.status).toBe("onTrack");
     // 300k × 1.1^n ≥ 1.5M × 1.03^n → n = 25
     expect(r.expectedYear).toBe(2051);
-    expect(r.short).toBe("On pace for age 60");
+    expect(r.short).toMatch(/^On pace for \d{4}$/);
   });
 
   it("journey milestones are unknown, not on track, without a projection", () => {
@@ -928,6 +928,7 @@ describe("input builders", () => {
       otherLiabilities: 0,
     };
     expect(milestoneYearFromHistory(row)).toMatchObject({
+      age: row.averageAge,
       liquid: 240_000,
       cash: 25_000,
       retirement: 180_000,

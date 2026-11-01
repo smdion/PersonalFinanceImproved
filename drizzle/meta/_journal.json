@@ -78,6 +78,20 @@
       "when": 1793482593455,
       "tag": "0010_v095_market_closes",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793498687691,
+      "tag": "0011_v096_budget_mortgage_link",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793504584660,
+      "tag": "0012_v096_gap_year_settings",
+      "breakpoints": true
     }
   ]
 }

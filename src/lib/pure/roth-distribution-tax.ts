@@ -37,6 +37,17 @@ type RothTaxSplit = {
   byKey: Map<string, { taxableGrowth: number; qualified: boolean }>;
 };
 
+/** A Roth distribution's growth is tax-free for this owner this year. */
+export function isQualifiedRothOwner(
+  ownerBirthYear: number | undefined,
+  year: number,
+): boolean {
+  return (
+    ownerBirthYear == null ||
+    ageInYear(ownerBirthYear, year) >= PENALTY_FREE_AGE
+  );
+}
+
 /**
  * Splits this year's Roth withdrawals (already sliced into BasisDraws) into
  * taxable-growth vs. tax-free, per account and in aggregate.
@@ -62,9 +73,7 @@ export function splitRothWithdrawalForTax(input: {
   for (const acct of accounts) {
     const draw = draws.get(acct.indKey);
     if (!draw) continue;
-    const qualified =
-      acct.ownerBirthYear == null ||
-      ageInYear(acct.ownerBirthYear, year) >= PENALTY_FREE_AGE;
+    const qualified = isQualifiedRothOwner(acct.ownerBirthYear, year);
     const acctTaxableGrowth = qualified ? 0 : draw.growthDrawn;
     const acctTaxFree =
       draw.contributionDrawn +

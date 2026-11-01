@@ -288,13 +288,9 @@ export function RetirementContent() {
             strategies={comparisonData.strategies}
             activeStrategy={comparisonData.activeStrategy}
             presetLabel={comparisonData.presetLabel}
-            retirementAge={comparisonData.retirementAge}
             dollarMode={dollarMode}
             onDollarModeChange={setDollarMode}
             inflationRate={parseFloat(settings.annualInflation)}
-            currentAge={
-              data.planHealth?.currentAge ?? settings.retirementAge - 20
-            }
             analyzerInput={comparisonInput ?? undefined}
           />
         ) : (

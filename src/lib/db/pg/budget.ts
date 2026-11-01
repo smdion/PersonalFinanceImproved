@@ -16,6 +16,7 @@ import type {
   ApiSyncDirection,
 } from "@/lib/config/enum-values";
 import { contributionAccounts } from "./contributions";
+import { mortgageLoans } from "./mortgages";
 
 // ────────────────────────────────────────────────────────────────────────────
 // 3. Budget
@@ -57,11 +58,18 @@ export const budgetItems = pgTable(
       () => contributionAccounts.id,
       { onDelete: "set null" },
     ),
+    /** This line pays this loan: after payoff the projection drops it. The
+     *  link is per budget profile, since items are. */
+    mortgageLoanId: integer("mortgage_loan_id").references(
+      () => mortgageLoans.id,
+      { onDelete: "set null" },
+    ),
     isEssential: boolean("is_essential").notNull().default(true),
     sortOrder: integer("sort_order").notNull().default(0),
   },
   (table) => [
     index("budget_items_profile_id_idx").on(table.profileId),
+    index("budget_items_mortgage_loan_id_idx").on(table.mortgageLoanId),
     index("budget_items_contribution_account_id_idx").on(
       table.contributionAccountId,
     ),

@@ -24,6 +24,7 @@
  * fixed order automatically when individual-account tracking isn't
  * enabled — see `rothBasisAvailable`'s docblock below.
  */
+import { isQualifiedRothOwner } from "@/lib/pure/roth-distribution-tax";
 import type { FilingStatusType, TaxBuckets } from "../types";
 import { marginalRateAtIncome } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
@@ -82,17 +83,28 @@ export function deriveBasisRankingInputs(params: {
     category: string;
     taxType: string;
     ownerPersonId?: number;
+    ownerBirthYear?: number;
     parentCategory?: string;
   }[];
   indKey?: IndKeyFn;
+  /** With both, a qualified owner's whole Roth balance is free capacity:
+   *  growth past 59½ costs no more than basis does. */
+  indBal?: ReadonlyMap<string, number>;
+  year?: number;
 }): { rothBasisAvailable: number | undefined; brokerageBasisRatio: number } {
-  const { balances, indBasis, indAccts, indKey } = params;
+  const { balances, indBasis, indAccts, indKey, indBal, year } = params;
   let rothBasisAvailable: number | undefined;
   if (indBasis) {
     if (indAccts && indKey) {
       rothBasisAvailable = indAccts.reduce((s, ia) => {
         if (!isTaxFreeBucket(ia.taxType)) return s;
         if (!isRetirementMoney(ia.parentCategory)) return s;
+        if (
+          indBal &&
+          year !== undefined &&
+          isQualifiedRothOwner(ia.ownerBirthYear, year)
+        )
+          return s + Math.max(0, indBal.get(indKey(ia)) ?? 0);
         const state = indBasis.get(indKey(ia));
         return state ? s + state.contributionBasis + state.conversionBasis : s;
       }, 0);

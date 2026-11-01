@@ -1,4 +1,5 @@
 /** Retirement router for readiness analysis including savings rates, employer matches, tax bucket projections, relocation comparisons, profile-switching scenarios, and retirement-settings/scenario/override/return-rate CRUD. */
+import { householdRetirementYear } from "@/server/helpers/retirement-profile";
 import { getStrategyMeta } from "@/lib/config/withdrawal-strategies";
 import {
   capResolvedProfile,
@@ -191,6 +192,8 @@ const retirementSettingsInput = z.object({
   enableIrmaaAwareness: z.boolean().optional(),
   /** IRMAA surcharges on top of the budget rather than inside it. */
   irmaaOnTopOfBudget: z.boolean().optional(),
+  gapYearStopSaving: z.boolean().optional(),
+  gapYearDraws: z.boolean().optional(),
   enableAcaAwareness: z.boolean().optional(),
   householdSize: z.number().int().min(1).max(HOUSEHOLD_SIZE_MAX).optional(),
   socialSecurityMonthly: zDecimal.optional(),
@@ -603,7 +606,13 @@ export const retirementRouter = createTRPCRouter({
         (r) => [r.age, toNumber(r.rateOfReturn)] as const,
       );
       const yearRates: number[] = [];
-      for (let a = age; a <= Math.max(age, settings.retirementAge); a++) {
+      // When the plan's withdrawals start, as the primary person's age.
+      const plannedYear = await householdRetirementYear(ctx.db);
+      const retirementAge =
+        plannedYear !== null
+          ? age + plannedYear - referenceDate.getFullYear()
+          : settings.retirementAge;
+      for (let a = age; a <= Math.max(age, retirementAge); a++) {
         const r = returnRateAtAge(rateBreakpoints, a);
         if (r !== null) yearRates.push(r);
       }
@@ -622,7 +631,7 @@ export const retirementRouter = createTRPCRouter({
         contributionOverrides: input.contributionOverrides,
         largePurchases: input.largePurchases,
         currentAge: age,
-        retirementAge: settings.retirementAge,
+        retirementAge,
         currentPortfolio: portfolioTotal,
         currentAnnualContributions: currentContribData.annualContributions,
         currentEmployerContributions: currentContribData.employerMatch,

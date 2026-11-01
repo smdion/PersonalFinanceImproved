@@ -9,7 +9,7 @@ import type { ProjectionInput, MonteCarloInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 
-const AS_OF = new Date("2026-03-01");
+export const AS_OF = new Date("2026-03-01");
 
 // ---------------------------------------------------------------------------
 // Tolerances
@@ -108,8 +108,8 @@ export function makePureGrowthInput(
       accumulationOverrides: [],
       decumulationOverrides: [],
       currentAge: 35,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 30,
+      projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 0,
       salaryGrowthRate: 0,
       salaryCap: null,
@@ -179,8 +179,8 @@ export function makeTrinityInput(
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: 65,
-    retirementAge: 65,
-    projectionEndAge: 95,
+    retirementYear: AS_OF.getFullYear() + 0,
+    projectionEndYear: AS_OF.getFullYear() + 30,
     currentSalary: 0,
     salaryGrowthRate: 0,
     salaryCap: null,
@@ -243,8 +243,8 @@ export function makeStandardInput(
       accumulationOverrides: [],
       decumulationOverrides: [],
       currentAge: 35,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 30,
+      projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 150000,
       salaryGrowthRate: 0.03,
       salaryCap: null,

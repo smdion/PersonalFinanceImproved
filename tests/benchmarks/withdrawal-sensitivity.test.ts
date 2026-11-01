@@ -11,6 +11,7 @@ import {
   makeMCInput,
   IBBOTSON_CLASSES,
   make7525GlidePath,
+  AS_OF,
 } from "./benchmark-helpers";
 import { shippedTaxTables } from "../helpers/tax-data";
 
@@ -104,7 +105,9 @@ describe("Withdrawal rate sensitivity", () => {
       [];
 
     for (const h of horizons) {
-      const engine = makeTrinityInput({ projectionEndAge: h.endAge });
+      const engine = makeTrinityInput({
+        projectionEndYear: AS_OF.getFullYear() + h.endAge - 65,
+      });
       const mc = makeMCInput(engine, {
         numTrials: 3000,
         seed: 42,

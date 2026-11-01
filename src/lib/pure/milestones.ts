@@ -231,7 +231,7 @@ function expectedNote(
   if (!input.projection) return null;
   if (!expected) return "Not reached in the projection";
   const prefix = estimate ? "About" : "On pace for";
-  return `${prefix} ${expected.year} · age ${Math.round(expected.age)}`;
+  return `${prefix} ${expected.year}`;
 }
 
 /**
@@ -515,7 +515,7 @@ function fi(input: MilestoneInput, now: MilestoneYear): MilestoneResult {
     short: !input.projection
       ? `${formatPercent(now.fiProgress)} there`
       : expected
-        ? `On pace for age ${Math.round(expected.age)}`
+        ? `On pace for ${expected.year}`
         : "Not reached in projection",
     note:
       [
@@ -632,7 +632,7 @@ function checkpoints(
     highest ? `${highest.label} reached ${highest.year}` : null,
     next
       ? `next ${multiple(next.multiple)} by ${next.age}${
-          expected ? ` — on pace for age ${Math.round(expected.age)}` : ""
+          expected ? ` — on pace for ${expected.year}` : ""
         }`
       : null,
   ].filter(Boolean);
@@ -646,11 +646,11 @@ function checkpoints(
     value: { kind: "multiple", amount: current },
     target: { kind: "multiple", amount: target },
     progress: target > 0 ? Math.min(1, current / target) : 1,
-    headline: `${multiple(current)} your income ${counted}; ${multiple(target)} is the target for age ${Math.round(now.age)}`,
+    headline: `${multiple(current)} your income ${counted}; ${multiple(target)} is the target for your household's average age, ${Math.round(now.age)}`,
     note: notes.length ? notes.join(" · ") : null,
     nextStep:
       current < target
-        ? `${formatCurrency((target - current) * now.grossIncome)} more ${counted} reaches ${multiple(target)} your income, the target for age ${Math.round(now.age)}`
+        ? `${formatCurrency((target - current) * now.grossIncome)} more ${counted} reaches ${multiple(target)} your income, the target for your household's average age, ${Math.round(now.age)}`
         : null,
     impact:
       current < target
@@ -1461,7 +1461,7 @@ function housing(input: MilestoneInput, now: MilestoneYear): MilestoneResult[] {
               ? "onTrack"
               : "behind",
         headline: payoffYear
-          ? `Mortgage paid off ${payoffYear}, at age ${Math.round(payoffAge ?? 0)}`
+          ? `Mortgage paid off ${payoffYear}`
           : "Mortgage payoff date unknown",
         expectedYear: payoffYear,
         expectedAge: payoffAge,

@@ -1,0 +1,3 @@
+ALTER TABLE "budget_items" ADD COLUMN "mortgage_loan_id" integer;--> statement-breakpoint
+ALTER TABLE "budget_items" ADD CONSTRAINT "budget_items_mortgage_loan_id_mortgage_loans_id_fk" FOREIGN KEY ("mortgage_loan_id") REFERENCES "public"."mortgage_loans"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "budget_items_mortgage_loan_id_idx" ON "budget_items" USING btree ("mortgage_loan_id");

@@ -11,6 +11,10 @@
  * already at 521 lines, over RULES.md §8's ~500-line Composed Router
  * guideline.
  */
+import {
+  planEndAge as planEndAgeOf,
+  planRetirementAge as planRetirementAgeOf,
+} from "@/lib/pure/household-timeline";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { z } from "zod/v4";
@@ -153,11 +157,11 @@ export const coastFireProbeRouter = createTRPCRouter({
       // binary search already restricts itself to.
       if (
         input.probeAge < engineInput.currentAge ||
-        input.probeAge >= engineInput.retirementAge
+        input.probeAge >= planRetirementAgeOf(engineInput)
       ) {
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: `probeAge must be in [${engineInput.currentAge}, ${engineInput.retirementAge})`,
+          message: `probeAge must be in [${engineInput.currentAge}, ${planRetirementAgeOf(engineInput)})`,
         });
       }
 
@@ -174,7 +178,7 @@ export const coastFireProbeRouter = createTRPCRouter({
           mcGlidePath,
           classifyAssetClasses(classBuckets),
           engineInput.currentAge,
-          engineInput.projectionEndAge,
+          planEndAgeOf(engineInput),
         ) ?? undefined;
       const inflationRisk = mc.effectiveInflationRisk;
 

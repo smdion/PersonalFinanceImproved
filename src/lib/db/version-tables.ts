@@ -59,7 +59,6 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   // Tier 1 — depends on tier 0
   { name: "jobs", tier: 1 },
   { name: "historical_salaries", tier: 1 },
-  { name: "budget_items", tier: 1 },
   { name: "savings_monthly", tier: 1 },
   { name: "savings_planned_transactions", tier: 1 },
   { name: "savings_allocation_overrides", tier: 1 },
@@ -94,7 +93,6 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "savings_planned_tx_settlements", tier: 2 },
   { name: "budget_income_adjustments", tier: 2 },
   { name: "account_basis", tier: 2 }, // FKs into performance_accounts (tier 1) + people (tier 0)
-  { name: "budget_item_category_links", tier: 2 }, // FK into budget_items (tier 1)
   { name: "savings_goal_category_links", tier: 2 }, // FK into savings_goals (tier 0)
   { name: "simplefin_accounts", tier: 2 }, // FK into performance_accounts (tier 1)
   { name: "holding_periods", tier: 2 }, // FK into performance_accounts (tier 1)
@@ -104,7 +102,11 @@ export const VERSION_TABLES: VersionTableEntry[] = [
   { name: "simplefin_account_balances", tier: 3 }, // FK into simplefin_accounts (tier 2)
   { name: "holding_observations", tier: 3 }, // FKs into simplefin_accounts (tier 2), performance_accounts (tier 1), securities (tier 0)
   { name: "investment_transactions", tier: 3 }, // FK into simplefin_accounts (tier 2)
+  { name: "budget_items", tier: 3 }, // FK into contribution_accounts (tier 2)
   { name: "holding_period_weights", tier: 3 }, // FKs into holding_periods (tier 2), securities (tier 0)
+
+  // Tier 4 — depends on tier 3
+  { name: "budget_item_category_links", tier: 4 }, // FK into budget_items (tier 3)
 ];
 
 // Validate tier ordering: entries must be grouped by ascending tier.

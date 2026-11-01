@@ -4,6 +4,7 @@
  * Verifies the four status branches (already_coast, found, unreachable,
  * already-retired) and the binary-search earliest-age guarantee.
  */
+import { planRetirementAge } from "@/lib/pure/household-timeline";
 import { withConsistentStart } from "./fixtures/engine-fixtures";
 import { describe, it, expect } from "vitest";
 import type { EngineAccumulationYear } from "@/lib/calculators/types";
@@ -57,8 +58,8 @@ function makeInput(overrides: Partial<ProjectionInput> = {}): ProjectionInput {
       accumulationOverrides: [],
       decumulationOverrides: [],
       currentAge: 35,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 30,
+      projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 150000,
       salaryGrowthRate: 0.03,
       salaryCap: null,
@@ -202,7 +203,7 @@ describe("findCoastFireAge", () => {
     // between currentAge and retirementAge.
     const input = makeInput({
       currentAge: 35,
-      retirementAge: 65,
+      retirementYear: AS_OF.getFullYear() + 30,
       currentSalary: 150_000,
       annualExpenses: 72_000,
       startingBalances: {
@@ -240,7 +241,7 @@ describe("findCoastFireAge", () => {
     if (result.status === "found") {
       expect(result.coastFireAge).not.toBeNull();
       expect(result.coastFireAge).toBeGreaterThan(input.currentAge);
-      expect(result.coastFireAge).toBeLessThan(input.retirementAge);
+      expect(result.coastFireAge).toBeLessThan(planRetirementAge(input));
       expect(result.sustainableWithdrawal).toBeGreaterThanOrEqual(
         result.projectedExpensesAtRetirement,
       );
@@ -255,7 +256,7 @@ describe("findCoastFireAge", () => {
   it("returns already_coast when currentAge >= retirementAge", () => {
     const input = makeInput({
       currentAge: 70,
-      retirementAge: 65,
+      retirementYear: AS_OF.getFullYear() - 5,
       currentSalary: 0,
       startingBalances: {
         preTax: 780000,
@@ -298,7 +299,7 @@ describe("findCoastFireAge", () => {
     // at retirementAge-1 (stopLate passes). Forces the binary search branch.
     const input = makeInput({
       currentAge: 30,
-      retirementAge: 65,
+      retirementYear: AS_OF.getFullYear() + 35,
       currentSalary: 150_000,
       annualExpenses: 60_000,
       startingBalances: {
@@ -326,7 +327,7 @@ describe("findCoastFireAge", () => {
     expect(result.status).toBe("found");
     expect(result.coastFireAge).not.toBeNull();
     expect(result.coastFireAge).toBeGreaterThan(input.currentAge);
-    expect(result.coastFireAge).toBeLessThan(input.retirementAge);
+    expect(result.coastFireAge).toBeLessThan(planRetirementAge(input));
     expect(result.sustainableWithdrawal).toBeGreaterThanOrEqual(
       result.projectedExpensesAtRetirement,
     );
@@ -338,7 +339,7 @@ describe("findCoastFireAge", () => {
     // the search genuinely found the earliest age.
     const input = makeInput({
       currentAge: 40,
-      retirementAge: 65,
+      retirementYear: AS_OF.getFullYear() + 25,
       currentSalary: 200_000,
       annualExpenses: 80_000,
       startingBalances: {
@@ -396,7 +397,7 @@ describe("findCoastFireAge", () => {
         );
       }
       expect(result.coastFireAge).toBeGreaterThanOrEqual(input.currentAge);
-      expect(result.coastFireAge).toBeLessThan(input.retirementAge);
+      expect(result.coastFireAge).toBeLessThan(planRetirementAge(input));
     }
   });
 });
@@ -455,8 +456,8 @@ describe("findCoastFireAge — v0.7.8 penalty-hard-exclusion baseline honesty", 
       accumulationOverrides: [],
       decumulationOverrides: [],
       currentAge: 37,
-      retirementAge: 55,
-      projectionEndAge: 95,
+      retirementYear: AS_OF_2.getFullYear() + 18,
+      projectionEndYear: AS_OF_2.getFullYear() + 58,
       currentSalary: 300000,
       salaryGrowthRate: 0.03,
       salaryCap: null,
@@ -657,8 +658,8 @@ describe("findCoastFireAge — non-retirement exclusion baseline honesty", () =>
       accumulationOverrides: [],
       decumulationOverrides: [],
       currentAge: 66,
-      retirementAge: 67,
-      projectionEndAge: 90,
+      retirementYear: AS_OF_3.getFullYear() + 1,
+      projectionEndYear: AS_OF_3.getFullYear() + 24,
       currentSalary: 150000,
       salaryGrowthRate: 0.03,
       salaryCap: null,
@@ -869,8 +870,8 @@ describe("findCoastFireAge — net/gross unit fix for the no-stated-need fallbac
       accumulationOverrides: [],
       decumulationOverrides: [],
       currentAge: 66,
-      retirementAge: 67,
-      projectionEndAge: 90,
+      retirementYear: AS_OF_4.getFullYear() + 1,
+      projectionEndYear: AS_OF_4.getFullYear() + 24,
       currentSalary: 150000,
       salaryGrowthRate: 0.03,
       salaryCap: null,

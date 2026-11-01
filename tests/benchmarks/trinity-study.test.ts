@@ -20,6 +20,7 @@ import {
   TOLERANCES,
   make5050GlidePath,
   make7525GlidePath,
+  AS_OF,
 } from "./benchmark-helpers";
 import { shippedTaxTables } from "../helpers/tax-data";
 
@@ -147,8 +148,12 @@ describe("Trinity Study — 4% rule validation", () => {
 
   describe("Time horizon sensitivity", () => {
     it("20yr horizon has higher success than 30yr", () => {
-      const engine20 = makeTrinityInput({ projectionEndAge: 85 });
-      const engine30 = makeTrinityInput({ projectionEndAge: 95 });
+      const engine20 = makeTrinityInput({
+        projectionEndYear: AS_OF.getFullYear() + 20,
+      });
+      const engine30 = makeTrinityInput({
+        projectionEndYear: AS_OF.getFullYear() + 30,
+      });
 
       const mc20 = makeMCInput(engine20, {
         numTrials: 3000,
@@ -172,8 +177,12 @@ describe("Trinity Study — 4% rule validation", () => {
     });
 
     it("40yr horizon has lower success than 30yr", () => {
-      const engine30 = makeTrinityInput({ projectionEndAge: 95 });
-      const engine40 = makeTrinityInput({ projectionEndAge: 105 });
+      const engine30 = makeTrinityInput({
+        projectionEndYear: AS_OF.getFullYear() + 30,
+      });
+      const engine40 = makeTrinityInput({
+        projectionEndYear: AS_OF.getFullYear() + 40,
+      });
 
       const mc30 = makeMCInput(engine30, {
         numTrials: 3000,

@@ -7,6 +7,7 @@ import {
   ASSET_CLASSES,
   CORRELATIONS,
   CURRENT_GLIDE_PATH,
+  AS_OF,
 } from "./benchmark-helpers";
 import { shippedTaxTables } from "../helpers/tax-data";
 
@@ -27,8 +28,8 @@ describe(
       // Layer 1: Pure retirement, single account, 0% tax (baseline)
       const layer1 = makeTrinityInput({
         currentAge: 55,
-        retirementAge: 55,
-        projectionEndAge: 95,
+        retirementYear: AS_OF.getFullYear() + 0,
+        projectionEndYear: AS_OF.getFullYear() + 40,
         annualExpenses: 90000,
         inflationRate: 0.03,
         startingBalances: {
@@ -66,8 +67,8 @@ describe(
       // Layer 2: Same but with realistic tax rates
       const layer2 = makeTrinityInput({
         currentAge: 55,
-        retirementAge: 55,
-        projectionEndAge: 95,
+        retirementYear: AS_OF.getFullYear() + 0,
+        projectionEndYear: AS_OF.getFullYear() + 40,
         annualExpenses: 90000,
         inflationRate: 0.03,
         startingBalances: {
@@ -134,8 +135,8 @@ describe(
       // Layer 3: Multi-account, realistic split (your actual portfolio at retirement est.)
       const layer3 = makeTrinityInput({
         currentAge: 55,
-        retirementAge: 55,
-        projectionEndAge: 95,
+        retirementYear: AS_OF.getFullYear() + 0,
+        projectionEndYear: AS_OF.getFullYear() + 40,
         annualExpenses: 90000,
         inflationRate: 0.03,
         // Estimate your portfolio at retirement: $2.77M split across accounts
@@ -205,8 +206,8 @@ describe(
       // Layer 4: Full lifecycle (accumulation + decumulation)
       const layer4 = makeStandardInput({
         currentAge: 37,
-        retirementAge: 55,
-        projectionEndAge: 95,
+        retirementYear: AS_OF.getFullYear() + 18,
+        projectionEndYear: AS_OF.getFullYear() + 58,
         currentSalary: 256000,
         salaryGrowthRate: 0.03,
         startingBalances: {

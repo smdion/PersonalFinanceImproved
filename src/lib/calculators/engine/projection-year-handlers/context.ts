@@ -74,27 +74,19 @@ export function buildProjectionContext(
 
   // Each person's working years: their job's (input.workingYearsByPerson),
   // ending by the year before their own retirement when that comes before
-  // the household's — a partial retirement. Outside them the person has no
+  // the plan's — a partial retirement. Outside them the person has no
   // pay and their contributions stop (pre-year-setup), fixed-dollar ones
   // included; the other person keeps working.
   const workingYearsByPerson: Record<
     number,
     { start: number | null; end: number | null }
   > = { ...input.workingYearsByPerson };
-  if (input.retirementAgeByPerson && hasPerPersonSalary) {
-    const baseYear = input.asOfDate.getFullYear();
-    const householdRetYear =
-      baseYear + (input.retirementAge - input.currentAge);
-    for (const [pidStr, retAge] of Object.entries(
-      input.retirementAgeByPerson,
+  if (input.retirementYearByPerson && hasPerPersonSalary) {
+    for (const [pidStr, retirementYear] of Object.entries(
+      input.retirementYearByPerson,
     )) {
       const pid = Number(pidStr);
-      const personBirthYear = input.socialSecurityEntries?.find(
-        (e) => e.personId === pid,
-      )?.birthYear;
-      if (personBirthYear == null) continue;
-      const retirementYear = personBirthYear + retAge;
-      if (retirementYear >= householdRetYear) continue;
+      if (retirementYear >= input.retirementYear) continue;
       const job = workingYearsByPerson[pid];
       workingYearsByPerson[pid] = {
         start: job?.start ?? null,
@@ -129,7 +121,10 @@ export function buildProjectionContext(
     if (ageMatch) returnRateMap.set(Number(ageMatch[1]), r.rate);
   }
 
-  const yearsToProject = Math.max(0, input.projectionEndAge - input.currentAge);
+  const yearsToProject = Math.max(
+    0,
+    input.projectionEndYear - input.asOfDate.getFullYear(),
+  );
 
   // First-year pro-rating: remaining contributable months.
   // If past mid-month (day > 15), current month's contribution is assumed done → exclude it.

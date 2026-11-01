@@ -295,6 +295,10 @@ export const retirementSettings = pgTable(
     enableIrmaaAwareness: boolean("enable_irmaa_awareness")
       .notNull()
       .default(false),
+    /** Years someone with a job has stopped: stop saving altogether. */
+    gapYearStopSaving: boolean("gap_year_stop_saving").notNull().default(false),
+    /** Those years, draw what pay doesn't cover; off, spending is cut to it. */
+    gapYearDraws: boolean("gap_year_draws").notNull().default(true),
     /** IRMAA surcharges are paid on top of the retirement budget, not inside
      *  it. The surcharge only: base Part B and D premiums aren't modeled. */
     irmaaOnTopOfBudget: boolean("irmaa_on_top_of_budget")

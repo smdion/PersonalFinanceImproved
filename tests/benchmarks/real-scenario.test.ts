@@ -7,6 +7,7 @@ import {
   ASSET_CLASSES,
   CORRELATIONS,
   CURRENT_GLIDE_PATH,
+  AS_OF,
 } from "./benchmark-helpers";
 import { shippedTaxTables } from "../helpers/tax-data";
 
@@ -18,8 +19,8 @@ describe(
       // Accumulation + decumulation with representative values
       const fullInput = makeStandardInput({
         currentAge: 35,
-        retirementAge: 55,
-        projectionEndAge: 95,
+        retirementYear: AS_OF.getFullYear() + 20,
+        projectionEndYear: AS_OF.getFullYear() + 60,
         currentSalary: 250000,
         salaryGrowthRate: 0.03,
         startingBalances: {
@@ -87,8 +88,8 @@ describe(
       // Retirement-only (skip accumulation, start with estimated retirement balance)
       const retirementOnlyInput = makeTrinityInput({
         currentAge: 55,
-        retirementAge: 55,
-        projectionEndAge: 95,
+        retirementYear: AS_OF.getFullYear() + 0,
+        projectionEndYear: AS_OF.getFullYear() + 40,
         annualExpenses: 90000,
         inflationRate: 0.03,
         startingBalances: {

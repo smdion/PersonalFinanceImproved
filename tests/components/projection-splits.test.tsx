@@ -181,6 +181,10 @@ function baseMockState(overrides: Record<string, unknown> = {}): any {
     columnLabel: { "401k_trad": "401k Trad" },
     baseYear: 2026,
     deflate: (v: number) => v,
+    ageLabel: (age: number) => `Age ${age}`,
+    yearOfAge: (age: number) => 1960 + age,
+    agesInYear: () => [],
+    primaryName: undefined,
 
     // View state
     projectionMode: "monteCarlo" as const,
@@ -498,7 +502,7 @@ describe("McDepletionCallout", () => {
     });
     render(<McDepletionCallout state={s} />);
     expect(
-      screen.getByText(/28% of futures, money runs out around age 88/),
+      screen.getByText(/28% of futures, money runs out around 2048/),
     ).toBeInTheDocument();
   });
 });

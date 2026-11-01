@@ -1,0 +1,2 @@
+ALTER TABLE "retirement_settings" ADD COLUMN "gap_year_stop_saving" boolean DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE "retirement_settings" ADD COLUMN "gap_year_draws" boolean DEFAULT true NOT NULL;

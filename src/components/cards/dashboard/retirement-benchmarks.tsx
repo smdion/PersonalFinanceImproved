@@ -114,13 +114,13 @@ function Readiness({
             setProjectedAge(e.target.value ? Number(e.target.value) : null);
           }}
         >
-          <option value="">Now — age {currentAge}</option>
+          <option value="">Now — {currentYear}</option>
           {Array.from(
             { length: Math.max(0, maxAge - currentAge) },
             (_, i) => currentAge + i + 1,
           ).map((a) => (
             <option key={a} value={a}>
-              Age {a} ({currentYear + a - currentAge})
+              {currentYear + a - currentAge}
               {a === settings.retirementAge ? " — retirement" : ""}
             </option>
           ))}
@@ -193,7 +193,7 @@ function Growth({
           ${formatNumber(factor(years), 2)}
         </span>
         <span className="text-muted text-xs" data-privacy-visible>
-          per $1 by age {retirementAge} · {years} yrs at{" "}
+          per $1 in {new Date().getFullYear() + years} · {years} yrs at{" "}
           {formatPercent(avgReturn, 1)}
         </span>
       </div>

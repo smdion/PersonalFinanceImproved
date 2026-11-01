@@ -139,6 +139,8 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     coastFireMcQuery,
     activeAltMcResult,
     dollarMode,
+    ageLabel,
+    yearOfAge,
   } = state;
 
   const currentAge = result.projectionByYear[0]?.age ?? 0;
@@ -299,8 +301,8 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
             <CompactRing rate={mc.successRate} size={68} />
             <div className="text-micro text-faint">
               {mc.distributions.failureAge
-                ? `${dominantFailureReason(mc.failureReasonRates) === "depleted" ? "runs out" : "falls short"} ~age ${Math.round(mc.distributions.failureAge.median)}`
-                : `vs age ${engineSettings?.endAge ?? "?"}`}
+                ? `${dominantFailureReason(mc.failureReasonRates) === "depleted" ? "runs out" : "falls short"} ~${yearOfAge(Math.round(mc.distributions.failureAge.median))}`
+                : `through ${lastYear?.year ?? "?"}`}
             </div>
           </div>
         </KpiCard>
@@ -408,8 +410,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
             <>
               <div className="text-caption text-faint mt-1 leading-tight">
                 Range {formatCurrency(endDisplay.low)} –{" "}
-                {formatCurrency(endDisplay.high)} at age{" "}
-                {engineSettings?.endAge ?? "?"}
+                {formatCurrency(endDisplay.high)} in {lastYear?.year ?? "?"}
               </div>
               <div className="text-caption text-faint leading-tight">
                 Baseline: {formatCurrency(endDisplay.baseline)} (fixed returns)
@@ -417,7 +418,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
             </>
           ) : (
             <div className="text-caption text-faint mt-1 leading-tight">
-              Baseline (fixed returns) at age {engineSettings?.endAge ?? "?"}
+              Baseline (fixed returns) in {lastYear?.year ?? "?"}
               {isPersonFiltered ? " — the simulation is household-wide" : ""}
             </div>
           )}
@@ -431,6 +432,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
             coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
           }
           coastFireMcComputedAt={coastFireMcQuery.data?.computedAt}
+          ageLabel={ageLabel}
         />
       </div>
     );
@@ -453,8 +455,8 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
         </div>
         <div className="text-caption text-faint mt-1">
           {alreadyRetired
-            ? `Age ${currentAge} (today's $)`
-            : `Avg age ${engineSettings?.retirementAge ?? "?"}`}
+            ? `${result.projectionByYear[0]?.year} (today's $)`
+            : `In ${yearOfAge(engineSettings?.retirementAge ?? currentAge)}`}
         </div>
       </KpiCard>
 
@@ -479,12 +481,12 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
         <div
           className={`text-xl font-bold tabular-nums ${depl ? "text-red-500" : "text-green-500"}`}
         >
-          {depl ? `Age ${depl.age}` : "Lasts ✓"}
+          {depl ? String(depl.year) : "Lasts ✓"}
         </div>
         <div className="text-caption text-faint mt-1">
           {depl
-            ? `${"reason" in depl && depl.reason !== "depleted" ? "Falls short" : "Runs out"} ${depl.year}`
-            : `Through age ${engineSettings?.endAge ?? "?"}`}
+            ? `${"reason" in depl && depl.reason !== "depleted" ? "Falls short" : "Runs out"} then`
+            : `Through ${lastYear?.year ?? "?"}`}
         </div>
       </KpiCard>
 
@@ -493,6 +495,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
         input={debouncedBaseInput}
         coastFireMcResult={undefined}
         coastFireMcLoading={false}
+        ageLabel={ageLabel}
       />
     </div>
   );

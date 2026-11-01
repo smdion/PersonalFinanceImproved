@@ -8,6 +8,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.9
 
+## [0.9.6] - 2026-11-01
+
+### Upgrading
+
+- **Projections move, for every two-person household.** The plan used to run on the average of the two ages, a spreadsheet leftover. It now runs from each person's own age and retirement date. For a couple four years apart who both retire at 55, withdrawals start when the younger one retires, the working person keeps their pay and contributions until then, and the plan runs two more years, to the last person's end age. The yearly return rate now follows the primary person's age, so results depend on who is primary.
+- **Years with one paycheck now draw from your accounts.** If one person retires first, or a job ends before its holder retires, the shortfall between your budget and what's left of your pay comes out of your accounts. The plan used to assume the remaining paycheck covered everything. Balances in and after those years are lower than they were reading, and a year that can't be funded now fails the plan.
+- **Saved Custom clamp bounds now apply.** If you set them, Custom simulations change.
+- **SQLite installs:** saving anything that wrote in a transaction, backup import included, used to fail. It works now.
+
+### Changed
+
+- **The plan reads in years.** The retirement graph and table, hero cards, the dashboard, Plan comparison, Milestones and the report show years, since an age means something different for each person. Hover a year in the graph or table to see everyone's age.
+- **Coast FIRE names whose age it is**, for example "2035 (Alex, 48)", and its input is labelled with the primary person's name.
+- **A bracket target is a preference, not a spending limit.** Waterfall withdrawals now use your other accounts first, then go past the target to fund your spending, and say so that year. Your own caps stay hard. Bracket filling already spent past the target; now it says so too.
+
+### Added
+
+- **You choose how years with one paycheck work.** In Retirement Profile → Timeline: keep saving as planned or stop, and withdraw what pay doesn't cover or spend only what's coming in. The projection marks these years, and hovering one shows the money.
+- **The mortgage ends in the projection.** Pick the budget line that pays your loan on the Liabilities page, and the plan stops spending it the year after payoff, before or after you retire. Taxes and insurance stay, and retirement spending you typed in as a figure stays as entered.
+
+### Fixed
+
+- A household where only one person has a job no longer stops that person's work early because of the other's retirement age.
+- Percentage withdrawals no longer lose money a Traditional or Roth cap cuts: it moves to the next account, or shows as unmet.
+- The last-resort withdrawal counts what the year already drew against your caps.
+- Roth money past 59½ now ranks as free when choosing what to draw, ahead of brokerage gains.
+- Withdrawal comparison: Legacy and the average, lowest and highest figures are each in that year's own today's dollars (Legacy read about twice too high).
+- Budget: a yearly contribution shows as a twelfth a month ($6,500 showed as about $14,083).
+- Savings: Settle all works with both sides of a transfer.
+- Paycheck: take-home counts the 0.9% Additional Medicare withholding (about $900 a year at $300k).
+- Custom Simulation clamp bounds are saved.
+- Restoring a version or backup no longer fails when a budget line is linked to a contribution account.
+
+---
+
 ## [0.9.5] - 2026-10-31
 
 ### Upgrading

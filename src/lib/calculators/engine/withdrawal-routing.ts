@@ -160,7 +160,7 @@ export function routeWithdrawals(
       remainingNeed: remaining > 0 ? remaining : 0,
     });
 
-    if (cappedByAccount && remaining > 0) {
+    if (cappedByAccount && remaining > 0 && accountCap! > 0) {
       warnings.push(
         `${category} withdrawal capped at $${accountCap!.toLocaleString()} — ` +
           `$${remaining.toLocaleString()} shifts to next account`,
@@ -192,7 +192,6 @@ export function routeWithdrawalsPercentage(
   balances: AccountBalances,
 ): { slots: DecumulationSlot[]; warnings: string[]; unmetNeed?: number } {
   const warnings: string[] = [];
-  const slots: DecumulationSlot[] = [];
 
   // Calculate available balance per account
   const available: Record<AccountCategory, number> = Object.fromEntries(
@@ -231,34 +230,142 @@ export function routeWithdrawalsPercentage(
   // (one pass left that remainder "unmet" beside full accounts). Accounts
   // with a 0% split take what's left after the split ones are full: the
   // split is the mix the household prefers, not a ban on other money.
+  // Accounts a tax-type cap has stopped (below) take no more.
+  const stopped = new Set<AccountCategory>();
   const roomOf = (c: AccountCategory) => {
+    if (stopped.has(c)) return 0;
     const cap = config.withdrawalAccountCaps[c];
     const limit = cap !== null ? Math.min(available[c], cap) : available[c];
     return roundToCents(Math.max(0, limit - targets[c]));
   };
-  for (
-    let pass = 0;
-    excess > 0.01 && pass < ACCOUNT_CATEGORIES.length * 2;
-    pass++
-  ) {
-    const withRoom = ACCOUNT_CATEGORIES.filter((c) => roomOf(c) > 0);
-    if (withRoom.length === 0) break;
-    const splitWeighted = withRoom.filter(
-      (c) => (config.withdrawalSplits[c] ?? 0) > 0,
-    );
-    const pool = splitWeighted.length > 0 ? splitWeighted : withRoom;
-    const weightOf = (c: AccountCategory) =>
-      splitWeighted.length > 0 ? (config.withdrawalSplits[c] ?? 0) : roomOf(c);
-    const totalWeight = pool.reduce((t, c) => t + weightOf(c), 0);
-    if (totalWeight <= 0) break;
-    const toPlace = excess;
-    for (const cat of pool) {
-      const extra = roundToCents(
-        Math.min(toPlace * (weightOf(cat) / totalWeight), roomOf(cat)),
+  const placeExcess = () => {
+    for (
+      let pass = 0;
+      excess > 0.01 && pass < ACCOUNT_CATEGORIES.length * 2;
+      pass++
+    ) {
+      const withRoom = ACCOUNT_CATEGORIES.filter((c) => roomOf(c) > 0);
+      if (withRoom.length === 0) break;
+      const splitWeighted = withRoom.filter(
+        (c) => (config.withdrawalSplits[c] ?? 0) > 0,
       );
-      targets[cat] = roundToCents(targets[cat] + extra);
-      excess = roundToCents(excess - extra);
+      const pool = splitWeighted.length > 0 ? splitWeighted : withRoom;
+      const weightOf = (c: AccountCategory) =>
+        splitWeighted.length > 0
+          ? (config.withdrawalSplits[c] ?? 0)
+          : roomOf(c);
+      const totalWeight = pool.reduce((t, c) => t + weightOf(c), 0);
+      if (totalWeight <= 0) break;
+      const toPlace = excess;
+      for (const cat of pool) {
+        const extra = roundToCents(
+          Math.min(toPlace * (weightOf(cat) / totalWeight), roomOf(cat)),
+        );
+        targets[cat] = roundToCents(targets[cat] + extra);
+        excess = roundToCents(excess - extra);
+      }
     }
+  };
+  placeExcess();
+
+  // Build slots with tax-type routing within each account. A tax-type cap can
+  // cut an account below its target: the cut moves on like any other (it
+  // was dropped: delivered short with no unmet need), and the slots rebuild.
+  const buildSlots = () => {
+    const slots: DecumulationSlot[] = [];
+    let totalTradWithdrawn = 0;
+    let totalRothWithdrawn = 0;
+
+    for (const category of ACCOUNT_CATEGORIES) {
+      const withdrawal = targets[category];
+      let rothWithdrawal = 0;
+      let tradWithdrawal = 0;
+      let cappedByTaxType = false;
+
+      if (getAccountTypeConfig(category).balanceStructure === "single_bucket") {
+        tradWithdrawal = withdrawal;
+      } else if (!getAccountTypeConfig(category).supportsRothSplit) {
+        // Non-split accounts (e.g. brokerage): neither roth nor traditional
+      } else {
+        const bal = balances[category];
+        const tradBalance = getTraditionalBalance(bal);
+        const rothBalance = getRothBalance(bal);
+        const taxPref = config.withdrawalTaxPreference[category];
+        if (taxPref === "traditional" || taxPref === null) {
+          tradWithdrawal = roundToCents(Math.min(withdrawal, tradBalance));
+          rothWithdrawal = roundToCents(
+            Math.min(withdrawal - tradWithdrawal, rothBalance),
+          );
+        } else {
+          rothWithdrawal = roundToCents(Math.min(withdrawal, rothBalance));
+          tradWithdrawal = roundToCents(
+            Math.min(withdrawal - rothWithdrawal, tradBalance),
+          );
+        }
+
+        // Cross-account tax-type caps
+        const tradCap = config.withdrawalTaxTypeCaps.traditional;
+        if (tradCap !== null && totalTradWithdrawn + tradWithdrawal > tradCap) {
+          const allowed = roundToCents(
+            Math.max(0, tradCap - totalTradWithdrawn),
+          );
+          const excessTrad = roundToCents(tradWithdrawal - allowed);
+          tradWithdrawal = allowed;
+          const extraRoth = roundToCents(
+            Math.min(excessTrad, rothBalance - rothWithdrawal),
+          );
+          rothWithdrawal += extraRoth;
+          cappedByTaxType = true;
+        }
+        const rothCap = config.withdrawalTaxTypeCaps.roth;
+        if (rothCap !== null && totalRothWithdrawn + rothWithdrawal > rothCap) {
+          const allowed = roundToCents(
+            Math.max(0, rothCap - totalRothWithdrawn),
+          );
+          const excessRoth = roundToCents(rothWithdrawal - allowed);
+          rothWithdrawal = allowed;
+          const extraTrad = roundToCents(
+            Math.min(excessRoth, tradBalance - tradWithdrawal),
+          );
+          tradWithdrawal += extraTrad;
+          cappedByTaxType = true;
+        }
+      }
+
+      totalTradWithdrawn += tradWithdrawal;
+      totalRothWithdrawn += rothWithdrawal;
+
+      const accountCap = config.withdrawalAccountCaps[category];
+      slots.push({
+        category,
+        withdrawal: roundToCents(
+          !getAccountTypeConfig(category).supportsRothSplit
+            ? withdrawal
+            : tradWithdrawal + rothWithdrawal,
+        ),
+        rothWithdrawal,
+        traditionalWithdrawal: tradWithdrawal,
+        cappedByAccount: accountCap !== null && withdrawal >= accountCap,
+        cappedByTaxType,
+        remainingNeed: 0,
+      });
+    }
+    return slots;
+  };
+
+  let builtSlots = buildSlots();
+  for (let pass = 0; pass < ACCOUNT_CATEGORIES.length * 2; pass++) {
+    const cut = builtSlots.filter(
+      (s) => targets[s.category] - s.withdrawal > 0.01,
+    );
+    if (cut.length === 0) break;
+    for (const s of cut) {
+      excess = roundToCents(excess + targets[s.category] - s.withdrawal);
+      targets[s.category] = s.withdrawal;
+      stopped.add(s.category);
+    }
+    placeExcess();
+    builtSlots = buildSlots();
   }
   if (excess > 0) {
     warnings.push(
@@ -266,83 +373,42 @@ export function routeWithdrawalsPercentage(
     );
   }
   const unmetNeed = excess > 0 ? roundToCents(excess) : undefined;
+  return { slots: builtSlots, warnings, unmetNeed };
+}
 
-  // Build slots with tax-type routing within each account
-  let totalTradWithdrawn = 0;
-  let totalRothWithdrawn = 0;
+/** The year went past the bracket target: the target is a preference, so
+ *  spending was funded, and this says what it cost the plan. */
+function pastTargetWarning(amount: number): string {
+  return `$${Math.round(amount).toLocaleString()} went past your bracket target, because the other accounts couldn't cover the year's spending.`;
+}
 
-  for (const category of ACCOUNT_CATEGORIES) {
-    const withdrawal = targets[category];
-    let rothWithdrawal = 0;
-    let tradWithdrawal = 0;
-    let cappedByTaxType = false;
-
-    if (getAccountTypeConfig(category).balanceStructure === "single_bucket") {
-      tradWithdrawal = withdrawal;
-    } else if (!getAccountTypeConfig(category).supportsRothSplit) {
-      // Non-split accounts (e.g. brokerage): neither roth nor traditional
-    } else {
-      const bal = balances[category];
-      const tradBalance = getTraditionalBalance(bal);
-      const rothBalance = getRothBalance(bal);
-      const taxPref = config.withdrawalTaxPreference[category];
-      if (taxPref === "traditional" || taxPref === null) {
-        tradWithdrawal = roundToCents(Math.min(withdrawal, tradBalance));
-        rothWithdrawal = roundToCents(
-          Math.min(withdrawal - tradWithdrawal, rothBalance),
-        );
-      } else {
-        rothWithdrawal = roundToCents(Math.min(withdrawal, rothBalance));
-        tradWithdrawal = roundToCents(
-          Math.min(withdrawal - rothWithdrawal, tradBalance),
-        );
-      }
-
-      // Cross-account tax-type caps
-      const tradCap = config.withdrawalTaxTypeCaps.traditional;
-      if (tradCap !== null && totalTradWithdrawn + tradWithdrawal > tradCap) {
-        const allowed = roundToCents(Math.max(0, tradCap - totalTradWithdrawn));
-        const excessTrad = roundToCents(tradWithdrawal - allowed);
-        tradWithdrawal = allowed;
-        const extraRoth = roundToCents(
-          Math.min(excessTrad, rothBalance - rothWithdrawal),
-        );
-        rothWithdrawal += extraRoth;
-        cappedByTaxType = true;
-      }
-      const rothCap = config.withdrawalTaxTypeCaps.roth;
-      if (rothCap !== null && totalRothWithdrawn + rothWithdrawal > rothCap) {
-        const allowed = roundToCents(Math.max(0, rothCap - totalRothWithdrawn));
-        const excessRoth = roundToCents(rothWithdrawal - allowed);
-        rothWithdrawal = allowed;
-        const extraTrad = roundToCents(
-          Math.min(excessRoth, tradBalance - tradWithdrawal),
-        );
-        tradWithdrawal += extraTrad;
-        cappedByTaxType = true;
-      }
-    }
-
-    totalTradWithdrawn += tradWithdrawal;
-    totalRothWithdrawn += rothWithdrawal;
-
-    const accountCap = config.withdrawalAccountCaps[category];
-    slots.push({
-      category,
-      withdrawal: roundToCents(
-        !getAccountTypeConfig(category).supportsRothSplit
-          ? withdrawal
-          : tradWithdrawal + rothWithdrawal,
+/** The household's own caps, less what an earlier pass already drew: a
+ *  yearly cap covers the year, not each pass. */
+function capsLeftAfter(
+  config: ResolvedDecumulationConfig,
+  slots: readonly DecumulationSlot[],
+): ResolvedDecumulationConfig {
+  const left = (cap: number | null, drawn: number) =>
+    cap === null ? null : roundToCents(Math.max(0, cap - drawn));
+  const drawn = (key: "traditionalWithdrawal" | "rothWithdrawal") =>
+    slots.reduce((t, s) => t + s[key], 0);
+  return {
+    ...config,
+    withdrawalAccountCaps: Object.fromEntries(
+      Object.entries(config.withdrawalAccountCaps).map(([cat, cap]) => [
+        cat,
+        left(cap, slots.find((s) => s.category === cat)?.withdrawal ?? 0),
+      ]),
+    ) as ResolvedDecumulationConfig["withdrawalAccountCaps"],
+    withdrawalTaxTypeCaps: {
+      ...config.withdrawalTaxTypeCaps,
+      traditional: left(
+        config.withdrawalTaxTypeCaps.traditional,
+        drawn("traditionalWithdrawal"),
       ),
-      rothWithdrawal,
-      traditionalWithdrawal: tradWithdrawal,
-      cappedByAccount: accountCap !== null && withdrawal >= accountCap,
-      cappedByTaxType,
-      remainingNeed: 0,
-    });
-  }
-
-  return { slots, warnings, unmetNeed };
+      roth: left(config.withdrawalTaxTypeCaps.roth, drawn("rothWithdrawal")),
+    },
+  };
 }
 
 /**
@@ -747,7 +813,8 @@ export function routeWithdrawalsBracketFilling(
   // not a limit on spending: once Roth, brokerage and HSA can't cover the
   // rest, Traditional money pays it at a higher bracket rather than the
   // need going unmet while Traditional balances sit untouched. The user's
-  // own per-account and Traditional caps still hold.
+  // own per-account and Traditional caps still hold, and the year says so.
+  let pastTarget = 0;
   for (const category of phase1Order) {
     if (remaining <= 0) break;
     const accountCap = config.withdrawalAccountCaps[category];
@@ -768,6 +835,7 @@ export function routeWithdrawalsBracketFilling(
       Math.min(remaining, tradAvailable, accountRoom, tradTypeRoom),
     );
     if (tradDraw <= 0) continue;
+    pastTarget = roundToCents(pastTarget + tradDraw);
     remaining = roundToCents(remaining - tradDraw);
     totalTradWithdrawn += tradDraw;
     categoryWithdrawn.set(category, catDrawn + tradDraw);
@@ -798,6 +866,8 @@ export function routeWithdrawalsBracketFilling(
       });
     }
   }
+
+  if (pastTarget > 0) warnings.push(pastTargetWarning(pastTarget));
 
   // Ensure all 4 categories have slots (brokerage might be missing if not needed)
   // (this ACCOUNT_CATEGORIES loop already
@@ -1076,7 +1146,27 @@ function dispatchOnce(
   }
   // Waterfall mode — apply Roth bracket optimization overlay if configured.
   const routeConfig = applyRothBracketOverlay(config, bracketInfo);
-  const result = routeWithdrawals(targetWithdrawal, routeConfig, balances);
+  let result = routeWithdrawals(targetWithdrawal, routeConfig, balances);
+  // The target is a preference, not a limit on spending. Every other account
+  // has had its turn above; what's left comes from what the target held back,
+  // in the household's own order, under only their own caps.
+  if (routeConfig !== config && (result.unmetNeed ?? 0) > 0) {
+    const beyond = routeWithdrawals(
+      result.unmetNeed!,
+      capsLeftAfter(config, result.slots),
+      applySlotsToBalances(balances, result.slots),
+    );
+    const funded = roundToCents(result.unmetNeed! - (beyond.unmetNeed ?? 0));
+    result = {
+      slots: mergeDecumulationSlots(result.slots, beyond.slots),
+      warnings: [
+        ...result.warnings.filter((w) => !w.includes("unmet")),
+        ...beyond.warnings,
+        ...(funded > 0 ? [pastTargetWarning(funded)] : []),
+      ],
+      unmetNeed: beyond.unmetNeed,
+    };
+  }
   // Surface the same bracket ceiling `routeWithdrawalsBracketFilling` reports
   // as `traditionalCap` — previously
   // only bracket_filling mode populated this field, so waterfall + Roth-
@@ -1178,7 +1268,7 @@ function routeWithLastResortAllowance(
   );
   const pass2 = dispatchOnce(
     pass1.unmetNeed,
-    config,
+    capsLeftAfter(config, pass1.slots),
     pass2Balances,
     bracketInfo,
   );
@@ -1202,7 +1292,10 @@ function routeWithLastResortAllowance(
     // Dispatch #2's value — it always ran to reach this line, and it's the
     // one computed against the TRUE final routing (allowed money included).
     traditionalCap: pass2.traditionalCap,
-    tierBreakdown: pass2.tierBreakdown,
+    tierBreakdown: [
+      ...(pass1.tierBreakdown ?? []),
+      ...(pass2.tierBreakdown ?? []),
+    ],
     rothBasisCapacity: pass2.rothBasisCapacity,
     brokerageZeroLtcgCapacity: pass2.brokerageZeroLtcgCapacity,
     ...(penaltyAvoidedShortfall != null ? { penaltyAvoidedShortfall } : {}),

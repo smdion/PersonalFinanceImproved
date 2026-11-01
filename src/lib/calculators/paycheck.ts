@@ -387,8 +387,18 @@ export function calculatePaycheck(input: PaycheckInput): PaycheckResult {
   }
 
   // Medicare: 1.45% (from input) on FICA base, no cap.
-  // Additional Medicare Tax (0.9% above $200k) is handled in the annual tax calculator, not here.
-  const ficaMedicare = ficaBase * input.taxBrackets.medicareRate;
+  // Additional Medicare is withheld on wages past the threshold, so the checks
+  // late in the year carry it. Per-check figures average it over the year,
+  // like Social Security above; the year schedule shows the real checks.
+  const additionalMedicarePerCheck =
+    (input.taxBrackets.medicareAdditionalRate *
+      Math.max(
+        0,
+        annualFicaBase - input.taxBrackets.medicareAdditionalThreshold,
+      )) /
+    periodsPerYear;
+  const ficaMedicare =
+    ficaBase * input.taxBrackets.medicareRate + additionalMedicarePerCheck;
 
   // ── Step 5: Net pay ──
   // Gross - pre-tax deductions - federal withholding - FICA SS - FICA Medicare - post-tax deductions

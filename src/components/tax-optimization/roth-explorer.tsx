@@ -211,7 +211,7 @@ export function RothExplorer({ selection }: { selection: Selection }) {
               <table className="w-full border-collapse text-right text-xs tabular-nums">
                 <thead>
                   <tr className="border-strong text-muted border-b-2 text-[11px]">
-                    <th className="px-2 py-1.5 text-left">Age</th>
+                    <th className="px-2 py-1.5 text-left">Year</th>
                     <th className="px-2 py-1.5">Converted</th>
                     <th className="px-2 py-1.5">Tax now</th>
                     <th className="px-2 py-1.5">RMD reduction</th>
@@ -228,7 +228,7 @@ export function RothExplorer({ selection }: { selection: Selection }) {
                     )
                     .map((y) => (
                       <tr key={y.year}>
-                        <td className="px-2 py-1 text-left">{y.age}</td>
+                        <td className="px-2 py-1 text-left">{y.year}</td>
                         <td className="px-2 py-1">
                           {formatCurrency(y.conversionAmount)}
                         </td>

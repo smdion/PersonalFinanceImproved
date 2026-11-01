@@ -139,8 +139,8 @@ describe("runStressTestScenarios (M2)", () => {
         taxSplits: { "401k": 0.5, ira: 1.0 },
       },
       currentAge: 35,
-      retirementAge: 65,
-      projectionEndAge: 90,
+      retirementYear: AS_OF.getFullYear() + 30,
+      projectionEndYear: AS_OF.getFullYear() + 55,
       currentSalary: 150000,
       salaryGrowthRate: 0.03,
       salaryCap: null,
@@ -249,7 +249,6 @@ describe("runStressTestScenarios (M2)", () => {
       runStressTestScenarios({
         baseEngineInput: input,
         decumulationDefaults: makeDecumulationDefaults(),
-        avgRetirementAge: 65,
       }).map((r) => r.nestEggAtRetirement);
     expect(
       nestEggs({ ...twoEarners, salaryGrowthRateByPerson: { 1: 0.09, 2: 0 } }),
@@ -260,7 +259,6 @@ describe("runStressTestScenarios (M2)", () => {
     const results = runStressTestScenarios({
       baseEngineInput: makeBaseInput(),
       decumulationDefaults: makeDecumulationDefaults(),
-      avgRetirementAge: 65,
     });
     expect(results).toHaveLength(3);
     expect(results.map((r) => r.label)).toEqual([
@@ -274,7 +272,6 @@ describe("runStressTestScenarios (M2)", () => {
     const results = runStressTestScenarios({
       baseEngineInput: makeBaseInput(),
       decumulationDefaults: makeDecumulationDefaults(),
-      avgRetirementAge: 65,
     });
     // Conservative: 5% return, 4% inflation, 0% salary, 3.5% withdrawal
     const conservative = results[0]!;
@@ -294,7 +291,6 @@ describe("runStressTestScenarios (M2)", () => {
     const results = runStressTestScenarios({
       baseEngineInput: makeBaseInput(),
       decumulationDefaults: makeDecumulationDefaults(),
-      avgRetirementAge: 65,
     });
     const conservative = results.find(
       (r) => r.label === "Conservative stress test",
@@ -326,7 +322,6 @@ describe("runStressTestScenarios (M2)", () => {
     const results = runStressTestScenarios({
       baseEngineInput: makeBaseInput(),
       decumulationDefaults: makeDecumulationDefaults(),
-      avgRetirementAge: 65,
     });
     for (const r of results) {
       expect(r.nestEggAtRetirement).toBeGreaterThanOrEqual(0);
@@ -343,10 +338,9 @@ describe("runStressTestScenarios (M2)", () => {
       baseEngineInput: {
         ...base,
         currentAge: 68,
-        retirementAge: 65,
+        retirementYear: AS_OF.getFullYear() - 3,
       },
       decumulationDefaults: makeDecumulationDefaults(),
-      avgRetirementAge: 65,
     });
     expect(results).toHaveLength(3);
     for (const r of results) {
@@ -373,7 +367,6 @@ describe("runStressTestScenarios (M2)", () => {
           },
         },
       }),
-      avgRetirementAge: 65,
     });
     expect(results).toHaveLength(3);
   });

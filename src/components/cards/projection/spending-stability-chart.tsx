@@ -60,6 +60,7 @@ export function SpendingStabilityChart({
     deflate,
     showStabilityBars,
     setShowStabilityBars,
+    agesInYear,
   } = state;
   // Smart DEFAULT (hidden for GK/Forgo/etc. — flat/uneventful without real
   // volatility), applied ONCE via the shared showStabilityBars toggle (the
@@ -177,6 +178,7 @@ export function SpendingStabilityChart({
       const pct = (v: number) => Math.round(v * 1000) / 10;
       const datum: Record<string, number | undefined> = {
         age: yr.age,
+        year: yr.year,
         ratio: pct(ratio),
         withdrawal: Math.round(deflate(measured, yr.year)),
         baseline: Math.round(deflate(baseline, yr.year)),
@@ -293,7 +295,7 @@ export function SpendingStabilityChart({
         >
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
           <XAxis
-            dataKey="age"
+            dataKey="year"
             tick={{ fontSize: CHART_FONT.tick, fill: "var(--text-faint)" }}
             tickFormatter={(v: number) => String(v)}
           />
@@ -329,7 +331,17 @@ export function SpendingStabilityChart({
               const ratio = d.ratio ?? 0;
               return (
                 <div className="bg-surface-primary rounded-lg border p-2 text-xs shadow-lg">
-                  <div className="mb-1 font-medium">Age {d.age}</div>
+                  <div className="mb-1 font-medium">
+                    {d.year}
+                    {agesInYear(Number(d.year)).map((p) => (
+                      <span
+                        key={p.name}
+                        className="text-muted ml-2 font-normal"
+                      >
+                        {p.name}: {p.age}
+                      </span>
+                    ))}
+                  </div>
                   <div className="flex justify-between gap-4">
                     <span className="text-muted">vs {baselineLabel}:</span>
                     <span

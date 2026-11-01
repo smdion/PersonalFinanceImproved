@@ -24,6 +24,7 @@ type Props = {
     ruleOf55Override: boolean,
   ) => void;
   handleRetirementSettingUpdate: (field: string, value: string) => void;
+  handleGapYearSetting: (patch: Partial<Settings>) => void;
   isEditable: IsEditable;
 };
 
@@ -34,6 +35,7 @@ export function TimelineSection({
   handlePerPersonRetirementAge,
   handlePerPersonRuleOf55Override,
   handleRetirementSettingUpdate,
+  handleGapYearSetting,
   isEditable,
 }: Props) {
   return (
@@ -82,11 +84,11 @@ export function TimelineSection({
               </div>
             ))}
             <div>
-              <span className="text-muted">Household Retirement</span>
+              <span className="text-muted">Withdrawals start</span>
               <div className="font-medium text-blue-600">
-                {Math.max(...perPersonSettings.map((p) => p.retirementAge))}
+                {settings.retirementYear}
                 <span className="text-caption text-faint ml-1 font-normal">
-                  when last person retires
+                  when the last person with a job retires
                 </span>
               </div>
             </div>
@@ -117,13 +119,41 @@ export function TimelineSection({
           </span>
           <div className="flex items-baseline gap-1 font-medium">
             <InlineEdit
-              value={String(settings.endAge)}
+              value={String(settings.ownEndAge ?? settings.endAge)}
               onSave={(v) => handleRetirementSettingUpdate("endAge", v)}
               type="number"
               className="text-sm"
               isEditable={isEditable}
             />
           </div>
+        </div>
+      </div>
+      <div className="mt-3 border-t pt-2 text-sm">
+        <span className="text-muted">
+          Years one paycheck is gone
+          <HelpTip text="Years someone with a job has stopped before everyone retires: one person retired first, or a job ended early. Withdrawals for good haven't started yet. The projection marks these years in the Phase column; hover one to see the money." />
+        </span>
+        <div className="mt-1 flex flex-col gap-1">
+          <Toggle
+            isChecked={!(settings.gapYearStopSaving ?? false)}
+            onChange={(checked) =>
+              handleGapYearSetting({ gapYearStopSaving: !checked })
+            }
+            label="Keep saving as planned"
+            size="xs"
+            disabled={!isEditable}
+            title="Off: nobody contributes in these years, employer match included, so pay goes to spending first."
+          />
+          <Toggle
+            isChecked={settings.gapYearDraws ?? true}
+            onChange={(checked) =>
+              handleGapYearSetting({ gapYearDraws: checked })
+            }
+            label="Withdraw what pay doesn't cover"
+            size="xs"
+            disabled={!isEditable}
+            title="Off: nothing comes out of the accounts in these years, and the plan spends only what's coming in."
+          />
         </div>
       </div>
     </div>

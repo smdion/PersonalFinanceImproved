@@ -1,3 +1,4 @@
+import { withAsyncTransactions } from "./sqlite-transactions";
 import { isPostgres } from "./dialect";
 import { env } from "../env";
 import { log } from "@/lib/logger";
@@ -55,7 +56,7 @@ if (isPostgres()) {
   sqlite.pragma("busy_timeout = 5000");
   sqlite.pragma("foreign_keys = ON");
   sqlite.pragma("synchronous = NORMAL");
-  _db = sqliteDrizzle(sqlite, { schema });
+  _db = withAsyncTransactions(sqliteDrizzle(sqlite, { schema }), sqlite);
 }
 /* eslint-enable */
 

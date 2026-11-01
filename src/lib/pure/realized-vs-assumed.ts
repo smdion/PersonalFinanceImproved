@@ -1,11 +1,11 @@
 /**
  * Realized vs assumed returns: each completed year's actual return (the
  * Performance page's Portfolio return) next to the rate the projections
- * assume for the household's ages that year. Pure; display only.
+ * assume for that year. Pure; display only.
  *
  * The assumed rate is looked up the way the projection engine does: the
- * return-rate table's row for the highest age at or below the household's
- * average age. Years compound into one annual figure per side (chain-
+ * return-rate table's row for the highest age at or below the primary
+ * person's age. Years compound into one annual figure per side (chain-
  * linked), so a few big years don't dominate a simple average.
  */
 import { chainReturns } from "./performance";
@@ -29,7 +29,7 @@ export function assumedRateAt(
 
 type RealizedVsAssumedYear = {
   year: number;
-  /** Household average age that year. */
+  /** The primary person's age that year. */
   age: number;
   realized: number;
   assumed: number;
@@ -37,7 +37,7 @@ type RealizedVsAssumedYear = {
 
 export function realizedVsAssumed(
   years: readonly { year: number; returnPct: number | null }[],
-  birthYears: readonly number[],
+  primaryBirthYear: number | null,
   rates: readonly ReturnRateRow[],
   currentYear: number,
 ): {
@@ -46,7 +46,7 @@ export function realizedVsAssumed(
   assumedAnnual: number | null;
 } {
   const rows: RealizedVsAssumedYear[] = [];
-  if (birthYears.length > 0 && rates.length > 0) {
+  if (primaryBirthYear !== null && rates.length > 0) {
     // Completed years with a real return; leading placeholder years (a
     // flat 0% entered for early years) don't start the comparison.
     const real = [...years]
@@ -54,9 +54,7 @@ export function realizedVsAssumed(
       .sort((a, b) => a.year - b.year);
     const start = real.findIndex((y) => Math.abs(y.returnPct!) >= 0.001);
     for (const y of start < 0 ? [] : real.slice(start)) {
-      const age = Math.round(
-        birthYears.reduce((t, b) => t + (y.year - b), 0) / birthYears.length,
-      );
+      const age = y.year - primaryBirthYear;
       const assumed = assumedRateAt(rates, age);
       if (assumed === null) continue;
       rows.push({ year: y.year, age, realized: y.returnPct!, assumed });

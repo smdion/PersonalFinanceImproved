@@ -55,18 +55,7 @@ describe("state-version table registry coverage", () => {
   it("each versioned table's tier is >= the tier of every table it FKs into", () => {
     // restoreVersion inserts tier 0 → 1 → 2 → 3 without disabling FK
     // checks, so a child must never sort before its parent.
-    //
-    // Known pre-existing violation (predates the v0.8.0 squash, tracked
-    // separately): budget_items (tier 1) FKs contribution_accounts
-    // (tier 2). budget_items.contribution_account_id is nullable /
-    // ON DELETE SET NULL, so it only bites a restore for a household that
-    // has budget items linked to contribution accounts. Fixing it means
-    // re-tiering budget_items and its own children — out of scope here.
-    // This allowlist lets the invariant guard against NEW violations
-    // (the squash's real risk) without that refactor.
-    const KNOWN_TIER_VIOLATIONS = new Set([
-      "budget_items->contribution_accounts",
-    ]);
+
     const tierOf = new Map(VERSION_TABLES.map((t) => [t.name, t.tier]));
     // Every migration, not just the baseline — later ones add FKs too.
     const migrationsDir = path.join(process.cwd(), "drizzle");
@@ -84,7 +73,7 @@ describe("state-version table registry coverage", () => {
       const ct = tierOf.get(child!);
       const pt = tierOf.get(parent!);
       if (ct === undefined || pt === undefined) continue; // excluded table
-      if (ct < pt && !KNOWN_TIER_VIOLATIONS.has(`${child}->${parent}`)) {
+      if (ct < pt) {
         violations.push(
           `${child} (tier ${ct}) FKs ${parent} (tier ${pt}) — child sorts before parent`,
         );

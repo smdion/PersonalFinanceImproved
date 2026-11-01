@@ -165,7 +165,7 @@ export function ProjectionTable({
                 {/* Column group headers */}
                 <tr className="border-subtle border-b">
                   <th
-                    colSpan={3}
+                    colSpan={2}
                     className="text-caption text-faint py-1 text-center font-semibold tracking-wider uppercase"
                   >
                     Timeline
@@ -221,11 +221,7 @@ export function ProjectionTable({
                 <tr className="border-b">
                   <th className="text-muted py-1.5 pr-2 text-left font-medium">
                     Year
-                    <HelpTip text="Calendar year of the projection" />
-                  </th>
-                  <th className="text-muted px-2 py-1.5 text-left font-medium whitespace-nowrap">
-                    Avg Age
-                    <HelpTip text="Average age across all people in the plan — used to determine retirement eligibility and phase transitions" />
+                    <HelpTip text="Calendar year of the projection. Hover a year to see each person's age." />
                   </th>
                   <th className="text-muted px-2 py-1.5 text-left font-medium">
                     Phase
@@ -271,7 +267,7 @@ export function ProjectionTable({
                         ))}
                   <th className="text-muted px-2 py-1.5 text-right font-medium">
                     In / Out
-                    <HelpTip text="Saving phase: total contributions + employer match flowing in. Withdrawal phase: total amount withdrawn across all accounts" />
+                    <HelpTip text="Saving years: contributions and employer match going in. Withdrawal years: the total withdrawn. A year a paycheck is gone shows both: what went in, and below it what came out. Hover for the money in and out." />
                   </th>
                   {balanceView === "taxType" ? (
                     <>

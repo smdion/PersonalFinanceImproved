@@ -16,6 +16,7 @@
  * Survival only — callers with an extra test (Coast FIRE's first-year need)
  * add it on top.
  */
+import { gapShortfallFloor } from "./engine/gap-year-draw";
 import type { EngineDecumulationYear, ProjectionResult } from "./types";
 
 /** Why a plan failed:
@@ -68,6 +69,20 @@ function shortfallReason(y: EngineDecumulationYear): PlanFailureReason {
 export function assessPlan(
   result: Pick<ProjectionResult, "projectionByYear">,
 ): PlanOutcome {
+  // A paycheck gone and no reachable money to replace it, before retirement.
+  for (const y of result.projectionByYear) {
+    if (
+      y.phase === "accumulation" &&
+      y.gapDraw &&
+      y.gapDraw.unmetNeed >= gapShortfallFloor(y.gapDraw.need)
+    )
+      return {
+        succeeded: false,
+        failureAge: y.age,
+        failureYear: y.year,
+        failureReason: "shortfall",
+      };
+  }
   const years = result.projectionByYear.filter(
     (y): y is EngineDecumulationYear => y.phase === "decumulation",
   );

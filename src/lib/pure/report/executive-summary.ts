@@ -57,9 +57,9 @@ export function buildExecutiveSummary(
     keyNumbers.push({
       label:
         outcome.failureReason === "depleted"
-          ? "Age retirement money runs out"
-          : "Age the plan first falls short",
-      value: String(outcome.failureAge),
+          ? "Year retirement money runs out"
+          : "Year the plan first falls short",
+      value: String(outcome.failureYear),
     });
   }
 

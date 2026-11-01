@@ -1,7 +1,11 @@
 /** Budget router for multi-profile budget management including category items, column tiers, contribution profile linking, and budget API integration. */
+import { currentLoan } from "@/server/retirement/payload/expense-endings";
 import { assertWithinIrsLimits } from "@/server/helpers/contribution-caps";
 import { assertNoPlanUses } from "@/server/helpers/plans";
-import { SK_RETIREMENT_DEC_BUDGET_PROFILE_ID } from "@/lib/constants/settings-keys";
+import {
+  SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
+  SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
+} from "@/lib/constants/settings-keys";
 import { eq, asc, inArray, and, gte, lt } from "drizzle-orm";
 import { log } from "@/lib/logger";
 import { z } from "zod/v4";
@@ -34,6 +38,7 @@ import { calculateBudget } from "@/lib/calculators/budget";
 import type { BudgetInput } from "@/lib/calculators/types";
 import {
   computeBudgetAnnualTotal,
+  getActiveBudgetProfile,
   applyContributionAccountEdit,
   applyContributionAccountEditsBatch,
   resolveTargetBudgetProfile,
@@ -452,6 +457,7 @@ export const budgetRouter = createTRPCRouter({
                 category: i.category,
                 subcategory: i.subcategory,
                 amounts,
+                mortgageLoanId: i.mortgageLoanId,
                 isEssential: i.isEssential,
                 sortOrder: i.sortOrder,
                 // API links and contribution links deliberately left unset.
@@ -1486,6 +1492,90 @@ export const budgetRouter = createTRPCRouter({
   // ── Contribution Account Linking ──
 
   /** Link a budget item to a specific contribution account. */
+  /** The budget lines that could be a loan's payment, on the active budget
+   *  profile, and which one is. */
+  mortgageItemChoices: protectedProcedure
+    .input(z.object({ loanId: z.number().int() }))
+    .query(async ({ ctx, input }) => {
+      const [active, settings, loans, profiles, items] = await Promise.all([
+        getActiveBudgetProfile(ctx.db),
+        ctx.db.select().from(schema.appSettings),
+        ctx.db.select().from(schema.mortgageLoans),
+        ctx.db.select().from(schema.budgetProfiles),
+        ctx.db
+          .select()
+          .from(schema.budgetItems)
+          .orderBy(asc(schema.budgetItems.sortOrder)),
+      ]);
+      const setting = (key: string) =>
+        settings.find((s) => s.key === key)?.value ?? null;
+      // The working budget and the retirement budget can be different
+      // profiles; a line is linked per profile.
+      const retirementId = Number(setting(SK_RETIREMENT_DEC_BUDGET_PROFILE_ID));
+      const shown = profiles.filter(
+        (p) => p.id === active?.id || p.id === retirementId,
+      );
+      return {
+        retirementTyped: !!setting(SK_RETIREMENT_DEC_EXPENSE_OVERRIDE),
+        budgets: shown.map((p) => {
+          const own = items.filter((i) => i.profileId === p.id);
+          return {
+            budgetProfileId: p.id,
+            name: p.name,
+            items: own.map((i) => ({ id: i.id, name: i.subcategory })),
+            // A link made before a refinance still means this loan.
+            linkedItemId:
+              own.find(
+                (i) =>
+                  i.mortgageLoanId !== null &&
+                  currentLoan(loans, i.mortgageLoanId)?.id === input.loanId,
+              )?.id ?? null,
+          };
+        }),
+      };
+    }),
+
+  /** Mark which line of a budget pays a loan (null clears it). A line pays
+   *  one loan and a loan has one line per profile: the projection drops it
+   *  after payoff. */
+  setMortgageItem: budgetProcedure
+    .input(
+      z.object({
+        budgetProfileId: z.number().int(),
+        loanId: z.number().int(),
+        itemId: z.number().int().nullable(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.transaction(async (tx) => {
+        const loans = await tx.select().from(schema.mortgageLoans);
+        const stale = loans
+          .filter((l) => currentLoan(loans, l.id)?.id === input.loanId)
+          .map((l) => l.id);
+        await tx
+          .update(schema.budgetItems)
+          .set({ mortgageLoanId: null })
+          .where(
+            and(
+              eq(schema.budgetItems.profileId, input.budgetProfileId),
+              inArray(schema.budgetItems.mortgageLoanId, stale),
+            ),
+          );
+        if (input.itemId !== null) {
+          await tx
+            .update(schema.budgetItems)
+            .set({ mortgageLoanId: input.loanId })
+            .where(
+              and(
+                eq(schema.budgetItems.id, input.itemId),
+                eq(schema.budgetItems.profileId, input.budgetProfileId),
+              ),
+            );
+        }
+      });
+      return { ok: true };
+    }),
+
   linkContributionAccount: budgetProcedure
     .input(
       z.object({

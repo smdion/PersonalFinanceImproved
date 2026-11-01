@@ -15,6 +15,7 @@ import {
   CURRENT_GLIDE_PATH,
   IBBOTSON_CLASSES,
   make7525GlidePath,
+  AS_OF,
 } from "./benchmark-helpers";
 
 const STOCK_BOND_CORRELATIONS = [
@@ -196,8 +197,8 @@ describe("Monte Carlo statistical properties", () => {
       // (absent withdrawals) or growing > 200% in one year.
       const engine = makeTrinityInput({
         currentAge: 65,
-        retirementAge: 65,
-        projectionEndAge: 70,
+        retirementYear: AS_OF.getFullYear() + 0,
+        projectionEndYear: AS_OF.getFullYear() + 5,
         annualExpenses: 0, // No withdrawals to isolate return behavior
       });
       const mc = makeMCInput(engine, {

@@ -1123,6 +1123,32 @@ export function buildIndividualYearBalances(
   },
   eligibility?: EligibilityRecord,
 ): IndividualAccountYearBalance[] {
+  const withdrawalFields = (k: string) => {
+    const acctEligibility = eligibility?.byKey.get(k);
+    const draw = maps.draws?.get(k);
+    return {
+      withdrawal: maps.withdrawal?.get(k) ?? 0,
+      ...(acctEligibility
+        ? {
+            eligibilityLocked:
+              acctEligibility.penaltyFreeAmount <= 0.005 &&
+              acctEligibility.penaltyExposedAmount > 0,
+            eligibilityReason: acctEligibility.reason,
+            penaltyFreeAmount: acctEligibility.penaltyFreeAmount,
+            penaltyExposedAmount: acctEligibility.penaltyExposedAmount,
+            allowPenalizedWithdrawals:
+              acctEligibility.allowPenalizedWithdrawals,
+          }
+        : {}),
+      ...(draw != null
+        ? {
+            rothBasisDrawn: roundToCents(
+              draw.contributionDrawn + draw.conversionDrawn,
+            ),
+          }
+        : {}),
+    };
+  };
   const rows = indAccts.map((ia): IndividualAccountYearBalance => {
     const k = indKey(ia);
     const isOverflow = isOverflowTarget(ia.category);
@@ -1175,6 +1201,9 @@ export function buildIndividualYearBalances(
         ...basisFields,
         ...costBasisFields,
         ...projectedFields,
+        // A year a paycheck is gone draws too (gap-year-draw.ts): the same
+        // withdrawal, eligibility and basis fields a retirement year has.
+        ...(maps.withdrawal ? withdrawalFields(k) : {}),
       };
     }
 

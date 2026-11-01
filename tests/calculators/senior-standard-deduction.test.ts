@@ -86,8 +86,11 @@ function makeInput(overrides: {
     accumulationOverrides: [],
     decumulationOverrides: [],
     currentAge: overrides.currentAge ?? 63,
-    retirementAge: overrides.retirementAge ?? 63,
-    projectionEndAge: 80,
+    retirementYear:
+      AS_OF.getFullYear() +
+      (overrides.retirementAge ?? 63) -
+      (overrides.currentAge ?? 63),
+    projectionEndYear: AS_OF.getFullYear() + 80 - (overrides.currentAge ?? 63),
     currentSalary: 0,
     salaryGrowthRate: 0.03,
     salaryCap: null,

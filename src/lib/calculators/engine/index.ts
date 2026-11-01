@@ -42,3 +42,5 @@ export type {
   WithdrawalSourceKind,
   RankWithdrawalTiersInput,
 } from "./withdrawal-cost-ranking";
+
+export { gapShortfallFloor } from "./gap-year-draw";

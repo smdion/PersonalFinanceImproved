@@ -27,6 +27,7 @@ import {
   getDisplayConfig,
   ACCOUNT_TYPE_CONFIG,
   isPreTaxType,
+  isTaxFreeBucket,
 } from "@/lib/config/account-types";
 import type { TipColor, TooltipLineItem } from "./types";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
@@ -53,6 +54,11 @@ import {
   rowTotal,
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
+import { gapShortfallFloor } from "@/lib/calculators/engine";
+import {
+  buildEligibilityNote,
+  ownerAccountLabel,
+} from "./projection-table-decum-row";
 import {
   renderMcCell,
   type RenderMcCellOptions,
@@ -77,6 +83,24 @@ type AccumulationRowProps = {
   people?: { id: number; name: string; birthYear: number }[];
   mcCellOpts: RenderMcCellOptions;
 };
+
+/** SAVE, HOLD when nobody saves, and + DRAW when accounts pay in too. */
+function GapYearPhase({ yr }: { yr: EngineAccumulationYear }) {
+  return (
+    <span>
+      {yr.savingStopped ? (
+        <span className="text-caption font-medium text-sky-600">HOLD</span>
+      ) : (
+        <span className="text-caption font-medium text-green-600">SAVE</span>
+      )}
+      {(yr.gapDraw?.withdrawal ?? 0) > 0 && (
+        <span className="text-caption ml-1 font-medium text-amber-600">
+          + DRAW
+        </span>
+      )}
+    </span>
+  );
+}
 
 export function AccumulationRow({
   yr,
@@ -109,7 +133,6 @@ export function AccumulationRow({
     deflate,
     getPersonYearTotals,
     baseYear: _baseYear,
-    displayAge,
     renderTooltip,
     enginePeople,
     engineSettings,
@@ -126,6 +149,19 @@ export function AccumulationRow({
     yr.slots.map((s) => [s.category, s]),
   );
   const pt = getPersonYearTotals(yr);
+  // The accounts the row is showing (a person filter narrows them).
+  const scopedIabs = (
+    rows: NonNullable<typeof yr.individualAccountBalances>,
+  ) => (pt ? rows.filter((ia) => ia.ownerPersonId === personFilter) : rows);
+  const drawnTotal = (rows: NonNullable<typeof yr.individualAccountBalances>) =>
+    scopedIabs(rows).reduce((t, ia) => t + (ia.withdrawal ?? 0), 0);
+  const gapOut = yr.gapDraw
+    ? (yr.individualAccountBalances?.length ?? 0) > 0
+      ? drawnTotal(yr.individualAccountBalances!)
+      : pt
+        ? 0
+        : yr.gapDraw.withdrawal
+    : 0;
   return (
     <tr
       ref={rowRef}
@@ -140,22 +176,10 @@ export function AccumulationRow({
               : ""
       }`}
     >
-      <td className="py-1.5 pr-2 whitespace-nowrap">
-        {yr.year}
-        {yr.proRateFraction != null && (
-          <Tooltip
-            content={`Partial year: only ${proRateMonths(yr.proRateFraction)} of 12 months remain. All values in this row reflect the remaining months, not the full year.`}
-            side="right"
-            maxWidth={220}
-          >
-            <span className="text-micro align-super text-blue-500">*</span>
-          </Tooltip>
-        )}
-      </td>
       <Tooltip
         content={(() => {
           const pp = people ?? enginePeople;
-          if (!pp || pp.length < 2) return undefined;
+          if (!pp || pp.length === 0) return undefined;
           return renderTooltip({
             kind: "info",
             lines: pp.map((p) => ({
@@ -166,10 +190,21 @@ export function AccumulationRow({
         })()}
         side="top"
       >
-        <td className="px-2 py-1.5">{displayAge(yr.year) ?? yr.age}</td>
+        <td className="py-1.5 pr-2 whitespace-nowrap">
+          {yr.year}
+          {yr.proRateFraction != null && (
+            <Tooltip
+              content={`Partial year: only ${proRateMonths(yr.proRateFraction)} of 12 months remain. All values in this row reflect the remaining months, not the full year.`}
+              side="right"
+              maxWidth={220}
+            >
+              <span className="text-micro align-super text-blue-500">*</span>
+            </Tooltip>
+          )}
+        </td>
       </Tooltip>
       <td className="px-2 py-1.5">
-        <span className="text-caption font-medium text-green-600">SAVE</span>
+        <GapYearPhase yr={yr} />
       </td>
       <Tooltip
         content={(() => {
@@ -912,9 +947,59 @@ export function AccumulationRow({
             });
             inOutItems.push(...bucketTotals);
           }
+          // A year a paycheck is gone: money comes out as well as in. With
+          // a person or category filter only the accounts shown count, and
+          // the household's figures (tax, the why) are left out.
+          const gap = yr.gapDraw;
+          const gapScoped = !!gap && drawnTotal(iabs) < gap.withdrawal - 0.5;
+          if (gap) {
+            // Each account drawn from, as a retirement year lists them:
+            // owner, tax type, and whether the money is penalty-free.
+            const categoryOrder = getAllCategories();
+            const drawn = scopedIabs(iabs)
+              .filter((ia) => (ia.withdrawal ?? 0) > 0)
+              .sort(
+                (a, b) =>
+                  categoryOrder.indexOf(a.category) -
+                    categoryOrder.indexOf(b.category) ||
+                  (isTaxFreeBucket(a.taxType) ? 1 : 0) -
+                    (isTaxFreeBucket(b.taxType) ? 1 : 0) ||
+                  (a.ownerName ?? a.name).localeCompare(b.ownerName ?? b.name),
+              );
+            for (const ia of drawn)
+              inOutItems.push({
+                label: ownerAccountLabel(ia),
+                amount: deflate(ia.withdrawal!, yr.year),
+                prefix: "-",
+                taxType: itemTaxType(ia.category, ia.taxType),
+                color: "red",
+                group: `Withdrawn · ${catDisplayLabel[ia.category] ?? ia.category}`,
+                ...buildEligibilityNote(ia, yr, deflate),
+              });
+          }
+          const money = (v: number) => formatCurrency(deflate(v, yr.year));
+          const gapMeta = gap
+            ? gap.withdrawal > 0
+              ? `A paycheck is gone: pay ${money(gap.pay)}${gap.ssIncome > 0 ? ` and Social Security ${money(gap.ssIncome)}` : ""}, less ${money(gap.taxOnIncome)} tax and what's saved, leave spending ${money(gap.need)} short, so it's withdrawn`
+              : gap.spendingCut > 0
+                ? `A paycheck is gone: you chose not to withdraw, so spending runs ${money(gap.spendingCut)} under budget`
+                : undefined
+            : undefined;
           return renderTooltip({
             kind: "money",
             header: `${isPersonFiltered ? personFilterName : "Employee"}: ${formatCurrency(empAmount)}`,
+            meta: gapScoped ? undefined : gapMeta,
+            shortfall:
+              gap && !gapScoped && gap.unmetNeed >= gapShortfallFloor(gap.need)
+                ? { amount: deflate(gap.unmetNeed, yr.year) }
+                : undefined,
+            withdrawals:
+              gap && gap.withdrawal > 0 && !gapScoped
+                ? {
+                    amount: deflate(gap.withdrawal, yr.year),
+                    taxCost: deflate(gap.taxCost, yr.year),
+                  }
+                : undefined,
             items: inOutItems.length > 0 ? inOutItems : undefined,
             growth:
               Math.abs(totalGrowth) > 1
@@ -967,6 +1052,11 @@ export function AccumulationRow({
             <span className="text-micro ml-px align-super text-green-600">
               +m
             </span>
+          )}
+          {gapOut > 0 && (
+            <div className="text-caption text-amber-600">
+              −{formatCurrency(deflate(gapOut, yr.year))}
+            </div>
           )}
         </td>
       </Tooltip>

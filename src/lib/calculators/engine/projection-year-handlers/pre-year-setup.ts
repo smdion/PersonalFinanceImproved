@@ -3,6 +3,7 @@
  * decumulation branch. Computes return rate, applies profile switches,
  * projects salary and expenses, dispatches the spending strategy.
  */
+import { expenseEndingFactor } from "../expense-endings";
 import { socialSecurityForYear } from "../social-security-income";
 import { ageInYear } from "../../../utils/date";
 import { roundToCents } from "../../../utils/math";
@@ -57,15 +58,15 @@ export function runPreYearSetup(
 
   const age = input.currentAge + yearIndex;
   const year = input.asOfDate.getFullYear() + yearIndex;
-  // Treat yearIndex=0 as a final partial accumulation year when the person is
-  // retiring mid-calendar-year (retirementAge === currentAge and the as-of
+  // Treat yearIndex=0 as a final partial accumulation year when the household
+  // retires mid-calendar-year (retirementYear is this year and the as-of
   // date is before year-end). This defers decumulation to yearIndex=1 so that
   // accumulation-year.ts can pro-rate contributions and growth by
   // firstYearFraction before the phase boundary is crossed.
   const isAccumulation =
-    age < input.retirementAge ||
+    year < input.retirementYear ||
     (yearIndex === 0 &&
-      age === input.retirementAge &&
+      year === input.retirementYear &&
       ctx.firstYearFraction < 1);
 
   // Get return rate for this age (fall back to closest configured age at
@@ -219,6 +220,7 @@ export function runPreYearSetup(
         .filter((id) => !atWork(id))
     : [];
   let yearSpecs: ContributionSpec[] | undefined;
+  let nobodyAtWork = false;
   if (away.length > 0) {
     if (hasPerPersonSalary) {
       for (const id of away) {
@@ -233,7 +235,7 @@ export function runPreYearSetup(
     }
     // Nobody at work (everyone with pay is away, or the one earner): no
     // pay to save from — joint savings stop too.
-    const nobodyAtWork = hasPerPersonSalary
+    nobodyAtWork = hasPerPersonSalary
       ? [...effectiveSalaryByPerson.keys()].every((id) => away.includes(id))
       : true;
     yearSpecs = state.contributionSpecs?.map((spec) => {
@@ -265,6 +267,21 @@ export function runPreYearSetup(
       return spec;
     });
   }
+  const gapYear = away.some((id) => {
+    const start = workingYears[id]?.start ?? null;
+    return start === null || year >= start;
+  });
+  const savingStopped =
+    nobodyAtWork || (gapYear && input.gapYearStopSaving === true);
+  if (savingStopped && !nobodyAtWork)
+    yearSpecs = (yearSpecs ?? state.contributionSpecs)?.map((spec) => ({
+      ...spec,
+      value: 0,
+      baseAnnual: 0,
+      salaryFraction: 0,
+      configuredAnnual: undefined,
+      employerShare: 0,
+    }));
   // A job starting or ending this year (its own dates, not a retirement:
   // a person retiring next year works all of this one).
   const jobEdgeThisYear =
@@ -291,9 +308,9 @@ export function runPreYearSetup(
     scopedBalances(state.balances, nonRetirement);
 
   // Reset expenses to decumulation budget on the FIRST decumulation year.
-  // Do NOT key on `age === retirementAge`: that check fails in the mid-year
-  // case (retirementAge === currentAge) because by yearIndex=1 the age has already
-  // advanced past retirementAge. Instead, fire exactly once on the first year
+  // Do NOT key on `year === retirementYear`: that check fails in the mid-year
+  // case (retiring in the first year) because by yearIndex=1 the year has
+  // already passed it. Instead, fire exactly once on the first year
   // isAccumulation is false, tracked by state.decumulationExpensesSet.
   // Budget values are in today's dollars -- inflate to retirement-year nominal
   // dollars using CPI (inflationRate), NOT the post-retirement raise rate.
@@ -356,6 +373,28 @@ export function runPreYearSetup(
     // into the budget-only line.
     state.budgetOnlyExpenses =
       state.budgetOnlyExpenses * (1 + expenseInflation);
+  }
+
+  // A loan paid off: its line leaves the budget. Not over a figure typed in
+  // for this phase, and a rate-seeded retirement has no budget to take it from.
+  const typedFigure = [...budgetOverrideMap.keys()].some(
+    (y) =>
+      y <= year &&
+      (isAccumulation ||
+        y >= input.retirementYear ||
+        input.decumulationAnnualExpenses == null),
+  );
+  const rateSeeded =
+    !isAccumulation && input.rateSeededDecumulationYear1 === true;
+  if (!typedFigure && !rateSeeded) {
+    const factor = expenseEndingFactor({
+      endings: input.expenseEndings,
+      phase: isAccumulation ? "accumulation" : "decumulation",
+      year,
+      seeded: yearIndex === 0 || decumulationExpensesJustSet,
+    });
+    state.projectedExpenses *= factor;
+    state.budgetOnlyExpenses *= factor;
   }
 
   // --- Spending Strategy Dispatch ---
@@ -423,5 +462,7 @@ export function runPreYearSetup(
     hasBonusAdjustment,
     yearSpecs,
     jobEdgeThisYear,
+    gapYear,
+    savingStopped,
   };
 }
