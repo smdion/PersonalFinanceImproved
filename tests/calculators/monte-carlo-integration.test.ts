@@ -720,6 +720,25 @@ describe("monte carlo inflation — trials vary around the plan's own rates (v0.
     expect(at(last).priceLevel.p25).toBeLessThan(at(last).priceLevel.p75);
   });
 
+  it("Guyton-Klinger: retirement bands carry the range of anchors the trials set", () => {
+    const base = makeInput({});
+    const r = calculateMonteCarlo({
+      ...mc({
+        ...base,
+        decumulationDefaults: {
+          ...base.decumulationDefaults,
+          withdrawalStrategy: "guyton_klinger",
+        },
+      }),
+      numTrials: 100,
+    });
+    const bands = r.percentileBands;
+    const range = bands[bands.length - 1]!.assumptions!.gkAnchorRange!;
+    expect(range.p25).toBeGreaterThan(0);
+    expect(range.p75).toBeGreaterThan(range.p25);
+    expect(bands[0]!.assumptions!.gkAnchorRange).toBeUndefined();
+  });
+
   it("no inflation risk: no spread or range on the bands", () => {
     const r = calculateMonteCarlo(mc(makeInput({}), { stdDev: 0 }));
     expect(r.percentileBands[1]!.assumptions?.inflation).toBeUndefined();

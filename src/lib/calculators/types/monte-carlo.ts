@@ -26,6 +26,9 @@ export type MonteCarloPercentileBand = {
       stdDev: number;
       priceLevel: { p25: number; p50: number; p75: number };
     };
+    /** Retirement years on Guyton-Klinger: the rate each trial anchored on
+     *  (it's held from then on, so it's the same every year). */
+    gkAnchorRange?: { p25: number; p75: number };
   };
   /** % of trials whose ratio fell below MC_SPENDING_STABILITY_THRESHOLD in
    *  THIS specific year — only populated on `spendingStabilityBands`

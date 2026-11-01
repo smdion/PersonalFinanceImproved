@@ -16,6 +16,7 @@ import { assessPlan, type PlanFailureReason } from "./plan-outcome";
 import { calculateProjection } from "./engine";
 import { resolveReturnRateForAge } from "./engine/growth-application";
 import { buildInflationPath } from "./engine/inflation-path";
+import { gkAnchorRate } from "@/lib/pure/gk-anchor-rate";
 import {
   createPRNG,
   sampleBlendedReturn,
@@ -229,6 +230,9 @@ export function calculateMonteCarlo(
     engineInput.annualExpenses ??
     null;
   // Each trial's price level by year, for the assumptions on the bands.
+  const tracksGkAnchor =
+    engineInput.decumulationDefaults.withdrawalStrategy === "guyton_klinger";
+  const gkAnchorRates: number[] = [];
   const priceLevelsByYear: number[][] = Array.from(
     { length: numYears },
     () => [],
@@ -385,6 +389,10 @@ export function calculateMonteCarlo(
     // use year-1 withdrawal grown by the trial's general inflation — "did
     // spending hold in real terms" is a price question, and these
     // strategies don't use the post-retirement raise.
+    if (tracksGkAnchor) {
+      const anchor = gkAnchorRate(result.projectionByYear);
+      if (anchor !== null) gkAnchorRates.push(anchor);
+    }
     const decYears = result.projectionByYear.filter(
       (y): y is EngineDecumulationYear => y.phase === "decumulation",
     );
@@ -462,6 +470,15 @@ export function calculateMonteCarlo(
   }
   onProgress?.(numTrials, numTrials);
 
+  const sortedAnchors = [...gkAnchorRates].sort((a, b) => a - b);
+  const gkAnchorRange =
+    sortedAnchors.length > 0
+      ? {
+          p25: percentile(sortedAnchors, 25),
+          p75: percentile(sortedAnchors, 75),
+        }
+      : null;
+
   const assumptionsFor = (yearIdx: number) => {
     const stats = blendedReturnStats(
       assetClasses,
@@ -484,8 +501,13 @@ export function calculateMonteCarlo(
             },
           }
         : undefined;
+    const retired = yearIdx >= yearsToRetirement;
     return {
-      assumptions: { ...stats, ...(inflation ? { inflation } : {}) },
+      assumptions: {
+        ...stats,
+        ...(inflation ? { inflation } : {}),
+        ...(gkAnchorRange && retired ? { gkAnchorRange } : {}),
+      },
     };
   };
 

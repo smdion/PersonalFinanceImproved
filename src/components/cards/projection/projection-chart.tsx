@@ -190,8 +190,14 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
         datum._pricesP75 = priceLevel.p75;
       }
     }
-    if (yr.phase === "decumulation" && gkAnchor !== null)
+    if (yr.phase === "decumulation" && gkAnchor !== null) {
       datum._gkAnchor = gkAnchor;
+      const range = band?.assumptions?.gkAnchorRange;
+      if (range) {
+        datum._gkAnchorP25 = range.p25;
+        datum._gkAnchorP75 = range.p75;
+      }
+    }
     if (band) {
       const dp5 = band.p5;
       const dp10 = band.p10;
@@ -583,6 +589,8 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                           <span>Anchor rate</span>
                           <span className="tabular-nums">
                             {formatPercent(Number(d._gkAnchor), 2)}
+                            {d._gkAnchorP25 != null &&
+                              ` (likely ${formatPercent(Number(d._gkAnchorP25), 1)}–${formatPercent(Number(d._gkAnchorP75), 1)})`}
                           </span>
                         </div>
                       )}

@@ -374,7 +374,7 @@ import { log } from "@/lib/logger";
  *  Guyton-Klinger compares benefits in today's dollars. Each owner's RMD
  *  falls on that owner's own accounts (`rmdByPerson[].shortfall`,
  *  `rmdReassignedAmount`), and `irmaaOnTopOfBudget` adds `irmaaPaid`. */
-export const PROJECTION_CACHE_ENGINE_VERSION = 66;
+export const PROJECTION_CACHE_ENGINE_VERSION = 67;
 
 const TTL_MS = 36 * 60 * 60 * 1000; // 36h
 const MAX_ROWS = 500;
