@@ -1703,7 +1703,11 @@ export const performanceRouter = createTRPCRouter({
       .input(
         z
           .object({ id: z.number().int() })
-          .extend(performanceAccountInput.shape),
+          .extend(performanceAccountInput.shape)
+          // Not sent = keep it. Cost basis has its own editor
+          // (updateCostBasis); a card save that leaves it out used to
+          // default it to 0 and wipe a brokerage's basis.
+          .extend({ costBasis: zDecimal.optional() }),
       )
       .mutation(async ({ ctx, input: { id, ...data } }) => {
         // Resolve owner name for programmatic label

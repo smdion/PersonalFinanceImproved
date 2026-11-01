@@ -1484,6 +1484,53 @@ describe("performance.performanceAccounts.create additional", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("performanceAccounts.update", () => {
+  it("a card save that leaves cost basis out keeps it", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const account = await ctx.caller.performance.performanceAccounts.create({
+        institution: "Vanguard",
+        accountType: "brokerage",
+        ownershipType: "joint",
+        parentCategory: "Portfolio",
+        isActive: true,
+        displayOrder: 0,
+        costBasis: "5177.68",
+      });
+      const result = await ctx.caller.performance.performanceAccounts.update({
+        id: account!.id,
+        institution: "Vanguard",
+        accountType: "brokerage",
+        ownershipType: "joint",
+        parentCategory: "Portfolio",
+        isActive: false, // closing it, as the card does
+        displayOrder: 0,
+      });
+      expect(Number(result?.costBasis)).toBe(5177.68);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("an explicit cost basis is still saved", async () => {
+    const ctx = await createTestCaller(adminSession);
+    try {
+      const id = seedPerformanceAccount(ctx.db, { institution: "Vanguard" });
+      const result = await ctx.caller.performance.performanceAccounts.update({
+        id,
+        institution: "Vanguard",
+        accountType: "brokerage",
+        ownershipType: "joint",
+        parentCategory: "Portfolio",
+        isActive: true,
+        displayOrder: 0,
+        costBasis: "1200",
+      });
+      expect(Number(result?.costBasis)).toBe(1200);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
   it("updates the master record and cascades accountLabel/parentCategory", async () => {
     const ctx = await createTestCaller(adminSession);
     try {
