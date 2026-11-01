@@ -1869,7 +1869,11 @@ export const savingsRouter = createTRPCRouter({
 
       const [goals, activeProfile, budgetItems, appSettings] =
         await Promise.all([
-          ctx.db.select().from(schema.savingsGoals),
+          // A deactivated fund's old target is not what the plan funds.
+          ctx.db
+            .select()
+            .from(schema.savingsGoals)
+            .where(eq(schema.savingsGoals.isActive, true)),
           getActiveBudgetProfile(ctx.db),
           ctx.db.select().from(schema.budgetItems),
           ctx.db.select().from(schema.appSettings),

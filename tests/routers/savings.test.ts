@@ -1627,6 +1627,37 @@ describe("savings.computeSummary — currentMonthBudgeted", () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe("savings.pushContributionsToApi", () => {
+  it("leaves a deactivated fund's category alone", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId } = seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Retired Fund",
+        isActive: false,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "100",
+      });
+      await ctx.caller.savings.linkGoalToApi({
+        goalId,
+        service: "ynab",
+        apiCategoryId: "cat-retired",
+        apiCategoryName: "Retired Fund",
+      });
+      const updateCategoryGoalTarget = vi.fn().mockResolvedValue(undefined);
+      vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("ynab");
+      vi.mocked(getClientForService).mockResolvedValueOnce({
+        updateCategoryGoalTarget,
+        updateCategoryTargetBalance: vi.fn(),
+      } as unknown as BudgetAPIClient);
+      const result = await ctx.caller.savings.pushContributionsToApi();
+      expect(result.pushed).toBe(0);
+      expect(updateCategoryGoalTarget).not.toHaveBeenCalled();
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
   it("counts a BudgetApiError('unsupported') as skippedUnsupported, not pushed — and never throws", async () => {
     const ctx = await createTestCaller();
     try {
