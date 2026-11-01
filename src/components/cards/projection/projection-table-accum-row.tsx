@@ -27,6 +27,7 @@ import {
   getDisplayConfig,
   ACCOUNT_TYPE_CONFIG,
   isPreTaxType,
+  isTaxFreeBucket,
 } from "@/lib/config/account-types";
 import type { TipColor, TooltipLineItem } from "./types";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
@@ -53,6 +54,11 @@ import {
   rowTotal,
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
+import { gapShortfallFloor } from "@/lib/calculators/engine";
+import {
+  buildEligibilityNote,
+  ownerAccountLabel,
+} from "./projection-table-decum-row";
 import {
   renderMcCell,
   type RenderMcCellOptions,
@@ -77,42 +83,6 @@ type AccumulationRowProps = {
   people?: { id: number; name: string; birthYear: number }[];
   mcCellOpts: RenderMcCellOptions;
 };
-
-/** A year a paycheck is gone, as money in and money out of the household's
- *  hands: they balance, so the year reads as one picture. */
-function gapYearLines(
-  yr: EngineAccumulationYear,
-  money: (v: number) => string,
-): string[] {
-  const gap = yr.gapDraw!;
-  const spent = gap.spending - gap.spendingCut - gap.unmetNeed;
-  return [
-    `${yr.year}: a paycheck is gone`,
-    "Money in",
-    `  Pay: ${money(gap.pay)}`,
-    ...(gap.ssIncome > 0 ? [`  Social Security: ${money(gap.ssIncome)}`] : []),
-    ...gap.slots
-      .filter((s) => s.withdrawal > 0)
-      .map((s) => `  From ${s.category}: ${money(s.withdrawal)}`),
-    "Money out",
-    `  Spending: ${money(spent)}`,
-    `  Taxes: ${money(gap.taxOnIncome + gap.taxCost)}`,
-    ...(gap.contributions > 0
-      ? [`  Into accounts: ${money(gap.contributions)}`]
-      : []),
-    ...(yr.totalEmployer > 0
-      ? [`Employer match also goes in: ${money(yr.totalEmployer)}`]
-      : []),
-    ...(gap.spendingCut > 0
-      ? [
-          `Spending is ${money(gap.spendingCut)} under budget: you chose not to withdraw`,
-        ]
-      : []),
-    ...(gap.unmetNeed > 0
-      ? [`Spending is ${money(gap.unmetNeed)} under budget: no reachable money`]
-      : []),
-  ];
-}
 
 /** SAVE, HOLD when nobody saves, and + DRAW when accounts pay in too. */
 function GapYearPhase({ yr }: { yr: EngineAccumulationYear }) {
@@ -846,13 +816,6 @@ export function AccumulationRow({
       )}
       <Tooltip
         content={(() => {
-          if (yr.gapDraw && !pt)
-            return renderTooltip({
-              kind: "info",
-              lines: gapYearLines(yr, (v) =>
-                formatCurrency(Math.round(deflate(v, yr.year))),
-              ).map((text) => ({ text, style: "header" as const })),
-            });
           const iabs = yr.individualAccountBalances ?? [];
           const totalGrowth = (
             pt ? iabs.filter((ia) => ia.ownerPersonId === personFilter) : iabs
@@ -971,9 +934,59 @@ export function AccumulationRow({
             });
             inOutItems.push(...bucketTotals);
           }
+          // A year a paycheck is gone: money comes out as well as in. The
+          // household view only; draws aren't split by person.
+          const gap = yr.gapDraw;
+          if (gap) {
+            // Each account drawn from, as a retirement year lists them:
+            // owner, tax type, and whether the money is penalty-free.
+            const categoryOrder = getAllCategories();
+            const drawn = (
+              pt ? iabs.filter((ia) => ia.ownerPersonId === personFilter) : iabs
+            )
+              .filter((ia) => (ia.withdrawal ?? 0) > 0)
+              .sort(
+                (a, b) =>
+                  categoryOrder.indexOf(a.category) -
+                    categoryOrder.indexOf(b.category) ||
+                  (isTaxFreeBucket(a.taxType) ? 1 : 0) -
+                    (isTaxFreeBucket(b.taxType) ? 1 : 0) ||
+                  (a.ownerName ?? a.name).localeCompare(b.ownerName ?? b.name),
+              );
+            for (const ia of drawn)
+              inOutItems.push({
+                label: ownerAccountLabel(ia),
+                amount: deflate(ia.withdrawal!, yr.year),
+                prefix: "-",
+                taxType: itemTaxType(ia.category, ia.taxType),
+                color: "red",
+                group: `Withdrawn · ${catDisplayLabel[ia.category] ?? ia.category}`,
+                ...buildEligibilityNote(ia, yr, deflate),
+              });
+          }
+          const money = (v: number) => formatCurrency(deflate(v, yr.year));
+          const gapMeta = gap
+            ? gap.withdrawal > 0
+              ? `A paycheck is gone: pay ${money(gap.pay)}${gap.ssIncome > 0 ? ` and Social Security ${money(gap.ssIncome)}` : ""}, less ${money(gap.taxOnIncome)} tax and what's saved, leave spending ${money(gap.need)} short, so it's withdrawn`
+              : gap.spendingCut > 0
+                ? `A paycheck is gone: you chose not to withdraw, so spending runs ${money(gap.spendingCut)} under budget`
+                : undefined
+            : undefined;
           return renderTooltip({
             kind: "money",
             header: `${isPersonFiltered ? personFilterName : "Employee"}: ${formatCurrency(empAmount)}`,
+            meta: gapMeta,
+            shortfall:
+              gap && gap.unmetNeed >= gapShortfallFloor(gap.need)
+                ? { amount: deflate(gap.unmetNeed, yr.year) }
+                : undefined,
+            withdrawals:
+              gap && gap.withdrawal > 0
+                ? {
+                    amount: deflate(gap.withdrawal, yr.year),
+                    taxCost: deflate(gap.taxCost, yr.year),
+                  }
+                : undefined,
             items: inOutItems.length > 0 ? inOutItems : undefined,
             growth:
               Math.abs(totalGrowth) > 1

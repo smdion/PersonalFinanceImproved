@@ -88,9 +88,9 @@ const CATEGORY_ORDER = new Map(getAllCategories().map((c, i) => [c, i]));
  * Non-basis reason text (Rule of 55 / age-59½ / locked wording, none of
  * which embeds a dollar figure) is untouched.
  */
-function buildEligibilityNote(
+export function buildEligibilityNote(
   ia: IndividualAccountYearBalance,
-  year: EngineDecumulationYear,
+  year: { year: number },
   deflate: (v: number, yr: number) => number,
 ): { note?: string; noteLocked?: boolean } {
   const parts: string[] = [];
@@ -318,7 +318,10 @@ function buildFullAccountNote(
  *  prefix when the account's own name already starts with the owner's
  *  name (many real account names, e.g. "Sam IRA (Vanguard)", already
  *  include it — prefixing again produced a visibly duplicated name). */
-function ownerAccountLabel(ia: { name: string; ownerName?: string }): string {
+export function ownerAccountLabel(ia: {
+  name: string;
+  ownerName?: string;
+}): string {
   if (!ia.ownerName) return ia.name;
   if (ia.name.toLowerCase().startsWith(ia.ownerName.toLowerCase())) {
     return ia.name;

@@ -51,6 +51,8 @@ import {
   computeWithdrawalEligibility,
 } from "@/lib/pure/withdrawal-eligibility";
 import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
+import type { BasisDraw } from "@/lib/pure/roth-basis-tracking";
+import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
 import type {
   ProjectionContext,
@@ -78,6 +80,14 @@ export type GapYearDraw = {
   warnings: string[];
 };
 
+/** Each account's part of the draw, for the year's account rows. Not on
+ *  the year row itself (Maps don't serialize). */
+export type GapYearAccounts = {
+  withdrawal: Map<string, number>;
+  draws: Map<string, BasisDraw>;
+  eligibility: EligibilityRecord | undefined;
+};
+
 /** Below this the year counts as funded: rounding, not a shortfall. Same
  *  floor as a retirement year's. */
 export function gapShortfallFloor(need: number): number {
@@ -99,7 +109,7 @@ export function runGapYearDraw(
     employeeContributions: number;
     pretaxContributions: number;
   },
-): GapYearDraw {
+): { draw: GapYearDraw; accounts: GapYearAccounts | null } {
   const { input, hasIndividualAccounts, indAccts, indKey } = ctx;
   const { balances, acctBal, indBal, indBasis, brokBasis } = state;
   const { year, age, fraction, payByPerson, budget } = args;
@@ -189,8 +199,10 @@ export function runGapYearDraw(
     slots: [],
     warnings: [],
   };
-  if (need < gapShortfallFloor(need)) return { ...noDraw, need: 0 };
-  if (input.gapYearDraws === false) return { ...noDraw, spendingCut: need };
+  if (need < gapShortfallFloor(need))
+    return { draw: { ...noDraw, need: 0 }, accounts: null };
+  if (input.gapYearDraws === false)
+    return { draw: { ...noDraw, spendingCut: need }, accounts: null };
 
   const config = resolveDecumulationConfig(
     year,
@@ -249,6 +261,7 @@ export function runGapYearDraw(
     if (!hasIndividualAccounts)
       return {
         byKey: new Map<string, number>(),
+        draws: new Map<string, BasisDraw>(),
         warnings: [] as string[],
         rothGrowth: 0,
         penalty: 0,
@@ -270,6 +283,7 @@ export function runGapYearDraw(
     });
     return {
       byKey: decIndWithdrawal,
+      draws,
       warnings,
       rothGrowth: splitRothWithdrawalForTax({
         accounts: indAccts.map((ia) => ({
@@ -352,7 +366,12 @@ export function runGapYearDraw(
     );
   }
   const withdrawal = roundToCents(sumBy(slots, (s) => s.withdrawal));
-  return {
+  const accounts: GapYearAccounts = {
+    withdrawal: taken.byKey,
+    draws: taken.draws,
+    eligibility,
+  };
+  const draw: GapYearDraw = {
     need,
     withdrawal,
     taxCost: cost,
@@ -372,4 +391,5 @@ export function runGapYearDraw(
         ),
     ],
   };
+  return { draw, accounts };
 }

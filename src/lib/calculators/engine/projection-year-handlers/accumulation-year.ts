@@ -587,7 +587,7 @@ export function runAccumulationYear(
 
   // A paycheck is gone: the budget's shortfall comes out of the accounts,
   // before growth, as a retirement year's withdrawal does.
-  const gapDraw = setup.gapYear
+  const gapRun = setup.gapYear
     ? runGapYearDraw(ctx, state, {
         year,
         age,
@@ -601,6 +601,7 @@ export function runAccumulationYear(
         pretaxContributions: totalTraditional,
       })
     : null;
+  const gapDraw = gapRun?.draw ?? null;
   if (gapDraw) {
     routeWarnings.push(...gapDraw.warnings);
     if (gapDraw.unmetNeed >= gapShortfallFloor(gapDraw.need))
@@ -716,7 +717,14 @@ export function runAccumulationYear(
           ramp: indRamp,
           basis: indBasis,
           brokerageBasis: brokBasis,
+          ...(gapRun?.accounts
+            ? {
+                withdrawal: gapRun.accounts.withdrawal,
+                draws: gapRun.accounts.draws,
+              }
+            : {}),
         },
+        gapRun?.accounts?.eligibility,
       )
     : [];
 
