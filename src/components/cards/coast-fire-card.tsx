@@ -71,6 +71,8 @@ type DeterministicResult = {
 
 interface CoastFireCardProps {
   input: CoastFireInput;
+  /** A Coast FIRE age as its year and whose age it is. */
+  ageLabel: (age: number) => string;
   /** Pass-down of the Coast FIRE MC binary-search result from
    *  use-projection-queries.ts. On demand by default — fires
    *  once the household selects a Coast FIRE scenario, not on page load —
@@ -87,6 +89,7 @@ interface CoastFireCardProps {
 
 export function CoastFireCard({
   input,
+  ageLabel,
   coastFireMcResult,
   coastFireMcLoading = false,
   coastFireMcComputedAt,
@@ -122,9 +125,9 @@ export function CoastFireCard({
           prefetching, combined baseline+simulated once it lands. Does NOT
           show "Already ✓" unless BOTH baseline and simulated agree. */}
       {mcAvailable ? (
-        <CombinedStatus det={det} mc={coastFireMcResult} />
+        <CombinedStatus det={det} mc={coastFireMcResult} ageLabel={ageLabel} />
       ) : (
-        <DeterministicStatus result={det} />
+        <DeterministicStatus result={det} ageLabel={ageLabel} />
       )}
       <div className="mt-auto pt-2">
         {coastFireMcLoading && !coastFireMcResult && (
@@ -134,6 +137,7 @@ export function CoastFireCard({
         )}
         {mcAvailable && (
           <SimulatedDetail
+            ageLabel={ageLabel}
             mc={coastFireMcResult}
             computedAt={coastFireMcComputedAt}
           />
@@ -152,13 +156,15 @@ export function CoastFireCard({
 function CombinedStatus({
   det,
   mc,
+  ageLabel,
 }: {
   det: DeterministicResult | undefined;
   mc: CoastFireMcResult;
+  ageLabel: (age: number) => string;
 }) {
   // If baseline hasn't loaded, fall back to simulated-only headline.
   if (!det) {
-    return <SimulatedOnlyStatus mc={mc} />;
+    return <SimulatedOnlyStatus mc={mc} ageLabel={ageLabel} />;
   }
 
   // Either side saying "unreachable" → plan is not Coast FIRE.
@@ -210,7 +216,7 @@ function CombinedStatus({
     return (
       <>
         <div className="text-xl font-bold text-yellow-500 tabular-nums">
-          Age {mc.coastFireAge}
+          {ageLabel(mc.coastFireAge ?? 0)}
         </div>
         <div className="text-caption text-faint mt-1 leading-tight">
           {shortLine}
@@ -227,7 +233,7 @@ function CombinedStatus({
     return (
       <>
         <div className="text-primary text-xl font-bold tabular-nums">
-          Age {headlineAge}
+          {ageLabel(headlineAge)}
         </div>
         <div className="text-caption text-faint mt-1 leading-tight">
           {formatCurrency(det.sustainableWithdrawalToday)}/yr sustainable
@@ -244,7 +250,7 @@ function CombinedStatus({
   return (
     <>
       <div className="text-primary text-xl font-bold tabular-nums">
-        Age {det.coastFireAge}
+        {ageLabel(det.coastFireAge ?? 0)}
       </div>
       <div className="text-caption text-faint mt-1 leading-tight">
         {formatCurrency(det.sustainableWithdrawalToday)}/yr sustainable
@@ -256,7 +262,13 @@ function CombinedStatus({
   );
 }
 
-function SimulatedOnlyStatus({ mc }: { mc: CoastFireMcResult }) {
+function SimulatedOnlyStatus({
+  mc,
+  ageLabel,
+}: {
+  mc: CoastFireMcResult;
+  ageLabel: (age: number) => string;
+}) {
   if (mc.status === "unreachable") {
     return (
       <div className="text-xl font-bold text-red-500 tabular-nums">
@@ -265,7 +277,9 @@ function SimulatedOnlyStatus({ mc }: { mc: CoastFireMcResult }) {
     );
   }
   const label =
-    mc.status === "already_coast" ? "Already ✓" : `Age ${mc.coastFireAge}`;
+    mc.status === "already_coast"
+      ? "Already ✓"
+      : ageLabel(mc.coastFireAge ?? 0);
   const color =
     mc.status === "already_coast" ? "text-green-500" : "text-primary";
   return (
@@ -275,8 +289,10 @@ function SimulatedOnlyStatus({ mc }: { mc: CoastFireMcResult }) {
 
 function DeterministicStatus({
   result,
+  ageLabel,
 }: {
   result: DeterministicResult | undefined;
+  ageLabel: (age: number) => string;
 }) {
   if (!result) {
     return <div className="text-faint text-xl font-bold tabular-nums">—</div>;
@@ -315,7 +331,7 @@ function DeterministicStatus({
   return (
     <>
       <div className="text-primary text-xl font-bold tabular-nums">
-        Age {result.coastFireAge}
+        {ageLabel(result.coastFireAge ?? 0)}
       </div>
       <div className="text-caption text-faint mt-1 leading-tight">
         {formatCurrency(result.sustainableWithdrawalToday)}/yr sustainable
@@ -336,9 +352,11 @@ function DeterministicStatus({
 function SimulatedDetail({
   mc,
   computedAt,
+  ageLabel,
 }: {
   mc: CoastFireMcResult;
   computedAt?: string | null;
+  ageLabel: (age: number) => string;
 }) {
   const threshold = mc.confidenceThreshold;
   const stopNowPasses = mc.stopNowSuccessRate >= threshold;
@@ -355,7 +373,7 @@ function SimulatedDetail({
   } else if (stopNowPasses) {
     tail = "✓";
   } else if (mc.status === "found" && mc.coastFireAge != null) {
-    tail = `— need age ${mc.coastFireAge} for ${formatPercent(threshold, 0)}`;
+    tail = `— needs ${ageLabel(mc.coastFireAge)} for ${formatPercent(threshold, 0)}`;
   } else {
     tail = "";
   }

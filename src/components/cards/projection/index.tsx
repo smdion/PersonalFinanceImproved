@@ -641,8 +641,8 @@ export function ProjectionCard(props: {
                               lines={[
                                 "Active Plan: your plan as configured, with contributions continuing through retirement.",
                                 coastFireAvailable
-                                  ? `Coast FIRE (Age ${coastFireAge}): contributions zeroed from age ${coastFireAge} onward — the earliest age that still passes.`
-                                  : "Coast FIRE (Age N): contributions zeroed from your Coast FIRE age onward — the earliest age that still passes. Not yet available.",
+                                  ? `Coast FIRE (${state.ageLabel(coastFireAge!)}): contributions zeroed from then on — the earliest year that still passes.`
+                                  : "Coast FIRE: contributions zeroed from your Coast FIRE year on — the earliest year that still passes. Not yet available.",
                                 "Coast FIRE (Today): the SAME idea, but stopping right now instead of at the earliest passing age. Use this to see exactly what breaks (and when) if you stopped contributing today — often a shortfall in the years before 59½, which the passing-age view won't show since it's built to avoid it.",
                                 'Coast FIRE (Custom): check any age you pick, not just the earliest passing one or today — pick an age and press "Check this age" to see whether it passes.',
                                 "Initial Rate: an alternate simulation where year 1 of retirement spending is set from your Initial Withdrawal Rate setting × starting balance instead of your stated budget or the amount you set — your budget is ignored entirely for the starting point. Every year after that still runs your ACTIVE strategy's own ongoing rules (guardrails, decline schedule, etc.) unchanged — this only changes where the number starts, not how it evolves. Computed on demand (not preloaded in the background like Coast FIRE), so the first switch takes a few seconds.",
@@ -667,7 +667,7 @@ export function ProjectionCard(props: {
                             }}
                             label={
                               coastFireAvailable
-                                ? `Coast FIRE (Age ${coastFireAge})`
+                                ? `Coast FIRE (${state.ageLabel(coastFireAge!)})`
                                 : "Coast FIRE"
                             }
                             disabled={!coastFireAvailable}
@@ -734,7 +734,9 @@ export function ProjectionCard(props: {
                                   htmlFor="coast-fire-custom-age"
                                   className="text-caption text-muted"
                                 >
-                                  Check age
+                                  {state.primaryName
+                                    ? `Check ${state.primaryName}'s age`
+                                    : "Check age"}
                                 </label>
                                 <input
                                   id="coast-fire-custom-age"

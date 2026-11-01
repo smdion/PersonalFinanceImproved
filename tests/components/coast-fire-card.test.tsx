@@ -38,7 +38,9 @@ function setDeterministic(result: unknown) {
 describe("CoastFireCard", () => {
   it("renders a placeholder dash while deterministic data is loading", () => {
     setDeterministic(null);
-    render(<CoastFireCard input={baseInput} />);
+    render(
+      <CoastFireCard ageLabel={(age) => `Age ${age}`} input={baseInput} />,
+    );
     expect(screen.getByText("Coast FIRE")).toBeInTheDocument();
     expect(screen.getByText("—")).toBeInTheDocument();
   });
@@ -50,7 +52,9 @@ describe("CoastFireCard", () => {
       sustainableWithdrawalToday: 0,
       projectedExpensesAtRetirementToday: 0,
     });
-    render(<CoastFireCard input={baseInput} />);
+    render(
+      <CoastFireCard ageLabel={(age) => `Age ${age}`} input={baseInput} />,
+    );
     expect(screen.getByText("Not reachable")).toBeInTheDocument();
   });
 
@@ -61,7 +65,9 @@ describe("CoastFireCard", () => {
       sustainableWithdrawalToday: 60000,
       projectedExpensesAtRetirementToday: 50000,
     });
-    render(<CoastFireCard input={baseInput} />);
+    render(
+      <CoastFireCard ageLabel={(age) => `Age ${age}`} input={baseInput} />,
+    );
     expect(screen.getByText("Already ✓")).toBeInTheDocument();
     expect(screen.getByText(/60,000/)).toBeInTheDocument();
   });
@@ -73,7 +79,9 @@ describe("CoastFireCard", () => {
       sustainableWithdrawalToday: 40000,
       projectedExpensesAtRetirementToday: 45000,
     });
-    render(<CoastFireCard input={baseInput} />);
+    render(
+      <CoastFireCard ageLabel={(age) => `Age ${age}`} input={baseInput} />,
+    );
     expect(screen.getByText("Age 52")).toBeInTheDocument();
   });
 
@@ -86,6 +94,7 @@ describe("CoastFireCard", () => {
     });
     render(
       <CoastFireCard
+        ageLabel={(age) => `Age ${age}`}
         input={baseInput}
         coastFireMcResult={{
           coastFireAge: 55,
@@ -115,6 +124,7 @@ describe("CoastFireCard", () => {
     });
     render(
       <CoastFireCard
+        ageLabel={(age) => `Age ${age}`}
         input={baseInput}
         coastFireMcLoading
         coastFireMcResult={undefined}

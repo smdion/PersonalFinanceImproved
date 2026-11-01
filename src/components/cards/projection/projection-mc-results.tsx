@@ -28,7 +28,7 @@ export function McDepletionCallout({ state }: { state: ProjectionState }) {
   // implies engineSettings defined (see use-projection-derived.ts).
   if (!state.result) return null;
 
-  const { mcQuery, mcLoading, dollarMode } = state;
+  const { mcQuery, mcLoading, dollarMode, yearOfAge } = state;
 
   if (!mcQuery.data?.result || mcLoading) return null;
   if (!mcQuery.data.result.distributions.failureAge) return null;
@@ -50,8 +50,8 @@ export function McDepletionCallout({ state }: { state: ProjectionState }) {
       <span className="shrink-0 font-medium">
         {isLowRisk ? "\u2139\uFE0F" : "\u26A0"}{" "}
         {isLowRisk
-          ? `In rare scenarios (${deplPct}%), ${failurePhrase} around age ${Math.round(mc.distributions.failureAge!.median)}.`
-          : `In ${deplPct}% of futures, ${failurePhrase} around age ${Math.round(mc.distributions.failureAge!.median)}.`}
+          ? `In rare scenarios (${deplPct}%), ${failurePhrase} around ${yearOfAge(Math.round(mc.distributions.failureAge!.median))}.`
+          : `In ${deplPct}% of futures, ${failurePhrase} around ${yearOfAge(Math.round(mc.distributions.failureAge!.median))}.`}
       </span>
       <span className={isLowRisk ? "text-muted" : "text-red-600"}>
         Typical end balance: {formatCurrency(tb.median)}

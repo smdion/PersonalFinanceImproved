@@ -1,4 +1,5 @@
 /** Memoized derived data from engine query results — person filtering, visible column detection, deflation, contribution rate schedules, tooltip rendering, and milestone-based year filtering. */
+import { planAgeLabel, yearOfPlanAge } from "@/lib/pure/household-timeline";
 import { useFocusMatch } from "@/lib/hooks/use-focus";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { useMemo, useCallback, useEffect } from "react";
@@ -534,6 +535,17 @@ export function useProjectionDerived(
       age: year - p.birthYear,
     }));
 
+  const planAges = result?.projectionByYear[0];
+  const primaryName = (people ?? enginePeople)?.find(
+    (p) => p.id === primaryPersonId,
+  )?.name;
+  /** A plan age as its year and whose age it is. */
+  const ageLabel = (age: number) =>
+    planAges ? planAgeLabel(planAges, primaryName, age) : `Age ${age}`;
+  /** A plan age's calendar year. */
+  const yearOfAge = (age: number) =>
+    planAges ? yearOfPlanAge(planAges, age) : age;
+
   const focusedYear = useFocusMatch("projectionYear")?.year ?? null;
 
   // --- Milestone filtering ---
@@ -611,6 +623,9 @@ export function useProjectionDerived(
     deflate,
     renderTooltip,
     agesInYear,
+    ageLabel,
+    primaryName,
+    yearOfAge,
     getFilteredYears,
     individualAccountNames,
   };

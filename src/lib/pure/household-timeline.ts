@@ -96,3 +96,22 @@ export function planRetirementAge(plan: PlanYears): number {
 export function planEndAge(plan: PlanYears): number {
   return planAgeInYear(plan, plan.projectionEndYear);
 }
+
+/** The calendar year of a plan age, from the plan's first row. */
+export function yearOfPlanAge(
+  first: { year: number; age: number },
+  age: number,
+): number {
+  return first.year + age - first.age;
+}
+
+/** A plan age for reading: the year, and whose age it is, since an age means
+ *  something different for each person. "2035 (Sean, 48)". */
+export function planAgeLabel(
+  first: { year: number; age: number },
+  primaryName: string | undefined,
+  age: number,
+): string {
+  const year = yearOfPlanAge(first, age);
+  return primaryName ? `${year} (${primaryName}, ${age})` : String(year);
+}

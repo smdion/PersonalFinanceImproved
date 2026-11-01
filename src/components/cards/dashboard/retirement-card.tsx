@@ -1,5 +1,6 @@
 "use client";
 
+import { planAgeLabel, yearOfPlanAge } from "@/lib/pure/household-timeline";
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import { simulationDollars } from "@/lib/pure/simulation-dollars";
 import { FocusLink } from "@/components/ui/focus-link";
@@ -97,6 +98,17 @@ function RetirementCardImpl() {
   const retAge = settings.retirementAge;
   const endAge = settings.endAge;
   const currentAge = result.projectionByYear[0]?.age ?? 0;
+  const firstRow = result.projectionByYear[0] ?? {
+    year: new Date().getFullYear(),
+    age: currentAge,
+  };
+  const yearOf = (age: number) => yearOfPlanAge(firstRow, age);
+  const ageLabel = (age: number) =>
+    planAgeLabel(
+      firstRow,
+      data.people?.find((p) => p.id === data.primaryPersonId)?.name,
+      age,
+    );
   const portfolioTotal = retPortfolio
     ? retPortfolio.preTax +
       retPortfolio.taxFree +
@@ -165,7 +177,7 @@ function RetirementCardImpl() {
             <>
               <Metric
                 value={formatCurrency(nestEggDisplay.median)}
-                label={`Nest egg at age ${nestEggAge} (today's $, simulated median)`}
+                label={`Nest egg in ${yearOf(nestEggAge)} (today's $, simulated median)`}
               />
               <div className="text-caption text-faint mt-1 leading-tight">
                 Range {formatCurrency(nestEggDisplay.low)} –{" "}
@@ -177,7 +189,7 @@ function RetirementCardImpl() {
             <>
               <Metric
                 value={formatCurrency(nestEggDisplay.baseline)}
-                label={`Nest egg at age ${nestEggAge} (today's $, baseline — fixed returns)`}
+                label={`Nest egg in ${yearOf(nestEggAge)} (today's $, baseline — fixed returns)`}
               />
               {/* The whole card links to /retirement — no nested link. */}
               <div className="text-caption text-faint mt-1 leading-tight">
@@ -192,7 +204,7 @@ function RetirementCardImpl() {
               <span className="text-primary">
                 {yearsToRet} yrs{" "}
                 <span className="text-caption text-faint">
-                  (age {currentAge} → {retAge})
+                  ({result.projectionByYear[0]?.year} → {yearOf(retAge)})
                 </span>
               </span>
             </div>
@@ -308,7 +320,7 @@ function RetirementCardImpl() {
                     ? "not reachable"
                     : simResult.status === "already_coast"
                       ? "already coast"
-                      : `age ${simResult.coastFireAge}`
+                      : ageLabel(simResult.coastFireAge ?? 0)
                   : null;
                 return (
                   <div className="flex justify-between">
@@ -327,7 +339,7 @@ function RetirementCardImpl() {
                         ? "Not reachable"
                         : coastFireData.result.status === "already_coast"
                           ? "Already Coast"
-                          : `Age ${coastFireData.result.coastFireAge}`}
+                          : ageLabel(coastFireData.result.coastFireAge ?? 0)}
                       <span className="text-caption text-faint ml-1">
                         {simLabel
                           ? `(simulated: ${simLabel})`
@@ -393,8 +405,8 @@ function RetirementCardImpl() {
                   className="font-medium text-red-600 hover:underline"
                 >
                   {outcome.failureReason === "depleted"
-                    ? `Runs out age ${outcome.failureAge}`
-                    : `Falls short age ${outcome.failureAge}`}
+                    ? `Runs out ${outcome.failureYear}`
+                    : `Falls short ${outcome.failureYear}`}
                 </FocusLink>
               )}
             </div>

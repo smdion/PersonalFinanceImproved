@@ -160,8 +160,8 @@ function PlanColumn({
                   return outcome.succeeded
                     ? "through the plan"
                     : outcome.failureReason === "depleted"
-                      ? `to age ${outcome.failureAge}`
-                      : `falls short at ${outcome.failureAge}`;
+                      ? `to ${outcome.failureYear}`
+                      : `falls short in ${outcome.failureYear}`;
                 })()
               : projection.isLoading
                 ? "…"

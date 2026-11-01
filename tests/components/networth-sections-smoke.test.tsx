@@ -157,7 +157,7 @@ describe("FinancialIndependenceCard smoke", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the projected FI year + age from the live projection", () => {
+  it("renders the projected FI year from the live projection", () => {
     projectedFi = {
       isLoading: false,
       hasProjection: true,
@@ -165,7 +165,7 @@ describe("FinancialIndependenceCard smoke", () => {
       fi: { year: 2045, age: 55 },
     };
     render(<FinancialIndependenceCard {...baseProps} />);
-    expect(screen.getByText("2045 (age 55)")).toBeInTheDocument();
+    expect(screen.getByText("2045")).toBeInTheDocument();
     expect(screen.getByText("Based on retirement plan")).toBeInTheDocument();
   });
 

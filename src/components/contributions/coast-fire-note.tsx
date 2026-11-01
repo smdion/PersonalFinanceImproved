@@ -7,21 +7,36 @@
  */
 import Link from "next/link";
 import { trpc } from "@/lib/trpc";
+import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
 import { usePlanEngineInput } from "@/lib/hooks/use-plan-engine-input";
+import { planAgeLabel } from "@/lib/pure/household-timeline";
 
 export function CoastFireNote() {
   const { input, ready } = usePlanEngineInput();
+  const { data: projection } = useDashboardProjection();
   const { data } = trpc.projection.computeCoastFire.useQuery(input, {
     enabled: ready,
     staleTime: 60_000,
   });
   const r = data?.result;
   if (!r) return null;
+  const first = projection?.result?.projectionByYear[0];
+  const stopLabel =
+    first && r.coastFireAge !== null
+      ? planAgeLabel(
+          first,
+          projection && "people" in projection
+            ? projection.people.find((p) => p.id === projection.primaryPersonId)
+                ?.name
+            : undefined,
+          r.coastFireAge,
+        )
+      : `age ${r.coastFireAge}`;
   const text =
     r.status === "already_coast"
       ? "Your active plan could stop contributing today and retirement would still work"
       : r.status === "found"
-        ? `Your active plan's contributions could stop at age ${r.coastFireAge} and retirement would still work`
+        ? `Your active plan's contributions could stop in ${stopLabel} and retirement would still work`
         : "Your active plan needs contributions all the way to retirement";
   return (
     <p className="text-caption text-muted -mt-2 mb-3">

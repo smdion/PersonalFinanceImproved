@@ -15,7 +15,6 @@ export function ReportYearTable({ rows }: { rows: YearTableRow[] }) {
         <thead>
           <tr className="border-b">
             <th className="py-1 pr-2 text-left">Year</th>
-            <th className="py-1 pr-2 text-left">Age</th>
             <th className="py-1 pr-2 text-right">Withdrawal</th>
             <th className="py-1 pr-2 text-right">Tax</th>
             <th className="py-1 text-left">Notes</th>
@@ -29,7 +28,6 @@ export function ReportYearTable({ rows }: { rows: YearTableRow[] }) {
               style={{ breakInside: "avoid" }}
             >
               <td className="py-0.5 pr-2 tabular-nums">{row.year}</td>
-              <td className="py-0.5 pr-2 tabular-nums">{row.age}</td>
               <td className="py-0.5 pr-2 text-right tabular-nums">
                 {row.withdrawal}
               </td>

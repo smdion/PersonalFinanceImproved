@@ -156,7 +156,7 @@ describe("buildExecutiveSummary", () => {
     expect(summary.narrative).toMatch(/runs out at age 78/);
     expect(
       summary.keyNumbers.find((k) => /runs out/i.test(k.label))?.value,
-    ).toBe("78");
+    ).toBe("2060");
   });
 
   it("includes a Coast FIRE one-liner only when an age is supplied", () => {

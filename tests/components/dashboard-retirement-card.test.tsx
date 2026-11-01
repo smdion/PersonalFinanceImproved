@@ -155,7 +155,7 @@ describe("RetirementCard dashboard cache-peek features", () => {
       result: { status: "found", coastFireAge: 55 },
     };
     render(<RetirementCard />);
-    expect(screen.getByText("(simulated: age 55)")).toBeInTheDocument();
+    expect(screen.getByText("(simulated: 2041)")).toBeInTheDocument();
   });
 });
 
