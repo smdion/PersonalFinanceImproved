@@ -522,6 +522,18 @@ describe("savings.linkGoalToApi / unlinkGoalFromApi", () => {
       expect(result).toEqual({ ok: true });
     });
 
+    it("refuses a category another fund is already linked to", async () => {
+      const other = seedSavingsGoal(db, { name: "Other Fund" });
+      await expect(
+        caller.savings.linkGoalToApi({
+          goalId: other,
+          service: "ynab",
+          apiCategoryId: "cat-xyz-999",
+          apiCategoryName: "New Category Name",
+        }),
+      ).rejects.toThrow(/Sinking Fund is already linked/);
+    });
+
     it("rejects empty apiCategoryId", async () => {
       await expect(
         caller.savings.linkGoalToApi({

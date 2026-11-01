@@ -1479,8 +1479,8 @@ export const savingsRouter = createTRPCRouter({
         z.object({
           goalId: z.number().int(),
           profileId: z.number().int(),
-          allocationPercent: z.number().nullable(),
-          monthlyContribution: z.number(),
+          allocationPercent: z.number().min(0).max(100).nullable(),
+          monthlyContribution: z.number().min(0),
         }),
       )
       .mutation(async ({ ctx, input }) => {
@@ -1528,6 +1528,27 @@ export const savingsRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // One fund per category: two would each push their own target to it,
+      // and the last push would win.
+      const goals = await ctx.db
+        .select({ id: schema.savingsGoals.id, name: schema.savingsGoals.name })
+        .from(schema.savingsGoals);
+      const links = await loadSavingsGoalLinks(
+        ctx.db,
+        goals.map((g) => g.id),
+        input.service,
+        "primary",
+      );
+      const taken = goals.find(
+        (g) =>
+          g.id !== input.goalId &&
+          links.get(g.id)?.categoryId === input.apiCategoryId,
+      );
+      if (taken)
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `${taken.name} is already linked to that category`,
+        });
       await setSavingsGoalLink(ctx.db, {
         savingsGoalId: input.goalId,
         service: input.service,
@@ -2184,11 +2205,25 @@ export const savingsRouter = createTRPCRouter({
         });
       }
 
+      // A fund taking more than the whole pool has no percent to lock in
+      // (and would overflow the column).
+      const over = targets.find(
+        (g) =>
+          resolvedByGoal.get(g.id)!.monthlyContribution > maxMonthlyFunding,
+      );
+      if (over)
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: `${over.name} gets more than the whole income pool — lower it first`,
+        });
+
       await ctx.db.transaction(async (tx) => {
         for (const g of targets) {
           const resolved = resolvedByGoal.get(g.id)!;
           const newPercent =
-            (resolved.monthlyContribution / maxMonthlyFunding) * 100;
+            Math.round(
+              (resolved.monthlyContribution / maxMonthlyFunding) * 100_000,
+            ) / 1000;
           await upsertGoalProfileAllocation(tx, g.id, targetProfileId, {
             allocationPercent: newPercent,
             monthlyContribution: resolved.monthlyContribution,
