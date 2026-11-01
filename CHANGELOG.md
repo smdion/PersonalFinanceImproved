@@ -15,6 +15,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Current Balances shows money the balances already show going in.** "Paid in" comes from the transactions your institutions send, which arrive several days late, so a recent day's figure was missing deposits. Each close's figure now includes money the balances already show, marked "~" until it's reported; hover for the breakdown.
 - **A backdoor Roth contribution waiting to be converted is no longer called pre-tax money.** The pro-rata check read today's traditional IRA balance as Dec 31's, so a monthly backdoor deposit a few days before its conversion warned that the backdoor was mostly taxable. For someone going the backdoor route, that deposit is after-tax money; the Roth IRA card names it and says to convert it before Dec 31.
 
+- **Finalizing a year works on every install.** It failed outright on SQLite. A category with no yearly row now gets one, so a year can't stay half-finalized or be finalized twice.
+- **Performance's lifetime totals keep their history.** The Retirement row now starts from what its categories have on record, and a category with no stored row in a finalized year no longer resets to zero. **Your Retirement lifetime figures may rise** if your history was imported.
+- **Saving a snapshot that pulls balances from your budget app** now updates Performance and Net Worth together.
+- **A family HSA is sized at the family limit** in Contribution Profiles, and the limit always matches the coverage shown, including with two HSA rows.
+- **A person born on January 1 keeps their birth year** on servers behind UTC. The same fix covers year-end and loan dates.
+- **Raises on the active Salary Profile update extra-paycheck transfers**, instead of leaving them at the old pay.
+- **Savings transfers stay paired.** Editing one side moves the other, deleting one side deletes both, and a transfer to the same fund is refused. Bulk savings changes now save all or nothing.
+- **Deleting things cleans up after itself.** A person with retirement settings can be deleted (the primary person can't while others remain), and deleted accounts, debts, loans, assets and deductions leave no budget links or profile values behind.
+- **Reset all data** clears the settings that pointed at the wiped data, in one step.
+- **Budget and fund safeguards.** A deactivated fund's target is no longer pushed to your budget app, and two funds can't share a category. Extra-paycheck rules can't overlap or run backwards, and fund percentages stay between 0 and 100.
+- **SimpleFIN:** a whole account is no longer suggested beside a part already linked, Current Balances' recent activity lists only counted accounts, and a day missing a fund's value no longer reads as selling it.
+- **Performance vs snapshot check** works for evening updates; utilities year-over-year compares the same months.
+- Cost basis edits save correctly, budget sync handles large budgets in batches and flags missing mapped accounts, the Strategy retirement lever re-runs the plan with the new age, and settings follow the active retirement profile.
+
+### Added
+
+- **The projection chart's tooltip shows each year's assumptions:** plan return, the Simulation's return and volatility, inflation, and Guyton-Klinger's anchor rate.
+
 ### Security
 
 - Rate limiting uses the address the proxy saw, not one the client can claim.
