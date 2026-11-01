@@ -1,4 +1,5 @@
 /** Asset management router covering home improvements, other assets, year-end history, and historical notes with API sync status. */
+import { calendarYear } from "@/lib/utils/date";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
@@ -278,9 +279,7 @@ export const assetsRouter = createTRPCRouter({
       const { year, fields } = input;
 
       const rows = await ctx.db.select().from(schema.netWorthAnnual);
-      const row = rows.find(
-        (r) => new Date(r.yearEndDate).getFullYear() === year,
-      );
+      const row = rows.find((r) => calendarYear(r.yearEndDate) === year);
       if (!row) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -439,7 +438,7 @@ export const assetsRouter = createTRPCRouter({
         .map((r) => ({
           id: 0,
           loanId: input?.loanId ?? 0,
-          year: new Date(r.yearEndDate).getFullYear(),
+          year: calendarYear(r.yearEndDate),
           assessedValue: null,
           taxAmount: toNumber(r.propertyTaxes!),
           note: "From historical records",

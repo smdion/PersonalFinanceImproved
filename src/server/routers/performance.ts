@@ -86,7 +86,11 @@ import {
   perfFieldSchema,
   PERF_NOTE_MAX,
 } from "@/lib/pure/performance-annotations";
-import { localDateStr, parseLocalDateOnly } from "@/lib/utils/date";
+import {
+  localDateStr,
+  parseLocalDateOnly,
+  calendarYear,
+} from "@/lib/utils/date";
 import { getEffectiveOtherLiabilities } from "@/server/helpers/debts";
 
 const performanceAccountInput = z.object({
@@ -1618,7 +1622,7 @@ export const performanceRouter = createTRPCRouter({
         // Check if row already exists for this year
         const existingNW = await tx.select().from(schema.netWorthAnnual);
         const existingRow = existingNW.find(
-          (r) => new Date(r.yearEndDate).getFullYear() === year,
+          (r) => calendarYear(r.yearEndDate) === year,
         );
 
         const nwValues = assembleNetWorthValues({

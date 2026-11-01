@@ -1,4 +1,5 @@
 /** Net worth router that aggregates account snapshots, mortgage balances, cash, and other assets into a current and projected net worth summary, plus portfolio snapshot CRUD (including budget-API pull/push side-effects). */
+import { calendarYear } from "@/lib/utils/date";
 import { loadTrackedAccountNames } from "@/server/helpers/account-names";
 import { eq, asc, desc, sql, gte, lte, and, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -328,7 +329,7 @@ export const networthRouter = createTRPCRouter({
 
       const primaryPerson = getPrimaryPerson(people);
       const primaryBirthYear = primaryPerson
-        ? new Date(primaryPerson.dateOfBirth).getFullYear()
+        ? calendarYear(primaryPerson.dateOfBirth)
         : null;
 
       // Purchase price for cost basis: use earliest mortgage (or active) as the property
@@ -389,7 +390,7 @@ export const networthRouter = createTRPCRouter({
 
       const primaryPerson = getPrimaryPerson(people);
       const primaryBirthYear = primaryPerson
-        ? new Date(primaryPerson.dateOfBirth).getFullYear()
+        ? calendarYear(primaryPerson.dateOfBirth)
         : null;
 
       // Pass through YearEndRow data — all metrics already computed by buildYearEndHistory

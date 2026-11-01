@@ -16,6 +16,7 @@ import {
   parseLocalDateOnly,
   localMidnight,
   localDateStr,
+  calendarYear,
 } from "@/lib/utils/date";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
 import type { Db } from "./transforms";
@@ -414,7 +415,7 @@ export async function buildYearEndHistory(
     let cumulative = 0;
     const allYears = new Set([
       ...homeImprovementItems.map((i) => i.year),
-      ...nwRows.map((r) => new Date(r.yearEndDate).getFullYear()),
+      ...nwRows.map((r) => calendarYear(r.yearEndDate)),
     ]);
     for (const year of Array.from(allYears).sort()) {
       const yearItems = homeImprovementItems.filter((i) => i.year <= year);
@@ -679,15 +680,11 @@ export async function buildYearEndHistory(
   // If loan data covers the year, use the computed balance; otherwise fall back to manual netWorthAnnual.mortgageBalance.
   const earliestLoanYear =
     mortgageLoans.length > 0
-      ? Math.min(
-          ...mortgageLoans.map((l) =>
-            new Date(l.firstPaymentDate).getFullYear(),
-          ),
-        )
+      ? Math.min(...mortgageLoans.map((l) => calendarYear(l.firstPaymentDate)))
       : Infinity;
   const mortgageBalanceByYear = new Map<number, number>();
   for (const r of nwRows) {
-    const year = new Date(r.yearEndDate).getFullYear();
+    const year = calendarYear(r.yearEndDate);
     if (mortgageLoans.length > 0 && year >= earliestLoanYear) {
       const yearEnd = new Date(year, 11, 31); // Dec 31
       mortgageBalanceByYear.set(
@@ -699,7 +696,7 @@ export async function buildYearEndHistory(
 
   // Map net_worth_annual rows to unified YearEndRow
   const history: YearEndRow[] = nwRows.map((r) => {
-    const year = new Date(r.yearEndDate).getFullYear();
+    const year = calendarYear(r.yearEndDate);
     const perf = perfPortfolioByYear.get(year);
     const perfSummary = perfSummaryByYear.get(year);
 
@@ -1088,7 +1085,7 @@ export async function buildYearEndHistory(
   const useSalaryAverage = setting("use_salary_average_3_year", 0) === 1;
 
   // Birth years for average age
-  const birthYears = people.map((p) => new Date(p.dateOfBirth).getFullYear());
+  const birthYears = people.map((p) => calendarYear(p.dateOfBirth));
 
   // Withdrawal rate from the ACTIVE RETIREMENT PROFILE's settings row.
   // Was "the primary person's row", which read an arbitrary row when no

@@ -10,6 +10,7 @@
  * balances. Callers (projection router endpoints) consume the result and add
  * their own accumulation/decumulation overrides and decumulation defaults.
  */
+import { calendarYear } from "@/lib/utils/date";
 import { loadExpenseEndings } from "./payload/expense-endings";
 import {
   householdTimeline,
@@ -517,7 +518,7 @@ export async function buildEnginePayload(
     return {
       personId: p.id,
       name: p.name,
-      birthYear: new Date(p.dateOfBirth).getFullYear(),
+      birthYear: calendarYear(p.dateOfBirth),
       retirementAge:
         (ps?.retirementAge ?? settings.retirementAge) +
         (opts.retirementAgeDelta ?? 0),
@@ -1318,7 +1319,7 @@ export async function buildEnginePayload(
       perPersonSettings.length > 1
         ? buildSocialSecurityEntries(perPersonSettings, filingStatus)
         : undefined,
-    birthYear: new Date(primaryPerson.dateOfBirth).getFullYear(),
+    birthYear: calendarYear(primaryPerson.dateOfBirth),
     filingStatus,
     enableIrmaaAwareness: settings.enableIrmaaAwareness,
     irmaaOnTopOfBudget: settings.irmaaOnTopOfBudget,

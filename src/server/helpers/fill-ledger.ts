@@ -8,6 +8,7 @@ import { z } from "zod/v4";
 import { and, eq, gte, inArray, lte } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { utcDayOf } from "@/lib/utils/date";
+import { mergeSettingAtomically } from "./merge-setting";
 import type { Db, DbOrTx } from "./transforms";
 
 const FILL_LEDGER_KEY = "simplefin_fill_ledger";
@@ -84,32 +85,32 @@ export async function recordFill(
           ),
         )
     : [];
-  const ledger = await readLedger(tx);
-  const scoped = (ledger[scope] ??= {});
-  const record = (scoped[fill.year] ??= { baselines: {}, counted: {} });
-  for (const [row, baseline] of Object.entries(fill.baselines))
-    if (
-      record.baselines[row] === undefined &&
-      baseline >= `${fill.year - 1}-12-31` &&
-      baseline <= `${fill.year}-12-31`
-    )
-      record.baselines[row] = baseline;
-  for (const { id } of known) record.counted[id] = fill.counted[id]!;
-  // Only forward, and never past today or the year.
-  const today = utcDayOf(new Date());
-  const through = (record.estimatedThrough ??= {});
-  for (const [row, d] of Object.entries(fill.estimatedThrough ?? {}))
-    if (
-      d <= today &&
-      d <= `${fill.year}-12-31` &&
-      d > (through[row] ?? `${fill.year - 1}-12-31`)
-    )
-      through[row] = d;
-  await tx
-    .insert(schema.appSettings)
-    .values({ key: FILL_LEDGER_KEY, value: ledger })
-    .onConflictDoUpdate({
-      target: schema.appSettings.key,
-      set: { value: ledger },
-    });
+  // Two saves at once (Performance and Basis) must not drop each other's
+  // fills: one read-change-write under the setting's lock.
+  await mergeSettingAtomically(tx as Db, FILL_LEDGER_KEY, (stored) => {
+    const ledger = (
+      stored && typeof stored === "object" ? stored : {}
+    ) as Ledger;
+    const scoped = (ledger[scope] ??= {});
+    const record = (scoped[fill.year] ??= { baselines: {}, counted: {} });
+    for (const [row, baseline] of Object.entries(fill.baselines))
+      if (
+        record.baselines[row] === undefined &&
+        baseline >= `${fill.year - 1}-12-31` &&
+        baseline <= `${fill.year}-12-31`
+      )
+        record.baselines[row] = baseline;
+    for (const { id } of known) record.counted[id] = fill.counted[id]!;
+    // Only forward, and never past today or the year.
+    const today = utcDayOf(new Date());
+    const through = (record.estimatedThrough ??= {});
+    for (const [row, d] of Object.entries(fill.estimatedThrough ?? {}))
+      if (
+        d <= today &&
+        d <= `${fill.year}-12-31` &&
+        d > (through[row] ?? `${fill.year - 1}-12-31`)
+      )
+        through[row] = d;
+    return ledger;
+  });
 }
