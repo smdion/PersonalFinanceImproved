@@ -17,6 +17,7 @@ import { useMemo, useCallback } from "react";
 import {
   buildPayrollBreakdown,
   buildNonPayrollContribs,
+  fixedContributionMonthly,
 } from "@/components/budget/helpers";
 import { normalizeContribKey } from "@/lib/config/account-types";
 import type {
@@ -188,8 +189,16 @@ export function useBudgetDerivedData({
         }>) {
           if (linkedContributionAccountIds.has(c.id)) continue;
           const val = computeValue(c) || 0;
+          // Joint money has no pay schedule of its own: the first paycheck's.
+          const periods = (
+            pData.people as { paycheck: { periodsPerYear: number } | null }[]
+          ).find((p) => p.paycheck)?.paycheck?.periodsPerYear;
           const monthly =
-            c.contributionMethod === "fixed_monthly" ? val : val / 12;
+            c.contributionMethod === "fixed_per_period" && periods
+              ? fixedContributionMonthly(c.contributionMethod, val, periods)
+              : c.contributionMethod === "fixed_monthly"
+                ? val
+                : val / 12;
           const key = normalizeContribKey(c.accountType);
           if (key) map.set(key, (map.get(key) ?? 0) + monthly);
         }

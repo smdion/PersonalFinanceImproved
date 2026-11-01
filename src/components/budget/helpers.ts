@@ -161,16 +161,29 @@ export function buildNonPayrollContribs(
       let monthly: number;
       if (c.contributionMethod === "percent_of_salary") {
         monthly = ((val / 100) * (d.salary ?? 0)) / 12;
-      } else if (c.contributionMethod === "fixed_monthly") {
-        monthly = val;
       } else {
-        monthly = (val * periodsPerYear) / 12;
+        monthly = fixedContributionMonthly(
+          c.contributionMethod,
+          val,
+          periodsPerYear,
+        );
       }
       const existing = map.get(c.accountType) ?? 0;
       map.set(c.accountType, existing + monthly);
     }
   }
   return map;
+}
+
+/** A fixed-dollar contribution's monthly figure, by how it's entered. */
+export function fixedContributionMonthly(
+  method: string,
+  value: number,
+  periodsPerYear: number,
+): number {
+  if (method === "fixed_monthly") return value;
+  if (method === "fixed_annual") return value / 12;
+  return (value * periodsPerYear) / 12;
 }
 
 /** Sum of all sinking-fund monthly commitments. */
