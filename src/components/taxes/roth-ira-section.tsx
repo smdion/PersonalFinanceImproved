@@ -144,6 +144,14 @@ export function RothIraSection({ wageAgi }: { wageAgi: number }) {
                 }}
               />
             </div>
+            {view.pendingConversion.map((p) => (
+              <p key={`pending-${p.personId}`} className="text-muted">
+                {p.name} has {formatCurrency(p.amount, 0)} in a traditional IRA
+                waiting to be converted: after-tax money from the backdoor
+                contribution, so the pro-rata rule doesn&apos;t tax it. Convert
+                it before Dec 31 so it isn&apos;t counted then.
+              </p>
+            ))}
             {j.verdict !== "direct" &&
               view.proRata.map((p) => (
                 <p key={p.personId} className="text-primary">
