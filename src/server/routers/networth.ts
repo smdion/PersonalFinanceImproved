@@ -1373,39 +1373,87 @@ export const networthRouter = createTRPCRouter({
         // balance row added out-of-band with no explanation, matching the
         // "zero, don't silently omit" rule create() enforces for carried-
         // forward rows — an explicit add should fail loudly instead.
+        const [snap] = await ctx.db
+          .select()
+          .from(schema.portfolioSnapshots)
+          .where(eq(schema.portfolioSnapshots.id, input.snapshotId));
+        if (!snap)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "That snapshot no longer exists.",
+          });
+        // Same rule as updateAccount: an older snapshot is history.
+        const [latest] = await ctx.db
+          .select({ id: schema.portfolioSnapshots.id })
+          .from(schema.portfolioSnapshots)
+          .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
+          .limit(1);
+        if (latest?.id !== snap.id)
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Accounts can only be added to the most recent snapshot.",
+          });
+
+        // A row linked to a master takes the master's parent category, as
+        // every other write does, so Net Worth and Performance group it
+        // the same way.
+        let parentCategory: string = input.parentCategory;
         if (input.performanceAccountId != null) {
-          const master = await ctx.db
-            .select({ isActive: schema.performanceAccounts.isActive })
+          const [master] = await ctx.db
+            .select({
+              isActive: schema.performanceAccounts.isActive,
+              parentCategory: schema.performanceAccounts.parentCategory,
+            })
             .from(schema.performanceAccounts)
             .where(
               eq(schema.performanceAccounts.id, input.performanceAccountId),
             )
             .limit(1);
-          if (master[0] && !master[0].isActive) {
+          // Defensive invariant, not a reachable UI path today: the only
+          // shipped caller (AddSubAccountForm) never sends a
+          // performanceAccountId. A closed account can't get a new balance
+          // row added out-of-band — an explicit add fails loudly instead.
+          if (master && !master.isActive) {
             throw new TRPCError({
               code: "BAD_REQUEST",
               message:
                 "Cannot add a balance row for a closed account. Reopen the account first.",
             });
           }
+          if (master) parentCategory = master.parentCategory;
         }
-        const rows = await ctx.db
-          .insert(schema.portfolioAccounts)
-          .values({
-            snapshotId: input.snapshotId,
-            institution: input.institution,
-            taxType: input.taxType,
-            amount: input.amount,
-            accountType: input.accountType,
-            subType: input.subType ?? null,
-            label: input.label ?? null,
-            parentCategory: input.parentCategory,
-            ownerPersonId: input.ownerPersonId ?? null,
-            performanceAccountId: input.performanceAccountId ?? null,
-            isActive: true,
-          })
-          .returning();
-        return rows[0]!;
+        const row = await ctx.db.transaction(async (tx) => {
+          const [inserted] = await tx
+            .insert(schema.portfolioAccounts)
+            .values({
+              snapshotId: input.snapshotId,
+              institution: input.institution,
+              taxType: input.taxType,
+              amount: input.amount,
+              accountType: input.accountType,
+              subType: input.subType ?? null,
+              label: input.label ?? null,
+              parentCategory,
+              ownerPersonId: input.ownerPersonId ?? null,
+              performanceAccountId: input.performanceAccountId ?? null,
+              isActive: true,
+            })
+            .returning();
+          // The year's ending balances follow the snapshot, same shared
+          // path as create/updateAccount.
+          const allRows = await tx
+            .select({
+              performanceAccountId:
+                schema.portfolioAccounts.performanceAccountId,
+              amount: schema.portfolioAccounts.amount,
+            })
+            .from(schema.portfolioAccounts)
+            .where(eq(schema.portfolioAccounts.snapshotId, snap.id));
+          await refreshSnapshotYearDerivatives(tx, snap.snapshotDate, allRows);
+          return inserted!;
+        });
+        invalidateYearEndCache();
+        return row;
       }),
 
     /** Delete a snapshot (cascades to its accounts). */
