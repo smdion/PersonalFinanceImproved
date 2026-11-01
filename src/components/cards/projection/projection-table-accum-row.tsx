@@ -96,30 +96,35 @@ function GapYearPhase({
   );
   if (!gap) return save;
   const money = (v: number) => formatCurrency(Math.round(deflate(v, yr.year)));
+  // Money in and money out of the household's hands this year: they
+  // balance, so the year reads as one picture, not as save + draw.
+  const spent = gap.spending - gap.spendingCut - gap.unmetNeed;
+  const taxes = gap.taxOnIncome + gap.taxCost;
   const lines = [
-    gap.withdrawal > 0 && !yr.savingStopped
-      ? `A paycheck is gone in ${yr.year}: the year both saves and draws.`
-      : `A paycheck is gone in ${yr.year}.`,
-    `Pay: ${money(gap.pay)}`,
-    ...(gap.ssIncome > 0 ? [`Social Security: ${money(gap.ssIncome)}`] : []),
-    `Tax on that: ${money(gap.taxOnIncome)}`,
-    `Saved from pay: ${money(gap.contributions)}`,
-    ...(yr.totalEmployer > 0
-      ? [`Employer match: ${money(yr.totalEmployer)}`]
+    `${yr.year}: a paycheck is gone`,
+    "Money in",
+    `  Pay: ${money(gap.pay)}`,
+    ...(gap.ssIncome > 0 ? [`  Social Security: ${money(gap.ssIncome)}`] : []),
+    ...gap.slots
+      .filter((s) => s.withdrawal > 0)
+      .map((s) => `  From ${s.category}: ${money(s.withdrawal)}`),
+    "Money out",
+    `  Spending: ${money(spent)}`,
+    `  Taxes: ${money(taxes)}`,
+    ...(gap.contributions > 0
+      ? [`  Into accounts: ${money(gap.contributions)}`]
       : []),
-    `Spending: ${money(gap.spending)}`,
-    ...(gap.withdrawal > 0
-      ? [
-          `Drawn from accounts: ${money(gap.withdrawal)}, ${money(gap.taxCost)} of it tax`,
-          ...gap.slots
-            .filter((s) => s.withdrawal > 0)
-            .map((s) => `  ${s.category}: ${money(s.withdrawal)}`),
-        ]
+    ...(yr.totalEmployer > 0
+      ? [`Employer match also goes in: ${money(yr.totalEmployer)}`]
       : []),
     ...(gap.spendingCut > 0
-      ? [`You chose not to draw: ${money(gap.spendingCut)} less spending`]
+      ? [
+          `Spending is ${money(gap.spendingCut)} under budget: you chose not to withdraw`,
+        ]
       : []),
-    ...(gap.unmetNeed > 0 ? [`Unfunded: ${money(gap.unmetNeed)}`] : []),
+    ...(gap.unmetNeed > 0
+      ? [`Spending is ${money(gap.unmetNeed)} under budget: no reachable money`]
+      : []),
   ];
   return (
     <Tooltip

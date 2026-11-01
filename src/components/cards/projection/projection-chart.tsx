@@ -194,6 +194,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     if (yr.phase === "accumulation" && yr.gapDraw) {
       datum._gapWithdrawal = deflate(yr.gapDraw.withdrawal, yr.year);
       datum._gapSaved = deflate(yr.totalEmployee + yr.totalEmployer, yr.year);
+      datum._gapPayIn = deflate(yr.gapDraw.pay + yr.gapDraw.ssIncome, yr.year);
       datum._gapSpendingCut = deflate(yr.gapDraw.spendingCut, yr.year);
     }
 
@@ -442,28 +443,32 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                     </div>
                     {(Number(d._gapWithdrawal) > 0 ||
                       Number(d._gapSpendingCut) > 0) && (
-                      <div className="text-muted">
-                        A paycheck is gone this year
-                      </div>
-                    )}
-                    {Number(d._gapWithdrawal) > 0 && (
-                      <>
-                        <div className="flex justify-between gap-4 text-green-500">
-                          <span>Saved (match included)</span>
-                          <span>{formatCurrency(Number(d._gapSaved))}</span>
+                      <div className="mb-1 border-b pb-1">
+                        <div className="text-muted">A paycheck is gone</div>
+                        <div className="flex justify-between gap-4">
+                          <span>In: pay and benefits</span>
+                          <span>{formatCurrency(Number(d._gapPayIn))}</span>
                         </div>
-                        <div className="flex justify-between gap-4 text-amber-500">
-                          <span>Drawn from accounts</span>
-                          <span>
-                            {formatCurrency(Number(d._gapWithdrawal))}
-                          </span>
-                        </div>
-                      </>
-                    )}
-                    {Number(d._gapSpendingCut) > 0 && (
-                      <div className="text-amber-500">
-                        Spending {formatCurrency(Number(d._gapSpendingCut))}{" "}
-                        lower (you chose not to draw)
+                        {Number(d._gapWithdrawal) > 0 && (
+                          <div className="flex justify-between gap-4 text-amber-500">
+                            <span>In: from accounts</span>
+                            <span>
+                              {formatCurrency(Number(d._gapWithdrawal))}
+                            </span>
+                          </div>
+                        )}
+                        {Number(d._gapSaved) > 0 && (
+                          <div className="flex justify-between gap-4 text-green-500">
+                            <span>Out: into accounts (match included)</span>
+                            <span>{formatCurrency(Number(d._gapSaved))}</span>
+                          </div>
+                        )}
+                        {Number(d._gapSpendingCut) > 0 && (
+                          <div className="text-amber-500">
+                            Spending {formatCurrency(Number(d._gapSpendingCut))}{" "}
+                            under budget (you chose not to withdraw)
+                          </div>
+                        )}
                       </div>
                     )}
                     {segmentKeys
