@@ -32,7 +32,11 @@ vi.mock("@/lib/hooks/use-recommendations", () => ({
     error: null,
     recommendations,
     dismissed: [],
+    results: [],
   }),
+}));
+vi.mock("@/lib/hooks/use-dashboard-projection", () => ({
+  useDashboardProjection: () => ({ data: undefined }),
 }));
 
 // Each click sends its own change; the server merges it (settings router).

@@ -62,6 +62,7 @@ import {
   formatSavingsRate,
 } from "@/lib/utils/format";
 import { calculateLoanMonthlyPayment, safeDivide } from "@/lib/utils/math";
+import { sumBy } from "@/lib/utils/math";
 import { isHighInterestDebt } from "@/lib/config/debts";
 import { meetsRaiseRule } from "@/lib/pure/raise-history";
 import { recentCoveredMonths } from "@/lib/pure/always-buying";
@@ -1757,14 +1758,10 @@ function fundCosts(input: MilestoneInput): MilestoneResult {
   const bar = (f: (typeof judged)[number]) =>
     PF_FUND_EXPENSE_RATIO[f.bucket as keyof typeof PF_FUND_EXPENSE_RATIO];
   const pricey = judged.filter((f) => f.expenseRatio > bar(f));
-  // What the funds above the bar cost beyond it, each year.
-  const overBar = pricey.reduce(
-    (sum, f) => sum + (f.value ?? 0) * (f.expenseRatio - bar(f)),
-    0,
-  );
+  const over = sumBy(pricey, (f) => (f.value ?? 0) * (f.expenseRatio - bar(f)));
   return result("fundCosts", {
     status: pricey.length ? "behind" : "reached",
-    yearlySaving: overBar > 0 ? overBar : undefined,
+    yearlySaving: over > 0 ? over : undefined,
     value: { kind: "count", amount: judged.length - pricey.length },
     target: { kind: "count", amount: judged.length },
     progress: (judged.length - pricey.length) / judged.length,
