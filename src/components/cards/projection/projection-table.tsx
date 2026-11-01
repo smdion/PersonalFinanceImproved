@@ -165,7 +165,7 @@ export function ProjectionTable({
                 {/* Column group headers */}
                 <tr className="border-subtle border-b">
                   <th
-                    colSpan={3}
+                    colSpan={2}
                     className="text-caption text-faint py-1 text-center font-semibold tracking-wider uppercase"
                   >
                     Timeline
@@ -221,11 +221,7 @@ export function ProjectionTable({
                 <tr className="border-b">
                   <th className="text-muted py-1.5 pr-2 text-left font-medium">
                     Year
-                    <HelpTip text="Calendar year of the projection" />
-                  </th>
-                  <th className="text-muted px-2 py-1.5 text-left font-medium whitespace-nowrap">
-                    Age
-                    <HelpTip text="The primary person's age that year. Each person's retirement, Social Security and account rules run from their own age." />
+                    <HelpTip text="Calendar year of the projection. Hover a year to see each person's age." />
                   </th>
                   <th className="text-muted px-2 py-1.5 text-left font-medium">
                     Phase

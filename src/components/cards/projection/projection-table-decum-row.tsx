@@ -373,7 +373,6 @@ export function DecumulationRow({
     deflate,
     getPersonYearTotals,
     baseYear: _baseYear,
-    displayAge,
     renderTooltip,
     enginePeople,
     engineSettings,
@@ -419,13 +418,14 @@ export function DecumulationRow({
   const totalLumpSum = lumpSumTotal(yearLumpSums);
 
   // Detect milestone years for row highlighting
-  const ssAge = engineSettings?.ssStartAge;
-  const isSsStartRow = ssAge != null && yr.age === ssAge && dyr.ssIncome > 0;
-  const firstRmdAge = result.projectionByYear.find(
-    (y) => y.phase === "decumulation" && y.rmdAmount > 0,
-  )?.age;
+  const isSsStartRow =
+    result.projectionByYear.find(
+      (y) => y.phase === "decumulation" && y.ssIncome > 0,
+    )?.year === yr.year;
   const isRmdStartRow =
-    firstRmdAge != null && yr.age === firstRmdAge && dyr.rmdAmount > 0;
+    result.projectionByYear.find(
+      (y) => y.phase === "decumulation" && y.rmdAmount > 0,
+    )?.year === yr.year;
 
   return (
     <tr
@@ -445,11 +445,10 @@ export function DecumulationRow({
                   : ""
       }`}
     >
-      <td className="py-1.5 pr-2">{yr.year}</td>
       <Tooltip
         content={(() => {
           const pp = people ?? enginePeople;
-          if (!pp || pp.length < 2) return undefined;
+          if (!pp || pp.length === 0) return undefined;
           return renderTooltip({
             kind: "info",
             lines: pp.map((p) => ({
@@ -460,7 +459,7 @@ export function DecumulationRow({
         })()}
         side="top"
       >
-        <td className="px-2 py-1.5">{displayAge(yr.year) ?? yr.age}</td>
+        <td className="py-1.5 pr-2">{yr.year}</td>
       </Tooltip>
       <td className="px-2 py-1.5">
         <span className="text-caption font-medium text-amber-600">DRAW</span>

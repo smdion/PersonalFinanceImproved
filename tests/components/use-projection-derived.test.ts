@@ -440,7 +440,7 @@ describe("useProjectionDerived", () => {
     expect(result.current.personDepletionInfo).toEqual({ year: 2061, age: 66 });
   });
 
-  it("avgBirthYear and displayAge derive from the people list", async () => {
+  it("agesInYear gives each person their own age; derive from the people list", async () => {
     const useProjectionDerived = await importHook();
     const { result } = renderHook(() =>
       useProjectionDerived(
@@ -454,16 +454,18 @@ describe("useProjectionDerived", () => {
         }),
       ),
     );
-    // The plan's age is one real person's, never the two averaged (40).
-    expect(result.current.displayAge(2025)).toBe(45);
+    expect(result.current.agesInYear(2025)).toEqual([
+      { name: "Alice", age: 45 },
+      { name: "Bob", age: 35 },
+    ]);
   });
 
-  it("displayAge returns null when there are no people", async () => {
+  it("agesInYear is empty when there are no people", async () => {
     const useProjectionDerived = await importHook();
     const { result } = renderHook(() =>
       useProjectionDerived(makeForm(), makeQueries(), makeProps()),
     );
-    expect(result.current.displayAge(2025)).toBeNull();
+    expect(result.current.agesInYear(2025)).toEqual([]);
   });
 
   it("getFilteredYears returns all years unchanged when showAllYears is true", async () => {

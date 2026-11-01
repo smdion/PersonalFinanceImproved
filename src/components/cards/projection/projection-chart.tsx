@@ -72,6 +72,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     isPersonFiltered,
     personFilterName,
     getPersonYearTotals,
+    agesInYear,
     deflate,
     mcBandsByYear,
     mcPrefetchQuery,
@@ -85,18 +86,18 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   // Bars always show standalone deterministic projection.
   // MC fan bands + median line overlay on top via mcBandsByYear.
   const years = result.projectionByYear;
-  const retAge = engineSettings.retirementAge;
-  const ssStartAge = engineSettings.ssStartAge;
-  // Detect RMD start age from first decumulation year with rmdAmount > 0
-  const rmdStartAge =
-    years.find((y) => y.phase === "decumulation" && y.rmdAmount > 0)?.age ??
-    null;
-  const retIdx = years.findIndex((y) => y.age === retAge);
+  const retIdx = years.findIndex((y) => y.phase === "decumulation");
+  const retYear = years[retIdx]?.year ?? null;
   // Also pin the SS and RMD start years so milestone reference lines always
-  // appear, even when those ages fall on an odd-indexed (normally skipped) year.
-  const ssIdx = years.findIndex((y) => y.age === ssStartAge);
-  const rmdIdx =
-    rmdStartAge != null ? years.findIndex((y) => y.age === rmdStartAge) : -1;
+  // appear, even when those years fall on an odd-indexed (normally skipped) one.
+  const ssIdx = years.findIndex(
+    (y) => y.phase === "decumulation" && y.ssIncome > 0,
+  );
+  const ssStartYear = years[ssIdx]?.year ?? null;
+  const rmdIdx = years.findIndex(
+    (y) => y.phase === "decumulation" && y.rmdAmount > 0,
+  );
+  const rmdStartYear = years[rmdIdx]?.year ?? null;
   // Guyton-Klinger guardrail events (data already computed and
   // shown in the table-row tooltip — see projection-table-decum-row.tsx —
   // just not previously marked on the chart). Pin every triggering year the
@@ -141,7 +142,6 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   const chartData = filtered.map((yr) => {
     const pt = getPersonYearTotals(yr);
     const datum: Record<string, number | string> = {
-      age: yr.age,
       year: yr.year,
     };
 
@@ -192,11 +192,8 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
 
     // Milestone event annotations (decumulation only)
     if (yr.phase === "decumulation") {
-      datum._ssStart = yr.age === ssStartAge && yr.ssIncome > 0 ? 1 : 0;
-      datum._rmdStart =
-        rmdStartAge != null && yr.age === rmdStartAge && yr.rmdAmount > 0
-          ? 1
-          : 0;
+      datum._ssStart = yr.year === ssStartYear ? 1 : 0;
+      datum._rmdStart = yr.year === rmdStartYear ? 1 : 0;
       // All dollar figures below go through deflate() like every other
       // dollar value this chart renders (balances, MC bands) — previously
       // raw nominal dollars regardless of the Today's $/Future $ toggle
@@ -311,7 +308,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
         strategyEventStyleKeys.includes(y.strategyAction),
     )
     .map((y) => ({
-      age: y.age,
+      year: y.year,
       style: STRATEGY_EVENT_STYLE[y.strategyAction as string]!,
     }));
 
@@ -329,7 +326,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       (y): y is Extract<typeof y, { phase: "decumulation" }> =>
         y.phase === "decumulation" && y.unmetNeedMaterial === true,
     )
-    .map((y) => ({ age: y.age, amount: y.unmetNeed ?? 0 }));
+    .map((y) => ({ year: y.year, amount: y.unmetNeed ?? 0 }));
 
   return (
     <div className="bg-surface-sunken chart-fade-in rounded-lg p-3">
@@ -376,7 +373,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
           >
             <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.mcGrid} />
             <XAxis
-              dataKey="age"
+              dataKey="year"
               tick={{ fontSize: CHART_FONT.tick, fill: CHART_COLORS.axisMuted }}
               tickLine={false}
               axisLine={{ stroke: CHART_COLORS.axisLine }}
@@ -426,7 +423,15 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                     className={`${TOOLTIP_SURFACE_CLASSES} max-w-xs text-xs`}
                   >
                     <div className="mb-1 font-medium">
-                      Age {d.age} · {d.year}
+                      {d.year}
+                      {agesInYear(Number(d.year)).map((p) => (
+                        <span
+                          key={p.name}
+                          className="text-muted ml-2 font-normal"
+                        >
+                          {p.name}: {p.age}
+                        </span>
+                      ))}
                     </div>
                     {segmentKeys
                       .filter((k) => (Number(d[k.key]) || 0) > 0)
@@ -822,7 +827,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             {/* Retirement age reference line */}
             {(() => {
               const retDataIdx = chartData.findIndex(
-                (d) => Number(d.age) === retAge,
+                (d) => Number(d.year) === retYear,
               );
               if (retDataIdx < 0) return null;
               return (
@@ -839,10 +844,10 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             })()}
 
             {/* Social Security start age marker */}
-            {chartData.some((d) => Number(d.age) === ssStartAge) && (
+            {chartData.some((d) => Number(d.year) === ssStartYear) && (
               <ReferenceLine
                 yAxisId="balance"
-                x={ssStartAge}
+                x={ssStartYear ?? undefined}
                 stroke={CHART_COLORS.ssMarker}
                 strokeDasharray="6 3"
                 strokeWidth={1}
@@ -856,11 +861,11 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             )}
 
             {/* RMD start age marker */}
-            {rmdStartAge != null &&
-              chartData.some((d) => Number(d.age) === rmdStartAge) && (
+            {rmdStartYear != null &&
+              chartData.some((d) => Number(d.year) === rmdStartYear) && (
                 <ReferenceLine
                   yAxisId="balance"
-                  x={rmdStartAge}
+                  x={rmdStartYear}
                   stroke={CHART_COLORS.rmdMarker}
                   strokeDasharray="6 3"
                   strokeWidth={1}
@@ -879,11 +884,11 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 tooltip; now visible at a glance on the chart too. */}
             {guardrailEvents.map(
               (ev) =>
-                chartData.some((d) => Number(d.age) === ev.age) && (
+                chartData.some((d) => Number(d.year) === ev.year) && (
                   <ReferenceLine
-                    key={`guardrail-${ev.age}`}
+                    key={`guardrail-${ev.year}`}
                     yAxisId="balance"
-                    x={ev.age}
+                    x={ev.year}
                     stroke={ev.style.color}
                     strokeDasharray="2 2"
                     strokeWidth={1}
@@ -904,11 +909,11 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                 another guardrail-style informational marker. */}
             {shortfallEvents.map(
               (ev) =>
-                chartData.some((d) => Number(d.age) === ev.age) && (
+                chartData.some((d) => Number(d.year) === ev.year) && (
                   <ReferenceLine
-                    key={`shortfall-${ev.age}`}
+                    key={`shortfall-${ev.year}`}
                     yAxisId="balance"
-                    x={ev.age}
+                    x={ev.year}
                     stroke={CHART_COLORS.shortfallMarker}
                     strokeDasharray="2 2"
                     strokeWidth={1.5}
@@ -1001,7 +1006,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             SS Start
           </span>
         )}
-        {rmdStartAge != null &&
+        {rmdStartYear != null &&
           chartData.some((d) => Number(d._rmdAmount) > 0) && (
             <span className="flex items-center gap-1">
               <span

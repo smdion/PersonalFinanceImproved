@@ -109,7 +109,6 @@ export function AccumulationRow({
     deflate,
     getPersonYearTotals,
     baseYear: _baseYear,
-    displayAge,
     renderTooltip,
     enginePeople,
     engineSettings,
@@ -140,22 +139,10 @@ export function AccumulationRow({
               : ""
       }`}
     >
-      <td className="py-1.5 pr-2 whitespace-nowrap">
-        {yr.year}
-        {yr.proRateFraction != null && (
-          <Tooltip
-            content={`Partial year: only ${proRateMonths(yr.proRateFraction)} of 12 months remain. All values in this row reflect the remaining months, not the full year.`}
-            side="right"
-            maxWidth={220}
-          >
-            <span className="text-micro align-super text-blue-500">*</span>
-          </Tooltip>
-        )}
-      </td>
       <Tooltip
         content={(() => {
           const pp = people ?? enginePeople;
-          if (!pp || pp.length < 2) return undefined;
+          if (!pp || pp.length === 0) return undefined;
           return renderTooltip({
             kind: "info",
             lines: pp.map((p) => ({
@@ -166,7 +153,18 @@ export function AccumulationRow({
         })()}
         side="top"
       >
-        <td className="px-2 py-1.5">{displayAge(yr.year) ?? yr.age}</td>
+        <td className="py-1.5 pr-2 whitespace-nowrap">
+          {yr.year}
+          {yr.proRateFraction != null && (
+            <Tooltip
+              content={`Partial year: only ${proRateMonths(yr.proRateFraction)} of 12 months remain. All values in this row reflect the remaining months, not the full year.`}
+              side="right"
+              maxWidth={220}
+            >
+              <span className="text-micro align-super text-blue-500">*</span>
+            </Tooltip>
+          )}
+        </td>
       </Tooltip>
       <td className="px-2 py-1.5">
         <span className="text-caption font-medium text-green-600">SAVE</span>

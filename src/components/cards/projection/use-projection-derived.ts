@@ -526,18 +526,13 @@ export function useProjectionDerived(
     onContributionRates(rates);
   }, [result, onContributionRates]);
 
-  // --- Age display ---
-  // The person being viewed, else the primary person: the plan's ages.
-  const ageBirthYear = useMemo(() => {
-    const pp = people ?? enginePeople;
-    if (!pp || pp.length === 0) return null;
-    return (
-      pp.find((p) => p.id === (personFilter ?? primaryPersonId))?.birthYear ??
-      pp[0]!.birthYear
-    );
-  }, [people, enginePeople, personFilter, primaryPersonId]);
-  const displayAge = (year: number) =>
-    ageBirthYear !== null ? year - ageBirthYear : null;
+  // Each person's age in a year: the plan runs on years, and an age means
+  // something different for each person.
+  const agesInYear = (year: number) =>
+    (people ?? enginePeople ?? []).map((p) => ({
+      name: p.name,
+      age: year - p.birthYear,
+    }));
 
   const focusedYear = useFocusMatch("projectionYear")?.year ?? null;
 
@@ -550,7 +545,7 @@ export function useProjectionDerived(
       milestones.add(years[0]!.year);
       milestones.add(years[years.length - 1]!.year);
       for (const yr of years) {
-        if (yr.age % 5 === 0) milestones.add(yr.year);
+        if (yr.year % 5 === 0) milestones.add(yr.year);
       }
       for (let i = 1; i < years.length; i++) {
         if (years[i]!.phase !== years[i - 1]!.phase)
@@ -615,7 +610,7 @@ export function useProjectionDerived(
     baseYear,
     deflate,
     renderTooltip,
-    displayAge,
+    agesInYear,
     getFilteredYears,
     individualAccountNames,
   };
