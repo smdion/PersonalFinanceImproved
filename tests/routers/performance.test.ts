@@ -5,8 +5,7 @@
  * createAccount (account_performance), deleteAccount, and the
  * performanceAccounts master-registry CRUD (list/create).
  *
- * Note: finalizeYear uses db.transaction() with tx.execute() which isn't
- * compatible with better-sqlite3 in tests, so it is excluded.
+ * finalizeYear runs end to end in performance-finalize.test.ts.
  */
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
