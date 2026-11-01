@@ -280,6 +280,7 @@ export function runPreYearSetup(
       baseAnnual: 0,
       salaryFraction: 0,
       configuredAnnual: undefined,
+      employerShare: 0,
     }));
   // A job starting or ending this year (its own dates, not a retirement:
   // a person retiring next year works all of this one).

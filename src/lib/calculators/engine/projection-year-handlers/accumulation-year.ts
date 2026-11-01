@@ -260,6 +260,12 @@ export function runAccumulationYear(
     for (const cat of getAllCategories())
       yearEmployerMatch[cat] = roundToCents(yearEmployerMatch[cat]);
   }
+  // Nobody saves this year (gap-year choice or nobody at work): no
+  // contributions and no match, whichever path sized them.
+  if (setup.savingStopped && !useRealContribs) {
+    targetContribution = 0;
+    for (const cat of getAllCategories()) yearEmployerMatch[cat] = 0;
+  }
 
   // IRS limits: every key grows at the limit growth rate; the specs are
   // capped per person (ages at Dec 31 of this year), and every path sizes

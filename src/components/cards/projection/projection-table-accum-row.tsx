@@ -149,6 +149,19 @@ export function AccumulationRow({
     yr.slots.map((s) => [s.category, s]),
   );
   const pt = getPersonYearTotals(yr);
+  // The accounts the row is showing (a person filter narrows them).
+  const scopedIabs = (
+    rows: NonNullable<typeof yr.individualAccountBalances>,
+  ) => (pt ? rows.filter((ia) => ia.ownerPersonId === personFilter) : rows);
+  const drawnTotal = (rows: NonNullable<typeof yr.individualAccountBalances>) =>
+    scopedIabs(rows).reduce((t, ia) => t + (ia.withdrawal ?? 0), 0);
+  const gapOut = yr.gapDraw
+    ? (yr.individualAccountBalances?.length ?? 0) > 0
+      ? drawnTotal(yr.individualAccountBalances!)
+      : pt
+        ? 0
+        : yr.gapDraw.withdrawal
+    : 0;
   return (
     <tr
       ref={rowRef}
@@ -934,16 +947,16 @@ export function AccumulationRow({
             });
             inOutItems.push(...bucketTotals);
           }
-          // A year a paycheck is gone: money comes out as well as in. The
-          // household view only; draws aren't split by person.
+          // A year a paycheck is gone: money comes out as well as in. With
+          // a person or category filter only the accounts shown count, and
+          // the household's figures (tax, the why) are left out.
           const gap = yr.gapDraw;
+          const gapScoped = !!gap && drawnTotal(iabs) < gap.withdrawal - 0.5;
           if (gap) {
             // Each account drawn from, as a retirement year lists them:
             // owner, tax type, and whether the money is penalty-free.
             const categoryOrder = getAllCategories();
-            const drawn = (
-              pt ? iabs.filter((ia) => ia.ownerPersonId === personFilter) : iabs
-            )
+            const drawn = scopedIabs(iabs)
               .filter((ia) => (ia.withdrawal ?? 0) > 0)
               .sort(
                 (a, b) =>
@@ -975,13 +988,13 @@ export function AccumulationRow({
           return renderTooltip({
             kind: "money",
             header: `${isPersonFiltered ? personFilterName : "Employee"}: ${formatCurrency(empAmount)}`,
-            meta: gapMeta,
+            meta: gapScoped ? undefined : gapMeta,
             shortfall:
-              gap && gap.unmetNeed >= gapShortfallFloor(gap.need)
+              gap && !gapScoped && gap.unmetNeed >= gapShortfallFloor(gap.need)
                 ? { amount: deflate(gap.unmetNeed, yr.year) }
                 : undefined,
             withdrawals:
-              gap && gap.withdrawal > 0
+              gap && gap.withdrawal > 0 && !gapScoped
                 ? {
                     amount: deflate(gap.withdrawal, yr.year),
                     taxCost: deflate(gap.taxCost, yr.year),
@@ -1040,9 +1053,9 @@ export function AccumulationRow({
               +m
             </span>
           )}
-          {!pt && (yr.gapDraw?.withdrawal ?? 0) > 0 && (
+          {gapOut > 0 && (
             <div className="text-caption text-amber-600">
-              −{formatCurrency(deflate(yr.gapDraw!.withdrawal, yr.year))}
+              −{formatCurrency(deflate(gapOut, yr.year))}
             </div>
           )}
         </td>

@@ -156,13 +156,29 @@ describe("the household's choices for these years", () => {
         personPayShare: 1,
       },
     ] as ProjectionInput["contributionSpecs"];
-    const saving = year(couple({ contributionSpecs }), 2031);
-    const stopped = year(
-      couple({ contributionSpecs, gapYearStopSaving: true }),
+    const employerMatchRateByCategory = {
+      "401k": 0.04,
+      "403b": 0,
+      hsa: 0,
+      ira: 0,
+      brokerage: 0,
+    };
+    const saving = year(
+      couple({ contributionSpecs, employerMatchRateByCategory }),
       2031,
     );
+    const stopped = year(
+      couple({
+        contributionSpecs,
+        employerMatchRateByCategory,
+        gapYearStopSaving: true,
+      }),
+      2031,
+    );
+    expect(saving.totalEmployer).toBeGreaterThan(0);
     expect(saving.totalEmployee).toBeGreaterThan(0);
     expect(stopped.totalEmployee).toBe(0);
+    expect(stopped.totalEmployer).toBe(0);
     expect(stopped.savingStopped).toBe(true);
     expect(stopped.gapDraw!.need).toBeLessThan(saving.gapDraw!.need);
     const before = year(
@@ -183,6 +199,34 @@ describe("the household's choices for these years", () => {
     expect(year(input, 2034).retirementBalance).toBeGreaterThan(
       year(couple(), 2034).retirementBalance,
     );
+  });
+
+  it("stop saving with no contribution specs: nothing saved, no match", () => {
+    const match = {
+      "401k": 0.04,
+      "403b": 0,
+      hsa: 0,
+      ira: 0,
+      brokerage: 0,
+    };
+    const run = (stop: boolean) => {
+      const base = couple({ employerMatchRateByCategory: match });
+      return year(
+        {
+          ...base,
+          gapYearStopSaving: stop,
+          accumulationDefaults: {
+            ...base.accumulationDefaults,
+            contributionRate: 0.1,
+          },
+        },
+        2031,
+      );
+    };
+    expect(run(false).totalEmployer).toBeGreaterThan(0);
+    const stopped = run(true);
+    expect(stopped.totalEmployee).toBe(0);
+    expect(stopped.totalEmployer).toBe(0);
   });
 });
 
