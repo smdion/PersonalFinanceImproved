@@ -39,6 +39,7 @@ import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import { log } from "@/lib/logger";
+import { materializeExtraPaycheckSavings } from "@/server/helpers/extra-paycheck-materializer";
 import { createTRPCRouter } from "../trpc";
 import { protectedProcedure, contributionProfileProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
@@ -94,7 +95,7 @@ async function refreshExtraPaycheckRoutingIfActive(
     // (no field overlap), but a stale in-memory blob written back here
     // would silently clobber whichever one committed second. Re-reading
     // inside this transaction closes that window.
-    return await db.transaction(async (tx) => {
+    const refreshedRow = await db.transaction(async (tx) => {
       const rows = await tx
         .select()
         .from(schema.salaryProfiles)
@@ -129,10 +130,19 @@ async function refreshExtraPaycheckRoutingIfActive(
         .returning();
       return refreshedRow;
     });
-  } catch {
+    // A new net pay per check changes what the routing rules put into each
+    // fund, so the planned transactions they generate follow — as
+    // extraPaycheckRouting.save does.
+    if (refreshedRow) await materializeExtraPaycheckSavings(db);
+    return refreshedRow;
+  } catch (err) {
     // The caller's actual edit (already written before this runs) must not
     // fail just because the best-effort routing-snapshot refresh couldn't
     // resolve (e.g. a mid-edit state with no matching tax bracket yet).
+    log("warn", "salary_profile_routing_refresh_failed", {
+      profileId,
+      error: err instanceof Error ? err.message : String(err),
+    });
     return undefined;
   }
 }

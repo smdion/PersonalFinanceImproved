@@ -1721,6 +1721,44 @@ describe("savings.extraPaycheckRouting", () => {
     expect(result).toEqual({ ok: true });
   });
 
+  it("a raise on the active Salary Profile re-materializes the rule transactions", async () => {
+    await caller.savings.extraPaycheckRouting.save({
+      jobId,
+      rules: [{ from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] }],
+    });
+    const ruleTotal = () =>
+      db
+        .select()
+        .from(sqliteSchemaTables.savingsPlannedTransactions)
+        .all()
+        .filter((t) => t.source === "rule" && t.goalId === goalId)
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+    const before = ruleTotal();
+    expect(before).toBeGreaterThan(0);
+    const activeId = Number(
+      db
+        .select()
+        .from(sqliteSchemaTables.appSettings)
+        .where(
+          eq(sqliteSchemaTables.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID),
+        )
+        .get()!.value,
+    );
+    await caller.salaryProfile.patchEntry({
+      id: activeId,
+      jobId,
+      fields: { salary: 180_000 },
+    });
+    expect(ruleTotal()).toBeGreaterThan(before);
+    // Back to seedJob's salary for the tests below.
+    await caller.salaryProfile.patchEntry({
+      id: activeId,
+      jobId,
+      fields: { salary: 120_000 },
+    });
+    expect(ruleTotal()).toBeCloseTo(before, 2);
+  });
+
   it("save rejects rules that don't sum to 100%", async () => {
     await expect(
       caller.savings.extraPaycheckRouting.save({
