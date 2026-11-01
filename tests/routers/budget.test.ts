@@ -346,6 +346,14 @@ describe("budget router", () => {
       expect(profiles.find((p) => p.id === profileId)!.isActive).toBe(true);
     });
 
+    it("an id that doesn't exist is refused and the active profile stays", async () => {
+      await expect(
+        caller.budget.setActiveProfile({ id: 999_999 }),
+      ).rejects.toThrow(/no longer exists/);
+      const profiles = await caller.budget.listProfiles();
+      expect(profiles.find((p) => p.id === profileId)!.isActive).toBe(true);
+    });
+
     it("only one profile is active at a time", async () => {
       const profiles = await caller.budget.listProfiles();
       const activeProfiles = profiles.filter((p) => p.isActive);

@@ -336,50 +336,55 @@ export const budgetRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const rows = await ctx.db
-        .insert(schema.budgetProfiles)
-        .values({
-          name: input.name,
-          columnLabels: input.columnLabels,
-          isActive: false,
-        })
-        .returning();
-      const profile = rows[0]!;
+      // One transaction: a failed template or allocation insert must not
+      // leave an empty profile behind.
+      return ctx.db.transaction(async (tx) => {
+        const rows = await tx
+          .insert(schema.budgetProfiles)
+          .values({
+            name: input.name,
+            columnLabels: input.columnLabels,
+            isActive: false,
+          })
+          .returning();
+        const profile = rows[0]!;
 
-      // Pre-populate with template categories (all amounts zeroed)
-      const { BUDGET_TEMPLATE } = await import("@/lib/config/budget-template");
-      const numCols = input.columnLabels.length;
-      const zeroAmounts = new Array(numCols).fill(0) as number[];
-      await ctx.db.insert(schema.budgetItems).values(
-        BUDGET_TEMPLATE.map((t, i) => ({
-          profileId: profile.id,
-          category: t.category,
-          subcategory: t.subcategory,
-          amounts: zeroAmounts,
-          isEssential: t.isEssential,
-          sortOrder: i,
-        })),
-      );
-
-      // Savings funding is per-profile with no shared default — every
-      // existing active goal needs an explicit $0/no-percent row under this
-      // new profile (see savings_goal_profile_allocations' table comment).
-      const goals = await ctx.db
-        .select({ id: schema.savingsGoals.id })
-        .from(schema.savingsGoals)
-        .where(eq(schema.savingsGoals.isActive, true));
-      if (goals.length > 0) {
-        await ctx.db.insert(schema.savingsGoalProfileAllocations).values(
-          goals.map((g) => ({
-            goalId: g.id,
-            budgetProfileId: profile.id,
-            allocationPercent: null,
-            monthlyContribution: "0",
+        // Pre-populate with template categories (all amounts zeroed)
+        const { BUDGET_TEMPLATE } =
+          await import("@/lib/config/budget-template");
+        const numCols = input.columnLabels.length;
+        const zeroAmounts = new Array(numCols).fill(0) as number[];
+        await tx.insert(schema.budgetItems).values(
+          BUDGET_TEMPLATE.map((t, i) => ({
+            profileId: profile.id,
+            category: t.category,
+            subcategory: t.subcategory,
+            amounts: zeroAmounts,
+            isEssential: t.isEssential,
+            sortOrder: i,
           })),
         );
-      }
 
-      return profile;
+        // Savings funding is per-profile with no shared default — every
+        // existing active goal needs an explicit $0/no-percent row under this
+        // new profile (see savings_goal_profile_allocations' table comment).
+        const goals = await tx
+          .select({ id: schema.savingsGoals.id })
+          .from(schema.savingsGoals)
+          .where(eq(schema.savingsGoals.isActive, true));
+        if (goals.length > 0) {
+          await tx.insert(schema.savingsGoalProfileAllocations).values(
+            goals.map((g) => ({
+              goalId: g.id,
+              budgetProfileId: profile.id,
+              allocationPercent: null,
+              monthlyContribution: "0",
+            })),
+          );
+        }
+
+        return profile;
+      });
     }),
 
   /**
@@ -565,10 +570,17 @@ export const budgetRouter = createTRPCRouter({
     .mutation(async ({ ctx, input }) => {
       await ctx.db.transaction(async (tx) => {
         await tx.update(schema.budgetProfiles).set({ isActive: false });
-        await tx
+        const activated = await tx
           .update(schema.budgetProfiles)
           .set({ isActive: true })
-          .where(eq(schema.budgetProfiles.id, input.id));
+          .where(eq(schema.budgetProfiles.id, input.id))
+          .returning({ id: schema.budgetProfiles.id });
+        // A stale or wrong id would otherwise commit zero active profiles.
+        if (activated.length === 0)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "That budget profile no longer exists",
+          });
       });
       return { ok: true };
     }),
