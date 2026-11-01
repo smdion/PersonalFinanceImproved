@@ -1774,6 +1774,19 @@ describe("savings.extraPaycheckRouting", () => {
     ).rejects.toThrow();
   });
 
+  it("save rejects two rules starting the same month, or one ending before it starts", async () => {
+    const rule = { from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] };
+    await expect(
+      caller.savings.extraPaycheckRouting.save({ jobId, rules: [rule, rule] }),
+    ).rejects.toThrow(/overlap/);
+    await expect(
+      caller.savings.extraPaycheckRouting.save({
+        jobId,
+        rules: [{ ...rule, from: "2025-06", to: "2025-03" }],
+      }),
+    ).rejects.toThrow(/ends before it starts/);
+  });
+
   it("save clears rules when passed empty array", async () => {
     const result = await caller.savings.extraPaycheckRouting.save({
       jobId,

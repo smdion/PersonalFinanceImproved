@@ -2483,18 +2483,22 @@ export const savingsRouter = createTRPCRouter({
               message: `Rule starting ${rule.from}: splits must sum to 100% (got ${total.toFixed(1)}%)`,
             });
           }
-          // Validate no overlapping date ranges
+          if (rule.to !== null && rule.to < rule.from)
+            throw new TRPCError({
+              code: "BAD_REQUEST",
+              message: `Rule starting ${rule.from} ends before it starts`,
+            });
+          // Validate no overlapping date ranges (two rules starting the same
+          // month overlap too — which would win is arbitrary)
           for (const other of input.rules) {
             if (other === rule) continue;
             const aEnd = rule.to ?? "9999-12";
             const bEnd = other.to ?? "9999-12";
             if (rule.from <= bEnd && other.from <= aEnd) {
-              if (rule.from !== other.from) {
-                throw new TRPCError({
-                  code: "BAD_REQUEST",
-                  message: `Rules overlap: ${rule.from}–${rule.to ?? "∞"} and ${other.from}–${other.to ?? "∞"}`,
-                });
-              }
+              throw new TRPCError({
+                code: "BAD_REQUEST",
+                message: `Rules overlap: ${rule.from}–${rule.to ?? "∞"} and ${other.from}–${other.to ?? "∞"}`,
+              });
             }
           }
         }
