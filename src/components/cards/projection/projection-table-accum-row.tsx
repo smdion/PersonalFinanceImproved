@@ -82,9 +82,11 @@ type AccumulationRowProps = {
 function GapYearPhase({
   yr,
   renderTooltip,
+  deflate,
 }: {
   yr: EngineAccumulationYear;
   renderTooltip: ProjectionState["renderTooltip"];
+  deflate: ProjectionState["deflate"];
 }) {
   const gap = yr.gapDraw;
   const save = yr.savingStopped ? (
@@ -93,13 +95,18 @@ function GapYearPhase({
     <span className="text-caption font-medium text-green-600">SAVE</span>
   );
   if (!gap) return save;
-  const money = (v: number) => formatCurrency(Math.round(v));
+  const money = (v: number) => formatCurrency(Math.round(deflate(v, yr.year)));
   const lines = [
-    `A paycheck is gone in ${yr.year}.`,
+    gap.withdrawal > 0 && !yr.savingStopped
+      ? `A paycheck is gone in ${yr.year}: the year both saves and draws.`
+      : `A paycheck is gone in ${yr.year}.`,
     `Pay: ${money(gap.pay)}`,
     ...(gap.ssIncome > 0 ? [`Social Security: ${money(gap.ssIncome)}`] : []),
     `Tax on that: ${money(gap.taxOnIncome)}`,
     `Saved from pay: ${money(gap.contributions)}`,
+    ...(yr.totalEmployer > 0
+      ? [`Employer match: ${money(yr.totalEmployer)}`]
+      : []),
     `Spending: ${money(gap.spending)}`,
     ...(gap.withdrawal > 0
       ? [

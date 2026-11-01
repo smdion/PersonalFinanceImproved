@@ -193,6 +193,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     // A year a paycheck is gone: what came out while still saving.
     if (yr.phase === "accumulation" && yr.gapDraw) {
       datum._gapWithdrawal = deflate(yr.gapDraw.withdrawal, yr.year);
+      datum._gapSaved = deflate(yr.totalEmployee + yr.totalEmployer, yr.year);
       datum._gapSpendingCut = deflate(yr.gapDraw.spendingCut, yr.year);
     }
 
@@ -439,16 +440,30 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                         </span>
                       ))}
                     </div>
-                    {Number(d._gapWithdrawal) > 0 && (
-                      <div className="text-amber-500">
-                        A paycheck is gone: drawn from accounts{" "}
-                        {formatCurrency(Number(d._gapWithdrawal))}
+                    {(Number(d._gapWithdrawal) > 0 ||
+                      Number(d._gapSpendingCut) > 0) && (
+                      <div className="text-muted">
+                        A paycheck is gone this year
                       </div>
+                    )}
+                    {Number(d._gapWithdrawal) > 0 && (
+                      <>
+                        <div className="flex justify-between gap-4 text-green-500">
+                          <span>Saved (match included)</span>
+                          <span>{formatCurrency(Number(d._gapSaved))}</span>
+                        </div>
+                        <div className="flex justify-between gap-4 text-amber-500">
+                          <span>Drawn from accounts</span>
+                          <span>
+                            {formatCurrency(Number(d._gapWithdrawal))}
+                          </span>
+                        </div>
+                      </>
                     )}
                     {Number(d._gapSpendingCut) > 0 && (
                       <div className="text-amber-500">
-                        A paycheck is gone: spending{" "}
-                        {formatCurrency(Number(d._gapSpendingCut))} lower
+                        Spending {formatCurrency(Number(d._gapSpendingCut))}{" "}
+                        lower (you chose not to draw)
                       </div>
                     )}
                     {segmentKeys
