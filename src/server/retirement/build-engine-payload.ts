@@ -10,6 +10,7 @@
  * balances. Callers (projection router endpoints) consume the result and add
  * their own accumulation/decumulation overrides and decumulation defaults.
  */
+import { loadExpenseEndings } from "./payload/expense-endings";
 import {
   householdTimeline,
   planEndAge,
@@ -917,6 +918,7 @@ export async function buildEnginePayload(
     decProfile,
     decCol,
     accumulationExpenses,
+    accumulationContributionLines,
     decumulationExpenses,
   } = await resolvePhaseExpenses(db, {
     allBudgetProfiles,
@@ -925,6 +927,24 @@ export async function buildEnginePayload(
     opts,
   });
   const annualExpensesVal = accumulationExpenses;
+  const expenseEndings = await loadExpenseEndings(db, {
+    items: allBudgetItems,
+    accumulation: {
+      profileId: accProfile?.id,
+      column: accCol,
+      months: (accProfile?.columnMonths as number[] | null) ?? null,
+      annual: accumulationExpenses,
+      typed: !!opts.accumulationExpenseOverride,
+    },
+    decumulation: {
+      profileId: decProfile?.id,
+      column: decCol,
+      months: (decProfile?.columnMonths as number[] | null) ?? null,
+      annual: decumulationExpenses,
+      typed: !!opts.decumulationExpenseOverride,
+    },
+    asOfDate,
+  });
 
   // Build parentCategory lookup for contribution accounts (via linked performance account)
   const perfCategoryMap = new Map(
@@ -1144,8 +1164,20 @@ export async function buildEnginePayload(
       ? timeline.retirementYearByPerson
       : undefined,
     projectionEndYear: timeline.projectionEndYear,
-    payrollTaxRate:
-      (limitsMap.fica_ss_rate ?? 0) + (limitsMap.fica_medicare_rate ?? 0),
+    payrollTax:
+      limitsMap.fica_ss_rate !== undefined &&
+      limitsMap.fica_medicare_rate !== undefined &&
+      limitsMap.ss_wage_base !== undefined
+        ? {
+            socialSecurityRate: limitsMap.fica_ss_rate,
+            medicareRate: limitsMap.fica_medicare_rate,
+            socialSecurityWageBase: limitsMap.ss_wage_base,
+          }
+        : undefined,
+    budgetContributionShare:
+      accumulationExpenses > 0
+        ? accumulationContributionLines / accumulationExpenses
+        : 0,
     currentSalary: totalCompensationFullFormula,
     salaryGrowthRate: toNumber(
       (soleEarnerId !== primaryPerson.id
@@ -1202,6 +1234,7 @@ export async function buildEnginePayload(
     individualAccounts,
     ...(inputWarnings.length > 0 ? { inputWarnings } : {}),
     annualExpenses: annualExpensesVal,
+    expenseEndings,
     // Always pass when user explicitly set a decumulation override, or when
     // the computed decumulation budget differs from accumulation budget.
     decumulationAnnualExpenses:

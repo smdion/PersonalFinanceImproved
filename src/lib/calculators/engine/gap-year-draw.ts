@@ -5,13 +5,19 @@
  * budget, so spending never touches balances. With a paycheck gone that no
  * longer holds, so the shortfall comes out of the accounts:
  *
- *   budget − (pay − the year's own contributions − tax on the pay)
+ *   spending − (pay + Social Security − contributions − tax on that income)
+ *
+ * Spending leaves out budget lines that are contributions (they're the
+ * contributions, and a stopped person's are zeroed already).
  *
  * The draw runs through the same routing, eligibility, Roth growth split,
  * penalty and tax pricing as a retirement year (one path, not a copy): the
  * money stays subject to each owner's age, and someone still working has no
- * Rule of 55 on their own plan. Tax on the draw is priced on top of the pay,
- * and paid from the draw.
+ * Rule of 55 on their own plan. The draw pays what it adds to the year's tax:
+ * the tax on everything less the tax on the income alone.
+ *
+ * Not modelled yet: RMDs before the plan's withdrawal year; a year with one
+ * due says so.
  */
 import type { DecumulationSlot } from "../types";
 import { roundToCents, sumBy } from "../../utils/math";
@@ -24,7 +30,9 @@ import {
 import { resolveDecumulationConfig } from "./override-resolution";
 import { routeForMode } from "./withdrawal-routing";
 import { deriveBasisRankingInputs } from "./withdrawal-cost-ranking";
+import { socialSecurityForYear } from "./social-security-income";
 import {
+  computeTaxableSS,
   computeTaxFromSlots,
   estimateEffectiveTaxRate,
 } from "./tax-estimation";
@@ -70,8 +78,11 @@ export function runGapYearDraw(
   state: ProjectionLoopState,
   args: {
     year: number;
-    /** The year's pay and budget, already scaled to the part of it left. */
-    pay: number;
+    age: number;
+    /** The part of the year the plan covers (year 0 is partial). */
+    fraction: number;
+    /** The year's pay, per person, and budget: scaled to `fraction`. */
+    payByPerson: readonly number[];
     budget: number;
     /** The employee's contributions, and the Traditional part of them. */
     employeeContributions: number;
@@ -80,8 +91,9 @@ export function runGapYearDraw(
 ): GapYearDraw | null {
   const { input, hasIndividualAccounts, indAccts, indKey } = ctx;
   const { balances, acctBal, indBal, indBasis, brokBasis } = state;
-  const { year, pay, budget, employeeContributions, pretaxContributions } =
-    args;
+  const { year, age, fraction, payByPerson, budget } = args;
+  const { employeeContributions, pretaxContributions } = args;
+  const pay = sumBy(payByPerson, (p) => p);
   const { decumulationDefaults, filingStatus } = input;
   const taxRates = decumulationDefaults.distributionTaxRates;
 
@@ -102,20 +114,45 @@ export function runGapYearDraw(
     taxGrowthFactor(year, tableYears.ltcg, ctx.inflationRate),
   );
 
+  const ssIncome = roundToCents(
+    socialSecurityForYear(input, year, age, ctx.inflationRate).ssIncome *
+      fraction,
+  );
   const wages = Math.max(0, pay - pretaxContributions);
-  const wageTax =
+  const taxableSsOn = (otherIncome: number) =>
+    filingStatus ? computeTaxableSS(ssIncome, otherIncome, filingStatus) : 0;
+  const incomeTaxOn = (income: number) =>
+    income *
     (taxBrackets && taxBrackets.length > 0
-      ? wages *
-        estimateEffectiveTaxRate(
-          wages,
+      ? estimateEffectiveTaxRate(
+          income,
           taxBrackets,
           taxRates.taxMultiplier,
           standardDeduction,
         )
-      : wages * taxRates.traditionalFallbackRate) +
-    pay * (input.payrollTaxRate ?? 0);
+      : taxRates.traditionalFallbackRate);
+  const incomeAlone = wages + taxableSsOn(wages);
+  const taxOnIncome = incomeTaxOn(incomeAlone);
+  const { payrollTax } = input;
+  const wageBase =
+    payrollTax &&
+    payrollTax.socialSecurityWageBase *
+      taxGrowthFactor(year, tableYears.standardDeduction, ctx.inflationRate);
+  const payrollCost = payrollTax
+    ? sumBy(
+        payByPerson,
+        (p) =>
+          Math.min(p, wageBase! * fraction) * payrollTax.socialSecurityRate +
+          p * payrollTax.medicareRate,
+      )
+    : 0;
+  const spending = budget * (1 - (input.budgetContributionShare ?? 0));
   const need = roundToCents(
-    Math.max(0, budget - (pay - employeeContributions - wageTax)),
+    Math.max(
+      0,
+      spending -
+        (pay + ssIncome - employeeContributions - taxOnIncome - payrollCost),
+    ),
   );
   if (need < gapShortfallFloor(need)) return null;
 
@@ -151,8 +188,8 @@ export function runGapYearDraw(
         rothBracketTarget:
           config.rothBracketTarget ?? taxRates.rothBracketTarget,
         conversionTarget: taxRates.rothConversionTarget,
-        // Pay is ordinary income already in the year, under the draw.
-        taxableSS: wages,
+        // Income already in the year, under the draw.
+        taxableSS: incomeAlone,
         filingStatus,
         ltcgBrackets,
         rothBasisAvailable,
@@ -212,26 +249,33 @@ export function runGapYearDraw(
         : 0,
     };
   };
-  // The tax on the draw alone: its share of ordinary income at the year's
-  // average rate, with the pay's share left out, like Social Security's.
+  // What the draw adds to the year's tax (and any penalty). The draw can
+  // make more Social Security taxable, so that's settled first.
   const price = (
     slots: DecumulationSlot[],
     rothTaxableGrowth: number,
     penaltyCost: number,
   ) => {
-    const priced = computeTaxFromSlots({
-      slots,
-      taxableSS: wages,
-      balances,
-      taxRates: { ...taxRates, taxBrackets, standardDeduction, ltcgBrackets },
-      filingStatus,
-      rothTaxableGrowth,
-      penaltyCost,
-      brokerageBasisRatio,
-    });
+    const pricedWith = (otherIncome: number) =>
+      computeTaxFromSlots({
+        slots,
+        taxableSS: otherIncome,
+        balances,
+        taxRates: { ...taxRates, taxBrackets, standardDeduction, ltcgBrackets },
+        filingStatus,
+        rothTaxableGrowth,
+        penaltyCost,
+        brokerageBasisRatio,
+      });
+    const first = pricedWith(incomeAlone);
+    const drawIncome =
+      first.actualTaxableIncome - incomeAlone + first.brokerageGainsPortion;
+    const priced = pricedWith(wages + taxableSsOn(wages + drawIncome));
     return {
       priced,
-      cost: roundToCents(priced.taxCost - priced.ssTaxCost + penaltyCost),
+      cost: roundToCents(
+        Math.max(0, priced.taxCost - taxOnIncome) + penaltyCost,
+      ),
     };
   };
 
@@ -276,6 +320,16 @@ export function runGapYearDraw(
     taxCost: cost,
     unmetNeed: roundToCents(Math.max(0, need - (withdrawal - cost))),
     slots,
-    warnings: [...warnings, ...taken.warnings],
+    warnings: [
+      ...warnings,
+      ...taken.warnings,
+      ...[...ctx.rmdStartAgeByPerson.values()]
+        .filter((p) => year - p.birthYear >= p.startAge)
+        .slice(0, 1)
+        .map(
+          () =>
+            `${year}: a required minimum distribution falls due before withdrawals start; the plan doesn't take it until then.`,
+        ),
+    ],
   };
 }

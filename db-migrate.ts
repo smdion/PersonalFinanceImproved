@@ -811,6 +811,9 @@ export const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.9.5: Tiingo daily closes kept (market_closes).
   "57558a9b1f60616f4d97ba5e72c3c19871d6b86abd19b9bfdf9b75402a28c1cb":
     "0010_v095_market_closes",
+  // v0.9.6: a budget line can name the loan it pays.
+  "2c7456d55beddc75a64cfb14264d1dbc709449840ea1a26b74719abe9f8037cf":
+    "0011_v096_budget_mortgage_link",
 };
 
 /**

@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**392 procedures across 56 routers.**
+**394 procedures across 56 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -49,12 +49,13 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `deleteItem`                    | mutation | `budgetProcedure`    | Delete a budget item.                                                                                                                                                                                    |
 | `deleteProfile`                 | mutation | `budgetProcedure`    | Delete a budget profile (cannot delete the active one).                                                                                                                                                  |
 | `duplicateProfile`              | mutation | `budgetProcedure`    | account) is a live external-write hazard, and a copy is exactly how you'd create one by accident. - Forced: `isActive: false`. Duplicating is not activating. Same `budget` permission gate as createPro |
-| `linkContributionAccount`       | mutation | `budgetProcedure`    | Link a budget item to a specific contribution account.                                                                                                                                                   |
+| `linkContributionAccount`       | mutation | `budgetProcedure`    | (no description)                                                                                                                                                                                         |
 | `linkToApi`                     | mutation | `budgetProcedure`    | Link a budget item to a budget API category.                                                                                                                                                             |
 | `listApiActuals`                | query    | `protectedProcedure` | Get API actuals for linked budget items (activity + balance from cached month data).                                                                                                                     |
 | `listApiCategories`             | query    | `protectedProcedure` | Get cached categories from the active (or specified) budget API for the category picker.                                                                                                                 |
 | `listContribAccountsForLinking` | query    | `protectedProcedure` | jobId === null means the contribution comes from take-home pay (IRA, taxable brokerage, etc.). Job-linked contributions (401k, HSA, ESPP) are payroll-deducted and already on the paycheck.              |
 | `listProfiles`                  | query    | `protectedProcedure` | ignored the active Contribution and Salary Profiles. This procedure already loops every profile and already resolves each profile's own savings allocations and per-mode weighting, so resolving the pay |
+| `mortgageItemChoices`           | query    | `protectedProcedure` | profile, and which one is.                                                                                                                                                                               |
 | `moveItem`                      | mutation | `budgetProcedure`    | Move a budget item to a different category.                                                                                                                                                              |
 | `removeColumn`                  | mutation | `budgetProcedure`    | Remove a column (budget mode) from the target profile (active if not given).                                                                                                                             |
 | `renameColumn`                  | mutation | `budgetProcedure`    | Rename a column (budget mode).                                                                                                                                                                           |
@@ -62,6 +63,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `reorderCategory`               | mutation | `budgetProcedure`    | block. No-ops at the first/last category boundary.                                                                                                                                                       |
 | `reorderItem`                   | mutation | `budgetProcedure`    | category. No-ops at the category's first/last item boundary — moving an item into a different category is the "Move..." dropdown's job (moveItem above), not this.                                       |
 | `setActiveProfile`              | mutation | `budgetProcedure`    | — an error between the deactivate-all and activate-one writes must not be able to leave zero active profiles (every downstream reader of getActiveBudgetProfile silently treats that as "no profile").   |
+| `setMortgageItem`               | mutation | `budgetProcedure`    | one loan and a loan has one line per profile: the projection drops it after payoff.                                                                                                                      |
 | `setSyncDirection`              | mutation | `budgetProcedure`    | Change sync direction on a linked budget item.                                                                                                                                                           |
 | `syncBudgetFromApi`             | mutation | `budgetProcedure`    | Pull budgeted amounts from API for all linked items (API -> Ledgr).                                                                                                                                      |
 | `syncBudgetToApi`               | mutation | `budgetProcedure`    | Push budget amounts to API for all linked items (Ledgr -> API).                                                                                                                                          |

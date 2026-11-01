@@ -1,0 +1,2 @@
+ALTER TABLE `budget_items` ADD `mortgage_loan_id` integer REFERENCES mortgage_loans(id) ON DELETE SET NULL;--> statement-breakpoint
+CREATE INDEX `budget_items_mortgage_loan_id_idx` ON `budget_items` (`mortgage_loan_id`);

@@ -53,6 +53,8 @@ export type ProjectionInput = {
    * sticky-forward (persist until the next override for that field).
    * Used during years where age < retirementAge.
    */
+  /** Spending that ends: a loan paid off (expense-endings.ts). */
+  expenseEndings?: ExpenseEnding[];
   accumulationOverrides: AccumulationOverride[];
 
   /**
@@ -70,9 +72,15 @@ export type ProjectionInput = {
    *  before `retirementYear` has no pay from then and their contributions
    *  stop, while the accumulation handler runs on for the others. */
   retirementYearByPerson?: Record<number, number>;
-  /** The employee's payroll tax rate (Social Security + Medicare), from
-   *  reference data: what a gap year's take-home takes out of pay. */
-  payrollTaxRate?: number;
+  /** Payroll tax from reference data: what a gap year's take-home takes out
+   *  of each person's pay. */
+  payrollTax?: {
+    socialSecurityRate: number;
+    medicareRate: number;
+    socialSecurityWageBase: number;
+  };
+  /** The share of the working budget that is contribution lines. */
+  budgetContributionShare?: number;
   /** The projection's last year. */
   projectionEndYear: number;
   currentSalary: number;
@@ -292,6 +300,14 @@ export type ProjectionInput = {
 /**
  * Year projection for the accumulation phase (pre-retirement).
  */
+/** A budget line that stops: its share of each phase's budget, from `year`
+ *  on. Zero for a phase whose spending was typed in, not built from lines. */
+export type ExpenseEnding = {
+  year: number;
+  accumulation: number;
+  decumulation: number;
+};
+
 export type EngineAccumulationYear = {
   year: number;
   age: number;

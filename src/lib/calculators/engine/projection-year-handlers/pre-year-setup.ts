@@ -3,6 +3,7 @@
  * decumulation branch. Computes return rate, applies profile switches,
  * projects salary and expenses, dispatches the spending strategy.
  */
+import { expenseEndingFactor } from "../expense-endings";
 import { socialSecurityForYear } from "../social-security-income";
 import { ageInYear } from "../../../utils/date";
 import { roundToCents } from "../../../utils/math";
@@ -219,6 +220,7 @@ export function runPreYearSetup(
         .filter((id) => !atWork(id))
     : [];
   let yearSpecs: ContributionSpec[] | undefined;
+  let nobodyAtWork = false;
   if (away.length > 0) {
     if (hasPerPersonSalary) {
       for (const id of away) {
@@ -233,7 +235,7 @@ export function runPreYearSetup(
     }
     // Nobody at work (everyone with pay is away, or the one earner): no
     // pay to save from — joint savings stop too.
-    const nobodyAtWork = hasPerPersonSalary
+    nobodyAtWork = hasPerPersonSalary
       ? [...effectiveSalaryByPerson.keys()].every((id) => away.includes(id))
       : true;
     yearSpecs = state.contributionSpecs?.map((spec) => {
@@ -362,6 +364,28 @@ export function runPreYearSetup(
       state.budgetOnlyExpenses * (1 + expenseInflation);
   }
 
+  // A loan paid off: its line leaves the budget. Not over a figure typed in
+  // for this phase, and a rate-seeded retirement has no budget to take it from.
+  const typedFigure = [...budgetOverrideMap.keys()].some(
+    (y) =>
+      y <= year &&
+      (isAccumulation ||
+        y >= input.retirementYear ||
+        input.decumulationAnnualExpenses == null),
+  );
+  const rateSeeded =
+    !isAccumulation && input.rateSeededDecumulationYear1 === true;
+  if (!typedFigure && !rateSeeded) {
+    const factor = expenseEndingFactor({
+      endings: input.expenseEndings,
+      phase: isAccumulation ? "accumulation" : "decumulation",
+      year,
+      seeded: yearIndex === 0 || decumulationExpensesJustSet,
+    });
+    state.projectedExpenses *= factor;
+    state.budgetOnlyExpenses *= factor;
+  }
+
   // --- Spending Strategy Dispatch ---
   let strategyAction: string | null = null;
   state.portfolioWithdrawal = null;
@@ -428,5 +452,6 @@ export function runPreYearSetup(
     yearSpecs,
     jobEdgeThisYear,
     gapYear,
+    nobodyAtWork,
   };
 }

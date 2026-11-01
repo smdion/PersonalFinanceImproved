@@ -12,6 +12,11 @@ const returnRates = Array.from({ length: 70 }, (_, i) => ({
   label: `Age ${30 + i}`,
   rate: 0.05,
 }));
+const payrollTax = {
+  socialSecurityRate: 0.062,
+  medicareRate: 0.0145,
+  socialSecurityWageBase: 180000,
+};
 const people = [1, 2].map((personId) => ({
   personId,
   personName: personId === 1 ? "Ann" : "Bo",
@@ -43,7 +48,7 @@ function couple(
     annualExpenses: 100000,
     inflationRate: 0,
     returnRates,
-    payrollTaxRate: 0.0765,
+    payrollTax,
     ...overrides,
   });
 }
@@ -133,6 +138,43 @@ describe("gap-year draw", () => {
     expect(outcome.succeeded).toBe(false);
     expect(outcome.failureYear).toBe(2030);
     expect(outcome.failureReason).toBe("shortfall");
+  });
+});
+
+describe("what goes into a gap year's shortfall", () => {
+  const needIn = (i: ProjectionInput) => year(i, 2031).gapDraw?.need ?? 0;
+
+  it("a retired spouse's Social Security comes off it", () => {
+    const paid = people.map((p) =>
+      p.personId === 1 ? { ...p, annualAmount: 24000, startAge: 50 } : p,
+    );
+    expect(needIn(couple({ socialSecurityEntries: paid }))).toBeLessThan(
+      needIn(couple()) - 15000,
+    );
+  });
+
+  it("contribution lines in the budget aren't counted twice", () => {
+    const withLines = couple({ budgetContributionShare: 0.1 });
+    expect(needIn(couple()) - needIn(withLines)).toBeCloseTo(10000, -1);
+  });
+
+  it("Social Security payroll tax stops at the wage base", () => {
+    const high = { 1: 100000, 2: 400000 };
+    const input = (base: number) =>
+      couple({
+        salaryByPerson: high,
+        currentSalary: 500000,
+        annualExpenses: 400000,
+        payrollTax: { ...payrollTax, socialSecurityWageBase: base },
+      });
+    expect(needIn(input(180000))).toBeLessThan(needIn(input(400000)));
+  });
+
+  it("the draw comes out before the year's growth", () => {
+    const drawn = year(couple(), 2031);
+    const kept = year(couple({ annualExpenses: 40000 }), 2031);
+    const gap = kept.retirementBalance - drawn.retirementBalance;
+    expect(gap).toBeGreaterThan(drawn.gapDraw!.withdrawal);
   });
 });
 

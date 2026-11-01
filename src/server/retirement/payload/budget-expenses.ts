@@ -104,6 +104,14 @@ export async function resolvePhaseExpenses(
     decProfile,
     decCol,
     accumulationExpenses,
+    /** The part of that budget that is contribution lines. */
+    accumulationContributionLines: opts.accumulationExpenseOverride
+      ? 0
+      : computeBudgetAnnualTotal(
+          resolvedAccItems.filter((i) => i.contributionAccountId != null),
+          accCol,
+          accMonths,
+        ),
     decumulationExpenses,
   };
 }

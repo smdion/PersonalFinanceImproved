@@ -525,7 +525,7 @@ export function runAccumulationYear(
   // Apply brokerage contribution ramp (additional $X x year index, starting year 1)
   const rampYear = Math.min(yearIndex, MAX_BROKERAGE_RAMP_YEARS);
   const rampAmount =
-    (brokerageContributionRamp ?? 0) > 0 && yearIndex > 0
+    (brokerageContributionRamp ?? 0) > 0 && yearIndex > 0 && !setup.nobodyAtWork
       ? roundToCents(brokerageContributionRamp! * rampYear)
       : 0;
   if (rampAmount > 0) {
@@ -581,6 +581,30 @@ export function runAccumulationYear(
     // employer match from (see roth-basis-tracking.ts's docblock for why
     // that's load-bearing, not incidental).
     accrueIndividualBasis(indAccts, indKey, indBasis, indContribs);
+  }
+
+  // A paycheck is gone: the budget's shortfall comes out of the accounts,
+  // before growth, as a retirement year's withdrawal does.
+  const gapDraw = setup.gapYear
+    ? runGapYearDraw(ctx, state, {
+        year,
+        age,
+        fraction: proRate,
+        payByPerson: (hasPerPersonSalary
+          ? [...projectedSalaryByPerson.values()]
+          : [projectedSalary]
+        ).map((p) => p * proRate),
+        budget: state.projectedExpenses * proRate,
+        employeeContributions: totalEmployee + rampAmount,
+        pretaxContributions: totalTraditional,
+      })
+    : null;
+  if (gapDraw) {
+    routeWarnings.push(...gapDraw.warnings);
+    if (gapDraw.unmetNeed >= gapShortfallFloor(gapDraw.need))
+      routeWarnings.push(
+        `${year}: $${Math.round(gapDraw.unmetNeed).toLocaleString()} of spending can't be funded with a paycheck gone: no reachable money without a penalty.`,
+      );
   }
 
   // Apply growth to each bucket (pro-rated for year 0)
@@ -671,24 +695,6 @@ export function runAccumulationYear(
       gainsPortion,
       taxCost,
     });
-  }
-
-  // A paycheck is gone: the budget's shortfall comes out of the accounts.
-  const gapDraw = setup.gapYear
-    ? runGapYearDraw(ctx, state, {
-        year,
-        pay: projectedSalary * proRate,
-        budget: state.projectedExpenses * proRate,
-        employeeContributions: totalEmployee,
-        pretaxContributions: totalTraditional,
-      })
-    : null;
-  if (gapDraw) {
-    routeWarnings.push(...gapDraw.warnings);
-    if (gapDraw.unmetNeed >= gapShortfallFloor(gapDraw.need))
-      routeWarnings.push(
-        `${year}: $${Math.round(gapDraw.unmetNeed).toLocaleString()} of spending can't be funded with a paycheck gone: no reachable money without a penalty.`,
-      );
   }
 
   // Build individual account year balances -- extracted to individual-account-tracking.ts

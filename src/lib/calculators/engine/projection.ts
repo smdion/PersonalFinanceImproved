@@ -24,6 +24,7 @@ import {
   getAccountTypeConfig,
   isTaxFreeBucket,
 } from "../../config/account-types";
+import { expenseEndingFactor } from "./expense-endings";
 import { resolveDecumulationConfig } from "./override-resolution";
 import {
   buildProjectionContext,
@@ -261,7 +262,16 @@ export function calculateProjection(input: ProjectionInput): ProjectionResult {
               Math.pow(
                 1 + ctx.inflationRate,
                 Math.max(0, firstDecumYear.year - input.asOfDate.getFullYear()),
-              ),
+              ) *
+              // A loan paid off by then: the same cut the seed took.
+              (input.rateSeededDecumulationYear1
+                ? 1
+                : expenseEndingFactor({
+                    endings: input.expenseEndings,
+                    phase: "decumulation",
+                    year: firstDecumYear.year,
+                    seeded: true,
+                  })),
         )
       : null;
 

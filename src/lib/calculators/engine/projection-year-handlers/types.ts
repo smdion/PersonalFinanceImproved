@@ -97,8 +97,8 @@ export type ProjectionLoopState = {
   // Phase tracking
   /** Set to true on the first year isAccumulation is false. Prevents the
    *  decumulation expense reset from firing more than once, and handles the
-   *  retirementAge===currentAge mid-year case where age never equals
-   *  retirementAge on the first decumulation year. */
+   *  case of retiring mid-way through the first year, where the year never
+   *  equals retirementYear on the first decumulation year. */
   decumulationExpensesSet: boolean;
 
   // Milestone tracking
@@ -217,4 +217,6 @@ export type PreYearSetup = {
    *  over before its holder retires), so pay may not cover the budget. A
    *  job that hasn't started yet doesn't count: nothing changed. */
   gapYear: boolean;
+  /** Everyone with pay is away this year. */
+  nobodyAtWork: boolean;
 };

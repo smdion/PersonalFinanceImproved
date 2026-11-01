@@ -62,7 +62,10 @@ export function ActiveLoanCard({
           label="Paid off"
           variant="success"
         />
-        <RetirementPayoffNote payoffDate={loan.payoffDate} />
+        <RetirementPayoffNote
+          loanId={loan.loanId}
+          payoffDate={loan.payoffDate}
+        />
 
         <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
           <div>
