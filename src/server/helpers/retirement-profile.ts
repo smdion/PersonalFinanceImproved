@@ -132,8 +132,9 @@ async function plannedRetirements(db: Db) {
         (r) =>
           r.personId === p.id &&
           (profileId === null || r.profileId === profileId),
-      )?.retirementAge ??
-      settings.find((r) => r.personId === p.id)?.retirementAge;
+      )?.retirementAge;
+    // Only the active profile's own rows: another profile's age is another
+    // world's plan (each profile stands alone).
     return age != null
       ? [{ personId: p.id, birthYear: born, retirementAge: age }]
       : [];

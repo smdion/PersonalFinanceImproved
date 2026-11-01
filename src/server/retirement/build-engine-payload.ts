@@ -490,7 +490,14 @@ export async function buildEnginePayload(
   const perPersonSettings = people.map((p) => {
     const pp = profilePeople.find((r) => r.personId === p.id);
     // Legacy path: no profile resolved at all (see `settings` above).
-    const ps = pp ?? retSettings.find((s) => s.personId === p.id);
+    // Only this profile's row: another profile's values never stand in.
+    const ps =
+      pp ??
+      retSettings.find(
+        (s) =>
+          s.personId === p.id &&
+          (activeProfileId == null || s.profileId === activeProfileId),
+      );
     // salary_annual_increase DOES exist as a column on retirement_profile_people
     // (migration 0032 backfilled it, profile duplication clones it) — but
     // nothing reads or writes it there; `pp` above is never used for this
@@ -528,8 +535,11 @@ export async function buildEnginePayload(
       // for no benefit. Removing it is its own change, not a ride-along in a
       // behaviour-neutral migration.
       withdrawalRate:
-        retSettings.find((s) => s.personId === p.id)?.withdrawalRate ??
-        settings.withdrawalRate,
+        retSettings.find(
+          (s) =>
+            s.personId === p.id &&
+            (activeProfileId == null || s.profileId === activeProfileId),
+        )?.withdrawalRate ?? settings.withdrawalRate,
       socialSecurityMonthly:
         ps?.socialSecurityMonthly ?? settings.socialSecurityMonthly,
       // PIA (benefit at FRA) — opt-in, no household-level fallback (decision

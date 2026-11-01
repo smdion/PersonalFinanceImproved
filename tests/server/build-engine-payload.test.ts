@@ -1169,3 +1169,44 @@ describe("buildEnginePayload — the one earner isn't the primary person", () =>
     ]);
   });
 });
+
+describe("each retirement profile stands alone", () => {
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let appDb: Db;
+  let cleanup: () => void;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    db = ctx.db;
+    appDb = ctx.rawDb;
+    cleanup = ctx.cleanup;
+    const schema = await getSchema();
+    const personId = await seedPerson(db, "Jo", "1975-03-03");
+    await markPrimary(db, personId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const anyDb = db as any;
+    const [active, other] = ["Active plan", "Other plan"].map(
+      (name) =>
+        anyDb
+          .insert(schema.retirementProfiles)
+          .values({ name })
+          .returning({ id: schema.retirementProfiles.id })
+          .get().id as number,
+    );
+    // Jo's only row with an age is in the OTHER profile.
+    await seedRetirementSettings(db, personId, { retirementAge: 50 });
+    anyDb.update(schema.retirementSettings).set({ profileId: other }).run();
+    anyDb
+      .insert(schema.appSettings)
+      .values({ key: "active_retirement_profile_id", value: active })
+      .run();
+  });
+
+  afterAll(() => cleanup());
+
+  it("the planned retirement year never comes from another profile's row", async () => {
+    const { householdRetirementYear } =
+      await import("@/server/helpers/retirement-profile");
+    expect(await householdRetirementYear(appDb)).toBeNull();
+  });
+});
