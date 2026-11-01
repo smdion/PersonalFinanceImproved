@@ -17,7 +17,16 @@ export type MonteCarloPercentileBand = {
   mean: number;
   /** What this year's return was drawn from (the glide path at this age).
    *  Absent with no asset classes, and on a cached older result. */
-  assumptions?: { expectedReturn: number; volatility: number };
+  assumptions?: {
+    expectedReturn: number;
+    volatility: number;
+    /** With inflation risk: each year's draw has this spread, and prices at
+     *  this year against today landed in this range across the trials. */
+    inflation?: {
+      stdDev: number;
+      priceLevel: { p25: number; p50: number; p75: number };
+    };
+  };
   /** % of trials whose ratio fell below MC_SPENDING_STABILITY_THRESHOLD in
    *  THIS specific year — only populated on `spendingStabilityBands`
    *  entries (undefined elsewhere). Percentile bands alone can hide a real,

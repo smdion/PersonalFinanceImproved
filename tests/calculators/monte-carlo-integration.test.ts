@@ -705,6 +705,26 @@ describe("monte carlo inflation — trials vary around the plan's own rates (v0.
     expect(risk.successRate).toBe(plain.successRate);
   });
 
+  it("bands carry the inflation spread, and the price range widens over time", () => {
+    const r = calculateMonteCarlo({
+      ...mc(makeInput({ inflationRate: 0.03 }), { stdDev: 0.012 }),
+      numTrials: 200,
+    });
+    const at = (i: number) => r.percentileBands[i]!.assumptions!.inflation!;
+    const last = r.percentileBands.length - 1;
+    const width = (i: number) => at(i).priceLevel.p75 / at(i).priceLevel.p25;
+    expect(at(1).stdDev).toBe(0.012);
+    expect(at(0).priceLevel.p50).toBe(1);
+    expect(at(last).priceLevel.p50).toBeGreaterThan(at(1).priceLevel.p50);
+    expect(width(last)).toBeGreaterThan(width(2));
+    expect(at(last).priceLevel.p25).toBeLessThan(at(last).priceLevel.p75);
+  });
+
+  it("no inflation risk: no spread or range on the bands", () => {
+    const r = calculateMonteCarlo(mc(makeInput({}), { stdDev: 0 }));
+    expect(r.percentileBands[1]!.assumptions?.inflation).toBeUndefined();
+  });
+
   it("all-zero shocks match no shocks, to the cent, for every strategy", () => {
     const base = makeInput({ inflationRate: 0.03 });
     for (const withdrawalStrategy of WITHDRAWAL_STRATEGY_VALUES) {

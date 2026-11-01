@@ -228,6 +228,11 @@ export function calculateMonteCarlo(
     engineInput.decumulationAnnualExpenses ??
     engineInput.annualExpenses ??
     null;
+  // Each trial's price level by year, for the assumptions on the bands.
+  const priceLevelsByYear: number[][] = Array.from(
+    { length: numYears },
+    () => [],
+  );
 
   const yearsToRetirement = planRetirementAge(engineInput) - startAge;
   // The household's own rates — each trial's inflation varies around them.
@@ -308,6 +313,9 @@ export function calculateMonteCarlo(
     // (the app's convention — the general rate, every year), so a hot trial
     // reads poorer in today's dollars than a cool one with the same balance.
     const todayDeflator = (yearIdx: number) => trialInflation.growth(yearIdx);
+    if (inflationShocks)
+      for (let yearIdx = 0; yearIdx < numYears; yearIdx++)
+        priceLevelsByYear[yearIdx]!.push(todayDeflator(yearIdx));
     const pvDeflator = todayDeflator(yearsToRetirement);
 
     // Build modified engine input for this trial.
@@ -454,14 +462,31 @@ export function calculateMonteCarlo(
   }
   onProgress?.(numTrials, numTrials);
 
-  const assumptionsFor = (age: number) => {
-    const assumptions = blendedReturnStats(
+  const assumptionsFor = (yearIdx: number) => {
+    const stats = blendedReturnStats(
       assetClasses,
       correlationMatrix,
       glidePath,
-      age,
+      startAge + yearIdx,
     );
-    return assumptions ? { assumptions } : {};
+    if (!stats) return {};
+    const levels = [...(priceLevelsByYear[yearIdx] ?? [])].sort(
+      (a, b) => a - b,
+    );
+    const inflation =
+      inflationRisk && inflationRisk.stdDev > 0 && levels.length > 0
+        ? {
+            stdDev: inflationRisk.stdDev,
+            priceLevel: {
+              p25: percentile(levels, 25),
+              p50: percentile(levels, 50),
+              p75: percentile(levels, 75),
+            },
+          }
+        : undefined;
+    return {
+      assumptions: { ...stats, ...(inflation ? { inflation } : {}) },
+    };
   };
 
   // Aggregate into percentile bands
@@ -483,7 +508,7 @@ export function calculateMonteCarlo(
       p90: percentile(sorted, 90),
       p95: percentile(sorted, 95),
       mean,
-      ...assumptionsFor(startAge + yearIdx),
+      ...assumptionsFor(yearIdx),
     });
   }
 
@@ -504,7 +529,7 @@ export function calculateMonteCarlo(
       p90: percentile(sorted, 90),
       p95: percentile(sorted, 95),
       mean: sumBy(balances, (v) => v) / balances.length,
-      ...assumptionsFor(startAge + yearIdx),
+      ...assumptionsFor(yearIdx),
     });
   }
 

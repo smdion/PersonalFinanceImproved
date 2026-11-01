@@ -182,6 +182,13 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     if (band?.assumptions) {
       datum._simReturn = band.assumptions.expectedReturn;
       datum._simVolatility = band.assumptions.volatility;
+      if (band.assumptions.inflation) {
+        const { stdDev, priceLevel } = band.assumptions.inflation;
+        datum._simInflationSd = stdDev;
+        datum._pricesP25 = priceLevel.p25;
+        datum._pricesP50 = priceLevel.p50;
+        datum._pricesP75 = priceLevel.p75;
+      }
     }
     if (yr.phase === "decumulation" && gkAnchor !== null)
       datum._gkAnchor = gkAnchor;
@@ -557,8 +564,20 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                         <span>Inflation</span>
                         <span className="tabular-nums">
                           {formatPercent(Number(d._inflation), 1)}
+                          {d._simInflationSd != null &&
+                            ` ± ${formatPercent(Number(d._simInflationSd), 1)}`}
                         </span>
                       </div>
+                      {d._pricesP50 != null && Number(d._pricesP75) > 1 && (
+                        <div className="flex justify-between gap-4">
+                          <span>Prices vs today</span>
+                          <span className="tabular-nums">
+                            ×{Number(d._pricesP50).toFixed(2)} (likely ×
+                            {Number(d._pricesP25).toFixed(2)}–
+                            {Number(d._pricesP75).toFixed(2)})
+                          </span>
+                        </div>
+                      )}
                       {d._gkAnchor != null && (
                         <div className="flex justify-between gap-4">
                           <span>Anchor rate</span>

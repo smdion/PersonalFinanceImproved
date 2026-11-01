@@ -137,6 +137,14 @@ exports[`monte carlo integration > fixture 2: with inflation risk — adds infla
     "age": 35,
     "assumptions": {
       "expectedReturn": 0.09,
+      "inflation": {
+        "priceLevel": {
+          "p25": 1,
+          "p50": 1,
+          "p75": 1,
+        },
+        "stdDev": 0.02,
+      },
       "volatility": 0.15,
     },
     "mean": 253446.09,
@@ -153,6 +161,14 @@ exports[`monte carlo integration > fixture 2: with inflation risk — adds infla
     "age": 89,
     "assumptions": {
       "expectedReturn": 0.06,
+      "inflation": {
+        "priceLevel": {
+          "p25": 3.58,
+          "p50": 3.79,
+          "p75": 3.99,
+        },
+        "stdDev": 0.02,
+      },
       "volatility": 0.09,
     },
     "mean": 30977186,

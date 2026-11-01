@@ -38,7 +38,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ### Added
 
 - **A mortgage servicer's SimpleFIN feed can be your loan's balance.** Link it under Settings > SimpleFIN. It replaces the balance from your budget app for that loan, its date shows on the House page, and it stays out of Current Balances.
-- **The projection chart's tooltip shows each year's assumptions:** plan return, the Simulation's return and volatility, inflation, and Guyton-Klinger's anchor rate.
+- **The projection chart's tooltip shows each year's assumptions:** plan return, the Simulation's return and volatility, inflation with its spread, how far prices have moved across the runs, and Guyton-Klinger's anchor rate.
 
 ### Changed
 
