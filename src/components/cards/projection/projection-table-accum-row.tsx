@@ -78,29 +78,15 @@ type AccumulationRowProps = {
   mcCellOpts: RenderMcCellOptions;
 };
 
-/** SAVE, or in a year a paycheck is gone, what the year actually does. */
-function GapYearPhase({
-  yr,
-  renderTooltip,
-  deflate,
-}: {
-  yr: EngineAccumulationYear;
-  renderTooltip: ProjectionState["renderTooltip"];
-  deflate: ProjectionState["deflate"];
-}) {
-  const gap = yr.gapDraw;
-  const save = yr.savingStopped ? (
-    <span className="text-caption font-medium text-sky-600">HOLD</span>
-  ) : (
-    <span className="text-caption font-medium text-green-600">SAVE</span>
-  );
-  if (!gap) return save;
-  const money = (v: number) => formatCurrency(Math.round(deflate(v, yr.year)));
-  // Money in and money out of the household's hands this year: they
-  // balance, so the year reads as one picture, not as save + draw.
+/** A year a paycheck is gone, as money in and money out of the household's
+ *  hands: they balance, so the year reads as one picture. */
+function gapYearLines(
+  yr: EngineAccumulationYear,
+  money: (v: number) => string,
+): string[] {
+  const gap = yr.gapDraw!;
   const spent = gap.spending - gap.spendingCut - gap.unmetNeed;
-  const taxes = gap.taxOnIncome + gap.taxCost;
-  const lines = [
+  return [
     `${yr.year}: a paycheck is gone`,
     "Money in",
     `  Pay: ${money(gap.pay)}`,
@@ -110,7 +96,7 @@ function GapYearPhase({
       .map((s) => `  From ${s.category}: ${money(s.withdrawal)}`),
     "Money out",
     `  Spending: ${money(spent)}`,
-    `  Taxes: ${money(taxes)}`,
+    `  Taxes: ${money(gap.taxOnIncome + gap.taxCost)}`,
     ...(gap.contributions > 0
       ? [`  Into accounts: ${money(gap.contributions)}`]
       : []),
@@ -126,24 +112,23 @@ function GapYearPhase({
       ? [`Spending is ${money(gap.unmetNeed)} under budget: no reachable money`]
       : []),
   ];
+}
+
+/** SAVE, HOLD when nobody saves, and + DRAW when accounts pay in too. */
+function GapYearPhase({ yr }: { yr: EngineAccumulationYear }) {
   return (
-    <Tooltip
-      content={renderTooltip({
-        kind: "info",
-        lines: lines.map((text) => ({ text, style: "header" as const })),
-      })}
-      side="right"
-      maxWidth={300}
-    >
-      <span>
-        {save}
-        {gap.withdrawal > 0 && (
-          <span className="text-caption ml-1 font-medium text-amber-600">
-            + DRAW
-          </span>
-        )}
-      </span>
-    </Tooltip>
+    <span>
+      {yr.savingStopped ? (
+        <span className="text-caption font-medium text-sky-600">HOLD</span>
+      ) : (
+        <span className="text-caption font-medium text-green-600">SAVE</span>
+      )}
+      {(yr.gapDraw?.withdrawal ?? 0) > 0 && (
+        <span className="text-caption ml-1 font-medium text-amber-600">
+          + DRAW
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -236,7 +221,7 @@ export function AccumulationRow({
         </td>
       </Tooltip>
       <td className="px-2 py-1.5">
-        <GapYearPhase yr={yr} renderTooltip={renderTooltip} deflate={deflate} />
+        <GapYearPhase yr={yr} />
       </td>
       <Tooltip
         content={(() => {
@@ -861,6 +846,13 @@ export function AccumulationRow({
       )}
       <Tooltip
         content={(() => {
+          if (yr.gapDraw && !pt)
+            return renderTooltip({
+              kind: "info",
+              lines: gapYearLines(yr, (v) =>
+                formatCurrency(Math.round(deflate(v, yr.year))),
+              ).map((text) => ({ text, style: "header" as const })),
+            });
           const iabs = yr.individualAccountBalances ?? [];
           const totalGrowth = (
             pt ? iabs.filter((ia) => ia.ownerPersonId === personFilter) : iabs
@@ -1034,6 +1026,11 @@ export function AccumulationRow({
             <span className="text-micro ml-px align-super text-green-600">
               +m
             </span>
+          )}
+          {!pt && (yr.gapDraw?.withdrawal ?? 0) > 0 && (
+            <div className="text-caption text-amber-600">
+              −{formatCurrency(deflate(yr.gapDraw!.withdrawal, yr.year))}
+            </div>
           )}
         </td>
       </Tooltip>

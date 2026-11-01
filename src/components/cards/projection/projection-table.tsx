@@ -267,7 +267,7 @@ export function ProjectionTable({
                         ))}
                   <th className="text-muted px-2 py-1.5 text-right font-medium">
                     In / Out
-                    <HelpTip text="Saving phase: total contributions + employer match flowing in. Withdrawal phase: total amount withdrawn across all accounts" />
+                    <HelpTip text="Saving years: contributions and employer match going in. Withdrawal years: the total withdrawn. A year a paycheck is gone shows both: what went in, and below it what came out. Hover for the money in and out." />
                   </th>
                   {balanceView === "taxType" ? (
                     <>
