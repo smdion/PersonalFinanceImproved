@@ -231,7 +231,7 @@ export function AccumulationRow({
         </td>
       </Tooltip>
       <td className="px-2 py-1.5">
-        <GapYearPhase yr={yr} renderTooltip={renderTooltip} />
+        <GapYearPhase yr={yr} renderTooltip={renderTooltip} deflate={deflate} />
       </td>
       <Tooltip
         content={(() => {
