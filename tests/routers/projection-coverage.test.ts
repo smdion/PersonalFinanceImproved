@@ -480,6 +480,33 @@ describe("projection router — computeMonteCarloProjection", () => {
     }
   });
 
+  it("Custom's clamp bounds are saved and the simulation reads them", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      await caller.projection.updateClampBounds({
+        preset: "custom",
+        returnClampMin: -0.2,
+        returnClampMax: 0.4,
+      });
+      const response = await caller.projection.computeMonteCarloProjection({
+        numTrials: 100,
+        preset: "custom",
+        taxMode: "simple",
+        seed: 42,
+      });
+      expect(response.simulationInputs).toMatchObject({
+        returnClampMin: -0.2,
+        returnClampMax: 0.4,
+      });
+    } finally {
+      cleanup();
+    }
+  });
+
   it("runs MC simulation with custom preset and seeded data", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {

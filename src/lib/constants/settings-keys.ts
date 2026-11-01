@@ -117,3 +117,6 @@ export const SK_HOUSEHOLD_TIMEZONE = "household_timezone";
 export const SK_TAX_DATA_SYNC_ENABLED = "tax_data_sync_enabled";
 /** The last community tax-data check: `{ at, result, detail? }`. */
 export const SK_TAX_DATA_LAST_CHECK = "tax_data_last_check";
+
+/** Custom Simulation return clamps: { returnClampMin, returnClampMax }. */
+export const SK_MC_CUSTOM_CLAMP_BOUNDS = "mc_custom_clamp_bounds";

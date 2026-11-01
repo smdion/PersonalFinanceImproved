@@ -14,6 +14,7 @@
  * apply on top of any preset.
  */
 import { eq } from "drizzle-orm";
+import { SK_MC_CUSTOM_CLAMP_BOUNDS } from "@/lib/constants/settings-keys";
 import * as schema from "@/lib/db/schema";
 import type { GlidePathEntry } from "@/lib/calculators/random";
 import {
@@ -24,6 +25,7 @@ import {
 import { glidePathFromRows } from "@/lib/pure/stock-share";
 import { toNumber, type Db } from "./transforms";
 
+type CustomClampBounds = { returnClampMin: number; returnClampMax: number };
 type AssetClassOverride = { id: number; meanReturn?: number; stdDev?: number };
 
 export type SimulationPreset = {
@@ -49,7 +51,7 @@ export async function loadSimulationPreset(
 ): Promise<SimulationPreset> {
   const isCustom = key === "custom";
   const p = schema.mcPresets;
-  const [presetRow, customRows, savedRow] = await Promise.all([
+  const [presetRow, customRows, savedRow, customClamps] = await Promise.all([
     isCustom
       ? Promise.resolve(undefined)
       : db
@@ -63,6 +65,14 @@ export async function loadSimulationPreset(
       .from(schema.appSettings)
       .where(eq(schema.appSettings.key, "mc_asset_class_overrides"))
       .then((r) => r[0] ?? null),
+    // Custom has no preset row: its bounds are a setting.
+    isCustom
+      ? db
+          .select({ value: schema.appSettings.value })
+          .from(schema.appSettings)
+          .where(eq(schema.appSettings.key, SK_MC_CUSTOM_CLAMP_BOUNDS))
+          .then((r) => r[0]?.value as CustomClampBounds | undefined)
+      : Promise.resolve(undefined),
   ]);
   const [presetGlide, presetReturns] = presetRow
     ? await Promise.all([
@@ -87,10 +97,10 @@ export async function loadSimulationPreset(
     inflationStdDev: presetRow ? toNumber(presetRow.inflationStdDev) : null,
     returnClampMin: presetRow
       ? toNumber(presetRow.returnClampMin)
-      : MC_RETURN_CLAMP_MIN,
+      : (customClamps?.returnClampMin ?? MC_RETURN_CLAMP_MIN),
     returnClampMax: presetRow
       ? toNumber(presetRow.returnClampMax)
-      : MC_RETURN_CLAMP_MAX,
+      : (customClamps?.returnClampMax ?? MC_RETURN_CLAMP_MAX),
     glidePath: glidePathFromRows(
       presetGlide.length > 0 ? presetGlide : customRows,
     ),

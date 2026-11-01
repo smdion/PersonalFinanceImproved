@@ -5,6 +5,7 @@
  * projection engine) and the scenario-scoped mutations that edit the MC
  * input tables: `updateGlidePathAllocations` and `updateClampBounds`.
  */
+import { SK_MC_CUSTOM_CLAMP_BOUNDS } from "@/lib/constants/settings-keys";
 import { planEndAge as planEndAgeOf } from "@/lib/pure/household-timeline";
 import {
   loadSimulationPreset,
@@ -526,19 +527,24 @@ export const monteCarloRouter = createTRPCRouter({
     .input(
       z.object({
         preset: z.enum(["custom"]),
-        returnClampMin: z.number(),
-        returnClampMax: z.number(),
+        returnClampMin: z.number().min(-1).max(0),
+        returnClampMax: z.number().min(0).max(10),
       }),
     )
     .mutation(async ({ ctx, input }) => {
       const { db } = ctx;
+      // Custom has no preset row (this used to update nothing): a setting.
+      const value = {
+        returnClampMin: input.returnClampMin,
+        returnClampMax: input.returnClampMax,
+      };
       await db
-        .update(schema.mcPresets)
-        .set({
-          returnClampMin: String(input.returnClampMin),
-          returnClampMax: String(input.returnClampMax),
-        })
-        .where(eq(schema.mcPresets.key, input.preset));
+        .insert(schema.appSettings)
+        .values({ key: SK_MC_CUSTOM_CLAMP_BOUNDS, value })
+        .onConflictDoUpdate({
+          target: schema.appSettings.key,
+          set: { value },
+        });
       return { updated: true };
     }),
 
