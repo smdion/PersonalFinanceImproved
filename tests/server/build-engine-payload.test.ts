@@ -223,6 +223,23 @@ describe("buildEnginePayload — single-person household", () => {
     expect(payload!.baseEngineInput.salaryGrowthRateByPerson).toBeUndefined();
   });
 
+  it("a retirement-age what-if moves the whole timeline, not just the year", async () => {
+    const data = await fetchRetirementData(appDb, { contributionProfileId });
+    const base = await buildEnginePayload(appDb, data, {
+      contributionProfileId,
+    });
+    const later = await buildEnginePayload(appDb, data, {
+      contributionProfileId,
+      retirementAgeDelta: 2,
+    });
+    expect(later!.baseEngineInput.retirementYear).toBe(
+      base!.baseEngineInput.retirementYear + 2,
+    );
+    expect(later!.planRetirementAge).toBe(base!.planRetirementAge + 2);
+    // The saved settings are untouched.
+    expect(later!.settings.retirementAge).toBe(base!.settings.retirementAge);
+  });
+
   it("aggregates starting balances from the latest snapshot", async () => {
     const data = await fetchRetirementData(appDb, { contributionProfileId });
     const payload = await buildEnginePayload(appDb, data, {

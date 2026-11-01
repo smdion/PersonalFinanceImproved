@@ -288,6 +288,10 @@ export async function buildEnginePayload(
      *  profile — a stale id from a deleted profile must never silently
      *  compute against nothing. */
     retirementProfileId?: number;
+    /** What-if: everyone retires this many years later (negative: sooner).
+     *  Applied before the timeline, so every window built from it moves
+     *  too; the saved settings are untouched. */
+    retirementAgeDelta?: number;
   },
 ) {
   const {
@@ -507,7 +511,9 @@ export async function buildEnginePayload(
       personId: p.id,
       name: p.name,
       birthYear: new Date(p.dateOfBirth).getFullYear(),
-      retirementAge: ps?.retirementAge ?? settings.retirementAge,
+      retirementAge:
+        (ps?.retirementAge ?? settings.retirementAge) +
+        (opts.retirementAgeDelta ?? 0),
       endAge: ps?.endAge ?? settings.endAge,
       // Effective pre-retirement raise rate for THIS person. A person with
       // no retirement_settings row in the active profile at all shows the
