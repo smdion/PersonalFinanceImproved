@@ -447,7 +447,11 @@ export function capContributionsByLimitGroup(
           : (coverage.get(p.id) ?? jointCoverage),
       ),
     );
-    if (householdSizes.some((z) => typeof z === "string")) continue;
+    if (
+      householdSizes.length === 0 ||
+      householdSizes.some((z) => typeof z === "string")
+    )
+      continue;
     const household = householdOf(householdSizes as Size[], sharedFamily);
     groupLimits.set(group, household);
     const ownedRoom =

@@ -221,12 +221,18 @@ export function computeTaxBucketBreakdown(
         // Joint account — attribute to all people equally for ownership fractions
         if (!accountOwnerSets[cat]) accountOwnerSets[cat] = new Set();
         accountOwnerSets[cat].add("Joint");
-        for (const pName of Array.from(personNameById.values())) {
+        // No people yet: it's still the household's money, held under
+        // "Joint" so it stays in the totals.
+        const sharers =
+          personNameById.size > 0
+            ? Array.from(personNameById.values())
+            : ["Joint"];
+        for (const pName of sharers) {
           if (!balanceByPersonByCategory[pName])
             balanceByPersonByCategory[pName] = {};
           balanceByPersonByCategory[pName][cat] =
             (balanceByPersonByCategory[pName][cat] ?? 0) +
-            a.amount / personNameById.size;
+            a.amount / sharers.length;
         }
       }
 

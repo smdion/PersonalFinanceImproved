@@ -127,6 +127,22 @@ describe("computeTaxBucketBreakdown", () => {
     expect(result.ownershipByPerson.Sam?.brokerage).toBeCloseTo(0.5, 5);
   });
 
+  it("keeps a joint balance in the total before any people exist", () => {
+    const accounts: TaxBucketSnapshotAccount[] = [
+      account({
+        institution: "Vanguard",
+        accountType: "brokerage",
+        taxType: "afterTax",
+        performanceAccountId: 6,
+        ownerPersonId: null,
+        amount: 5000,
+        accountLabel: "Long Term Brokerage (Vanguard)",
+      }),
+    ];
+    const result = computeTaxBucketBreakdown({ accounts }, [], []);
+    expect(result.portfolioTotal).toBe(5000);
+  });
+
   describe("cost basis — each account's own", () => {
     const brokerage = (
       id: number,
