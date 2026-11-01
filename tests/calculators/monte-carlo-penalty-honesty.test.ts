@@ -221,5 +221,5 @@ describe("Monte Carlo honesty (acceptance criterion 11)", () => {
     // have but can't reach" rather than "you'll be broke."
     expect(withExclusion.penaltyAvoidedShortfallRate).toBeGreaterThan(0);
     expect(withoutExclusion.penaltyAvoidedShortfallRate).toBe(0);
-  });
+  }, 60_000); // 300 trials: slow under coverage instrumentation in CI
 });
