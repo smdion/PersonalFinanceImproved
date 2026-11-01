@@ -206,6 +206,7 @@ export default function NetWorthPage() {
     mortgageBalance,
     cash,
     cashSource,
+    cashMissingAccounts,
     otherAssets,
     otherAssetItems,
     otherAssetsSyncSource,
@@ -394,6 +395,7 @@ export default function NetWorthPage() {
               byTaxType={byTaxType}
               cash={cash}
               cashSource={cashSource}
+              cashMissingAccounts={cashMissingAccounts}
               displayHomeValue={displayHomeValue}
               otherAssets={otherAssets}
               otherAssetItems={otherAssetItems}

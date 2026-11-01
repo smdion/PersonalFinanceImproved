@@ -217,6 +217,20 @@ function mapTransaction(t: ActualTransaction): BudgetTransaction {
  * getMonthDetail(id) calls, which already pass bare YYYY-MM ids straight
  * from Actual's own `/months` list.
  */
+/** At most this many requests to the wrapper at once: it reloads the
+ *  budget per request and struggles when many run together. */
+const WRAPPER_BATCH_SIZE = 10;
+
+/** Runs `fn` over `items`, `size` at a time. */
+async function inBatches<T>(
+  items: readonly T[],
+  size: number,
+  fn: (item: T) => Promise<void>,
+): Promise<void> {
+  for (let i = 0; i < items.length; i += size)
+    await Promise.all(items.slice(i, i + size).map(fn));
+}
+
 function toActualMonthId(month: string): string {
   return month.slice(0, 7);
 }
@@ -411,18 +425,16 @@ export class ActualClient implements BudgetAPIClient {
     // debt "paid off", a mortgage zeroed, cash gone) and replace the good
     // cache — the sync's network phase throwing changes nothing locally.
     const failed: BudgetAccount[] = [];
-    await Promise.all(
-      accounts.map(async (acct) => {
-        try {
-          // Same endpoint/shape as getAccountBalance below.
-          const balance = await this.getAccountBalance(acct.id);
-          acct.balance = balance;
-          acct.clearedBalance = balance;
-        } catch {
-          failed.push(acct);
-        }
-      }),
-    );
+    await inBatches(accounts, WRAPPER_BATCH_SIZE, async (acct) => {
+      try {
+        // Same endpoint/shape as getAccountBalance below.
+        const balance = await this.getAccountBalance(acct.id);
+        acct.balance = balance;
+        acct.clearedBalance = balance;
+      } catch {
+        failed.push(acct);
+      }
+    });
     const unavailable: string[] = [];
     for (const acct of failed) {
       try {
@@ -530,14 +542,11 @@ export class ActualClient implements BudgetAPIClient {
     // Batched, not one unbounded Promise.all fan-out — a wide date range could otherwise fire dozens of
     // concurrent requests at the actual-http-api wrapper at once. No
     // live caller today, but this is the shape any future one inherits.
-    const MONTH_DETAIL_BATCH_SIZE = 10;
     const details: BudgetMonthDetail[] = [];
-    for (let i = 0; i < inRange.length; i += MONTH_DETAIL_BATCH_SIZE) {
-      const batch = inRange.slice(i, i + MONTH_DETAIL_BATCH_SIZE);
-      details.push(
-        ...(await Promise.all(batch.map((id) => this.getMonthDetail(id)))),
-      );
-    }
+    await inBatches(inRange, WRAPPER_BATCH_SIZE, async (id) => {
+      details.push(await this.getMonthDetail(id));
+    });
+    details.sort((a, b) => a.month.localeCompare(b.month));
     return details.map(({ categories: _categories, ...month }) => month);
   }
 
@@ -578,24 +587,35 @@ export class ActualClient implements BudgetAPIClient {
    * per-item fetch in this client already is.
    */
   private async overlayNoteGoals(categories: BudgetCategory[]): Promise<void> {
-    await Promise.all(
-      categories.map(async (cat) => {
-        try {
-          const noteRes = await this.request<{ data: string | null }>(
-            `/notes/category/${cat.id}`,
-          );
-          const noteGoal =
-            parseGoalFromNote(noteRes.data, "fixed") ??
-            parseGoalFromNote(noteRes.data, "target-balance");
-          if (noteGoal !== undefined) cat.goalTarget = noteGoal;
-        } catch (err) {
-          log("warn", "actual_client.goal_note_fetch_failed", {
-            categoryId: cat.id,
-            error: err instanceof Error ? err.message : String(err),
-          });
-        }
-      }),
-    );
+    const readNote = async (cat: BudgetCategory) => {
+      const noteRes = await this.request<{ data: string | null }>(
+        `/notes/category/${cat.id}`,
+      );
+      const noteGoal =
+        parseGoalFromNote(noteRes.data, "fixed") ??
+        parseGoalFromNote(noteRes.data, "target-balance");
+      if (noteGoal !== undefined) cat.goalTarget = noteGoal;
+    };
+    // A few at a time; a failed note gets one more try on its own (as
+    // account balances do) before it's left out.
+    const failed: BudgetCategory[] = [];
+    await inBatches(categories, WRAPPER_BATCH_SIZE, async (cat) => {
+      try {
+        await readNote(cat);
+      } catch {
+        failed.push(cat);
+      }
+    });
+    for (const cat of failed) {
+      try {
+        await readNote(cat);
+      } catch (err) {
+        log("warn", "actual_client.goal_note_fetch_failed", {
+          categoryId: cat.id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
   }
 
   /** The wrapper's `PATCH /months/:month/categories/:id` requires

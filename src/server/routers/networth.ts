@@ -151,7 +151,12 @@ export const networthRouter = createTRPCRouter({
       const { getActiveBudgetApi } = await import("@/lib/budget-api");
       const activeBudgetApi = await getActiveBudgetApi(ctx.db);
       const [
-        { cash, source: cashSource, cacheAgeDays: cashCacheAgeDays },
+        {
+          cash,
+          source: cashSource,
+          cacheAgeDays: cashCacheAgeDays,
+          missingAccounts: cashMissingAccounts,
+        },
         otherAssetsResult,
       ] = await Promise.all([
         getEffectiveCash(ctx.db, settings, activeBudgetApi),
@@ -293,6 +298,7 @@ export const networthRouter = createTRPCRouter({
         cash,
         cashSource,
         cashCacheAgeDays,
+        cashMissingAccounts,
         otherAssets,
         otherAssetItems,
         otherAssetsSyncSource,

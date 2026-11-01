@@ -137,6 +137,7 @@ describe("getEffectiveCash — active budget API", () => {
       cash: 6200,
       source: "manual",
       cacheAgeDays: null,
+      missingAccounts: 0,
     });
   });
 
@@ -172,7 +173,49 @@ describe("getEffectiveCash — active budget API", () => {
     });
     try {
       const result = await getEffectiveCash(ctx.rawDb, []);
-      expect(result).toEqual({ cash: 3500, source: "actual", cacheAgeDays: 3 });
+      expect(result).toEqual({
+        cash: 3500,
+        source: "actual",
+        cacheAgeDays: 3,
+        missingAccounts: 0,
+      });
+    } finally {
+      ctx.db.delete(ctx.schema.apiConnections).run();
+    }
+  });
+
+  it("a mapped account the budget app no longer lists is counted and flagged and reports the cache's real age", async () => {
+    mockGetActiveBudgetApi.mockResolvedValue("actual");
+    ctx.db
+      .insert(ctx.schema.apiConnections)
+      .values({
+        service: "actual",
+        config: {},
+        accountMappings: [
+          {
+            localId: "cash",
+            localName: "Cash",
+            remoteAccountId: "chk",
+            syncDirection: "pull",
+          },
+          {
+            localId: "cash",
+            localName: "Cash",
+            remoteAccountId: "sav",
+            syncDirection: "pull",
+          },
+        ],
+      })
+      .run();
+    mockCacheGet.mockResolvedValue({
+      data: [
+        { id: "sav", balance: 4000 }, // "chk" was closed in the budget app
+      ],
+      fetchedAt: new Date(Date.now() - 3 * 86_400_000),
+    });
+    try {
+      const result = await getEffectiveCash(ctx.rawDb, []);
+      expect(result).toMatchObject({ cash: 4000, missingAccounts: 1 });
     } finally {
       ctx.db.delete(ctx.schema.apiConnections).run();
     }
