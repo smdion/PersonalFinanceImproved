@@ -927,8 +927,8 @@ describe("input builders", () => {
       mortgageBalance: 210_000,
       otherLiabilities: 0,
     };
-    expect(milestoneYearFromHistory(row, 1990)).toMatchObject({
-      age: row.year - 1990,
+    expect(milestoneYearFromHistory(row)).toMatchObject({
+      age: row.averageAge,
       liquid: 240_000,
       cash: 25_000,
       retirement: 180_000,
@@ -936,21 +936,18 @@ describe("input builders", () => {
       contributions: 35_000,
       gain: 18_000,
     });
-    expect(
-      milestoneYearFromHistory({ ...row, isCurrent: true }, null),
-    ).toMatchObject({ age: row.averageAge, contributions: null, gain: null });
+    expect(milestoneYearFromHistory({ ...row, isCurrent: true })).toMatchObject(
+      { contributions: null, gain: null },
+    );
     // Each account's own parent category wins over its type's default.
     expect(
-      milestoneYearFromHistory(
-        {
-          ...row,
-          portfolioByTaxLocation: {
-            retirement: { preTax: 150_000, taxFree: 30_000, afterTax: 10_000 },
-            portfolio: { afterTax: 25_000 },
-          },
+      milestoneYearFromHistory({
+        ...row,
+        portfolioByTaxLocation: {
+          retirement: { preTax: 150_000, taxFree: 30_000, afterTax: 10_000 },
+          portfolio: { afterTax: 25_000 },
         },
-        1990,
-      ),
+      }),
     ).toMatchObject({ retirement: 190_000, brokerage: 25_000 });
   });
 
