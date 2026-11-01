@@ -521,19 +521,28 @@ export async function loadDailyPositions(
       ),
     )
     .then(newestReportPerDay);
+  // A report missing a held fund's value can't give that day's mix (a $0
+  // would read as the fund sold): the feed's whole day is left out, and
+  // its previous report carries the day (holdingsByDay).
+  const unvalued = new Set(
+    rows
+      .filter((r) => r.value === null && toNumber(r.shares) !== 0)
+      .map((r) => `${r.simplefinAccountId}|${r.asOf}`),
+  );
   const positions: DailyPosition[] = [];
   const latest = new Map<number, string>();
   for (const r of rows) {
     const feed = accounts.get(r.simplefinAccountId!);
     const perf = feed?.performanceAccountId;
     if (perf == null || toNumber(r.shares) === 0) continue;
+    if (unvalued.has(`${r.simplefinAccountId}|${r.asOf}`)) continue;
     positions.push({
       performanceAccountId: perf,
       subKey: feed!.subKey,
       feedId: r.simplefinAccountId!,
       day: r.asOf,
       securityId: r.securityId,
-      value: r.value === null ? 0 : toNumber(r.value),
+      value: toNumber(r.value),
     });
     if (!latest.has(perf) || r.asOf > latest.get(perf)!)
       latest.set(perf, r.asOf);
