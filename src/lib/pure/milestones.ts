@@ -646,11 +646,11 @@ function checkpoints(
     value: { kind: "multiple", amount: current },
     target: { kind: "multiple", amount: target },
     progress: target > 0 ? Math.min(1, current / target) : 1,
-    headline: `${multiple(current)} your income ${counted}; ${multiple(target)} is the target for age ${Math.round(now.age)}`,
+    headline: `${multiple(current)} your income ${counted}; ${multiple(target)} is the target for your household's average age, ${Math.round(now.age)}`,
     note: notes.length ? notes.join(" · ") : null,
     nextStep:
       current < target
-        ? `${formatCurrency((target - current) * now.grossIncome)} more ${counted} reaches ${multiple(target)} your income, the target for age ${Math.round(now.age)}`
+        ? `${formatCurrency((target - current) * now.grossIncome)} more ${counted} reaches ${multiple(target)} your income, the target for your household's average age, ${Math.round(now.age)}`
         : null,
     impact:
       current < target

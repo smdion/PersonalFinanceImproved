@@ -76,7 +76,7 @@ export function JourneyToAbundanceChart({
       title={
         <>
           Journey to Abundance{" "}
-          <HelpTip text="From The Millionaire Next Door: Average Accumulator of Wealth = Age x Average Income / 10. Prodigious = 2x that. Lines show your portfolio and net worth against these benchmarks." />
+          <HelpTip text="From The Millionaire Next Door: Average Accumulator of Wealth = Age x Average Income / 10, using your household's average age. Prodigious = 2x that. Lines show your portfolio and net worth against these benchmarks." />
         </>
       }
       className="mb-8"
