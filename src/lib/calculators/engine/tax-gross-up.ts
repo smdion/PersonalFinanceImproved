@@ -221,6 +221,8 @@ function evaluateCost(
     indBasis: hasIndTracking ? indBasis : undefined,
     indAccts: hasIndTracking ? indAccts : undefined,
     indKey: hasIndTracking ? indKey : undefined,
+    indBal: hasIndTracking ? indBal : undefined,
+    year: hasIndTracking ? year : undefined,
   });
   const routeResult = routeForMode(
     trialWithdrawal,

@@ -176,6 +176,8 @@ export function runGapYearDraw(
     indBasis: hasIndividualAccounts ? indBasis : undefined,
     indAccts: hasIndividualAccounts ? indAccts : undefined,
     indKey: hasIndividualAccounts ? indKey : undefined,
+    indBal: hasIndividualAccounts ? indBal : undefined,
+    year,
   });
 
   const route = (target: number) =>

@@ -158,3 +158,29 @@ describe("splitRothWithdrawalForTax", () => {
     expect(result.taxableGrowth).toBe(5000);
   });
 });
+
+describe("Rule of 55 and Roth 401(k) earnings", () => {
+  const draw = {
+    contributionDrawn: 20000,
+    conversionDrawn: 0,
+    growthDrawn: 50000,
+  } as BasisDraw;
+  const split = (year: number) =>
+    splitRothWithdrawalForTax({
+      accounts: [{ indKey: "roth-401k", ownerBirthYear: 1987 }],
+      draws: new Map([["roth-401k", draw]]),
+      year,
+    });
+
+  it("escapes the penalty but not the tax: at 58 the growth is ordinary income", () => {
+    const r = split(2045);
+    expect(r.taxableGrowth).toBe(50000);
+    expect(r.taxFreeAmount).toBe(20000);
+    expect(r.byKey.get("roth-401k")?.qualified).toBe(false);
+  });
+
+  it("the year the owner counts as past 59½, it's tax-free", () => {
+    expect(split(2046).taxableGrowth).toBe(50000);
+    expect(split(2047).taxableGrowth).toBe(0);
+  });
+});

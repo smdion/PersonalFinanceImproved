@@ -639,8 +639,9 @@ export function runDecumulationYear(
   // waterfall: sequential drain in priority order (legacy behavior)
   // percentage: fixed % split across accounts
   //
-  // For waterfall/percentage, Roth bracket optimization can still overlay
-  // via rothBracketTarget (sets a traditional tax-type cap).
+  // For waterfall, Roth bracket optimization can still overlay via
+  // rothBracketTarget (a Traditional cap that yields to spending once the
+  // other accounts are done). Percentage mode has no overlay.
   // Cost-aware post-bracket-cap ranking inputs
   // (bracket_filling mode only; ignored by waterfall/percentage). See
   // deriveBasisRankingInputs's docblock for why the basis-derived fields
@@ -663,6 +664,8 @@ export function runDecumulationYear(
     indBasis: hasIndividualAccounts ? indBasis : undefined,
     indAccts: hasIndividualAccounts ? indAccts : undefined,
     indKey: hasIndividualAccounts ? indKey : undefined,
+    indBal: hasIndividualAccounts ? indBal : undefined,
+    year,
   });
 
   // Resolved ONCE, here, and reused both for the routing reservation below
