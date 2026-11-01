@@ -943,18 +943,16 @@ export function buildContributionDisplaySpecs(
  * adds them from a specific profile's active fields, and only for accounts
  * that have an entry there.
  */
-type LiveContribRow = {
-  personId: number | null;
-  jobId: number | null;
+/** A live contribution account row: the full row (so every consumer — the
+ *  cap's HSA coverage, payroll vs. manual, ownership, the match's tax
+ *  treatment — reads the real fact), with its type narrowed and its parent
+ *  category resolved. */
+type LiveContribRow = Omit<
+  typeof schema.contributionAccounts.$inferSelect,
+  "accountType" | "parentCategory"
+> & {
   accountType: AccountCategory;
-  subType: string | null;
-  label: string | null;
   parentCategory: string;
-  taxTreatment: string;
-  employerMatchType: string | null;
-  employerMatchValue: string | null;
-  employerMaxMatchPct: string | null;
-  id: number;
 };
 
 /**
@@ -1005,18 +1003,10 @@ export async function loadLiveContribData(db: Db) {
 
   // Build ContribRow-compatible rows for aggregation (active only for live resolution)
   const contribs: LiveContribRow[] = activeContribs.map((c) => ({
-    personId: c.personId,
-    jobId: c.jobId,
+    ...c,
     accountType: c.accountType as AccountCategory,
-    subType: c.subType,
-    label: c.label,
     parentCategory:
       c.parentCategory ?? getParentCategory(c.accountType as AccountCategory),
-    taxTreatment: c.taxTreatment,
-    employerMatchType: c.employerMatchType,
-    employerMatchValue: c.employerMatchValue,
-    employerMaxMatchPct: c.employerMaxMatchPct,
-    id: c.id,
   }));
 
   return {
