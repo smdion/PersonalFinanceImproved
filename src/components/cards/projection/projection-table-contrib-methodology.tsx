@@ -39,7 +39,6 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
     personFilter,
     isPersonFiltered,
     personFilterName,
-    engineSettings,
     realDefaults,
     contribSpecs,
     budgetProfileSummaries: _budgetProfileSummaries,
@@ -186,8 +185,8 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                   })()}
                 {result.firstOverflowYear && (
                   <div className="mt-1.5 border-t border-blue-100 pt-1.5 font-medium text-amber-600">
-                    Contributions exceed IRS limits starting age{" "}
-                    {result.firstOverflowAge} ({result.firstOverflowYear}) —{" "}
+                    Contributions exceed IRS limits starting{" "}
+                    {result.firstOverflowYear} —{" "}
                     {formatCurrency(
                       deflate(
                         result.firstOverflowAmount ?? 0,
@@ -228,8 +227,8 @@ export function ContribMethodologySection({ state }: ContribMethodologyProps) {
                 </h5>
                 <p className="text-muted mb-2">
                   Computes annual need (budget × inflation &minus; Social
-                  Security at age {engineSettings?.ssStartAge ?? "?"}), grosses
-                  up for taxes, and routes withdrawals via{" "}
+                  Security from each person&apos;s start age), grosses up for
+                  taxes, and routes withdrawals via{" "}
                   {withdrawalRoutingMode === "bracket_filling"
                     ? "bracket filling (Traditional to bracket cap, then whichever of Roth or Brokerage is cheaper that year, HSA last)"
                     : withdrawalRoutingMode === "waterfall"

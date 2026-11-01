@@ -25,6 +25,7 @@ type NumLike = number | string;
  *  only has to agree on the fields it actually renders. */
 export type ReportEngineSettings = {
   retirementAge?: NumLike | null;
+  retirementYear?: NumLike | null;
   endAge?: NumLike | null;
   annualInflation?: NumLike | null;
   postRetirementInflation?: NumLike | null;
@@ -219,6 +220,7 @@ export function ReportAssumptionsSummary({
 
   const retirementAge = num(settings.retirementAge);
   const endAge = num(settings.endAge);
+  const retirementYear = num(settings.retirementYear);
   const householdSize = num(settings.householdSize);
   const annualInflation = num(settings.annualInflation);
   const postRetirementInflation = num(settings.postRetirementInflation);
@@ -254,12 +256,16 @@ export function ReportAssumptionsSummary({
 
       <Section title="Timeline">
         <Row
-          label="Retirement age"
-          value={retirementAge != null ? String(retirementAge) : "—"}
+          label="Withdrawals start"
+          value={retirementYear != null ? String(retirementYear) : "—"}
         />
         <Row
-          label="Plan end age"
-          value={endAge != null ? String(endAge) : "—"}
+          label="Plan through"
+          value={
+            retirementYear != null && retirementAge != null && endAge != null
+              ? String(retirementYear + endAge - retirementAge)
+              : "—"
+          }
         />
         {householdSize != null && (
           <Row label="Household size" value={String(householdSize)} />

@@ -1585,7 +1585,9 @@ export function DecumulationRow({
                 : []),
               ...(!dyr.acaSubsidyPreserved &&
               dyr.acaMagiHeadroom === 0 &&
-              yr.age < 65
+              (people ?? enginePeople ?? []).every(
+                (p) => yr.year - p.birthYear < 65,
+              )
                 ? [`ACA: subsidy lost`]
                 : []),
             ]}
