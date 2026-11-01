@@ -238,6 +238,35 @@ describe("investments router", () => {
     ).toBe(false);
   });
 
+  it("recent activity leaves out feeds that aren't counted", async () => {
+    const unlinked = ctx.db
+      .insert(sqliteSchema.simplefinAccounts)
+      .values({
+        externalAccountId: "sf-unlinked-recent",
+        orgName: "Elsewhere Bank",
+        accountName: "Checking",
+        lastBalance: "100",
+      })
+      .returning()
+      .get().id;
+    const id = ctx.db
+      .insert(sqliteSchema.investmentTransactions)
+      .values({
+        simplefinAccountId: unlinked,
+        externalId: "t-unlinked",
+        posted: daysAgo(0),
+        amount: "500.00",
+        description: "DEPOSIT",
+        pending: false,
+      })
+      .returning()
+      .get().id;
+    const flows = await ctx.caller.investments.getSnapshotFlows({
+      since: daysAgo(10),
+    });
+    expect(flows.recent.some((r) => r.id === id)).toBe(false);
+  });
+
   it("pairs a move between two of the household's accounts as a transfer", async () => {
     const db = ctx.db;
     const account = (externalAccountId: string, label: string) => {
