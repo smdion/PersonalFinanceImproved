@@ -29,7 +29,7 @@ const mortgageLoanInput = z.object({
   insuranceAndTaxes: zDecimal.default("0"),
   totalEscrow: zDecimal.default("0"),
   interestRate: zDecimal,
-  termYears: z.number().int(),
+  termYears: z.number().int().min(1).max(50),
   originalLoanAmount: zDecimal,
   firstPaymentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   propertyValuePurchase: zDecimal,

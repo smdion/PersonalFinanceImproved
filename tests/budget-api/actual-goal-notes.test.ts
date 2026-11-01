@@ -250,3 +250,19 @@ describe("parseGoalFromNote", () => {
     });
   });
 });
+
+describe("Windows line endings and non-numbers", () => {
+  it("updates a template on a CRLF note in place, keeping its line endings", () => {
+    const note = "Saving for the roof\r\n#template 50\r\nmore text";
+    const r = mergeGoalIntoNote(note, "fixed", 75);
+    expect(r).toEqual({
+      ok: true,
+      note: "Saving for the roof\r\n#template 75\r\nmore text",
+    });
+    expect(parseGoalFromNote(note, "fixed")).toBe(50);
+  });
+
+  it("refuses a NaN amount instead of writing #template NaN", () => {
+    expect(mergeGoalIntoNote(null, "fixed", Number.NaN).ok).toBe(false);
+  });
+});

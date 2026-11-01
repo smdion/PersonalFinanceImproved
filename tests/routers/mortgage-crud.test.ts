@@ -55,6 +55,12 @@ describe("mortgage.mortgageLoans", () => {
   });
 
   describe("create", () => {
+    it("refuses a term of zero years", async () => {
+      await expect(
+        caller.mortgage.mortgageLoans.create({ ...baseLoan, termYears: 0 }),
+      ).rejects.toThrow();
+    });
+
     it("creates a mortgage loan and returns it", async () => {
       const created = await caller.mortgage.mortgageLoans.create(baseLoan);
       expect(created).toBeDefined();

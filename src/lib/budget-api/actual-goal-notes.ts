@@ -68,7 +68,7 @@ export function mergeGoalIntoNote(
   // up front instead of writing malformed, self-poisoning syntax — a
   // negative goal amount isn't meaningful in Actual's template syntax
   // anyway.
-  if (amount < 0) {
+  if (!Number.isFinite(amount) || amount < 0) {
     return {
       ok: false,
       reason: `Goal amount must be zero or positive (got ${amount}).`,
