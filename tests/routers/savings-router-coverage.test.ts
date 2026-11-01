@@ -1244,6 +1244,40 @@ describe("savings.plannedTransactions settle/unsettle/settleMany", () => {
     ).rejects.toThrow(/already settled/i);
   });
 
+  it("settleMany takes both legs of a transfer", async () => {
+    const pair = await caller.savings.transfers.create({
+      fromGoalId: goalId1,
+      toGoalId: goalId2,
+      transactionDate: "2027-03-15",
+      amount: 100,
+      description: "Move",
+    });
+    const legs = [pair.withdrawal!.id, pair.deposit!.id];
+    await expect(
+      caller.savings.plannedTransactions.settleMany({
+        occurrences: legs.map((plannedTxId) => ({
+          plannedTxId,
+          occurrenceMonth: "2027-03",
+        })),
+      }),
+    ).resolves.toEqual({ ok: true });
+  });
+
+  it("settleMany still refuses what was settled before", async () => {
+    const tx = await caller.savings.plannedTransactions.create({
+      goalId: goalId1,
+      transactionDate: "2027-04-15",
+      amount: "-100",
+      description: "Once",
+      isRecurring: false,
+    });
+    const occ = { plannedTxId: tx!.id, occurrenceMonth: "2027-04" };
+    await caller.savings.plannedTransactions.settleMany({ occurrences: [occ] });
+    await expect(
+      caller.savings.plannedTransactions.settleMany({ occurrences: [occ] }),
+    ).rejects.toThrow("Already settled");
+  });
+
   it("settleMany settles multiple occurrences in one call", async () => {
     const tx1 = await caller.savings.plannedTransactions.create({
       goalId: goalId1,
