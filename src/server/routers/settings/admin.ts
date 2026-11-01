@@ -55,7 +55,6 @@ import {
   RBAC_ADMIN_GROUP_KEY,
 } from "@/server/auth";
 import { settingValue } from "./_shared";
-import { apiConfigSchema, accountMappingSchema } from "@/lib/db/json-schemas";
 import { applyPlan } from "@/server/helpers/plans";
 import { mergeSettingAtomically } from "@/server/helpers/merge-setting";
 import { firstReachedSchema } from "@/lib/pure/milestone-first-reached";
@@ -375,7 +374,10 @@ export const adminProcedures = {
   // ══ API CONNECTIONS ══
   apiConnections: createTRPCRouter({
     /** Admin-only, and never returns `config`: it holds credentials
-     *  (encrypted envelopes, or plaintext for legacy rows such as FMP). */
+     *  (encrypted envelopes, or plaintext for legacy rows such as FMP).
+     *  Connections are written only through each integration's own save
+     *  (sync), which encrypts, checks the URL and the mappings; a generic
+     *  upsert that stored config in plaintext was removed. */
     list: adminProcedure.query(({ ctx }) =>
       ctx.db
         .select({
@@ -391,33 +393,6 @@ export const adminProcedures = {
         .from(schema.apiConnections)
         .orderBy(asc(schema.apiConnections.service)),
     ),
-    upsert: adminProcedure
-      .input(
-        z.object({
-          service: z.string().min(1),
-          config: apiConfigSchema,
-          accountMappings: z.array(accountMappingSchema).nullable().optional(),
-        }),
-      )
-      .mutation(async ({ ctx, input }) => {
-        const existing = await ctx.db
-          .select()
-          .from(schema.apiConnections)
-          .where(eq(schema.apiConnections.service, input.service));
-        if (existing.length > 0) {
-          return ctx.db
-            .update(schema.apiConnections)
-            .set(input)
-            .where(eq(schema.apiConnections.service, input.service))
-            .returning()
-            .then((r) => r[0]);
-        }
-        return ctx.db
-          .insert(schema.apiConnections)
-          .values(input)
-          .returning()
-          .then((r) => r[0]);
-      }),
     delete: adminProcedure
       .input(z.object({ service: z.string().min(1) }))
       .mutation(({ ctx, input }) =>

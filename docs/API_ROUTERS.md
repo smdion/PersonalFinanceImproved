@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**394 procedures across 56 routers.**
+**393 procedures across 56 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -454,23 +454,22 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `settings/admin`
 
-| Procedure             | Kind     | Auth                 | Description                                                            |
-| --------------------- | -------- | -------------------- | ---------------------------------------------------------------------- |
-| `activate`            | mutation | `protectedProcedure` | Make this Plan's profiles the active ones, household-wide (applyPlan). |
-| `create`              | mutation | `scenarioProcedure`  | Save a set of profiles as a Plan — all four kinds, by name.            |
-| `delete`              | mutation | `adminProcedure`     | (no description)                                                       |
-| `delete`              | mutation | `scenarioProcedure`  | (no description)                                                       |
-| `delete`              | mutation | `adminProcedure`     | (no description)                                                       |
-| `get`                 | query    | `adminProcedure`     | Get current RBAC group mapping (DB overrides merged with defaults).    |
-| `getDataFreshness`    | query    | `protectedProcedure` | ══ DATA FRESHNESS ══                                                   |
-| `list`                | query    | `protectedProcedure` | ══ APP SETTINGS ══                                                     |
-| `list`                | query    | `protectedProcedure` | Every saved Plan.                                                      |
-| `list`                | query    | `adminProcedure`     | (encrypted envelopes, or plaintext for legacy rows such as FMP).       |
-| `setDismissal`        | mutation | `adminProcedure`     | server, so two admins changing different items both stick).            |
-| `update`              | mutation | `scenarioProcedure`  | Rename a Plan or change which profiles it holds.                       |
-| `updateDataFreshness` | mutation | `adminProcedure`     | (no description)                                                       |
-| `upsert`              | mutation | `adminProcedure`     | (no description)                                                       |
-| `upsert`              | mutation | `adminProcedure`     | (no description)                                                       |
+| Procedure             | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| --------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `activate`            | mutation | `protectedProcedure` | Make this Plan's profiles the active ones, household-wide (applyPlan).                                                                                                                                   |
+| `create`              | mutation | `scenarioProcedure`  | Save a set of profiles as a Plan — all four kinds, by name.                                                                                                                                              |
+| `delete`              | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `delete`              | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
+| `delete`              | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `get`                 | query    | `adminProcedure`     | Get current RBAC group mapping (DB overrides merged with defaults).                                                                                                                                      |
+| `getDataFreshness`    | query    | `protectedProcedure` | ══ DATA FRESHNESS ══                                                                                                                                                                                     |
+| `list`                | query    | `protectedProcedure` | ══ APP SETTINGS ══                                                                                                                                                                                       |
+| `list`                | query    | `protectedProcedure` | Every saved Plan.                                                                                                                                                                                        |
+| `list`                | query    | `adminProcedure`     | (encrypted envelopes, or plaintext for legacy rows such as FMP). Connections are written only through each integration's own save (sync), which encrypts, checks the URL and the mappings; a generic ups |
+| `setDismissal`        | mutation | `adminProcedure`     | server, so two admins changing different items both stick).                                                                                                                                              |
+| `update`              | mutation | `scenarioProcedure`  | Rename a Plan or change which profiles it holds.                                                                                                                                                         |
+| `updateDataFreshness` | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `upsert`              | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
 
 ## `settings/onboarding`
 
