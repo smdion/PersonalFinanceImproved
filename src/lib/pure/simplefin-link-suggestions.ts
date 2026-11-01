@@ -73,11 +73,16 @@ function wholeAccounts(
   return [...byAccount.values()];
 }
 
+/** `partLinked`: tracked accounts with a sub-account already linked to a
+ *  feed. Never offered whole — the linked part would be counted twice. */
 export function suggestLinks(
   accounts: readonly UnlinkedSimplefinAccount[],
   candidates: readonly SubAccountCandidate[],
+  partLinked: ReadonlySet<number> = new Set(),
 ): LinkSuggestion[] {
-  const whole = wholeAccounts(candidates);
+  const whole = wholeAccounts(candidates).filter(
+    (w) => !partLinked.has(w.performanceAccountId),
+  );
   // Every acceptable (account, candidate) pair with its relative balance gap.
   const options = new Map<number, { c: SubAccountCandidate; gap: number }[]>();
   for (const a of accounts) {

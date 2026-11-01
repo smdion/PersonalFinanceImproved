@@ -168,4 +168,28 @@ describe("suggestLinks", () => {
       amount: 150_000,
     });
   });
+
+  it("never offers a whole account when one of its parts is already linked", () => {
+    // The Roth part is linked to a feed: the rest isn't the whole account,
+    // and linking it whole would count the Roth part twice.
+    const pre = sub({
+      performanceAccountId: 5,
+      accountType: "401k",
+      taxType: "preTax",
+      amount: 60_000,
+    });
+    const s = suggestLinks(
+      [
+        {
+          id: 22,
+          orgName: "Example Bank",
+          accountName: "EMPLOYER 401(K) PLAN",
+          balance: 60_000,
+        },
+      ],
+      [pre],
+      new Set([5]),
+    );
+    expect(s).toHaveLength(0);
+  });
 });

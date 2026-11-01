@@ -113,6 +113,11 @@ async function linkContext(
     (sub) =>
       !takenKeys.has(sub.key) && !takenWhole.has(sub.performanceAccountId),
   );
+  const partLinked = new Set(
+    rows
+      .filter((r) => r.linkedPerformanceAccountId != null && r.linkedSubKey)
+      .map((r) => r.linkedPerformanceAccountId!),
+  );
   const keyOf = new Map(open.map((sub) => [sub, sub.key]));
   const suggestions = new Map<number, LinkSuggestionView>();
   for (const s of suggestLinks(
@@ -125,6 +130,7 @@ async function linkContext(
         balance: Number(r.lastBalance),
       })),
     open,
+    partLinked,
   )) {
     const subKey =
       s.candidate.taxType === null
@@ -545,7 +551,7 @@ export const simplefinRouter = createTRPCRouter({
       let linked = 0;
       for (const [id, s] of suggestions) {
         if (input.ids && !input.ids.includes(id)) continue;
-        await ctx.db
+        const updated = await ctx.db
           .update(schema.simplefinAccounts)
           .set({
             linkedPerformanceAccountId: s.performanceAccountId,
@@ -566,7 +572,10 @@ export const simplefinRouter = createTRPCRouter({
                 ),
               ),
             ),
-          );
+          )
+          .returning({ id: schema.simplefinAccounts.id });
+        // Linked meanwhile (another tab, a sync): nothing changed here.
+        if (updated.length === 0) continue;
         await redactStoredCardSpending(ctx.db, id);
         linked++;
       }
