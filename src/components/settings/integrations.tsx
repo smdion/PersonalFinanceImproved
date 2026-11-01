@@ -575,8 +575,8 @@ export function IntegrationsSettings() {
             </p>
             <ul className="list-disc space-y-0.5 pl-4">
               <li>
-                <strong>Budget page</strong> &mdash; &ldquo;Push to YNAB&rdquo;
-                sends budgeted amounts for items with push/both direction.
+                <strong>Budget page</strong> &mdash; &ldquo;Push&rdquo; sends
+                budgeted amounts for items with push/both direction.
               </li>
               <li>
                 <strong>Savings page</strong> &mdash; &ldquo;Push

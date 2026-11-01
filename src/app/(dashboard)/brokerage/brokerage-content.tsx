@@ -17,6 +17,7 @@ import {
   formatPercent,
   accountDisplayName,
   maskAmountsInText,
+  budgetApiServiceLabel,
 } from "@/lib/utils/format";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
@@ -624,6 +625,7 @@ function ByAccountSummary({
     budgetCategory: string;
   }>;
 }) {
+  const { data: activeBudgetApi } = trpc.sync.getActiveBudgetApi.useQuery();
   if (accounts.length === 0) {
     return (
       <p className="text-faint text-sm">
@@ -658,7 +660,7 @@ function ByAccountSummary({
                 {at.accountType}
                 {apiInfo && (
                   <Badge color="blue" className="ml-1.5">
-                    YNAB
+                    {budgetApiServiceLabel(activeBudgetApi)}
                   </Badge>
                 )}
               </span>
@@ -675,7 +677,7 @@ function ByAccountSummary({
             )}
             {apiInfo && (
               <p className="text-caption mt-0.5 text-blue-600">
-                Balance from YNAB (snapshot:{" "}
+                Balance from {budgetApiServiceLabel(activeBudgetApi)} (snapshot:{" "}
                 {formatCurrency(apiInfo.snapshotBalance)})
               </p>
             )}

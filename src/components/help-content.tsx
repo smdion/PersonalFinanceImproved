@@ -393,7 +393,7 @@ export function HelpContent() {
             card&rsquo;s transaction list) instead of deleting it. Settling
             removes it from future balance projections &mdash; since your synced
             balance already reflects the real activity &mdash; while keeping the
-            row for your records. For YNAB-linked funds, a dismissible banner
+            row for your records. For budget-linked funds, a dismissible banner
             suggests transactions that look settled based on real account
             activity; nothing settles automatically without a click. Rows
             planned 2+ months ago with no matching real activity get a

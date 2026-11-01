@@ -222,7 +222,7 @@ export const syncMappingsRouter = createTRPCRouter({
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
           message:
-            "Resyncing a non-latest snapshot causes historical drift in YNAB tracking-account balances. Confirm to proceed.",
+            "Resyncing a non-latest snapshot causes historical drift in budget tracking-account balances. Confirm to proceed.",
         });
       }
 

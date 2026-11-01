@@ -10,7 +10,12 @@ import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency, formatPercent, formatDate } from "@/lib/utils/format";
+import {
+  budgetApiServiceLabel,
+  formatCurrency,
+  formatPercent,
+  formatDate,
+} from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { Lock, LockOpen } from "lucide-react";
 import { SyncBadge } from "@/components/ui/sync-badge";
@@ -23,6 +28,7 @@ export default function HousePage() {
     trpc.assets.computeSummary.useQuery(targeting);
   const { data: mortgageData, isLoading: mortgageLoading } =
     trpc.mortgage.computeActiveSummary.useQuery();
+  const { data: activeBudgetApi } = trpc.sync.getActiveBudgetApi.useQuery();
   const { data: propTaxes, isLoading: taxesLoading } =
     trpc.assets.listPropertyTaxes.useQuery();
   const utils = trpc.useUtils();
@@ -161,7 +167,9 @@ export default function HousePage() {
           title={
             <>
               Home Value{" "}
-              {current?.houseValueSynced && <SyncBadge source="ynab" />}
+              {current?.houseValueSynced && (
+                <SyncBadge source={activeBudgetApi ?? ""} />
+              )}
             </>
           }
         >
@@ -185,7 +193,9 @@ export default function HousePage() {
                 : undefined
             }
           />
-          {loanResult?.apiBalance != null && <SyncBadge source="ynab" />}
+          {loanResult?.apiBalance != null && (
+            <SyncBadge source={activeBudgetApi ?? ""} />
+          )}
         </Card>
 
         <Card title="Equity">
@@ -282,9 +292,9 @@ export default function HousePage() {
           {loanResult.apiBalance != null &&
             loanResult.calculatedBalance != null && (
               <div className="mt-3 rounded bg-blue-50 p-2 text-xs text-blue-700">
-                YNAB balance: {formatCurrency(loanResult.apiBalance)} |
-                Calculated: {formatCurrency(loanResult.calculatedBalance)} |
-                Diff:{" "}
+                {budgetApiServiceLabel(activeBudgetApi)} balance:{" "}
+                {formatCurrency(loanResult.apiBalance)} | Calculated:{" "}
+                {formatCurrency(loanResult.calculatedBalance)} | Diff:{" "}
                 {formatCurrency(
                   Math.abs(
                     loanResult.apiBalance - loanResult.calculatedBalance,

@@ -32,10 +32,10 @@ describe("PushPreviewModal — destination wording", () => {
     expect(screen.queryByText(/request to YNAB/)).not.toBeInTheDocument();
   });
 
-  it("defaults to 'YNAB' when no destinationLabel is given", () => {
+  it("defaults to the generic label when no destinationLabel is given", () => {
     render(
       <PushPreviewModal
-        title="Push to YNAB"
+        title="Push"
         items={items}
         onConfirm={vi.fn()}
         onCancel={vi.fn()}
@@ -43,7 +43,7 @@ describe("PushPreviewModal — destination wording", () => {
       />,
     );
     expect(
-      screen.getByText(/Each item is a separate request to YNAB/),
+      screen.getByText(/Each item is a separate request to your budget app/),
     ).toBeInTheDocument();
   });
 });
