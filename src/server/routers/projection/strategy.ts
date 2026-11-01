@@ -322,8 +322,9 @@ export const strategyRouter = createTRPCRouter({
               label: meta.label,
               shortLabel: meta.shortLabel,
               // The plan judge's verdict for this strategy's baseline.
-              ...(({ failureAge, failureReason }) => ({
+              ...(({ failureAge, failureYear, failureReason }) => ({
                 failureAge,
+                failureYear,
                 failureReason,
               }))(assessPlan(result)),
               // sustainableWithdrawal dropped from
@@ -364,9 +365,11 @@ export const strategyRouter = createTRPCRouter({
               successRate,
               spendingStabilityRate,
               budgetStabilityRate,
-              yearByYear: decYears.map((y) => ({
+              yearByYear: decYears.map((y, i) => ({
                 age: y.age,
+                year: y.year,
                 withdrawal: roundToCents(y.totalWithdrawal),
+                spending: roundToCents(spendings[i] ?? 0),
                 retirementBalance: roundToCents(y.retirementBalance),
               })),
             };

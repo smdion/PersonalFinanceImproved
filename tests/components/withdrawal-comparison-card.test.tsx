@@ -44,6 +44,7 @@ const strategies = [
     label: "Fixed Withdrawal",
     shortLabel: "Fixed",
     failureAge: null,
+    failureYear: null,
     failureReason: null,
     year1Spending: 52000,
     avgAnnualSpending: 53000,
@@ -57,8 +58,20 @@ const strategies = [
     spendingStabilityRate: 0.9,
     budgetStabilityRate: 0.85,
     yearByYear: [
-      { age: 65, withdrawal: 40000, retirementBalance: 900000 },
-      { age: 66, withdrawal: 41000, retirementBalance: 870000 },
+      {
+        age: 65,
+        year: 2045,
+        withdrawal: 40000,
+        spending: 40000,
+        retirementBalance: 900000,
+      },
+      {
+        age: 66,
+        year: 2046,
+        withdrawal: 41000,
+        spending: 41000,
+        retirementBalance: 870000,
+      },
     ],
   },
   {
@@ -66,6 +79,7 @@ const strategies = [
     label: "Guyton-Klinger Guardrails",
     shortLabel: "Guardrails",
     failureAge: 88,
+    failureYear: 2068,
     failureReason: "depleted" as const,
     year1Spending: 54000,
     avgAnnualSpending: 55000,
@@ -78,7 +92,15 @@ const strategies = [
     successRate: 0.6,
     spendingStabilityRate: null,
     budgetStabilityRate: null,
-    yearByYear: [{ age: 65, withdrawal: 42000, retirementBalance: 850000 }],
+    yearByYear: [
+      {
+        age: 65,
+        year: 2045,
+        withdrawal: 42000,
+        spending: 42000,
+        retirementBalance: 850000,
+      },
+    ],
   },
 ];
 
@@ -90,11 +112,9 @@ function baseProps(
   return {
     strategies,
     activeStrategy: "fixed",
-    retirementAge: 65,
     dollarMode: "nominal" as const,
     onDollarModeChange: vi.fn(),
     inflationRate: 0.03,
-    currentAge: 45,
     ...overrides,
   };
 }
@@ -124,7 +144,7 @@ describe("WithdrawalComparisonCard", () => {
   it("shows 'Never' for a strategy with no depletion age and the age for one that has it", () => {
     render(<WithdrawalComparisonCard {...baseProps()} />);
     expect(screen.getByText("Never")).toBeInTheDocument();
-    expect(screen.getByText("88")).toBeInTheDocument();
+    expect(screen.getByText("2068")).toBeInTheDocument();
   });
 
   it("renders an em dash for null stability rates", () => {

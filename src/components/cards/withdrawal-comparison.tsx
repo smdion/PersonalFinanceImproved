@@ -1,5 +1,6 @@
 "use client";
 
+import { strategySummary } from "@/lib/pure/strategy-summary";
 import type { PlanFailureReason } from "@/lib/calculators/plan-outcome";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
@@ -28,6 +29,7 @@ type StrategyResult = {
   label: string;
   shortLabel: string;
   failureAge: number | null;
+  failureYear: number | null;
   failureReason: PlanFailureReason | null;
   /** What the strategy has the household spend (Social Security
    *  included) — comparable across strategies, unlike the withdrawals. */
@@ -42,7 +44,13 @@ type StrategyResult = {
   successRate: number | null;
   spendingStabilityRate: number | null;
   budgetStabilityRate: number | null;
-  yearByYear: { age: number; withdrawal: number; retirementBalance: number }[];
+  yearByYear: {
+    age: number;
+    year: number;
+    withdrawal: number;
+    spending: number;
+    retirementBalance: number;
+  }[];
 };
 
 type AnalyzerInput = {
@@ -61,11 +69,9 @@ type Props = {
   activeStrategy: string | null;
   /** The Simulation preset behind the Success and Stability columns. */
   presetLabel?: string;
-  retirementAge: number;
   dollarMode: "nominal" | "real";
   onDollarModeChange: (mode: "nominal" | "real") => void;
   inflationRate: number;
-  currentAge: number;
   analyzerInput?: AnalyzerInput;
 };
 
@@ -75,11 +81,9 @@ export function WithdrawalComparisonCard({
   strategies,
   activeStrategy,
   presetLabel,
-  retirementAge,
   dollarMode,
   onDollarModeChange,
   inflationRate,
-  currentAge,
   analyzerInput,
 }: Props) {
   const [chartMetric, setChartMetric] =
@@ -95,37 +99,35 @@ export function WithdrawalComparisonCard({
   if (strategies.length === 0) return null;
 
   // Deflate a future-dollar value to today's dollars
-  const deflate = (value: number, age: number) => {
+  const thisYear = new Date().getFullYear();
+  const deflate = (value: number, year: number) => {
     if (dollarMode === "nominal") return value;
-    const yearsOut = age - currentAge;
+    const yearsOut = year - thisYear;
     return yearsOut > 0 ? value / Math.pow(1 + inflationRate, yearsOut) : value;
   };
 
-  // For summary stats (Year 1, Avg, Min, Max, Legacy), use retirement age as baseline
-  const deflateSummary = (value: number) => deflate(value, retirementAge);
-
-  // Build chart data: merge all strategies into age-indexed rows
+  // Build chart data: merge all strategies into year-indexed rows
   const chartData = (() => {
-    const ageMap = new Map<number, Record<string, number>>();
+    const byYear = new Map<number, Record<string, number>>();
     for (const s of strategies) {
       for (const pt of s.yearByYear) {
-        if (!ageMap.has(pt.age)) ageMap.set(pt.age, { age: pt.age });
+        if (!byYear.has(pt.year)) byYear.set(pt.year, { year: pt.year });
         const raw =
           chartMetric === "retirementBalance"
             ? pt.retirementBalance
             : pt.withdrawal;
-        ageMap.get(pt.age)![s.strategy] = deflate(raw, pt.age);
+        byYear.get(pt.year)![s.strategy] = deflate(raw, pt.year);
       }
     }
-    return Array.from(ageMap.values()).sort(
-      (a, b) => (a.age ?? 0) - (b.age ?? 0),
+    return Array.from(byYear.values()).sort(
+      (a, b) => (a.year ?? 0) - (b.year ?? 0),
     );
   })();
 
   return (
     <Card
       title="Withdrawal Strategy Comparison"
-      subtitle={`Comparing ${strategies.length} strategies from age ${retirementAge} · Success % via simulation`}
+      subtitle={`Comparing ${strategies.length} strategies from ${strategies[0]?.yearByYear[0]?.year ?? "retirement"} · Success % via simulation`}
       className="mb-6"
       isCollapsible
       isDefaultOpen={true}
@@ -243,7 +245,7 @@ export function WithdrawalComparisonCard({
                       </div>
                     </td>
                     <td className="text-faint px-2 py-1.5 text-right tabular-nums">
-                      {s.failureAge != null ? (
+                      {s.failureYear != null ? (
                         <span
                           title={
                             s.failureReason === "depleted"
@@ -253,7 +255,7 @@ export function WithdrawalComparisonCard({
                                 : "Spending can't be fully funded"
                           }
                         >
-                          {s.failureAge}
+                          {s.failureYear}
                         </span>
                       ) : (
                         <span className="text-green-400">Never</span>
@@ -311,25 +313,39 @@ export function WithdrawalComparisonCard({
                       )}
                     </td>
                     <td className="px-2 py-1.5 text-right tabular-nums">
-                      {formatCurrency(deflateSummary(s.year1Spending))}
+                      {formatCurrency(
+                        strategySummary(s.yearByYear, deflate).year1Spending,
+                      )}
                     </td>
                     <td className="px-2 py-1.5 text-right tabular-nums">
-                      {formatCurrency(deflateSummary(s.avgAnnualSpending))}
+                      {formatCurrency(
+                        strategySummary(s.yearByYear, deflate).avgSpending,
+                      )}
                     </td>
                     <td className="text-faint px-2 py-1.5 text-right tabular-nums">
-                      {formatCurrency(deflateSummary(s.year1Withdrawal))}
+                      {formatCurrency(
+                        strategySummary(s.yearByYear, deflate).year1Withdrawal,
+                      )}
                     </td>
                     <td className="text-faint px-2 py-1.5 text-right tabular-nums">
-                      {formatCurrency(deflateSummary(s.avgAnnualWithdrawal))}
+                      {formatCurrency(
+                        strategySummary(s.yearByYear, deflate).avgWithdrawal,
+                      )}
                     </td>
                     <td className="text-faint px-2 py-1.5 text-right tabular-nums">
-                      {formatCurrency(deflateSummary(s.minAnnualWithdrawal))}
+                      {formatCurrency(
+                        strategySummary(s.yearByYear, deflate).minWithdrawal,
+                      )}
                     </td>
                     <td className="text-faint px-2 py-1.5 text-right tabular-nums">
-                      {formatCurrency(deflateSummary(s.maxAnnualWithdrawal))}
+                      {formatCurrency(
+                        strategySummary(s.yearByYear, deflate).maxWithdrawal,
+                      )}
                     </td>
                     <td className="text-faint py-1.5 pl-2 text-right tabular-nums">
-                      {formatCurrency(deflateSummary(s.legacyAmount))}
+                      {formatCurrency(
+                        strategySummary(s.yearByYear, deflate).legacy,
+                      )}
                     </td>
                   </tr>
                 );
@@ -363,11 +379,11 @@ export function WithdrawalComparisonCard({
                 stroke={CHART_COLORS.wdComparisonGrid}
               />
               <XAxis
-                dataKey="age"
+                dataKey="year"
                 stroke={CHART_COLORS.wdComparisonAxis}
                 tick={{ fontSize: CHART_FONT.tick }}
                 label={{
-                  value: "Age",
+                  value: "Year",
                   position: "insideBottom",
                   offset: -5,
                   fontSize: CHART_FONT.tick,
@@ -388,7 +404,7 @@ export function WithdrawalComparisonCard({
                 }}
                 labelStyle={{ color: CHART_COLORS.wdComparisonAxis }}
                 formatter={(value) => formatCurrency(Number(value))}
-                labelFormatter={(age) => `Age ${age}`}
+                labelFormatter={(year) => String(year)}
               />
               <Legend
                 wrapperStyle={{ fontSize: CHART_FONT.legend, paddingTop: 16 }}
