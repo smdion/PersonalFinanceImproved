@@ -39,6 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Savings: Settle all works with both sides of a transfer.
 - Paycheck: take-home counts the 0.9% Additional Medicare withholding (about $900 a year at $300k).
 - Custom Simulation clamp bounds are saved.
+- Restoring a version or backup no longer fails when a budget line is linked to a contribution account.
 
 ---
 
