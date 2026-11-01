@@ -989,13 +989,16 @@ export const contributionRouter = createTRPCRouter({
 
           // Determine limits per category — uses resolveContribLimit with HSA coverage from raw data
           // Takes the raw DB category key (categoryKey), not the display label
-          const getLimitForCategory = (rawCat: string): number => {
-            const hsaAcct = rawContribs.find((c) => c.accountType === rawCat);
-            return resolveContribLimit(
-              rawCat,
-              hsaAcct?.hsaCoverageType ?? null,
+          // Coverage across every row of the type — family if any row is
+          // family — the same rule the label and the cap use.
+          const coverageFor = (rawCat: string) =>
+            combinedCoverage(
+              rawContribs
+                .filter((c) => c.accountType === rawCat)
+                .map((c) => c.hsaCoverageType ?? null),
             );
-          };
+          const getLimitForCategory = (rawCat: string): number =>
+            resolveContribLimit(rawCat, coverageFor(rawCat));
 
           const accountTypes: AccountTypeSnapshot[] = [];
           for (const [cat, data] of Array.from(categoryMap)) {
@@ -1041,12 +1044,9 @@ export const contributionRouter = createTRPCRouter({
             // Prior-year contribution data (only during IRS window for eligible types)
             let priorYearSnapshot: AccountTypeSnapshot["priorYear"];
             if (inPriorYearWindow && cfg?.supportsPriorYearContrib) {
-              const hsaAcct = rawContribs.find(
-                (c) => c.accountType === data.categoryKey,
-              );
               const pyLimit = resolveContribPriorYearLimit(
                 data.categoryKey,
-                hsaAcct?.hsaCoverageType ?? null,
+                coverageFor(data.categoryKey),
               );
               if (pyLimit > 0) {
                 priorYearSnapshot = {

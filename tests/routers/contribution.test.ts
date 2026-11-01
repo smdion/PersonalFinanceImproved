@@ -528,6 +528,35 @@ describe("contribution router", () => {
     });
   });
 
+  describe("computeSummary — two HSA rows, self-only listed first", () => {
+    let personId: number;
+
+    beforeAll(async () => {
+      personId = await seedPerson(db, "HSA-Two-Rows", "1984-03-02");
+      const jobId = seedJob(db, personId, { annualSalary: "90000" });
+      for (const hsaCoverageType of ["self_only", "family"] as const)
+        insertContribAccount(db, {
+          personId,
+          jobId,
+          accountType: "hsa",
+          contributionMethod: "fixed_annual",
+          contributionValue: "1000",
+          taxTreatment: "tax_free",
+          employerMatchType: "none",
+          hsaCoverageType,
+          parentCategory: "Retirement",
+        });
+    });
+
+    it("the limit follows the coverage the label shows (family)", async () => {
+      const result = await computeSummary();
+      const person = result.people.find((p) => p.person.id === personId);
+      const hsa = person!.accountTypes.find((a) => a.categoryKey === "hsa")!;
+      expect(hsa.hsaCoverageType).toBe("family");
+      expect(hsa.limit).toBe(8750);
+    });
+  });
+
   describe("computeSummary — brokerage (overflow target) contribution", () => {
     let personId: number;
     let perfAcctId: number;
