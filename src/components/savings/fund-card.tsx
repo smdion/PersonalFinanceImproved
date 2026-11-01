@@ -1,5 +1,6 @@
 "use client";
 
+import { isGoalMet } from "@/lib/pure/savings-goal-met";
 import React, { useRef, useState } from "react";
 import { useScrollToFocus } from "@/components/ui/focus-target";
 import { useFocusMatch, useFocusReveal } from "@/lib/hooks/use-focus";
@@ -280,7 +281,11 @@ export function FundCard({
   } | null;
   onLinkToApi?: (goalId: number) => void;
   onUnlinkFromApi?: (goalId: number) => void;
-  onConvertToBudgetItem?: (goalId: number, name: string) => void;
+  onConvertToBudgetItem?: (
+    goalId: number,
+    name: string,
+    goalMet: boolean,
+  ) => void;
   onUpdateParent?: (childGoalId: number, newParentId: number | null) => void;
   availableParents?: { id: number; name: string }[];
   defaultExpanded?: boolean;
@@ -424,12 +429,17 @@ export function FundCard({
                 onClick={async (e) => {
                   e.stopPropagation();
                   setShowMenu(false);
+                  const goalMet = isGoalMet({
+                    targetMode: rawGoal.targetMode,
+                    target: savingsGoal.target,
+                    current: savingsGoal.current,
+                  });
                   if (
                     await confirm(
-                      `Convert "${projection.name}" to a budget item? This will delete the sinking fund and its history.`,
+                      `${goalMet ? `"${projection.name}" has met its goal. ` : ""}Convert "${projection.name}" to a budget item? Its monthly funding carries over. This will delete the sinking fund and its history.`,
                     )
                   )
-                    onConvertToBudgetItem(rawGoal.id, projection.name);
+                    onConvertToBudgetItem(rawGoal.id, projection.name, goalMet);
                 }}
                 className="hover:bg-surface-elevated block w-full px-3 py-1 text-left text-xs text-amber-600 transition-colors"
               >

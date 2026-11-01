@@ -29,6 +29,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Performance vs snapshot check** works for evening updates; utilities year-over-year compares the same months.
 - Cost basis edits save correctly, budget sync handles large budgets in batches and flags missing mapped accounts, the Strategy retirement lever re-runs the plan with the new age, and settings follow the active retirement profile.
 
+- **Budget targets follow one rule in every integration.** A monthly push replaces only a monthly target (or none). A yearly, weekly or dated target is left alone and reported as skipped, as Actual already did; YNAB used to overwrite it. A fund taken to $0 now clears the target it had.
+- **Turning a fund into a budget item keeps its monthly funding**, and tells you if the fund had met its goal.
+- **A joint account set per paycheck with no job** is flagged when your pay schedules differ, rather than using whichever job came first. Attach a job or use a monthly amount.
+- **With no active retirement profile set**, the plan says which profile it's using instead of choosing silently.
+
 ### Added
 
 - **The projection chart's tooltip shows each year's assumptions:** plan return, the Simulation's return and volatility, inflation, and Guyton-Klinger's anchor rate.

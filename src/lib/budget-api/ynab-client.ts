@@ -3,6 +3,7 @@
 // Auth: Bearer token
 // Amounts: milliunits (÷1000 for dollars)
 
+import { BudgetApiError } from "./errors";
 import "server-only";
 import type { BudgetAPIClient } from "./interface";
 import type {
@@ -56,6 +57,9 @@ type YnabCategory = {
   balance: number;
   goal_target: number | null;
   goal_type: string | null;
+  /** 1 = monthly, 2 = weekly, 13 = yearly; see isPlainMonthlyGoal. */
+  goal_cadence?: number | null;
+  goal_cadence_frequency?: number | null;
   note: string | null;
 };
 
@@ -166,6 +170,17 @@ function mapMonth(m: YnabMonth): BudgetMonth {
     activity: fromMilliunits(m.activity),
     toBeBudgeted: fromMilliunits(m.to_be_budgeted),
   };
+}
+
+/** No target yet, or one repeating every month: what a monthly push may
+ *  replace. Weekly, yearly, every-N-months and dated targets aren't. */
+function isPlainMonthlyGoal(c: YnabCategory): boolean {
+  if (c.goal_target == null || c.goal_type === "MF") return true;
+  return (
+    c.goal_type === "NEED" &&
+    c.goal_cadence === 1 &&
+    (c.goal_cadence_frequency ?? 1) === 1
+  );
 }
 
 function mapMonthDetail(m: YnabMonth): BudgetMonthDetail {
@@ -352,13 +367,29 @@ export class YnabClient implements BudgetAPIClient {
     categoryId: string,
     targetAmount: number,
   ): Promise<void> {
+    // goal_frequency replaces whatever target is there, so a target of any
+    // other shape is left alone and reported — the interface's contract,
+    // and what Actual's note-based write does.
+    const { data } = await this.request<
+      YnabResponse<{ category: YnabCategory }>
+    >(`/categories/${categoryId}`);
+    if (!isPlainMonthlyGoal(data.category))
+      throw new BudgetApiError(
+        "This category's target isn't a plain monthly one — left untouched to avoid overwriting a target configured directly in YNAB.",
+        "conflict",
+        null,
+      );
     await this.request(`/categories/${categoryId}`, {
       method: "PATCH",
       body: JSON.stringify({
-        category: {
-          goal_target: toMilliunits(targetAmount),
-          goal_frequency: "monthly",
-        },
+        category:
+          targetAmount === 0
+            ? // Null removes a target; goal_frequency requires an amount.
+              { goal_target: null }
+            : {
+                goal_target: toMilliunits(targetAmount),
+                goal_frequency: "monthly",
+              },
       }),
     });
   }

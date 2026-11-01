@@ -438,12 +438,18 @@ export function useApiSync() {
     [unlinkGoalFromApi, activeService],
   );
   const onConvertToBudgetItem = useCallback(
-    (goalId: number, name: string) =>
-      convertToBudgetItem.mutate({
-        goalId,
-        category: "Savings",
-        subcategory: name,
-      }),
+    (goalId: number, name: string, goalMet: boolean) =>
+      convertToBudgetItem.mutate(
+        { goalId, category: "Savings", subcategory: name },
+        {
+          onSuccess: () => {
+            if (goalMet)
+              toast.success(
+                `${name} met its goal. Its funding is now a budget item.`,
+              );
+          },
+        },
+      ),
     [convertToBudgetItem],
   );
   const onPushPreview = useCallback(

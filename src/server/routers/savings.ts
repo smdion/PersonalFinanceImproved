@@ -1705,8 +1705,17 @@ export const savingsRouter = createTRPCRouter({
         });
 
       return ctx.db.transaction(async (tx) => {
+        // The funding carries over: the item budgets what this profile was
+        // putting into the goal each month, in every column.
+        const funding = await getResolvedGoalAllocations(
+          tx,
+          [goal],
+          profile.id,
+        );
         const numCols = profile.columnLabels.length;
-        const amounts = new Array(numCols).fill(0) as number[];
+        const amounts = new Array(numCols).fill(
+          funding.get(goal.id)?.monthlyContribution ?? 0,
+        ) as number[];
 
         // Place at end of category
         const existingItems = await tx
@@ -1932,6 +1941,19 @@ export const savingsRouter = createTRPCRouter({
         activeProfile?.id ?? null,
       );
 
+      // A fund taken to $0 clears the target it had; one that never had a
+      // target isn't written to.
+      const categoriesCache = await cacheGet<BudgetCategoryGroup[]>(
+        ctx.db,
+        active,
+        "categories",
+      );
+      const currentTarget = new Map(
+        (categoriesCache?.data ?? [])
+          .flatMap((g) => g.categories)
+          .map((c) => [c.id, c.goalTarget ?? 0]),
+      );
+
       let pushed = 0;
       // Counted separately from a generic failure (network/auth/rate-limit,
       // still just logged and skipped below) — the provider COULDN'T
@@ -1985,7 +2007,10 @@ export const savingsRouter = createTRPCRouter({
             // for the shared formula it uses.
             const monthly =
               resolvedByGoal.get(goal.id)?.monthlyContribution ?? 0;
-            if (monthly > 0) {
+            if (
+              monthly > 0 ||
+              (currentTarget.get(goal.apiCategoryId!) ?? 0) > 0
+            ) {
               await client.updateCategoryGoalTarget(
                 goal.apiCategoryId!,
                 monthly,

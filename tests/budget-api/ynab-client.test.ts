@@ -446,10 +446,13 @@ describe("YnabClient", () => {
   });
 
   describe("updateCategoryGoalTarget", () => {
+    const existing = (category: object) => jsonResponse({ data: { category } });
+
     it("PATCHes the plan-level category endpoint with goal_frequency monthly and milliunits conversion", async () => {
+      mockFetch.mockReturnValueOnce(existing({ goal_target: null }));
       mockFetch.mockReturnValueOnce(jsonResponse({}));
       await client.updateCategoryGoalTarget("cat-1", 500);
-      const [url, init] = mockFetch.mock.calls[0]!;
+      const [url, init] = mockFetch.mock.calls[1]!;
       expect(url).toContain("/categories/cat-1");
       expect(url).not.toMatch(/\/months\//);
       expect(init.method).toBe("PATCH");
@@ -458,6 +461,48 @@ describe("YnabClient", () => {
       expect(body.category.goal_target).toBe(500_000);
       // goal_type is a read-only, derived field in YNAB's API — never sent.
       expect(body.category.goal_type).toBeUndefined();
+    });
+
+    it("updates a target that already repeats monthly", async () => {
+      mockFetch.mockReturnValueOnce(
+        existing({
+          goal_target: 100_000,
+          goal_type: "NEED",
+          goal_cadence: 1,
+          goal_cadence_frequency: 1,
+        }),
+      );
+      mockFetch.mockReturnValueOnce(jsonResponse({}));
+      await client.updateCategoryGoalTarget("cat-1", 500);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it.each([
+      ["yearly", { goal_type: "NEED", goal_cadence: 13 }],
+      ["weekly", { goal_type: "NEED", goal_cadence: 2 }],
+      [
+        "every other month",
+        { goal_type: "NEED", goal_cadence: 1, goal_cadence_frequency: 2 },
+      ],
+      ["target balance", { goal_type: "TB", goal_cadence: 0 }],
+    ])("leaves a %s target alone and reports a conflict", async (_n, goal) => {
+      mockFetch.mockReturnValueOnce(
+        existing({ goal_target: 100_000, ...goal }),
+      );
+      await expect(
+        client.updateCategoryGoalTarget("cat-1", 500),
+      ).rejects.toMatchObject({ code: "conflict" });
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("$0 removes the target", async () => {
+      mockFetch.mockReturnValueOnce(
+        existing({ goal_target: 100_000, goal_type: "NEED", goal_cadence: 1 }),
+      );
+      mockFetch.mockReturnValueOnce(jsonResponse({}));
+      await client.updateCategoryGoalTarget("cat-1", 0);
+      const body = JSON.parse(mockFetch.mock.calls[1]![1].body);
+      expect(body.category).toEqual({ goal_target: null });
     });
   });
 

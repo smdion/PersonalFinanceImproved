@@ -42,6 +42,7 @@ import {
 import { getAllPeople } from "@/server/helpers/people";
 import {
   resolveRetirementProfileIdFrom,
+  retirementProfileIsFallback,
   pickProfileSettingsRow,
 } from "@/server/helpers/retirement-profile";
 import type { AccountCategory } from "@/lib/calculators/types";
@@ -720,7 +721,15 @@ export async function buildEnginePayload(
       ).map((a) => missingCostBasisWarning(a.name)),
     ),
   ];
+  const viewingFallbackProfile =
+    activeProfileId !== opts.retirementProfileId &&
+    retirementProfileIsFallback(allAppSettings, retProfiles);
   const inputWarnings = [
+    ...(viewingFallbackProfile
+      ? [
+          `No active retirement profile is set, so this uses ${retProfiles.find((p) => p.id === activeProfileId)?.name}. Choose one in the Retirement profiles.`,
+        ]
+      : []),
     ...(rmdTarget.warning ? [rmdTarget.warning] : []),
     ...basisWarnings,
   ];

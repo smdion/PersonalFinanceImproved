@@ -88,22 +88,26 @@ export function computeAnnualContribution(
 }
 
 /**
- * Fallback periods-per-year for a jobless contribution account: the first
- * active job's pay period, or `incomplete: true` if there are none (no job
- * anywhere to resolve a schedule from — `periodsPerYear` is a meaningless
- * placeholder in that case, not a real value; callers must not use it for a
- * `fixed_per_period` account without also honoring `incomplete`). Shared by
+ * Fallback periods-per-year for a jobless contribution account: the active
+ * jobs' pay period, or `incomplete: true` if there's none, or if they're on
+ * different schedules ("per paycheck" then has no single answer: 26 checks
+ * or 24 — attach a job or use a monthly amount). `periodsPerYear` is a
+ * placeholder when incomplete; callers must not use it for a
+ * `fixed_per_period` account without also honoring `incomplete`. Shared by
  * computeActiveSummary's forward computation and
  * applyContributionAccountEdit's inverse so the two can't drift apart.
  */
 export function resolveJoblessPeriodsPerYear(
   activeJobs: { payPeriod: string | undefined }[],
 ): { periodsPerYear: number; incomplete: boolean } {
-  const withSchedule = activeJobs.find((j) => j.payPeriod != null);
-  return withSchedule
+  const schedules = new Set(
+    activeJobs.flatMap((j) => (j.payPeriod != null ? [j.payPeriod] : [])),
+  );
+  const [first] = schedules;
+  return first !== undefined
     ? {
-        periodsPerYear: getPeriodsPerYear(withSchedule.payPeriod!),
-        incomplete: false,
+        periodsPerYear: getPeriodsPerYear(first),
+        incomplete: schedules.size > 1,
       }
     : { periodsPerYear: 0, incomplete: true };
 }

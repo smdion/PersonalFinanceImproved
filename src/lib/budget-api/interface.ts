@@ -68,7 +68,12 @@ export interface BudgetAPIClient {
    * clobbering it. Throws `BudgetApiError` (code `"conflict"`) if the note
    * already has a `#template` of a different, incompatible shape — callers
    * must handle this the same way they'd handle any other typed
-   * BudgetApiError, not assume every push always lands. */
+   * BudgetApiError, not assume every push always lands.
+   *
+   * Every client keeps the same rule: replace only a target of this shape
+   * (or none), otherwise throw `"conflict"` and change nothing. YNAB reads
+   * the category's cadence first. An amount of 0 clears the target: YNAB
+   * removes it, Actual writes `#template 0`. */
   updateCategoryGoalTarget(
     categoryId: string,
     targetAmount: number,

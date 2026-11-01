@@ -796,6 +796,25 @@ describe("savings.convertGoalToBudgetItem", () => {
 
   afterAll(() => cleanup());
 
+  it("the budget item keeps the goal's monthly funding", async () => {
+    const own = await createTestCaller();
+    try {
+      const profileId = await seedBudgetProfile(own.db, "Funded Budget", true);
+      const goalId = seedSavingsGoal(own.db, { name: "Funded Goal" });
+      seedSavingsGoalAllocation(own.db, goalId, profileId, {
+        monthlyContribution: "125",
+      });
+      const item = await own.caller.savings.convertGoalToBudgetItem({
+        goalId,
+        category: "Savings",
+        subcategory: "Funded Goal",
+      });
+      expect(new Set(item!.amounts)).toEqual(new Set([125]));
+    } finally {
+      own.cleanup();
+    }
+  });
+
   it("converts a savings goal to a budget item using the active budget profile, copying the link", async () => {
     const profileId = await seedBudgetProfile(db, "Active Budget", true);
     const goalId = seedSavingsGoal(db, {
@@ -1627,6 +1646,52 @@ describe("savings.computeSummary — currentMonthBudgeted", () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe("savings.pushContributionsToApi", () => {
+  it("a fund at $0 clears the target it had; one that never had one is left alone", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId } = seedStandardDataset(ctx.db);
+      for (const [name, cat] of [
+        ["Had Target", "cat-had"],
+        ["Never Had", "cat-never"],
+      ] as const) {
+        const goalId = seedSavingsGoal(ctx.db, { name });
+        seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+          monthlyContribution: "0",
+        });
+        await ctx.caller.savings.linkGoalToApi({
+          goalId,
+          service: "ynab",
+          apiCategoryId: cat,
+          apiCategoryName: name,
+        });
+      }
+      const updateCategoryGoalTarget = vi.fn().mockResolvedValue(undefined);
+      vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("ynab");
+      vi.mocked(getClientForService).mockResolvedValueOnce({
+        updateCategoryGoalTarget,
+        updateCategoryTargetBalance: vi.fn(),
+      } as unknown as BudgetAPIClient);
+      vi.mocked(cacheGet).mockResolvedValueOnce({
+        data: [
+          {
+            categories: [
+              { id: "cat-had", goalTarget: 300 },
+              { id: "cat-never" },
+            ],
+          },
+        ],
+      } as never);
+      const result = await ctx.caller.savings.pushContributionsToApi();
+      expect(result.pushed).toBe(1);
+      expect(updateCategoryGoalTarget).toHaveBeenCalledExactlyOnceWith(
+        "cat-had",
+        0,
+      );
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
   it("leaves a deactivated fund's category alone", async () => {
     const ctx = await createTestCaller();
     try {
