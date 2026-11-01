@@ -46,6 +46,10 @@ exports[`monte carlo integration > fixture 1: basic monte carlo — 2 asset clas
   },
   "firstBand": {
     "age": 35,
+    "assumptions": {
+      "expectedReturn": 0.09,
+      "volatility": 0.15,
+    },
     "mean": 253446.09,
     "p10": 219366.31,
     "p25": 233691.19,
@@ -58,6 +62,10 @@ exports[`monte carlo integration > fixture 1: basic monte carlo — 2 asset clas
   },
   "lastBand": {
     "age": 89,
+    "assumptions": {
+      "expectedReturn": 0.06,
+      "volatility": 0.09,
+    },
     "mean": 30899667.21,
     "p10": 11781160.5,
     "p25": 17662381.32,
@@ -127,6 +135,10 @@ exports[`monte carlo integration > fixture 2: with inflation risk — adds infla
   },
   "firstBand": {
     "age": 35,
+    "assumptions": {
+      "expectedReturn": 0.09,
+      "volatility": 0.15,
+    },
     "mean": 253446.09,
     "p10": 219366.31,
     "p25": 233691.19,
@@ -139,6 +151,10 @@ exports[`monte carlo integration > fixture 2: with inflation risk — adds infla
   },
   "lastBand": {
     "age": 89,
+    "assumptions": {
+      "expectedReturn": 0.06,
+      "volatility": 0.09,
+    },
     "mean": 30934102.4,
     "p10": 11619969.91,
     "p25": 17951179.59,
@@ -208,6 +224,10 @@ exports[`monte carlo integration > fixture 3: conservative allocation — heavy 
   },
   "firstBand": {
     "age": 35,
+    "assumptions": {
+      "expectedReturn": 0.06,
+      "volatility": 0.09,
+    },
     "mean": 238166.32,
     "p10": 218633.14,
     "p25": 224465.04,
@@ -220,6 +240,10 @@ exports[`monte carlo integration > fixture 3: conservative allocation — heavy 
   },
   "lastBand": {
     "age": 89,
+    "assumptions": {
+      "expectedReturn": 0.05,
+      "volatility": 0.07,
+    },
     "mean": 12614211.36,
     "p10": 6570521.65,
     "p25": 8730144.87,
@@ -301,6 +325,10 @@ exports[`monte carlo integration > fixture 4: near-retirement — older person w
   },
   "firstBand": {
     "age": 60,
+    "assumptions": {
+      "expectedReturn": 0.07,
+      "volatility": 0.1,
+    },
     "mean": 1509356.68,
     "p10": 1364824.83,
     "p25": 1413778.43,
@@ -313,6 +341,10 @@ exports[`monte carlo integration > fixture 4: near-retirement — older person w
   },
   "lastBand": {
     "age": 89,
+    "assumptions": {
+      "expectedReturn": 0.05,
+      "volatility": 0.07,
+    },
     "mean": 3716147.07,
     "p10": 1297420.64,
     "p25": 1820259.78,

@@ -715,6 +715,14 @@ describe("monte carlo inflation — trials vary around the plan's own rates (v0.
     );
   });
 
+  it("each year's band carries the return assumptions it was drawn from", () => {
+    const r = calculateMonteCarlo(mc(makeInput({})));
+    const [first] = r.percentileBands;
+    expect(first!.assumptions?.expectedReturn).toBeGreaterThan(0);
+    expect(first!.assumptions?.volatility).toBeGreaterThan(0);
+    expect(r.today.percentileBands[0]!.assumptions).toEqual(first!.assumptions);
+  });
+
   it("today's dollars are each trial deflated by the inflation it ran with", () => {
     const input = makeInput({ inflationRate: 0.03 });
     const r = calculateMonteCarlo(mc(input, { stdDev: 0 }));

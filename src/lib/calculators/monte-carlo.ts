@@ -18,6 +18,7 @@ import { resolveReturnRateForAge } from "./engine/growth-application";
 import {
   createPRNG,
   sampleBlendedReturn,
+  blendedReturnStats,
   choleskyDecomposition,
   buildCorrelationMatrix,
   sampleNormalMeanStd,
@@ -459,6 +460,16 @@ export function calculateMonteCarlo(
   }
   onProgress?.(numTrials, numTrials);
 
+  const assumptionsFor = (age: number) => {
+    const assumptions = blendedReturnStats(
+      assetClasses,
+      correlationMatrix,
+      glidePath,
+      age,
+    );
+    return assumptions ? { assumptions } : {};
+  };
+
   // Aggregate into percentile bands
   const percentileBands: MonteCarloPercentileBand[] = [];
   for (let yearIdx = 0; yearIdx < numYears; yearIdx++) {
@@ -478,6 +489,7 @@ export function calculateMonteCarlo(
       p90: percentile(sorted, 90),
       p95: percentile(sorted, 95),
       mean,
+      ...assumptionsFor(startAge + yearIdx),
     });
   }
 
@@ -498,6 +510,7 @@ export function calculateMonteCarlo(
       p90: percentile(sorted, 90),
       p95: percentile(sorted, 95),
       mean: sumBy(balances, (v) => v) / balances.length,
+      ...assumptionsFor(startAge + yearIdx),
     });
   }
 

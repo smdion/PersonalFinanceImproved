@@ -239,6 +239,40 @@ export function sampleBlendedReturn(
 }
 
 /**
+ * What one year's blended return is drawn from at an age: its mean and
+ * standard deviation, exactly (the covariance of the correlated log-normal
+ * draws sampleCorrelatedReturns makes, weighted by the glide path). Null
+ * with nothing to blend.
+ */
+export function blendedReturnStats(
+  assetClasses: AssetClassParams[],
+  correlationMatrix: number[][],
+  glidePath: GlidePathEntry[],
+  age: number,
+): { expectedReturn: number; volatility: number } | null {
+  if (glidePath.length === 0 || assetClasses.length === 0) return null;
+  const allocations = interpolateAllocations(glidePath, age);
+  const weight = assetClasses.map((a) => allocations[a.id] ?? 0);
+  const log = assetClasses.map((a) => logNormalParams(a.meanReturn, a.stdDev));
+  let expectedReturn = 0;
+  let variance = 0;
+  for (let i = 0; i < assetClasses.length; i++) {
+    expectedReturn += weight[i]! * assetClasses[i]!.meanReturn;
+    for (let j = 0; j < assetClasses.length; j++) {
+      const covariance =
+        (1 + assetClasses[i]!.meanReturn) *
+        (1 + assetClasses[j]!.meanReturn) *
+        (Math.exp(
+          correlationMatrix[i]![j]! * Math.sqrt(log[i]!.s * log[j]!.s),
+        ) -
+          1);
+      variance += weight[i]! * weight[j]! * covariance;
+    }
+  }
+  return { expectedReturn, volatility: Math.sqrt(Math.max(0, variance)) };
+}
+
+/**
  * Interpolate glide path allocations for a given age.
  * Uses linear interpolation between the two nearest defined ages.
  */

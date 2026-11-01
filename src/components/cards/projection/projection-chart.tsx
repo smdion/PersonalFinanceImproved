@@ -1,6 +1,7 @@
 "use client";
 
 /** Balance projection chart — stacked bar (deterministic) + confidence bands + median line. */
+import { gkAnchorRate } from "@/lib/pure/gk-anchor-rate";
 import {
   taxTypeLabel,
   categoryChartHex,
@@ -9,7 +10,11 @@ import {
   chartLinePalette,
 } from "@/lib/utils/colors";
 import { useTheme } from "@/lib/hooks/use-theme";
-import { formatCurrency, compactCurrency } from "@/lib/utils/format";
+import {
+  formatCurrency,
+  compactCurrency,
+  formatPercent,
+} from "@/lib/utils/format";
 import {
   buildStrategyEventStyle,
   tipColorClass,
@@ -86,6 +91,15 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   // Bars always show standalone deterministic projection.
   // MC fan bands + median line overlay on top via mcBandsByYear.
   const years = result.projectionByYear;
+  // As the engine reads them: no post-retirement rate = the general rate.
+  const generalInflation = Number(engineSettings.annualInflation);
+  const postRetirementInflation = engineSettings.postRetirementInflation
+    ? Number(engineSettings.postRetirementInflation)
+    : generalInflation;
+  const gkAnchor =
+    engineSettings.withdrawalStrategy === "guyton_klinger"
+      ? gkAnchorRate(years)
+      : null;
   const retIdx = years.findIndex((y) => y.phase === "decumulation");
   const retYear = years[retIdx]?.year ?? null;
   // Also pin the SS and RMD start years so milestone reference lines always
@@ -161,6 +175,16 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
     // (simulationDollars: today's are deflated per trial), never deflated
     // here.
     const band = mcBandsByYear?.get(yr.year);
+    // This year's assumptions, for the tooltip.
+    datum._planReturn = yr.annualizedReturnRate;
+    datum._inflation =
+      yr.phase === "decumulation" ? postRetirementInflation : generalInflation;
+    if (band?.assumptions) {
+      datum._simReturn = band.assumptions.expectedReturn;
+      datum._simVolatility = band.assumptions.volatility;
+    }
+    if (yr.phase === "decumulation" && gkAnchor !== null)
+      datum._gkAnchor = gkAnchor;
     if (band) {
       const dp5 = band.p5;
       const dp10 = band.p10;
@@ -513,6 +537,37 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                         </div>
                       </div>
                     )}
+                    <div className="text-muted mt-1 border-t border-white/10 pt-1">
+                      <div className="flex justify-between gap-4">
+                        <span>Plan return</span>
+                        <span className="tabular-nums">
+                          {formatPercent(Number(d._planReturn), 1)}
+                        </span>
+                      </div>
+                      {d._simReturn != null && (
+                        <div className="flex justify-between gap-4">
+                          <span>Simulation return</span>
+                          <span className="tabular-nums">
+                            {formatPercent(Number(d._simReturn), 1)} ±{" "}
+                            {formatPercent(Number(d._simVolatility), 1)}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex justify-between gap-4">
+                        <span>Inflation</span>
+                        <span className="tabular-nums">
+                          {formatPercent(Number(d._inflation), 1)}
+                        </span>
+                      </div>
+                      {d._gkAnchor != null && (
+                        <div className="flex justify-between gap-4">
+                          <span>Anchor rate</span>
+                          <span className="tabular-nums">
+                            {formatPercent(Number(d._gkAnchor), 2)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                     {/* Milestone events */}
                     {(Number(d._ssStart) === 1 ||
                       Number(d._rmdStart) === 1 ||
