@@ -90,6 +90,27 @@ function missingNote(
 }
 
 /** Hover text for a close with accounts missing. */
+/** One short figure: money paid in or out, "~" while some of it is only
+ *  seen in balances (institutions send transactions days late). */
+function paidLine(c: {
+  flows: number | null;
+  unreported: { amount: number } | null;
+}): string | null {
+  const total = (c.flows ?? 0) + (c.unreported?.amount ?? 0);
+  if (Math.abs(total) < 0.005) return null;
+  return `${c.unreported ? "~" : ""}${total > 0 ? "+" : "−"}${formatCurrency(Math.abs(total), 0)} paid ${total > 0 ? "in" : "out"}`;
+}
+
+function unreportedDetail(c: {
+  flows: number | null;
+  unreported: { amount: number; names: string[] } | null;
+}): string | null {
+  if (!c.unreported) return null;
+  const sign = (n: number) =>
+    `${n >= 0 ? "+" : "−"}${formatCurrency(Math.abs(n), 0)}`;
+  return `${c.flows ? `${sign(c.flows)} reported; ` : ""}about ${sign(c.unreported.amount)} at ${c.unreported.names.join(", ")} not reported yet: institutions send transactions days late, so it's read from balances less the market's move.`;
+}
+
 function missingReason(
   c: { day: string; missing: readonly string[] },
   target: string | undefined,
@@ -354,26 +375,11 @@ function LinkedBalanceCardImpl() {
               </span>
               <span
                 className="text-faint break-words"
-                title={[
-                  missingReason(c, target),
-                  c.unreported
-                    ? 'Paid in and out comes from the transactions your institutions send, which arrive several days late. "Not reported yet" is money the balances already show going in or out, less the market\'s move.'
-                    : null,
-                ]
+                title={[missingReason(c, target), unreportedDetail(c)]
                   .filter(Boolean)
                   .join(" ")}
               >
-                {[
-                  missingNote(c, target),
-                  c.flows
-                    ? `${c.flows > 0 ? "+" : "−"}${formatCurrency(Math.abs(c.flows))} paid ${c.flows > 0 ? "in" : "out"}`
-                    : null,
-                  // Balances show money the institutions haven't sent as
-                  // transactions yet (they arrive days later).
-                  c.unreported
-                    ? `${c.flows ? "about " : ""}${c.unreported.amount > 0 ? "+" : "−"}${formatCurrency(Math.abs(c.unreported.amount), 0)} ${c.flows ? "more " : ""}paid ${c.unreported.amount > 0 ? "in" : "out"} at ${c.unreported.names.join(", ")}, not reported yet`
-                    : null,
-                ]
+                {[missingNote(c, target), paidLine(c)]
                   .filter(Boolean)
                   .join(" · ")}
               </span>

@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Fixed
 
-- **Current Balances shows money the balances already show going in.** "Paid in" comes from the transactions your institutions send, which arrive several days late, so a recent day's figure was missing deposits. Each close now also shows money the balances show going in or out that hasn't been reported yet, by institution.
+- **Current Balances shows money the balances already show going in.** "Paid in" comes from the transactions your institutions send, which arrive several days late, so a recent day's figure was missing deposits. Each close's figure now includes money the balances already show, marked "~" until it's reported; hover for the breakdown.
 - **A backdoor Roth contribution waiting to be converted is no longer called pre-tax money.** The pro-rata check read today's traditional IRA balance as Dec 31's, so a monthly backdoor deposit a few days before its conversion warned that the backdoor was mostly taxable. For someone going the backdoor route, that deposit is after-tax money; the Roth IRA card names it and says to convert it before Dec 31.
 
 ### Security
