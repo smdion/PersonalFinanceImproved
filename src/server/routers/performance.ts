@@ -2,6 +2,7 @@
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import { asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { sumBy } from "@/lib/utils/math";
 import {
   PERF_BALANCE_MISMATCH_ABS,
   PERF_BALANCE_MISMATCH_PCT,
@@ -305,6 +306,11 @@ export const performanceRouter = createTRPCRouter({
       annualRows.map((r) => [annualKey(r.year, r.category), r]),
     );
 
+    // Rows built here from account data have no stored lifetime totals:
+    // even in a finalized year they accumulate rather than reset the
+    // running total to their placeholder 0.
+    const noStoredLifetime = new Set<(typeof annualRows)[number]>();
+
     // For each year with account data, synthesize missing annual rows and recompute current-year rows
     for (const year of Array.from(allAccountYears)) {
       const yearAccounts = accounts.filter((a) => a.year === year);
@@ -354,6 +360,7 @@ export const performanceRouter = createTRPCRouter({
           });
           existingAnnual.add(key);
           annualByKey.set(key, annualRows[annualRows.length - 1]!);
+          noStoredLifetime.add(annualRows[annualRows.length - 1]!);
         } else {
           // Existing annual row: only recompute non-finalized rows from account data.
           // Finalized rows are authoritative (seeded from spreadsheet or locked by finalizeYear).
@@ -518,7 +525,7 @@ export const performanceRouter = createTRPCRouter({
         runningMatch = 0;
 
       for (const row of catRows) {
-        if (row.isFinalized) {
+        if (row.isFinalized && !noStoredLifetime.has(row)) {
           // Trust stored lifetime values, use as new running baseline
           runningGains = row.lifetimeGains;
           runningContribs = row.lifetimeContributions;
@@ -578,9 +585,16 @@ export const performanceRouter = createTRPCRouter({
         annualRows.splice(i, 1);
     }
 
-    let retLtGains = 0,
-      retLtContribs = 0,
-      retLtMatch = 0;
+    // Lifetime totals: each fully-Retirement category's own lifetime (its
+    // stored history included, carried forward through a year it has no
+    // row), plus the Retirement brokerage accounts' running sums.
+    const catLifetime = new Map<
+      string,
+      { gains: number; contribs: number; match: number }
+    >();
+    let brokLtGains = 0,
+      brokLtContribs = 0,
+      brokLtMatch = 0;
     for (const year of retYears) {
       const isCurrentYr = year === currentYear;
       const existingRow = annualRows.find((r) => r.year === year);
@@ -604,9 +618,19 @@ export const performanceRouter = createTRPCRouter({
       const fees = annualSums.fees + brokSums.fees;
       const rolloverSum = annualSums.rollovers + brokSums.rollovers;
 
-      retLtGains += gainLoss;
-      retLtContribs += contribs;
-      retLtMatch += employer;
+      for (const r of catAnnualRows)
+        catLifetime.set(r.category, {
+          gains: r.lifetimeGains,
+          contribs: r.lifetimeContributions,
+          match: r.lifetimeMatch,
+        });
+      brokLtGains += brokSums.gainLoss;
+      brokLtContribs += brokSums.contribs;
+      brokLtMatch += brokSums.employer;
+      const carried = [...catLifetime.values()];
+      const retLtGains = brokLtGains + sumBy(carried, (c) => c.gains);
+      const retLtContribs = brokLtContribs + sumBy(carried, (c) => c.contribs);
+      const retLtMatch = brokLtMatch + sumBy(carried, (c) => c.match);
 
       annualRows.push({
         id: -1,
