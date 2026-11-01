@@ -319,9 +319,9 @@ describe("describeDiscretionaryCapacityMath", () => {
     )!;
     expect(text).toMatch(/\$0\.00 you could have drawn from brokerage/);
     expect(text).toMatch(
-      /\$10,854\.07 came from Roth basis and \$0\.00 from brokerage/,
+      /\$10,854\.07 came from tax-free Roth and \$0\.00 from brokerage/,
     );
-    expect(text).toMatch(/\$19,145\.93 of Roth basis went unused this year/);
+    expect(text).toMatch(/\$19,145\.93 of tax-free Roth went unused this year/);
     expect(text).toMatch(
       /Discretionary Withdrawal Order setting \(currently "Brokerage 0% room first"\)/,
     );
@@ -334,9 +334,9 @@ describe("describeDiscretionaryCapacityMath", () => {
       "roth_first",
       false,
     )!;
-    expect(text).toMatch(/\$0\.00 of tax-free Roth basis/);
+    expect(text).toMatch(/\$0\.00 of tax-free Roth money/);
     expect(text).toMatch(
-      /\$0\.00 came from Roth basis and \$12,000\.00 from brokerage/,
+      /\$0\.00 came from tax-free Roth and \$12,000\.00 from brokerage/,
     );
     expect(text).toMatch(
       /\$3,000\.00 of brokerage's 0% room went unused this year/,
@@ -351,10 +351,10 @@ describe("describeDiscretionaryCapacityMath", () => {
       false,
     )!;
     expect(rothFirst).toMatch(
-      /\$20,000\.00 came from Roth basis and \$0\.00 from brokerage/,
+      /\$20,000\.00 came from tax-free Roth and \$0\.00 from brokerage/,
     );
     expect(rothFirst).toMatch(
-      /\$10,000\.00 of Roth basis and \$31,000\.00 of brokerage's 0% room went unused this year/,
+      /\$10,000\.00 of tax-free Roth and \$31,000\.00 of brokerage's 0% room went unused this year/,
     );
     expect(rothFirst).toMatch(
       /Discretionary Withdrawal Order setting \(currently "Roth basis first"\) on the Taxes settings page/,
@@ -372,7 +372,7 @@ describe("describeDiscretionaryCapacityMath", () => {
       false,
     )!;
     expect(brokerageFirst).toMatch(
-      /\$0\.00 came from Roth basis and \$20,000\.00 from brokerage/,
+      /\$0\.00 came from tax-free Roth and \$20,000\.00 from brokerage/,
     );
     expect(brokerageFirst).toMatch(
       /Discretionary Withdrawal Order setting \(currently "Brokerage 0% room first"\)/,
@@ -394,10 +394,10 @@ describe("describeDiscretionaryCapacityMath", () => {
       false,
     )!;
     expect(text).toMatch(
-      /\$10,000\.00 came from Roth basis and \$8,000\.00 from brokerage/,
+      /\$10,000\.00 came from tax-free Roth and \$8,000\.00 from brokerage/,
     );
     expect(text).toMatch(
-      /\$20,000\.00 of Roth basis and \$17,000\.00 of brokerage's 0% room went unused this year/,
+      /\$20,000\.00 of tax-free Roth and \$17,000\.00 of brokerage's 0% room went unused this year/,
     );
     expect(text).not.toMatch(/ran out/);
     expect(text).not.toMatch(/covered the full discretionary need on its own/);
@@ -414,7 +414,7 @@ describe("describeDiscretionaryCapacityMath", () => {
       false,
     )!;
     expect(text).toMatch(
-      /\$10,000\.00 came from Roth basis and \$8,000\.00 from brokerage/,
+      /\$10,000\.00 came from tax-free Roth and \$8,000\.00 from brokerage/,
     );
     expect(text).not.toMatch(/went unused/);
   });
@@ -433,7 +433,7 @@ describe("describeDiscretionaryCapacityMath", () => {
       "roth_first",
       false,
     )!;
-    expect(text).toMatch(/\$5,000\.00 came from Roth basis/);
-    expect(text).not.toMatch(/\$8,000\.00 came from Roth basis/);
+    expect(text).toMatch(/\$5,000\.00 came from tax-free Roth/);
+    expect(text).not.toMatch(/\$8,000\.00 came from tax-free Roth/);
   });
 });

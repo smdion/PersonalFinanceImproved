@@ -1174,10 +1174,7 @@ export async function buildEnginePayload(
             socialSecurityWageBase: limitsMap.ss_wage_base,
           }
         : undefined,
-    budgetContributionShare:
-      accumulationExpenses > 0
-        ? accumulationContributionLines / accumulationExpenses
-        : 0,
+    budgetContributionLines: accumulationContributionLines,
     currentSalary: totalCompensationFullFormula,
     salaryGrowthRate: toNumber(
       (soleEarnerId !== primaryPerson.id

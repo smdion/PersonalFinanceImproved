@@ -52,6 +52,19 @@ async function seedHousehold(db: TestCtx["db"]) {
       value: [{ id: "g1", label: "Fixture goal", amount: 100000 }],
     })
     .run();
+  // A budget line linked to a contribution account: restored after it.
+  const [account] = db.select().from(sqliteSchema.contributionAccounts).all();
+  const [profile] = db.select().from(sqliteSchema.budgetProfiles).all();
+  if (account && profile)
+    db.insert(sqliteSchema.budgetItems)
+      .values({
+        profileId: profile.id,
+        category: "Saving",
+        subcategory: "Linked contribution",
+        amounts: [100],
+        contributionAccountId: account.id,
+      })
+      .run();
   // Holding history for one part of an account (sub_key) and its fund.
   const perf = db
     .select({ id: sqliteSchema.performanceAccounts.id })

@@ -312,7 +312,7 @@ describe("buildWithdrawalStrategyNarrative", () => {
       /\$0\.00 you could have drawn from brokerage at 0% federal tax/,
     );
     expect(highlight.detail).toMatch(
-      /\$10,854\.07 came from Roth basis and \$0\.00 from brokerage/,
+      /\$10,854\.07 came from tax-free Roth and \$0\.00 from brokerage/,
     );
   });
 

@@ -146,7 +146,14 @@ export function runGapYearDraw(
           p * payrollTax.medicareRate,
       )
     : 0;
-  const spending = budget * (1 - (input.budgetContributionShare ?? 0));
+  // Contribution lines inflate with the budget and aren't in a typed figure.
+  const typedFigure = [...ctx.budgetOverrideMap.keys()].some((y) => y <= year);
+  const contributionLines = typedFigure
+    ? 0
+    : (input.budgetContributionLines ?? 0) *
+      Math.pow(1 + ctx.inflationRate, year - input.asOfDate.getFullYear()) *
+      fraction;
+  const spending = Math.max(0, budget - contributionLines);
   const need = roundToCents(
     Math.max(
       0,

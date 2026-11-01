@@ -154,8 +154,26 @@ describe("what goes into a gap year's shortfall", () => {
   });
 
   it("contribution lines in the budget aren't counted twice", () => {
-    const withLines = couple({ budgetContributionShare: 0.1 });
+    const withLines = couple({ budgetContributionLines: 10000 });
     expect(needIn(couple()) - needIn(withLines)).toBeCloseTo(10000, -1);
+  });
+
+  it("a loan ending doesn't shrink the contribution lines", () => {
+    const input = (lines: number) =>
+      couple({
+        budgetContributionLines: lines,
+        expenseEndings: [{ year: 2028, accumulation: 0.2, decumulation: 0 }],
+      });
+    expect(needIn(input(0)) - needIn(input(10000))).toBeCloseTo(10000, -1);
+  });
+
+  it("a typed year's figure stays as typed", () => {
+    const typed = (lines: number) =>
+      couple({
+        budgetOverrides: [{ year: 2030, value: 9000 }],
+        budgetContributionLines: lines,
+      });
+    expect(needIn(typed(10000))).toBe(needIn(typed(0)));
   });
 
   it("Social Security payroll tax stops at the wage base", () => {

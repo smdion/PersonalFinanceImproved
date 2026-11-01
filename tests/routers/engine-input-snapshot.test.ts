@@ -167,7 +167,7 @@ describe("engine input snapshot guard", () => {
         "birthYear",
         "brokerageContributionRamp",
         "brokerageGoals",
-        "budgetContributionShare",
+        "budgetContributionLines",
         "budgetOverrides",
         "contributionSpecs",
         "currentAge",

@@ -268,13 +268,13 @@ export function describeDiscretionaryCapacityMath(
   );
 
   const parts: string[] = [
-    `You had about ${formatCurrency(rothBasisCapacity)} of tax-free Roth basis and ${formatCurrency(brokerageZeroLtcgCapacity)} you could have drawn from brokerage at 0% federal tax this year.`,
-    `${formatCurrency(rothZeroUsed)} came from Roth basis and ${formatCurrency(brokerageZeroUsed)} from brokerage.`,
+    `You had about ${formatCurrency(rothBasisCapacity)} of tax-free Roth money and ${formatCurrency(brokerageZeroLtcgCapacity)} you could have drawn from brokerage at 0% federal tax this year.`,
+    `${formatCurrency(rothZeroUsed)} came from tax-free Roth and ${formatCurrency(brokerageZeroUsed)} from brokerage.`,
   ];
 
   const leftovers: string[] = [];
   if (rothUnused > 0)
-    leftovers.push(`${formatCurrency(rothUnused)} of Roth basis`);
+    leftovers.push(`${formatCurrency(rothUnused)} of tax-free Roth`);
   if (brokerageUnused > 0) {
     leftovers.push(`${formatCurrency(brokerageUnused)} of brokerage's 0% room`);
   }

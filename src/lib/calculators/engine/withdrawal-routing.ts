@@ -160,7 +160,7 @@ export function routeWithdrawals(
       remainingNeed: remaining > 0 ? remaining : 0,
     });
 
-    if (cappedByAccount && remaining > 0) {
+    if (cappedByAccount && remaining > 0 && accountCap! > 0) {
       warnings.push(
         `${category} withdrawal capped at $${accountCap!.toLocaleString()} — ` +
           `$${remaining.toLocaleString()} shifts to next account`,

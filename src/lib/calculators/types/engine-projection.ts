@@ -79,8 +79,8 @@ export type ProjectionInput = {
     medicareRate: number;
     socialSecurityWageBase: number;
   };
-  /** The share of the working budget that is contribution lines. */
-  budgetContributionShare?: number;
+  /** The working budget's contribution lines, a year, in today's dollars. */
+  budgetContributionLines?: number;
   /** The projection's last year. */
   projectionEndYear: number;
   currentSalary: number;
