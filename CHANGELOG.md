@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ### Added
 
+- **You choose how years with one paycheck work.** In Retirement Profile → Timeline: keep saving as planned or stop, and withdraw what pay doesn't cover or spend only what's coming in. The projection marks these years, and hovering one shows the money.
 - **The mortgage ends in the projection.** Pick the budget line that pays your loan on the Liabilities page, and the plan stops spending it the year after payoff, before or after you retire. Taxes and insurance stay, and retirement spending you typed in as a figure stays as entered.
 
 ### Fixed

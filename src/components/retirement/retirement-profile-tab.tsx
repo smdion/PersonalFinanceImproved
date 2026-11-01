@@ -410,6 +410,11 @@ export function RetirementProfileTab({
                   handlePerPersonRuleOf55Override
                 }
                 handleRetirementSettingUpdate={handleRetirementSettingUpdate}
+                handleGapYearSetting={(patch) =>
+                  upsertSettingsMutation.mutate(
+                    buildSettingsPatch(settings, patch),
+                  )
+                }
                 isEditable={admin}
               />
 

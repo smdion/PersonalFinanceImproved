@@ -1,0 +1,2 @@
+ALTER TABLE `retirement_settings` ADD `gap_year_stop_saving` integer DEFAULT false NOT NULL;--> statement-breakpoint
+ALTER TABLE `retirement_settings` ADD `gap_year_draws` integer DEFAULT true NOT NULL;

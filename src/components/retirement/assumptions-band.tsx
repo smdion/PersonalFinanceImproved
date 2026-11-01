@@ -236,7 +236,7 @@ export function AssumptionsBand({
             <HelpTip text="How long your money needs to last. Higher = more safety margin." />
           </span>
           <InlineEdit
-            value={String(settings.endAge)}
+            value={String(settings.ownEndAge ?? settings.endAge)}
             onSave={(v) => {
               const n = parseInt(v, 10);
               if (isNaN(n)) return;

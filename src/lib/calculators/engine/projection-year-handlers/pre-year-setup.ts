@@ -271,6 +271,16 @@ export function runPreYearSetup(
     const start = workingYears[id]?.start ?? null;
     return start === null || year >= start;
   });
+  const savingStopped =
+    nobodyAtWork || (gapYear && input.gapYearStopSaving === true);
+  if (savingStopped && !nobodyAtWork)
+    yearSpecs = (yearSpecs ?? state.contributionSpecs)?.map((spec) => ({
+      ...spec,
+      value: 0,
+      baseAnnual: 0,
+      salaryFraction: 0,
+      configuredAnnual: undefined,
+    }));
   // A job starting or ending this year (its own dates, not a retirement:
   // a person retiring next year works all of this one).
   const jobEdgeThisYear =
@@ -452,6 +462,6 @@ export function runPreYearSetup(
     yearSpecs,
     jobEdgeThisYear,
     gapYear,
-    nobodyAtWork,
+    savingStopped,
   };
 }

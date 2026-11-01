@@ -78,7 +78,7 @@ describe("gap-year draw", () => {
 
   it("the balance falls by the draw against the same plan with enough pay", () => {
     const covered = couple({ annualExpenses: 40000 });
-    expect(year(covered, 2031).gapDraw).toBeUndefined();
+    expect(year(covered, 2031).gapDraw?.withdrawal).toBe(0);
     expect(year(couple(), 2034).retirementBalance).toBeLessThan(
       year(covered, 2034).retirementBalance,
     );
@@ -138,6 +138,51 @@ describe("gap-year draw", () => {
     expect(outcome.succeeded).toBe(false);
     expect(outcome.failureYear).toBe(2030);
     expect(outcome.failureReason).toBe("shortfall");
+  });
+});
+
+describe("the household's choices for these years", () => {
+  it("stop saving: no contributions, so less to draw", () => {
+    const contributionSpecs = [
+      {
+        category: "401k",
+        name: "Bo",
+        method: "percent_of_salary",
+        value: 0.1,
+        salaryFraction: 0.4,
+        baseAnnual: 6000,
+        personId: 2,
+        employerShare: 1,
+        personPayShare: 1,
+      },
+    ] as ProjectionInput["contributionSpecs"];
+    const saving = year(couple({ contributionSpecs }), 2031);
+    const stopped = year(
+      couple({ contributionSpecs, gapYearStopSaving: true }),
+      2031,
+    );
+    expect(saving.totalEmployee).toBeGreaterThan(0);
+    expect(stopped.totalEmployee).toBe(0);
+    expect(stopped.savingStopped).toBe(true);
+    expect(stopped.gapDraw!.need).toBeLessThan(saving.gapDraw!.need);
+    const before = year(
+      couple({ contributionSpecs, gapYearStopSaving: true }),
+      2029,
+    );
+    expect(before.totalEmployee).toBeGreaterThan(0);
+  });
+
+  it("don't draw: balances untouched, spending cut, and the plan doesn't fail", () => {
+    const input = couple({ gapYearDraws: false });
+    const { gapDraw } = year(input, 2031);
+    assert(gapDraw);
+    expect(gapDraw.withdrawal).toBe(0);
+    expect(gapDraw.spendingCut).toBeGreaterThan(0);
+    expect(gapDraw.unmetNeed).toBe(0);
+    expect(assessPlan(calculateProjection(input)).succeeded).toBe(true);
+    expect(year(input, 2034).retirementBalance).toBeGreaterThan(
+      year(couple(), 2034).retirementBalance,
+    );
   });
 });
 

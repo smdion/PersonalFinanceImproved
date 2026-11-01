@@ -108,6 +108,8 @@ export type Settings = {
   // Feature flags + filing
   enableIrmaaAwareness?: boolean;
   irmaaOnTopOfBudget?: boolean;
+  gapYearStopSaving?: boolean;
+  gapYearDraws?: boolean;
   enableAcaAwareness?: boolean;
   householdSize?: number;
   filingStatus?: string | null;

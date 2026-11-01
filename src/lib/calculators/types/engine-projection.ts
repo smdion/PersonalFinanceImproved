@@ -265,6 +265,10 @@ export type ProjectionInput = {
    *  need rises by the surcharge) rather than sitting inside it. Only the
    *  income-based surcharge: base Part B and D premiums aren't modeled. */
   irmaaOnTopOfBudget?: boolean;
+  /** In a gap year (gap-year-draw.ts) nobody saves. */
+  gapYearStopSaving?: boolean;
+  /** False: a gap year doesn't draw; spending is cut to what's coming in. */
+  gapYearDraws?: boolean;
   /** The household's primary person: an account with no owner counts toward
    *  this person's RMD. */
   primaryPersonId?: number;
@@ -361,6 +365,8 @@ export type EngineAccumulationYear = {
   /** Set when a paycheck is gone and pay didn't cover the budget: what came
    *  out of the accounts (gap-year-draw.ts). */
   gapDraw?: GapYearDraw;
+  /** Nobody saved this year. Set with `gapDraw`. */
+  savingStopped?: boolean;
   /** Retirement money at end of year: every account minus the
    *  Portfolio-parented ones (savings outside the retirement plan) — what
    *  retirement answers count (depletion, success, nest egg). */

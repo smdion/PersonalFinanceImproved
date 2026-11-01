@@ -525,7 +525,9 @@ export function runAccumulationYear(
   // Apply brokerage contribution ramp (additional $X x year index, starting year 1)
   const rampYear = Math.min(yearIndex, MAX_BROKERAGE_RAMP_YEARS);
   const rampAmount =
-    (brokerageContributionRamp ?? 0) > 0 && yearIndex > 0 && !setup.nobodyAtWork
+    (brokerageContributionRamp ?? 0) > 0 &&
+    yearIndex > 0 &&
+    !setup.savingStopped
       ? roundToCents(brokerageContributionRamp! * rampYear)
       : 0;
   if (rampAmount > 0) {
@@ -799,7 +801,7 @@ export function runAccumulationYear(
     brokerageRampContribution: rampAmount,
     totalTaxAdvSpace,
     brokerageGoalWithdrawals: goalWithdrawals,
-    ...(gapDraw ? { gapDraw } : {}),
+    ...(gapDraw ? { gapDraw, savingStopped: setup.savingStopped } : {}),
     retirementBalance,
     allAccountsBalance,
     balanceByTaxType: { ...balances },

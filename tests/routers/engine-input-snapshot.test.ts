@@ -180,6 +180,8 @@ describe("engine input snapshot guard", () => {
         "enableIrmaaAwareness",
         "expenseEndings",
         "filingStatus",
+        "gapYearDraws",
+        "gapYearStopSaving",
         "householdSize",
         "individualAccounts",
         "inflationRate",

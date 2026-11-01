@@ -16,6 +16,9 @@
  * Rule of 55 on their own plan. The draw pays what it adds to the year's tax:
  * the tax on everything less the tax on the income alone.
  *
+ * Two household choices (Retirement Profile): stop saving these years, and
+ * don't draw, so spending comes down to what's coming in.
+ *
  * Not modelled yet: RMDs before the plan's withdrawal year; a year with one
  * due says so.
  */
@@ -63,6 +66,14 @@ export type GapYearDraw = {
   taxCost: number;
   /** The need no reachable money could fund. */
   unmetNeed: number;
+  /** Spending given up by choice: the household draws nothing these years. */
+  spendingCut: number;
+  /** What the year's figures were, for the row's explanation. */
+  pay: number;
+  ssIncome: number;
+  contributions: number;
+  taxOnIncome: number;
+  spending: number;
   slots: DecumulationSlot[];
   warnings: string[];
 };
@@ -88,7 +99,7 @@ export function runGapYearDraw(
     employeeContributions: number;
     pretaxContributions: number;
   },
-): GapYearDraw | null {
+): GapYearDraw {
   const { input, hasIndividualAccounts, indAccts, indKey } = ctx;
   const { balances, acctBal, indBal, indBasis, brokBasis } = state;
   const { year, age, fraction, payByPerson, budget } = args;
@@ -161,7 +172,25 @@ export function runGapYearDraw(
         (pay + ssIncome - employeeContributions - taxOnIncome - payrollCost),
     ),
   );
-  if (need < gapShortfallFloor(need)) return null;
+  const figures = {
+    pay,
+    ssIncome,
+    contributions: employeeContributions,
+    taxOnIncome: roundToCents(taxOnIncome + payrollCost),
+    spending: roundToCents(spending),
+  };
+  const noDraw = {
+    need,
+    withdrawal: 0,
+    taxCost: 0,
+    unmetNeed: 0,
+    spendingCut: 0,
+    ...figures,
+    slots: [],
+    warnings: [],
+  };
+  if (need < gapShortfallFloor(need)) return { ...noDraw, need: 0 };
+  if (input.gapYearDraws === false) return { ...noDraw, spendingCut: need };
 
   const config = resolveDecumulationConfig(
     year,
@@ -328,6 +357,8 @@ export function runGapYearDraw(
     withdrawal,
     taxCost: cost,
     unmetNeed: roundToCents(Math.max(0, need - (withdrawal - cost))),
+    spendingCut: 0,
+    ...figures,
     slots,
     warnings: [
       ...warnings,

@@ -1306,6 +1306,8 @@ export async function buildEnginePayload(
     filingStatus,
     enableIrmaaAwareness: settings.enableIrmaaAwareness,
     irmaaOnTopOfBudget: settings.irmaaOnTopOfBudget,
+    gapYearStopSaving: settings.gapYearStopSaving,
+    gapYearDraws: settings.gapYearDraws,
     primaryPersonId: primaryPerson.id,
     enableAcaAwareness: settings.enableAcaAwareness,
     householdSize: settings.householdSize,

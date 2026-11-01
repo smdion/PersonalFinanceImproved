@@ -217,6 +217,7 @@ export type PreYearSetup = {
    *  over before its holder retires), so pay may not cover the budget. A
    *  job that hasn't started yet doesn't count: nothing changed. */
   gapYear: boolean;
-  /** Everyone with pay is away this year. */
-  nobodyAtWork: boolean;
+  /** Nobody saves this year: nobody's at work, or the household chose to
+   *  stop in gap years. */
+  savingStopped: boolean;
 };

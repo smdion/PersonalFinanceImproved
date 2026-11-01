@@ -78,6 +78,63 @@ type AccumulationRowProps = {
   mcCellOpts: RenderMcCellOptions;
 };
 
+/** SAVE, or in a year a paycheck is gone, what the year actually does. */
+function GapYearPhase({
+  yr,
+  renderTooltip,
+}: {
+  yr: EngineAccumulationYear;
+  renderTooltip: ProjectionState["renderTooltip"];
+}) {
+  const gap = yr.gapDraw;
+  const save = yr.savingStopped ? (
+    <span className="text-caption font-medium text-sky-600">HOLD</span>
+  ) : (
+    <span className="text-caption font-medium text-green-600">SAVE</span>
+  );
+  if (!gap) return save;
+  const money = (v: number) => formatCurrency(Math.round(v));
+  const lines = [
+    `A paycheck is gone in ${yr.year}.`,
+    `Pay: ${money(gap.pay)}`,
+    ...(gap.ssIncome > 0 ? [`Social Security: ${money(gap.ssIncome)}`] : []),
+    `Tax on that: ${money(gap.taxOnIncome)}`,
+    `Saved from pay: ${money(gap.contributions)}`,
+    `Spending: ${money(gap.spending)}`,
+    ...(gap.withdrawal > 0
+      ? [
+          `Drawn from accounts: ${money(gap.withdrawal)}, ${money(gap.taxCost)} of it tax`,
+          ...gap.slots
+            .filter((s) => s.withdrawal > 0)
+            .map((s) => `  ${s.category}: ${money(s.withdrawal)}`),
+        ]
+      : []),
+    ...(gap.spendingCut > 0
+      ? [`You chose not to draw: ${money(gap.spendingCut)} less spending`]
+      : []),
+    ...(gap.unmetNeed > 0 ? [`Unfunded: ${money(gap.unmetNeed)}`] : []),
+  ];
+  return (
+    <Tooltip
+      content={renderTooltip({
+        kind: "info",
+        lines: lines.map((text) => ({ text, style: "header" as const })),
+      })}
+      side="right"
+      maxWidth={300}
+    >
+      <span>
+        {save}
+        {gap.withdrawal > 0 && (
+          <span className="text-caption ml-1 font-medium text-amber-600">
+            + DRAW
+          </span>
+        )}
+      </span>
+    </Tooltip>
+  );
+}
+
 export function AccumulationRow({
   yr,
   focused = false,
@@ -167,18 +224,7 @@ export function AccumulationRow({
         </td>
       </Tooltip>
       <td className="px-2 py-1.5">
-        <span className="text-caption font-medium text-green-600">SAVE</span>
-        {yr.gapDraw && (
-          <Tooltip
-            content={`A paycheck is gone this year, so ${formatCurrency(yr.gapDraw.withdrawal)} comes out of the accounts to cover ${formatCurrency(yr.gapDraw.need)} of spending the remaining pay doesn't, plus ${formatCurrency(yr.gapDraw.taxCost)} tax on the draw.`}
-            side="right"
-            maxWidth={260}
-          >
-            <span className="text-caption ml-1 font-medium text-amber-600">
-              + DRAW
-            </span>
-          </Tooltip>
-        )}
+        <GapYearPhase yr={yr} renderTooltip={renderTooltip} />
       </td>
       <Tooltip
         content={(() => {

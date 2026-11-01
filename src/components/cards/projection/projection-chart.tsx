@@ -190,6 +190,12 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
       }
     }
 
+    // A year a paycheck is gone: what came out while still saving.
+    if (yr.phase === "accumulation" && yr.gapDraw) {
+      datum._gapWithdrawal = deflate(yr.gapDraw.withdrawal, yr.year);
+      datum._gapSpendingCut = deflate(yr.gapDraw.spendingCut, yr.year);
+    }
+
     // Milestone event annotations (decumulation only)
     if (yr.phase === "decumulation") {
       datum._ssStart = yr.year === ssStartYear ? 1 : 0;
@@ -433,6 +439,18 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                         </span>
                       ))}
                     </div>
+                    {Number(d._gapWithdrawal) > 0 && (
+                      <div className="text-amber-500">
+                        A paycheck is gone: drawn from accounts{" "}
+                        {formatCurrency(Number(d._gapWithdrawal))}
+                      </div>
+                    )}
+                    {Number(d._gapSpendingCut) > 0 && (
+                      <div className="text-amber-500">
+                        A paycheck is gone: spending{" "}
+                        {formatCurrency(Number(d._gapSpendingCut))} lower
+                      </div>
+                    )}
                     {segmentKeys
                       .filter((k) => (Number(d[k.key]) || 0) > 0)
                       .map((k) => (

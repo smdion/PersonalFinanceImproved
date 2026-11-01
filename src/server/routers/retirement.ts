@@ -192,6 +192,8 @@ const retirementSettingsInput = z.object({
   enableIrmaaAwareness: z.boolean().optional(),
   /** IRMAA surcharges on top of the budget rather than inside it. */
   irmaaOnTopOfBudget: z.boolean().optional(),
+  gapYearStopSaving: z.boolean().optional(),
+  gapYearDraws: z.boolean().optional(),
   enableAcaAwareness: z.boolean().optional(),
   householdSize: z.number().int().min(1).max(HOUSEHOLD_SIZE_MAX).optional(),
   socialSecurityMonthly: zDecimal.optional(),

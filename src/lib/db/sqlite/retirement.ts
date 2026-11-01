@@ -238,6 +238,14 @@ export const retirementSettings = sqliteTable(
     enableIrmaaAwareness: integer("enable_irmaa_awareness", { mode: "boolean" })
       .notNull()
       .default(false),
+    /** Years someone with a job has stopped: stop saving altogether. */
+    gapYearStopSaving: integer("gap_year_stop_saving", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    /** Those years, draw what pay doesn't cover; off, spending is cut to it. */
+    gapYearDraws: integer("gap_year_draws", { mode: "boolean" })
+      .notNull()
+      .default(true),
     /** IRMAA surcharges are paid on top of the retirement budget, not inside
      *  it. The surcharge only: base Part B and D premiums aren't modeled. */
     irmaaOnTopOfBudget: integer("irmaa_on_top_of_budget", { mode: "boolean" })
