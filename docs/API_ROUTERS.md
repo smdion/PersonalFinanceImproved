@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**386 procedures across 54 routers.**
+**392 procedures across 56 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -75,9 +75,10 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `contribution`
 
-| Procedure        | Kind  | Auth                 | Description      |
-| ---------------- | ----- | -------------------- | ---------------- |
-| `computeSummary` | query | `protectedProcedure` | (no description) |
+| Procedure        | Kind  | Auth                 | Description                                                                                                               |
+| ---------------- | ----- | -------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `computeSummary` | query | `protectedProcedure` | saved setting, when set, wins on the client). Here so a filing-status save, which reloads `contribution`, reloads it too. |
+| `highIncomeLine` | query | `protectedProcedure` | saved setting, when set, wins on the client). Here so a filing-status save, which reloads `contribution`, reloads it too. |
 
 ## `contribution-profiles`
 
@@ -139,24 +140,38 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `getLiveSinceSnapshot` | query | `portfolioProcedure` | How the household's linked accounts moved each day since the latest snapshot, as a change from it — the Portfolio chart's live line and the Net Worth page's "today" estimate add it to the snapshot's o |
 | `getRecentChanges`     | query | `portfolioProcedure` | tracked account, counted feeds only (deposits included).                                                                                                                                                 |
 
+## `investments/buying`
+
+| Procedure         | Kind  | Auth                 | Description      |
+| ----------------- | ----- | -------------------- | ---------------- |
+| `getBuyingMonths` | query | `portfolioProcedure` | (no description) |
+
 ## `investments/comparison`
 
-| Procedure       | Kind  | Auth                 | Description                                                                                                 |
-| --------------- | ----- | -------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `getComparison` | query | `portfolioProcedure` | Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains). |
+| Procedure             | Kind  | Auth                 | Description                                                                                                        |
+| --------------------- | ----- | -------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `getComparison`       | query | `portfolioProcedure` | Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains).        |
+| `getYearReturnRanges` | query | `portfolioProcedure` | at the household's age that year on the chosen preset's glide path — today's assumptions, not what was known then. |
+
+## `investments/current-balances`
+
+| Procedure            | Kind  | Auth                 | Description                                |
+| -------------------- | ----- | -------------------- | ------------------------------------------ |
+| `getCurrentBalances` | query | `protectedProcedure` | daily moves — no holdings or transactions. |
 
 ## `investments/fund-facts`
 
-| Procedure               | Kind     | Auth                 | Description                                                                                                                                                                                   |
-| ----------------------- | -------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `checkStandIn`          | mutation | `portfolioProcedure` | Check a suggested (unconfirmed) stand-in's SEC filings now, to judge it before using it. At most once an hour per fund unless the last check failed — each check downloads several SEC files. |
-| `clearUserFacts`        | mutation | `portfolioProcedure` | Remove your own expense ratio or mix for a fund, going back to SEC's (or none).                                                                                                               |
-| `confirmStandIn`        | mutation | `portfolioProcedure` | Use the suggested stand-in's SEC filings for this fund, and fetch them now.                                                                                                                   |
-| `findStandIn`           | mutation | `portfolioProcedure` | After "Not a match": look for a stand-in again (asks SEC now).                                                                                                                                |
-| `getHoldingsOverview`   | query    | `portfolioProcedure` | Holdings valued today, with each fund's facts; allocation vs target; blended cost.                                                                                                            |
-| `linkCompositionBucket` | mutation | `portfolioProcedure` | Which asset class a fund category counts toward (null = none). Several categories may count toward one class; a category toward one class.                                                    |
-| `rejectStandIn`         | mutation | `portfolioProcedure` | Stop using a stand-in (suggested or already confirmed): no registered fund fits. Facts that came from it are removed and it isn't suggested again; your own entries are kept.                 |
-| `setUserFacts`          | mutation | `portfolioProcedure` | The household's own expense ratio and/or mix for a fund (e.g. from the plan's fee disclosure).                                                                                                |
+| Procedure                 | Kind     | Auth                 | Description                                                                                                                                                                                   |
+| ------------------------- | -------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checkStandIn`            | mutation | `portfolioProcedure` | Check a suggested (unconfirmed) stand-in's SEC filings now, to judge it before using it. At most once an hour per fund unless the last check failed — each check downloads several SEC files. |
+| `clearUserFacts`          | mutation | `portfolioProcedure` | Remove your own expense ratio or mix for a fund, going back to SEC's (or none).                                                                                                               |
+| `confirmStandIn`          | mutation | `portfolioProcedure` | Use the suggested stand-in's SEC filings for this fund, and fetch them now.                                                                                                                   |
+| `findStandIn`             | mutation | `portfolioProcedure` | After "Not a match": look for a stand-in again (asks SEC now).                                                                                                                                |
+| `getHoldingsOverview`     | query    | `portfolioProcedure` | (no description)                                                                                                                                                                              |
+| `getSimulationGlidePaths` | query    | `portfolioProcedure` | Simulation runs on — so Benchmarks can show it beside your target mix. Allocations by age only; no balances.                                                                                  |
+| `linkCompositionBucket`   | mutation | `portfolioProcedure` | Which asset class a fund category counts toward (null = none). Several categories may count toward one class; a category toward one class.                                                    |
+| `rejectStandIn`           | mutation | `portfolioProcedure` | Stop using a stand-in (suggested or already confirmed): no registered fund fits. Facts that came from it are removed and it isn't suggested again; your own entries are kept.                 |
+| `setUserFacts`            | mutation | `portfolioProcedure` | The household's own expense ratio and/or mix for a fund (e.g. from the plan's fee disclosure).                                                                                                |
 
 ## `investments/health`
 
@@ -197,9 +212,11 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `milestones`
 
-| Procedure       | Kind  | Auth                 | Description                                                                                      |
-| --------------- | ----- | -------------------- | ------------------------------------------------------------------------------------------------ |
-| `computeInputs` | query | `protectedProcedure` | Year-end history mapped for the Milestones engine, plus the household's own goals and checklist. |
+| Procedure       | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| --------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `computeInputs` | query    | `protectedProcedure` | Year-end history mapped for the Milestones engine, plus the household's own goals and checklist.                                                                                                         |
+| `firstReached`  | query    | `protectedProcedure` | When each milestone was first reached (null before any recording).                                                                                                                                       |
+| `recordReached` | mutation | `protectedProcedure` | Record milestones reached now that aren't recorded yet. Judged here, on the active profiles — never on what a page shows (it may be a What-If) or on ids a browser sends. Any signed-in viewer's visit c |
 
 ## `mortgage`
 
@@ -315,7 +332,6 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `analyzeStrategy`           | query    | `protectedProcedure` | Analyze the active strategy — run what-if MC scenarios and return ranked recommendations.                                                                                 |
 | `computeStrategyComparison` | query    | `protectedProcedure` | Compare all withdrawal strategies side-by-side. Fetches DB data once, then runs calculateProjection() for each strategy varying only withdrawalStrategy + strategyParams. |
 | `updateAssetClassOverrides` | mutation | `scenarioProcedure`  | Persist MC asset class return/volatility overrides to appSettings.                                                                                                        |
-| `updateInflationRisk`       | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                          |
 
 ## `projection/stress-test`
 
@@ -448,7 +464,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `list`                | query    | `protectedProcedure` | ══ APP SETTINGS ══                                                     |
 | `list`                | query    | `protectedProcedure` | Every saved Plan.                                                      |
 | `list`                | query    | `adminProcedure`     | (encrypted envelopes, or plaintext for legacy rows such as FMP).       |
-| `setDismissal`        | mutation | `adminProcedure`     | Dismiss, snooze or restore one recommendation (merged on the server).  |
+| `setDismissal`        | mutation | `adminProcedure`     | server, so two admins changing different items both stick).            |
 | `update`              | mutation | `scenarioProcedure`  | Rename a Plan or change which profiles it holds.                       |
 | `updateDataFreshness` | mutation | `adminProcedure`     | (no description)                                                       |
 | `upsert`              | mutation | `adminProcedure`     | (no description)                                                       |
@@ -644,20 +660,20 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `version`
 
-| Procedure              | Kind     | Auth                 | Description                                                                                                              |
-| ---------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| `create`               | mutation | `versionProcedure`   | Create a new manual version.                                                                                             |
-| `delete`               | mutation | `versionProcedure`   | Delete a version.                                                                                                        |
-| `dismissUpgradeBanner` | mutation | `versionProcedure`   | Dismiss the upgrade banner by removing the app_settings flag.                                                            |
-| `getById`              | query    | `protectedProcedure` | Get a single version with per-table row counts (no JSONB data).                                                          |
-| `getPreview`           | query    | `protectedProcedure` | Preview first 50 rows of a specific table from a version.                                                                |
-| `getRetention`         | query    | `protectedProcedure` | Read retention setting.                                                                                                  |
-| `getSchedule`          | query    | `protectedProcedure` | Read auto-version schedule setting.                                                                                      |
-| `getUpgradeBanner`     | query    | `protectedProcedure` | Check if a pre-upgrade backup banner should be shown.                                                                    |
-| `importDataLoss`       | query    | `versionProcedure`   | Same check for an uploaded backup file, given only its table names.                                                      |
-| `list`                 | query    | `protectedProcedure` | List all versions (metadata only, no JSONB data).                                                                        |
-| `resetAllData`         | mutation | `adminProcedure`     | Reset all user data — truncates every table except state_versions, state_version_tables, app_settings, and local_admins. |
-| `restore`              | mutation | `versionProcedure`   | Restore from a version.                                                                                                  |
-| `restoreDataLoss`      | query    | `versionProcedure`   | Tables a restore of this version would empty (it predates them), for the pre-restore warning.                            |
-| `setRetention`         | mutation | `versionProcedure`   | Update retention setting and trigger cleanup.                                                                            |
-| `setSchedule`          | mutation | `versionProcedure`   | Update auto-version schedule.                                                                                            |
+| Procedure              | Kind     | Auth                 | Description                                                                                                                                 |
+| ---------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create`               | mutation | `versionProcedure`   | Create a new manual version.                                                                                                                |
+| `delete`               | mutation | `versionProcedure`   | Delete a version.                                                                                                                           |
+| `dismissUpgradeBanner` | mutation | `versionProcedure`   | Dismiss the upgrade banner by removing the app_settings flag.                                                                               |
+| `getById`              | query    | `versionProcedure`   | Version permission: a backup's contents are every table's data.                                                                             |
+| `getPreview`           | query    | `versionProcedure`   | permission — the rows are any table's data, which elsewhere needs its own permission — and never a credential table (withheld, count only). |
+| `getRetention`         | query    | `protectedProcedure` | Read retention setting.                                                                                                                     |
+| `getSchedule`          | query    | `protectedProcedure` | Read auto-version schedule setting.                                                                                                         |
+| `getUpgradeBanner`     | query    | `protectedProcedure` | Check if a pre-upgrade backup banner should be shown.                                                                                       |
+| `importDataLoss`       | query    | `versionProcedure`   | Same check for an uploaded backup file, given only its table names.                                                                         |
+| `list`                 | query    | `protectedProcedure` | List all versions (metadata only, no JSONB data).                                                                                           |
+| `resetAllData`         | mutation | `adminProcedure`     | Reset all user data — truncates every table except state_versions, state_version_tables, app_settings, and local_admins.                    |
+| `restore`              | mutation | `versionProcedure`   | Restore from a version.                                                                                                                     |
+| `restoreDataLoss`      | query    | `versionProcedure`   | Tables a restore of this version would empty (it predates them), for the pre-restore warning.                                               |
+| `setRetention`         | mutation | `versionProcedure`   | Update retention setting and trigger cleanup.                                                                                               |
+| `setSchedule`          | mutation | `versionProcedure`   | Update auto-version schedule.                                                                                                               |

@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { ComparisonSection } from "@/components/investments/comparison-section";
 import { HoldingsSection } from "@/components/investments/holdings-section";
+import { BenchmarksSummary } from "@/components/investments/benchmarks-summary";
 import Link from "next/link";
 import { focusHref } from "@/lib/config/focus-topics";
 
@@ -23,11 +24,24 @@ export function BenchmarksContent() {
     );
   }
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Benchmarks"
         subtitle="How your investments did against the market, what you hold, and what it costs"
-      />
+      >
+        <span className="text-caption flex gap-3">
+          <Link href="/milestones" className="text-blue-600 hover:underline">
+            Your wins → Milestones
+          </Link>
+          <Link
+            href="/recommendations"
+            className="text-blue-600 hover:underline"
+          >
+            What to do → Recommendations
+          </Link>
+        </span>
+      </PageHeader>
+      <BenchmarksSummary />
       <ComparisonSection />
       <HoldingsSection />
       <p className="text-caption text-faint">

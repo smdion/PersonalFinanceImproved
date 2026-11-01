@@ -26,7 +26,6 @@ export function ReportRoot({
   projectionResult,
   mcResult,
   deflate,
-  baseYear,
   coastFireAge,
   peopleNames,
   generatedAt,
@@ -40,7 +39,6 @@ export function ReportRoot({
   projectionResult: ProjectionResult;
   mcResult: MonteCarloResult;
   deflate: (value: number, year: number) => number;
-  baseYear: number;
   coastFireAge: number | null;
   peopleNames: string[];
   generatedAt: Date;
@@ -57,7 +55,6 @@ export function ReportRoot({
 }) {
   const narrative = buildReportNarrative(projectionResult, mcResult, {
     deflate,
-    baseYear,
     coastFireAge,
     bracketOptimizerResult,
   });
@@ -73,7 +70,6 @@ export function ReportRoot({
       <ReportRiskAnalysisSection
         narrative={narrative.risk}
         bandPoints={narrative.riskBandPoints}
-        deflate={deflate}
       />
       <ReportStrategyNarrativeSection strategy={narrative.withdrawalStrategy} />
       <ReportRiskWatchlistSection watchlist={narrative.watchlist} />

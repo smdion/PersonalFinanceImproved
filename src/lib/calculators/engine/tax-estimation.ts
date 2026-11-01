@@ -261,6 +261,30 @@ export function computeTaxableSS(
   return roundToCents(Math.max(0, taxable));
 }
 
+/**
+ * Taxable Social Security for a priced year: provisional income counts
+ * every other ordinary and capital-gains income in AGI — Traditional
+ * withdrawals, non-qualified Roth growth and realized brokerage gains (IRS
+ * Pub 915). One rule for the gross-up's trials and the real year. (A Roth
+ * conversion runs after pricing and isn't in it yet — see TODO.)
+ */
+export function taxableSSFor(
+  ssIncome: number,
+  priced: Pick<
+    ComputeTaxFromSlotsResult,
+    "totalTraditionalWithdrawal" | "rothTaxableGrowth" | "brokerageGainsPortion"
+  >,
+  filingStatus: FilingStatusType,
+): number {
+  return computeTaxableSS(
+    ssIncome,
+    priced.totalTraditionalWithdrawal +
+      priced.rothTaxableGrowth +
+      priced.brokerageGainsPortion,
+    filingStatus,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Tax cost from a completed set of withdrawal slots
 // ---------------------------------------------------------------------------
@@ -304,6 +328,10 @@ interface ComputeTaxFromSlotsInput {
    *  (every downstream consumer reads `taxCost` as income tax only).
    *  Omitted or undefined ⇒ the arithmetic reduces exactly to today's. */
   penaltyCost?: number;
+  /** The brokerage withdrawal's tax when the caller has re-priced it (the
+   *  post-conversion recompute in decumulation-year.ts, where a Roth
+   *  conversion raised the LTCG stacking base). Omitted: computed here. */
+  brokerageTaxCostOverride?: number;
   taxRates: {
     traditionalFallbackRate: number;
     roth: number;
@@ -343,6 +371,12 @@ interface ComputeTaxFromSlotsResult {
    *  it from taxCost, since that would require re-summing already-rounded
    *  components and risks a rounding mismatch. */
   brokerageTaxCost: number;
+  /** Tax on the taxable share of Social Security (subset of taxCost) —
+   *  the same average ordinary rate as the withdrawals, since it's part of
+   *  the same ordinary income. Owed whether or not anything is withdrawn,
+   *  so effective-rate-on-withdrawals readers leave it out
+   *  (`withdrawalTaxCost`). */
+  ssTaxCost: number;
   totalTraditionalWithdrawal: number;
   totalRothWithdrawal: number;
   hsaWithdrawal: number;
@@ -413,7 +447,18 @@ export function computeTaxFromSlots(
   let brokerageTaxCost = 0;
   let brokerageBasisPortion = 0;
   let brokerageGainsPortion = 0;
-  if (brokerageWithdrawal > 0 && balances.afterTax > 0) {
+  if (input.brokerageTaxCostOverride !== undefined) {
+    brokerageTaxCost = roundToCents(input.brokerageTaxCostOverride);
+    if (brokerageWithdrawal > 0 && balances.afterTax > 0) {
+      const basisRatio =
+        input.brokerageBasisRatio ??
+        Math.min(1, balances.afterTaxBasis / balances.afterTax);
+      brokerageBasisPortion = roundToCents(brokerageWithdrawal * basisRatio);
+      brokerageGainsPortion = roundToCents(
+        brokerageWithdrawal - brokerageBasisPortion,
+      );
+    }
+  } else if (brokerageWithdrawal > 0 && balances.afterTax > 0) {
     const basisRatio =
       input.brokerageBasisRatio ??
       Math.min(1, balances.afterTaxBasis / balances.afterTax);
@@ -442,12 +487,17 @@ export function computeTaxFromSlots(
       : roundToCents(brokerageGainsPortion * taxRates.brokerage);
   }
 
+  // Taxable Social Security is ordinary income too: the rate above is the
+  // average over all of it, so its share is owed at that rate. (With no
+  // brackets, the flat fallback rate — 0 in simple tax mode.)
+  const ssTaxCost = roundToCents(taxableSS * actualTraditionalRate);
   const taxCost = roundToCents(
     totalTraditionalWithdrawal * actualTraditionalRate +
       rothTaxableGrowth * actualTraditionalRate +
       rothTaxFreePortion * taxRates.roth +
       hsaWithdrawal * taxRates.hsa +
-      brokerageTaxCost,
+      brokerageTaxCost +
+      ssTaxCost,
   );
 
   return {
@@ -457,6 +507,7 @@ export function computeTaxFromSlots(
     brokerageBasisPortion,
     brokerageGainsPortion,
     brokerageTaxCost,
+    ssTaxCost,
     totalTraditionalWithdrawal,
     totalRothWithdrawal,
     hsaWithdrawal,

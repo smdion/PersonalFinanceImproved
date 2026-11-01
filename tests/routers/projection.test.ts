@@ -184,93 +184,6 @@ describe("projection router — updateClampBounds", () => {
 });
 
 // ---------------------------------------------------------------------------
-// updateInflationRisk
-// ---------------------------------------------------------------------------
-
-describe("projection router — updateInflationRisk", () => {
-  it("updates inflation risk for a named preset row", async () => {
-    const { caller: c, db, cleanup } = await createTestCaller();
-    try {
-      // Seed a default mc_preset row
-      db.insert(schema.mcPresets)
-        .values({
-          key: "default",
-          label: "Default",
-          description: "Default preset",
-          returnMultiplier: "1.0",
-          volMultiplier: "1.0",
-          inflationMean: "0.025",
-          inflationStdDev: "0.012",
-          defaultTrials: 1000,
-          returnClampMin: "-0.5",
-          returnClampMax: "1.0",
-          sortOrder: 0,
-          isActive: true,
-        })
-        .run();
-
-      const result = await c.projection.updateInflationRisk({
-        preset: "default",
-        inflationMean: 0.03,
-        inflationStdDev: 0.015,
-      });
-      expect(result.updated).toBe(true);
-    } finally {
-      cleanup();
-    }
-  });
-
-  it("accepts all four named preset keys", async () => {
-    for (const key of ["aggressive", "default", "conservative"] as const) {
-      const { caller: c, db, cleanup } = await createTestCaller();
-      try {
-        db.insert(schema.mcPresets)
-          .values({
-            key,
-            label: key,
-            description: `${key} preset`,
-            returnMultiplier: "1.0",
-            volMultiplier: "1.0",
-            inflationMean: "0.025",
-            inflationStdDev: "0.012",
-            defaultTrials: 1000,
-            returnClampMin: "-0.5",
-            returnClampMax: "1.0",
-            sortOrder: 0,
-            isActive: true,
-          })
-          .run();
-
-        const result = await c.projection.updateInflationRisk({
-          preset: key,
-          inflationMean: 0.03,
-          inflationStdDev: 0.015,
-        });
-        expect(result.updated).toBe(true);
-      } finally {
-        cleanup();
-      }
-    }
-  });
-
-  it("rejects an invalid preset key", async () => {
-    const { caller: c, cleanup } = await createTestCaller();
-    try {
-      await expect(
-        c.projection.updateInflationRisk({
-          // @ts-expect-error — testing invalid input
-          preset: "unknown_preset",
-          inflationMean: 0.03,
-          inflationStdDev: 0.015,
-        }),
-      ).rejects.toThrow();
-    } finally {
-      cleanup();
-    }
-  });
-});
-
-// ---------------------------------------------------------------------------
 // updateAssetClassOverrides
 // ---------------------------------------------------------------------------
 
@@ -345,7 +258,6 @@ describe("projection router — updateInflationOverrides", () => {
     const { caller: c, cleanup } = await createTestCaller();
     try {
       const result = await c.projection.updateInflationOverrides({
-        meanRate: 0.035,
         stdDev: 0.012,
       });
       expect(result.updated).toBe(true);
@@ -357,9 +269,8 @@ describe("projection router — updateInflationOverrides", () => {
   it("upserts — second call replaces first without error", async () => {
     const { caller: c, cleanup } = await createTestCaller();
     try {
-      await c.projection.updateInflationOverrides({ meanRate: 0.03 });
+      await c.projection.updateInflationOverrides({ stdDev: 0.01 });
       const result = await c.projection.updateInflationOverrides({
-        meanRate: 0.04,
         stdDev: 0.015,
       });
       expect(result.updated).toBe(true);
@@ -371,7 +282,7 @@ describe("projection router — updateInflationOverrides", () => {
   it("clears overrides when called with no fields", async () => {
     const { caller: c, cleanup } = await createTestCaller();
     try {
-      await c.projection.updateInflationOverrides({ meanRate: 0.03 });
+      await c.projection.updateInflationOverrides({ stdDev: 0.01 });
       // Empty object → isEmpty = true → deletes the row
       const result = await c.projection.updateInflationOverrides({});
       expect(result.updated).toBe(true);
@@ -380,13 +291,15 @@ describe("projection router — updateInflationOverrides", () => {
     }
   });
 
-  it("accepts meanRate-only override", async () => {
+  it("a mean is no longer an input — trials center on the plan's own rates", async () => {
     const { caller: c, cleanup } = await createTestCaller();
     try {
-      const result = await c.projection.updateInflationOverrides({
-        meanRate: 0.025,
-      });
-      expect(result.updated).toBe(true);
+      await expect(
+        c.projection.updateInflationOverrides({
+          // @ts-expect-error — the mean was removed in v0.9.5
+          meanRate: 0.025,
+        }),
+      ).resolves.toEqual({ updated: true });
     } finally {
       cleanup();
     }

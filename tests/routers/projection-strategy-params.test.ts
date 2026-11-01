@@ -47,6 +47,51 @@ const noOverrides = {
   rmdMultiplier: null,
 };
 
+describe("buildStrategyParams reads each param field's own column", () => {
+  it("every strategy's defaults with nothing stored, VPW included", () => {
+    const params = buildStrategyParams({});
+    for (const [key, meta] of Object.entries(WITHDRAWAL_STRATEGY_CONFIG)) {
+      if (meta.paramFields.length === 0) continue;
+      expect(params[key as keyof typeof params]).toEqual(meta.defaultParams);
+    }
+    expect(params.vpw).toMatchObject({
+      cap: 0.1,
+      endAge: 100,
+      stockReturn: 0.05,
+      bondReturn: 0.019,
+      ssInAmount: false,
+    });
+  });
+
+  it("stored columns win — numbers parsed, the Social Security switches as booleans", () => {
+    const params = buildStrategyParams({
+      cpWithdrawalPercent: "0.045",
+      cpSsInAmount: true,
+      vdSsInAmount: false,
+      vpwCap: "0.08",
+      vpwEndAge: 95,
+      vpwSsInAmount: null,
+    });
+    expect(params.constant_percentage).toMatchObject({
+      withdrawalPercent: 0.045,
+      ssInAmount: true,
+    });
+    expect(params.vanguard_dynamic!.ssInAmount).toBe(false);
+    expect(params.vpw).toMatchObject({
+      cap: 0.08,
+      endAge: 95,
+      ssInAmount: false,
+    });
+  });
+
+  it("every param field names a real retirement_settings column", async () => {
+    const { retirementSettings } = await import("@/lib/db/pg/retirement");
+    for (const meta of Object.values(WITHDRAWAL_STRATEGY_CONFIG))
+      for (const f of meta.paramFields)
+        expect(Object.keys(retirementSettings)).toContain(f.column);
+  });
+});
+
 describe("withdrawal-strategy defaults agree across layers", () => {
   const serverDefaults = buildStrategyParams(noOverrides);
 

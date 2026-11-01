@@ -1,11 +1,11 @@
 "use client";
 
 /** Monte Carlo results — loading spinner, errors, warnings, depletion callout, and compact summary bar. */
+import { strategySpending } from "@/lib/calculators/strategy-spending";
 import {
   dominantFailureReason,
   planFailurePhrase,
 } from "@/lib/calculators/plan-outcome";
-import { rowTotal } from "./utils";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -18,6 +18,8 @@ import {
   formatRelativeTime,
   maskAmountsInText,
 } from "@/lib/utils/format";
+import type { EngineDecumulationYear } from "@/lib/calculators/types";
+import { simulationDollars } from "@/lib/pure/simulation-dollars";
 import type { ProjectionState } from "./projection-table-types";
 
 /** Compact depletion callout (1-liner) shown when MC has a depletion age. */
@@ -26,16 +28,16 @@ export function McDepletionCallout({ state }: { state: ProjectionState }) {
   // implies engineSettings defined (see use-projection-derived.ts).
   if (!state.result) return null;
 
-  const { result, engineSettings, deflate, baseYear, mcQuery, mcLoading } =
-    state;
+  const { mcQuery, mcLoading, dollarMode } = state;
 
   if (!mcQuery.data?.result || mcLoading) return null;
   if (!mcQuery.data.result.distributions.failureAge) return null;
 
   const mc = mcQuery.data.result;
-  const terminalYear =
-    baseYear + (engineSettings.endAge - (result.projectionByYear[0]?.age ?? 0));
-  const tb = mc.distributions.terminalBalance;
+  // In the shown dollars — today's from the Simulation's per-trial deflation.
+  const tb = simulationDollars(mc, dollarMode).terminalBalance;
+  const dollarsLabel =
+    dollarMode === "nominal" ? "future dollars" : "today\u2019s dollars";
   const deplPct = Math.round((1 - mc.successRate) * 100);
   const isLowRisk = mc.successRate >= 0.9;
   // Named by the most common way failing futures fail (plan judge).
@@ -52,17 +54,17 @@ export function McDepletionCallout({ state }: { state: ProjectionState }) {
           : `In ${deplPct}% of futures, ${failurePhrase} around age ${Math.round(mc.distributions.failureAge!.median)}.`}
       </span>
       <span className={isLowRisk ? "text-muted" : "text-red-600"}>
-        Typical end balance: {formatCurrency(deflate(tb.median, terminalYear))}
+        Typical end balance: {formatCurrency(tb.median)}
       </span>
       <HelpTip
         maxWidth={400}
         lines={[
-          "Terminal balance distribution (today\u2019s dollars):",
-          `Bad luck (p10): ${formatCurrency(deflate(tb.p10, terminalYear))}`,
-          `Below avg (p25): ${formatCurrency(deflate(tb.p25, terminalYear))}`,
-          `Typical (p50): ${formatCurrency(deflate(tb.median, terminalYear))}`,
-          `Above avg (p75): ${formatCurrency(deflate(tb.p75, terminalYear))}`,
-          `Good luck (p90): ${formatCurrency(deflate(tb.p90, terminalYear))}`,
+          `Terminal balance distribution (${dollarsLabel}):`,
+          `Bad luck (p10): ${formatCurrency(tb.p10)}`,
+          `Below avg (p25): ${formatCurrency(tb.p25)}`,
+          `Typical (p50): ${formatCurrency(tb.median)}`,
+          `Above avg (p75): ${formatCurrency(tb.p75)}`,
+          `Good luck (p90): ${formatCurrency(tb.p90)}`,
           isLowRisk
             ? "Only a small fraction of simulated scenarios show depletion — this is within normal planning margins."
             : "A bad stretch of returns early in retirement can drain your portfolio before it recovers.",
@@ -157,16 +159,14 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
 
               // First decumulation year — the same year Guyton-Klinger's
               // anchor rate below is captured from, and also the source
-              // for the "starting income" tile: `projectedExpenses` is the
-              // ACTIVE strategy's own computed first-year spending (per
+              // for the "starting income" tile: `spending` is what the
+              // household spends that year under the ACTIVE strategy (per
               // coast-fire.ts's docblock — for every strategy but the 4
               // budget-continuation ones this is real, strategy-computed
               // math, not an echo of a flat rate setting), so this reflects
               // whatever withdrawal strategy/override is actually driving
               // the household's plan, not si.withdrawalRate.
-              let firstDecumYear:
-                NonNullable<typeof result>["projectionByYear"][number] | null =
-                null;
+              let firstDecumYear: EngineDecumulationYear | null = null;
               let priorAccumEnd: number | null = null;
               if (result) {
                 const years = result.projectionByYear;
@@ -174,17 +174,20 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                   const y = years[i]!;
                   if (y.phase === "decumulation") {
                     firstDecumYear = y;
-                    priorAccumEnd = i > 0 ? rowTotal(years[i - 1]!) : null;
+                    // The balance GK anchors on: retirement money carried
+                    // into the year (pre-year-setup's retirementBalance).
+                    priorAccumEnd =
+                      i > 0 ? years[i - 1]!.retirementBalance : null;
                     break;
                   }
                 }
               }
 
               // Guyton-Klinger's actual starting rate (not the flat
-              // "Initial Withdrawal Rate" setting) — that year's spending ÷
-              // the portfolio balance carried in from the last accumulation
-              // year. GK uses this number (not si.withdrawalRate) to decide
-              // every future raise/cut.
+              // "Initial Withdrawal Rate" setting) — what the portfolio pays
+              // that year (spending less Social Security) ÷ the retirement
+              // balance carried in. None while Social Security covers all of
+              // it (the engine anchors later).
               let gkImpliedRate: number | null = null;
               if (
                 si.withdrawalStrategy === "guyton_klinger" &&
@@ -192,8 +195,9 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                 priorAccumEnd != null &&
                 priorAccumEnd > 0
               ) {
-                gkImpliedRate =
-                  firstDecumYear.projectedExpenses / priorAccumEnd;
+                const draw =
+                  firstDecumYear.projectedExpenses - firstDecumYear.ssIncome;
+                gkImpliedRate = draw > 0 ? draw / priorAccumEnd : null;
               }
 
               const presetBar: Record<
@@ -316,7 +320,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                           {gkImpliedRate != null ? (
                             <HelpTip
                               maxWidth={260}
-                              text={`Your Retirement Budget doesn't set a rate directly — Guyton-Klinger captures ${formatPercent(gkImpliedRate, 2)} on your first retirement year (that year's spending ÷ your projected portfolio balance) and defends THIS rate with guardrails for the rest of retirement. It's not the "Initial Withdrawal Rate" setting (${formatPercent(si.withdrawalRate, 2)}) — that field is never read by any strategy, including this one.`}
+                              text={`Your Retirement Budget doesn't set a rate directly — Guyton-Klinger captures ${formatPercent(gkImpliedRate, 2)} on your first retirement year (what the portfolio pays that year — spending less Social Security — ÷ your projected portfolio balance) and defends THIS rate with guardrails for the rest of retirement. It's not the "Initial Withdrawal Rate" setting (${formatPercent(si.withdrawalRate, 2)}) — that field is never read by any strategy, including this one.`}
                             />
                           ) : (
                             <HelpTip
@@ -360,7 +364,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                           <div className="flex items-center justify-center gap-0.5 font-semibold tabular-nums">
                             {formatCurrency(
                               deflate(
-                                firstDecumYear.projectedExpenses,
+                                strategySpending(firstDecumYear),
                                 firstDecumYear.year,
                               ),
                             )}
@@ -385,10 +389,10 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                       )}
                       <div className="text-center">
                         <div className="flex items-center justify-center gap-0.5 font-semibold tabular-nums">
-                          {formatPercent(si.inflationRisk.meanRate, 2)}
+                          {formatPercent(si.inflationRate, 2)}
                           <HelpTip
                             maxWidth={280}
-                            text={`Average assumed inflation rate, randomized per year within each trial (±${formatPercent(si.inflationRisk.stdDev, 2)} standard deviation) rather than held flat — some years run hotter, some cooler, same as real inflation history. This is the same input for every strategy, but strategies react to it differently: a fixed-dollar strategy raises spending with inflation every year regardless, while a guardrail strategy like "Forgo Inflation After Loss" can skip that year's raise after a bad market year specifically to protect the portfolio.`}
+                            text={`Your inflation rate, varied in each trial (±${formatPercent(si.inflationRisk.stdDev, 2)} standard deviation a year) — and your post-retirement raise (${formatPercent(si.postRetirementInflationRate, 2)}) moves with it, keeping your gap between the two. The engine runs each trial at that trial's average, so a trial runs a little hotter or cooler throughout rather than swinging year to year. Today's dollars use each trial's own inflation. Strategies react differently: a fixed-dollar strategy raises spending with inflation every year regardless, while a guardrail strategy like "Forgo Inflation After Loss" can skip that year's raise after a bad market year.`}
                           />
                         </div>
                         <div className="text-micro text-faint">inflation</div>

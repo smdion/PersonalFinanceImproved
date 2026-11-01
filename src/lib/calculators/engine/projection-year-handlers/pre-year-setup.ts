@@ -3,6 +3,7 @@
  * decumulation branch. Computes return rate, applies profile switches,
  * projects salary and expenses, dispatches the spending strategy.
  */
+import { socialSecurityForYear } from "../social-security-income";
 import { ageInYear } from "../../../utils/date";
 import { roundToCents } from "../../../utils/math";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
@@ -121,8 +122,13 @@ export function runPreYearSetup(
             pid,
             Math.max(0, yearOverrides.get(pid)!),
           );
-        } else if (yearIndex > 0 && salaryGrowthRate > 0) {
-          let newSal = prevSal * (1 + salaryGrowthRate);
+          continue;
+        }
+        // This person's own raise; the household rate when none is given.
+        const personGrowthRate =
+          input.salaryGrowthRateByPerson?.[pid] ?? salaryGrowthRate;
+        if (yearIndex > 0 && personGrowthRate > 0) {
+          let newSal = prevSal * (1 + personGrowthRate);
           if (input.salaryCap !== null)
             newSal = Math.min(newSal, input.salaryCap);
           state.projectedSalaryByPerson.set(pid, newSal);
@@ -354,8 +360,16 @@ export function runPreYearSetup(
 
   // --- Spending Strategy Dispatch ---
   let strategyAction: string | null = null;
+  state.portfolioWithdrawal = null;
 
   if (!isAccumulation && activeStrategy !== "fixed") {
+    const { ssIncome, ssIncomeToday, ssGrowthFactor } = socialSecurityForYear(
+      input,
+      year,
+      age,
+      ctx.inflationRate,
+    );
+    const ssForStrategy = { ssIncome, ssIncomeToday, ssGrowthFactor };
     // Use primary person's actual age for RMD factor lookup (not household average)
     const primaryAge =
       input.birthYear != null ? ageInYear(input.birthYear, year) : undefined;
@@ -368,9 +382,23 @@ export function runPreYearSetup(
       yearIndex,
       age,
       primaryPersonAge: primaryAge,
+      // A couple's VPW uses the younger spouse's age.
+      youngestAge:
+        input.perPersonBirthYears && input.perPersonBirthYears.length > 0
+          ? ageInYear(Math.max(...input.perPersonBirthYears), year)
+          : undefined,
+      stockShare: input.stockShareByAge?.[Math.round(age)],
+      ...ssForStrategy,
       crossYearState: state.spendingState,
     });
     state.projectedExpenses = result.projectedExpenses;
+    // A portfolio-sized amount is the gross withdrawal (Social Security on
+    // top) unless the household says Social Security comes out of it.
+    if (
+      result.amountKind === "portfolio_withdrawal" &&
+      activeStrategyParams.ssInAmount !== true
+    )
+      state.portfolioWithdrawal = result.projectedExpenses;
     strategyAction = result.action;
     Object.assign(state.spendingState, result.updatedState);
   }

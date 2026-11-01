@@ -4,6 +4,8 @@
  * transaction-level detail): live balance and link status, what it holds,
  * and whether deposits match the paycheck setup.
  */
+import { changeSinceSnapshot } from "@/lib/pure/current-balances";
+import { loadCurrentBalances } from "./load-current-balances";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { addDays, utcDayOf } from "@/lib/utils/date";
@@ -81,10 +83,14 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
     // Since the snapshot needs transactions back to it, not just the window.
     const loadFrom =
       snapshotDate !== null && snapshotDate < since ? snapshotDate : since;
-    const [rows, valued] = await Promise.all([
+    const [rows, valued, current] = await Promise.all([
       loadClassifiedTransactions(ctx.db, { since: loadFrom }),
       valueHoldings(ctx.db, holdings),
+      loadCurrentBalances(ctx.db),
     ]);
+    const behindFeeds = new Set(
+      current.feeds.filter((f) => f.behindSnapshot).map((f) => f.id),
+    );
     const perfById = new Map(perfRows.map((p) => [p.id, p]));
     const perfIds = new Set([
       ...feeds.map((f) => f.performanceAccountId),
@@ -111,6 +117,7 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
           (u) => u.performanceAccountId === performanceAccountId,
         ),
         snapshotDate,
+        behindSnapshot: [...ids].some((id) => behindFeeds.has(id)),
         snapshotCovered:
           snapshotDate !== null &&
           coverage !== null &&
@@ -146,8 +153,15 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
       ctx.db,
     );
     if (!snapshotDate || feeds.length === 0)
-      return { snapshotDate, points: [] };
-    const history = await loadBalanceHistory(ctx.db);
+      return { snapshotDate, points: [], estimate: null };
+    const [history, current] = await Promise.all([
+      loadBalanceHistory(ctx.db),
+      loadCurrentBalances(ctx.db),
+    ]);
+    // A feed behind the snapshot shows lag, not money that moved.
+    const behind = new Set(
+      current.feeds.filter((f) => f.behindSnapshot).map((f) => f.id),
+    );
     const historyOf = (f: (typeof feeds)[number]) => {
       const rows: [string, number][] = (history.get(f.id) ?? []).map((h) => [
         h.day,
@@ -160,6 +174,7 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
       .map((id) => {
         const mine = feeds.filter((f) => f.performanceAccountId === id);
         const parts = subs.filter((s) => s.performanceAccountId === id);
+        if (mine.some((f) => behind.has(f.id))) return null;
         if (
           !liveCoversAccount(
             parts.map((p) => p.key),
@@ -183,6 +198,18 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
       points: dailyEstimates(days, 0, accounts)
         .filter((p) => p.accounts > 0)
         .map((p) => ({ date: p.date, change: p.total, accounts: p.accounts })),
+      // Today's best figure: each account's newest balance, moved to the
+      // latest close where its holdings are priced.
+      estimate: {
+        change: changeSinceSnapshot(current.balances),
+        accounts: new Set(
+          current.balances
+            .filter((b) => !b.noSnapshot)
+            .map((b) => b.performanceAccountId),
+        ).size,
+        estimatedTo: current.summary.estimatedTo,
+        estimateIsPartial: current.summary.estimateIsPartial,
+      },
     };
   }),
 });

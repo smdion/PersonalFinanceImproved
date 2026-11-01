@@ -14,6 +14,7 @@ import type { ProjectionState } from "./projection-table-types";
 import type { AccumOverride, DecumOverride } from "./types";
 import { catDisplayLabel } from "./utils";
 import { LumpSumForm } from "./lump-sum-form";
+import { investedAtStartOf } from "@/lib/pure/goldilocks";
 
 type OverridesPanelV2Props = {
   state: ProjectionState;
@@ -330,6 +331,9 @@ export function OverridesPanelV2({
           <div className="space-y-2">
             <LumpSumForm
               accounts={state.individualAccountNames ?? []}
+              investedAtStartOf={(year) =>
+                investedAtStartOf(state.result?.projectionByYear ?? [], year)
+              }
               onAdd={(ls) => {
                 const lumpEntry = {
                   id: ls.id,

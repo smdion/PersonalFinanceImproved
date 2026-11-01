@@ -82,6 +82,7 @@ export function useRecommendations(): ReturnType<typeof useMilestones> & {
     ...recommendationsFromCash({
       ...cash,
       underTarget: classesUnderTarget(milestones.input?.holdings ?? null),
+      investedAssets: investedNow(milestones.input?.years),
     }),
     ...recommendationsFromFunds(cash),
   ]);
@@ -99,4 +100,14 @@ export function useRecommendations(): ReturnType<typeof useMilestones> & {
     recommendations: shown,
     dismissed,
   };
+}
+
+/** The household's invested money now: the current year's liquid
+ *  investments less its cash. */
+function investedNow(
+  years:
+    readonly { isCurrent: boolean; liquid: number; cash: number }[] | undefined,
+): number | undefined {
+  const now = years?.find((y) => y.isCurrent);
+  return now ? now.liquid - now.cash : undefined;
 }

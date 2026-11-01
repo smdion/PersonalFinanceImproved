@@ -14,6 +14,7 @@ import {
   max,
   sql,
 } from "drizzle-orm";
+import { newestReportPerDay } from "@/lib/pure/simplefin-holdings";
 import * as schema from "@/lib/db/schema";
 import { isHsaCategory } from "@/lib/config/account-types";
 import { addDays, utcDayOf } from "@/lib/utils/date";
@@ -95,7 +96,13 @@ export const countedFeed = and(
 );
 
 /** A counted SimpleFIN feed: its link, balance, and the day the balance is from. */
-type ContextFeed = FeedAccount & { balanceDay: string | null };
+type ContextFeed = FeedAccount & {
+  balanceDay: string | null;
+  /** The institution's as-of time for the balance; null when not reported. */
+  reportedAt: Date | null;
+  /** When Ledgr last saw the account (standing in for a missing as-of). */
+  lastSeenAt: Date;
+};
 
 /** What every investments view starts from — loaded once, in one place. */
 type FeedContext = {
@@ -120,6 +127,7 @@ export async function loadFeedContext(db: Db): Promise<FeedContext> {
         subKey: f.linkedSubKey,
         balance: f.lastBalance,
         balanceDate: f.lastBalanceDate,
+        lastSeenAt: f.lastSeenAt,
       })
       .from(f)
       .where(countedFeed),
@@ -144,6 +152,8 @@ export async function loadFeedContext(db: Db): Promise<FeedContext> {
       : null,
     balance: toNumber(r.balance),
     balanceDay: r.balanceDate ? utcDayOf(r.balanceDate) : null,
+    reportedAt: r.balanceDate,
+    lastSeenAt: r.lastSeenAt,
   }));
   const { unplaced } = suggestSnapshotAmounts(
     subs,
@@ -444,6 +454,7 @@ export async function loadLatestHoldings(db: Db) {
       simplefinAccountId: h.simplefinAccountId,
       securityId: h.securityId,
       asOf: h.asOf,
+      balanceDate: h.balanceDate,
       shares: h.shares,
       reportedMarketValue: h.reportedMarketValue,
       avgCostPerShare: h.avgCostPerShare,
@@ -453,7 +464,8 @@ export async function loadLatestHoldings(db: Db) {
       kind: s.kind,
     })
     .from(h)
-    .innerJoin(s, eq(s.id, h.securityId));
+    .innerJoin(s, eq(s.id, h.securityId))
+    .then(newestReportPerDay);
   const accountLatestDay = new Map<number, string>();
   for (const r of rows) {
     if (r.simplefinAccountId === null) continue; // manual rows come later
@@ -497,6 +509,7 @@ export async function loadDailyPositions(
       simplefinAccountId: h.simplefinAccountId,
       securityId: h.securityId,
       asOf: h.asOf,
+      balanceDate: h.balanceDate,
       shares: h.shares,
       value: h.reportedMarketValue,
     })
@@ -506,7 +519,8 @@ export async function loadDailyPositions(
         sql`${h.simplefinAccountId} IS NOT NULL`,
         since !== undefined ? gte(h.asOf, since) : undefined,
       ),
-    );
+    )
+    .then(newestReportPerDay);
   const positions: DailyPosition[] = [];
   const latest = new Map<number, string>();
   for (const r of rows) {

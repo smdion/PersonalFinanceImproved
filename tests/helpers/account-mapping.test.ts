@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
 import {
+  isPullOnlyLocalId,
+  allowedDirectionsForLocalId,
+  allowedDirectionsForMapping,
+  localTargetsPulledTwice,
   mappingWithTypedIds,
   mappingsWithTypedIds,
+  remotesPulledTwice,
 } from "@/lib/utils/account-mapping";
 import type { AccountMapping } from "@/lib/db/schema";
 
@@ -178,5 +183,77 @@ describe("mappingsWithTypedIds", () => {
     const result = mappingsWithTypedIds(input);
     expect(result[0]!.performanceAccountId).toBe(1);
     expect(result[1]!.assetId).toBe(2);
+  });
+});
+
+describe("debt mappings", () => {
+  const m = (
+    localId: string,
+    remoteAccountId: string,
+    syncDirection: "pull" | "push" | "both" = "pull",
+  ) => ({ localId, localName: localId, remoteAccountId, syncDirection });
+
+  it("derives debtId from debt:{id}", () => {
+    expect(mappingWithTypedIds(m("debt:7", "r1")).debtId).toBe(7);
+    expect(mappingWithTypedIds(m("debt:x", "r1")).debtId).toBeUndefined();
+  });
+
+  it("debts, cash and credit card only pull", () => {
+    expect(isPullOnlyLocalId("debt:7")).toBe(true);
+    expect(isPullOnlyLocalId("cash")).toBe(true);
+    expect(isPullOnlyLocalId("creditCard")).toBe(true);
+    expect(isPullOnlyLocalId("asset:1")).toBe(false);
+  });
+
+  it("each target allows only its own directions", () => {
+    expect(allowedDirectionsForLocalId("performance:3")).toEqual(["push"]);
+    expect(allowedDirectionsForLocalId("debt:7")).toEqual(["pull"]);
+    expect(allowedDirectionsForLocalId("cash")).toEqual(["pull"]);
+    expect(allowedDirectionsForLocalId("asset:1")).toEqual([
+      "pull",
+      "push",
+      "both",
+    ]);
+    // Legacy plain-name mapping: a real asset mapping, any direction.
+    expect(allowedDirectionsForLocalId("Savings Bond")).toHaveLength(3);
+    // The typed field counts even when the localId breadcrumb is missing.
+    expect(
+      allowedDirectionsForMapping({
+        localName: "Roth IRA",
+        remoteAccountId: "r1",
+        syncDirection: "pull",
+        performanceAccountId: 3,
+      }),
+    ).toEqual(["push"]);
+  });
+
+  it("a budget account pulled into two places is reported once; pushes don't count", () => {
+    expect(
+      remotesPulledTwice([
+        m("creditCard", "r1"),
+        m("debt:7", "r1", "both"),
+        m("debt:8", "r1"),
+        m("performance:1", "r2", "push"),
+        m("performance:2", "r2", "push"),
+        m("cash", "r3"),
+      ]),
+    ).toEqual(["r1"]);
+  });
+
+  it("a Ledgr row pulled from two budget accounts is reported once; Cash and Credit Card sum by design", () => {
+    expect(
+      localTargetsPulledTwice([
+        m("debt:5", "r1"),
+        m("debt:5", "r2", "both"),
+        m("debt:5", "r3", "push"),
+        m("mortgage:3:loanBalance", "r4"),
+        m("mortgage:3:propertyValue", "r5"),
+        m("asset:2", "r6"),
+        m("cash", "r7"),
+        m("cash", "r8"),
+        m("creditCard", "r9"),
+        m("creditCard", "r10"),
+      ]),
+    ).toEqual(["debt:5"]);
   });
 });

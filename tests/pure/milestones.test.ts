@@ -632,7 +632,7 @@ describe("investing (Bogleheads)", () => {
     expect(r.nextStep).toBe(
       "Rebalance about $100k: sell Stocks; buy $60k Bonds and $40k TIPS",
     );
-    expect(r.impact).toEqual({ kind: "oneTime", amount: 100_000 });
+    expect(r.impact?.amount).toBeCloseTo(100_000, 2);
     // The same mix in a $50k household scales with it.
     const small = byId(
       holdings(
@@ -670,6 +670,26 @@ describe("investing (Bogleheads)", () => {
     expect(r.nextStep).toBe(
       "Rebalance about $100k: sell Stocks; buy $56k Bonds and $40k TIPS",
     );
+  });
+
+  it("one amount for the move: buys larger than sells set it, and it matches the impact", () => {
+    // Cash under the minimum move is left out of the sells: sells $96k,
+    // buys $100k.
+    const r = byId(
+      holdings(
+        [
+          { name: "Stocks", share: 0.696, targetShare: 0.6 },
+          { name: "Bonds", share: 0.2, targetShare: 0.3 },
+          { name: "Cash", share: 0.104, targetShare: 0.1 },
+        ],
+        { knownValue: 1_000_000 },
+      ),
+      "rebalance",
+    );
+    expect(r.nextStep).toBe(
+      "Rebalance about $100k: sell Stocks; buy $100k Bonds",
+    );
+    expect(r.impact?.amount).toBeCloseTo(100_000, 2);
   });
 
   it("lists several classes as a sentence", () => {
@@ -1899,6 +1919,8 @@ describe("FOO steps 3 and 9 with the debts list", () => {
       impact: { kind: "perYear", amount: 550 },
     });
     expect(student(33).nextStep).toMatch(/Nelnet \(5\.5%\)/);
+    // The amount is in the text itself.
+    expect(student(33).nextStep).toMatch(/about \$550 a year in interest$/);
   });
 
   it("a card on the list is a balance carried at any rate; mapped cards aren't judged", () => {
@@ -2040,5 +2062,236 @@ describe("FOO steps 3 and 9 with the debts list", () => {
       status: "unknown",
       headline: "Mortgage and other debt in progress",
     });
+  });
+});
+
+describe("save your raises (60/40)", () => {
+  const raise = (year: number, share: number, estimated = false) => ({
+    year,
+    raise: 10_000,
+    savingChange: share * 10_000,
+    share,
+    estimated,
+  });
+
+  it("judged on the latest raise, with every raise counted in the note", () => {
+    const r = byId(
+      run({ raises: [raise(2023, 0.8), raise(2024, 0.6)] }),
+      "saveRaises",
+    );
+    expect(r.status).toBe("reached");
+    expect(r.reachedYear).toBe(2024);
+    expect(r.headline).toBe("Saved 60% of the 2024 raise");
+    expect(r.note).toBe("2 of 2 raises at 60% or more");
+    expect(r.impact).toBeNull();
+  });
+
+  it("behind: the yearly amount that closes the gap", () => {
+    const r = byId(run({ raises: [raise(2024, 0.2, true)] }), "saveRaises");
+    expect(r.status).toBe("behind");
+    expect(r.nextStep).toBe(
+      "Contribute $4,000 more a year to save 60% of the 2024 raise",
+    );
+    expect(r.impact).toEqual({ kind: "perYear", amount: 4_000 });
+    expect(r.note).toContain("contributions still estimated");
+  });
+
+  it("saving less after a raise says how much less", () => {
+    const r = byId(run({ raises: [raise(2024, -0.5)] }), "saveRaises");
+    expect(r.headline).toBe("Saved $5,000 less after the 2024 raise");
+    expect(r.progress).toBe(0);
+  });
+
+  it("not judged without history or without a raise", () => {
+    expect(byId(run({ raises: null }), "saveRaises").status).toBe("unknown");
+    expect(byId(run({ raises: [] }), "saveRaises").headline).toBe(
+      "No raise to judge yet",
+    );
+  });
+});
+
+describe("Always Be Buying", () => {
+  const months = (states: ("invested" | "notInvested" | "unknown")[]) =>
+    states.map((state, i) => ({
+      month: `2026-${String(i + 1).padStart(2, "0")}`,
+      state,
+    }));
+  const down = (year: number, heldUp: boolean) => ({
+    year,
+    gain: -10_000,
+    contributed: heldUp ? 20_000 : 10_000,
+    prior: 20_000,
+    heldUp,
+  });
+
+  it("reached: every covered month bought and the latest losing year held up", () => {
+    const r = byId(
+      run({
+        buying: {
+          months: months(["invested", "unknown", "invested"]),
+          downYears: [down(2022, true)],
+        },
+      }),
+      "alwaysBuying",
+    );
+    expect(r.status).toBe("reached");
+    expect(r.headline).toBe(
+      "Bought every month of the last 2 · kept buying through 2022's loss",
+    );
+    expect(r.note).toBe("1 of 1 losing year held up");
+  });
+
+  it("a covered month without a deposit is behind", () => {
+    const r = byId(
+      run({
+        buying: { months: months(["invested", "notInvested"]), downYears: [] },
+      }),
+      "alwaysBuying",
+    );
+    expect(r.status).toBe("behind");
+    expect(r.headline).toBe("1 of the last 2 months without a deposit");
+    expect(r.nextStep).toContain("automatic investment every month");
+  });
+
+  it("contributions that dropped in the latest losing year are behind", () => {
+    const r = byId(
+      run({
+        buying: {
+          months: null,
+          downYears: [down(2020, true), down(2022, false)],
+        },
+      }),
+      "alwaysBuying",
+    );
+    expect(r.status).toBe("behind");
+    expect(r.headline).toBe(
+      "Contributed 50% of the year before in 2022, a losing year",
+    );
+    expect(r.note).toBe("1 of 2 losing years held up");
+  });
+
+  it("not judged with nothing to go on", () => {
+    expect(
+      byId(run({ buying: { months: [], downYears: [] } }), "alwaysBuying")
+        .status,
+    ).toBe("unknown");
+  });
+});
+
+describe("borrowing: 20/3/8 and student loans", () => {
+  const borrowing = (
+    over: Partial<NonNullable<MilestoneInput["borrowing"]>> = {},
+  ) => ({ carLoans: [], studentLoans: [], jointStudentLoans: 0, ...over });
+  const car = {
+    name: "Car",
+    purchasePrice: 30_000,
+    originalAmount: 24_000,
+    termMonths: 36,
+    monthlyPayment: 600,
+  };
+
+  it("no car loan passes; one within 20/3/8 passes with its payment share", () => {
+    expect(byId(run({ borrowing: borrowing() }), "carRule").headline).toBe(
+      "No car loan",
+    );
+    const r = byId(
+      run({
+        borrowing: borrowing({ carLoans: [car] }),
+        savings: makeSavings({ compensation: 120_000 }),
+      }),
+      "carRule",
+    );
+    expect(r.status).toBe("reached");
+    expect(r.headline).toBe("Within 20/3/8 — car payments 6.0% of gross pay");
+  });
+
+  it("a long term and a heavy payment are behind, each named", () => {
+    const r = byId(
+      run({
+        borrowing: borrowing({
+          carLoans: [{ ...car, termMonths: 72, monthlyPayment: 1_200 }],
+        }),
+        savings: makeSavings({ compensation: 120_000 }),
+      }),
+      "carRule",
+    );
+    expect(r.status).toBe("behind");
+    expect(r.headline).toBe("Car: 72-month term (36 or fewer)");
+    expect(r.note).toBe("Car payments are 12.0% of gross pay (8% or less)");
+  });
+
+  it("missing details aren't judged", () => {
+    const r = byId(
+      run({
+        borrowing: borrowing({ carLoans: [{ ...car, purchasePrice: null }] }),
+        savings: makeSavings({ compensation: 120_000 }),
+      }),
+      "carRule",
+    );
+    expect(r.status).toBe("unknown");
+  });
+
+  it("student loans over the first full year's pay are behind; under it reached", () => {
+    const loan = (total: number) => ({
+      owner: "Alex",
+      totalOriginal: total,
+      loanYear: 2010,
+      firstSalary: { year: 2015, salary: 52_000 },
+    });
+    const over = byId(
+      run({ borrowing: borrowing({ studentLoans: [loan(80_000)] }) }),
+      "studentLoans",
+    );
+    expect(over.status).toBe("behind");
+    expect(over.headline).toBe(
+      "Alex borrowed $80,000 against $52,000 earned in 2015",
+    );
+    expect(
+      byId(
+        run({ borrowing: borrowing({ studentLoans: [loan(30_000)] }) }),
+        "studentLoans",
+      ).status,
+    ).toBe("reached");
+  });
+
+  it("student loans without an amount or a salary say what's missing", () => {
+    const r = byId(
+      run({
+        borrowing: borrowing({
+          studentLoans: [
+            {
+              owner: "Alex",
+              totalOriginal: null,
+              loanYear: 2010,
+              firstSalary: null,
+            },
+          ],
+        }),
+      }),
+      "studentLoans",
+    );
+    expect(r.status).toBe("unknown");
+    expect(r.headline).toBe("Alex: add each loan's original amount");
+  });
+
+  it("a loan with no owner is still said when someone else's loans are judged", () => {
+    const r = byId(
+      run({
+        borrowing: borrowing({
+          studentLoans: [
+            {
+              owner: "Alex",
+              totalOriginal: 30_000,
+              loanYear: 2010,
+              firstSalary: { year: 2015, salary: 52_000 },
+            },
+          ],
+          jointStudentLoans: 1,
+        }),
+      }),
+      "studentLoans",
+    );
+    expect(r.status).toBe("reached");
+    expect(r.note).toBe("Give each student loan an owner to judge it");
   });
 });

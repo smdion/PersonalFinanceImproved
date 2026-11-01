@@ -18,6 +18,63 @@ const accounts = [
 ];
 
 describe("LumpSumForm", () => {
+  describe("Goldilocks tip (money coming in)", () => {
+    const invested = () => 400_000;
+    const typeAmount = (v: string) =>
+      fireEvent.change(screen.getByPlaceholderText("$50,000"), {
+        target: { value: v },
+      });
+
+    it("over 10% of what's invested: spread it over months", () => {
+      render(
+        <LumpSumForm
+          accounts={accounts}
+          onAdd={vi.fn()}
+          investedAtStartOf={invested}
+        />,
+      );
+      typeAmount("100000"); // 25% → 5 + 3 steps = 8 months
+      expect(
+        screen.getByText(/About 25% of what you'll have/),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/spread it over 8 months/)).toBeInTheDocument();
+    });
+
+    it("under 10%: invest it at once", () => {
+      render(
+        <LumpSumForm
+          accounts={accounts}
+          onAdd={vi.fn()}
+          investedAtStartOf={invested}
+        />,
+      );
+      typeAmount("20000");
+      expect(
+        screen.getByText(/under 10%, invest it at once/),
+      ).toBeInTheDocument();
+    });
+
+    it("no tip for a withdrawal, or without the projection", () => {
+      const { unmount } = render(
+        <LumpSumForm
+          accounts={accounts}
+          onAdd={vi.fn()}
+          allowWithdrawals
+          investedAtStartOf={invested}
+        />,
+      );
+      fireEvent.change(screen.getByDisplayValue("Inject"), {
+        target: { value: "out" },
+      });
+      typeAmount("100000");
+      expect(screen.queryByText(/Goldilocks/)).toBeNull();
+      unmount();
+      render(<LumpSumForm accounts={accounts} onAdd={vi.fn()} />);
+      typeAmount("100000");
+      expect(screen.queryByText(/Goldilocks/)).toBeNull();
+    });
+  });
+
   it("renders without crashing with typical accounts", () => {
     render(<LumpSumForm accounts={accounts} onAdd={vi.fn()} />);
     expect(screen.getByText("Amount")).toBeInTheDocument();

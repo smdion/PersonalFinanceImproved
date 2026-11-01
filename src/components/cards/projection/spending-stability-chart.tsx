@@ -1,5 +1,6 @@
 "use client";
 
+import { strategySpending } from "@/lib/calculators/strategy-spending";
 import { useEffect, useRef } from "react";
 
 /** Yearly Income Stability chart — shows withdrawal as % of baseline over
@@ -164,7 +165,11 @@ export function SpendingStabilityChart({
       // results) already does, so this chart stops silently showing
       // nominal/future dollars while the rest of the page respects the
       // Today's $ / Future $ toggle.
-      const ratio = safeDivide(yr.totalWithdrawal, baseline, 0);
+      // Budget view: what the strategy has the household spend against the
+      // budget (the Simulation's budget band measures the same); strategy
+      // view: the withdrawal against the strategy's own baseline.
+      const measured = isStrategy ? yr.totalWithdrawal : strategySpending(yr);
+      const ratio = safeDivide(measured, baseline, 0);
 
       const band = mcBandMap?.get(yr.age);
 
@@ -173,7 +178,7 @@ export function SpendingStabilityChart({
       const datum: Record<string, number | undefined> = {
         age: yr.age,
         ratio: pct(ratio),
-        withdrawal: Math.round(deflate(yr.totalWithdrawal, yr.year)),
+        withdrawal: Math.round(deflate(measured, yr.year)),
         baseline: Math.round(deflate(baseline, yr.year)),
       };
 
@@ -338,7 +343,9 @@ export function SpendingStabilityChart({
                     </span>
                   </div>
                   <div className="flex justify-between gap-4">
-                    <span className="text-muted">Withdrawal:</span>
+                    <span className="text-muted">
+                      {isStrategy ? "Withdrawal:" : "Spending:"}
+                    </span>
                     <span>{formatCurrency(d.withdrawal ?? 0)}</span>
                   </div>
                   <div className="flex justify-between gap-4">

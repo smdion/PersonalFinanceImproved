@@ -3,10 +3,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { ProjectionInput } from "@/lib/calculators/types";
 import {
   buildAccumulationOrder,
-  computeStockPercentFromGlidePath,
   runStressTestScenarios,
-  type GlidePathRow,
-  type AssetClassRow,
 } from "@/server/routers/projection-v5-helpers";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
@@ -63,85 +60,62 @@ describe("buildAccumulationOrder (M1)", () => {
   });
 });
 
-describe("computeStockPercentFromGlidePath (M6)", () => {
-  // Pure function — takes plain rows, no db mock needed. This is the
-  // testable core of the M6 glide-path lookup; the db-bound wrapper
-  // (computeCurrentStockAllocationPercent) is a thin delegation that
-  // the integration path exercises in production.
-
-  it("returns null when no glide path is configured", () => {
-    expect(computeStockPercentFromGlidePath([], [], 35)).toBeNull();
-  });
-
-  it("returns null when asset classes have no stock/equity entries", () => {
-    const gp: GlidePathRow[] = [
-      { age: 30, assetClassId: 1, allocation: "1.0" },
-    ];
-    const classes: AssetClassRow[] = [{ id: 1, name: "US Bonds" }];
-    expect(computeStockPercentFromGlidePath(gp, classes, 35)).toBeNull();
-  });
-
-  it("sums equity allocations at the exact age when a glide path row matches", () => {
-    const gp: GlidePathRow[] = [
-      { age: 35, assetClassId: 1, allocation: "0.6" }, // US Equities
-      { age: 35, assetClassId: 2, allocation: "0.3" }, // International Equities
-      { age: 35, assetClassId: 3, allocation: "0.1" }, // Bonds
-    ];
-    const classes: AssetClassRow[] = [
-      { id: 1, name: "US Equities" },
-      { id: 2, name: "International Equities" },
-      { id: 3, name: "US Bonds" },
-    ];
-    // 0.6 + 0.3 = 0.9 → 90.0%
-    expect(computeStockPercentFromGlidePath(gp, classes, 35)).toBeCloseTo(
-      90.0,
-      1,
-    );
-  });
-
-  it("interpolates between two bracket ages when current age is in between", () => {
-    const gp: GlidePathRow[] = [
-      { age: 30, assetClassId: 1, allocation: "0.8" },
-      { age: 40, assetClassId: 1, allocation: "0.4" },
-      { age: 30, assetClassId: 2, allocation: "0.2" },
-      { age: 40, assetClassId: 2, allocation: "0.6" },
-    ];
-    const classes: AssetClassRow[] = [
-      { id: 1, name: "US Equities" },
-      { id: 2, name: "US Bonds" },
-    ];
-    // At age 35 (halfway), stock allocation should interpolate:
-    // US Equities: 0.8 + (0.4 - 0.8) * 0.5 = 0.6 → 60%
-    expect(computeStockPercentFromGlidePath(gp, classes, 35)).toBeCloseTo(
-      60.0,
-      1,
-    );
-  });
-
-  it("clamps to the earliest bracket for ages below the glide path start", () => {
-    const gp: GlidePathRow[] = [
-      { age: 40, assetClassId: 1, allocation: "0.7" },
-      { age: 50, assetClassId: 1, allocation: "0.5" },
-    ];
-    const classes: AssetClassRow[] = [{ id: 1, name: "US Equities" }];
-    expect(computeStockPercentFromGlidePath(gp, classes, 25)).toBeCloseTo(
-      70.0,
-      1,
-    );
-  });
-
-  it("clamps to the latest bracket for ages above the glide path end", () => {
-    const gp: GlidePathRow[] = [
-      { age: 40, assetClassId: 1, allocation: "0.7" },
-      { age: 50, assetClassId: 1, allocation: "0.5" },
-    ];
-    const classes: AssetClassRow[] = [{ id: 1, name: "US Equities" }];
-    expect(computeStockPercentFromGlidePath(gp, classes, 70)).toBeCloseTo(
-      50.0,
-      1,
-    );
+describe("computeCurrentStockAllocationPercent (M6)", () => {
+  // The glide path's stock share at an age — the same helper VPW sizes by
+  // (lib/pure/stock-share.ts, which has the interpolation cases).
+  it("the mapped stock share at the age; null without a glide path or mapping", async () => {
+    const { createTestCaller } = await import("./setup");
+    const { computeCurrentStockAllocationPercent } =
+      await import("@/server/routers/projection-v5-helpers");
+    const sqlite = await import("@/lib/db/schema-sqlite");
+    const { db, cleanup } = await createTestCaller();
+    try {
+      const empty = await computeCurrentStockAllocationPercent(db as never, 35);
+      // (A seeded glide path may exist; only assert once ours is set.)
+      expect(empty === null || typeof empty === "number").toBe(true);
+      db.delete(sqlite.glidePathAllocations).run();
+      expect(
+        await computeCurrentStockAllocationPercent(db as never, 35),
+      ).toBeNull();
+      const cls = (name: string) =>
+        db
+          .insert(sqlite.assetClassParams)
+          .values({ name, meanReturn: "0.07", stdDev: "0.15" })
+          .returning()
+          .get().id;
+      const stocks = cls("Example Stocks");
+      const bonds = cls("Example Bonds");
+      db.insert(sqlite.glidePathAllocations)
+        .values([
+          { age: 30, assetClassId: stocks, allocation: "0.8" },
+          { age: 30, assetClassId: bonds, allocation: "0.2" },
+          { age: 40, assetClassId: stocks, allocation: "0.4" },
+          { age: 40, assetClassId: bonds, allocation: "0.6" },
+        ])
+        .run();
+      db.delete(sqlite.assetClassBuckets).run();
+      // Nothing mapped: unknown, not "all bonds".
+      expect(
+        await computeCurrentStockAllocationPercent(db as never, 35),
+      ).toBeNull();
+      db.insert(sqlite.assetClassBuckets)
+        .values([
+          { bucket: "us_equity", assetClassId: stocks },
+          { bucket: "us_bond", assetClassId: bonds },
+        ])
+        .run();
+      expect(
+        await computeCurrentStockAllocationPercent(db as never, 35),
+      ).toBeCloseTo(60, 1);
+    } finally {
+      cleanup();
+    }
   });
 });
+
+type ProjectionInputArg = Parameters<
+  typeof runStressTestScenarios
+>[0]["baseEngineInput"];
 
 describe("runStressTestScenarios (M2)", () => {
   const AS_OF = new Date("2026-01-01");
@@ -263,6 +237,23 @@ describe("runStressTestScenarios (M2)", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("a scenario's salary growth applies to everyone, whatever each person's own rate", () => {
+    const twoEarners = {
+      ...makeBaseInput(),
+      salaryByPerson: { 1: 60000, 2: 40000 },
+      currentSalary: 100000,
+    };
+    const nestEggs = (input: ProjectionInputArg) =>
+      runStressTestScenarios({
+        baseEngineInput: input,
+        decumulationDefaults: makeDecumulationDefaults(),
+        avgRetirementAge: 65,
+      }).map((r) => r.nestEggAtRetirement);
+    expect(
+      nestEggs({ ...twoEarners, salaryGrowthRateByPerson: { 1: 0.09, 2: 0 } }),
+    ).toEqual(nestEggs(twoEarners));
   });
 
   it("returns one result per canonical scenario (conservative/baseline/optimistic)", () => {

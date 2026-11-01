@@ -64,6 +64,9 @@ export const SK_TAX_FILING_STATUS = "tax_filing_status";
 /** Dollars of HSA cash to keep uninvested; unset = the year's HDHP minimum deductible for the coverage. */
 export const SK_HSA_CASH_BUFFER = "hsa_cash_buffer";
 
+/** Simulation preset the Retirement page's Simulation and strategy comparison use; unset = Default. */
+export const SK_SIMULATION_PRESET = "simulation_preset";
+
 // ── Dashboard Cards ─────────────────────────────────────────────────
 export const SK_HIGH_INCOME_THRESHOLD = "high_income_threshold";
 export const SK_SAVINGS_RATE_THRESHOLDS = "savings_rate_thresholds";
@@ -78,6 +81,8 @@ export const SK_SAVINGS_RATE_INCLUDE_PORTFOLIO =
 export const SK_MILESTONE_CUSTOM_GOALS = "milestone_custom_goals";
 /** Ticked milestone checklist items (validated: milestoneChecklistSchema). */
 export const SK_MILESTONE_CHECKLIST = "milestone_checklist";
+/** When each milestone was first reached (lib/pure/milestone-first-reached.ts). */
+export const SK_MILESTONE_FIRST_REACHED = "milestone_first_reached";
 /** "moneyGuy" | "fidelity" — which income-multiple checkpoints to follow. */
 export const SK_MILESTONE_CHECKPOINT_SOURCE = "milestone_checkpoint_source";
 /** The household's own target mix by age for what it holds today —

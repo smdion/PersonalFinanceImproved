@@ -21,6 +21,8 @@ import {
   type SavingsTargetSource,
 } from "@/lib/config/milestones";
 import type { HouseholdSavings } from "@/lib/pure/contributions";
+import type { RaiseYear } from "@/lib/pure/raise-history";
+import type { BuyingMonth, DownYear } from "@/lib/pure/always-buying";
 import type { CompositionBucket, DebtKind } from "@/lib/config/enum-values";
 
 // ---------------------------------------------------------------------------
@@ -219,7 +221,7 @@ export type MilestoneInput = {
     savedWithMatch: number;
     compensation: number;
     matchCounted: boolean;
-    /** At or above the household's high-income threshold. */
+    /** At or above the household's high-income line. */
     highIncome: boolean;
     highIncomeThreshold: number;
     /** Both goal groups with the match rule applied, for the breakdown. */
@@ -278,7 +280,37 @@ export type MilestoneInput = {
       /** Held in an account whose funds the household picks (an IRA,
        *  a taxable account) — not only in fixed workplace/HSA menus. */
       switchable?: boolean;
+      /** Dollars in the fund across accounts; absent when unknown. */
+      value?: number;
     }[];
+  } | null;
+  /** Each judged raise, oldest first (lib/pure/raise-history.ts); null/
+   *  absent when there's no salary or finalized contribution history. */
+  raises?: RaiseYear[] | null;
+  /** Always Be Buying: SimpleFIN months (null when not linked or not
+   *  visible to this viewer) and the losing years on record. */
+  buying?: { months: BuyingMonth[] | null; downYears: DownYear[] } | null;
+  /** The borrowing rules' inputs (lib/pure/debt-rules.ts): open car
+   *  loans, and each person's student loans with the salary they're judged
+   *  against. Absent before it's loaded. */
+  borrowing?: {
+    carLoans: {
+      name: string;
+      purchasePrice: number | null;
+      originalAmount: number | null;
+      termMonths: number | null;
+      monthlyPayment: number | null;
+    }[];
+    studentLoans: {
+      owner: string;
+      /** Null when a loan has no original amount. */
+      totalOriginal: number | null;
+      /** The earliest loan's opened year (null: none has a date). */
+      loanYear: number | null;
+      firstSalary: { year: number; salary: number } | null;
+    }[];
+    /** Student loans with no single owner (not judged). */
+    jointStudentLoans: number;
   } | null;
   /** The Liabilities debts list; null/absent before it's loaded. */
   debts?: MilestoneDebt[] | null;
@@ -341,4 +373,7 @@ export type MilestoneResult = MilestoneDefinition & {
   /** The dollars closing the gap would move — set where the gap is already
    *  worked out, so Recommendations rank by it without re-deriving it. */
   impact: MilestoneImpact | null;
+  /** A yearly saving to show in retirement terms, when it isn't the
+   *  `impact` that ranks recommendations. */
+  yearlySaving?: number;
 };

@@ -125,6 +125,14 @@ export const VERSION_TABLES: VersionTableEntry[] = [
 /** All table names in insert order (tier 0 → 1 → 2 → 3). */
 export const VERSION_TABLE_NAMES = VERSION_TABLES.map((t) => t.name);
 
+/** Versioned, but never shown in a version preview: they hold credentials
+ *  (admin password hashes; the budget, SimpleFIN, Tiingo and SEC
+ *  connections' config). A restore still carries them. */
+export const VERSION_PREVIEW_WITHHELD_TABLES: readonly string[] = [
+  "local_admins",
+  "api_connections",
+];
+
 /** Excluded from versioning (audit/version tables + ephemeral caches). */
 export const EXCLUDED_TABLES = [
   "change_log",
@@ -134,5 +142,6 @@ export const EXCLUDED_TABLES = [
   "projection_cache", // derived-from-inputs cache; rebuilt on demand, never user data
   "sync_request_log", // outbound-request quota ledger; operational, pruned after 30 days
   "sec_filing_cache", // normalised SEC filings by accession; re-fetchable
+  "market_closes", // Tiingo daily closes; re-fetchable
   "tax_data_updates", // fetched community tax-data files + admin decisions; not household data
 ];

@@ -20,30 +20,36 @@ export function FooLadder({ results }: { results: MilestoneResult[] }) {
         Step zero is generosity. The Bogleheads&apos; investing order is much
         the same, and they stress it&apos;s a guide, not a rule.
       </p>
-      <ol className="grid grid-cols-3 gap-1.5 sm:grid-cols-9">
+      <ol className="grid grid-cols-3 gap-1.5 lg:grid-cols-5 xl:grid-cols-9">
         {steps.map((s, i) => {
           const isCurrent = current === i + 1;
           return (
             <li
               key={s.id}
               title={`${s.title}: ${s.headline}`}
-              className={`rounded border px-1.5 py-1 ${
+              className={`rounded border px-2 py-1.5 ${
                 isCurrent
-                  ? "border-blue-500 ring-1 ring-blue-500"
+                  ? "bg-surface-sunken border-blue-500 ring-1 ring-blue-500"
                   : "border-default"
               }`}
             >
-              <div className="flex items-center gap-1">
+              {/* Same three slots in every step, so the row lines up:
+                  step number, a two-line title, then the detail (never cut off). */}
+              <div className="text-caption text-muted flex items-center gap-1.5">
                 <StatusIcon status={s.status} />
-                <span className="text-micro text-faint">
+                <span className="sr-only">
                   {MILESTONE_STATUS_LABELS[s.status]}
                 </span>
-              </div>
-              <div className="text-primary text-xs leading-tight">
-                {s.title}
+                Step {i + 1}
               </div>
               <div
-                className={`text-micro mt-0.5 truncate ${STATUS_STYLE[s.status].icon}`}
+                className="text-primary mt-1 line-clamp-2 min-h-[2.5em] text-xs leading-tight font-medium"
+                title={s.title}
+              >
+                {s.title.replace(/^\d+\s*·\s*/, "")}
+              </div>
+              <div
+                className={`text-caption mt-0.5 min-h-[2.75em] leading-snug ${STATUS_STYLE[s.status].icon}`}
               >
                 {s.short}
               </div>

@@ -5,7 +5,8 @@
  * Supports injection (positive) and withdrawal (negative) with individual account targeting.
  */
 import { useState } from "react";
-import { formatCurrency } from "@/lib/utils/format";
+import { formatCurrency, formatPercent } from "@/lib/utils/format";
+import { goldilocksPlan } from "@/lib/pure/goldilocks";
 import type { AccountCategory } from "@/lib/calculators/types";
 import type { LumpSumEvent } from "./types";
 
@@ -34,6 +35,9 @@ type LumpSumFormProps = {
   allowWithdrawals?: boolean;
   /** Default year for the form. */
   defaultYear?: string;
+  /** What the projection has invested at the start of a year — sizes Money
+   *  Guy's Goldilocks tip for money coming in. Omitted = no tip. */
+  investedAtStartOf?: (year: number) => number | undefined;
 };
 
 export function LumpSumForm({
@@ -41,6 +45,7 @@ export function LumpSumForm({
   onAdd,
   allowWithdrawals = false,
   defaultYear,
+  investedAtStartOf,
 }: LumpSumFormProps) {
   const [form, setForm] = useState({
     year: defaultYear ?? String(new Date().getFullYear() + 1),
@@ -73,104 +78,123 @@ export function LumpSumForm({
     setForm((f) => ({ ...f, amount: "", label: "" }));
   };
 
+  const goldilocks =
+    form.direction === "in" && investedAtStartOf
+      ? goldilocksPlan(
+          parseFloat(form.amount),
+          investedAtStartOf(Number(form.year)) ?? 0,
+        )
+      : null;
+
   return (
-    <div
-      className={`grid items-end gap-2 text-sm ${
-        allowWithdrawals
-          ? "grid-cols-[80px_80px_1fr_1fr_1fr_auto]"
-          : "grid-cols-[80px_1fr_1fr_1fr_auto]"
-      }`}
-    >
-      <label className="block">
-        <span className="text-caption text-muted">Year</span>
-        <input
-          type="number"
-          value={form.year}
-          onChange={(e) => setForm((f) => ({ ...f, year: e.target.value }))}
-          className="border-strong mt-0.5 block w-full rounded border px-2 py-1 text-sm"
-        />
-      </label>
-      {allowWithdrawals && (
+    <div className="space-y-1">
+      <div
+        className={`grid items-end gap-2 text-sm ${
+          allowWithdrawals
+            ? "grid-cols-[80px_80px_1fr_1fr_1fr_auto]"
+            : "grid-cols-[80px_1fr_1fr_1fr_auto]"
+        }`}
+      >
         <label className="block">
-          <span className="text-caption text-muted">Type</span>
+          <span className="text-caption text-muted">Year</span>
+          <input
+            type="number"
+            value={form.year}
+            onChange={(e) => setForm((f) => ({ ...f, year: e.target.value }))}
+            className="border-strong mt-0.5 block w-full rounded border px-2 py-1 text-sm"
+          />
+        </label>
+        {allowWithdrawals && (
+          <label className="block">
+            <span className="text-caption text-muted">Type</span>
+            <select
+              value={form.direction}
+              onChange={(e) =>
+                setForm((f) => ({
+                  ...f,
+                  direction: e.target.value as "in" | "out",
+                }))
+              }
+              className="border-strong mt-0.5 block w-full rounded border px-2 py-1 text-sm"
+            >
+              <option value="in">Inject</option>
+              <option value="out">Withdraw</option>
+            </select>
+          </label>
+        )}
+        <label className="block">
+          <span className="text-caption text-muted">Amount</span>
+          <input
+            type="number"
+            min={0}
+            placeholder="$50,000"
+            value={form.amount}
+            onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+            className="border-strong mt-0.5 block w-full rounded border px-2 py-1 text-sm"
+          />
+        </label>
+        <label className="block">
+          <span className="text-caption text-muted">Account</span>
           <select
-            value={form.direction}
-            onChange={(e) =>
+            value={
+              accounts.some((a) => a.name === form.targetAccountName)
+                ? optionKey({
+                    name: form.targetAccountName,
+                    category: form.targetAccount,
+                    ownerName: form.targetOwnerName || undefined,
+                  })
+                : form.targetAccount
+            }
+            onChange={(e) => {
+              const val = e.target.value;
+              const acct = accounts.find((a) => optionKey(a) === val);
               setForm((f) => ({
                 ...f,
-                direction: e.target.value as "in" | "out",
-              }))
-            }
+                targetAccountName: acct ? acct.name : "",
+                targetOwnerName: acct?.ownerName ?? "",
+                targetAccount: acct
+                  ? (acct.category as AccountCategory)
+                  : (val as AccountCategory),
+              }));
+            }}
             className="border-strong mt-0.5 block w-full rounded border px-2 py-1 text-sm"
           >
-            <option value="in">Inject</option>
-            <option value="out">Withdraw</option>
+            {accounts.map((a) => (
+              <option key={optionKey(a)} value={optionKey(a)}>
+                {a.ownerName ? `${a.name} (${a.ownerName})` : a.name}
+              </option>
+            ))}
           </select>
         </label>
-      )}
-      <label className="block">
-        <span className="text-caption text-muted">Amount</span>
-        <input
-          type="number"
-          min={0}
-          placeholder="$50,000"
-          value={form.amount}
-          onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
-          className="border-strong mt-0.5 block w-full rounded border px-2 py-1 text-sm"
-        />
-      </label>
-      <label className="block">
-        <span className="text-caption text-muted">Account</span>
-        <select
-          value={
-            accounts.some((a) => a.name === form.targetAccountName)
-              ? optionKey({
-                  name: form.targetAccountName,
-                  category: form.targetAccount,
-                  ownerName: form.targetOwnerName || undefined,
-                })
-              : form.targetAccount
-          }
-          onChange={(e) => {
-            const val = e.target.value;
-            const acct = accounts.find((a) => optionKey(a) === val);
-            setForm((f) => ({
-              ...f,
-              targetAccountName: acct ? acct.name : "",
-              targetOwnerName: acct?.ownerName ?? "",
-              targetAccount: acct
-                ? (acct.category as AccountCategory)
-                : (val as AccountCategory),
-            }));
-          }}
-          className="border-strong mt-0.5 block w-full rounded border px-2 py-1 text-sm"
+        <label className="block">
+          <span className="text-caption text-muted">Label</span>
+          <input
+            type="text"
+            placeholder={
+              allowWithdrawals ? "Bonus / Down payment" : "Inheritance"
+            }
+            value={form.label}
+            onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
+            className="border-strong mt-0.5 block w-full rounded border px-2 py-1 text-sm"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          className="rounded bg-emerald-600 px-3 py-1.5 text-xs text-white hover:bg-emerald-700"
         >
-          {accounts.map((a) => (
-            <option key={optionKey(a)} value={optionKey(a)}>
-              {a.ownerName ? `${a.name} (${a.ownerName})` : a.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="block">
-        <span className="text-caption text-muted">Label</span>
-        <input
-          type="text"
-          placeholder={
-            allowWithdrawals ? "Bonus / Down payment" : "Inheritance"
-          }
-          value={form.label}
-          onChange={(e) => setForm((f) => ({ ...f, label: e.target.value }))}
-          className="border-strong mt-0.5 block w-full rounded border px-2 py-1 text-sm"
-        />
-      </label>
-      <button
-        type="button"
-        onClick={handleSubmit}
-        className="rounded bg-emerald-600 px-3 py-1.5 text-xs text-white hover:bg-emerald-700"
-      >
-        Add
-      </button>
+          Add
+        </button>
+      </div>
+      {goldilocks && (
+        <p className="text-caption text-muted">
+          About {formatPercent(goldilocks.share, 0)} of what you&apos;ll have
+          invested then.{" "}
+          {goldilocks.months === 0
+            ? "Money Guy's Goldilocks rule: under 10%, invest it at once."
+            : `Money Guy's Goldilocks rule: spread it over ${goldilocks.months} months.`}
+        </p>
+      )}
     </div>
   );
 }

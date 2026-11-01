@@ -717,9 +717,9 @@ describe("budget router — syncBudgetFromApi", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedStandardDataset(db);
-      await expect(
-        caller.budget.syncBudgetFromApi({ selectedColumn: 0 }),
-      ).rejects.toThrow("No budget API active");
+      await expect(caller.budget.syncBudgetFromApi()).rejects.toThrow(
+        "No budget API active",
+      );
     } finally {
       cleanup();
     }
@@ -734,9 +734,9 @@ describe("budget router — syncBudgetFromApi", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedStandardDataset(db);
-      await expect(
-        caller.budget.syncBudgetFromApi({ selectedColumn: 0 }),
-      ).rejects.toThrow("No cached month data");
+      await expect(caller.budget.syncBudgetFromApi()).rejects.toThrow(
+        "No cached month data",
+      );
     } finally {
       cleanup();
     }
@@ -774,9 +774,7 @@ describe("budget router — syncBudgetFromApi", () => {
         syncDirection: "pull",
       });
 
-      const result = await caller.budget.syncBudgetFromApi({
-        selectedColumn: 0,
-      });
+      const result = await caller.budget.syncBudgetFromApi();
       expect(result.updated).toBe(1);
 
       // Verify amount was updated
@@ -810,9 +808,7 @@ describe("budget router — syncBudgetFromApi", () => {
         syncDirection: "push",
       });
 
-      const result = await caller.budget.syncBudgetFromApi({
-        selectedColumn: 0,
-      });
+      const result = await caller.budget.syncBudgetFromApi();
       expect(result.updated).toBe(0);
     } finally {
       cleanup();
@@ -841,13 +837,91 @@ describe("budget router — syncBudgetFromApi", () => {
         syncDirection: "both",
       });
 
-      const result = await caller.budget.syncBudgetFromApi({
-        selectedColumn: 0,
-      });
+      const result = await caller.budget.syncBudgetFromApi();
       expect(result.updated).toBe(1);
     } finally {
       cleanup();
     }
+  });
+
+  describe("column, missing goals and empty amounts", () => {
+    async function pullWith(
+      categories: Array<Record<string, unknown>>,
+      linkedColumnIndex: number,
+      setup: (
+        sqlite: { exec: (sql: string) => void },
+        itemIds: number[],
+      ) => void,
+    ) {
+      const { getActiveBudgetApi, cacheGet } = await import("@/lib/budget-api");
+      (getActiveBudgetApi as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+        "ynab",
+      );
+      (cacheGet as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        data: { categories },
+      });
+      const { caller, db, sqlite, cleanup } =
+        await createTestCaller(adminSession);
+      try {
+        const seed = seedStandardDataset(db);
+        sqlite.exec(
+          `INSERT INTO api_connections (service, config, linked_profile_id, linked_column_index) VALUES ('ynab', '{}', ${seed.profileId}, ${linkedColumnIndex})`,
+        );
+        setup(sqlite, seed.itemIds);
+        for (const [i, c] of categories.entries()) {
+          await caller.budget.linkToApi({
+            budgetItemId: seed.itemIds[i]!,
+            service: "ynab",
+            apiCategoryId: c.id as string,
+            apiCategoryName: "Linked",
+            syncDirection: "pull",
+          });
+        }
+        const result = await caller.budget.syncBudgetFromApi();
+        const summary = await caller.budget.computeActiveSummary();
+        const amountsOf = (id: number) =>
+          summary.rawItems!.find((i) => i.id === id)!.amounts as number[];
+        return { result, amountsOf, itemIds: seed.itemIds };
+      } finally {
+        cleanup();
+      }
+    }
+
+    it("writes the connection's linked column, not a client-sent one", async () => {
+      const { result, amountsOf, itemIds } = await pullWith(
+        [{ id: "c1", goalTarget: 1500 }],
+        1,
+        (sqlite, ids) =>
+          sqlite.exec(
+            `UPDATE budget_items SET amounts = '[100,200,300]' WHERE id = ${ids[0]}`,
+          ),
+      );
+      expect(result.updated).toBe(1);
+      expect(amountsOf(itemIds[0]!)).toEqual([100, 1500, 300]);
+    });
+
+    it("skips a linked category with no goal instead of zeroing the item", async () => {
+      const { result, amountsOf, itemIds } = await pullWith(
+        [{ id: "c1", goalTarget: null }],
+        0,
+        () => {},
+      );
+      expect(result.updated).toBe(0);
+      expect(amountsOf(itemIds[0]!)).toEqual([2000]);
+    });
+
+    it("never writes a negative index for an item with no amounts", async () => {
+      const { result, amountsOf, itemIds } = await pullWith(
+        [{ id: "c1", goalTarget: 500 }],
+        0,
+        (sqlite, ids) =>
+          sqlite.exec(
+            `UPDATE budget_items SET amounts = '[]' WHERE id = ${ids[0]}`,
+          ),
+      );
+      expect(result.updated).toBe(0);
+      expect(amountsOf(itemIds[0]!)).toEqual([]);
+    });
   });
 
   it("uses linked profile from apiConnections when configured", async () => {
@@ -869,9 +943,7 @@ describe("budget router — syncBudgetFromApi", () => {
         `INSERT INTO api_connections (service, config, linked_profile_id) VALUES ('ynab', '{}', ${secondProfileId})`,
       );
 
-      const result = await caller.budget.syncBudgetFromApi({
-        selectedColumn: 0,
-      });
+      const result = await caller.budget.syncBudgetFromApi();
       expect(result.updated).toBe(0); // No linked items in the new profile
     } finally {
       cleanup();
@@ -2077,9 +2149,9 @@ describe("budget router — syncBudgetFromApi no profile", () => {
         `INSERT INTO api_connections (service, config, linked_profile_id) VALUES ('ynab', '{}', 999999)`,
       );
 
-      await expect(
-        caller.budget.syncBudgetFromApi({ selectedColumn: 0 }),
-      ).rejects.toThrow("No linked or active budget profile");
+      await expect(caller.budget.syncBudgetFromApi()).rejects.toThrow(
+        "No linked or active budget profile",
+      );
     } finally {
       cleanup();
     }

@@ -228,6 +228,23 @@ export const retirementSettings = pgTable(
       precision: 12,
       scale: 6,
     }).default("1.0"),
+    /** VPW: the most the yearly percentage reaches (null = config default). */
+    vpwCap: decimal("vpw_cap", { precision: 12, scale: 6 }),
+    /** VPW: the age the table runs to (null = config default). */
+    vpwEndAge: integer("vpw_end_age"),
+    /**
+     * Per portfolio-sized strategy: whether Social Security comes out of
+     * the strategy's amount (true — the amount is spending and Social
+     * Security pays part of it) or comes on top of it (false — the amount
+     * is what leaves the portfolio, the published methods' definition).
+     * Null = the strategy's config default (false). Migration 0006 set the
+     * four that existed to true, keeping projections as they were.
+     */
+    cpSsInAmount: boolean("cp_ss_in_amount"),
+    enSsInAmount: boolean("en_ss_in_amount"),
+    vdSsInAmount: boolean("vd_ss_in_amount"),
+    rmdSsInAmount: boolean("rmd_ss_in_amount"),
+    vpwSsInAmount: boolean("vpw_ss_in_amount"),
     /** What to do with RMD-forced withdrawal beyond stated spending
      *  need (after any QCD reduces the taxable RMD first) — "reinvest"
      *  into brokerage (default, matches prior behavior) or "spend"
@@ -276,6 +293,11 @@ export const retirementSettings = pgTable(
     }),
     /** Enable IRMAA awareness — constrain Roth conversions/withdrawals near Medicare surcharge cliffs (65+). */
     enableIrmaaAwareness: boolean("enable_irmaa_awareness")
+      .notNull()
+      .default(false),
+    /** IRMAA surcharges are paid on top of the retirement budget, not inside
+     *  it. The surcharge only: base Part B and D premiums aren't modeled. */
+    irmaaOnTopOfBudget: boolean("irmaa_on_top_of_budget")
       .notNull()
       .default(false),
     /** Enable ACA subsidy awareness — cap MAGI to preserve health insurance subsidies (pre-65). */

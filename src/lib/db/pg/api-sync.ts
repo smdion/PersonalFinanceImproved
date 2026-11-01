@@ -158,6 +158,35 @@ export const simplefinBalanceSnapshots = pgTable(
 // built-in and user rules, so a rule change re-classifies history (RULES:
 // computed values are not stored). Only explicit overrides are stored.
 
+/**
+ * Daily closes from Tiingo, kept so a restart or a rate limit doesn't lose
+ * them and each close is fetched once. Raw close plus that day's
+ * distribution and split — total return is built from these
+ * (lib/pure/total-return.ts), never from Tiingo's adjusted close, which is
+ * re-based on each new distribution. Re-fetchable; not household data.
+ */
+export const marketCloses = pgTable(
+  "market_closes",
+  {
+    id: serial("id").primaryKey(),
+    ticker: text("ticker").notNull(),
+    date: date("date").notNull(),
+    close: decimal("close", { precision: 18, scale: 6 }).notNull(),
+    divCash: decimal("div_cash", { precision: 18, scale: 6 })
+      .notNull()
+      .default("0"),
+    splitFactor: decimal("split_factor", { precision: 18, scale: 8 })
+      .notNull()
+      .default("1"),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    uniqueIndex("market_closes_ticker_date_idx").on(table.ticker, table.date),
+  ],
+);
+
 /** A fund/security as an institution reports it. */
 export const securities = pgTable(
   "securities",
@@ -324,9 +353,12 @@ export const simplefinAccountBalances = pgTable(
 );
 
 /**
- * Shares held per account, security and trading day. One row per day: for
- * funds with no public ticker, the reported value ÷ shares is the only price
- * history there is. Exactly one of simplefinAccountId / performanceAccountId
+ * Shares held per account and security, one row per report (per
+ * `balanceDate`; per day for a feed that sends no report time, and for
+ * manual rows). Every report is kept: a feed a market day behind sends two
+ * reports a day apart that `asOf` would put on the same day. For funds with
+ * no public ticker, the reported value ÷ shares is the only price history
+ * there is. Exactly one of simplefinAccountId / performanceAccountId
  * is set (enforced in the app layer too — SQLite drops CHECK constraints).
  */
 export const holdingObservations = pgTable(
@@ -346,7 +378,9 @@ export const holdingObservations = pgTable(
       .references(() => securities.id, { onDelete: "restrict" }),
     /** SimpleFIN `balance-date` as sent (UTC); null for manual rows. */
     balanceDate: timestamp("balance_date", { withTimezone: true }),
-    /** Valuation date: the most recent completed US trading day for balanceDate. */
+    /** The close assumed from balanceDate's time alone — no feed lag. The
+     *  close the data really reflects is worked out on read
+     *  (lib/pure/feed-data-date.ts), since a feed's lag is learned. */
     asOf: date("as_of").notNull(),
     shares: decimal("shares", { precision: 20, scale: 8 }).notNull(),
     /** As reported — evidence only, never summed as a balance. */
@@ -361,9 +395,16 @@ export const holdingObservations = pgTable(
       .defaultNow(),
   },
   (table) => [
+    uniqueIndex("holding_observations_simplefin_report_idx")
+      .on(table.simplefinAccountId, table.securityId, table.balanceDate)
+      .where(
+        sql`${table.simplefinAccountId} IS NOT NULL AND ${table.balanceDate} IS NOT NULL`,
+      ),
     uniqueIndex("holding_observations_simplefin_idx")
       .on(table.simplefinAccountId, table.securityId, table.asOf)
-      .where(sql`${table.simplefinAccountId} IS NOT NULL`),
+      .where(
+        sql`${table.simplefinAccountId} IS NOT NULL AND ${table.balanceDate} IS NULL`,
+      ),
     uniqueIndex("holding_observations_manual_idx")
       .on(table.performanceAccountId, table.securityId, table.asOf)
       .where(sql`${table.performanceAccountId} IS NOT NULL`),

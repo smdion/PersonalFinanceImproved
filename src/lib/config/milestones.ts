@@ -36,6 +36,7 @@ type MilestoneGroup =
   | "foo"
   | "safety"
   | "housing"
+  | "borrowing"
   | "investing";
 
 export const MILESTONE_GROUPS: {
@@ -70,6 +71,11 @@ export const MILESTONE_GROUPS: {
     blurb: "Cash and protection for the unexpected.",
   },
   { key: "housing", title: "Home", blurb: "Keeping the house affordable." },
+  {
+    key: "borrowing",
+    title: "Borrowing",
+    blurb: "Keeping car and student loans in proportion.",
+  },
   {
     key: "investing",
     title: "Investing",
@@ -255,6 +261,86 @@ export type CustomGoalMetric = keyof typeof CUSTOM_GOAL_METRICS;
 
 export const MAX_CUSTOM_GOALS = 12;
 
+/**
+ * Money Guy's 20/3/8 rule for a car loan: at least `minDownShare` of the
+ * price down, a term of at most `maxTermMonths`, and every car payment
+ * together at most `maxPaymentShare` of gross monthly pay.
+ */
+export const CAR_RULE = {
+  minDownShare: 0.2,
+  maxTermMonths: 36,
+  maxPaymentShare: 0.08,
+  source: "https://moneyguy.com/faq/cash-to-buy-car/",
+} as const;
+
+/**
+ * Money Guy's student-loan rule: borrow no more in total than your
+ * first-year salary. Judged against the first full year of pay at or after
+ * the earliest loan's year, and only when that year is within
+ * `maxYearsAfterLoan` of it (further out, it isn't the first-year salary).
+ */
+export const STUDENT_LOAN_RULE = {
+  maxYearsAfterLoan: 5,
+  source:
+    "https://moneyguy.com/faq/how-much-student-loan-debt-is-ok-to-take-on",
+} as const;
+
+/**
+ * Money Guy's "Always Be Buying": invest on a schedule whatever the market
+ * does. Judged two ways — month by month where SimpleFIN shows deposits
+ * (the last `recentMonths` covered months), and in each year the
+ * household's investments lost money, whether its own contributions held
+ * at `heldUpShare` or more of the year before.
+ */
+export const ALWAYS_BUYING_RULE = {
+  recentMonths: 12,
+  heldUpShare: 0.9,
+} as const;
+
+/**
+ * Money Guy's 60/40 rule for raises: at least 60% of any income boost goes
+ * to saving and investing, at most 40% to lifestyle. Judged on salary (a
+ * bonus swings year to year) and only for a raise of at least
+ * `minRaiseShare` of last year's salary, so a rounding-sized change isn't
+ * judged.
+ */
+export const RAISE_RULE = {
+  saveShare: 0.6,
+  minRaiseShare: 0.01,
+  source:
+    "https://moneyguy.com/episode/the-1m-mistake-almost-everyone-makes-in-their-30s/",
+} as const;
+
+/**
+ * Money Guy's high-income line — at or above it the employer match stops
+ * counting toward the 25% savings rate. Money Guy names $200k for a
+ * household; $100k for one filer is the owner's reading of the same line
+ * (Money Guy's page gives only the household figure). A saved
+ * `high_income_threshold` setting replaces both.
+ */
+export const HIGH_INCOME_LINE = {
+  married: 200_000,
+  single: 100_000,
+  source:
+    "https://moneyguy.com/article/should-you-include-your-employer-match-in-the-20-25-investing-goal",
+} as const;
+
+/**
+ * Money Guy's Goldilocks rule — lump sum or dollar-cost average, sized by
+ * how big the money is against your invested assets ("Dollar cost averaging
+ * vs lump sum", moneyguy.com): under 10% invest it at
+ * once; at 10% spread it over 5 months, one month more for each further 5%,
+ * at most 12 months.
+ */
+export const GOLDILOCKS_RULE = {
+  lumpSumBelow: 0.1,
+  startMonths: 5,
+  stepShare: 0.05,
+  maxMonths: 12,
+  source:
+    "https://moneyguy.com/article/dollar-cost-averaging-vs-lump-sum-how-to-take-away-the-guess-work",
+} as const;
+
 // ---------------------------------------------------------------------------
 // The registry
 // ---------------------------------------------------------------------------
@@ -378,7 +464,7 @@ const MILESTONES = [
     title: "6 · Max out retirement",
     rule: "Fill the IRS limit of every account in the Retirement category (401k/403b, IRA, HSA) with your own contributions — or reach 25% of gross pay into Retirement accounts first (Portfolio money is step 7's).",
     adaptedNote:
-      "Money Guy's step 6 is the employer plans; Ledgr counts every account you've put in the Retirement category, so step 5's IRA and HSA are part of it. Employer match isn't counted — the IRS limit is for your own deferrals (an HSA's limit includes employer money). Money Guy says hitting 25% before maxing out is enough to move on \"if you don't have a high income\" but gives no number; Ledgr's high-income threshold only decides whether the match counts toward the 25%.",
+      "Money Guy's step 6 is the employer plans; Ledgr counts every account you've put in the Retirement category, so step 5's IRA and HSA are part of it. Employer match isn't counted — the IRS limit is for your own deferrals (an HSA's limit includes employer money). Money Guy says hitting 25% before maxing out is enough to move on \"if you don't have a high income\" but gives no number; Ledgr's high-income line only decides whether the match counts toward the 25%.",
     focus: { topic: "contributionElections" },
   },
   {
@@ -442,9 +528,29 @@ const MILESTONES = [
     group: "saving",
     source: "moneyGuy",
     title: "25% savings rate",
-    rule: "Save and invest 25% of gross pay — retirement accounts, HSA and brokerage alike (a rate that rounds to 25% counts). The employer match counts until household pay passes the high-income threshold.",
+    rule: `Save and invest 25% of gross pay — retirement accounts, HSA and brokerage alike (a rate that rounds to 25% counts). The employer match counts until household pay reaches the high-income line: $${HIGH_INCOME_LINE.married / 1000}k married filing jointly, $${HIGH_INCOME_LINE.single / 1000}k otherwise, or your own (set beside the match switch).`,
     adaptedNote:
       "Money set aside for a specific future cost (college, the next car) is step 8, not part of the 25%. Starting later needs more: 6% from age 20, 10% from 25, 17% from 30, about 25% from 35.",
+    focus: { topic: "savingsRate" },
+  },
+  {
+    id: "alwaysBuying",
+    group: "saving",
+    source: "moneyGuy",
+    title: "Always Be Buying",
+    rule: "Keep investing on a schedule — especially when the market falls. Stopping in a downturn is the mistake this guards against.",
+    adaptedNote:
+      "Two checks. Months: where SimpleFIN shows deposits, a month with none breaks the streak (a month a feed didn't report is left out, not counted against you; the feed can't tell employer money from yours). Years: in each year your investments lost money, your own contributions (from Performance, employer money left out) should hold at 90% of the year before — a job change can cause a drop too.",
+    focus: { topic: "savingsRate" },
+  },
+  {
+    id: "saveRaises",
+    group: "saving",
+    source: "moneyGuy",
+    title: "Save your raises (60/40)",
+    rule: "Put at least 60% of each raise toward saving and investing; let the other 40% raise your lifestyle.",
+    adaptedNote:
+      "Ledgr compares finalized years: the change in what you contributed yourself (every account, employer money left out) against the change in household salary. Bonuses aren't judged. A lump deposit (a house sale, an inheritance) counts as saving, so a year with one can look better than it was; a new job mid-year shows up across two years.",
     focus: { topic: "savingsRate" },
   },
   {
@@ -517,6 +623,26 @@ const MILESTONES = [
   },
 
   // --- Investing (Bogleheads) ---
+  // --- Borrowing ---
+  {
+    id: "carRule",
+    group: "borrowing",
+    source: "moneyGuy",
+    title: "20/3/8 car rule",
+    rule: `Finance a car with at least ${CAR_RULE.minDownShare * 100}% down, for ${CAR_RULE.maxTermMonths / 12} years or less, and keep every car payment together under ${CAR_RULE.maxPaymentShare * 100}% of gross monthly pay.`,
+    adaptedNote:
+      "Judged on each open car loan in the debts list from its purchase price, original amount and term. Money Guy's exception for luxury cars (pay cash, or pay it off within a year) isn't something Ledgr can tell from the list.",
+    focus: { topic: "debts" },
+  },
+  {
+    id: "studentLoans",
+    group: "borrowing",
+    source: "moneyGuy",
+    title: "Student loans vs first-year pay",
+    rule: "Borrow no more for school, in total, than you earn in your first year of work.",
+    adaptedNote: `Judged per person on student loans in the debts list (their original amounts) against the first full year of salary on record at or after the earliest loan, within ${STUDENT_LOAN_RULE.maxYearsAfterLoan} years. A year a job started after January is partial, so the next one counts. Joint student loans aren't judged.`,
+    focus: { topic: "debts" },
+  },
   {
     id: "rebalance",
     group: "investing",

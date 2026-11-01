@@ -172,6 +172,23 @@ export const retirementSettings = sqliteTable(
     vdFloorPercent: text("vd_floor_percent").default("0.025"),
     /** RMD Spending: multiplier on IRS RMD amount. */
     rmdMultiplier: text("rmd_multiplier").default("1.0"),
+    /** VPW: the most the yearly percentage reaches (null = config default). */
+    vpwCap: text("vpw_cap"),
+    /** VPW: the age the table runs to (null = config default). */
+    vpwEndAge: integer("vpw_end_age"),
+    /**
+     * Per portfolio-sized strategy: whether Social Security comes out of
+     * the strategy's amount (true — the amount is spending and Social
+     * Security pays part of it) or comes on top of it (false — the amount
+     * is what leaves the portfolio, the published methods' definition).
+     * Null = the strategy's config default (false). Migration 0006 set the
+     * four that existed to true, keeping projections as they were.
+     */
+    cpSsInAmount: integer("cp_ss_in_amount", { mode: "boolean" }),
+    enSsInAmount: integer("en_ss_in_amount", { mode: "boolean" }),
+    vdSsInAmount: integer("vd_ss_in_amount", { mode: "boolean" }),
+    rmdSsInAmount: integer("rmd_ss_in_amount", { mode: "boolean" }),
+    vpwSsInAmount: integer("vpw_ss_in_amount", { mode: "boolean" }),
     /** What to do with RMD-forced withdrawal beyond stated spending
      *  need (after any QCD reduces the taxable RMD first) — "reinvest"
      *  into brokerage (default, matches prior behavior) or "spend"
@@ -219,6 +236,11 @@ export const retirementSettings = sqliteTable(
     rmdSmoothingMaxBracketTarget: text("rmd_smoothing_max_bracket_target"),
     /** Enable IRMAA awareness — constrain Roth conversions/withdrawals near Medicare surcharge cliffs (65+). */
     enableIrmaaAwareness: integer("enable_irmaa_awareness", { mode: "boolean" })
+      .notNull()
+      .default(false),
+    /** IRMAA surcharges are paid on top of the retirement budget, not inside
+     *  it. The surcharge only: base Part B and D premiums aren't modeled. */
+    irmaaOnTopOfBudget: integer("irmaa_on_top_of_budget", { mode: "boolean" })
       .notNull()
       .default(false),
     /** Enable ACA subsidy awareness — cap MAGI to preserve health insurance subsidies (pre-65). */

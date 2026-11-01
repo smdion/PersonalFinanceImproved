@@ -20,6 +20,7 @@ import {
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
 import { MC_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD } from "@/lib/constants";
+import { simulationDollars } from "@/lib/pure/simulation-dollars";
 
 // ---------------------------------------------------------------------------
 // Unified card chrome — matches projection-mc-results.tsx summary bar
@@ -137,6 +138,7 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     scenarioView,
     coastFireMcQuery,
     activeAltMcResult,
+    dollarMode,
   } = state;
 
   const currentAge = result.projectionByYear[0]?.age ?? 0;
@@ -187,7 +189,8 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
       : mcQuery.data?.result && !mcLoading
         ? mcQuery.data.result
         : null;
-  const mcBands = mc?.percentileBands ?? null;
+  // In the shown dollars — today's from the Simulation's per-trial deflation.
+  const mcBands = mc ? simulationDollars(mc, dollarMode).percentileBands : null;
   // One rule for simulated vs baseline (nest-egg-display.ts, shared with
   // the dashboard): a person filter shows the baseline — the simulation is
   // the whole household's.
@@ -197,7 +200,6 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     targetAge: alreadyRetired
       ? currentAge
       : (engineSettings?.retirementAge ?? currentAge),
-    toDisplay: deflate,
     personFiltered: isPersonFiltered,
   });
   // A non-default simulation preset is named next to the range.
@@ -220,7 +222,6 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
     // balance is the end-of-year figure the card reads as "at endAge") —
     // the same row the baseline came from.
     targetAge: lastYear?.age ?? 0,
-    toDisplay: deflate,
     personFiltered: isPersonFiltered,
   });
   // The plan judge: retirement money runs out, or a year falls short.

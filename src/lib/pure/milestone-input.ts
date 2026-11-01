@@ -4,6 +4,8 @@
  * summaries) into the MilestoneInput that evaluateMilestones() judges.
  * Split from milestones.ts, which holds the rules themselves.
  */
+import type { RaiseYear } from "@/lib/pure/raise-history";
+import type { BuyingMonth, DownYear } from "@/lib/pure/always-buying";
 import {
   getAccountTypeConfig,
   getAllCategories,
@@ -302,6 +304,8 @@ export function milestoneHoldings(overview: {
       bucket: CompositionBucket;
       expenseRatio: number;
       switchable: boolean;
+      /** Across every account holding it. */
+      value: number;
     }
   >();
   for (const a of overview.accounts ?? []) {
@@ -334,6 +338,7 @@ export function milestoneHoldings(overview: {
         switchable:
           (funds.get(key)?.switchable ?? false) ||
           canSwitchFunds(a.accountType ?? null),
+        value: (funds.get(key)?.value ?? 0) + (h.value ?? 0),
       });
     }
   }
@@ -460,6 +465,9 @@ export function buildMilestoneInput(raw: {
     savingsTargetSource: SavingsTargetSource;
     debts?: MilestoneDebt[] | null;
     otherDebt?: { manual: number; creditCardMapped: number } | null;
+    raises?: RaiseYear[] | null;
+    downYears?: DownYear[];
+    borrowing?: MilestoneInput["borrowing"];
   };
   contributions: {
     people: (Omit<SavingsRatePerson, "accountTypes"> & {
@@ -476,6 +484,8 @@ export function buildMilestoneInput(raw: {
     filingStatus?: string;
   } | null;
   highIncomeThreshold: number;
+  /** SimpleFIN deposit months (investments.getBuyingMonths). */
+  buyingMonths?: BuyingMonth[] | null;
   brokerageGoals?: { name: string; targetYear: number }[] | null;
   efundMonths: number | null;
   efundEssentialMonthly?: number | null;
@@ -650,6 +660,12 @@ export function buildMilestoneInput(raw: {
     customGoals: inputs.customGoals,
     debts: inputs.debts ?? null,
     otherDebt: inputs.otherDebt ?? null,
+    raises: inputs.raises ?? null,
+    borrowing: inputs.borrowing ?? null,
+    buying: {
+      months: raw.buyingMonths ?? null,
+      downYears: inputs.downYears ?? [],
+    },
     checkpointSource: inputs.checkpointSource,
     savingsTargetSource: inputs.savingsTargetSource,
     megaBackdoor: mega,

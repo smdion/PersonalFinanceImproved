@@ -6,6 +6,7 @@
  *  echo `projection.computeProjection` returns), so this reads exactly what
  *  drove the numbers above it rather than a second, possibly-stale query.
  */
+import { annualRaiseLabel } from "@/lib/pure/raise-rates";
 import { filingStatusLabel } from "@/lib/config/display-labels";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { MAX_BROKERAGE_RAMP_YEARS } from "@/lib/constants";
@@ -39,6 +40,7 @@ export type ReportEngineSettings = {
   socialSecurityMonthly?: NumLike | null;
   ssStartAge?: NumLike | null;
   enableIrmaaAwareness?: boolean | null;
+  irmaaOnTopOfBudget?: boolean | null;
   enableAcaAwareness?: boolean | null;
   householdSize?: NumLike | null;
   filingStatus?: string | null;
@@ -67,6 +69,13 @@ export type ReportEngineSettings = {
   vdCeilingPercent?: NumLike | null;
   vdFloorPercent?: NumLike | null;
   rmdMultiplier?: NumLike | null;
+  vpwCap?: NumLike | null;
+  vpwEndAge?: NumLike | null;
+  cpSsInAmount?: boolean | null;
+  enSsInAmount?: boolean | null;
+  vdSsInAmount?: boolean | null;
+  rmdSsInAmount?: boolean | null;
+  vpwSsInAmount?: boolean | null;
 };
 
 /** `null`/`undefined` → `undefined`; otherwise coerce to a real number. */
@@ -80,6 +89,8 @@ function num(v: NumLike | null | undefined): number | undefined {
  *  report component stays free of server-type imports (same reason
  *  `ReportEngineSettings` is hand-rolled). */
 type ReportPerPersonSettings = ReadonlyArray<{
+  name?: string | null;
+  salaryAnnualIncrease?: NumLike | null;
   socialSecurityMonthly?: NumLike | null;
   socialSecurityPia?: NumLike | null;
   ssStartAge?: NumLike | null;
@@ -152,7 +163,11 @@ export function ReportAssumptionsSummary({
   // paramFields strategy-params.tsx renders for editing, read-only here.
   // Explicit lookup (not a cast off `settings`) so this stays typed to the
   // fields ReportEngineSettings actually declares.
-  const strategyParamValues: Record<string, NumLike | null | undefined> = {
+  // Keyed by column (`paramFields[].column`).
+  const strategyParamValues: Record<
+    string,
+    NumLike | boolean | null | undefined
+  > = {
     gkUpperGuardrail: settings.gkUpperGuardrail,
     gkLowerGuardrail: settings.gkLowerGuardrail,
     gkIncreasePct: settings.gkIncreasePct,
@@ -167,11 +182,35 @@ export function ReportAssumptionsSummary({
     vdCeilingPercent: settings.vdCeilingPercent,
     vdFloorPercent: settings.vdFloorPercent,
     rmdMultiplier: settings.rmdMultiplier,
+    vpwCap: settings.vpwCap,
+    vpwEndAge: settings.vpwEndAge,
+    cpSsInAmount: settings.cpSsInAmount,
+    enSsInAmount: settings.enSsInAmount,
+    vdSsInAmount: settings.vdSsInAmount,
+    rmdSsInAmount: settings.rmdSsInAmount,
+    vpwSsInAmount: settings.vpwSsInAmount,
   };
   const strategyParamRows = (strategyCfg?.paramFields ?? [])
-    .filter((f) => typeof f.default !== "boolean")
     .map((f) => {
-      const v = num(strategyParamValues[f.key]);
+      const stored = strategyParamValues[f.column];
+      if (f.type === "boolean") {
+        const on = stored == null ? f.default === true : stored === true;
+        // The Social Security switch reads as a sentence; other switches
+        // aren't shown (as before).
+        if (f.key !== "ssInAmount") return null;
+        return (
+          <Row
+            key={f.key}
+            label="Social Security"
+            value={
+              on
+                ? "comes out of the strategy's amount"
+                : "on top of the withdrawal"
+            }
+          />
+        );
+      }
+      const v = num(stored as NumLike | null | undefined);
       if (v == null) return null;
       const formatted = f.type === "percent" ? formatPercent(v, 1) : String(v);
       return <Row key={f.key} label={f.label} value={formatted} />;
@@ -252,7 +291,7 @@ export function ReportAssumptionsSummary({
           label="Annual raise assumption"
           value={
             salaryAnnualIncrease != null
-              ? formatPercent(salaryAnnualIncrease, 1)
+              ? annualRaiseLabel(salaryAnnualIncrease, perPersonSettings)
               : "—"
           }
         />
@@ -304,7 +343,7 @@ export function ReportAssumptionsSummary({
           ) : (
             socialSecurityMonthly != null && (
               <Row
-                label="Estimated monthly benefit"
+                label="Estimated monthly benefit (today's dollars)"
                 value={formatCurrency(socialSecurityMonthly)}
               />
             )
@@ -325,7 +364,14 @@ export function ReportAssumptionsSummary({
       {(settings.enableIrmaaAwareness || settings.enableAcaAwareness) && (
         <Section title="Healthcare & Medicare">
           {settings.enableIrmaaAwareness && (
-            <Row label="IRMAA awareness" value="Enabled" />
+            <Row
+              label="IRMAA surcharge"
+              value={
+                settings.irmaaOnTopOfBudget
+                  ? "On top of the budget"
+                  : "In the budget"
+              }
+            />
           )}
           {settings.enableAcaAwareness && (
             <Row label="ACA subsidy awareness" value="Enabled" />

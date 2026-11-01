@@ -731,6 +731,10 @@ describe("transformBackupToCurrentSchema — v0.7_final / v0.8.0 baseline", () =
           distribution_tax_rate_roth: null,
           distribution_tax_rate_brokerage: null,
           distribution_tax_rate_hsa: null,
+          cp_ss_in_amount: true,
+          en_ss_in_amount: true,
+          vd_ss_in_amount: true,
+          rmd_ss_in_amount: true,
         },
       ],
       scenarios: [{ id: 1, name: "Base", retirement_profile_id: null }],
@@ -969,5 +973,40 @@ describe("schema-version registry tracks the drizzle journals", () => {
         ),
       ).not.toThrow();
     }
+  });
+});
+
+describe("transformBackupToCurrentSchema — 0006 Social Security switches", () => {
+  it("a pre-0006 backup restores with the four existing switches on, VPW's absent", () => {
+    const { tables } = transformBackupToCurrentSchema(
+      { retirement_settings: [{ id: 1 }] },
+      "0005_v092_filing_status_auto",
+      "0006_v095_milestones",
+    );
+    const [row] = tables.retirement_settings as Record<string, unknown>[];
+    expect(row).toMatchObject({
+      cp_ss_in_amount: true,
+      en_ss_in_amount: true,
+      vd_ss_in_amount: true,
+      rmd_ss_in_amount: true,
+    });
+    expect(row).not.toHaveProperty("vpw_ss_in_amount");
+  });
+
+  it("a backup that has the switches keeps its own values, null included", () => {
+    const row = {
+      id: 1,
+      cp_ss_in_amount: null,
+      en_ss_in_amount: false,
+      vd_ss_in_amount: true,
+      rmd_ss_in_amount: null,
+      vpw_ss_in_amount: false,
+    };
+    const { tables } = transformBackupToCurrentSchema(
+      { retirement_settings: [row] },
+      "0005_v092_filing_status_auto",
+      "0007_future",
+    );
+    expect(tables.retirement_settings).toEqual([expect.objectContaining(row)]);
   });
 });

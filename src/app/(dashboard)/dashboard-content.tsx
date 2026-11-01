@@ -38,7 +38,7 @@ export function DashboardContent() {
         <CardBoundary title="Net Worth">
           <NetWorthCard />
         </CardBoundary>
-        <CardBoundary title="Live Balance">
+        <CardBoundary title="Current Balances">
           <LinkedBalanceCard />
         </CardBoundary>
         <CardBoundary title="Household Income">

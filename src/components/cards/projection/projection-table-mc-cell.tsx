@@ -56,7 +56,9 @@ export function renderMcCell(
     );
     parts.push(`Standalone: ${formatCurrency(detBal)}`);
     parts.push(
-      `Expenses: ${formatCurrency(deflate(mcDetYr.projectedExpenses, yr.year))}/yr`,
+      mcDetYr.phase === "decumulation"
+        ? `Spending: ${formatCurrency(deflate(mcDetYr.spending, yr.year))}/yr`
+        : `Expenses: ${formatCurrency(deflate(mcDetYr.projectedExpenses, yr.year))}/yr`,
     );
     if (mcDetYr.phase === "accumulation") {
       const accYr = mcDetYr as EngineAccumulationYear;
@@ -72,6 +74,10 @@ export function renderMcCell(
         `Withdrawals: ${formatCurrency(deflate(decYr.totalWithdrawal, yr.year))}`,
       );
       parts.push(`Tax rate: ${formatPercent(decYr.effectiveTaxRate, 1)}`);
+      if (decYr.ssTaxCost > 0)
+        parts.push(
+          `Tax on Social Security: ${formatCurrency(deflate(decYr.ssTaxCost, yr.year))}`,
+        );
     }
     proofNote = `Simulation engine: ${parts.join(" ·")}`;
   }

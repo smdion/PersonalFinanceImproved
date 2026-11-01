@@ -139,6 +139,101 @@ describe("ActualClient", () => {
     });
   });
 
+  describe("getAccounts — a balance that won't come", () => {
+    const list = jsonResponse({
+      data: [
+        {
+          id: "a1",
+          name: "Checking",
+          type: "checking",
+          offbudget: false,
+          closed: false,
+        },
+        {
+          id: "a2",
+          name: "Car loan",
+          type: "other",
+          offbudget: true,
+          closed: false,
+        },
+      ],
+    });
+
+    it("a balance failing in the parallel pass is retried on its own", async () => {
+      let a2Calls = 0;
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith("/accounts")) return list;
+        if (url.includes("/a2/")) {
+          a2Calls++;
+          if (a2Calls === 1) return Promise.reject(new Error("wrapper busy"));
+          return jsonResponse({ data: -1234500 });
+        }
+        return jsonResponse({ data: 50000 });
+      });
+      const accounts = await client.getAccounts();
+      expect(accounts.map((a) => a.balance)).toEqual([500, -12345]);
+    });
+
+    it("still failing, the sync stops — never a $0 balance", async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith("/accounts")) return list;
+        if (url.includes("/a2/")) return Promise.reject(new Error("down"));
+        return jsonResponse({ data: 50000 });
+      });
+      await expect(client.getAccounts()).rejects.toThrow(
+        /didn't return a balance for Car loan — nothing was synced/,
+      );
+    });
+  });
+
+  describe("getTransactions — an account that won't answer", () => {
+    const list = jsonResponse({
+      data: [
+        { id: "a1", name: "Checking", type: "checking", closed: false },
+        { id: "a2", name: "Savings", type: "savings", closed: false },
+      ],
+    });
+    const tx = {
+      id: "t1",
+      date: "2026-01-02",
+      amount: -500,
+      account: "a1",
+      payee_name: "Shop",
+    };
+
+    it("skips an account that is gone (404) and keeps the rest", async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith("/accounts")) return list;
+        if (url.includes("/a2/")) return jsonResponse({ error: "no" }, 404);
+        return jsonResponse({ data: [tx] });
+      });
+      const out = await client.getTransactions("2026-01-01");
+      expect(out).toHaveLength(1);
+    });
+
+    it("a non-404 failure stops the sync and names the account", async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith("/accounts")) return list;
+        if (url.includes("/a2/")) return jsonResponse({ error: "no" }, 401);
+        return jsonResponse({ data: [tx] });
+      });
+      await expect(client.getTransactions("2026-01-01")).rejects.toThrow(
+        /transactions for Savings — nothing was synced/,
+      );
+    });
+
+    it("a network failure stops the sync too", async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith("/accounts")) return list;
+        if (url.includes("/a2/")) return Promise.reject(new Error("down"));
+        return jsonResponse({ data: [tx] });
+      });
+      await expect(client.getTransactions("2026-01-01")).rejects.toThrow(
+        /Savings/,
+      );
+    });
+  });
+
   describe("getAccountBalance", () => {
     it("returns balance in dollars from cents", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ data: 5000 }));

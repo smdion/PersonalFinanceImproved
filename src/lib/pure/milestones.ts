@@ -35,6 +35,8 @@ import {
   GOAL_HORIZON_YEARS,
   PF_FUND_EXPENSE_RATIO,
   PF_RETIREMENT_RATE,
+  RAISE_RULE,
+  CAR_RULE,
   type BuiltInMilestoneId,
   type CheckpointSource,
   type CustomGoalMetric,
@@ -60,7 +62,11 @@ import {
   formatSavingsRate,
 } from "@/lib/utils/format";
 import { calculateLoanMonthlyPayment, safeDivide } from "@/lib/utils/math";
+import { sumBy } from "@/lib/utils/math";
 import { isHighInterestDebt } from "@/lib/config/debts";
+import { meetsRaiseRule } from "@/lib/pure/raise-history";
+import { recentCoveredMonths } from "@/lib/pure/always-buying";
+import { carPaymentShare, checkCarLoan } from "@/lib/pure/debt-rules";
 import type {
   CustomGoal,
   MatchShortfall,
@@ -697,6 +703,236 @@ function savingsRate(input: MilestoneInput): MilestoneResult {
   });
 }
 
+/** Money Guy's 20/3/8 on every open car loan in the debts list. */
+function carRule(input: MilestoneInput, now: MilestoneYear): MilestoneResult {
+  const loans = input.borrowing?.carLoans;
+  if (!loans) {
+    return result("carRule", {
+      status: "unknown",
+      headline: "Needs the debts list",
+    });
+  }
+  if (loans.length === 0) {
+    return result("carRule", { status: "reached", headline: "No car loan" });
+  }
+  const checks = loans.map(checkCarLoan);
+  const pay = input.savings?.compensation ?? now.grossIncome;
+  const share = carPaymentShare(
+    loans.map((l) => l.monthlyPayment),
+    pay,
+  );
+  const paymentOk =
+    share === null ? null : share <= CAR_RULE.maxPaymentShare + 1e-9;
+  const misses: string[] = [];
+  for (const c of checks) {
+    if (c.downOk === false)
+      misses.push(
+        `${c.name}: ${formatPercent(c.downShare ?? 0, 0)} down (${formatPercent(CAR_RULE.minDownShare, 0)} or more)`,
+      );
+    if (c.termOk === false)
+      misses.push(
+        `${c.name}: ${c.termMonths}-month term (${CAR_RULE.maxTermMonths} or fewer)`,
+      );
+  }
+  if (paymentOk === false)
+    misses.push(
+      `car payments are ${formatPercent(share!, 1)} of gross pay (${formatPercent(CAR_RULE.maxPaymentShare, 0)} or less)`,
+    );
+  const unknown =
+    checks.some((c) => c.downOk === null || c.termOk === null) ||
+    paymentOk === null;
+  const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+  if (misses.length > 0) {
+    return result("carRule", {
+      status: "behind",
+      headline: cap(misses[0]!),
+      short: `${misses.length} part${misses.length === 1 ? "" : "s"} missed`,
+      note: misses.length > 1 ? misses.slice(1).map(cap).join(" · ") : null,
+      nextStep:
+        paymentOk === false
+          ? "Pay the car loan down early, or keep the next car cheaper"
+          : "Next car: put 20% down and borrow for 3 years or less",
+      nextStepFocus: { topic: "debts" },
+    });
+  }
+  if (unknown) {
+    return result("carRule", {
+      status: "unknown",
+      headline:
+        "Add each car loan's purchase price, original amount, term and payment to judge",
+      short: "Needs loan details",
+      nextStep: "Fill in the car loan's details in the debts list",
+      nextStepFocus: { topic: "debts" },
+    });
+  }
+  return result("carRule", {
+    status: "reached",
+    headline: `Within 20/3/8 — car payments ${formatPercent(share!, 1)} of gross pay`,
+    short: "Within 20/3/8",
+  });
+}
+
+/** Money Guy's student-loan rule, per person. */
+function studentLoans(input: MilestoneInput): MilestoneResult {
+  const b = input.borrowing;
+  if (!b) {
+    return result("studentLoans", {
+      status: "unknown",
+      headline: "Needs the debts list",
+    });
+  }
+  if (b.studentLoans.length === 0) {
+    return result("studentLoans", {
+      status: b.jointStudentLoans > 0 ? "unknown" : "reached",
+      headline:
+        b.jointStudentLoans > 0
+          ? "Give each student loan an owner to judge it"
+          : "No student loans",
+      nextStepFocus: b.jointStudentLoans > 0 ? { topic: "debts" } : undefined,
+    });
+  }
+  const judged: {
+    owner: string;
+    total: number;
+    salary: number;
+    year: number;
+  }[] = [];
+  const reasons: string[] = [];
+  // Loans with no owner aren't anyone's to judge — said, never dropped
+  // because someone else's loans could be judged.
+  if (b.jointStudentLoans > 0)
+    reasons.push("Give each student loan an owner to judge it");
+  for (const p of b.studentLoans) {
+    if (p.totalOriginal === null)
+      reasons.push(`${p.owner}: add each loan's original amount`);
+    else if (p.loanYear === null)
+      reasons.push(`${p.owner}: add when the loans were opened`);
+    else if (!p.firstSalary)
+      reasons.push(
+        `${p.owner}: no full year of salary on record within a few years of the loans`,
+      );
+    else
+      judged.push({
+        owner: p.owner,
+        total: p.totalOriginal,
+        salary: p.firstSalary.salary,
+        year: p.firstSalary.year,
+      });
+  }
+  const over = judged.filter((j) => j.total > j.salary);
+  const describe = (j: (typeof judged)[number]) =>
+    `${j.owner} borrowed ${formatCurrency(j.total, 0)} against ${formatCurrency(j.salary, 0)} earned in ${j.year}`;
+  if (over.length > 0) {
+    return result("studentLoans", {
+      status: "behind",
+      headline: describe(over[0]!),
+      short: `${formatCurrency(over[0]!.total - over[0]!.salary, 0)} over`,
+      note: [...over.slice(1).map(describe), ...reasons].join(" · ") || null,
+      nextStep:
+        "Pay the student loans down — and for more school, borrow no more than the first year's pay",
+      nextStepFocus: { topic: "debts" },
+    });
+  }
+  if (judged.length === 0) {
+    return result("studentLoans", {
+      status: "unknown",
+      headline: reasons[0] ?? "Not enough to judge",
+      note: reasons.slice(1).join(" · ") || null,
+      nextStepFocus: { topic: "debts" },
+    });
+  }
+  return result("studentLoans", {
+    status: "reached",
+    headline: judged.map(describe).join(" · "),
+    short: "Within first-year pay",
+    note: reasons.join(" · ") || null,
+  });
+}
+
+/** Money Guy's Always Be Buying: the last covered SimpleFIN months and the
+ *  latest losing year on record. */
+function alwaysBuying(input: MilestoneInput): MilestoneResult {
+  const recent = recentCoveredMonths(input.buying?.months ?? []);
+  const down = input.buying?.downYears ?? [];
+  const latestDown = down[down.length - 1];
+  if (recent.length === 0 && !latestDown) {
+    return result("alwaysBuying", {
+      status: "unknown",
+      headline: "Needs SimpleFIN deposits or a losing year on record",
+    });
+  }
+  const missed = recent.filter((m) => m.state === "notInvested").length;
+  const droppedInDown = latestDown !== undefined && !latestDown.heldUp;
+  const held = down.filter((d) => d.heldUp).length;
+  const downText = latestDown
+    ? latestDown.heldUp
+      ? `kept buying through ${latestDown.year}'s loss`
+      : `contributed ${formatPercent(safeDivide(latestDown.contributed, latestDown.prior, 0), 0)} of the year before in ${latestDown.year}, a losing year`
+    : null;
+  const monthText =
+    recent.length === 0
+      ? null
+      : missed === 0
+        ? `bought every month of the last ${recent.length}`
+        : `${missed} of the last ${recent.length} months without a deposit`;
+  const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+  const headline = [monthText, downText].filter(Boolean).join(" · ");
+  return result("alwaysBuying", {
+    status: missed > 0 || droppedInDown ? "behind" : "reached",
+    headline: cap(headline),
+    short: cap(monthText ?? downText ?? ""),
+    note:
+      down.length > 0
+        ? `${held} of ${down.length} losing year${down.length === 1 ? "" : "s"} held up`
+        : null,
+    nextStep:
+      missed > 0
+        ? "Set up an automatic investment every month, so no month goes without one"
+        : droppedInDown
+          ? "Keep contributions steady when the market falls — that's when buying matters most"
+          : null,
+  });
+}
+
+/** Money Guy's 60/40: judged on the latest raise; the page lists them all. */
+function saveRaises(input: MilestoneInput): MilestoneResult {
+  const raises = input.raises;
+  if (!raises || raises.length === 0) {
+    return result("saveRaises", {
+      status: "unknown",
+      headline: raises
+        ? "No raise to judge yet"
+        : "Needs salary history and finalized Performance years",
+    });
+  }
+  const latest = raises[raises.length - 1]!;
+  const met = meetsRaiseRule(latest);
+  const metCount = raises.filter(meetsRaiseRule).length;
+  const shortfall = RAISE_RULE.saveShare * latest.raise - latest.savingChange;
+  return result("saveRaises", {
+    status: met ? "reached" : "behind",
+    value: { kind: "percent", amount: latest.share },
+    target: { kind: "percent", amount: RAISE_RULE.saveShare },
+    progress: Math.min(1, Math.max(0, latest.share / RAISE_RULE.saveShare)),
+    headline:
+      latest.savingChange < 0
+        ? `Saved ${formatCurrency(-latest.savingChange, 0)} less after the ${latest.year} raise`
+        : `Saved ${formatPercent(latest.share, 0)} of the ${latest.year} raise`,
+    short: `${formatPercent(latest.share, 0)} of the ${latest.year} raise`,
+    note: [
+      `${metCount} of ${raises.length} raise${raises.length === 1 ? "" : "s"} at ${formatPercent(RAISE_RULE.saveShare, 0)} or more`,
+      latest.estimated ? "contributions still estimated" : null,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    reachedYear: met ? latest.year : null,
+    nextStep: met
+      ? null
+      : `Contribute ${formatCurrency(shortfall, 0)} more a year to save ${formatPercent(RAISE_RULE.saveShare, 0)} of the ${latest.year} raise`,
+    impact: met ? null : { kind: "perYear", amount: shortfall },
+  });
+}
+
 function emergencyFund(
   id: "emergencyFund" | "foo4",
   input: MilestoneInput,
@@ -780,7 +1016,7 @@ function limitStep(
   // Money Guy's step 6: reaching a 25% retirement investing rate (the
   // Retirement category only — Portfolio money is step 7's) before the
   // plans are maxed also completes the step. (Their "if you don't have a
-  // high income" has no number; the high-income threshold only decides
+  // high income" has no number; the high-income line only decides
   // whether the match counts toward the 25%.)
   const unlimitedNote =
     step === 6 && (input.retirementUnlimited ?? 0) > 0
@@ -1002,7 +1238,7 @@ function highInterestDebtStep(
         ]
           .filter(Boolean)
           .join(". ") || null,
-      nextStep: `Pay off ${names.join(", ")} — above Money Guy's line for your age`,
+      nextStep: `Pay off ${names.join(", ")} — above Money Guy's line for your age${interest > 0 ? `; about ${formatCurrency(interest, 0)} a year in interest` : ""}`,
       nextStepFocus: { topic: "debts" },
       subjects: high.map((d) => d.name),
       impact: interest > 0 ? { kind: "perYear", amount: interest } : null,
@@ -1336,6 +1572,9 @@ function investing(input: MilestoneInput): MilestoneResult[] {
     const names = (cs: typeof targeted) => formatList(cs.map((c) => c.name));
     const overTotal = over.reduce((s, c) => s + dollars(c), 0);
     const underTotal = under.reduce((s, c) => s + dollars(c), 0);
+    // One amount for the move: sells and buys can differ a little, since
+    // moves too small to matter are left out of each side.
+    const moveTotal = Math.max(overTotal, underTotal);
     // Where to sell: inside tax-advantaged accounts a sale costs no tax;
     // in a taxable account it realizes gains, so new money does it better.
     const sheltered = over.reduce((s, c) => s + (c.shelteredValue ?? 0), 0);
@@ -1351,9 +1590,9 @@ function investing(input: MilestoneInput): MilestoneResult[] {
           : " — steer new contributions; selling in taxable accounts realizes gains";
     const action =
       over.length && under.length
-        ? `Rebalance about ${compactCurrency(overTotal)}: sell ${names(over)}; buy ${list(under)}${where}`
+        ? `Rebalance about ${compactCurrency(moveTotal)}: sell ${names(over)}; buy ${list(under)}${where}`
         : over.length
-          ? `Rebalance about ${compactCurrency(overTotal)}: sell ${names(over)}; buy what's under target${where}`
+          ? `Rebalance about ${compactCurrency(moveTotal)}: sell ${names(over)}; buy what's under target${where}`
           : under.length
             ? `Add about ${compactCurrency(underTotal)}: ${list(under)}`
             : null;
@@ -1382,10 +1621,7 @@ function investing(input: MilestoneInput): MilestoneResult[] {
             .filter(Boolean)
             .join(" · ") || null,
         nextStep: action,
-        impact:
-          action !== null
-            ? { kind: "oneTime", amount: Math.max(overTotal, underTotal) }
-            : null,
+        impact: action !== null ? { kind: "oneTime", amount: moveTotal } : null,
       }),
     );
   }
@@ -1522,8 +1758,10 @@ function fundCosts(input: MilestoneInput): MilestoneResult {
   const bar = (f: (typeof judged)[number]) =>
     PF_FUND_EXPENSE_RATIO[f.bucket as keyof typeof PF_FUND_EXPENSE_RATIO];
   const pricey = judged.filter((f) => f.expenseRatio > bar(f));
+  const over = sumBy(pricey, (f) => (f.value ?? 0) * (f.expenseRatio - bar(f)));
   return result("fundCosts", {
     status: pricey.length ? "behind" : "reached",
+    yearlySaving: over > 0 ? over : undefined,
     value: { kind: "count", amount: judged.length - pricey.length },
     target: { kind: "count", amount: judged.length },
     progress: (judged.length - pricey.length) / judged.length,
@@ -1685,11 +1923,15 @@ export function evaluateMilestones(input: MilestoneInput): MilestoneResult[] {
     input.savingsTargetSource === "personalFinance"
       ? pfRetirementRate(input)
       : savings,
+    saveRaises(input),
+    alwaysBuying(input),
     megaBackdoor(input),
     goalHorizon(input),
     efund,
     protection(input, now),
     ...housing(input, now),
+    carRule(input, now),
+    studentLoans(input),
     ...investing(input),
     fundCosts(input),
   ];

@@ -180,11 +180,10 @@ describe("schemaLabel — what a pre-squash backup is labelled", () => {
   });
 
   it("nothing recorded but the v0.9 columns present → by shape", () => {
-    // The newest migration whose tables and columns match. 0005 only drops
-    // a NOT NULL (no column of its own), so the shape reads as 0005 — a
-    // label, not a record of what ran.
+    // The newest migration whose tables and columns match — a label, not a
+    // record of what ran (0007 is data only, 0009 indexes only).
     expect(schemaLabel(journal, FOLDER, new Set(), allApplied, crypto)).toBe(
-      "0005_v092_filing_status_auto",
+      "0010_v095_market_closes",
     );
   });
 });

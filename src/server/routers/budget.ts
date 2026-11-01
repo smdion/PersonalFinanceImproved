@@ -1,6 +1,7 @@
 /** Budget router for multi-profile budget management including category items, column tiers, contribution profile linking, and budget API integration. */
 import { assertWithinIrsLimits } from "@/server/helpers/contribution-caps";
 import { assertNoPlanUses } from "@/server/helpers/plans";
+import { SK_RETIREMENT_DEC_BUDGET_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { eq, asc, inArray, and, gte, lt } from "drizzle-orm";
 import { log } from "@/lib/logger";
 import { z } from "zod/v4";
@@ -527,6 +528,25 @@ export const budgetRouter = createTRPCRouter({
       await ctx.db
         .delete(schema.budgetProfiles)
         .where(eq(schema.budgetProfiles.id, input.id));
+
+      // Nothing may keep pointing at the deleted profile: the retirement
+      // page's retirement-spending pick (app_settings holds the id as a
+      // number or numeric string) and a budget-API link.
+      const [decSetting] = await ctx.db
+        .select()
+        .from(schema.appSettings)
+        .where(eq(schema.appSettings.key, SK_RETIREMENT_DEC_BUDGET_PROFILE_ID));
+      if (decSetting && Number(decSetting.value) === input.id) {
+        await ctx.db
+          .delete(schema.appSettings)
+          .where(
+            eq(schema.appSettings.key, SK_RETIREMENT_DEC_BUDGET_PROFILE_ID),
+          );
+      }
+      await ctx.db
+        .update(schema.apiConnections)
+        .set({ linkedProfileId: null })
+        .where(eq(schema.apiConnections.linkedProfileId, input.id));
       return { ok: true };
     }),
 
@@ -1685,8 +1705,8 @@ export const budgetRouter = createTRPCRouter({
 
   /** Pull budgeted amounts from API for all linked items (API -> Ledgr). */
   syncBudgetFromApi: budgetProcedure
-    .input(z.object({ selectedColumn: z.number().int().default(0) }))
-    .mutation(async ({ ctx, input }) => {
+    .input(z.object({}).optional())
+    .mutation(async ({ ctx }) => {
       const active = await getActiveBudgetApi(ctx.db);
       if (active === "none") {
         throw new TRPCError({
@@ -1717,7 +1737,10 @@ export const budgetRouter = createTRPCRouter({
       // Use linked profile from apiConnections (consistent with sync.ts orchestrator),
       // falling back to active profile if no linked profile is configured.
       const [conn] = await ctx.db
-        .select({ linkedProfileId: schema.apiConnections.linkedProfileId })
+        .select({
+          linkedProfileId: schema.apiConnections.linkedProfileId,
+          linkedColumnIndex: schema.apiConnections.linkedColumnIndex,
+        })
         .from(schema.apiConnections)
         .where(eq(schema.apiConnections.service, active));
       const allProfiles = await ctx.db.select().from(schema.budgetProfiles);
@@ -1729,6 +1752,10 @@ export const budgetRouter = createTRPCRouter({
           code: "NOT_FOUND",
           message: "No linked or active budget profile",
         });
+      // Same connection-configured column the preview (sync/core.ts) and
+      // syncBudgetToApi use — a client-sent column would write a number into
+      // a column the user never saw in the preview.
+      const colIdx = conn?.linkedColumnIndex ?? 0;
 
       const itemRows = await ctx.db
         .select()
@@ -1761,9 +1788,14 @@ export const budgetRouter = createTRPCRouter({
         const apiCat = apiCategories.get(item.apiCategoryId);
         if (!apiCat) continue;
 
+        // A category with no goal has nothing to pull — writing 0 would
+        // wipe the item's amount.
+        if (apiCat.goalTarget == null) continue;
+
         const amounts = budgetAmountsSchema.parse(item.amounts);
-        const colIdx = Math.min(input.selectedColumn, amounts.length - 1);
-        amounts[colIdx] = apiCat.goalTarget ?? 0;
+        // An item with no amount columns has nowhere to write (index -1).
+        if (amounts.length === 0) continue;
+        amounts[Math.min(colIdx, amounts.length - 1)] = apiCat.goalTarget;
 
         await ctx.db
           .update(schema.budgetItems)

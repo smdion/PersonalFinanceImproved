@@ -795,6 +795,22 @@ export const V08_MIGRATION_HASHES: Record<string, string> = {
   // v0.9.2: a Retirement Profile's filing status may be empty (= Auto).
   fc5a04adc960cfb5f6b2aca6c670a1a7574dc29d22bfeb275698de2d92d6f0c6:
     "0005_v092_filing_status_auto",
+  // v0.9.5: debts purchase/term/pulled balance; VPW params and the
+  // per-strategy Social Security switches.
+  "34805b1b06399bee36372f4a957f544c6bc9a8f2e001a290c75201e6d40c2471":
+    "0006_v095_milestones",
+  // v0.9.5: credentials scrubbed from the change log (data only).
+  "343a1cdb129eb7364a0c952f416452e670fe62dbcf051751b8b98283a0804e87":
+    "0007_v095_redact_change_log",
+  // v0.9.5: IRMAA surcharges inside the budget or on top of it.
+  f9d735d3807b08de4b79ae9ee0ef0484fffde20b88824342ef2aef65a467a9e6:
+    "0008_v095_irmaa_budget",
+  // v0.9.5: holdings kept per report, not per assumed day (index only).
+  "3191a9cd884c7a1ea667d17481dae32ee2478373fd74ba53e3b392bd5ed18e49":
+    "0009_v095_holding_reports",
+  // v0.9.5: Tiingo daily closes kept (market_closes).
+  "57558a9b1f60616f4d97ba5e72c3c19871d6b86abd19b9bfdf9b75402a28c1cb":
+    "0010_v095_market_closes",
 };
 
 /**

@@ -455,6 +455,10 @@ export function capSpecs(
     projectedSalary: number;
     salaryBase: number;
     limitGrowthFactor: number;
+    personPay?: {
+      projected: ReadonlyMap<number, number>;
+      base: Readonly<Record<number, number>>;
+    };
   },
   year: YearCapInput,
 ): CappedSpecs {

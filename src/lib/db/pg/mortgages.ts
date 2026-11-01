@@ -164,6 +164,16 @@ export const debts = pgTable(
     paidOffDate: date("paid_off_date"),
     notes: text("notes"),
     sortOrder: integer("sort_order").notNull().default(0),
+    /** What was paid for the thing the loan bought (a car's price) — the
+     *  20/3/8 rule's down payment is this less `originalAmount`. */
+    purchasePrice: decimal("purchase_price", { precision: 14, scale: 2 }),
+    /** The loan's term in months, as written. */
+    termMonths: integer("term_months"),
+    /** The balance pulled from a mapped budget account (as
+     *  mortgage_loans.api_balance) and the day it's from; used instead of
+     *  `balance` while set, cleared when the mapping goes. */
+    apiBalance: decimal("api_balance", { precision: 14, scale: 2 }),
+    apiBalanceDate: date("api_balance_date"),
   },
   (table) => [index("debts_owner_person_id_idx").on(table.ownerPersonId)],
 );

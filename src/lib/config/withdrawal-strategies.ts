@@ -28,6 +28,8 @@ type ParamLever = {
 
 type ParamField = {
   key: string;
+  /** The retirement_settings column (Drizzle name) the value is stored in. */
+  column: string;
   label: string;
   type: ParamFieldType;
   min?: number;
@@ -183,10 +185,12 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     reactsToVolatility: false,
     defaultParams: {
       rmdMultiplier: 1.0,
+      ssInAmount: false,
     },
     paramFields: [
       {
         key: "rmdMultiplier",
+        column: "rmdMultiplier",
         label: "RMD Multiplier",
         type: "number",
         min: 0.5,
@@ -200,6 +204,15 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
           unit: "relative",
           targets: ["survival", "smoothness"],
         },
+      },
+      {
+        key: "ssInAmount",
+        column: "rmdSsInAmount",
+        label: "Social Security comes out of this amount",
+        type: "boolean",
+        default: false,
+        tooltip:
+          "Off (the method as published): the amount is what leaves the portfolio each year, and Social Security comes on top of it. On: the amount is your spending, and Social Security pays part of it — less leaves the portfolio once it starts.",
       },
     ],
     crossYearStateKeys: [],
@@ -242,6 +255,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     paramFields: [
       {
         key: "upperGuardrail",
+        column: "gkUpperGuardrail",
         label: "Upper Guardrail",
         type: "percent",
         min: 0.5,
@@ -254,6 +268,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       },
       {
         key: "increasePercent",
+        column: "gkIncreasePct",
         label: "Increase %",
         type: "percent",
         min: 0.01,
@@ -267,6 +282,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       },
       {
         key: "lowerGuardrail",
+        column: "gkLowerGuardrail",
         label: "Lower Guardrail",
         type: "percent",
         min: 1.0,
@@ -279,6 +295,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       },
       {
         key: "decreasePercent",
+        column: "gkDecreasePct",
         label: "Decrease %",
         type: "percent",
         min: 0.01,
@@ -292,6 +309,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       },
       {
         key: "skipInflationAfterLoss",
+        column: "gkSkipInflationAfterLoss",
         label: "Skip Inflation After Loss",
         type: "boolean",
         default: true,
@@ -303,9 +321,10 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       "initialWithdrawalRate",
       "priorYearReturn",
       "priorYearSpending",
+      "priorYearSsIncome",
     ],
     guide: {
-      how: "Start with your budget, adjusted for inflation each year. If your current withdrawal rate drops below 80% of the initial rate (portfolio doing well), increase spending 10%. If it exceeds 120% (portfolio struggling), cut spending 10%. Also skips inflation after loss years.",
+      how: "Start with your budget, adjusted for inflation each year. If your current withdrawal rate drops below 80% of the initial rate (portfolio doing well), increase spending 10%. If it exceeds 120% (portfolio struggling), cut spending 10%. Also skips inflation after loss years. The withdrawal rate is what the portfolio pays — spending less Social Security — over its balance, and the 10% moves are 10% of that draw; Social Security starting moves the starting rate with it, so it's never read as a market gain.",
       strengths: [
         "Strong portfolio protection — 100% success rate in most scenarios",
         "Responds to both good and bad markets with clear, rule-based adjustments",
@@ -340,6 +359,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     paramFields: [
       {
         key: "annualDeclineRate",
+        column: "sdAnnualDeclineRate",
         label: "Annual Decline Rate",
         type: "percent",
         min: 0.005,
@@ -384,10 +404,12 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
     defaultParams: {
       withdrawalPercent: 0.05,
       floorPercent: 0.9,
+      ssInAmount: false,
     },
     paramFields: [
       {
         key: "withdrawalPercent",
+        column: "cpWithdrawalPercent",
         label: "Withdrawal %",
         type: "percent",
         min: 0.02,
@@ -403,6 +425,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       },
       {
         key: "floorPercent",
+        column: "cpFloorPercent",
         label: "Floor (% of Initial)",
         type: "percent",
         min: 0.5,
@@ -412,6 +435,15 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         tooltip:
           "Minimum withdrawal as a percentage of the initial withdrawal amount.",
         lever: { delta: -0.1, unit: "relative", targets: ["survival"] },
+      },
+      {
+        key: "ssInAmount",
+        column: "cpSsInAmount",
+        label: "Social Security comes out of this amount",
+        type: "boolean",
+        default: false,
+        tooltip:
+          "Off (the method as published): the amount is what leaves the portfolio each year, and Social Security comes on top of it. On: the amount is your spending, and Social Security pays part of it — less leaves the portfolio once it starts.",
       },
     ],
     crossYearStateKeys: ["initialWithdrawalAmount"],
@@ -448,10 +480,12 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       withdrawalPercent: 0.05,
       rollingYears: DEFAULT_ENDOWMENT_ROLLING_YEARS,
       floorPercent: 0.9,
+      ssInAmount: false,
     },
     paramFields: [
       {
         key: "withdrawalPercent",
+        column: "enWithdrawalPercent",
         label: "Withdrawal %",
         type: "percent",
         min: 0.02,
@@ -468,6 +502,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       },
       {
         key: "rollingYears",
+        column: "enRollingYears",
         label: "Rolling Window (years)",
         type: "number",
         min: 3,
@@ -480,6 +515,7 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       },
       {
         key: "floorPercent",
+        column: "enFloorPercent",
         label: "Floor (% of Initial)",
         type: "percent",
         min: 0.5,
@@ -488,6 +524,15 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         default: 0.9,
         tooltip:
           "Minimum withdrawal as a percentage of the initial withdrawal amount.",
+      },
+      {
+        key: "ssInAmount",
+        column: "enSsInAmount",
+        label: "Social Security comes out of this amount",
+        type: "boolean",
+        default: false,
+        tooltip:
+          "Off (the method as published): the amount is what leaves the portfolio each year, and Social Security comes on top of it. On: the amount is your spending, and Social Security pays part of it — less leaves the portfolio once it starts.",
       },
     ],
     crossYearStateKeys: ["initialWithdrawalAmount", "balanceHistory"],
@@ -524,10 +569,12 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       basePercent: 0.05,
       ceilingPercent: 0.05,
       floorPercent: 0.025,
+      ssInAmount: false,
     },
     paramFields: [
       {
         key: "basePercent",
+        column: "vdBasePercent",
         label: "Base Withdrawal %",
         type: "percent",
         min: 0.02,
@@ -543,33 +590,44 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
       },
       {
         key: "ceilingPercent",
-        label: "Ceiling (max YoY increase)",
+        column: "vdCeilingPercent",
+        label: "Ceiling (max nominal YoY increase)",
         type: "percent",
         min: 0.01,
         max: 0.15,
         step: 0.005,
         default: 0.05,
         tooltip:
-          "Maximum year-over-year spending increase (e.g. 5% = spending can grow at most 5% per year).",
+          "Maximum year-over-year increase in nominal dollars, before inflation (e.g. 5% = spending can grow at most 5% per year; at 3% inflation that's about 1.9% in real terms).",
       },
       {
         key: "floorPercent",
-        label: "Floor (max YoY decrease)",
+        column: "vdFloorPercent",
+        label: "Floor (max nominal YoY decrease)",
         type: "percent",
         min: 0.01,
         max: 0.1,
         step: 0.005,
         default: 0.025,
         tooltip:
-          "Maximum year-over-year spending decrease (e.g. 2.5% = spending can fall at most 2.5% per year).",
+          "Maximum year-over-year decrease in nominal dollars, before inflation (e.g. 2.5% = spending can fall at most 2.5% per year; at 3% inflation that's about 5.4% in real terms).",
         lever: { delta: -0.4, unit: "relative", targets: ["smoothness"] },
+      },
+      {
+        key: "ssInAmount",
+        column: "vdSsInAmount",
+        label: "Social Security comes out of this amount",
+        type: "boolean",
+        default: false,
+        tooltip:
+          "Off (the method as published): the amount is what leaves the portfolio each year, and Social Security comes on top of it. On: the amount is your spending, and Social Security pays part of it — less leaves the portfolio once it starts.",
       },
     ],
     crossYearStateKeys: ["priorYearSpending"],
     guide: {
-      how: "Withdraw 5% of your current portfolio, but limit year-over-year changes: spending can rise at most 5% or fall at most 2.5% from the prior year. This creates a smoother income stream than pure Constant Percentage.",
+      how: "Withdraw 5% of your current portfolio, but limit year-over-year changes: spending can rise at most 5% or fall at most 2.5% from the prior year, in nominal dollars. This creates a smoother income stream than pure Constant Percentage. The limits are nominal like every percentage-based strategy's floor, so at 3% inflation the 2.5% cut is about 5.4% in real terms and the 5% raise about 1.9%. The published method applies them to inflation-adjusted spending, so results won't match its 4.7% figure exactly.",
       strengths: [
-        "Excellent downside protection — spending can only fall 2.5% per year, not 30%+",
+        "Excellent downside protection — spending can only fall 2.5% per year in nominal dollars, not 30%+",
         "Asymmetric guardrails favor stability (tighter floor than ceiling)",
         "Based on Vanguard research (2012), well-tested methodology",
         "High success rate — typically 100%",
@@ -583,6 +641,83 @@ export const WITHDRAWAL_STRATEGY_CONFIG = {
         "Retirees who want portfolio-linked spending with strong short-term income stability.",
       stabilityNote:
         "Low stability (3–5%) despite smooth year-to-year changes. The metric measures against an inflation-adjusted baseline over the full retirement, and even small compounding cuts accumulate over 40 years.",
+    },
+  },
+
+  vpw: {
+    label: "Variable Percentage (VPW)",
+    shortLabel: "VPW",
+    description:
+      "Bogleheads' Variable Percentage Withdrawal — a percentage of the balance that rises with age and allocation, spending the portfolio down by a set age",
+    morningstarRef: null,
+    incomeSource: "formula",
+    usesWithdrawalRate: false,
+    usesPostRetirementRaise: false,
+    reactsToVolatility: false,
+    defaultParams: {
+      cap: 0.1,
+      endAge: 100,
+      // The real returns the published table is built on.
+      stockReturn: 0.05,
+      bondReturn: 0.019,
+      // Used when the projection has no asset allocation.
+      stockShare: 0.6,
+      ssInAmount: false,
+    },
+    paramFields: [
+      {
+        key: "cap",
+        column: "vpwCap",
+        label: "Most it reaches",
+        type: "percent",
+        min: 0.05,
+        max: 0.2,
+        step: 0.005,
+        default: 0.1,
+        tooltip:
+          '"The withdrawal percentage stops growing when it reaches 10%" (Bogleheads). Past this the percentage holds.',
+        lever: { delta: -0.2, unit: "relative", targets: ["survival"] },
+      },
+      {
+        key: "endAge",
+        column: "vpwEndAge",
+        label: "Table runs to age",
+        type: "number",
+        min: 90,
+        max: 110,
+        step: 1,
+        default: 100,
+        tooltip:
+          "The age the percentages are built to spend the portfolio by. The published table runs to 100.",
+        lever: { delta: 5, unit: "absolute", targets: ["survival"] },
+      },
+      {
+        key: "ssInAmount",
+        column: "vpwSsInAmount",
+        label: "Social Security comes out of this amount",
+        type: "boolean",
+        default: false,
+        tooltip:
+          "Off (the method as published): the amount is what leaves the portfolio each year, and Social Security comes on top of it. On: the amount is your spending, and Social Security pays part of it — less leaves the portfolio once it starts.",
+      },
+    ],
+    crossYearStateKeys: [],
+    guide: {
+      how: "Each year, withdraw a percentage of the portfolio that depends on your age (the younger spouse's, for a couple) and how much is in stocks — the payment that would spend the balance by age 100 at 5% real for stocks and 1.9% for bonds. At 65 with 60% stocks it's 5.0%; it rises every year, and stops growing at 10%. Social Security comes on top.",
+      strengths: [
+        "Spends the portfolio on purpose — no large unspent balance at the end",
+        "Self-correcting: the withdrawal follows the balance, so it can't run out before the end age",
+        "Simple yearly rule with a published table to check against",
+      ],
+      weaknesses: [
+        "Income moves with the market, like any percentage-of-balance method",
+        "Spending rises late in life as the percentage climbs; living past the end age leaves little",
+        "Bogleheads suggests buying an annuity around 80 to cover living past 100 — Ledgr doesn't model that",
+      ],
+      bestFor:
+        "Retirees who want to spend their savings fully, with Social Security or pensions as the floor.",
+      stabilityNote:
+        "Low stability is expected — spending tracks the balance, and the percentage itself rises with age.",
     },
   },
 } as const;

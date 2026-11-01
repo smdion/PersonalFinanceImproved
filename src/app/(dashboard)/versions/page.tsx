@@ -777,7 +777,9 @@ export default function VersionsPage() {
                   </table>
                 ) : (
                   <div className="text-faint py-4 text-center text-xs">
-                    Table is empty in this version.
+                    {"withheld" in previewData && previewData.withheld
+                      ? "Not shown — this table holds credentials. A restore still brings it back."
+                      : "Table is empty in this version."}
                   </div>
                 )}
               </div>

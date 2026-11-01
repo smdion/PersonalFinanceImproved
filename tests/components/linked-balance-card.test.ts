@@ -1,245 +1,65 @@
 /**
- * Pure aggregation logic for the dashboard's "Linked Balance" card:
- * account-type breakdown (with nested tax type) and drift summary.
- * Value assertions, not just "runs without throwing" — these are
- * financial-summing functions.
+ * The Current Balances card's rows: the same figures as its total, by
+ * group, with each group's move into the card's one close.
  */
 import { describe, it, expect } from "vitest";
-import {
-  summarizeByAccountType,
-  summarizeByTrackedAccount,
-  summarizeDrift,
-  type SimplefinAccountListItem,
-} from "@/components/cards/dashboard/linked-balance-card";
+import { groupCurrentBalances } from "@/components/cards/dashboard/linked-balance-card";
 
-function account(
-  overrides: Partial<SimplefinAccountListItem> = {},
-): SimplefinAccountListItem {
-  return {
-    id: 1,
-    orgName: "Example Bank",
-    isIncluded: true,
-    lastBalance: 0,
-    lastBalanceDate: null,
-    lastSeenAt: "2026-06-01",
-    linkedPerformanceAccountId: null,
-    change: null,
-    taxType: null,
-    accountType: null,
-    subType: null,
-    snapshotDate: null,
-    ...overrides,
-  };
-}
-
-describe("summarizeByAccountType", () => {
-  it("buckets included accounts by account type and sums to the total", () => {
-    const accounts = [
-      account({ id: 1, lastBalance: 100, accountType: "401k" }),
-      account({ id: 2, lastBalance: 50, accountType: "401k" }),
-      account({ id: 3, lastBalance: 200, accountType: "brokerage" }),
-      account({ id: 4, lastBalance: 25, accountType: null }),
-    ];
-    const result = summarizeByAccountType(accounts);
-    const total = result.reduce((s, r) => s + r.balance, 0);
-    expect(total).toBe(375);
-
-    const k401 = result.find((r) => r.label === "401k");
-    expect(k401?.balance).toBe(150);
-    const brokerage = result.find((r) => r.label === "Brokerage");
-    expect(brokerage?.balance).toBe(200);
-    const unmatched = result.find((r) => r.label === "Not matched");
-    expect(unmatched?.balance).toBe(25);
-  });
-
-  it("keeps 'Not matched' last regardless of its balance size", () => {
-    const accounts = [
-      account({ id: 1, lastBalance: 5, accountType: "hsa" }),
-      account({ id: 2, lastBalance: 999999, accountType: null }),
-    ];
-    const result = summarizeByAccountType(accounts);
-    expect(result[result.length - 1]!.label).toBe("Not matched");
-  });
-
-  it("sorts matched groups largest balance first", () => {
-    const accounts = [
-      account({ id: 1, lastBalance: 100, accountType: "hsa" }),
-      account({ id: 2, lastBalance: 500, accountType: "ira" }),
-      account({ id: 3, lastBalance: 300, accountType: "401k" }),
-    ];
-    const result = summarizeByAccountType(accounts);
-    expect(result.map((r) => r.label)).toEqual(["IRA", "401k", "HSA"]);
-  });
-
-  it("excludes accounts where isIncluded is false", () => {
-    const accounts = [
-      account({ lastBalance: 100, accountType: "brokerage" }),
-      account({
-        lastBalance: 999,
-        accountType: "brokerage",
-        isIncluded: false,
-      }),
-    ];
-    const result = summarizeByAccountType(accounts);
-    expect(result).toHaveLength(1);
-    expect(result[0]!.balance).toBe(100);
-  });
-
-  it("returns an empty array when there are no included accounts", () => {
-    expect(summarizeByAccountType([])).toEqual([]);
-  });
-
-  it("computes a per-group drift, deduped by performanceAccountId within the group", () => {
-    const accounts = [
-      account({
-        id: 1,
-        lastBalance: 100,
-        accountType: "ira",
-        linkedPerformanceAccountId: 10,
-        change: 15,
-      }),
-      account({
-        id: 2,
-        lastBalance: 50,
-        accountType: "ira",
-        linkedPerformanceAccountId: 10, // same target — shouldn't double the drift
-        change: 15,
-      }),
-      account({
-        id: 3,
-        lastBalance: 200,
-        accountType: "ira",
-        linkedPerformanceAccountId: 20,
-        change: -5,
-      }),
-      account({
-        id: 4,
-        lastBalance: 30,
-        accountType: "hsa",
-      }), // unmatched — drift stays 0
-    ];
-    const result = summarizeByAccountType(accounts);
-    expect(result.find((r) => r.label === "IRA")?.drift).toBe(10); // 15 + -5
-    expect(result.find((r) => r.label === "HSA")?.drift).toBe(0);
-  });
-
-  it("collapses sub-cent float residue in a group's summed drift to exactly 0", () => {
-    // Real incident: three accounts under one 401k with per-account `change`
-    // values that sum to a true zero but land on a tiny nonzero float via
-    // IEEE-754 addition (0.1 + 0.2 + -0.3 === 5.55e-17, not 0) — this used
-    // to show a "+$0.00" drift badge next to sibling categories with no
-    // badge at all for an actual zero.
-    const accounts = [
-      account({
-        id: 1,
-        lastBalance: 100,
-        accountType: "401k",
-        linkedPerformanceAccountId: 10,
-        change: 0.1,
-      }),
-      account({
-        id: 2,
-        lastBalance: 50,
-        accountType: "401k",
-        linkedPerformanceAccountId: 20,
-        change: 0.2,
-      }),
-      account({
-        id: 3,
-        lastBalance: 25,
-        accountType: "401k",
-        linkedPerformanceAccountId: 30,
-        change: -0.3,
-      }),
-    ];
-    const result = summarizeByAccountType(accounts);
-    expect(result.find((r) => r.label === "401k")?.drift).toBe(0);
-  });
+const balance = (
+  key: string,
+  current: number,
+  move: number | null,
+  market = true,
+) => ({
+  key,
+  feedIds: [1],
+  performanceAccountId: 1,
+  current,
+  snapshot: current,
+  noSnapshot: false,
+  source: "snapshot" as const,
+  market,
+  move,
 });
 
-describe("summarizeDrift", () => {
-  it("dedupes by linkedPerformanceAccountId so a shared change isn't double-counted", () => {
-    const accounts = [
-      account({ id: 1, linkedPerformanceAccountId: 10, change: 25 }),
-      account({ id: 2, linkedPerformanceAccountId: 10, change: 25 }), // same group, same change
-      account({ id: 3, linkedPerformanceAccountId: 20, change: -10 }),
-      account({ id: 4, linkedPerformanceAccountId: 30, change: 0 }),
-      account({ id: 5, linkedPerformanceAccountId: null, change: null }),
-    ];
-    const result = summarizeDrift(accounts);
-    expect(result.groupCount).toBe(3);
-    expect(result.driftedCount).toBe(2); // group 30 has change=0, not drifted
-    expect(result.totalDrift).toBe(15); // 25 + -10 + 0
-  });
+describe("groupCurrentBalances", () => {
+  const bucket = (b: { key: string }) =>
+    b.key.startsWith("ira")
+      ? { key: "ira", label: "IRA" }
+      : b.key === "x"
+        ? { key: "", label: "Not matched" }
+        : { key: "401k", label: "401k" };
 
-  it("ignores an unchecked account even while it stays linked", () => {
-    const result = summarizeDrift([
-      account({ id: 1, linkedPerformanceAccountId: 10, change: 0.4 }),
-      // Unchecked, linked, stale balance vs a $0 snapshot.
-      account({
-        id: 2,
-        linkedPerformanceAccountId: 20,
-        change: 3951.88,
-        isIncluded: false,
-      }),
-    ]);
-    expect(result).toEqual({ groupCount: 1, driftedCount: 1, totalDrift: 0.4 });
-  });
-
-  it("returns zeroed summary when nothing is matched", () => {
-    expect(summarizeDrift([account(), account()])).toEqual({
-      groupCount: 0,
-      driftedCount: 0,
-      totalDrift: 0,
-    });
-  });
-
-  it("collapses sub-cent float residue in the headline totalDrift to exactly 0", () => {
-    const accounts = [
-      account({ id: 1, linkedPerformanceAccountId: 10, change: 0.1 }),
-      account({ id: 2, linkedPerformanceAccountId: 20, change: 0.2 }),
-      account({ id: 3, linkedPerformanceAccountId: 30, change: -0.3 }),
-    ];
-    const result = summarizeDrift(accounts);
-    expect(result.totalDrift).toBe(0);
-  });
-});
-
-describe("summarizeByTrackedAccount", () => {
-  it("gives each tracked account its own row, by name, and agrees on the total", () => {
-    const accounts = [
-      account({
-        id: 1,
-        lastBalance: 100,
-        linkedPerformanceAccountId: 7,
-        change: 10,
-      }),
-      account({
-        id: 2,
-        lastBalance: 50,
-        linkedPerformanceAccountId: 7,
-        change: 10,
-      }),
-      account({
-        id: 3,
-        lastBalance: 200,
-        linkedPerformanceAccountId: 8,
-        change: -5,
-      }),
-      account({ id: 4, lastBalance: 25 }),
-    ];
-    const names = new Map([
-      [7, "Alex IRA (Example)"],
-      [8, "Sam 401k (Example)"],
-    ]);
-    const result = summarizeByTrackedAccount(accounts, names);
-    expect(result).toEqual([
-      { key: "8", label: "Sam 401k (Example)", balance: 200, drift: -5 },
-      { key: "7", label: "Alex IRA (Example)", balance: 150, drift: 10 },
-      { key: "", label: "Not matched", balance: 25, drift: 0 },
-    ]);
-    expect(result.reduce((t, r) => t + r.balance, 0)).toBe(
-      summarizeByAccountType(accounts).reduce((t, r) => t + r.balance, 0),
+  it("rows add up to the total, largest first, unmatched last", () => {
+    const rows = groupCurrentBalances(
+      [
+        balance("ira-a", 100, -5),
+        balance("ira-b", 50, 2),
+        balance("x", 500, 1),
+        balance("401k", 300, 4),
+      ],
+      bucket,
     );
+    expect(rows.map((r) => [r.label, r.current, r.move])).toEqual([
+      ["401k", 300, 4],
+      ["IRA", 150, -3],
+      ["Not matched", 500, 1],
+    ]);
+  });
+
+  it("a row with any move it can't tell shows none — never a partial sum", () => {
+    const rows = groupCurrentBalances(
+      [balance("ira-a", 100, -5), balance("ira-b", 50, null)],
+      bucket,
+    );
+    expect(rows[0]!.move).toBeNull();
+  });
+
+  it("money that doesn't move with markets doesn't block the row", () => {
+    const rows = groupCurrentBalances(
+      [balance("ira-a", 100, -5), balance("ira-cash", 50, null, false)],
+      bucket,
+    );
+    expect(rows[0]!.move).toBe(-5);
   });
 });

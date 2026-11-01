@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { HIGH_INCOME_LINE } from "@/lib/config/milestones";
+import { formatCurrency } from "@/lib/utils/format";
 import { ProseSection } from "@/components/ui/prose-section";
 import { SettingsLink } from "@/components/ui/settings-link";
 import {
@@ -198,6 +200,12 @@ export function HelpContent() {
           </li>
           <li>
             <strong>Savings Rate</strong> &mdash; Percentage of income saved.
+            The employer match counts until household pay reaches the
+            high-income line &mdash;{" "}
+            {formatCurrency(HIGH_INCOME_LINE.married, 0)} married filing
+            jointly, {formatCurrency(HIGH_INCOME_LINE.single, 0)} otherwise (by
+            this year&apos;s filing status), or your own, set beside the match
+            switch.
           </li>
           <li>
             <strong>Budget Status</strong> &mdash; Spending versus target.

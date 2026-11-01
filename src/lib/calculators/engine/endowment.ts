@@ -37,6 +37,7 @@ export function applyEndowment(
     const initial = roundToCents(portfolioBalance * withdrawalPercent);
     return {
       projectedExpenses: initial,
+      amountKind: "portfolio_withdrawal",
       action: null,
       updatedState: {
         initialWithdrawalAmount: initial,
@@ -57,6 +58,7 @@ export function applyEndowment(
 
   return {
     projectedExpenses: spending,
+    amountKind: "portfolio_withdrawal",
     action: floorApplied ? "floor_applied" : null,
     updatedState: {
       balanceHistory: history,

@@ -15,6 +15,7 @@ import { applyEndowment } from "./endowment";
 import { applyVanguardDynamic } from "./vanguard-dynamic";
 import { applyRmdSpending } from "./rmd-spending";
 import { applyGuytonKlingerStrategy } from "./guyton-klinger";
+import { applyVpw } from "./vpw";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -38,6 +39,18 @@ export interface SpendingStrategyInput {
   age: number;
   /** Primary person's age (for RMD factor lookup). Falls back to `age` if not provided. */
   primaryPersonAge?: number;
+  /** The youngest person's age (VPW: a couple uses the younger spouse's). */
+  youngestAge?: number;
+  /** Social Security paid this year (what it covers of spending). */
+  ssIncome?: number;
+  /** The same benefits in today's dollars, and this year's growth since
+   *  the input's year — Guyton-Klinger compares benefits in today's dollars
+   *  so a cost-of-living raise never reads as a benefit starting. */
+  ssIncomeToday?: number;
+  ssGrowthFactor?: number;
+  /** This year's stock share of the portfolio (0–1), from the allocation
+   *  glide path; absent when the household has no asset classes. */
+  stockShare?: number;
   /** Cross-year state from the orchestrator. */
   crossYearState: SpendingCrossYearState;
 }
@@ -55,11 +68,24 @@ export interface SpendingCrossYearState {
   balanceHistory: number[];
   /** Count of decumulation years elapsed (for spending decline). */
   decumulationYearCount: number;
+  /** The Social Security Guyton-Klinger's anchor reflects, in today's
+   *  dollars (it rescales when a benefit starts or stops; held through
+   *  years the portfolio pays nothing). Null before the first decumulation
+   *  year. */
+  priorYearSsIncome: number | null;
 }
 
 export interface SpendingStrategyResult {
-  /** Adjusted spending for this year. */
+  /** This year's amount — spending, or the portfolio withdrawal (see
+   *  `amountKind`). */
   projectedExpenses: number;
+  /** What the amount is this year: what the household spends (Social
+   *  Security pays part of it — the default), or what leaves the portfolio
+   *  (the published portfolio-sized methods). A strategy can switch from
+   *  year to year (RMD Spending before the RMD age follows the budget).
+   *  The household's `ssInAmount` switch can still treat a
+   *  portfolio_withdrawal amount as spending. */
+  amountKind?: "spending" | "portfolio_withdrawal";
   /** Action label (e.g. 'increase', 'decrease', 'floor_applied'). */
   action: string | null;
   /** Updates to merge into cross-year state. */
@@ -75,6 +101,7 @@ export function initialCrossYearState(): SpendingCrossYearState {
     priorYearSpending: null,
     balanceHistory: [],
     decumulationYearCount: 0,
+    priorYearSsIncome: null,
   };
 }
 
@@ -117,6 +144,19 @@ export interface EndowmentParams {
   floorPercent: number;
 }
 
+/** Variable Percentage Withdrawal params. */
+export interface VpwParams {
+  /** The most the percentage reaches. */
+  cap: number;
+  /** The age the table runs to. */
+  endAge: number;
+  /** Real returns VPW assumes for stocks and bonds. */
+  stockReturn: number;
+  bondReturn: number;
+  /** Stock share used when the projection has no allocation. */
+  stockShare: number;
+}
+
 /** Vanguard Dynamic (Floor & Ceiling) params. */
 export interface VanguardDynamicParams {
   basePercent: number;
@@ -146,6 +186,7 @@ const STRATEGY_DISPATCH: Record<WithdrawalStrategyType, StrategyFn> = {
   constant_percentage: applyConstantPercentage,
   endowment: applyEndowment,
   vanguard_dynamic: applyVanguardDynamic,
+  vpw: applyVpw,
 };
 
 /**

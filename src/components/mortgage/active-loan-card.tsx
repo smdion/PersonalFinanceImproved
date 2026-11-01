@@ -6,6 +6,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { Badge } from "@/components/ui/badge";
 import { AmortizationTable } from "./amortization-table";
 import type { LoanSummary } from "./types";
+import { RetirementPayoffNote } from "./retirement-payoff-note";
 
 export function ActiveLoanCard({
   loan,
@@ -61,6 +62,7 @@ export function ActiveLoanCard({
           label="Paid off"
           variant="success"
         />
+        <RetirementPayoffNote payoffDate={loan.payoffDate} />
 
         <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
           <div>

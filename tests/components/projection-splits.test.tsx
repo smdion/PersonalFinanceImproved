@@ -321,6 +321,23 @@ describe("ProjectionHeroKpis", () => {
         },
         medianEndBalance: 1500000,
         numTrials: 1000,
+        // The page is in today's dollars ("real"): read per-trial-deflated.
+        today: {
+          percentileBands: [
+            {
+              age: 65,
+              year: 2055,
+              p5: 800000,
+              p10: 1000000,
+              p25: 1500000,
+              p50: 2000000,
+              p75: 2800000,
+              p90: 3500000,
+              p95: 4000000,
+            },
+          ],
+          terminalBalance: { median: 1500000 },
+        },
       },
     };
     const s = baseMockState({
@@ -457,6 +474,15 @@ describe("McDepletionCallout", () => {
             },
             distributions: {
               failureAge: { median: 88, p10: 82, p25: 85, p75: 92, p90: 95 },
+              terminalBalance: {
+                median: 50000,
+                p10: 0,
+                p25: 10000,
+                p75: 200000,
+                p90: 500000,
+              },
+            },
+            today: {
               terminalBalance: {
                 median: 50000,
                 p10: 0,

@@ -2,11 +2,14 @@
 
 /** Client content for the Contributions page — prefetched by page.tsx. */
 
+import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useActiveContribProfile } from "@/lib/hooks/use-active-contrib-profile";
 import { PageHeader } from "@/components/ui/page-header";
+import { CoastFireNote } from "@/components/contributions/coast-fire-note";
 import { ChipToggle } from "@/components/ui/chip-toggle";
+import { HighIncomeLineEdit } from "@/components/cards/dashboard/high-income-line-edit";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -18,20 +21,18 @@ import { safeDivide } from "@/lib/utils/math";
 import { categoryChartHex, gainLossTextColor } from "@/lib/utils/colors";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { useScenario } from "@/lib/context/scenario-context";
-import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
 import { useRecommendations } from "@/lib/hooks/use-recommendations";
 import { contributionsSummaryLine } from "@/lib/pure/plain-summary";
 import { PlainSummary } from "@/components/ui/plain-summary";
 import {
   householdSavings,
+  isHighIncomeHousehold,
   type HouseholdSavings,
   type SavingsGroup,
 } from "@/lib/pure/contributions";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
-import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
 
 type PeriodMode = "annual" | "monthly" | "per-period";
 
@@ -90,17 +91,17 @@ export function ContributionsContent() {
   const [selectedProfileId, setSelectedProfileId] = useState<
     number | undefined
   >(activeProfileId ?? undefined);
-  const [highIncomeThreshold] = usePersistedSetting<number>(
-    SK_HIGH_INCOME_THRESHOLD,
-    DEFAULT_HIGH_INCOME_THRESHOLD,
-  );
+  const { threshold: highIncomeThreshold, error: highIncomeError } =
+    useHighIncomeLine();
   // Before the early returns (hooks): the switches are shared app-wide.
   const { excludeMatch, includePortfolio, toggleMatch, togglePortfolio } =
     useSavingsRateOptions(
-      (data?.people ?? [])
-        .filter((p) => p.salary > 0)
-        .reduce((s, p) => s + (p.totalCompensation ?? p.salary), 0) >=
+      isHighIncomeHousehold(
+        (data?.people ?? [])
+          .filter((p) => p.salary > 0)
+          .reduce((s, p) => s + (p.totalCompensation ?? p.salary), 0),
         highIncomeThreshold,
+      ),
     );
 
   // The top paycheck to-do, for the plain-words line.
@@ -113,7 +114,23 @@ export function ContributionsContent() {
     { enabled: !!selectedProfileId },
   );
 
-  if (isLoading) {
+  if (highIncomeError) {
+    return (
+      <div>
+        <PageHeader
+          title="Contributions"
+          subtitle="Household contribution breakdown and savings rates"
+        />
+        <Card>
+          <p className="py-8 text-center text-sm text-red-500">
+            Failed to load the high-income line
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isLoading || highIncomeThreshold === undefined) {
     return (
       <div>
         <PageHeader
@@ -256,6 +273,7 @@ export function ContributionsContent() {
           </div>
         </div>
       </PageHeader>
+      <CoastFireNote />
 
       {/* Prior-year contribution window banner */}
       {priorYearWindow && (
@@ -310,6 +328,7 @@ export function ContributionsContent() {
                         label="Portfolio"
                         title="Count brokerage and other non-retirement savings (also on the Dashboard)"
                       />
+                      <HighIncomeLineEdit />
                     </>
                   }
                   text={

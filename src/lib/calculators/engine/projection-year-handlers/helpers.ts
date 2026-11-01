@@ -2,6 +2,7 @@
  * Shared helpers used by both accumulation-year and decumulation-year handlers.
  */
 import { isPreTaxType } from "../../../config/account-types";
+import { rmdOwnerOf } from "../rmd-enforcement";
 import type { ProjectionContext, ProjectionLoopState } from "./types";
 
 /**
@@ -16,10 +17,11 @@ export function updatePerPersonTradBalance(
   if (ctx.rmdStartAgeByPerson.size === 0 || !ctx.hasIndividualAccounts) return;
   state.priorYearEndTradByPerson.clear();
   for (const ia of ctx.indAccts) {
-    if (ia.ownerPersonId != null && isPreTaxType(ia.taxType)) {
+    const owner = rmdOwnerOf(ia, ctx.primaryPersonId);
+    if (owner != null && isPreTaxType(ia.taxType)) {
       const bal = state.indBal.get(ctx.indKey(ia)) ?? 0;
-      const prev = state.priorYearEndTradByPerson.get(ia.ownerPersonId) ?? 0;
-      state.priorYearEndTradByPerson.set(ia.ownerPersonId, prev + bal);
+      const prev = state.priorYearEndTradByPerson.get(owner) ?? 0;
+      state.priorYearEndTradByPerson.set(owner, prev + bal);
     }
   }
 }

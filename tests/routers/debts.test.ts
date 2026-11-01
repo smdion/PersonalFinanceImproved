@@ -150,6 +150,48 @@ describe("debts router", () => {
     }
   });
 
+  it("a balance pulled from the budget is what's owed — in the list and in net worth — while the typed one stays", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const created = await caller.debts.create({
+        ...loan,
+        purchasePrice: "30000",
+        termMonths: 36,
+      });
+      db.update(schema.debts)
+        .set({ apiBalance: "18000.00", apiBalanceDate: "2026-10-28" })
+        .run();
+      const [d] = await caller.debts.list();
+      expect(d).toMatchObject({
+        id: created!.id,
+        balance: 20000,
+        apiBalance: 18000,
+        currentBalance: 18000,
+        currentBalanceAsOf: "2026-10-28",
+        purchasePrice: 30000,
+        termMonths: 36,
+      });
+      expect(await caller.debts.summary()).toMatchObject({ itemized: 18000 });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("a pulled balance of zero counts as paid off", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      await caller.debts.create(loan);
+      db.update(schema.debts)
+        .set({ apiBalance: "0.00", apiBalanceDate: "2026-10-28" })
+        .run();
+      const [d] = await caller.debts.list();
+      expect(d!.open).toBe(false);
+      expect(await caller.debts.summary()).toMatchObject({ itemized: 0 });
+    } finally {
+      cleanup();
+    }
+  });
+
   it("only an admin can change debts; anyone signed in can read them", async () => {
     const { caller, cleanup } = await createTestCaller(viewerSession);
     try {

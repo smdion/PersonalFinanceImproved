@@ -32,6 +32,7 @@ export function applyConstantPercentage(
     const initial = roundToCents(portfolioBalance * withdrawalPercent);
     return {
       projectedExpenses: initial,
+      amountKind: "portfolio_withdrawal",
       action: null,
       updatedState: { initialWithdrawalAmount: initial },
     };
@@ -47,6 +48,7 @@ export function applyConstantPercentage(
 
   return {
     projectedExpenses: spending,
+    amountKind: "portfolio_withdrawal",
     action: floorApplied ? "floor_applied" : null,
     updatedState: {},
   };

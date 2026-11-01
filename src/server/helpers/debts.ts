@@ -7,7 +7,9 @@
  *  - `itemized`: open rows of the debts list (not paid off as of `asOf`);
  *  - `creditCardMapped`: credit-card balances from the budget's mapped
  *    accounts (getEffectiveCreditCardDebt).
- * Balances are as entered (never amortized forward). Finalizing a year
+ * Balances are as entered (never amortized forward) — or, for a debt
+ * mapped to a budget account, the balance last pulled from it (written on
+ * sync, like the mortgage's). Finalizing a year
  * stores today's balances, as it always has for the typed one, for the
  * debts open at that year's Dec 31.
  */
@@ -31,11 +33,30 @@ type OtherLiabilities = {
   openDebts: OpenDebt[];
 };
 
-/** Is a debt still owed on `asOfDate` (YYYY-MM-DD)? */
+/** A debt's balance now: the pulled one while a budget account feeds it,
+ *  else the one entered — with the day it's from. */
+export function debtBalance(d: {
+  balance: string;
+  balanceAsOf: string;
+  apiBalance: string | null;
+  apiBalanceDate: string | null;
+}): { balance: number; asOf: string; pulled: boolean } {
+  return d.apiBalance != null
+    ? {
+        balance: toNumber(d.apiBalance),
+        asOf: d.apiBalanceDate ?? d.balanceAsOf,
+        pulled: true,
+      }
+    : { balance: toNumber(d.balance), asOf: d.balanceAsOf, pulled: false };
+}
+
+/** Is a debt still owed on `asOfDate` (YYYY-MM-DD)? Paid off by its date,
+ *  or — fed by a budget account — once the pulled balance reaches zero. */
 export function isOpenDebt(
-  d: { paidOffDate: string | null },
+  d: { paidOffDate: string | null; apiBalance?: string | null },
   asOfDate: string,
 ): boolean {
+  if (d.apiBalance != null && toNumber(d.apiBalance) <= 0) return false;
   return d.paidOffDate == null || d.paidOffDate > asOfDate;
 }
 
@@ -58,7 +79,7 @@ export async function getEffectiveOtherLiabilities(
   const openDebts = (await db.select().from(schema.debts)).filter((d) =>
     isOpenDebt(d, day),
   );
-  const itemized = openDebts.reduce((s, d) => s + toNumber(d.balance), 0);
+  const itemized = openDebts.reduce((s, d) => s + debtBalance(d).balance, 0);
   const creditCardMapped = await getEffectiveCreditCardDebt(
     db as Parameters<typeof getEffectiveCreditCardDebt>[0],
     activeBudgetApi,

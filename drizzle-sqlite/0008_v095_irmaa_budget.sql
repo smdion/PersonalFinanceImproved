@@ -1,0 +1,1 @@
+ALTER TABLE `retirement_settings` ADD `irmaa_on_top_of_budget` integer DEFAULT false NOT NULL;

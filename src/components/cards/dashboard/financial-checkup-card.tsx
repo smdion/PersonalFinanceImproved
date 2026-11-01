@@ -1,5 +1,6 @@
 "use client";
 
+import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
 import Link from "next/link";
 import { FocusLink } from "@/components/ui/focus-link";
 import type { Focus } from "@/lib/config/focus-topics";
@@ -10,7 +11,6 @@ import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
 import { formatSavingsRate } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
-import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
 import { CHECKUP_MILESTONES } from "@/lib/config/milestones";
 import { meetsRateTarget, type MilestoneResult } from "@/lib/pure/milestones";
 import {
@@ -24,10 +24,7 @@ import { useRecommendations } from "@/lib/hooks/use-recommendations";
 import { LoadingCard, ErrorCard } from "./utils";
 import { SavingsRateBreakdown } from "./savings-rate-breakdown";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
-import {
-  SK_HIGH_INCOME_THRESHOLD,
-  SK_SAVINGS_RATE_THRESHOLDS,
-} from "@/lib/constants/settings-keys";
+import { SK_SAVINGS_RATE_THRESHOLDS } from "@/lib/constants/settings-keys";
 
 type CheckupStep = {
   label: string;
@@ -172,10 +169,8 @@ function checkupStatus(r: MilestoneResult): CheckupStep["status"] {
 function FinancialCheckupCardImpl() {
   const { viewMode } = useScenario();
   const contribInput = useContributionSummaryInput();
-  const [highIncomeThreshold] = usePersistedSetting<number>(
-    SK_HIGH_INCOME_THRESHOLD,
-    DEFAULT_HIGH_INCOME_THRESHOLD,
-  );
+  const { threshold: highIncomeThreshold, error: highIncomeError } =
+    useHighIncomeLine();
   const [savingsRateThresholds] = usePersistedSetting<string>(
     SK_SAVINGS_RATE_THRESHOLDS,
     "[0.25, 0.15]",
@@ -191,10 +186,14 @@ function FinancialCheckupCardImpl() {
   const { excludeMatch, includePortfolio, toggleMatch, togglePortfolio } =
     useSavingsRateOptions(highIncome);
 
-  if (milestones.isLoading || contribs.isLoading)
-    return <LoadingCard title="Financial Checkup" />;
-  if (milestones.error || contribs.error)
+  if (milestones.error || contribs.error || highIncomeError)
     return <ErrorCard title="Financial Checkup" message="Failed to load" />;
+  if (
+    milestones.isLoading ||
+    contribs.isLoading ||
+    highIncomeThreshold === undefined
+  )
+    return <LoadingCard title="Financial Checkup" />;
 
   const byId = new Map(milestones.results.map((r) => [r.id, r]));
   const milestoneStep = (id: string, label: string): CheckupStep[] => {

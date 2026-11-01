@@ -3,7 +3,7 @@
  * (portfolioProcedure — balances and returns).
  */
 import { z } from "zod/v4";
-import { inArray } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import {
@@ -28,6 +28,9 @@ import {
   type CompositionBucket,
 } from "@/lib/config/enum-values";
 import { localDateStr } from "@/lib/utils/date";
+import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
+import { yearReturnRanges } from "@/lib/calculators/year-return-range";
+import { buildMcInputs } from "../projection/_shared";
 import { effectiveFacts } from "@/lib/pure/fund-facts";
 import {
   dailyWeightsByAccount,
@@ -137,6 +140,44 @@ async function matchedMixBenchmark(
 }
 
 export const investmentComparisonRouter = createTRPCRouter({
+  /** The range of one year's return the Simulation expects for each year,
+   *  at the household's age that year on the chosen preset's glide path —
+   *  today's assumptions, not what was known then. */
+  getYearReturnRanges: portfolioProcedure
+    .input(
+      z.object({
+        preset: z.enum(SIMULATION_PRESET_KEYS),
+        years: z.array(z.number().int()).max(100),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const [mc, [person]] = await Promise.all([
+        buildMcInputs(ctx.db, input.preset),
+        ctx.db
+          .select({ dob: schema.people.dateOfBirth })
+          .from(schema.people)
+          .where(eq(schema.people.isPrimaryUser, true))
+          .limit(1),
+      ]);
+      if (!mc.preset?.found || !person) return null;
+      const birthYear = Number(person.dob.slice(0, 4));
+      const ranges = yearReturnRanges({
+        ages: input.years.map((y) => y - birthYear),
+        assetClasses: mc.mcAssetClasses,
+        correlations: mc.mcCorrelations,
+        glidePath: mc.mcGlidePath,
+        clampMin: mc.preset.returnClampMin,
+        clampMax: mc.preset.returnClampMax,
+      });
+      return {
+        presetLabel: mc.preset.label,
+        ranges: ranges.map((r) => ({
+          year: r.age + birthYear,
+          low: r.low,
+          high: r.high,
+        })),
+      };
+    }),
   /** Yearly results and the same money in each benchmark, from `fromYear` (default: first year with real gains). */
   getComparison: portfolioProcedure
     .input(z.object({ fromYear: z.number().int().optional() }))

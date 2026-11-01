@@ -28,6 +28,8 @@ type Draft = {
   ratePct: string;
   monthlyPayment: string;
   originalAmount: string;
+  purchasePrice: string;
+  termMonths: string;
   openedDate: string;
   paidOffDate: string;
   notes: string;
@@ -42,6 +44,8 @@ const blank = (): Draft => ({
   ratePct: "",
   monthlyPayment: "",
   originalAmount: "",
+  purchasePrice: "",
+  termMonths: "",
   openedDate: "",
   paidOffDate: "",
   notes: "",
@@ -95,6 +99,11 @@ export function DebtsCard() {
       interestRate: rate,
       monthlyPayment: toNum(draft.monthlyPayment),
       originalAmount: toNum(draft.originalAmount),
+      purchasePrice: toNum(draft.purchasePrice),
+      termMonths:
+        draft.termMonths.trim() === ""
+          ? null
+          : Math.round(Number(draft.termMonths)),
       openedDate: draft.openedDate || null,
       paidOffDate: draft.paidOffDate || null,
       notes: draft.notes.trim() || null,
@@ -117,12 +126,17 @@ export function DebtsCard() {
           : String(+(d.interestRate * 100).toFixed(4)),
       monthlyPayment: d.monthlyPayment == null ? "" : String(d.monthlyPayment),
       originalAmount: d.originalAmount == null ? "" : String(d.originalAmount),
+      purchasePrice: d.purchasePrice == null ? "" : String(d.purchasePrice),
+      termMonths: d.termMonths == null ? "" : String(d.termMonths),
       openedDate: d.openedDate ?? "",
       paidOffDate: d.paidOffDate ?? "",
       notes: d.notes ?? "",
     });
   };
   const error = create.error ?? update.error;
+  const editingPulled =
+    typeof editing === "number" &&
+    debts?.find((d) => d.id === editing)?.apiBalance != null;
 
   const input = "border-strong rounded border px-2 py-1 text-sm bg-transparent";
   const form = (
@@ -175,6 +189,12 @@ export function DebtsCard() {
           value={draft.balance}
           onChange={(e) => set("balance")(e.target.value)}
         />
+        {editingPulled && (
+          <span className="text-faint text-xs">
+            Synced from your budget — this one is used only if that mapping is
+            removed.
+          </span>
+        )}
       </label>
       <label className="flex flex-col gap-1">
         <span className="text-muted text-xs">Balance as of</span>
@@ -218,6 +238,30 @@ export function DebtsCard() {
           step="0.01"
           value={draft.originalAmount}
           onChange={(e) => set("originalAmount")(e.target.value)}
+        />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-muted text-xs">
+          Purchase price (what a car loan bought)
+        </span>
+        <input
+          className={input}
+          type="number"
+          min={0}
+          step="0.01"
+          value={draft.purchasePrice}
+          onChange={(e) => set("purchasePrice")(e.target.value)}
+        />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-muted text-xs">Term (months)</span>
+        <input
+          className={input}
+          type="number"
+          min={1}
+          step="1"
+          value={draft.termMonths}
+          onChange={(e) => set("termMonths")(e.target.value)}
         />
       </label>
       <label className="flex flex-col gap-1">
@@ -350,9 +394,10 @@ export function DebtsCard() {
                     </span>
                   </td>
                   <td className="py-1.5 text-right tabular-nums">
-                    {formatCurrency(d.balance)}
+                    {formatCurrency(d.currentBalance)}
                     <div className="text-faint text-[10px]">
-                      as of {formatDate(d.balanceAsOf, "medium")}
+                      {d.apiBalance != null ? "synced from budget " : "as of "}
+                      {formatDate(d.currentBalanceAsOf, "medium")}
                     </div>
                   </td>
                   <td className="py-1.5 text-right tabular-nums">

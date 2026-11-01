@@ -43,10 +43,12 @@
  * need" — but it means their Coast FIRE result rests entirely on the plan
  * judge.
  */
+import { strategySpending } from "./strategy-spending";
 import { assessPlan } from "./plan-outcome";
 import { calculateProjection } from "./engine";
 import type {
   AccountCategory,
+  EngineDecumulationYear,
   ProfileSwitch,
   ProjectionInput,
   ProjectionResult,
@@ -84,9 +86,7 @@ function resultFrom(
   status: CoastFireStatus,
   projection: ProjectionResult,
 ): CoastFireResult {
-  const retirementYear = projection.projectionByYear.find(
-    (y) => y.phase === "decumulation",
-  );
+  const retirementYear = firstRetirementYear(projection);
   const finalYear =
     projection.projectionByYear[projection.projectionByYear.length - 1];
   return {
@@ -94,7 +94,11 @@ function resultFrom(
     status,
     endRetirementBalance: finalYear?.retirementBalance ?? 0,
     sustainableWithdrawal: projection.sustainableWithdrawal,
-    projectedExpensesAtRetirement: retirementYear?.projectedExpenses ?? 0,
+    // What the household spends — with Social Security on top of a
+    // portfolio-sized withdrawal that's not the strategy's amount.
+    projectedExpensesAtRetirement: retirementYear
+      ? strategySpending(retirementYear)
+      : 0,
   };
 }
 
@@ -105,9 +109,7 @@ function passes(projection: ProjectionResult): boolean {
   // Survival: the one plan judge (retirement money lasts, every year's
   // spending funded — penalty-locked and Portfolio-only money included).
   if (!assessPlan(projection).succeeded) return false;
-  const retirementYear = projection.projectionByYear.find(
-    (y) => y.phase === "decumulation",
-  );
+  const retirementYear = firstRetirementYear(projection);
   if (!retirementYear) return false;
   // Compare the strategy's actual first-year spending against the
   // household's stated need — NOT against `sustainableWithdrawal` (see the
@@ -124,7 +126,7 @@ function passes(projection: ProjectionResult): boolean {
     // mixed units, systematically wrong by both the tax bill and whatever
     // Social Security covers. Undo both adjustments before comparing so
     // both sides are in the same "total household spending" terms
-    // `projectedExpenses` is in.
+    // `strategySpending` is in.
     const netSustainableWithdrawal = roundToCents(
       projection.sustainableWithdrawal -
         retirementYear.taxCost +
@@ -136,12 +138,21 @@ function passes(projection: ProjectionResult): boolean {
     // fully-funded plan as "unreachable". Compare with a $1 tolerance.
     return (
       netSustainableWithdrawal >=
-      retirementYear.projectedExpenses - NET_WITHDRAWAL_ROUNDING_TOLERANCE
+      strategySpending(retirementYear) - NET_WITHDRAWAL_ROUNDING_TOLERANCE
     );
   }
   return (
-    retirementYear.projectedExpenses >=
-    projection.firstDecumulationYearStatedNeed
+    strategySpending(retirementYear) >=
+    projection.firstDecumulationYearStatedNeed -
+      NET_WITHDRAWAL_ROUNDING_TOLERANCE
+  );
+}
+
+function firstRetirementYear(
+  projection: ProjectionResult,
+): EngineDecumulationYear | undefined {
+  return projection.projectionByYear.find(
+    (y): y is EngineDecumulationYear => y.phase === "decumulation",
   );
 }
 

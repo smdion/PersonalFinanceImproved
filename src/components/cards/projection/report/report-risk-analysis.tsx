@@ -10,11 +10,9 @@ import { ReportRiskBandChart } from "./report-risk-band-chart";
 export function ReportRiskAnalysisSection({
   narrative,
   bandPoints,
-  deflate,
 }: {
   narrative: RiskNarrative;
   bandPoints: RiskBandPoint[];
-  deflate: (value: number, year: number) => number;
 }) {
   return (
     <section className="mb-6" style={{ breakInside: "avoid" }}>
@@ -31,7 +29,7 @@ export function ReportRiskAnalysisSection({
         </p>
       )}
       <div className="mb-1">
-        <ReportRiskBandChart points={bandPoints} deflate={deflate} />
+        <ReportRiskBandChart points={bandPoints} />
       </div>
       <p className="text-muted text-xs">
         Shaded range: 10th to 90th percentile portfolio balance across simulated

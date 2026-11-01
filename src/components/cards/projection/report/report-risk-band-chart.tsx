@@ -13,20 +13,15 @@ const PAD_BOTTOM = 24;
 const PAD_TOP = 12;
 const PAD_RIGHT = 12;
 
-export function ReportRiskBandChart({
-  points,
-  deflate,
-}: {
-  points: RiskBandPoint[];
-  deflate: (value: number, year: number) => number;
-}) {
+export function ReportRiskBandChart({ points }: { points: RiskBandPoint[] }) {
   if (points.length === 0) return null;
 
+  // Points arrive in today's dollars (buildRiskBandPoints).
   const deflated = points.map((p) => ({
     year: p.year,
-    low: deflate(p.low, p.year),
-    high: deflate(p.high, p.year),
-    median: deflate(p.median, p.year),
+    low: p.low,
+    high: p.high,
+    median: p.median,
   }));
 
   const minYear = deflated[0]!.year;

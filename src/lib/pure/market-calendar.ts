@@ -102,6 +102,11 @@ export function tradingDayOnOrBefore(date: string): string {
   return d;
 }
 
+/** The trading day before `date` ("YYYY-MM-DD"). */
+export function previousTradingDay(date: string): string {
+  return tradingDayOnOrBefore(addDays(date, -1));
+}
+
 /**
  * The trading day whose close a reported balance reflects: the Eastern-time
  * calendar day of the report, minus one day when reported before the 4 pm
@@ -109,6 +114,23 @@ export function tradingDayOnOrBefore(date: string): string {
  * arrive overnight, so they map to the previous session's close.
  */
 export function valuationDateFor(reportedAt: Date): string {
+  return tradingDayOnOrBefore(reportCalendarDay(reportedAt));
+}
+
+/** A moment's Eastern calendar day. */
+export function easternDay(at: Date): string {
+  const f = new Intl.DateTimeFormat("en-CA", {
+    timeZone: MARKET_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return f.format(at);
+}
+
+/** The calendar day a report covers through: its Eastern day, minus one
+ *  when before the 4 pm close. Not rolled back to a trading day. */
+export function reportCalendarDay(reportedAt: Date): string {
   const f = new Intl.DateTimeFormat("en-US", {
     timeZone: MARKET_TIME_ZONE,
     year: "numeric",
@@ -123,9 +145,7 @@ export function valuationDateFor(reportedAt: Date): string {
   );
   const day = ymd(Number(p.year), Number(p.month), Number(p.day));
   const minutes = Number(p.hour) * 60 + Number(p.minute);
-  return tradingDayOnOrBefore(
-    minutes < MARKET_CLOSE_MINUTES ? addDays(day, -1) : day,
-  );
+  return minutes < MARKET_CLOSE_MINUTES ? addDays(day, -1) : day;
 }
 
 /** Trading days after `from` up to and including `to` (0 when `to` ≤ `from`). */

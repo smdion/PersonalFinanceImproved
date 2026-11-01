@@ -19,10 +19,7 @@ export interface RiskNarrative {
  *  two sections never disagree about whether a rate "sounds fine." */
 const SUCCESS_RATE_ON_TRACK_THRESHOLD = 0.85;
 
-export function buildRiskNarrative(
-  mcResult: MonteCarloResult,
-  opts: { deflate: (v: number, year: number) => number; baseYear: number },
-): RiskNarrative {
+export function buildRiskNarrative(mcResult: MonteCarloResult): RiskNarrative {
   const successPct = formatPercent(mcResult.successRate, 0);
   const onTrack = mcResult.successRate >= SUCCESS_RATE_ON_TRACK_THRESHOLD;
 
@@ -35,9 +32,10 @@ export function buildRiskNarrative(
   if (worstCase.p5FailureAge != null) {
     worstCaseNarrative = `In the worst 5% of market conditions this report tested, your plan falls short by age ${worstCase.p5FailureAge}. This is the kind of outcome a genuinely bad decade of market returns — not a typical one — could produce.`;
   } else {
-    const p5Balance = formatCurrency(
-      opts.deflate(worstCase.p5EndBalance, opts.baseYear),
-    );
+    // Today's dollars from the Simulation itself — each trial deflated by
+    // its own inflation (deflating the nominal figure at the base year was
+    // a no-op that printed future dollars as today's).
+    const p5Balance = formatCurrency(mcResult.today.p5EndBalance);
     worstCaseNarrative = `Even in the worst 5% of market conditions this report tested, your retirement money was not projected to run out — ending with roughly ${p5Balance} (today's dollars) at the end of the projection in that scenario.`;
   }
 
@@ -68,7 +66,8 @@ export interface RiskBandPoint {
 export function buildRiskBandPoints(
   mcResult: MonteCarloResult,
 ): RiskBandPoint[] {
-  return mcResult.percentileBands.map((b) => ({
+  // Today's dollars (the report's), deflated per trial by the Simulation.
+  return mcResult.today.percentileBands.map((b) => ({
     year: b.year,
     age: b.age,
     low: b.p10,

@@ -17,6 +17,10 @@
 "use client";
 
 import {
+  getStrategyMeta,
+  type WithdrawalStrategyType,
+} from "@/lib/config/withdrawal-strategies";
+import {
   W4_FILING_STATUS_VALUES,
   type W4FilingStatus,
 } from "@/lib/config/enum-values";
@@ -26,6 +30,7 @@ import {
 } from "@/lib/config/display-labels";
 import { useState } from "react";
 import { HelpTip } from "@/components/ui/help-tip";
+import { HSA_DRAW_TREATMENT } from "@/lib/pure/early-access";
 import { Badge } from "@/components/ui/badge";
 import { InlineEdit } from "@/components/ui/inline-edit";
 import { formatPercent } from "@/lib/utils/format";
@@ -184,7 +189,8 @@ export function TaxesSection({
         </div>
         <div className="flex items-baseline gap-1.5">
           <span className="text-muted">HSA</span>
-          <span className="font-medium text-emerald-600">0%</span>
+          <span className="font-medium text-blue-600">Varies</span>
+          <HelpTip text={HSA_DRAW_TREATMENT} />
         </div>
         <div className="flex items-baseline gap-1.5">
           <span className="text-muted">Brokerage</span>
@@ -259,6 +265,15 @@ export function TaxesSection({
               {(settings?.grossUpForTaxes ?? true) ? "On" : "Off"}
             </button>
           </div>
+          {withdrawalSized(settings) && (
+            <span className="text-caption text-faint">
+              {settings?.withdrawalStrategy === "rmd_spending"
+                ? "From the RMD age, no effect: "
+                : "No effect with this strategy: "}
+              it sets the withdrawal itself, tax comes out of it, and Social
+              Security comes on top.
+            </span>
+          )}
         </div>
         <div>
           <span className="text-muted">
@@ -553,4 +568,18 @@ export function TaxesSection({
       </div>
     </div>
   );
+}
+
+/** The active strategy sizes the portfolio withdrawal with Social Security
+ *  on top (its "comes out of this amount" switch off) — nothing is grossed
+ *  up then. */
+function withdrawalSized(settings: Settings | undefined): boolean {
+  if (!settings) return false;
+  const meta = getStrategyMeta(
+    (settings.withdrawalStrategy ?? "fixed") as WithdrawalStrategyType,
+  );
+  const field = meta.paramFields.find((f) => f.key === "ssInAmount");
+  if (!field) return false;
+  const stored = (settings as Record<string, unknown>)[field.column];
+  return stored == null ? field.default !== true : stored !== true;
 }

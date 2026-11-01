@@ -14,6 +14,7 @@
 import "./setup-mocks";
 import type { AccountCategory } from "@/lib/calculators/types";
 import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
+import { eq } from "drizzle-orm";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import {
   createTestCaller,
@@ -982,6 +983,35 @@ describe("retirement.retirementProfiles", () => {
     ).rejects.toThrow(/active profile/);
     // Cleanup for the next test -- the non-active one deletes fine.
     await caller.retirement.retirementProfiles.delete({ id: recreated!.id });
+  });
+
+  it("delete refuses the implicitly active profile when the setting is unset or stale", async () => {
+    const other = await caller.retirement.retirementProfiles.duplicate({
+      sourceProfileId: firstProfileId,
+      name: "Higher id",
+    });
+    const lowestId = Math.min(firstProfileId, other!.id);
+    const highestId = Math.max(firstProfileId, other!.id);
+
+    // Unset: the lowest id is the active profile.
+    db.delete(sqliteSchema.appSettings)
+      .where(eq(sqliteSchema.appSettings.key, "active_retirement_profile_id"))
+      .run();
+    await expect(
+      caller.retirement.retirementProfiles.delete({ id: lowestId }),
+    ).rejects.toThrow(/active profile/);
+
+    // Stale (points at a profile that no longer exists): same fallback.
+    await caller.settings.appSettings.upsert({
+      key: "active_retirement_profile_id",
+      value: 999999,
+    });
+    await expect(
+      caller.retirement.retirementProfiles.delete({ id: lowestId }),
+    ).rejects.toThrow(/active profile/);
+
+    // The non-active one still deletes.
+    await caller.retirement.retirementProfiles.delete({ id: highestId });
   });
 
   it("delete refuses to remove a profile a Plan is set to", async () => {

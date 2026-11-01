@@ -220,6 +220,24 @@ export function blendReturns(
   return blended;
 }
 
+/** One year's portfolio return at an age: correlated asset-class draws
+ *  blended by that age's glide path. The Simulation's yearly draw, and what
+ *  the expected-range check samples, so the two can't drift apart. */
+export function sampleBlendedReturn(
+  rng: PRNG,
+  assetClasses: AssetClassParams[],
+  choleskyL: number[][],
+  glidePath: GlidePathEntry[],
+  age: number,
+): number {
+  return blendReturns(
+    sampleCorrelatedReturns(rng, assetClasses, choleskyL),
+    assetClasses,
+    glidePath,
+    age,
+  );
+}
+
 /**
  * Interpolate glide path allocations for a given age.
  * Uses linear interpolation between the two nearest defined ages.

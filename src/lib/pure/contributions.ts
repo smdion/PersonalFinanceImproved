@@ -588,12 +588,16 @@ export function householdTotalCompensation(
 }
 
 /** Household-level "is this a high earner" gate — whether employer match is
- * excluded from the headline savings rate by default. */
+ * excluded from the headline savings rate by default. A line not known yet
+ * (still loading) is never crossed; surfaces that judge with it wait. */
 export function isHighIncomeHousehold(
   householdTotalComp: number,
-  highIncomeThreshold: number,
+  highIncomeThreshold: number | undefined,
 ): boolean {
-  return householdTotalComp >= highIncomeThreshold;
+  return (
+    highIncomeThreshold !== undefined &&
+    householdTotalComp >= highIncomeThreshold
+  );
 }
 
 export type SavingsGroup = "retirement" | "portfolio";

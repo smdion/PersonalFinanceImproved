@@ -62,6 +62,7 @@ const DecumulationMethodologyContent = dynamic(() =>
 );
 import { McResultsSection } from "./projection-mc-results";
 import { ProjectionLoader } from "./projection-loader";
+import { simulationDollars } from "@/lib/pure/simulation-dollars";
 import {
   useProjectionState,
   type EngineContribRate,
@@ -175,7 +176,6 @@ export function ProjectionCard(props: {
     setPersonFilter,
     isPersonFiltered,
     updateGlidePath,
-    updateInflationRisk,
     updateClampBounds,
     updateAssetClassOverrides,
     updateInflationOverrides,
@@ -191,7 +191,6 @@ export function ProjectionCard(props: {
     enginePeople,
     engineSettings,
     enginePerPersonSettings,
-    baseYear,
     deflate,
     autoloadEnabled,
     runSimulation,
@@ -460,7 +459,6 @@ export function ProjectionCard(props: {
                   projectionResult={result}
                   mcResult={mcQuery.data.result}
                   deflate={deflate}
-                  baseYear={baseYear}
                   coastFireAge={deterministicCoastFireAge}
                   peopleNames={(people ?? enginePeople ?? []).map(
                     (p) => p.name,
@@ -864,10 +862,8 @@ export function ProjectionCard(props: {
                                         <strong className="text-purple-300">
                                           Custom
                                         </strong>{" "}
-                                        — Raw DB values for returns, volatility,
-                                        and glide path. No preset adjustments —
-                                        edit asset_class_params and
-                                        glide_path_allocations directly.
+                                        — Your own returns, volatility and glide
+                                        path, with no preset adjustments.
                                       </span>,
                                     ]}
                                   />
@@ -880,6 +876,11 @@ export function ProjectionCard(props: {
                                 </option>
                                 <option value="custom">Custom</option>
                               </LabeledSelect>
+                              <span className="text-caption text-faint basis-full">
+                                Sets the Simulation and strategy comparison. The
+                                year-by-year projection, Coast FIRE and the
+                                glide-path check stay on Default.
+                              </span>
                               <LabeledSelect
                                 label="Trials"
                                 value={mcTrials}
@@ -1476,14 +1477,9 @@ export function ProjectionCard(props: {
               onGlidePathChange={(entries) =>
                 updateGlidePath.mutate({ entries })
               }
-              onInflationRiskChange={(meanRate, stdDev) => {
-                updateInflationRisk.mutate({
-                  preset: mcPreset,
-                  inflationMean: meanRate,
-                  inflationStdDev: stdDev,
-                });
-                updateInflationOverrides.mutate({ meanRate, stdDev });
-              }}
+              onInflationRiskChange={(stdDev) =>
+                updateInflationOverrides.mutate({ stdDev })
+              }
               onClampBoundsChange={(min, max) =>
                 updateClampBounds.mutate({
                   preset: "custom",
@@ -1493,28 +1489,12 @@ export function ProjectionCard(props: {
               }
               outcomeDistribution={{
                 successRate: mcQuery.data.result.successRate,
-                medianEndBalance: mcQuery.data.result.medianEndBalance,
-                p5EndBalance: mcQuery.data.result.worstCase.p5EndBalance,
-                terminalBalance:
-                  mcQuery.data.result.distributions.terminalBalance,
+                ...simulationDollars(mcQuery.data.result, dollarMode),
                 sustainableWithdrawalPV:
                   mcQuery.data.result.distributions.sustainableWithdrawalPV,
                 failureAge:
                   mcQuery.data.result.distributions.failureAge ?? undefined,
                 computeTimeMs: mcQuery.data.result.computeTimeMs,
-              }}
-              deflate={(amount: number) => {
-                // No early-return gate on `result` at this component's top
-                // level (unlike ProjectionChart/HeroKpis/McDepletionCallout),
-                // so engineSettings isn't guaranteed defined here the way
-                // the discriminated-return invariant covers those — fall
-                // back to no deflation rather than asserting with `!`.
-                const termYear = engineSettings
-                  ? baseYear +
-                    (engineSettings.endAge -
-                      (result?.projectionByYear[0]?.age ?? 0))
-                  : baseYear;
-                return deflate(amount, termYear);
               }}
             />
           )}

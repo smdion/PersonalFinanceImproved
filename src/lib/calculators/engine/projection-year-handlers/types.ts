@@ -60,6 +60,10 @@ export type ProjectionLoopState = {
    *  percentage). This field is the strategy-blind
    *  budget line those two comparisons need to actually differ. */
   budgetOnlyExpenses: number;
+  /** This year's amount as the gross portfolio withdrawal (Social Security
+   *  on top) — set when the strategy sized it that way and the household's
+   *  `ssInAmount` switch is off; null = the amount is spending. */
+  portfolioWithdrawal: number | null;
   projectedSalaryByPerson: Map<number, number>;
 
   // Individual account tracking
@@ -87,6 +91,8 @@ export type ProjectionLoopState = {
 
   // Tax/IRMAA history
   magiHistory: number[];
+  /** The no-owner Traditional account warning is said once a projection. */
+  rmdNoOwnerWarned: boolean;
 
   // Phase tracking
   /** Set to true on the first year isAccumulation is false. Prevents the
@@ -153,6 +159,9 @@ export type ProjectionContext = {
   firstYearFraction: number;
   rmdStartAge: number | null;
   rmdStartAgeByPerson: Map<number, { startAge: number; birthYear: number }>;
+  /** Whose RMD an account with no owner counts toward (rmdOwnerOf): the
+   *  household's primary person. */
+  primaryPersonId: number | null;
   yearsToProject: number;
 
   // Constants

@@ -22,6 +22,17 @@ const AS_OF = new Date("2025-03-07");
 
 const MFJ_BRACKETS = [
   { threshold: 23850, baseWithholding: 0, rate: 0.1 },
+  { threshold: 96950, baseWithholding: 7310, rate: 0.12 },
+  { threshold: 206700, baseWithholding: 20480, rate: 0.22 },
+  { threshold: 394600, baseWithholding: 61818, rate: 0.24 },
+  { threshold: 501050, baseWithholding: 87366, rate: 0.32 },
+];
+
+/** Deliberately discontinuous: tax falls by about $5k crossing $96,950, so a
+ *  gross-up landing just under it comes up short. For the tests that need a
+ *  target-independent shortfall or a depleting candidate. */
+const CLIFF_BRACKETS = [
+  { threshold: 23850, baseWithholding: 0, rate: 0.1 },
   { threshold: 96950, baseWithholding: 2385, rate: 0.12 },
   { threshold: 206700, baseWithholding: 11157, rate: 0.22 },
   { threshold: 394600, baseWithholding: 35302, rate: 0.24 },
@@ -39,6 +50,7 @@ const MFJ_BRACKETS = [
 function makeMainHousehold(
   currentTarget: number,
   conversionsOn: boolean,
+  brackets = MFJ_BRACKETS,
 ): ProjectionInput {
   return withCapsAge({
     accumulationDefaults: {
@@ -73,7 +85,7 @@ function makeMainHousehold(
         hsa: 0,
         brokerage: 0.15,
         rothBracketTarget: currentTarget,
-        taxBrackets: MFJ_BRACKETS,
+        taxBrackets: brackets,
         enableRothConversions: conversionsOn,
         rothConversionTarget: conversionsOn ? currentTarget : undefined,
       },
@@ -259,7 +271,7 @@ function makeDepletionHousehold(currentTarget: number): ProjectionInput {
         hsa: 0,
         brokerage: 0.15,
         rothBracketTarget: currentTarget,
-        taxBrackets: MFJ_BRACKETS,
+        taxBrackets: CLIFF_BRACKETS,
         enableRothConversions: true,
         rothConversionTarget: currentTarget,
       },
@@ -327,13 +339,13 @@ function makeDepletionHousehold(currentTarget: number): ProjectionInput {
 describe("optimizeRothBracketTarget", () => {
   it("recommends a genuinely cheaper lower target when one exists (RMD-avoidance case)", () => {
     const result = optimizeRothBracketTarget(makeMainHousehold(0.22, true));
-    // Pinned to round 4's hand-verified numbers (design doc + committed
-    // probe): the 12% candidate is the real minimum, not just directionally
-    // better than 22%.
+    // Re-pinned for v0.9.5: continuous brackets (the old table had a tax
+    // cliff), Social Security's COLA and its tax counted. The 12% candidate
+    // is still the real minimum, not just directionally better than 22%.
     const at12 = result.candidates.find((c) => c.target === 0.12)!;
     const at22 = result.candidates.find((c) => c.target === 0.22)!;
-    expect(at12.netCost).toBeCloseTo(127112, -1);
-    expect(at22.netCost).toBeCloseTo(177467, -1);
+    expect(at12.netCost).toBeCloseTo(261565, -1);
+    expect(at22.netCost).toBeCloseTo(296681, -1);
     expect(result.recommendedTarget).toBe(0.12);
   });
 
@@ -343,7 +355,7 @@ describe("optimizeRothBracketTarget", () => {
     expect(result.recommendedTarget).toBeNull();
   });
 
-  it("pins netCost, traditionalEnd, and totalConversions to round 4's hand-verified numbers", () => {
+  it("pins traditionalEnd, totalConversions and the first RMD", () => {
     const candidateInput = {
       ...makeMainHousehold(0.12, true),
     };
@@ -359,7 +371,7 @@ describe("optimizeRothBracketTarget", () => {
     const finalYear =
       result.projectionByYear[result.projectionByYear.length - 1];
     expect(finalYear?.balanceByTaxType.preTax).toBeCloseTo(0, 0);
-    expect(totalConversions).toBeCloseTo(1222072, -2);
+    expect(totalConversions).toBeCloseTo(1201641, -2);
 
     const rmdYears = decumYears.filter(
       (y) => ("rmdAmount" in y ? (y.rmdAmount ?? 0) : 0) > 0,
@@ -372,24 +384,26 @@ describe("optimizeRothBracketTarget", () => {
     // scenario, not this one.
     expect(
       "rmdAmount" in rmdYears[0]! ? rmdYears[0].rmdAmount : undefined,
-    ).toBeCloseTo(2835.6, 0);
+    ).toBeCloseTo(6632.52, 0);
   });
 
   it("a household where every candidate carries the same non-depleting shortfall still produces a sensible ranking", () => {
-    // MAIN_HOUSEHOLD's own 2027/age-64 shortfall (a target-independent
-    // tax-gross-up residual, per the design doc's "known limitation") is
-    // present, non-material-difference-sized, across every candidate here
-    // -- this is exactly that case, not a separately constructed fixture.
-    const result = optimizeRothBracketTarget(makeMainHousehold(0.24, true));
+    // A shortfall every candidate carries: the cliff in CLIFF_BRACKETS
+    // leaves a gross-up short at the same income whatever the target.
+    const result = optimizeRothBracketTarget(
+      makeMainHousehold(0.24, true, CLIFF_BRACKETS),
+    );
     for (const c of result.candidates) {
       expect(c.depleted).toBe(false);
       expect(c.shortfallScore).toBeGreaterThan(0);
     }
-    // Ranking still resolves to the real cost-minimizer, not an arbitrary
-    // candidate -- proves the shortfall-noise tolerance (SHORTFALL_TIE_
-    // TOLERANCE) is doing its job rather than the ranking degrading to
-    // "whichever candidate happens to round down by a few cents."
-    expect(result.recommendedTarget).toBe(0.12);
+    // Ranking still resolves to a real candidate: the least shortfall wins,
+    // ties (SHORTFALL_TIE_TOLERANCE) going to the cheaper.
+    const least = Math.min(...result.candidates.map((c) => c.shortfallScore));
+    const winner = result.candidates.find(
+      (c) => c.target === result.recommendedTarget,
+    );
+    expect(winner?.shortfallScore).toBeCloseTo(least, -2);
   });
 
   it("hard-excludes a candidate that genuinely depletes, regardless of its netCost", () => {
@@ -413,7 +427,7 @@ describe("optimizeRothBracketTarget", () => {
     // scale than the conversions-on case, confirming the joint-movement
     // logic genuinely didn't fire.
     const at12 = result.candidates.find((c) => c.target === 0.12)!;
-    expect(at12.netCost).toBeCloseTo(509759, -1);
+    expect(at12.netCost).toBeCloseTo(818066.8564, -1);
     expect(result.recommendedTarget).toBe(0.12);
   });
 

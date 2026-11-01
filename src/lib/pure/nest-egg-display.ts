@@ -23,7 +23,8 @@ type NestEggDisplay =
 
 export function simulatedOrBaseline(opts: {
   /** The simulation's balance bands (retirement money), if one was run
-   *  for these inputs. */
+   *  for these inputs — already in display dollars (`simulationDollars`:
+   *  today's are deflated per trial, so they're never converted here). */
   bands:
     | readonly Pick<
         MonteCarloPercentileBand,
@@ -35,9 +36,6 @@ export function simulatedOrBaseline(opts: {
   baseline: number;
   /** Retirement age, or the current age when already retired. */
   targetAge: number;
-  /** Nominal dollars in `year` → display dollars (today's or future) —
-   *  the same conversion the baseline went through. */
-  toDisplay: (value: number, year: number) => number;
   personFiltered: boolean;
 }): NestEggDisplay {
   const band = opts.personFiltered
@@ -46,9 +44,9 @@ export function simulatedOrBaseline(opts: {
   if (!band) return { kind: "baseline", baseline: opts.baseline };
   return {
     kind: "simulated",
-    median: opts.toDisplay(band.p50, band.year),
-    low: opts.toDisplay(band.p25, band.year),
-    high: opts.toDisplay(band.p75, band.year),
+    median: band.p50,
+    low: band.p25,
+    high: band.p75,
     baseline: opts.baseline,
   };
 }
@@ -57,9 +55,8 @@ export function simulatedOrBaseline(opts: {
  * The fixed-return nest egg in nominal dollars, and its year: the engine's
  * retirement money (`retirementBalance`) at the target age — the retirement
  * answer, never a view's summed tax buckets. The caller converts it with
- * the same `toDisplay` it gives `simulatedOrBaseline`, so the baseline and
- * the simulated range go through one conversion. Null when the projection
- * has no year at that age.
+ * the view's own deflator; `simulatedOrBaseline`'s bands arrive already
+ * in display dollars. Null when the projection has no year at that age.
  */
 export function baselineNestEgg(
   years: readonly { age: number; year: number; retirementBalance: number }[],

@@ -118,11 +118,11 @@ describe("portfolio roll-ups", () => {
     expect(r.cost.expenseRatio).toBeCloseTo(3.5 / 1500);
   });
 
-  it("has no rollup for an account that effectively holds one fund", () => {
+  it("rolls up a single-fund account too, marked as one fund; none when empty", () => {
     const one = holdings[0]!;
-    expect(accountRollup([one])).toBeNull();
+    expect(accountRollup([one])?.multiFund).toBe(false);
     // Cash dust next to the fund doesn't make it a multi-fund account.
-    expect(accountRollup([one, { ...one, value: 1 }])).toBeNull();
+    expect(accountRollup([one, { ...one, value: 1 }])?.multiFund).toBe(false);
     expect(accountRollup([])).toBeNull();
   });
 

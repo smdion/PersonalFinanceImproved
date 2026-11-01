@@ -1,4 +1,7 @@
-import { SK_TAX_FILING_STATUS } from "@/lib/constants/settings-keys";
+import {
+  SK_SIMULATION_PRESET,
+  SK_TAX_FILING_STATUS,
+} from "@/lib/constants/settings-keys";
 import { w4FilingStatusSchema } from "@/lib/config/enum-values";
 import { z } from "zod/v4";
 import {
@@ -6,7 +9,7 @@ import {
   unknownAssetClassIds,
 } from "@/lib/pure/current-glide-path";
 import { TRPCError } from "@trpc/server";
-import { eq, asc, desc, sql } from "drizzle-orm";
+import { eq, asc, desc } from "drizzle-orm";
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -17,6 +20,7 @@ import * as schema from "@/lib/db/schema";
 import {
   SK_HOUSEHOLD_TIMEZONE,
   SK_MILESTONE_CHECKLIST,
+  SK_MILESTONE_FIRST_REACHED,
   SK_MILESTONE_CHECKPOINT_SOURCE,
   SK_MILESTONE_CUSTOM_GOALS,
   SK_MILESTONE_SAVINGS_TARGET_SOURCE,
@@ -33,8 +37,6 @@ import {
   nextDismissals,
   parseDismissals,
 } from "@/lib/pure/recommendation-dismissals";
-import { isPostgres } from "@/lib/db";
-import { execRaw } from "@/lib/db/compat";
 import { localDateStr } from "@/lib/utils/date";
 import {
   checkpointSourceSchema,
@@ -55,17 +57,12 @@ import {
 import { settingValue } from "./_shared";
 import { apiConfigSchema, accountMappingSchema } from "@/lib/db/json-schemas";
 import { applyPlan } from "@/server/helpers/plans";
+import { mergeSettingAtomically } from "@/server/helpers/merge-setting";
+import { firstReachedSchema } from "@/lib/pure/milestone-first-reached";
+import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import type { Db } from "@/server/helpers/transforms";
 
 // --- Zod schemas ---
-
-/** Runs `fn` after every earlier call has finished (an in-process queue). */
-let dismissalQueue: Promise<unknown> = Promise.resolve();
-function oneAtATime<T>(fn: () => Promise<T>): Promise<T> {
-  const run = dismissalQueue.then(fn, fn);
-  dismissalQueue = run.catch(() => undefined);
-  return run;
-}
 
 const appSettingInput = z.object({
   key: z.string().min(1),
@@ -76,8 +73,10 @@ const appSettingInput = z.object({
  *  is refused instead of read back later as empty. */
 const STRUCTURED_SETTINGS: Record<string, z.ZodType> = {
   [SK_TAX_FILING_STATUS]: w4FilingStatusSchema,
+  [SK_SIMULATION_PRESET]: z.enum(SIMULATION_PRESET_KEYS),
   [SK_MILESTONE_CUSTOM_GOALS]: customGoalsSchema,
   [SK_MILESTONE_CHECKLIST]: milestoneChecklistSchema,
+  [SK_MILESTONE_FIRST_REACHED]: firstReachedSchema,
   [SK_MILESTONE_CHECKPOINT_SOURCE]: checkpointSourceSchema,
   [SK_MILESTONE_SAVINGS_TARGET_SOURCE]: savingsTargetSourceSchema,
   [SK_RECOMMENDATION_DISMISSALS]: dismissalsSchema,
@@ -260,11 +259,8 @@ export const adminProcedures = {
         invalidateYearEndCache();
         return result;
       }),
-    // The saved map is read, changed and written as one step — queued in
-    // this process, and under a transaction lock on Postgres — so two admins
-    // changing different items at once both stick (the browser's whole-map
-    // upsert could drop one).
-    /** Dismiss, snooze or restore one recommendation (merged on the server). */
+    /** Dismiss, snooze or restore one recommendation (merged on the
+     *  server, so two admins changing different items both stick). */
     setDismissal: adminProcedure
       .input(
         z.object({
@@ -273,37 +269,9 @@ export const adminProcedures = {
         }),
       )
       .mutation(({ ctx, input }) =>
-        oneAtATime(async () => {
-          const apply = async (db: typeof ctx.db) => {
-            const [row] = await db
-              .select({ value: schema.appSettings.value })
-              .from(schema.appSettings)
-              .where(eq(schema.appSettings.key, SK_RECOMMENDATION_DISMISSALS));
-            const value = nextDismissals(
-              parseDismissals(row?.value),
-              localDateStr(),
-              input,
-            );
-            await db
-              .insert(schema.appSettings)
-              .values({ key: SK_RECOMMENDATION_DISMISSALS, value })
-              .onConflictDoUpdate({
-                target: schema.appSettings.key,
-                set: { value },
-              });
-            return value;
-          };
-          // SQLite: one process, one connection — the queue is the lock
-          // (concurrent async transactions on one connection interleave).
-          if (!isPostgres()) return apply(ctx.db);
-          return ctx.db.transaction(async (tx) => {
-            await execRaw(
-              tx as never,
-              sql`SELECT pg_advisory_xact_lock(hashtext(${SK_RECOMMENDATION_DISMISSALS}))`,
-            );
-            return apply(tx as never);
-          });
-        }),
+        mergeSettingAtomically(ctx.db, SK_RECOMMENDATION_DISMISSALS, (stored) =>
+          nextDismissals(parseDismissals(stored), localDateStr(), input),
+        ),
       ),
     delete: adminProcedure
       .input(z.object({ key: z.string() }))

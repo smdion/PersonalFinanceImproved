@@ -1,5 +1,7 @@
 "use client";
 
+import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
+import { simulationDollars } from "@/lib/pure/simulation-dollars";
 import { FocusLink } from "@/components/ui/focus-link";
 import { focusHref } from "@/lib/config/focus-topics";
 import {
@@ -22,7 +24,6 @@ import {
 } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
 import { STATUS_COLORS } from "@/lib/utils/colors";
-import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { categoriesWithIrsLimit } from "@/lib/config/account-types";
 import { WITHDRAWAL_STRATEGY_LABELS } from "@/lib/config/withdrawal-strategies";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
@@ -32,8 +33,6 @@ import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies"
 import { LoadingCard, ErrorCard } from "./utils";
 import { RetirementBenchmarks } from "./retirement-benchmarks";
 import { useSavingsRateOptions } from "@/lib/hooks/use-savings-rate-options";
-import { DEFAULT_HIGH_INCOME_THRESHOLD } from "@/lib/constants";
-import { SK_HIGH_INCOME_THRESHOLD } from "@/lib/constants/settings-keys";
 import { isHighIncomeHousehold } from "@/lib/pure/contributions";
 
 function RetirementCardImpl() {
@@ -44,10 +43,7 @@ function RetirementCardImpl() {
   const milestoneInputs = trpc.milestones.computeInputs.useQuery(
     useYearEndTargetingInput(),
   );
-  const [highIncomeThreshold] = usePersistedSetting<number>(
-    SK_HIGH_INCOME_THRESHOLD,
-    DEFAULT_HIGH_INCOME_THRESHOLD,
-  );
+  const { threshold: highIncomeThreshold } = useHighIncomeLine();
   // The match switch shared with every savings rate and contribution total.
   const { excludeMatch } = useSavingsRateOptions(
     isHighIncomeHousehold(
@@ -146,10 +142,12 @@ function RetirementCardImpl() {
     ? toDisplay(baseline.nominal, baseline.year)
     : portfolioTotal;
   const nestEggDisplay = simulatedOrBaseline({
-    bands: mcPeek?.result?.percentileBands,
+    // Today's dollars, from the Simulation's own per-trial deflation.
+    bands: mcPeek?.result
+      ? simulationDollars(mcPeek.result, "real").percentileBands
+      : null,
     baseline: nestEgg,
     targetAge: nestEggAge,
-    toDisplay,
     personFiltered: false,
   });
   const totalWithMatch = annualContributions + employerContributions;

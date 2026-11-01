@@ -6,15 +6,19 @@
  * here. This keeps shared pipeline code in exactly one place and removes
  * the duplicate-schema risk of spreading them across the sibling files.
  */
+import {
+  loadSimulationPreset,
+  presetAssetClasses,
+  type SimulationPreset,
+} from "@/server/helpers/simulation-preset";
+import type { SimulationPresetKey } from "@/lib/constants";
+import { glidePathFromRows } from "@/lib/pure/stock-share";
 import { z } from "zod/v4";
 import { eq, asc } from "drizzle-orm";
 import { toNumber } from "@/server/helpers";
 import * as schema from "@/lib/db/schema";
 import type { db as _db } from "@/lib/db";
-import {
-  DEFAULT_MC_INFLATION_RISK,
-  DEFAULT_ENDOWMENT_ROLLING_YEARS,
-} from "@/lib/constants";
+import { DEFAULT_MC_INFLATION_RISK } from "@/lib/constants";
 import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";
 import type {
   AccountCategory,
@@ -26,7 +30,11 @@ import {
   DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
   PARENT_CATEGORY_VALUES,
 } from "@/lib/config/account-types";
-import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
+import {
+  getAllStrategyKeys,
+  getStrategyMeta,
+  type WithdrawalStrategyType,
+} from "@/lib/config/withdrawal-strategies";
 
 /**
  * Baseline "current" SS claiming age for the strategy optimizer's
@@ -233,53 +241,32 @@ export async function resolveProjectionOverrides(
   };
 }
 
-/** Build strategyParams from DB settings columns. */
-export function buildStrategyParams(settings: {
-  gkUpperGuardrail: string | null;
-  gkLowerGuardrail: string | null;
-  gkIncreasePct: string | null;
-  gkDecreasePct: string | null;
-  gkSkipInflationAfterLoss: boolean;
-  sdAnnualDeclineRate: string | null;
-  cpWithdrawalPercent: string | null;
-  cpFloorPercent: string | null;
-  enWithdrawalPercent: string | null;
-  enRollingYears: number | null;
-  enFloorPercent: string | null;
-  vdBasePercent: string | null;
-  vdCeilingPercent: string | null;
-  vdFloorPercent: string | null;
-  rmdMultiplier: string | null;
-}): Partial<Record<WithdrawalStrategyType, Record<string, number | boolean>>> {
-  return {
-    guyton_klinger: {
-      upperGuardrail: toNumber(settings.gkUpperGuardrail ?? "0.80"),
-      lowerGuardrail: toNumber(settings.gkLowerGuardrail ?? "1.20"),
-      increasePercent: toNumber(settings.gkIncreasePct ?? "0.10"),
-      decreasePercent: toNumber(settings.gkDecreasePct ?? "0.10"),
-      skipInflationAfterLoss: settings.gkSkipInflationAfterLoss,
-    },
-    spending_decline: {
-      annualDeclineRate: toNumber(settings.sdAnnualDeclineRate ?? "0.02"),
-    },
-    constant_percentage: {
-      withdrawalPercent: toNumber(settings.cpWithdrawalPercent ?? "0.05"),
-      floorPercent: toNumber(settings.cpFloorPercent ?? "0.90"),
-    },
-    endowment: {
-      withdrawalPercent: toNumber(settings.enWithdrawalPercent ?? "0.05"),
-      rollingYears: settings.enRollingYears ?? DEFAULT_ENDOWMENT_ROLLING_YEARS,
-      floorPercent: toNumber(settings.enFloorPercent ?? "0.90"),
-    },
-    vanguard_dynamic: {
-      basePercent: toNumber(settings.vdBasePercent ?? "0.05"),
-      ceilingPercent: toNumber(settings.vdCeilingPercent ?? "0.05"),
-      floorPercent: toNumber(settings.vdFloorPercent ?? "0.025"),
-    },
-    rmd_spending: {
-      rmdMultiplier: toNumber(settings.rmdMultiplier ?? "1.0"),
-    },
-  };
+/**
+ * Build strategyParams from DB settings columns: each strategy's config
+ * defaults, with every param field read from its own column (config
+ * `paramFields[].column`) when set. A null column keeps the default.
+ */
+export function buildStrategyParams(
+  settings: Readonly<Record<string, unknown>>,
+): Partial<Record<WithdrawalStrategyType, Record<string, number | boolean>>> {
+  const out: Partial<
+    Record<WithdrawalStrategyType, Record<string, number | boolean>>
+  > = {};
+  for (const key of getAllStrategyKeys()) {
+    const meta = getStrategyMeta(key);
+    if (meta.paramFields.length === 0) continue;
+    const params: Record<string, number | boolean> = {
+      ...meta.defaultParams,
+    };
+    for (const field of meta.paramFields) {
+      const stored = settings[field.column];
+      if (stored == null) continue;
+      params[field.key] =
+        field.type === "boolean" ? Boolean(stored) : toNumber(String(stored));
+    }
+    out[key] = params;
+  }
+  return out;
 }
 
 /**
@@ -360,15 +347,56 @@ export { buildCoastFireProfileSwitches } from "@/lib/calculators/coast-fire";
 
 type Db = typeof _db;
 
+/** The saved Simulation inflation override (Simulation assumptions). */
+export type SavedInflationOverrides = { stdDev?: number } | null;
+
 /**
- * Bootstrap parallel fetch of the three core MC DB tables plus the saved
- * inflation-risk override, then map them to the shapes the engine expects.
- *
- * Used by computeStrategyComparison, analyzeStrategy, and
- * computeMonteCarloProjection. NOT used by computeCoastFireMC (which reads
- * a preset-specific glide path keyed on mcPresets.key = 'default').
+ * The Simulation's inflation risk — the spread of each year's inflation
+ * around the plan's own rates — for every route that runs trials (the
+ * Simulation, strategy comparison, Coast FIRE and its probe): this run's
+ * UI override, else the saved override, else the preset's, else the
+ * default. One resolver, so no route quietly ignores the household's
+ * setting.
  */
-export async function buildMcInputs(db: Db): Promise<{
+export function resolveInflationRisk(opts: {
+  ui?: { stdDev: number } | null;
+  saved: SavedInflationOverrides;
+  presetStdDev?: number | null;
+}): { stdDev: number } {
+  return {
+    stdDev:
+      opts.ui?.stdDev ??
+      opts.saved?.stdDev ??
+      opts.presetStdDev ??
+      DEFAULT_MC_INFLATION_RISK.stdDev,
+  };
+}
+
+/** Read the saved inflation override (null when none is saved). */
+export async function loadSavedInflationOverrides(
+  db: Db,
+): Promise<SavedInflationOverrides> {
+  const row = await db
+    .select({ value: schema.appSettings.value })
+    .from(schema.appSettings)
+    .where(eq(schema.appSettings.key, "mc_inflation_overrides"))
+    .then((r) => r[0] ?? null);
+  const value = (row?.value ?? null) as { stdDev?: unknown } | null;
+  return value && typeof value.stdDev === "number"
+    ? { stdDev: value.stdDev }
+    : null;
+}
+
+/**
+ * The Simulation's inputs: asset classes, correlations, glide path and
+ * inflation risk, under `presetKey` (helpers/simulation-preset.ts). Without
+ * one, the raw table values — computeMonteCarloProjection applies the
+ * run's preset itself, with the run's own asset-class changes on top.
+ */
+export async function buildMcInputs(
+  db: Db,
+  presetKey?: SimulationPresetKey,
+): Promise<{
   mcAssetClasses: {
     id: number;
     name: string;
@@ -377,35 +405,40 @@ export async function buildMcInputs(db: Db): Promise<{
   }[];
   mcCorrelations: { classAId: number; classBId: number; correlation: number }[];
   mcGlidePath: { age: number; allocations: Record<number, number> }[];
-  effectiveInflationRisk: { meanRate: number; stdDev: number };
+  effectiveInflationRisk: { stdDev: number };
+  /** The preset used; null without `presetKey`. */
+  preset: SimulationPreset | null;
   /** Raw saved inflation override — null if none saved. Callers that surface
    *  this to the client (e.g. computeMonteCarloProjection) use this as-is. */
-  savedInflationOverrides: { meanRate?: number; stdDev?: number } | null;
+  savedInflationOverrides: SavedInflationOverrides;
 }> {
-  const BASE_INFLATION_RISK = DEFAULT_MC_INFLATION_RISK;
+  const [
+    assetClasses,
+    assetCorrelations,
+    glidePathRows,
+    savedInflationOverrides,
+    preset,
+  ] = await Promise.all([
+    db
+      .select()
+      .from(schema.assetClassParams)
+      .where(eq(schema.assetClassParams.isActive, true))
+      .orderBy(asc(schema.assetClassParams.sortOrder)),
+    db.select().from(schema.assetClassCorrelations),
+    db.select().from(schema.glidePathAllocations),
+    loadSavedInflationOverrides(db),
+    presetKey ? loadSimulationPreset(db, presetKey) : Promise.resolve(null),
+  ]);
 
-  const [assetClasses, assetCorrelations, glidePathRows, savedInflationRow] =
-    await Promise.all([
-      db
-        .select()
-        .from(schema.assetClassParams)
-        .where(eq(schema.assetClassParams.isActive, true))
-        .orderBy(asc(schema.assetClassParams.sortOrder)),
-      db.select().from(schema.assetClassCorrelations),
-      db.select().from(schema.glidePathAllocations),
-      db
-        .select({ value: schema.appSettings.value })
-        .from(schema.appSettings)
-        .where(eq(schema.appSettings.key, "mc_inflation_overrides"))
-        .then((r) => r[0] ?? null),
-    ]);
-
-  const mcAssetClasses = assetClasses.map((ac) => ({
+  const rawClasses = assetClasses.map((ac) => ({
     id: ac.id,
     name: ac.name,
     meanReturn: toNumber(ac.meanReturn),
     stdDev: toNumber(ac.stdDev),
   }));
+  const mcAssetClasses = preset
+    ? presetAssetClasses(rawClasses, preset)
+    : rawClasses;
 
   const mcCorrelations = assetCorrelations.map((c) => ({
     classAId: c.classAId,
@@ -413,32 +446,19 @@ export async function buildMcInputs(db: Db): Promise<{
     correlation: toNumber(c.correlation),
   }));
 
-  const gpByAge = new Map<number, Record<number, number>>();
-  for (const gp of glidePathRows) {
-    if (!gpByAge.has(gp.age)) gpByAge.set(gp.age, {});
-    gpByAge.get(gp.age)![gp.assetClassId] = toNumber(gp.allocation);
-  }
-  const mcGlidePath = Array.from(gpByAge.entries())
-    .sort(([a], [b]) => a - b)
-    .map(([gpAge, allocations]) => ({ age: gpAge, allocations }));
+  const mcGlidePath = preset?.glidePath ?? glidePathFromRows(glidePathRows);
 
-  const savedInflationOverrides = (savedInflationRow?.value ?? null) as {
-    meanRate?: number;
-    stdDev?: number;
-  } | null;
-  const effectiveInflationRisk = savedInflationOverrides
-    ? {
-        meanRate:
-          savedInflationOverrides.meanRate ?? BASE_INFLATION_RISK.meanRate,
-        stdDev: savedInflationOverrides.stdDev ?? BASE_INFLATION_RISK.stdDev,
-      }
-    : BASE_INFLATION_RISK;
+  const effectiveInflationRisk = resolveInflationRisk({
+    saved: savedInflationOverrides,
+    presetStdDev: preset?.inflationStdDev ?? null,
+  });
 
   return {
     mcAssetClasses,
     mcCorrelations,
     mcGlidePath,
     effectiveInflationRisk,
+    preset,
     savedInflationOverrides,
   };
 }

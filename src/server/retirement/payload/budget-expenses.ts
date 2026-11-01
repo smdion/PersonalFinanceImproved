@@ -39,9 +39,12 @@ export async function resolvePhaseExpenses(
 ) {
   const defaultProfile = pickActiveBudgetProfile(allBudgetProfiles);
   // Accumulation phase: profile + column
-  const accProfile = opts.accumulationBudgetProfileId
-    ? allBudgetProfiles.find((p) => p.id === opts.accumulationBudgetProfileId)
-    : defaultProfile;
+  // A picked profile that no longer exists falls back to the active one
+  // rather than silently making the phase's spending $0.
+  const accProfile =
+    (opts.accumulationBudgetProfileId
+      ? allBudgetProfiles.find((p) => p.id === opts.accumulationBudgetProfileId)
+      : undefined) ?? defaultProfile;
   const accMaxCol =
     Math.max(0, (accProfile?.columnLabels as string[] | null)?.length ?? 1) - 1;
   const accCol = Math.min(
@@ -52,9 +55,10 @@ export async function resolvePhaseExpenses(
     ? allBudgetItems.filter((i) => i.profileId === accProfile.id)
     : [];
   // Decumulation phase: profile + column
-  const decProfile = opts.decumulationBudgetProfileId
-    ? allBudgetProfiles.find((p) => p.id === opts.decumulationBudgetProfileId)
-    : defaultProfile;
+  const decProfile =
+    (opts.decumulationBudgetProfileId
+      ? allBudgetProfiles.find((p) => p.id === opts.decumulationBudgetProfileId)
+      : undefined) ?? defaultProfile;
   const decMaxCol =
     Math.max(0, (decProfile?.columnLabels as string[] | null)?.length ?? 1) - 1;
   const decCol = Math.min(

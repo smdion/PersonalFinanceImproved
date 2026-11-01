@@ -156,6 +156,7 @@ export const accountMappingSchema = z.object({
   assetId: z.number().int().optional(),
   loanId: z.number().int().optional(),
   loanMapType: z.enum(["propertyValue", "loanBalance"]).optional(),
+  debtId: z.number().int().optional(),
   performanceAccountId: z.number().int().optional(),
 });
 

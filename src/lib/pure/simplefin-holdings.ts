@@ -159,3 +159,29 @@ export function assertHoldingHasOneAccount(row: {
     );
   }
 }
+
+/**
+ * A feed's holdings rows keep every report (several can share a day), so
+ * readers that want one report per day take the day's newest: what the
+ * one-row-per-day storage used to keep. Manual rows pass through.
+ */
+export function newestReportPerDay<
+  T extends {
+    simplefinAccountId: number | null;
+    asOf: string;
+    balanceDate: Date | null;
+  },
+>(rows: readonly T[]): T[] {
+  const at = (r: T) => r.balanceDate?.getTime() ?? -Infinity;
+  const newest = new Map<string, number>();
+  for (const r of rows) {
+    if (r.simplefinAccountId === null) continue;
+    const key = `${r.simplefinAccountId}:${r.asOf}`;
+    if (!newest.has(key) || at(r) > newest.get(key)!) newest.set(key, at(r));
+  }
+  return rows.filter(
+    (r) =>
+      r.simplefinAccountId === null ||
+      at(r) === newest.get(`${r.simplefinAccountId}:${r.asOf}`),
+  );
+}

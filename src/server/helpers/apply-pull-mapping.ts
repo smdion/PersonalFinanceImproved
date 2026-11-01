@@ -1,20 +1,26 @@
 /**
  * Shared "apply one pull mapping" logic for budget-API account sync.
  *
- * Used by `syncAll`'s pull loop (assets and mortgage mappings alike); the
+ * Used by `syncAll`'s pull loop (assets, mortgage and debt mappings alike); the
  * caller passes its own `db`/`tx`, so atomicity is the caller's choice.
  */
 
-import { eq } from "drizzle-orm";
+import { and, eq, isNotNull, notInArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AccountMapping } from "@/lib/db/schema";
 import type { Db } from "./transforms";
 import { localDateStr } from "@/lib/utils/date";
+import { log } from "@/lib/logger";
+import {
+  isPullMapping,
+  mappingsWithTypedIds,
+} from "@/lib/utils/account-mapping";
 
 type ApplyPullMappingResult =
   | { applied: false }
   | { applied: true; kind: "mortgagePropertyValue" | "mortgageLoanBalance" }
-  | { applied: true; kind: "asset" };
+  | { applied: true; kind: "asset" }
+  | { applied: true; kind: "debt" };
 
 /**
  * Apply a single resolved API balance to whatever local record `mapping`
@@ -49,6 +55,23 @@ export async function applyPullMapping(
     return { applied: false };
   }
 
+  // A debt's balance, written like the mortgage loan balance below.
+  if (mapping.debtId != null || localId.startsWith("debt:")) {
+    const debtId = mapping.debtId ?? parseInt(localId.split(":")[1]!, 10);
+    const updated = await db
+      .update(schema.debts)
+      .set({
+        apiBalance: String(Math.abs(apiBalance)),
+        apiBalanceDate: localDateStr(),
+      })
+      .where(eq(schema.debts.id, debtId))
+      .returning({ id: schema.debts.id });
+    // A deleted debt: nothing to write (as for a deleted asset).
+    return updated.length > 0
+      ? { applied: true, kind: "debt" }
+      : { applied: false };
+  }
+
   // Prefer typed fields; fall back to prefix parsing for legacy mappings.
   if (mapping.loanId || localId.startsWith("mortgage:")) {
     const loanId = mapping.loanId ?? Number(localId.split(":")[1]);
@@ -74,6 +97,25 @@ export async function applyPullMapping(
         .where(eq(schema.mortgageLoans.id, loanId));
       return { applied: true, kind: "mortgageLoanBalance" };
     }
+    return { applied: false };
+  }
+
+  // Only target kinds this pipeline knows are written. A portfolio
+  // (`performance:`) account is push-only — its balance is already in net
+  // worth from the snapshot, so falling through to the asset branch below
+  // would write it a second time as an other_asset_items row. Anything else
+  // with a prefix we don't know is skipped the same way. A localId with no
+  // prefix at all (a plain name) is a legacy asset mapping, kept working.
+  const isAssetTarget =
+    mapping.assetId != null ||
+    localId.startsWith("asset:") ||
+    !/^[a-z]+:\d/.test(localId);
+  if (mapping.performanceAccountId != null || !isAssetTarget) {
+    log("warn", "apply_pull_mapping.unsupported_target", {
+      localId,
+      localName: mapping.localName,
+      remoteAccountId: mapping.remoteAccountId,
+    });
     return { applied: false };
   }
 
@@ -116,4 +158,42 @@ export async function applyPullMapping(
     });
   }
   return { applied: true, kind: "asset" };
+}
+
+/**
+ * Clear pulled balances nothing pulls any more — a debt or mortgage loan
+ * whose mapping was removed (or whose connection was deleted) goes back to
+ * its own balance instead of keeping the last pulled one forever.
+ */
+export async function clearUnmappedPulledBalances(db: Db): Promise<void> {
+  const conns = await db
+    .select({ accountMappings: schema.apiConnections.accountMappings })
+    .from(schema.apiConnections);
+  const pulled = mappingsWithTypedIds(
+    conns.flatMap((c) => c.accountMappings ?? []),
+  ).filter(isPullMapping);
+  const debtIds = pulled.flatMap((m) => (m.debtId != null ? [m.debtId] : []));
+  const loanIds = pulled.flatMap((m) =>
+    m.loanId != null && m.loanMapType === "loanBalance" ? [m.loanId] : [],
+  );
+  await db
+    .update(schema.debts)
+    .set({ apiBalance: null, apiBalanceDate: null })
+    .where(
+      and(
+        isNotNull(schema.debts.apiBalance),
+        debtIds.length > 0 ? notInArray(schema.debts.id, debtIds) : undefined,
+      ),
+    );
+  await db
+    .update(schema.mortgageLoans)
+    .set({ apiBalance: null, apiBalanceDate: null })
+    .where(
+      and(
+        isNotNull(schema.mortgageLoans.apiBalance),
+        loanIds.length > 0
+          ? notInArray(schema.mortgageLoans.id, loanIds)
+          : undefined,
+      ),
+    );
 }

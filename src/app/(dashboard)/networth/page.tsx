@@ -268,15 +268,19 @@ export default function NetWorthPage() {
           {formatCurrency(displayNetWorth)}
         </p>
         {(() => {
-          const today = liveSinceSnapshot?.points.at(-1);
+          const today = liveSinceSnapshot?.estimate;
           if (!today || !liveSinceSnapshot?.snapshotDate) return null;
           return (
             <p className="mt-1 text-sm opacity-80">
-              ≈ {formatCurrency(displayNetWorth + today.change)} with live
+              ≈ {formatCurrency(displayNetWorth + today.change)} with current
               balances ({today.change >= 0 ? "+" : "−"}
               {formatCurrency(Math.abs(today.change))} since your{" "}
               {formatDate(liveSinceSnapshot.snapshotDate, "medium")} snapshot,{" "}
-              {today.accounts} linked account{today.accounts === 1 ? "" : "s"})
+              {today.accounts} linked account{today.accounts === 1 ? "" : "s"}
+              {today.estimatedTo
+                ? `, ${today.estimateIsPartial ? "partly " : ""}estimated to the ${formatDate(today.estimatedTo, "medium")} close`
+                : ""}
+              )
             </p>
           );
         })()}

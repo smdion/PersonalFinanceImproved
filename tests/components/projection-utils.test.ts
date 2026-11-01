@@ -750,6 +750,7 @@ describe("filterYearByParentCategory", () => {
       // (see the two tests below).
       targetWithdrawal: 200000,
       taxCost: 20000,
+      ssTaxCost: 0,
       projectedExpenses: 150000,
       rmdAmount: 50000,
     } as unknown as EngineYearProjection;
@@ -793,6 +794,19 @@ describe("filterYearByParentCategory", () => {
   // "underfunded" purely because the comparison basis (targetWithdrawal)
   // never shrank to match. Both must scale by the SAME ratio as the
   // withdrawal itself.
+  it("tax on Social Security stays whole: only the withdrawal's tax is rescoped", () => {
+    const ratio = 14466.75 / 177209.74;
+    const base = makeDecumYear();
+    if (base.phase !== "decumulation") throw new Error("expected decumulation");
+    const result = filterYearByParentCategory(
+      { ...base, ssTaxCost: 5000 },
+      "Retirement",
+    );
+    if (result.phase !== "decumulation")
+      throw new Error("expected decumulation");
+    expect(result.taxCost).toBeCloseTo(15000 * ratio + 5000, 1);
+  });
+
   it("rescopes targetWithdrawal and taxCost by the same ratio as totalWithdrawal", () => {
     const result = filterYearByParentCategory(makeDecumYear(), "Retirement");
     if (result.phase !== "decumulation")

@@ -30,12 +30,30 @@ export type Recommendation = {
    *  instead of asking the reader. */
   context: string;
   impact: MilestoneImpact | null;
+  /** A yearly saving shown in retirement terms; never ranks the list. */
+  yearlySaving?: number;
   /** What the recommendation is about — where its link lands. */
   focus: Focus;
   source: MilestoneSource | "ledgr";
   /** An error to fix: it can be snoozed but never dismissed for good. */
   snoozeOnly?: boolean;
 };
+
+/**
+ * What a yearly amount grows to by the last year of the given return rates
+ * (the plan's, year by year), each year's amount added at that year's end.
+ * A per-year impact or yearly saving only: a one-time impact is money moved
+ * (a rebalance, a sale), not money gained, so it has no retirement value.
+ */
+export function retirementValue(
+  r: Pick<Recommendation, "impact" | "yearlySaving">,
+  yearlyRates: readonly number[],
+): number | null {
+  const amount =
+    r.impact?.kind === "perYear" ? r.impact.amount : r.yearlySaving;
+  if (amount === undefined || yearlyRates.length === 0) return null;
+  return yearlyRates.reduce((v, rate) => v * (1 + rate) + amount, 0);
+}
 
 /** Behind (or alerting) milestones with a next step, in their configured
  *  area. Urgency is the milestone's own: alert → now, behind → soon. */
@@ -60,6 +78,7 @@ export function recommendationsFromMilestones(
       action: r.nextStep,
       context: r.headline,
       impact: r.impact,
+      yearlySaving: r.yearlySaving,
       focus: r.focus,
       source: r.source,
     });

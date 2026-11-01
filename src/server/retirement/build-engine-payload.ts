@@ -10,6 +10,9 @@
  * balances. Callers (projection router endpoints) consume the result and add
  * their own accumulation/decumulation overrides and decumulation defaults.
  */
+import { DEFAULT_SIMULATION } from "@/lib/constants";
+import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
+import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import { retirementFilingStatus } from "@/lib/pure/filing-status";
 import { thisYearFilingStatus } from "@/server/helpers/filing-status";
 import { eq, asc } from "drizzle-orm";
@@ -130,6 +133,8 @@ export async function fetchRetirementData(
     salaryProfileRow,
     jobLinkRows,
     accountBasisRows,
+    defaultPreset,
+    classBucketRows,
   ] = await Promise.all([
     getAllPeople(db),
     db.select().from(schema.jobs),
@@ -213,6 +218,11 @@ export async function fetchRetirementData(
       })
       .from(schema.contributionAccounts),
     db.select().from(schema.accountBasis),
+    // The Default preset's glide path and which classes are stocks — VPW
+    // sizes its percentage by the stock share (lib/pure/stock-share.ts). A
+    // Simulation run replaces this with its own preset's.
+    loadSimulationPreset(db, DEFAULT_SIMULATION.preset),
+    db.select().from(schema.assetClassBuckets),
   ]);
   return {
     people,
@@ -241,6 +251,8 @@ export async function fetchRetirementData(
     salaryProfileRow,
     jobLinkRows,
     accountBasisRows,
+    defaultPreset,
+    classBucketRows,
   };
 }
 
@@ -298,6 +310,8 @@ export async function buildEnginePayload(
     allAppSettings,
     jobLinkRows,
     accountBasisRows,
+    defaultPreset,
+    classBucketRows,
   } = data;
 
   // All active contribution accounts feed the engine (both Retirement and Portfolio).
@@ -840,6 +854,11 @@ export async function buildEnginePayload(
       (salaryByPerson[js.job.personId] ?? 0) + js.totalCompFullFormula;
   }
   const hasMultiplePeople = Object.keys(salaryByPerson).length > 1;
+  // With one earner, salary runs at the household level on that person's
+  // terms — who may not be the primary person.
+  const earnerIds = Object.keys(salaryByPerson).map(Number);
+  const soleEarnerId =
+    earnerIds.length === 1 ? earnerIds[0]! : primaryPerson.id;
 
   // Separate salary overrides: profile-switch overrides vs plain salary
   // overrides. A row is a profile switch if it references EITHER axis — the
@@ -854,7 +873,7 @@ export async function buildEnginePayload(
 
   // Salary overrides from DB — household-level fallback (only when single person)
   const dbSalaryOverrides = plainSalaryOverrides
-    .filter((o) => !hasMultiplePeople && o.personId === primaryPerson.id)
+    .filter((o) => !hasMultiplePeople && o.personId === soleEarnerId)
     .map((o) => ({
       year: o.projectionYear,
       value: toNumber(o.overrideSalary),
@@ -1135,7 +1154,20 @@ export async function buildEnginePayload(
       : undefined,
     projectionEndAge: maxEndAge,
     currentSalary: totalCompensationFullFormula,
-    salaryGrowthRate: toNumber(settings.salaryAnnualIncrease),
+    salaryGrowthRate: toNumber(
+      (soleEarnerId !== primaryPerson.id
+        ? perPersonSettings.find((p) => p.personId === soleEarnerId)
+        : undefined
+      )?.salaryAnnualIncrease ?? settings.salaryAnnualIncrease,
+    ),
+    salaryGrowthRateByPerson: hasMultiplePeople
+      ? Object.fromEntries(
+          perPersonSettings.map((p) => [
+            p.personId,
+            toNumber(p.salaryAnnualIncrease),
+          ]),
+        )
+      : undefined,
     salaryCap: settings.salaryCap ? toNumber(settings.salaryCap) : null,
     salaryOverrides: dbSalaryOverrides,
     salaryByPerson: hasMultiplePeople ? salaryByPerson : undefined,
@@ -1250,9 +1282,18 @@ export async function buildEnginePayload(
     birthYear: new Date(primaryPerson.dateOfBirth).getFullYear(),
     filingStatus,
     enableIrmaaAwareness: settings.enableIrmaaAwareness,
+    irmaaOnTopOfBudget: settings.irmaaOnTopOfBudget,
+    primaryPersonId: primaryPerson.id,
     enableAcaAwareness: settings.enableAcaAwareness,
     householdSize: settings.householdSize,
     perPersonBirthYears: perPersonSettings.map((p) => p.birthYear),
+    stockShareByAge:
+      stockShareByAge(
+        defaultPreset.glidePath,
+        classifyAssetClasses(classBucketRows),
+        age,
+        maxEndAge,
+      ) ?? undefined,
     asOfDate,
   };
 

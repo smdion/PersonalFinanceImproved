@@ -13,6 +13,10 @@ import {
   restoreVersion,
   tablesLostOnRestore,
 } from "@/lib/db/version-logic";
+import {
+  VERSION_PREVIEW_WITHHELD_TABLES,
+  VERSION_TABLE_NAMES,
+} from "@/lib/db/version-tables";
 
 export const versionRouter = createTRPCRouter({
   /** List all versions (metadata only, no JSONB data). */
@@ -34,8 +38,9 @@ export const versionRouter = createTRPCRouter({
       .orderBy(desc(schema.stateVersions.createdAt));
   }),
 
-  /** Get a single version with per-table row counts (no JSONB data). */
-  getById: protectedProcedure
+  /** Get a single version with per-table row counts (no JSONB data).
+   *  Version permission: a backup's contents are every table's data. */
+  getById: versionProcedure
     .input(z.object({ id: z.number().int() }))
     .query(async ({ ctx, input }) => {
       const [version] = await ctx.db
@@ -56,9 +61,18 @@ export const versionRouter = createTRPCRouter({
       return { ...version, tables };
     }),
 
-  /** Preview first 50 rows of a specific table from a version. */
-  getPreview: protectedProcedure
-    .input(z.object({ versionId: z.number().int(), tableName: z.string() }))
+  /** Preview first 50 rows of a specific table from a version. Version
+   *  permission — the rows are any table's data, which elsewhere needs its
+   *  own permission — and never a credential table (withheld, count only). */
+  getPreview: versionProcedure
+    .input(
+      z.object({
+        versionId: z.number().int(),
+        tableName: z
+          .string()
+          .refine((t) => VERSION_TABLE_NAMES.includes(t), "Unknown table"),
+      }),
+    )
     .query(async ({ ctx, input }) => {
       const [tableData] = await ctx.db
         .select()
@@ -68,6 +82,8 @@ export const versionRouter = createTRPCRouter({
         );
 
       if (!tableData) return { rows: [], rowCount: 0 };
+      if (VERSION_PREVIEW_WITHHELD_TABLES.includes(input.tableName))
+        return { rows: [], rowCount: tableData.rowCount, withheld: true };
 
       const allRows = tableData.data as unknown[];
       return {

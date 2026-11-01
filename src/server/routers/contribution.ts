@@ -39,6 +39,7 @@ import {
   buildSandboxContribRow,
 } from "@/server/helpers";
 import { getAllPeople } from "@/server/helpers/people";
+import { householdHighIncomeLine } from "@/server/helpers/high-income-line";
 import {
   zSandboxSalaryEntries,
   zSandboxContribActiveFields,
@@ -201,6 +202,12 @@ type PersonSnapshot = {
 };
 
 export const contributionRouter = createTRPCRouter({
+  /** The default high-income line — by this year's filing status (the
+   *  saved setting, when set, wins on the client). Here so a filing-status
+   *  save, which reloads `contribution`, reloads it too. */
+  highIncomeLine: protectedProcedure.query(({ ctx }) =>
+    householdHighIncomeLine(ctx.db),
+  ),
   computeSummary: protectedProcedure
     .input(
       z

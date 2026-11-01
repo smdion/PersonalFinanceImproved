@@ -114,6 +114,70 @@ describe("getEffectiveCash — active budget API", () => {
     expect(result.cacheAgeDays).toBeNull();
   });
 
+  it("nothing detected as cash: the manual figure, not $0 from the API", async () => {
+    mockGetActiveBudgetApi.mockResolvedValue("actual");
+    mockCacheGet.mockResolvedValue({
+      data: [{ onBudget: true, closed: false, type: "other", balance: 3000 }],
+      fetchedAt: new Date(),
+    });
+    ctx.db
+      .insert(ctx.schema.appSettings)
+      .values({ key: "current_cash", value: 6200 })
+      .onConflictDoUpdate({
+        target: ctx.schema.appSettings.key,
+        set: { value: 6200 },
+      })
+      .run();
+    const settings = ctx.db.select().from(ctx.schema.appSettings).all();
+    const result = await getEffectiveCash(
+      ctx.rawDb,
+      settings as { key: string; value: unknown }[],
+    );
+    expect(result).toEqual({
+      cash: 6200,
+      source: "manual",
+      cacheAgeDays: null,
+    });
+  });
+
+  it("mapped cash keeps each balance's sign and reports the cache's real age", async () => {
+    mockGetActiveBudgetApi.mockResolvedValue("actual");
+    ctx.db
+      .insert(ctx.schema.apiConnections)
+      .values({
+        service: "actual",
+        config: {},
+        accountMappings: [
+          {
+            localId: "cash",
+            localName: "Cash",
+            remoteAccountId: "chk",
+            syncDirection: "pull",
+          },
+          {
+            localId: "cash",
+            localName: "Cash",
+            remoteAccountId: "sav",
+            syncDirection: "pull",
+          },
+        ],
+      })
+      .run();
+    mockCacheGet.mockResolvedValue({
+      data: [
+        { id: "chk", balance: -500 }, // overdrawn checking
+        { id: "sav", balance: 4000 },
+      ],
+      fetchedAt: new Date(Date.now() - 3 * 86_400_000),
+    });
+    try {
+      const result = await getEffectiveCash(ctx.rawDb, []);
+      expect(result).toEqual({ cash: 3500, source: "actual", cacheAgeDays: 3 });
+    } finally {
+      ctx.db.delete(ctx.schema.apiConnections).run();
+    }
+  });
+
   it("falls back to manual cash when no budget API is active", async () => {
     mockGetActiveBudgetApi.mockResolvedValue("none");
 

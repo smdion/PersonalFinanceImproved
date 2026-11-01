@@ -73,9 +73,10 @@ export type MonteCarloInput = {
     allocations: Record<number, number>;
   }[];
 
-  /** Optional inflation randomization. */
+  /** Optional inflation randomization: each year's inflation varies by
+   *  this spread around the plan's own rates (`engineInput.inflationRate`
+   *  and `postRetirementInflationRate`). */
   inflationRisk?: {
-    meanRate: number;
     stdDev: number;
   };
 
@@ -136,6 +137,17 @@ export type MonteCarloResult = {
   worstCase: {
     /** 5th-percentile failure age among failing trials. */
     p5FailureAge: number | null;
+    p5EndBalance: number;
+  };
+
+  /** The dollar outcomes in today's dollars, each trial deflated by the
+   *  inflation it ran with before the percentiles are taken. Today's-dollar
+   *  views read these — never the nominal figures deflated at the plan's
+   *  rate, which would erase the inflation each trial drew. */
+  today: {
+    percentileBands: MonteCarloPercentileBand[];
+    terminalBalance: DistributionSummary;
+    medianEndBalance: number;
     p5EndBalance: number;
   };
 

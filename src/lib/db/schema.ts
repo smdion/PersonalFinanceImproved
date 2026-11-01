@@ -88,6 +88,7 @@ export const budgetApiCache = active.budgetApiCache;
 export const simplefinBalanceSnapshots = active.simplefinBalanceSnapshots;
 export const simplefinAccounts = active.simplefinAccounts;
 export const securities = active.securities;
+export const marketCloses = active.marketCloses;
 export const simplefinAccountBalances = active.simplefinAccountBalances;
 export const holdingObservations = active.holdingObservations;
 export const holdingPeriods = active.holdingPeriods;

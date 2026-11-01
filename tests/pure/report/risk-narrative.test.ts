@@ -6,8 +6,6 @@ import {
 } from "@/lib/pure/report/risk-narrative";
 import type { MonteCarloResult } from "@/lib/calculators/types/monte-carlo";
 
-const noopDeflate = (v: number) => v;
-
 function distribution(median: number) {
   return {
     min: 0,
@@ -66,24 +64,37 @@ function mcResult(overrides: Partial<MonteCarloResult> = {}): MonteCarloResult {
       sustainableWithdrawalPV: distribution(42000),
     },
     worstCase: { p5FailureAge: null, p5EndBalance: 100000 },
+    today: {
+      percentileBands: [
+        {
+          year: 2040,
+          age: 65,
+          p5: 50,
+          p10: 100,
+          p25: 150,
+          p50: 200,
+          p75: 250,
+          p90: 300,
+          p95: 350,
+          mean: 200,
+        },
+      ],
+      terminalBalance: distribution(250000),
+      medianEndBalance: 250000,
+      p5EndBalance: 50000,
+    },
     ...overrides,
   } as unknown as MonteCarloResult;
 }
 
 describe("buildRiskNarrative", () => {
   it("reads as reassuring for a high success rate", () => {
-    const r = buildRiskNarrative(mcResult({ successRate: 0.92 }), {
-      deflate: noopDeflate,
-      baseYear: 2026,
-    });
+    const r = buildRiskNarrative(mcResult({ successRate: 0.92 }));
     expect(r.successRateNarrative).toMatch(/strong result/i);
   });
 
   it("reads as a real warning, not softened, for a low success rate", () => {
-    const r = buildRiskNarrative(mcResult({ successRate: 0.5 }), {
-      deflate: noopDeflate,
-      baseYear: 2026,
-    });
+    const r = buildRiskNarrative(mcResult({ successRate: 0.5 }));
     expect(r.successRateNarrative).toMatch(/below the 85% threshold/i);
     expect(r.successRateNarrative).toMatch(/50%/);
   });
@@ -91,7 +102,6 @@ describe("buildRiskNarrative", () => {
   it("describes a real worst-case depletion age when one exists", () => {
     const r = buildRiskNarrative(
       mcResult({ worstCase: { p5FailureAge: 80, p5EndBalance: 0 } }),
-      { deflate: noopDeflate, baseYear: 2026 },
     );
     expect(r.worstCaseNarrative).toMatch(/80/);
     expect(r.worstCaseNarrative).toMatch(/worst 5%/i);
@@ -100,7 +110,6 @@ describe("buildRiskNarrative", () => {
   it("does not claim depletion when the worst case never depletes — reports the balance instead", () => {
     const r = buildRiskNarrative(
       mcResult({ worstCase: { p5FailureAge: null, p5EndBalance: 250000 } }),
-      { deflate: noopDeflate, baseYear: 2026 },
     );
     expect(r.worstCaseNarrative).not.toMatch(/depleted/i);
     expect(r.worstCaseNarrative).toMatch(/not projected to run out/i);
@@ -109,24 +118,21 @@ describe("buildRiskNarrative", () => {
   it("adds a spending-stability note only when stability is meaningfully below the bar", () => {
     const stable = buildRiskNarrative(
       mcResult({ spendingStabilityRate: 0.95 }),
-      { deflate: noopDeflate, baseYear: 2026 },
     );
     expect(stable.spendingStabilityNarrative).toBeUndefined();
 
     const unstable = buildRiskNarrative(
       mcResult({ spendingStabilityRate: 0.6 }),
-      { deflate: noopDeflate, baseYear: 2026 },
     );
     expect(unstable.spendingStabilityNarrative).toBeDefined();
   });
 });
 
 describe("buildRiskBandPoints", () => {
-  it("maps p10/p90/p50 to low/high/median per year", () => {
+  it("maps today's-dollar p10/p90/p50 to low/high/median per year", () => {
     const points = buildRiskBandPoints(mcResult());
     expect(points).toEqual([
-      { year: 2040, age: 65, low: 200, high: 600, median: 400 },
-      { year: 2041, age: 66, low: 190, high: 590, median: 390 },
+      { year: 2040, age: 65, low: 100, high: 300, median: 200 },
     ]);
   });
 });

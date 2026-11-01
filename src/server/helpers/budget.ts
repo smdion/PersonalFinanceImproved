@@ -2,6 +2,10 @@
  * Budget expense computation helpers.
  */
 import {
+  isPullMapping,
+  mappingsWithTypedIds,
+} from "@/lib/utils/account-mapping";
+import {
   capForRequest,
   loadCapHousehold,
 } from "@/server/helpers/contribution-caps";
@@ -115,16 +119,26 @@ async function sumMappedAccountBalances(
   db: Db,
   service: "ynab" | "actual",
   localId: "cash" | "creditCard",
-): Promise<number | null> {
+): Promise<{ total: number; cacheAgeDays: number } | null> {
   const { cacheGet } = await import("@/lib/budget-api");
   const [conn] = await db
     .select({ accountMappings: schema.apiConnections.accountMappings })
     .from(schema.apiConnections)
     .where(eq(schema.apiConnections.service, service));
-  const mapped = (conn?.accountMappings ?? []).filter(
-    (m) =>
-      m.localId === localId &&
-      (m.syncDirection === "pull" || m.syncDirection === "both"),
+  const all = (conn?.accountMappings ?? []).filter(isPullMapping);
+  // A remote also pulled into a debt or loan balance counts there, not
+  // here (mappings saved before one-pull-per-account was enforced).
+  const pulledElsewhere = new Set(
+    mappingsWithTypedIds(all)
+      .filter(
+        (m) =>
+          m.debtId != null ||
+          (m.loanId != null && m.loanMapType === "loanBalance"),
+      )
+      .map((m) => m.remoteAccountId),
+  );
+  const mapped = all.filter(
+    (m) => m.localId === localId && !pulledElsewhere.has(m.remoteAccountId),
   );
   if (mapped.length === 0) return null;
 
@@ -137,10 +151,19 @@ async function sumMappedAccountBalances(
   );
   if (!cached) return null;
   const byId = new Map(cached.data.map((a) => [a.id, a.balance]));
-  return mapped.reduce(
-    (sum, m) => sum + Math.abs(byId.get(m.remoteAccountId) ?? 0),
-    0,
-  );
+  // A card's balance is what's owed, whichever sign the budget app uses;
+  // cash keeps its sign — an overdrawn checking account takes from cash.
+  const amount = (balance: number) =>
+    localId === "creditCard" ? Math.abs(balance) : balance;
+  return {
+    total: mapped.reduce(
+      (sum, m) => sum + amount(byId.get(m.remoteAccountId) ?? 0),
+      0,
+    ),
+    cacheAgeDays: Math.floor(
+      (Date.now() - cached.fetchedAt.getTime()) / 86_400_000,
+    ),
+  };
 }
 
 /**
@@ -172,7 +195,11 @@ export async function getEffectiveCash(
   if (active !== "none") {
     const mappedCash = await sumMappedAccountBalances(db, active, "cash");
     if (mappedCash !== null) {
-      return { cash: mappedCash, source: active, cacheAgeDays: 0 };
+      return {
+        cash: mappedCash.total,
+        source: active,
+        cacheAgeDays: mappedCash.cacheAgeDays,
+      };
     }
 
     type BudgetAccount = {
@@ -187,11 +214,14 @@ export async function getEffectiveCash(
       "accounts",
       BUDGET_CACHE_MAX_AGE_MS,
     );
-    if (cached) {
-      const cashTypes = new Set(["checking", "savings", "cash"]);
-      const cash = cached.data
-        .filter((a) => a.onBudget && !a.closed && cashTypes.has(a.type))
-        .reduce((sum, a) => sum + a.balance, 0);
+    const cashTypes = new Set(["checking", "savings", "cash"]);
+    const detected = cached?.data.filter(
+      (a) => a.onBudget && !a.closed && cashTypes.has(a.type),
+    );
+    // Nothing detected (no cash-type account) falls through to the manual
+    // figure — never $0 from the API.
+    if (cached && detected && detected.length > 0) {
+      const cash = detected.reduce((sum, a) => sum + a.balance, 0);
       const cacheAgeDays = Math.floor(
         (Date.now() - cached.fetchedAt.getTime()) / 86_400_000,
       );
@@ -227,7 +257,7 @@ export async function getEffectiveCreditCardDebt(
   const { getActiveBudgetApi } = await import("@/lib/budget-api");
   const active = activeBudgetApi ?? (await getActiveBudgetApi(db));
   if (active === "none") return 0;
-  return (await sumMappedAccountBalances(db, active, "creditCard")) ?? 0;
+  return (await sumMappedAccountBalances(db, active, "creditCard"))?.total ?? 0;
 }
 
 /**

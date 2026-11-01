@@ -69,6 +69,11 @@ export const SECURITY_KIND_VALUES = [
   "other",
 ] as const;
 export type SecurityKind = (typeof SECURITY_KIND_VALUES)[number];
+/** Kinds worth the same at every close (a stable $1 price): never a market move. */
+export const CASH_LIKE_SECURITY_KINDS: ReadonlySet<SecurityKind> = new Set([
+  "money_market",
+  "cash",
+]);
 export const securityKindSchema = z.enum(SECURITY_KIND_VALUES);
 
 // ── Fund facts (SEC filings / user) ──

@@ -1,0 +1,1 @@
+ALTER TABLE "retirement_settings" ADD COLUMN "irmaa_on_top_of_budget" boolean DEFAULT false NOT NULL;

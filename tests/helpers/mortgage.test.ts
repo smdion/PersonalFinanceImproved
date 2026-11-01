@@ -139,6 +139,50 @@ describe("buildMortgageInputs", () => {
     expect(extras.every((e) => e.loanId === 1)).toBe(true);
   });
 
+  it("a recurring series starting on the 31st yields one payment per month", () => {
+    const { extras } = buildMortgageInputs(
+      [makeLoanRow()] as never,
+      [
+        makeExtraPaymentRow({
+          startDate: "2025-01-31",
+          endDate: "2025-12-31",
+        }),
+      ] as never,
+    );
+    expect(extras).toHaveLength(12);
+    expect(extras.map((e) => e.date.toISOString().slice(0, 10))).toEqual([
+      "2025-01-31",
+      "2025-02-28",
+      "2025-03-31",
+      "2025-04-30",
+      "2025-05-31",
+      "2025-06-30",
+      "2025-07-31",
+      "2025-08-31",
+      "2025-09-30",
+      "2025-10-31",
+      "2025-11-30",
+      "2025-12-31",
+    ]);
+  });
+
+  it("clamps to Feb 29 in a leap year and recovers the 30th afterward", () => {
+    const { extras } = buildMortgageInputs(
+      [makeLoanRow()] as never,
+      [
+        makeExtraPaymentRow({
+          startDate: "2024-01-30",
+          endDate: "2024-03-30",
+        }),
+      ] as never,
+    );
+    expect(extras.map((e) => e.date.toISOString().slice(0, 10))).toEqual([
+      "2024-01-30",
+      "2024-02-29",
+      "2024-03-30",
+    ]);
+  });
+
   it("skips extra payment with neither paymentDate nor startDate/endDate", () => {
     const { extras } = buildMortgageInputs(
       [makeLoanRow()] as never,

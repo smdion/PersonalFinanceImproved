@@ -18,6 +18,7 @@ import {
   YAxis,
 } from "recharts";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
+import { useSimulationPreset } from "@/lib/hooks/use-simulation-preset";
 import { Card } from "@/components/ui/card";
 import {
   axisProps,
@@ -81,6 +82,30 @@ function chartPoints(
   return points;
 }
 
+/** The plan's range for a year; amber when the year fell outside it. */
+function RangeCell({
+  value,
+  range,
+}: {
+  value: number | null | undefined;
+  range: { low: number; high: number } | null;
+}) {
+  if (!range) return <td className="text-faint py-1 text-right">—</td>;
+  const outside = value != null && (value < range.low || value > range.high);
+  return (
+    <td
+      className={`py-1 text-right tabular-nums ${outside ? "text-amber-600" : "text-muted"}`}
+      title={
+        outside
+          ? "Outside what the plan expects in 9 years out of 10"
+          : "Inside what the plan expects"
+      }
+    >
+      {formatPercent(range.low, 0)} to {formatPercent(range.high, 0)}
+    </td>
+  );
+}
+
 export function ComparisonSection() {
   const [fromYear, setFromYear] = useState<number | undefined>(undefined);
   const { data, isLoading } = trpc.investments.getComparison.useQuery({
@@ -91,6 +116,18 @@ export function ComparisonSection() {
     "benchmark_primary",
     DEFAULT_BENCHMARK_KEY,
   );
+
+  // What the Simulation expects of a single year, for the years shown.
+  const [simulationPreset] = useSimulationPreset();
+  const fullYears = (data?.years ?? [])
+    .filter((y) => !y.partial)
+    .map((y) => y.year);
+  const { data: expected } = trpc.investments.getYearReturnRanges.useQuery(
+    { preset: simulationPreset, years: fullYears },
+    { enabled: fullYears.length > 0 },
+  );
+  const rangeOf = (year: number) =>
+    expected?.ranges.find((r) => r.year === year) ?? null;
 
   if (isLoading || !data) {
     return (
@@ -270,6 +307,14 @@ export function ComparisonSection() {
                 You vs {primary.label}
               </th>
             )}
+            {expected && (
+              <th
+                className="py-1 text-right font-medium"
+                title={`The middle 90% of one year's return in your Simulation (${expected.presetLabel} preset), at your age that year. It uses the preset's mix and today's assumptions, not your actual holdings then.`}
+              >
+                Plan&apos;s range
+              </th>
+            )}
           </tr>
         </thead>
         <tbody>
@@ -306,6 +351,9 @@ export function ComparisonSection() {
                     ? "—"
                     : `${diff >= 0 ? "+" : ""}${formatPercent(diff, 1)}`}
                 </td>
+                {expected && (
+                  <RangeCell value={y.returnPct} range={rangeOf(y.year)} />
+                )}
               </tr>
             );
           })}

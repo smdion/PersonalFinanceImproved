@@ -18,6 +18,7 @@ import type {
   MonteCarloPercentileBand,
   MonteCarloResult,
 } from "@/lib/calculators/types";
+import { simulationDollars } from "@/lib/pure/simulation-dollars";
 import type { ProjectionFormState } from "./use-projection-form-state";
 import type { UseProjectionStateProps } from "./use-projection-state";
 import { filterYearByParentCategory } from "./utils";
@@ -67,6 +68,7 @@ export function useProjectionQueries(
     setMcAssetClassOverrides,
     scenarioView,
     coastFireCustomAge,
+    dollarMode,
   } = form;
 
   const {
@@ -274,13 +276,12 @@ export function useProjectionQueries(
     utils.projection.computeMonteCarloProjection.invalidate();
     utils.projection.computeStrategyComparison.invalidate();
   };
+  // The glide path also sets the stock share VPW sizes by — every
+  // projection reads it, not just the Simulation.
   const updateGlidePath =
     trpc.projection.updateGlidePathAllocations.useMutation({
-      onSuccess: invalidateMc,
+      onSuccess: invalidateEngine,
     });
-  const updateInflationRisk = trpc.projection.updateInflationRisk.useMutation({
-    onSuccess: invalidateMc,
-  });
   const updateClampBounds = trpc.projection.updateClampBounds.useMutation({
     onSuccess: invalidateMc,
   });
@@ -833,30 +834,27 @@ export function useProjectionQueries(
       !useCoastFireMc
     )
       return null;
-    if (useCoastFireMc) {
-      const bands = activeAltMcResult?.percentileBands ?? null;
-      if (!bands) return null;
-      return new Map<number, MonteCarloPercentileBand>(
-        bands.map((b) => [b.year, b]),
-      );
-    }
-    const mcBands =
-      projectionMode === "monteCarlo"
-        ? mcQuery.data?.result?.percentileBands
-        : null;
-    const bands =
-      mcBands ?? mcPrefetchQuery.data?.result?.percentileBands ?? null;
-    if (!bands) return null;
+    // In the dollars the chart shows — today's come from the Simulation,
+    // each trial deflated by its own inflation (never re-deflated here).
+    const source = useCoastFireMc
+      ? activeAltMcResult
+      : ((projectionMode === "monteCarlo" ? mcQuery.data?.result : null) ??
+        mcPrefetchQuery.data?.result);
+    if (!source) return null;
     return new Map<number, MonteCarloPercentileBand>(
-      bands.map((b) => [b.year, b]),
+      simulationDollars(source, dollarMode).percentileBands.map((b) => [
+        b.year,
+        b,
+      ]),
     );
   }, [
     projectionMode,
     mcQuery.isFetching,
-    mcQuery.data?.result?.percentileBands,
-    mcPrefetchQuery.data?.result?.percentileBands,
+    mcQuery.data?.result,
+    mcPrefetchQuery.data?.result,
     useCoastFireMc,
-    activeAltMcResult?.percentileBands,
+    activeAltMcResult,
+    dollarMode,
   ]);
 
   const mcStabilityBands = useMemo(() => {
@@ -983,7 +981,6 @@ export function useProjectionQueries(
     saveProjectionOverrides,
     clearProjectionOverrides,
     updateGlidePath,
-    updateInflationRisk,
     updateClampBounds,
     updateAssetClassOverrides,
     updateInflationOverrides,

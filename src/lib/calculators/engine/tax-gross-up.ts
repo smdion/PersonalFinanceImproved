@@ -44,7 +44,7 @@ import { computeNiit } from "../../config/niit";
 import { roundToCents } from "../../utils/math";
 import { cloneAccountBalances } from "./balance-utils";
 import {
-  computeTaxableSS,
+  taxableSSFor,
   computeTaxFromSlots,
   type WithholdingBracket,
 } from "./tax-estimation";
@@ -65,10 +65,20 @@ import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penal
 
 /** Input for the convergence estimation. */
 interface TaxEstimationInput {
-  /** After-tax spending need (expenses - SS income) */
+  /** After-tax spending need (expenses - SS income). Ignored when
+   *  `fixedGrossWithdrawal` is set. */
   afterTaxNeed: number;
+  /** A portfolio-sized strategy's amount with Social Security on top: the
+   *  gross withdrawal is fixed (no solving), and the after-tax need it
+   *  delivers is derived from it (`derivedAfterTaxNeed`). */
+  fixedGrossWithdrawal?: number;
   /** Social Security income for this year */
   ssIncome: number;
+  /** Social Security beyond this year's spending. It pays the year's tax
+   *  first, so only the rest needs a withdrawal; never banked past that.
+   *  Omitted or 0 in a `fixedGrossWithdrawal` year (Social Security is on
+   *  top of the amount by definition). */
+  ssSurplus?: number;
   /** Filing status for SS taxation thresholds */
   filingStatus: FilingStatusType | null | undefined;
   /** Resolved decumulation config for this year */
@@ -149,6 +159,10 @@ interface TaxEstimationResult {
   grossedUpNeed: number;
   /** Target withdrawal (capped at total balance) */
   targetWithdrawal: number;
+  /** With `fixedGrossWithdrawal`: what it delivers after tax and penalty —
+   *  the year's after-tax need, so every reader of that need (shortfall,
+   *  RMD excess, post-RMD recompute) works unchanged. */
+  derivedAfterTaxNeed?: number;
   /** Estimated early-withdrawal penalty cost — 0 whenever `hasIndTracking`
    *  is false or nothing was
    *  penalized (the overwhelming default case, since `routeForMode` already
@@ -171,7 +185,7 @@ interface TaxEstimationResult {
  *  function's own retries, not just across files. */
 function evaluateCost(
   trialWithdrawal: number,
-  taxableSS: number,
+  laggedTaxableSS: number,
   input: TaxEstimationInput,
 ) {
   const {
@@ -228,7 +242,7 @@ function evaluateCost(
         taxRates.rothConversionTarget ??
         config.rothBracketTarget ??
         taxRates.rothBracketTarget,
-      taxableSS,
+      taxableSS: laggedTaxableSS,
       filingStatus,
       ltcgBrackets: taxRates.ltcgBrackets,
       rothBasisAvailable,
@@ -281,16 +295,27 @@ function evaluateCost(
       }).penaltyCost;
     }
   }
-  const taxResult = computeTaxFromSlots({
-    slots: routeResult.slots,
-    taxableSS,
-    balances,
-    brokerageBasisRatio,
-    taxRates,
-    filingStatus,
-    rothTaxableGrowth,
-    penaltyCost: iterPenaltyCost,
-  });
+  const price = (ss: number) =>
+    computeTaxFromSlots({
+      slots: routeResult.slots,
+      taxableSS: ss,
+      balances,
+      brokerageBasisRatio,
+      taxRates,
+      filingStatus,
+      rothTaxableGrowth,
+      penaltyCost: iterPenaltyCost,
+    });
+  // Routing above used the previous trial's taxable Social Security (its
+  // bracket caps only); the COST must use this trial's own, so cost(W) is a
+  // function of W — the real year prices it that way (with no filing status
+  // the flat 85% estimate stands, the conservative side).
+  let taxResult = price(laggedTaxableSS);
+  let taxableSS = laggedTaxableSS;
+  if (filingStatus && input.ssIncome > 0) {
+    taxableSS = taxableSSFor(input.ssIncome, taxResult, filingStatus);
+    taxResult = price(taxableSS);
+  }
   // NIIT, priced as the year handler charges it (decumulation-year.ts):
   // left out, a household above the threshold came up short by exactly the
   // surtax every year. Roth conversions run later and stay out of MAGI here.
@@ -305,15 +330,55 @@ function evaluateCost(
       )
     : 0;
   const taxCost = roundToCents(taxResult.taxCost + niit);
+  const totalCost = roundToCents(taxCost + taxResult.penaltyCost);
+  // What the withdrawal itself must cover (Social Security's surplus pays
+  // the tax first, decumulation-year.ts credits the same amount).
+  const surplusCredit = Math.min(input.ssSurplus ?? 0, taxCost);
   return {
     taxCost,
+    taxableSS,
     penaltyCost: taxResult.penaltyCost,
-    totalCost: roundToCents(taxCost + taxResult.penaltyCost),
-    totalTraditionalWithdrawal: taxResult.totalTraditionalWithdrawal,
+    totalCost,
+    netCost: roundToCents(totalCost - surplusCredit),
     // What the router couldn't deliver of this trial amount (account caps,
     // exclusion, or genuine balance exhaustion). The loop below grosses up
     // what IS delivered and stops once a larger trial delivers no more.
     routedUnmet: roundToCents(routeResult.unmetNeed ?? 0),
+  };
+}
+
+/**
+ * A fixed gross withdrawal (a portfolio-sized strategy with Social Security
+ * on top): no solving — evaluate the cost of W once, refining Social
+ * Security's taxable share from that evaluation's Traditional draw, and
+ * derive the after-tax need from the strategy's FULL amount at that cost
+ * rate. Never from what the balance or the router could deliver: a need cut
+ * down to what's there would hide running out (no shortfall, plan "funded").
+ */
+function fixedWithdrawalEstimate(
+  input: TaxEstimationInput,
+  amount: number,
+): TaxEstimationResult {
+  const { ssIncome, totalBalance } = input;
+  const W = roundToCents(Math.max(0, Math.min(amount, totalBalance)));
+  let evalResult = evaluateCost(W, ssIncome * 0.85, input);
+  // Once more with the evaluated taxable share: routing's caps see it too.
+  if (ssIncome > 0) evalResult = evaluateCost(W, evalResult.taxableSS, input);
+  const { taxableSS } = evalResult;
+  const effectiveTaxRate = W > 0 ? evalResult.totalCost / W : 0;
+  const derivedAfterTaxNeed = roundToCents(
+    Math.max(0, amount * (1 - Math.min(1, effectiveTaxRate))),
+  );
+  return {
+    taxableSS,
+    estTax: evalResult.taxCost,
+    estPenalty: evalResult.penaltyCost,
+    effectiveTaxRate,
+    // Nothing is grossed up: the withdrawal is the amount.
+    grossUpFactor: 1,
+    grossedUpNeed: W,
+    targetWithdrawal: W,
+    derivedAfterTaxNeed,
   };
 }
 
@@ -338,40 +403,32 @@ function evaluateCost(
  * trial" an underestimate of the true marginal rate on the larger grossed-
  * up dollars (a ~7% real shortfall, silent, no unmetNeed flagged).
  *
- * taxableSS's own circular dependency (taxableSS depends on the
- * Traditional withdrawal, which depends on W) is resolved in the SAME
- * loop rather than nested inside it — every evaluation
- * both refines taxableSS (from that evaluation's totalTraditionalWithdrawal)
- * and produces the next trial W, so the returned taxableSS/targetWithdrawal
- * pair is always mutually consistent with a single accepted evaluation,
- * never a stale taxableSS paired with an extrapolated W that was never
- * itself evaluated.
+ * taxableSS's own circular dependency (taxableSS depends on the income
+ * drawn, which depends on W) is resolved inside each evaluation: the cost
+ * prices that trial's own taxable share, so `cost(W)` is a function of W
+ * alone and the returned taxableSS/targetWithdrawal pair comes from one
+ * accepted evaluation. Only routing's bracket caps see the previous
+ * trial's share. Social Security's surplus, when spending is under it,
+ * pays tax first: the equation is on `netCost`.
  */
 export function estimateWithdrawalTaxCost(
   input: TaxEstimationInput,
 ): TaxEstimationResult {
-  const { afterTaxNeed, ssIncome, filingStatus, totalBalance, taxRates } =
-    input;
+  const { ssIncome, totalBalance, taxRates } = input;
+  if (input.fixedGrossWithdrawal !== undefined)
+    return fixedWithdrawalEstimate(input, input.fixedGrossWithdrawal);
+  const { afterTaxNeed } = input;
   const shouldGrossUp = taxRates.grossUpForTaxes !== false;
-  const MAX_EVALUATIONS = 4;
+  // Exits on convergence: the cap only spends more where cost(W) has kinks
+  // close together (the withdrawal mix changing, Social Security's torpedo).
+  const MAX_EVALUATIONS = 8;
   const RESIDUAL_TOLERANCE = 0.01;
 
-  let taxableSS = ssIncome * 0.85; // initial flat estimate
   let W = afterTaxNeed;
-  let evalResult = evaluateCost(W, taxableSS, input);
-  if (filingStatus && ssIncome > 0) {
-    taxableSS = computeTaxableSS(
-      ssIncome,
-      evalResult.totalTraditionalWithdrawal,
-      filingStatus,
-    );
-    // taxableSS changed -> re-evaluate at the SAME trial W with the
-    // refined SS taxability before this point becomes the loop's first
-    // secant anchor (accepting the stale-taxableSS evaluation here would
-    // just reintroduce the same "extrapolate from a point that wasn't
-    // really evaluated" bug this whole rewrite exists to remove).
-    evalResult = evaluateCost(W, taxableSS, input);
-  }
+  // First with the flat estimate, then the same W with routing's caps on
+  // the evaluated taxable share, before it anchors the secant.
+  let evalResult = evaluateCost(W, ssIncome * 0.85, input);
+  if (ssIncome > 0) evalResult = evaluateCost(W, evalResult.taxableSS, input);
 
   let prevW: number | null = null;
   let prevCost: number | null = null;
@@ -394,7 +451,7 @@ export function estimateWithdrawalTaxCost(
       (evalResult.routedUnmet > 0.01 &&
         prevDelivered != null &&
         delivered <= prevDelivered + 0.01);
-    const proceeds = delivered - evalResult.totalCost;
+    const proceeds = delivered - evalResult.netCost;
     const residual = afterTaxNeed - proceeds;
     if (Math.abs(residual) <= RESIDUAL_TOLERANCE || clamped) break;
 
@@ -402,29 +459,22 @@ export function estimateWithdrawalTaxCost(
     if (prevW == null || prevCost == null || Math.abs(W - prevW) < 0.01) {
       // No usable second point yet for a secant slope -- one Picard step
       // (W = need + cost(W)) to generate one.
-      nextW = roundToCents(afterTaxNeed + evalResult.totalCost);
+      nextW = roundToCents(afterTaxNeed + evalResult.netCost);
     } else {
-      const marginalRate = (evalResult.totalCost - prevCost) / (W - prevW);
+      const marginalRate = (evalResult.netCost - prevCost) / (W - prevW);
       nextW =
         marginalRate < 1 && Number.isFinite(marginalRate)
           ? roundToCents(W + residual / (1 - marginalRate))
-          : roundToCents(afterTaxNeed + evalResult.totalCost); // degenerate slope -> fall back to a Picard step
+          : roundToCents(afterTaxNeed + evalResult.netCost); // degenerate slope -> fall back to a Picard step
     }
     nextW = Math.min(nextW, totalBalance);
     if (Math.abs(nextW - W) < 0.01) break; // no more progress possible (likely the balance clamp)
 
     prevW = W;
-    prevCost = evalResult.totalCost;
+    prevCost = evalResult.netCost;
     prevDelivered = delivered;
     W = nextW;
-    if (filingStatus && ssIncome > 0) {
-      taxableSS = computeTaxableSS(
-        ssIncome,
-        evalResult.totalTraditionalWithdrawal,
-        filingStatus,
-      );
-    }
-    evalResult = evaluateCost(W, taxableSS, input);
+    evalResult = evaluateCost(W, evalResult.taxableSS, input);
     evaluations++;
   }
 
@@ -442,7 +492,7 @@ export function estimateWithdrawalTaxCost(
   const grossedUpNeed = roundToCents(afterTaxNeed * grossUpFactor);
 
   return {
-    taxableSS,
+    taxableSS: evalResult.taxableSS,
     estTax: evalResult.taxCost,
     estPenalty: evalResult.penaltyCost,
     effectiveTaxRate,

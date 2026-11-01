@@ -12,7 +12,9 @@ import {
   PENALTY_FREE_AGE,
   ROTH_CONVERSION_SEASONING_YEARS,
   HSA_NON_MEDICAL_PENALTY_AGE,
+  HSA_NON_MEDICAL_PENALTY_RATE,
 } from "@/lib/constants";
+import { formatPercent } from "@/lib/utils/format";
 import { roundToCents } from "@/lib/utils/math";
 
 export type SeparationSource = "explicit" | "derived" | "active" | "no_data";
@@ -259,6 +261,15 @@ export function computeRothIraAccess(input: {
  *  behaves exactly like a Traditional IRA: penalty-free at 65 (this
  *  account's own age gate, not the 59½ IRA one), always ordinary income
  *  tax. No basis concept, so no split — the whole balance moves together. */
+/**
+ * How a projection treats an HSA withdrawal, in one sentence for every
+ * surface that shows it. The engine doesn't model medical spending, so it
+ * can't know a draw paid a medical bill: each is general spending — the
+ * same assumption as `computeHsaAccess`'s slice. That can overstate tax for
+ * a household that pays medical costs from its HSA.
+ */
+export const HSA_DRAW_TREATMENT = `Projected as non-medical: taxed as ordinary income, plus a ${formatPercent(HSA_NON_MEDICAL_PENALTY_RATE)} penalty before age ${HSA_NON_MEDICAL_PENALTY_AGE}. Money you spend on qualified medical costs would be tax- and penalty-free at any age, which the projection doesn't model, so it may overstate the tax.`;
+
 export function computeHsaAccess(
   balance: number,
   currentAge: number,

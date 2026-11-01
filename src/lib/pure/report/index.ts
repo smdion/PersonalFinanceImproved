@@ -23,7 +23,6 @@ export function buildReportNarrative(
   mcResult: MonteCarloResult,
   opts: {
     deflate: (value: number, year: number) => number;
-    baseYear: number;
     coastFireAge?: number | null;
     bracketOptimizerResult?: BracketOptimizerResult | null;
   },
@@ -41,10 +40,7 @@ export function buildReportNarrative(
     opts.bracketOptimizerResult,
   );
 
-  const risk = buildRiskNarrative(mcResult, {
-    deflate: opts.deflate,
-    baseYear: opts.baseYear,
-  });
+  const risk = buildRiskNarrative(mcResult);
   const riskBandPoints = buildRiskBandPoints(mcResult);
 
   const watchlist = buildWatchlist(decumulationYears, opts.deflate);
