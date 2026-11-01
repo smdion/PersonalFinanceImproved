@@ -1,12 +1,11 @@
 /**
  * Tests for pure historical data temporal resolution logic.
- * Covers: resolveSalaryForYear, buildSalaryByYear, resolveCarryForwardAssetValue,
+ * Covers: resolveSalaryForYear, resolveCarryForwardAssetValue,
  * resolveOtherAssetsForYear, computeHomeImpCumulative.
  */
 import { describe, it, expect } from "vitest";
 import {
   resolveSalaryForYear,
-  buildSalaryByYear,
   resolveCarryForwardAssetValue,
   resolveOtherAssetsForYear,
   computeHomeImpCumulative,
@@ -37,40 +36,6 @@ describe("resolveSalaryForYear", () => {
 
   it("returns salary on the change year itself", () => {
     expect(resolveSalaryForYear(job, 2023)).toBe(110000);
-  });
-});
-
-describe("buildSalaryByYear", () => {
-  it("builds lookup across multiple people and jobs", () => {
-    const people = [
-      {
-        personId: 1,
-        timeline: [
-          {
-            startDate: "2022-01-01",
-            endDate: null,
-            salary: 100000,
-            changes: [{ effectiveDate: "2023-06-01", newSalary: 120000 }],
-          },
-        ],
-      },
-      {
-        personId: 2,
-        timeline: [
-          {
-            startDate: "2023-01-01",
-            endDate: "2023-12-31",
-            salary: 80000,
-            changes: [],
-          },
-        ],
-      },
-    ];
-    const result = buildSalaryByYear(people);
-    expect(result.get(2022)?.get(1)).toBe(100000);
-    expect(result.get(2023)?.get(1)).toBe(120000);
-    expect(result.get(2023)?.get(2)).toBe(80000);
-    expect(result.get(2022)?.has(2)).toBe(false);
   });
 });
 
