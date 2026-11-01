@@ -31,6 +31,7 @@ import {
   ACCOUNT_OWNERSHIP_VALUES,
 } from "@/lib/config/enum-values";
 import { zDecimal } from "./_shared";
+import { dropContributionActiveFields } from "@/server/helpers/delete-references";
 
 // --- Zod schemas ---
 
@@ -638,9 +639,16 @@ export const paycheckProcedures = {
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(({ ctx, input }) =>
-        ctx.db
-          .delete(schema.contributionAccounts)
-          .where(eq(schema.contributionAccounts.id, input.id)),
+        ctx.db.transaction(async (tx) => {
+          await dropContributionActiveFields(
+            tx,
+            "contributionAccounts",
+            input.id,
+          );
+          await tx
+            .delete(schema.contributionAccounts)
+            .where(eq(schema.contributionAccounts.id, input.id));
+        }),
       ),
   }),
 
@@ -749,9 +757,12 @@ export const paycheckProcedures = {
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(({ ctx, input }) =>
-        ctx.db
-          .delete(schema.paycheckDeductions)
-          .where(eq(schema.paycheckDeductions.id, input.id)),
+        ctx.db.transaction(async (tx) => {
+          await dropContributionActiveFields(tx, "deductions", input.id);
+          await tx
+            .delete(schema.paycheckDeductions)
+            .where(eq(schema.paycheckDeductions.id, input.id));
+        }),
       ),
   }),
 };

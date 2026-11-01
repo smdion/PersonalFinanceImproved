@@ -199,6 +199,7 @@ export {
   sumAccounts,
   sumAnnualRows,
 } from "@/lib/pure/performance";
+import { dropMappingsTo } from "@/server/helpers/delete-references";
 export type { AccountLike, AnnualRowLike } from "@/lib/pure/performance";
 
 export const performanceRouter = createTRPCRouter({
@@ -1831,10 +1832,14 @@ export const performanceRouter = createTRPCRouter({
           });
         }
 
-        // contributionAccounts and portfolioAccounts use SET NULL — they'll be unlinked
-        await ctx.db
-          .delete(schema.performanceAccounts)
-          .where(eq(schema.performanceAccounts.id, input.id));
+        // contributionAccounts and portfolioAccounts use SET NULL — they'll
+        // be unlinked; its budget-API mappings live in JSON and go here.
+        await ctx.db.transaction(async (tx) => {
+          await dropMappingsTo(tx, { performanceAccountId: input.id });
+          await tx
+            .delete(schema.performanceAccounts)
+            .where(eq(schema.performanceAccounts.id, input.id));
+        });
         return { success: true };
       }),
   }),

@@ -12,6 +12,7 @@ import {
   getEffectiveOtherLiabilities,
   isOpenDebt,
 } from "@/server/helpers/debts";
+import { dropMappingsTo } from "@/server/helpers/delete-references";
 
 const zDate = z.string().refine(isCalendarDate, "Not a date (YYYY-MM-DD)");
 /** Annual rate as a fraction: 0 ≤ r < 1 (6.5% is 0.065, not 6.5). */
@@ -140,7 +141,10 @@ export const debtsRouter = createTRPCRouter({
   delete: adminProcedure
     .input(z.object({ id: z.number().int().positive() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db.delete(schema.debts).where(eq(schema.debts.id, input.id));
+      await ctx.db.transaction(async (tx) => {
+        await dropMappingsTo(tx, { debtId: input.id });
+        await tx.delete(schema.debts).where(eq(schema.debts.id, input.id));
+      });
       return { success: true };
     }),
 });

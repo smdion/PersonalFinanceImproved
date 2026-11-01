@@ -18,6 +18,7 @@ import {
   resolveOtherAssetsForYear,
   resolveCarryForwardAssetValue,
 } from "@/lib/pure/historical";
+import { dropMappingsTo } from "@/server/helpers/delete-references";
 
 export const assetsRouter = createTRPCRouter({
   /**
@@ -391,9 +392,12 @@ export const assetsRouter = createTRPCRouter({
   deleteOtherAsset: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(schema.otherAssetItems)
-        .where(eq(schema.otherAssetItems.id, input.id));
+      await ctx.db.transaction(async (tx) => {
+        await dropMappingsTo(tx, { assetId: input.id });
+        await tx
+          .delete(schema.otherAssetItems)
+          .where(eq(schema.otherAssetItems.id, input.id));
+      });
       return { success: true };
     }),
 
