@@ -85,7 +85,7 @@ import {
   perfFieldSchema,
   PERF_NOTE_MAX,
 } from "@/lib/pure/performance-annotations";
-import { localDateStr } from "@/lib/utils/date";
+import { localDateStr, parseLocalDateOnly } from "@/lib/utils/date";
 import { getEffectiveOtherLiabilities } from "@/server/helpers/debts";
 
 const performanceAccountInput = z.object({
@@ -824,9 +824,12 @@ export const performanceRouter = createTRPCRouter({
     const balanceMismatch = (() => {
       if (!snapshotData) return null;
       const snapDate = snapshotData.snapshot.snapshotDate;
+      // The stamp is a UTC instant; the snapshot date is the household's
+      // calendar day — compare on the household's day (an evening edit is
+      // already tomorrow in UTC).
       const perfDate =
         typeof performanceLastUpdated === "string"
-          ? performanceLastUpdated.slice(0, 10)
+          ? localDateStr(parseLocalDateOnly(performanceLastUpdated))
           : null;
       if (!perfDate || snapDate !== perfDate) return null;
 
