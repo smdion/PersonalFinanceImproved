@@ -1144,6 +1144,8 @@ export async function buildEnginePayload(
       ? timeline.retirementYearByPerson
       : undefined,
     projectionEndYear: timeline.projectionEndYear,
+    payrollTaxRate:
+      (limitsMap.fica_ss_rate ?? 0) + (limitsMap.fica_medicare_rate ?? 0),
     currentSalary: totalCompensationFullFormula,
     salaryGrowthRate: toNumber(
       (soleEarnerId !== primaryPerson.id

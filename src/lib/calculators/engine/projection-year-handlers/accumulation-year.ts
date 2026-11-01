@@ -62,6 +62,7 @@ import type {
   ProjectionContext,
   ProjectionLoopState,
 } from "./types";
+import { gapShortfallFloor, runGapYearDraw } from "../gap-year-draw";
 import { updatePerPersonTradBalance } from "./helpers";
 import { applyLumpSums } from "./lump-sum";
 
@@ -672,6 +673,24 @@ export function runAccumulationYear(
     });
   }
 
+  // A paycheck is gone: the budget's shortfall comes out of the accounts.
+  const gapDraw = setup.gapYear
+    ? runGapYearDraw(ctx, state, {
+        year,
+        pay: projectedSalary * proRate,
+        budget: state.projectedExpenses * proRate,
+        employeeContributions: totalEmployee,
+        pretaxContributions: totalTraditional,
+      })
+    : null;
+  if (gapDraw) {
+    routeWarnings.push(...gapDraw.warnings);
+    if (gapDraw.unmetNeed >= gapShortfallFloor(gapDraw.need))
+      routeWarnings.push(
+        `${year}: $${Math.round(gapDraw.unmetNeed).toLocaleString()} of spending can't be funded with a paycheck gone: no reachable money without a penalty.`,
+      );
+  }
+
   // Build individual account year balances -- extracted to individual-account-tracking.ts
   const indYearBalances: IndividualAccountYearBalance[] = hasIndividualAccounts
     ? buildIndividualYearBalances(
@@ -774,6 +793,7 @@ export function runAccumulationYear(
     brokerageRampContribution: rampAmount,
     totalTaxAdvSpace,
     brokerageGoalWithdrawals: goalWithdrawals,
+    ...(gapDraw ? { gapDraw } : {}),
     retirementBalance,
     allAccountsBalance,
     balanceByTaxType: { ...balances },

@@ -184,6 +184,7 @@ describe("engine input snapshot guard", () => {
         "irmaaOnTopOfBudget",
         "irsLimitCaps",
         "limitGrowthRate",
+        "payrollTaxRate",
         "perPersonBirthYears",
         "perPersonSalaryOverrides",
         "postRetirementInflationRate",

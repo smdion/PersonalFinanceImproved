@@ -265,6 +265,10 @@ export function runPreYearSetup(
       return spec;
     });
   }
+  const gapYear = away.some((id) => {
+    const start = workingYears[id]?.start ?? null;
+    return start === null || year >= start;
+  });
   // A job starting or ending this year (its own dates, not a retirement:
   // a person retiring next year works all of this one).
   const jobEdgeThisYear =
@@ -423,5 +427,6 @@ export function runPreYearSetup(
     hasBonusAdjustment,
     yearSpecs,
     jobEdgeThisYear,
+    gapYear,
   };
 }

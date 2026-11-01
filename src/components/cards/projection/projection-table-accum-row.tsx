@@ -168,6 +168,17 @@ export function AccumulationRow({
       </Tooltip>
       <td className="px-2 py-1.5">
         <span className="text-caption font-medium text-green-600">SAVE</span>
+        {yr.gapDraw && (
+          <Tooltip
+            content={`A paycheck is gone this year, so ${formatCurrency(yr.gapDraw.withdrawal)} comes out of the accounts to cover ${formatCurrency(yr.gapDraw.need)} of spending the remaining pay doesn't, plus ${formatCurrency(yr.gapDraw.taxCost)} tax on the draw.`}
+            side="right"
+            maxWidth={260}
+          >
+            <span className="text-caption ml-1 font-medium text-amber-600">
+              + DRAW
+            </span>
+          </Tooltip>
+        )}
       </td>
       <Tooltip
         content={(() => {

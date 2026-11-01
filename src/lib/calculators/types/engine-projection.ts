@@ -1,5 +1,6 @@
 // Engine projection output types — year rows, phase results, and the full projection result.
 
+import type { GapYearDraw } from "../engine/gap-year-draw";
 import type { AccountCategory } from "@/lib/config/account-types";
 import type {
   TaxBuckets,
@@ -69,6 +70,9 @@ export type ProjectionInput = {
    *  before `retirementYear` has no pay from then and their contributions
    *  stop, while the accumulation handler runs on for the others. */
   retirementYearByPerson?: Record<number, number>;
+  /** The employee's payroll tax rate (Social Security + Medicare), from
+   *  reference data: what a gap year's take-home takes out of pay. */
+  payrollTaxRate?: number;
   /** The projection's last year. */
   projectionEndYear: number;
   currentSalary: number;
@@ -338,6 +342,9 @@ export type EngineAccumulationYear = {
     gainsPortion: number;
     taxCost: number;
   }[];
+  /** Set when a paycheck is gone and pay didn't cover the budget: what came
+   *  out of the accounts (gap-year-draw.ts). */
+  gapDraw?: GapYearDraw;
   /** Retirement money at end of year: every account minus the
    *  Portfolio-parented ones (savings outside the retirement plan) — what
    *  retirement answers count (depletion, success, nest egg). */
