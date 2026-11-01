@@ -1039,7 +1039,7 @@ export const performanceRouter = createTRPCRouter({
     .input(
       z.object({
         performanceAccountId: z.number().int(),
-        costBasis: z.string(),
+        costBasis: zDecimal,
       }),
     )
     .mutation(async ({ ctx, input }) => {

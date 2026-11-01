@@ -622,6 +622,24 @@ describe("settings.updateDataFreshness", () => {
     expect(freshness.balanceDate).toBe("2025-07-15");
   });
 
+  it("refuses a balanceDate that isn't a date, collides, or changes year", async () => {
+    const fresh = await createTestCaller(adminSession);
+    try {
+      seedSnapshot(fresh.db, "2025-03-01", []);
+      seedSnapshot(fresh.db, "2025-06-01", []);
+      const set = (balanceDate: string) =>
+        fresh.caller.settings.updateDataFreshness({ balanceDate });
+      await expect(set("2025-02-30")).rejects.toThrow(/Not a date/);
+      await expect(set("2025-03-01")).rejects.toThrow(/previous snapshot/);
+      await expect(set("2026-01-05")).rejects.toThrow(/Must stay in 2025/);
+      await set("2025-06-20");
+      const freshness = await fresh.caller.settings.getDataFreshness();
+      expect(freshness.balanceDate).toBe("2025-06-20");
+    } finally {
+      fresh.cleanup();
+    }
+  });
+
   it("is a no-op for balanceDate when no snapshot exists", async () => {
     const fresh = await createTestCaller(adminSession);
     try {

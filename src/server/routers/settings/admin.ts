@@ -37,7 +37,7 @@ import {
   nextDismissals,
   parseDismissals,
 } from "@/lib/pure/recommendation-dismissals";
-import { localDateStr } from "@/lib/utils/date";
+import { isCalendarDate, localDateStr } from "@/lib/utils/date";
 import {
   checkpointSourceSchema,
   customGoalsSchema,
@@ -139,7 +139,10 @@ export const adminProcedures = {
   updateDataFreshness: adminProcedure
     .input(
       z.object({
-        balanceDate: z.string().optional(),
+        balanceDate: z
+          .string()
+          .refine(isCalendarDate, "Not a date (YYYY-MM-DD)")
+          .optional(),
         performanceDate: z.string().optional(),
         basisDate: z.string().optional(),
       }),
@@ -147,16 +150,35 @@ export const adminProcedures = {
     .mutation(async ({ ctx, input }) => {
       if (input.balanceDate) {
         // Update the most recent portfolio snapshot date
-        const latest = await ctx.db
-          .select({ id: schema.portfolioSnapshots.id })
+        const [latest, previous] = await ctx.db
+          .select({
+            id: schema.portfolioSnapshots.id,
+            snapshotDate: schema.portfolioSnapshots.snapshotDate,
+          })
           .from(schema.portfolioSnapshots)
           .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
-          .limit(1);
-        if (latest[0]) {
+          .limit(2);
+        // The latest stays the latest and in its own year: anything else
+        // collides with another snapshot or leaves a year's Performance
+        // figures derived from a snapshot that moved away.
+        if (latest && previous && input.balanceDate <= previous.snapshotDate)
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Must be after the previous snapshot (${previous.snapshotDate})`,
+          });
+        if (
+          latest &&
+          input.balanceDate.slice(0, 4) !== latest.snapshotDate.slice(0, 4)
+        )
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Must stay in ${latest.snapshotDate.slice(0, 4)} — create a new snapshot for another year`,
+          });
+        if (latest) {
           await ctx.db
             .update(schema.portfolioSnapshots)
             .set({ snapshotDate: input.balanceDate })
-            .where(eq(schema.portfolioSnapshots.id, latest[0].id));
+            .where(eq(schema.portfolioSnapshots.id, latest.id));
         }
       }
       if (input.performanceDate) {
