@@ -1149,48 +1149,73 @@ export const networthRouter = createTRPCRouter({
             if (pullMappings.length > 0) {
               const pullBalanceMap = await getMapForPull(ctx.db, activeForPull);
               if (pullBalanceMap) {
-                const pullSnapshotAccounts = await ctx.db
-                  .select()
-                  .from(schema.portfolioAccounts)
-                  .where(eq(schema.portfolioAccounts.snapshotId, snapshot.id));
-                let pulled = 0;
-                for (const mapping of pullMappings) {
-                  const m = mapping as {
-                    remoteAccountId: string;
-                    performanceAccountId?: number;
-                  };
-                  const apiBalance = pullBalanceMap.get(m.remoteAccountId);
-                  if (apiBalance === undefined || !m.performanceAccountId)
-                    continue;
-                  const matchingRows = pullSnapshotAccounts.filter(
-                    (a) => a.performanceAccountId === m.performanceAccountId,
-                  );
-                  if (matchingRows.length === 0) continue;
-                  const currentTotal = matchingRows.reduce(
-                    (s, a) => s + Number(a.amount),
-                    0,
-                  );
-                  if (matchingRows.length === 1) {
-                    await ctx.db
-                      .update(schema.portfolioAccounts)
-                      .set({ amount: String(apiBalance) })
-                      .where(
-                        eq(schema.portfolioAccounts.id, matchingRows[0]!.id),
-                      );
-                  } else {
-                    const ratio = safeDivide(apiBalance, currentTotal, 0);
-                    for (const row of matchingRows) {
-                      const scaled = Number(row.amount) * ratio;
-                      await ctx.db
+                // The pulled amounts and the year's derivatives (ending
+                // balances, annual rollups) change together: refreshed
+                // again from the final amounts, in one transaction, so
+                // Performance and Net Worth can't disagree about this save.
+                const pulled = await ctx.db.transaction(async (tx) => {
+                  const pullSnapshotAccounts = await tx
+                    .select()
+                    .from(schema.portfolioAccounts)
+                    .where(
+                      eq(schema.portfolioAccounts.snapshotId, snapshot.id),
+                    );
+                  let pulled = 0;
+                  for (const mapping of pullMappings) {
+                    const m = mapping as {
+                      remoteAccountId: string;
+                      performanceAccountId?: number;
+                    };
+                    const apiBalance = pullBalanceMap.get(m.remoteAccountId);
+                    if (apiBalance === undefined || !m.performanceAccountId)
+                      continue;
+                    const matchingRows = pullSnapshotAccounts.filter(
+                      (a) => a.performanceAccountId === m.performanceAccountId,
+                    );
+                    if (matchingRows.length === 0) continue;
+                    const currentTotal = matchingRows.reduce(
+                      (s, a) => s + Number(a.amount),
+                      0,
+                    );
+                    if (matchingRows.length === 1) {
+                      await tx
                         .update(schema.portfolioAccounts)
-                        .set({
-                          amount: String(roundToCents(scaled)),
-                        })
-                        .where(eq(schema.portfolioAccounts.id, row.id));
+                        .set({ amount: String(apiBalance) })
+                        .where(
+                          eq(schema.portfolioAccounts.id, matchingRows[0]!.id),
+                        );
+                    } else {
+                      const ratio = safeDivide(apiBalance, currentTotal, 0);
+                      for (const row of matchingRows) {
+                        const scaled = Number(row.amount) * ratio;
+                        await tx
+                          .update(schema.portfolioAccounts)
+                          .set({
+                            amount: String(roundToCents(scaled)),
+                          })
+                          .where(eq(schema.portfolioAccounts.id, row.id));
+                      }
                     }
+                    pulled++;
                   }
-                  pulled++;
-                }
+                  if (pulled > 0) {
+                    const finalRows = await tx
+                      .select()
+                      .from(schema.portfolioAccounts)
+                      .where(
+                        eq(schema.portfolioAccounts.snapshotId, snapshot.id),
+                      );
+                    await refreshSnapshotYearDerivatives(
+                      tx,
+                      input.snapshotDate,
+                      finalRows.map((r) => ({
+                        performanceAccountId: r.performanceAccountId ?? null,
+                        amount: r.amount,
+                      })),
+                    );
+                  }
+                  return pulled;
+                });
                 apiPullResult = { pulled };
               }
             }
