@@ -267,13 +267,14 @@ export const dualIncomeFamilyProfile: DemoProfile = {
   contributionAccounts: [
     {
       personName: "Jordan",
+      employerName: "BigCo",
       accountType: "401k",
       taxTreatment: "pre_tax",
       contributionMethod: "percent_of_salary",
       contributionValue: "15",
       employerMatchType: "percent_of_contribution",
       employerMatchValue: "100",
-      employerMaxMatchPct: "4",
+      employerMaxMatchPct: "0.04",
       perfAccountLabel: "401(k) - BigCo",
     },
     {
@@ -289,13 +290,14 @@ export const dualIncomeFamilyProfile: DemoProfile = {
     },
     {
       personName: "Taylor",
+      employerName: "AdAgency",
       accountType: "401k",
       taxTreatment: "pre_tax",
       contributionMethod: "percent_of_salary",
       contributionValue: "10",
       employerMatchType: "percent_of_contribution",
       employerMatchValue: "50",
-      employerMaxMatchPct: "6",
+      employerMaxMatchPct: "0.06",
       perfAccountLabel: "401(k) - AdAgency",
     },
     {

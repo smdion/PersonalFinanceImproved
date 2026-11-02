@@ -82,6 +82,10 @@ export type DemoProfile = {
 
   contributionAccounts: {
     personName: string;
+    /** The job (by employerName) the account is deducted from: its pay
+     *  sizes the contribution and its match. Required for any account with
+     *  an employer match or a percent-of-salary contribution. */
+    employerName?: string;
     accountType: AccountCategory;
     taxTreatment: TaxTreatment;
     contributionMethod: string;

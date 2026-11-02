@@ -79,6 +79,7 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
   // a demo Salary Profile below — a profile entry is all-or-nothing, never
   // a partial pin (mirrors the "Demo Contribution" profile pattern).
   const salaryPinsByJobId: Record<string, SalaryProfileEntry> = {};
+  const jobIdByEmployer = new Map<string, number>();
   for (const j of profile.jobs) {
     const [createdJob] = await db
       .insert(schema.jobs)
@@ -91,6 +92,7 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
       })
       .returning({ id: schema.jobs.id });
     if (!createdJob) continue;
+    jobIdByEmployer.set(j.employerName, createdJob.id);
     // The persona's own figures over the blank entry (the fields no demo
     // persona models: extra withholding, box 2c, extra-paycheck routing…).
     salaryPinsByJobId[String(createdJob.id)] = {
@@ -221,6 +223,9 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     const [created] = await db
       .insert(schema.contributionAccounts)
       .values({
+        jobId: ca.employerName
+          ? (jobIdByEmployer.get(ca.employerName) ?? null)
+          : null,
         personId: personIdByName.get(ca.personName)!,
         accountType: ca.accountType,
         parentCategory:

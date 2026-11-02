@@ -193,13 +193,14 @@ export const debtPayoffProfile: DemoProfile = {
   contributionAccounts: [
     {
       personName: "Casey",
+      employerName: "ConsultingFirm",
       accountType: "401k",
       taxTreatment: "pre_tax",
       contributionMethod: "percent_of_salary",
       contributionValue: "6",
       employerMatchType: "percent_of_contribution",
       employerMatchValue: "50",
-      employerMaxMatchPct: "6",
+      employerMaxMatchPct: "0.06",
       perfAccountLabel: "401(k) - ConsultingFirm",
     },
   ],

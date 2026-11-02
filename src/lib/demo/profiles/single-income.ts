@@ -195,13 +195,14 @@ export const singleIncomeProfile: DemoProfile = {
   contributionAccounts: [
     {
       personName: "Alex",
+      employerName: "TechCorp",
       accountType: "401k",
       taxTreatment: "pre_tax",
       contributionMethod: "percent_of_salary",
       contributionValue: "10",
       employerMatchType: "percent_of_contribution",
       employerMatchValue: "50",
-      employerMaxMatchPct: "6",
+      employerMaxMatchPct: "0.06",
       perfAccountLabel: "401(k) - TechCorp",
     },
     {
