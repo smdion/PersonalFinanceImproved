@@ -42,7 +42,7 @@ let template: Buffer | null = null;
 export function openTestSqlite(): InstanceType<typeof Database> {
   if (!template) {
     const t = new Database(":memory:");
-    applyMigrationsIdempotent(t);
+    applyMigrations(t);
     // Reference data from the tax-data file, through the same reconcile
     // the migrator runs.
     reconcileReferenceRowsSync(
@@ -91,12 +91,12 @@ export async function createTestDb(): Promise<TestDbContext> {
 }
 
 /**
- * Apply SQLite migrations idempotently, ignoring "already exists" / "duplicate
- * column" errors that arise when the squash migration (0000) was generated from
- * a later schema snapshot, causing 0001 to re-add tables/columns 0000 already
- * created. Mirrors the savepoint logic in db-migrate.ts.
+ * Apply the SQLite migrations to a fresh database the way the migrator
+ * applies pending ones: every statement must succeed (db-migrate.ts skips
+ * "already done" errors only in a squash replay). A migration that only
+ * works by skipping errors fails here, as it would on a fresh install.
  */
-function applyMigrationsIdempotent(
+function applyMigrations(
   sqlite: InstanceType<typeof Database>,
   migrationsFolder = "./drizzle-sqlite",
 ): void {
@@ -127,21 +127,7 @@ function applyMigrationsIdempotent(
       .map((s: string) => s.trim())
       .filter(Boolean);
     const applyTx = sqlite.transaction(() => {
-      for (const stmt of stmts) {
-        try {
-          sqlite.exec(stmt);
-        } catch (e) {
-          const msg = (e as Error).message ?? "";
-          if (
-            msg.includes("already exists") ||
-            msg.includes("duplicate column")
-          ) {
-            // idempotent — skip
-          } else {
-            throw e;
-          }
-        }
-      }
+      for (const stmt of stmts) sqlite.exec(stmt);
       sqlite
         .prepare(
           "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",

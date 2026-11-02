@@ -1263,6 +1263,7 @@ function assertSchemaComplete(
   migrationsFolder: string,
   actual: Map<string, Set<string>>,
   actualIndexes: Set<string>,
+  step: "Squash replay" | "Migration",
 ): void {
   const last = journal.entries[journal.entries.length - 1];
   if (!last) return;
@@ -1274,8 +1275,34 @@ function assertSchemaComplete(
   ];
   if (missing.length > 0)
     throw new Error(
-      `Squash replay left the schema incomplete (missing ${missing.slice(0, 8).join(", ")}) — rolled back, nothing changed.`,
+      `${step} left the schema incomplete (missing ${missing.slice(0, 8).join(", ")}) — rolled back, nothing changed.`,
     );
+}
+
+/** assertSchemaComplete for a start with nothing pending: an install that
+ *  is short of the snapshot (a migration recorded without its change, or a
+ *  hand edit) is logged as an error for the admin, never thrown — refusing
+ *  to start over drift would take the app down with no migration to blame. */
+function warnIfSchemaIncomplete(
+  journal: Journal,
+  migrationsFolder: string,
+  actual: Map<string, Set<string>>,
+  actualIndexes: Set<string>,
+): void {
+  try {
+    assertSchemaComplete(
+      journal,
+      migrationsFolder,
+      actual,
+      actualIndexes,
+      "Migration",
+    );
+  } catch (err) {
+    log("error", "schema_incomplete", {
+      error: err instanceof Error ? err.message : String(err),
+      note: "The database is missing parts of the current schema though no migration is pending. Restore a backup or ask for a repair migration.",
+    });
+  }
 }
 
 async function pgIndexes(
@@ -1338,7 +1365,9 @@ async function assertSupportedUpgradePathPg(
 
 // "Already done" AND "already moved past" are both benign when replaying a
 // migration whose hash isn't recorded against a database that may already be
-// past it. A migration that creates something that already exists
+// past it — which happens only in a squash replay. Anywhere else the same
+// errors mean the migration didn't do its job, and skipping them recorded it
+// as applied anyway. A migration that creates something that already exists
 // (duplicate_*) is as expected as one that references a column/table a later
 // migration already renamed or dropped (undefined_column/undefined_table).
 const IGNORABLE_PG_CODES = new Set([
@@ -1351,9 +1380,10 @@ const IGNORABLE_PG_CODES = new Set([
   "42P01", // undefined_table — already renamed/dropped by a later migration
 ]);
 
-/** Run one migration file's statements inside the caller's transaction, each
- *  under a savepoint so an ignorable error skips only that statement. */
-async function applyStatementsPg(
+/** Squash replay only: run one migration file's statements inside the
+ *  caller's transaction, each under a savepoint so an ignorable error skips
+ *  only that statement. The replay checks the whole schema afterwards. */
+async function replayStatementsPg(
   client: import("pg").PoolClient,
   sql: string,
 ): Promise<void> {
@@ -1375,6 +1405,19 @@ async function applyStatementsPg(
       }
     }
   }
+}
+
+/** Run one pending migration file's statements inside the caller's
+ *  transaction. Every error stops the migration: nothing is skipped. */
+async function applyStatementsPg(
+  client: import("pg").PoolClient,
+  sql: string,
+): Promise<void> {
+  for (const stmt of sql
+    .split("--> statement-breakpoint")
+    .map((s: string) => s.trim())
+    .filter(Boolean))
+    await client.query(stmt);
 }
 
 /**
@@ -1463,7 +1506,7 @@ async function handleSquashUpgrade(
         const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
         if (!fs.existsSync(sqlPath)) continue;
         const sql = fs.readFileSync(sqlPath, "utf-8");
-        await applyStatementsPg(client, sql);
+        await replayStatementsPg(client, sql);
         await client.query(
           "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
           [
@@ -1478,6 +1521,7 @@ async function handleSquashUpgrade(
         migrationsFolder,
         await pgColumns(client),
         await pgIndexes(client),
+        "Squash replay",
       );
       await client.query("COMMIT");
     } catch (txErr) {
@@ -1581,18 +1625,18 @@ async function runPostgres() {
     const squash = await handleSquashUpgrade(pool, "./drizzle");
     let backupPath = squash.backupPath;
 
-    // Apply any pending migrations idempotently before handing off to Drizzle's
-    // migrate(). This handles upgrade DBs that already have tables/columns from
-    // old pre-squash migrations — Drizzle's migrator has no savepoint support
-    // and would fail on "table already exists" or "column already exists" errors.
-    // Running idempotently first means migrate() below is always a no-op.
+    // Apply pending migrations here, before Drizzle's migrate(): strictly, in
+    // one transaction, with the schema checked before commit (below). Drizzle's
+    // migrator commits each file on its own and checks nothing afterwards;
+    // running first means migrate() below is always a no-op. Databases that
+    // still carry pre-squash history went through the squash replay above.
     const journal = JSON.parse(
       fs.readFileSync(path.resolve("./drizzle/meta/_journal.json"), "utf-8"),
     );
     const preClient = await pool.connect();
     try {
       // Ensure drizzle schema + migrations table exist (migrate() normally does
-      // this, but we need it before our idempotent pre-apply step).
+      // this, but we need it before our pre-apply step).
       await preClient.query(`CREATE SCHEMA IF NOT EXISTS drizzle`);
       await preClient.query(
         `CREATE TABLE IF NOT EXISTS drizzle.__drizzle_migrations (
@@ -1641,31 +1685,54 @@ async function runPostgres() {
         }
       }
 
-      for (const entry of journal.entries) {
-        const sqlPath = path.resolve(`./drizzle/${entry.tag}.sql`);
-        if (!fs.existsSync(sqlPath)) continue;
-        const sql = fs.readFileSync(sqlPath, "utf-8");
-        const hash = crypto.createHash("sha256").update(sql).digest("hex");
-        if (recordedHashes.has(hash)) continue;
+      // Every pending migration in one transaction, strictly, then the
+      // schema checked against the latest snapshot before commit: a failed
+      // statement or a missing table/column rolls all of them back and
+      // records nothing (the container then stops with the database as it
+      // was).
+      if (pending.pendingTags.length > 0) {
         await preClient.query("BEGIN");
         try {
-          await applyStatementsPg(preClient, sql);
-          await preClient.query(
-            "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
-            [hash, String(Date.now())],
+          for (const entry of journal.entries) {
+            const sqlPath = path.resolve(`./drizzle/${entry.tag}.sql`);
+            if (!fs.existsSync(sqlPath)) continue;
+            const sql = fs.readFileSync(sqlPath, "utf-8");
+            const hash = crypto.createHash("sha256").update(sql).digest("hex");
+            if (recordedHashes.has(hash)) continue;
+            await applyStatementsPg(preClient, sql);
+            await preClient.query(
+              "INSERT INTO drizzle.__drizzle_migrations (hash, created_at) VALUES ($1, $2)",
+              [hash, String(Date.now())],
+            );
+            log("info", "migration_applied", { tag: entry.tag });
+          }
+          assertSchemaComplete(
+            journal,
+            "./drizzle",
+            await pgColumns(preClient),
+            await pgIndexes(preClient),
+            "Migration",
           );
           await preClient.query("COMMIT");
-          log("info", "migration_applied", { tag: entry.tag });
         } catch (txErr) {
           await preClient.query("ROLLBACK").catch(() => {});
           throw txErr;
         }
+      } else {
+        // Nothing pending: still compare with the snapshot, but only report
+        // — drift alone never blocks a start (see warnIfSchemaIncomplete).
+        warnIfSchemaIncomplete(
+          journal,
+          "./drizzle",
+          await pgColumns(preClient),
+          await pgIndexes(preClient),
+        );
       }
     } finally {
       preClient.release();
     }
 
-    // Drizzle's own migrate() — always a no-op after the idempotent pre-apply
+    // Drizzle's own migrate() — always a no-op after the pre-apply
     // above, but retained as a safety net for any edge cases.
     const db = drizzle(pool);
     await migrate(db, { migrationsFolder: "./drizzle" });
@@ -1932,10 +1999,11 @@ function sqliteRecordedHashes(sqlite: SqliteDb): Set<string> {
   );
 }
 
-/** Run one migration file's statements inside the caller's transaction,
- *  skipping the ones that are already done (or already moved past — see
- *  IGNORABLE_PG_CODES). */
-function applyStatementsSqlite(sqlite: SqliteDb, sql: string): void {
+/** Squash replay only: run one migration file's statements inside the
+ *  caller's transaction, skipping the ones that are already done (or already
+ *  moved past — see IGNORABLE_PG_CODES). The replay checks the whole schema
+ *  afterwards. */
+function replayStatementsSqlite(sqlite: SqliteDb, sql: string): void {
   const statements = sql
     .split("--> statement-breakpoint")
     .map((s: string) => s.trim())
@@ -1958,6 +2026,28 @@ function applyStatementsSqlite(sqlite: SqliteDb, sql: string): void {
       }
     }
   }
+}
+
+/** Run one pending migration file's statements inside the caller's
+ *  transaction. Every error stops the migration: nothing is skipped. */
+function applyStatementsSqlite(sqlite: SqliteDb, sql: string): void {
+  for (const stmt of sql
+    .split("--> statement-breakpoint")
+    .map((s: string) => s.trim())
+    .filter(Boolean))
+    sqlite.exec(stmt);
+}
+
+/** The index names a SQLite database has, as assertSchemaComplete reads
+ *  them. */
+function sqliteIndexes(sqlite: SqliteDb): Set<string> {
+  return new Set(
+    (
+      sqlite
+        .prepare("SELECT name FROM sqlite_master WHERE type = 'index'")
+        .all() as { name: string }[]
+    ).map((r) => r.name),
+  );
 }
 
 /**
@@ -2024,7 +2114,7 @@ function handleSQLiteSquashUpgrade(
         const sqlPath = path.resolve(`${migrationsFolder}/${entry.tag}.sql`);
         if (!fs.existsSync(sqlPath)) continue;
         const sql = fs.readFileSync(sqlPath, "utf-8");
-        applyStatementsSqlite(sqlite, sql);
+        replayStatementsSqlite(sqlite, sql);
         sqlite
           .prepare(
             "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
@@ -2039,13 +2129,8 @@ function handleSQLiteSquashUpgrade(
         journal,
         migrationsFolder,
         sqliteColumns(sqlite),
-        new Set(
-          (
-            sqlite
-              .prepare("SELECT name FROM sqlite_master WHERE type = 'index'")
-              .all() as { name: string }[]
-          ).map((r) => r.name),
-        ),
+        sqliteIndexes(sqlite),
+        "Squash replay",
       );
     })();
   } catch (err) {
@@ -2097,10 +2182,9 @@ export function runSQLite() {
   // Handle squash upgrade before running Drizzle's migrate()
   let backupPath = handleSQLiteSquashUpgrade(sqlite, "./drizzle-sqlite");
 
-  // Apply any pending migrations idempotently. Mirrors the PostgreSQL pre-apply
-  // step: handles upgrade DBs that already have tables/columns from old pre-squash
-  // migrations (or a squash SQL that was generated from a later schema snapshot),
-  // causing newer migrations to re-add DDL that already exists.
+  // Apply pending migrations strictly, as on PostgreSQL (see the pre-apply
+  // there). Databases that still carry pre-squash history went through the
+  // squash replay above.
   {
     const journal = JSON.parse(
       fs.readFileSync(
@@ -2144,26 +2228,45 @@ export function runSQLite() {
       requireBackupOrAbort(backupPath);
     }
 
-    for (const entry of journal.entries) {
-      const sqlPath = path.resolve(`./drizzle-sqlite/${entry.tag}.sql`);
-      if (!fs.existsSync(sqlPath)) continue;
-      const sql = fs.readFileSync(sqlPath, "utf-8");
-      const hash = crypto.createHash("sha256").update(sql).digest("hex");
-      if (appliedHashes.has(hash)) continue;
-      const applyTx = sqlite.transaction(() => {
-        applyStatementsSqlite(sqlite, sql);
-        sqlite
-          .prepare(
-            "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
-          )
-          .run(hash, String(Date.now()));
-      });
-      applyTx();
-      log("info", "migration_applied", { tag: entry.tag, dialect: "sqlite" });
-    }
+    // Same rule as PostgreSQL: every pending migration in one transaction,
+    // strictly, with the schema checked before commit.
+    if (pending.pendingTags.length > 0)
+      sqlite.transaction(() => {
+        for (const entry of journal.entries) {
+          const sqlPath = path.resolve(`./drizzle-sqlite/${entry.tag}.sql`);
+          if (!fs.existsSync(sqlPath)) continue;
+          const sql = fs.readFileSync(sqlPath, "utf-8");
+          const hash = crypto.createHash("sha256").update(sql).digest("hex");
+          if (appliedHashes.has(hash)) continue;
+          applyStatementsSqlite(sqlite, sql);
+          sqlite
+            .prepare(
+              "INSERT INTO __drizzle_migrations (hash, created_at) VALUES (?, ?)",
+            )
+            .run(hash, String(Date.now()));
+          log("info", "migration_applied", {
+            tag: entry.tag,
+            dialect: "sqlite",
+          });
+        }
+        assertSchemaComplete(
+          journal,
+          "./drizzle-sqlite",
+          sqliteColumns(sqlite),
+          sqliteIndexes(sqlite),
+          "Migration",
+        );
+      })();
+    else
+      warnIfSchemaIncomplete(
+        journal,
+        "./drizzle-sqlite",
+        sqliteColumns(sqlite),
+        sqliteIndexes(sqlite),
+      );
   }
 
-  // Drizzle's own migrate() — always a no-op after the idempotent pre-apply
+  // Drizzle's own migrate() — always a no-op after the pre-apply
   // above, but retained as a safety net.
   const db = drizzle(sqlite);
   migrate(db, { migrationsFolder: "./drizzle-sqlite" });

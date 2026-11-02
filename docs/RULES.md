@@ -587,10 +587,12 @@ restore path in `src/lib/db/v0810-profile-sets.ts` remains.) Converters work
 on snake_case rows (JSON as object or text), are idempotent (a no-op once
 their source is gone) and write only non-default values; the restore path
 also drops the columns the migration drops, and each new data-changing
-migration tag goes in `V08_SCHEMA_TAGS`. A replayed unique violation is
-swallowed on PostgreSQL: a squash replay's final check requires every index
-of the latest snapshot, and an incremental migration that adds a unique
-index over existing data asserts it exists afterwards.
+migration tag goes in `V08_SCHEMA_TAGS`. Pending migrations apply
+strictly, all in one transaction, and the schema is checked against the
+latest snapshot (every table, column and index) before it commits: a failed
+statement or a missing object rolls everything back and records nothing.
+Only a squash replay skips "already done" errors (a replayed unique
+violation included on PostgreSQL), and it runs the same check.
 
 ### Migration squashes
 
