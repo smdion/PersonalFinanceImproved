@@ -56,11 +56,49 @@ Rules that use universal quantifiers ("NEVER", "ALWAYS", "every") without defini
 
 ---
 
+## Working Standards
+
+These apply to every change, and to every review of one.
+
+1. **Data-driven.** Behavior that varies lives in config or reference data; code reads it.
+2. **Shared logic.** One function per calculation or rule, used by every caller. A second copy is a defect.
+3. **One file per piece of logic.** A concept has one obvious home, and that file does one thing.
+4. **As simple as possible.** A new abstraction, layer or tool must retire at least two existing copies, or it isn't added. Prefer deleting to adding.
+5. **As accurate as possible.** A figure traces to an authority and a derived test. Where simple and accurate conflict, accuracy wins, and the choice is disclosed.
+
+### Review rules
+
+These stop the failure this codebase is most prone to: maintenance by addition, where each change fixes its bug and leaves the shape alone.
+
+1. **Comments state what is true now.** At most three lines of current reason. Past tense, "the fix", counts of bugs and claims like "can't drift" are rejected; history goes in the commit. If a comment needs more, the code or the type changes first. Deleting code deletes its comment.
+2. **Change the model, not the branch.** A second fix in the same spot within 30 days first asks what concept is missing. No function over 150 lines may grow. A rename or removal sweeps all callers, aliases and comments.
+3. **Types carry the state.** New domain fields use enums and config-derived unions, never `string`. Fields that appear together are grouped into one optional object. A field has one meaning. Identity is an id, never a formatted or display value. A new `as` needs a parser or a one-line reason.
+4. **No guards for impossible states.** A default in money code needs a real absent state; a missing key that should exist throws or warns rather than becoming $0.
+5. **Data crosses layers as data.** Nothing branches on human-readable text. The engine emits facts and the UI words them. Rendering holds no calculation.
+
+### Product standards
+
+- **Budget apps are equals.** YNAB and Actual Budget are equal citizens: every budget feature, fix and test covers both, whichever one any household uses.
+- **SQLite is the default, supported install;** PostgreSQL is equally supported. Neither is "dev only".
+- **External responses are parsed, never cast.** A response from another service is checked at the boundary, and a bad shape fails before anything is written.
+- **Plan-wide dates show the year,** with each person's age on hover. An age on a plan-wide figure names whose it is. Never average ages for retirement logic. Metrics that are defined on age (income multiples, the wealth formula) keep the household's average age.
+
+## Known Gaps
+
+Rules below state the target. These parts aren't true yet; don't build on them.
+
+- **"One config entry" for an account type.** `AccountCategory` and its enum are hand copies, the default withdrawal order is a hand list (a category missing from it is never drawn), and early access is identity branches.
+- **Calculations have no independent answer key,** and a pinned test figure can move with the code. A figure changes only with its source and its cause in dollars.
+- **There is no named layer for composition that needs I/O.** It lives in router procedures and `src/server/helpers/`, and some routers call others. Don't add more; a shared service layer is planned.
+- **`lib/pure` imports from `@/server/helpers/transforms` and `/settings`.** The rule below allows the first as a stopgap; don't extend it.
+- **The `version` permission.** Decided: it manages backups of household data, not access. Today an imported backup can also change logins and access settings.
+- **Files and functions over the size rule.** `.size-exempt` isn't a pass to grow.
+
 ## Data-Driven Architecture
 
 > **Config declares, code executes.** Nothing in the codebase knows what a "401k" is — it only knows how to process an account type with properties like `supportsRothSplit: true` and `balanceStructure: 'roth_traditional'`.
 
-All account-type behavior is defined in `src/lib/config/account-types.ts` (`ACCOUNT_TYPE_CONFIG`). Adding a new account type = adding one config entry. No DB migration, no enum change, no component edits.
+All account-type behavior is defined in `src/lib/config/account-types.ts` (`ACCOUNT_TYPE_CONFIG`). **The target:** adding a new account type = adding one config entry, with no DB migration, enum change or component edits. It isn't true yet: see § Known Gaps.
 
 ### Rules
 
@@ -76,13 +114,13 @@ All account-type behavior is defined in `src/lib/config/account-types.ts` (`ACCO
 
 ### Key Files
 
-| File                                | Role                                                                 |
-| ----------------------------------- | -------------------------------------------------------------------- |
-| `src/lib/config/account-types.ts`   | `ACCOUNT_TYPE_CONFIG` + every derived helper and predicate           |
-| `src/lib/config/account-balance.ts` | Balance-structure helpers (Traditional, Roth, basis)                 |
-| `src/lib/config/display-labels.ts`  | Label maps and performance-category constants                        |
-| `src/lib/calculators/types.ts`      | `AccountCategory` (derived from config keys), `AccountBalance` union |
-| `src/lib/constants.ts`              | App-wide defaults and thresholds                                     |
+| File                                | Role                                                                                                     |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `src/lib/config/account-types.ts`   | `ACCOUNT_TYPE_CONFIG` + every derived helper and predicate                                               |
+| `src/lib/config/account-balance.ts` | Balance-structure helpers (Traditional, Roth, basis)                                                     |
+| `src/lib/config/display-labels.ts`  | Label maps and performance-category constants                                                            |
+| `src/lib/calculators/types.ts`      | `AccountCategory` (a hand-kept union matching the config keys, see § Known Gaps), `AccountBalance` union |
+| `src/lib/constants.ts`              | App-wide defaults and thresholds                                                                         |
 
 The rest of `src/lib/config/` holds the other data tables (tax, RMD, IRMAA, ACA, NIIT, Social Security, milestones, recommendations, withdrawal strategies, glossary, …) — one module per subject.
 
@@ -385,6 +423,9 @@ a Contribution Profile's `deductions` active-field entry
 - A display rule, label mapping, or formula reimplemented in a second component instead of importing the existing function
 - A local hex/Tailwind color value for a chart series or a status/severity indicator instead of an export from `colors.ts`
 - A new `lib/pure/` function, hook, or `components/ui/` primitive merged with zero call sites
+- A plan-wide date shown as an age, or an unnamed or averaged age on a plan-wide figure
+- An external response cast with `as` instead of parsed at the boundary
+- A budget feature, fix or test that covers only one of YNAB and Actual
 
 ---
 
@@ -715,7 +756,7 @@ These are true cross-cutting reference data that no single page owns.
 
 ## Constants & Defaults
 
-> **Every numeric default lives in exactly one place.** If a fallback value appears in more than one file, it must be extracted to `src/lib/constants.ts` and imported everywhere. Inline magic numbers are violations — even when they match the constant's current value.
+> **Every numeric default lives in exactly one place.** If a fallback value appears in more than one file, it must be extracted to `src/lib/constants.ts` and imported everywhere. Inline magic numbers are violations — even when they match the constant's current value. A number that can't change, like 12 months in a year, isn't a magic number; write it plainly.
 
 ### Rules
 
