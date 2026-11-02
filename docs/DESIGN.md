@@ -295,7 +295,7 @@ export function calculateXxx(input: XxxInput): XxxResult { ... }
 | Savings          | Months of coverage, goal projections                                                                                                                                                                                                        |
 | E-Fund           | Essential expense coverage months                                                                                                                                                                                                           |
 | Brokerage Goals  | View enricher: maps engine projection to per-goal status (funded/shortfall/tax cost)                                                                                                                                                        |
-| Monte Carlo      | 1,000+ trial simulation with asset class correlations, glide path allocations, configurable presets                                                                                                                                         |
+| Monte Carlo      | 500-trial simulation by default (Coast FIRE 1,000, strategy comparison 200; about 1.3 points of standard error on a 90% success rate at 500), with asset class correlations, glide path allocations, configurable presets                   |
 | Random           | Distribution utilities (normal, log-normal) for Monte Carlo                                                                                                                                                                                 |
 | Relocation       | Budget comparison, FI target/age impact, earliest safe relocation, large purchase modeling                                                                                                                                                  |
 
@@ -330,13 +330,13 @@ The relocation decision tool (`lib/calculators/relocation.ts`) compares two budg
 
 `lib/calculators/engine/` runs accumulation and retirement in one pass, year by year. Module map and per-year order: `engine/ARCHITECTURE.md`. Public API: `engine/index.ts`.
 
-1. **Accumulation** (today → retirement): contributions routed per account from the contribution specs (or waterfall / percentage), IRS limits with overflow to a Retirement brokerage, employer match, salary growth with a cap (each person's salary grows at its raise rate and stops at the cap), Roth/Traditional splits, lump sums, brokerage goals.
+1. **Accumulation** (today → retirement): contributions routed per account from the contribution specs (or waterfall / percentage), IRS limits (over-limit money reaches a Retirement brokerage only in some later years; RULES.md § Known Gaps), employer match, salary growth with a cap (each person's salary grows at its raise rate and stops at the cap), Roth/Traditional splits, lump sums, brokerage goals.
 2. **Retirement** — three withdrawal routing modes:
-   - **Bracket filling** (default): Traditional up to a target bracket, then the rest ranked by each year's real cost — free basis and 0% LTCG room first, then whichever of Roth growth or brokerage gains is cheaper (NIIT-aware), HSA on the same footing (`withdrawal-cost-ranking.ts`). Once Roth, brokerage and HSA are gone, Traditional above the target. Needs a `rothBracketTarget` and brackets; otherwise waterfall.
+   - **Bracket filling** (default): Traditional up to a target bracket, then the rest ranked by each year's real cost — Roth basis (free) and brokerage draws inside the 0% LTCG room first, then whichever of Roth growth or brokerage gains is cheaper (NIIT-aware), HSA on the same footing (`withdrawal-cost-ranking.ts`). Once Roth, brokerage and HSA are gone, Traditional above the target. Needs a `rothBracketTarget` and brackets; otherwise waterfall. A brokerage draw takes basis in proportion to the account's balance (average cost, not lot by lot).
    - **Waterfall:** accounts in priority order with per-account and per-tax-type caps.
    - **Percentage:** fixed shares, with an emptied or capped account's share placed on the others. Once the accounts with a share are full or empty, accounts with a 0% share take the rest, in proportion to what each can still give.
-   - The withdrawal is grossed up to cover its own tax: brackets from W-4 withholding tables (with a tax multiplier, which scales the computed tax for future rate changes; 1.0 is current law), Social Security taxation (provisional income), NIIT, early-withdrawal penalties.
-   - Spending follows the household's strategy (fixed, Guyton-Klinger and seven others).
+   - The withdrawal is grossed up to cover its own tax: federal income tax from the IRS Pub 15-T percentage-method tables with the rest of the standard deduction taken off first, which gives the tax owed, not withholding (with a tax multiplier, which scales the computed tax for future rate changes; 1.0 is current law), Social Security taxation (provisional income), NIIT, early-withdrawal penalties.
+   - Spending follows the household's strategy (fixed, Guyton-Klinger and seven others). A spending-sized strategy's figure, less Social Security, is what the gross-up works from. A portfolio-sized one (Constant Percentage, Endowment, Vanguard Dynamic, VPW, and RMD Spending in its RMD years) is the gross withdrawal itself, tax paid out of it and Social Security on top, unless the household's "Social Security comes out of this amount" switch is on. Guardrails judges its rate before the gross-up: (spending − Social Security) ÷ last year-end retirement balance, tax left out.
 3. **Tax-aware features** (data in `lib/config/`): RMDs (Uniform Lifetime Table only, SECURE 2.0 start ages; the Joint Life Table, required when the sole beneficiary is a spouse more than 10 years younger, isn't used), QCDs, graduated LTCG, Roth conversions into bracket room (and RMD smoothing), IRMAA and ACA cliffs, the OBBBA senior deduction, inflation-indexed thresholds.
 
 Every setting can change by year ("Changes by year", resolved in `override-resolution.ts`).
@@ -420,7 +420,7 @@ Yearly brokerage-funded goals (e.g., new car in 2030). Unlike sinking funds held
 **Engine-integrated:** long-term goals are drawn inside the engine's accumulation years, not by a separate calculator, so:
 
 - goal draws come only from **Portfolio** brokerages and reduce them before retirement sees anything (holistic rule);
-- cost basis is tracked **per brokerage account** (`brokerage-basis.ts`): contributions add basis 1:1, growth doesn't, draws take basis in proportion;
+- cost basis is tracked **per brokerage account** (`brokerage-basis.ts`): it starts at the account's entered cost basis; money the projection adds (contributions, match, overflow, reinvested RMD money, lump sums) adds basis 1:1, growth doesn't, and draws take basis in proportion (average cost). A rollover is not a contribution (RULES.md § ESPP Accounting);
 - tax is on the gain only, at the brokerage distribution rate.
 
 ```
@@ -458,10 +458,12 @@ What each kind holds:
 - **Contribution Profile** — contribution account values/methods/match,
   whether each payroll account is also taken from bonus checks (`fromBonus`),
   and deduction amounts. It never touches `jobs`.
-- **Budget Profile** — budget items per column (spending level), optionally
-  weighted by months; savings goal allocations (%/$) are a facet of it
-  (`savings_goal_profile_allocations` is keyed to `budget_profile_id`), not a
-  fifth kind.
+- **Budget Profile** — budget items per column (spending level); savings
+  goal allocations (%/$) are a facet of it (`savings_goal_profile_allocations`
+  is keyed to `budget_profile_id`), not a fifth kind. Annual expenses are the
+  active column × 12. A profile with month weights (`column_months`, an
+  explicit blend) instead adds each column's monthly total × its months, and
+  the active column doesn't apply.
 - **Retirement Profile** — retirement assumptions (ages, inflation, strategy).
 
 Resolution: page-local selection (profile managers, What-If) → active. Budget

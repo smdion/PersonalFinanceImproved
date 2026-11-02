@@ -96,6 +96,16 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **Roth conversions don't add to Roth basis,** until fixed. Conversion basis is decrement-only (`lib/pure/roth-basis-tracking.ts`).
 - **The IRS cap pass doesn't apply 415(c) annual additions or the pay bound,** until fixed. 415(c) is read only for mega-backdoor room.
 - **Year totals come from three places** (the schedule, the blended walk, average × checks), until fixed. Only the schedule is right.
+- **Over-limit contributions overflow only in some later years,** until they overflow in every year (decision C4, v0.11). Money configured over this year's limit is capped and goes nowhere.
+- **RMDs aren't taken before withdrawals start,** until each owner's RMD is taken from their RMD age every year (decision D5, v0.11). A gap year warns; a working year doesn't.
+- **A Portfolio-parented Traditional account's RMD isn't taken from it,** until fixed (decision D12.7, v0.11). Its part shows as the owner's RMD shortfall.
+- **The projection's end year isn't run** (a Projection to 95 stops at 94), until fixed (decision D10, v0.11).
+- **Vanguard Dynamic's ceiling and floor are nominal,** until switched to real, as the paper has them (decision G4, v0.11).
+- **The stored stock mean and volatility don't fit one published series** under either reading, until re-sourced (decision F1, v0.11).
+- **The Simulation's fixed-return line compounds below the portfolio's median** (a weighted sum of each class's geometric mean), until it uses the portfolio's median rate (decision F2, v0.11).
+- **Today's-dollar balances are deflated at their row's start,** up to a year's inflation high, until each balance is deflated by its own date (decision F3, v0.11).
+- **Inflation shocks are independent year to year,** so long-run inflation spread is understated, until persistent inflation is modelled (decision F4, v0.11).
+- **There are two success bars,** 90% and the report's 85%, until one 90% bar judges every verdict (decision F5, v0.11).
 
 ## Data-Driven Architecture
 
@@ -433,6 +443,19 @@ a Contribution Profile's `deductions` active-field entry
 
 ---
 
+## Simulation
+
+The Simulation runs the whole projection many times, each trial with its own random returns. This is what it does today; § Known Gaps lists what changes.
+
+- **Trials.** 500 by default (100 to 10,000 accepted); Coast FIRE probes run 1,000 and the strategy comparison 200 (`DEFAULT_SIMULATION`, `lib/constants.ts`). At 500, a 90% success rate has a standard error of about 1.3 points. Trial `i` draws from `createPRNG(seed + i)`. The Simulation page's run takes a random seed, cached with the run; Coast FIRE and the strategy comparison use seed 42, so the options they compare share draws.
+- **Returns.** An asset class's stored mean and deviation are the arithmetic mean and standard deviation of its simple yearly return; draws are log-normal with those moments (`logNormalParams`, `random.ts`). Correlations apply to the underlying normal draws, through one Cholesky factor per run. The year's mix is the glide path at the primary person's age that year, interpolated between waypoints, and the blended return is clamped to the preset's limits.
+- **Inflation.** With inflation risk on, each year draws one shock around the household's own inflation rates, and the shock moves both rates (`inflation-path.ts`).
+- **Success** is the share of trials the plan judge passes (`assessPlan`, DESIGN § Retirement scope and the plan judge). Unmet spending below the materiality floor, $50 or 1% of the year's need, whichever is larger, counts as met, so a trial a few dollars short still succeeds. A failed trial is `depleted`, `penaltyGap` or `shortfall`.
+- **Success bars.** 90% (`MC_CONFIDENCE_THRESHOLD`) for Coast FIRE and the strategy comparison's diagnosis; the screens rate 90% and up best and 75% and up next. The report's on-track verdict and action items use 85% (`lib/pure/report/`).
+- **Bands** are the 5th to 95th percentiles of each year's retirement balance across all trials (linear between order statistics, R's type 7). Failed trials stay in, at $0 once their money is gone.
+- **Today's dollars.** Each trial's figures are divided by that trial's own price index before the percentiles are taken. A row uses the index at its start (`growth(t)`, 1 for the first row): right for the year's withdrawal, but a year-end balance reads high: by a year's inflation for a retired household, and by the part of the first year left at the as-of date for a working one.
+- **Fixed-return line.** The Simulation's own fixed-return line compounds, each year, the weighted sum of each class's geometric mean (`routers/projection/monte-carlo.ts`).
+
 ## Profiles and Plans
 
 **Each profile is its own world.** Salary, Contribution, Budget and
@@ -614,12 +637,12 @@ Each account type has a default `parentCategory` in `ACCOUNT_TYPE_CONFIG` (broke
 **What Portfolio money may and may not affect (the retirement-scope contract, v0.8.11).** Portfolio-parented accounts (savings outside the retirement plan) are never spent in retirement. In the projection engine and everything built on it:
 
 - **Retirement answers read retirement money only** — `retirementBalance` on each year row (every account minus the Portfolio-parented ones, `scopedBalances`): spending strategies and the rate-seeded first year, depletion (`retirementDepletionAge`), the plan verdict (`assessPlan`, `lib/calculators/plan-outcome.ts` — the one judge for success/failure everywhere), simulation success, bands and terminal balances, Coast FIRE, strategy comparison, the Social Security / bracket optimizers, tax optimization, relocation, stress tests, nest-egg figures, and Simple tax mode (which simulates retirement money alone).
-- **Retirement money never becomes Portfolio money**: contribution overflow, reinvested RMD money and retirement lump sums go to Retirement brokerages (a projection-only one when there are none); the contribution-rate ceiling caps retirement contributions only.
+- **Retirement money never becomes Portfolio money**: contribution overflow, reinvested RMD money and retirement lump sums go to Retirement brokerages (a projection-only one when there are none); the contribution-rate ceiling caps retirement contributions only. Over-limit money reaches that brokerage only in some later years (e.g. a percent-of-pay row whose pay outgrows the limit); money configured over this year's limit is capped before the projection and isn't saved anywhere (§ Known Gaps).
 - **Portfolio money is never spent for retirement or moved into it**: brokerage goals, the Brokerage page's ramp and lump sums are Portfolio money; balance corrections take from retirement accounts first.
 - **`allAccountsBalance` (Portfolio money included) is for net-worth views only** — FI milestones (liquid net worth = every account plus cash) and the Money Guy benchmark. The `local/no-all-accounts-balance` lint rule enforces the allow-list; `tests/calculators/retirement-scope-invariance.test.ts` proves +$1M of Portfolio money changes no retirement answer.
 - **Social Security is entered in today's dollars and grows at the general inflation rate (its COLA) in `socialSecurityForYear` alone** — in today's dollars it stays at what was entered. Its taxable share is taxed with the rest of ordinary income (`computeTaxFromSlots`); any benefit above spending pays that tax first.
-- **Inflation in the spending strategies: spending-based strategies are real, percentage-based bounds are nominal.** Fixed, Forgo Inflation, Guyton-Klinger, Spending Decline and RMD Spending before the RMD age build on inflation-adjusted figures. Constant Percentage, Endowment and Vanguard Dynamic keep their floors and ceilings in nominal dollars, and say so in their labels: an inflation-adjusted floor would push withdrawals up in bad years, past what the portfolio sustains.
-- **The one coupling: RMDs.** Required minimum distributions on Portfolio-parented Traditional accounts are real (the IRS doesn't care how accounts are categorized), so they still raise taxable income and RMD amounts.
+- **Inflation in the spending strategies: spending-based strategies are real, percentage-based bounds are nominal.** Fixed, Forgo Inflation, Guyton-Klinger, Spending Decline and RMD Spending before the RMD age build on inflation-adjusted figures. Constant Percentage, Endowment and Vanguard Dynamic keep their floors and ceilings in nominal dollars, and say so in their labels: an inflation-adjusted floor would push withdrawals up in bad years, past what the portfolio sustains. Vanguard Dynamic's year is `w = clamp(p × B, w₋₁ × (1 − f), w₋₁ × (1 + c))`, all nominal, with no bounds in its first year (`p` the base %, `B` the retirement balance, `c` and `f` the ceiling and floor). Vanguard's published rule applies the bounds to inflation-adjusted spending (§ Known Gaps).
+- **The one coupling: RMDs.** A Portfolio-parented Traditional account counts in its owner's RMD (the IRS doesn't care how accounts are categorized). The whole RMD is paid from the owner's Retirement accounts, which raises taxable income; what they can't pay is that owner's RMD shortfall, shown with its 25% excise estimate, and isn't drawn or taxed (§ Known Gaps).
 - **Each person's RMD comes from that person's own Retirement accounts and never spills to a spouse.** `enforceOwnerRmds` (`rmd-enforcement.ts`) pins it to their accounts; an account with no owner counts as the primary person's (`rmdOwnerOf`, one rule for the RMD base and the pins). What their accounts can't pay is their shortfall: since an RMD is a fraction of last year's balance, that means the money is Portfolio-parented, and the warning says so.
 
 **Simulated vs baseline (one display rule, v0.8.11).** A nest egg (or end balance) is shown through `simulatedOrBaseline` (`lib/pure/nest-egg-display.ts`) everywhere it appears — the dashboard's Retirement card and the Retirement page's hero:
