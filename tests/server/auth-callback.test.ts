@@ -12,15 +12,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
  * returns the updated token. That logic is now exported as
  * assignRoleAndPermissions() so this test file can drive every branch:
  *
- *   1. No user → token returned untouched (refresh case)
+ *   1. No user (refresh) → token kept only if it carries an authMethod
  *   2. local-admin provider → admin role, no permissions, authMethod=local
  *   3. authentik provider + admin group → admin role, no permissions
  *   4. authentik provider + viewer groups → viewer role, mapped permissions
  *   5. authentik provider + unknown groups → viewer role, empty permissions
  *   6. authentik provider + no groups → viewer role, empty permissions
  *   7. credentials provider in dev → admin role
- *   8. credentials provider in production → falls through to safe default
- *   9. unknown provider → viewer role with safe defaults
+ *   8. credentials provider in production → rejected (null)
+ *   9. unknown provider → rejected (null)
  *
  * The callback wrapper in fullAuthConfig is a thin pass-through; testing
  * the underlying helper covers the contract a regression would break.
@@ -87,18 +87,29 @@ describe("assignRoleAndPermissions (M18 / auth.ts contract)", () => {
   });
 
   describe("no-user case (token refresh)", () => {
-    it("returns the token untouched when user is undefined", async () => {
+    it("keeps a token a known provider signed in", async () => {
       token.role = "viewer";
       token.permissions = ["budget"];
+      token.authMethod = "oidc";
       const result = await assignRoleAndPermissions(
         token,
         undefined,
         { provider: "authentik" },
         mockGroups,
       );
-      expect(result.role).toBe("viewer");
-      expect(result.permissions).toEqual(["budget"]);
+      expect(result!.role).toBe("viewer");
+      expect(result!.permissions).toEqual(["budget"]);
     });
+  });
+
+  it("rejects a refreshed token with no authMethod (signed by no provider here)", async () => {
+    // The NextAuth secret is shared with the demo: a token minted there
+    // (Dev Login's viewer fallback) carries no authMethod.
+    token.role = "viewer";
+    token.permissions = [];
+    expect(
+      await assignRoleAndPermissions(token, undefined, null, mockGroups),
+    ).toBeNull();
   });
 
   describe("local-admin provider", () => {
@@ -109,9 +120,9 @@ describe("assignRoleAndPermissions (M18 / auth.ts contract)", () => {
         { provider: "local-admin" },
         mockGroups,
       );
-      expect(result.role).toBe("admin");
-      expect(result.permissions).toEqual([]);
-      expect(result.authMethod).toBe("local");
+      expect(result!.role).toBe("admin");
+      expect(result!.permissions).toEqual([]);
+      expect(result!.authMethod).toBe("local");
     });
   });
 
@@ -128,9 +139,9 @@ describe("assignRoleAndPermissions (M18 / auth.ts contract)", () => {
         { provider: "authentik" },
         mockGroups,
       );
-      expect(result.role).toBe("admin");
-      expect(result.permissions).toEqual([]);
-      expect(result.authMethod).toBe("oidc");
+      expect(result!.role).toBe("admin");
+      expect(result!.permissions).toEqual([]);
+      expect(result!.authMethod).toBe("oidc");
     });
 
     it("assigns viewer role with mapped permissions for non-admin users", async () => {
@@ -145,9 +156,9 @@ describe("assignRoleAndPermissions (M18 / auth.ts contract)", () => {
         { provider: "authentik" },
         mockGroups,
       );
-      expect(result.role).toBe("viewer");
-      expect(result.permissions).toEqual(["budget", "sync"]);
-      expect(result.authMethod).toBe("oidc");
+      expect(result!.role).toBe("viewer");
+      expect(result!.permissions).toEqual(["budget", "sync"]);
+      expect(result!.authMethod).toBe("oidc");
     });
 
     it("filters out unknown groups silently — only mapped groups become permissions", async () => {
@@ -162,9 +173,9 @@ describe("assignRoleAndPermissions (M18 / auth.ts contract)", () => {
         { provider: "authentik" },
         mockGroups,
       );
-      expect(result.role).toBe("viewer");
+      expect(result!.role).toBe("viewer");
       // random-group is dropped; budget + portfolio survive
-      expect(result.permissions).toEqual(["budget", "portfolio"]);
+      expect(result!.permissions).toEqual(["budget", "portfolio"]);
     });
 
     it("returns viewer with empty permissions when groups is missing entirely", async () => {
@@ -174,8 +185,8 @@ describe("assignRoleAndPermissions (M18 / auth.ts contract)", () => {
         { provider: "authentik" },
         mockGroups,
       );
-      expect(result.role).toBe("viewer");
-      expect(result.permissions).toEqual([]);
+      expect(result!.role).toBe("viewer");
+      expect(result!.permissions).toEqual([]);
     });
 
     it("returns viewer with empty permissions when groups is an empty array", async () => {
@@ -185,8 +196,8 @@ describe("assignRoleAndPermissions (M18 / auth.ts contract)", () => {
         { provider: "authentik" },
         mockGroups,
       );
-      expect(result.role).toBe("viewer");
-      expect(result.permissions).toEqual([]);
+      expect(result!.role).toBe("viewer");
+      expect(result!.permissions).toEqual([]);
     });
 
     it("does NOT grant admin from a group that only matches by substring", async () => {
@@ -204,7 +215,7 @@ describe("assignRoleAndPermissions (M18 / auth.ts contract)", () => {
         { provider: "authentik" },
         mockGroups,
       );
-      expect(result.role).toBe("viewer");
+      expect(result!.role).toBe("viewer");
     });
   });
 
@@ -220,11 +231,11 @@ describe("assignRoleAndPermissions (M18 / auth.ts contract)", () => {
         { provider: "credentials" },
         mockGroups,
       );
-      expect(result.role).toBe("admin");
-      expect(result.authMethod).toBe("local");
+      expect(result!.role).toBe("admin");
+      expect(result!.authMethod).toBe("local");
     });
 
-    it("does NOT grant admin in production (falls through to safe default)", async () => {
+    it("rejects Dev Login in a production build", async () => {
       vi.stubEnv("NODE_ENV", "production");
       const result = await assignRoleAndPermissions(
         token,
@@ -232,30 +243,22 @@ describe("assignRoleAndPermissions (M18 / auth.ts contract)", () => {
         { provider: "credentials" },
         mockGroups,
       );
-      // The credentials branch is gated on NODE_ENV !== production, so
-      // in production it falls through to the unknown-provider branch
-      // and the token gets the safe default.
-      expect(result.role).toBe("viewer");
-      expect(result.permissions).toEqual([]);
+      expect(result).toBeNull();
     });
   });
 
-  describe("unknown provider (safe default)", () => {
-    it("assigns viewer role with empty permissions", async () => {
+  describe("unknown provider", () => {
+    it("is rejected", async () => {
       const result = await assignRoleAndPermissions(
         token,
         { id: "?:1", name: "?" },
         { provider: "some-future-provider" },
         mockGroups,
       );
-      expect(result.role).toBe("viewer");
-      expect(result.permissions).toEqual([]);
+      expect(result).toBeNull();
     });
 
-    it("preserves existing role/permissions on the token rather than clobbering", async () => {
-      // The unknown-provider branch uses ?? to fall back to existing
-      // values. Tests that existing role survives if the user object is
-      // supplied without a recognized provider.
+    it("is rejected even when the token already claims a role", async () => {
       token.role = "admin";
       token.permissions = ["budget"];
       const result = await assignRoleAndPermissions(
@@ -264,8 +267,7 @@ describe("assignRoleAndPermissions (M18 / auth.ts contract)", () => {
         { provider: "some-other" },
         mockGroups,
       );
-      expect(result.role).toBe("admin");
-      expect(result.permissions).toEqual(["budget"]);
+      expect(result).toBeNull();
     });
   });
 });
