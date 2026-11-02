@@ -2,6 +2,7 @@
 import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
 import {
   DEMO_SCHEMA_MARKER_PREFIX,
+  DEMO_SHARED_TABLES,
   MIGRATION_STAMP_SQL,
 } from "@/lib/db/demo-schema-marker";
 import { applyReferenceData } from "@/lib/db/reference-data";
@@ -618,9 +619,8 @@ export const demoRouter = createTRPCRouter({
         );
 
         for (const { tablename } of tables.rows) {
-          // Community tax-data updates are the install's, not household
-          // data: a demo reads the public table through its search_path.
-          if (tablename === "tax_data_updates") continue;
+          // Install-wide tables are read from public (search_path).
+          if (DEMO_SHARED_TABLES.includes(tablename)) continue;
           const quotedTable = quoteIdent(tablename);
           await cdb.execute(
             sql.raw(

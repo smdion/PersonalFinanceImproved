@@ -18,3 +18,12 @@ export const MIGRATION_STAMP_SUBQUERY =
 
 /** The same stamp as a query returning one row `{ stamp }`. */
 export const MIGRATION_STAMP_SQL = `SELECT ${MIGRATION_STAMP_SUBQUERY} AS stamp`;
+
+/** Install-wide tables a demo schema never gets its own copy of: a demo
+ *  reads them from public through its search_path ("demo_x, public").
+ *  Community tax-data updates are the install's, not household data. The
+ *  demo builder skips these and the request check (demoSchemaMiddleware)
+ *  doesn't require them — one list, so the two can't disagree (they did:
+ *  the builder skipped tax_data_updates while the check required every
+ *  public table, so every demo request was refused). */
+export const DEMO_SHARED_TABLES: readonly string[] = ["tax_data_updates"];
