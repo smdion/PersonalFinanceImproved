@@ -472,10 +472,12 @@ export function estimateWithdrawalTaxCost(
     return fixedWithdrawalEstimate(input, input.fixedGrossWithdrawal);
   const { afterTaxNeed } = input;
   const shouldGrossUp = taxRates.grossUpForTaxes !== false;
-  // Each trial may route a few times (evaluateAtOwnSS). Smooth years
-  // exit in ~3; the cap only binds where bisection is needed across a cost
-  // jump (about 20 halvings of a five-figure bracket).
-  const MAX_TRIALS = 24;
+  // At most 20 trials (each may route a few times, evaluateAtOwnSS).
+  // Smooth years exit in ~3; the cap only binds where bisection is needed
+  // across a cost jump, and 20 halvings take a five-figure bracket to
+  // under $0.10 — inside the $1 of the need a year may stop at. Short of
+  // the need, the gap is reported as unmet.
+  const MAX_TRIALS = 20;
   const RESIDUAL_TOLERANCE = 0.01;
   // Below this span, a secant slope between two cent-rounded costs is noise.
   const MIN_SECANT_SPAN = 1;
