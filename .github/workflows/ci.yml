@@ -38,6 +38,9 @@ jobs:
       - name: Type-check tests
         run: pnpm check:types-tests
 
+      - name: Type-check scripts
+        run: pnpm check:types-scripts
+
       - name: Lint
         run: pnpm run lint
 

@@ -4,13 +4,13 @@
  * Supports cross-version imports (v0.1.x backups are auto-transformed).
  *
  * Usage:
- *   pnpm backup:import { withAsyncTransactions } from "../src/lib/db/sqlite-transactions";
-import ./backup.json              # Import backup
+ *   pnpm backup:import ./backup.json              # Import backup
  *   pnpm backup:import --dry-run ./backup.json     # Preview without writing
  */
 
 import * as fs from "fs";
 import * as path from "path";
+import { withAsyncTransactions } from "../src/lib/db/sqlite-transactions";
 
 function getDialect(): "postgresql" | "sqlite" {
   const url = process.env.DATABASE_URL;
@@ -99,7 +99,7 @@ async function run() {
   if (dryRun) {
     console.error("\n--- Dry run summary ---");
     for (const t of tableNames) {
-      console.error(`  ${t}: ${tables[t].length} rows`);
+      console.error(`  ${t}: ${tables[t]?.length ?? 0} rows`);
     }
     console.error("\nNo changes made (--dry-run).");
     return;
@@ -114,6 +114,7 @@ async function run() {
   if (dialect === "postgresql") {
     const { Pool } = await import("pg");
     const { drizzle } = await import("drizzle-orm/node-postgres");
+    const schema = await import("../src/lib/db/schema");
 
     const pool = new Pool({
       connectionString: process.env.DATABASE_URL,
@@ -124,7 +125,7 @@ async function run() {
     });
 
     try {
-      const db = drizzle(pool);
+      const db = drizzle(pool, { schema });
       const { importBackup } = await import("../src/lib/db/version-logic");
       const result = await importBackup(db, {
         schemaVersion: backup.schemaVersion,
