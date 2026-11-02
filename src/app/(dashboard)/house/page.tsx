@@ -2,6 +2,7 @@
 
 /** Displays home value, improvement history, and equity estimates with links to the liabilities page for mortgage context. */
 
+import { loanFeedIsStale } from "@/lib/pure/simplefin-feeds";
 import { useState } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,12 @@ import { trpc } from "@/lib/trpc";
 import { Card, Metric } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
 import { HelpTip } from "@/components/ui/help-tip";
-import { formatCurrency, formatPercent, formatDate } from "@/lib/utils/format";
+import {
+  budgetApiServiceLabel,
+  formatCurrency,
+  formatPercent,
+  formatDate,
+} from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { Lock, LockOpen } from "lucide-react";
 import { SyncBadge } from "@/components/ui/sync-badge";
@@ -23,6 +29,8 @@ export default function HousePage() {
     trpc.assets.computeSummary.useQuery(targeting);
   const { data: mortgageData, isLoading: mortgageLoading } =
     trpc.mortgage.computeActiveSummary.useQuery();
+  const { data: activeBudgetApi } = trpc.sync.getActiveBudgetApi.useQuery();
+  const { data: linkableLoans } = trpc.simplefin.listLinkableLoans.useQuery();
   const { data: propTaxes, isLoading: taxesLoading } =
     trpc.assets.listPropertyTaxes.useQuery();
   const utils = trpc.useUtils();
@@ -104,6 +112,11 @@ export default function HousePage() {
     (l) => l.id === mortgageData?.activeLoanId,
   );
   const loanResult = mortgageData?.activeLoanResult ?? undefined;
+  const fedBySimplefin =
+    linkableLoans?.find((l) => l.id === loanResult?.loanId)?.fedBySimplefin ??
+    false;
+  const balanceSource = fedBySimplefin ? "simplefin" : (activeBudgetApi ?? "");
+  const feedAsOf = fedBySimplefin ? loanResult?.apiBalanceDate : undefined;
   const homeImprovements = assetData?.homeImprovements ?? [];
 
   // Group home improvements by year
@@ -161,7 +174,9 @@ export default function HousePage() {
           title={
             <>
               Home Value{" "}
-              {current?.houseValueSynced && <SyncBadge source="ynab" />}
+              {current?.houseValueSynced && (
+                <SyncBadge source={activeBudgetApi ?? ""} />
+              )}
             </>
           }
         >
@@ -185,7 +200,18 @@ export default function HousePage() {
                 : undefined
             }
           />
-          {loanResult?.apiBalance != null && <SyncBadge source="ynab" />}
+          {loanResult?.apiBalance != null && (
+            <SyncBadge source={balanceSource} />
+          )}
+          {feedAsOf && (
+            <p
+              className={`text-caption mt-1 ${
+                loanFeedIsStale(feedAsOf) ? "text-amber-600" : "text-muted"
+              }`}
+            >
+              As of {formatDate(feedAsOf)}
+            </p>
+          )}
         </Card>
 
         <Card title="Equity">
@@ -282,9 +308,9 @@ export default function HousePage() {
           {loanResult.apiBalance != null &&
             loanResult.calculatedBalance != null && (
               <div className="mt-3 rounded bg-blue-50 p-2 text-xs text-blue-700">
-                YNAB balance: {formatCurrency(loanResult.apiBalance)} |
-                Calculated: {formatCurrency(loanResult.calculatedBalance)} |
-                Diff:{" "}
+                {budgetApiServiceLabel(balanceSource)} balance:{" "}
+                {formatCurrency(loanResult.apiBalance)} | Calculated:{" "}
+                {formatCurrency(loanResult.calculatedBalance)} | Diff:{" "}
                 {formatCurrency(
                   Math.abs(
                     loanResult.apiBalance - loanResult.calculatedBalance,

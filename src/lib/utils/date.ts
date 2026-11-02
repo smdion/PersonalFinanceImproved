@@ -66,6 +66,12 @@ export function localDateStr(date: Date = new Date()): string {
   ].join("-");
 }
 
+/** The year of a YYYY-MM-DD date. `new Date(d).getFullYear()` parses it as
+ *  UTC midnight, which behind UTC reads Jan 1 as the year before. */
+export function calendarYear(date: string): number {
+  return Number(date.slice(0, 4));
+}
+
 /**
  * Parse a value that MAY be a bare date-only string ("2020-11-01") as LOCAL // lint-violation-ok: literal date-string format example
  * midnight rather than UTC midnight — `new Date("2020-11-01")` (unguarded) // lint-violation-ok: literal date-string format example

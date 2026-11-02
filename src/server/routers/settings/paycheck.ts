@@ -31,6 +31,7 @@ import {
   ACCOUNT_OWNERSHIP_VALUES,
 } from "@/lib/config/enum-values";
 import { zDecimal } from "./_shared";
+import { dropContributionActiveFields } from "@/server/helpers/delete-references";
 
 // --- Zod schemas ---
 
@@ -311,6 +312,44 @@ export const paycheckProcedures = {
             code: "PRECONDITION_FAILED",
             message: `They own ${owned.map((d) => d.name).join(", ")} on Liabilities — make it joint, reassign or delete it first`,
           });
+        // The household's own retirement settings live on the primary
+        // person's rows: someone else must be primary first.
+        const everyone = await ctx.db.select().from(schema.people);
+        if (everyone.length > 1 && getPrimaryPerson(everyone)?.id === input.id)
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message:
+              "They're the primary person — make someone else primary first",
+          });
+        // A real job or recorded Roth basis is history: block with a
+        // clear reason rather than the foreign-key error.
+        const [realJob] = await ctx.db
+          .select({ id: schema.jobs.id })
+          .from(schema.jobs)
+          .where(
+            and(
+              eq(schema.jobs.personId, input.id),
+              eq(schema.jobs.isSpeculative, false),
+            ),
+          )
+          .limit(1);
+        if (realJob)
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message:
+              "They have a job on record — delete their jobs on Paycheck first",
+          });
+        const [basis] = await ctx.db
+          .select({ id: schema.accountBasis.id })
+          .from(schema.accountBasis)
+          .where(eq(schema.accountBasis.ownerPersonId, input.id))
+          .limit(1);
+        if (basis)
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message:
+              "They have Roth basis recorded on an account — remove it first",
+          });
         return ctx.db.transaction(async (tx) => {
           await tx
             .delete(schema.jobs)
@@ -320,6 +359,17 @@ export const paycheckProcedures = {
                 eq(schema.jobs.isSpeculative, true),
               ),
             );
+          // Their per-profile retirement rows and changes by year are
+          // settings about them, not history: they go with them.
+          await tx
+            .delete(schema.retirementSettings)
+            .where(eq(schema.retirementSettings.personId, input.id));
+          await tx
+            .delete(schema.retirementSalaryOverrides)
+            .where(eq(schema.retirementSalaryOverrides.personId, input.id));
+          await tx
+            .delete(schema.retirementBudgetOverrides)
+            .where(eq(schema.retirementBudgetOverrides.personId, input.id));
           return tx.delete(schema.people).where(eq(schema.people.id, input.id));
         });
       }),
@@ -589,9 +639,16 @@ export const paycheckProcedures = {
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(({ ctx, input }) =>
-        ctx.db
-          .delete(schema.contributionAccounts)
-          .where(eq(schema.contributionAccounts.id, input.id)),
+        ctx.db.transaction(async (tx) => {
+          await dropContributionActiveFields(
+            tx,
+            "contributionAccounts",
+            input.id,
+          );
+          await tx
+            .delete(schema.contributionAccounts)
+            .where(eq(schema.contributionAccounts.id, input.id));
+        }),
       ),
   }),
 
@@ -700,9 +757,12 @@ export const paycheckProcedures = {
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(({ ctx, input }) =>
-        ctx.db
-          .delete(schema.paycheckDeductions)
-          .where(eq(schema.paycheckDeductions.id, input.id)),
+        ctx.db.transaction(async (tx) => {
+          await dropContributionActiveFields(tx, "deductions", input.id);
+          await tx
+            .delete(schema.paycheckDeductions)
+            .where(eq(schema.paycheckDeductions.id, input.id));
+        }),
       ),
   }),
 };

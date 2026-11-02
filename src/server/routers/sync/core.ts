@@ -1,5 +1,6 @@
 /** Sync core router handling full data synchronization, sync preview generation, and expense comparison between budget API and local data. */
 
+import { loansFedBySimplefin } from "@/server/helpers/loan-feed";
 import { z } from "zod/v4";
 import { eq, sql, and, like, ne } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
@@ -860,6 +861,7 @@ export const syncCoreRouter = createTRPCRouter({
               asOfDate: new Date(),
             })
           : null;
+      const feedLoans = await loansFedBySimplefin(ctx.db);
       const mortgageAccounts: Array<{
         label: string;
         id: number;
@@ -868,6 +870,7 @@ export const syncCoreRouter = createTRPCRouter({
         calculatedBalance?: number;
         apiBalance?: number;
         apiBalanceDate?: string | null;
+        fedBySimplefin?: boolean;
       }> = [];
       for (const loan of activeMortgageLoans) {
         mortgageAccounts.push({
@@ -890,6 +893,7 @@ export const syncCoreRouter = createTRPCRouter({
             loanResult?.calculatedBalance ?? loanResult?.currentBalance,
           apiBalance: loanResult?.apiBalance,
           apiBalanceDate: loan.apiBalanceDate,
+          fedBySimplefin: feedLoans.has(loan.id),
         });
       }
 

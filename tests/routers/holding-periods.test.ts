@@ -7,6 +7,7 @@ import "./setup-mocks";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
+import { loadDailyPositions } from "@/server/routers/investments/_shared";
 import {
   createTestCaller,
   seedPerformanceAccount,
@@ -361,5 +362,69 @@ describe("holding periods — an account reported per part", () => {
       .returning();
     const r = await ctx.caller.investments.listHoldingPeriods();
     expect(r.periods.find((p) => p.id === row!.id)!.orphaned).toBe(true);
+  });
+});
+
+describe("holding periods — a report missing a fund's value", () => {
+  it("doesn't read the unvalued fund as sold", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const db = ctx.db;
+      const perf = seedPerformanceAccount(db, {
+        institution: "Example Bank",
+        accountType: "ira",
+      });
+      const feed = db
+        .insert(sqliteSchema.simplefinAccounts)
+        .values({
+          externalAccountId: "f-null",
+          orgName: "Example Bank",
+          accountName: "f-null",
+          lastBalance: "0",
+          linkedPerformanceAccountId: perf,
+        })
+        .returning()
+        .get().id;
+      const sec = (name: string, ticker: string) =>
+        db
+          .insert(sqliteSchema.securities)
+          .values({ name, ticker, kind: "mutual_fund", sourceSymbol: ticker })
+          .returning()
+          .get().id;
+      const fundA = sec("Example Stock Index", "EXSTX");
+      const fundB = sec("Example Bond Index", "EXBDX");
+      for (const [asOf, a, b] of [
+        ["2026-10-12", "600", "400"],
+        ["2026-10-13", "590", "405"],
+        ["2026-10-14", "595", null],
+      ] as const)
+        db.insert(sqliteSchema.holdingObservations)
+          .values(
+            [
+              [fundA, a],
+              [fundB, b],
+            ].map(([securityId, reportedMarketValue]) => ({
+              simplefinAccountId: feed,
+              securityId: securityId as number,
+              asOf,
+              shares: "10",
+              reportedMarketValue: reportedMarketValue as string | null,
+              source: "simplefin" as const,
+            })),
+          )
+          .run();
+      const { positions } = await loadDailyPositions(ctx.rawDb);
+      // The 14th's report is left out whole (the 13th carries it), not
+      // read as fund B at $0.
+      expect(positions.some((p) => p.day === "2026-10-14")).toBe(false);
+      const r = await ctx.caller.investments.listHoldingPeriods();
+      const observed = r.periods.filter(
+        (p) => p.basis === "observed" && p.performanceAccountId === perf,
+      );
+      expect(observed).toHaveLength(1);
+      expect(observed[0]!.weights[fundB]).toBeGreaterThan(0.3);
+    } finally {
+      ctx.cleanup();
+    }
   });
 });

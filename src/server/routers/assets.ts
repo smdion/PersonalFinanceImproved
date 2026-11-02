@@ -1,4 +1,6 @@
 /** Asset management router covering home improvements, other assets, year-end history, and historical notes with API sync status. */
+import { loansFedBySimplefin } from "@/server/helpers/loan-feed";
+import { calendarYear } from "@/lib/utils/date";
 import { and, asc, desc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
@@ -18,6 +20,7 @@ import {
   resolveOtherAssetsForYear,
   resolveCarryForwardAssetValue,
 } from "@/lib/pure/historical";
+import { dropMappingsTo } from "@/server/helpers/delete-references";
 
 export const assetsRouter = createTRPCRouter({
   /**
@@ -112,14 +115,19 @@ export const assetsRouter = createTRPCRouter({
             return lid === `mortgage:${activeLoan.id}:propertyValue`;
           })
         : false;
-      const mortgageSynced = activeLoan
-        ? mortgageMappings.some((m) => {
-            if (m.loanId === activeLoan.id && m.loanMapType === "loanBalance")
-              return true;
-            const lid = m.localId ?? m.localName;
-            return lid === `mortgage:${activeLoan.id}:loanBalance`;
-          })
-        : false;
+      const mortgageFromFeed =
+        activeLoan != null &&
+        (await loansFedBySimplefin(ctx.db)).has(activeLoan.id);
+      const mortgageSynced =
+        mortgageFromFeed ||
+        (activeLoan
+          ? mortgageMappings.some((m) => {
+              if (m.loanId === activeLoan.id && m.loanMapType === "loanBalance")
+                return true;
+              const lid = m.localId ?? m.localName;
+              return lid === `mortgage:${activeLoan.id}:loanBalance`;
+            })
+          : false);
 
       const allYears = yearEndHistory.map((r) => r.year);
       const currentYear = new Date().getFullYear();
@@ -241,6 +249,7 @@ export const assetsRouter = createTRPCRouter({
           houseValueSynced,
           mortgageBalance,
           mortgageSynced,
+          mortgageFromFeed,
           houseEquity: houseValue - mortgageBalance,
           homeImprovements: latestHistory?.homeImprovements ?? 0,
           otherAssetsTotal,
@@ -277,9 +286,7 @@ export const assetsRouter = createTRPCRouter({
       const { year, fields } = input;
 
       const rows = await ctx.db.select().from(schema.netWorthAnnual);
-      const row = rows.find(
-        (r) => new Date(r.yearEndDate).getFullYear() === year,
-      );
+      const row = rows.find((r) => calendarYear(r.yearEndDate) === year);
       if (!row) {
         throw new TRPCError({
           code: "BAD_REQUEST",
@@ -391,9 +398,12 @@ export const assetsRouter = createTRPCRouter({
   deleteOtherAsset: adminProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .delete(schema.otherAssetItems)
-        .where(eq(schema.otherAssetItems.id, input.id));
+      await ctx.db.transaction(async (tx) => {
+        await dropMappingsTo(tx, { assetId: input.id });
+        await tx
+          .delete(schema.otherAssetItems)
+          .where(eq(schema.otherAssetItems.id, input.id));
+      });
       return { success: true };
     }),
 
@@ -435,7 +445,7 @@ export const assetsRouter = createTRPCRouter({
         .map((r) => ({
           id: 0,
           loanId: input?.loanId ?? 0,
-          year: new Date(r.yearEndDate).getFullYear(),
+          year: calendarYear(r.yearEndDate),
           assessedValue: null,
           taxAmount: toNumber(r.propertyTaxes!),
           note: "From historical records",

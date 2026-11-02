@@ -345,10 +345,11 @@ export function accountDisplayName(
  * sync toast used to say "YNAB" literally, even when Actual Budget was the
  * active connected service). */
 export function budgetApiServiceLabel(
-  service: "ynab" | "actual" | "none" | null | undefined,
+  service: string | null | undefined,
 ): string {
   if (service === "actual") return "Actual Budget";
   if (service === "ynab") return "YNAB";
+  if (service === "simplefin") return "SimpleFIN";
   return "the budget API";
 }
 

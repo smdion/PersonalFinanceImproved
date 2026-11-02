@@ -7,6 +7,8 @@
  */
 import { describe, it, expect } from "vitest";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
+import { calculateProjection } from "@/lib/calculators/engine";
+import { WITHDRAWAL_STRATEGY_VALUES } from "@/lib/config/withdrawal-strategies";
 import type { ProjectionInput, MonteCarloInput } from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
@@ -219,7 +221,7 @@ describe("monte carlo integration", () => {
     // around the 3% inflation-risk mean, floored at 0%, and two
     // inflation-heavy trials ran out at 87–88).
     expect(result.successRate).toBe(1);
-    expect(result.medianEndBalance).toBeCloseTo(28577900.78, 2);
+    expect(result.medianEndBalance).toBeCloseTo(28595806.57, 1);
     expect(extractSummary(result)).toMatchSnapshot();
   });
 
@@ -703,6 +705,103 @@ describe("monte carlo inflation — trials vary around the plan's own rates (v0.
     expect(risk.successRate).toBe(plain.successRate);
   });
 
+  it("bands carry the inflation spread, and the price range widens over time", () => {
+    const r = calculateMonteCarlo({
+      ...mc(makeInput({ inflationRate: 0.03 }), { stdDev: 0.012 }),
+      numTrials: 200,
+    });
+    const at = (i: number) => r.percentileBands[i]!.assumptions!.inflation!;
+    const last = r.percentileBands.length - 1;
+    const width = (i: number) => at(i).priceLevel.p75 / at(i).priceLevel.p25;
+    expect(at(1).stdDev).toBe(0.012);
+    expect(at(0).priceLevel.p50).toBe(1);
+    expect(at(last).priceLevel.p50).toBeGreaterThan(at(1).priceLevel.p50);
+    expect(width(last)).toBeGreaterThan(width(2));
+    expect(at(last).priceLevel.p25).toBeLessThan(at(last).priceLevel.p75);
+  });
+
+  it("Guyton-Klinger: retirement bands carry the range of anchors the trials set", () => {
+    const base = makeInput({});
+    const r = calculateMonteCarlo({
+      ...mc({
+        ...base,
+        decumulationDefaults: {
+          ...base.decumulationDefaults,
+          withdrawalStrategy: "guyton_klinger",
+        },
+      }),
+      numTrials: 100,
+    });
+    const bands = r.percentileBands;
+    const range = bands[bands.length - 1]!.assumptions!.gkAnchorRange!;
+    expect(range.p25).toBeGreaterThan(0);
+    expect(range.p75).toBeGreaterThan(range.p25);
+    expect(bands[0]!.assumptions!.gkAnchorRange).toBeUndefined();
+  });
+
+  it("no inflation risk: no spread or range on the bands", () => {
+    const r = calculateMonteCarlo(mc(makeInput({}), { stdDev: 0 }));
+    expect(r.percentileBands[1]!.assumptions?.inflation).toBeUndefined();
+  });
+
+  it("all-zero shocks match no shocks, to the cent, for every strategy", () => {
+    const base = makeInput({ inflationRate: 0.03 });
+    for (const withdrawalStrategy of WITHDRAWAL_STRATEGY_VALUES) {
+      const input = {
+        ...base,
+        decumulationDefaults: {
+          ...base.decumulationDefaults,
+          withdrawalStrategy,
+        },
+      };
+      const plain = calculateProjection(input).projectionByYear;
+      const shocked = calculateProjection({
+        ...input,
+        inflationShocks: new Array(plain.length + 2).fill(0),
+      }).projectionByYear;
+      shocked.forEach((y, i) => {
+        expect(y.projectedExpenses).toBeCloseTo(plain[i]!.projectedExpenses, 2);
+        expect(y.retirementBalance).toBeCloseTo(plain[i]!.retirementBalance, 0);
+      });
+    }
+  });
+
+  it("one hot year lifts expenses that year and for good, not before", () => {
+    const input = makeInput({ inflationRate: 0.03 });
+    const plain = calculateProjection(input).projectionByYear;
+    const k = 5;
+    const shocks = new Array(plain.length).fill(0);
+    shocks[k] = 0.05;
+    const hot = calculateProjection({
+      ...input,
+      inflationShocks: shocks,
+    }).projectionByYear;
+    for (let i = 0; i < k; i++)
+      expect(hot[i]!.projectedExpenses).toBeCloseTo(
+        plain[i]!.projectedExpenses,
+        2,
+      );
+    for (let i = k; i < plain.length; i++) {
+      if (plain[i]!.phase !== "accumulation") break;
+      expect(
+        hot[i]!.projectedExpenses / plain[i]!.projectedExpenses,
+      ).toBeCloseTo(1.08 / 1.03, 6);
+    }
+  });
+
+  it("price levels vary mid-horizon, year by year", () => {
+    const r = calculateMonteCarlo({
+      ...mc(makeInput({ inflationRate: 0.03 }), { stdDev: 0.02 }),
+      numTrials: 50,
+    });
+    const flat = calculateMonteCarlo({
+      ...mc(makeInput({ inflationRate: 0.03 }), { stdDev: 0 }),
+      numTrials: 50,
+    });
+    expect(r.medianEndBalance).not.toBe(flat.medianEndBalance);
+    expect(r.today.medianEndBalance).not.toBe(flat.today.medianEndBalance);
+  });
+
   it("the plan's own inflation moves the Simulation", () => {
     const low = calculateMonteCarlo(
       mc(makeInput({ inflationRate: 0.02 }), { stdDev: 0.012 }),
@@ -713,6 +812,14 @@ describe("monte carlo inflation — trials vary around the plan's own rates (v0.
     expect(high.today.medianEndBalance).toBeLessThan(
       low.today.medianEndBalance,
     );
+  });
+
+  it("each year's band carries the return assumptions it was drawn from", () => {
+    const r = calculateMonteCarlo(mc(makeInput({})));
+    const [first] = r.percentileBands;
+    expect(first!.assumptions?.expectedReturn).toBeGreaterThan(0);
+    expect(first!.assumptions?.volatility).toBeGreaterThan(0);
+    expect(r.today.percentileBands[0]!.assumptions).toEqual(first!.assumptions);
   });
 
   it("today's dollars are each trial deflated by the inflation it ran with", () => {

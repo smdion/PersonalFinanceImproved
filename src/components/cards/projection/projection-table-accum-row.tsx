@@ -640,7 +640,9 @@ export function AccumulationRow({
                         header: `${ofLabel} Contributions`,
                         items,
                         rateCeiling:
-                          yr.rateCeilingScale != null && yr.rateCeilingScale < 1
+                          yr.rateCeilingScale != null &&
+                          yr.rateCeilingScale > 0 &&
+                          yr.rateCeilingScale < 1
                             ? {
                                 uncapped: deflate(
                                   ofEmp / yr.rateCeilingScale,

@@ -77,7 +77,7 @@ export function checkGlidePath(
 
   const direction = dev > 0 ? "more aggressive" : "more conservative";
   const message =
-    `Your simulation's assumed stock allocation (${currentStockPercent}%) is ${absDev}pp ${direction} ` +
+    `Your simulation's assumed stock allocation (${Math.round(currentStockPercent)}%) is ${Math.round(absDev)}pp ${direction} ` +
     `than the "110 − age" rule of thumb suggests for age ${age} (${recommended}%). ` +
     `This check uses your configured glide path, not actual holdings.`;
 

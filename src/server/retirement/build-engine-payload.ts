@@ -10,6 +10,7 @@
  * balances. Callers (projection router endpoints) consume the result and add
  * their own accumulation/decumulation overrides and decumulation defaults.
  */
+import { calendarYear } from "@/lib/utils/date";
 import { loadExpenseEndings } from "./payload/expense-endings";
 import {
   householdTimeline,
@@ -41,6 +42,7 @@ import {
 import { getAllPeople } from "@/server/helpers/people";
 import {
   resolveRetirementProfileIdFrom,
+  retirementProfileIsFallback,
   pickProfileSettingsRow,
 } from "@/server/helpers/retirement-profile";
 import type { AccountCategory } from "@/lib/calculators/types";
@@ -288,6 +290,10 @@ export async function buildEnginePayload(
      *  profile — a stale id from a deleted profile must never silently
      *  compute against nothing. */
     retirementProfileId?: number;
+    /** What-if: everyone retires this many years later (negative: sooner).
+     *  Applied before the timeline, so every window built from it moves
+     *  too; the saved settings are untouched. */
+    retirementAgeDelta?: number;
   },
 ) {
   const {
@@ -486,7 +492,14 @@ export async function buildEnginePayload(
   const perPersonSettings = people.map((p) => {
     const pp = profilePeople.find((r) => r.personId === p.id);
     // Legacy path: no profile resolved at all (see `settings` above).
-    const ps = pp ?? retSettings.find((s) => s.personId === p.id);
+    // Only this profile's row: another profile's values never stand in.
+    const ps =
+      pp ??
+      retSettings.find(
+        (s) =>
+          s.personId === p.id &&
+          (activeProfileId == null || s.profileId === activeProfileId),
+      );
     // salary_annual_increase DOES exist as a column on retirement_profile_people
     // (migration 0032 backfilled it, profile duplication clones it) — but
     // nothing reads or writes it there; `pp` above is never used for this
@@ -506,8 +519,10 @@ export async function buildEnginePayload(
     return {
       personId: p.id,
       name: p.name,
-      birthYear: new Date(p.dateOfBirth).getFullYear(),
-      retirementAge: ps?.retirementAge ?? settings.retirementAge,
+      birthYear: calendarYear(p.dateOfBirth),
+      retirementAge:
+        (ps?.retirementAge ?? settings.retirementAge) +
+        (opts.retirementAgeDelta ?? 0),
       endAge: ps?.endAge ?? settings.endAge,
       // Effective pre-retirement raise rate for THIS person. A person with
       // no retirement_settings row in the active profile at all shows the
@@ -522,8 +537,11 @@ export async function buildEnginePayload(
       // for no benefit. Removing it is its own change, not a ride-along in a
       // behaviour-neutral migration.
       withdrawalRate:
-        retSettings.find((s) => s.personId === p.id)?.withdrawalRate ??
-        settings.withdrawalRate,
+        retSettings.find(
+          (s) =>
+            s.personId === p.id &&
+            (activeProfileId == null || s.profileId === activeProfileId),
+        )?.withdrawalRate ?? settings.withdrawalRate,
       socialSecurityMonthly:
         ps?.socialSecurityMonthly ?? settings.socialSecurityMonthly,
       // PIA (benefit at FRA) — opt-in, no household-level fallback (decision
@@ -703,7 +721,15 @@ export async function buildEnginePayload(
       ).map((a) => missingCostBasisWarning(a.name)),
     ),
   ];
+  const viewingFallbackProfile =
+    activeProfileId !== opts.retirementProfileId &&
+    retirementProfileIsFallback(allAppSettings, retProfiles);
   const inputWarnings = [
+    ...(viewingFallbackProfile
+      ? [
+          `No active retirement profile is set, so this uses ${retProfiles.find((p) => p.id === activeProfileId)?.name}. Choose one in the Retirement profiles.`,
+        ]
+      : []),
     ...(rmdTarget.warning ? [rmdTarget.warning] : []),
     ...basisWarnings,
   ];
@@ -1302,7 +1328,7 @@ export async function buildEnginePayload(
       perPersonSettings.length > 1
         ? buildSocialSecurityEntries(perPersonSettings, filingStatus)
         : undefined,
-    birthYear: new Date(primaryPerson.dateOfBirth).getFullYear(),
+    birthYear: calendarYear(primaryPerson.dateOfBirth),
     filingStatus,
     enableIrmaaAwareness: settings.enableIrmaaAwareness,
     irmaaOnTopOfBudget: settings.irmaaOnTopOfBudget,

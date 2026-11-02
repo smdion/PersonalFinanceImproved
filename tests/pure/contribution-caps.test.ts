@@ -441,6 +441,16 @@ describe("capContributionsByLimitGroup — joint rows", () => {
     expect(out.get(own.id)!.cappedAnnual).toBe(15000);
   });
 
+  it("with no people to size a limit, a joint row keeps its amount", () => {
+    const joint = row({
+      personId: null,
+      accountType: "401k",
+      regularAnnual: 5000,
+    });
+    const out = cap([joint], [], "MFJ");
+    expect(out.get(joint.id)?.cappedAnnual ?? 5000).toBe(5000);
+  });
+
   it("a joint row within the household's room keeps its amount but stays flagged", () => {
     const joint = row({
       personId: null,

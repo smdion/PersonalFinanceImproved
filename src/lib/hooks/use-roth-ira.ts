@@ -55,6 +55,7 @@ export function useRothIra(): {
           hsaOutsidePayroll: data.householdIncome.hsaOutsidePayroll,
           investmentIncome: inputs.data.investmentIncome.estimate,
           preTaxIraByPerson: inputs.data.preTaxIraByPerson,
+          pendingConversionByPerson: inputs.data.pendingConversionByPerson,
           marginOverride: marginSetting,
         })
       : null;

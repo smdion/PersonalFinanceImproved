@@ -233,7 +233,7 @@ export async function pushSnapshotToBudgetApi(input: {
         cleanupFailures
           .map((f) => `${f.transactionId} (${f.error})`)
           .join("; ") +
-        ". Reconcile the failed transactions manually in YNAB before retrying.",
+        ". Reconcile the failed transactions manually in your budget app before retrying.",
     });
   }
 

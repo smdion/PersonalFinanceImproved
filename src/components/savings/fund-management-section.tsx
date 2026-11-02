@@ -108,7 +108,11 @@ interface FundManagementSectionProps {
   /** From ApiSyncSection — piped through to FundCard */
   onLinkToApi: (goalId: number) => void;
   onUnlinkFromApi: (goalId: number) => void;
-  onConvertToBudgetItem: (goalId: number, name: string) => void;
+  onConvertToBudgetItem: (
+    goalId: number,
+    name: string,
+    goalMet: boolean,
+  ) => void;
   onPushPreview: (items: PushPreviewItem[], goalId?: number) => void;
   /** Single shared mutation instance from useApiSync() — see pushMutation
    *  in ApiSyncSection for why this must not be a second, independent

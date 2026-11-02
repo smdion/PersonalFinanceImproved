@@ -949,7 +949,7 @@ export function AllTransactionsTab({
                         lines={[
                           "Once a planned deposit or withdrawal has actually happened, settle it instead of deleting it.",
                           "Settling excludes it from future balance projections — your synced balance already reflects the real activity — while keeping the row for your records.",
-                          "Never automatic: for YNAB-linked funds a banner may suggest likely-settled items based on real account activity, but nothing settles without a click.",
+                          "Never automatic: for budget-linked funds a banner may suggest likely-settled items based on real account activity, but nothing settles without a click.",
                         ]}
                         maxWidth={260}
                       />

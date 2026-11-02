@@ -13,6 +13,8 @@
 import "server-only";
 import { eq, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
+import { countsInLiveBalance } from "@/lib/pure/simplefin-feeds";
+import { applyLoanFeedBalances } from "@/server/helpers/loan-feed";
 import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
 import {
   getAccounts,
@@ -467,15 +469,22 @@ export async function runSimplefinSync(
     );
 
     await upsertSimplefinAccounts(db, fetched);
+    const errored = new Set(accountIdsWithErrors ?? []);
+    await applyLoanFeedBalances(
+      db,
+      new Set([...fetchedIds].filter((id) => !errored.has(id))),
+    );
 
     // Re-query the full included set rather than trusting the upsert's
     // RETURNING rows — those only cover accounts present in this fetch, so
     // a missing account's stale (but still real) balance needs to be
     // re-read from the DB to keep contributing to today's total.
-    const allIncluded = await db
-      .select()
-      .from(schema.simplefinAccounts)
-      .where(eq(schema.simplefinAccounts.isIncluded, true));
+    const allIncluded = (
+      await db
+        .select()
+        .from(schema.simplefinAccounts)
+        .where(eq(schema.simplefinAccounts.isIncluded, true))
+    ).filter(countsInLiveBalance);
     const totalBalance = allIncluded.reduce(
       (sum, a) => sum + Number(a.lastBalance),
       0,
@@ -589,10 +598,12 @@ export async function recomputeTodaySnapshotFromLocal(
   db: Db,
   asOfDate: Date = new Date(),
 ): Promise<SimplefinSyncResult> {
-  const rows = await db
-    .select()
-    .from(schema.simplefinAccounts)
-    .where(eq(schema.simplefinAccounts.isIncluded, true));
+  const rows = (
+    await db
+      .select()
+      .from(schema.simplefinAccounts)
+      .where(eq(schema.simplefinAccounts.isIncluded, true))
+  ).filter(countsInLiveBalance);
 
   const totalBalance = rows.reduce((sum, r) => sum + Number(r.lastBalance), 0);
   const accountCount = rows.length;

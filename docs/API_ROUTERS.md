@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**394 procedures across 56 routers.**
+**395 procedures across 56 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -454,23 +454,22 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `settings/admin`
 
-| Procedure             | Kind     | Auth                 | Description                                                            |
-| --------------------- | -------- | -------------------- | ---------------------------------------------------------------------- |
-| `activate`            | mutation | `protectedProcedure` | Make this Plan's profiles the active ones, household-wide (applyPlan). |
-| `create`              | mutation | `scenarioProcedure`  | Save a set of profiles as a Plan — all four kinds, by name.            |
-| `delete`              | mutation | `adminProcedure`     | (no description)                                                       |
-| `delete`              | mutation | `scenarioProcedure`  | (no description)                                                       |
-| `delete`              | mutation | `adminProcedure`     | (no description)                                                       |
-| `get`                 | query    | `adminProcedure`     | Get current RBAC group mapping (DB overrides merged with defaults).    |
-| `getDataFreshness`    | query    | `protectedProcedure` | ══ DATA FRESHNESS ══                                                   |
-| `list`                | query    | `protectedProcedure` | ══ APP SETTINGS ══                                                     |
-| `list`                | query    | `protectedProcedure` | Every saved Plan.                                                      |
-| `list`                | query    | `adminProcedure`     | (encrypted envelopes, or plaintext for legacy rows such as FMP).       |
-| `setDismissal`        | mutation | `adminProcedure`     | server, so two admins changing different items both stick).            |
-| `update`              | mutation | `scenarioProcedure`  | Rename a Plan or change which profiles it holds.                       |
-| `updateDataFreshness` | mutation | `adminProcedure`     | (no description)                                                       |
-| `upsert`              | mutation | `adminProcedure`     | (no description)                                                       |
-| `upsert`              | mutation | `adminProcedure`     | (no description)                                                       |
+| Procedure             | Kind     | Auth                 | Description                                                                                                                                                                                              |
+| --------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `activate`            | mutation | `protectedProcedure` | Make this Plan's profiles the active ones, household-wide (applyPlan).                                                                                                                                   |
+| `create`              | mutation | `scenarioProcedure`  | Save a set of profiles as a Plan — all four kinds, by name.                                                                                                                                              |
+| `delete`              | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `delete`              | mutation | `scenarioProcedure`  | (no description)                                                                                                                                                                                         |
+| `delete`              | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `get`                 | query    | `adminProcedure`     | Get current RBAC group mapping (DB overrides merged with defaults).                                                                                                                                      |
+| `getDataFreshness`    | query    | `protectedProcedure` | ══ DATA FRESHNESS ══                                                                                                                                                                                     |
+| `list`                | query    | `protectedProcedure` | ══ APP SETTINGS ══                                                                                                                                                                                       |
+| `list`                | query    | `protectedProcedure` | Every saved Plan.                                                                                                                                                                                        |
+| `list`                | query    | `adminProcedure`     | (encrypted envelopes, or plaintext for legacy rows such as FMP). Connections are written only through each integration's own save (sync), which encrypts, checks the URL and the mappings; a generic ups |
+| `setDismissal`        | mutation | `adminProcedure`     | server, so two admins changing different items both stick).                                                                                                                                              |
+| `update`              | mutation | `scenarioProcedure`  | Rename a Plan or change which profiles it holds.                                                                                                                                                         |
+| `updateDataFreshness` | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
+| `upsert`              | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
 
 ## `settings/onboarding`
 
@@ -562,11 +561,13 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `getStatus`             | query    | `protectedProcedure` | Connection status for the Settings integrations card and the sidebar's Data Updated tooltip.                                                                                                            |
 | `listAccounts`          | query    | `protectedProcedure` | matched-group level: every SimpleFIN account linked to a given performance account shares the same `change`, comparing their _combined_ live balance against that one snapshot balance. A per-row delta |
 | `listBalanceHistory`    | query    | `protectedProcedure` | Snapshot history for the dashboard sparkline.                                                                                                                                                           |
+| `listLinkableLoans`     | query    | `protectedProcedure` | Loans a feed can report; `feedId` shows which are taken.                                                                                                                                                |
 | `listMatchableAccounts` | query    | `protectedProcedure` | Active performance_accounts, for the match-to-existing-account picker.                                                                                                                                  |
 | `removeConnection`      | mutation | `syncProcedure`      | Remove the stored connection (history in simplefin_balance_snapshots is preserved).                                                                                                                     |
 | `saveToken`             | mutation | `syncProcedure`      | Claim a one-time setup token and store the resulting access URL.                                                                                                                                        |
 | `setAccountIncluded`    | mutation | `syncProcedure`      | Toggle an account's inclusion and recompute today's total from local data immediately — no SimpleFIN API call, so this is free to click repeatedly. Does not touch any prior day's snapshot.            |
 | `setAccountMapping`     | mutation | `syncProcedure`      | multiple SimpleFIN accounts can point at the same performance account (e.g. historical account splits/merges Ledgr still tracks as a single account) — listAccounts sums every linked account's balance |
+| `setLoanLink`           | mutation | `syncProcedure`      | Make a feed a mortgage's balance (or stop, with loanId null). The feed stops being an account: it leaves any tracked-account link and the live total, and it's included, or the link would do nothing.  |
 | `syncNow`               | mutation | `syncProcedure`      | Manual sync trigger — calls the same runSimplefinSync the daily cron calls. At most once per 10 minutes (quota).                                                                                        |
 | `testConnection`        | mutation | `syncProcedure`      | Test the stored connection without writing a snapshot.                                                                                                                                                  |
 
@@ -662,20 +663,20 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 
 ## `version`
 
-| Procedure              | Kind     | Auth                 | Description                                                                                                                                 |
-| ---------------------- | -------- | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create`               | mutation | `versionProcedure`   | Create a new manual version.                                                                                                                |
-| `delete`               | mutation | `versionProcedure`   | Delete a version.                                                                                                                           |
-| `dismissUpgradeBanner` | mutation | `versionProcedure`   | Dismiss the upgrade banner by removing the app_settings flag.                                                                               |
-| `getById`              | query    | `versionProcedure`   | Version permission: a backup's contents are every table's data.                                                                             |
-| `getPreview`           | query    | `versionProcedure`   | permission — the rows are any table's data, which elsewhere needs its own permission — and never a credential table (withheld, count only). |
-| `getRetention`         | query    | `protectedProcedure` | Read retention setting.                                                                                                                     |
-| `getSchedule`          | query    | `protectedProcedure` | Read auto-version schedule setting.                                                                                                         |
-| `getUpgradeBanner`     | query    | `protectedProcedure` | Check if a pre-upgrade backup banner should be shown.                                                                                       |
-| `importDataLoss`       | query    | `versionProcedure`   | Same check for an uploaded backup file, given only its table names.                                                                         |
-| `list`                 | query    | `protectedProcedure` | List all versions (metadata only, no JSONB data).                                                                                           |
-| `resetAllData`         | mutation | `adminProcedure`     | Reset all user data — truncates every table except state_versions, state_version_tables, app_settings, and local_admins.                    |
-| `restore`              | mutation | `versionProcedure`   | Restore from a version.                                                                                                                     |
-| `restoreDataLoss`      | query    | `versionProcedure`   | Tables a restore of this version would empty (it predates them), for the pre-restore warning.                                               |
-| `setRetention`         | mutation | `versionProcedure`   | Update retention setting and trigger cleanup.                                                                                               |
-| `setSchedule`          | mutation | `versionProcedure`   | Update auto-version schedule.                                                                                                               |
+| Procedure              | Kind     | Auth                 | Description                                                                                                                                                                                           |
+| ---------------------- | -------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create`               | mutation | `versionProcedure`   | Create a new manual version.                                                                                                                                                                          |
+| `delete`               | mutation | `versionProcedure`   | Delete a version.                                                                                                                                                                                     |
+| `dismissUpgradeBanner` | mutation | `versionProcedure`   | Dismiss the upgrade banner by removing the app_settings flag.                                                                                                                                         |
+| `getById`              | query    | `versionProcedure`   | Version permission: a backup's contents are every table's data.                                                                                                                                       |
+| `getPreview`           | query    | `versionProcedure`   | permission — the rows are any table's data, which elsewhere needs its own permission — and never a credential table (withheld, count only).                                                           |
+| `getRetention`         | query    | `protectedProcedure` | Read retention setting.                                                                                                                                                                               |
+| `getSchedule`          | query    | `protectedProcedure` | Read auto-version schedule setting.                                                                                                                                                                   |
+| `getUpgradeBanner`     | query    | `protectedProcedure` | Check if a pre-upgrade backup banner should be shown.                                                                                                                                                 |
+| `importDataLoss`       | query    | `versionProcedure`   | Same check for an uploaded backup file, given only its table names.                                                                                                                                   |
+| `list`                 | query    | `protectedProcedure` | List all versions (metadata only, no JSONB data).                                                                                                                                                     |
+| `resetAllData`         | mutation | `adminProcedure`     | Reset all user data — truncates every table except state_versions, state_version_tables, app_settings, and local_admins, and clears the app_settings keys that describe the data (DATA_SETTING_KEYS). |
+| `restore`              | mutation | `versionProcedure`   | Restore from a version.                                                                                                                                                                               |
+| `restoreDataLoss`      | query    | `versionProcedure`   | Tables a restore of this version would empty (it predates them), for the pre-restore warning.                                                                                                         |
+| `setRetention`         | mutation | `versionProcedure`   | Update retention setting and trigger cleanup.                                                                                                                                                         |
+| `setSchedule`          | mutation | `versionProcedure`   | Update auto-version schedule.                                                                                                                                                                         |

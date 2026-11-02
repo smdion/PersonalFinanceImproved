@@ -1,7 +1,6 @@
 ---
 name: release
-when: "when releasing a new version of ledgr — from finished feature branch through CHANGELOG, deploy, PR merge, and GitHub release creation"
-description: "Executes the full Ledgr release process step-by-step — CHANGELOG, version bump, deploy, PR, merge, tag, GitHub release. Never skips steps."
+description: "Executes the full Ledgr release process step-by-step — CHANGELOG, version bump, deploy, PR, merge, tag, GitHub release. Never skips steps.. Use when releasing a new version of ledgr — from finished feature branch through CHANGELOG, deploy, PR merge, and GitHub release creation"
 model: sonnet
 ---
 

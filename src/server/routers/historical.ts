@@ -1,4 +1,5 @@
 /** Historical data router providing year-end balance history, per-person salary/bonus records, home improvements, other assets, and historical notes management. */
+import { calendarYear } from "@/lib/utils/date";
 import { and, asc, eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { z } from "zod/v4";
@@ -217,9 +218,7 @@ export const historicalRouter = createTRPCRouter({
 
       // Find the row by year
       const rows = await ctx.db.select().from(schema.netWorthAnnual);
-      const row = rows.find(
-        (r) => new Date(r.yearEndDate).getFullYear() === year,
-      );
+      const row = rows.find((r) => calendarYear(r.yearEndDate) === year);
       if (!row) {
         throw new TRPCError({
           code: "BAD_REQUEST",

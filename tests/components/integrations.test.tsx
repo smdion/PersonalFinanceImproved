@@ -128,6 +128,10 @@ vi.mock("@/lib/trpc", () => ({
       listMatchableAccounts: {
         useQuery: () => ({ data: undefined }),
       },
+      listLinkableLoans: { useQuery: () => ({ data: undefined }) },
+      setLoanLink: {
+        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+      },
       saveToken: {
         useMutation: () => ({ mutate: vi.fn(), isPending: false }),
       },
@@ -532,6 +536,10 @@ describe("IntegrationsSettings", () => {
           },
           listAccounts: { useQuery: () => ({ data: undefined }) },
           listMatchableAccounts: { useQuery: () => ({ data: undefined }) },
+          listLinkableLoans: { useQuery: () => ({ data: undefined }) },
+          setLoanLink: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
           saveToken: {
             useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },
@@ -736,6 +744,10 @@ describe("IntegrationsSettings", () => {
           },
           listAccounts: { useQuery: () => ({ data: undefined }) },
           listMatchableAccounts: { useQuery: () => ({ data: undefined }) },
+          listLinkableLoans: { useQuery: () => ({ data: undefined }) },
+          setLoanLink: {
+            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
+          },
           saveToken: {
             useMutation: () => ({ mutate: vi.fn(), isPending: false }),
           },

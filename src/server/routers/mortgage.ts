@@ -11,6 +11,7 @@ import {
 } from "@/server/helpers";
 import type { MortgageInput, MortgageWhatIf } from "@/lib/calculators/types";
 import { zDecimal } from "./settings/_shared";
+import { dropMappingsTo } from "@/server/helpers/delete-references";
 
 // --- CRUD Zod schemas ---
 
@@ -28,7 +29,7 @@ const mortgageLoanInput = z.object({
   insuranceAndTaxes: zDecimal.default("0"),
   totalEscrow: zDecimal.default("0"),
   interestRate: zDecimal,
-  termYears: z.number().int(),
+  termYears: z.number().int().min(1).max(50),
   originalLoanAmount: zDecimal,
   firstPaymentDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   propertyValuePurchase: zDecimal,
@@ -135,9 +136,12 @@ export const mortgageRouter = createTRPCRouter({
     delete: adminProcedure
       .input(z.object({ id: z.number().int() }))
       .mutation(({ ctx, input }) =>
-        ctx.db
-          .delete(schema.mortgageLoans)
-          .where(eq(schema.mortgageLoans.id, input.id)),
+        ctx.db.transaction(async (tx) => {
+          await dropMappingsTo(tx, { loanId: input.id });
+          await tx
+            .delete(schema.mortgageLoans)
+            .where(eq(schema.mortgageLoans.id, input.id));
+        }),
       ),
   }),
 

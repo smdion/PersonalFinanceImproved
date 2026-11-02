@@ -5,6 +5,7 @@
  * engine). Coast FIRE endpoints (`computeCoastFire`, `computeCoastFireMC`)
  * live in the sibling `coast-fire.ts` file.
  */
+import { calendarYear } from "@/lib/utils/date";
 import { jobYearsNote } from "@/lib/pure/profiles";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure } from "../../trpc";
@@ -362,7 +363,7 @@ export const scenariosRouter = createTRPCRouter({
         people: people.map((p) => ({
           id: p.id,
           name: p.name,
-          birthYear: new Date(p.dateOfBirth).getFullYear(),
+          birthYear: calendarYear(p.dateOfBirth),
         })),
         selectedScenario: selectedScenario
           ? {

@@ -149,6 +149,29 @@ export function judgeRothIra(args: {
   };
 }
 
+/** How far back a backdoor deposit waiting to be converted is looked for:
+ *  past a monthly contribute-then-convert cycle, with room for a late one. */
+export const PENDING_CONVERSION_WINDOW_DAYS = 45;
+
+/**
+ * A deposit sitting in a traditional IRA, waiting to be converted to Roth:
+ * the latest balance less the lowest in the recent window (just after the
+ * last conversion, when only leftovers were there). Read from balances,
+ * since institutions send the deposit as a transaction days later. Only a
+ * backdoor route makes this after-tax money (the caller decides that).
+ */
+export function pendingConversion(
+  balances: readonly { day: string; balance: number }[],
+  today: string,
+  windowStart: string,
+): number {
+  const recent = balances.filter((b) => b.day >= windowStart && b.day <= today);
+  if (recent.length < 2) return 0;
+  const latest = recent.at(-1)!.balance;
+  const lowest = Math.min(...recent.map((b) => b.balance));
+  return Math.max(0, Math.round((latest - lowest) * 100) / 100);
+}
+
 /**
  * Pre-tax money in each person's IRAs (traditional / SEP / SIMPLE — every
  * pre-tax balance in an IRA-type account; 401(k)/403(b) are outside the
@@ -212,6 +235,9 @@ export type RothIraView = {
    *  (their Contribution Profile's route); people with no Roth IRA
    *  contribution aren't listed. */
   routes: { personId: number; name: string; route: RothIraRoute }[];
+  /** A backdoor deposit sitting in a traditional IRA, waiting to be
+   *  converted: after-tax, so left out of the pro-rata amount below. */
+  pendingConversion: { personId: number; name: string; amount: number }[];
   /** Each person's pre-tax IRA balance — the pro-rata blocker for a backdoor conversion. */
   proRata: {
     personId: number;
@@ -233,6 +259,8 @@ export function buildRothIraView(args: {
   hsaOutsidePayroll: number;
   investmentIncome: number;
   preTaxIraByPerson: readonly { personId: number; amount: number }[];
+  /** Each person's traditional-IRA deposit waiting to be converted. */
+  pendingConversionByPerson?: readonly { personId: number; amount: number }[];
   marginOverride: number | null;
 }): RothIraView {
   const parts: RothIraMagiParts = {
@@ -241,8 +269,28 @@ export function buildRothIraView(args: {
     investmentIncome: args.investmentIncome,
   };
   const magi = rothIraMagi(parts);
-  const preTax = new Map(
+  const rawPreTax = new Map(
     args.preTaxIraByPerson.map((p) => [p.personId, p.amount]),
+  );
+  // A backdoor deposit waiting to be converted is after-tax money (a
+  // nondeductible contribution, Form 8606 basis): the pro-rata rule doesn't
+  // tax it. Only for someone going the backdoor route, never more than a
+  // year's IRA contribution, never more than what's there.
+  const backdoorPeople = new Set(
+    args.rothIra.people
+      .filter((p) => p.rothRoute === "backdoor")
+      .map((p) => p.personId),
+  );
+  const pendingOf = (personId: number) => {
+    const person = args.rothIra.people.find((p) => p.personId === personId);
+    const raw =
+      args.pendingConversionByPerson?.find((p) => p.personId === personId)
+        ?.amount ?? 0;
+    if (!backdoorPeople.has(personId) || person?.iraLimit == null) return 0;
+    return Math.min(raw, person.iraLimit, rawPreTax.get(personId) ?? 0);
+  };
+  const preTax = new Map(
+    [...rawPreTax].map(([id, amount]) => [id, amount - pendingOf(id)]),
   );
   return {
     filingStatus: args.rothIra.filingStatus,
@@ -268,6 +316,10 @@ export function buildRothIraView(args: {
               },
             ],
       ),
+    }),
+    pendingConversion: args.rothIra.people.flatMap((p) => {
+      const amount = pendingOf(p.personId);
+      return amount > 0 ? [{ personId: p.personId, name: p.name, amount }] : [];
     }),
     routes: args.rothIra.people.flatMap((p) =>
       p.rothRoute

@@ -1,7 +1,6 @@
 ---
 name: test-writer
-when: "when writing tests for new or modified code, when reviewer findings flag missing test coverage, or when implementing a fix that needs a failing test written first"
-description: "Writes the right type of test for any Ledgr code — knows calculator unit tests, router integration tests, component tests, engine snapshots, invariants, and benchmarks"
+description: "Writes the right type of test for any Ledgr code — knows calculator unit tests, router integration tests, component tests, engine snapshots, invariants, and benchmarks. Use when writing tests for new or modified code, when reviewer findings flag missing test coverage, or when implementing a fix that needs a failing test written first"
 model: sonnet
 ---
 

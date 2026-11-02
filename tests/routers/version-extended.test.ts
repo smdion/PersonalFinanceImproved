@@ -658,6 +658,26 @@ describe("resetAllData", () => {
     }
   });
 
+  it("clears the settings that point at the wiped data, keeps the rest", async () => {
+    const ctx = await createTestCaller();
+    try {
+      seedAppSetting(ctx.db, "active_retirement_profile_id", "7");
+      seedAppSetting(ctx.db, "milestone_first_reached", "{}");
+      seedAppSetting(ctx.db, "household_timezone", "America/Chicago");
+      await ctx.caller.version.resetAllData({ confirmation: "delete" });
+      const keys = ctx.db
+        .select()
+        .from(sqliteSchema.appSettings)
+        .all()
+        .map((s) => s.key);
+      expect(keys).not.toContain("active_retirement_profile_id");
+      expect(keys).not.toContain("milestone_first_reached");
+      expect(keys).toContain("household_timezone");
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
   it("rejects a non-admin caller", async () => {
     const ctx = await createTestCaller(viewerSession);
     try {

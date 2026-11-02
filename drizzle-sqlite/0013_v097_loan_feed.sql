@@ -1,0 +1,2 @@
+ALTER TABLE `simplefin_accounts` ADD `linked_loan_id` integer REFERENCES mortgage_loans(id) ON DELETE set null;--> statement-breakpoint
+CREATE UNIQUE INDEX `simplefin_accounts_linked_loan_idx` ON `simplefin_accounts` (`linked_loan_id`);

@@ -37,6 +37,12 @@ describe("checkGlidePath", () => {
     expect(w?.deviationPoints).toBe(15);
   });
 
+  it("prints whole percentages, not raw floats", () => {
+    const w = checkGlidePath(50, 72.3);
+    expect(w?.message).toContain("(72%)");
+    expect(w?.message).toContain(" 12pp ");
+  });
+
   it("returns 'warn' for 20-35pp deviation (audit's main concern)", () => {
     // Age 60 → recommend 50. 85% stock is +35pp.
     const w = checkGlidePath(60, 85);

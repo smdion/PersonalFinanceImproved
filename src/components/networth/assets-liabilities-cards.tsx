@@ -14,6 +14,7 @@ export function AssetsLiabilitiesCards({
   byTaxType,
   cash,
   cashSource,
+  cashMissingAccounts = 0,
   displayHomeValue,
   otherAssets,
   otherAssetItems,
@@ -30,6 +31,8 @@ export function AssetsLiabilitiesCards({
   byTaxType: Map<string, number>;
   cash: number;
   cashSource: "ynab" | "actual" | "manual";
+  /** Mapped cash accounts the budget app no longer lists. */
+  cashMissingAccounts?: number;
   displayHomeValue: number;
   otherAssets: number;
   otherAssetItems?: { name: string; value: number; synced: boolean }[];
@@ -92,6 +95,15 @@ export function AssetsLiabilitiesCards({
             <span className="text-muted">
               Cash
               {cashSource !== "manual" && <SyncBadge source={cashSource} />}
+              {cashMissingAccounts > 0 && (
+                <span
+                  className="text-caption ml-1 text-amber-600"
+                  title="A cash account you mapped is no longer in your budget app (closed or deleted), so it counts as $0. Check your account mappings."
+                >
+                  {cashMissingAccounts} mapped{" "}
+                  {cashMissingAccounts === 1 ? "account" : "accounts"} missing
+                </span>
+              )}
             </span>
             {cashSource === "manual" ? (
               <InlineEdit

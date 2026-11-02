@@ -1,5 +1,6 @@
 "use client";
 
+import { isGoalMet } from "@/lib/pure/savings-goal-met";
 import React, { useState } from "react";
 import {
   formatCurrency,
@@ -51,8 +52,7 @@ function DefaultContributionCell({
   const pct = safeDivide(gp.monthlyAllocation, pool, 0) * 100;
 
   // Already-funded funds show a special indicator instead of editable $0
-  const isFunded =
-    gp.targetMode === "fixed" && gp.target > 0 && gp.current >= gp.target;
+  const isFunded = isGoalMet(gp);
 
   const startEditDollar = () => {
     setEditing("dollar");

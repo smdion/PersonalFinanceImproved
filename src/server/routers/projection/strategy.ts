@@ -434,7 +434,7 @@ export const strategyRouter = createTRPCRouter({
         buildMcInputs(ctx.db, input?.preset ?? DEFAULT_SIMULATION.preset),
       ]);
 
-      const payload = await buildEnginePayload(ctx.db, data, {
+      const payloadOpts = {
         contributionProfileId: input?.contributionProfileId,
         salaryProfileId: input?.salaryProfileId,
         accumulationBudgetProfileId: input?.accumulationBudgetProfileId,
@@ -443,7 +443,8 @@ export const strategyRouter = createTRPCRouter({
         decumulationBudgetProfileId: input?.decumulationBudgetProfileId,
         decumulationBudgetColumn: input?.decumulationBudgetColumn,
         decumulationExpenseOverride: input?.decumulationExpenseOverride,
-      });
+      };
+      const payload = await buildEnginePayload(ctx.db, data, payloadOpts);
       if (!payload)
         return {
           baseline: null,
@@ -695,18 +696,23 @@ export const strategyRouter = createTRPCRouter({
         } else {
           // Global lever — modify the engine input field directly
           if (lever.field === "retirementAge") {
-            // Everyone works the extra years, whoever retires first.
-            const delta = rounded - lever.currentValue;
+            // Everyone works the extra years, whoever retires first. The
+            // payload is built again with the later ages, so every window
+            // that follows from the retirement year (profile switches,
+            // contribution caps, working years) moves with it.
+            const shifted = await buildEnginePayload(ctx.db, data, {
+              ...payloadOpts,
+              retirementAgeDelta: rounded - lever.currentValue,
+            });
+            if (!shifted) continue;
             variantInput = {
               ...variantInput,
-              retirementYear: variantInput.retirementYear + delta,
-              retirementYearByPerson:
-                variantInput.retirementYearByPerson &&
-                Object.fromEntries(
-                  Object.entries(variantInput.retirementYearByPerson).map(
-                    ([id, year]) => [id, year + delta],
-                  ),
-                ),
+              ...shifted.baseEngineInput,
+              returnRates: variantInput.returnRates,
+              stockShareByAge: variantInput.stockShareByAge,
+              accumulationOverrides: variantInput.accumulationOverrides,
+              decumulationOverrides: variantInput.decumulationOverrides,
+              decumulationDefaults: variantInput.decumulationDefaults,
             };
           } else if (lever.field === "ssStartAge") {
             // "Delay claiming by N years" — shift every person's SS start

@@ -975,6 +975,55 @@ describe("savings.listEfundReimbursements", () => {
     }
   });
 
+  it("reads the active e-fund goal, not a deactivated older one", async () => {
+    const ctx = await createTestCaller();
+    try {
+      seedSavingsGoal(ctx.db, {
+        name: "Old E-Fund",
+        isEmergencyFund: true,
+        isActive: false,
+        targetAmount: "5000",
+      });
+      const efundGoalId = seedSavingsGoal(ctx.db, {
+        name: "E-Fund",
+        isEmergencyFund: true,
+        targetAmount: "15000",
+      });
+      linkGoal(
+        ctx.db,
+        efundGoalId,
+        "ynab",
+        "reimb-cat-003",
+        null,
+        "reimbursement",
+      );
+      mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
+      mockCacheGet.mockResolvedValueOnce({
+        data: [
+          {
+            name: "Reimbursements",
+            categories: [
+              {
+                id: "reimb-cat-003",
+                name: "Self-Loan Tracking",
+                balance: 0,
+                budgeted: 0,
+                activity: 0,
+                note: "25 - parking",
+              },
+            ],
+          },
+        ],
+      });
+      const result = await ctx.caller.savings.listEfundReimbursements();
+      expect(result!.items).toHaveLength(1);
+    } finally {
+      ctx.cleanup();
+      mockGetActiveBudgetApi.mockResolvedValue("none");
+      mockCacheGet.mockResolvedValue(null);
+    }
+  });
+
   it("skips unparseable lines and reports them", async () => {
     const ctx = await createTestCaller();
     try {
@@ -1543,6 +1592,24 @@ describe("savings.allocationOverrides advanced", () => {
       });
       expect(result).toEqual({ ok: true });
     });
+
+    it("refuses a fund listed twice and leaves the month as it was", async () => {
+      await expect(
+        caller.savings.allocationOverrides.upsertMonth({
+          monthDate: "2027-03-01",
+          allocations: [
+            { goalId, amount: 1 },
+            { goalId, amount: 2 },
+          ],
+        }),
+      ).rejects.toThrow(/once per month/);
+      const rows = db
+        .select()
+        .from(sqliteSchemaTables.savingsAllocationOverrides)
+        .all()
+        .filter((r) => r.monthDate === "2027-03-01");
+      expect(rows.map((r) => Number(r.amount)).sort()).toEqual([0, 700]);
+    });
   });
 
   describe("upsertMonthRange", () => {
@@ -1654,6 +1721,44 @@ describe("savings.extraPaycheckRouting", () => {
     expect(result).toEqual({ ok: true });
   });
 
+  it("a raise on the active Salary Profile re-materializes the rule transactions", async () => {
+    await caller.savings.extraPaycheckRouting.save({
+      jobId,
+      rules: [{ from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] }],
+    });
+    const ruleTotal = () =>
+      db
+        .select()
+        .from(sqliteSchemaTables.savingsPlannedTransactions)
+        .all()
+        .filter((t) => t.source === "rule" && t.goalId === goalId)
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+    const before = ruleTotal();
+    expect(before).toBeGreaterThan(0);
+    const activeId = Number(
+      db
+        .select()
+        .from(sqliteSchemaTables.appSettings)
+        .where(
+          eq(sqliteSchemaTables.appSettings.key, SK_ACTIVE_SALARY_PROFILE_ID),
+        )
+        .get()!.value,
+    );
+    await caller.salaryProfile.patchEntry({
+      id: activeId,
+      jobId,
+      fields: { salary: 180_000 },
+    });
+    expect(ruleTotal()).toBeGreaterThan(before);
+    // Back to seedJob's salary for the tests below.
+    await caller.salaryProfile.patchEntry({
+      id: activeId,
+      jobId,
+      fields: { salary: 120_000 },
+    });
+    expect(ruleTotal()).toBeCloseTo(before, 2);
+  });
+
   it("save rejects rules that don't sum to 100%", async () => {
     await expect(
       caller.savings.extraPaycheckRouting.save({
@@ -1667,6 +1772,19 @@ describe("savings.extraPaycheckRouting", () => {
         ],
       }),
     ).rejects.toThrow();
+  });
+
+  it("save rejects two rules starting the same month, or one ending before it starts", async () => {
+    const rule = { from: "2025-01", to: null, splits: [{ goalId, pct: 100 }] };
+    await expect(
+      caller.savings.extraPaycheckRouting.save({ jobId, rules: [rule, rule] }),
+    ).rejects.toThrow(/overlap/);
+    await expect(
+      caller.savings.extraPaycheckRouting.save({
+        jobId,
+        rules: [{ ...rule, from: "2025-06", to: "2025-03" }],
+      }),
+    ).rejects.toThrow(/ends before it starts/);
   });
 
   it("save clears rules when passed empty array", async () => {

@@ -1,7 +1,8 @@
 /** Performance router for portfolio time-weighted return tracking, snapshot ingestion, account-level performance history, and category rollup calculations. */
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
-import { asc, eq, and, inArray, sql } from "drizzle-orm";
+import { asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { sumBy } from "@/lib/utils/math";
 import {
   PERF_BALANCE_MISMATCH_ABS,
   PERF_BALANCE_MISMATCH_PCT,
@@ -85,7 +86,11 @@ import {
   perfFieldSchema,
   PERF_NOTE_MAX,
 } from "@/lib/pure/performance-annotations";
-import { localDateStr } from "@/lib/utils/date";
+import {
+  localDateStr,
+  parseLocalDateOnly,
+  calendarYear,
+} from "@/lib/utils/date";
 import { getEffectiveOtherLiabilities } from "@/server/helpers/debts";
 
 const performanceAccountInput = z.object({
@@ -199,6 +204,7 @@ export {
   sumAccounts,
   sumAnnualRows,
 } from "@/lib/pure/performance";
+import { dropMappingsTo } from "@/server/helpers/delete-references";
 export type { AccountLike, AnnualRowLike } from "@/lib/pure/performance";
 
 export const performanceRouter = createTRPCRouter({
@@ -304,6 +310,11 @@ export const performanceRouter = createTRPCRouter({
       annualRows.map((r) => [annualKey(r.year, r.category), r]),
     );
 
+    // Rows built here from account data have no stored lifetime totals:
+    // even in a finalized year they accumulate rather than reset the
+    // running total to their placeholder 0.
+    const noStoredLifetime = new Set<(typeof annualRows)[number]>();
+
     // For each year with account data, synthesize missing annual rows and recompute current-year rows
     for (const year of Array.from(allAccountYears)) {
       const yearAccounts = accounts.filter((a) => a.year === year);
@@ -353,6 +364,7 @@ export const performanceRouter = createTRPCRouter({
           });
           existingAnnual.add(key);
           annualByKey.set(key, annualRows[annualRows.length - 1]!);
+          noStoredLifetime.add(annualRows[annualRows.length - 1]!);
         } else {
           // Existing annual row: only recompute non-finalized rows from account data.
           // Finalized rows are authoritative (seeded from spreadsheet or locked by finalizeYear).
@@ -517,7 +529,7 @@ export const performanceRouter = createTRPCRouter({
         runningMatch = 0;
 
       for (const row of catRows) {
-        if (row.isFinalized) {
+        if (row.isFinalized && !noStoredLifetime.has(row)) {
           // Trust stored lifetime values, use as new running baseline
           runningGains = row.lifetimeGains;
           runningContribs = row.lifetimeContributions;
@@ -577,9 +589,16 @@ export const performanceRouter = createTRPCRouter({
         annualRows.splice(i, 1);
     }
 
-    let retLtGains = 0,
-      retLtContribs = 0,
-      retLtMatch = 0;
+    // Lifetime totals: each fully-Retirement category's own lifetime (its
+    // stored history included, carried forward through a year it has no
+    // row), plus the Retirement brokerage accounts' running sums.
+    const catLifetime = new Map<
+      string,
+      { gains: number; contribs: number; match: number }
+    >();
+    let brokLtGains = 0,
+      brokLtContribs = 0,
+      brokLtMatch = 0;
     for (const year of retYears) {
       const isCurrentYr = year === currentYear;
       const existingRow = annualRows.find((r) => r.year === year);
@@ -603,9 +622,19 @@ export const performanceRouter = createTRPCRouter({
       const fees = annualSums.fees + brokSums.fees;
       const rolloverSum = annualSums.rollovers + brokSums.rollovers;
 
-      retLtGains += gainLoss;
-      retLtContribs += contribs;
-      retLtMatch += employer;
+      for (const r of catAnnualRows)
+        catLifetime.set(r.category, {
+          gains: r.lifetimeGains,
+          contribs: r.lifetimeContributions,
+          match: r.lifetimeMatch,
+        });
+      brokLtGains += brokSums.gainLoss;
+      brokLtContribs += brokSums.contribs;
+      brokLtMatch += brokSums.employer;
+      const carried = [...catLifetime.values()];
+      const retLtGains = brokLtGains + sumBy(carried, (c) => c.gains);
+      const retLtContribs = brokLtContribs + sumBy(carried, (c) => c.contribs);
+      const retLtMatch = brokLtMatch + sumBy(carried, (c) => c.match);
 
       annualRows.push({
         id: -1,
@@ -823,9 +852,12 @@ export const performanceRouter = createTRPCRouter({
     const balanceMismatch = (() => {
       if (!snapshotData) return null;
       const snapDate = snapshotData.snapshot.snapshotDate;
+      // The stamp is a UTC instant; the snapshot date is the household's
+      // calendar day — compare on the household's day (an evening edit is
+      // already tomorrow in UTC).
       const perfDate =
         typeof performanceLastUpdated === "string"
-          ? performanceLastUpdated.slice(0, 10)
+          ? localDateStr(parseLocalDateOnly(performanceLastUpdated))
           : null;
       if (!perfDate || snapDate !== perfDate) return null;
 
@@ -1038,7 +1070,7 @@ export const performanceRouter = createTRPCRouter({
     .input(
       z.object({
         performanceAccountId: z.number().int(),
-        costBasis: z.string(),
+        costBasis: zDecimal,
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -1271,31 +1303,35 @@ export const performanceRouter = createTRPCRouter({
           );
           finalizedCatValues.push(values);
 
+          // Upsert: a category can have account rows but no annual row
+          // yet — an update alone would leave the year unfinalized.
+          const catFields = {
+            isFinalized: true,
+            isCurrentYear: false,
+            isImmutable: true,
+            beginningBalance: values.beginningBalance.toFixed(2),
+            totalContributions: values.totalContributions.toFixed(2),
+            yearlyGainLoss: values.yearlyGainLoss.toFixed(2),
+            endingBalance: values.endingBalance.toFixed(2),
+            annualReturnPct: returnPct?.toFixed(6) ?? null,
+            employerContributions: values.employerContributions.toFixed(2),
+            distributions: values.distributions.toFixed(2),
+            fees: values.fees.toFixed(2),
+            rollovers: values.rollovers.toFixed(2),
+            lifetimeGains: values.lifetimeGains.toFixed(2),
+            lifetimeContributions: values.lifetimeContributions.toFixed(2),
+            lifetimeMatch: values.lifetimeMatch.toFixed(2),
+          };
           await tx
-            .update(schema.annualPerformance)
-            .set({
-              isFinalized: true,
-              isCurrentYear: false,
-              isImmutable: true,
-              beginningBalance: values.beginningBalance.toFixed(2),
-              totalContributions: values.totalContributions.toFixed(2),
-              yearlyGainLoss: values.yearlyGainLoss.toFixed(2),
-              endingBalance: values.endingBalance.toFixed(2),
-              annualReturnPct: returnPct?.toFixed(6) ?? null,
-              employerContributions: values.employerContributions.toFixed(2),
-              distributions: values.distributions.toFixed(2),
-              fees: values.fees.toFixed(2),
-              rollovers: values.rollovers.toFixed(2),
-              lifetimeGains: values.lifetimeGains.toFixed(2),
-              lifetimeContributions: values.lifetimeContributions.toFixed(2),
-              lifetimeMatch: values.lifetimeMatch.toFixed(2),
-            })
-            .where(
-              and(
-                eq(schema.annualPerformance.year, year),
-                eq(schema.annualPerformance.category, category),
-              ),
-            );
+            .insert(schema.annualPerformance)
+            .values({ year, category, ...catFields })
+            .onConflictDoUpdate({
+              target: [
+                schema.annualPerformance.year,
+                schema.annualPerformance.category,
+              ],
+              set: catFields,
+            });
         }
 
         // Second pass: finalize Portfolio row by summing per-category values
@@ -1308,31 +1344,33 @@ export const performanceRouter = createTRPCRouter({
 
           if (portfolioResult) {
             const { values: pv, returnPct } = portfolioResult;
+            const portfolioFields = {
+              isFinalized: true,
+              isCurrentYear: false,
+              isImmutable: true,
+              beginningBalance: pv.beginningBalance.toFixed(2),
+              totalContributions: pv.totalContributions.toFixed(2),
+              yearlyGainLoss: pv.yearlyGainLoss.toFixed(2),
+              endingBalance: pv.endingBalance.toFixed(2),
+              annualReturnPct: returnPct?.toFixed(6) ?? null,
+              employerContributions: pv.employerContributions.toFixed(2),
+              distributions: pv.distributions.toFixed(2),
+              fees: pv.fees.toFixed(2),
+              rollovers: pv.rollovers.toFixed(2),
+              lifetimeGains: pv.lifetimeGains.toFixed(2),
+              lifetimeContributions: pv.lifetimeContributions.toFixed(2),
+              lifetimeMatch: pv.lifetimeMatch.toFixed(2),
+            };
             await tx
-              .update(schema.annualPerformance)
-              .set({
-                isFinalized: true,
-                isCurrentYear: false,
-                isImmutable: true,
-                beginningBalance: pv.beginningBalance.toFixed(2),
-                totalContributions: pv.totalContributions.toFixed(2),
-                yearlyGainLoss: pv.yearlyGainLoss.toFixed(2),
-                endingBalance: pv.endingBalance.toFixed(2),
-                annualReturnPct: returnPct?.toFixed(6) ?? null,
-                employerContributions: pv.employerContributions.toFixed(2),
-                distributions: pv.distributions.toFixed(2),
-                fees: pv.fees.toFixed(2),
-                rollovers: pv.rollovers.toFixed(2),
-                lifetimeGains: pv.lifetimeGains.toFixed(2),
-                lifetimeContributions: pv.lifetimeContributions.toFixed(2),
-                lifetimeMatch: pv.lifetimeMatch.toFixed(2),
-              })
-              .where(
-                and(
-                  eq(schema.annualPerformance.year, year),
-                  eq(schema.annualPerformance.category, "Portfolio"),
-                ),
-              );
+              .insert(schema.annualPerformance)
+              .values({ year, category: "Portfolio", ...portfolioFields })
+              .onConflictDoUpdate({
+                target: [
+                  schema.annualPerformance.year,
+                  schema.annualPerformance.category,
+                ],
+                set: portfolioFields,
+              });
           }
         }
 
@@ -1584,7 +1622,7 @@ export const performanceRouter = createTRPCRouter({
         // Check if row already exists for this year
         const existingNW = await tx.select().from(schema.netWorthAnnual);
         const existingRow = existingNW.find(
-          (r) => new Date(r.yearEndDate).getFullYear() === year,
+          (r) => calendarYear(r.yearEndDate) === year,
         );
 
         const nwValues = assembleNetWorthValues({
@@ -1603,13 +1641,29 @@ export const performanceRouter = createTRPCRouter({
         // Build portfolio_by_tax_location from nearest snapshot at finalization time.
         // This captures the point-in-time tax location breakdown that may not be
         // reconstructible later (snapshots can be pruned/restructured).
-        const nearestSnapshot = await tx
+        // The closest on each side of Dec 31, then the nearer — portable
+        // across PostgreSQL and SQLite (the date arithmetic isn't).
+        const [onOrBefore] = await tx
           .select()
           .from(schema.portfolioSnapshots)
-          .orderBy(
-            sql`ABS(EXTRACT(EPOCH FROM (${schema.portfolioSnapshots.snapshotDate}::timestamp - ${yearEndDate}::timestamp)))`,
-          )
+          .where(lte(schema.portfolioSnapshots.snapshotDate, yearEndDate))
+          .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
           .limit(1);
+        const [onOrAfter] = await tx
+          .select()
+          .from(schema.portfolioSnapshots)
+          .where(gte(schema.portfolioSnapshots.snapshotDate, yearEndDate))
+          .orderBy(asc(schema.portfolioSnapshots.snapshotDate))
+          .limit(1);
+        const daysFromYearEnd = (d: string) =>
+          Math.abs(Date.parse(d) - Date.parse(yearEndDate));
+        const nearestSnapshot = [onOrBefore, onOrAfter]
+          .filter((x) => x !== undefined)
+          .sort(
+            (a, b) =>
+              daysFromYearEnd(a.snapshotDate) - daysFromYearEnd(b.snapshotDate),
+          )
+          .slice(0, 1);
 
         const portfolioByTaxLocation: {
           retirement: Record<string, number>;
@@ -1703,7 +1757,11 @@ export const performanceRouter = createTRPCRouter({
       .input(
         z
           .object({ id: z.number().int() })
-          .extend(performanceAccountInput.shape),
+          .extend(performanceAccountInput.shape)
+          // Not sent = keep it. Cost basis has its own editor
+          // (updateCostBasis); a card save that leaves it out used to
+          // default it to 0 and wipe a brokerage's basis.
+          .extend({ costBasis: zDecimal.optional() }),
       )
       .mutation(async ({ ctx, input: { id, ...data } }) => {
         // Resolve owner name for programmatic label
@@ -1827,10 +1885,14 @@ export const performanceRouter = createTRPCRouter({
           });
         }
 
-        // contributionAccounts and portfolioAccounts use SET NULL — they'll be unlinked
-        await ctx.db
-          .delete(schema.performanceAccounts)
-          .where(eq(schema.performanceAccounts.id, input.id));
+        // contributionAccounts and portfolioAccounts use SET NULL — they'll
+        // be unlinked; its budget-API mappings live in JSON and go here.
+        await ctx.db.transaction(async (tx) => {
+          await dropMappingsTo(tx, { performanceAccountId: input.id });
+          await tx
+            .delete(schema.performanceAccounts)
+            .where(eq(schema.performanceAccounts.id, input.id));
+        });
         return { success: true };
       }),
   }),

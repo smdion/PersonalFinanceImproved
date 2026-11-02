@@ -1,7 +1,6 @@
 ---
 name: schema-reviewer
-when: "before committing any edit to src/lib/db/schema-pg.ts or writing any new migration file — checks safety, Drizzle conventions, and all required follow-up steps"
-description: "Opus-powered schema change reviewer — catches migration safety issues, convention violations, and missing follow-up steps before they reach production data"
+description: "Opus-powered schema change reviewer — catches migration safety issues, convention violations, and missing follow-up steps before they reach production data. Use before committing any edit to src/lib/db/schema-pg.ts or writing any new migration file — checks safety, Drizzle conventions, and all required follow-up steps"
 model: opus
 ---
 
@@ -13,7 +12,7 @@ If no change is provided, ask: "What schema change are you reviewing? Paste the 
 
 ## Step 0 — Consult the advisor
 
-Before committing, run the proposed change past `.claude/subagents/advisor.md`. Per `CLAUDE.md`'s "When to consult the advisor" section, changes to `lib/db/schema-pg.ts` are exactly the kind of change that should go through the advisor before committing. Frame it as "here's what I plan to do and why," with enough context for the advisor to disagree.
+Before committing, run the proposed change past `.claude/agents/advisor.md`. Per `CLAUDE.md`'s "When to consult the advisor" section, changes to `lib/db/schema-pg.ts` are exactly the kind of change that should go through the advisor before committing. Frame it as "here's what I plan to do and why," with enough context for the advisor to disagree.
 
 ---
 

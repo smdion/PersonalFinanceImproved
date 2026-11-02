@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   changeSinceSnapshot,
   currentBalance,
+  addedIntoClose,
   moveIntoClose,
   pairFeedsWithParts,
   snapshotDataDay,
@@ -364,5 +365,50 @@ describe("snapshotDataDay", () => {
     expect(snapshotDataDay("2026-10-25", et("2026-10-29", 18))).toBe(
       "2026-10-23",
     );
+  });
+});
+
+describe("addedIntoClose", () => {
+  const close = (c: number) => ({ close: c, adjClose: c });
+  const closes = new Map([
+    ["2026-10-28", close(100)],
+    ["2026-10-29", close(101)],
+  ]);
+
+  it("shares bought into a close, at its price", () => {
+    const p = {
+      shares: 20,
+      sharesByDay: [
+        { day: "2026-10-28", shares: 10 },
+        { day: "2026-10-29", shares: 20 },
+      ],
+      closes,
+      feedDay: "2026-10-29",
+    };
+    expect(addedIntoClose([p], "2026-10-29")).toBe(1010);
+  });
+
+  it("cash counts at face value", () => {
+    const p = {
+      shares: 625,
+      sharesByDay: [
+        { day: "2026-10-28", shares: 0 },
+        { day: "2026-10-29", shares: 625 },
+      ],
+      closes: null,
+      cash: true,
+      feedDay: "2026-10-29",
+    };
+    expect(addedIntoClose([p], "2026-10-29")).toBe(625);
+  });
+
+  it("unknown when a fund has no report for the close yet", () => {
+    const p = {
+      shares: 10,
+      sharesByDay: [{ day: "2026-10-28", shares: 10 }],
+      closes,
+      feedDay: "2026-10-28",
+    };
+    expect(addedIntoClose([p], "2026-10-29")).toBeNull();
   });
 });

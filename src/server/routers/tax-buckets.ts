@@ -9,6 +9,7 @@
  * applies today.
  */
 import { z } from "zod/v4";
+import { isCalendarDate } from "@/lib/utils/date";
 import { eq, and } from "drizzle-orm";
 import {
   createTRPCRouter,
@@ -309,7 +310,10 @@ export const taxBucketsRouter = createTRPCRouter({
     .input(
       z.object({
         performanceAccountId: z.number().int(),
-        separationDate: z.string().nullable(),
+        separationDate: z
+          .string()
+          .refine(isCalendarDate, "Not a date (YYYY-MM-DD)")
+          .nullable(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

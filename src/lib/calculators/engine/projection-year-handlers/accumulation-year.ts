@@ -21,6 +21,7 @@ import {
   getAllCategories,
   getAccountTypeConfig,
   isOverflowTarget,
+  isPortfolioParent,
   getRothFraction as configGetRothFraction,
   addTraditional,
   addRoth,
@@ -267,6 +268,34 @@ export function runAccumulationYear(
     for (const cat of getAllCategories()) yearEmployerMatch[cat] = 0;
   }
 
+  // A change to a 0% rate pauses retirement contributions until the next
+  // change. A plan whose own rate is 0 has no ceiling (no retirement rate to
+  // hold it to), no salary isn't a pause (fixed amounts go in), and year 0's
+  // real contributions already happened. A paused account earns no match
+  // that depends on contributing; flat employer money keeps coming.
+  const paused =
+    !useRealContribs &&
+    config.contributionRate === 0 &&
+    state.accumulationDefaults.contributionRate > 0 &&
+    projectedSalary > 0;
+  if (paused) {
+    if (!contributionSpecs?.length) {
+      for (const cat of getAllCategories()) yearEmployerMatch[cat] = 0;
+    } else {
+      const kept = buildCategoryRecord(() => 1);
+      for (const spec of contributionSpecs)
+        if (
+          !isPortfolioParent(spec.parentCategory) &&
+          spec.matchNeedsContribution !== false
+        )
+          kept[spec.category] -= spec.employerShare ?? 0;
+      for (const cat of getAllCategories())
+        yearEmployerMatch[cat] = roundToCents(
+          yearEmployerMatch[cat] * Math.max(0, kept[cat]),
+        );
+    }
+  }
+
   // IRS limits: every key grows at the limit growth rate; the specs are
   // capped per person (ages at Dec 31 of this year), and every path sizes
   // its slot limits from the household's group limits, each counted once.
@@ -418,7 +447,7 @@ export function runAccumulationYear(
     const rateCeiling = roundToCents(
       projectedSalary * Math.max(0, config.contributionRate) * proRate,
     );
-    if (retirementTotal > rateCeiling && rateCeiling > 0) {
+    if (retirementTotal > rateCeiling && (rateCeiling > 0 || paused)) {
       const scale = rateCeiling / retirementTotal;
       rateCeilingScale = scale;
       for (const slot of slots) {

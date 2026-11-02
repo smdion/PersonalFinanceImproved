@@ -52,6 +52,18 @@ export function resolveRetirementProfileIdFrom(
   return profiles.reduce((lowest, p) => (p.id < lowest.id ? p : lowest)).id;
 }
 
+/** Whether resolveRetirementProfileIdFrom had to fall back: there are
+ *  profiles, but the setting doesn't name one of them. */
+export function retirementProfileIsFallback(
+  appSettings: { key: string; value: unknown }[],
+  profiles: { id: number }[],
+): boolean {
+  const configured = toProfileId(
+    appSettings.find((s) => s.key === SK_ACTIVE_RETIREMENT_PROFILE_ID)?.value,
+  );
+  return profiles.length > 0 && !profiles.some((p) => p.id === configured);
+}
+
 /**
  * Pick the one settings row that represents a profile's household assumptions.
  *
@@ -132,8 +144,9 @@ async function plannedRetirements(db: Db) {
         (r) =>
           r.personId === p.id &&
           (profileId === null || r.profileId === profileId),
-      )?.retirementAge ??
-      settings.find((r) => r.personId === p.id)?.retirementAge;
+      )?.retirementAge;
+    // Only the active profile's own rows: another profile's age is another
+    // world's plan (each profile stands alone).
     return age != null
       ? [{ personId: p.id, birthYear: born, retirementAge: age }]
       : [];

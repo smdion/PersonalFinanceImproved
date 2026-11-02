@@ -4,7 +4,7 @@
  * Covers all procedures exposed via adminProcedures (spread into settingsRouter):
  *   - appSettings.list / upsert / delete
  *   - Plans (scenarios.*): see plans.test.ts
- *   - apiConnections.list / upsert / delete
+ *   - apiConnections.list / delete (no generic upsert)
  *   - getDataFreshness
  *   - rbacGroups.get
  *   - settings/_shared's validation schemas (zDecimal, settingValue)
@@ -34,6 +34,8 @@ import {
   viewerSession,
 } from "./setup";
 import { zDecimal, settingValue } from "@/server/routers/settings/_shared";
+import * as sqliteSchema from "@/lib/db/schema-sqlite";
+import { eq } from "drizzle-orm";
 
 vi.mock("@/lib/budget-api", () => ({
   getActiveBudgetApi: vi.fn().mockResolvedValue("none"),
@@ -279,15 +281,40 @@ describe("settings.appSettings", () => {
 
 describe("settings.apiConnections", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let db: Awaited<ReturnType<typeof createTestCaller>>["db"];
   let cleanup: () => void;
+  // Connections are saved by each integration's own flow; tests seed rows.
+  const seed = (row: {
+    service: string;
+    config: Record<string, unknown>;
+    accountMappings?: unknown[];
+  }) => {
+    db.delete(sqliteSchema.apiConnections)
+      .where(eq(sqliteSchema.apiConnections.service, row.service))
+      .run();
+    db.insert(sqliteSchema.apiConnections)
+      .values(row as never)
+      .run();
+  };
 
   beforeAll(async () => {
     const ctx = await createTestCaller(adminSession);
     caller = ctx.caller;
+    db = ctx.db;
     cleanup = ctx.cleanup;
   });
 
   afterAll(() => cleanup());
+
+  it("has no generic upsert: credentials go through each integration's save", async () => {
+    // eslint-disable-next-line no-restricted-syntax -- reaching a removed procedure
+    const connections = caller.settings.apiConnections as unknown as {
+      upsert: (input: unknown) => Promise<unknown>;
+    };
+    await expect(
+      connections.upsert({ service: "x", config: { token: "plain" } }),
+    ).rejects.toThrow(/No procedure found/);
+  });
 
   describe("list", () => {
     it("returns an empty array on a fresh database", async () => {
@@ -297,15 +324,12 @@ describe("settings.apiConnections", () => {
     });
   });
 
-  describe("upsert", () => {
-    it("inserts a new api connection", async () => {
-      const result = await caller.settings.apiConnections.upsert({
+  describe("seeded rows", () => {
+    it("a saved connection appears", () => {
+      seed({
         service: "simplefin",
         config: { token: "abc123", baseUrl: "https://api.simplefin.org" },
       });
-      expect(result).toBeDefined();
-      expect(result!.service).toBe("simplefin");
-      expect(result!.config).toMatchObject({ token: "abc123" });
     });
 
     it("inserted connection appears in list", async () => {
@@ -325,25 +349,8 @@ describe("settings.apiConnections", () => {
       expect(JSON.stringify(rows)).not.toContain("abc123");
     });
 
-    it("updates an existing connection on upsert (same service key)", async () => {
-      const result = await caller.settings.apiConnections.upsert({
-        service: "simplefin",
-        config: { token: "newtoken", baseUrl: "https://api.simplefin.org" },
-      });
-      expect(result).toBeDefined();
-      expect((result!.config as Record<string, string>).token).toBe("newtoken");
-    });
-
-    it("only one row per service after multiple upserts", async () => {
-      const rows = await caller.settings.apiConnections.list();
-      const matching = rows.filter(
-        (r: { service: string }) => r.service === "simplefin",
-      );
-      expect(matching).toHaveLength(1);
-    });
-
     it("inserts a second distinct service", async () => {
-      await caller.settings.apiConnections.upsert({
+      seed({
         service: "monarch",
         config: { apiKey: "xyz789" },
         accountMappings: [
@@ -369,10 +376,7 @@ describe("settings.apiConnections", () => {
 
   describe("delete", () => {
     it("deletes a connection by service name", async () => {
-      await caller.settings.apiConnections.upsert({
-        service: "to_delete_svc",
-        config: {},
-      });
+      seed({ service: "to_delete_svc", config: {} });
       let rows = await caller.settings.apiConnections.list();
       expect(
         rows.find((r: { service: string }) => r.service === "to_delete_svc"),
@@ -390,10 +394,7 @@ describe("settings.apiConnections", () => {
       const before = await caller.settings.apiConnections.list();
       const countBefore = before.length;
 
-      await caller.settings.apiConnections.upsert({
-        service: "ephemeral",
-        config: {},
-      });
+      seed({ service: "ephemeral", config: {} });
       await caller.settings.apiConnections.delete({ service: "ephemeral" });
 
       const after = await caller.settings.apiConnections.list();
@@ -621,6 +622,24 @@ describe("settings.updateDataFreshness", () => {
     expect(freshness.balanceDate).toBe("2025-07-15");
   });
 
+  it("refuses a balanceDate that isn't a date, collides, or changes year", async () => {
+    const fresh = await createTestCaller(adminSession);
+    try {
+      seedSnapshot(fresh.db, "2025-03-01", []);
+      seedSnapshot(fresh.db, "2025-06-01", []);
+      const set = (balanceDate: string) =>
+        fresh.caller.settings.updateDataFreshness({ balanceDate });
+      await expect(set("2025-02-30")).rejects.toThrow(/Not a date/);
+      await expect(set("2025-03-01")).rejects.toThrow(/previous snapshot/);
+      await expect(set("2026-01-05")).rejects.toThrow(/Must stay in 2025/);
+      await set("2025-06-20");
+      const freshness = await fresh.caller.settings.getDataFreshness();
+      expect(freshness.balanceDate).toBe("2025-06-20");
+    } finally {
+      fresh.cleanup();
+    }
+  });
+
   it("is a no-op for balanceDate when no snapshot exists", async () => {
     const fresh = await createTestCaller(adminSession);
     try {
@@ -752,87 +771,6 @@ describe("settings.appSettings non-admin filtering", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 // ADDITIONAL COVERAGE — apiConnections config shapes
 // ─────────────────────────────────────────────────────────────────────────────
-
-describe("settings.apiConnections additional coverage", () => {
-  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
-  let cleanup: () => void;
-
-  beforeAll(async () => {
-    const ctx = await createTestCaller(adminSession);
-    caller = ctx.caller;
-    cleanup = ctx.cleanup;
-  });
-
-  afterAll(() => cleanup());
-
-  it("stores complex config with multiple fields", async () => {
-    const result = await caller.settings.apiConnections.upsert({
-      service: "complex_svc",
-      config: {
-        token: "tok-123",
-        baseUrl: "https://api.example.com",
-        refreshToken: "ref-456",
-      },
-    });
-    expect(result).toBeDefined();
-    const cfg = result!.config as Record<string, string>;
-    expect(cfg.token).toBe("tok-123");
-    expect(cfg.baseUrl).toBe("https://api.example.com");
-    expect(cfg.refreshToken).toBe("ref-456");
-  });
-
-  it("stores account mappings with all sync directions", async () => {
-    const result = await caller.settings.apiConnections.upsert({
-      service: "mapping_svc",
-      config: { apiKey: "key" },
-      accountMappings: [
-        {
-          localName: "Checking",
-          remoteAccountId: "rem-1",
-          syncDirection: "pull",
-        },
-        {
-          localName: "Savings",
-          remoteAccountId: "rem-2",
-          syncDirection: "push",
-        },
-        {
-          localName: "Credit",
-          remoteAccountId: "rem-3",
-          syncDirection: "both",
-        },
-      ],
-    });
-    expect(result).toBeDefined();
-    const mappings = result!.accountMappings as Array<{
-      syncDirection: string;
-    }>;
-    expect(mappings).toHaveLength(3);
-    expect(mappings[0]!.syncDirection).toBe("pull");
-    expect(mappings[1]!.syncDirection).toBe("push");
-    expect(mappings[2]!.syncDirection).toBe("both");
-  });
-
-  it("upsert updates account mappings", async () => {
-    await caller.settings.apiConnections.upsert({
-      service: "update_mapping",
-      config: {},
-      accountMappings: [
-        { localName: "Old", remoteAccountId: "rem-old", syncDirection: "pull" },
-      ],
-    });
-    const result = await caller.settings.apiConnections.upsert({
-      service: "update_mapping",
-      config: {},
-      accountMappings: [
-        { localName: "New", remoteAccountId: "rem-new", syncDirection: "both" },
-      ],
-    });
-    const mappings = result!.accountMappings as Array<{ localName: string }>;
-    expect(mappings).toHaveLength(1);
-    expect(mappings[0]!.localName).toBe("New");
-  });
-});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADDITIONAL COVERAGE — savingsGoals edge cases

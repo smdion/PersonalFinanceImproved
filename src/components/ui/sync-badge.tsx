@@ -1,10 +1,11 @@
+import { budgetApiServiceLabel } from "@/lib/utils/format";
 import { Badge } from "./badge";
 
-/** Small pill indicating a value was synced from an external budget API (YNAB, Actual, etc). */
+/** Small pill indicating a value was synced from an external budget API — always the one actually connected. */
 export function SyncBadge({ source }: { source: string }) {
   return (
     <Badge color="blue" size="sm" case="normal" className="ml-1.5">
-      Synced from {source.toUpperCase()}
+      Synced from {budgetApiServiceLabel(source)}
     </Badge>
   );
 }

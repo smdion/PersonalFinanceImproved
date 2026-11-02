@@ -21,8 +21,8 @@ export function socialSecurityForYear(
   >,
   year: number,
   age: number,
-  /** The validated general inflation rate (ctx.inflationRate). */
-  inflationRate: number,
+  /** Price level this year against the input's year (ctx.inflation). */
+  ssGrowthFactor: number,
 ): {
   /** Paid this year, nominal. */
   ssIncome: number;
@@ -33,10 +33,6 @@ export function socialSecurityForYear(
   ssIncomeByPerson:
     { personId: number; personName: string; amount: number }[] | undefined;
 } {
-  const ssGrowthFactor = Math.pow(
-    1 + inflationRate,
-    Math.max(0, year - input.asOfDate.getFullYear()),
-  );
   const grown = (today: number) => roundToCents(today * ssGrowthFactor);
   if (input.socialSecurityEntries && input.socialSecurityEntries.length > 0) {
     const today = input.socialSecurityEntries.map((entry) =>

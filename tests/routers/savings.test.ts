@@ -25,6 +25,7 @@ import {
 } from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
+import * as sqliteTables from "@/lib/db/schema-sqlite";
 import {
   getActiveBudgetApi,
   getClientForService,
@@ -521,6 +522,18 @@ describe("savings.linkGoalToApi / unlinkGoalFromApi", () => {
       expect(result).toEqual({ ok: true });
     });
 
+    it("refuses a category another fund is already linked to", async () => {
+      const other = seedSavingsGoal(db, { name: "Other Fund" });
+      await expect(
+        caller.savings.linkGoalToApi({
+          goalId: other,
+          service: "ynab",
+          apiCategoryId: "cat-xyz-999",
+          apiCategoryName: "New Category Name",
+        }),
+      ).rejects.toThrow(/Sinking Fund is already linked/);
+    });
+
     it("rejects empty apiCategoryId", async () => {
       await expect(
         caller.savings.linkGoalToApi({
@@ -782,6 +795,25 @@ describe("savings.convertGoalToBudgetItem", () => {
   });
 
   afterAll(() => cleanup());
+
+  it("the budget item keeps the goal's monthly funding", async () => {
+    const own = await createTestCaller();
+    try {
+      const profileId = await seedBudgetProfile(own.db, "Funded Budget", true);
+      const goalId = seedSavingsGoal(own.db, { name: "Funded Goal" });
+      seedSavingsGoalAllocation(own.db, goalId, profileId, {
+        monthlyContribution: "125",
+      });
+      const item = await own.caller.savings.convertGoalToBudgetItem({
+        goalId,
+        category: "Savings",
+        subcategory: "Funded Goal",
+      });
+      expect(new Set(item!.amounts)).toEqual(new Set([125]));
+    } finally {
+      own.cleanup();
+    }
+  });
 
   it("converts a savings goal to a budget item using the active budget profile, copying the link", async () => {
     const profileId = await seedBudgetProfile(db, "Active Budget", true);
@@ -1084,6 +1116,60 @@ describe("savings.transfers", () => {
       expect(result.deposit!.isRecurring).toBe(true);
       expect(result.withdrawal!.recurrenceMonths).toBe(3);
       expect(result.deposit!.recurrenceMonths).toBe(3);
+    });
+
+    it("refuses a transfer to the same fund, or to one that doesn't exist", async () => {
+      const base = {
+        transactionDate: "2026-09-01",
+        amount: 100,
+        description: "x",
+        isRecurring: false,
+      };
+      await expect(
+        caller.savings.transfers.create({
+          ...base,
+          fromGoalId,
+          toGoalId: fromGoalId,
+        }),
+      ).rejects.toThrow(/fund it comes from/);
+      await expect(
+        caller.savings.transfers.create({
+          ...base,
+          fromGoalId,
+          toGoalId: 999_999,
+        }),
+      ).rejects.toThrow(/no longer exists/);
+    });
+
+    it("editing one leg moves the other; deleting one leg deletes both", async () => {
+      const { pairId, withdrawal } = await caller.savings.transfers.create({
+        fromGoalId,
+        toGoalId,
+        transactionDate: "2026-10-01",
+        amount: 300,
+        description: "Pair edit",
+        isRecurring: false,
+      });
+      await caller.savings.plannedTransactions.update({
+        id: withdrawal!.id,
+        goalId: fromGoalId,
+        transactionDate: "2026-10-15",
+        amount: "-450",
+        description: "Pair edited",
+        isRecurring: false,
+      });
+      const legs = () =>
+        db
+          .select()
+          .from(sqliteTables.savingsPlannedTransactions)
+          .all()
+          .filter((t) => t.transferPairId === pairId);
+      const deposit = legs().find((t) => t.goalId === toGoalId)!;
+      expect(deposit.transactionDate).toBe("2026-10-15");
+      expect(deposit.description).toBe("Pair edited");
+      expect(Number(deposit.amount)).toBe(450);
+      await caller.savings.plannedTransactions.delete({ id: deposit.id });
+      expect(legs()).toHaveLength(0);
     });
 
     it("rejects a zero amount (must be positive)", async () => {
@@ -1560,6 +1646,83 @@ describe("savings.computeSummary — currentMonthBudgeted", () => {
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe("savings.pushContributionsToApi", () => {
+  it("a fund at $0 clears the target it had; one that never had one is left alone", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId } = seedStandardDataset(ctx.db);
+      for (const [name, cat] of [
+        ["Had Target", "cat-had"],
+        ["Never Had", "cat-never"],
+      ] as const) {
+        const goalId = seedSavingsGoal(ctx.db, { name });
+        seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+          monthlyContribution: "0",
+        });
+        await ctx.caller.savings.linkGoalToApi({
+          goalId,
+          service: "ynab",
+          apiCategoryId: cat,
+          apiCategoryName: name,
+        });
+      }
+      const updateCategoryGoalTarget = vi.fn().mockResolvedValue(undefined);
+      vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("ynab");
+      vi.mocked(getClientForService).mockResolvedValueOnce({
+        updateCategoryGoalTarget,
+        updateCategoryTargetBalance: vi.fn(),
+      } as unknown as BudgetAPIClient);
+      vi.mocked(cacheGet).mockResolvedValueOnce({
+        data: [
+          {
+            categories: [
+              { id: "cat-had", goalTarget: 300 },
+              { id: "cat-never" },
+            ],
+          },
+        ],
+      } as never);
+      const result = await ctx.caller.savings.pushContributionsToApi();
+      expect(result.pushed).toBe(1);
+      expect(updateCategoryGoalTarget).toHaveBeenCalledExactlyOnceWith(
+        "cat-had",
+        0,
+      );
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("leaves a deactivated fund's category alone", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId } = seedStandardDataset(ctx.db);
+      const goalId = seedSavingsGoal(ctx.db, {
+        name: "Retired Fund",
+        isActive: false,
+      });
+      seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+        monthlyContribution: "100",
+      });
+      await ctx.caller.savings.linkGoalToApi({
+        goalId,
+        service: "ynab",
+        apiCategoryId: "cat-retired",
+        apiCategoryName: "Retired Fund",
+      });
+      const updateCategoryGoalTarget = vi.fn().mockResolvedValue(undefined);
+      vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("ynab");
+      vi.mocked(getClientForService).mockResolvedValueOnce({
+        updateCategoryGoalTarget,
+        updateCategoryTargetBalance: vi.fn(),
+      } as unknown as BudgetAPIClient);
+      const result = await ctx.caller.savings.pushContributionsToApi();
+      expect(result.pushed).toBe(0);
+      expect(updateCategoryGoalTarget).not.toHaveBeenCalled();
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
   it("counts a BudgetApiError('unsupported') as skippedUnsupported, not pushed — and never throws", async () => {
     const ctx = await createTestCaller();
     try {

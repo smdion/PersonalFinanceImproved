@@ -88,12 +88,14 @@ export function buildMortgageInputs(
   return { loanInputs, extras };
 }
 
-/** Compute total current mortgage balance across all loans. */
+/** Total mortgage balance across all loans at `asOfDate`. A live balance
+ *  (api_balance) applies only to the current period from its own date on;
+ *  `currentDate` is today unless a caller's clock is pinned. */
 export function computeMortgageBalance(
   mortgageLoans: (typeof schema.mortgageLoans.$inferSelect)[],
   extraPayments: (typeof schema.mortgageExtraPayments.$inferSelect)[],
   asOfDate: Date = new Date(),
-  currentDate?: Date,
+  currentDate: Date = new Date(),
 ): number {
   const { loanInputs, extras } = buildMortgageInputs(
     mortgageLoans,

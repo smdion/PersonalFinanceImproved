@@ -111,6 +111,7 @@ export type PreviewData = {
       label: string;
       id: number;
       type: "propertyValue" | "loanBalance";
+      fedBySimplefin?: boolean;
       value: number;
     }[];
     /** Open debts — pull targets for their balance (as a loan balance). */

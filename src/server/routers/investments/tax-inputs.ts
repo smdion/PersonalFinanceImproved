@@ -18,10 +18,18 @@ import {
   estimateTaxableInvestmentIncome,
   investmentIncomeGaps,
 } from "@/lib/pure/investment-income";
-import { preTaxIraByPerson } from "@/lib/pure/roth-ira";
+import {
+  PENDING_CONVERSION_WINDOW_DAYS,
+  pendingConversion,
+  preTaxIraByPerson,
+} from "@/lib/pure/roth-ira";
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
 import { loadTrackedAccountNames } from "@/server/helpers/account-names";
-import { loadAccounts, loadClassifiedTransactions } from "./_shared";
+import {
+  loadAccounts,
+  loadBalanceHistory,
+  loadClassifiedTransactions,
+} from "./_shared";
 
 export const investmentTaxInputsRouter = createTRPCRouter({
   getRothIraInputs: portfolioProcedure
@@ -29,19 +37,28 @@ export const investmentTaxInputsRouter = createTRPCRouter({
     .query(async ({ ctx, input }) => {
       const since = `${input.taxYear - 1}-01-01`;
       const t = schema.investmentTransactions;
-      const [accounts, rows, coverage, windowDays, firstSeen, subs, names] =
-        await Promise.all([
-          loadAccounts(ctx.db),
-          loadClassifiedTransactions(ctx.db, { since }),
-          getTransactionCoverageStart(ctx.db),
-          getWindowLimitDays(ctx.db),
-          ctx.db
-            .select({ id: t.simplefinAccountId, first: min(t.firstSeenAt) })
-            .from(t)
-            .groupBy(t.simplefinAccountId),
-          loadLatestSubAccounts(ctx.db),
-          loadTrackedAccountNames(ctx.db),
-        ]);
+      const [
+        accounts,
+        rows,
+        coverage,
+        windowDays,
+        firstSeen,
+        subs,
+        names,
+        balanceHistory,
+      ] = await Promise.all([
+        loadAccounts(ctx.db),
+        loadClassifiedTransactions(ctx.db, { since }),
+        getTransactionCoverageStart(ctx.db),
+        getWindowLimitDays(ctx.db),
+        ctx.db
+          .select({ id: t.simplefinAccountId, first: min(t.firstSeenAt) })
+          .from(t)
+          .groupBy(t.simplefinAccountId),
+        loadLatestSubAccounts(ctx.db),
+        loadTrackedAccountNames(ctx.db),
+        loadBalanceHistory(ctx.db),
+      ]);
       // A feed's history starts a sync window before it was first synced
       // (never before the household's own first sync window).
       const householdStart = coverage ? utcDayOf(coverage) : null;
@@ -80,6 +97,28 @@ export const investmentTaxInputsRouter = createTRPCRouter({
         today: localDateStr(),
       });
       const preTax = preTaxIraByPerson(subs);
+      // A deposit waiting in a pre-tax IRA part, from its own feed's
+      // balances (the part's feed is linked by the part's key).
+      const today = localDateStr();
+      const windowStart = addDays(today, -PENDING_CONVERSION_WINDOW_DAYS);
+      const pendingByPerson = new Map<number, number>();
+      for (const sub of subs) {
+        if (sub.ownerPersonId === null) continue;
+        const feeds = [...accounts.values()].filter(
+          (a) => a.subKey === sub.key,
+        );
+        if (feeds.length !== 1) continue;
+        const amount = pendingConversion(
+          balanceHistory.get(feeds[0]!.id) ?? [],
+          today,
+          windowStart,
+        );
+        if (amount > 0)
+          pendingByPerson.set(
+            sub.ownerPersonId,
+            (pendingByPerson.get(sub.ownerPersonId) ?? 0) + amount,
+          );
+      }
       return {
         investmentIncome,
         ...investmentIncomeGaps({
@@ -92,6 +131,9 @@ export const investmentTaxInputsRouter = createTRPCRouter({
           amount,
         })),
         unownedPreTaxIra: preTax.unowned,
+        pendingConversionByPerson: [...pendingByPerson].map(
+          ([personId, amount]) => ({ personId, amount }),
+        ),
       };
     }),
 });

@@ -24,7 +24,7 @@ export function PushPreviewModal({
   onCancel,
   isPending,
   direction = "push",
-  destinationLabel = "YNAB",
+  destinationLabel = "your budget app",
   valueFormat = "currency",
 }: {
   title: string;

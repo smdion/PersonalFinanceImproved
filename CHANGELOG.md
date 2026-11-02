@@ -8,6 +8,56 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.9
 
+## [0.9.7] - 2026-11-01
+
+### Fixed
+
+- **Current Balances shows money the balances already show going in.** "Paid in" comes from the transactions your institutions send, which arrive several days late, so a recent day's figure was missing deposits. Each close's figure now includes money the balances already show, marked "~" until it's reported; hover for the breakdown.
+- **A backdoor Roth contribution waiting to be converted is no longer called pre-tax money.** The pro-rata check read today's traditional IRA balance as Dec 31's, so a monthly backdoor deposit a few days before its conversion warned that the backdoor was mostly taxable. For someone going the backdoor route, that deposit is after-tax money; the Roth IRA card names it and says to convert it before Dec 31.
+
+- **Finalizing a year works on every install.** It failed outright on SQLite. A category with no yearly row now gets one, so a year can't stay half-finalized or be finalized twice.
+- **Performance's lifetime totals keep their history.** The Retirement row now starts from what its categories have on record, and a category with no stored row in a finalized year no longer resets to zero. **Your Retirement lifetime figures may rise** if your history was imported.
+- **Past dates use the loan's schedule, not today's balance.** Finalizing an earlier year could store today's balance as Dec 31's, and Net Worth's mortgage change read $0 between two dates this year.
+- **Saving a snapshot that pulls balances from your budget app** now updates Performance and Net Worth together.
+- **A family HSA is sized at the family limit** in Contribution Profiles, and the limit always matches the coverage shown, including with two HSA rows.
+- **A person born on January 1 keeps their birth year** on servers behind UTC. The same fix covers year-end and loan dates.
+- **Raises on the active Salary Profile update extra-paycheck transfers**, instead of leaving them at the old pay.
+- **Savings transfers stay paired.** Editing one side moves the other, deleting one side deletes both, and a transfer to the same fund is refused. Bulk savings changes now save all or nothing.
+- **Deleting things cleans up after itself.** A person with retirement settings can be deleted (the primary person can't while others remain), and deleted accounts, debts, loans, assets and deductions leave no budget links or profile values behind.
+- **Reset all data** clears the settings that pointed at the wiped data, in one step.
+- **Budget and fund safeguards.** A deactivated fund's target is no longer pushed to your budget app, and two funds can't share a category. Extra-paycheck rules can't overlap or run backwards, and fund percentages stay between 0 and 100.
+- **SimpleFIN:** a whole account is no longer suggested beside a part already linked, Current Balances' recent activity lists only counted accounts, and a day missing a fund's value no longer reads as selling it.
+- **Performance vs snapshot check** works for evening updates; utilities year-over-year compares the same months.
+- Cost basis edits save correctly, budget sync handles large budgets in batches and flags missing mapped accounts, the Strategy retirement lever re-runs the plan with the new age, and settings follow the active retirement profile.
+- **Setting a year's contribution rate to 0% pauses contributions** until you change it, along with any match that depends on them; flat employer money keeps coming. It used to mean "no limit", so contributions carried on.
+- **Stress tests keep your gap between general and post-retirement inflation.**
+- **Roth basis at retirement reflects gap-year draws**, read from the projection itself, so early access no longer looks better than it is.
+- **A new loan or card feed isn't counted as money.** An unlinked feed that owes money stays out of Current Balances and is flagged for linking.
+- **A SimpleFIN feed linked to one part of an account compares with that part,** not the whole account.
+- **Your purchase vs estimated home value choice stands.** Budget pulls update the value and no longer switch it.
+- The prior-year contribution editor shows only to those who can save it, and warnings no longer show a raw person number.
+- **Budget targets follow one rule in every integration.** A monthly push replaces only a monthly target (or none). A yearly, weekly or dated target is left alone and reported as skipped, as Actual already did; YNAB used to overwrite it. A fund taken to $0 now clears the target it had.
+- **Turning a fund into a budget item keeps its monthly funding**, and tells you if the fund had met its goal.
+- **A joint account set per paycheck with no job** is flagged when your pay schedules differ, rather than using whichever job came first. Attach a job or use a monthly amount.
+- **Labels name the budget app you actually connected.** House and Brokerage always said YNAB, even with Actual Budget connected.
+- **With no active retirement profile set**, the plan says which profile it's using instead of choosing silently.
+
+### Added
+
+- **A mortgage servicer's SimpleFIN feed can be your loan's balance.** Link it under Settings > SimpleFIN. It replaces the balance from your budget app for that loan, its date shows on the House page, and it stays out of Current Balances.
+- **The projection chart's tooltip shows each year's assumptions:** plan return, the Simulation's return and volatility, inflation with its spread, how far prices have moved across the runs, and Guyton-Klinger's anchor rate with its range.
+
+### Changed
+
+- **Simulation inflation now varies year by year inside each trial**, through spending, Social Security, tax brackets and today's dollars. Trials used to run at one average rate. Expect small changes: on a real plan the success rate held and the median moved under 1%, with a slightly wider range mid-plan.
+
+### Security
+
+- Rate limiting uses the address the proxy saw, not one the client can claim.
+- Removed an unused way to save integration settings that stored credentials unencrypted.
+
+---
+
 ## [0.9.6] - 2026-11-01
 
 ### Upgrading

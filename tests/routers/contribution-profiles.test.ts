@@ -1161,6 +1161,45 @@ describe("contributionProfiles coverage", () => {
   // ── RESOLVE: with real seeded data ──
 
   describe("resolve — with seeded job and contributions", () => {
+    it("the profile list caps a family HSA at the family limit, like resolve", async () => {
+      const { caller, db, cleanup } = await createTestCaller(adminSession);
+      try {
+        const personId = await seedPerson(db, "Alex");
+        seedJob(db, personId, { annualSalary: "100000" });
+        const acctId = seedContribAccount(db, {
+          personId,
+          accountType: "hsa",
+          parentCategory: "Retirement",
+          hsaCoverageType: "family",
+        });
+        const profileId = seedContribProfile(db, {
+          name: "FamilyHsa",
+          contributionActiveFields: {
+            contributionAccounts: {
+              [String(acctId)]: {
+                contributionValue: "7000",
+                contributionMethod: "fixed_annual",
+              },
+            },
+            jobs: {},
+          },
+        });
+        const resolved = await caller.contributionProfile.resolve({
+          id: profileId,
+        });
+        const listed = (await caller.contributionProfile.list()).find(
+          (p) => p.id === profileId,
+        )!;
+        expect(resolved!.annualContributions).toBeCloseTo(7000, 0);
+        expect(listed.summary.annualContributions).toBeCloseTo(
+          resolved!.annualContributions,
+          2,
+        );
+      } finally {
+        cleanup();
+      }
+    });
+
     it("returns meaningful totals when data is seeded", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {

@@ -6,6 +6,7 @@
  * ambiguous match), and the unspent-RMD target; plus the projection-only
  * Retirement brokerage when there's none to receive that money.
  */
+import { calendarYear } from "@/lib/utils/date";
 import type {
   AccountCategory,
   IndividualAccountInput,
@@ -128,7 +129,7 @@ export function buildIndividualAccounts({
     people: people.map((p) => ({
       id: p.id,
       name: p.name,
-      birthYear: new Date(p.dateOfBirth).getFullYear(),
+      birthYear: calendarYear(p.dateOfBirth),
     })),
     currentDate: asOfDate,
   });

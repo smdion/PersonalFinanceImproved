@@ -9,6 +9,7 @@
  * onConfirm/onCancel to the parent's close callback.
  */
 
+import { budgetApiServiceLabel } from "@/lib/utils/format";
 import {
   PushPreviewModal,
   type PushPreviewItem,
@@ -33,9 +34,9 @@ export function BudgetPushYnabModal({
 }: Props) {
   return (
     <PushPreviewModal
-      title={`Push "${activeColumnLabel}" budget amounts to ${apiService?.toUpperCase()}`}
+      title={`Push "${activeColumnLabel}" budget amounts to ${budgetApiServiceLabel(apiService)}`}
       items={items}
-      destinationLabel={apiService?.toUpperCase() ?? "YNAB"}
+      destinationLabel={budgetApiServiceLabel(apiService)}
       onConfirm={onConfirm}
       onCancel={onCancel}
       isPending={isPending}

@@ -38,11 +38,11 @@ export const investmentSnapshotFlowsRouter = createTRPCRouter({
       const linkedIds = new Set(linked.map((l) => l.id));
       const covered =
         coverageStart !== null && utcDayOf(coverageStart) <= input.since;
-      const { added, uncertainCount } = flowsSince(
-        rows.filter((r) => linkedIds.has(r.simplefinAccountId)),
-        input.since,
-      );
-      const recent = rows
+      // Recent activity has the same scope as the total beside it: feeds
+      // counted toward the Live Balance.
+      const counted = rows.filter((r) => linkedIds.has(r.simplefinAccountId));
+      const { added, uncertainCount } = flowsSince(counted, input.since);
+      const recent = counted
         .filter((r) => !r.pending && ACTIVITY_KINDS.has(r.kind))
         .slice(0, 3)
         .map((r) => ({

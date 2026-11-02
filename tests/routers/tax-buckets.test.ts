@@ -194,6 +194,15 @@ describe("taxBuckets router", () => {
     }
   });
 
+  it("updateSeparationDate refuses something that isn't a date", async () => {
+    await expect(
+      caller.taxBuckets.updateSeparationDate({
+        performanceAccountId: 1,
+        separationDate: "next spring",
+      }),
+    ).rejects.toThrow(/Not a date/);
+  });
+
   it("updateSeparationDate sets the explicit date, overriding any derived job link", async () => {
     const personId = await seedPerson(db, "Sep Test", "1980-01-01");
     const perfAcctId = seedPerformanceAccount(db, {

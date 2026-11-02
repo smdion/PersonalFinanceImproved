@@ -27,7 +27,6 @@ import { roundToCents, sumBy } from "../../utils/math";
 import {
   growLtcgBrackets,
   growWithholdingBrackets,
-  taxGrowthFactor,
   taxTableYears,
 } from "./bracket-growth";
 import { resolveDecumulationConfig } from "./override-resolution";
@@ -122,22 +121,26 @@ export function runGapYearDraw(
   const taxBrackets = taxRates.taxBrackets
     ? growWithholdingBrackets(
         taxRates.taxBrackets,
-        taxGrowthFactor(year, tableYears.brackets, ctx.inflationRate),
+        ctx.inflation.growthSinceVintage(year, tableYears.brackets),
       )
     : undefined;
   const standardDeduction =
     taxRates.standardDeduction != null
       ? taxRates.standardDeduction *
-        taxGrowthFactor(year, tableYears.standardDeduction, ctx.inflationRate)
+        ctx.inflation.growthSinceVintage(year, tableYears.standardDeduction)
       : undefined;
   const ltcgBrackets = growLtcgBrackets(
     taxRates.ltcgBrackets,
-    taxGrowthFactor(year, tableYears.ltcg, ctx.inflationRate),
+    ctx.inflation.growthSinceVintage(year, tableYears.ltcg),
   );
 
   const ssIncome = roundToCents(
-    socialSecurityForYear(input, year, age, ctx.inflationRate).ssIncome *
-      fraction,
+    socialSecurityForYear(
+      input,
+      year,
+      age,
+      ctx.inflation.growth(year - input.asOfDate.getFullYear()),
+    ).ssIncome * fraction,
   );
   const wages = Math.max(0, pay - pretaxContributions);
   const taxableSsOn = (otherIncome: number) =>
@@ -158,7 +161,7 @@ export function runGapYearDraw(
   const wageBase =
     payrollTax &&
     payrollTax.socialSecurityWageBase *
-      taxGrowthFactor(year, tableYears.standardDeduction, ctx.inflationRate);
+      ctx.inflation.growthSinceVintage(year, tableYears.standardDeduction);
   const payrollCost = payrollTax
     ? sumBy(
         payByPerson,
@@ -172,7 +175,7 @@ export function runGapYearDraw(
   const contributionLines = typedFigure
     ? 0
     : (input.budgetContributionLines ?? 0) *
-      Math.pow(1 + ctx.inflationRate, year - input.asOfDate.getFullYear()) *
+      ctx.inflation.growth(year - input.asOfDate.getFullYear()) *
       fraction;
   const spending = Math.max(0, budget - contributionLines);
   const need = roundToCents(

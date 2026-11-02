@@ -1,0 +1,3 @@
+ALTER TABLE "simplefin_accounts" ADD COLUMN "linked_loan_id" integer;--> statement-breakpoint
+ALTER TABLE "simplefin_accounts" ADD CONSTRAINT "simplefin_accounts_linked_loan_id_mortgage_loans_id_fk" FOREIGN KEY ("linked_loan_id") REFERENCES "public"."mortgage_loans"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE UNIQUE INDEX "simplefin_accounts_linked_loan_idx" ON "simplefin_accounts" USING btree ("linked_loan_id");

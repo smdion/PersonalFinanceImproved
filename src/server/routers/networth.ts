@@ -1,4 +1,5 @@
 /** Net worth router that aggregates account snapshots, mortgage balances, cash, and other assets into a current and projected net worth summary, plus portfolio snapshot CRUD (including budget-API pull/push side-effects). */
+import { calendarYear } from "@/lib/utils/date";
 import { loadTrackedAccountNames } from "@/server/helpers/account-names";
 import { eq, asc, desc, sql, gte, lte, and, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -151,7 +152,12 @@ export const networthRouter = createTRPCRouter({
       const { getActiveBudgetApi } = await import("@/lib/budget-api");
       const activeBudgetApi = await getActiveBudgetApi(ctx.db);
       const [
-        { cash, source: cashSource, cacheAgeDays: cashCacheAgeDays },
+        {
+          cash,
+          source: cashSource,
+          cacheAgeDays: cashCacheAgeDays,
+          missingAccounts: cashMissingAccounts,
+        },
         otherAssetsResult,
       ] = await Promise.all([
         getEffectiveCash(ctx.db, settings, activeBudgetApi),
@@ -293,6 +299,7 @@ export const networthRouter = createTRPCRouter({
         cash,
         cashSource,
         cashCacheAgeDays,
+        cashMissingAccounts,
         otherAssets,
         otherAssetItems,
         otherAssetsSyncSource,
@@ -322,7 +329,7 @@ export const networthRouter = createTRPCRouter({
 
       const primaryPerson = getPrimaryPerson(people);
       const primaryBirthYear = primaryPerson
-        ? new Date(primaryPerson.dateOfBirth).getFullYear()
+        ? calendarYear(primaryPerson.dateOfBirth)
         : null;
 
       // Purchase price for cost basis: use earliest mortgage (or active) as the property
@@ -383,7 +390,7 @@ export const networthRouter = createTRPCRouter({
 
       const primaryPerson = getPrimaryPerson(people);
       const primaryBirthYear = primaryPerson
-        ? new Date(primaryPerson.dateOfBirth).getFullYear()
+        ? calendarYear(primaryPerson.dateOfBirth)
         : null;
 
       // Pass through YearEndRow data — all metrics already computed by buildYearEndHistory
@@ -1143,48 +1150,73 @@ export const networthRouter = createTRPCRouter({
             if (pullMappings.length > 0) {
               const pullBalanceMap = await getMapForPull(ctx.db, activeForPull);
               if (pullBalanceMap) {
-                const pullSnapshotAccounts = await ctx.db
-                  .select()
-                  .from(schema.portfolioAccounts)
-                  .where(eq(schema.portfolioAccounts.snapshotId, snapshot.id));
-                let pulled = 0;
-                for (const mapping of pullMappings) {
-                  const m = mapping as {
-                    remoteAccountId: string;
-                    performanceAccountId?: number;
-                  };
-                  const apiBalance = pullBalanceMap.get(m.remoteAccountId);
-                  if (apiBalance === undefined || !m.performanceAccountId)
-                    continue;
-                  const matchingRows = pullSnapshotAccounts.filter(
-                    (a) => a.performanceAccountId === m.performanceAccountId,
-                  );
-                  if (matchingRows.length === 0) continue;
-                  const currentTotal = matchingRows.reduce(
-                    (s, a) => s + Number(a.amount),
-                    0,
-                  );
-                  if (matchingRows.length === 1) {
-                    await ctx.db
-                      .update(schema.portfolioAccounts)
-                      .set({ amount: String(apiBalance) })
-                      .where(
-                        eq(schema.portfolioAccounts.id, matchingRows[0]!.id),
-                      );
-                  } else {
-                    const ratio = safeDivide(apiBalance, currentTotal, 0);
-                    for (const row of matchingRows) {
-                      const scaled = Number(row.amount) * ratio;
-                      await ctx.db
+                // The pulled amounts and the year's derivatives (ending
+                // balances, annual rollups) change together: refreshed
+                // again from the final amounts, in one transaction, so
+                // Performance and Net Worth can't disagree about this save.
+                const pulled = await ctx.db.transaction(async (tx) => {
+                  const pullSnapshotAccounts = await tx
+                    .select()
+                    .from(schema.portfolioAccounts)
+                    .where(
+                      eq(schema.portfolioAccounts.snapshotId, snapshot.id),
+                    );
+                  let pulled = 0;
+                  for (const mapping of pullMappings) {
+                    const m = mapping as {
+                      remoteAccountId: string;
+                      performanceAccountId?: number;
+                    };
+                    const apiBalance = pullBalanceMap.get(m.remoteAccountId);
+                    if (apiBalance === undefined || !m.performanceAccountId)
+                      continue;
+                    const matchingRows = pullSnapshotAccounts.filter(
+                      (a) => a.performanceAccountId === m.performanceAccountId,
+                    );
+                    if (matchingRows.length === 0) continue;
+                    const currentTotal = matchingRows.reduce(
+                      (s, a) => s + Number(a.amount),
+                      0,
+                    );
+                    if (matchingRows.length === 1) {
+                      await tx
                         .update(schema.portfolioAccounts)
-                        .set({
-                          amount: String(roundToCents(scaled)),
-                        })
-                        .where(eq(schema.portfolioAccounts.id, row.id));
+                        .set({ amount: String(apiBalance) })
+                        .where(
+                          eq(schema.portfolioAccounts.id, matchingRows[0]!.id),
+                        );
+                    } else {
+                      const ratio = safeDivide(apiBalance, currentTotal, 0);
+                      for (const row of matchingRows) {
+                        const scaled = Number(row.amount) * ratio;
+                        await tx
+                          .update(schema.portfolioAccounts)
+                          .set({
+                            amount: String(roundToCents(scaled)),
+                          })
+                          .where(eq(schema.portfolioAccounts.id, row.id));
+                      }
                     }
+                    pulled++;
                   }
-                  pulled++;
-                }
+                  if (pulled > 0) {
+                    const finalRows = await tx
+                      .select()
+                      .from(schema.portfolioAccounts)
+                      .where(
+                        eq(schema.portfolioAccounts.snapshotId, snapshot.id),
+                      );
+                    await refreshSnapshotYearDerivatives(
+                      tx,
+                      input.snapshotDate,
+                      finalRows.map((r) => ({
+                        performanceAccountId: r.performanceAccountId ?? null,
+                        amount: r.amount,
+                      })),
+                    );
+                  }
+                  return pulled;
+                });
                 apiPullResult = { pulled };
               }
             }
@@ -1342,39 +1374,87 @@ export const networthRouter = createTRPCRouter({
         // balance row added out-of-band with no explanation, matching the
         // "zero, don't silently omit" rule create() enforces for carried-
         // forward rows — an explicit add should fail loudly instead.
+        const [snap] = await ctx.db
+          .select()
+          .from(schema.portfolioSnapshots)
+          .where(eq(schema.portfolioSnapshots.id, input.snapshotId));
+        if (!snap)
+          throw new TRPCError({
+            code: "NOT_FOUND",
+            message: "That snapshot no longer exists.",
+          });
+        // Same rule as updateAccount: an older snapshot is history.
+        const [latest] = await ctx.db
+          .select({ id: schema.portfolioSnapshots.id })
+          .from(schema.portfolioSnapshots)
+          .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
+          .limit(1);
+        if (latest?.id !== snap.id)
+          throw new TRPCError({
+            code: "PRECONDITION_FAILED",
+            message: "Accounts can only be added to the most recent snapshot.",
+          });
+
+        // A row linked to a master takes the master's parent category, as
+        // every other write does, so Net Worth and Performance group it
+        // the same way.
+        let parentCategory: string = input.parentCategory;
         if (input.performanceAccountId != null) {
-          const master = await ctx.db
-            .select({ isActive: schema.performanceAccounts.isActive })
+          const [master] = await ctx.db
+            .select({
+              isActive: schema.performanceAccounts.isActive,
+              parentCategory: schema.performanceAccounts.parentCategory,
+            })
             .from(schema.performanceAccounts)
             .where(
               eq(schema.performanceAccounts.id, input.performanceAccountId),
             )
             .limit(1);
-          if (master[0] && !master[0].isActive) {
+          // Defensive invariant, not a reachable UI path today: the only
+          // shipped caller (AddSubAccountForm) never sends a
+          // performanceAccountId. A closed account can't get a new balance
+          // row added out-of-band — an explicit add fails loudly instead.
+          if (master && !master.isActive) {
             throw new TRPCError({
               code: "BAD_REQUEST",
               message:
                 "Cannot add a balance row for a closed account. Reopen the account first.",
             });
           }
+          if (master) parentCategory = master.parentCategory;
         }
-        const rows = await ctx.db
-          .insert(schema.portfolioAccounts)
-          .values({
-            snapshotId: input.snapshotId,
-            institution: input.institution,
-            taxType: input.taxType,
-            amount: input.amount,
-            accountType: input.accountType,
-            subType: input.subType ?? null,
-            label: input.label ?? null,
-            parentCategory: input.parentCategory,
-            ownerPersonId: input.ownerPersonId ?? null,
-            performanceAccountId: input.performanceAccountId ?? null,
-            isActive: true,
-          })
-          .returning();
-        return rows[0]!;
+        const row = await ctx.db.transaction(async (tx) => {
+          const [inserted] = await tx
+            .insert(schema.portfolioAccounts)
+            .values({
+              snapshotId: input.snapshotId,
+              institution: input.institution,
+              taxType: input.taxType,
+              amount: input.amount,
+              accountType: input.accountType,
+              subType: input.subType ?? null,
+              label: input.label ?? null,
+              parentCategory,
+              ownerPersonId: input.ownerPersonId ?? null,
+              performanceAccountId: input.performanceAccountId ?? null,
+              isActive: true,
+            })
+            .returning();
+          // The year's ending balances follow the snapshot, same shared
+          // path as create/updateAccount.
+          const allRows = await tx
+            .select({
+              performanceAccountId:
+                schema.portfolioAccounts.performanceAccountId,
+              amount: schema.portfolioAccounts.amount,
+            })
+            .from(schema.portfolioAccounts)
+            .where(eq(schema.portfolioAccounts.snapshotId, snap.id));
+          await refreshSnapshotYearDerivatives(tx, snap.snapshotDate, allRows);
+          return inserted!;
+        });
+        invalidateYearEndCache();
+        return row;
       }),
 
     /** Delete a snapshot (cascades to its accounts). */

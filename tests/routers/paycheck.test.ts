@@ -278,9 +278,24 @@ describe("settings.people CRUD", () => {
     expect(updated!.name).toBe("Jane Updated");
   });
 
-  it("delete removes a person", async () => {
+  it("delete removes a person once someone else is primary", async () => {
     const people = await caller.settings.people.list();
     const id = people[1]!.id;
+    await expect(caller.settings.people.delete({ id })).rejects.toThrow(
+      /primary person/,
+    );
+    await caller.settings.people.update({
+      id: people[0]!.id,
+      name: "Jane Updated",
+      dateOfBirth: "1990-05-15",
+      isPrimaryUser: true,
+    });
+    await caller.settings.people.update({
+      id,
+      name: "John Smith",
+      dateOfBirth: "1988-12-01",
+      isPrimaryUser: false,
+    });
     await caller.settings.people.delete({ id });
     const remaining = await caller.settings.people.list();
     expect(remaining).toHaveLength(1);
@@ -337,6 +352,39 @@ describe("settings.people.create fans out to every existing retirement profile",
   });
 
   afterAll(() => cleanup());
+
+  it("a person with retirement rows in every profile can be deleted", async () => {
+    const b = await caller.settings.people.create({
+      name: "Person B",
+      dateOfBirth: "1990-01-01",
+    });
+    // The fan-out gave B a settings row: that used to block the delete.
+    const rows = db
+      .select()
+      .from(schema.retirementSettings)
+      .where(eq(schema.retirementSettings.personId, b!.id))
+      .all();
+    expect(rows.length).toBeGreaterThan(0);
+    await caller.settings.people.delete({ id: b!.id });
+    expect(
+      db
+        .select()
+        .from(schema.retirementSettings)
+        .where(eq(schema.retirementSettings.personId, b!.id))
+        .all(),
+    ).toHaveLength(0);
+  });
+
+  it("the primary person can't be deleted while others remain", async () => {
+    const c = await caller.settings.people.create({
+      name: "Person C",
+      dateOfBirth: "1992-01-01",
+    });
+    await expect(
+      caller.settings.people.delete({ id: personA }),
+    ).rejects.toThrow(/primary person/);
+    await caller.settings.people.delete({ id: c!.id });
+  });
 
   it("gives the new person a retirement_settings row cloned from the primary person's, in every existing profile", async () => {
     const newPerson = await caller.settings.people.create({

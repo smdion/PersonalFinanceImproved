@@ -306,6 +306,7 @@ erDiagram
   holding_period_weights }o--|| securities : references
   investment_transactions }o--|| simplefin_accounts : references
   simplefin_accounts }o--|| performance_accounts : references
+  simplefin_accounts }o--|| mortgage_loans : references
   asset_class_buckets }o--|| asset_class_params : references
   asset_class_correlations }o--|| asset_class_params : references
   asset_class_correlations }o--|| asset_class_params : references
@@ -393,7 +394,7 @@ erDiagram
 - **security_facts** → securities
 - **self_loans** → savings_goals, savings_goals
 - **simplefin_account_balances** → simplefin_accounts
-- **simplefin_accounts** → performance_accounts
+- **simplefin_accounts** → performance_accounts, mortgage_loans
 - **simplefin_balance_snapshots**
 - **state_version_tables** → state_versions
 - **state_versions**

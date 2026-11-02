@@ -229,6 +229,9 @@ export type ProjectionInput = {
    *  Typically higher than pre-retirement due to healthcare costs.
    *  Falls back to inflationRate if not provided. */
   postRetirementInflationRate?: number;
+  /** A Simulation trial's yearly inflation shocks, added to both rates
+   *  (engine/inflation-path.ts). Absent = the plan's rates every year. */
+  inflationShocks?: readonly number[];
   /** Age-indexed return rates (from return_rate_table). */
   returnRates: { label: string; rate: number }[];
   /** Social Security annual income (kicks in at ssStartAge).

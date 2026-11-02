@@ -119,7 +119,13 @@ async function sumMappedAccountBalances(
   db: Db,
   service: "ynab" | "actual",
   localId: "cash" | "creditCard",
-): Promise<{ total: number; cacheAgeDays: number } | null> {
+): Promise<{
+  total: number;
+  cacheAgeDays: number;
+  /** Mapped accounts the budget app no longer lists (closed or deleted):
+   *  counted as nothing, and said so. */
+  missing: number;
+} | null> {
   const { cacheGet } = await import("@/lib/budget-api");
   const [conn] = await db
     .select({ accountMappings: schema.apiConnections.accountMappings })
@@ -160,6 +166,7 @@ async function sumMappedAccountBalances(
       (sum, m) => sum + amount(byId.get(m.remoteAccountId) ?? 0),
       0,
     ),
+    missing: mapped.filter((m) => !byId.has(m.remoteAccountId)).length,
     cacheAgeDays: Math.floor(
       (Date.now() - cached.fetchedAt.getTime()) / 86_400_000,
     ),
@@ -188,6 +195,8 @@ export async function getEffectiveCash(
   cash: number;
   source: "ynab" | "actual" | "manual";
   cacheAgeDays: number | null;
+  /** Mapped cash accounts the budget app no longer lists. */
+  missingAccounts: number;
 }> {
   const { getActiveBudgetApi, cacheGet } = await import("@/lib/budget-api");
   const active = activeBudgetApi ?? (await getActiveBudgetApi(db));
@@ -199,6 +208,7 @@ export async function getEffectiveCash(
         cash: mappedCash.total,
         source: active,
         cacheAgeDays: mappedCash.cacheAgeDays,
+        missingAccounts: mappedCash.missing,
       };
     }
 
@@ -225,7 +235,7 @@ export async function getEffectiveCash(
       const cacheAgeDays = Math.floor(
         (Date.now() - cached.fetchedAt.getTime()) / 86_400_000,
       );
-      return { cash, source: active, cacheAgeDays };
+      return { cash, source: active, cacheAgeDays, missingAccounts: 0 };
     }
   }
 
@@ -235,6 +245,7 @@ export async function getEffectiveCash(
     cash: setting("current_cash", 0),
     source: "manual",
     cacheAgeDays: null,
+    missingAccounts: 0,
   };
 }
 

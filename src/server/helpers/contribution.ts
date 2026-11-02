@@ -88,22 +88,26 @@ export function computeAnnualContribution(
 }
 
 /**
- * Fallback periods-per-year for a jobless contribution account: the first
- * active job's pay period, or `incomplete: true` if there are none (no job
- * anywhere to resolve a schedule from — `periodsPerYear` is a meaningless
- * placeholder in that case, not a real value; callers must not use it for a
- * `fixed_per_period` account without also honoring `incomplete`). Shared by
+ * Fallback periods-per-year for a jobless contribution account: the active
+ * jobs' pay period, or `incomplete: true` if there's none, or if they're on
+ * different schedules ("per paycheck" then has no single answer: 26 checks
+ * or 24 — attach a job or use a monthly amount). `periodsPerYear` is a
+ * placeholder when incomplete; callers must not use it for a
+ * `fixed_per_period` account without also honoring `incomplete`. Shared by
  * computeActiveSummary's forward computation and
  * applyContributionAccountEdit's inverse so the two can't drift apart.
  */
 export function resolveJoblessPeriodsPerYear(
   activeJobs: { payPeriod: string | undefined }[],
 ): { periodsPerYear: number; incomplete: boolean } {
-  const withSchedule = activeJobs.find((j) => j.payPeriod != null);
-  return withSchedule
+  const schedules = new Set(
+    activeJobs.flatMap((j) => (j.payPeriod != null ? [j.payPeriod] : [])),
+  );
+  const [first] = schedules;
+  return first !== undefined
     ? {
-        periodsPerYear: getPeriodsPerYear(withSchedule.payPeriod!),
-        incomplete: false,
+        periodsPerYear: getPeriodsPerYear(first),
+        incomplete: schedules.size > 1,
       }
     : { periodsPerYear: 0, incomplete: true };
 }
@@ -943,18 +947,16 @@ export function buildContributionDisplaySpecs(
  * adds them from a specific profile's active fields, and only for accounts
  * that have an entry there.
  */
-type LiveContribRow = {
-  personId: number | null;
-  jobId: number | null;
+/** A live contribution account row: the full row (so every consumer — the
+ *  cap's HSA coverage, payroll vs. manual, ownership, the match's tax
+ *  treatment — reads the real fact), with its type narrowed and its parent
+ *  category resolved. */
+type LiveContribRow = Omit<
+  typeof schema.contributionAccounts.$inferSelect,
+  "accountType" | "parentCategory"
+> & {
   accountType: AccountCategory;
-  subType: string | null;
-  label: string | null;
   parentCategory: string;
-  taxTreatment: string;
-  employerMatchType: string | null;
-  employerMatchValue: string | null;
-  employerMaxMatchPct: string | null;
-  id: number;
 };
 
 /**
@@ -1005,18 +1007,10 @@ export async function loadLiveContribData(db: Db) {
 
   // Build ContribRow-compatible rows for aggregation (active only for live resolution)
   const contribs: LiveContribRow[] = activeContribs.map((c) => ({
-    personId: c.personId,
-    jobId: c.jobId,
+    ...c,
     accountType: c.accountType as AccountCategory,
-    subType: c.subType,
-    label: c.label,
     parentCategory:
       c.parentCategory ?? getParentCategory(c.accountType as AccountCategory),
-    taxTreatment: c.taxTreatment,
-    employerMatchType: c.employerMatchType,
-    employerMatchValue: c.employerMatchValue,
-    employerMaxMatchPct: c.employerMaxMatchPct,
-    id: c.id,
   }));
 
   return {
@@ -1807,6 +1801,8 @@ export function buildProfileContribData(
           employerMatchByCategory[cat],
           0,
         ),
+        matchNeedsContribution:
+          c.employerMatchType === "percent_of_contribution",
       };
     })
     .filter((spec): spec is ContributionSpec => spec !== null);

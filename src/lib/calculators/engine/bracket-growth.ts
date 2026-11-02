@@ -52,8 +52,9 @@ export function taxGrowthYears(
   return Math.max(0, year - taxDataYear);
 }
 
-/** `(1 + inflationRate) ^ taxGrowthYears(...)` — the factor the grow*
- *  helpers below apply, one per table per year (RULES.md
+/** `(1 + inflationRate) ^ taxGrowthYears(...)` — a plain run's factor for
+ *  the grow* helpers below (a Simulation trial's comes from the same
+ *  place, inflation-path.ts `growthSinceVintage`), applied one per table per year (RULES.md
  *  single-computation-path). Each table grows from its own year
  *  (`taxTableYears`); when `standardDeduction` and `taxBrackets` share a
  *  year they share the identical factor, and when they don't, each grown

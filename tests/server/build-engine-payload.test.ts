@@ -223,6 +223,23 @@ describe("buildEnginePayload — single-person household", () => {
     expect(payload!.baseEngineInput.salaryGrowthRateByPerson).toBeUndefined();
   });
 
+  it("a retirement-age what-if moves the whole timeline, not just the year", async () => {
+    const data = await fetchRetirementData(appDb, { contributionProfileId });
+    const base = await buildEnginePayload(appDb, data, {
+      contributionProfileId,
+    });
+    const later = await buildEnginePayload(appDb, data, {
+      contributionProfileId,
+      retirementAgeDelta: 2,
+    });
+    expect(later!.baseEngineInput.retirementYear).toBe(
+      base!.baseEngineInput.retirementYear + 2,
+    );
+    expect(later!.planRetirementAge).toBe(base!.planRetirementAge + 2);
+    // The saved settings are untouched.
+    expect(later!.settings.retirementAge).toBe(base!.settings.retirementAge);
+  });
+
   it("aggregates starting balances from the latest snapshot", async () => {
     const data = await fetchRetirementData(appDb, { contributionProfileId });
     const payload = await buildEnginePayload(appDb, data, {
@@ -1150,5 +1167,46 @@ describe("buildEnginePayload — the one earner isn't the primary person", () =>
     expect(payload!.baseEngineInput.salaryOverrides).toEqual([
       expect.objectContaining({ year: 2040, value: 150000 }),
     ]);
+  });
+});
+
+describe("each retirement profile stands alone", () => {
+  let db: BetterSQLite3Database<typeof sqliteSchema>;
+  let appDb: Db;
+  let cleanup: () => void;
+
+  beforeAll(async () => {
+    const ctx = await createTestCaller();
+    db = ctx.db;
+    appDb = ctx.rawDb;
+    cleanup = ctx.cleanup;
+    const schema = await getSchema();
+    const personId = await seedPerson(db, "Jo", "1975-03-03");
+    await markPrimary(db, personId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const anyDb = db as any;
+    const [active, other] = ["Active plan", "Other plan"].map(
+      (name) =>
+        anyDb
+          .insert(schema.retirementProfiles)
+          .values({ name })
+          .returning({ id: schema.retirementProfiles.id })
+          .get().id as number,
+    );
+    // Jo's only row with an age is in the OTHER profile.
+    await seedRetirementSettings(db, personId, { retirementAge: 50 });
+    anyDb.update(schema.retirementSettings).set({ profileId: other }).run();
+    anyDb
+      .insert(schema.appSettings)
+      .values({ key: "active_retirement_profile_id", value: active })
+      .run();
+  });
+
+  afterAll(() => cleanup());
+
+  it("the planned retirement year never comes from another profile's row", async () => {
+    const { householdRetirementYear } =
+      await import("@/server/helpers/retirement-profile");
+    expect(await householdRetirementYear(appDb)).toBeNull();
   });
 });

@@ -39,8 +39,7 @@ export function runPreYearSetup(
   const {
     input,
     salaryGrowthRate,
-    inflationRate,
-    validatedPostRetirementInflation,
+    inflation,
     salaryOverrideMap,
     perPersonSalaryOverrides,
     currentYearBonusAdjustment,
@@ -330,8 +329,7 @@ export function runPreYearSetup(
       ? roundToCents(
           input.decumulationDefaults.withdrawalRate * retirementBalance,
         )
-      : input.decumulationAnnualExpenses! *
-        Math.pow(1 + inflationRate, yearIndex);
+      : input.decumulationAnnualExpenses! * inflation.growth(yearIndex);
     // budgetOnlyExpenses seeds identically -- a rate-seeded run has no
     // independent "budget" concept to track (it deliberately ignores the
     // budget entirely), so both start from the same rate-seed value; for
@@ -348,8 +346,8 @@ export function runPreYearSetup(
   const strategyUsesRaise =
     WITHDRAWAL_STRATEGY_CONFIG[activeStrategy].usesPostRetirementRaise;
   const effectiveInflation = isAccumulation
-    ? inflationRate
-    : validatedPostRetirementInflation;
+    ? inflation.rate(yearIndex)
+    : inflation.postRate(yearIndex);
   const expenseInflation =
     !isAccumulation && !strategyUsesRaise ? 0 : effectiveInflation;
   // Rate-Seeded year 1 deliberately ignores a same-year budget override too
@@ -406,7 +404,7 @@ export function runPreYearSetup(
       input,
       year,
       age,
-      ctx.inflationRate,
+      inflation.growth(yearIndex),
     );
     const ssForStrategy = { ssIncome, ssIncomeToday, ssGrowthFactor };
     // Use primary person's actual age for RMD factor lookup (not household average)
@@ -416,7 +414,12 @@ export function runPreYearSetup(
       projectedExpenses: state.projectedExpenses,
       portfolioBalance: retirementBalance,
       effectiveInflation,
-      cpiInflation: inflationRate,
+      cpiInflation: inflation.rate(yearIndex),
+      // Year 1 of retirement is this year less the years since it.
+      cpiGrowthSinceStart: inflation.shockedGrowthBetween(
+        yearIndex - state.spendingState.decumulationYearCount,
+        yearIndex,
+      ),
       hasBudgetOverride: budgetOverrideMap.has(year),
       yearIndex,
       age,

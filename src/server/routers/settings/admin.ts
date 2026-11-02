@@ -37,7 +37,7 @@ import {
   nextDismissals,
   parseDismissals,
 } from "@/lib/pure/recommendation-dismissals";
-import { localDateStr } from "@/lib/utils/date";
+import { isCalendarDate, localDateStr } from "@/lib/utils/date";
 import {
   checkpointSourceSchema,
   customGoalsSchema,
@@ -55,7 +55,6 @@ import {
   RBAC_ADMIN_GROUP_KEY,
 } from "@/server/auth";
 import { settingValue } from "./_shared";
-import { apiConfigSchema, accountMappingSchema } from "@/lib/db/json-schemas";
 import { applyPlan } from "@/server/helpers/plans";
 import { mergeSettingAtomically } from "@/server/helpers/merge-setting";
 import { firstReachedSchema } from "@/lib/pure/milestone-first-reached";
@@ -140,7 +139,10 @@ export const adminProcedures = {
   updateDataFreshness: adminProcedure
     .input(
       z.object({
-        balanceDate: z.string().optional(),
+        balanceDate: z
+          .string()
+          .refine(isCalendarDate, "Not a date (YYYY-MM-DD)")
+          .optional(),
         performanceDate: z.string().optional(),
         basisDate: z.string().optional(),
       }),
@@ -148,16 +150,35 @@ export const adminProcedures = {
     .mutation(async ({ ctx, input }) => {
       if (input.balanceDate) {
         // Update the most recent portfolio snapshot date
-        const latest = await ctx.db
-          .select({ id: schema.portfolioSnapshots.id })
+        const [latest, previous] = await ctx.db
+          .select({
+            id: schema.portfolioSnapshots.id,
+            snapshotDate: schema.portfolioSnapshots.snapshotDate,
+          })
           .from(schema.portfolioSnapshots)
           .orderBy(desc(schema.portfolioSnapshots.snapshotDate))
-          .limit(1);
-        if (latest[0]) {
+          .limit(2);
+        // The latest stays the latest and in its own year: anything else
+        // collides with another snapshot or leaves a year's Performance
+        // figures derived from a snapshot that moved away.
+        if (latest && previous && input.balanceDate <= previous.snapshotDate)
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Must be after the previous snapshot (${previous.snapshotDate})`,
+          });
+        if (
+          latest &&
+          input.balanceDate.slice(0, 4) !== latest.snapshotDate.slice(0, 4)
+        )
+          throw new TRPCError({
+            code: "BAD_REQUEST",
+            message: `Must stay in ${latest.snapshotDate.slice(0, 4)} — create a new snapshot for another year`,
+          });
+        if (latest) {
           await ctx.db
             .update(schema.portfolioSnapshots)
             .set({ snapshotDate: input.balanceDate })
-            .where(eq(schema.portfolioSnapshots.id, latest[0].id));
+            .where(eq(schema.portfolioSnapshots.id, latest.id));
         }
       }
       if (input.performanceDate) {
@@ -375,7 +396,10 @@ export const adminProcedures = {
   // ══ API CONNECTIONS ══
   apiConnections: createTRPCRouter({
     /** Admin-only, and never returns `config`: it holds credentials
-     *  (encrypted envelopes, or plaintext for legacy rows such as FMP). */
+     *  (encrypted envelopes, or plaintext for legacy rows such as FMP).
+     *  Connections are written only through each integration's own save
+     *  (sync), which encrypts, checks the URL and the mappings; a generic
+     *  upsert that stored config in plaintext was removed. */
     list: adminProcedure.query(({ ctx }) =>
       ctx.db
         .select({
@@ -391,33 +415,6 @@ export const adminProcedures = {
         .from(schema.apiConnections)
         .orderBy(asc(schema.apiConnections.service)),
     ),
-    upsert: adminProcedure
-      .input(
-        z.object({
-          service: z.string().min(1),
-          config: apiConfigSchema,
-          accountMappings: z.array(accountMappingSchema).nullable().optional(),
-        }),
-      )
-      .mutation(async ({ ctx, input }) => {
-        const existing = await ctx.db
-          .select()
-          .from(schema.apiConnections)
-          .where(eq(schema.apiConnections.service, input.service));
-        if (existing.length > 0) {
-          return ctx.db
-            .update(schema.apiConnections)
-            .set(input)
-            .where(eq(schema.apiConnections.service, input.service))
-            .returning()
-            .then((r) => r[0]);
-        }
-        return ctx.db
-          .insert(schema.apiConnections)
-          .values(input)
-          .returning()
-          .then((r) => r[0]);
-      }),
     delete: adminProcedure
       .input(z.object({ service: z.string().min(1) }))
       .mutation(({ ctx, input }) =>

@@ -12,9 +12,16 @@ export type EntryMoves = {
   key: string;
   /** Its institution: named when its move is missing. */
   name: string;
-  /** Per close: the market move, or null when it can't be told in full. */
-  moves: readonly { day: string; move: number | null }[];
+  /** The feeds behind it, to match its reported transactions. */
+  feedIds?: readonly number[];
+  /** Per close: the market move, or null when it can't be told in full;
+   *  and the money its share counts show going in or out (null unknown). */
+  moves: readonly { day: string; move: number | null; added?: number | null }[];
 };
+
+/** Below this, share counts and reported transactions agree: rounding,
+ *  fractional shares, a cent of interest. */
+export const UNREPORTED_MIN = 25;
 
 export type CloseMovement = {
   day: string;
@@ -27,6 +34,10 @@ export type CloseMovement = {
   /** Money in less money out that landed after the close before through
    *  this one; null when some market account sends no transactions. */
   flows: number | null;
+  /** Money the share counts show going in or out that no transaction has
+   *  been reported for yet (institutions send transactions days late), and
+   *  whose accounts. Null when there's none. */
+  unreported: { amount: number; names: string[] } | null;
 };
 
 const cents = (n: number) => Math.round(n * 100) / 100;
@@ -39,6 +50,9 @@ export function dailyMovement(args: {
   /** Signed money in / out by the day it posted. */
   flows: readonly { day: string; amount: number }[];
   flowsKnown: boolean;
+  /** Every reported transaction that changes share counts (money in and
+   *  out, dividends, interest, fees), by feed. */
+  shareChanges?: readonly { feedId: number; day: string; amount: number }[];
 }): CloseMovement[] {
   return args.sessions.map((day) => {
     const from = previousTradingDay(day);
@@ -51,6 +65,22 @@ export function dailyMovement(args: {
       ),
     ];
     const known = moves.filter((m): m is number => m !== null);
+    // Share counts against reported transactions, entry by entry.
+    let gap = 0;
+    const names = new Set<string>();
+    for (const e of args.entries) {
+      const added = e.moves.find((m) => m.day === day)?.added;
+      if (added === null || added === undefined || !e.feedIds?.length) continue;
+      const reported = (args.shareChanges ?? [])
+        .filter(
+          (f) => e.feedIds!.includes(f.feedId) && f.day > from && f.day <= day,
+        )
+        .reduce((t, f) => t + f.amount, 0);
+      const missing = added - reported;
+      if (Math.abs(missing) < UNREPORTED_MIN) continue;
+      gap += missing;
+      names.add(e.name);
+    }
     return {
       day,
       move: cents(known.reduce((t, m) => t + m, 0)),
@@ -64,6 +94,10 @@ export function dailyMovement(args: {
               .reduce((t, f) => t + f.amount, 0),
           )
         : null,
+      unreported:
+        Math.abs(gap) >= UNREPORTED_MIN
+          ? { amount: cents(gap), names: [...names] }
+          : null,
     };
   });
 }

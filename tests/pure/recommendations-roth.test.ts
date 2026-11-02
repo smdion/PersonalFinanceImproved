@@ -162,3 +162,61 @@ describe("recommendationsFromRothIra", () => {
     expect(recs(view(220_000), 2027, "2026-11-01")[0]!.urgency).toBe("soon");
   });
 });
+
+describe("a backdoor deposit waiting to be converted", () => {
+  const withPending = (
+    preTax: number,
+    pending: number,
+    rothRoute: "direct" | "backdoor" | null,
+  ) =>
+    buildRothIraView({
+      rothIra: {
+        filingStatus: "MFJ",
+        phaseOut: { start: 200_000, end: 210_000 },
+        people: [
+          {
+            personId: 7,
+            name: "Ann",
+            compensation: 180_000,
+            iraLimit: 7000,
+            hasEmployerPlan: true,
+            iraRoom: null,
+            rothRoute,
+          },
+        ],
+      },
+      wageAgi: 220_000,
+      hsaOutsidePayroll: 0,
+      investmentIncome: 0,
+      preTaxIraByPerson: [{ personId: 7, amount: preTax }],
+      pendingConversionByPerson: [{ personId: 7, amount: pending }],
+      marginOverride: null,
+    });
+
+  it("is after-tax: no pro-rata warning for it", () => {
+    const v = withPending(625.19, 625, "backdoor");
+    expect(v.proRata).toEqual([]);
+    expect(v.pendingConversion).toEqual([
+      { personId: 7, name: "Ann", amount: 625 },
+    ]);
+    // Already going the backdoor route: nothing to do.
+    expect(recommendationsFromRothIra(v, 2026, "2026-11-01")).toEqual([]);
+  });
+
+  it("older pre-tax money beside it still warns, for that amount only", () => {
+    const v = withPending(5625, 625, "backdoor");
+    expect(v.proRata[0]!.amount).toBe(5000);
+  });
+
+  it("someone not going the backdoor route: the deposit may be deductible, so it counts", () => {
+    const v = withPending(5000, 5000, "direct");
+    expect(v.pendingConversion).toEqual([]);
+    expect(v.proRata[0]!.amount).toBe(5000);
+  });
+
+  it("never more than a year's IRA contribution", () => {
+    const v = withPending(20_000, 20_000, "backdoor");
+    expect(v.pendingConversion[0]!.amount).toBe(7000);
+    expect(v.proRata[0]!.amount).toBe(13_000);
+  });
+});

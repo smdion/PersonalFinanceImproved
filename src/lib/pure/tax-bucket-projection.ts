@@ -100,6 +100,34 @@ function projectContributionBasis(
   return sum;
 }
 
+/** Roth basis at the transition: the engine's own per-account figures
+ *  (accrual, gap-year draws and draw order all in them), so this page and
+ *  the projection read one number. A row without them (no tracked basis)
+ *  falls back to `projectContributionBasis`. */
+function transitionRothBasis(
+  rothBasisMeta: RothBasisMeta | null,
+  projected: {
+    rothContributionBasisRemaining?: number;
+    rothConversionBasisRemaining?: number;
+  },
+  contributionByYear: Map<number, number> | undefined,
+  transitionYear: number,
+): { contributionBasis: number; conversionBasis: number } {
+  return {
+    contributionBasis:
+      projected.rothContributionBasisRemaining ??
+      projectContributionBasis(
+        rothBasisMeta,
+        contributionByYear,
+        transitionYear,
+      ),
+    conversionBasis:
+      projected.rothConversionBasisRemaining ??
+      rothBasisMeta?.conversionBasis ??
+      0,
+  };
+}
+
 /** The brokerage's cost basis at the transition: the engine's own
  *  per-account basis (brokerage-basis.ts — contributions, overflow, ramp
  *  and lump sums, exactly as the projection moves them), so this page and
@@ -384,8 +412,12 @@ export function computeTaxBucketProjection(input: {
 
     if (isIraCategory(now.category)) {
       if (isTaxFreeBucket(now.taxType)) {
-        const projectedContributionBasis = projectContributionBasis(
+        const {
+          contributionBasis: projectedContributionBasis,
+          conversionBasis: projectedConversionBasis,
+        } = transitionRothBasis(
           now.rothBasisMeta,
+          projected,
           contributionsByKey.get(key),
           transitionYear,
         );
@@ -393,6 +425,7 @@ export function computeTaxBucketProjection(input: {
           ? {
               ...now.rothBasisMeta,
               contributionBasis: projectedContributionBasis,
+              conversionBasis: projectedConversionBasis,
             }
           : null;
         slices = computeRothIraAccess({
@@ -400,7 +433,7 @@ export function computeTaxBucketProjection(input: {
           currentAge: ageAtTransition,
           currentYear: transitionYear,
           contributionBasis: projectedContributionBasis,
-          conversionBasis: now.rothBasisMeta?.conversionBasis ?? 0,
+          conversionBasis: projectedConversionBasis,
           latestConversionYear: now.rothBasisMeta?.latestConversionYear ?? null,
         });
       } else {
@@ -424,8 +457,12 @@ export function computeTaxBucketProjection(input: {
       );
       const eligible = ruleOf55?.eligible ?? false;
       if (isTaxFreeBucket(now.taxType)) {
-        const projectedContributionBasis = projectContributionBasis(
+        const {
+          contributionBasis: projectedContributionBasis,
+          conversionBasis: projectedConversionBasis,
+        } = transitionRothBasis(
           now.rothBasisMeta,
+          projected,
           contributionsByKey.get(key),
           transitionYear,
         );
@@ -433,11 +470,11 @@ export function computeTaxBucketProjection(input: {
           ? {
               ...now.rothBasisMeta,
               contributionBasis: projectedContributionBasis,
+              conversionBasis: projectedConversionBasis,
             }
           : null;
         const enteredBasis =
-          projectedContributionBasis +
-          (now.rothBasisMeta?.conversionBasis ?? 0);
+          projectedContributionBasis + projectedConversionBasis;
         slices = computeEmployerPlanRothAccess(
           balance,
           ageAtTransition,

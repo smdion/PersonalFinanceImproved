@@ -57,9 +57,11 @@ export async function getBenchmarkMonthlyPrices(
 }
 
 const CLOSE_TTL_MS = 6 * 60 * 60 * 1000;
+/** A failed fetch is retried sooner: it's usually a blip, not an answer. */
+const FAILED_CLOSE_TTL_MS = 15 * 60 * 1000;
 const closeCache = new Map<
   string,
-  { at: number; close: { date: string; close: number } | null }
+  { until: number; close: { date: string; close: number } | null }
 >();
 
 /** Latest close for a ticker, or null when Tiingo isn't connected, doesn't know it, or failed. */
@@ -68,19 +70,22 @@ export async function getLatestMarketClose(
   ticker: string,
 ): Promise<{ date: string; close: number } | null> {
   const hit = closeCache.get(ticker);
-  if (hit && Date.now() - hit.at < CLOSE_TTL_MS) return hit.close;
+  if (hit && Date.now() < hit.until) return hit.close;
   const apiKey = await getTiingoApiKey(db);
   if (!apiKey) return null;
   try {
     const close = await getLatestClose(apiKey, ticker);
-    closeCache.set(ticker, { at: Date.now(), close });
+    closeCache.set(ticker, { until: Date.now() + CLOSE_TTL_MS, close });
     return close;
   } catch (err) {
     log("warn", "market_close_failed", {
       ticker,
       error: err instanceof Error ? err.message : String(err),
     });
-    closeCache.set(ticker, { at: Date.now(), close: null });
+    closeCache.set(ticker, {
+      until: Date.now() + FAILED_CLOSE_TTL_MS,
+      close: null,
+    });
     return null;
   }
 }

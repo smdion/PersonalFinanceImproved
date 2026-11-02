@@ -1,6 +1,7 @@
 "use client";
 
 /** Monte Carlo results — loading spinner, errors, warnings, depletion callout, and compact summary bar. */
+import { gkAnchorRate } from "@/lib/pure/gk-anchor-rate";
 import { strategySpending } from "@/lib/calculators/strategy-spending";
 import {
   dominantFailureReason,
@@ -167,38 +168,22 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
               // whatever withdrawal strategy/override is actually driving
               // the household's plan, not si.withdrawalRate.
               let firstDecumYear: EngineDecumulationYear | null = null;
-              let priorAccumEnd: number | null = null;
               if (result) {
                 const years = result.projectionByYear;
                 for (let i = 0; i < years.length; i++) {
                   const y = years[i]!;
                   if (y.phase === "decumulation") {
                     firstDecumYear = y;
-                    // The balance GK anchors on: retirement money carried
-                    // into the year (pre-year-setup's retirementBalance).
-                    priorAccumEnd =
-                      i > 0 ? years[i - 1]!.retirementBalance : null;
                     break;
                   }
                 }
               }
 
-              // Guyton-Klinger's actual starting rate (not the flat
-              // "Initial Withdrawal Rate" setting) — what the portfolio pays
-              // that year (spending less Social Security) ÷ the retirement
-              // balance carried in. None while Social Security covers all of
-              // it (the engine anchors later).
-              let gkImpliedRate: number | null = null;
-              if (
-                si.withdrawalStrategy === "guyton_klinger" &&
-                firstDecumYear &&
-                priorAccumEnd != null &&
-                priorAccumEnd > 0
-              ) {
-                const draw =
-                  firstDecumYear.projectedExpenses - firstDecumYear.ssIncome;
-                gkImpliedRate = draw > 0 ? draw / priorAccumEnd : null;
-              }
+              // Guyton-Klinger's actual starting rate (see gkAnchorRate).
+              const gkImpliedRate =
+                si.withdrawalStrategy === "guyton_klinger" && result
+                  ? gkAnchorRate(result.projectionByYear)
+                  : null;
 
               const presetBar: Record<
                 string,
@@ -392,7 +377,7 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
                           {formatPercent(si.inflationRate, 2)}
                           <HelpTip
                             maxWidth={280}
-                            text={`Your inflation rate, varied in each trial (±${formatPercent(si.inflationRisk.stdDev, 2)} standard deviation a year) — and your post-retirement raise (${formatPercent(si.postRetirementInflationRate, 2)}) moves with it, keeping your gap between the two. The engine runs each trial at that trial's average, so a trial runs a little hotter or cooler throughout rather than swinging year to year. Today's dollars use each trial's own inflation. Strategies react differently: a fixed-dollar strategy raises spending with inflation every year regardless, while a guardrail strategy like "Forgo Inflation After Loss" can skip that year's raise after a bad market year.`}
+                            text={`Your inflation rate, varied in each trial (±${formatPercent(si.inflationRisk.stdDev, 2)} standard deviation a year) — and your post-retirement raise (${formatPercent(si.postRetirementInflationRate, 2)}) moves with it, keeping your gap between the two. Each year of a trial draws its own inflation, carried through spending, Social Security and tax brackets. Today's dollars use each trial's own inflation. Strategies react differently: a fixed-dollar strategy raises spending with inflation every year regardless, while a guardrail strategy like "Forgo Inflation After Loss" can skip that year's raise after a bad market year.`}
                           />
                         </div>
                         <div className="text-micro text-faint">inflation</div>

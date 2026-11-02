@@ -11,6 +11,7 @@ import type { AccountMapping } from "@/lib/db/schema";
 import type { Db } from "./transforms";
 import { localDateStr } from "@/lib/utils/date";
 import { log } from "@/lib/logger";
+import { loansFedBySimplefin } from "./loan-feed";
 import {
   isPullMapping,
   mappingsWithTypedIds,
@@ -80,14 +81,15 @@ export async function applyPullMapping(
     if (mapType === "propertyValue") {
       await db
         .update(schema.mortgageLoans)
-        .set({
-          propertyValueEstimated: String(apiBalance),
-          usePurchaseOrEstimated: "estimated",
-        })
+        // The value only: purchase vs estimated is the household's choice.
+        .set({ propertyValueEstimated: String(apiBalance) })
         .where(eq(schema.mortgageLoans.id, loanId));
       return { applied: true, kind: "mortgagePropertyValue" };
     }
     if (mapType === "loanBalance") {
+      // The servicer's own feed outranks a budget app's figure.
+      if ((await loansFedBySimplefin(db)).has(loanId))
+        return { applied: false };
       await db
         .update(schema.mortgageLoans)
         .set({
@@ -173,9 +175,12 @@ export async function clearUnmappedPulledBalances(db: Db): Promise<void> {
     conns.flatMap((c) => c.accountMappings ?? []),
   ).filter(isPullMapping);
   const debtIds = pulled.flatMap((m) => (m.debtId != null ? [m.debtId] : []));
-  const loanIds = pulled.flatMap((m) =>
-    m.loanId != null && m.loanMapType === "loanBalance" ? [m.loanId] : [],
-  );
+  const loanIds = [
+    ...pulled.flatMap((m) =>
+      m.loanId != null && m.loanMapType === "loanBalance" ? [m.loanId] : [],
+    ),
+    ...(await loansFedBySimplefin(db)),
+  ];
   await db
     .update(schema.debts)
     .set({ apiBalance: null, apiBalanceDate: null })

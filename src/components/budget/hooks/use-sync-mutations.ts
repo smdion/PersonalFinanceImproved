@@ -20,11 +20,18 @@ import { useInvalidateBudget } from "./use-invalidate-budget";
 
 export function useSyncMutations() {
   const { invalidateSummary } = useInvalidateBudget();
+  const { data: activeBudgetApi } = trpc.sync.getActiveBudgetApi.useQuery();
 
   const syncFromApi = trpc.budget.syncBudgetFromApi.useMutation({
     onSuccess: (data) => {
       invalidateSummary();
-      toast.success(formatSyncResultToast(data.updated, "pull", "YNAB"));
+      toast.success(
+        formatSyncResultToast(
+          data.updated,
+          "pull",
+          budgetApiServiceLabel(activeBudgetApi),
+        ),
+      );
     },
   });
   const syncToApi = trpc.budget.syncBudgetToApi.useMutation({

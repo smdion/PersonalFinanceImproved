@@ -273,6 +273,11 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
                     <div key={remoteId}>
                       {names.join(" + ")} = {formatCurrency(localTotal)} &rarr;{" "}
                       {tracking?.name ?? "Unknown"}
+                      {names.some(
+                        (n) =>
+                          portfolio.mortgageAccounts?.find((a) => a.label === n)
+                            ?.fedBySimplefin,
+                      ) && " (paused: SimpleFIN reports this loan)"}
                     </div>
                   );
                 })}
@@ -299,10 +304,13 @@ export function PortfolioSection({ service, portfolio, mutations }: Props) {
               localId: `asset:${a.id}`,
               localName: a.label,
             })),
-            ...(portfolio.mortgageAccounts ?? []).map((m) => ({
-              localId: `mortgage:${m.id}:${m.type}`,
-              localName: m.label,
-            })),
+            // A loan SimpleFIN reports can't also be pulled from here.
+            ...(portfolio.mortgageAccounts ?? [])
+              .filter((m) => !m.fedBySimplefin)
+              .map((m) => ({
+                localId: `mortgage:${m.id}:${m.type}`,
+                localName: m.label,
+              })),
             ...(portfolio.debtAccounts ?? []).map((d) => ({
               localId: `debt:${d.id}`,
               localName: d.label,

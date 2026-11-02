@@ -240,13 +240,15 @@ describe("utilities router", () => {
       expect(feb.costPerUnit).toBe(20); // 200 / 10
     });
 
-    it("computes YoY cost change (null for the first year)", async () => {
+    it("computes YoY cost change over the months both years have (null for the first year)", async () => {
       const { summaries } = await caller.utilities.computeSummary();
       const svc = summaries.find((s) => s.serviceId === serviceId)!;
       const y2022 = svc.years.find((y) => y.year === 2022)!;
       const y2023 = svc.years.find((y) => y.year === 2023)!;
       expect(y2022.yoyCostPct).toBeNull();
-      expect(y2023.yoyCostPct).toBeCloseTo((400 - 300) / 300, 5);
+      // 2023 has only January so far: January against January, not
+      // against all of 2022 (Jan + Feb).
+      expect(y2023.yoyCostPct).toBeCloseTo((400 - 100) / 100, 5);
     });
 
     it("exposes latest-year rollups on the service summary", async () => {

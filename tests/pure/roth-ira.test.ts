@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   buildRothIraView,
+  pendingConversion,
   judgeRothIra,
   preTaxIraByPerson,
   rothIraAllowed,
@@ -355,5 +356,36 @@ describe("Roth IRA route", () => {
     expect(backdoorPlanned(v(150_000, "direct"))).toBe(false);
     expect(backdoorPlanned(v(150_000, "backdoor"))).toBe(true);
     expect(backdoorPlanned(v(220_000, null))).toBe(true);
+  });
+});
+
+describe("pendingConversion", () => {
+  const b = (day: string, balance: number) => ({ day, balance });
+  it("the deposit since the last conversion", () => {
+    expect(
+      pendingConversion(
+        [
+          b("2026-10-02", 625.19),
+          b("2026-10-06", 0.19),
+          b("2026-10-31", 625.19),
+        ],
+        "2026-11-01",
+        "2026-09-17",
+      ),
+    ).toBe(625);
+  });
+  it("nothing after it's converted", () => {
+    expect(
+      pendingConversion(
+        [b("2026-10-31", 625.19), b("2026-11-05", 0.19)],
+        "2026-11-06",
+        "2026-09-22",
+      ),
+    ).toBe(0);
+  });
+  it("too little history: nothing", () => {
+    expect(
+      pendingConversion([b("2026-10-31", 625)], "2026-11-01", "2026-09-17"),
+    ).toBe(0);
   });
 });

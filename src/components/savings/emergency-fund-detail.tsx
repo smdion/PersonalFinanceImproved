@@ -141,7 +141,7 @@ export function EmergencyFundDetail({
           {isApiSyncEnabled && (
             <span
               className="text-caption text-blue-600/70"
-              title="Target balance pushed to YNAB"
+              title="Target balance pushed to your budget app"
             >
               → push
             </span>
