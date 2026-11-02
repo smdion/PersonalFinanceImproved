@@ -26,11 +26,7 @@ export const recentlyRetiredProfile: DemoProfile = {
   name: "Recently Retired",
   description:
     "Retired couple, $5M portfolio, delaying Social Security to 70, navigating RMDs and the Roth conversion window.",
-  keyStats: {
-    income: "$0 (retired)",
-    portfolioSize: "$5,000,000",
-    savingsRate: "N/A",
-  },
+  keyStats: { savingsRate: "N/A" },
 
   // ── People ────────────────────────────────────────────────────────────────
   people: [

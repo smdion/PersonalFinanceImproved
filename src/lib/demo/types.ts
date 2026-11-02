@@ -21,9 +21,12 @@ export type DemoProfile = {
   slug: string;
   name: string;
   description: string;
+  /** The chooser card's stats. Income and portfolio size are derived from
+   *  the seeded rows (demoKeyStats); the savings rate is stored because
+   *  the server computes it from database rows — tests/routers/demo-seed-
+   *  stats.test.ts seeds each profile and checks it against the
+   *  Contribution page's figure. */
   keyStats: {
-    income: string;
-    portfolioSize: string;
     savingsRate: string;
   };
 

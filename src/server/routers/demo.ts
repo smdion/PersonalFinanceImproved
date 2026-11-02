@@ -51,7 +51,7 @@ function quoteIdent(name: string): string {
 const MAX_DEMO_SCHEMAS = 10;
 
 /** Seed a demo profile into the given database connection (already on the demo schema). */
-async function seedProfile(db: typeof appDb, profile: DemoProfile) {
+export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
   // 1. People
   const personRows = await db
     .insert(schema.people)

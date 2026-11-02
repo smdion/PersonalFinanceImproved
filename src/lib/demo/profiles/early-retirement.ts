@@ -13,11 +13,7 @@ export const earlyRetirementProfile: DemoProfile = {
   name: "FIRE Pursuer",
   description:
     "High income, aggressive savings rate, targeting early retirement at 45.",
-  keyStats: {
-    income: "$240,000",
-    portfolioSize: "$850,000",
-    savingsRate: "45%",
-  },
+  keyStats: { savingsRate: "45%" },
 
   people: [{ name: "Morgan", dateOfBirth: "1991-11-03", isPrimaryUser: true }],
 

@@ -132,6 +132,36 @@ describe.skipIf(skip)("demo profiles on PostgreSQL", () => {
     expect(rows).toEqual([]);
   });
 
+  it("each profile's chooser savings rate is the Contribution page's rate", async () => {
+    // Seeded exactly as a visitor's demo is, then computed as the page
+    // computes it (computeSummary → householdSavings): projected, match
+    // included, Portfolio money counted — the glossary's savings rate.
+    const { DEMO_PROFILES } = await import("@/lib/demo");
+    const { householdSavings } = await import("@/lib/pure/contributions");
+    for (const profile of Object.values(DEMO_PROFILES)) {
+      const { schemaName: demo } = await (
+        await callerFor(null)
+      ).demo.activateProfile({ slug: profile.slug });
+      const summary = await (
+        await callerFor(demo)
+      ).contribution.computeSummary();
+      const earners = summary.people.filter((p) => p.salary > 0);
+      if (profile.keyStats.savingsRate === "N/A") {
+        expect(earners, profile.slug).toEqual([]);
+        continue;
+      }
+      const { rate } = householdSavings(
+        earners,
+        summary.jointAccountTypes,
+        "projected",
+        { excludeMatch: false },
+      );
+      expect(`${Math.round(rate * 100)}%`, profile.slug).toBe(
+        profile.keyStats.savingsRate,
+      );
+    }
+  }, 300_000);
+
   it("refuses a demo schema missing one of its own tables", async () => {
     await admin.query(`DROP TABLE "${schemaName}".people CASCADE`);
     await expect(
