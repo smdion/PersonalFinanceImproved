@@ -219,6 +219,13 @@ function mapTransaction(t: ActualTransaction): BudgetTransaction {
  */
 /** At most this many requests to the wrapper at once: it reloads the
  *  budget per request and struggles when many run together. */
+/** The `until_date` every transaction list sends. The wrapper's lists end at
+ *  its own today unless told otherwise, which dropped every transaction
+ *  dated after that (a future-dated snapshot adjustment among them) from
+ *  sync, the snapshot scan and the read-back. The last day Actual's
+ *  YYYYMMDD dates can hold. */
+const ACTUAL_LIST_UNTIL = "9999-12-31";
+
 const WRAPPER_BATCH_SIZE = 10;
 
 /** Runs `fn` over `items`, `size` at a time. */
@@ -463,9 +470,15 @@ export class ActualClient implements BudgetAPIClient {
    * under `data.balance`. Reading `res.data.balance` (the old code here)
    * silently produced NaN on every call — pushSnapshotToBudgetApi's
    * delta-vs-live-balance math was broken for every Actual household. */
-  async getAccountBalance(accountId: string): Promise<number> {
+  async getAccountBalance(
+    accountId: string,
+    asOfDate?: string,
+  ): Promise<number> {
+    // cutoff_date is inclusive and read as a local date by the wrapper, so
+    // the wrapper's time zone no longer moves the figure; without it the
+    // balance is "up to the wrapper's today".
     const res = await this.request<{ data: number }>(
-      `/accounts/${accountId}/balance`,
+      `/accounts/${accountId}/balance${asOfDate ? `?cutoff_date=${asOfDate}` : ""}`,
     );
     return fromCents(res.data);
   }
@@ -706,7 +719,7 @@ export class ActualClient implements BudgetAPIClient {
       if (acct.closed) continue;
       try {
         const res = await this.request<{ data: ActualTransaction[] }>(
-          `/accounts/${acct.id}/transactions?since_date=${sinceDate}`,
+          `/accounts/${acct.id}/transactions?since_date=${sinceDate}&until_date=${ACTUAL_LIST_UNTIL}`,
         );
         allTx.push(
           ...res.data.map((t) =>
@@ -793,8 +806,11 @@ export class ActualClient implements BudgetAPIClient {
         },
       }),
     });
+    // The read-back asks for exactly the day it wrote: the wrapper's lists
+    // otherwise end at its own today, and a transaction dated after that
+    // was posted but never found, so a retry posted it again.
     const res = await this.request<{ data: ActualTransaction[] }>(
-      `/accounts/${tx.accountId}/transactions?since_date=${tx.date}`,
+      `/accounts/${tx.accountId}/transactions?since_date=${tx.date}&until_date=${tx.date}`,
     );
     const created = res.data.find((t) => t.imported_id === importedId);
     if (!created) {
@@ -816,7 +832,7 @@ export class ActualClient implements BudgetAPIClient {
     sinceDate: string,
   ): Promise<BudgetTransaction[]> {
     const res = await this.request<{ data: ActualTransaction[] }>(
-      `/accounts/${accountId}/transactions?since_date=${sinceDate}`,
+      `/accounts/${accountId}/transactions?since_date=${sinceDate}&until_date=${ACTUAL_LIST_UNTIL}`,
     );
     return res.data.map((t) => mapTransaction(t));
   }

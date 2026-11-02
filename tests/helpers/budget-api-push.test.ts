@@ -130,7 +130,12 @@ describe("pushSnapshotToBudgetApi — aggregation + create mode", () => {
     expect(client.createTransaction).toHaveBeenCalledTimes(1);
     const call = (client.createTransaction as ReturnType<typeof vi.fn>).mock
       .calls[0]![0];
-    // total 1500 - live 1200 = 300
+    // total 1500 - live 1200 = 300, the live balance read as of the
+    // snapshot's own date (later transactions mustn't move the adjustment)
+    expect(client.getAccountBalance).toHaveBeenCalledWith(
+      "remote-1",
+      "2026-01-01",
+    );
     expect(call.amount).toBe(300);
     expect(call.memo).toContain("snapshot:7");
     expect(call.memo).toContain("Checking");

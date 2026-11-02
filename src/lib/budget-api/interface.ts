@@ -23,8 +23,11 @@ export interface BudgetAPIClient {
   /** List all accounts in the budget */
   getAccounts(): Promise<BudgetAccount[]>;
 
-  /** Get balance for a single account */
-  getAccountBalance(accountId: string): Promise<number>;
+  /** An account's balance: every transaction dated on or before `asOfDate`
+   *  ("YYYY-MM-DD"), or, omitted, everything up to today. A snapshot push
+   *  passes its own date, so transactions dated after it (or the budget
+   *  app's own clock) don't change the adjustment it posts. */
+  getAccountBalance(accountId: string, asOfDate?: string): Promise<number>;
 
   // -- Categories & Months --
 

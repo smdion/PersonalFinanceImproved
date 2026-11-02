@@ -1192,3 +1192,113 @@ describe("ActualClient", () => {
     });
   });
 });
+
+describe("ActualClient with dates after the wrapper's today", () => {
+  // A stand-in that behaves as the real wrapper does (actual-http-api
+  // 26.10.0): a transaction list ends at the wrapper's own today unless
+  // until_date is sent, and a balance counts every transaction up to
+  // cutoff_date (inclusive) or, without it, up to that today.
+  const WRAPPER_TODAY = "2026-11-02";
+  type Row = {
+    id: string;
+    account: string;
+    date: string;
+    amount: number;
+    imported_id?: string;
+  };
+  let rows: Row[];
+  let client: ActualClient;
+
+  beforeEach(() => {
+    mockFetch.mockReset();
+    resetActualWrapperGates();
+    rows = [
+      {
+        id: "opening",
+        account: "acct-1",
+        date: "2026-10-01",
+        amount: 5_000_000,
+      },
+      { id: "later", account: "acct-1", date: "2026-11-03", amount: -333 },
+    ];
+    client = new ActualClient(
+      "http://actual.local",
+      "test-api-key",
+      "sync-id-123",
+    );
+    mockFetch.mockImplementation(async (url: string, init?: RequestInit) => {
+      const u = new URL(url);
+      const m = u.pathname.match(
+        /\/accounts\/([^/]+)\/(transactions|balance)$/,
+      );
+      if (m?.[2] === "transactions" && init?.method === "POST") {
+        const t = JSON.parse(init.body as string).transaction;
+        rows.push({
+          id: `tx-${rows.length}`,
+          account: m[1]!,
+          date: t.date,
+          amount: t.amount,
+          imported_id: t.imported_id,
+        });
+        return jsonResponse({ message: "ok" });
+      }
+      if (m?.[2] === "transactions") {
+        const since = u.searchParams.get("since_date")!;
+        const until = u.searchParams.get("until_date") ?? WRAPPER_TODAY;
+        return jsonResponse({
+          data: rows
+            .filter(
+              (r) => r.account === m[1] && r.date >= since && r.date <= until,
+            )
+            .map((r) => ({ ...r, cleared: true, reconciled: false })),
+        });
+      }
+      if (m?.[2] === "balance") {
+        const cutoff = u.searchParams.get("cutoff_date") ?? WRAPPER_TODAY;
+        return jsonResponse({
+          data: rows
+            .filter((r) => r.account === m[1] && r.date <= cutoff)
+            .reduce((s, r) => s + r.amount, 0),
+        });
+      }
+      if (u.pathname.endsWith("/accounts"))
+        return jsonResponse({
+          data: [
+            { id: "acct-1", name: "Roth", offbudget: true, closed: false },
+          ],
+        });
+      throw new Error(`unexpected ${init?.method ?? "GET"} ${u.pathname}`);
+    });
+  });
+
+  it("finds back a transaction it wrote dated after the wrapper's today", async () => {
+    // A snapshot ahead of the wrapper's clock: the read-back used to miss
+    // it, report a failure with the adjustment posted, and post again on
+    // every retry.
+    const id = await client.createTransaction({
+      accountId: "acct-1",
+      date: "2026-12-15",
+      amount: 10_000,
+      payeeName: "Portfolio Sync",
+      memo: "snapshot:7",
+      cleared: true,
+    });
+    expect(id).toBe("tx-2");
+  });
+
+  it("lists transactions dated after the wrapper's today", async () => {
+    const own = await client.getAccountTransactions("acct-1", "2026-01-01");
+    expect(own.map((t) => t.id)).toEqual(["opening", "later"]);
+    const all = await client.getTransactions("2026-01-01");
+    expect(all.map((t) => t.id)).toEqual(["opening", "later"]);
+  });
+
+  it("reads a balance as of a date, whatever the wrapper's today is", async () => {
+    expect(await client.getAccountBalance("acct-1", "2026-11-02")).toBe(50_000);
+    expect(await client.getAccountBalance("acct-1", "2026-11-03")).toBe(
+      49_996.67,
+    );
+    // Without a date: up to the wrapper's today.
+    expect(await client.getAccountBalance("acct-1")).toBe(50_000);
+  });
+});

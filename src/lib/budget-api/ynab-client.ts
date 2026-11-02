@@ -17,6 +17,7 @@ import type {
   DeltaSyncResult,
 } from "./types";
 import { fromMilliunits, toMilliunits } from "./conversions";
+import { roundToCents } from "@/lib/utils/math";
 import { budgetApiRequest } from "./errors";
 import { transactionIdempotencyKey } from "./idempotency";
 import {
@@ -281,11 +282,20 @@ export class YnabClient implements BudgetAPIClient {
     return res.data.accounts.map(mapAccount);
   }
 
-  async getAccountBalance(accountId: string): Promise<number> {
+  async getAccountBalance(
+    accountId: string,
+    asOfDate?: string,
+  ): Promise<number> {
     const res = await this.request<YnabResponse<{ account: YnabAccount }>>(
       `/accounts/${accountId}`,
     );
-    return fromMilliunits(res.data.account.balance);
+    const balance = fromMilliunits(res.data.account.balance);
+    if (!asOfDate) return balance;
+    // YNAB reports only the balance now: take off what's dated after.
+    const later = (
+      await this.getAccountTransactions(accountId, asOfDate)
+    ).filter((t) => t.date > asOfDate);
+    return roundToCents(later.reduce((s, t) => s - t.amount, balance));
   }
 
   // -- Categories & Months --

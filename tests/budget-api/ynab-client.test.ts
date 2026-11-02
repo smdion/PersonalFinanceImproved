@@ -102,6 +102,48 @@ describe("YnabClient", () => {
       );
       expect(await client.getAccountBalance("acct-1")).toBe(50);
     });
+
+    it("as of a date: today's balance less what's dated after it", async () => {
+      // YNAB reports only the balance now; a snapshot dated before later
+      // transactions must not count them in its adjustment.
+      const tx = (
+        id: string,
+        date: string,
+        amount: number,
+        deleted = false,
+      ) => ({
+        id,
+        account_id: "acct-1",
+        account_name: "Roth",
+        date,
+        amount,
+        payee_name: null,
+        category_id: null,
+        category_name: null,
+        memo: null,
+        cleared: "cleared",
+        approved: true,
+        deleted,
+      });
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ data: { account: { balance: 50_000_000 } } }),
+      );
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: {
+            transactions: [
+              tx("same-day", "2026-11-02", 1_000),
+              tx("after", "2026-11-03", -3_330),
+              tx("after-deleted", "2026-11-04", -99_000, true),
+            ],
+          },
+        }),
+      );
+      // 50,000.00 less the -3.33 dated after: same-day counts, deleted doesn't.
+      expect(await client.getAccountBalance("acct-1", "2026-11-02")).toBe(
+        50_003.33,
+      );
+    });
   });
 
   describe("getCategories", () => {

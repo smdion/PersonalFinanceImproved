@@ -253,10 +253,13 @@ export async function pushSnapshotToBudgetApi(input: {
       ) {
         continue;
       }
-      // Always read the current YNAB balance live - for resync, the cache
-      // is now stale because we just deleted transactions.
+      // Always read the balance live (for resync, the cache is stale: we
+      // just deleted transactions), as of the snapshot's own date: what's
+      // dated after it, or the budget app's clock, mustn't move the
+      // adjustment.
       const currentBalance = await client.getAccountBalance(
         group.remoteAccountId,
+        snapshotDate,
       );
       const difference = roundToCents(group.total - currentBalance);
       const memo = buildMemo(snapshotId, group.contributorLabels);
