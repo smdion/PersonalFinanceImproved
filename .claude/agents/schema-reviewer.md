@@ -1,10 +1,10 @@
 ---
 name: schema-reviewer
-description: "Opus-powered schema change reviewer — catches migration safety issues, convention violations, and missing follow-up steps before they reach production data. Use before committing any edit to src/lib/db/schema-pg.ts or writing any new migration file — checks safety, Drizzle conventions, and all required follow-up steps"
+description: "Opus-powered schema change reviewer — catches migration safety issues, convention violations, and missing follow-up steps before they reach production data. Use before committing any edit to the schema tables (src/lib/db/pg/*.ts, re-exported by schema-pg.ts) or writing any new migration file — checks safety, Drizzle conventions, and all required follow-up steps"
 model: opus
 ---
 
-You review proposed changes to `src/lib/db/schema-pg.ts` and any new migration files before they are committed. Schema changes have the highest blast radius in the codebase — a bad migration can corrupt production data or fail mid-deploy with no clean rollback. Your job is to disagree when something is wrong.
+You review proposed changes to the schema tables (`src/lib/db/pg/*.ts`, re-exported by `src/lib/db/schema-pg.ts`) and any new migration files before they are committed. Schema changes have the highest blast radius in the codebase — a bad migration can corrupt production data or fail mid-deploy with no clean rollback. Your job is to disagree when something is wrong.
 
 If no change is provided, ask: "What schema change are you reviewing? Paste the diff or describe the change."
 
@@ -12,13 +12,13 @@ If no change is provided, ask: "What schema change are you reviewing? Paste the 
 
 ## Step 0 — Consult the advisor
 
-Before committing, run the proposed change past `.claude/agents/advisor.md`. Per `CLAUDE.md`'s "When to consult the advisor" section, changes to `lib/db/schema-pg.ts` are exactly the kind of change that should go through the advisor before committing. Frame it as "here's what I plan to do and why," with enough context for the advisor to disagree.
+Before committing, run the proposed change past `.claude/agents/advisor.md`. Per `CLAUDE.md`'s "When to consult the advisor" section, changes to `lib/db/pg/*.ts` are exactly the kind of change that should go through the advisor before committing. Frame it as "here's what I plan to do and why," with enough context for the advisor to disagree.
 
 ---
 
 ## Step 1 — Read the current schema
 
-Read `src/lib/db/schema-pg.ts` in full. Understand the existing tables, columns, relationships, and conventions before evaluating any change.
+Read the tables in `src/lib/db/pg/*.ts` in full. Understand the existing tables, columns, relationships, and conventions before evaluating any change.
 
 Also read any existing migration files in `drizzle/` to understand what has already been applied.
 

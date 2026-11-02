@@ -35,9 +35,9 @@ Key concept → directory map:
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Calculators (pure)      | `src/lib/calculators/`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Engine modules          | `src/lib/calculators/engine/` (<!-- AUTO-GEN:engineModules -->32<!-- /AUTO-GEN --> modules)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| Calculator I/O types    | `src/lib/calculators/types.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Calculator I/O types    | `src/lib/calculators/types/` (barrel `types.ts`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | Config tables (declare) | `src/lib/config/` (account types, tax, RMD, IRMAA, ACA)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| DB schema               | `src/lib/db/schema.ts` (<!-- AUTO-GEN:tables -->84<!-- /AUTO-GEN -->+ tables)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| DB schema               | `src/lib/db/pg/*.ts` (re-exported by `schema-pg.ts`; <!-- AUTO-GEN:tables -->84<!-- /AUTO-GEN -->+ tables)                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | tRPC routers            | `src/server/routers/` (<!-- AUTO-GEN:primaryRouters -->27<!-- /AUTO-GEN --> primary + <!-- AUTO-GEN:settingsSubRouters -->5<!-- /AUTO-GEN --> settings sub-routers)                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Auth + tRPC middleware  | `src/server/auth.ts`, `src/server/trpc.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | Pages (App Router)      | `src/app/(dashboard)/` (<!-- AUTO-GEN:pages -->36<!-- /AUTO-GEN --> pages)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -249,7 +249,7 @@ every account type — do not add employer_contributions again. See
 `computeReturn()` in `src/lib/pure/performance.ts`, the single canonical
 implementation.
 
-Stored values trusted. Null values computed. Division-by-zero returns null.
+On finalized rollup (`annual_performance`) rows the stored value is trusted and nulls are computed; per-account returns are always computed. Division-by-zero returns null.
 
 ### Finalization Flow
 
@@ -270,7 +270,7 @@ Stored values trusted. Null values computed. Division-by-zero returns null.
 Each calculator follows the same pattern:
 
 ```typescript
-// lib/calculators/types.ts — ALL types live here, decoupled from Drizzle
+// lib/calculators/types/ — shared I/O types, decoupled from Drizzle; a module's own types stay in it
 type XxxInput = { /* all number, never Drizzle string */ asOfDate: Date; };
 type XxxResult = { /* outputs */ warnings: string[]; };
 
@@ -321,7 +321,7 @@ The relocation decision tool (`lib/calculators/relocation.ts`) compares two budg
 
 **How purchases affect the projection:**
 
-1. **Purchase year**: Portfolio withdraws `purchasePrice × downPaymentPercent` (cash outlay), adds `saleProceeds`. Net impact shown in `largePurchaseImpact`.
+1. **Purchase year**: retirement money (the Retirement-parented balance the calculator starts from) pays `purchasePrice × downPaymentPercent` (cash outlay) and gets `saleProceeds`. Net impact shown in `largePurchaseImpact`.
 2. **Loan payments**: Monthly amortization payment added to relocation expenses for `loanTermYears` starting at `purchaseYear`.
 3. **Ongoing costs**: Added to relocation expenses from `purchaseYear` onward (permanent).
 4. **FI target**: Increased by ongoing costs (they're retirement expenses too). Loan payments do NOT increase FI target (they end).
@@ -330,14 +330,14 @@ The relocation decision tool (`lib/calculators/relocation.ts`) compares two budg
 
 `lib/calculators/engine/` runs accumulation and retirement in one pass, year by year. Module map and per-year order: `engine/ARCHITECTURE.md`. Public API: `engine/index.ts`.
 
-1. **Accumulation** (today → retirement): contributions routed per account from the contribution specs (or waterfall / percentage), IRS limits with overflow to a Retirement brokerage, employer match, salary growth with a cap, Roth/Traditional splits, lump sums, brokerage goals.
+1. **Accumulation** (today → retirement): contributions routed per account from the contribution specs (or waterfall / percentage), IRS limits with overflow to a Retirement brokerage, employer match, salary growth with a cap (each person's salary grows at its raise rate and stops at the cap), Roth/Traditional splits, lump sums, brokerage goals.
 2. **Retirement** — three withdrawal routing modes:
    - **Bracket filling** (default): Traditional up to a target bracket, then the rest ranked by each year's real cost — free basis and 0% LTCG room first, then whichever of Roth growth or brokerage gains is cheaper (NIIT-aware), HSA on the same footing (`withdrawal-cost-ranking.ts`). Once Roth, brokerage and HSA are gone, Traditional above the target. Needs a `rothBracketTarget` and brackets; otherwise waterfall.
    - **Waterfall:** accounts in priority order with per-account and per-tax-type caps.
-   - **Percentage:** fixed shares, with an emptied or capped account's share placed on the others.
-   - The withdrawal is grossed up to cover its own tax: brackets from W-4 withholding tables (with a tax multiplier), Social Security taxation (provisional income), NIIT, early-withdrawal penalties.
+   - **Percentage:** fixed shares, with an emptied or capped account's share placed on the others. Once the accounts with a share are full or empty, accounts with a 0% share take the rest, in proportion to what each can still give.
+   - The withdrawal is grossed up to cover its own tax: brackets from W-4 withholding tables (with a tax multiplier, which scales the computed tax for future rate changes; 1.0 is current law), Social Security taxation (provisional income), NIIT, early-withdrawal penalties.
    - Spending follows the household's strategy (fixed, Guyton-Klinger and seven others).
-3. **Tax-aware features** (data in `lib/config/`): RMDs (Uniform Lifetime Table, SECURE 2.0 start ages), QCDs, graduated LTCG, Roth conversions into bracket room (and RMD smoothing), IRMAA and ACA cliffs, the OBBBA senior deduction, inflation-indexed thresholds.
+3. **Tax-aware features** (data in `lib/config/`): RMDs (Uniform Lifetime Table only, SECURE 2.0 start ages; the Joint Life Table, required when the sole beneficiary is a spouse more than 10 years younger, isn't used), QCDs, graduated LTCG, Roth conversions into bracket room (and RMD smoothing), IRMAA and ACA cliffs, the OBBBA senior deduction, inflation-indexed thresholds.
 
 Every setting can change by year ("Changes by year", resolved in `override-resolution.ts`).
 

@@ -12,7 +12,7 @@ Thanks for your interest in contributing! Here's how to get started.
 
 ## Making Changes
 
-1. Create a branch from `main`: `git checkout -b feature/your-feature`
+1. Branch from the current version branch (`vX.Y.Z`), or from `main` for a pull request from a fork: `git checkout -b feature/your-feature`
 2. Make your changes
 3. Ensure all checks pass:
    ```bash

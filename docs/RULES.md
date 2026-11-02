@@ -18,7 +18,7 @@ Three communities shape the app's design:
 
 **YNAB:** Give Every Dollar a Job. Embrace True Expenses (large infrequent costs broken into monthly savings). Roll With the Punches (multi-tier budgets adapt immediately). Age Your Money (income replacement fund). Integrates with YNAB API for transaction tracking — this app is the strategic layer on top.
 
-**The Money Guy Show:** Financial Order of Operations. Wealth Multiplier (net worth as salary multiple by age). 25% savings rate target. Tax-bucket diversification (Roth / Traditional / After-Tax / HSA) as a first-class feature.
+**The Money Guy Show:** Financial Order of Operations. Money Guy's checkpoints by age (liquid investments as a multiple of gross income). 25% savings rate target. Tax-bucket diversification (Roth / Traditional / After-Tax / HSA) as a first-class feature.
 
 **Bogleheads:** Keep it simple (account-level balances, not individual funds). Stay the course (show the full long-term history). Tax-efficient fund placement. Low costs.
 
@@ -31,7 +31,7 @@ Three communities shape the app's design:
 This is the architectural foundation. Every data model, UI component, and calculation must be designed so that change is easy and expected.
 
 1. **Nothing is hardcoded that could change.** Contribution limits, tax brackets, budget categories, savings buckets, account types — all configurable data, never constants in code.
-2. **Entities are generic, not special-cased.** Contribution accounts are one generic system — adding a 529 plan is adding a row, not writing new code.
+2. **Entities are generic, not special-cased.** Contribution accounts are one generic system — adding a 529 plan is adding a row, not writing new code (the target; see § Known Gaps).
 3. **Budget profiles are fully user-created.** Not hard-wired scenarios.
 4. **Savings buckets are user-defined.** Users can add, rename, archive, or remove goals.
 5. **Retirement scenarios are fully composable.** Different withdrawal rates, target incomes, start years — all mix-and-match.
@@ -93,6 +93,9 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **`lib/pure` imports from `@/server/helpers/transforms` and `/settings`.** The rule below allows the first as a stopgap; don't extend it.
 - **The `version` permission.** Decided: it manages backups of household data, not access. Today an imported backup can also change logins and access settings.
 - **Files and functions over the size rule.** `.size-exempt` isn't a pass to grow.
+- **Roth conversions don't add to Roth basis,** until fixed. Conversion basis is decrement-only (`lib/pure/roth-basis-tracking.ts`).
+- **The IRS cap pass doesn't apply 415(c) annual additions or the pay bound,** until fixed. 415(c) is read only for mega-backdoor room.
+- **Year totals come from three places** (the schedule, the blended walk, average × checks), until fixed. Only the schedule is right.
 
 ## Data-Driven Architecture
 
@@ -158,14 +161,14 @@ The orchestrator (`projection.ts`) calls modules in an explicit pipeline order; 
 ### Rules
 
 1. **No new logic in the orchestrator.** `projection.ts` calls modules — it doesn't implement financial logic itself. New features (e.g., a new tax-aware optimization) get their own module.
-2. **Explicit pipeline order.** The sequence of operations (contribution routing → growth → withdrawal routing → RMD enforcement → post-withdrawal optimization → balance deduction) is defined in `projection.ts`. Changes to ordering must be intentional and documented.
+2. **Explicit pipeline order.** The per-year order is defined in the year handlers and listed in `engine/ARCHITECTURE.md` § One year. Changes to it must be intentional and update that list.
 3. **Module interfaces are contracts.** Each module declares its input type. Callers pass data through the interface — they don't reach into module internals or share mutable state.
 4. **Override resolution is centralized.** All per-year sticky-forward config resolution goes through `override-resolution.ts`. No module implements its own override logic.
 5. **Balance operations use utilities.** Clone, deduct, grow, and track operations use `balance-utils.ts`, `balance-deduction.ts`, `growth-application.ts`, and `individual-account-tracking.ts`. Never inline balance math in the orchestrator or other modules.
 
 ### Public API
 
-`engine/index.ts` is the only entry point: `calculateProjection()`, the tax helpers `estimateEffectiveTaxRate()`, `incomeCapForMarginalRate()`, `marginalRateAboveTarget()`, `computeTaxableSS()`, and `rankWithdrawalTiers()` (withdrawal cost ranking), plus their types. Everything else is internal to `engine/`.
+`engine/index.ts` is the only entry point: `calculateProjection()`, the tax helpers `estimateEffectiveTaxRate()`, `incomeCapForMarginalRate()`, `marginalRateAboveTarget()`, `computeTaxableSS()`, `rankWithdrawalTiers()` (withdrawal cost ranking) and `gapShortfallFloor()` (the gap-year shortfall floor), plus their types. Everything else is internal to `engine/`.
 
 ---
 
@@ -179,7 +182,7 @@ The orchestrator (`projection.ts`) calls modules in an explicit pipeline order; 
 
 **How to tell if logic is in the wrong place:** it's in a `.transaction()` callback; it's in a `protectedProcedure` handler doing math/validation/aggregation; it needs `import * as schema` or `import { eq } from "drizzle-orm"` to work; or it can't be tested without mocking the database.
 
-Full contributor-facing writeup (existing pure modules table, import-discipline examples) lives in `CONTRIBUTING.md` § Pure Business Logic Boundary — this section is the authoritative rule; that one is the onboarding-friendly version. Keep them consistent if either changes.
+The short version for contributors is `CONTRIBUTING.md` § Before you write code. This section is the authoritative rule; keep them consistent if either changes.
 
 ## The Holistic Rule
 
@@ -218,28 +221,28 @@ Portfolio Snapshots + Performance Data + Settings
 
 ### Shared State Sources
 
-| Data                               | Source                                   | Key                                                                                                                                                                                                                                                         |
-| ---------------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Year-level financial data          | `buildYearEndHistory()`                  | `YearEndRow` from `net_worth_annual` + live current year                                                                                                                                                                                                    |
-| Tax location breakdown             | `YearEndRow.portfolioByTaxLocation`      | JSONB on `net_worth_annual` (finalized) / snapshot (current)                                                                                                                                                                                                |
-| Budget column                      | `app_settings`                           | `budget_active_column`                                                                                                                                                                                                                                      |
-| Annual expenses                    | `getAnnualExpensesFromBudget()`          | Uses `budget_active_column`                                                                                                                                                                                                                                 |
-| Total compensation (profile-aware) | `resolveCompensation()`                  | `server/helpers/salary.ts` — the single place salary+bonus is computed under a Salary Profile entry                                                                                                                                                         |
-| Salary override merge              | `applyActiveSalary()`                    | Final `active ?? raw` merge of the What-If sandbox salary onto an already-resolved raw salary                                                                                                                                                               |
-| Salary override map                | `loadAndApplySalaryProfile()`            | The active (or requested) Salary Profile's entries                                                                                                                                                                                                          |
-| Portfolio balances                 | `getLatestSnapshot()`                    | Latest `portfolio_snapshots` row                                                                                                                                                                                                                            |
-| Contribution accounts              | `buildContribAccounts()`                 | `contribution_accounts` table                                                                                                                                                                                                                               |
-| Employer match                     | `computeGroupedEmployerMatch()`          | Combines Roth/Traditional splits of one account before applying the match cap once; every consumer (`buildContribAccounts`, `buildContributionDisplaySpecs`, `aggregateContributionsByCategory`, `retirement.ts`'s scenario comparison) routes through this |
-| Contribution specs                 | `buildContributionDisplaySpecs()`        | Per-account specs, incl. match via `computeGroupedEmployerMatch()`                                                                                                                                                                                          |
-| Category aggregations              | `aggregateContributionsByCategory()`     | Contribution + match totals per account category, incl. match via `computeGroupedEmployerMatch()`                                                                                                                                                           |
-| Account type config                | `getAccountTypeConfig()`                 | All account-type behavior (from `ACCOUNT_TYPE_CONFIG`)                                                                                                                                                                                                      |
-| Parent category map                | `getParentCategory()`                    | Account type → goal category (Retirement/Portfolio) via config                                                                                                                                                                                              |
-| Mortgage balance                   | `computeMortgageBalance()`               | Amortization from loans + extra payments, or the servicer feed / budget pull in `api_balance` (feed wins)                                                                                                                                                   |
-| Financial rules & milestones       | `evaluateMilestones()`                   | `lib/pure/milestones.ts` — Checkup, Milestones page and Retirement readiness all read its results; thresholds in `lib/config/milestones.ts`                                                                                                                 |
-| Household annual income            | `computeAnnualEarnings()`                | `lib/pure/household-income.ts` — salary + the resolved bonus, pre-tax money (incl. bonus-check contributions), FICA wages; the annual tax, Income card, Living Costs and MAGI all read it (never re-sum `salary`)                                           |
-| Household tax                      | `calculateHouseholdTax()`                | `lib/calculators/tax.ts` — federal on combined income, SS per person, Additional Medicare on the household above the liability row                                                                                                                          |
-| Roth IRA eligibility               | `buildRothIraView()`                     | `lib/pure/roth-ira.ts` — the Income card panel and the Roth / pro-rata recommendations read it                                                                                                                                                              |
-| Holding periods                    | `deriveObservedPeriods()` / `periodOn()` | `lib/pure/holding-periods.ts` — observed periods derived from `holding_observations` on read; entered ones in `holding_periods`; per part (`accountSplits` / `partSharesOn`) only for an account whose feeds are linked per part                            |
+| Data                               | Source                                                                        | Key                                                                                                                                                                                                                                                         |
+| ---------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Year-level financial data          | `buildYearEndHistory()`                                                       | `YearEndRow` from `net_worth_annual` + live current year                                                                                                                                                                                                    |
+| Tax location breakdown             | `YearEndRow.portfolioByTaxLocation`                                           | JSONB on `net_worth_annual` (finalized) / snapshot (current)                                                                                                                                                                                                |
+| Budget column                      | `app_settings`                                                                | `budget_active_column`                                                                                                                                                                                                                                      |
+| Annual expenses                    | `getAnnualExpensesFromBudget()` (DB) over `computeBudgetAnnualTotal()` (pure) | Uses `budget_active_column`                                                                                                                                                                                                                                 |
+| Total compensation (profile-aware) | `resolveCompensation()`                                                       | `server/helpers/salary.ts` — the single place salary+bonus is computed under a Salary Profile entry                                                                                                                                                         |
+| Salary override merge              | `applyActiveSalary()`                                                         | Final `active ?? raw` merge of the What-If sandbox salary onto an already-resolved raw salary                                                                                                                                                               |
+| Salary override map                | `loadAndApplySalaryProfile()`                                                 | The active (or requested) Salary Profile's entries                                                                                                                                                                                                          |
+| Portfolio balances                 | `getLatestSnapshot()`                                                         | Latest `portfolio_snapshots` row                                                                                                                                                                                                                            |
+| Contribution accounts              | `buildContribAccounts()`                                                      | `contribution_accounts` table                                                                                                                                                                                                                               |
+| Employer match                     | `computeGroupedEmployerMatch()`                                               | Combines Roth/Traditional splits of one account before applying the match cap once; every consumer (`buildContribAccounts`, `buildContributionDisplaySpecs`, `aggregateContributionsByCategory`, `retirement.ts`'s scenario comparison) routes through this |
+| Contribution specs                 | `buildContributionDisplaySpecs()`                                             | Per-account specs, incl. match via `computeGroupedEmployerMatch()`                                                                                                                                                                                          |
+| Category aggregations              | `aggregateContributionsByCategory()`                                          | Contribution + match totals per account category, incl. match via `computeGroupedEmployerMatch()`                                                                                                                                                           |
+| Account type config                | `getAccountTypeConfig()`                                                      | All account-type behavior (from `ACCOUNT_TYPE_CONFIG`)                                                                                                                                                                                                      |
+| Parent category map                | `getParentCategory()`                                                         | Account type → goal category (Retirement/Portfolio) via config                                                                                                                                                                                              |
+| Mortgage balance                   | `computeMortgageBalance()`                                                    | Amortization from loans + extra payments, or the servicer feed / budget pull in `api_balance` (feed wins)                                                                                                                                                   |
+| Financial rules & milestones       | `evaluateMilestones()`                                                        | `lib/pure/milestones.ts` — Checkup, Milestones page and Retirement readiness all read its results; thresholds in `lib/config/milestones.ts`                                                                                                                 |
+| Household annual income            | `computeAnnualEarnings()`                                                     | `lib/pure/household-income.ts` — salary + the resolved bonus, pre-tax money (incl. bonus-check contributions), FICA wages; the annual tax, Income card, Living Costs and MAGI all read it (never re-sum `salary`)                                           |
+| Household tax                      | `calculateHouseholdTax()`                                                     | `lib/calculators/tax.ts` — federal on combined income, SS per person, Additional Medicare on the household above the liability row                                                                                                                          |
+| Roth IRA eligibility               | `buildRothIraView()`                                                          | `lib/pure/roth-ira.ts` — the Income card panel and the Roth / pro-rata recommendations read it                                                                                                                                                              |
+| Holding periods                    | `deriveObservedPeriods()` / `periodOn()`                                      | `lib/pure/holding-periods.ts` — observed periods derived from `holding_observations` on read; entered ones in `holding_periods`; per part (`accountSplits` / `partSharesOn`) only for an account whose feeds are linked per part                            |
 
 ### Rules
 
@@ -249,6 +252,7 @@ Portfolio Snapshots + Performance Data + Settings
 4. **Shared helpers, not duplicated queries.** Use `src/server/helpers/` when multiple routers need the same derived value.
 5. **Age and personal data come from the `people` table.** Never hardcode ages or personal details.
 6. **Grep before reimplementing a documented rule.** Before writing a display rule, derived formula, or label mapping that plausibly already exists (check DESIGN.md and grep for similarly-named components/hooks first), find and reuse the existing implementation rather than writing a second one from the spec. Two independent implementations of the same rule will diverge — this is how the sub-row label rule, tax-type labels, and the household savings-rate formula each shipped real bugs after being written twice.
+7. **Year totals come from the year schedule.** One function computes them; every year panel reads it (not true yet: see § Known Gaps).
 
 ### The Salary Profile layer
 
@@ -392,8 +396,8 @@ a Contribution Profile's `deductions` active-field entry
 - Tax location data derived from account type config instead of stored/snapshot data
 - A component or router with `if (category === '401k')` or similar string check
 - A local label map duplicating what exists in `src/lib/config/`
-- A `{ MFJ: <figure>, Single: <figure>, HOH: <figure> }` tax-figure table (rates, thresholds, bracket data) declared outside `src/lib/config/` instead of imported from a config module (R43 — `tests/lint/violations.test.ts` rule 23)
-- A local `const` re-declaring an ALL_CAPS name already exported from `src/lib/constants.ts` or a `src/lib/config/` module, instead of importing it (R43 — rule 24)
+- A `{ MFJ: <figure>, Single: <figure>, HOH: <figure> }` tax-figure table (rates, thresholds, bracket data) declared outside `src/lib/config/` instead of imported from a config module (`tests/lint/violations.test.ts` rule 23)
+- A local `const` re-declaring an ALL_CAPS name already exported from `src/lib/constants.ts` or a `src/lib/config/` module, instead of importing it (rule 24)
 - A hardcoded `['401k', '403b', 'hsa', 'ira', 'brokerage']` array instead of `getAllCategories()`
 - A new account type requiring code changes beyond one config entry
 - A router or component using `displayName ?? accountLabel` inline instead of `accountDisplayName()`
@@ -599,18 +603,20 @@ Two `parentCategory` values classify all investment accounts by their goal:
 | **Retirement** | 401k, 403b, IRA, HSA | Retirement projections, contribution engine                 |
 | **Portfolio**  | Brokerage            | Portfolio totals only; excluded from retirement projections |
 
+The table shows defaults. A brokerage account can be Retirement-parented (a Retirement brokerage); its `parentCategory`, not its type, decides.
+
 Each account type has a default `parentCategory` in `ACCOUNT_TYPE_CONFIG` (brokerage defaults to Portfolio, retirement accounts default to Retirement). The `parentCategory` is user-editable per account in the Portfolio page and controls all routing — retirement projections include only Retirement-category accounts, the brokerage page shows only Portfolio-category accounts. The config default determines the initial assignment, but `parentCategory` is the single source of truth for behavior.
 
 **Note:** ESPP, Rollover, Employer Match, Profit Sharing are **sub-types** (`subType` field) of their parent account type — not separate account categories. The 5 account categories are: `401k`, `403b`, `ira`, `hsa`, `brokerage`. Sub-types are defined per account type in `ACCOUNT_TYPE_CONFIG.subTypeOptions`.
 
-**Retirement ⊂ Portfolio.** Portfolio means ALL accounts. Retirement is the subset used for retirement projections. Every account either rolls up directly to Portfolio or into Retirement (which is included in Portfolio).
+**Two words, two meanings.** "All accounts" means every account. "Portfolio money" means the Portfolio-parented accounts. Every account is either Retirement money (the subset used for retirement projections) or Portfolio money; together they are all accounts.
 
 **What Portfolio money may and may not affect (the retirement-scope contract, v0.8.11).** Portfolio-parented accounts (savings outside the retirement plan) are never spent in retirement. In the projection engine and everything built on it:
 
 - **Retirement answers read retirement money only** — `retirementBalance` on each year row (every account minus the Portfolio-parented ones, `scopedBalances`): spending strategies and the rate-seeded first year, depletion (`retirementDepletionAge`), the plan verdict (`assessPlan`, `lib/calculators/plan-outcome.ts` — the one judge for success/failure everywhere), simulation success, bands and terminal balances, Coast FIRE, strategy comparison, the Social Security / bracket optimizers, tax optimization, relocation, stress tests, nest-egg figures, and Simple tax mode (which simulates retirement money alone).
 - **Retirement money never becomes Portfolio money**: contribution overflow, reinvested RMD money and retirement lump sums go to Retirement brokerages (a projection-only one when there are none); the contribution-rate ceiling caps retirement contributions only.
 - **Portfolio money is never spent for retirement or moved into it**: brokerage goals, the Brokerage page's ramp and lump sums are Portfolio money; balance corrections take from retirement accounts first.
-- **`allAccountsBalance` (Portfolio included) is for net-worth views only** — FI milestones (liquid net worth = every account plus cash) and the Money Guy benchmark. The `local/no-all-accounts-balance` lint rule enforces the allow-list; `tests/calculators/retirement-scope-invariance.test.ts` proves +$1M of Portfolio money changes no retirement answer.
+- **`allAccountsBalance` (Portfolio money included) is for net-worth views only** — FI milestones (liquid net worth = every account plus cash) and the Money Guy benchmark. The `local/no-all-accounts-balance` lint rule enforces the allow-list; `tests/calculators/retirement-scope-invariance.test.ts` proves +$1M of Portfolio money changes no retirement answer.
 - **Social Security is entered in today's dollars and grows at the general inflation rate (its COLA) in `socialSecurityForYear` alone** — in today's dollars it stays at what was entered. Its taxable share is taxed with the rest of ordinary income (`computeTaxFromSlots`); any benefit above spending pays that tax first.
 - **Inflation in the spending strategies: spending-based strategies are real, percentage-based bounds are nominal.** Fixed, Forgo Inflation, Guyton-Klinger, Spending Decline and RMD Spending before the RMD age build on inflation-adjusted figures. Constant Percentage, Endowment and Vanguard Dynamic keep their floors and ceilings in nominal dollars, and say so in their labels: an inflation-adjusted floor would push withdrawals up in bad years, past what the portfolio sustains.
 - **The one coupling: RMDs.** Required minimum distributions on Portfolio-parented Traditional accounts are real (the IRS doesn't care how accounts are categorized), so they still raise taxable income and RMD amounts.
@@ -629,18 +635,18 @@ Each account type has a default `parentCategory` in `ACCOUNT_TYPE_CONFIG` (broke
 
 The Performance page uses a **separate grouping** based on `accountType` from the `performance_accounts` master table — not `parentCategory`. This groups accounts by what they _are_, not their goal:
 
-| Display Category | Account Types                                        | Derived From                |
-| ---------------- | ---------------------------------------------------- | --------------------------- |
-| **Brokerage**    | All brokerage accounts (Long Term, Retirement, ESPP) | `accountType = 'brokerage'` |
-| **HSA**          | All HSA accounts                                     | `accountType = 'hsa'`       |
-| **Retirement**   | 401k, 403b, IRA                                      | Everything else             |
-| **Portfolio**    | All accounts combined                                | Sum of all categories       |
+| Display Category | Account Types                                                | Derived From                |
+| ---------------- | ------------------------------------------------------------ | --------------------------- |
+| **Brokerage**    | All brokerage accounts (Long Term, Retirement, ESPP)         | `accountType = 'brokerage'` |
+| **HSA**          | All HSA accounts                                             | `accountType = 'hsa'`       |
+| **Retirement**   | 401k, 403b, IRA                                              | Everything else             |
+| **Portfolio**    | All accounts combined (a display label, not Portfolio money) | Sum of all categories       |
 
 This mapping is `accountTypeToPerformanceCategory()` (`lib/config/display-labels.ts`). Annual rollup rows (`annual_performance.category`) and account filtering both use this grouping. For `account_performance` rows without a `performanceAccountId`, the system falls back to matching by `institution + accountLabel` against the master table, then to the stored `parentCategory`.
 
 **Where numbers appear:**
 
-- **All accounts (Portfolio):** Net Worth page, Net Worth dashboard card, Portfolio page, Performance page
+- **All accounts:** Net Worth page, Net Worth dashboard card, Portfolio page, Performance page
 - **Retirement-only:** Retirement page, Retirement dashboard card, contribution engine projections
 - **By account type:** Performance page tabs, Historical page `portfolioByType` breakdown
 
@@ -785,7 +791,7 @@ These are true cross-cutting reference data that no single page owns.
 
 ### Rules
 
-1. **Financial amounts use `zDecimal`.** All tRPC mutations that write decimal/currency columns must use the shared `zDecimal` validator from `_shared.ts` — never bare `z.string()`. This applies to performance, portfolio, budget, and all other domain mutations.
+1. **Financial amounts use `zDecimal`.** All tRPC mutations that write decimal/currency columns must use the shared `zDecimal` validator from `@/lib/config/enum-values` — never bare `z.string()`. This applies to performance, portfolio, budget, and all other domain mutations.
 2. **Account type uses config enum.** Every mutation that accepts `accountType` must use `z.enum(accountCategoryEnum())`. No `z.string().min(1)` on account type fields.
 3. **Shared schemas for shared tables.** When multiple mutations write to the same table, extract the field validators into a shared schema or compose from shared field definitions. Don't define independent schemas with different constraints.
 4. **Year fields are bounded.** All year inputs should use `z.number().int().min(1900).max(2100)` or similar reasonable bounds — not bare `z.number()`.
@@ -811,11 +817,11 @@ These are true cross-cutting reference data that no single page owns.
 
 ### Accounting decisions
 
-1. **Payroll-year attribution.** Purchase lots belong to the year payroll was withheld, not the settlement year. The Dec 31 lot (shares settle in January) is a **prior-year** contribution. The Mar 31 lot is the current year.
+1. **Payroll-year attribution.** Purchase lots belong to the year payroll was withheld, not the settlement year. A lot whose purchase date is in one year and settlement date in the next is a contribution of the purchase year.
 
-2. **`total_contributions` = market value at purchase.** The provider applies the 15% lookback discount before publishing figures. `total_contributions` is `cost_basis ÷ 0.85` (the market value paid), not the employee's out-of-pocket cost. This is consistent with how 401k/HSA employer match is handled — total always includes both sides.
+2. **`total_contributions` = market value at purchase:** Form 3922 box 4 (FMV on the exercise date) × box 5 shares, not the employee's out-of-pocket cost. This is consistent with how 401k/HSA employer match is handled — total always includes both sides.
 
-3. **`employer_contributions` = the 15% discount.** `employer_contributions = total_contributions − cost_basis`. This is the "employer match equivalent" — it is not a cash contribution by the employer, just the discount portion tracked separately for reporting.
+3. **`employer_contributions` = that market value − cost basis** (the plan's discount, whatever it is). This is the "employer match equivalent" — it is not a cash contribution by the employer, just the discount portion tracked separately for reporting.
 
 4. **`rollovers` on the ESPP (source) account = negative.** Wire transfers from the ESPP provider to the destination brokerage are outgoing rollovers. Record as negative values. Use the YTD total from the provider's statement, not individual transaction amounts.
 

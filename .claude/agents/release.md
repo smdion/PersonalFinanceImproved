@@ -18,7 +18,7 @@ The full procedure is documented in `.scratch/docs/ops/OPS.md` § "Release Proce
 git status          # working tree must be clean
 git branch          # confirm you are on the feature branch (not main)
 pnpm test           # must pass — fix failures before proceeding
-pnpm lint           # must be zero errors (warnings OK)
+pnpm lint           # must pass: zero errors and zero warnings (--max-warnings 0)
 pnpm build          # must succeed
 ```
 
@@ -105,7 +105,7 @@ See CHANGELOG.md for details."
 
 ### Step 7 — Wait for CI
 
-CI checks: type-check, lint, file sizes, build, tests, E2E, audit, migrations, docs freshness, Docker build. All must pass. Do not merge with a failing CI check.
+CI checks: type-check, lint, file sizes, build, tests, E2E, migrations, docs freshness, Docker build. All must pass. Do not merge with a failing CI check.
 
 If CI fails on something introduced by this release, fix it on the feature branch, push, and wait for CI again.
 

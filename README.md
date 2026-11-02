@@ -104,14 +104,14 @@ All configuration is through environment variables. Copy `.env.example` to `.env
 
 ### Optional — authentication
 
-| Variable                | Description                                                                        |
-| ----------------------- | ---------------------------------------------------------------------------------- |
-| `ALLOW_DEV_MODE`        | Set `true` to enable dev-mode login (type any name to log in; no Authentik needed) |
-| `AUTH_AUTHENTIK_ISSUER` | Authentik OIDC issuer URL (e.g. `https://auth.example.com/application/o/ledgr`)    |
-| `AUTH_AUTHENTIK_ID`     | Authentik OIDC client ID                                                           |
-| `AUTH_AUTHENTIK_SECRET` | Authentik OIDC client secret                                                       |
-| `DEMO_ONLY`             | Set `true` for demo-only mode — no login, read-only, with a profile chooser        |
-| `ALLOWED_ACTUAL_HOSTS`  | Comma-separated hostnames the Actual Budget client may reach on a private network  |
+| Variable                | Description                                                                                                                                                                                                                                     |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ALLOW_DEV_MODE`        | Set `true` to enable dev-mode login (type any name to log in; no Authentik needed)                                                                                                                                                              |
+| `AUTH_AUTHENTIK_ISSUER` | Authentik OIDC issuer URL (e.g. `https://auth.example.com/application/o/ledgr`). A production build needs it set at build time too, or the dashboard pages prerender as static with the dev user baked in (the Docker image sets a placeholder) |
+| `AUTH_AUTHENTIK_ID`     | Authentik OIDC client ID                                                                                                                                                                                                                        |
+| `AUTH_AUTHENTIK_SECRET` | Authentik OIDC client secret                                                                                                                                                                                                                    |
+| `DEMO_ONLY`             | Set `true` for demo-only mode — no login, read-only, with a profile chooser                                                                                                                                                                     |
+| `ALLOWED_ACTUAL_HOSTS`  | Comma-separated hostnames the Actual Budget client may reach on a private network                                                                                                                                                               |
 
 ### Integrations
 
@@ -242,11 +242,11 @@ Migrations are managed by Drizzle Kit: each release line starts from a squashed 
 All three are configured from **Settings → Integrations** — there are no credential environment variables. Only one budget provider (YNAB or Actual) can be active at a time; SimpleFIN runs alongside either.
 
 - **YNAB (You Need A Budget)** — Generate a personal access token at [YNAB Developer Settings](https://app.ynab.com/settings/developer), paste it in, and pick a budget. Syncs accounts, categories, monthly summaries, and transactions with delta sync for fast incremental updates. Two-way: category-goal targets and portfolio snapshots can be pushed back.
-- **Actual Budget** — Requires a running [Actual Budget HTTP API](https://github.com/jhonderson/actual-http-api) wrapper in front of your Actual server. Enter the server URL, API key, and budget sync ID. Outbound requests to private IP ranges are blocked unless the host is in `ALLOWED_ACTUAL_HOSTS`.
+- **Actual Budget** — Requires a running [Actual Budget HTTP API](https://github.com/jhonderson/actual-http-api) wrapper in front of your Actual server. Enter the server URL, API key, and budget sync ID. Outbound requests to private IP ranges are blocked unless the host is in `ALLOWED_ACTUAL_HOSTS`. Pin the wrapper to `jhonderson/actual-http-api` 26.10.0 (commit 8ef9a0ca), and move it together with `actual-server` to the same version. The wrapper checks its API key only when `NODE_ENV=production` (its Docker image sets it).
 - **SimpleFIN Bridge** — Read-only daily data per linked account: balances, holdings and investment transactions (used for live balances, benchmarks, holdings history and suggested Performance fills). No budget sync.
 - **Tax data updates** — Optional, off unless you turn it on (onboarding offers it). Once a week Ledgr checks this project's signed tax-data release on GitHub for new tax figures between Ledgr updates — one plain download from `github.com`, nothing about your household sent. A newer file is verified against a key built into Ledgr and checked, then waits in **Settings → Reference Data** for an admin to review and apply; figures you've changed are never touched. `LEDGR_TAX_DATA_SYNC=off` turns it off for the whole server. Behind a proxy, set `NODE_USE_ENV_PROXY=1`.
 
-The integration layer hardens every outbound call: typed error classification, exponential backoff with `Retry-After` support on rate limits, deterministic idempotency keys so retries don't create duplicate transactions, and drift detection after every sync that surfaces broken account mappings in the UI.
+The integration layer hardens every outbound call: typed error classification, exponential backoff with `Retry-After` support on rate limits, duplicate guards on writes (deterministic keys on YNAB; on Actual, a memo tag and never resending a POST), and drift detection after every sync that surfaces broken account mappings in the UI.
 
 ## Testing
 

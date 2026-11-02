@@ -78,9 +78,9 @@ projection-year-handlers/    one year of work
 
 **Accumulation** — `runAccumulationYear`: route contributions (specs, limits, overflow), match, lump sums, goal draws from Portfolio brokerages, growth, then `reconcileIndividualToAggregate` and `syncAggregateBasis`.
 
-**When the phases change** — dates come from `lib/pure/household-timeline.ts`: ages count from the primary person, withdrawals start when the last person with a job retires (`retirementYear`), and the projection runs to the last person's end age (`projectionEndYear`). Nothing averages the people.
+**When the phases change** — dates come from `lib/pure/household-timeline.ts`: plan dates (retirement year, end year) count from the primary person; per-person rules (catch-up, RMDs, 59½, the senior deduction) use that person's age; withdrawals start when the last person with a job retires (`retirementYear`), and the projection runs to the last person's end age (`projectionEndYear`). Nothing averages the people.
 
-**Gap years** — `gap-year-draw.ts`: an accumulation year where someone with a job has stopped draws the shortfall (spending less take-home pay and Social Security), before growth, through the same routing, eligibility, Roth split, penalty and tax pricing as a retirement year. Other accumulation years take pay as covering the budget: spending doesn't touch balances.
+**Gap years** — `gap-year-draw.ts`: an accumulation year where someone with a job has stopped draws the shortfall (spending less take-home pay and Social Security), before growth, through the same routing, eligibility, Roth split and penalty as a retirement year. Tax pricing differs today, until fixed: gap years size the draw with their own gross-up and leave out the 65+ deductions. Other accumulation years take pay as covering the budget: spending doesn't touch balances.
 
 **Budget lines that end** — `expense-endings.ts`: a loan's line leaves as a share of each phase's budget the year after payoff. Typed figures and rate-seeded retirements are left alone.
 
@@ -88,7 +88,7 @@ projection-year-handlers/    one year of work
 
 1. `resolveDecumulationConfig` — the year's settings
 2. `computeQcdAmounts` — charitable distributions against the RMD
-3. `estimateWithdrawalTaxCost` — size and route the withdrawal (gross-up)
+3. `estimateWithdrawalTaxCost` — size and route the withdrawal (gross-up), against the year's indexed figures (`bracket-growth.ts`: brackets, standard deduction with the 65+ add-on, LTCG thresholds)
 4. `enforceRmd` — top up to the required minimum
 5. per-account distribution, `deductWithdrawals`, `clampBalances`, `reinvestRmdExcess`, `trackDepletions`
 6. `computeRmdSmoothingTargets`, `performRothConversion`
