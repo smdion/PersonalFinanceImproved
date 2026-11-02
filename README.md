@@ -40,7 +40,7 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 - **RBAC** — Role-based access control via Authentik OIDC with granular viewer permissions, plus a standalone local-admin table for deployments without an identity provider.
 - **Onboarding wizard & demo mode** — Guided first-run setup with demo profiles to explore before entering real data; a separate read-only `DEMO_ONLY` mode with a profile chooser and no login.
 - **Dark mode & accessibility** — Full dark/light theming with semantic design tokens and a CI-enforced theme audit. WCAG AA-aligned contrast, `prefers-reduced-motion` support, keyboard skip-to-content, focus trapping in dialogs, screen-reader error announcements, and ARIA coverage on inline icons and table semantics.
-- **Versioning & backup** — Automatic database snapshots on startup as pre-migration recovery points. Cross-version backup import transforms data from any older schema era (v0.2 onward) to the current shape. `pnpm backup:export` / `pnpm backup:import` for headless use, and `scripts/encrypted-backup.sh` wraps `pg_dump` in AES-256 encryption for off-site backups.
+- **Versioning & backup** — Automatic database snapshots on startup, plus a backup before each migration. Cross-version backup import transforms data from any older schema era (v0.2 onward) to the current shape. `pnpm backup:export` / `pnpm backup:import` for headless use, and `scripts/encrypted-backup.sh` wraps `pg_dump` in AES-256 encryption for off-site backups.
 - **Raw Data Browser** — Admin-only live database table viewer with row counts, column metadata, pagination, and JSON export.
 - **Help & Guide** — A walkthrough of every feature by section, plus an in-app glossary for finance jargon.
 - **Health checks** — `/api/health` for container orchestration; an authenticated `/api/health/detailed` (gated by `CRON_SECRET`) exposes pool stats and integration status.
@@ -146,7 +146,7 @@ YNAB, Actual Budget, and SimpleFIN credentials are **not** configured via enviro
 
 - **End-to-end type safety** — TypeScript strict mode from the database schema (Drizzle) through the API (tRPC) to the UI (React).
 - **Data-driven design** — Account-type behavior is declared in one config record; adding an account type is one entry, not code changes. Tax tables and limits are data, versioned by year.
-- **Single source of truth for schema** — `src/lib/db/schema-pg.ts` defines the model; `schema-sqlite.ts` is generated from it. Each release line starts from a squashed baseline; later migrations are incremental.
+- **Single source of truth for schema** — `src/lib/db/pg/*.ts` (re-exported by `schema-pg.ts`) define the model; `schema-sqlite.ts` is generated from it. Each release line starts from a squashed baseline; later migrations are incremental.
 - **Self-hosted** — No external SaaS dependencies. SQLite by default, PostgreSQL supported. Budget-provider sync is optional.
 
 ## Development
@@ -173,24 +173,24 @@ Open [http://localhost:3000](http://localhost:3000). On first launch you'll see 
 
 ### Commands
 
-| Command              | Description                                 |
-| -------------------- | ------------------------------------------- |
-| `pnpm dev`           | Start the development server                |
-| `pnpm build`         | Production build                            |
-| `pnpm start`         | Start the production server                 |
-| `pnpm test`          | Run all tests                               |
-| `pnpm test:watch`    | Run tests in watch mode                     |
-| `pnpm test:e2e`      | End-to-end browser tests (Playwright)       |
-| `pnpm test:coverage` | Run with coverage thresholds                |
-| `pnpm lint`          | ESLint + Prettier check                     |
-| `pnpm format`        | Auto-format with Prettier                   |
-| `pnpm db:generate`   | Generate a migration from schema changes    |
-| `pnpm db:migrate`    | Run pending migrations                      |
-| `pnpm db:studio`     | Open Drizzle Studio (visual DB browser)     |
-| `pnpm backup:export` | Export all data to JSON (stdout or `--out`) |
-| `pnpm backup:import` | Import a JSON backup (supports `--dry-run`) |
+| Command              | Description                                                 |
+| -------------------- | ----------------------------------------------------------- |
+| `pnpm dev`           | Start the development server                                |
+| `pnpm build`         | Production build                                            |
+| `pnpm start`         | Not for this build: standalone output runs `node server.js` |
+| `pnpm test`          | Run all tests                                               |
+| `pnpm test:watch`    | Run tests in watch mode                                     |
+| `pnpm test:e2e`      | End-to-end browser tests (Playwright)                       |
+| `pnpm test:coverage` | Run with coverage thresholds                                |
+| `pnpm lint`          | ESLint + Prettier check                                     |
+| `pnpm format`        | Auto-format with Prettier                                   |
+| `pnpm db:generate`   | Generate a migration from schema changes                    |
+| `pnpm db:migrate`    | Run pending migrations                                      |
+| `pnpm db:studio`     | Open Drizzle Studio (visual DB browser)                     |
+| `pnpm backup:export` | Export all data to JSON (stdout or `--out`)                 |
+| `pnpm backup:import` | Import a JSON backup (supports `--dry-run`)                 |
 
-After editing `schema-pg.ts`, regenerate the SQLite schema with `npx tsx scripts/gen-sqlite-schema.ts` — never edit `schema-sqlite.ts` by hand.
+After editing `src/lib/db/pg/*.ts`, regenerate the SQLite schema with `npx tsx scripts/gen-sqlite-schema.ts` — never edit `schema-sqlite.ts` by hand.
 
 ### Authentication modes
 

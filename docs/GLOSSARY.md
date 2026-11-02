@@ -13,11 +13,11 @@ the linked IRS / SSA / CMS publications.
 | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Profile**                       | A complete, named set of one kind of assumption: Salary, Contribution, Budget or Retirement. Only the **active** profile of each kind counts; there is no default or baseline profile. |
 | **Plan**                          | A saved set of profiles, one of each kind. Applying it makes them the active ones.                                                                                                     |
-| **What-If**                       | The Budget page's sandbox; it never changes the active profiles.                                                                                                                       |
+| **What-If**                       | The Profiles page's sandbox; it never changes the active profiles.                                                                                                                     |
 | **Retirement vs Portfolio money** | Every account has a parent category. Retirement accounts fund retirement; Portfolio accounts (savings outside the retirement plan) never do — retirement answers ignore them.          |
 | **Baseline vs Simulation**        | Baseline = the projection with fixed returns. Simulation = many trials with random returns (Monte Carlo); shown as a median and a middle range.                                        |
 | **Changes by year**               | Settings that change from a given year onward (contribution rate, spending, salary, …), "sticky" until the next change.                                                                |
-| **Coast FIRE**                    | The age after which you could stop contributing and still reach your retirement need.                                                                                                  |
+| **Coast FIRE**                    | The year after which you could stop contributing and still reach your retirement need.                                                                                                 |
 | **Sinking fund**                  | Cash saved monthly toward a known future expense.                                                                                                                                      |
 
 ## Account types
@@ -45,19 +45,19 @@ are IRS-level categories independent of the account type that holds them.
 
 ## Retirement / withdrawal
 
-| Term                                     | Meaning                                                                                                                                                                      |
-| ---------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **RMD**                                  | Required Minimum Distribution. IRS rule forcing withdrawals from traditional retirement accounts starting at age 72/73/75 (depending on birth year per SECURE 2.0).          |
-| **Uniform Lifetime Table**               | IRS Pub 590-B Table III. Divisor used to compute the RMD amount based on age.                                                                                                |
-| **SECURE 2.0**                           | 2022 federal legislation that raised RMD start ages, added a "super catch-up" for ages 60–63, and indexed catch-up contribution limits.                                      |
-| **Catch-up**                             | Extra contribution allowance for age ≥ 50 (e.g., +$7,500/yr on 401k).                                                                                                        |
-| **Super catch-up**                       | SECURE 2.0 enhanced catch-up for ages 60–63 only ($11,250 in 2026). Replaces — does NOT add to — the regular catch-up.                                                       |
-| **Trinity Study**                        | 1998 academic paper analyzing safe withdrawal rates over 30-year retirements. Origin of the "4% rule."                                                                       |
-| **4% rule**                              | Heuristic safe withdrawal rate from a balanced portfolio over 30 years.                                                                                                      |
-| **Guyton-Klinger**                       | Dynamic withdrawal strategy with upper/lower guardrails. Cuts spending after a market crash, raises it after a bull run. Reduces sequence-of-returns risk vs. fixed 4% rule. |
-| **Sequence-of-returns risk**             | The order matters — bad returns early in retirement deplete the portfolio more than the same returns late.                                                                   |
-| **FI / FIRE**                            | Financial Independence / Retire Early. Portfolio large enough to live off withdrawals indefinitely (typically 25× annual expenses).                                          |
-| **Wealth Score / Millionaire Next Door** | Stanley & Danko (1996) formula: `(age × salary) / 10`. Scores ≥ 1.0 are PAW (Prodigious Accumulator); ≥ 0.5 is AAW.                                                          |
+| Term                                     | Meaning                                                                                                                                                                                                                                          |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **RMD**                                  | Required Minimum Distribution. IRS rule forcing withdrawals from traditional retirement accounts starting at age 72/73/75 (depending on birth year per SECURE 2.0).                                                                              |
+| **Uniform Lifetime Table**               | IRS Pub 590-B Table III. Divisor used to compute the RMD amount based on age.                                                                                                                                                                    |
+| **SECURE 2.0**                           | 2022 federal legislation that raised RMD start ages, added a "super catch-up" for ages 60–63, and indexed catch-up contribution limits.                                                                                                          |
+| **Catch-up**                             | Extra contribution allowance for age ≥ 50 (a yearly figure; see the IRS limits in Settings).                                                                                                                                                     |
+| **Super catch-up**                       | SECURE 2.0 enhanced catch-up for ages 60–63 only ($11,250 in 2026). Replaces — does NOT add to — the regular catch-up.                                                                                                                           |
+| **Trinity Study**                        | 1998 academic paper analyzing safe withdrawal rates over 30-year retirements. Origin of the "4% rule."                                                                                                                                           |
+| **4% rule**                              | Heuristic safe withdrawal rate from a balanced portfolio over 30 years.                                                                                                                                                                          |
+| **Guyton-Klinger**                       | Dynamic withdrawal strategy with upper/lower guardrails. Cuts spending after a market crash, raises it after a bull run. Reduces sequence-of-returns risk vs. fixed 4% rule.                                                                     |
+| **Sequence-of-returns risk**             | The order matters — bad returns early in retirement deplete the portfolio more than the same returns late.                                                                                                                                       |
+| **FI / FIRE**                            | Financial Independence / Retire Early. Portfolio large enough to live off withdrawals indefinitely (typically 25× annual expenses).                                                                                                              |
+| **Wealth Score / Millionaire Next Door** | Net worth ÷ expected net worth. Expected is Stanley & Danko's `(age × income) / 10` (1996); under 40 the divisor is `10 + years until 40`, as in Money Guy's version. PAW (Prodigious Accumulator) at 2× or more, UAW at ½ or less, AAW between. |
 
 ## Tax
 
@@ -74,7 +74,7 @@ are IRS-level categories independent of the account type that holds them.
 | **AMT**          | Alternative Minimum Tax. Parallel tax system that limits certain deductions for high earners. (Not currently modeled in ledgr.)                                   |
 | **W-4**          | Federal withholding form. The "2(c)" checkbox is the multi-job adjustment that uses different withholding brackets.                                               |
 | **FICA**         | Federal Insurance Contributions Act — payroll tax. Social Security (6.2% up to wage base) + Medicare (1.45% no cap) + 0.9% surtax above $200k single / $250k MFJ. |
-| **SS wage base** | Annual cap on the 6.2% Social Security tax portion of FICA. $176,100 in 2026.                                                                                     |
+| **SS wage base** | Annual cap on the 6.2% Social Security tax portion of FICA. A yearly figure; see the IRS limits in Settings.                                                      |
 | **FEIE**         | Foreign Earned Income Exclusion. (Not modeled.)                                                                                                                   |
 | **QBI**          | Qualified Business Income deduction (IRC §199A). 20% deduction for eligible self-employment income. (Not modeled.)                                                |
 
@@ -94,7 +94,7 @@ are IRS-level categories independent of the account type that holds them.
 | **PIA**                             | Primary Insurance Amount. Your monthly SS benefit at full retirement age.                                                                                                                                                                |
 | **FRA**                             | Full Retirement Age. 67 for anyone born 1960+.                                                                                                                                                                                           |
 | **SS torpedo / provisional income** | The 3-tier formula that determines how much of your SS is taxable. Thresholds ($25k/$34k single, $32k/$44k MFJ) are NOT indexed — more retirees hit them every year. Marginal rates inside the torpedo zone can hit 40-46%. IRS Pub 915. |
-| **WEP / GPO**                       | Windfall Elimination Provision / Government Pension Offset. Reduce SS for people with non-SS-covered pensions. (Not currently modeled.)                                                                                                  |
+| **WEP / GPO**                       | Windfall Elimination Provision / Government Pension Offset. Repealed by the Social Security Fairness Act (P.L. 118-273); not modeled.                                                                                                    |
 
 ## Budget API integrations
 

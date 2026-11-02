@@ -2,13 +2,13 @@
 
 ## Core Purpose
 
-A unified financial command center for a dual-income household. It answers: **"Are we on track?"** across three horizons:
+A unified financial command center for a household of any shape: one earner or two, any filing status, working or retired. It answers: **"Are we on track?"** across three horizons:
 
 - **This month:** Is the budget funded? Does every dollar have a job?
 - **This year:** Are savings goals progressing? Are we maximizing tax-advantaged space?
 - **Long-term:** Will we actually be able to retire? Are we in the right tax buckets?
 
-**Primary user:** Admin (daily dashboard scan). Second user checks occasionally.
+**Primary user:** Admin (daily dashboard scan). Others in the household may check occasionally.
 
 ---
 
@@ -133,7 +133,7 @@ The orchestrator (`projection.ts`) calls modules in an explicit pipeline order; 
 
 ## Pure Business Logic Boundary
 
-**All business logic must live in `src/lib/pure/` — never inside database transactions, API handlers, or router procedures.** This is a hard architectural rule, not a style preference: `better-sqlite3` cannot use async transactions, and coupling logic to I/O makes it untestable regardless of database.
+**All business logic must live in `src/lib/pure/` — never inside database transactions, API handlers, or router procedures.** This is a hard architectural rule, not a style preference: coupling logic to I/O makes it untestable regardless of database, and a transaction held open across an `await` lets other requests on the one SQLite connection see its uncommitted work.
 
 1. **Pure functions** (`src/lib/pure/`): compute values, validate rules, resolve limits, transform data. No imports from `@/lib/db`, `drizzle-orm`, or any I/O module. Import helpers only from specific submodules (e.g. `@/server/helpers/transforms`), never from barrel re-exports that pull in DB code.
 2. **Routers/handlers** (`src/server/routers/`): fetch data, call pure functions, persist results. Thin wrappers only — if you're writing an `if` or a `for` loop that computes a value, it belongs in a pure function.
@@ -208,7 +208,7 @@ Portfolio Snapshots + Performance Data + Settings
 1. **No hardcoded fallbacks for user-specific data.** If data doesn't exist, return 0 — don't invent a number. Universal defaults (4% withdrawal rate, IRS limits) are acceptable if stored in DB.
 2. **One budget column controls everything.** `budget_active_column` determines which spending level (column) is shown across all pages.
 3. **What-ifs are explicit opt-ins.** Sandbox controls (the What-If tab) are clearly labeled as "what-if", never write the active profiles, and never leak into other pages.
-4. **Shared helpers, not duplicated queries.** Use `helpers.ts` when multiple routers need the same derived value.
+4. **Shared helpers, not duplicated queries.** Use `src/server/helpers/` when multiple routers need the same derived value.
 5. **Age and personal data come from the `people` table.** Never hardcode ages or personal details.
 6. **Grep before reimplementing a documented rule.** Before writing a display rule, derived formula, or label mapping that plausibly already exists (check DESIGN.md and grep for similarly-named components/hooks first), find and reuse the existing implementation rather than writing a second one from the spec. Two independent implementations of the same rule will diverge — this is how the sub-row label rule, tax-type labels, and the household savings-rate formula each shipped real bugs after being written twice.
 
@@ -427,7 +427,7 @@ every page then use that set.
   stored (`scenarios.overrides`) into Salary Profiles and dropped
   `overrides`/`is_baseline`. Never add a value to a Plan — make a profile.
 
-**What-If** (Budget page tab) is the only unsaved sandbox: its pickers and
+**What-If** (Profiles page tab) is the only unsaved sandbox: its pickers and
 edits are local state and never write the active profiles. To keep a What-If
 result, save its edits as profiles (and those profiles as a Plan).
 
@@ -644,7 +644,7 @@ Each page owns its domain data. Users should never have to leave a page to confi
 - **IRS Limits** — yearly reference data (401k/IRA/HSA caps, FICA rates, standard deductions)
 - **Tax Brackets** — yearly, multi-filing-status reference data
 - **Return Rates** (age-based expected rate of return) — reference/assumption data feeding projections broadly, not a single page's user-editable setting, despite superficially reading like retirement-adjacent settings
-- **Retirement Profile** (retirement ages, timeline, income, decumulation plan, taxes, healthcare, Social Security — `retirement_settings`) — lives on the Budget page's Retirement Profile tab, not the Retirement page. Originally page-local, but the Budget page's other profile levers (Salary, Contributions, Budget, Savings) need visibility into these same assumptions, the same cross-cutting reasoning as Return Rates above — moved here in v0.7.8 rather than duplicated or left orphaned on a page that no longer owns it.
+- **Retirement Profile** (retirement ages, timeline, income, decumulation plan, taxes, healthcare, Social Security — `retirement_settings`) — lives on the Profiles page's Retirement tab, not the Retirement page. Originally page-local, but the other profile levers (Salary, Contributions, Budget, Savings) need visibility into these same assumptions, the same cross-cutting reasoning as Return Rates above — moved here in v0.7.8 rather than duplicated or left orphaned on a page that no longer owns it.
 
 These are true cross-cutting reference data that no single page owns.
 
@@ -692,7 +692,7 @@ These are true cross-cutting reference data that no single page owns.
 
 "Too many lines" is two separate problems with separate fixes — don't conflate them in a refactor plan:
 
-- **Total LOC** is reduced by dead-code sweeps (`ts-prune`), parameterized test compression, and flattening premature abstractions. Realistic ceilings are small (~5% at current size) and often not worth the churn.
+- **Total LOC** is reduced by dead-code sweeps (`knip`), parameterized test compression, and flattening premature abstractions. Realistic ceilings are small (~5% at current size) and often not worth the churn.
 - **Per-file size** is the real reviewability problem. Files over ~1,500 lines hurt cognitive load. The fix is splitting into focused modules. Splitting _increases_ total LOC slightly (new imports, prop types) but is the right trade.
 
 "Split large files" does not reduce total LOC. "Delete dead code" does not reduce per-file size. Different problems, different plans.

@@ -22,7 +22,7 @@
 - **<!-- AUTO-GEN:primaryRouters -->27<!-- /AUTO-GEN --> primary tRPC routers + <!-- AUTO-GEN:settingsSubRouters -->5<!-- /AUTO-GEN --> settings sub-routers**, <!-- AUTO-GEN:tables -->84<!-- /AUTO-GEN -->+ tables, <!-- AUTO-GEN:migrations -->14<!-- /AUTO-GEN --> migrations (PG + SQLite).
 - **Integrations** — YNAB and Actual Budget (two-way budget sync, cash, assets, savings categories), SimpleFIN (balances, holdings, transactions), Tiingo prices, SEC fund facts.
 
-Two patterns shape everything (rules in RULES.md): account-type behavior is **declared in config** (`ACCOUNT_TYPE_CONFIG` — a new account type is one entry), and the engine is **one pure module per concern** behind an orchestrator.
+Two patterns shape everything (rules in RULES.md): account-type behavior is **declared in config** (`ACCOUNT_TYPE_CONFIG` — a new account type is meant to be one entry; see RULES.md § Known Gaps), and the engine is **one pure module per concern** behind an orchestrator.
 
 ---
 
@@ -89,7 +89,7 @@ Auth.js with Authentik OIDC. Base roles + permission addons:
 | `ledgr-brokerage`            | `brokerage`           | Manage brokerage goals + planned transactions                                                                                                  |
 | `ledgr-sync`                 | `sync`                | Trigger budget API sync operations                                                                                                             |
 
-Route-level protection via Next.js middleware on `/(dashboard)` routes. Permission enforcement at tRPC procedure level. UI gating via `UserContext` (`useUser()`, `hasPermission()`, `isAdmin()`).
+The `(dashboard)` layout redirects to `/login`; `src/proxy.ts` runs `auth` but has no `authorized` callback, so it blocks nothing. Permission enforcement is at tRPC procedure level, and API routes check for themselves. UI gating via `UserContext` (`useUser()`, `hasPermission()`, `isAdmin()`).
 
 ### Server/Client Component Boundary
 
@@ -153,7 +153,7 @@ Helpers: `taxTypeColor()`, `taxTypeTextColor()`, `taxTypeLabel()`
 - Account types and tax treatments use distinct hue families — no overlap
 - Generic UI badges (BG, PC, etc.) use indigo or gray to avoid collision
 - **Contrast floor (WCAG 1.4.11):** a data-carrying chart stroke or its legend swatch must clear 3:1 against the card background (and against any fill it's drawn over) in **both** themes. A single `CHART_COLORS` hex often can't — see `chartLinePalette(dark)` in `colors.ts` for the theme-aware escape hatch (mirrors `trajectoryChartPalette`). Decorative reference/zero lines are exempt.
-- Account type colors are derived from `ACCOUNT_TYPE_CONFIG` — adding a new account type with a `colors` block automatically wires it up in `colors.ts`
+- Account type colors are derived from `ACCOUNT_TYPE_CONFIG` — a `colors` block wires a new account type into `colors.ts` helpers; `CATEGORY_CHART_HEX` is still a separate table
 - **Portfolio scope:** "All accounts" = every account from the latest balance snapshot. "Retirement accounts" = only accounts with `parentCategory = 'Retirement'`. Retirement ⊂ Portfolio.
 - **Data freshness:** A global sidebar indicator shows when balance and performance data were last updated. Individual pages do not duplicate this information.
 - **ID-based entity matching:** All cross-entity references use stable database IDs, never display names or labels. `AccountMapping.localId` uses the format `"performance:{id}" | "asset:{id}" | "mortgage:{loanId}:{type}"`. Savings goals match by `goalId`, mortgage results carry `loanId`, asset class overrides/correlations/glide paths use numeric `id` keys, and person/owner matching uses `ownerPersonId`. Display names are cached in `localName` (mappings) or computed via `accountDisplayName()` — but never used for identity resolution.
@@ -238,7 +238,7 @@ IRA (Vanguard)                                    $260,000.00
 
 For years with `account_performance` data but missing `annual_performance` category rows, synthetic rows are computed at read time. Single-category years copy from the stored annual row to avoid account-level sum discrepancies.
 
-### Return % (Modified Dietz)
+### Return % (Simple Dietz, midpoint weighting)
 
 ```
 return = gain_loss / (beginning_balance + (contributions + rollovers - distributions - fees) / 2)
@@ -336,7 +336,7 @@ The relocation decision tool (`lib/calculators/relocation.ts`) compares two budg
    - **Waterfall:** accounts in priority order with per-account and per-tax-type caps.
    - **Percentage:** fixed shares, with an emptied or capped account's share placed on the others.
    - The withdrawal is grossed up to cover its own tax: brackets from W-4 withholding tables (with a tax multiplier), Social Security taxation (provisional income), NIIT, early-withdrawal penalties.
-   - Spending follows the household's strategy (fixed, Guyton-Klinger and five others).
+   - Spending follows the household's strategy (fixed, Guyton-Klinger and seven others).
 3. **Tax-aware features** (data in `lib/config/`): RMDs (Uniform Lifetime Table, SECURE 2.0 start ages), QCDs, graduated LTCG, Roth conversions into bracket room (and RMD smoothing), IRMAA and ACA cliffs, the OBBBA senior deduction, inflation-indexed thresholds.
 
 Every setting can change by year ("Changes by year", resolved in `override-resolution.ts`).
@@ -383,7 +383,7 @@ Inputs: year-level history from `milestones.computeInputs` (via `buildYearEndHis
 
 ## Current glide path (Benchmarks)
 
-The household can set a **current glide path** — its target mix by age for what it holds today — on Benchmarks ("Your mix vs your target"). It's separate from the retirement simulation's glide path (`glide_path_allocations`, which the engine and Monte Carlo read), so the real portfolio can be held more conservatively than the plan projects with. Stored in `app_settings.current_glide_path`, validated on write (`currentGlidePathSchema`: each age's mix adds to 100%); `loadHoldingsOverview` interpolates it at the primary person's age when set and falls back to the simulation's glide path when not (`targetSource`). Benchmarks' mix vs target and Milestones' rebalancing both read that target. Allocation counts only SimpleFIN accounts linked to a Ledgr account; unlinked ones are listed as left out. "What it costs" keeps the two kinds of cost apart (`COST_KINDS` in `lib/config/performance-help.ts`): **fund costs** — value × expense ratio (`blendedCost`), a rate on today's balance, already inside fund prices and so inside Performance gains — and **account fees**, the Performance Fees column per year (`accountFeesForYears`); the headline adds a year of each (`allInYearlyCost`), never folding one into the other. Next to "What it costs", a stacked chart shows that glide path by age (asset-class colors from their fund categories) with Vanguard Target Retirement's stock share (`VANGUARD_TDF_STOCK_SHARE`, shifted to the household's retirement age) as a dashed line to compare with the top of the stock bands.
+The household can set a **current glide path** — its target mix by age for what it holds today — on Benchmarks ("Your mix vs your target"). It's separate from the retirement simulation's glide path (`mc_preset_glide_paths` for a named preset, `glide_path_allocations` for Custom), so the real portfolio can be held more conservatively than the plan projects with. Stored in `app_settings.current_glide_path`, validated on write (`currentGlidePathSchema`: each age's mix adds to 100%); `loadHoldingsOverview` interpolates it at the primary person's age when set and falls back to the simulation's glide path when not (`targetSource`). Benchmarks' mix vs target and Milestones' rebalancing both read that target. Allocation counts only SimpleFIN accounts linked to a Ledgr account; unlinked ones are listed as left out. "What it costs" keeps the two kinds of cost apart (`COST_KINDS` in `lib/config/performance-help.ts`): **fund costs** — value × expense ratio (`blendedCost`), a rate on today's balance, already inside fund prices and so inside Performance gains — and **account fees**, the Performance Fees column per year (`accountFeesForYears`); the headline adds a year of each (`allInYearlyCost`), never folding one into the other. Next to "What it costs", a stacked chart shows that glide path by age (asset-class colors from their fund categories) with Vanguard Target Retirement's stock share (`VANGUARD_TDF_STOCK_SHARE`, shifted to the household's retirement age) as a dashed line to compare with the top of the stock bands.
 
 ## Household annual income and tax
 
@@ -474,7 +474,7 @@ Plan tier.
 
 Documented deviations from general architectural rules, kept for pragmatic reasons:
 
-1. **Resolution helper lives in `helpers.ts`, not `override-resolution.ts`**: Profile resolution requires DB access. The engine layer (`lib/calculators/engine/`) is pure functions with no DB. Splitting into two layers adds complexity without proportional benefit at current scale. Revisit if override resolution logic grows beyond ~50 lines.
+1. **Resolution helper lives in `src/server/helpers/`, not `override-resolution.ts`**: Profile resolution requires DB access. The engine layer (`lib/calculators/engine/`) is pure functions with no DB. Splitting into two layers adds complexity without proportional benefit at current scale. Revisit if override resolution logic grows beyond ~50 lines.
 
 2. **Zod validation for a profile's active fields is manually defined, not derived from config**: `contribAccountActiveFieldsPatchSchema` / `deductionActiveFieldsSchema` / `salaryEntrySchema` are hand-written rather than derived from the Drizzle schema or `ACCOUNT_TYPE_CONFIG` — derivation adds abstraction with the risk of rejecting valid values if it has bugs, and the hand-written schemas are easy to audit at the current field count. Which fields a profile holds is still read from these schemas, never a hand-kept list (`lib/db/profile-fields.ts`). Revisit if the fields exceed ~25 or change often.
 
@@ -491,7 +491,7 @@ Live in production (self-hosted Docker). Procedures — deploy, release, rollbac
 | Image            | 3-stage Dockerfile (deps → builder → runner), digest-pinned `node` Alpine base, Next standalone output                                                                                               |
 | Compose          | `read_only`, `cap_drop: ALL`, `no-new-privileges`, localhost port binding, CPU + memory limits                                                                                                       |
 | Health           | `GET /api/health` (status + version); `GET /api/health/detailed` (authenticated: pool, budget API, sync times)                                                                                       |
-| Security headers | CSP without `unsafe-eval`, HSTS, `X-Frame-Options: DENY`, Permissions-Policy                                                                                                                         |
+| Security headers | CSP without `unsafe-eval` (`script-src` allows `unsafe-inline`), HSTS, `X-Frame-Options: DENY`, Permissions-Policy                                                                                   |
 | Migrations       | `db-migrate.ts`, compiled standalone, runs from the entrypoint before the server: pending migrations (with a pre-upgrade backup), then the reference-data seed. Data-converting migrations: RULES.md |
 | Monitoring       | Structured JSON logs                                                                                                                                                                                 |
 

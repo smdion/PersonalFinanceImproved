@@ -29,7 +29,7 @@ pnpm vitest run tests/calculators   # one area — prefer this while working
 | `server/`, `utils/`, `scripts/`, `edge-cases/` | Auth callbacks, utilities, repo scripts, extreme inputs                                                                                     |
 | `e2e/`                                         | Playwright smoke tests and the privacy-mode leak scan                                                                                       |
 
-**Coverage** is scoped to `src/lib/calculators/**` and `src/server/**`; thresholds in `vitest.config.ts`: statements 85%, branches 70%, functions 80%, lines 85%.
+**Coverage** is scoped to `src/server/**` and, under `src/lib/`, `calculators`, `config`, `budget-api`, `db`, `pure`, `simplefin`, `env.ts` and four named `utils` files (`vitest.config.ts`). Components, hooks, `tax-data`, `auth`, `sec` and `tiingo` aren't measured; thresholds in `vitest.config.ts`: statements 85%, branches 70%, functions 80%, lines 85%.
 
 ## Suites worth knowing
 

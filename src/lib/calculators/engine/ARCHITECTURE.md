@@ -43,6 +43,7 @@ projection-year-handlers/    one year of work
 | `bracket-growth.ts`            | Grows inflation-indexed thresholds (brackets, standard deduction, LTCG, IRMAA) year by year.                                                                                                                       |
 | `obbba-senior-deduction.ts`    | The 2025–2028 OBBBA senior deduction and its phase-out.                                                                                                                                                            |
 | `rmd-enforcement.ts`           | Required minimum distributions after routing. Multi-person households: each owner's RMD is pinned to that owner's accounts, including owner assignment; single-person: shortfall spread over Traditional accounts. |
+| `social-security-income.ts`    | Social Security paid in a year, per person; one computation for the year handler and strategies.                                                                                                                   |
 | `qcd.ts`                       | Qualified Charitable Distributions that satisfy part of an RMD.                                                                                                                                                    |
 | `post-withdrawal-optimizer.ts` | Roth conversions into bracket room, IRMAA and ACA cliff checks.                                                                                                                                                    |
 | `rmd-smoothing.ts`             | Sizes Roth conversions to shrink future RMDs toward the spending need.                                                                                                                                             |
@@ -67,6 +68,7 @@ projection-year-handlers/    one year of work
 | `spending-decline.ts`    | Fixed real decline per year                              |
 | `forgo-inflation.ts`     | Skip the inflation raise after a losing year             |
 | `rmd-spending.ts`        | Spending scaled by the RMD factor                        |
+| `vpw.ts`                 | Variable Percentage Withdrawal, % of the balance by age  |
 
 `fixed` is inline in the dispatcher. A new strategy = one module + one dispatch entry. Strategies size spending from the **retirement balance** only.
 
