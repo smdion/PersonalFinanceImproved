@@ -13,7 +13,7 @@ export const singleIncomeProfile: DemoProfile = {
   name: "Young Professional",
   description:
     "Single income, early career, building an emergency fund and starting to invest.",
-  keyStats: { savingsRate: "18%" },
+  keyStats: { savingsRate: "21%" },
 
   people: [{ name: "Alex", dateOfBirth: "1996-06-15", isPrimaryUser: true }],
 

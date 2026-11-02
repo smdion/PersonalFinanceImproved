@@ -15,7 +15,7 @@ export const dualIncomeFamilyProfile: DemoProfile = {
   name: "Dual Income Family",
   description:
     "Two incomes, mortgage, kids, moderate portfolio — mid-career financial planning.",
-  keyStats: { savingsRate: "22%" },
+  keyStats: { savingsRate: "23%" },
 
   people: [
     { name: "Jordan", dateOfBirth: "1988-04-12", isPrimaryUser: true },

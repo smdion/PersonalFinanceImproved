@@ -9,8 +9,56 @@
  * runs it against a PostgreSQL service with DEMO_ONLY on, as the public
  * demo runs.
  */
-import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
+
+// Not ./setup-mocks: it swaps the db, dialect and schema modules for
+// SQLite. Only what has no request context outside Next.js is mocked here.
+vi.mock("next/headers", () => ({
+  cookies: vi.fn().mockRejectedValue(new Error("No request context")),
+  headers: vi.fn().mockRejectedValue(new Error("No request context")),
+}));
+vi.mock("next/server", () => ({
+  NextResponse: { json: vi.fn(), redirect: vi.fn(), next: vi.fn() },
+  NextRequest: vi.fn(),
+}));
+// Sessions come straight from the caller's context, as in setup-mocks.
+vi.mock("@/server/auth", () => ({
+  auth: vi.fn().mockResolvedValue(null),
+  Permission: {},
+  RBAC_ADMIN_GROUP_KEY: "rbac_admin_group",
+  RBAC_SETTINGS_PREFIX: "rbac_group_",
+  ALL_PERMISSIONS: [
+    "scenario",
+    "portfolio",
+    "performance",
+    "budget",
+    "savings",
+    "brokerage",
+    "version",
+    "contributionProfile",
+    "sync",
+  ],
+}));
+// The real connection, built as src/lib/db/index.ts builds it: that module
+// loads its schema with a runtime require() of a .ts file, which only the
+// app's bundler resolves.
+vi.mock("@/lib/db", async () => {
+  const { default: pgDriver } = await import("pg");
+  const { drizzle } = await import("drizzle-orm/node-postgres");
+  const schema = await import("@/lib/db/schema-pg");
+  const { isPostgres } = await import("@/lib/db/dialect");
+  const pool = new pgDriver.Pool({
+    connectionString: process.env.TEST_DATABASE_URL,
+  });
+  return { db: drizzle(pool, { schema }), pool, isPostgres };
+});
+vi.mock("@/lib/rate-limit", () => ({
+  rateLimit: vi.fn(() => ({
+    success: true,
+    remaining: 999,
+    firstExceedance: false,
+  })),
+}));
 import { spawnSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -18,6 +66,7 @@ import { tmpdir } from "node:os";
 import { cookies } from "next/headers";
 import pg from "pg";
 import type { Session } from "next-auth";
+import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
 
 const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
 const TSX = path.join(process.cwd(), "node_modules", ".bin", "tsx");
@@ -69,6 +118,9 @@ describe.skipIf(skip)("demo profiles on PostgreSQL", () => {
     if (!TEST_DATABASE_URL) throw new Error("TEST_DATABASE_URL is not set");
     assertThrowaway(TEST_DATABASE_URL);
     process.env.DATABASE_URL = TEST_DATABASE_URL;
+    // The db module validates the environment on import; a placeholder,
+    // not a secret (no session is ever signed in this test).
+    process.env.NEXTAUTH_SECRET ??= "demo-postgres-test-placeholder-secret-32+";
     backupDir = fs.mkdtempSync(path.join(tmpdir(), "ledgr-demo-pg-"));
     process.env.LEDGR_BACKUP_DIR = backupDir;
 
@@ -81,9 +133,14 @@ describe.skipIf(skip)("demo profiles on PostgreSQL", () => {
       await admin.query(`DROP SCHEMA "${nspname}" CASCADE`);
     await admin.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public");
 
+    // db-migrate.ts does nothing when VITEST is set (so tests can import
+    // it): the child must not inherit the runner's VITEST variables.
+    const migratorEnv: NodeJS.ProcessEnv = { ...process.env };
+    for (const key of Object.keys(migratorEnv))
+      if (key.startsWith("VITEST")) delete migratorEnv[key];
     const migrated = spawnSync(TSX, ["db-migrate.ts"], {
       cwd: process.cwd(),
-      env: { ...process.env },
+      env: migratorEnv,
       encoding: "utf8",
       timeout: 180_000,
     });
@@ -142,23 +199,38 @@ describe.skipIf(skip)("demo profiles on PostgreSQL", () => {
       const { schemaName: demo } = await (
         await callerFor(null)
       ).demo.activateProfile({ slug: profile.slug });
-      const summary = await (
-        await callerFor(demo)
-      ).contribution.computeSummary();
-      const earners = summary.people.filter((p) => p.salary > 0);
       if (profile.keyStats.savingsRate === "N/A") {
-        expect(earners, profile.slug).toEqual([]);
+        const summary = await (
+          await callerFor(demo)
+        ).contribution.computeSummary();
+        expect(
+          summary.people.filter((p) => p.salary > 0),
+          profile.slug,
+        ).toEqual([]);
         continue;
       }
+      // The page asks for the active Contribution Profile by id; with no
+      // profile nothing resolves (every contribution reads $0).
+      const { rows: active } = await admin.query<{ value: unknown }>(
+        `SELECT value FROM "${demo}".app_settings WHERE key = $1`,
+        [SK_ACTIVE_CONTRIB_PROFILE_ID],
+      );
+      const contributionProfileId = Number(active[0]?.value);
+      expect(Number.isInteger(contributionProfileId), profile.slug).toBe(true);
+      const summary = await (
+        await callerFor(demo)
+      ).contribution.computeSummary({ contributionProfileId });
+      const earners = summary.people.filter((p) => p.salary > 0);
       const { rate } = householdSavings(
         earners,
         summary.jointAccountTypes,
         "projected",
         { excludeMatch: false },
       );
-      expect(`${Math.round(rate * 100)}%`, profile.slug).toBe(
-        profile.keyStats.savingsRate,
-      );
+      // Soft: one run reports every profile that disagrees.
+      expect
+        .soft(`${Math.round(rate * 100)}%`, profile.slug)
+        .toBe(profile.keyStats.savingsRate);
     }
   }, 300_000);
 

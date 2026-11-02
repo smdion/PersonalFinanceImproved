@@ -13,7 +13,7 @@ export const debtPayoffProfile: DemoProfile = {
   name: "Debt Payoff Journey",
   description:
     "Moderate income, significant debt, focused on building emergency fund and paying down loans.",
-  keyStats: { savingsRate: "8%" },
+  keyStats: { savingsRate: "9%" },
 
   people: [{ name: "Casey", dateOfBirth: "1993-02-20", isPrimaryUser: true }],
 
