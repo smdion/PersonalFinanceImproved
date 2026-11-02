@@ -14,7 +14,10 @@ import {
   optimizeRothBracketTarget,
   ASSUMED_TERMINAL_RATE,
 } from "@/lib/calculators/withdrawal-bracket-optimizer";
-import type { ProjectionInput } from "@/lib/calculators/types";
+import type {
+  EngineDecumulationYear,
+  ProjectionInput,
+} from "@/lib/calculators/types";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
 
@@ -28,9 +31,11 @@ const MFJ_BRACKETS = [
   { threshold: 501050, baseWithholding: 87366, rate: 0.32 },
 ];
 
-/** Deliberately discontinuous: tax falls by about $5k crossing $96,950, so a
- *  gross-up landing just under it comes up short. For the tests that need a
- *  target-independent shortfall or a depleting candidate. */
+/** Deliberately discontinuous: tax falls by $4,925 crossing $96,950 (the 12%
+ *  band starts from a base of $2,385, not the $7,310 the 10% band reaches).
+ *  Just under the cliff a year can't meet its need, so the gross-up funds it
+ *  at or above the cliff and spends up to the jump over budget. Also builds
+ *  the depleting-candidate household. */
 const CLIFF_BRACKETS = [
   { threshold: 23850, baseWithholding: 0, rate: 0.1 },
   { threshold: 96950, baseWithholding: 2385, rate: 0.12 },
@@ -388,11 +393,26 @@ describe("optimizeRothBracketTarget", () => {
   });
 
   it("a household where every candidate carries the same non-depleting shortfall still produces a sensible ranking", () => {
-    // A shortfall every candidate carries: the cliff in CLIFF_BRACKETS
-    // leaves a gross-up short at the same income whatever the target.
-    const result = optimizeRothBracketTarget(
-      makeMainHousehold(0.24, true, CLIFF_BRACKETS),
-    );
+    // A shortfall every candidate carries: for the first five retirement
+    // years every account is capped below the $90k budget, so no bracket
+    // target can fund them; the caps lift before the money runs low.
+    const start = AS_OF.getFullYear();
+    const result = optimizeRothBracketTarget({
+      ...makeMainHousehold(0.24, true),
+      decumulationOverrides: [
+        {
+          year: start,
+          withdrawalAccountCaps: {
+            "401k": 20000,
+            "403b": 0,
+            ira: 10000,
+            brokerage: 10000,
+            hsa: 0,
+          },
+        },
+        { year: start + 5, reset: true },
+      ],
+    });
     for (const c of result.candidates) {
       expect(c.depleted).toBe(false);
       expect(c.shortfallScore).toBeGreaterThan(0);
@@ -404,6 +424,36 @@ describe("optimizeRothBracketTarget", () => {
       (c) => c.target === result.recommendedTarget,
     );
     expect(winner?.shortfallScore).toBeCloseTo(least, -2);
+  });
+
+  it("funds every year across the tax cliff, overspending by at most the jump", () => {
+    // The tax CLIFF_BRACKETS drops at its 12% threshold: the 10% band's tax
+    // there less the 12% band's base.
+    const [ten, twelve] = CLIFF_BRACKETS;
+    const jump =
+      ten!.baseWithholding +
+      ten!.rate * (twelve!.threshold - ten!.threshold) -
+      twelve!.baseWithholding;
+    expect(jump).toBeCloseTo(4925, 2);
+    for (const target of [0.1, 0.12, 0.22, 0.24]) {
+      const result = calculateProjection(
+        makeMainHousehold(target, true, CLIFF_BRACKETS),
+      );
+      expect(result.retirementDepletionAge ?? null).toBeNull();
+      const years = result.projectionByYear.filter(
+        (y): y is EngineDecumulationYear =>
+          y.phase === "decumulation" && !y.withdrawalSized,
+      );
+      for (const y of years) {
+        expect(y.unmetNeedMaterial ?? false).toBe(false);
+        // RMD years carry the NIIT charged after routing; the equation is
+        // exact only outside them.
+        if (y.rmdAmount > 0 || y.afterTaxNeed === 0) continue;
+        const over = y.spending - y.projectedExpenses;
+        expect(over).toBeGreaterThan(-0.025);
+        expect(over).toBeLessThanOrEqual(jump);
+      }
+    }
   });
 
   it("hard-excludes a candidate that genuinely depletes, regardless of its netCost", () => {

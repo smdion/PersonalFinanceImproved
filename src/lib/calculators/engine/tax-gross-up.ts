@@ -109,7 +109,11 @@ interface TaxEstimationInput {
   balances: TaxBuckets;
   /** Current per-account balances */
   acctBal: AccountBalances;
-  /** Total portfolio balance */
+  /** Every account's balance, Portfolio-parented ones included
+   *  (PreYearSetup.totalBalance): the physical pool the target never
+   *  exceeds. The search stops sooner, at what the router can reach (the
+   *  router-exhaustion stop below), and routing records the rest as
+   *  `nonRetirementShortfall`. */
   totalBalance: number;
   /** The year's brokerage basis ratio for retirement withdrawals
    *  (brokerage-basis.ts) — the same one the real execution prices with.
@@ -147,7 +151,10 @@ interface TaxEstimationInput {
 
 /** Output from the convergence estimation. */
 interface TaxEstimationResult {
-  /** Final taxable Social Security amount */
+  /** The taxable Social Security the accepted trial ROUTED with (routing's
+   *  bracket caps read it). The real year must route with this same figure
+   *  to reproduce the accepted trial's slots, then prices its own taxable
+   *  share from them, exactly as the trial did. */
   taxableSS: number;
   /** Estimated tax cost */
   estTax: number;
@@ -157,7 +164,7 @@ interface TaxEstimationResult {
   grossUpFactor: number;
   /** Grossed-up withdrawal need */
   grossedUpNeed: number;
-  /** Target withdrawal (capped at total balance) */
+  /** Target withdrawal (never above `totalBalance`) */
   targetWithdrawal: number;
   /** With `fixedGrossWithdrawal`: what it delivers after tax and penalty —
    *  the year's after-tax need, so every reader of that need (shortfall,
@@ -308,10 +315,11 @@ function evaluateCost(
       rothTaxableGrowth,
       penaltyCost: iterPenaltyCost,
     });
-  // Routing above used the previous trial's taxable Social Security (its
-  // bracket caps only); the COST must use this trial's own, so cost(W) is a
-  // function of W — the real year prices it that way (with no filing status
-  // the flat 85% estimate stands, the conservative side).
+  // Routing above read the caller's taxable Social Security (its bracket
+  // caps only; `evaluateAtOwnSS` brings that figure to this trial's own);
+  // the COST always uses this trial's own share, as the real year prices it
+  // (with no filing status the flat 85% estimate stands, the conservative
+  // side).
   let taxResult = price(laggedTaxableSS);
   let taxableSS = laggedTaxableSS;
   if (filingStatus && input.ssIncome > 0) {
@@ -346,16 +354,52 @@ function evaluateCost(
     // exclusion, or genuine balance exhaustion). The loop below grosses up
     // what IS delivered and stops once a larger trial delivers no more.
     routedUnmet: roundToCents(routeResult.unmetNeed ?? 0),
+    // The taxable share routing's caps saw (the caller's lagged figure).
+    routedWithSS: laggedTaxableSS,
   };
+}
+
+/** Rounds of the routing fixed point below, and how close (dollars) the
+ *  share routing saw must come to the share the trial priced. Solver
+ *  parameters, not figures: stopping short of the tolerance costs routing
+ *  quality (bracket caps a little off), never correctness, because the real
+ *  year routes with the same figure the accepted trial did and so
+ *  reproduces it either way. */
+const SS_ROUTING_ROUNDS = 6;
+const SS_ROUTING_TOLERANCE = 1;
+
+/**
+ * `evaluateCost` at W, with routing's bracket caps reading W's OWN taxable
+ * Social Security rather than a seed's. The two are coupled: the taxable
+ * share depends on the Traditional draw, and with a Bracket Ceiling the
+ * Traditional room is the income cap less that share. Routed with a stale
+ * (higher) share, the same W draws more Roth and costs less, so a trial can
+ * look like it meets the need when the routing it would really get falls
+ * short (hundreds of dollars a year in the torpedo zone). Iterated on the
+ * average of the routed and priced shares: plain substitution oscillates
+ * there, since the map's slope is close to -1. Without Social Security, or
+ * without a filing status (the flat estimate stands), the share never moves
+ * and this is one evaluation.
+ */
+function evaluateAtOwnSS(W: number, seedSS: number, input: TaxEstimationInput) {
+  let e = evaluateCost(W, seedSS, input);
+  for (
+    let round = 0;
+    round < SS_ROUTING_ROUNDS &&
+    Math.abs(e.taxableSS - e.routedWithSS) > SS_ROUTING_TOLERANCE;
+    round++
+  )
+    e = evaluateCost(W, (e.taxableSS + e.routedWithSS) / 2, input);
+  return e;
 }
 
 /**
  * A fixed gross withdrawal (a portfolio-sized strategy with Social Security
- * on top): no solving — evaluate the cost of W once, refining Social
- * Security's taxable share from that evaluation's Traditional draw, and
- * derive the after-tax need from the strategy's FULL amount at that cost
- * rate. Never from what the balance or the router could deliver: a need cut
- * down to what's there would hide running out (no shortfall, plan "funded").
+ * on top): no solving — evaluate the cost of W at its own taxable Social
+ * Security share (`evaluateAtOwnSS`), and derive the after-tax need from
+ * the strategy's FULL amount at that cost rate. Never from what the
+ * balance or the router could deliver: a need cut down to what's there
+ * would hide running out (no shortfall, plan "funded").
  */
 function fixedWithdrawalEstimate(
   input: TaxEstimationInput,
@@ -363,10 +407,8 @@ function fixedWithdrawalEstimate(
 ): TaxEstimationResult {
   const { ssIncome, totalBalance } = input;
   const W = roundToCents(Math.max(0, Math.min(amount, totalBalance)));
-  let evalResult = evaluateCost(W, ssIncome * 0.85, input);
-  // Once more with the evaluated taxable share: routing's caps see it too.
-  if (ssIncome > 0) evalResult = evaluateCost(W, evalResult.taxableSS, input);
-  const { taxableSS } = evalResult;
+  const evalResult = evaluateAtOwnSS(W, ssIncome * 0.85, input);
+  const taxableSS = evalResult.routedWithSS;
   const effectiveTaxRate = W > 0 ? evalResult.totalCost / W : 0;
   const derivedAfterTaxNeed = roundToCents(
     Math.max(0, amount * (1 - Math.min(1, effectiveTaxRate))),
@@ -387,31 +429,40 @@ function fixedWithdrawalEstimate(
 /**
  * Resolves decumulation-year.ts's circular dependency — the withdrawal
  * amount depends on its own tax+penalty cost, which depends on the
- * withdrawal amount — by solving `W - cost(W) = afterTaxNeed` for W.
+ * withdrawal amount — by finding, to the cent, a W where the after-tax
+ * proceeds cross the need: `delivered(W) - cost(W) >= afterTaxNeed`, where
+ * `delivered` is what the router could actually move. (Proceeds aren't
+ * monotone, so this is a crossing, not necessarily the smallest W.)
  *
- * `cost(W)` is piecewise LINEAR in W (progressive tax brackets are
- * piecewise linear; the early-withdrawal penalty is piecewise linear with
- * a kink at each account's `penaltyFreeAmount` — 0% below, 10-20% above),
- * and monotone with slope < 1 (no real tax+penalty system takes >100% of
- * a marginal dollar). That makes `f(W) = W - cost(W) - afterTaxNeed` a
- * monotone piecewise-linear root-finding problem: SECANT iteration lands
- * on the root in one or two more evaluations once two points are known
- * (exactly, when both points sit in the same linear segment), which is
- * why this converges in ~3 evaluations rather than the ~7+ a repeated
- * `W = need + cost(W)` (Picard) step would need for the same accuracy —
- * that single-Picard-step version is what this function did before this
- * fix, and it silently under-withdrew whenever a fixed-dollar-cap cost
- * (the penalty) made the "rate measured at the smaller pre-gross-up
- * trial" an underestimate of the true marginal rate on the larger grossed-
- * up dollars (a ~7% real shortfall, silent, no unmetNeed flagged).
+ * `cost(W)` is NOT well behaved: routing tier switches and tax-table cliffs
+ * make it jump, the early-withdrawal penalty adds kinks, and it isn't
+ * monotone.
+ * Each trial routes at its own taxable Social Security (`evaluateAtOwnSS`),
+ * a fixed point reached to a dollar, not exactly. Costs are rounded to
+ * cents, so a slope measured over a few cents is noise (a "rate" of
+ * 0.99999999 sent a plain secant step to billions, and the balance cap then
+ * accepted a trial that over-delivered by millions as if it were the
+ * answer). The solver therefore assumes nothing about shape:
+ *   - It keeps a bracket: `lo`, the largest trial that under-delivers, and
+ *     `hi`, the smallest that over-delivers. A secant step is taken only
+ *     when it lands strictly inside the bracket and the bracket halved
+ *     within the last two steps; otherwise it bisects (Brent's safeguard:
+ *     a secant crawling toward one end can't use up the trial cap).
+ *   - No secant over less than $1: below that the slope is rounding noise,
+ *     so it takes a Picard step (`W = need + cost(W)`) instead.
+ *   - It stops short of the need only when a trial at `totalBalance`
+ *     (or one the router can deliver no more of) still under-delivers.
+ *     Otherwise an unconverged search returns `hi`, the smallest W found
+ *     that meets the need; over a cost jump that over-delivers (spending
+ *     above the budget) by at most the jump, never by an unbounded secant
+ *     step. A shortfall at `lo` would be worse: the plan judge would read a
+ *     solver artifact as a failed year.
+ * Secant on the smooth stretches keeps the usual year at ~3 trials.
  *
- * taxableSS's own circular dependency (taxableSS depends on the income
- * drawn, which depends on W) is resolved inside each evaluation: the cost
- * prices that trial's own taxable share, so `cost(W)` is a function of W
- * alone and the returned taxableSS/targetWithdrawal pair comes from one
- * accepted evaluation. Only routing's bracket caps see the previous
- * trial's share. Social Security's surplus, when spending is under it,
- * pays tax first: the equation is on `netCost`.
+ * The returned `taxableSS` is the figure the accepted trial routed with, so
+ * the real year (which routes with it, then prices its own share from the
+ * slots) reproduces the accepted trial exactly. Social Security's surplus,
+ * when spending is under it, pays tax first: the equation is on `netCost`.
  */
 export function estimateWithdrawalTaxCost(
   input: TaxEstimationInput,
@@ -421,72 +472,101 @@ export function estimateWithdrawalTaxCost(
     return fixedWithdrawalEstimate(input, input.fixedGrossWithdrawal);
   const { afterTaxNeed } = input;
   const shouldGrossUp = taxRates.grossUpForTaxes !== false;
-  // Exits on convergence: the cap only spends more where cost(W) has kinks
-  // close together (the withdrawal mix changing, Social Security's torpedo).
-  const MAX_EVALUATIONS = 8;
+  // Each trial may route a few times (evaluateAtOwnSS). Smooth years
+  // exit in ~3; the cap only binds where bisection is needed across a cost
+  // jump (about 20 halvings of a five-figure bracket).
+  const MAX_TRIALS = 24;
   const RESIDUAL_TOLERANCE = 0.01;
+  // Below this span, a secant slope between two cent-rounded costs is noise.
+  const MIN_SECANT_SPAN = 1;
 
-  let W = afterTaxNeed;
-  // First with the flat estimate, then the same W with routing's caps on
-  // the evaluated taxable share, before it anchors the secant.
-  let evalResult = evaluateCost(W, ssIncome * 0.85, input);
-  if (ssIncome > 0) evalResult = evaluateCost(W, evalResult.taxableSS, input);
-
-  let prevW: number | null = null;
-  let prevCost: number | null = null;
-  let evaluations = 1;
-
+  type Trial = { W: number; e: ReturnType<typeof evaluateAtOwnSS> };
   // What a trial actually delivers: the router can come up short of W.
-  const deliveredOf = (w: number, e: typeof evalResult) =>
-    roundToCents(w - e.routedUnmet);
-  let prevDelivered: number | null = null;
+  const deliveredOf = (t: Trial) => roundToCents(t.W - t.e.routedUnmet);
+  const proceedsOf = (t: Trial) => deliveredOf(t) - t.e.netCost;
+  const residualOf = (t: Trial) => roundToCents(afterTaxNeed - proceedsOf(t));
 
-  while (shouldGrossUp && evaluations < MAX_EVALUATIONS) {
-    const delivered = deliveredOf(W, evalResult);
-    // Clamped: the balance is all asked for, or the router delivered no
-    // more than at the previous (smaller) trial — the reachable money is
-    // exhausted. A router that falls short of the NEED alone (W = need)
-    // still gets its delivered money grossed up: stopping there left the
-    // whole tax bill unfunded over a cents-scale routing residual.
-    const clamped =
-      W >= totalBalance - 0.01 ||
-      (evalResult.routedUnmet > 0.01 &&
-        prevDelivered != null &&
-        delivered <= prevDelivered + 0.01);
-    const proceeds = delivered - evalResult.netCost;
-    const residual = afterTaxNeed - proceeds;
-    if (Math.abs(residual) <= RESIDUAL_TOLERANCE || clamped) break;
+  // Seeded with the flat 85% estimate. Proceeds at W = need can't exceed
+  // the need (cost is never negative), so this trial under-delivers or
+  // converges.
+  const W0 = roundToCents(Math.max(0, Math.min(afterTaxNeed, totalBalance)));
+  let trial: Trial = {
+    W: W0,
+    e: evaluateAtOwnSS(W0, ssIncome * 0.85, input),
+  };
 
-    let nextW: number;
-    if (prevW == null || prevCost == null || Math.abs(W - prevW) < 0.01) {
-      // No usable second point yet for a secant slope -- one Picard step
-      // (W = need + cost(W)) to generate one.
-      nextW = roundToCents(afterTaxNeed + evalResult.netCost);
-    } else {
-      const marginalRate = (evalResult.netCost - prevCost) / (W - prevW);
-      nextW =
-        marginalRate < 1 && Number.isFinite(marginalRate)
-          ? roundToCents(W + residual / (1 - marginalRate))
-          : roundToCents(afterTaxNeed + evalResult.netCost); // degenerate slope -> fall back to a Picard step
+  let lo: Trial | null = null;
+  let hi: Trial | null = null;
+  // Bracket widths after the last two trials, for the forced bisection.
+  let widthOneAgo = Infinity;
+  let widthTwoAgo = Infinity;
+  let prev: Trial | null = null;
+  let trials = 1;
+
+  while (shouldGrossUp) {
+    const residual = residualOf(trial);
+    if (Math.abs(residual) <= RESIDUAL_TOLERANCE) break;
+    if (residual > 0) {
+      // Short of the need, and no larger trial can do better: all the pool
+      // holds is asked for, or the router delivered no more than at a
+      // smaller trial. A router that falls short of the NEED alone (W =
+      // need) still gets its delivered money grossed up. Once more W
+      // delivers nothing more, the smaller trial is the answer: asking for
+      // money that can't be reached only inflates the routed shortfall.
+      if (trial.W >= totalBalance - 0.01) break;
+      if (
+        trial.e.routedUnmet > 0.01 &&
+        lo != null &&
+        deliveredOf(trial) <= deliveredOf(lo) + 0.01
+      ) {
+        trial = lo;
+        break;
+      }
+      if (lo == null || trial.W > lo.W) lo = trial;
+    } else if (hi == null || trial.W < hi.W) {
+      hi = trial;
     }
-    nextW = Math.min(nextW, totalBalance);
-    if (Math.abs(nextW - W) < 0.01) break; // no more progress possible (likely the balance clamp)
+    if (lo != null && hi != null && hi.W - lo.W <= 0.01) break;
+    if (lo == null || trials >= MAX_TRIALS) break;
+    const width = hi != null ? hi.W - lo.W : Infinity;
+    const bisectNow = hi != null && width > widthTwoAgo / 2;
+    widthTwoAgo = widthOneAgo;
+    widthOneAgo = width;
 
-    prevW = W;
-    prevCost = evalResult.netCost;
-    prevDelivered = delivered;
-    W = nextW;
-    evalResult = evaluateCost(W, evalResult.taxableSS, input);
-    evaluations++;
+    let nextW = afterTaxNeed + trial.e.netCost; // Picard
+    if (prev != null && Math.abs(trial.W - prev.W) >= MIN_SECANT_SPAN) {
+      const slope = (proceedsOf(trial) - proceedsOf(prev)) / (trial.W - prev.W);
+      if (slope > 0 && Number.isFinite(slope))
+        nextW = trial.W + residual / slope;
+    }
+    nextW = roundToCents(Math.min(nextW, totalBalance));
+    if (bisectNow || !(nextW > lo.W && (hi == null || nextW < hi.W))) {
+      nextW =
+        hi != null
+          ? roundToCents((lo.W + hi.W) / 2)
+          : roundToCents(
+              Math.min(totalBalance, lo.W + Math.max(0.01, residual)),
+            );
+    }
+
+    prev = trial;
+    trial = {
+      W: nextW,
+      e: evaluateAtOwnSS(nextW, trial.e.taxableSS, input),
+    };
+    trials++;
   }
+  // Not converged: the smallest trial known to meet the need, if any.
+  if (hi != null && Math.abs(residualOf(trial)) > RESIDUAL_TOLERANCE)
+    trial = hi;
 
-  const targetWithdrawal = roundToCents(Math.min(W, totalBalance));
-  const totalCost = evalResult.totalCost;
+  const targetWithdrawal = trial.W;
+  const totalCost = trial.e.totalCost;
   // Reporting-only from here -- grossUpFactor/effectiveTaxRate/grossedUpNeed
-  // no longer DRIVE targetWithdrawal (the loop above already converged it
-  // directly); they're derived from the accepted evaluation purely for
-  // display/diagnostics, matching what decumulation-year.ts's own post-RMD
-  // recompute already treats them as.
+  // don't DRIVE targetWithdrawal (the search above sized it directly);
+  // they're derived from the accepted evaluation for display/diagnostics,
+  // matching what decumulation-year.ts's own post-RMD recompute already
+  // treats them as.
   const effectiveTaxRate =
     afterTaxNeed > 0 ? totalCost / (afterTaxNeed + totalCost) : 0;
   const grossUpFactor =
@@ -494,9 +574,9 @@ export function estimateWithdrawalTaxCost(
   const grossedUpNeed = roundToCents(afterTaxNeed * grossUpFactor);
 
   return {
-    taxableSS: evalResult.taxableSS,
-    estTax: evalResult.taxCost,
-    estPenalty: evalResult.penaltyCost,
+    taxableSS: trial.e.routedWithSS,
+    estTax: trial.e.taxCost,
+    estPenalty: trial.e.penaltyCost,
     effectiveTaxRate,
     grossUpFactor,
     grossedUpNeed,
