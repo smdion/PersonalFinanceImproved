@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # Version branches (vX.Y.Z) too: releases are built and deployed from
+    # them before the release PR exists.
+    branches: [main, "v*"]
   pull_request:
     branches: [main]
 
@@ -147,7 +149,10 @@ jobs:
         env:
           BASE: ${{ github.event_name == 'pull_request' && github.base_ref || github.event.before }}
         run: |
-          git fetch --depth=1 origin "$BASE" 2>/dev/null || true
+          base="$BASE"
+          # A branch's first push has no "before" commit: compare with main.
+          case "$base" in ""|0000000000000000000000000000000000000000) base=main ;; esac
+          git fetch --depth=1 origin "$base" 2>/dev/null || true
           pnpm tsx scripts/check-tax-data-version.ts FETCH_HEAD
 
       - name: Verify docs freshness
