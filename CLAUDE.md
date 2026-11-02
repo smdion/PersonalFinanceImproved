@@ -12,7 +12,7 @@
 
 ## When to consult the advisor
 
-The `advisor` subagent (`.claude/subagents/advisor.md`) runs on Opus and exists
+The `advisor` subagent (`.claude/agents/advisor.md`) runs on Opus and exists
 to push back. Use it before committing when:
 
 - Changing anything in `lib/calculators/engine/` or `lib/db/schema*.ts`
@@ -29,7 +29,7 @@ The advisor should have enough context to disagree.
 
 ## Local docs & planning
 
-`.scratch/docs/INDEX.md` (gitignored, not shipped) is the index for everything not covered above: `TODO.md`/`FEATURE-ROADMAP.md` (what's next), `OPS.md` (deploy/release/CI/security), per-feature implementation plans, and the other five subagents beyond `advisor` (`planner`, `release`, `reviewer`, `schema-reviewer`, `test-writer`). Check it before starting new feature work or asking "has this already been designed."
+`.scratch/docs/INDEX.md` (gitignored, not shipped) is the index for everything not covered above: `TODO.md`/`FEATURE-ROADMAP.md` (what's next), `OPS.md` (deploy/release/CI/security), per-feature implementation plans, and `advisor`'s five sibling subagents in `.claude/agents/` (`planner`, `release`, `reviewer`, `schema-reviewer`, `test-writer`). Check it before starting new feature work or asking "has this already been designed."
 
 ## Project shortcuts
 

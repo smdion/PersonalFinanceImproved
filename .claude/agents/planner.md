@@ -1,7 +1,6 @@
 ---
 name: planner
-when: "when you have reviewer findings or a list of code issues and need an ordered implementation plan — produces a V053-PLAN style execution plan with grouped commits, dependency ordering, risk levels, and test commands"
-description: "Turns reviewer findings or issue lists into an ordered execution plan — groups by root cause, sequences commits by dependency, flags advisor gates"
+description: "Turns reviewer findings or issue lists into an ordered execution plan — groups by root cause, sequences commits by dependency, flags advisor gates. Use when you have reviewer findings or a list of code issues and need an ordered implementation plan — produces a V053-PLAN style execution plan with grouped commits, dependency ordering, risk levels, and test commands"
 model: sonnet
 ---
 

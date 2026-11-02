@@ -1,7 +1,6 @@
 ---
 name: reviewer
-when: "when reviewing a specific area of code for quality, naming, structure, or architecture before starting a refactor"
-description: "Sonnet-powered code quality review — expert in every Ledgr discipline, finds root causes not symptoms"
+description: "Sonnet-powered code quality review — expert in every Ledgr discipline, finds root causes not symptoms. Use when reviewing a specific area of code for quality, naming, structure, or architecture before starting a refactor"
 model: sonnet
 ---
 

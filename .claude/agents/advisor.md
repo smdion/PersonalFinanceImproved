@@ -1,7 +1,6 @@
 ---
 name: advisor
-when: "when evaluating architecture decisions, schema changes, engine changes, permission edits, or when stuck on a bug after two wrong guesses"
-description: "Opus-powered second opinion on hard decisions — reviews proposals and pushes back"
+description: "Opus-powered second opinion on hard decisions — reviews proposals and pushes back. Use when evaluating architecture decisions, schema changes, engine changes, permission edits, or when stuck on a bug after two wrong guesses"
 model: opus
 ---
 
