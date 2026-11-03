@@ -429,7 +429,7 @@ export function ProjectionCard(props: {
                 onClick={handlePrintAdvisor}
                 className="text-muted hover:text-secondary underline"
               >
-                Print Advisor Report
+                Print Full Report
               </button>
             </div>
           )}
