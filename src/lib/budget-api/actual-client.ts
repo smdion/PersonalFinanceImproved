@@ -34,7 +34,6 @@ import { log } from "@/lib/logger";
 type ActualAccount = {
   id: string;
   name: string;
-  type: string;
   offbudget: boolean;
   closed: boolean;
   balance?: number; // cents (may need separate call)
@@ -56,7 +55,6 @@ type ActualCategory = {
   budgeted?: number; // cents
   spent?: number; // cents (negative = spending)
   balance?: number; // cents
-  goal?: number | null; // cents
 };
 
 // Field names AND shape re-verified LIVE against the deployed wrapper —
@@ -101,26 +99,14 @@ type ActualTransaction = {
   }[];
 };
 
-// -- Account type mapping --
-
-const ACTUAL_ACCOUNT_TYPE_MAP: Record<string, BudgetAccount["type"]> = {
-  checking: "checking",
-  savings: "savings",
-  cash: "cash",
-  credit: "creditCard",
-  mortgage: "mortgage",
-  debt: "lineOfCredit",
-  investment: "tracking",
-  other: "other",
-};
-
 // -- Conversion helpers --
 
 function mapAccount(a: ActualAccount): BudgetAccount {
   return {
     id: a.id,
     name: a.name,
-    type: ACTUAL_ACCOUNT_TYPE_MAP[a.type] ?? "other",
+    // The wrapper's account list carries no type.
+    type: "other",
     onBudget: !a.offbudget,
     closed: a.closed,
     balance: fromCents(a.balance ?? 0),
@@ -138,7 +124,8 @@ function mapCategory(c: ActualCategory, groupName: string): BudgetCategory {
     budgeted: fromCents(c.budgeted ?? 0),
     activity: fromCents(c.spent ?? 0),
     balance: fromCents(c.balance ?? 0),
-    goalTarget: c.goal != null ? fromCents(c.goal) : undefined,
+    // Set from the category's note (overlayNoteGoals); Actual sends none.
+    goalTarget: undefined,
   };
 }
 
@@ -516,25 +503,9 @@ export class ActualClient implements BudgetAPIClient {
 
   // -- Categories & Months --
 
-  /** The plain `/categorygroups` + `/categories` endpoints only carry
-   *  id/name/hidden/group_id — verified live: a raw `/categories` category
-   *  object has NO `budgeted`/`spent`/`balance`/`goal` keys at all, unlike
-   *  YNAB's categories endpoint, which does carry a real running balance
-   *  per category. Actual's balance/budgeted/activity are inherently
-   *  month-scoped (carryover + this month's budgeted − spent), only
-   *  returned by `/months/:id`. Reading `.balance`/`.budgeted` off the
-   *  plain-categories response (the original code here) silently produced
-   *  $0 for every category on every Actual household — the savings goal
-   *  balance override in savings.ts's computeSummary reads exactly this
-   *  cache, so every API-linked sinking fund showed a $0 current balance
-   *  even though its real Actual balance (and Ledgr's own separately-
-   *  tracked `savings_monthly` history) was correct (this had silently never worked for any Actual household,
-   *  masked until now because the same balance also renders correctly
-   *  from savings_monthly whenever the override doesn't fire). Fetch the
-   *  current month's detail too and merge its real per-category numbers
-   *  in by id — the ActualCategory type already carries these fields
-   *  (mapCategory needs no change), they just aren't populated by the
-   *  bare category list. */
+  /** `/categorygroups` and `/categories` carry names only; each category's
+   *  numbers come from the current month, merged in by id. A category the
+   *  month doesn't list yet (just created) has 0 for each. */
   async getCategories(): Promise<BudgetCategoryGroup[]> {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -603,9 +574,9 @@ export class ActualClient implements BudgetAPIClient {
     return detail;
   }
 
-  /** Reads each category's note and prefers its `#template` goal over
-   *  `cat.goal`, the field Ledgr's goal write never changes. A note failing
-   *  transiently twice keeps the old goalTarget; any other failure throws. */
+  /** Reads each category's goal from its note's `#template` (Actual sends
+   *  no goal field). A note failing transiently twice leaves that goal
+   *  unset; any other failure throws. */
   private async overlayNoteGoals(categories: BudgetCategory[]): Promise<void> {
     const readNote = async (cat: BudgetCategory) => {
       const noteRes = await this.request<{ data: string | null }>(
@@ -659,32 +630,9 @@ export class ActualClient implements BudgetAPIClient {
     );
   }
 
-  /**
-   * There is no STRUCTURED field to write a category's goal amount —
-   * verified against `@actual-app/api`'s own docs: `updateCategory` only
-   * ever accepts name/group_id/is_income, on any release channel. Actual's
-   * newer Budget Automations engine stores a goal as `goal_def` directly on
-   * the category row (what `getCategories`' `cat.goal` reads — read-only
-   * via this wrapper), but that field is never exposed for writing.
-   *
-   * The REAL, working mechanism is Actual's older note-based template
-   * syntax (`#template <amount>` for a recurring monthly assignment,
-   * `#template up to <amount>` for a refill-to-balance target) — written
-   * through the actual-http-api wrapper's `PUT /notes/category/:id`
-   * endpoint, the same place a household's own free-text category notes
-   * live. `mergeGoalIntoNote` (`actual-goal-notes.ts`) does the actual
-   * read-merge-write so this never clobbers unrelated note content or a
-   * differently-shaped template the household configured directly in
-   * Actual — it either updates a matching-shape template in place, appends
-   * a fresh one if none exists, or throws `BudgetApiError` (code
-   * `"conflict"`) if an incompatible template is already there.
-   *
-   * Known caveat: this writes the OLD note-based mechanism, not the newer
-   * `goal_def` field `getCategories` reads back — so a goal pushed here
-   * won't appear in `cat.goal`/`goalTarget` reads until the household (or
-   * Actual itself) also sets it through the newer mechanism. The note-based
-   * `#template` IS what Actual's own "Apply Budget Template" action reads,
-   * though, so the push still does something real. */
+  /** Actual's API can't write a structured goal, so a goal is a `#template`
+   *  line in the category's note (what "Apply Budget Template" reads),
+   *  merged by actual-goal-notes.ts without touching the rest of the note. */
   async prepareGoalWrite(
     categoryId: string,
     shape: GoalShape,

@@ -105,15 +105,8 @@ export function mergeGoalIntoNote(
  * Read counterpart to `mergeGoalIntoNote` — extracts the CURRENT amount
  * Ledgr itself last wrote to a category's note, for a given `shape`.
  *
- * Why this exists: `getCategories()`'s `cat.goal` (`actual-client.ts`)
- * reads Actual's newer `goal_def` field, which `prepareGoalWrite` never
- * writes to (there's no API to write it — see that function's own
- * docblock). Comparing a push/pull preview's "current" value against
- * `goal_def` would show every Ledgr-managed goal as permanently changed,
- * even immediately after a successful push, because the two never talk
- * to the same field. This function reads the note instead — the ONLY
- * field Ledgr's write path actually touches — so the diff is internally
- * consistent with what a push/pull will actually do.
+ * The note is where Ledgr writes a goal (Actual's API can't write its
+ * structured goal), so a preview compares against what a push wrote.
  *
  * Returns `undefined` when no template of the requested `shape` is
  * present (no goal set via this mechanism yet, or a different shape is

@@ -92,62 +92,25 @@ describe("ActualClient", () => {
       expect(accounts[0]).toMatchObject({
         id: "acct-1",
         name: "Checking",
-        type: "checking",
+        type: "other",
         onBudget: true,
         closed: false,
         balance: 150,
       });
     });
 
-    it("maps account types correctly", async () => {
+    it('every account is "other": the wrapper\'s list carries no type', async () => {
       mockFetch.mockReturnValueOnce(
         jsonResponse({
           data: [
-            {
-              id: "a1",
-              name: "Savings",
-              type: "savings",
-              offbudget: false,
-              closed: false,
-              balance: 0,
-            },
-            {
-              id: "a2",
-              name: "CC",
-              type: "credit",
-              offbudget: false,
-              closed: false,
-              balance: 0,
-            },
-            {
-              id: "a3",
-              name: "Invest",
-              type: "investment",
-              offbudget: true,
-              closed: false,
-              balance: 0,
-            },
-            {
-              id: "a4",
-              name: "Unknown",
-              type: "weird",
-              offbudget: false,
-              closed: false,
-              balance: 0,
-            },
+            { id: "a1", name: "Savings", offbudget: false, closed: false },
+            { id: "a2", name: "Invest", offbudget: true, closed: false },
           ],
         }),
       );
-      // Balance calls for each
-      for (let i = 0; i < 4; i++) {
-        mockFetch.mockReturnValueOnce(jsonResponse({ data: 0 }));
-      }
-
+      mockFetch.mockReturnValue(jsonResponse({ data: 0 }));
       const accounts = await client.getAccounts();
-      expect(accounts[0]!.type).toBe("savings");
-      expect(accounts[1]!.type).toBe("creditCard");
-      expect(accounts[2]!.type).toBe("tracking");
-      expect(accounts[3]!.type).toBe("other");
+      expect(accounts.map((a) => a.type)).toEqual(["other", "other"]);
     });
   });
 
@@ -919,7 +882,7 @@ describe("ActualClient", () => {
       expect(noteCall[0]).toContain("/notes/category/c1");
     });
 
-    it("falls back to the structured goal field's value when the note has no #template", async () => {
+    it("a category has no goal unless its note has a #template: Actual sends no goal field", async () => {
       mockFetch.mockReturnValueOnce(
         jsonResponse({
           data: {
@@ -952,7 +915,7 @@ describe("ActualClient", () => {
         jsonResponse({ data: "Just a free-text note, no goal" }),
       );
       const detail = await client.getMonthDetail("2026-01");
-      expect(detail.categories[0]!.goalTarget).toBe(300);
+      expect(detail.categories[0]!.goalTarget).toBeUndefined();
     });
 
     it("a note fetch that fails for a reason that isn't transient fails the call: a goal left out would read as unset", async () => {
