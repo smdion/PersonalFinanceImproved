@@ -35,7 +35,7 @@ function getDialect(): "postgresql" | "sqlite" {
  * tax year or a corrected figure reaches existing installs — without ever
  * touching a figure the household changed (see reconcileReferenceRows). The
  * code below is a verbatim copy of src/lib/db/reference-reconcile-core.ts
- * (this file compiles standalone and can't import src/); a test keeps the
+ * (this file is bundled on its own and doesn't import src/); a test keeps the
  * two identical.
  */
 /** The tables the reconcile writes (a test keeps this in step with the core). */

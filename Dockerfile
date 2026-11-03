@@ -32,15 +32,10 @@ ENV AUTH_AUTHENTIK_SECRET=build-placeholder
 
 RUN pnpm build
 
-# Compile db-migrate.ts to JS using the TypeScript compiler already in devDeps.
-# --moduleResolution bundler + --module nodenext works with the existing imports.
-# --ignoreConfig: TypeScript 6.0 made it an error (TS5112) to pass both a file
-# argument and CLI flags without ignoring tsconfig.json. We don't want the
-# root tsconfig.json here — this is a standalone one-file compile.
-RUN pnpm exec tsc db-migrate.ts \
-  --target ES2022 --module nodenext --moduleResolution nodenext \
-  --esModuleInterop --skipLibCheck --outDir . \
-  --ignoreConfig
+# Bundle the migrator (db-migrate.ts) with its JS dependencies (drizzle-orm,
+# pg) into one db-migrate.js. better-sqlite3 stays external: it's a native
+# addon, linked to Next's traced copy in the runner stage below.
+RUN pnpm build:migrator
 
 # Stage 3: Production runner
 FROM node:26.13.0-alpine@sha256:c6ad9e9c1d80f6eb607c26b4b0a132ff7a2344fad1c78ea3baa2a7d4c8de6d94 AS runner
@@ -64,8 +59,6 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Copy standalone output (includes node_modules traced by @vercel/nft).
-# outputFileTracingIncludes in next.config.mjs ensures better-sqlite3's
-# native .node binary is included even though the build uses PG mode.
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
@@ -73,6 +66,18 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/drizzle ./drizzle
 COPY --from=builder /app/drizzle-sqlite ./drizzle-sqlite
 COPY --from=builder /app/db-migrate.js ./db-migrate.js
+# db-migrate.js requires better-sqlite3 from /app/node_modules, where the
+# standalone output has it only under .pnpm/. Link the copy Next traced for
+# server.js, and fail the build here if it doesn't load.
+RUN set -e; \
+    if [ ! -e node_modules/better-sqlite3 ]; then \
+      set -- node_modules/.pnpm/better-sqlite3@*/node_modules/better-sqlite3; \
+      if [ "$#" -ne 1 ] || [ ! -f "$1/package.json" ]; then \
+        echo "Expected one traced better-sqlite3 package, found: $*" >&2; exit 1; \
+      fi; \
+      ln -s "${1#node_modules/}" node_modules/better-sqlite3; \
+    fi; \
+    node -e "new (require('better-sqlite3'))(':memory:').close()"
 # The tax-data file (reference data), read from disk by db-migrate.js and the app.
 COPY --from=builder /app/tax-data ./tax-data
 

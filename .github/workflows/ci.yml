@@ -165,6 +165,12 @@ jobs:
         if: github.event_name == 'push'
         run: docker build --build-arg APP_VERSION=ci-${{ github.sha }} -t ledgr:ci-test .
 
+      # The default install: the image on an empty volume with SQLite. The
+      # entrypoint runs the migrator, then the server must answer /api/health.
+      - name: Docker image boots on an empty volume
+        if: github.event_name == 'push'
+        run: bash scripts/ci-image-boot.sh ledgr:ci-test
+
       - name: Notify on failure
         if: failure() && github.ref == 'refs/heads/main'
         run: |

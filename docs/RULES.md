@@ -578,8 +578,8 @@ A migration that rewrites data runs **one converter** both on a live
 database (`db-migrate.ts`, inside the migration's transaction, just before
 its SQL drops what the converter reads) and on an older backup being
 restored (`backup-transforms.ts` → `transformBackupToCurrentSchema`, e.g.
-`transformV0810ProfileSets`). `db-migrate.ts` is compiled on its own and
-can't import from `src/`, so while the migration is in the journal it keeps
+`transformV0810ProfileSets`). `db-migrate.ts` is bundled on its own and
+doesn't import from `src/`, so while the migration is in the journal it keeps
 an **identical copy** of the converter between `// BEGIN …` / `// END …`
 markers, with a test that the copies match; edit both together. (The
 v0.8.10 converter's live copy went with the v0.9.0 squash — only the

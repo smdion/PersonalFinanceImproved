@@ -488,14 +488,14 @@ Documented deviations from general architectural rules, kept for pragmatic reaso
 
 Live in production (self-hosted Docker). Procedures — deploy, release, rollback, backups — are in the maintainers' ops notes.
 
-| Concern          | Implementation                                                                                                                                                                                       |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Image            | 3-stage Dockerfile (deps → builder → runner), digest-pinned `node` Alpine base, Next standalone output                                                                                               |
-| Compose          | `read_only`, `cap_drop: ALL`, `no-new-privileges`, localhost port binding, CPU + memory limits                                                                                                       |
-| Health           | `GET /api/health` (status + version); `GET /api/health/detailed` (authenticated: pool, budget API, sync times)                                                                                       |
-| Security headers | CSP without `unsafe-eval` (`script-src` allows `unsafe-inline`), HSTS, `X-Frame-Options: DENY`, Permissions-Policy                                                                                   |
-| Migrations       | `db-migrate.ts`, compiled standalone, runs from the entrypoint before the server: pending migrations (with a pre-upgrade backup), then the reference-data seed. Data-converting migrations: RULES.md |
-| Monitoring       | Structured JSON logs                                                                                                                                                                                 |
+| Concern          | Implementation                                                                                                                                                                                                                                                        |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Image            | 3-stage Dockerfile (deps → builder → runner), digest-pinned `node` Alpine base, Next standalone output                                                                                                                                                                |
+| Compose          | `read_only`, `cap_drop: ALL`, `no-new-privileges`, localhost port binding, CPU + memory limits                                                                                                                                                                        |
+| Health           | `GET /api/health` (status + version); `GET /api/health/detailed` (authenticated: pool, budget API, sync times)                                                                                                                                                        |
+| Security headers | CSP without `unsafe-eval` (`script-src` allows `unsafe-inline`), HSTS, `X-Frame-Options: DENY`, Permissions-Policy                                                                                                                                                    |
+| Migrations       | `db-migrate.ts`, bundled on its own by esbuild (`pnpm build:migrator`; better-sqlite3 stays external), runs from the entrypoint before the server: pending migrations (with a pre-upgrade backup), then the reference-data seed. Data-converting migrations: RULES.md |
+| Monitoring       | Structured JSON logs                                                                                                                                                                                                                                                  |
 
 ---
 
