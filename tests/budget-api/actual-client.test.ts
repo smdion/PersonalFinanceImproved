@@ -48,6 +48,33 @@ function actualTx(overrides: Record<string, unknown> = {}) {
   };
 }
 
+/** `/categories` and `/payees` as the wrapper lists them. */
+const CATEGORIES = [
+  { id: "groceries", name: "Groceries", group_id: "g1", hidden: false },
+  { id: "utilities", name: "Utilities", group_id: "g1", hidden: false },
+  { id: "water", name: "Water", group_id: "g1", hidden: false },
+  { id: "trash", name: "Trash", group_id: "g1", hidden: false },
+];
+const PAYEES = [
+  { id: "p1", name: "Store", category: null, transfer_acct: null },
+  { id: "p-xfer", name: "", category: null, transfer_acct: "a1" },
+  { id: "p-imported", name: null, category: null, transfer_acct: null },
+];
+
+/** Answers the name lists by URL and hands every other request to `rest`. */
+function withNameLists(
+  rest: (url: string, init?: RequestInit) => unknown,
+  lists: { categories?: unknown; payees?: unknown } = {},
+) {
+  return (url: string, init?: RequestInit) => {
+    if (url.endsWith("/categories"))
+      return jsonResponse(lists.categories ?? { data: CATEGORIES });
+    if (url.endsWith("/payees"))
+      return jsonResponse(lists.payees ?? { data: PAYEES });
+    return rest(url, init);
+  };
+}
+
 describe("ActualClient", () => {
   let client: ActualClient;
 
@@ -229,33 +256,39 @@ describe("ActualClient", () => {
     };
 
     it("skips an account that is gone (404) and keeps the rest", async () => {
-      mockFetch.mockImplementation((url: string) => {
-        if (url.endsWith("/accounts")) return list;
-        if (url.includes("/a2/")) return jsonResponse({ error: "no" }, 404);
-        return jsonResponse({ data: [tx] });
-      });
+      mockFetch.mockImplementation(
+        withNameLists((url) => {
+          if (url.endsWith("/accounts")) return list;
+          if (url.includes("/a2/")) return jsonResponse({ error: "no" }, 404);
+          return jsonResponse({ data: [tx] });
+        }),
+      );
       const out = await client.getTransactions("2026-01-01");
       expect(out).toHaveLength(1);
     });
 
     it("a non-404 failure stops the sync and names the account", async () => {
-      mockFetch.mockImplementation((url: string) => {
-        if (url.endsWith("/accounts")) return list;
-        if (url.includes("/a2/")) return jsonResponse({ error: "no" }, 401);
-        return jsonResponse({ data: [tx] });
-      });
+      mockFetch.mockImplementation(
+        withNameLists((url) => {
+          if (url.endsWith("/accounts")) return list;
+          if (url.includes("/a2/")) return jsonResponse({ error: "no" }, 401);
+          return jsonResponse({ data: [tx] });
+        }),
+      );
       await expect(client.getTransactions("2026-01-01")).rejects.toThrow(
         /transactions for Savings — nothing was synced/,
       );
     });
 
     it("a network failure stops the sync too", async () => {
-      mockFetch.mockImplementation((url: string) => {
-        if (url.endsWith("/accounts")) return list;
-        if (url.includes("/a2/"))
-          return Promise.reject(new TypeError("fetch failed"));
-        return jsonResponse({ data: [tx] });
-      });
+      mockFetch.mockImplementation(
+        withNameLists((url) => {
+          if (url.endsWith("/accounts")) return list;
+          if (url.includes("/a2/"))
+            return Promise.reject(new TypeError("fetch failed"));
+          return jsonResponse({ data: [tx] });
+        }),
+      );
       await expect(client.getTransactions("2026-01-01")).rejects.toThrow(
         /Savings/,
       );
@@ -1059,53 +1092,47 @@ describe("ActualClient", () => {
   });
 
   describe("getTransactions", () => {
+    const accounts = {
+      data: [
+        { id: "a1", name: "Checking", offbudget: false, closed: false },
+        { id: "a-sav", name: "Savings", offbudget: false, closed: false },
+        { id: "a2", name: "Old Savings", offbudget: false, closed: true },
+      ],
+    };
+    /** The wrapper: `byAccount` lists each account's transactions. */
+    function wrapper(
+      byAccount: Record<string, unknown[]>,
+      lists?: { categories?: unknown; payees?: unknown },
+    ) {
+      mockFetch.mockImplementation(
+        withNameLists((url) => {
+          if (url.endsWith("/accounts")) return jsonResponse(accounts);
+          const id = url.match(/\/accounts\/([^/]+)\/transactions/)?.[1];
+          if (id) return jsonResponse({ data: byAccount[id] ?? [] });
+          throw new Error(`unexpected ${url}`);
+        }, lists),
+      );
+    }
+    const paths = () =>
+      mockFetch.mock.calls.map(([url]) =>
+        new URL(url as string).pathname.replace(/^.*sync-id-123/, ""),
+      );
+
     it("aggregates transactions across open accounts, skipping closed", async () => {
-      // Response 1: /accounts — two accounts, one closed
-      mockFetch.mockReturnValueOnce(
-        jsonResponse({
-          data: [
-            {
-              id: "a1",
-              name: "Checking",
-              type: "checking",
-              offbudget: false,
-              closed: false,
-              balance: 0,
-            },
-            {
-              id: "a2",
-              name: "Old Savings",
-              type: "savings",
-              offbudget: false,
-              closed: true, // closed → should be skipped
-              balance: 0,
-            },
-          ],
-        }),
-      );
-      // Response 2: /accounts/a1/transactions
-      mockFetch.mockReturnValueOnce(
-        jsonResponse({
-          data: [
-            {
-              id: "tx-1",
-              account: "a1",
-              date: "2026-01-10",
-              amount: -5000, // $-50
-              payee: "p1",
-              payee_name: "Store",
-              notes: "test",
-              cleared: true,
-              reconciled: false,
-              subtransactions: [],
-            },
-          ],
-        }),
-      );
+      wrapper({
+        a1: [
+          actualTx({
+            id: "tx-1",
+            account: "a1",
+            date: "2026-01-10",
+            payee: "p1",
+            notes: "test",
+            cleared: true,
+          }),
+        ],
+      });
       const txs = await client.getTransactions("2026-01-01");
-      // Only one account's transactions returned — the closed account
-      // was never fetched.
-      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(paths()).not.toContain("/accounts/a2/transactions");
       expect(txs).toHaveLength(1);
       expect(txs[0]).toMatchObject({
         id: "tx-1",
@@ -1115,58 +1142,109 @@ describe("ActualClient", () => {
       });
     });
 
-    it("a split keeps its own category and carries its live parts", async () => {
-      mockFetch.mockReturnValueOnce(
-        jsonResponse({
-          data: [
-            {
-              id: "a1",
-              name: "Checking",
-              type: "checking",
-              offbudget: false,
-              closed: false,
-              balance: 0,
-            },
-          ],
-        }),
-      );
-      mockFetch.mockReturnValueOnce(
-        jsonResponse({
-          data: [
-            {
-              id: "tx-2",
-              account: "a1",
-              date: "2026-02-05",
-              amount: -14010,
-              category: "utilities",
-              cleared: true,
-              reconciled: false,
-              subtransactions: [
-                {
-                  amount: -9010,
-                  category: "water",
-                  notes: null,
-                  tombstone: false,
-                },
-                {
-                  amount: -5000,
-                  category: "trash",
-                  notes: "trash",
-                  tombstone: false,
-                },
-                { amount: -100, category: "x", tombstone: true },
-              ],
-            },
-          ],
-        }),
-      );
+    it("names each category and payee from the lists, read once per call", async () => {
+      wrapper({
+        a1: [
+          actualTx({ id: "t1", category: "groceries", payee: "p1" }),
+          actualTx({ id: "t2", category: null, payee: null }),
+          actualTx({ id: "t4", category: null, payee: "p-imported" }),
+        ],
+        "a-sav": [actualTx({ id: "t3", account: "a-sav", payee: "p-xfer" })],
+      });
+      const txs = await client.getTransactions("2026-01-01");
+      expect(
+        txs.map((t) => [t.id, t.categoryName, t.payeeName, t.accountName]),
+      ).toEqual([
+        ["t1", "Groceries", "Store", "Checking"],
+        ["t2", null, null, "Checking"],
+        // A payee Actual holds without a name has none here either.
+        ["t4", null, null, "Checking"],
+        // A transfer payee has no name of its own: its account's name.
+        ["t3", null, "Checking", "Savings"],
+      ]);
+      expect(paths().filter((p) => p === "/categories")).toHaveLength(1);
+      expect(paths().filter((p) => p === "/payees")).toHaveLength(1);
+    });
+
+    it("an id missing from a list gives no name, never the id", async () => {
+      wrapper({
+        a1: [actualTx({ category: "deleted-cat", payee: "deleted-payee" })],
+      });
+      const [tx] = await client.getTransactions("2026-01-01");
+      expect(tx).toMatchObject({
+        categoryId: "deleted-cat",
+        categoryName: null,
+        payeeName: null,
+      });
+    });
+
+    it("a split keeps its own category and carries its live parts, named", async () => {
+      wrapper({
+        a1: [
+          actualTx({
+            id: "tx-2",
+            date: "2026-02-05",
+            amount: -14010,
+            category: "utilities",
+            cleared: true,
+            subtransactions: [
+              {
+                amount: -9010,
+                category: "water",
+                notes: null,
+                tombstone: false,
+              },
+              {
+                amount: -5000,
+                category: "trash",
+                notes: "trash",
+                tombstone: false,
+              },
+              { amount: -100, category: "x", tombstone: true },
+            ],
+          }),
+        ],
+      });
       const [tx] = await client.getTransactions("2026-01-01");
       expect(tx!.categoryId).toBe("utilities");
+      expect(tx!.categoryName).toBe("Utilities");
       expect(tx!.subtransactions).toEqual([
-        { categoryId: "water", categoryName: null, amount: -90.1, memo: null },
-        { categoryId: "trash", categoryName: null, amount: -50, memo: "trash" },
+        {
+          categoryId: "water",
+          categoryName: "Water",
+          amount: -90.1,
+          memo: null,
+        },
+        {
+          categoryId: "trash",
+          categoryName: "Trash",
+          amount: -50,
+          memo: "trash",
+        },
       ]);
     });
+
+    it.each([
+      [
+        "categories",
+        { categories: { data: [{ id: "c1", title: "Food" }] } },
+        "data.0.name",
+      ],
+      ["payees", { payees: { payees: [] } }, "data"],
+    ])(
+      "a bad %s list is bad-response, before any transaction is read",
+      async (_name, lists, field) => {
+        wrapper({ a1: [actualTx()] }, lists);
+        await expect(
+          client.getTransactions("2026-01-01"),
+        ).rejects.toMatchObject({
+          code: "bad-response",
+          service: "Actual",
+          field,
+        });
+        expect(paths()).not.toContain("/accounts/a1/transactions");
+      },
+    );
   });
 
   describe("deleteTransaction", () => {
@@ -1189,7 +1267,7 @@ describe("ActualClient", () => {
               account: "a1",
               date: "2026-01-15",
               amount: -2500,
-              payee_name: "Coffee",
+              payee: "p1",
               notes: null,
               cleared: false,
               reconciled: false,
@@ -1202,6 +1280,9 @@ describe("ActualClient", () => {
       expect(txs).toHaveLength(1);
       expect(txs[0]!.amount).toBe(-25);
       expect(txs[0]!.cleared).toBe(false);
+      // Matched on its memo only: no name lists are read.
+      expect(txs[0]!.payeeName).toBeNull();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -1425,6 +1506,8 @@ describe("ActualClient with dates after the wrapper's today", () => {
             .reduce((s, r) => s + r.amount, 0),
         });
       }
+      if (u.pathname.endsWith("/categories") || u.pathname.endsWith("/payees"))
+        return jsonResponse({ data: [] });
       if (u.pathname.endsWith("/accounts"))
         return jsonResponse({
           data: [

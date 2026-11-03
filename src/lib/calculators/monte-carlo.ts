@@ -14,7 +14,6 @@ import { planEndAge, planRetirementAge } from "@/lib/pure/household-timeline";
 import { strategySpending } from "./strategy-spending";
 import { assessPlan, type PlanFailureReason } from "./plan-outcome";
 import { calculateProjection } from "./engine";
-import { resolveReturnRateForAge } from "./engine/growth-application";
 import { buildInflationPath } from "./engine/inflation-path";
 import { gkAnchorRate } from "@/lib/pure/gk-anchor-rate";
 import {
@@ -24,6 +23,7 @@ import {
   choleskyDecomposition,
   buildCorrelationMatrix,
   sampleNormalMeanStd,
+  type GlidePathEntry,
 } from "./random";
 import type {
   MonteCarloInput,
@@ -41,6 +41,71 @@ import {
 import type { EngineDecumulationYear } from "./types";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "../config/withdrawal-strategies";
 import type { WithdrawalStrategyType } from "../config/withdrawal-strategies";
+
+// ---------------------------------------------------------------------------
+// Not configured
+// ---------------------------------------------------------------------------
+
+/** Why a Simulation can't run: its preset is missing, there are no asset
+ *  classes to draw returns from, no glide path to mix them by age, or a
+ *  glide-path age whose active-class weights don't add up to 100%. */
+export type SimulationNotConfigured =
+  "no_presets" | "no_asset_classes" | "no_glide_path" | "glide_path_mismatch";
+
+/** What each not-configured state tells the household. */
+export const SIMULATION_NOT_CONFIGURED_MESSAGE: Record<
+  SimulationNotConfigured,
+  string
+> = {
+  no_presets:
+    "No simulation preset: the preset this runs on is missing, so the simulation can't run.",
+  no_asset_classes:
+    "No asset classes: the simulation has no returns to draw from, so it can't run.",
+  no_glide_path:
+    "No glide path: this preset has no mix by age, so the simulation can't run.",
+  glide_path_mismatch:
+    "The glide path doesn't add up to 100% at every age (an asset class may be inactive), so the simulation can't run.",
+};
+
+/** How far a glide-path age's active-class weights may sum from 100%. */
+export const GLIDE_PATH_WEIGHT_TOLERANCE = 0.001;
+
+/**
+ * The one check for whether a Simulation can run, or null when it can.
+ * `preset` is the run's preset (`found` false: a named preset the
+ * database lacks — never run Custom's mix under its name); null when the
+ * caller has none. Only active classes (`assetClasses`) count toward a
+ * glide-path age's weights.
+ */
+export function simulationNotConfigured(
+  preset: { found: boolean } | null,
+  assetClasses: readonly { id: number }[],
+  glidePath: readonly GlidePathEntry[],
+): SimulationNotConfigured | null {
+  if (preset && !preset.found) return "no_presets";
+  if (assetClasses.length === 0) return "no_asset_classes";
+  if (glidePath.length === 0) return "no_glide_path";
+  const active = new Set(assetClasses.map((c) => c.id));
+  const sums = glidePath.map((g) =>
+    sumBy(
+      Object.entries(g.allocations).filter(([id]) => active.has(Number(id))),
+      ([, w]) => w,
+    ),
+  );
+  if (sums.every((w) => w <= 0)) return "no_glide_path";
+  if (sums.some((w) => Math.abs(w - 1) > GLIDE_PATH_WEIGHT_TOLERANCE))
+    return "glide_path_mismatch";
+  return null;
+}
+
+/** Thrown by calculateMonteCarlo when it can't run; callers check
+ *  simulationNotConfigured first and show the state instead. */
+export class SimulationNotConfiguredError extends Error {
+  constructor(readonly reason: SimulationNotConfigured) {
+    super(SIMULATION_NOT_CONFIGURED_MESSAGE[reason]);
+    this.name = "SimulationNotConfiguredError";
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -141,15 +206,11 @@ export function calculateMonteCarlo(
   const strategyUsesRaise =
     WITHDRAWAL_STRATEGY_CONFIG[activeStrategy]?.usesPostRetirementRaise ?? true;
 
-  // Validate inputs
-  if (assetClasses.length === 0) {
-    warnings.push(
-      "No asset classes configured — using deterministic return rates for all trials",
-    );
-  }
-  if (glidePath.length === 0) {
-    warnings.push("No glide path configured — using equal-weight allocation");
-  }
+  // Nothing to draw returns from. (A mix off 100% is refused by the
+  // routers, which check the household's own glide path.)
+  const notConfigured = simulationNotConfigured(null, assetClasses, glidePath);
+  if (notConfigured === "no_asset_classes" || notConfigured === "no_glide_path")
+    throw new SimulationNotConfiguredError(notConfigured);
 
   // Check for missing correlation pairs
   if (assetClasses.length > 1) {
@@ -250,14 +311,6 @@ export function calculateMonteCarlo(
   // state with.
   const progressInterval = Math.max(1, Math.floor(numTrials / 50));
 
-  // Deterministic return rates (age -> rate), read as breakpoints exactly
-  // as the engine reads them. Only used when there are no asset classes.
-  const detRateMap = new Map<number, number>();
-  for (const r of engineInput.returnRates) {
-    const ageMatch = r.label.match(/(\d+)/);
-    if (ageMatch) detRateMap.set(Number(ageMatch[1]), r.rate);
-  }
-
   // Run trials
   for (let trial = 0; trial < numTrials; trial++) {
     if (
@@ -272,22 +325,15 @@ export function calculateMonteCarlo(
     const trialReturnRates: { label: string; rate: number }[] = [];
     for (let yearIdx = 0; yearIdx < numYears; yearIdx++) {
       const age = startAge + yearIdx;
-      let annualReturn: number;
-
-      if (assetClasses.length > 0) {
-        // Correlated log-normal draws, centered on the asset class means and
-        // blended by this age's glide path.
-        annualReturn = sampleBlendedReturn(
-          rng,
-          assetClasses,
-          choleskyL,
-          glidePath,
-          age,
-        );
-      } else {
-        // Fallback: use the deterministic return rate
-        annualReturn = resolveReturnRateForAge(detRateMap, age);
-      }
+      // Correlated log-normal draws, centered on the asset class means and
+      // blended by this age's glide path.
+      let annualReturn = sampleBlendedReturn(
+        rng,
+        assetClasses,
+        choleskyL,
+        glidePath,
+        age,
+      );
 
       // Clamp extreme returns (prevent unrealistic scenarios)
       annualReturn = Math.max(annualReturn, clampMin);

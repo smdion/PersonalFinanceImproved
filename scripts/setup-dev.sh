@@ -99,17 +99,19 @@ EOF
     ok "Created .env with dev defaults"
   fi
 
-  # Generate ENCRYPTION_KEY if not set
-  if grep -q '^ENCRYPTION_KEY=$' .env; then
-    KEY="$(node -e 'console.log(require("crypto").randomBytes(32).toString("base64"))')"
-    # Use a portable sed-in-place
-    if [[ "$(uname -s)" == "Darwin" ]]; then
-      sed -i '' "s|^ENCRYPTION_KEY=$|ENCRYPTION_KEY=$KEY|" .env
-    else
-      sed -i "s|^ENCRYPTION_KEY=$|ENCRYPTION_KEY=$KEY|" .env
+  # Fill each blank secret with a fresh random 32-byte base64 value
+  for VAR in NEXTAUTH_SECRET CRON_SECRET ENCRYPTION_KEY; do
+    if grep -q "^${VAR}=\$" .env; then
+      KEY="$(node -e 'console.log(require("crypto").randomBytes(32).toString("base64"))')"
+      # Use a portable sed-in-place
+      if [[ "$(uname -s)" == "Darwin" ]]; then
+        sed -i '' "s|^${VAR}=\$|${VAR}=$KEY|" .env
+      else
+        sed -i "s|^${VAR}=\$|${VAR}=$KEY|" .env
+      fi
+      ok "Generated ${VAR}"
     fi
-    ok "Generated ENCRYPTION_KEY"
-  fi
+  done
 else
   ok ".env already exists — leaving it alone"
 fi

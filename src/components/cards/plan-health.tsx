@@ -30,6 +30,7 @@
  */
 
 import { Card } from "@/components/ui/card";
+import { Disclaimer } from "@/components/ui/disclaimer";
 import { trpc } from "@/lib/trpc";
 import { validateContributionOrder } from "@/lib/pure/contributions";
 import { checkGlidePath } from "@/lib/pure/glide-path";
@@ -190,6 +191,7 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
         userInflationRate={props.inflationRate}
         userSalaryGrowth={props.salaryGrowthRate}
       />
+      <Disclaimer className="mt-3" />
     </Card>
   );
 }

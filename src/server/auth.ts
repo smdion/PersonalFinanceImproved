@@ -1,13 +1,12 @@
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import type { NextAuthConfig } from "next-auth";
-import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { appSettings, localAdmins } from "@/lib/db/schema";
-import { verifyPassword } from "@/lib/auth/password";
+import { appSettings } from "@/lib/db/schema";
 import { authConfig } from "./auth.config";
 import { isDevelopmentBuild } from "./auth-mode";
 import { log } from "@/lib/logger";
+import { authorizeLocalAdmin } from "./local-admin-login";
 
 /**
  * ── NextAuth v5 Beta Notice ──
@@ -133,6 +132,11 @@ declare module "next-auth" {
   }
 }
 
+/** The login form shows this `code` as "too many failed sign-ins". */
+class LoginThrottledError extends CredentialsSignin {
+  code = "rate_limited";
+}
+
 /** Local admin credentials provider — lives in auth.ts (not auth.config.ts) because it needs DB. */
 const localAdminProvider = Credentials({
   id: "local-admin",
@@ -141,41 +145,11 @@ const localAdminProvider = Credentials({
     email: { label: "Email", type: "email" },
     password: { label: "Password", type: "password" },
   },
-  async authorize(credentials) {
-    const email = credentials?.email as string | undefined;
-    const password = credentials?.password as string | undefined;
-    if (!email || !password) return null;
-
-    try {
-      const [admin] = await db
-        .select()
-        .from(localAdmins)
-        .where(eq(localAdmins.email, email.toLowerCase()))
-        .limit(1);
-      if (!admin) {
-        log("info", "login_failed", { email, reason: "user_not_found" });
-        return null;
-      }
-
-      const valid = await verifyPassword(password, admin.passwordHash);
-      if (!valid) {
-        log("warn", "login_failed", { email, reason: "invalid_password" });
-        return null;
-      }
-
-      log("info", "login_success", { email, method: "local-admin" });
-      return {
-        id: `local:${admin.id}`,
-        name: admin.name,
-        email: admin.email,
-      };
-    } catch (err) {
-      log("error", "login_error", {
-        email,
-        error: err instanceof Error ? err.message : String(err),
-      });
-      return null;
-    }
+  async authorize(credentials, request) {
+    const result = await authorizeLocalAdmin(credentials, request);
+    if (result.ok) return result.user;
+    if (result.throttled) throw new LoginThrottledError();
+    return null;
   },
 });
 

@@ -4,6 +4,7 @@
  *  retirement/page.tsx is a thin server component that prefetches the most
  *  expensive query before rendering this. */
 
+import { NotConfiguredNotice } from "@/components/ui/not-configured-notice";
 import { useSimulationPreset } from "@/lib/hooks/use-simulation-preset";
 import { useFocusedState } from "@/lib/hooks/use-focus";
 import { useState, useMemo } from "react";
@@ -14,6 +15,7 @@ import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { formatCurrency } from "@/lib/utils/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Disclaimer } from "@/components/ui/disclaimer";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
@@ -283,11 +285,18 @@ export function RetirementContent() {
             <Skeleton className="h-4 w-1/2" />
             <Skeleton className="h-4 w-3/4" />
           </div>
+        ) : comparisonData &&
+          "notConfigured" in comparisonData &&
+          comparisonData.notConfigured === "no_return_rate" ? (
+          <div className="p-4">
+            <NotConfiguredNotice reason={comparisonData.notConfigured} />
+          </div>
         ) : comparisonData && "retirementAge" in comparisonData ? (
           <WithdrawalComparisonCard
             strategies={comparisonData.strategies}
             activeStrategy={comparisonData.activeStrategy}
             presetLabel={comparisonData.presetLabel}
+            notConfigured={comparisonData.notConfigured}
             dollarMode={dollarMode}
             onDollarModeChange={setDollarMode}
             inflationRate={parseFloat(settings.annualInflation)}
@@ -337,6 +346,8 @@ export function RetirementContent() {
               src/components/retirement/retirement-profile-tab.tsx. */}
         </>
       )}
+      {/* Plan Health's card carries its own. */}
+      {pageTab !== "planHealth" && <Disclaimer className="mt-3" />}
     </div>
   );
 }

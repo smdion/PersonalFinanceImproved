@@ -9,7 +9,7 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 - **Retirement planning** — A full accumulation-and-decumulation projection engine with Monte Carlo simulation (labeled **Simulation** in the app), validated against Trinity Study benchmarks. Per-person retirement ages, Social Security amounts and start ages, and pre-retirement raise rates. Nine withdrawal strategies (Fixed, Forgo Inflation After Loss, Spending Decline, Constant Percentage, Endowment, Vanguard Dynamic, Variable Percentage Withdrawal, Guyton-Klinger, RMD Spending) and three withdrawal-routing modes (**Bracket Filling** — Traditional up to a target tax bracket, then the cheapest remaining source each year; **Waterfall** — accounts in a set priority order; **Percentage** — fixed shares). Retirement answers count retirement accounts only — savings tagged Portfolio never prop up the plan. Models RMDs and RMD smoothing, Qualified Charitable Distributions, the age-65+ standard deduction and the temporary OBBBA senior deduction, IRMAA cliff detection with a two-year MAGI lookback, ACA premium-subsidy cliffs, Rule-of-55 and early-withdrawal-penalty rules, lump-sum injections and withdrawals, and a multi-year Roth-conversion bracket-target optimizer.
 - **Profiles and Plans** — Salary, Contribution, Budget and Retirement profiles, each its own complete set of assumptions; a **Plan** is a saved set of one of each, applied in one step. A Retirement Profile can keep a specific tax year's tables so an old projection reproduces exactly.
 - **Plan Health** — A card that surfaces contribution-order warnings, glide-path mismatches, rosy-assumption flags, and a recommended withdrawal strategy in context.
-- **Print Advisor Report** — A purpose-built multi-page document: executive summary, Monte Carlo risk analysis with worst-case framing, a withdrawal-strategy narrative, an ACA/IRMAA watchlist, action items, and a condensed year-by-year table.
+- **Print Full Report** — A purpose-built multi-page document: executive summary, Monte Carlo risk analysis with worst-case framing, a withdrawal-strategy narrative, an ACA/IRMAA watchlist, action items, and a condensed year-by-year table.
 - **Coast FIRE** — Automatic Coast FIRE age plus a custom-age check for any age between now and your planned retirement.
 - **Tax Buckets** — Per-account analysis of how much of each balance is reachable now, split into penalty-free and tax-free portions, with Roth ordering rules and Rule-of-55 eligibility applied.
 - **What-If** — Try changes in a sandbox that never touches your active profiles; save the result as profiles when you want to keep it.
@@ -53,16 +53,20 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 git clone <repo-url> && cd ledgr
 
 cp .env.example .env
-# Edit .env — at minimum set NEXTAUTH_SECRET, CRON_SECRET, and ENCRYPTION_KEY
+# Edit .env: set NEXTAUTH_SECRET, CRON_SECRET and ENCRYPTION_KEY (see below)
 
 # SQLite, zero config:
 docker compose up -d
 
-# Or PostgreSQL:
+# Or PostgreSQL (also set POSTGRES_PASSWORD in .env):
 # docker compose -f docker-compose.postgres.yml up -d
 ```
 
-By default Ledgr uses SQLite — no database setup required. On first launch, migrations run automatically and you'll see the onboarding wizard.
+By default Ledgr uses SQLite — no database setup required. On first launch, migrations run automatically, the sign-in page asks you to create the first admin, and the onboarding wizard then sets up your household.
+
+Finish first-run setup (create the admin) before you expose the port or put a public proxy in front of it.
+
+Both compose files pass every variable in `.env` to the container, so the optional ones below (Authentik, `TZ`, `LEDGR_BACKUP_DIR`, …) need no compose edits. Until each required variable is set, `docker compose` refuses to start and names the one that's missing.
 
 ### Generate secrets
 
@@ -104,14 +108,15 @@ All configuration is through environment variables. Copy `.env.example` to `.env
 
 ### Optional — authentication
 
-| Variable                | Description                                                                                                                                                                                                                                                                                      |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `ALLOW_DEV_MODE`        | `next dev` only: `true` skips sign-in and makes every request an admin (without it, a read-only viewer). Refused in production builds                                                                                                                                                            |
-| `AUTH_AUTHENTIK_ISSUER` | Authentik OIDC issuer URL (e.g. `https://auth.example.com/application/o/ledgr`). Required in production: Ledgr refuses to start without it (except with `DEMO_ONLY`); the Docker image sets a placeholder at build time, since the login page reads it then to decide whether to offer Authentik |
-| `AUTH_AUTHENTIK_ID`     | Authentik OIDC client ID                                                                                                                                                                                                                                                                         |
-| `AUTH_AUTHENTIK_SECRET` | Authentik OIDC client secret                                                                                                                                                                                                                                                                     |
-| `DEMO_ONLY`             | Set `true` for demo-only mode — no login, read-only, with a profile chooser                                                                                                                                                                                                                      |
-| `ALLOWED_ACTUAL_HOSTS`  | Comma-separated hostnames the Actual Budget client may reach on a private network                                                                                                                                                                                                                |
+| Variable                | Description                                                                                                                                                                                                                                                                                                           |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ALLOW_DEV_MODE`        | `next dev` only: `true` skips sign-in and makes every request an admin (without it, a read-only viewer). Refused in production builds                                                                                                                                                                                 |
+| `AUTH_AUTHENTIK_ISSUER` | Authentik OIDC issuer URL (e.g. `https://auth.example.com/application/o/ledgr`). Without it, sign-in is local admin only. Read at runtime: the login page offers Authentik when the running server has it                                                                                                             |
+| `AUTH_AUTHENTIK_ID`     | Authentik OIDC client ID                                                                                                                                                                                                                                                                                              |
+| `AUTH_AUTHENTIK_SECRET` | Authentik OIDC client secret                                                                                                                                                                                                                                                                                          |
+| `DEMO_ONLY`             | Set `true` for demo-only mode — no login, read-only, with a profile chooser                                                                                                                                                                                                                                           |
+| `ALLOWED_ACTUAL_HOSTS`  | Comma-separated hostnames the Actual Budget client may reach on a private network                                                                                                                                                                                                                                     |
+| `TRUSTED_PROXY_HEADER`  | Which header names the client for rate limits and the sign-in throttle: unset uses X-Real-IP, else the last X-Forwarded-For hop (safe only behind a proxy that overwrites them, like SWAG); `x-real-ip` or `x-forwarded-for` trusts only that one; `none` (no proxy in front) puts every visitor in one shared bucket |
 
 ### Integrations
 
@@ -194,11 +199,13 @@ After editing `src/lib/db/pg/*.ts`, regenerate the SQLite schema with `npx tsx s
 
 ### Authentication modes
 
-| Mode               | When                           | How                                                                                                               |
-| ------------------ | ------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| **Local Admin**    | Always available               | Email/password against a `local_admins` table. The first admin is created during onboarding.                      |
-| **Authentik OIDC** | `AUTH_AUTHENTIK_ISSUER` is set | SSO with RBAC group mapping. Shown alongside the local-admin form.                                                |
-| **Dev Mode**       | Running `next dev`             | No sign-in: a fixed session, admin with `ALLOW_DEV_MODE=true`, otherwise a read-only viewer. Never in production. |
+| Mode               | When                           | How                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Local Admin**    | Always available               | Email/password against a `local_admins` table. On a fresh install, `/login` offers "Create the first admin" until one exists (or onboarding is completed through Authentik). Sign-ins are throttled: after 5 attempts from one address, or 10 for one email (from an address that already failed), that address or email waits up to 15 minutes; a sign-in resets both counts. |
+| **Authentik OIDC** | `AUTH_AUTHENTIK_ISSUER` is set | SSO with RBAC group mapping. Shown alongside the local-admin form.                                                                                                                                                                                                                                                                                                             |
+| **Dev Mode**       | Running `next dev`             | No sign-in: a fixed session, admin with `ALLOW_DEV_MODE=true`, otherwise a read-only viewer. Never in production.                                                                                                                                                                                                                                                              |
+
+Local admin is the default install's sign-in: Authentik is optional, and without `AUTH_AUTHENTIK_ISSUER` the login page offers only the local-admin form.
 
 ## Deployment
 

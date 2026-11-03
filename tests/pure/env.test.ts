@@ -53,6 +53,7 @@ beforeEach(() => {
     "ENCRYPTION_KEY",
     "ALLOW_DEV_MODE",
     "SQLITE_PATH",
+    "TRUSTED_PROXY_HEADER",
   ]) {
     delete process.env[key];
   }
@@ -208,6 +209,21 @@ describe("env.ts production invariants", () => {
       process.env.SQLITE_PATH = "data/ledgr.db";
 
       await expect(import("@/lib/env")).resolves.toBeDefined();
+    });
+  });
+
+  describe("TRUSTED_PROXY_HEADER", () => {
+    it("accepts each documented value", async () => {
+      for (const value of ["x-real-ip", "x-forwarded-for", "none"]) {
+        vi.resetModules();
+        process.env.TRUSTED_PROXY_HEADER = value;
+        await expect(import("@/lib/env")).resolves.toBeDefined();
+      }
+    });
+
+    it("rejects any other value", async () => {
+      process.env.TRUSTED_PROXY_HEADER = "X-Client-IP";
+      await expect(import("@/lib/env")).rejects.toThrow(/environment/i);
     });
   });
 });

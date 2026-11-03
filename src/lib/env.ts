@@ -20,6 +20,10 @@ const baseSchema = z.object({
   AUTH_AUTHENTIK_ISSUER: z.string().url().optional(),
   AUTH_AUTHENTIK_ID: z.string().min(1).optional(),
   AUTH_AUTHENTIK_SECRET: z.string().min(1).optional(),
+  // Which proxy header names the client for rate limits (client-address.ts).
+  TRUSTED_PROXY_HEADER: z
+    .enum(["x-real-ip", "x-forwarded-for", "none"])
+    .optional(),
   // Cron secret — optional but must be strong when set
   CRON_SECRET: z.string().min(32).optional(),
   // At-rest encryption key for api_connections.config (AES-256-GCM).
@@ -76,10 +80,9 @@ function validateEnv(): Env {
   //        - CRON_SECRET gates /api/health/detailed. In demo mode the
   //          health details (DB up, migration version, row counts on
   //          ephemeral per-tenant schemas) are not sensitive.
-  //      Same carve-out precedent already exists in src/server/trpc.ts:60
-  //      for AUTH_AUTHENTIK_ISSUER. A real prod install must still
-  //      satisfy both invariants — demo mode is the only exception and
-  //      it's load-bearing exactly because the mutation guard is.
+  //      A real prod install must still satisfy both invariants — demo
+  //      mode is the only exception and it's load-bearing exactly because
+  //      the mutation guard is.
   const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
   const isDemoOnly = process.env.DEMO_ONLY === "true";
   if (process.env.NODE_ENV === "production" && !isBuildPhase && !isDemoOnly) {

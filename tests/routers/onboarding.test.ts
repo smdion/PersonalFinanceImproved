@@ -1,6 +1,6 @@
 /**
  * Onboarding router tests — isOnboardingComplete, completeOnboarding,
- * createLocalAdmin, testOidcConnection.
+ * firstRunState, createLocalAdmin, testOidcConnection.
  */
 import "./setup-mocks";
 import { vi, describe, it, expect, afterEach } from "vitest";
@@ -109,7 +109,82 @@ describe("settings.testOidcConnection", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// createLocalAdmin (lines 59-86)
+// firstRunState (public: /login reads it signed out)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const firstAdmin = {
+  name: "First Admin",
+  email: "first@example.com",
+  password: "SecurePass123!",
+};
+
+describe("settings.firstRunState", () => {
+  it("says an admin is needed on a fresh database, signed out", async () => {
+    const { caller, cleanup } = await createTestCaller(null);
+    try {
+      expect(await caller.settings.firstRunState()).toEqual({
+        adminNeeded: true,
+      });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("says no once a local admin exists", async () => {
+    const { caller, cleanup } = await createTestCaller(null);
+    try {
+      await caller.settings.createLocalAdmin(firstAdmin);
+      expect(await caller.settings.firstRunState()).toEqual({
+        adminNeeded: false,
+      });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("says no once onboarding is complete under OIDC, with no local admin", async () => {
+    const { caller, cleanup } = await createTestCaller(adminSession);
+    try {
+      await caller.settings.completeOnboarding();
+      expect(await caller.settings.firstRunState()).toEqual({
+        adminNeeded: false,
+      });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("says no under DEMO_ONLY, and the create is refused", async () => {
+    vi.stubEnv("DEMO_ONLY", "true");
+    const { caller, cleanup } = await createTestCaller(null);
+    try {
+      expect(await caller.settings.firstRunState()).toEqual({
+        adminNeeded: false,
+      });
+      await expect(
+        caller.settings.createLocalAdmin(firstAdmin),
+      ).rejects.toThrow();
+    } finally {
+      vi.unstubAllEnvs();
+      cleanup();
+    }
+  });
+
+  it("says no once a person exists", async () => {
+    const { caller, db, cleanup } = await createTestCaller(null);
+    try {
+      await seedPerson(db, "Test User", "1990-01-01");
+      expect(await caller.settings.firstRunState()).toEqual({
+        adminNeeded: false,
+      });
+    } finally {
+      cleanup();
+    }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// createLocalAdmin
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("settings.createLocalAdmin", () => {
@@ -147,6 +222,36 @@ describe("settings.createLocalAdmin", () => {
           password: "AnotherPass456!",
         }),
       ).rejects.toThrow(/local admin account already exists/i);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("is refused signed out once onboarding is complete under OIDC", async () => {
+    const { caller, db, cleanup } = await createTestCaller(null);
+    try {
+      seedAppSetting(db, "onboarding_completed", true);
+      await expect(
+        caller.settings.createLocalAdmin(firstAdmin),
+      ).rejects.toThrow(/onboarding is complete/i);
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("creates one admin when two first-run requests race", async () => {
+    const { caller, db, cleanup } = await createTestCaller(null);
+    try {
+      const results = await Promise.allSettled([
+        caller.settings.createLocalAdmin(firstAdmin),
+        caller.settings.createLocalAdmin({
+          ...firstAdmin,
+          email: "second@example.com",
+        }),
+      ]);
+      expect(results.filter((r) => r.status === "fulfilled")).toHaveLength(1);
+      const sqliteSchema = await import("@/lib/db/schema-sqlite");
+      expect(db.select().from(sqliteSchema.localAdmins).all()).toHaveLength(1);
     } finally {
       cleanup();
     }

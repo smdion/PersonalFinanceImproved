@@ -49,6 +49,7 @@ vi.mock("@/lib/logger", () => ({
 // next-auth and the local config import; the side effect of NextAuth(fullConfig)
 // runs at module load, but with everything mocked it's a no-op.
 vi.mock("next-auth", () => ({
+  CredentialsSignin: class extends Error {},
   default: () => ({
     handlers: {},
     auth: vi.fn(),

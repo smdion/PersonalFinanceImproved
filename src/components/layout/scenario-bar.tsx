@@ -23,6 +23,7 @@ import { FormError } from "@/components/ui/form-error";
 import { useClickOutside } from "@/lib/hooks/use-click-outside";
 import { profilesHref } from "@/lib/config/profile-tabs";
 import type { PlanProfileKind } from "@/lib/config/plans";
+import { planSaveBlockedReason } from "@/lib/pure/plans";
 
 const VIEW_MODES = [
   {
@@ -167,6 +168,7 @@ export function ScenarioBar() {
         retirementProfileId: activeIds.retirement!,
       }
     : null;
+  const saveBlocked = activeSet ? null : planSaveBlockedReason(activeIds);
 
   const handleCreate = () => {
     if (!newName.trim() || !activeSet) return;
@@ -426,13 +428,23 @@ export function ScenarioBar() {
                         </div>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => setCreating(true)}
-                        disabled={!activeSet}
-                        className="w-full rounded px-1 py-1.5 text-left text-blue-600 hover:bg-blue-50 disabled:opacity-50"
-                      >
-                        + Save these profiles as a new Plan
-                      </button>
+                      <>
+                        <button
+                          onClick={() => setCreating(true)}
+                          disabled={!activeSet}
+                          aria-describedby={
+                            saveBlocked ? "plan-save-blocked" : undefined
+                          }
+                          className="w-full rounded px-1 py-1.5 text-left text-blue-600 hover:bg-blue-50 disabled:opacity-50"
+                        >
+                          + Save these profiles as a new Plan
+                        </button>
+                        {saveBlocked && (
+                          <p id="plan-save-blocked" className="text-muted px-1">
+                            {saveBlocked}
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 )}

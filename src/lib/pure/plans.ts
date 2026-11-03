@@ -59,3 +59,17 @@ export function planInUseMessage(
   const one = planNames.length === 1;
   return `Can't delete: used by ${one ? "Plan" : "Plans"} ${planNames.join(", ")}. Choose a different ${PLAN_PROFILE_KIND_LABELS[kind]} profile in ${one ? "that Plan" : "those Plans"} first.`;
 }
+
+/** Why the active profiles can't be saved as a Plan: each kind with no
+ *  active profile, named. Null when every kind has one. */
+export function planSaveBlockedReason(
+  active: Partial<Record<PlanProfileKind, number | null | undefined>>,
+): string | null {
+  const missing = PLAN_PROFILE_KINDS.filter((k) => active[k] == null).map(
+    (k) => PLAN_PROFILE_KIND_LABELS[k],
+  );
+  if (missing.length === 0) return null;
+  const last = missing.pop()!;
+  const named = missing.length ? `${missing.join(", ")} and ${last}` : last;
+  return `To save a Plan, make a ${named} profile active first.`;
+}

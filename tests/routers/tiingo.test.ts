@@ -143,12 +143,15 @@ describe("tiingo router", () => {
       .where(eq(sqliteSchema.apiConnections.id, row.id))
       .run();
 
+    const calls = testApiKey.mock.calls.length;
     const result = await caller.tiingo.testConnection();
 
-    expect(result.success).toBe(false);
-    expect(result.success === false && result.error).not.toBe(
-      "No Tiingo connection configured",
-    );
+    expect(result).toEqual({
+      success: false,
+      error:
+        "The saved Tiingo key can't be decrypted (it was saved with a different ENCRYPTION_KEY) — enter the key again.",
+    });
+    expect(testApiKey.mock.calls.length).toBe(calls);
   });
 
   it("removeConnection deletes the stored key", async () => {

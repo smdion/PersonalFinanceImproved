@@ -3,7 +3,7 @@
  * and auth enforcement for the sync-permission-gated mutation.
  */
 import "./setup-mocks";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import {
@@ -14,6 +14,11 @@ import {
   seedSnapshot,
 } from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
+import { saveSimplefinConnection } from "@/lib/simplefin/sync";
+import {
+  SIMPLEFIN_DAILY_REQUEST_LIMIT,
+  countSimplefinRequestsLastDay,
+} from "@/lib/simplefin/request-log";
 
 describe("simplefin router", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
@@ -496,13 +501,121 @@ describe("simplefin router", () => {
     });
   });
 
+  describe("testConnection", () => {
+    /** A fresh database with a SimpleFIN connection; `fetch` answers. */
+    async function connected(answer: () => { status: number; body: string }) {
+      const ctx = await createTestCaller();
+      await saveSimplefinConnection(
+        ctx.rawDb,
+        "https://u:p@bridge.simplefin.org/simplefin",
+      );
+      const fetchMock = vi.fn(async () => {
+        const { status, body } = answer();
+        return {
+          ok: status === 200,
+          status,
+          headers: new Headers(),
+          text: async () => body,
+        };
+      });
+      vi.stubGlobal("fetch", fetchMock);
+      const log = () =>
+        ctx.db
+          .select()
+          .from(sqliteSchema.syncRequestLog)
+          .all()
+          .map((r) => [r.endpoint, r.outcome, r.httpStatus]);
+      return { ctx, fetchMock, log };
+    }
+
+    it("sends one request, never retried, and logs it against the quota", async () => {
+      const { ctx, fetchMock, log } = await connected(() => ({
+        status: 503,
+        body: "busy",
+      }));
+      try {
+        expect(await ctx.caller.simplefin.testConnection()).toMatchObject({
+          success: false,
+        });
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(log()).toEqual([["/accounts", "error", 503]]);
+        expect(await countSimplefinRequestsLastDay(ctx.rawDb)).toBe(1);
+      } finally {
+        vi.unstubAllGlobals();
+        ctx.cleanup();
+      }
+    });
+
+    it("logs a 200 it can't read as a bad response, as the sync does", async () => {
+      const { ctx, log } = await connected(() => ({
+        status: 200,
+        body: JSON.stringify({ errors: "down", accounts: [] }),
+      }));
+      try {
+        await ctx.caller.simplefin.testConnection();
+        expect(log()).toEqual([["/accounts", "bad_response", 200]]);
+      } finally {
+        vi.unstubAllGlobals();
+        ctx.cleanup();
+      }
+    });
+
+    it("stops at the daily limit, as the sync does, without calling SimpleFIN", async () => {
+      const { ctx, fetchMock, log } = await connected(() => ({
+        status: 200,
+        body: JSON.stringify({ accounts: [] }),
+      }));
+      try {
+        for (let i = 0; i < SIMPLEFIN_DAILY_REQUEST_LIMIT; i++)
+          ctx.db
+            .insert(sqliteSchema.syncRequestLog)
+            .values({
+              service: "simplefin",
+              endpoint: "/accounts",
+              outcome: "ok",
+            })
+            .run();
+        const result = await ctx.caller.simplefin.testConnection();
+        expect(result).toEqual({
+          success: false,
+          error: `Paused: ${SIMPLEFIN_DAILY_REQUEST_LIMIT} SimpleFIN requests in the last 24 hours (Ledgr's limit is ${SIMPLEFIN_DAILY_REQUEST_LIMIT}, below SimpleFIN's daily quota). Syncing resumes automatically.`,
+        });
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(log().at(-1)).toEqual(["/accounts", "skipped_quota", null]);
+      } finally {
+        vi.unstubAllGlobals();
+        ctx.cleanup();
+      }
+    });
+  });
+
   describe("syncNow", () => {
+    it("after a connection test, says a request was sent, not that it synced", async () => {
+      const ctx = await createTestCaller();
+      try {
+        ctx.db
+          .insert(sqliteSchema.syncRequestLog)
+          .values({
+            service: "simplefin",
+            endpoint: "/accounts",
+            outcome: "ok",
+            requestedAt: new Date(Date.now() - 3 * 60_000 - 1_000),
+          })
+          .run();
+        await expect(ctx.caller.simplefin.syncNow()).rejects.toThrow(
+          "Ledgr sent SimpleFIN a request 3 minutes ago. Try again in 7 minutes — SimpleFIN allows only about 24 requests a day.",
+        );
+      } finally {
+        ctx.cleanup();
+      }
+    });
+
     it("refuses a manual sync within 10 minutes of the last SimpleFIN request (quota)", async () => {
       db.insert(sqliteSchema.syncRequestLog)
         .values({ service: "simplefin", endpoint: "/accounts", outcome: "ok" })
         .run();
       await expect(caller.simplefin.syncNow()).rejects.toThrow(
-        /Try again in \d+ minute/,
+        "Ledgr sent SimpleFIN a request less than a minute ago. Try again in 10 minutes — SimpleFIN allows only about 24 requests a day.",
       );
     });
   });

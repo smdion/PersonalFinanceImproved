@@ -123,6 +123,10 @@ export const scenariosRouter = createTRPCRouter({
         retirementProfileId: input.retirementProfileId,
       });
       if (!payload) return { result: null };
+      // No return rate: a state, not an engine throw. Metadata (settings,
+      // budgets) needs no rate, so a metadataOnly read still gets it.
+      if (payload.notConfigured && !input.metadataOnly)
+        return { result: null, notConfigured: payload.notConfigured };
 
       const {
         primaryPerson,

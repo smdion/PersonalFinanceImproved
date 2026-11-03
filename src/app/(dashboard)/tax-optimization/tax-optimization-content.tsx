@@ -18,6 +18,7 @@
  * `projectTaxYears` is still queried — not to render a table, but for the
  * IRMAA-exposure callout and the "brackets current through {year}" note.
  */
+import { NotConfiguredNotice } from "@/components/ui/not-configured-notice";
 import { useMemo, useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { PageHeader } from "@/components/ui/page-header";
@@ -83,6 +84,15 @@ export function TaxOptimizationContent() {
         <PageHeader title="Roth & conversions" />
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-96 w-full" />
+      </div>
+    );
+  }
+
+  if (taxQuery.data && "notConfigured" in taxQuery.data) {
+    return (
+      <div className="space-y-4">
+        <PageHeader title="Roth & conversions" />
+        <NotConfiguredNotice reason={taxQuery.data.notConfigured} />
       </div>
     );
   }

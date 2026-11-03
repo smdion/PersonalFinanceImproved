@@ -39,7 +39,9 @@ beforeEach(() => {
   fs.cpSync(path.join(REPO, FOLDER), path.join(dir, FOLDER), {
     recursive: true,
   });
-  fs.symlinkSync(path.join(REPO, "tax-data"), path.join(dir, "tax-data"));
+  // The migrator reads its reference data from the working directory.
+  for (const data of ["tax-data", "reference-data"])
+    fs.symlinkSync(path.join(REPO, data), path.join(dir, data));
   process.env.SQLITE_PATH = path.join(dir, "ledgr.db");
   process.env.LEDGR_BACKUP_DIR = path.join(dir, "backups");
   delete process.env.LEDGR_SKIP_PREMIGRATION_BACKUP;

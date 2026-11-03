@@ -140,6 +140,7 @@ export const DATA_SETTING_KEYS: readonly string[] = [
   SK_MILESTONE_CUSTOM_GOALS,
   SK_RECOMMENDATION_DISMISSALS,
   SK_CURRENT_GLIDE_PATH,
+  "mc_asset_class_overrides", // asset-class ids, emptied with the classes
   "active_budget_api",
   "current_other_liabilities",
   "performance_last_updated",

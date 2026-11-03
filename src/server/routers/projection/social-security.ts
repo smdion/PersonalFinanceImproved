@@ -113,6 +113,8 @@ export const socialSecurityRouter = createTRPCRouter({
         retirementProfileId: input.retirementProfileId,
       });
       if (!payload) return { result: null };
+      if (payload.notConfigured)
+        return { result: null, notConfigured: payload.notConfigured };
 
       const person = payload.perPersonSettings.find(
         (p) => p.personId === input.personId,

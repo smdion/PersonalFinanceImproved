@@ -37,6 +37,7 @@ import {
 import { effectiveHighIncomeLine } from "@/lib/pure/high-income-line";
 import { householdHighIncomeLine } from "@/server/helpers/high-income-line";
 import { mergeSettingAtomically } from "@/server/helpers/merge-setting";
+import { resolveActiveProfilePair } from "@/server/helpers/budget";
 import { contributionRouter } from "./contribution";
 import { savingsRouter } from "./savings";
 import { mortgageRouter } from "./mortgage";
@@ -355,6 +356,10 @@ async function activeMilestoneInput(ctx: Context) {
     settingRows.find((r) => r.key === key)?.value ?? null;
   const efundColumn = setting(SK_EFUND_BUDGET_COLUMN);
   const optional = <T>(p: Promise<T>) => p.catch(() => null);
+  // Contributions need the profile ids the page sends; with none they're $0.
+  const { contribProfileId, salaryProfileId } = await resolveActiveProfilePair(
+    ctx.db,
+  );
   const [
     inputs,
     contributions,
@@ -366,7 +371,12 @@ async function activeMilestoneInput(ctx: Context) {
     line,
   ] = await Promise.all([
     loadMilestoneInputs(ctx.db, undefined),
-    createCallerFactory(contributionRouter)(inner).computeSummary(),
+    createCallerFactory(contributionRouter)(inner).computeSummary({
+      ...(contribProfileId != null
+        ? { contributionProfileId: contribProfileId }
+        : {}),
+      ...(salaryProfileId != null ? { salaryProfileId } : {}),
+    }),
     createCallerFactory(savingsRouter)(inner).computeSummary(
       typeof efundColumn === "number" && efundColumn >= 0
         ? { budgetTierOverride: efundColumn }

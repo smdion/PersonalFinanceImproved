@@ -23,6 +23,17 @@ vi.mock("next-auth/react", () => ({
   signIn: vi.fn(),
 }));
 
+const { createLocalAdmin } = vi.hoisted(() => ({ createLocalAdmin: vi.fn() }));
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    settings: {
+      createLocalAdmin: {
+        useMutation: () => ({ mutateAsync: createLocalAdmin }),
+      },
+    },
+  },
+}));
+
 import { signIn } from "next-auth/react";
 import { LoginForm } from "@/app/login/login-form";
 
@@ -46,6 +57,9 @@ import { LoginForm } from "@/app/login/login-form";
  *   - Invalid-credentials submission path: signIn returns {error}, the
  *     local error banner appears, and the form stays mounted (no
  *     redirect side-effect)
+ *   - Throttled sign-in (code "rate_limited") says so, not "Invalid …"
+ *   - First run (adminNeeded): "Create the first admin" creates the
+ *     account, then signs in with it
  */
 
 describe("LoginForm (M18)", () => {
@@ -173,6 +187,34 @@ describe("LoginForm (M18)", () => {
       ).not.toBeDisabled();
     });
 
+    it("says so when sign-in is throttled after too many failures", async () => {
+      vi.mocked(signIn).mockResolvedValueOnce({
+        error: "CredentialsSignin",
+        ok: false,
+        status: 401,
+        url: null,
+        code: "rate_limited",
+      });
+
+      render(<LoginForm hasOidc={false} />);
+      fireEvent.change(screen.getByLabelText("Email"), {
+        target: { value: "admin@example.com" },
+      });
+      fireEvent.change(screen.getByLabelText("Password"), {
+        target: { value: "pw" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Too many failed sign-ins/i),
+        ).toBeInTheDocument();
+      });
+      expect(
+        screen.queryByText(/Invalid email or password/i),
+      ).not.toBeInTheDocument();
+    });
+
     it("passes the callbackUrl query param through to signIn", async () => {
       searchParamsRef.current = new URLSearchParams("callbackUrl=/retirement");
       vi.mocked(signIn).mockResolvedValueOnce({
@@ -198,6 +240,105 @@ describe("LoginForm (M18)", () => {
           expect.objectContaining({ callbackUrl: "/retirement" }),
         );
       });
+    });
+  });
+
+  describe("first run: no admin yet", () => {
+    const fill = (password: string, confirm = password) => {
+      fireEvent.change(screen.getByLabelText("Name"), {
+        target: { value: "Robin" },
+      });
+      fireEvent.change(screen.getByLabelText("Email"), {
+        target: { value: "robin@example.com" },
+      });
+      fireEvent.change(screen.getByLabelText("Password"), {
+        target: { value: password },
+      });
+      fireEvent.change(screen.getByLabelText("Confirm password"), {
+        target: { value: confirm },
+      });
+      fireEvent.click(
+        screen.getByRole("button", { name: "Create admin and sign in" }),
+      );
+    };
+
+    it("offers 'Create the first admin' instead of signing in", () => {
+      render(<LoginForm hasOidc={false} adminNeeded />);
+      expect(
+        screen.getByRole("heading", { name: "Create the first admin" }),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Sign in" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("creates the admin, then signs in with it", async () => {
+      createLocalAdmin.mockResolvedValueOnce({ id: 1 });
+      vi.mocked(signIn).mockResolvedValueOnce({
+        error: undefined,
+        ok: true,
+        status: 200,
+        url: "http://localhost/",
+        code: undefined,
+      });
+      render(<LoginForm hasOidc={false} adminNeeded />);
+      fill("First-admin-pass-1");
+
+      await waitFor(() => {
+        expect(signIn).toHaveBeenCalledWith(
+          "local-admin",
+          expect.objectContaining({
+            email: "robin@example.com",
+            password: "First-admin-pass-1",
+            redirect: false,
+          }),
+        );
+      });
+      expect(createLocalAdmin).toHaveBeenCalledWith({
+        name: "Robin",
+        email: "robin@example.com",
+        password: "First-admin-pass-1",
+      });
+    });
+
+    it("refuses mismatched passwords before sending anything", () => {
+      render(<LoginForm hasOidc={false} adminNeeded />);
+      fill("First-admin-pass-1", "First-admin-pass-2");
+      expect(screen.getByText(/Passwords don't match/)).toBeInTheDocument();
+      expect(createLocalAdmin).not.toHaveBeenCalled();
+    });
+
+    it("shows the server's refusal and doesn't sign in", async () => {
+      createLocalAdmin.mockRejectedValueOnce(
+        Object.assign(new Error("A local admin account already exists."), {
+          data: { code: "BAD_REQUEST" },
+        }),
+      );
+      render(<LoginForm hasOidc={false} adminNeeded />);
+      fill("First-admin-pass-1");
+      await waitFor(() => {
+        expect(screen.getByText(/already exists/)).toBeInTheDocument();
+      });
+      expect(signIn).not.toHaveBeenCalled();
+    });
+
+    it("falls back to the sign-in form when signing in after creation fails", async () => {
+      createLocalAdmin.mockResolvedValueOnce({ id: 1 });
+      vi.mocked(signIn).mockResolvedValueOnce({
+        error: "CredentialsSignin",
+        ok: false,
+        status: 401,
+        url: null,
+        code: undefined,
+      });
+      render(<LoginForm hasOidc={false} adminNeeded />);
+      fill("First-admin-pass-1");
+      await waitFor(() => {
+        expect(
+          screen.getByRole("button", { name: "Sign in" }),
+        ).toBeInTheDocument();
+      });
+      expect(screen.getByText(/admin account was created/)).toBeInTheDocument();
     });
   });
 });

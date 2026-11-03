@@ -63,3 +63,14 @@ export function rateLimit(
     firstExceedance: false,
   };
 }
+
+/** Requests `key` has taken in its current window (0 once it ends). */
+export function rateLimitCount(key: string): number {
+  const entry = store.get(key);
+  return entry && Date.now() < entry.resetTime ? entry.count : 0;
+}
+
+/** Forget `key`'s window, so its next request starts a fresh one. */
+export function clearRateLimit(key: string): void {
+  store.delete(key);
+}

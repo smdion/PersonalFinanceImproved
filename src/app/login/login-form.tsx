@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { BRAND_COLORS } from "@/lib/utils/colors";
+import { FirstAdminForm } from "./first-admin-form";
 
 const ERROR_MESSAGES: Record<string, string> = {
   CredentialsSignin: "Invalid email or password.",
@@ -59,7 +60,14 @@ function LedgrLogo() {
   );
 }
 
-export function LoginForm({ hasOidc }: { hasOidc: boolean }) {
+export function LoginForm({
+  hasOidc,
+  adminNeeded = false,
+}: {
+  hasOidc: boolean;
+  /** No admin yet: offer "Create the first admin" instead of signing in. */
+  adminNeeded?: boolean;
+}) {
   const searchParams = useSearchParams();
   const errorCode = searchParams.get("error");
   const callbackUrl = searchParams.get("callbackUrl") ?? "/";
@@ -68,6 +76,7 @@ export function LoginForm({ hasOidc }: { hasOidc: boolean }) {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
+  const [creatingAdmin, setCreatingAdmin] = useState(adminNeeded);
 
   const errorMessage = errorCode
     ? (ERROR_MESSAGES[errorCode] ?? ERROR_MESSAGES.Default)
@@ -86,7 +95,11 @@ export function LoginForm({ hasOidc }: { hasOidc: boolean }) {
     });
 
     if (result?.error) {
-      setLocalError("Invalid email or password.");
+      setLocalError(
+        result.code === "rate_limited"
+          ? "Too many failed sign-ins. Wait 15 minutes, then try again."
+          : "Invalid email or password.",
+      );
       setIsLoading(false);
     } else if (result?.url) {
       window.location.href = result.url;
@@ -152,51 +165,58 @@ export function LoginForm({ hasOidc }: { hasOidc: boolean }) {
             </>
           )}
 
-          {/* Local admin login form */}
-          <form onSubmit={handleLocalLogin} className="flex flex-col gap-4">
-            <div>
-              <label
-                htmlFor="email"
-                className="text-secondary mb-1 block text-sm font-medium"
+          {creatingAdmin ? (
+            <FirstAdminForm
+              callbackUrl={callbackUrl}
+              onError={setLocalError}
+              onCreatedNotSignedIn={() => setCreatingAdmin(false)}
+            />
+          ) : (
+            <form onSubmit={handleLocalLogin} className="flex flex-col gap-4">
+              <div>
+                <label
+                  htmlFor="email"
+                  className="text-secondary mb-1 block text-sm font-medium"
+                >
+                  Email
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                  className="border-default bg-input text-input-text placeholder:text-input-placeholder w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--c-focus-ring))] focus:outline-none"
+                  placeholder="admin@example.com"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="password"
+                  className="text-secondary mb-1 block text-sm font-medium"
+                >
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  className="border-default bg-input text-input-text placeholder:text-input-placeholder w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--c-focus-ring))] focus:outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="border-default text-primary hover:bg-surface-secondary w-full rounded-lg border px-4 py-2.5 font-medium transition-colors disabled:opacity-50"
               >
-                Email
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-                className="border-default bg-input text-input-text placeholder:text-input-placeholder w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--c-focus-ring))] focus:outline-none"
-                placeholder="admin@example.com"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="password"
-                className="text-secondary mb-1 block text-sm font-medium"
-              >
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                className="border-default bg-input text-input-text placeholder:text-input-placeholder w-full rounded-lg border px-3 py-2 focus:ring-2 focus:ring-[rgb(var(--c-focus-ring))] focus:outline-none"
-              />
-            </div>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="border-default text-primary hover:bg-surface-secondary w-full rounded-lg border px-4 py-2.5 font-medium transition-colors disabled:opacity-50"
-            >
-              {isLoading ? "Signing in..." : "Sign in"}
-            </button>
-          </form>
+                {isLoading ? "Signing in..." : "Sign in"}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>

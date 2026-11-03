@@ -21,6 +21,8 @@ import {
 } from "../routers/setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { VERSION_TABLE_NAMES } from "@/lib/db/version-tables";
+import { SIMULATION_PRESET_TABLES } from "@/lib/db/reference-reconcile-core";
+import { readSimulationPresetsFile } from "@/lib/db/reference-data";
 import {
   createVersion,
   exportBackup,
@@ -150,6 +152,28 @@ describe("Backup Round-Trip (real version-logic)", () => {
         ),
         table,
       ).toBe(true);
+  });
+
+  it("import keeps the backup's own preset rows, neither doubled nor reset", async () => {
+    a.db.run(
+      sql`UPDATE asset_class_params SET mean_return = '0.123000' WHERE name = 'US Equities'`,
+    );
+    a.db.run(sql`DELETE FROM mc_presets WHERE key = 'aggressive'`);
+    const before = await snapshotTables(a.rawDb);
+    await importBackup(b.rawDb, await exportBackup(a.rawDb));
+    const after = await snapshotTables(b.rawDb);
+    for (const t of SIMULATION_PRESET_TABLES)
+      expect(after[t], t).toEqual(before[t]);
+  });
+
+  it("import of a backup with no preset rows gets the shipped presets", async () => {
+    const backup = await exportBackup(a.rawDb);
+    for (const t of SIMULATION_PRESET_TABLES) backup.tables[t] = [];
+    await importBackup(b.rawDb, backup);
+    const after = await snapshotTables(b.rawDb);
+    const shipped = readSimulationPresetsFile();
+    for (const t of SIMULATION_PRESET_TABLES)
+      expect(after[t], t).toHaveLength(shipped[t].length);
   });
 
   it("import replaces existing data rather than merging into it", async () => {

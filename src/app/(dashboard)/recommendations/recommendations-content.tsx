@@ -4,6 +4,7 @@
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Disclaimer } from "@/components/ui/disclaimer";
 import { LoadingCard, ErrorCard } from "@/components/cards/dashboard/utils";
 import { useRecommendations } from "@/lib/hooks/use-recommendations";
 import { RECOMMENDATION_AREAS } from "@/lib/config/recommendations";
@@ -144,6 +145,7 @@ export function RecommendationsContent() {
           hint="Every milestone Ledgr can judge is reached or on track."
         />
         {dismissedList}
+        <Disclaimer className="mt-3" />
       </div>
     );
 
@@ -216,6 +218,7 @@ export function RecommendationsContent() {
             : [],
         )}
       />
+      <Disclaimer />
     </div>
   );
 }

@@ -6,6 +6,7 @@
 import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { createTestCaller } from "./setup";
+import { clearSimulationPresets } from "../helpers/db-harness";
 import * as sqlite from "@/lib/db/schema-sqlite";
 import {
   loadSimulationPreset,
@@ -25,14 +26,7 @@ describe("simulation presets", () => {
   beforeAll(async () => {
     ctx = await createTestCaller();
     const db = ctx.db;
-    for (const t of [
-      sqlite.mcPresetGlidePaths,
-      sqlite.mcPresetReturnOverrides,
-      sqlite.mcPresets,
-      sqlite.glidePathAllocations,
-      sqlite.assetClassBuckets,
-    ])
-      db.delete(t).run();
+    clearSimulationPresets(db);
     const cls = (name: string) =>
       db
         .insert(sqlite.assetClassParams)

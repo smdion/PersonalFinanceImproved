@@ -28,11 +28,10 @@ import {
   userMessageFor,
 } from "@/lib/budget-api/errors";
 import {
-  SIMPLEFIN_DAILY_REQUEST_LIMIT,
-  countSimplefinRequestsLastDay,
   pruneSimplefinRequestLog,
   recordSimplefinRequest,
-  type SimplefinRequestOutcome,
+  simplefinRequestRecorder,
+  stopAtSimplefinQuota,
 } from "./request-log";
 import { ingestInvestmentData, type IngestSummary } from "./ingest";
 import { utcDayOf } from "@/lib/utils/date";
@@ -195,13 +194,6 @@ export async function hasSyncedToday(
   const conn = await getSimplefinConnection(db);
   if (!conn?.lastSyncedAt) return false;
   return localDateStr(conn.lastSyncedAt) === localDateStr(asOfDate);
-}
-
-/** How a failed /accounts request is logged. */
-function requestOutcome(e: unknown): SimplefinRequestOutcome {
-  if (!(e instanceof BudgetApiError)) return "error";
-  if (e.code === "timeout") return "timeout";
-  return e.code === "bad-response" ? "bad_response" : "error";
 }
 
 /** Record (or clear) the last SimpleFIN sync error for display in the UI. */
@@ -430,20 +422,8 @@ export async function runSimplefinSync(
 
     // Quota: every real request counts against SimpleFIN Bridge's daily
     // limit (exceeding it can disable the connection). Replays don't count.
-    const replay = isSimplefinReplayMode();
     await pruneSimplefinRequestLog(db, asOfDate);
-    if (!replay) {
-      const used = await countSimplefinRequestsLastDay(db, asOfDate);
-      if (used >= SIMPLEFIN_DAILY_REQUEST_LIMIT) {
-        await recordSimplefinRequest(db, {
-          endpoint: "/accounts",
-          outcome: "skipped_quota",
-        });
-        throw new Error(
-          `Paused: ${used} SimpleFIN requests in the last 24 hours (Ledgr's limit is ${SIMPLEFIN_DAILY_REQUEST_LIMIT}, below SimpleFIN's daily quota). Syncing resumes automatically.`,
-        );
-      }
-    }
+    await stopAtSimplefinQuota(db, asOfDate);
     // Based on the last complete investment ingest, not the balance sync:
     // the first sync after upgrading (or after a failed ingest) must reach
     // back the full window SimpleFIN still holds.
@@ -454,18 +434,17 @@ export async function runSimplefinSync(
     );
     let response: Awaited<ReturnType<typeof getAccounts>>;
     try {
-      response = await getAccounts(accessUrl, { startDate: windowStart });
-      await recordSimplefinRequest(db, {
-        endpoint: "/accounts",
-        outcome: replay ? "replay" : "ok",
-        httpStatus: replay ? null : 200,
+      // A real request logs itself; a replay never reaches SimpleFIN.
+      response = await getAccounts(accessUrl, {
+        startDate: windowStart,
+        onRequest: simplefinRequestRecorder(db),
       });
+      if (isSimplefinReplayMode())
+        await recordSimplefinRequest(db, {
+          endpoint: "/accounts",
+          outcome: "replay",
+        });
     } catch (e) {
-      await recordSimplefinRequest(db, {
-        endpoint: "/accounts",
-        outcome: requestOutcome(e),
-        httpStatus: e instanceof BudgetApiError ? e.status : null,
-      });
       // Nothing a user sees is written before this answer (the request log
       // and its pruning are bookkeeping).
       throw e instanceof BudgetApiError ? nothingChanged(e) : e;

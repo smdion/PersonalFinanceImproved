@@ -33,6 +33,7 @@ import {
   type ActualAccount,
   type ActualCategoryGroup,
   type ActualMonth,
+  type ActualPayee,
   type ActualTransaction,
 } from "./actual-schemas";
 import {
@@ -93,6 +94,7 @@ function mapCategoryGroup(
     id: g.id,
     name: g.name,
     hidden: g.hidden || g.is_income,
+    isIncome: g.is_income,
     categories: g.categories.map((c) => mapCategory(c, g.name)),
   };
 }
@@ -121,16 +123,56 @@ function mapMonthDetail(m: ActualMonth): BudgetMonthDetail {
   };
 }
 
-function mapTransaction(t: ActualTransaction): BudgetTransaction {
+/** Names for a transaction's ids. A lookup without the id gives `null`:
+ *  an id is never shown as a name. */
+type TransactionNames = {
+  accountName: string;
+  categories: ReadonlyMap<string, string>;
+  payees: ReadonlyMap<string, string>;
+};
+
+const NO_NAMES: TransactionNames = {
+  accountName: "",
+  categories: new Map(),
+  payees: new Map(),
+};
+
+function nameOf(
+  names: ReadonlyMap<string, string>,
+  id: string | null | undefined,
+): string | null {
+  return id ? (names.get(id) ?? null) : null;
+}
+
+/** Payee id to name. A transfer payee with no name of its own takes its
+ *  account's name. */
+function payeeNames(
+  payees: ActualPayee[],
+  accounts: ActualAccount[],
+): Map<string, string> {
+  const accountNames = new Map(accounts.map((a) => [a.id, a.name]));
+  const out = new Map<string, string>();
+  for (const p of payees) {
+    const name =
+      p.name?.trim() || (p.transfer_acct && accountNames.get(p.transfer_acct));
+    if (name) out.set(p.id, name);
+  }
+  return out;
+}
+
+function mapTransaction(
+  t: ActualTransaction,
+  names: TransactionNames,
+): BudgetTransaction {
   return {
     id: t.id,
     accountId: t.account,
-    accountName: t.account_name ?? "",
+    accountName: names.accountName,
     date: t.date,
     amount: fromCents(t.amount),
-    payeeName: t.payee_name ?? t.payee ?? null,
+    payeeName: nameOf(names.payees, t.payee),
     categoryId: t.category ?? null,
-    categoryName: t.category_name ?? null,
+    categoryName: nameOf(names.categories, t.category),
     memo: t.notes ?? null,
     cleared: t.cleared || t.reconciled,
     approved: true, // Actual doesn't have approved flag
@@ -140,7 +182,7 @@ function mapTransaction(t: ActualTransaction): BudgetTransaction {
         .filter((st) => !st.tombstone)
         .map((st) => ({
           categoryId: st.category ?? null,
-          categoryName: st.category_name ?? null,
+          categoryName: nameOf(names.categories, st.category),
           amount: fromCents(st.amount),
           memo: st.notes ?? null,
         })),
@@ -622,8 +664,15 @@ export class ActualClient implements BudgetAPIClient {
   // -- Transactions --
 
   async getTransactions(sinceDate: string): Promise<BudgetTransaction[]> {
-    // Actual requires transactions per account; fetch all accounts then aggregate
-    const accounts = await this.request("/accounts", actualSchemas.accounts);
+    // Actual lists transactions per account, with ids only: names come from
+    // one read of each list, and a bad list fails the sync before any write.
+    const [accounts, categories, payees] = await Promise.all([
+      this.request("/accounts", actualSchemas.accounts),
+      this.request("/categories", actualSchemas.categories),
+      this.request("/payees", actualSchemas.payees),
+    ]);
+    const categoryNames = new Map(categories.data.map((c) => [c.id, c.name]));
+    const payeeNameById = payeeNames(payees.data, accounts.data);
     const allTx: BudgetTransaction[] = [];
 
     for (const acct of accounts.data) {
@@ -635,7 +684,11 @@ export class ActualClient implements BudgetAPIClient {
         );
         allTx.push(
           ...res.data.map((t) =>
-            mapTransaction({ ...t, account_name: acct.name }),
+            mapTransaction(t, {
+              accountName: acct.name,
+              categories: categoryNames,
+              payees: payeeNameById,
+            }),
           ),
         );
       } catch (err) {
@@ -750,7 +803,8 @@ export class ActualClient implements BudgetAPIClient {
       `/accounts/${accountId}/transactions?since_date=${sinceDate}&until_date=${ACTUAL_LIST_UNTIL}`,
       actualSchemas.transactions,
     );
-    return res.data.map((t) => mapTransaction(t));
+    // Its one reader matches on the memo, so no names are looked up.
+    return res.data.map((t) => mapTransaction(t, NO_NAMES));
   }
 
   /** Same request-body nesting fix as `createTransaction` — the wrapper's

@@ -8,7 +8,7 @@
  */
 import { trpc } from "@/lib/trpc";
 import { usePlanEngineInput } from "@/lib/hooks/use-plan-engine-input";
-import { projectedFiYear } from "@/lib/pure/milestones";
+import { projectedFiYear } from "@/lib/pure/milestones.shared";
 import { milestoneProjectionYears } from "@/lib/pure/milestone-input";
 
 /** The plan's projection (usePlanEngineInput — the same input the

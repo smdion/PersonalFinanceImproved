@@ -143,7 +143,10 @@ const ACCOUNTS: ExternalSource = {
 function requestAccounts(
   url: string,
   init: RequestInit,
-  options?: { maxAttempts?: number; timeoutMs?: number },
+  options: Pick<
+    Parameters<typeof externalRequest>[0],
+    "maxAttempts" | "timeoutMs" | "onAttempt"
+  >,
 ): Promise<unknown> {
   return externalRequest({
     service: "simplefin",
@@ -209,6 +212,12 @@ type GetAccountsOptions = {
    * (protocol v2, pending included). Omit for a balances-only request.
    */
   startDate?: Date;
+  /** Called once for the request sent (the quota), after its answer is
+   *  read: `status` is null when none came, `error` null when it read. */
+  onRequest?: (request: {
+    status: number | null;
+    error: unknown;
+  }) => Promise<void>;
 };
 
 /** A money field that may not be sent: absent or "" is null. */
@@ -458,14 +467,29 @@ export async function getAccounts(
   const query = options.startDate
     ? `version=2&pending=1&start-date=${Math.floor(options.startDate.getTime() / 1000)}`
     : "balances-only=1";
+  let okStatus: number | null = null;
   const body = await requestAccounts(
     `${baseUrl}/accounts?${query}`,
     { headers: { Authorization: authHeader } },
-    // Full requests are never retried here: every call counts against the
-    // daily quota, and a timeout on a large response usually repeats.
-    options.startDate
-      ? { maxAttempts: 1, timeoutMs: FULL_REQUEST_TIMEOUT_MS }
-      : undefined,
+    {
+      // Never retried here: every call counts against the daily quota, and
+      // a timeout on a large response usually repeats.
+      maxAttempts: 1,
+      ...(options.startDate && { timeoutMs: FULL_REQUEST_TIMEOUT_MS }),
+      // A failed request is reported now; one that answered, once read.
+      onAttempt: async ({ status, error }) => {
+        if (error) await options.onRequest?.({ status, error });
+        else okStatus = status;
+      },
+    },
   );
-  return readAccounts([body]);
+  let result: GetAccountsResult;
+  try {
+    result = readAccounts([body]);
+  } catch (error) {
+    await options.onRequest?.({ status: okStatus, error });
+    throw error;
+  }
+  await options.onRequest?.({ status: okStatus, error: null });
+  return result;
 }

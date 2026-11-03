@@ -156,10 +156,8 @@ export function RetirementProfileManager({
       </div>
     );
   }
-  // No profiles yet — a real, expected state (there's no in-app bootstrap
-  // for the very first one; it comes from the migration backfill or a data
-  // import). RetirementProfileTab already shows its own EmptyState
-  // explaining that, so stay silent here rather than duplicate the message.
+  // No profiles until the first retirement settings are saved;
+  // RetirementProfileTab shows its own EmptyState until then.
   if (!profiles || profiles.length === 0) return null;
 
   const canDeleteAny = profiles.length > 1;

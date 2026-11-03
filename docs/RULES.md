@@ -448,6 +448,8 @@ a Contribution Profile's `deductions` active-field entry
 The Simulation runs the whole projection many times, each trial with its own random returns. This is what it does today; § Known Gaps lists what changes.
 
 - **Trials.** 500 by default (100 to 10,000 accepted); Coast FIRE probes run 1,000 and the strategy comparison 200 (`DEFAULT_SIMULATION`, `lib/constants.ts`). At 500, a 90% success rate has a standard error of about 1.3 points. Trial `i` draws from `createPRNG(seed + i)`. The Simulation page's run takes a random seed, cached with the run; Coast FIRE and the strategy comparison use seed 42, so the options they compare share draws.
+- **Where presets come from.** Ledgr ships the Aggressive, Default and Conservative presets with their asset classes, correlations, bucket links (`asset_class_buckets`: each composition bucket to its own class, `other` to none), glide paths (`mc_preset_glide_paths`) and return overrides in `reference-data/simulation-presets.json`. The migrator and every path that rewrites the tables (restore, import, "Reset all data", a demo schema) insert the whole set only when every one of those tables is empty, and never update a row already there: an install's preset rows are its own, and a change to the shipped values reaches existing installs only as a migration. Custom's glide path (`glide_path_allocations`) is the household's own, not shipped.
+- **Not configured.** One check decides whether a Simulation can run (`simulationNotConfigured`, `monte-carlo.ts`): the run's named preset is missing (never Custom's mix under its name), there are no asset classes, no glide path, or a glide-path age whose active-class weights are more than 0.1 point off 100%. Then the Simulation, Coast FIRE (search and probe) and the strategy comparison and analyzer don't simulate: they return `notConfigured` and the cards say what's missing, never a 0% run or "not reachable".
 - **Returns.** An asset class's stored mean and deviation are the arithmetic mean and standard deviation of its simple yearly return; draws are log-normal with those moments (`logNormalParams`, `random.ts`). Correlations apply to the underlying normal draws, through one Cholesky factor per run. The year's mix is the glide path at the primary person's age that year, interpolated between waypoints, and the blended return is clamped to the preset's limits.
 - **Inflation.** With inflation risk on, each year draws one shock around the household's own inflation rates, and the shock moves both rates (`inflation-path.ts`).
 - **Success** is the share of trials the plan judge passes (`assessPlan`, DESIGN § Retirement scope and the plan judge). Unmet spending below the materiality floor, $50 or 1% of the year's need, whichever is larger, counts as met, so a trial a few dollars short still succeeds. A failed trial is `depleted`, `penaltyGap` or `shortfall`.
@@ -466,6 +468,16 @@ baseline to diff against — only the **active** profile of each kind
 `active_retirement_profile_id`, `budget_profiles.is_active`). Every page shows
 the active profiles, and an edit to a profile field saves to the profile it
 belongs to.
+
+**The first Retirement profile** is "Current Retirement", made once by
+`adoptFirstRetirementProfile` (`server/helpers/retirement-profile.ts`) from
+the household's first saved retirement settings: on the first
+`retirementSettings.upsert` with no profile, on `completeOnboarding`, and by
+the demo seed. It takes every settings row with no profile, adds everyone
+without one the way `people.create` adds a person (one helper), so each
+person has both rows, and makes the profile active, in one transaction
+under the first-profile lock (which `people.create` takes too). An install that already has a
+profile is never touched.
 
 **A Plan is a named set of profiles** — one of each kind, nothing else
 (`scenarios`: `name`, `description`, four profile FKs, `ON DELETE set null`).
@@ -578,8 +590,8 @@ A migration that rewrites data runs **one converter** both on a live
 database (`db-migrate.ts`, inside the migration's transaction, just before
 its SQL drops what the converter reads) and on an older backup being
 restored (`backup-transforms.ts` → `transformBackupToCurrentSchema`, e.g.
-`transformV0810ProfileSets`). `db-migrate.ts` is compiled on its own and
-can't import from `src/`, so while the migration is in the journal it keeps
+`transformV0810ProfileSets`). `db-migrate.ts` is bundled on its own and
+doesn't import from `src/`, so while the migration is in the journal it keeps
 an **identical copy** of the converter between `// BEGIN …` / `// END …`
 markers, with a test that the copies match; edit both together. (The
 v0.8.10 converter's live copy went with the v0.9.0 squash — only the
@@ -875,3 +887,5 @@ Raw provider inputs (withheld, market value, gross proceeds, commission, dividen
 3. **No unprotected writes.** Every mutation that modifies _shared application data_ must use a domain-specific procedure (`budgetProcedure`, `performanceProcedure`, etc.) or `adminProcedure`. `protectedProcedure` is for reads only.
 
    **Exception — session/sandbox mutations.** Mutations in `demo.*` may use `protectedProcedure` because (a) they manage HttpOnly cookie state, not application data, or (b) they write to a demo profile's own schema (one per demo profile, shared by everyone viewing it, seed data only), never to the household's data, and (c) they must remain callable in DEMO_ONLY mode where the `demoOnlyGuard` middleware exempts demo paths. Demo users are not admins, so `adminProcedure` would break the flow. Each such mutation must carry an inline comment justifying the exception.
+
+   **Exception — the first admin.** `settings.createLocalAdmin` is a `publicProcedure` write, because a fresh install has no session yet. Its guard: it runs only while `firstRunState` (`src/server/helpers/first-run.ts`) says an admin is needed, that is, no `local_admins` row exists and onboarding isn't complete, checked again under a transaction lock so two requests can't both create one. Once any admin exists or onboarding is complete it is refused for good. `/login`, the `firstRunState` query and the guard share that one helper; never widen when it is callable. Reset all data, a restore and an import replace the people, settings and local admins, so each ends with `settleFirstRunGate`: `onboarding_completed` becomes true while a way to sign in remains (a local admin, or Authentik), and false otherwise, which reopens the gate as on a fresh install (with a warning in the log) rather than locking the household out.

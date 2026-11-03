@@ -432,6 +432,11 @@ export function ProjectionHeroKpis({ state }: { state: ProjectionState }) {
             coastFireMcQuery.isLoading || coastFireMcQuery.isFetching
           }
           coastFireMcComputedAt={coastFireMcQuery.data?.computedAt}
+          coastFireMcNotConfigured={
+            coastFireMcQuery.data && "notConfigured" in coastFireMcQuery.data
+              ? coastFireMcQuery.data.notConfigured
+              : null
+          }
           ageLabel={ageLabel}
         />
       </div>

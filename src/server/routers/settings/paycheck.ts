@@ -18,6 +18,10 @@ import { materializeBudgetIncomeAdjustments } from "@/server/helpers/budget-inco
 import { getPrimaryPerson } from "@/server/helpers/transforms";
 import { getAllPeople } from "@/server/helpers/people";
 import {
+  addPersonToRetirementProfile,
+  lockFirstRetirementProfile,
+} from "@/server/helpers/retirement-profile";
+import {
   accountCategoryEnum,
   getAccountTypeConfig,
   parentCategoryEnum,
@@ -224,61 +228,21 @@ export const paycheckProcedures = {
           // real routing rules has no need for.
           await tx.insert(schema.jobs).values(speculativeJobValues(person.id));
 
-          // Completeness invariant (Retirement Profiles): every profile
-          // holds a row for every person. A new person starts with none, so
-          // fan a row into every EXISTING profile — sourced from that
-          // profile's own primary-person row, same rule `duplicate` and the
-          // step-A backfill both use, so a new household member doesn't
-          // silently leave any profile incomplete (build-engine-payload.ts
-          // has no other way to invent a missing person's assumptions).
+          // Completeness invariant: every profile holds rows for every
+          // person, so the new person joins each existing profile. Under the
+          // first-profile lock, so a first profile made at the same time
+          // either includes this person or is seen here.
+          await lockFirstRetirementProfile(tx);
           const existingProfiles = await tx
             .select({ id: schema.retirementProfiles.id })
             .from(schema.retirementProfiles);
-          for (const profile of existingProfiles) {
-            const settingsRows = await tx
-              .select()
-              .from(schema.retirementSettings)
-              .where(eq(schema.retirementSettings.profileId, profile.id));
-            const sourceHousehold =
-              (primaryPerson
-                ? settingsRows.find((s) => s.personId === primaryPerson.id)
-                : undefined) ?? settingsRows[0];
-            if (sourceHousehold) {
-              const {
-                id: _hhId,
-                personId: _hhPersonId,
-                profileId: _hhProfileId,
-                ...householdFields
-              } = sourceHousehold;
-              await tx.insert(schema.retirementSettings).values({
-                ...householdFields,
-                personId: person.id,
-                profileId: profile.id,
-              });
-            }
-
-            const peopleRows = await tx
-              .select()
-              .from(schema.retirementProfilePeople)
-              .where(eq(schema.retirementProfilePeople.profileId, profile.id));
-            const sourcePersonRow =
-              (primaryPerson
-                ? peopleRows.find((r) => r.personId === primaryPerson.id)
-                : undefined) ?? peopleRows[0];
-            if (sourcePersonRow) {
-              const {
-                id: _ppId,
-                personId: _ppPersonId,
-                profileId: _ppProfileId,
-                ...perPersonFields
-              } = sourcePersonRow;
-              await tx.insert(schema.retirementProfilePeople).values({
-                ...perPersonFields,
-                personId: person.id,
-                profileId: profile.id,
-              });
-            }
-          }
+          for (const profile of existingProfiles)
+            await addPersonToRetirementProfile(
+              tx,
+              profile.id,
+              person.id,
+              primaryPerson?.id,
+            );
 
           return person;
         });

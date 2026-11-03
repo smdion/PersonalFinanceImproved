@@ -19,6 +19,10 @@ import {
   formatRelativeTime,
 } from "@/lib/utils/format";
 import { KpiCard } from "./projection/projection-hero-kpis";
+import {
+  SIMULATION_NOT_CONFIGURED_MESSAGE,
+  type SimulationNotConfigured,
+} from "@/lib/calculators/monte-carlo";
 
 type CoastFireInput = Parameters<
   typeof trpc.projection.computeCoastFire.useQuery
@@ -85,6 +89,9 @@ interface CoastFireCardProps {
    *  it came from a fresh (uncached) run just now. Surfaced so the user can
    *  tell a cached result apart from a just-computed one. */
   coastFireMcComputedAt?: string | null;
+  /** Why the simulated answer can't be computed (no preset, classes or
+   *  glide path); the card shows that in place of a simulated figure. */
+  coastFireMcNotConfigured?: SimulationNotConfigured | null;
 }
 
 export function CoastFireCard({
@@ -93,6 +100,7 @@ export function CoastFireCard({
   coastFireMcResult,
   coastFireMcLoading = false,
   coastFireMcComputedAt,
+  coastFireMcNotConfigured,
 }: CoastFireCardProps) {
   const { data: deterministic } = trpc.projection.computeCoastFire.useQuery(
     input,
@@ -133,6 +141,12 @@ export function CoastFireCard({
         {coastFireMcLoading && !coastFireMcResult && (
           <div className="text-caption text-muted animate-pulse">
             Running simulations...
+          </div>
+        )}
+        {!mcAvailable && coastFireMcNotConfigured && (
+          <div className="text-caption text-faint leading-tight">
+            Simulated:{" "}
+            {SIMULATION_NOT_CONFIGURED_MESSAGE[coastFireMcNotConfigured]}
           </div>
         )}
         {mcAvailable && (

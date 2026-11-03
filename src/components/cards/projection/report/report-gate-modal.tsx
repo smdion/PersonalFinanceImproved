@@ -1,6 +1,6 @@
 "use client";
 
-/** Shown when "Print Advisor Report" is clicked but checkReportGate fails —
+/** Shown when "Print Full Report" is clicked but checkReportGate fails —
  *  explains why and offers a one-click fix where one exists (running the
  *  simulation). Modeled on push-preview-modal.tsx's shell. print:hidden so
  *  it can never itself end up in a printed page. */
@@ -34,7 +34,7 @@ export function ReportGateModal({
         className="bg-surface-primary mx-4 w-full max-w-md rounded-lg border p-5 shadow-xl"
       >
         <h3 className="text-primary mb-1 text-sm font-semibold">
-          Advisor report not ready
+          Full report not ready
         </h3>
         <p className="text-muted mb-4 text-xs">
           {reportGateFailureMessage(failure)}

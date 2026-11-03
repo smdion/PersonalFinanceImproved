@@ -109,9 +109,9 @@ export function checkReportGate(input: ReportGateInput): ReportGateResult {
 export function reportGateFailureMessage(failure: ReportGateFailure): string {
   switch (failure) {
     case "not-baseline-scenario":
-      return "The advisor report is only available for your baseline plan — switch back from the current scenario view to generate it.";
+      return "The full report is only available for your baseline plan — switch back from the current scenario view to generate it.";
     case "simple-tax-mode":
-      return "The advisor report's risk analysis needs Advanced tax mode. Switch to Advanced, then try again.";
+      return "The full report's risk analysis needs Advanced tax mode. Switch to Advanced, then try again.";
     case "inputs-unsettled":
       return "Your latest changes are still being applied — try again in a moment.";
     case "engine-not-fresh":

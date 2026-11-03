@@ -52,18 +52,23 @@ const month = z.looseObject({
   ),
 });
 
+/** `/payees`: a transfer payee may have an empty name and points at its
+ *  account instead; an imported payee may have none. */
+const payee = z.looseObject({
+  id: z.string(),
+  name: z.string().nullish(),
+  transfer_acct: z.string().nullish(),
+});
+
 const transaction = z.looseObject({
   id: z.string(),
   account: z.string(),
   date: isoDate,
   amount: cents,
-  /** The payee's id; the wrapper sends no names (account, payee or
-   *  category). */
+  /** Ids only: the wrapper sends no account, payee or category names, so
+   *  the client resolves them from `/accounts`, `/payees` and `/categories`. */
   payee: z.string().nullish(),
-  account_name: z.string().optional(),
-  payee_name: z.string().optional(),
   category: z.string().nullish(),
-  category_name: z.string().optional(),
   notes: z.string().nullish(),
   imported_id: z.string().nullish(),
   cleared: z.boolean(),
@@ -73,7 +78,6 @@ const transaction = z.looseObject({
     z.looseObject({
       amount: cents,
       category: z.string().nullish(),
-      category_name: z.string().optional(),
       notes: z.string().nullish(),
       tombstone: z.boolean(),
     }),
@@ -89,6 +93,7 @@ export const actualSchemas = {
   month: z.looseObject({ data: month }),
   /** No note answers `""`. */
   note: z.looseObject({ data: z.string() }),
+  payees: z.looseObject({ data: z.array(payee) }),
   transactions: z.looseObject({ data: z.array(transaction) }),
   /** Ledgr reads nothing from a write's answer. */
   written: z.unknown(),
@@ -97,4 +102,5 @@ export const actualSchemas = {
 export type ActualAccount = z.infer<typeof account>;
 export type ActualCategoryGroup = z.infer<typeof categoryGroup>;
 export type ActualMonth = z.infer<typeof month>;
+export type ActualPayee = z.infer<typeof payee>;
 export type ActualTransaction = z.infer<typeof transaction>;

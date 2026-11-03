@@ -20,6 +20,8 @@ import {
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
+import { eq } from "drizzle-orm";
+import { clearSimulationPresets } from "../helpers/db-harness";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { defaultDecumulationConfig } from "@/lib/config/account-types";
 
@@ -55,8 +57,10 @@ vi.mock("@/server/helpers/monte-carlo-worker-client", async () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Seed two asset class rows so glide path FK references work. */
+/** Two asset class rows (in place of the shipped ones) so glide path FK
+ *  references work. */
 function seedAssetClasses(db: BetterSQLite3Database<typeof sqliteSchema>) {
+  clearSimulationPresets(db);
   db.insert(schema.assetClassParams)
     .values({
       id: 1,
@@ -277,6 +281,57 @@ describe("projection router — computeProjection cache", () => {
 });
 
 describe("projection router — computeProjection edge cases (continued)", () => {
+  it("no return rate at or below the current age: a typed state, not a throw", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      // Only the age-65 breakpoint is left, past the household's age.
+      db.delete(schema.returnRateTable)
+        .where(eq(schema.returnRateTable.age, 35))
+        .run();
+      expect(await caller.projection.computeProjection({})).toEqual({
+        result: null,
+        notConfigured: "no_return_rate",
+      });
+      expect(await caller.projection.computeCoastFire({})).toEqual({
+        result: null,
+        notConfigured: "no_return_rate",
+      });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("no return rate: a metadata read still gets settings and budgets", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      db.delete(schema.returnRateTable).run();
+      const meta = await caller.projection.computeProjection({
+        metadataOnly: true,
+      });
+      expect(meta).not.toHaveProperty("notConfigured");
+      expect(meta).toHaveProperty("settings");
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("no return rate: the strategy comparison says to set one", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      db.delete(schema.returnRateTable).run();
+      expect(await caller.projection.computeStrategyComparison()).toEqual({
+        strategies: [],
+        activeStrategy: null,
+        notConfigured: "no_return_rate",
+      });
+    } finally {
+      cleanup();
+    }
+  });
+
   it("client decumulation defaults set the routing mode, not the rate", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -640,6 +695,8 @@ describe("projection router — computeMonteCarloProjection", () => {
       seedFullProjectionData(db);
       seedAssetClasses(db);
       seedCorrelations(db);
+      // A named preset with no glide path of its own uses the household's.
+      seedGlidePath(db);
 
       // Seed a named preset in mc_presets table
       db.insert(schema.mcPresets)
@@ -1089,6 +1146,7 @@ describe("projection router — computeStrategyComparison", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
+      clearSimulationPresets(db);
 
       const response = await caller.projection.computeStrategyComparison();
 
@@ -1123,6 +1181,8 @@ describe("projection router — computeStrategyComparison", () => {
       seedAssetClasses(db);
       seedCorrelations(db);
       seedGlidePath(db);
+      // The Default preset the run names, using the glide path above.
+      seedDefaultMcPreset(db);
 
       const response = await caller.projection.computeStrategyComparison();
 
@@ -1285,6 +1345,8 @@ describe("projection router — computeStrategyComparison cache", () => {
       seedAssetClasses(db);
       seedCorrelations(db);
       seedGlidePath(db);
+      // The Default preset the run names, using the glide path above.
+      seedDefaultMcPreset(db);
 
       await caller.projection.computeStrategyComparison();
       const before = db.select().from(schema.projectionCache).all();
@@ -1576,7 +1638,51 @@ describe("projection router — computeProjection edge cases", () => {
 // ---------------------------------------------------------------------------
 
 describe("projection router — MC edge cases", () => {
-  it("MC with no glide path (empty custom glide path)", async () => {
+  it("every shipped preset can run", async () => {
+    const { db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const { buildMcInputs } =
+        await import("@/server/routers/projection/_shared");
+      for (const key of ["aggressive", "default", "conservative"] as const)
+        expect(
+          (await buildMcInputs(db as never, key)).notConfigured,
+          key,
+        ).toBeNull();
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("a named preset the database lacks never runs Custom's mix under its name", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      const mc = await caller.projection.computeMonteCarloProjection({
+        numTrials: 100,
+        preset: "aggressive",
+        seed: 42,
+      });
+      expect(mc).toMatchObject({ result: null, notConfigured: "no_presets" });
+      const comparison = await caller.projection.computeStrategyComparison({
+        preset: "aggressive",
+      });
+      expect(comparison).toMatchObject({ notConfigured: "no_presets" });
+      const analysis = await caller.projection.analyzeStrategy({
+        preset: "aggressive",
+      });
+      expect(analysis).toMatchObject({
+        baseline: null,
+        notConfigured: "no_presets",
+      });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("MC with no glide path (empty custom glide path) says so instead of running", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
@@ -1590,8 +1696,8 @@ describe("projection router — MC edge cases", () => {
         seed: 42,
       });
 
-      expect(response.result).not.toBeNull();
-      expect(response.simulationInputs!.glidePath).toHaveLength(0);
+      expect(response.result).toBeNull();
+      expect(response).toMatchObject({ notConfigured: "no_glide_path" });
     } finally {
       cleanup();
     }
@@ -1752,7 +1858,8 @@ describe("projection router — analyzeStrategy", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
-      // No asset classes or glide path seeded
+      // No asset classes or glide path
+      clearSimulationPresets(db);
       const response = await caller.projection.analyzeStrategy();
       expect(response.baseline).toBeNull();
       expect(response.recommendations).toEqual([]);
@@ -1767,6 +1874,8 @@ describe("projection router — analyzeStrategy", () => {
       seedFullProjectionData(db);
       seedAssetClasses(db);
       seedGlidePath(db);
+      // The Default preset the run names, using the glide path above.
+      seedDefaultMcPreset(db);
       seedCorrelations(db);
 
       const response = await caller.projection.analyzeStrategy();
@@ -1800,6 +1909,8 @@ describe("projection router — analyzeStrategy", () => {
       seedFullProjectionData(db);
       seedAssetClasses(db);
       seedGlidePath(db);
+      // The Default preset the run names, using the glide path above.
+      seedDefaultMcPreset(db);
       seedCorrelations(db);
 
       // Switch strategy to guyton_klinger
@@ -1932,6 +2043,72 @@ describe("projection router — computeCoastFire", () => {
 // follow-up commit by switching to compat.ts's queryRaw(), same as F5.
 
 describe("projection router — computeCoastFireMC", () => {
+  it("says there are no simulation presets instead of unreachable", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      clearSimulationPresets(db);
+      const response = await caller.projection.computeCoastFireMC({});
+      expect(response).toEqual({
+        result: null,
+        computedAt: null,
+        notConfigured: "no_presets",
+      });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("refuses a glide path whose active classes don't add up to 100%", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      seedAssetClasses(db);
+      seedCorrelations(db);
+      seedGlidePath(db);
+      seedDefaultMcPreset(db);
+      // Bonds (class 2) holds part of every age's mix.
+      db.update(schema.assetClassParams)
+        .set({ isActive: false })
+        .where(eq(schema.assetClassParams.id, 2))
+        .run();
+      const response = await caller.projection.computeCoastFireMC({});
+      expect(response).toMatchObject({ notConfigured: "glide_path_mismatch" });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("the probe says why too", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      clearSimulationPresets(db);
+      const response = await caller.projection.computeCoastFireProbe({
+        probeAge: 40,
+      });
+      expect(response).toMatchObject({
+        result: null,
+        notConfigured: "no_presets",
+      });
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("says there are no asset classes when the Default preset has none", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      clearSimulationPresets(db);
+      seedDefaultMcPreset(db);
+      const response = await caller.projection.computeCoastFireMC({});
+      expect(response).toMatchObject({ notConfigured: "no_asset_classes" });
+    } finally {
+      cleanup();
+    }
+  });
+
   it("returns a null result when no data is seeded", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
@@ -1948,6 +2125,8 @@ describe("projection router — computeCoastFireMC", () => {
       seedFullProjectionData(db);
       seedAssetClasses(db);
       seedCorrelations(db);
+      // A named preset with no glide path of its own uses the household's.
+      seedGlidePath(db);
 
       db.insert(schema.mcPresets)
         .values({
@@ -1980,6 +2159,8 @@ describe("projection router — computeCoastFireMC", () => {
       seedFullProjectionData(db);
       seedAssetClasses(db);
       seedCorrelations(db);
+      // A named preset with no glide path of its own uses the household's.
+      seedGlidePath(db);
       db.insert(schema.mcPresets)
         .values({
           key: "default",
@@ -2031,6 +2212,8 @@ describe("projection router — computeCoastFireProbe", () => {
       seedFullProjectionData(db);
       seedAssetClasses(db);
       seedCorrelations(db);
+      // A named preset with no glide path of its own uses the household's.
+      seedGlidePath(db);
       db.insert(schema.mcPresets)
         .values({
           key: "default",
@@ -2145,6 +2328,8 @@ describe("projection router — computeCoastFireMC cache", () => {
       seedFullProjectionData(db);
       seedAssetClasses(db);
       seedCorrelations(db);
+      // A named preset with no glide path of its own uses the household's.
+      seedGlidePath(db);
       seedDefaultMcPreset(db);
 
       const first = await caller.projection.computeCoastFireMC({});
@@ -2167,6 +2352,8 @@ describe("projection router — computeCoastFireMC cache", () => {
       seedFullProjectionData(db);
       seedAssetClasses(db);
       seedCorrelations(db);
+      // A named preset with no glide path of its own uses the household's.
+      seedGlidePath(db);
       seedDefaultMcPreset(db);
 
       await caller.projection.computeCoastFireMC({});
@@ -2194,6 +2381,8 @@ describe("projection router — computeCoastFireMC cache", () => {
       seedFullProjectionData(db);
       seedAssetClasses(db);
       seedCorrelations(db);
+      // A named preset with no glide path of its own uses the household's.
+      seedGlidePath(db);
       seedDefaultMcPreset(db);
 
       const runsBefore = mcRuns.count;
@@ -2217,6 +2406,8 @@ describe("projection router — computeCoastFireMC cache", () => {
       seedFullProjectionData(db);
       seedAssetClasses(db);
       seedCorrelations(db);
+      // A named preset with no glide path of its own uses the household's.
+      seedGlidePath(db);
       seedDefaultMcPreset(db);
 
       const real = await caller.projection.computeCoastFireMC({});

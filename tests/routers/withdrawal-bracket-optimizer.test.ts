@@ -88,6 +88,19 @@ function seedFullProjectionData(
 }
 
 describe("projection router — computeWithdrawalBracketOptimizer", () => {
+  it("no return rate: says to set one, instead of the engine throwing", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      db.delete(schema.returnRateTable).run();
+      expect(
+        await caller.projection.computeWithdrawalBracketOptimizer({}),
+      ).toEqual({ result: null, notConfigured: "no_return_rate" });
+    } finally {
+      cleanup();
+    }
+  });
+
   it("returns null result when no retirement data is seeded", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {

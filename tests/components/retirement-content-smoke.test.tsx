@@ -106,6 +106,9 @@ vi.mock("@/lib/context/scenario-context", () => ({
   useScenario: () => ({ activeScenario: null }),
 }));
 
+/** What computeStrategyComparison returns (null = nothing yet). */
+const mockComparison: { data: unknown } = { data: null };
+
 const mockSettings = {
   personId: 1,
   profileId: 1,
@@ -179,7 +182,7 @@ vi.mock("@/lib/trpc", () => ({
         }),
       },
       computeStrategyComparison: {
-        useQuery: () => ({ data: null, isLoading: false }),
+        useQuery: () => ({ data: mockComparison.data, isLoading: false }),
       },
     },
     retirement: {
@@ -204,6 +207,26 @@ vi.mock("@/lib/trpc", () => ({
 describe("RetirementContent smoke", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockComparison.data = null;
+  });
+
+  it("the comparison tab says to set a return rate when none is set, not Loading", async () => {
+    mockComparison.data = {
+      strategies: [],
+      activeStrategy: null,
+      notConfigured: "no_return_rate",
+    };
+    const { RetirementContent } =
+      await import("@/app/(dashboard)/retirement/retirement-content");
+    render(<RetirementContent />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Strategy Comparison" }),
+    );
+    expect(screen.getByText(/Set a return rate first/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Set return rates" }),
+    ).toHaveAttribute("href", expect.stringContaining("section=returns"));
+    expect(screen.queryByText(/Loading strategy comparison/)).toBeNull();
   });
 
   it("renders the 3 main tabs", async () => {
@@ -232,5 +255,17 @@ describe("RetirementContent smoke", () => {
     fireEvent.click(screen.getByRole("button", { name: "Plan Health" }));
     expect(screen.getByTestId("plan-health")).toBeInTheDocument();
     expect(screen.queryByTestId("projection-card")).toBeNull();
+  });
+
+  it("shows the shared disclaimer under the projection; Plan Health's card has its own", async () => {
+    const { RetirementContent } =
+      await import("@/app/(dashboard)/retirement/retirement-content");
+    render(<RetirementContent />);
+    const disclaimer =
+      "Estimates from the figures and assumptions you entered. Not financial, tax or legal advice.";
+    expect(screen.getByText(disclaimer)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Plan Health" }));
+    // The stubbed card stands in for the real one, which renders it.
+    expect(screen.queryByText(disclaimer)).toBeNull();
   });
 });

@@ -18,7 +18,8 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Pushes also build the image and boot both compose files.
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -67,9 +68,12 @@ jobs:
           NEXTAUTH_SECRET: build-placeholder-secret-at-least-32-chars
           NEXTAUTH_URL: http://localhost:3000
           AUTH_TRUST_HOST: "true"
-          AUTH_AUTHENTIK_ISSUER: https://build-placeholder/application/o/ledgr/
-          AUTH_AUTHENTIK_ID: build-placeholder
-          AUTH_AUTHENTIK_SECRET: build-placeholder
+
+      # Pages that depend on the running server (sign-in, Authentik, the
+      # database) must render per request: a prerendered one would ship
+      # the build machine's answer. Built above with no Authentik issuer.
+      - name: No prerendered sign-in or dashboard page
+        run: pnpm tsx scripts/check-prerender.ts
 
       - name: Test with coverage thresholds
         run: pnpm test:coverage
@@ -100,6 +104,9 @@ jobs:
         run: |
           cp -r .next/static .next/standalone/.next/static
           [ -d public ] && cp -r public .next/standalone/public || true
+          # The app reads tax-data/ and reference-data/ from its working
+          # directory (server.js chdirs to .next/standalone), as the image does.
+          cp -r tax-data reference-data .next/standalone/
           # Write .env for the standalone server (reads dotenv, not shell env).
           # Values here must match the step env: block — single source of truth.
           printf 'SQLITE_PATH=%s\nDEMO_ONLY=%s\nNEXTAUTH_SECRET=%s\nNEXTAUTH_URL=%s\nAUTH_TRUST_HOST=%s\nCRON_SECRET=%s\nENCRYPTION_KEY=%s\n' \
@@ -162,6 +169,14 @@ jobs:
         if: github.event_name == 'push'
         run: docker build --build-arg APP_VERSION=ci-${{ github.sha }} -t ledgr:ci-test .
 
+      # The sample compose install on an empty volume, SQLite and PostgreSQL:
+      # missing required variables are refused by name, .env reaches the
+      # container, and each boots to /api/health 200 and answers a public
+      # tRPC query with no Authentik. Builds reuse the cache from the step above.
+      - name: Compose install boots on an empty volume
+        if: github.event_name == 'push'
+        run: bash scripts/ci-image-boot.sh
+
       - name: Notify on failure
         if: failure() && github.ref == 'refs/heads/main'
         run: |
@@ -207,4 +222,11 @@ jobs:
           # Throwaway service database; not a secret.
           TEST_DATABASE_URL: postgresql://ledgr:ledgr-ci-placeholder@localhost:5432/ledgr_test
           DEMO_ONLY: "true"
+          REQUIRE_TEST_DATABASE: "true"
+
+      - name: Fresh install on PostgreSQL
+        run: pnpm test tests/routers/fresh-install-postgres.test.ts
+        env:
+          # Throwaway service database; not a secret.
+          TEST_DATABASE_URL: postgresql://ledgr:ledgr-ci-placeholder@localhost:5432/ledgr_test
           REQUIRE_TEST_DATABASE: "true"

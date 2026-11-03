@@ -11,6 +11,10 @@
  * approved (tax_data_updates) is applied after the shipped file whenever
  * it's newer, so it stands in for the shipped data from then on. Demo
  * schemas are built from the files too, never from the household's rows.
+ *
+ * The Simulation presets (`reference-data/simulation-presets.json`) are
+ * seeded the same way, only into a database whose preset tables are all
+ * empty; existing preset rows are never changed.
  */
 import * as fs from "fs";
 import * as path from "path";
@@ -23,10 +27,17 @@ import {
   reconcileReferenceRowsSync,
   type RefChange,
   type RefMode,
+  type RefQuery,
+  type RefQuerySync,
   pickApprovedCommunityFile,
   type TaxDataFile,
   TAX_DATA_DIR,
   readTaxDataDir,
+  parseSimulationPresets,
+  seedSimulationPresets,
+  seedSimulationPresetsSync,
+  SIMULATION_PRESETS_FILE,
+  type SimulationPresetsFile,
 } from "./reference-reconcile-core";
 
 /** The tables the reference data writes (db-migrate.ts keeps the same set;
@@ -48,6 +59,16 @@ let shippedFile: TaxDataFile | undefined;
 export function readTaxDataFile(): TaxDataFile {
   shippedFile ??= readTaxDataDir(fs, path.resolve(TAX_DATA_DIR));
   return shippedFile;
+}
+
+/** The shipped Simulation presets, read from disk once (the Docker image
+ *  copies `reference-data/`). Shared — don't mutate it. */
+let shippedPresets: SimulationPresetsFile | undefined;
+export function readSimulationPresetsFile(): SimulationPresetsFile {
+  shippedPresets ??= parseSimulationPresets(
+    fs.readFileSync(path.resolve(SIMULATION_PRESETS_FILE), "utf-8"),
+  );
+  return shippedPresets;
 }
 
 /** `?` placeholders → a parameterised Drizzle query (either dialect). */
@@ -88,14 +109,13 @@ function sqliteClient(db: Db): SqliteClient | null {
   return client && typeof client.prepare === "function" ? client : null;
 }
 
-/** Run `files` in order (each with its mode) in one transaction; step 5
- *  (carry-forward) runs with the last. Exported for tests. */
-export async function reconcileTaxDataFiles(
+/** Run `sync` (better-sqlite3's own transaction) or `async` (Postgres, in
+ *  one transaction when `db` can open one) against `db`. */
+async function inReferenceTransaction<T>(
   db: Db,
-  files: { file: TaxDataFile; mode: RefMode }[],
-): Promise<RefChange[]> {
-  const changes: RefChange[] = [];
-  const last = files.length - 1;
+  sync: (run: RefQuerySync) => T,
+  async: (run: RefQuery, dialect: "pg" | "sqlite") => Promise<T>,
+): Promise<T> {
   if (!isPostgres()) {
     const client = sqliteClient(db);
     if (client) {
@@ -106,39 +126,53 @@ export async function reconcileTaxDataFiles(
         stmt.run(...params);
         return [];
       };
-      client.transaction(() => {
-        files.forEach(({ file, mode }, i) =>
-          changes.push(
-            ...reconcileReferenceRowsSync(run, file, mode, i === last).changes,
-          ),
-        );
-      })();
-      return changes;
+      return client.transaction(() => sync(run))();
     }
   }
-  const go = async (target: Db, dialect: "pg" | "sqlite") => {
-    for (const [i, { file, mode }] of files.entries())
-      changes.push(
-        ...(
-          await reconcileReferenceRows(
-            runOn(target),
-            dialect,
-            file,
-            mode,
-            i === last,
-          )
-        ).changes,
-      );
-  };
-  if (!isPostgres() || !("transaction" in db)) {
-    await go(db, isPostgres() ? "pg" : "sqlite");
-    return changes;
-  }
+  if (!isPostgres() || !("transaction" in db))
+    return async(runOn(db), isPostgres() ? "pg" : "sqlite");
   const pg = db as Db & {
-    transaction: <T>(fn: (tx: Db) => Promise<T>) => Promise<T>;
+    transaction: <U>(fn: (tx: Db) => Promise<U>) => Promise<U>;
   };
-  await pg.transaction((tx) => go(tx, "pg"));
-  return changes;
+  return pg.transaction((tx) => async(runOn(tx), "pg"));
+}
+
+/** Run `files` in order (each with its mode) in one transaction; step 5
+ *  (carry-forward) runs with the last. Exported for tests. */
+export async function reconcileTaxDataFiles(
+  db: Db,
+  files: { file: TaxDataFile; mode: RefMode }[],
+): Promise<RefChange[]> {
+  const last = files.length - 1;
+  return inReferenceTransaction(
+    db,
+    (run) =>
+      files.flatMap(
+        ({ file, mode }, i) =>
+          reconcileReferenceRowsSync(run, file, mode, i === last).changes,
+      ),
+    async (run, dialect) => {
+      const changes: RefChange[] = [];
+      for (const [i, { file, mode }] of files.entries())
+        changes.push(
+          ...(
+            await reconcileReferenceRows(run, dialect, file, mode, i === last)
+          ).changes,
+        );
+      return changes;
+    },
+  );
+}
+
+/** Seed the shipped presets into `db` when its preset tables are all
+ *  empty, in its own transaction; returns the rows inserted. */
+export async function seedShippedPresets(db: Db): Promise<number> {
+  const presets = readSimulationPresetsFile();
+  return inReferenceTransaction(
+    db,
+    (run) => seedSimulationPresetsSync(run, presets),
+    (run, dialect) => seedSimulationPresets(run, dialect, presets),
+  );
 }
 
 /** The newest community update an admin approved that this version can
@@ -158,8 +192,9 @@ export async function approvedCommunityFile(
 }
 
 /** Apply the tax data to `db` (throws on failure), in one transaction:
- *  the shipped file, then a newer approved community update. A demo
- *  schema finds the install's updates through its search_path. */
+ *  the shipped file, then a newer approved community update; then, in a
+ *  transaction of its own, the presets when the preset tables are empty.
+ *  A demo schema finds the install's updates through its search_path. */
 export async function applyReferenceData(db: Db): Promise<void> {
   const file = readTaxDataFile();
   const community = await approvedCommunityFile(db, file.dataVersion);
@@ -167,6 +202,7 @@ export async function applyReferenceData(db: Db): Promise<void> {
     { file, mode: "seed" },
     ...(community ? [{ file: community, mode: "community" as const }] : []),
   ]);
+  await seedShippedPresets(db);
 }
 
 /** Apply an approved community update (one transaction); returns the

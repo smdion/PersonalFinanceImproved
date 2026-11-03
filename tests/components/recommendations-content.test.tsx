@@ -74,6 +74,11 @@ describe("RecommendationsContent", () => {
     expect(screen.getAllByText("Do First").length).toBeGreaterThan(0);
     expect(screen.queryByRole("button", { name: "Dismiss" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Snooze" })).toBeNull();
+    expect(
+      screen.getByText(
+        "Estimates from the figures and assumptions you entered. Not financial, tax or legal advice.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("each dismissal sends only its own change (the server merges them)", async () => {

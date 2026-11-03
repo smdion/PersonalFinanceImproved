@@ -1,6 +1,5 @@
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
-import { eq } from "drizzle-orm";
 import {
   protectedProcedure,
   adminProcedure,
@@ -8,23 +7,22 @@ import {
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
 import { hashPassword } from "@/lib/auth/password";
-import type { DbType } from "./_shared";
+import {
+  checkOnboardingComplete,
+  firstRunState,
+} from "@/server/helpers/first-run";
+import { lockForTransaction } from "@/server/helpers/transaction-lock";
+import { adoptFirstRetirementProfile } from "@/server/helpers/retirement-profile";
+import type { DbOrTx } from "@/server/helpers/transforms";
 
-/** Shared by isOnboardingComplete and createLocalAdmin's guard — these two
- *  checks must never drift apart, or one can be tricked into believing
- *  onboarding hasn't happened when the other says it has. */
-async function checkOnboardingComplete(db: DbType): Promise<boolean> {
-  const peopleRows = await db
-    .select({ id: schema.people.id })
-    .from(schema.people)
-    .limit(1);
-  if (peopleRows.length > 0) return true;
-
-  const setting = await db
-    .select({ value: schema.appSettings.value })
-    .from(schema.appSettings)
-    .where(eq(schema.appSettings.key, "onboarding_completed"));
-  return setting.length > 0 && setting[0]!.value === true;
+/** Refuse unless the install still needs its first admin (first-run.ts). */
+async function requireAdminNeeded(db: DbOrTx): Promise<void> {
+  if ((await firstRunState(db)).adminNeeded) return;
+  throw new TRPCError({
+    code: "BAD_REQUEST",
+    message:
+      "A local admin account already exists, or onboarding is complete. Sign in to continue.",
+  });
 }
 
 export const onboardingProcedures = {
@@ -40,18 +38,21 @@ export const onboardingProcedures = {
         target: schema.appSettings.key,
         set: { value: true },
       });
+    // Settings saved before onboarding finished become the first profile.
+    await adoptFirstRetirementProfile(ctx.db);
     return { ok: true };
   }),
 
+  /** Signed-out callers read this too: /login and the wizard offer
+   *  "Create the first admin" only while it says so. */
+  firstRunState: publicProcedure.query(({ ctx }) => firstRunState(ctx.db)),
+
   /**
-   * Create the initial local admin account during onboarding.
-   * Guard: only callable when no local admins exist yet AND onboarding
-   * hasn't otherwise been completed (e.g. via OIDC) — an OIDC-only install
-   * never creates a local_admins row, so table-emptiness alone would leave
-   * this endpoint permanently open. Runs inside a transaction so the
-   * check-then-insert can't race two concurrent first-run requests into
-   * both succeeding.
-   * Uses publicProcedure because no session exists before the first admin is created.
+   * Create the first local admin. Public, because no session exists yet;
+   * callable only while `firstRunState` says an admin is needed, so it
+   * closes for good once any local admin exists or onboarding is complete.
+   * The check repeats under a transaction lock, so two first-run requests
+   * at once can't both create one.
    */
   createLocalAdmin: publicProcedure
     .input(
@@ -68,27 +69,12 @@ export const onboardingProcedures = {
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // Refused cheaply, before the write transaction and the password hash.
+      await requireAdminNeeded(ctx.db);
+      const passwordHash = await hashPassword(input.password);
       const admin = await ctx.db.transaction(async (tx) => {
-        if (await checkOnboardingComplete(tx)) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message:
-              "Onboarding has already been completed. Use Settings to manage accounts.",
-          });
-        }
-        const existing = await tx
-          .select({ id: schema.localAdmins.id })
-          .from(schema.localAdmins)
-          .limit(1);
-        if (existing.length > 0) {
-          throw new TRPCError({
-            code: "BAD_REQUEST",
-            message:
-              "A local admin account already exists. Use Settings to manage accounts.",
-          });
-        }
-
-        const passwordHash = await hashPassword(input.password);
+        await lockForTransaction(tx, "first-local-admin");
+        await requireAdminNeeded(tx);
         const [created] = await tx
           .insert(schema.localAdmins)
           .values({
@@ -97,7 +83,6 @@ export const onboardingProcedures = {
             passwordHash,
           })
           .returning({ id: schema.localAdmins.id });
-
         return created!;
       });
 

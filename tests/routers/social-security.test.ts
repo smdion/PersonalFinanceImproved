@@ -226,6 +226,23 @@ async function seedMfjPiaHousehold(
 }
 
 describe("projection router — sweepSocialSecurityClaimingAges, MFJ two-person household", () => {
+  it("no return rate: says to set one, instead of the engine throwing", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const { workerId } = await seedMfjPiaHousehold(db);
+      db.delete(schema.returnRateTable).run();
+      expect(
+        await caller.projection.sweepSocialSecurityClaimingAges({
+          personId: workerId,
+          pia: 48000,
+          ages: [62, 70],
+        }),
+      ).toEqual({ result: null, notConfigured: "no_return_rate" });
+    } finally {
+      cleanup();
+    }
+  });
+
   it("rebuilds the WHOLE household's entries per candidate age (spousal top-up responds to the swept worker's age), matching a direct call exactly", async () => {
     const { caller, db, rawDb, cleanup } = await createTestCaller(adminSession);
     try {

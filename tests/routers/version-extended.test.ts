@@ -652,7 +652,8 @@ describe("resetAllData", () => {
         .from(sqliteSchema.appSettings)
         .all()
         .find((s) => s.key === "onboarding_completed");
-      expect(onboardingSetting?.value).toBe("true");
+      // The local admin survives, so the first-admin gate stays closed.
+      expect(onboardingSetting?.value).toBe(true);
     } finally {
       ctx.cleanup();
     }
@@ -673,6 +674,35 @@ describe("resetAllData", () => {
       expect(keys).not.toContain("active_retirement_profile_id");
       expect(keys).not.toContain("milestone_first_reached");
       expect(keys).toContain("household_timezone");
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("puts the shipped presets back and drops the saved asset-class changes that pointed at the old classes", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const [cls] = ctx.db.select().from(sqliteSchema.assetClassParams).all();
+      seedAppSetting(ctx.db, "mc_asset_class_overrides", [
+        { id: cls!.id, meanReturn: 0.2 },
+      ]);
+      ctx.db
+        .update(sqliteSchema.mcPresets)
+        .set({ label: "Changed by the household" })
+        .run();
+      await ctx.caller.version.resetAllData({ confirmation: "delete" });
+      const keys = ctx.db
+        .select()
+        .from(sqliteSchema.appSettings)
+        .all()
+        .map((s) => s.key);
+      expect(keys).not.toContain("mc_asset_class_overrides");
+      const labels = ctx.db
+        .select()
+        .from(sqliteSchema.mcPresets)
+        .all()
+        .map((p) => p.label);
+      expect(labels.sort()).toEqual(["Aggressive", "Conservative", "Default"]);
     } finally {
       ctx.cleanup();
     }

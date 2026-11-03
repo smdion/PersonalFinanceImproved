@@ -10,6 +10,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Disclaimer } from "@/components/ui/disclaimer";
 import { LoadingCard, ErrorCard } from "@/components/cards/dashboard/utils";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { useMilestones } from "@/lib/hooks/use-milestones";
@@ -266,6 +267,7 @@ export function MilestonesContent() {
             weight: 2 + Object.keys(input.checklist).length * 0.6,
           })}
       />
+      <Disclaimer />
     </div>
   );
 }

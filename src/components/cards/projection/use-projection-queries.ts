@@ -18,6 +18,7 @@ import type {
   MonteCarloPercentileBand,
   MonteCarloResult,
 } from "@/lib/calculators/types";
+import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/calculators/monte-carlo";
 import { simulationDollars } from "@/lib/pure/simulation-dollars";
 import type { ProjectionFormState } from "./use-projection-form-state";
 import type { UseProjectionStateProps } from "./use-projection-state";
@@ -450,6 +451,11 @@ export function useProjectionQueries(
         runId,
       });
       setCoastFireProbeResult(response.result as CoastFireProbeResult | null);
+      // Can't simulate: say why where a failed check would.
+      if ("notConfigured" in response)
+        setCoastFireProbeError(
+          SIMULATION_NOT_CONFIGURED_MESSAGE[response.notConfigured],
+        );
     } catch (err) {
       setCoastFireProbeError(
         err instanceof Error ? err.message : "Failed to check this age.",

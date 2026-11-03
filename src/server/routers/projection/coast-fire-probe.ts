@@ -134,7 +134,8 @@ export const coastFireProbeRouter = createTRPCRouter({
         decumulationExpenseOverride: input.decumulationExpenseOverride,
         retirementProfileId: input.retirementProfileId,
       });
-      if (!payload) return { result: null, computedAt: null };
+      if (!payload || payload.notConfigured)
+        return { result: null, computedAt: null };
 
       const { settings, distributionTaxRates, baseEngineInput } = payload;
 
@@ -165,9 +166,12 @@ export const coastFireProbeRouter = createTRPCRouter({
         });
       }
 
-      if (!mc.preset?.found) {
-        return { result: null, computedAt: null };
-      }
+      if (mc.notConfigured || !mc.preset)
+        return {
+          result: null,
+          computedAt: null,
+          notConfigured: mc.notConfigured ?? ("no_presets" as const),
+        };
 
       const { mcAssetClasses, mcCorrelations, mcGlidePath } = mc;
       const { returnClampMin, returnClampMax } = mc.preset;

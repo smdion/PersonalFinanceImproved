@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  SIMULATION_NOT_CONFIGURED_MESSAGE,
+  type SimulationNotConfigured,
+} from "@/lib/calculators/monte-carlo";
 import { strategySummary } from "@/lib/pure/strategy-summary";
 import type { PlanFailureReason } from "@/lib/calculators/plan-outcome";
 import { useState } from "react";
@@ -69,6 +73,8 @@ type Props = {
   activeStrategy: string | null;
   /** The Simulation preset behind the Success and Stability columns. */
   presetLabel?: string;
+  /** Why those columns are empty (the Simulation can't run), or null. */
+  notConfigured?: SimulationNotConfigured | null;
   dollarMode: "nominal" | "real";
   onDollarModeChange: (mode: "nominal" | "real") => void;
   inflationRate: number;
@@ -81,6 +87,7 @@ export function WithdrawalComparisonCard({
   strategies,
   activeStrategy,
   presetLabel,
+  notConfigured,
   dollarMode,
   onDollarModeChange,
   inflationRate,
@@ -127,7 +134,7 @@ export function WithdrawalComparisonCard({
   return (
     <Card
       title="Withdrawal Strategy Comparison"
-      subtitle={`Comparing ${strategies.length} strategies from ${strategies[0]?.yearByYear[0]?.year ?? "retirement"} · Success % via simulation`}
+      subtitle={`Comparing ${strategies.length} strategies from ${strategies[0]?.yearByYear[0]?.year ?? "retirement"} · ${notConfigured ? SIMULATION_NOT_CONFIGURED_MESSAGE[notConfigured] : "Success % via simulation"}`}
       className="mb-6"
       isCollapsible
       isDefaultOpen={true}
@@ -445,6 +452,14 @@ export function WithdrawalComparisonCard({
         ) : analyzerQuery.isLoading ? (
           <div className="text-faint animate-pulse py-3 text-center text-xs">
             Running scenario analysis...
+          </div>
+        ) : analyzerQuery.data && "notConfigured" in analyzerQuery.data ? (
+          <div className="text-faint rounded-lg border border-amber-500/20 bg-amber-950/20 p-3 text-xs">
+            {
+              SIMULATION_NOT_CONFIGURED_MESSAGE[
+                analyzerQuery.data.notConfigured
+              ]
+            }
           </div>
         ) : analyzerQuery.data?.recommendations &&
           analyzerQuery.data.recommendations.length > 0 ? (

@@ -77,6 +77,31 @@ function seedTaxOptHousehold(db: BetterSQLite3Database<typeof sqliteSchema>) {
 }
 
 describe("projection router — projectTaxYears", () => {
+  it("no return rate: each tool says to set one, instead of the engine throwing", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedTaxOptHousehold(db);
+      db.delete(schema.returnRateTable).run();
+      expect(await caller.projection.projectTaxYears({})).toMatchObject({
+        rows: [],
+        notConfigured: "no_return_rate",
+      });
+      expect(
+        await caller.projection.compareWithdrawalStrategies({
+          strategies: [
+            { label: "A", mode: "waterfall" },
+            { label: "B", mode: "bracket_filling" },
+          ],
+        }),
+      ).toMatchObject({ strategies: [], notConfigured: "no_return_rate" });
+      expect(
+        await caller.projection.rothConversionWhatIf({ mode: "optimize" }),
+      ).toMatchObject({ result: null, notConfigured: "no_return_rate" });
+    } finally {
+      cleanup();
+    }
+  });
+
   it("returns an empty result when no retirement data is seeded", async () => {
     const { caller, cleanup } = await createTestCaller(adminSession);
     try {
@@ -156,6 +181,7 @@ describe("projection router — withdrawal routing DB fallback", () => {
           { label: "B", mode: "bracket_filling" },
         ],
       });
+      assert(!("notConfigured" in res));
       const currentPlan = res.strategies.find(
         (s) => s.label === "Your current plan",
       );

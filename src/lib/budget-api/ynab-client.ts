@@ -95,6 +95,8 @@ function mapCategoryGroup(g: YnabCategoryGroup): BudgetCategoryGroup {
     id: g.id,
     name: g.name,
     hidden: g.hidden,
+    // YNAB's income ("Inflow: Ready to Assign") sits in its internal group.
+    isIncome: g.name === "Internal Master Category",
     categories: g.categories.map((c) => mapCategory(c, g.name)),
   };
 }
@@ -179,6 +181,25 @@ function ynabImportId(tx: NewBudgetTransaction): string {
   return `ledgr:${idempotencyKey.slice(0, 30)}`;
 }
 
+/** The budgets an access token can open (YNAB's `/budgets` list). Also
+ *  used before a connection is saved, to pick the budget. */
+export async function listYnabBudgets(
+  accessToken: string,
+): Promise<Array<{ id: string; name: string; lastModified: string | null }>> {
+  const res = await externalRequest({
+    service: "ynab",
+    endpoint: "/budgets",
+    url: `${YNAB_BASE}/budgets?include_accounts=false`,
+    headers: { Authorization: `Bearer ${accessToken}` },
+    schema: ynabSchemas.budgets,
+  });
+  return res.data.budgets.map((b) => ({
+    id: b.id,
+    name: b.name,
+    lastModified: b.last_modified_on ?? null,
+  }));
+}
+
 export class YnabClient implements BudgetAPIClient {
   getExcludedCategoryNames(): Set<string> {
     return YNAB_EXPENSE_EXCLUDED_CATEGORIES;
@@ -221,13 +242,11 @@ export class YnabClient implements BudgetAPIClient {
   }
 
   async getBudgetName(): Promise<string> {
-    // Use the budgets list endpoint to get the name without fetching the full budget
-    const res = await this.request(
-      `${YNAB_BASE}/budgets?include_accounts=false`,
-      ynabSchemas.budgets,
+    // The list carries the name without fetching the whole budget.
+    const budgets = await listYnabBudgets(this.accessToken);
+    return (
+      budgets.find((b) => b.id === this.budgetId)?.name ?? "Unknown Budget"
     );
-    const match = res.data.budgets.find((b) => b.id === this.budgetId);
-    return match?.name ?? "Unknown Budget";
   }
 
   // -- Accounts --

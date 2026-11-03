@@ -27,6 +27,7 @@ import {
   fetchRetirementData,
 } from "@/server/retirement/build-engine-payload";
 import * as schema from "@/lib/db/schema-sqlite";
+import { clearSimulationPresets } from "../helpers/db-harness";
 
 // Freeze wall clock so `currentAge` and any other time-derived fields in
 // `baseEngineInput` are deterministic across CI runners, local runs, and
@@ -89,7 +90,9 @@ describe("engine input snapshot guard", () => {
       },
     });
 
-    // Add asset classes (engine needs these for MC trials)
+    // Its own asset classes in place of the shipped ones (engine needs
+    // these for MC trials).
+    clearSimulationPresets(db);
     db.insert(schema.assetClassParams)
       .values({
         id: 1,

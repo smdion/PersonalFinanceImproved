@@ -81,7 +81,13 @@ const data = <T extends z.ZodRawShape>(shape: T) =>
 
 export const ynabSchemas = {
   budgets: data({
-    budgets: z.array(z.looseObject({ id: z.string(), name: z.string() })),
+    budgets: z.array(
+      z.looseObject({
+        id: z.string(),
+        name: z.string(),
+        last_modified_on: z.string().nullish(),
+      }),
+    ),
   }),
   accounts: data({ accounts: z.array(account) }),
   account: data({ account }),
