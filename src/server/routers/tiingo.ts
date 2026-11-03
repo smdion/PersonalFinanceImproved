@@ -35,6 +35,9 @@ function describeTiingoError(e: unknown): string {
   return `Couldn't reach Tiingo to verify the key: ${msg}`;
 }
 
+const KEY_UNREADABLE =
+  "The saved Tiingo key can't be decrypted (it was saved with a different ENCRYPTION_KEY) — enter the key again.";
+
 export const tiingoRouter = createTRPCRouter({
   /** Validate a key against Tiingo, then store it encrypted. An invalid key is never saved. */
   saveKey: syncProcedure
@@ -57,16 +60,20 @@ export const tiingoRouter = createTRPCRouter({
 
   /** Test the stored key and report how far back price history goes. */
   testConnection: syncProcedure.mutation(async ({ ctx }) => {
+    let apiKey: string | null;
     try {
-      // Inside the try: decrypting can fail (e.g. a restored backup from an
-      // instance with a different ENCRYPTION_KEY) — report it, don't 500.
-      const apiKey = await getTiingoApiKey(ctx.db);
-      if (!apiKey) {
-        return {
-          success: false as const,
-          error: "No Tiingo connection configured",
-        };
-      }
+      apiKey = await getTiingoApiKey(ctx.db);
+    } catch {
+      // A key saved under another ENCRYPTION_KEY (e.g. a restored backup).
+      return { success: false as const, error: KEY_UNREADABLE };
+    }
+    if (!apiKey) {
+      return {
+        success: false as const,
+        error: "No Tiingo connection configured",
+      };
+    }
+    try {
       const meta = await testApiKey(apiKey);
       return {
         success: true as const,
