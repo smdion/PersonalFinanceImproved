@@ -9,7 +9,7 @@ pnpm test:e2e         # Playwright (needs a running app; PLAYWRIGHT_BASE_URL to 
 pnpm vitest run tests/calculators   # one area — prefer this while working
 ```
 
-**<!-- AUTO-GEN:vitestFiles -->582<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->15<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
+**<!-- AUTO-GEN:vitestFiles -->583<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->15<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
 
 ## Suites
 
@@ -60,7 +60,7 @@ Fixtures use invented data only — never a real household's figures.
 - **Router integration** — call procedures directly; check permission gates with viewer sessions.
 - **Lint-as-test** — source sweeps enforce RULES.md.
 - **E2E smoke** — pages load and navigate. In CI they run against a standalone build with SQLite, `DEMO_ONLY=true` and an empty database; locally against a real database some checks (privacy scan, YNAB card) depend on the data.
-- **PostgreSQL** — CI's `postgres` job (a PostgreSQL 16 service) migrates the empty database (`pnpm db:migrate`), checks its primary keys, foreign keys and indexes against `scripts/constraints/<dialect>.txt` on both dialects (`pnpm check:constraints`; `--write` rewrites the list when a migration changes one on purpose), then runs the files that need PostgreSQL, each in its own named step: `routers/demo-postgres.test.ts` (a demo profile and data calls through the real middleware; demo schemas exist only on PostgreSQL; `DEMO_ONLY=true`), `routers/fresh-install-postgres.test.ts`, and `routers/seeded-postgres.test.ts` (each demo household seeded into `public`: every page's main read, a transaction, and the backup round trip through `scripts/export-backup.ts` and `scripts/import-backup.ts`). They share `routers/setup-postgres.ts` and run only when `TEST_DATABASE_URL` names a throwaway database ending in `_test` (they drop its schemas); elsewhere they skip.
+- **PostgreSQL demo** — `routers/demo-postgres.test.ts` sets up a demo profile and makes data calls through the real middleware; demo schemas exist only on PostgreSQL. It runs only when `TEST_DATABASE_URL` names a throwaway database ending in `_test` (it drops the public schema); CI's `postgres-demo` job runs it against a PostgreSQL service with `DEMO_ONLY=true`.
 
 ## Updating snapshots
 

@@ -244,36 +244,57 @@ function definesSymbol(src: string, sym: string): boolean {
   ).test(src);
 }
 
-/** Function and Test entries that don't exist on disk. */
-export function missingPaths(doc: string, root = ROOT): string[] {
-  const out: string[] = [];
+/** One entry of a Function cell. */
+export interface FunctionRef {
+  id: string;
+  line: number;
+  /** The entry as written. */
+  code: string;
+  /** Repo-relative (`src/…` or `tax-data/…`); null for a bare symbol with no file before it. */
+  file: string | null;
+  /** "" for a file-only entry. */
+  symbol: string;
+}
+
+/** Every `path:symbol` and bare `symbol` entry in the Function cells. */
+export function functionRefs(doc: string): FunctionRef[] {
+  const out: FunctionRef[] = [];
   for (const { line, cells } of registerRows(doc)) {
-    const id = cells.Id;
+    const id = cells.Id!;
     let file: string | null = null;
     for (const [, code] of (cells.Function ?? "").matchAll(CODE)) {
       const ref = code!.match(FILE_REF);
-      let sym: string;
       if (ref) {
-        const rel = ref[1]!.startsWith("tax-data/") ? ref[1]! : `src/${ref[1]}`;
-        file = path.join(root, rel);
-        sym = ref[2]!;
-        if (!fs.existsSync(file)) {
-          out.push(`${id} (line ${line}): Function \`${code}\`: no ${rel}`);
-          file = null;
-          continue;
-        }
-      } else if (/^\w+$/.test(code!)) {
-        sym = code!;
-        if (!file) {
-          out.push(`${id} (line ${line}): Function \`${code}\` names no file`);
-          continue;
-        }
-      } else continue;
-      if (sym && !definesSymbol(fs.readFileSync(file, "utf8"), sym))
-        out.push(
-          `${id} (line ${line}): Function \`${code}\`: ${sym} isn't defined in ${path.relative(root, file)}`,
-        );
+        file = ref[1]!.startsWith("tax-data/") ? ref[1]! : `src/${ref[1]}`;
+        out.push({ id, line, code: code!, file, symbol: ref[2]! });
+      } else if (/^\w+$/.test(code!))
+        out.push({ id, line, code: code!, file, symbol: code! });
     }
+  }
+  return out;
+}
+
+/** Function and Test entries that don't exist on disk. */
+export function missingPaths(doc: string, root = ROOT): string[] {
+  const out: string[] = [];
+  for (const { id, line, code, file: rel, symbol: sym } of functionRefs(doc)) {
+    const bare = code === sym;
+    const file = rel && path.join(root, rel);
+    if (!file || !fs.existsSync(file)) {
+      out.push(
+        bare
+          ? `${id} (line ${line}): Function \`${code}\` names no file`
+          : `${id} (line ${line}): Function \`${code}\`: no ${rel}`,
+      );
+      continue;
+    }
+    if (sym && !definesSymbol(fs.readFileSync(file, "utf8"), sym))
+      out.push(
+        `${id} (line ${line}): Function \`${code}\`: ${sym} isn't defined in ${rel}`,
+      );
+  }
+  for (const { line, cells } of registerRows(doc)) {
+    const id = cells.Id;
     for (const [, code] of (cells.Test ?? "").matchAll(CODE)) {
       if (!/\/.*\.\w+$/.test(code!)) continue;
       if (!fs.existsSync(path.join(root, "tests", code!)))

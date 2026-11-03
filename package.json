@@ -44,6 +44,7 @@
     "check:migrations": "tsx scripts/check-migrations.ts",
     "check:constraints": "tsx scripts/check-constraints.ts",
     "check:tax-params": "tsx scripts/check-tax-params.ts",
+    "check:calculation-register": "tsx scripts/check-calculation-register.ts",
     "tax-data:keygen": "tsx scripts/tax-data-keygen.ts",
     "tax-data:publish": "tsx scripts/tax-data-publish.ts",
     "tax-data:check": "tsx scripts/tax-data-check.ts",

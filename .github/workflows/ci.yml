@@ -165,6 +165,13 @@ jobs:
       - name: Verify docs freshness
         run: pnpm docs:verify
 
+      # Every calculator, engine and lib/pure export has a row in
+      # docs/CALCULATIONS.md; the exports without one and the high-risk
+      # rows with no independent test may only shrink
+      # (scripts/calculation-register-baseline.json).
+      - name: Calculation register check
+        run: pnpm check:calculation-register
+
       - name: Docker build smoke test
         if: github.event_name == 'push'
         run: docker build --build-arg APP_VERSION=ci-${{ github.sha }} -t ledgr:ci-test .
