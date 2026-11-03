@@ -7,6 +7,10 @@
  *   2025-10-09), https://www.irs.gov/pub/irs-drop/rp-25-32.pdf
  * - T26: Pub 15-T (2026), Dec 3, 2025,
  *   https://www.irs.gov/pub/irs-prior/p15t--2026.pdf
+ * - CMS26: CMS fact sheet, 2026 Medicare Parts A & B Premiums and
+ *   Deductibles (Nov 14, 2025), https://www.cms.gov/newsroom/fact-sheets/2026-medicare-parts-b-premiums-deductibles
+ * - HHS25: 2025 HHS Poverty Guidelines, 90 FR 5917,
+ *   https://www.govinfo.gov/content/pkg/FR-2025-01-17/pdf/2025-01377.pdf
  */
 import type { PublishedYear } from "./types";
 
@@ -175,6 +179,48 @@ export const PUBLISHED_2026: PublishedYear = {
           { atLeast: 332_375, tentative: 95_585.5, rate: 0.37 },
         ],
       },
+    },
+  },
+
+  // CMS fact sheet "2026 Medicare Parts A & B Premiums and Deductibles"
+  // (Nov 14, 2025; 2024 MAGI). Part B from its "Full Part B Coverage"
+  // table, Part D from its Part D table; each tier's MAGI is the lower
+  // edge printed ("greater than", "greater than or equal to" at the top).
+  irmaa: {
+    individual: {
+      cite: "CMS, 2026 Medicare Parts A & B Premiums and Deductibles (Nov 14, 2025), Part B (Full Part B Coverage) and Part D IRMAA tables, individual tax returns",
+      value: [
+        { over: 109_000, partB: 81.2, partD: 14.5 },
+        { over: 137_000, partB: 202.9, partD: 37.5 },
+        { over: 171_000, partB: 324.6, partD: 60.4 },
+        { over: 205_000, partB: 446.3, partD: 83.3 },
+        { over: 500_000, partB: 487.0, partD: 91.0 },
+      ],
+    },
+    joint: {
+      cite: "CMS, 2026 Medicare Parts A & B Premiums and Deductibles (Nov 14, 2025), Part B (Full Part B Coverage) and Part D IRMAA tables, joint tax returns",
+      value: [
+        { over: 218_000, partB: 81.2, partD: 14.5 },
+        { over: 274_000, partB: 202.9, partD: 37.5 },
+        { over: 342_000, partB: 324.6, partD: 60.4 },
+        { over: 410_000, partB: 446.3, partD: 83.3 },
+        { over: 750_000, partB: 487.0, partD: 91.0 },
+      ],
+    },
+  },
+
+  // 2026 coverage uses the guidelines HHS published in 2025.
+  fpl: {
+    cite: "HHS, Annual Update of the HHS Poverty Guidelines, 90 FR 5917 (Jan 17, 2025), 2025 guidelines for the 48 contiguous states and DC, p. 5917",
+    value: {
+      1: 15_650,
+      2: 21_150,
+      3: 26_650,
+      4: 32_150,
+      5: 37_650,
+      6: 43_150,
+      7: 48_650,
+      8: 54_150,
     },
   },
 };

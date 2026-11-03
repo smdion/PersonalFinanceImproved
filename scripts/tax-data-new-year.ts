@@ -123,6 +123,23 @@ function blankFixture(): PublishedYear {
         checkbox: rows(table(st)?.checkbox.length ?? 8, row),
       };
     }),
+    irmaa: Object.fromEntries(
+      (["individual", "joint"] as const).map((col) => [
+        col,
+        rows(
+          from.irmaa?.brackets[col === "joint" ? "MFJ" : "Single"]?.length ?? 5,
+          {
+            over: NaN,
+            partB: NaN,
+            partD: NaN,
+          },
+        ),
+      ]),
+    ) as PublishedYear["irmaa"],
+    fpl: {
+      value: { 1: NaN, 2: NaN, 3: NaN, 4: NaN, 5: NaN, 6: NaN, 7: NaN, 8: NaN },
+      cite: "",
+    },
   };
 }
 
@@ -132,8 +149,11 @@ const fixtureText = (f: PublishedYear) => `/**
  * tax-data/us-federal/${year}.json: the Rev. Proc. of ${year} inflation
  * adjustments (§ 1 rate tables, § 1(h) maximum zero and 15% rate amounts,
  * § 63(c)(2) standard deduction, § 63(f) aged-or-blind amounts) and
- * Pub 15-T (${year}) § 1 annual percentage-method tables, both columns.
- * Cite each table (document, section or table, page). Then add it to
+ * Pub 15-T (${year}) § 1 annual percentage-method tables, both columns;
+ * CMS's ${year} Medicare Parts A & B fact sheet (Part B and Part D IRMAA
+ * tables); HHS's ${Number(year) - 1} poverty guidelines (${year} coverage uses
+ * the ones published the year before). Cite each table (document,
+ * section or table, page). Then add it to
  * PUBLISHED in tests/tax-data/irs-published.test.ts; that test lists any
  * blank left.
  */

@@ -13,6 +13,10 @@
  *   Its tables predate the OBBBA and weren't reissued, so they embed the
  *   old $30,000 / $22,500 / $15,000 deductions; withholding for 2025 still
  *   follows them as printed.
+ * - CMS25: CMS fact sheet, 2025 Medicare Parts A & B Premiums and
+ *   Deductibles (Nov 8, 2024), https://www.cms.gov/newsroom/fact-sheets/2025-medicare-parts-b-premiums-and-deductibles
+ * - HHS24: 2024 HHS Poverty Guidelines, 89 FR 2961,
+ *   https://www.govinfo.gov/content/pkg/FR-2024-01-17/pdf/2024-00796.pdf
  */
 import type { PublishedYear } from "./types";
 
@@ -183,6 +187,48 @@ export const PUBLISHED_2025: PublishedYear = {
           { atLeast: 324_425, tentative: 93_515.75, rate: 0.37 },
         ],
       },
+    },
+  },
+
+  // CMS fact sheet "2025 Medicare Parts A & B Premiums and Deductibles"
+  // (Nov 8, 2024; 2023 MAGI). Part B from its "Full Part B Coverage"
+  // table, Part D from its Part D table; each tier's MAGI is the lower
+  // edge printed ("greater than", "greater than or equal to" at the top).
+  irmaa: {
+    individual: {
+      cite: "CMS, 2025 Medicare Parts A & B Premiums and Deductibles (Nov 8, 2024), Part B (Full Part B Coverage) and Part D IRMAA tables, individual tax returns",
+      value: [
+        { over: 106_000, partB: 74.0, partD: 13.7 },
+        { over: 133_000, partB: 185.0, partD: 35.3 },
+        { over: 167_000, partB: 295.9, partD: 57.0 },
+        { over: 200_000, partB: 406.9, partD: 78.6 },
+        { over: 500_000, partB: 443.9, partD: 85.8 },
+      ],
+    },
+    joint: {
+      cite: "CMS, 2025 Medicare Parts A & B Premiums and Deductibles (Nov 8, 2024), Part B (Full Part B Coverage) and Part D IRMAA tables, joint tax returns",
+      value: [
+        { over: 212_000, partB: 74.0, partD: 13.7 },
+        { over: 266_000, partB: 185.0, partD: 35.3 },
+        { over: 334_000, partB: 295.9, partD: 57.0 },
+        { over: 400_000, partB: 406.9, partD: 78.6 },
+        { over: 750_000, partB: 443.9, partD: 85.8 },
+      ],
+    },
+  },
+
+  // 2025 coverage uses the guidelines HHS published in 2024.
+  fpl: {
+    cite: "HHS, Annual Update of the HHS Poverty Guidelines, 89 FR 2961 (Jan 17, 2024), 2024 guidelines for the 48 contiguous states and DC, p. 2962",
+    value: {
+      1: 15_060,
+      2: 20_440,
+      3: 25_820,
+      4: 31_200,
+      5: 36_580,
+      6: 41_960,
+      7: 47_340,
+      8: 52_720,
     },
   },
 };

@@ -90,7 +90,7 @@ The check refuses a blank, so no figure or citation can carry over from last yea
 - withholding tables add up; no blanks;
 - the generated schemas and the key table below are current.
 
-CI also compares every shipped table cell (brackets, standard deduction and add-ons, LTCG, withholding) to the hand-keyed published figures in `tests/fixtures/irs-published/<year>.ts` (`tests/tax-data/irs-published.test.ts`), and fails for a shipped year without them.
+CI also compares every shipped table cell (brackets, standard deduction and add-ons, LTCG, withholding, IRMAA, poverty guidelines) to the hand-keyed published figures in `tests/fixtures/irs-published/<year>.ts` (`tests/tax-data/irs-published.test.ts`), and fails for a shipped year without them.
 
 ## Keys
 

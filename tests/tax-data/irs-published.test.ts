@@ -14,7 +14,10 @@
  * Cases: answer key § Tax "Tables against the published figures"
  * (TAB-2025-*, TAB-2026-*, WH-2026-*; WH-2025-* added, since the item
  * covers every year). TAB-VAL, the validator rule, is in
- * tests/config/tax-data-file.test.ts.
+ * tests/config/tax-data-file.test.ts. The IRMAA and poverty-guideline
+ * cells are the data checks behind retirement I1-I13, I15 and I21
+ * (Retirement "Data tests per shipped table"; those cases are written
+ * with the IRMAA and ACA functions).
  */
 import * as fs from "fs";
 import * as path from "path";
@@ -43,6 +46,15 @@ const SHORT: Record<FilingStatus, string> = {
   Single: "S",
   MFJ: "MFJ",
   HOH: "HOH",
+};
+
+/** The CMS IRMAA column each status reads: "Beneficiaries who file
+ *  individual tax returns" (Single, HOH) or "joint tax returns" (MFJ).
+ *  CMS fact sheets 2025, 2026; 20 CFR § 418.1115. */
+const IRMAA_COLUMN: Record<FilingStatus, "individual" | "joint"> = {
+  Single: "individual",
+  MFJ: "joint",
+  HOH: "individual",
 };
 
 /** Long-term gains rates, fixed by law: IRC § 1(h)(1)(B), (C), (D). */
@@ -194,5 +206,26 @@ for (const [y, p] of Object.entries(PUBLISHED)) {
           );
       });
     }
+  });
+
+  describe(`${y} shipped retirement tables against the publications`, () => {
+    for (const st of STATUSES) {
+      const col = IRMAA_COLUMN[st];
+      const tiers = p.irmaa[col];
+      // Per person, a year: (Part B + Part D monthly adjustment) × 12,
+      // to the cent (the shipped `notes` say so).
+      it(`${y} IRMAA ${st}: every tier's MAGI and surcharge = ${tiers.cite} [RET-15]`, () => {
+        expect(year(y).irmaa?.brackets[st]).toEqual(
+          tiers.value.map((t) => ({
+            magiThreshold: t.over,
+            annualSurcharge: Math.round((t.partB + t.partD) * 12 * 100) / 100,
+          })),
+        );
+      });
+    }
+
+    it(`${y} poverty guidelines, sizes 1-8 = ${p.fpl.cite} [RET-17]`, () => {
+      expect(year(y).fpl?.amounts).toEqual(p.fpl.value);
+    });
   });
 }

@@ -36,6 +36,18 @@ export interface WithholdingRow {
   readonly rate: number;
 }
 
+/** One Medicare income-related tier above the standard premium, from the
+ *  CMS fact sheet: the MAGI it applies above (at or above, for the top
+ *  tier) and the monthly Part B and Part D adjustments. */
+export interface IrmaaTier {
+  readonly over: number;
+  readonly partB: number;
+  readonly partD: number;
+}
+
+/** HHS poverty-guideline household sizes. */
+export type HouseholdSize = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+
 export interface PublishedYear {
   readonly year: number;
   /** The § 1 rate tables, from the first (10%) band to the 37% band. */
@@ -64,4 +76,13 @@ export interface PublishedYear {
       }
     >
   >;
+  /** The year's Medicare premiums' IRMAA tiers (MAGI from two years
+   *  before): the CMS columns for individual and joint tax returns. */
+  readonly irmaa: {
+    readonly individual: Cited<IrmaaTier[]>;
+    readonly joint: Cited<IrmaaTier[]>;
+  };
+  /** Poverty guidelines for the year's ACA coverage: the ones HHS
+   *  published the year before (26 CFR § 1.36B-1(h)), 48 states and DC. */
+  readonly fpl: Cited<Readonly<Record<HouseholdSize, number>>>;
 }
