@@ -46,7 +46,8 @@
  *   - "Procedure computing mortgage/cash/salary independently" (#8)
  *   - "Tax location derived from config instead of stored data" (#9)
  *   - "Local label map duplicating config" (#11) — false-positive prone
- *   - "New account type requiring code changes beyond config entry" (#13) — review-only
+ *   - "New account type requiring code changes beyond config entry" (#13) — review-only;
+ *     the synthetic-category tests at the bottom check the parts that can be checked
  *   - "Appending (Owner) suffix separately" (#15) — too many ways to write it
  *   - "Snapshot rows flat instead of grouped" (#17)
  *   - "Sub-row showing raw accountType instead of subType" (#18)
@@ -76,6 +77,11 @@ import { describe, it, expect } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
+import {
+  ACCOUNT_TYPE_CONFIG,
+  DEFAULT_DECUMULATION_ORDER,
+} from "@/lib/config/account-types";
+import { accountCategoryEnum } from "@/lib/config/account-types.types";
 
 // `let`, not `const`: the positive controls at the bottom point every
 // scanner at a temporary tree with planted violations (withRepoRoot).
@@ -117,7 +123,13 @@ const EXEMPT: Record<string, string> = {
   "src/lib/db/seed-defaults.ts": "Seed data initializer",
 };
 
-const CATEGORY_VALUES = ["401k", "403b", "hsa", "ira", "brokerage"];
+// The category rules match every key of ACCOUNT_TYPE_CONFIG, read at scan
+// time: a category added to the config is covered with no edit here.
+function categoryAlternation(): string {
+  return Object.keys(ACCOUNT_TYPE_CONFIG)
+    .map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+}
 
 // Canonical performance-category display strings — these should always be
 // referenced via the PERF_CATEGORY_* constants from display-labels.ts,
@@ -175,7 +187,7 @@ interface Violation {
 function findCategoryEqualityViolations(): Violation[] {
   const violations: Violation[] = [];
   const pattern = new RegExp(
-    `(?:!==|===)\\s*['"](?:${CATEGORY_VALUES.join("|")})['"]`,
+    `(?:!==|===)\\s*['"](?:${categoryAlternation()})['"]`,
     "g",
   );
   for (const file of walkTsFiles(SRC_DIR)) {
@@ -216,7 +228,7 @@ function findHardcodedCategoryArrayViolations(): Violation[] {
   // Match an array literal that contains 3+ category strings (4+ would be
   // an obvious match against ALL categories; 3 still suspicious).
   const pattern = new RegExp(
-    `\\[\\s*(?:['"](${CATEGORY_VALUES.join("|")})['"]\\s*,\\s*){2,}['"](${CATEGORY_VALUES.join("|")})['"]`,
+    `\\[\\s*(?:['"](${categoryAlternation()})['"]\\s*,\\s*){2,}['"](${categoryAlternation()})['"]`,
   );
   for (const file of walkTsFiles(SRC_DIR)) {
     const rel = relPath(file);
@@ -410,7 +422,7 @@ function findHardcodedPerfCategoryViolations(): Violation[] {
 function findHardcodedAccountTypeStateViolations(): Violation[] {
   return findPatternViolations(
     new RegExp(
-      `\\buseState\\s*(?:<[^>]*>)?\\s*\\(\\s*["'](?:${CATEGORY_VALUES.join("|")})["']`,
+      `\\buseState\\s*(?:<[^>]*>)?\\s*\\(\\s*["'](?:${categoryAlternation()})["']`,
     ),
     "no-hardcoded-account-type-state",
   );
@@ -1584,4 +1596,59 @@ describe("RULES.md violations sweep — positive controls", () => {
       ),
     ).toEqual([]);
   });
+});
+
+// ── One config entry adds an account type ──────────────────────────
+//
+// RULES.md § Account Types promises that adding an account type is one
+// ACCOUNT_TYPE_CONFIG entry. These tests add a synthetic category to the
+// config object for the length of one test. The entry is added at run
+// time, so a list derived when its module loads would miss it too: a fix
+// derives at call time (or this test re-evaluates the modules).
+
+const SYNTHETIC_CATEGORY = "synthetic-test-category";
+
+function withSyntheticCategory<T>(fn: () => T): T {
+  const config = ACCOUNT_TYPE_CONFIG as Record<string, unknown>;
+  config[SYNTHETIC_CATEGORY] = { ...ACCOUNT_TYPE_CONFIG.brokerage };
+  try {
+    return fn();
+  } finally {
+    delete config[SYNTHETIC_CATEGORY];
+  }
+}
+
+describe("one config entry adds an account type", () => {
+  it("the category rules here cover a category added to the config", () => {
+    withSyntheticCategory(() => {
+      expect(
+        scanPlanted(findCategoryEqualityViolations, {
+          "src/a.ts": `if (t === "${SYNTHETIC_CATEGORY}") run();\n`,
+        }),
+      ).toEqual(["src/a.ts"]);
+    });
+    expect(Object.keys(ACCOUNT_TYPE_CONFIG)).not.toContain(SYNTHETIC_CATEGORY);
+  });
+
+  // Broken today: AccountCategory and its enum are hand copies (RULES.md
+  // § Known Gaps).
+  it.fails(
+    "the account-category enum includes it (until v0.10.1 Test every promise)",
+    () => {
+      withSyntheticCategory(() => {
+        expect(accountCategoryEnum()).toContain(SYNTHETIC_CATEGORY);
+      });
+    },
+  );
+
+  // Broken today: the default withdrawal order is a hand list, so a new
+  // category is never drawn.
+  it.fails(
+    "the default withdrawal order includes it (until v0.10.1 Test every promise)",
+    () => {
+      withSyntheticCategory(() => {
+        expect(DEFAULT_DECUMULATION_ORDER).toContain(SYNTHETIC_CATEGORY);
+      });
+    },
+  );
 });

@@ -2,9 +2,10 @@
  * Rules for the answer-key suites (`tests/fixtures/answer-key.ts`):
  *
  *   1. Every `it.fails(` under tests/ names the release that fixes it
- *      (`v0.11 …`) in its title, so an expected failure always points at
- *      its TODO item. Titles must be literals; `xfail()` builds its own and
- *      checks its `todo` when it runs.
+ *      (`v0.11 …`; a structure fix may name a v0.10 patch, `v0.10.1 …`) in
+ *      its title, so an expected failure always points at its TODO item.
+ *      Titles must be literals; `xfail()` builds its own and checks its
+ *      `todo` when it runs.
  *   2. `<area>/<id>` titles are unique across the `answer-key-*` files. A
  *      second test of the same case adds a suffix (`ret/P9:engine`).
  *   3. No `answer-key-*` file imports or reads a fixture from `.scratch` or
@@ -69,7 +70,7 @@ function itFailsViolations(src: string): string[] {
     }
     const end = src.indexOf(quote, at + 1);
     const title = src.slice(at + 1, end);
-    if (!/\bv0\.1[1-9](\.\d+)? \S/.test(title))
+    if (!/\bv0\.(1[1-9]|10\.[1-9])(\.\d+)? \S/.test(title))
       out.push(
         `line ${line}: it.fails("${title}") names no fixing release (v0.11 …)`,
       );
@@ -145,6 +146,12 @@ describe("the rules catch planted violations", () => {
         `it.fails("tax/L2 — expected failure until v0.11 Tax \\"Unused standard deduction\\"", () => {});`,
       ),
     ).toEqual([]);
+    expect(
+      itFailsViolations(`it.fails("x until v0.10.1 Test every promise", f);`),
+    ).toEqual([]);
+    expect(
+      itFailsViolations(`it.fails("x until v0.10 Tests", f);`),
+    ).toHaveLength(1);
   });
 
   it("a duplicated case id", () => {
