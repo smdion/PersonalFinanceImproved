@@ -182,12 +182,23 @@ jobs:
         run: |
           echo "::warning::CI failed on main — check ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-  # Demo profiles live in PostgreSQL schemas, so the SQLite suite above never
-  # reaches them. This runs the demo end to end on PostgreSQL with DEMO_ONLY
-  # on, as the public demo runs.
-  postgres-demo:
+  # The suite above runs on SQLite only. This job checks what must also
+  # hold on PostgreSQL (16, the version installs run): migrations from
+  # empty, the demo profiles (PostgreSQL schemas), a fresh install, a
+  # seeded router subset and the backup round trip. One throwaway service
+  # database; every test step drops and rebuilds it, so steps don't depend
+  # on each other's data and a new PostgreSQL step is appended as its own
+  # named step.
+  postgres:
+    name: PostgreSQL
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
+
+    env:
+      # Throwaway service database; not a secret.
+      TEST_DATABASE_URL: postgresql://ledgr:ledgr-ci-placeholder@localhost:5432/ledgr_test
+      # A missing database fails the PostgreSQL tests instead of skipping them.
+      REQUIRE_TEST_DATABASE: "true"
 
     services:
       postgres:
@@ -216,17 +227,21 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # The service database starts empty. db-migrate.ts reads no .env:
+      # the URL comes from the step's environment.
+      - name: Migrations from empty on PostgreSQL
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+          LEDGR_BACKUP_DIR: ${{ runner.temp }}/ledgr-backups
+
       - name: Demo profiles on PostgreSQL (DEMO_ONLY)
         run: pnpm test tests/routers/demo-postgres.test.ts
         env:
-          # Throwaway service database; not a secret.
-          TEST_DATABASE_URL: postgresql://ledgr:ledgr-ci-placeholder@localhost:5432/ledgr_test
           DEMO_ONLY: "true"
-          REQUIRE_TEST_DATABASE: "true"
 
       - name: Fresh install on PostgreSQL
         run: pnpm test tests/routers/fresh-install-postgres.test.ts
-        env:
-          # Throwaway service database; not a secret.
-          TEST_DATABASE_URL: postgresql://ledgr:ledgr-ci-placeholder@localhost:5432/ledgr_test
-          REQUIRE_TEST_DATABASE: "true"
+
+      - name: Seeded routers and backup round trip on PostgreSQL
+        run: pnpm test tests/routers/seeded-postgres.test.ts
