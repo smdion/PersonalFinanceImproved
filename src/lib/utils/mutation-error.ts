@@ -21,6 +21,8 @@ type TrpcClientErrorShape = {
   data?: {
     code?: string;
     zodError?: ZodFlattened | null;
+    /** Written by the server when a service failed (trpc.ts). */
+    userMessage?: string | null;
   } | null;
 };
 
@@ -51,6 +53,9 @@ export function friendlyMutationError(error: unknown): string | null {
 
   // Aborted by the user / by TanStack on unmount — not an error to report.
   if (code === "CLIENT_CLOSED_REQUEST") return null;
+
+  // A service failed: the server says what happened and what changed.
+  if (e.data?.userMessage) return e.data.userMessage;
 
   // Zod input-validation failure — surface the first concrete field issue,
   // never the stringified-JSON `message`.

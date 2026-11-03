@@ -96,4 +96,19 @@ describe("friendlyMutationError", () => {
       "Something went wrong. Please try again.",
     );
   });
+
+  it("shows the server's sentence when a service failed", () => {
+    expect(
+      friendlyMutationError({
+        message: "Sync failed: Actual: /accounts: data.0.offbudget: …",
+        data: {
+          code: "INTERNAL_SERVER_ERROR",
+          userMessage:
+            "Actual sent something Ledgr doesn't understand (data.0.offbudget). Nothing was changed.",
+        },
+      }),
+    ).toBe(
+      "Actual sent something Ledgr doesn't understand (data.0.offbudget). Nothing was changed.",
+    );
+  });
 });

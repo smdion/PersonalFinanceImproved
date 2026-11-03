@@ -42,6 +42,7 @@ import {
 import { calculateMortgage } from "@/lib/calculators/mortgage";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { serviceEnum } from "./_shared";
+import { nothingChanged } from "@/lib/budget-api/errors";
 import { safeDivide, toDecimalColumn } from "@/lib/utils/math";
 
 export const syncCoreRouter = createTRPCRouter({
@@ -299,6 +300,8 @@ export const syncCoreRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Sync failed: ${msg.slice(0, 200)}`,
+          // The network phase writes nothing; its transaction rolls back.
+          cause: nothingChanged(e),
         });
       }
     }),

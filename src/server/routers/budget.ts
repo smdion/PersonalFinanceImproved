@@ -61,6 +61,7 @@ import {
   refreshCategoryCache,
   BudgetApiError,
 } from "@/lib/budget-api";
+import { WriteStopped, nothingChanged } from "@/lib/budget-api/errors";
 import type {
   BudgetCategoryGroup,
   BudgetMonthDetail,
@@ -2033,7 +2034,7 @@ export const budgetRouter = createTRPCRouter({
             skippedUnsupported++;
             continue;
           }
-          throw err;
+          throw nothingChanged(err);
         }
       }
 
@@ -2075,7 +2076,11 @@ export const budgetRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Pushed ${pushed} of ${prepared.length} budget targets, then failed: ${writeError instanceof Error ? writeError.message : String(writeError)}`,
-          cause: writeError,
+          cause: new WriteStopped(
+            `Pushed ${pushed} of ${prepared.length} budget targets`,
+            `Pushed ${pushed} of ${prepared.length} budget targets before it stopped.`,
+            writeError,
+          ),
         });
 
       return { pushed, skippedUnsupported, service: active };

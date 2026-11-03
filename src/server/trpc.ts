@@ -6,6 +6,7 @@ import {
 } from "@/lib/db/demo-schema-marker";
 import { devBypass } from "./auth-mode";
 import { ZodError, z } from "zod/v4";
+import { externalFailure, userMessageFor } from "@/lib/budget-api/errors";
 import type { Session } from "next-auth";
 import { cookies, headers } from "next/headers";
 import { auth } from "./auth";
@@ -120,11 +121,11 @@ const t = initTRPC
   .context<Context>()
   .meta<ProcedureMeta>()
   .create({
-    // Surface Zod input-validation failures as a structured `data.zodError`
-    // (`{ formErrors, fieldErrors }`) so the client's global error toast
-    // (friendlyMutationError) can show a concrete field message instead of
-    // the raw ZodError JSON in `message`.
+    // For the client's global error toast (friendlyMutationError): Zod
+    // input failures as `data.zodError`; a failed service as
+    // `data.externalError` and the sentence to show, `data.userMessage`.
     errorFormatter({ shape, error }) {
+      const { external } = externalFailure(error);
       return {
         ...shape,
         data: {
@@ -133,6 +134,13 @@ const t = initTRPC
             error.code === "BAD_REQUEST" && error.cause instanceof ZodError
               ? z.flattenError(error.cause)
               : null,
+          // A service behind the failure, and what the user is told.
+          externalError: external && {
+            service: external.service ?? null,
+            code: external.code,
+            field: external.field ?? null,
+          },
+          userMessage: userMessageFor(error),
         },
       };
     },

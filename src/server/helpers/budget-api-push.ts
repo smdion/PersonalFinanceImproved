@@ -24,6 +24,7 @@ import type { AccountMapping } from "@/lib/db/schema";
 import type { BudgetAPIClient } from "@/lib/budget-api";
 import type { NewBudgetTransaction } from "@/lib/budget-api/types";
 import { BudgetApiError } from "@/lib/budget-api";
+import { WriteStopped, nothingChanged } from "@/lib/budget-api/errors";
 import { formatCurrency } from "@/lib/utils/format";
 import type { Db } from "./transforms";
 import { log } from "@/lib/logger";
@@ -180,6 +181,7 @@ export async function pushSnapshotToBudgetApi(input: {
   let groupsCleaned = 0;
   const cleanupFailures: Array<{ transactionId: string; error: string }> = [];
   const cleanupDeleted: string[] = [];
+  let cleanupCause: unknown;
 
   // Every account is listed before anything is deleted: a list that fails
   // on the third group must not leave the first two cleaned out.
@@ -198,7 +200,7 @@ export async function pushSnapshotToBudgetApi(input: {
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: `Failed to list transactions on ${group.remoteAccountId}: ${errorMessage(cause)}`,
-        cause,
+        cause: nothingChanged(cause),
       });
     }
 
@@ -227,6 +229,7 @@ export async function pushSnapshotToBudgetApi(input: {
           transactionId: taggedTx.id,
           error: errorMessage(cause),
         });
+        cleanupCause ??= cause;
       }
     }
     groupsCleaned++;
@@ -247,6 +250,18 @@ export async function pushSnapshotToBudgetApi(input: {
           .map((f) => `${f.transactionId} (${f.error})`)
           .join("; ") +
         ". Reconcile the failed transactions manually in your budget app before retrying.",
+      cause: new WriteStopped(
+        "Resync cleanup partially failed",
+        [
+          cleanupDeleted.length > 0 &&
+            `Deleted ${adjustments(cleanupDeleted.length, "old")}.`,
+          `${adjustments(cleanupFailures.length, "old")} couldn't be deleted.`,
+          "Sync the snapshot again to fix it.",
+        ]
+          .filter(Boolean)
+          .join(" "),
+        cleanupCause,
+      ),
     });
   }
 
@@ -350,7 +365,16 @@ export async function pushSnapshotToBudgetApi(input: {
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
       message: baseMessage + rollbackMessage + unverified,
-      cause,
+      cause: new WriteStopped(
+        baseMessage,
+        stoppedAfter(
+          mode,
+          cleanupDeleted.length,
+          rollbackFailures.length,
+          unverified !== "",
+        ),
+        cause,
+      ),
     });
   }
 
@@ -370,6 +394,35 @@ function rejectedBeforeRunning(cause: unknown): boolean {
       cause.code === "rate-limit" ||
       cause.code === "client")
   );
+}
+
+/** "1 old adjustment", "2 new adjustments". */
+function adjustments(count: number, kind: "old" | "new"): string {
+  return `${count} ${kind} adjustment${count === 1 ? "" : "s"}`;
+}
+
+/** What a snapshot push that stopped had changed, in counts. A resync
+ *  again removes everything tagged with the snapshot, so it fixes any
+ *  leftover; a create skips tagged accounts, so leftovers need a hand. */
+function stoppedAfter(
+  mode: PushSnapshotMode,
+  deleted: number,
+  notRolledBack: number,
+  maybePosted: boolean,
+): string {
+  if (deleted === 0 && notRolledBack === 0 && !maybePosted)
+    return "Nothing was changed.";
+  return [
+    deleted > 0 && `Deleted ${adjustments(deleted, "old")} for this snapshot.`,
+    notRolledBack > 0 &&
+      `${adjustments(notRolledBack, "new")} couldn't be removed.`,
+    maybePosted && "The last adjustment may have been posted.",
+    mode === "resync"
+      ? "Sync the snapshot again to fix it."
+      : "Check your budget app and remove any left over.",
+  ]
+    .filter(Boolean)
+    .join(" ");
 }
 
 function asOfYear(date: Date): number {

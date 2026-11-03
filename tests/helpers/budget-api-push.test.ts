@@ -8,7 +8,7 @@ import type { AccountMapping } from "@/lib/db/schema";
 import type { BudgetAPIClient } from "@/lib/budget-api/interface";
 import type { BudgetTransaction } from "@/lib/budget-api/types";
 import type { Db } from "@/server/helpers/transforms";
-import { BudgetApiError } from "@/lib/budget-api/errors";
+import { BudgetApiError, userMessageFor } from "@/lib/budget-api/errors";
 
 /** Fake db exposing only the select().from().where() chain the helper
  *  uses to load portfolioAccounts for a snapshot. */
@@ -474,6 +474,72 @@ describe("pushSnapshotToBudgetApi — a create refused before it ran", () => {
       }),
     ).rejects.toThrow(/unauthorized Rolled back 0 created transactions\.$/);
     expect(client.findCreatedTransaction).not.toHaveBeenCalled();
+  });
+});
+
+describe("pushSnapshotToBudgetApi — what a stopped push tells the user", () => {
+  const twoGroups = [
+    { performanceAccountId: 1, amount: "1000.00" },
+    { performanceAccountId: 2, amount: "500.00" },
+  ];
+  const mappings = [
+    makeMapping({ remoteAccountId: "remote-a", performanceAccountId: 1 }),
+    makeMapping({ remoteAccountId: "remote-b", performanceAccountId: 2 }),
+  ];
+  const push = (client: BudgetAPIClient, mode: "create" | "resync") =>
+    pushSnapshotToBudgetApi({
+      db: makeFakeDb(twoGroups),
+      snapshotId: 21,
+      snapshotDate: "2026-01-01",
+      mappings,
+      client,
+      mode,
+      asOfDate: new Date("2026-01-01"),
+    }).then(
+      () => null,
+      (e: unknown) => e,
+    );
+
+  it("a create rolled back in full changed nothing", async () => {
+    const client = makeFakeClient({
+      createTransaction: vi
+        .fn()
+        .mockResolvedValueOnce("created-1")
+        .mockRejectedValueOnce(new BudgetApiError("busy", "rate-limit", 429)),
+    });
+    expect(userMessageFor(await push(client, "create"))).toMatch(
+      /Nothing was changed\.$/,
+    );
+  });
+
+  it("a create that left one behind says so, in the singular", async () => {
+    const client = makeFakeClient({
+      createTransaction: vi
+        .fn()
+        .mockResolvedValueOnce("created-1")
+        .mockRejectedValueOnce(new BudgetApiError("busy", "rate-limit", 429)),
+      deleteTransaction: vi.fn().mockRejectedValue(new Error("down")),
+    });
+    expect(userMessageFor(await push(client, "create"))).toMatch(
+      /1 new adjustment couldn't be removed\. Check your budget app and remove any left over\.$/,
+    );
+  });
+
+  it("a resync that had deleted the old adjustments says so", async () => {
+    const client = makeFakeClient({
+      getAccountTransactions: vi
+        .fn()
+        .mockResolvedValue([
+          makeTransaction({ id: "old", memo: "Ledgr snapshot:21 - x" }),
+        ]),
+      createTransaction: vi
+        .fn()
+        .mockRejectedValue(new BudgetApiError("busy", "rate-limit", 429)),
+    });
+    const message = userMessageFor(await push(client, "resync"));
+    expect(message).toContain("Deleted 2 old adjustments for this snapshot.");
+    expect(message).toMatch(/Sync the snapshot again to fix it\.$/);
+    expect(message).not.toContain("Nothing was changed");
   });
 });
 

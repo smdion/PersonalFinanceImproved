@@ -85,6 +85,7 @@ import {
   BudgetApiError,
   isTransientError,
 } from "@/lib/budget-api";
+import { WriteStopped, nothingChanged } from "@/lib/budget-api/errors";
 import type {
   PreparedGoalWrite,
   BudgetCategoryGroup,
@@ -2013,7 +2014,7 @@ export const savingsRouter = createTRPCRouter({
           ) {
             skippedUnsupported++;
           } else {
-            throw err;
+            throw nothingChanged(err);
           }
         }
       }
@@ -2058,7 +2059,11 @@ export const savingsRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Pushed ${pushed} of ${prepared.length} savings targets, then failed: ${stopError instanceof Error ? stopError.message : String(stopError)}`,
-          cause: stopError,
+          cause: new WriteStopped(
+            `Pushed ${pushed} of ${prepared.length} savings targets`,
+            `Pushed ${pushed} of ${prepared.length} savings targets before it stopped.`,
+            stopError,
+          ),
         });
 
       return {
