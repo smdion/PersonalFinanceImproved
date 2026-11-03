@@ -223,9 +223,10 @@ describe("Tax accuracy — IRS published tables", () => {
     });
   });
 
-  describe("IRS limit sanity (from DB)", () => {
-    // These values were verified against the live DB
-    it("SS wage base 2026 = $176,100", () => {
+  describe("IRS limit sanity (the 2025 fixture above)", () => {
+    // MFJ_2025_BRACKETS's own figures, not the database. $176,100 is the
+    // 2025 wage base (Pub 15 (2025)); 2026's is $184,500 (Pub 15 (2026)).
+    it("SS wage base 2025 = $176,100", () => {
       expect(MFJ_2025_BRACKETS.socialSecurityWageBase).toBe(176100);
     });
 

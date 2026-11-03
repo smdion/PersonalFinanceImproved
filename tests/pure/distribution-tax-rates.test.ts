@@ -1,6 +1,17 @@
-/** Distribution tax rates and deductions for the engine. Invented figures only. */
+/**
+ * Distribution tax rates and deductions for the engine. The first block
+ * uses invented figures; the answer-key block (tax/DTR-*) runs the shipped
+ * 2026 limits for each filing status, so a status reading another's keys
+ * fails (survivors m32, m36, m45 in the November tax verdicts).
+ */
 import { describe, it, expect } from "vitest";
 import { buildDistributionTaxRates } from "@/lib/pure/distribution-tax-rates";
+import type { FilingStatusType } from "@/lib/calculators/types";
+import {
+  shippedTaxTables,
+  taxDataLimitMap,
+  taxDataWithholding,
+} from "../helpers/tax-data";
 
 const settings = {
   distributionTaxRateTraditional: "0.2",
@@ -73,5 +84,57 @@ describe("buildDistributionTaxRates", () => {
     expect(() => buildDistributionTaxRates({ ...base, limitsMap: {} })).toThrow(
       /standard_deduction_mfj/,
     );
+  });
+});
+
+describe("answer key: buildDistributionTaxRates per status, shipped 2026 limits", () => {
+  // Every 2026 limit as shipped (`tax-data/us-federal/2026.json`), keyed
+  // as the payload builder's `limitsMap`.
+  const limits2026 = Object.fromEntries(
+    [...taxDataLimitMap()]
+      .filter(([k]) => k.startsWith("2026:"))
+      .map(([k, v]) => [k.slice("2026:".length), v]),
+  );
+  const tables = shippedTaxTables(2026);
+  const run = (filingStatus: FilingStatusType) =>
+    buildDistributionTaxRates({
+      ...base,
+      filingStatus,
+      limitsMap: limits2026,
+      bracketData: taxDataWithholding().find(
+        (t) =>
+          t.taxYear === 2026 &&
+          t.filingStatus === filingStatus &&
+          !t.w4Checkbox,
+      )!.brackets,
+      ltcgBracketData: tables.ltcgBrackets,
+      irmaaBracketData: tables.irmaaBrackets,
+      fplByHousehold: tables.fplByHousehold,
+    });
+
+  // Standard deduction: RP25 § 4.14(1) (16,100 / 32,200 / 24,150). Age
+  // add-on per person 65+: RP25 § 4.14(3), 2,050 unmarried (Single, HOH),
+  // 1,650 married (IRC 63(f)). Senior-deduction phase-out start: IRC
+  // 151(d)(5)(C)(iii)(I), 150,000 on a joint return, 75,000 otherwise
+  // (spec § 4.2, § 4.4).
+  it("tax/DTR-S [TAX-25] Single: std 16,100, add-on 2,050, senior start 75,000", () => {
+    const r = run("Single");
+    expect(r.standardDeduction).toBe(16_100);
+    expect(r.additionalStdDeduction65PerSenior).toBe(2_050);
+    expect(r.obbbaSeniorPhaseoutStart).toBe(75_000);
+  });
+
+  it("tax/DTR-MFJ [TAX-25] MFJ: std 32,200, add-on 1,650, senior start 150,000", () => {
+    const r = run("MFJ");
+    expect(r.standardDeduction).toBe(32_200);
+    expect(r.additionalStdDeduction65PerSenior).toBe(1_650);
+    expect(r.obbbaSeniorPhaseoutStart).toBe(150_000);
+  });
+
+  it("tax/DTR-HOH [TAX-25] HOH: std 24,150, add-on 2,050, senior start 75,000", () => {
+    const r = run("HOH");
+    expect(r.standardDeduction).toBe(24_150);
+    expect(r.additionalStdDeduction65PerSenior).toBe(2_050);
+    expect(r.obbbaSeniorPhaseoutStart).toBe(75_000);
   });
 });

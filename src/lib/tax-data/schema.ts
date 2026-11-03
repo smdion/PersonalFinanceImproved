@@ -24,7 +24,7 @@ const KIND_TEXT = {
 const exception = {
   type: "object",
   description:
-    "Outside the year-to-year bounds on purpose — say why and cite it.",
+    "Outside the year-to-year bounds, or a table repeating the prior year's, on purpose — say why and cite it.",
   required: ["reason", "source"],
   properties: {
     reason: { type: "string", minLength: 1 },

@@ -1,0 +1,46 @@
+{
+  "asOfDate": "2026-01-01",
+  "taxYearBase": 2026,
+  "inflation": "0.03",
+  "limitGrowth": "0.02",
+  "taxMultiplier": 1,
+  "spendingStrategy": "fixed",
+  "withdrawalRouting": "waterfall",
+  "rothConversions": "off",
+  "qcdAnnual": 0,
+  "lumpSums": [],
+  "id": "H6",
+  "name": "Early retiree with only a Traditional IRA",
+  "purpose": "Early-withdrawal penalty priced in the gross-up, 59 1/2 reached exactly on January 1, RMD above the need for a single person, reinvestment. One account, so every step can be checked by hand.",
+  "filingStatus": "Single",
+  "people": [
+    {
+      "id": "A",
+      "primary": true,
+      "birthDate": "1977-07-01",
+      "ssAnnualToday": 0,
+      "ssStartAge": 67,
+      "jobs": []
+    }
+  ],
+  "accounts": [
+    {
+      "id": "A-ira-trad",
+      "owner": "A",
+      "category": "ira",
+      "tax": "traditional",
+      "parent": "Retirement",
+      "balance": 2000000
+    }
+  ],
+  "contributions": [],
+  "returnRates": [
+    {
+      "fromAge": 0,
+      "rate": "0.06"
+    }
+  ],
+  "annualSpendingToday": 40000,
+  "waterfall": ["A-ira-trad"],
+  "endYear": 2054
+}

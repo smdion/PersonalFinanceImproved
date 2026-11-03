@@ -836,6 +836,17 @@ function findRedeclaredConfigExportViolations(): Violation[] {
 // context-dependent for a reliable regex (an R## could be a real
 // identifier; a date could be a legitimate incident narrative per RULES.md's
 // own exception) and are left to code review, not a lint gate.
+// An answer-key case id written as `<area>/<id>` (`ret/R12`,
+// `household/C1`) names an answer-key case: every answer-key test title
+// starts with its id, and a file's header lists its closed cases by id
+// (tests/fixtures/answer-key.ts). That makes it a code reference, not
+// provenance (RULES.md "Comments explain the code, not its
+// history", exceptions), so both citation rules read a comment with those
+// ids removed. A bare `R12` or `(C1)` is still caught.
+const ANSWER_KEY_ID_REF =
+  /\b(?:tax|paycheck|limits|ret|engine|strategies|sim|household)\/[A-Za-z0-9][A-Za-z0-9.:†-]*/g;
+const withoutAnswerKeyIds = (comment: string) =>
+  comment.replace(ANSWER_KEY_ID_REF, "");
 const REVIEW_CITATION_PATTERN =
   /\((?:H|M|L|T|C)[0-9]{1,3}\)|review-findings\.md|expert-review|CodeRabbit/;
 function findReviewCitationViolations(): Violation[] {
@@ -852,7 +863,7 @@ function findReviewCitationViolations(): Violation[] {
         // to contain e.g. "(C2)" is not this rule's concern.
         const commentStart = Math.max(line.indexOf("//"), line.indexOf("*"));
         if (commentStart === -1) continue;
-        const commentText = line.slice(commentStart);
+        const commentText = withoutAnswerKeyIds(line.slice(commentStart));
         const m = REVIEW_CITATION_PATTERN.exec(commentText);
         if (!m) continue;
         violations.push({
@@ -941,7 +952,7 @@ function findBroadCitationViolations(): Violation[] {
         // Only inside a comment — same scoping as rule 25.
         const commentStart = Math.max(line.indexOf("//"), line.indexOf("*"));
         if (commentStart === -1) continue;
-        const commentText = line.slice(commentStart);
+        const commentText = withoutAnswerKeyIds(line.slice(commentStart));
         const matched =
           BROAD_CITATION_ATTRIBUTION_PATTERN.test(commentText) ||
           (includeDatePattern && BROAD_CITATION_DATE_PATTERN.test(commentText));
@@ -1314,6 +1325,28 @@ describe("RULES.md violations sweep", () => {
           formatViolations("Violations", violations),
       );
     }
+  });
+
+  it("an answer-key <area>/<id> in a comment is a code reference; a bare tag is not", () => {
+    const read = (c: string) => withoutAnswerKeyIds(c);
+    expect(REVIEW_CITATION_PATTERN.test(read("// the household/C1 loan"))).toBe(
+      false,
+    );
+    expect(
+      BROAD_CITATION_ATTRIBUTION_PATTERN.test(
+        read("// closed: ret/R12, ret/R16"),
+      ),
+    ).toBe(false);
+    expect(REVIEW_CITATION_PATTERN.test(read("// the C1 loan (C1)"))).toBe(
+      true,
+    );
+    expect(
+      BROAD_CITATION_ATTRIBUTION_PATTERN.test(read("// closed: R12")),
+    ).toBe(true);
+    // A path isn't an id: `lib/pure` is left alone, and `review/R12` too.
+    expect(
+      BROAD_CITATION_ATTRIBUTION_PATTERN.test(read("// see review/R12")),
+    ).toBe(true);
   });
 
   it("no review-history citation in comments (finding-ID tags, review-findings.md, expert-review, CodeRabbit)", () => {

@@ -398,12 +398,6 @@ const RMD_FACTORS: Record<number, number> = {
 };
 
 // ---------------------------------------------------------------------------
-// IRMAA thresholds (2025 approximate — for structural invariant checks only)
-// ---------------------------------------------------------------------------
-
-const _IRMAA_CLIFFS_MFJ = [206000, 258000, 322000, 386000, 750000];
-
-// ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
 
@@ -1095,6 +1089,12 @@ describe("engine invariants", () => {
       );
     });
 
+    // Bug pin (verdict N7): `year.age` is the primary's, so this holds for
+    // one person but pins N7 for a couple whose primary is 65 or older and
+    // whose spouse is under 65 (who can keep a credit, IRC 36B(b)(3)(C)).
+    // Changes on purpose with v0.11 Retirement rules "59½ tested by year"
+    // (N7: one spouse on Medicare skips ACA for the other): key it on
+    // everyone 65+ (answer-key ret/A32, `tests/calculators/answer-key-aca.test.ts`).
     it("13 — ACA headroom is zero when age >= 65", () => {
       fc.assert(
         fc.property(arbitraryRetiredInput(), (input) => {

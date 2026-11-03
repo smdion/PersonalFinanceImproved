@@ -111,6 +111,11 @@ describe("spending_decline", () => {
     expect(result.updatedState.decumulationYearCount).toBeUndefined();
   });
 
+  // Bug pin (strategies verdict N2): this asserts the closed form from the
+  // first amount, which ignores typed budgets and expense endings. The
+  // answer key's strategies/N2 (61,133.30, answer-key-strategies.test.ts)
+  // replaces it in v0.11 Strategies "RMD Spending starts at a hard-coded
+  // 72" (Spending Decline: carry last year's amount). Values unchanged.
   it("5-year real decline matches formula (CPI-adjusted)", () => {
     const initial = 50000;
     const rate = 0.02;
@@ -130,6 +135,11 @@ describe("spending_decline", () => {
     expect(result.action).toBe("decline");
   });
 
+  // Bug pin (strategies verdict N2): this asserts the closed form from the
+  // first amount, which ignores typed budgets and expense endings. The
+  // answer key's strategies/N2 (61,133.30, answer-key-strategies.test.ts)
+  // replaces it in v0.11 Strategies "RMD Spending starts at a hard-coded
+  // 72" (Spending Decline: carry last year's amount). Values unchanged.
   it("does not manage year count (orchestrator-managed)", () => {
     const input = makeInput({
       crossYearState: stateWith({

@@ -1,0 +1,70 @@
+{
+  "asOfDate": "2026-01-01",
+  "taxYearBase": 2026,
+  "inflation": "0.03",
+  "limitGrowth": "0.02",
+  "taxMultiplier": 1,
+  "spendingStrategy": "fixed",
+  "withdrawalRouting": "waterfall",
+  "rothConversions": "off",
+  "qcdAnnual": 0,
+  "lumpSums": [],
+  "id": "H3",
+  "name": "Retired couple, Social Security and RMDs, no job ever",
+  "purpose": "Decumulation from year 0, age add-ons and senior deduction through 2028, first RMDs for each spouse (73 in 2027, 75 in 2035), RMD above the need, reinvestment into a projection-only brokerage.",
+  "filingStatus": "MFJ",
+  "people": [
+    {
+      "id": "A",
+      "primary": true,
+      "birthDate": "1954-01-15",
+      "ssAnnualToday": 34000,
+      "ssStartAge": 67,
+      "jobs": []
+    },
+    {
+      "id": "B",
+      "primary": false,
+      "birthDate": "1960-01-15",
+      "ssAnnualToday": 22000,
+      "ssStartAge": 62,
+      "jobs": []
+    }
+  ],
+  "accounts": [
+    {
+      "id": "A-401k-trad",
+      "owner": "A",
+      "category": "401k",
+      "tax": "traditional",
+      "parent": "Retirement",
+      "balance": 2400000
+    },
+    {
+      "id": "B-ira-trad",
+      "owner": "B",
+      "category": "ira",
+      "tax": "traditional",
+      "parent": "Retirement",
+      "balance": 450000
+    },
+    {
+      "id": "A-ira-roth",
+      "owner": "A",
+      "category": "ira",
+      "tax": "roth",
+      "parent": "Retirement",
+      "balance": 200000
+    }
+  ],
+  "contributions": [],
+  "returnRates": [
+    {
+      "fromAge": 0,
+      "rate": "0.05"
+    }
+  ],
+  "annualSpendingToday": 110000,
+  "waterfall": ["A-401k-trad", "B-ira-trad", "A-ira-roth"],
+  "endYear": 2037
+}

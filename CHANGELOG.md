@@ -8,6 +8,22 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.9
 
+## [0.9.10] - 2026-11-03
+
+The answer key: about 650 test cases worked by hand from the IRS, SSA, CMS and HHS publications, each with its working and source beside it, and `docs/CALCULATIONS.md`, the register of every calculation Ledgr does. No figure in the app changed.
+
+### Added
+
+- **The answer key** (`tests/**/answer-key-*.test.ts`), by area: tax 75 passing / 24 expected failures; paycheck 26 / 19; contribution limits 84 / 13; retirement rules 112 / 20; engine 7 / 20; spending strategies 45 / 14; Simulation 9 / 6; household math 62 / 10. A case Ledgr gets right today guards against regressions. A case it gets wrong is an expected failure holding the correct figure, naming the v0.11 item that fixes it, with today's figure pinned beside it. About 100 cases Ledgr can't take yet (an input it has no field for, or a function that doesn't exist) are listed as to-dos.
+- **Published-table checks:** every shipped tax table cell for 2025 and 2026 (brackets, standard deductions and the 65+ add-on, capital-gains thresholds, Pub 15-T withholding), every IRMAA cell, the poverty guidelines for households of 1 to 8, and all 49 cells of the RMD Uniform Lifetime table are compared with figures typed in separately from the publications (`tests/fixtures/irs-published/`). CI fails for a shipped tax year without them.
+- **`docs/CALCULATIONS.md`:** 271 calculations, each with its function, the law or source it follows, its tests, which answer-key cases cover it (generated from the test titles, kept current by `pnpm docs:update`) and its known gaps. Every row that follows tax law records the tax year it was last checked against the law.
+
+### Changed
+
+- **Tax-data files are checked more strictly** (`pnpm tax-data:check`, CI, and community tax-data updates). A table that's identical to the prior year's (withholding, capital gains, IRMAA thresholds or surcharges, poverty guidelines) is rejected as a copy not yet updated. A section's `exception` now counts only when it's the year's own, or when it carries through a repeat or jump that lasted several years; one copied along with a whole file doesn't. The shipped files pass unchanged; a tax year that really repeats a table needs an exception with its reason and source.
+- **A new tax year needs a law check, not just new figures.** CI fails a new year's tax-data file until every tax-law row in `docs/CALCULATIONS.md` is checked for that year and the year has hand-worked whole-return cases for each filing status. `pnpm tax-data:new-year` also writes the blank published-figures file to fill in. Steps in `tax-data/README.md`.
+- Mislabelled and weak tests fixed (a "2026 wage base" test that checked 2025's, a "no warning" test that asserted a warning, withholding checked only as "over $600", a cost-ranking test on a bracket table one row off). No app behaviour changed.
+
 ## [0.9.9] - 2026-11-03
 
 Fresh installs and integrations: the sample Docker Compose install starts, signs in and saves a Plan with no extra setup, the Simulation runs on a new install, and Actual budgets get their category and payee names.

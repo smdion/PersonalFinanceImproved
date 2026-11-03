@@ -139,32 +139,35 @@ describe("enforceRmd", () => {
     // priorYearEndTradBalance is the blended (Retirement + Portfolio)
     // total upstream of this module -- nonRetirement must not touch the
     // requirement, only the shortfall's distribution capacity below it.
+    // Answer-key case ret/R11: born 1951,
+    // 76 in 2027, 401(k) 600,000 at 12/31/2026, of which 500,000 is held
+    // outside the plan (Portfolio-parented) here.
     const acctBal = makeAccountBalances({ preTax: 0, afterTax: 0 });
     acctBal["401k"] = {
       structure: "roth_traditional",
-      traditional: 500000,
+      traditional: 600000,
       roth: 0,
     };
     const nonRetirement = {
       total: zeroByCat(),
-      trad: { ...zeroByCat(), "401k": 400000 },
+      trad: { ...zeroByCat(), "401k": 500000 },
       roth: zeroByCat(),
-      grandTotal: 400000,
+      grandTotal: 500000,
     };
     const factorInput = baseInput({
-      age: 75,
+      age: 76,
       rmdStartAge: 73,
-      priorYearEndTradBalance: 500000, // blended total
+      priorYearEndTradBalance: 600000, // blended total
       acctBal,
       nonRetirement,
     });
     const result = enforceRmd(factorInput);
-    // rmdAmount is derived from the full 500000, not the 100000
-    // Retirement-only remainder -- assert it's the larger, requirement-
-    // correct figure (real IRS factor math, not re-derived here, just
-    // confirmed it didn't shrink to the Retirement-only balance).
-    expect(result.rmdAmount).toBeGreaterThan(15000); // any RMD factor on 500k clears this
-    expect(result.rmdAmount).not.toBeCloseTo(100000 / 24.6, 1); // not silently recomputed off 100k
+    // The requirement is on the full 600,000: Pub 590-B (2025) Table III
+    // at 76 is 23.7, so 600,000 / 23.7 = 25,316.455... -> 25,316.46
+    // (Treas. Reg. 1.401(a)(9)-5(a)(1), (c)(1)).
+    expect(result.rmdAmount).toBeCloseTo(25316.46, 2);
+    // Not recomputed off the 100,000 Retirement-only remainder (4,219.41).
+    expect(result.rmdAmount).not.toBeCloseTo(100000 / 23.7, 1);
   });
 
   it("no drift when nonRetirement is undefined or all-zero (byte-identical to pre-R49 behavior)", () => {

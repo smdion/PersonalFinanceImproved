@@ -1,0 +1,12 @@
+household,year,account,owner,tax,parent,start,contributions,match,lump_sum,gross_distribution,reinvested,growth,end,basis_end
+H7,2026,A-ira-trad,A,traditional,Retirement,250000.00,0.00,0.00,0.00,32064.27,0.00,10896.79,228832.52,
+H7,2027,A-ira-trad,A,traditional,Retirement,228832.52,0.00,0.00,0.00,33166.86,0.00,9783.28,205448.94,
+H7,2028,A-ira-trad,A,traditional,Retirement,205448.94,0.00,0.00,0.00,34302.54,0.00,8557.32,179703.72,
+H7,2029,A-ira-trad,A,traditional,Retirement,179703.72,0.00,0.00,0.00,36397.73,0.00,7165.30,150471.29,
+H7,2030,A-ira-trad,A,traditional,Retirement,150471.29,0.00,0.00,0.00,37602.56,0.00,5643.44,118512.17,
+H7,2031,A-ira-trad,A,traditional,Retirement,118512.17,0.00,0.00,0.00,38843.55,0.00,3983.43,83652.05,
+H7,2032,A-ira-trad,A,traditional,Retirement,83652.05,0.00,0.00,0.00,40121.75,0.00,2176.52,45706.82,
+H7,2033,A-ira-trad,A,traditional,Retirement,45706.82,0.00,0.00,0.00,41388.04,0.00,215.94,4534.72,
+H7,2034,A-ira-trad,A,traditional,Retirement,4534.72,0.00,0.00,0.00,4534.72,0.00,0.00,0.00,
+H7,2035,A-ira-trad,A,traditional,Retirement,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,
+H7,2036,A-ira-trad,A,traditional,Retirement,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,

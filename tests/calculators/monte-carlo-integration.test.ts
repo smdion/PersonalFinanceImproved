@@ -822,6 +822,11 @@ describe("monte carlo inflation — trials vary around the plan's own rates (v0.
     expect(r.today.percentileBands[0]!.assumptions).toEqual(first!.assumptions);
   });
 
+  // Pins today's convention (answer key sim/K11, SIM-13): a year-end
+  // balance divided by its row's start-of-year index, one step early.
+  // Changes with v0.11 Simulation "Decided: deflate each balance by its own
+  // date" (decision F3, with D2). Runs at zero spread, so it can't tell
+  // per-trial deflation from the plan-rate method (K9).
   it("today's dollars are each trial deflated by the inflation it ran with", () => {
     const input = makeInput({ inflationRate: 0.03 });
     const r = calculateMonteCarlo(mc(input, { stdDev: 0 }));

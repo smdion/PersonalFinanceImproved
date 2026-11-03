@@ -27,7 +27,15 @@ const seedLimits = parseSeedLimits();
 
 const IRS_LIMITS: Record<
   number,
-  Record<string, { value: number; source: string }>
+  Record<
+    string,
+    {
+      value: number;
+      source: string;
+      /** Answer-key case id (`<area>/<id> [ROW]`), first in the title. */
+      id?: string;
+    }
+  >
 > = {
   2025: {
     "401k_employee_limit": {
@@ -41,6 +49,13 @@ const IRS_LIMITS: Record<
     "401k_super_catchup_limit": {
       value: 11250,
       source: "SECURE 2.0 Act §109, ages 60-63",
+    },
+    // IRC §415(c)(1)(A) annual additions limit, $70,000 for 2025
+    // (Notice 2024-80 p.1). Read only for mega backdoor room today.
+    "401k_total_additions_limit": {
+      id: "limits/415c-2025 [LIM-02]",
+      value: 70000,
+      source: "IRS Notice 2024-80 — IRC §415(c)(1)(A)",
     },
     ira_limit: {
       value: 7000,
@@ -134,6 +149,13 @@ const IRS_LIMITS: Record<
     "401k_super_catchup_limit": {
       value: 11250,
       source: "SECURE 2.0 Act §109, ages 60-63",
+    },
+    // IRC §415(c)(1)(A) annual additions limit, $72,000 for 2026
+    // (Notice 2025-67 p.1).
+    "401k_total_additions_limit": {
+      id: "limits/415c-2026 [LIM-02]",
+      value: 72000,
+      source: "IRS Notice 2025-67 — IRC §415(c)(1)(A)",
     },
     ira_limit: {
       value: 7500,
@@ -258,8 +280,9 @@ describe("IRS Contribution Limits", () => {
 
   for (const [year, limits] of Object.entries(IRS_LIMITS)) {
     describe(`Tax Year ${year}`, () => {
-      for (const [limitType, { value, source }] of Object.entries(limits)) {
-        it(`${limitType} = $${value.toLocaleString()} (${source})`, () => {
+      for (const [limitType, { value, source, id }] of Object.entries(limits)) {
+        const title = `${limitType} = $${value.toLocaleString()} (${source})`;
+        it(id ? `${id} ${title}` : title, () => {
           const seedValue = seedLimits.get(`${year}:${limitType}`);
           expect(
             seedValue,

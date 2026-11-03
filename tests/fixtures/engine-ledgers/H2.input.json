@@ -1,0 +1,116 @@
+{
+  "asOfDate": "2026-01-01",
+  "taxYearBase": 2026,
+  "inflation": "0.03",
+  "limitGrowth": "0.02",
+  "taxMultiplier": 1,
+  "spendingStrategy": "fixed",
+  "withdrawalRouting": "waterfall",
+  "rothConversions": "off",
+  "qcdAnnual": 0,
+  "lumpSums": [],
+  "id": "H2",
+  "name": "Two earners, one stops four-plus years early",
+  "purpose": "Per-owner contributions and growth, gap years funded by take-home plus draws, phase change when the last job ends, RMDs for each owner in different years.",
+  "filingStatus": "MFJ",
+  "people": [
+    {
+      "id": "A",
+      "primary": true,
+      "birthDate": "1964-01-15",
+      "ssAnnualToday": 32000,
+      "ssStartAge": 67,
+      "jobs": [
+        {
+          "employer": "J1",
+          "start": "2005-01-01",
+          "end": "2027-12-31",
+          "salary": 110000,
+          "salaryGrowth": "0.03"
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "primary": false,
+      "birthDate": "1968-01-15",
+      "ssAnnualToday": 28000,
+      "ssStartAge": 67,
+      "jobs": [
+        {
+          "employer": "J2",
+          "start": "2008-01-01",
+          "end": "2032-12-31",
+          "salary": 85000,
+          "salaryGrowth": "0.03"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "id": "A-403b-trad",
+      "owner": "A",
+      "category": "403b",
+      "tax": "traditional",
+      "parent": "Retirement",
+      "balance": 1500000
+    },
+    {
+      "id": "B-401k-trad",
+      "owner": "B",
+      "category": "401k",
+      "tax": "traditional",
+      "parent": "Retirement",
+      "balance": 350000
+    },
+    {
+      "id": "B-401k-roth",
+      "owner": "B",
+      "category": "401k",
+      "tax": "roth",
+      "parent": "Retirement",
+      "balance": 60000
+    }
+  ],
+  "contributions": [
+    {
+      "person": "A",
+      "account": "A-403b-trad",
+      "kind": "percent",
+      "value": "0.05",
+      "payroll": "pretax",
+      "group": "401k"
+    },
+    {
+      "person": "B",
+      "account": "B-401k-trad",
+      "kind": "percent",
+      "value": "0.10",
+      "payroll": "pretax",
+      "group": "401k",
+      "match": {
+        "rate": "1",
+        "capPercent": "0.04",
+        "account": "B-401k-trad"
+      }
+    },
+    {
+      "person": "B",
+      "account": "B-401k-roth",
+      "kind": "percent",
+      "value": "0.02",
+      "payroll": "roth",
+      "group": "401k"
+    }
+  ],
+  "returnRates": [
+    {
+      "fromAge": 0,
+      "rate": "0.05"
+    }
+  ],
+  "annualSpendingToday": 105000,
+  "waterfall": ["A-403b-trad", "B-401k-roth", "B-401k-trad"],
+  "endYear": 2044
+}

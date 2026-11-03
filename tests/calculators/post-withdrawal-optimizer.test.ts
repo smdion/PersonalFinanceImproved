@@ -178,11 +178,12 @@ describe("performRothConversion", () => {
   });
 
   it("applies IRMAA-aware cap when enabled", () => {
-    // IRMAA MFJ first cliff = 206000
+    // IRMAA MFJ first cliff = 218000 (CMS 2026: the first joint tier is
+    // MAGI greater than 218,000)
     // MAGI without conversion = 40000 + 5000 + 10000 = 55000
-    // Max conversion for cliff = 206000 - 55000 = 151000
+    // Max conversion for cliff = 218000 - 55000 = 163000
     // Normal conversion room = 96175 - 50000 = 46175
-    // Since 46175 < 151000, IRMAA cap doesn't reduce it here.
+    // Since 46175 < 163000, IRMAA cap doesn't reduce it here.
     // To test IRMAA actually capping, use higher income:
     const balances = makeTaxBuckets();
     const acctBal = makeAccountBalances();
@@ -205,8 +206,9 @@ describe("performRothConversion", () => {
       }),
     );
     // Without IRMAA: conversionRoom = 457525 - 160000 = 297525 (capped at preTax 500000)
-    // With IRMAA: max = 218000 - 212000 = 6000
-    expect(result.rothConversionAmount).toBeLessThanOrEqual(6000);
+    // With IRMAA: max = 218000 - 212000 = 6000, exactly (a bound alone
+    // passed with no conversion at all; retirement audit, weak tests)
+    expect(result.rothConversionAmount).toBe(6000);
   });
 
   it("flags rothConversionIrmaaCapped when the IRMAA clamp actually bites", () => {
@@ -219,11 +221,10 @@ describe("performRothConversion", () => {
         rothBracketTarget: 0.35, // bracket cap far above the next cliff (218000)
       }),
     );
-    // The conversion was clamped to the ~6000 of cliff headroom, and the
-    // engine records that it did so.
+    // The conversion was clamped to the cliff headroom, 218000 - 212000 =
+    // 6000 exactly, and the engine records that it did so.
     expect(result.rothConversionIrmaaCapped).toBe(true);
-    expect(result.rothConversionAmount).toBeLessThanOrEqual(6000);
-    expect(result.rothConversionAmount).toBeGreaterThan(0);
+    expect(result.rothConversionAmount).toBe(6000);
   });
 
   it("leaves rothConversionIrmaaCapped unset when IRMAA awareness is off", () => {
@@ -328,7 +329,7 @@ describe("checkIrmaa", () => {
     expect(result.warnings[0]).toContain("Roth conversion");
   });
 
-  it("no warning when conversion doesn't change IRMAA tier", () => {
+  it("warns when the conversion moves MAGI up a tier (271000 → 276000, tier 1 → tier 2)", () => {
     const result = checkIrmaa(
       makeIrmaaInput({
         projectedMagi: 276000,
@@ -338,6 +339,20 @@ describe("checkIrmaa", () => {
     expect(result.irmaaCost).toBeCloseTo(2884.8, 2); // tier 2 (>274000)
     // Without conversion: 271000 → tier 1 (1148.40) < 2884.80 → should warn
     expect(result.warnings.length).toBeGreaterThan(0);
+  });
+
+  it("no warning when conversion doesn't change IRMAA tier", () => {
+    // With the conversion: 250000; without: 245000. Both are in the first
+    // joint tier (> 218000, ≤ 274000; CMS 2026), 1148.40 either way, so the
+    // conversion crossed no cliff.
+    const result = checkIrmaa(
+      makeIrmaaInput({
+        projectedMagi: 250000,
+        rothConversionAmount: 5000,
+      }),
+    );
+    expect(result.irmaaCost).toBeCloseTo(1148.4, 2);
+    expect(result.warnings).toEqual([]);
   });
 });
 
@@ -367,6 +382,12 @@ function makeAcaInput(overrides: Partial<AcaInput> = {}): AcaInput {
 }
 
 describe("checkAca", () => {
+  // Bug pin (verdict N8): "not checked" reads as "not preserved", and the
+  // report says the subsidy was lost. Changes on purpose with the v0.11
+  // Retirement rules item: ACA reported "lost" when never checked (a
+  // status of not checked, preserved or lost); answer-key ret/A31
+  // (`tests/pure/report/aca-irmaa-narrative.test.ts`) holds the decided
+  // report.
   it("returns false/0 when disabled", () => {
     const result = checkAca(makeAcaInput({ enableAcaAwareness: false }));
     expect(result.acaSubsidyPreserved).toBe(false);
@@ -374,6 +395,12 @@ describe("checkAca", () => {
     expect(result.warnings).toHaveLength(0);
   });
 
+  // Bug pin (verdicts N7 and N8): one spouse 65 or older skips the check
+  // for the other, who can keep a credit (IRC 36B(b)(3)(C); Reg.
+  // 1.36B-2(c)(2)). Changes on purpose with v0.11 Retirement rules "59½
+  // tested by year" (N7: one spouse on Medicare skips ACA for the other),
+  // where answer-key ret/A32 (`tests/calculators/answer-key-aca.test.ts`:
+  // kept, headroom 34,600) replaces it, and with the N8 status above.
   it("returns false/0 when not all persons under 65", () => {
     const result = checkAca(makeAcaInput({ allPersonsUnder65: false }));
     expect(result.acaSubsidyPreserved).toBe(false);
@@ -447,12 +474,18 @@ describe("checkAca", () => {
     expect(result.acaSubsidyPreserved).toBe(false);
   });
 
-  it("adjusts cliff by household size", () => {
-    // Household size 1: FPL = 15650, cliff = 62600
-    // Household size 4: FPL = 32150, cliff = 128600
-    const r1 = checkAca(makeAcaInput({ householdSize: 1 }));
-    const r4 = checkAca(makeAcaInput({ householdSize: 4 }));
-    expect(r4.acaMagiHeadroom).toBeGreaterThan(r1.acaMagiHeadroom);
+  it("adjusts cliff by household size (400% of the HHS 2025 guideline)", () => {
+    // HHS 2025 poverty guidelines (90 FR 5917), 48 states and DC, used for
+    // 2026 coverage. MAGI = 30000 + 5000 = 35000.
+    // Household size 1: FPL = 15650, cliff = 62600, headroom 27600
+    // Household size 4: FPL = 32150, cliff = 128600, headroom 93600
+    // Household size 9 (answer key ret/A22): FPL = 54150 + 5500 = 59650,
+    // cliff = 238600, headroom 203600
+    const headroom = (householdSize: number) =>
+      checkAca(makeAcaInput({ householdSize })).acaMagiHeadroom;
+    expect(headroom(1)).toBe(27600);
+    expect(headroom(4)).toBe(93600);
+    expect(headroom(9)).toBe(203600);
   });
 });
 

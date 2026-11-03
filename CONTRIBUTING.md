@@ -64,7 +64,7 @@ pnpm tax-data:new-year 2027   # a new year: every figure blank, to fill in
 pnpm tax-data:check           # the same checks CI runs, in seconds
 ```
 
-Cite the published document for every figure and link it in the year's `sources`; use only published figures, never estimates. Format, conventions and the list of keys: [`tax-data/README.md`](tax-data/README.md).
+Cite the published document for every figure and link it in the year's `sources`; use only published figures, never estimates. `new-year` also writes a blank `tests/fixtures/irs-published/<year>.ts`: key it by hand from the same notices, and CI checks the year's tables against it. Format, conventions and the list of keys: [`tax-data/README.md`](tax-data/README.md).
 
 ## Reporting Issues
 

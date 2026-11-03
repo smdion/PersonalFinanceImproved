@@ -122,6 +122,10 @@ describe("Monte Carlo statistical properties", () => {
       expect(result1.meanEndBalance).toBe(result2.meanEndBalance);
     });
 
+    // Seeds 42 and 123 share 419 of their 500 trials (`seed + trial`), so
+    // this treats an overlapping run as a fresh one (answer key sim/K12,
+    // SIM-01). Replaced by K12's 20-seed check with v0.11 Simulation "Mix
+    // seed and trial per trial".
     it("different seeds produce different results", () => {
       const engine = makeTrinityInput();
       const mc1 = makeMCInput(engine, { numTrials: 500, seed: 42 });

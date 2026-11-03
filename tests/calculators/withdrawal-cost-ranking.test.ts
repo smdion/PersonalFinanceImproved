@@ -21,11 +21,20 @@ function rothState(
   };
 }
 
+// The 2025 rate schedule for married filing jointly, Rev. Proc. 2024-40
+// § 2.01 Table 1 (taxable income over / tax on that / rate on the
+// excess), as `WithholdingBracket` rows. No standard deduction is passed,
+// so `ordinaryIncomeFloor` reads as taxable income. (It used to be read
+// one row off: 10% from 23,850 and 0% below, each base a row late, so
+// 150,000 sat in "12%"; strategies audit, 2026-11-02.)
 const MFJ_BRACKETS = [
-  { threshold: 23850, baseWithholding: 0, rate: 0.1 },
-  { threshold: 96950, baseWithholding: 2385, rate: 0.12 },
-  { threshold: 206700, baseWithholding: 11157, rate: 0.22 },
-  { threshold: 394600, baseWithholding: 35302, rate: 0.24 },
+  { threshold: 0, baseWithholding: 0, rate: 0.1 },
+  { threshold: 23850, baseWithholding: 2385, rate: 0.12 },
+  { threshold: 96950, baseWithholding: 11157, rate: 0.22 },
+  { threshold: 206700, baseWithholding: 35302, rate: 0.24 },
+  { threshold: 394600, baseWithholding: 80398, rate: 0.32 },
+  { threshold: 501050, baseWithholding: 114462, rate: 0.35 },
+  { threshold: 751600, baseWithholding: 202154.5, rate: 0.37 },
 ];
 
 function baseInput(
@@ -33,7 +42,7 @@ function baseInput(
 ): RankWithdrawalTiersInput {
   return {
     filingStatus: "MFJ",
-    ordinaryIncomeFloor: 150000, // in the 12% bracket
+    ordinaryIncomeFloor: 150000, // in the 22% bracket (96,950 to 206,700)
     taxBrackets: MFJ_BRACKETS,
     ltcgBrackets: shippedTaxTables().ltcgBrackets,
     rothBasisAvailable: 0,
@@ -155,9 +164,9 @@ describe("rankWithdrawalTiers", () => {
   // instead of the household's REAL income level systematically
   // overpriced Roth/HSA whenever the two diverge).
   it("Roth growth is priced at the bracket ordinaryIncomeFloor ACTUALLY sits in", () => {
-    // 150,000 sits in the 12% bracket (96,950 <= 150,000 < 206,700) --
-    // marginalRateAtIncome must return 0.12 regardless of any
-    // bracket-filling target elsewhere in the system.
+    // 150,000 sits in the 22% bracket (96,950 <= 150,000 < 206,700,
+    // Rev. Proc. 2024-40 Table 1) -- marginalRateAtIncome must return 0.22
+    // regardless of any bracket-filling target elsewhere in the system.
     const { tiers } = rankWithdrawalTiers(
       baseInput({
         ordinaryIncomeFloor: 150000,
@@ -167,12 +176,20 @@ describe("rankWithdrawalTiers", () => {
       }),
     );
     const rothTier = tiers.find((t) => t.source === "roth");
-    expect(rothTier?.costRate).toBeCloseTo(0.12, 5);
+    expect(rothTier?.costRate).toBeCloseTo(0.22, 5);
   });
 
-  it("no free tiers ⇒ Roth growth (12%) ranks BEFORE 15% LTCG brokerage when it's genuinely cheaper", () => {
+  it("no Roth basis ⇒ Roth growth (12%) ranks BEFORE 15% LTCG brokerage when it's genuinely cheaper", () => {
+    // 90,000 sits in the 12% bracket (23,850 to 96,950). Gains stack on
+    // it: 98,900 - 90,000 = 8,900 at 0%, then 15%. Roth growth at 12%
+    // ranks before the 15% brokerage tier (the 0% tier ranks first). At
+    // the default 150,000 Roth growth is 22% and ranks after it.
     const { tiers } = rankWithdrawalTiers(
-      baseInput({ rothBasisAvailable: 0, magiBeforeThisDraw: 0 }),
+      baseInput({
+        ordinaryIncomeFloor: 90000,
+        rothBasisAvailable: 0,
+        magiBeforeThisDraw: 0,
+      }),
     );
     const rothIdx = tiers.findIndex(
       (t) => t.source === "roth" && t.costRate > 0,
@@ -186,8 +203,8 @@ describe("rankWithdrawalTiers", () => {
   });
 
   it("brokerage ranks before Roth once income is high enough that Roth's real bracket rate exceeds LTCG", () => {
-    // 600,000 is past the top ordinary bracket (24%) while LTCG here is
-    // still 15% -- brokerage is genuinely cheaper at this income level,
+    // 600,000 sits in the 35% bracket (501,050 to 751,600) while LTCG
+    // here is still 15% -- brokerage is genuinely cheaper at this income level,
     // unlike the old targetRate-driven pricing which could make Roth look
     // artificially cheap regardless of the household's real income.
     // (Deliberately NOT 613,700, the exact 15%/20% LTCG boundary -- gains
@@ -205,7 +222,7 @@ describe("rankWithdrawalTiers", () => {
     const rothIdx = tiers.findIndex((t) => t.source === "roth");
     const brokerageIdx = tiers.findIndex((t) => t.source === "brokerage");
     expect(tiers.find((t) => t.source === "roth")?.costRate).toBeCloseTo(
-      0.24,
+      0.35,
       5,
     );
     expect(tiers.find((t) => t.source === "brokerage")?.costRate).toBeCloseTo(
@@ -355,8 +372,15 @@ describe("rankWithdrawalTiers", () => {
   // competes on real cost like Roth growth instead of an assumed-worst
   // rate that made it lose to genuinely-more-expensive sources too.
   it("HSA competes on ordinary rate alongside Roth growth, ranking BEFORE a more expensive brokerage tier", () => {
+    // 90,000: ordinary 12%, gains 0% for the first 8,900 then 15% (as
+    // above). At the default 150,000 the HSA's ordinary rate is 22%,
+    // dearer than 15% gains.
     const { tiers } = rankWithdrawalTiers(
-      baseInput({ rothBasisAvailable: 0, magiBeforeThisDraw: 0 }),
+      baseInput({
+        ordinaryIncomeFloor: 90000,
+        rothBasisAvailable: 0,
+        magiBeforeThisDraw: 0,
+      }),
     );
     const hsaTier = tiers.find((t) => t.source === "hsa")!;
     const rothGrowthTier = tiers.find(
@@ -365,7 +389,9 @@ describe("rankWithdrawalTiers", () => {
     // Same ordinary-rate formula as Roth growth -- ties, not "always worse."
     expect(hsaTier.costRate).toBeCloseTo(rothGrowthTier.costRate, 5);
     const hsaIdx = tiers.findIndex((t) => t.source === "hsa");
-    const brokerageIdx = tiers.findIndex((t) => t.source === "brokerage");
+    const brokerageIdx = tiers.findIndex(
+      (t) => t.source === "brokerage" && t.costRate > 0,
+    );
     // At this income level (12% ordinary vs 15% LTCG) HSA is genuinely
     // cheaper than brokerage, so it must rank before it -- not last
     // purely by construction.

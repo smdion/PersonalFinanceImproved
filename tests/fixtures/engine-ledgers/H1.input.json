@@ -1,0 +1,117 @@
+{
+  "asOfDate": "2026-01-01",
+  "taxYearBase": 2026,
+  "inflation": "0.03",
+  "limitGrowth": "0.02",
+  "taxMultiplier": 1,
+  "spendingStrategy": "fixed",
+  "withdrawalRouting": "waterfall",
+  "rothConversions": "off",
+  "qcdAnnual": 0,
+  "lumpSums": [],
+  "id": "H1",
+  "name": "One earner, married, Portfolio savings alongside",
+  "purpose": "One job, spouse with no job and no accounts. Accumulation, Portfolio scope, retirement at 65, Social Security claims, first RMD at 75.",
+  "filingStatus": "MFJ",
+  "people": [
+    {
+      "id": "A",
+      "primary": true,
+      "birthDate": "1971-01-15",
+      "ssAnnualToday": 36000,
+      "ssStartAge": 67,
+      "jobs": [
+        {
+          "employer": "J1",
+          "start": "2010-01-01",
+          "end": "2035-12-31",
+          "salary": 120000,
+          "salaryGrowth": "0.03"
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "primary": false,
+      "birthDate": "1973-01-15",
+      "ssAnnualToday": 18000,
+      "ssStartAge": 67,
+      "jobs": []
+    }
+  ],
+  "accounts": [
+    {
+      "id": "A-401k-trad",
+      "owner": "A",
+      "category": "401k",
+      "tax": "traditional",
+      "parent": "Retirement",
+      "balance": 900000
+    },
+    {
+      "id": "A-ira-roth",
+      "owner": "A",
+      "category": "ira",
+      "tax": "roth",
+      "parent": "Retirement",
+      "balance": 80000
+    },
+    {
+      "id": "A-hsa",
+      "owner": "A",
+      "category": "hsa",
+      "tax": "hsa",
+      "parent": "Retirement",
+      "balance": 30000
+    },
+    {
+      "id": "P-brokerage",
+      "owner": "A",
+      "category": "brokerage",
+      "tax": "brokerage",
+      "parent": "Portfolio",
+      "balance": 100000,
+      "basis": 70000
+    }
+  ],
+  "contributions": [
+    {
+      "person": "A",
+      "account": "A-401k-trad",
+      "kind": "percent",
+      "value": "0.15",
+      "payroll": "pretax",
+      "group": "401k",
+      "match": {
+        "rate": "0.5",
+        "capPercent": "0.06",
+        "account": "A-401k-trad"
+      }
+    },
+    {
+      "person": "A",
+      "account": "A-hsa",
+      "kind": "fixed",
+      "value": 5000,
+      "payroll": "section125",
+      "group": null
+    },
+    {
+      "person": "A",
+      "account": "P-brokerage",
+      "kind": "fixed",
+      "value": 6000,
+      "payroll": "aftertax",
+      "group": null
+    }
+  ],
+  "returnRates": [
+    {
+      "fromAge": 0,
+      "rate": "0.06"
+    }
+  ],
+  "annualSpendingToday": 70000,
+  "waterfall": ["A-401k-trad", "A-ira-roth", "A-hsa"],
+  "endYear": 2047
+}

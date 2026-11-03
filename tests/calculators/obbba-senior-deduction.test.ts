@@ -74,6 +74,11 @@ describe("computeObbbaSeniorDeduction", () => {
   });
 
   it("two seniors' combined base phases out further out than one senior's", () => {
+    // Pins a bug until v0.11 Tax "One returnDeductions()" (with "Senior
+    // deduction phases out against the combined amount"): Schedule 1-A
+    // lines 35-37 phase each person's 6,000 out on the joint MAGI, so two
+    // seniors are gone at $250,000, not $350,000. The answer key's tax/E6-E10
+    // (answer-key-tax.test.ts) replace this test in the fix commit.
     // $12,000 base / 6% = $200,000 of room -> fully phased out at $350,000
     expect(
       computeObbbaSeniorDeduction({

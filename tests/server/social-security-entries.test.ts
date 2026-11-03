@@ -101,6 +101,12 @@ describe("buildSocialSecurityEntries", () => {
     expect(low!.annualAmount).toBeCloseTo(16200, 2);
   });
 
+  // Bug pin (verdict N1): the spousal excess is lost for life here. In law
+  // it starts when the worker files (42 USC 402(b)(1), 402(r)(1); POMS GN
+  // 00204.035). Changes on purpose with v0.11 Retirement rules "Spousal
+  // excess is lost for life when the lower earner claims in an earlier
+  // year", where answer-key ret/S44 and ret/S45
+  // (`tests/calculators/answer-key-social-security.test.ts`) replace it.
   it("MFJ + 2: no spousal top-up before the worker has filed", () => {
     const [, sam] = buildSocialSecurityEntries(
       [
