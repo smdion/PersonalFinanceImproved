@@ -41,7 +41,7 @@ These stop the failure this codebase is most prone to: maintenance by addition, 
 
 1. **Comments explain the code, not its history: they state what is true now.** At most three lines of current reason. Past tense, "the fix", counts of bugs and claims like "can't drift" are rejected; history goes in the commit, incident stories, finding ids (`H10`), roadmap numbers (`R32`), date-stamps and links to plan or review notes included. If a comment needs more, the code or the type changes first. Deleting code deletes its comment. These are not history, so they stay: statute and tax-law citations (`SECURE 2.0 (2023)`, IRS Notice numbers, `tax_year` values); `@deprecated` tags saying what to do instead; answer-key case ids written `<area>/<id>` (`ret/R12`; [TESTING.md](TESTING.md) § Suites worth knowing; a bare `R12` is a citation); references to the `docs/` files; and the `PROJECTION_CACHE_ENGINE_VERSION` changelog in `projection-cache.ts`.
 2. **Change the model, not the branch.** A second fix in the same spot within 30 days first asks what concept is missing. No function over 150 lines may grow. A rename or removal sweeps all callers, aliases and comments.
-3. **Types carry the state.** New domain fields use enums and config-derived unions, never `string`. Fields that appear together are grouped into one optional object. A field has one meaning. Identity is an id, never a formatted or display value. A new `as` needs a parser or a one-line reason.
+3. **Types carry the state.** New domain fields use enums and config-derived unions, never `string`. Fields that appear together are grouped into one optional object. A field has one meaning. Identity is an id, never a formatted or display value. A new `as` needs a parser or a one-line reason (an `eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- <reason>`).
 4. **No guards for impossible states.** A default in money code needs a real absent state; a missing key that should exist throws or warns rather than becoming $0.
 5. **Data crosses layers as data.** Nothing branches on human-readable text. The engine emits facts and the UI words them. Rendering holds no calculation.
 
@@ -60,9 +60,9 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **"One config entry" for an account type.** `AccountCategory` and its enum are hand copies, the default withdrawal order is a hand list (a category missing from it is never drawn), and early access is identity branches.
 - **Calculations are answer-keyed only in part.** [CALCULATIONS.md](CALCULATIONS.md) lists every calculation: its Tested column says which rows have hand-worked answer-key cases, and its Gaps column is where calculation bugs are listed. A row with no case has only its pinned tests, which can move with the code. A figure changes only with its source and its cause in dollars.
 - **There is no named layer for composition that needs I/O.** It lives in router procedures and `src/server/helpers/`, and some routers call others. Don't add more; a shared service layer is planned.
-- **`lib/pure` imports from `@/server/helpers/transforms` and `/settings`.** The rule below allows the first as a stopgap; don't extend it.
+- **`lib/pure` imports from `@/server/helpers/transforms` and `/settings`.** Both are recorded layer breaks (§ Pure Business Logic Boundary); don't extend them.
 - **The `version` permission.** Decided: it manages backups of household data, not access. Today an imported backup can also change logins and access settings.
-- **Files and functions over the size rule.** `.size-exempt` isn't a pass to grow.
+- **Files and functions over the size limit** are recorded in `size-baseline.json`; a recorded size is a ceiling, not a pass to grow.
 - **Roth conversions don't add to Roth basis,** until fixed. Conversion basis is decrement-only (`lib/pure/roth-basis-tracking.ts`).
 - **The IRS cap pass doesn't apply 415(c) annual additions or the pay bound,** until fixed. 415(c) is read only for mega-backdoor room.
 - **Year totals come from three places** (the schedule, the blended walk, average × checks), until fixed. Only the schedule is right.
@@ -103,11 +103,13 @@ Key files, adding a predicate, and contribution stubs: DESIGN.md § Data-Driven 
 
 **All business logic must live in `src/lib/pure/` — never inside database transactions, API handlers, or router procedures.** This is a hard architectural rule, not a style preference: coupling logic to I/O makes it untestable regardless of database, and a transaction held open across an `await` lets other requests on the one SQLite connection see its uncommitted work.
 
-1. **Pure functions** (`src/lib/pure/`): compute values, validate rules, resolve limits, transform data. No imports from `@/lib/db`, `drizzle-orm`, or any I/O module. Import helpers only from specific submodules (e.g. `@/server/helpers/transforms`), never from barrel re-exports that pull in DB code.
+1. **Pure functions** (`src/lib/pure/`): compute values, validate rules, resolve limits, transform data. No imports from `@/lib/db`, `drizzle-orm`, or any I/O module. Never import from barrel re-exports that pull in DB code.
 2. **Routers/handlers** (`src/server/routers/`): fetch data, call pure functions, persist results. Thin wrappers only — if you're writing an `if` or a `for` loop that computes a value, it belongs in a pure function.
 3. **Tests** (`tests/pure/`): every pure function gets a unit test that runs without any database, network, or environment setup.
 
 **How to tell if logic is in the wrong place:** it's in a `.transaction()` callback; it's in a `protectedProcedure` handler doing math/validation/aggregation; it needs `import * as schema` or `import { eq } from "drizzle-orm"` to work; or it can't be tested without mocking the database.
+
+**Enforced by `pnpm check:layers`** (`.dependency-cruiser.mjs`, run in CI). It holds one layer manifest (foundation, shapes, pure, infrastructure, services, routers, server pages, UI, worker, scripts) and the import directions between the layers. Type-only imports count. The engine is reached only through `engine/index.ts`, and relative imports count too. Today's breaks are listed in `.dependency-cruiser-known-violations.json`, and that list only shrinks: a new break fails with "<from> → <to> breaks layer rule <name>; never add to the known list". When you fix a break, delete its entry in the same commit (`pnpm check:layers --prune`); a stale entry fails. Pure code importing `@/server/helpers/*` is one of those known breaks, not an allowed pattern.
 
 The short version for contributors is `CONTRIBUTING.md` § Before you write code. This section is the authoritative rule; keep them consistent if either changes.
 
@@ -146,9 +148,11 @@ The rest of the conventions are in CONTRIBUTING.md § Coding Conventions.
 "Too many lines" is two separate problems with separate fixes — don't conflate them in a refactor plan:
 
 - **Total LOC** is reduced by dead-code sweeps (`knip`), parameterized test compression, and flattening premature abstractions. Realistic ceilings are small (~5% at current size) and often not worth the churn.
-- **Per-file size** is the real reviewability problem. Files over ~1,500 lines hurt cognitive load. The fix is splitting into focused modules. Splitting _increases_ total LOC slightly (new imports, prop types) but is the right trade.
+- **Per-file size.** No file or recorded function grows; a split names a concept per part. `size-baseline.json` records every `src/` file over 400 lines and every function over 150 at its length (`pnpm check:file-size`, CI). Past its recorded size, or past 400 if unrecorded, a file is split, never re-recorded higher. A change that shrinks one lowers its entry in the same commit (`pnpm check:file-size --update`). A split records each new part at its size (`pnpm check:file-size --record <part>…`) so parts don't regrow to the limit. Splitting _increases_ total LOC slightly (new imports, prop types) but is the right trade.
 
 "Split large files" does not reduce total LOC. "Delete dead code" does not reduce per-file size. Different problems, different plans.
+
+**Quality ratchet.** Lint counts live in `eslint-suppressions.json` (and `eslint-suppressions-typed.json` for `pnpm lint:typed`): today's cases per file and rule. A count never rises; a cleanup or deletion lowers it in the same commit (`npx eslint <files> --prune-suppressions`; `pnpm lint:typed --prune-suppressions`). Raising a baseline or a count is its own visible commit with the owner's OK; never `--suppress-all`/`--suppress-rule` to pass new code. Division by a value that may be zero uses `safeDivide(n, d, fallback)`; a hand guard (`d > 0 ? n / d : 0` and its spellings) is counted by `ratchet/no-guarded-division`.
 
 **Prerequisite for any file split:** add smoke tests for the target file first — mount with mocked tRPC, assert key elements present, one mutation-plumbing test per page. The refactor needs a safety net.
 
