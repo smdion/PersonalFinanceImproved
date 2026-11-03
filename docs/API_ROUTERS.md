@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**395 procedures across 56 routers.**
+**396 procedures across 56 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -476,7 +476,8 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | Procedure              | Kind     | Auth                 | Description                                                                                                                                                                                              |
 | ---------------------- | -------- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `completeOnboarding`   | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
-| `createLocalAdmin`     | mutation | `publicProcedure`    | never creates a local_admins row, so table-emptiness alone would leave this endpoint permanently open. Runs inside a transaction so the check-then-insert can't race two concurrent first-run requests i |
+| `createLocalAdmin`     | mutation | `publicProcedure`    | Create the first local admin. Public, because no session exists yet; callable only while `firstRunState` says an admin is needed, so it closes for good once any local admin exists or onboarding is com |
+| `firstRunState`        | query    | `publicProcedure`    | "Create the first admin" only while it says so.                                                                                                                                                          |
 | `isOnboardingComplete` | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
 | `testOidcConnection`   | query    | `publicProcedure`    | Test whether OIDC (Authentik) is configured and reachable. Checks env vars and fetches the issuer's well-known endpoint.                                                                                 |
 

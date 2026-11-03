@@ -92,11 +92,11 @@ interface TestCaller {
 /**
  * Creates an isolated test environment with:
  * - A temp SQLite database with all migrations applied
- * - A tRPC caller bound to an admin session
+ * - A tRPC caller bound to an admin session (or `null`: signed out)
  * - A cleanup function to close the DB
  */
 export async function createTestCaller(
-  session: Session = adminSession,
+  session: Session | null = adminSession,
 ): Promise<TestCaller> {
   // A fresh in-memory copy of the migrated, seeded template (built once
   // per worker — see openTestSqlite).

@@ -1,7 +1,8 @@
 /**
  * The login page reads AUTH_AUTHENTIK_ISSUER per request (after
  * `connection()`), so one loaded module follows the running server's
- * setting: the Authentik button appears exactly when an issuer is set.
+ * setting: the Authentik button appears exactly when an issuer is set,
+ * and a fresh install is offered its first admin.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
@@ -11,6 +12,18 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 vi.mock("next-auth/react", () => ({ signIn: vi.fn() }));
+vi.mock("@/lib/db", () => ({ db: {} }));
+const { firstRunState } = vi.hoisted(() => ({
+  firstRunState: vi.fn(async () => ({ adminNeeded: false })),
+}));
+vi.mock("@/server/helpers/first-run", () => ({ firstRunState }));
+vi.mock("@/lib/trpc", () => ({
+  trpc: {
+    settings: {
+      createLocalAdmin: { useMutation: () => ({ mutateAsync: vi.fn() }) },
+    },
+  },
+}));
 
 import { connection } from "next/server";
 import LoginPage from "@/app/login/page";
@@ -37,5 +50,16 @@ describe("LoginPage", () => {
     render(await LoginPage());
     expect(authentikButton()).toBeInTheDocument();
     expect(connection).toHaveBeenCalledTimes(2);
+  });
+
+  it("offers the first admin while the install has none", async () => {
+    firstRunState.mockResolvedValueOnce({ adminNeeded: true });
+    render(await LoginPage());
+    expect(
+      screen.getByRole("heading", { name: "Create the first admin" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Sign in" }),
+    ).not.toBeInTheDocument();
   });
 });

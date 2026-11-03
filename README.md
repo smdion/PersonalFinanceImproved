@@ -62,7 +62,7 @@ docker compose up -d
 # docker compose -f docker-compose.postgres.yml up -d
 ```
 
-By default Ledgr uses SQLite — no database setup required. On first launch, migrations run automatically and you'll see the onboarding wizard.
+By default Ledgr uses SQLite — no database setup required. On first launch, migrations run automatically, the sign-in page asks you to create the first admin, and the onboarding wizard then sets up your household.
 
 Finish first-run setup (create the admin) before you expose the port or put a public proxy in front of it.
 
@@ -199,11 +199,11 @@ After editing `src/lib/db/pg/*.ts`, regenerate the SQLite schema with `npx tsx s
 
 ### Authentication modes
 
-| Mode               | When                           | How                                                                                                                                                                                                                                                                                            |
-| ------------------ | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Local Admin**    | Always available               | Email/password against a `local_admins` table. The first admin is created during onboarding. Sign-ins are throttled: after 5 attempts from one address, or 10 for one email (from an address that already failed), that address or email waits up to 15 minutes; a sign-in resets both counts. |
-| **Authentik OIDC** | `AUTH_AUTHENTIK_ISSUER` is set | SSO with RBAC group mapping. Shown alongside the local-admin form.                                                                                                                                                                                                                             |
-| **Dev Mode**       | Running `next dev`             | No sign-in: a fixed session, admin with `ALLOW_DEV_MODE=true`, otherwise a read-only viewer. Never in production.                                                                                                                                                                              |
+| Mode               | When                           | How                                                                                                                                                                                                                                                                                                                                                                            |
+| ------------------ | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Local Admin**    | Always available               | Email/password against a `local_admins` table. On a fresh install, `/login` offers "Create the first admin" until one exists (or onboarding is completed through Authentik). Sign-ins are throttled: after 5 attempts from one address, or 10 for one email (from an address that already failed), that address or email waits up to 15 minutes; a sign-in resets both counts. |
+| **Authentik OIDC** | `AUTH_AUTHENTIK_ISSUER` is set | SSO with RBAC group mapping. Shown alongside the local-admin form.                                                                                                                                                                                                                                                                                                             |
+| **Dev Mode**       | Running `next dev`             | No sign-in: a fixed session, admin with `ALLOW_DEV_MODE=true`, otherwise a read-only viewer. Never in production.                                                                                                                                                                                                                                                              |
 
 Local admin is the default install's sign-in: Authentik is optional, and without `AUTH_AUTHENTIK_ISSUER` the login page offers only the local-admin form.
 

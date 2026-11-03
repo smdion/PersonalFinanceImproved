@@ -2,17 +2,20 @@
 
 import { Suspense } from "react";
 import { connection } from "next/server";
+import { db } from "@/lib/db";
+import { firstRunState } from "@/server/helpers/first-run";
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage() {
   // Rendered per request, so the Authentik button follows the running
   // server's AUTH_AUTHENTIK_ISSUER (what auth.config.ts registers), not
-  // the build machine's.
+  // the build machine's, and a fresh install is offered its first admin.
   await connection();
   const hasOidc = !!process.env.AUTH_AUTHENTIK_ISSUER;
+  const { adminNeeded } = await firstRunState(db);
   return (
     <Suspense>
-      <LoginForm hasOidc={hasOidc} />
+      <LoginForm hasOidc={hasOidc} adminNeeded={adminNeeded} />
     </Suspense>
   );
 }

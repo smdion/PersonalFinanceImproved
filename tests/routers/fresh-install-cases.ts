@@ -189,12 +189,11 @@ export function freshInstallCases(fresh: () => Promise<FreshInstall>): void {
     timeout,
   );
 
-  it.fails(
+  it(
     "first-run state says an admin is needed when there is none",
     async () => {
       const settings = (await fresh()).caller(null).settings;
-      // @ts-expect-error -- settings.firstRunState doesn't exist yet
-      const state: unknown = await settings.firstRunState();
+      const state = await settings.firstRunState();
       expect(state).toMatchObject({ adminNeeded: true });
     },
     timeout,
