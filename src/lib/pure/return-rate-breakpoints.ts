@@ -8,6 +8,12 @@
  * equal rates.
  */
 
+/** What the projection cards say when no breakpoint is at or below the
+ *  household's current age (`notConfigured: "no_return_rate"`): none ship;
+ *  the household sets them. */
+export const NO_RETURN_RATE_MESSAGE =
+  "Set a return rate first: projections need an expected return from your current age on.";
+
 /** The rate in effect at `age`: the breakpoint with the highest age at or
  *  below it, or null below the first breakpoint (each caller decides what
  *  that means). Takes `[age, rate]` pairs in any order — a Map works as is. */

@@ -134,7 +134,8 @@ export const coastFireProbeRouter = createTRPCRouter({
         decumulationExpenseOverride: input.decumulationExpenseOverride,
         retirementProfileId: input.retirementProfileId,
       });
-      if (!payload) return { result: null, computedAt: null };
+      if (!payload || payload.notConfigured)
+        return { result: null, computedAt: null };
 
       const { settings, distributionTaxRates, baseEngineInput } = payload;
 

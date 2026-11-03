@@ -281,6 +281,27 @@ describe("projection router — computeProjection cache", () => {
 });
 
 describe("projection router — computeProjection edge cases (continued)", () => {
+  it("no return rate at or below the current age: a typed state, not a throw", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      // Only the age-65 breakpoint is left, past the household's age.
+      db.delete(schema.returnRateTable)
+        .where(eq(schema.returnRateTable.age, 35))
+        .run();
+      expect(await caller.projection.computeProjection({})).toEqual({
+        result: null,
+        notConfigured: "no_return_rate",
+      });
+      expect(await caller.projection.computeCoastFire({})).toEqual({
+        result: null,
+        notConfigured: "no_return_rate",
+      });
+    } finally {
+      cleanup();
+    }
+  });
+
   it("client decumulation defaults set the routing mode, not the rate", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {

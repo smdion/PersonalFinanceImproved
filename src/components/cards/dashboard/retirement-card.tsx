@@ -11,6 +11,9 @@ import {
 } from "@/lib/pure/nest-egg-display";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
 import { memo } from "react";
+import Link from "next/link";
+import { settingsHref } from "@/lib/config/settings-sections";
+import { NO_RETURN_RATE_MESSAGE } from "@/lib/pure/return-rate-breakpoints";
 
 import { trpc } from "@/lib/trpc";
 import { useDashboardProjection } from "@/lib/hooks/use-dashboard-projection";
@@ -72,6 +75,20 @@ function RetirementCardImpl() {
   );
   if (isLoading) return <LoadingCard title="Retirement" />;
   if (error) return <ErrorCard title="Retirement" message="Failed to load" />;
+  if (data && "notConfigured" in data)
+    return (
+      <Card title="Retirement" href="/retirement">
+        <p className="text-faint text-sm">
+          {NO_RETURN_RATE_MESSAGE}
+          <Link
+            href={settingsHref("taxdata", "returns")}
+            className="ml-1 underline"
+          >
+            Set return rates
+          </Link>
+        </p>
+      </Card>
+    );
   if (!data?.result)
     return (
       <Card title="Retirement" href="/retirement">

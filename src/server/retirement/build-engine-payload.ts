@@ -1390,6 +1390,8 @@ export async function buildEnginePayload(
       .filter((v, i, a) => a.indexOf(v) === i)
       .sort((a, b) => a - b),
     relevantReturnRates,
+    /** No return rate covers the current age: projections can't run. */
+    notConfigured: floorRate ? null : ("no_return_rate" as const),
     displayContribRate,
     noContribData,
     totalRealContrib,

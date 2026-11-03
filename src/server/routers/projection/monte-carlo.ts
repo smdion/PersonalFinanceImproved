@@ -205,7 +205,8 @@ export const monteCarloRouter = createTRPCRouter({
         decumulationExpenseOverride: input.decumulationExpenseOverride,
         retirementProfileId: input.retirementProfileId,
       });
-      if (!payload)
+      // No return rate: the projection card says so.
+      if (!payload || payload.notConfigured)
         return {
           result: null,
           savedOverrides: {

@@ -135,6 +135,8 @@ export const coastFireRouter = createTRPCRouter({
         retirementProfileId: input.retirementProfileId,
       });
       if (!payload) return { result: null };
+      if (payload.notConfigured)
+        return { result: null, notConfigured: payload.notConfigured };
 
       const { settings, distributionTaxRates, baseEngineInput } = payload;
 
@@ -265,7 +267,9 @@ export const coastFireRouter = createTRPCRouter({
         decumulationExpenseOverride: input.decumulationExpenseOverride,
         retirementProfileId: input.retirementProfileId,
       });
-      if (!payload) return { result: null, computedAt: null };
+      // No return rate: the projection card says so; nothing to search.
+      if (!payload || payload.notConfigured)
+        return { result: null, computedAt: null };
 
       const { settings, distributionTaxRates, baseEngineInput } = payload;
 

@@ -123,6 +123,8 @@ export const scenariosRouter = createTRPCRouter({
         retirementProfileId: input.retirementProfileId,
       });
       if (!payload) return { result: null };
+      if (payload.notConfigured)
+        return { result: null, notConfigured: payload.notConfigured };
 
       const {
         primaryPerson,

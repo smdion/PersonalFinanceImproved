@@ -152,7 +152,7 @@ export function freshInstallCases(fresh: () => Promise<FreshInstall>): void {
       const install = await fresh();
       await firstRun(install);
       const admin = install.caller(firstAdminSession);
-      // The return-rate table starts empty (the next case).
+      // The return-rate table starts empty (see the next case).
       await admin.retirement.returnRates.upsert({
         age: 18,
         rateOfReturn: "0.06",
@@ -164,16 +164,27 @@ export function freshInstallCases(fresh: () => Promise<FreshInstall>): void {
     timeout,
   );
 
-  it.fails(
-    "projections run before any return rate is set",
+  it(
+    "projections say to set a return rate first when none is set",
     async () => {
       const install = await fresh();
       await firstRun(install);
-      // Throws "No return rate configured for age …": no rows ship.
-      const { result } = await install
-        .caller(firstAdminSession)
-        .projection.computeCoastFireMC({});
-      expect(result).not.toBeNull();
+      const admin = install.caller(firstAdminSession);
+      // No rows ship: a typed state, never "No return rate configured".
+      expect(await admin.projection.computeProjection({})).toEqual({
+        result: null,
+        notConfigured: "no_return_rate",
+      });
+      expect(await admin.projection.computeCoastFire({})).toEqual({
+        result: null,
+        notConfigured: "no_return_rate",
+      });
+      expect(await admin.projection.computeCoastFireMC({})).toMatchObject({
+        result: null,
+      });
+      expect(
+        await admin.projection.computeMonteCarloProjection({}),
+      ).toMatchObject({ result: null });
     },
     timeout,
   );
