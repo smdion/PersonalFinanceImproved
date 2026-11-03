@@ -6,6 +6,10 @@ import "./setup-mocks";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema-sqlite";
+import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
+import { buildMilestoneInput } from "@/lib/pure/milestone-input";
+import { evaluateMilestones } from "@/lib/pure/milestones";
+import { effectiveHighIncomeLine } from "@/lib/pure/high-income-line";
 import {
   createTestCaller,
   seedPerson,
@@ -13,6 +17,8 @@ import {
   seedPerformanceAccount,
   seedSnapshot,
   seedAppSetting,
+  seedContributionAccount,
+  seedContributionProfile,
   viewerSession,
 } from "./setup";
 
@@ -218,5 +224,90 @@ describe("milestones.recordReached", () => {
       .run();
     const next = await ctx.caller.milestones.recordReached();
     expect(next?.reached[id!]).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  });
+});
+
+describe("milestones.recordReached on a household with contributions", () => {
+  let ctx: Awaited<ReturnType<typeof createTestCaller>>;
+  let contributionProfileId: number;
+
+  beforeAll(async () => {
+    ctx = await createTestCaller(viewerSession);
+    const personId = await seedPerson(ctx.db, "Test Person", "1990-01-01");
+    const jobId = seedJob(ctx.db, personId);
+    // $36,000 a year (30%) on a $120,000 salary: $20,000 to a 401k, the
+    // rest to a brokerage account.
+    const plan = seedContributionAccount(ctx.db, { personId, jobId });
+    const brokerage = seedContributionAccount(ctx.db, {
+      personId,
+      accountType: "brokerage",
+      parentCategory: "Portfolio",
+      taxTreatment: "after_tax",
+    });
+    const annual = (value: string) => ({
+      contributionMethod: "fixed_annual",
+      contributionValue: value,
+    });
+    contributionProfileId = seedContributionProfile(ctx.db, {
+      contributionActiveFields: {
+        contributionAccounts: {
+          [plan]: annual("20000"),
+          [brokerage]: annual("16000"),
+        },
+      },
+    });
+    ctx.db
+      .insert(schema.appSettings)
+      .values({
+        key: SK_ACTIVE_CONTRIB_PROFILE_ID,
+        value: String(contributionProfileId),
+      })
+      .onConflictDoUpdate({
+        target: schema.appSettings.key,
+        set: { value: String(contributionProfileId) },
+      })
+      .run();
+  });
+  afterAll(() => ctx.cleanup());
+
+  it("records the same reached set the page judges on the active profiles", async () => {
+    const { caller } = ctx;
+    const [inputs, contributions, savings, mortgage, line] = await Promise.all(
+      [
+        caller.milestones.computeInputs({}),
+        caller.contribution.computeSummary({ contributionProfileId }),
+        caller.savings.computeSummary(),
+        caller.mortgage.computeActiveSummary(),
+        caller.contribution.highIncomeLine(),
+      ],
+    );
+    const efund = savings.efund;
+    const pageReached = evaluateMilestones(
+      buildMilestoneInput({
+        inputs,
+        contributions,
+        highIncomeThreshold: effectiveHighIncomeLine(null, line.threshold),
+        efundMonths: efund
+          ? (efund.monthsCoveredWithRepay ?? efund.monthsCovered)
+          : null,
+        efundEssentialMonthly:
+          efund && efund.targetMonths > 0
+            ? efund.targetAmount / efund.targetMonths
+            : null,
+        mortgage,
+        projection: null,
+        holdings: null,
+        buyingMonths: null,
+        brokerageGoals: null,
+      }),
+    )
+      .filter((r) => r.status === "reached")
+      .map((r) => r.id)
+      .sort();
+    // Reached only when contributions count.
+    expect(pageReached).toContain("savingsRate");
+
+    const recorded = await caller.milestones.recordReached();
+    expect(Object.keys(recorded!.reached).sort()).toEqual(pageReached);
   });
 });
