@@ -32,8 +32,8 @@ jobs:
         id: data
         run: |
           # File size check
-          SIZE_OUTPUT=$(bash scripts/check-file-size.sh 2>&1 || true)
-          EXEMPT_FILES=$(grep -v '^#' .size-exempt | grep -v '^$' | sed 's/^/- `/' | sed 's/$/`/')
+          SIZE_OUTPUT=$(pnpm -s check:file-size 2>&1 || true)
+          LARGEST_FILES=$(node -e 'const b = require("./size-baseline.json"); console.log(Object.entries(b.files).sort((x, y) => y[1] - x[1]).slice(0, 15).map(([f, n]) => "- `" + f + "` " + n).join("\n"))')
 
           # Pending major dependabot PRs
           MAJOR_PRS=$(gh pr list --state open --label "dependencies" --json title,url \
@@ -69,8 +69,8 @@ jobs:
             echo "SIZE_OUTPUT<<EOF"
             echo "$SIZE_OUTPUT"
             echo "EOF"
-            echo "EXEMPT_FILES<<EOF"
-            echo "$EXEMPT_FILES"
+            echo "LARGEST_FILES<<EOF"
+            echo "$LARGEST_FILES"
             echo "EOF"
             echo "MAJOR_PRS<<EOF"
             echo "$MAJOR_PRS"
@@ -108,12 +108,12 @@ jobs:
             --body "$(cat <<ISSUE_BODY
           ## Quarterly Review Checklist
 
-          ### File Size Exemptions
+          ### Size Baseline
 
-          Review \`.size-exempt\` — split files where practical, re-justify the rest.
+          \`size-baseline.json\` only goes down. Pick the next splits from the largest recorded files.
 
-          **Currently exempt:**
-          $EXEMPT_FILES
+          **Largest recorded files:**
+          $LARGEST_FILES
 
           <details>
           <summary>Full file size report</summary>
@@ -180,7 +180,7 @@ jobs:
 
           ### Housekeeping
 
-          - [ ] Review \`.size-exempt\` files — split or re-justify each entry
+          - [ ] Pick the next split from \`size-baseline.json\` (a split names a concept per part)
           - [ ] Review open major dependency PRs — merge, close, or defer with reason
           - [ ] Check Docker image size (\`docker images ledgr\`) — flag if significantly larger
           - [ ] Review CI pipeline — any steps consistently slow or failing?

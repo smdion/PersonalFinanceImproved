@@ -62,8 +62,8 @@ jobs:
       - name: Dead code (unused files, exports, dependencies)
         run: pnpm check:dead-code
 
-      - name: Check file sizes
-        run: bash scripts/check-file-size.sh
+      - name: Size baseline (no file or recorded function grows)
+        run: pnpm check:file-size
 
       - name: Cache Next.js build
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
