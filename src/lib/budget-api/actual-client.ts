@@ -534,8 +534,8 @@ export class ActualClient implements BudgetAPIClient {
   }
 
   /** Reads each category's goal from its note's `#template` (Actual sends
-   *  no goal field). A note failing transiently twice leaves that goal
-   *  unset; any other failure throws. */
+   *  no goal field). A note still failing after its second try stops the
+   *  read: a goal left out would be cached as "no goal" over a good one. */
   private async overlayNoteGoals(categories: BudgetCategory[]): Promise<void> {
     const readNote = async (cat: BudgetCategory) => {
       const noteRes = await this.request(
@@ -548,7 +548,7 @@ export class ActualClient implements BudgetAPIClient {
       if (noteGoal !== undefined) cat.goalTarget = noteGoal;
     };
     // A few at a time; a note that fails transiently gets one more try on
-    // its own (as account balances do) before it's left out.
+    // its own, as account balances do.
     const failed: BudgetCategory[] = [];
     await inBatches(categories, WRAPPER_BATCH_SIZE, async (cat) => {
       try {
@@ -563,10 +563,13 @@ export class ActualClient implements BudgetAPIClient {
         await readNote(cat);
       } catch (err) {
         if (!isTransientError(err)) throw err;
-        log("warn", "actual_client.goal_note_fetch_failed", {
-          categoryId: cat.id,
-          error: err instanceof Error ? err.message : String(err),
-        });
+        const cause = err as BudgetApiError;
+        throw new BudgetApiError(
+          `Actual didn't return the note for ${cat.name}, so its goal is unknown — nothing was synced; try again`,
+          cause.code,
+          cause.status,
+          cause.retryAfterSeconds,
+        );
       }
     }
   }

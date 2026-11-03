@@ -956,6 +956,47 @@ describe("ActualClient", () => {
       expect(detail.categories[0]!.goalTarget).toBeUndefined();
     });
 
+    it("a note still failing after its second try stops the read: its goal would be cached as unset", async () => {
+      const monthBody = {
+        data: {
+          month: "2026-01",
+          totalIncome: 0,
+          totalBudgeted: 0,
+          totalSpent: 0,
+          toBudget: 0,
+          categoryGroups: [
+            {
+              id: "g1",
+              name: "Bills",
+              is_income: false,
+              hidden: false,
+              categories: [
+                {
+                  id: "c1",
+                  name: "Rent",
+                  group_id: "g1",
+                  is_income: false,
+                  hidden: false,
+                  budgeted: 0,
+                  spent: 0,
+                  balance: 0,
+                },
+              ],
+            },
+          ],
+        },
+      };
+      mockFetch.mockImplementation((url: string) =>
+        url.includes("/notes/")
+          ? Promise.reject(new TypeError("fetch failed"))
+          : jsonResponse(monthBody),
+      );
+      await expect(client.getMonthDetail("2026-01")).rejects.toMatchObject({
+        code: "network",
+        message: expect.stringMatching(/note for Rent/),
+      });
+    });
+
     it("a note fetch that fails for a reason that isn't transient fails the call: a goal left out would read as unset", async () => {
       mockFetch.mockReturnValueOnce(
         jsonResponse({
