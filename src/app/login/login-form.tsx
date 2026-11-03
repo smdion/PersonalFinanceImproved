@@ -86,7 +86,11 @@ export function LoginForm({ hasOidc }: { hasOidc: boolean }) {
     });
 
     if (result?.error) {
-      setLocalError("Invalid email or password.");
+      setLocalError(
+        result.code === "rate_limited"
+          ? "Too many failed sign-ins. Wait 15 minutes, then try again."
+          : "Invalid email or password.",
+      );
       setIsLoading(false);
     } else if (result?.url) {
       window.location.href = result.url;

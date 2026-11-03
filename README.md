@@ -198,11 +198,11 @@ After editing `src/lib/db/pg/*.ts`, regenerate the SQLite schema with `npx tsx s
 
 ### Authentication modes
 
-| Mode               | When                           | How                                                                                                               |
-| ------------------ | ------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| **Local Admin**    | Always available               | Email/password against a `local_admins` table. The first admin is created during onboarding.                      |
-| **Authentik OIDC** | `AUTH_AUTHENTIK_ISSUER` is set | SSO with RBAC group mapping. Shown alongside the local-admin form.                                                |
-| **Dev Mode**       | Running `next dev`             | No sign-in: a fixed session, admin with `ALLOW_DEV_MODE=true`, otherwise a read-only viewer. Never in production. |
+| Mode               | When                           | How                                                                                                                                                                                                                                                                                            |
+| ------------------ | ------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Local Admin**    | Always available               | Email/password against a `local_admins` table. The first admin is created during onboarding. Sign-ins are throttled: after 5 attempts from one address, or 10 for one email (from an address that already failed), that address or email waits up to 15 minutes; a sign-in resets both counts. |
+| **Authentik OIDC** | `AUTH_AUTHENTIK_ISSUER` is set | SSO with RBAC group mapping. Shown alongside the local-admin form.                                                                                                                                                                                                                             |
+| **Dev Mode**       | Running `next dev`             | No sign-in: a fixed session, admin with `ALLOW_DEV_MODE=true`, otherwise a read-only viewer. Never in production.                                                                                                                                                                              |
 
 Local admin is the default install's sign-in: Authentik is optional, and without `AUTH_AUTHENTIK_ISSUER` the login page offers only the local-admin form.
 

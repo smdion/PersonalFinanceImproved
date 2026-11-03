@@ -1,6 +1,6 @@
 import "../routers/setup-mocks";
 import { describe, expect, it } from "vitest";
-import { clientAddress } from "@/server/trpc";
+import { clientAddress } from "@/lib/client-address";
 
 const from = (h: Record<string, string>) => (name: string) => h[name] ?? null;
 

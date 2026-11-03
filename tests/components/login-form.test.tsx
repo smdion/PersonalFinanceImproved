@@ -46,6 +46,7 @@ import { LoginForm } from "@/app/login/login-form";
  *   - Invalid-credentials submission path: signIn returns {error}, the
  *     local error banner appears, and the form stays mounted (no
  *     redirect side-effect)
+ *   - Throttled sign-in (code "rate_limited") says so, not "Invalid …"
  */
 
 describe("LoginForm (M18)", () => {
@@ -171,6 +172,34 @@ describe("LoginForm (M18)", () => {
       expect(
         screen.getByRole("button", { name: "Sign in" }),
       ).not.toBeDisabled();
+    });
+
+    it("says so when sign-in is throttled after too many failures", async () => {
+      vi.mocked(signIn).mockResolvedValueOnce({
+        error: "CredentialsSignin",
+        ok: false,
+        status: 401,
+        url: null,
+        code: "rate_limited",
+      });
+
+      render(<LoginForm hasOidc={false} />);
+      fireEvent.change(screen.getByLabelText("Email"), {
+        target: { value: "admin@example.com" },
+      });
+      fireEvent.change(screen.getByLabelText("Password"), {
+        target: { value: "pw" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/Too many failed sign-ins/i),
+        ).toBeInTheDocument();
+      });
+      expect(
+        screen.queryByText(/Invalid email or password/i),
+      ).not.toBeInTheDocument();
     });
 
     it("passes the callbackUrl query param through to signIn", async () => {
