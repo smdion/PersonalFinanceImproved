@@ -22,12 +22,17 @@ import {
   isSimplefinReplayMode,
   type SimplefinAccount,
 } from "./client";
-import { BudgetApiError } from "@/lib/budget-api/errors";
+import {
+  BudgetApiError,
+  nothingChanged,
+  userMessageFor,
+} from "@/lib/budget-api/errors";
 import {
   SIMPLEFIN_DAILY_REQUEST_LIMIT,
   countSimplefinRequestsLastDay,
   pruneSimplefinRequestLog,
   recordSimplefinRequest,
+  type SimplefinRequestOutcome,
 } from "./request-log";
 import { ingestInvestmentData, type IngestSummary } from "./ingest";
 import { utcDayOf } from "@/lib/utils/date";
@@ -190,6 +195,13 @@ export async function hasSyncedToday(
   const conn = await getSimplefinConnection(db);
   if (!conn?.lastSyncedAt) return false;
   return localDateStr(conn.lastSyncedAt) === localDateStr(asOfDate);
+}
+
+/** How a failed /accounts request is logged. */
+function requestOutcome(e: unknown): SimplefinRequestOutcome {
+  if (!(e instanceof BudgetApiError)) return "error";
+  if (e.code === "timeout") return "timeout";
+  return e.code === "bad-response" ? "bad_response" : "error";
 }
 
 /** Record (or clear) the last SimpleFIN sync error for display in the UI. */
@@ -451,13 +463,12 @@ export async function runSimplefinSync(
     } catch (e) {
       await recordSimplefinRequest(db, {
         endpoint: "/accounts",
-        outcome:
-          e instanceof BudgetApiError && e.code === "timeout"
-            ? "timeout"
-            : "error",
+        outcome: requestOutcome(e),
         httpStatus: e instanceof BudgetApiError ? e.status : null,
       });
-      throw e;
+      // Nothing a user sees is written before this answer (the request log
+      // and its pruning are bookkeeping).
+      throw e instanceof BudgetApiError ? nothingChanged(e) : e;
     }
     const {
       accounts: fetched,
@@ -594,7 +605,7 @@ export async function runSimplefinSync(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    await setSimplefinLastError(db, message);
+    await setSimplefinLastError(db, userMessageFor(err) ?? message);
     throw err;
   }
 }

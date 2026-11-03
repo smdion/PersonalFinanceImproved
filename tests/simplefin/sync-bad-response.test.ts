@@ -21,6 +21,7 @@ import {
   runSimplefinSync,
   saveSimplefinConnection,
 } from "@/lib/simplefin/sync";
+import { countSimplefinRequestsLastDay } from "@/lib/simplefin/request-log";
 import {
   sfAccount,
   sfAccountSet,
@@ -113,18 +114,26 @@ describe("runSimplefinSync with an answer Ledgr can't fully read", () => {
     await expect(
       runSimplefinSync(ctx.rawDb, new Date(2026, 6, 3)),
     ).rejects.toMatchObject({
-      code: "bad-response",
       message: "SimpleFIN: /accounts: errors: expected array, received string",
+      done: "Nothing was changed.",
+      cause: { code: "bad-response", field: "errors" },
     });
 
     expect(balances()).toEqual(before.balances);
     expect(snapshots()).toEqual(before.snapshots);
     expect(await getSimplefinConnection(ctx.rawDb)).toEqual(conn);
+    // Settings shows what the toast shows.
     expect(await getSimplefinLastError(ctx.rawDb)).toBe(
-      "SimpleFIN: /accounts: errors: expected array, received string",
+      "SimpleFIN sent something Ledgr doesn't understand (errors). Nothing was changed.",
     );
     const log = ctx.db.select().from(ctx.schema.syncRequestLog).all();
-    expect(log.at(-1)).toMatchObject({ outcome: "error", httpStatus: null });
+    expect(log.at(-1)).toMatchObject({
+      outcome: "bad_response",
+      httpStatus: null,
+    });
+    expect(await countSimplefinRequestsLastDay(ctx.rawDb, new Date())).toBe(
+      log.length,
+    );
   });
 
   describe("a broken holding or transaction on a good account", () => {
