@@ -678,6 +678,35 @@ describe("resetAllData", () => {
     }
   });
 
+  it("puts the shipped presets back and drops the saved asset-class changes that pointed at the old classes", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const [cls] = ctx.db.select().from(sqliteSchema.assetClassParams).all();
+      seedAppSetting(ctx.db, "mc_asset_class_overrides", [
+        { id: cls!.id, meanReturn: 0.2 },
+      ]);
+      ctx.db
+        .update(sqliteSchema.mcPresets)
+        .set({ label: "Changed by the household" })
+        .run();
+      await ctx.caller.version.resetAllData({ confirmation: "delete" });
+      const keys = ctx.db
+        .select()
+        .from(sqliteSchema.appSettings)
+        .all()
+        .map((s) => s.key);
+      expect(keys).not.toContain("mc_asset_class_overrides");
+      const labels = ctx.db
+        .select()
+        .from(sqliteSchema.mcPresets)
+        .all()
+        .map((p) => p.label);
+      expect(labels.sort()).toEqual(["Aggressive", "Conservative", "Default"]);
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
   it("rejects a non-admin caller", async () => {
     const ctx = await createTestCaller(viewerSession);
     try {

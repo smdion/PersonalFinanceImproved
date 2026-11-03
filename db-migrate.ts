@@ -33,7 +33,9 @@ function getDialect(): "postgresql" | "sqlite" {
  * year, assembled by assembleTaxData) is
  * applied on every migrate, in public and in each live demo schema, so a new
  * tax year or a corrected figure reaches existing installs — without ever
- * touching a figure the household changed (see reconcileReferenceRows). The
+ * touching a figure the household changed (see reconcileReferenceRows).
+ * The Simulation presets (reference-data/) are seeded only where every
+ * preset table is empty (see presetSeedSteps). The
  * code below is a verbatim copy of src/lib/db/reference-reconcile-core.ts
  * (this file is bundled on its own and doesn't import src/); a test keeps the
  * two identical.
@@ -50,6 +52,12 @@ export const REFERENCE_SEED_TABLES = new Set([
 
 function readTaxDataFile(): TaxDataFile {
   return readTaxDataDir(fs, path.resolve(TAX_DATA_DIR));
+}
+
+function readSimulationPresetsFile(): SimulationPresetsFile {
+  return parseSimulationPresets(
+    fs.readFileSync(path.resolve(SIMULATION_PRESETS_FILE), "utf-8"),
+  );
 }
 
 // BEGIN reference-reconcile-core (keep identical in db-migrate.ts)
@@ -603,6 +611,231 @@ export function reconcileReferenceRowsSync(
   carryForward = true,
 ): RefResult {
   const steps = reconcileSteps("sqlite", file, mode, carryForward);
+  let next = steps.next();
+  while (!next.done) next = steps.next(run(next.value.sql, next.value.params));
+  return next.value;
+}
+
+/** Where the shipped Simulation presets live (repo and image). */
+export const SIMULATION_PRESETS_FILE = "reference-data/simulation-presets.json";
+
+/** Highest presets file format this code reads. */
+export const SIMULATION_PRESETS_FORMAT_VERSION = 1;
+
+/** The shipped Simulation presets, the asset classes they draw from and
+ *  which composition buckets count toward each class, one array per table;
+ *  rows name each other by asset class `name` and preset `key`, never by
+ *  id. */
+export type SimulationPresetsFile = {
+  formatVersion: number;
+  asset_class_params: {
+    name: string;
+    mean_return: number;
+    std_dev: number;
+    sort_order: number;
+    is_active: boolean;
+  }[];
+  asset_class_correlations: {
+    class_a: string;
+    class_b: string;
+    correlation: number;
+  }[];
+  asset_class_buckets: { bucket: string; asset_class: string }[];
+  mc_presets: {
+    key: string;
+    label: string;
+    description: string;
+    return_multiplier: number;
+    vol_multiplier: number;
+    inflation_mean: number;
+    inflation_std_dev: number;
+    default_trials: number;
+    return_clamp_min: number;
+    return_clamp_max: number;
+    sort_order: number;
+    is_active: boolean;
+  }[];
+  mc_preset_glide_paths: {
+    preset: string;
+    age: number;
+    asset_class: string;
+    allocation: number;
+  }[];
+  mc_preset_return_overrides: {
+    preset: string;
+    asset_class: string;
+    mean_return: number;
+  }[];
+};
+
+/** The tables the preset seed fills, parents first; it writes only when
+ *  all are empty. */
+export const SIMULATION_PRESET_TABLES = [
+  "asset_class_params",
+  "asset_class_correlations",
+  "asset_class_buckets",
+  "mc_presets",
+  "mc_preset_glide_paths",
+  "mc_preset_return_overrides",
+] as const;
+
+/** How far a glide-path age's weights may sum from 100%. */
+export const GLIDE_PATH_SUM_TOLERANCE = 1e-6;
+
+/** Parse the presets file, throwing on a format this code can't read, a
+ *  figure that isn't a finite number, a correlation outside [-1, 1], a
+ *  glide-path age that doesn't sum to 100%, or a row that names a class or
+ *  preset the file doesn't have. */
+export function parseSimulationPresets(text: string): SimulationPresetsFile {
+  const f = JSON.parse(text) as SimulationPresetsFile;
+  const fail = (why: string) => {
+    throw new Error(`${SIMULATION_PRESETS_FILE}: ${why}`);
+  };
+  if (f.formatVersion > SIMULATION_PRESETS_FORMAT_VERSION)
+    throw new Error(
+      `simulation presets format ${f.formatVersion} is newer than this app reads (${SIMULATION_PRESETS_FORMAT_VERSION})`,
+    );
+  for (const t of SIMULATION_PRESET_TABLES)
+    if (!Array.isArray(f[t])) fail(`${t} is missing`);
+  const classes = new Set(f.asset_class_params.map((c) => c.name));
+  const presets = new Set(f.mc_presets.map((p) => p.key));
+  for (const t of SIMULATION_PRESET_TABLES)
+    for (const row of f[t] as Record<string, unknown>[])
+      for (const [col, v] of Object.entries(row)) {
+        if (typeof v === "number" && !Number.isFinite(v))
+          fail(`${t}.${col} is not a finite number`);
+        if (col === "asset_class" || col === "class_a" || col === "class_b")
+          if (!classes.has(String(v))) fail(`unknown asset class ${v}`);
+        if (col === "preset" && !presets.has(String(v)))
+          fail(`unknown preset ${v}`);
+      }
+  for (const r of f.asset_class_correlations)
+    if (!(Math.abs(r.correlation) <= 1))
+      fail(`correlation ${r.class_a}/${r.class_b} is outside [-1, 1]`);
+  const sums = new Map<string, number>();
+  for (const r of f.mc_preset_glide_paths) {
+    const k = `${r.preset} at ${r.age}`;
+    sums.set(k, (sums.get(k) ?? 0) + r.allocation);
+  }
+  for (const [k, sum] of sums)
+    if (Math.abs(sum - 1) > GLIDE_PATH_SUM_TOLERANCE)
+      fail(`glide path ${k} sums to ${sum}, not 1`);
+  return f;
+}
+
+/**
+ * Insert the shipped presets when every preset table is empty (a fresh
+ * install, "Reset all data", a new demo schema); otherwise do nothing —
+ * rows already there are the install's, whatever they hold. Returns the
+ * rows inserted.
+ */
+function* presetSeedSteps(
+  dialect: RefDialect,
+  file: SimulationPresetsFile,
+): Generator<RefStep, number, Rows> {
+  const query = (sql: string, params: unknown[] = []) => ({ sql, params });
+  for (const t of SIMULATION_PRESET_TABLES)
+    if ((yield query(`SELECT 1 AS present FROM ${t} LIMIT 1`)).length > 0)
+      return 0;
+  const bool = (b: boolean) => (dialect === "sqlite" ? (b ? 1 : 0) : b);
+  const dec = (n: number) => n.toFixed(6);
+  const insert = (table: string, row: Record<string, unknown>) => {
+    const cols = Object.keys(row);
+    return query(
+      `INSERT INTO ${table} (${cols.join(", ")}) VALUES (${cols.map(() => "?").join(", ")})`,
+      Object.values(row),
+    );
+  };
+  const idsBy = (rows: Rows, col: string) =>
+    new Map(rows.map((r) => [String(r[col]), Number(r.id)]));
+  let inserted = 0;
+
+  for (const c of file.asset_class_params) {
+    yield insert("asset_class_params", {
+      name: c.name,
+      mean_return: dec(c.mean_return),
+      std_dev: dec(c.std_dev),
+      sort_order: c.sort_order,
+      is_active: bool(c.is_active),
+    });
+    inserted++;
+  }
+  const classId = idsBy(
+    yield query("SELECT id, name FROM asset_class_params"),
+    "name",
+  );
+  for (const r of file.asset_class_correlations) {
+    yield insert("asset_class_correlations", {
+      class_a_id: classId.get(r.class_a),
+      class_b_id: classId.get(r.class_b),
+      correlation: dec(r.correlation),
+    });
+    inserted++;
+  }
+  for (const r of file.asset_class_buckets) {
+    yield insert("asset_class_buckets", {
+      bucket: r.bucket,
+      asset_class_id: classId.get(r.asset_class),
+    });
+    inserted++;
+  }
+  for (const p of file.mc_presets) {
+    yield insert("mc_presets", {
+      key: p.key,
+      label: p.label,
+      description: p.description,
+      return_multiplier: dec(p.return_multiplier),
+      vol_multiplier: dec(p.vol_multiplier),
+      inflation_mean: dec(p.inflation_mean),
+      inflation_std_dev: dec(p.inflation_std_dev),
+      default_trials: p.default_trials,
+      return_clamp_min: dec(p.return_clamp_min),
+      return_clamp_max: dec(p.return_clamp_max),
+      sort_order: p.sort_order,
+      is_active: bool(p.is_active),
+    });
+    inserted++;
+  }
+  const presetId = idsBy(yield query("SELECT id, key FROM mc_presets"), "key");
+  for (const r of file.mc_preset_glide_paths) {
+    yield insert("mc_preset_glide_paths", {
+      preset_id: presetId.get(r.preset),
+      age: r.age,
+      asset_class_id: classId.get(r.asset_class),
+      allocation: dec(r.allocation),
+    });
+    inserted++;
+  }
+  for (const r of file.mc_preset_return_overrides) {
+    yield insert("mc_preset_return_overrides", {
+      preset_id: presetId.get(r.preset),
+      asset_class_id: classId.get(r.asset_class),
+      mean_return: dec(r.mean_return),
+    });
+    inserted++;
+  }
+  return inserted;
+}
+
+/** Seed the presets through an async driver (see presetSeedSteps). */
+export async function seedSimulationPresets(
+  run: RefQuery,
+  dialect: RefDialect,
+  file: SimulationPresetsFile,
+): Promise<number> {
+  const steps = presetSeedSteps(dialect, file);
+  let next = steps.next();
+  while (!next.done)
+    next = steps.next(await run(next.value.sql, next.value.params));
+  return next.value;
+}
+
+/** Seed the presets through a sync driver (better-sqlite3). */
+export function seedSimulationPresetsSync(
+  run: RefQuerySync,
+  file: SimulationPresetsFile,
+): number {
+  const steps = presetSeedSteps("sqlite", file);
   let next = steps.next();
   while (!next.done) next = steps.next(run(next.value.sql, next.value.params));
   return next.value;
@@ -1819,6 +2052,7 @@ async function runPostgres() {
     const seedClient = await pool.connect();
     try {
       const file = readTaxDataFile();
+      const presets = readSimulationPresetsFile();
       const pgQuery: RefQuery = async (text, params) => {
         let i = 0;
         const res = await seedClient.query(
@@ -1867,10 +2101,15 @@ async function runPostgres() {
         };
       };
       const result = await inTransaction(bothFiles);
+      // The presets go in after, in a transaction of their own.
+      const seedPresets = () =>
+        inTransaction(() => seedSimulationPresets(pgQuery, "pg", presets));
+      const presetRows = await seedPresets();
       log("info", "reference_data_reconciled", {
         dataVersion: file.dataVersion,
         communityDataVersion: community?.dataVersion ?? null,
         ...result,
+        presetRows,
       });
       const { rows: demos } = await seedClient.query<{ nspname: string }>(
         `SELECT nspname FROM pg_namespace WHERE nspname LIKE 'demo\\_%'`,
@@ -1880,6 +2119,7 @@ async function runPostgres() {
         try {
           await seedClient.query(`SET search_path TO ${schemaIdent}`);
           await inTransaction(bothFiles);
+          await seedPresets();
         } finally {
           await seedClient.query("SET search_path TO public");
         }
@@ -2299,6 +2539,7 @@ export function runSQLite() {
   // above — fails loudly rather than warn-and-continue.
   try {
     const file = readTaxDataFile();
+    const presets = readSimulationPresetsFile();
     const run = (text: string, params: unknown[]) => {
       const stmt = sqlite.prepare(text);
       if (stmt.reader) return stmt.all(...params) as Record<string, unknown>[];
@@ -2323,10 +2564,15 @@ export function runSQLite() {
         updated: seeded.updated + (updated?.updated ?? 0),
       };
     })();
+    // The presets go in after, in a transaction of their own.
+    const presetRows = sqlite.transaction(() =>
+      seedSimulationPresetsSync(run, presets),
+    )();
     log("info", "reference_data_reconciled", {
       dataVersion: file.dataVersion,
       communityDataVersion: community?.dataVersion ?? null,
       ...result,
+      presetRows,
     });
   } finally {
     sqlite.close();

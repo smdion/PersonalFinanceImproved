@@ -5,14 +5,19 @@
  */
 import { withAsyncTransactions } from "@/lib/db/sqlite-transactions";
 import {
+  SIMULATION_PRESETS_FILE,
   TAX_DATA_DIR,
+  parseSimulationPresets,
   readTaxDataDir,
   reconcileReferenceRowsSync,
+  seedSimulationPresetsSync,
+  SIMULATION_PRESET_TABLES,
 } from "@/lib/db/reference-reconcile-core";
 import fs from "fs";
 import path from "path";
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
+import { sql } from "drizzle-orm";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import type { NodePgDatabase } from "drizzle-orm/node-postgres";
@@ -34,7 +39,8 @@ let template: Buffer | null = null;
 
 /**
  * A fresh in-memory test database: a copy of a template that has every
- * migration and the reference data (IRS limits, tax brackets) applied.
+ * migration and the reference data (IRS limits, tax brackets, the shipped
+ * Simulation presets) applied.
  * Building that template takes ~85ms; copying it takes well under 1ms, so
  * it's built once per worker instead of once per test. A reference-data
  * load that fails throws here — tests must never run on a half-seeded DB.
@@ -43,17 +49,23 @@ export function openTestSqlite(): InstanceType<typeof Database> {
   if (!template) {
     const t = new Database(":memory:");
     applyMigrations(t);
-    // Reference data from the tax-data file, through the same reconcile
-    // the migrator runs.
+    // Reference data from the tax-data file and the presets file, through
+    // the same reconcile and seed the migrator runs.
+    const run = (text: string, params: unknown[]) => {
+      const stmt = t.prepare(text);
+      if (stmt.reader) return stmt.all(...params) as Record<string, unknown>[];
+      stmt.run(...params);
+      return [];
+    };
     reconcileReferenceRowsSync(
-      (text, params) => {
-        const stmt = t.prepare(text);
-        if (stmt.reader)
-          return stmt.all(...params) as Record<string, unknown>[];
-        stmt.run(...params);
-        return [];
-      },
+      run,
       readTaxDataDir(fs, path.resolve(TAX_DATA_DIR)),
+    );
+    seedSimulationPresetsSync(
+      run,
+      parseSimulationPresets(
+        fs.readFileSync(path.resolve(SIMULATION_PRESETS_FILE), "utf-8"),
+      ),
     );
     template = t.serialize();
     t.close();
@@ -61,6 +73,19 @@ export function openTestSqlite(): InstanceType<typeof Database> {
   const sqlite = new Database(template);
   sqlite.pragma("foreign_keys = ON");
   return sqlite;
+}
+
+/** Empty the preset tables the template ships filled, for a test that
+ *  builds its own asset classes and presets (rows that point at them go
+ *  too). */
+export function clearSimulationPresets(
+  db: BetterSQLite3Database<typeof sqliteSchema>,
+): void {
+  for (const t of [
+    "glide_path_allocations",
+    ...[...SIMULATION_PRESET_TABLES].reverse(),
+  ])
+    db.run(sql.raw(`DELETE FROM ${t}`));
 }
 
 export async function createTestDb(): Promise<TestDbContext> {

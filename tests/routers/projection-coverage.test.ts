@@ -20,6 +20,7 @@ import {
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
+import { clearSimulationPresets } from "../helpers/db-harness";
 import { DEFAULT_SIMULATION } from "@/lib/constants";
 import { defaultDecumulationConfig } from "@/lib/config/account-types";
 
@@ -55,8 +56,10 @@ vi.mock("@/server/helpers/monte-carlo-worker-client", async () => {
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Seed two asset class rows so glide path FK references work. */
+/** Two asset class rows (in place of the shipped ones) so glide path FK
+ *  references work. */
 function seedAssetClasses(db: BetterSQLite3Database<typeof sqliteSchema>) {
+  clearSimulationPresets(db);
   db.insert(schema.assetClassParams)
     .values({
       id: 1,
@@ -1089,6 +1092,7 @@ describe("projection router — computeStrategyComparison", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
+      clearSimulationPresets(db);
 
       const response = await caller.projection.computeStrategyComparison();
 
@@ -1752,7 +1756,8 @@ describe("projection router — analyzeStrategy", () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
       seedFullProjectionData(db);
-      // No asset classes or glide path seeded
+      // No asset classes or glide path
+      clearSimulationPresets(db);
       const response = await caller.projection.analyzeStrategy();
       expect(response.baseline).toBeNull();
       expect(response.recommendations).toEqual([]);

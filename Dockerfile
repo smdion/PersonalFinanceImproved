@@ -77,6 +77,7 @@ RUN set -e; \
     node -e "new (require('better-sqlite3'))(':memory:').close()"
 # The tax-data file (reference data), read from disk by db-migrate.js and the app.
 COPY --from=builder /app/tax-data ./tax-data
+COPY --from=builder /app/reference-data ./reference-data
 
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod 555 docker-entrypoint.sh

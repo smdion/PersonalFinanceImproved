@@ -32,6 +32,7 @@ vi.mock("@/lib/sec/facts-sync", () => ({
 }));
 
 import { createTestCaller, createViewerSessionWithPermissions } from "./setup";
+import { clearSimulationPresets } from "../helpers/db-harness";
 
 describe("fund facts", () => {
   let linkedPerf: number;
@@ -41,6 +42,7 @@ describe("fund facts", () => {
   beforeAll(async () => {
     ctx = await createTestCaller();
     const db = ctx.db;
+    clearSimulationPresets(db);
     const cls = (
       name: string,
       bucket: CompositionBucket | null,

@@ -17,6 +17,7 @@ import {
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import * as schema from "@/lib/db/schema-sqlite";
+import { clearSimulationPresets } from "../helpers/db-harness";
 import { startingBalanceGaps } from "../calculators/fixtures/engine-fixtures";
 
 vi.mock("@/lib/budget-api", () => ({
@@ -28,8 +29,10 @@ vi.mock("@/lib/budget-api", () => ({
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** Seed two asset class rows so glide path FK references work. */
+/** Two asset class rows (in place of the shipped ones) so glide path FK
+ *  references work. */
 function seedAssetClasses(db: BetterSQLite3Database<typeof sqliteSchema>) {
+  clearSimulationPresets(db);
   db.insert(schema.assetClassParams)
     .values({
       id: 1,

@@ -1,0 +1,853 @@
+{
+  "formatVersion": 1,
+  "asset_class_params": [
+    {
+      "name": "US Equities",
+      "mean_return": 0.1,
+      "std_dev": 0.16,
+      "sort_order": 1,
+      "is_active": true
+    },
+    {
+      "name": "International Equities",
+      "mean_return": 0.08,
+      "std_dev": 0.17,
+      "sort_order": 2,
+      "is_active": true
+    },
+    {
+      "name": "US Bonds",
+      "mean_return": 0.05,
+      "std_dev": 0.05,
+      "sort_order": 3,
+      "is_active": true
+    },
+    {
+      "name": "International Bonds",
+      "mean_return": 0.045,
+      "std_dev": 0.05,
+      "sort_order": 4,
+      "is_active": true
+    },
+    {
+      "name": "TIPS",
+      "mean_return": 0.035,
+      "std_dev": 0.04,
+      "sort_order": 5,
+      "is_active": true
+    },
+    {
+      "name": "Cash",
+      "mean_return": 0.03,
+      "std_dev": 0.01,
+      "sort_order": 6,
+      "is_active": true
+    }
+  ],
+  "asset_class_correlations": [
+    {
+      "class_a": "US Equities",
+      "class_b": "International Equities",
+      "correlation": 0.75
+    },
+    {
+      "class_a": "US Equities",
+      "class_b": "US Bonds",
+      "correlation": -0.1
+    },
+    {
+      "class_a": "US Equities",
+      "class_b": "TIPS",
+      "correlation": 0.0
+    },
+    {
+      "class_a": "US Equities",
+      "class_b": "Cash",
+      "correlation": 0.0
+    },
+    {
+      "class_a": "International Equities",
+      "class_b": "US Bonds",
+      "correlation": -0.05
+    },
+    {
+      "class_a": "International Equities",
+      "class_b": "TIPS",
+      "correlation": 0.05
+    },
+    {
+      "class_a": "International Equities",
+      "class_b": "Cash",
+      "correlation": 0.0
+    },
+    {
+      "class_a": "US Bonds",
+      "class_b": "TIPS",
+      "correlation": 0.5
+    },
+    {
+      "class_a": "US Bonds",
+      "class_b": "Cash",
+      "correlation": 0.3
+    },
+    {
+      "class_a": "TIPS",
+      "class_b": "Cash",
+      "correlation": 0.2
+    },
+    {
+      "class_a": "International Bonds",
+      "class_b": "US Equities",
+      "correlation": 0.0
+    },
+    {
+      "class_a": "International Bonds",
+      "class_b": "International Equities",
+      "correlation": 0.05
+    },
+    {
+      "class_a": "International Bonds",
+      "class_b": "US Bonds",
+      "correlation": 0.7
+    },
+    {
+      "class_a": "International Bonds",
+      "class_b": "TIPS",
+      "correlation": 0.4
+    },
+    {
+      "class_a": "International Bonds",
+      "class_b": "Cash",
+      "correlation": 0.2
+    }
+  ],
+  "asset_class_buckets": [
+    {
+      "bucket": "us_equity",
+      "asset_class": "US Equities"
+    },
+    {
+      "bucket": "intl_equity",
+      "asset_class": "International Equities"
+    },
+    {
+      "bucket": "us_bond",
+      "asset_class": "US Bonds"
+    },
+    {
+      "bucket": "intl_bond",
+      "asset_class": "International Bonds"
+    },
+    {
+      "bucket": "tips",
+      "asset_class": "TIPS"
+    },
+    {
+      "bucket": "cash",
+      "asset_class": "Cash"
+    }
+  ],
+  "mc_presets": [
+    {
+      "key": "aggressive",
+      "label": "Aggressive",
+      "description": "Full historical returns, 0.9× vol, high equity (95%→35%). Money Guy / Bogleheads age-20.",
+      "return_multiplier": 1.0,
+      "vol_multiplier": 0.9,
+      "inflation_mean": 0.025,
+      "inflation_std_dev": 0.012,
+      "default_trials": 5000,
+      "return_clamp_min": -0.5,
+      "return_clamp_max": 1.0,
+      "sort_order": 1,
+      "is_active": true
+    },
+    {
+      "key": "default",
+      "label": "Default",
+      "description": "Historical returns, standard vol, hybrid FIRE glide path (90%→50% floor). Vanguard TDF + Kitces.",
+      "return_multiplier": 1.0,
+      "vol_multiplier": 1.0,
+      "inflation_mean": 0.03,
+      "inflation_std_dev": 0.012,
+      "default_trials": 5000,
+      "return_clamp_min": -0.5,
+      "return_clamp_max": 1.0,
+      "sort_order": 2,
+      "is_active": true
+    },
+    {
+      "key": "conservative",
+      "label": "Conservative",
+      "description": "Forward-looking returns (~5% equity), +15% vol, heavy bonds (75%→15%). VCMM / LTCMA.",
+      "return_multiplier": 0.0,
+      "vol_multiplier": 1.15,
+      "inflation_mean": 0.03,
+      "inflation_std_dev": 0.015,
+      "default_trials": 5000,
+      "return_clamp_min": -0.5,
+      "return_clamp_max": 1.0,
+      "sort_order": 3,
+      "is_active": true
+    }
+  ],
+  "mc_preset_glide_paths": [
+    {
+      "preset": "aggressive",
+      "age": 25,
+      "asset_class": "US Equities",
+      "allocation": 0.66
+    },
+    {
+      "preset": "aggressive",
+      "age": 25,
+      "asset_class": "International Equities",
+      "allocation": 0.29
+    },
+    {
+      "preset": "aggressive",
+      "age": 25,
+      "asset_class": "US Bonds",
+      "allocation": 0.04
+    },
+    {
+      "preset": "aggressive",
+      "age": 25,
+      "asset_class": "TIPS",
+      "allocation": 0.01
+    },
+    {
+      "preset": "aggressive",
+      "age": 25,
+      "asset_class": "Cash",
+      "allocation": 0.0
+    },
+    {
+      "preset": "aggressive",
+      "age": 35,
+      "asset_class": "US Equities",
+      "allocation": 0.62
+    },
+    {
+      "preset": "aggressive",
+      "age": 35,
+      "asset_class": "International Equities",
+      "allocation": 0.3
+    },
+    {
+      "preset": "aggressive",
+      "age": 35,
+      "asset_class": "US Bonds",
+      "allocation": 0.06
+    },
+    {
+      "preset": "aggressive",
+      "age": 35,
+      "asset_class": "TIPS",
+      "allocation": 0.01
+    },
+    {
+      "preset": "aggressive",
+      "age": 35,
+      "asset_class": "Cash",
+      "allocation": 0.01
+    },
+    {
+      "preset": "aggressive",
+      "age": 45,
+      "asset_class": "US Equities",
+      "allocation": 0.57
+    },
+    {
+      "preset": "aggressive",
+      "age": 45,
+      "asset_class": "International Equities",
+      "allocation": 0.28
+    },
+    {
+      "preset": "aggressive",
+      "age": 45,
+      "asset_class": "US Bonds",
+      "allocation": 0.1
+    },
+    {
+      "preset": "aggressive",
+      "age": 45,
+      "asset_class": "TIPS",
+      "allocation": 0.03
+    },
+    {
+      "preset": "aggressive",
+      "age": 45,
+      "asset_class": "Cash",
+      "allocation": 0.02
+    },
+    {
+      "preset": "aggressive",
+      "age": 55,
+      "asset_class": "US Equities",
+      "allocation": 0.48
+    },
+    {
+      "preset": "aggressive",
+      "age": 55,
+      "asset_class": "International Equities",
+      "allocation": 0.25
+    },
+    {
+      "preset": "aggressive",
+      "age": 55,
+      "asset_class": "US Bonds",
+      "allocation": 0.17
+    },
+    {
+      "preset": "aggressive",
+      "age": 55,
+      "asset_class": "TIPS",
+      "allocation": 0.06
+    },
+    {
+      "preset": "aggressive",
+      "age": 55,
+      "asset_class": "Cash",
+      "allocation": 0.04
+    },
+    {
+      "preset": "aggressive",
+      "age": 65,
+      "asset_class": "US Equities",
+      "allocation": 0.38
+    },
+    {
+      "preset": "aggressive",
+      "age": 65,
+      "asset_class": "International Equities",
+      "allocation": 0.2
+    },
+    {
+      "preset": "aggressive",
+      "age": 65,
+      "asset_class": "US Bonds",
+      "allocation": 0.25
+    },
+    {
+      "preset": "aggressive",
+      "age": 65,
+      "asset_class": "TIPS",
+      "allocation": 0.1
+    },
+    {
+      "preset": "aggressive",
+      "age": 65,
+      "asset_class": "Cash",
+      "allocation": 0.07
+    },
+    {
+      "preset": "aggressive",
+      "age": 75,
+      "asset_class": "US Equities",
+      "allocation": 0.28
+    },
+    {
+      "preset": "aggressive",
+      "age": 75,
+      "asset_class": "International Equities",
+      "allocation": 0.15
+    },
+    {
+      "preset": "aggressive",
+      "age": 75,
+      "asset_class": "US Bonds",
+      "allocation": 0.3
+    },
+    {
+      "preset": "aggressive",
+      "age": 75,
+      "asset_class": "TIPS",
+      "allocation": 0.16
+    },
+    {
+      "preset": "aggressive",
+      "age": 75,
+      "asset_class": "Cash",
+      "allocation": 0.11
+    },
+    {
+      "preset": "aggressive",
+      "age": 85,
+      "asset_class": "US Equities",
+      "allocation": 0.23
+    },
+    {
+      "preset": "aggressive",
+      "age": 85,
+      "asset_class": "International Equities",
+      "allocation": 0.12
+    },
+    {
+      "preset": "aggressive",
+      "age": 85,
+      "asset_class": "US Bonds",
+      "allocation": 0.3
+    },
+    {
+      "preset": "aggressive",
+      "age": 85,
+      "asset_class": "TIPS",
+      "allocation": 0.2
+    },
+    {
+      "preset": "aggressive",
+      "age": 85,
+      "asset_class": "Cash",
+      "allocation": 0.15
+    },
+    {
+      "preset": "default",
+      "age": 25,
+      "asset_class": "US Equities",
+      "allocation": 0.6
+    },
+    {
+      "preset": "default",
+      "age": 25,
+      "asset_class": "International Equities",
+      "allocation": 0.3
+    },
+    {
+      "preset": "default",
+      "age": 25,
+      "asset_class": "US Bonds",
+      "allocation": 0.07
+    },
+    {
+      "preset": "default",
+      "age": 25,
+      "asset_class": "TIPS",
+      "allocation": 0.02
+    },
+    {
+      "preset": "default",
+      "age": 25,
+      "asset_class": "Cash",
+      "allocation": 0.01
+    },
+    {
+      "preset": "default",
+      "age": 35,
+      "asset_class": "US Equities",
+      "allocation": 0.57
+    },
+    {
+      "preset": "default",
+      "age": 35,
+      "asset_class": "International Equities",
+      "allocation": 0.3
+    },
+    {
+      "preset": "default",
+      "age": 35,
+      "asset_class": "US Bonds",
+      "allocation": 0.09
+    },
+    {
+      "preset": "default",
+      "age": 35,
+      "asset_class": "TIPS",
+      "allocation": 0.03
+    },
+    {
+      "preset": "default",
+      "age": 35,
+      "asset_class": "Cash",
+      "allocation": 0.01
+    },
+    {
+      "preset": "default",
+      "age": 45,
+      "asset_class": "US Equities",
+      "allocation": 0.52
+    },
+    {
+      "preset": "default",
+      "age": 45,
+      "asset_class": "International Equities",
+      "allocation": 0.25
+    },
+    {
+      "preset": "default",
+      "age": 45,
+      "asset_class": "US Bonds",
+      "allocation": 0.15
+    },
+    {
+      "preset": "default",
+      "age": 45,
+      "asset_class": "TIPS",
+      "allocation": 0.06
+    },
+    {
+      "preset": "default",
+      "age": 45,
+      "asset_class": "Cash",
+      "allocation": 0.02
+    },
+    {
+      "preset": "default",
+      "age": 55,
+      "asset_class": "US Equities",
+      "allocation": 0.42
+    },
+    {
+      "preset": "default",
+      "age": 55,
+      "asset_class": "International Equities",
+      "allocation": 0.21
+    },
+    {
+      "preset": "default",
+      "age": 55,
+      "asset_class": "US Bonds",
+      "allocation": 0.24
+    },
+    {
+      "preset": "default",
+      "age": 55,
+      "asset_class": "TIPS",
+      "allocation": 0.08
+    },
+    {
+      "preset": "default",
+      "age": 55,
+      "asset_class": "Cash",
+      "allocation": 0.05
+    },
+    {
+      "preset": "default",
+      "age": 65,
+      "asset_class": "US Equities",
+      "allocation": 0.4
+    },
+    {
+      "preset": "default",
+      "age": 65,
+      "asset_class": "International Equities",
+      "allocation": 0.2
+    },
+    {
+      "preset": "default",
+      "age": 65,
+      "asset_class": "US Bonds",
+      "allocation": 0.25
+    },
+    {
+      "preset": "default",
+      "age": 65,
+      "asset_class": "TIPS",
+      "allocation": 0.09
+    },
+    {
+      "preset": "default",
+      "age": 65,
+      "asset_class": "Cash",
+      "allocation": 0.06
+    },
+    {
+      "preset": "default",
+      "age": 75,
+      "asset_class": "US Equities",
+      "allocation": 0.37
+    },
+    {
+      "preset": "default",
+      "age": 75,
+      "asset_class": "International Equities",
+      "allocation": 0.18
+    },
+    {
+      "preset": "default",
+      "age": 75,
+      "asset_class": "US Bonds",
+      "allocation": 0.27
+    },
+    {
+      "preset": "default",
+      "age": 75,
+      "asset_class": "TIPS",
+      "allocation": 0.11
+    },
+    {
+      "preset": "default",
+      "age": 75,
+      "asset_class": "Cash",
+      "allocation": 0.07
+    },
+    {
+      "preset": "default",
+      "age": 85,
+      "asset_class": "US Equities",
+      "allocation": 0.33
+    },
+    {
+      "preset": "default",
+      "age": 85,
+      "asset_class": "International Equities",
+      "allocation": 0.17
+    },
+    {
+      "preset": "default",
+      "age": 85,
+      "asset_class": "US Bonds",
+      "allocation": 0.27
+    },
+    {
+      "preset": "default",
+      "age": 85,
+      "asset_class": "TIPS",
+      "allocation": 0.13
+    },
+    {
+      "preset": "default",
+      "age": 85,
+      "asset_class": "Cash",
+      "allocation": 0.1
+    },
+    {
+      "preset": "conservative",
+      "age": 25,
+      "asset_class": "US Equities",
+      "allocation": 0.5
+    },
+    {
+      "preset": "conservative",
+      "age": 25,
+      "asset_class": "International Equities",
+      "allocation": 0.25
+    },
+    {
+      "preset": "conservative",
+      "age": 25,
+      "asset_class": "US Bonds",
+      "allocation": 0.15
+    },
+    {
+      "preset": "conservative",
+      "age": 25,
+      "asset_class": "TIPS",
+      "allocation": 0.07
+    },
+    {
+      "preset": "conservative",
+      "age": 25,
+      "asset_class": "Cash",
+      "allocation": 0.03
+    },
+    {
+      "preset": "conservative",
+      "age": 35,
+      "asset_class": "US Equities",
+      "allocation": 0.48
+    },
+    {
+      "preset": "conservative",
+      "age": 35,
+      "asset_class": "International Equities",
+      "allocation": 0.24
+    },
+    {
+      "preset": "conservative",
+      "age": 35,
+      "asset_class": "US Bonds",
+      "allocation": 0.18
+    },
+    {
+      "preset": "conservative",
+      "age": 35,
+      "asset_class": "TIPS",
+      "allocation": 0.06
+    },
+    {
+      "preset": "conservative",
+      "age": 35,
+      "asset_class": "Cash",
+      "allocation": 0.04
+    },
+    {
+      "preset": "conservative",
+      "age": 45,
+      "asset_class": "US Equities",
+      "allocation": 0.42
+    },
+    {
+      "preset": "conservative",
+      "age": 45,
+      "asset_class": "International Equities",
+      "allocation": 0.2
+    },
+    {
+      "preset": "conservative",
+      "age": 45,
+      "asset_class": "US Bonds",
+      "allocation": 0.24
+    },
+    {
+      "preset": "conservative",
+      "age": 45,
+      "asset_class": "TIPS",
+      "allocation": 0.09
+    },
+    {
+      "preset": "conservative",
+      "age": 45,
+      "asset_class": "Cash",
+      "allocation": 0.05
+    },
+    {
+      "preset": "conservative",
+      "age": 55,
+      "asset_class": "US Equities",
+      "allocation": 0.32
+    },
+    {
+      "preset": "conservative",
+      "age": 55,
+      "asset_class": "International Equities",
+      "allocation": 0.16
+    },
+    {
+      "preset": "conservative",
+      "age": 55,
+      "asset_class": "US Bonds",
+      "allocation": 0.3
+    },
+    {
+      "preset": "conservative",
+      "age": 55,
+      "asset_class": "TIPS",
+      "allocation": 0.13
+    },
+    {
+      "preset": "conservative",
+      "age": 55,
+      "asset_class": "Cash",
+      "allocation": 0.09
+    },
+    {
+      "preset": "conservative",
+      "age": 65,
+      "asset_class": "US Equities",
+      "allocation": 0.23
+    },
+    {
+      "preset": "conservative",
+      "age": 65,
+      "asset_class": "International Equities",
+      "allocation": 0.12
+    },
+    {
+      "preset": "conservative",
+      "age": 65,
+      "asset_class": "US Bonds",
+      "allocation": 0.33
+    },
+    {
+      "preset": "conservative",
+      "age": 65,
+      "asset_class": "TIPS",
+      "allocation": 0.19
+    },
+    {
+      "preset": "conservative",
+      "age": 65,
+      "asset_class": "Cash",
+      "allocation": 0.13
+    },
+    {
+      "preset": "conservative",
+      "age": 75,
+      "asset_class": "US Equities",
+      "allocation": 0.13
+    },
+    {
+      "preset": "conservative",
+      "age": 75,
+      "asset_class": "International Equities",
+      "allocation": 0.07
+    },
+    {
+      "preset": "conservative",
+      "age": 75,
+      "asset_class": "US Bonds",
+      "allocation": 0.37
+    },
+    {
+      "preset": "conservative",
+      "age": 75,
+      "asset_class": "TIPS",
+      "allocation": 0.25
+    },
+    {
+      "preset": "conservative",
+      "age": 75,
+      "asset_class": "Cash",
+      "allocation": 0.18
+    },
+    {
+      "preset": "conservative",
+      "age": 85,
+      "asset_class": "US Equities",
+      "allocation": 0.1
+    },
+    {
+      "preset": "conservative",
+      "age": 85,
+      "asset_class": "International Equities",
+      "allocation": 0.05
+    },
+    {
+      "preset": "conservative",
+      "age": 85,
+      "asset_class": "US Bonds",
+      "allocation": 0.35
+    },
+    {
+      "preset": "conservative",
+      "age": 85,
+      "asset_class": "TIPS",
+      "allocation": 0.28
+    },
+    {
+      "preset": "conservative",
+      "age": 85,
+      "asset_class": "Cash",
+      "allocation": 0.22
+    }
+  ],
+  "mc_preset_return_overrides": [
+    {
+      "preset": "conservative",
+      "asset_class": "US Equities",
+      "mean_return": 0.05
+    },
+    {
+      "preset": "conservative",
+      "asset_class": "International Equities",
+      "mean_return": 0.055
+    },
+    {
+      "preset": "conservative",
+      "asset_class": "US Bonds",
+      "mean_return": 0.035
+    },
+    {
+      "preset": "conservative",
+      "asset_class": "TIPS",
+      "mean_return": 0.02
+    },
+    {
+      "preset": "conservative",
+      "asset_class": "Cash",
+      "mean_return": 0.015
+    }
+  ]
+}

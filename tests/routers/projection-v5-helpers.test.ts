@@ -7,6 +7,7 @@ import {
 } from "@/server/routers/projection-v5-helpers";
 import { capsFromBaseLimits, withCapsAge } from "../helpers/irs-limit-caps";
 import { shippedTaxTables } from "../helpers/tax-data";
+import { clearSimulationPresets } from "../helpers/db-harness";
 
 /**
  * Unit tests for the projection-v5-helpers module. These helpers were
@@ -70,10 +71,7 @@ describe("computeCurrentStockAllocationPercent (M6)", () => {
     const sqlite = await import("@/lib/db/schema-sqlite");
     const { db, cleanup } = await createTestCaller();
     try {
-      const empty = await computeCurrentStockAllocationPercent(db as never, 35);
-      // (A seeded glide path may exist; only assert once ours is set.)
-      expect(empty === null || typeof empty === "number").toBe(true);
-      db.delete(sqlite.glidePathAllocations).run();
+      clearSimulationPresets(db);
       expect(
         await computeCurrentStockAllocationPercent(db as never, 35),
       ).toBeNull();

@@ -57,6 +57,7 @@ const PRESET_TABLES = [
   "mc_preset_return_overrides",
   "asset_class_params",
   "asset_class_correlations",
+  "asset_class_buckets",
 ];
 
 const TSX = path.join(process.cwd(), "node_modules", ".bin", "tsx");
@@ -135,7 +136,7 @@ export function freshInstallCases(fresh: () => Promise<FreshInstall>): void {
     timeout,
   );
 
-  it.fails(
+  it(
     "fills the simulation preset tables",
     async () => {
       const install = await fresh();
