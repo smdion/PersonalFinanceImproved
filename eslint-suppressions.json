@@ -4676,11 +4676,6 @@
       "count": 1
     }
   },
-  "src/lib/pure/recent-change.ts": {
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/lib/pure/recommendation-dismissals.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
