@@ -52,7 +52,7 @@ const ONE_TIME_WHAT_IF =
 
 const noon = (day: string) => new Date(`${day}T12:00:00Z`);
 
-/** The C1 loan: 200,000 at 6% over 360 months, P&I 1,199.10 (C1). */
+/** The household/C1 loan: 200,000 at 6% over 360 months, P&I 1,199.10. */
 const C1_LOAN: MortgageLoanInput = {
   id: 1,
   name: "Home",

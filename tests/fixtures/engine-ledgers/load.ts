@@ -146,7 +146,7 @@ export function rmdTotal(cell: string | undefined): number {
 }
 
 export interface LedgerInputOptions {
-  /** Every account allows penalized withdrawals (H6). */
+  /** Every account allows penalized withdrawals (engine/H6). */
   allowPenalizedWithdrawals?: boolean;
   /** Fill `baseYearContributions` / `baseYearEmployerMatch` as the payload
    *  does (E3). */

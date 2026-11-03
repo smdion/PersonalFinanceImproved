@@ -791,7 +791,7 @@ describe("answer key: RMD Spending", () => {
   it("strategies/RMD-4 [WDR-11] the pre-RMD step is CPI, not the raise: 41,600", () => {
     // Spec RMD-4 (strategies report G9): raise 1%, CPI 4%, w1 40,000:
     // 40,000 × 1.04 = 41,600, where Fixed (by the raise) gives 40,400.
-    // Kills audit mutant r03 (no CPI before the RMD age).
+    // Fails if the raise skips the CPI step before the RMD age.
     cents(
       rmdSpend({
         age: 66,

@@ -352,7 +352,7 @@ describe("household: Coast FIRE reads retirement money only", () => {
   it("household/C154 [ENG-30] 1,000,000 of Portfolio money doesn't move the Coast age", () => {
     // S154: Portfolio money is never retirement money, so the earliest
     // stop age is the same with or without it. The spec's closed-form
-    // "year 6" (C153) is a different metric from Ledgr's engine-judged
+    // "year 6" is a different metric from Ledgr's engine-judged
     // Coast age (verdict G9, owner design), so the property is what's
     // asserted, on a household whose Coast age is found, not already met.
     const without = findCoastFireAge(household(0));

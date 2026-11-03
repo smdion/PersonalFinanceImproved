@@ -25,7 +25,7 @@
  *   Roth" → v0.11 Limits "Mandatory Roth catch-up (SECURE 2.0 § 603) not
  *   modelled".
  * - C48: after-tax money already put into the 401(k) this year → built in
- *   v0.11 (decided 2026-11-02; R42).
+ *   v0.11 (owner decision).
  * - C131–C133, C138, C142, C143: HSA coverage by month and Medicare start
  *   → HSA part-year coverage in v0.11 Tax "Absent rules", with the HSA
  *   Medicare check (Advice).
@@ -33,9 +33,9 @@
  * - C144: HSA dependent flag: disclosed (v0.12 list).
  * - C59: MFS, lived together: closed (MFS unsupported, decision B2).
  * - C90–C114: covered-by-a-workplace-plan flags and deduction MAGI
- *   (R61–R65) → a per-person "covered" flag with the IRA deduction
+ *   → a per-person "covered" flag with the IRA deduction
  *   phase-out keys (v0.11 Limits "Tax data lacks keys").
- * - C115–C117: pro-rata fraction (R67) → v0.11 Retirement rules "No IRA
+ * - C115–C117: pro-rata fraction → v0.11 Retirement rules "No IRA
  *   basis input".
  *
  * Ledgr has no QSS or MFS filing status, so C79–C84 and C89 test the
@@ -234,7 +234,7 @@ describe("limits: deferrals and age", () => {
 });
 
 // ---------------------------------------------------------------------------
-// B. Several employers (402(g)(1) per person; R9, R10)
+// B. Several employers (402(g)(1) per person)
 // ---------------------------------------------------------------------------
 
 /**
@@ -263,7 +263,7 @@ describe("limits: several employers", () => {
   });
 
   it("limits/C17 [LIM-06] job change (2026, 55, 30,000 at A): room at B 2,500", () => {
-    // 32,500 − 30,000 = 2,500 (earlier employer's deferrals count, R10).
+    // 32,500 − 30,000 = 2,500 (earlier employer's deferrals count).
     cents(roomAtB(55, 30_000), 2_500);
   });
 
@@ -301,7 +301,7 @@ describe("limits: several employers", () => {
 });
 
 // ---------------------------------------------------------------------------
-// D. Total additions and mega backdoor room (IRC 415(c); R33–R44)
+// D. Total additions and mega backdoor room (IRC 415(c))
 // ---------------------------------------------------------------------------
 
 /** After-tax room in one plan (`megaBackdoorRoom`): min(415(c), pay) less
@@ -351,7 +351,7 @@ describe("limits: total additions and mega backdoor room", () => {
   });
 
   it("limits/C37 [LIM-16] whole-plan maximum at 50+ (2026, 52): 80,000", () => {
-    // 415(c) 72,000 plus the 8,000 catch-up outside it = 80,000 (R35; IRS
+    // 415(c) 72,000 plus the 8,000 catch-up outside it = 80,000 (IRS
     // 401(k) limits page). Deferrals 32,500 + room 72,000 − 24,500.
     cents(wholePlanMax(52), 80_000);
   });
@@ -402,14 +402,14 @@ describe("limits: total additions and mega backdoor room", () => {
   });
 
   it("limits/C42 [LIM-17] 415(c) per unrelated employer (2026, 46, solo plan beside a W-2 plan): 72,000", () => {
-    // 415(c) is per employer (415(f)(1)(B); R38): the W-2 plan's 24,500 of
+    // 415(c) is per employer (415(f)(1)(B)): the W-2 plan's 24,500 of
     // deferrals don't touch the solo plan's limit, so the solo plan alone
     // (business pay above the limit, nothing in it yet) has 72,000.
     cents(megaRoom(2026, 900_000, 0, 0).room, 72_000);
   });
 
   it("limits/C43 [LIM-17] related employers share 415(c) (2026, 45, 24,500 at A, employer 20,000 at B): 27,500", () => {
-    // One limit across related employers (415(h); R38):
+    // One limit across related employers (415(h)):
     // 72,000 − (24,500 + 20,000) = 27,500.
     cents(megaRoom(2026, 300_000, 24_500, 20_000).room, 27_500);
   });

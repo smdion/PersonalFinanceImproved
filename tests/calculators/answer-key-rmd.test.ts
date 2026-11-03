@@ -47,12 +47,12 @@
  *
  * Not written here (one header for the closed and "not as printed"
  * cases):
- * - R12 (first-year deferral to April 1), R16, R17 (per-plan and
- *   per-type RMDs), R29, R30 (the 10% corrected-in-window excise tier and
+ * - ret/R12 (first-year deferral to April 1), ret/R16, ret/R17 (per-plan and
+ *   per-type RMDs), ret/R29, ret/R30 (the 10% corrected-in-window excise tier and
  *   a missed first-year RMD): closed, disclosed only, v0.12 Retirement
  *   rules "Disclose always" (bulk group, v0.11 Retirement rules "Answer
  *   key, retirement bulk group").
- * - R1 (born before 7/1/1949: 70½), R8, R10 (the still-working
+ * - ret/R1 (born before 7/1/1949: 70½), ret/R8, ret/R10 (the still-working
  *   deferral): not as printed (verdict); Ledgr has no still-working input
  *   and no one born before 1949 reaches a first RMD in a projection.
  * Blocked with an item that unblocks them: the `it.todo`s at the end.
@@ -236,7 +236,7 @@ describe("answer key: RMD start age and first distribution year", () => {
     // (ii); Reg. -2(b)(3); Pub 575 (2025) p.32), so the 401(k)'s FDCY is
     // the year of 73: 1953 + 73 = 2026. On a 1,000 balance at 73:
     // 1,000 ÷ 26.5 = 37.735… → 37.74. Ledgr gives no one the deferral
-    // (R8, R10 are out), so this owner's answer is the plain one.
+    // (ret/R8, ret/R10 are out), so this owner's answer is the plain one.
     expect(fdcy(1953)).toBe(2026);
     cents(computeRmdAmount(1_000, 2026 - 1953)!, 37.74);
   });
@@ -614,11 +614,11 @@ describe("answer key: RMD and QCD cases blocked on a feature", () => {
   // Inputs and figures for each are in the answer key's Retirement rules.
   const FIRST_DEATH =
     'v0.11 Retirement rules "Add: survivor benefit and first death"';
-  // R23: owner 80, spouse 65 (sole beneficiary) dies March 2026: 2026
+  // ret/R23: owner 80, spouse 65 (sole beneficiary) dies March 2026: 2026
   // stays on Table II 23.8 (marital status is set on January 1, Reg.
   // -5(c)(2)(iii)); 2027 Table III at 81, 19.4. Needs a death date.
   it.todo(`ret/R23: blocked on ${FIRST_DEATH} (a spouse's death date)`);
-  // R32: owner dies June 2026 after the RBD, RMD 15,000, 5,000 taken: the
+  // ret/R32: owner dies June 2026 after the RBD, RMD 15,000, 5,000 taken: the
   // beneficiary takes 10,000 in 2026 (spec FD-3).
   it.todo(`ret/R32: blocked on ${FIRST_DEATH}`);
   // Q12: the 2027 QCD limit isn't published; Ledgr grows 2026's. No

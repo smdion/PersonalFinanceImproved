@@ -317,7 +317,7 @@ const LINE_25_CAP = `v0.11 Tax "Gap years have no 65+ deductions" (Schedule D li
 
 // ── Social Security (Pub 915 Worksheet 1; IRC 86) ───────────────────────
 // L8 provisional income = other + ½ benefits (+ tax-exempt interest).
-// Base (L9): 25,000 Single/HOH, 32,000 MFJ. L11: 9,000 / 12,000.
+// Base (line 9): 25,000 Single/HOH, 32,000 MFJ. Line 11: 9,000 / 12,000.
 // Taxable = min(min(½ B, ½ min(L10, L11)) + 85% × L12, 85% × B). "More
 // than" the base: L8 equal to it is 0 (spec SS-2).
 
@@ -477,7 +477,7 @@ describe("answer key: the rate schedules", () => {
 // ── Gains (QDCG worksheet, i1040 p.38) ──────────────────────────────────
 // T taxable income, G gains. L5 = T − G (ordinary portion); L9 = gains at
 // 0% (to the 0% top); L17 at 15% (to the 15% top); L20 at 20%. Line 23 =
-// 15% × L17 + 20% × L20 + TAX(L5). 0% / 15% tops: 2026 Single 49,450 /
+// 15% × line 17 + 20% × line 20 + TAX(line 5). 0% / 15% tops: 2026 Single 49,450 /
 // 545,500, MFJ 98,900 / 613,700; 2025 Single 48,350 / 533,400, MFJ 96,700
 // / 600,050, HOH 64,750 / 566,700 (RP24 § 2.03, RP25 § 4.03).
 

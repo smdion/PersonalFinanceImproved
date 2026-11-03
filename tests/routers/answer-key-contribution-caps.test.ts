@@ -141,7 +141,7 @@ describe("limits/D2-45: 415(c) dollar leg, under 50", () => {
 
 describe("limits/D2-50: 415(c) dollar leg, 50+", () => {
   // Born 1974-01-15: 52. Deferrals past 415(c) can be catch-up at 50+
-  // (Reg. 1.414(v)-1(b)(1)(i), R37), outside annual additions
+  // (Reg. 1.414(v)-1(b)(1)(i)), outside annual additions
   // (414(v)(3)(A)): 12,000 under 415(c) + 8,000 catch-up = 20,000, within
   // 402(g) + catch-up (32,500). Today the same 24,500 + 60,000.
   const run = d2Household("1974-01-15");

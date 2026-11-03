@@ -174,7 +174,7 @@ describe("paycheck/C16–C30: Worksheet 1A", () => {
     // $2,500 biweekly, Single. 1c 65,000; 1g 8,600 (both years); 2a 56,400.
     // T25 Single standard row A 54,875, C 5,578.50, D 22%:
     //   2g 5,578.50 + 22% × 1,525 = 5,914.00; 2h / 26 = 227.4615.
-    // T26 row A 19,900, C 1,240, D 12%: 2g 5,620.00; 2h 216.1538 (C16).
+    // T26 row A 19,900, C 1,240, D 12%: 2g 5,620.00; 2h 216.1538 (paycheck/C16).
     const paid2025 = calculatePaycheck(
       job({ salary: 65_000, period: "biweekly", year: 2025 }),
     );

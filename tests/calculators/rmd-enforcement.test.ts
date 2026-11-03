@@ -139,7 +139,7 @@ describe("enforceRmd", () => {
     // priorYearEndTradBalance is the blended (Retirement + Portfolio)
     // total upstream of this module -- nonRetirement must not touch the
     // requirement, only the shortfall's distribution capacity below it.
-    // Answer-key case ret/R11 (spec retirement-rules § 14.2): born 1951,
+    // Answer-key case ret/R11: born 1951,
     // 76 in 2027, 401(k) 600,000 at 12/31/2026, of which 500,000 is held
     // outside the plan (Portfolio-parented) here.
     const acctBal = makeAccountBalances({ preTax: 0, afterTax: 0 });

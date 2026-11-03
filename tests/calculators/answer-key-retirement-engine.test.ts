@@ -16,8 +16,8 @@
  *   the third retired year (RT38): `tests/config/answer-key-irmaa.test.ts`.
  * - The two-year lookback (I26, I29, C5; RT33): the same file, and spec
  *   `specs/retirement-rules.md` § 14.6 C5.
- * - Spouses in different RMD cohorts (RT08): `answer-key-rmd.test.ts` (R4
- *   to R7 starts, Table III).
+ * - Spouses in different RMD cohorts (RT08): `answer-key-rmd.test.ts` (ret/R4
+ *   to ret/R7 starts, Table III).
  *
  * Households: `tests/fixtures/answer-key-household.ts` (invented; 0%
  * return, inflation and limit growth, so the 2026 tables hold in every
