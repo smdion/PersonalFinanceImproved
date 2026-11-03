@@ -59,6 +59,9 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
+      - name: Lint, type-aware ratchet
+        run: pnpm lint:typed
+
       - name: Dead code (unused files, exports, dependencies)
         run: pnpm check:dead-code
 

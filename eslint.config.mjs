@@ -1,6 +1,7 @@
 import nextConfig from "eslint-config-next";
 import nextCoreWebVitals from "eslint-config-next/core-web-vitals";
 import nextTypescript from "eslint-config-next/typescript";
+import { ratchetConfig } from "./eslint-ratchet.mjs";
 
 const HEX_COLOR_PATTERN = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 
@@ -281,6 +282,7 @@ const config = [
       ],
     },
   },
+  ...ratchetConfig,
   {
     // Tool/plugin-managed directories, not app source — none of these are
     // committed to the repo (all gitignored or untracked scratch state),

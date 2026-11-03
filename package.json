@@ -13,6 +13,7 @@
     "build:migrator": "esbuild db-migrate.ts --bundle --platform=node --format=cjs --external:better-sqlite3 --external:pg-native --log-level=warning --outfile=db-migrate.js",
     "start": "next start",
     "lint": "eslint . --max-warnings 0 && prettier --check .",
+    "lint:typed": "eslint -c eslint.typed.config.mjs --no-inline-config --suppressions-location eslint-suppressions-typed.json --max-warnings 0 src",
     "format": "prettier --write .",
     "test": "vitest run --project='!benchmarks'",
     "test:watch": "vitest",
