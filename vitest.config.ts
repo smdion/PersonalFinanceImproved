@@ -147,8 +147,6 @@ export default defineConfig({
         "src/server/helpers/server-trpc.ts",
         // Demo router — requires Postgres pool, cookies, schema isolation
         "src/server/routers/demo.ts",
-        // Testing router — admin-only on-demand vitest runner
-        "src/server/routers/testing.ts",
         // Router re-export barrels and documentation-only files
         "src/server/routers/index.ts",
         "src/server/routers/settings/index.ts",

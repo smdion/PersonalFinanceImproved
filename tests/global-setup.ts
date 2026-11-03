@@ -9,8 +9,8 @@
 import { execFileSync } from "node:child_process";
 
 export default function setup() {
-  // Output to stderr only: the admin testing router parses vitest's JSON
-  // reporter from stdout.
+  // Output to stderr only, so stdout stays vitest's own (its JSON reporter
+  // writes there).
   execFileSync("pnpm", ["-s", "build:mc-worker"], {
     stdio: ["ignore", process.stderr, process.stderr],
   });

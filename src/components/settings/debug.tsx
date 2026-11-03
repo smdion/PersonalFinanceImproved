@@ -1,6 +1,6 @@
 "use client";
 
-/** Debug settings tab providing diagnostics mode toggle, data freshness date overrides, an embedded test runner, and a danger-zone full data reset. */
+/** Debug settings tab providing diagnostics mode toggle, data freshness date overrides, and a danger-zone full data reset. */
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import {
@@ -15,7 +15,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { STATUS_COLORS } from "@/lib/utils/colors";
 import { formatDate } from "@/lib/utils/format";
-import { TestRunner } from "./test-runner";
 
 /** A stored freshness value can be a plain "YYYY-MM-DD" or a full ISO
  *  timestamp — take just the calendar day so the <input type="date"> and
@@ -108,12 +107,6 @@ function DiagnosticsSection() {
           </p>
         </div>
       </label>
-
-      {diagMode && admin && (
-        <div className="border-subtle mt-4 border-t pt-4">
-          <TestRunner />
-        </div>
-      )}
     </div>
   );
 }
