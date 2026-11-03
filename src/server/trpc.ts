@@ -4,6 +4,7 @@ import {
   DEMO_SHARED_TABLES,
   MIGRATION_STAMP_SUBQUERY,
 } from "@/lib/db/demo-schema-marker";
+import { devBypass } from "./auth-mode";
 import { ZodError, z } from "zod/v4";
 import type { Session } from "next-auth";
 import { cookies, headers } from "next/headers";
@@ -39,25 +40,21 @@ export type Context = {
   internal?: boolean;
 };
 
-const isDev = process.env.NODE_ENV === "development";
 const isDemoOnly = process.env.DEMO_ONLY === "true";
 
-// ALLOW_DEV_MODE is only honored in non-production environments.
-// In production, OIDC is required (unless DEMO_ONLY).
-const isDevMode =
-  process.env.ALLOW_DEV_MODE === "true" &&
-  process.env.NODE_ENV !== "production";
-
-const devSession: Session = {
-  user: {
-    id: "1",
-    name: isDevMode ? "Admin" : "Viewer",
-    email: "admin@dev.local",
-    role: isDevMode ? "admin" : "viewer",
-    permissions: [],
-  },
-  expires: "2099-12-31T23:59:59.999Z",
-};
+/** The fixed session `next dev` gives every request (auth-mode.ts). */
+function devSession(role: "admin" | "viewer"): Session {
+  return {
+    user: {
+      id: "1",
+      name: role === "admin" ? "Admin" : "Viewer",
+      email: "admin@dev.local",
+      role,
+      permissions: [],
+    },
+    expires: "2099-12-31T23:59:59.999Z",
+  };
+}
 
 const demoOnlySession: Session = {
   user: {
@@ -95,10 +92,11 @@ if (
 }
 
 export async function createContext(): Promise<Context> {
+  const bypass = devBypass();
   const session = isDemoOnly
     ? demoOnlySession
-    : isDev
-      ? devSession
+    : bypass
+      ? devSession(bypass)
       : await auth();
 
   // Detect demo profile from cookie — actual search_path switching happens

@@ -1,5 +1,6 @@
 import Credentials from "next-auth/providers/credentials";
 import type { NextAuthConfig } from "next-auth";
+import { isDevelopmentBuild } from "./auth-mode";
 
 /**
  * Edge-compatible auth config — NO database imports.
@@ -15,12 +16,11 @@ const providers: NextAuthConfig["providers"] = [];
 // shared with the demo, so a production build offering it would mint tokens
 // another install could be handed.
 const isDemoOnly = process.env.DEMO_ONLY === "true";
-const isDevelopmentBuild = process.env.NODE_ENV !== "production";
 
 if (isDemoOnly) {
   // No providers.
 } else if (!process.env.AUTH_AUTHENTIK_ISSUER) {
-  if (isDevelopmentBuild)
+  if (isDevelopmentBuild())
     providers.push(
       Credentials({
         name: "Dev Login",

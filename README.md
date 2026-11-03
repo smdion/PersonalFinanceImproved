@@ -104,14 +104,14 @@ All configuration is through environment variables. Copy `.env.example` to `.env
 
 ### Optional — authentication
 
-| Variable                | Description                                                                                                                                                                                                                                     |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `ALLOW_DEV_MODE`        | Set `true` to enable dev-mode login (type any name to log in; no Authentik needed)                                                                                                                                                              |
-| `AUTH_AUTHENTIK_ISSUER` | Authentik OIDC issuer URL (e.g. `https://auth.example.com/application/o/ledgr`). A production build needs it set at build time too, or the dashboard pages prerender as static with the dev user baked in (the Docker image sets a placeholder) |
-| `AUTH_AUTHENTIK_ID`     | Authentik OIDC client ID                                                                                                                                                                                                                        |
-| `AUTH_AUTHENTIK_SECRET` | Authentik OIDC client secret                                                                                                                                                                                                                    |
-| `DEMO_ONLY`             | Set `true` for demo-only mode — no login, read-only, with a profile chooser                                                                                                                                                                     |
-| `ALLOWED_ACTUAL_HOSTS`  | Comma-separated hostnames the Actual Budget client may reach on a private network                                                                                                                                                               |
+| Variable                | Description                                                                                                                                                                                                             |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ALLOW_DEV_MODE`        | `next dev` only: `true` skips sign-in and makes every request an admin (without it, a read-only viewer). Refused in production builds                                                                                   |
+| `AUTH_AUTHENTIK_ISSUER` | Authentik OIDC issuer URL (e.g. `https://auth.example.com/application/o/ledgr`). Required in production: Ledgr refuses to start without it (except with `DEMO_ONLY`); the Docker image sets a placeholder at build time |
+| `AUTH_AUTHENTIK_ID`     | Authentik OIDC client ID                                                                                                                                                                                                |
+| `AUTH_AUTHENTIK_SECRET` | Authentik OIDC client secret                                                                                                                                                                                            |
+| `DEMO_ONLY`             | Set `true` for demo-only mode — no login, read-only, with a profile chooser                                                                                                                                             |
+| `ALLOWED_ACTUAL_HOSTS`  | Comma-separated hostnames the Actual Budget client may reach on a private network                                                                                                                                       |
 
 ### Integrations
 
@@ -194,11 +194,11 @@ After editing `src/lib/db/pg/*.ts`, regenerate the SQLite schema with `npx tsx s
 
 ### Authentication modes
 
-| Mode               | When                                              | How                                                                                          |
-| ------------------ | ------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **Local Admin**    | Always available                                  | Email/password against a `local_admins` table. The first admin is created during onboarding. |
-| **Authentik OIDC** | `AUTH_AUTHENTIK_ISSUER` is set                    | SSO with RBAC group mapping. Shown alongside the local-admin form.                           |
-| **Dev Mode**       | `ALLOW_DEV_MODE=true` and no Authentik configured | Type any name to auto-login as admin. Local development only — never in production.          |
+| Mode               | When                           | How                                                                                                               |
+| ------------------ | ------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| **Local Admin**    | Always available               | Email/password against a `local_admins` table. The first admin is created during onboarding.                      |
+| **Authentik OIDC** | `AUTH_AUTHENTIK_ISSUER` is set | SSO with RBAC group mapping. Shown alongside the local-admin form.                                                |
+| **Dev Mode**       | Running `next dev`             | No sign-in: a fixed session, admin with `ALLOW_DEV_MODE=true`, otherwise a read-only viewer. Never in production. |
 
 ## Deployment
 

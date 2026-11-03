@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { appSettings, localAdmins } from "@/lib/db/schema";
 import { verifyPassword } from "@/lib/auth/password";
 import { authConfig } from "./auth.config";
+import { isDevelopmentBuild } from "./auth-mode";
 import { log } from "@/lib/logger";
 
 /**
@@ -235,10 +236,7 @@ export async function assignRoleAndPermissions(
 
   // Dev Login: development builds only (auth.config.ts doesn't register it
   // in production builds or DEMO_ONLY).
-  if (
-    account?.provider === "credentials" &&
-    process.env.NODE_ENV !== "production"
-  ) {
+  if (account?.provider === "credentials" && isDevelopmentBuild()) {
     token.role = "admin";
     token.permissions = [];
     token.authMethod = "local";

@@ -12,22 +12,16 @@ import { DemoBanner } from "@/components/layout/demo-banner";
 import { DEMO_PROFILES } from "@/lib/demo";
 import { db, isPostgres } from "@/lib/db";
 import { sql } from "drizzle-orm";
+import { devBypass } from "@/server/auth-mode";
 
-const isDev = !process.env.AUTH_AUTHENTIK_ISSUER;
 const isDemoOnly = process.env.DEMO_ONLY === "true";
 
-const devUser: {
+type LayoutUser = {
   id: string;
   name: string;
   email: string;
   role: "admin" | "viewer";
   permissions: Permission[];
-} = {
-  id: "1",
-  name: "Admin",
-  email: "admin@dev.local",
-  role: "admin",
-  permissions: [],
 };
 
 export default async function DashboardLayout({
@@ -35,7 +29,10 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  let user = devUser;
+  // The same rule as every request's session (auth-mode.ts): only `next dev`
+  // skips sign-in; any other build signs in, Authentik configured or not.
+  const bypass = devBypass();
+  let user: LayoutUser;
 
   if (isDemoOnly) {
     user = {
@@ -45,7 +42,15 @@ export default async function DashboardLayout({
       role: "viewer",
       permissions: [],
     };
-  } else if (!isDev) {
+  } else if (bypass) {
+    user = {
+      id: "1",
+      name: bypass === "admin" ? "Admin" : "Viewer",
+      email: "admin@dev.local",
+      role: bypass,
+      permissions: [],
+    };
+  } else {
     const session = await auth();
     if (!session?.user) {
       redirect("/login");
