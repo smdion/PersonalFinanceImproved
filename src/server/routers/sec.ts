@@ -15,6 +15,11 @@ import {
   saveSecConnection,
 } from "@/lib/sec/connection";
 import { SecRateLimitError, testSecContact } from "@/lib/sec/client";
+import {
+  BudgetApiError,
+  nothingChanged,
+  userMessageFor,
+} from "@/lib/budget-api/errors";
 import { getSecFactsStatus, syncSecurityFacts } from "@/lib/sec/facts-sync";
 
 const MANUAL_REFRESH_GAP_MS = 10 * 60 * 1000;
@@ -23,7 +28,10 @@ let lastManualRefresh = 0;
 function describe(e: unknown): string {
   if (e instanceof SecRateLimitError)
     return "SEC declined the request — check the contact email, or try again later.";
-  return `Couldn't reach SEC: ${(e instanceof Error ? e.message : "Unknown error").slice(0, 200)}`;
+  return (
+    userMessageFor(e) ??
+    `Couldn't reach SEC: ${(e instanceof Error ? e.message : "Unknown error").slice(0, 200)}`
+  );
 }
 
 export const secRouter = createTRPCRouter({
@@ -34,7 +42,13 @@ export const secRouter = createTRPCRouter({
       try {
         await testSecContact(input.contactEmail);
       } catch (e) {
-        throw new TRPCError({ code: "BAD_REQUEST", message: describe(e) });
+        // Nothing is stored until SEC accepts the contact.
+        const cause = e instanceof BudgetApiError ? nothingChanged(e) : e;
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: describe(cause),
+          cause,
+        });
       }
       await saveSecConnection(ctx.db, input.contactEmail);
       return { success: true as const };

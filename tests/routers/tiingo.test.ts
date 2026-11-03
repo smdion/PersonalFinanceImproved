@@ -7,7 +7,7 @@ import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { eq } from "drizzle-orm";
 import { createTestCaller, createViewerSessionWithPermissions } from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
-import { BudgetApiError } from "@/lib/budget-api/errors";
+import { serviceError, userMessageFor } from "@/lib/budget-api/errors";
 
 const testApiKey = vi.fn();
 vi.mock("@/lib/tiingo/client", () => ({
@@ -47,24 +47,42 @@ describe("tiingo router", () => {
     expect(result.success).toBe(false);
   });
 
-  it("does not save a key that Tiingo rejects", async () => {
+  it("does not save a key that Tiingo rejects, and says so", async () => {
     testApiKey.mockRejectedValueOnce(
-      new BudgetApiError("Authentication failed (403)", "auth", 403),
+      serviceError("Tiingo", "Authentication failed (403)", "auth", 403),
     );
 
     await expect(caller.tiingo.saveKey({ apiKey: "bad-key" })).rejects.toThrow(
-      /Tiingo rejected the API key/,
+      "Tiingo didn't accept Ledgr's credentials — reconnect it in Settings. Nothing was changed.",
     );
     expect(storedRow()).toBeUndefined();
   });
 
-  it("does not blame the key when Tiingo is unreachable or rate-limited", async () => {
+  it("does not blame the key when Tiingo is rate-limited", async () => {
     testApiKey.mockRejectedValueOnce(
-      new BudgetApiError("Rate limited (429)", "rate-limit", 429),
+      serviceError("Tiingo", "Rate limited (429)", "rate-limit", 429),
     );
 
+    const error = await caller.tiingo.saveKey({ apiKey: "good-key" }).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    const said =
+      "Tiingo asked Ledgr to slow down — try again in a few minutes. Nothing was changed.";
+    expect((error as Error).message).toBe(said);
+    expect(userMessageFor(error)).toBe(said);
+    expect(storedRow()).toBeUndefined();
+  });
+
+  it("a bad answer says Tiingo sent something Ledgr doesn't understand", async () => {
+    const bad = () => {
+      const e = serviceError("Tiingo", "Tiingo: /meta: x", "bad-response");
+      e.field = "startDate";
+      return e;
+    };
+    testApiKey.mockRejectedValueOnce(bad());
     await expect(caller.tiingo.saveKey({ apiKey: "good-key" })).rejects.toThrow(
-      /Couldn't reach Tiingo/,
+      "Tiingo sent something Ledgr doesn't understand (startDate). Nothing was changed.",
     );
     expect(storedRow()).toBeUndefined();
   });
@@ -102,6 +120,16 @@ describe("tiingo router", () => {
       success: true,
       ticker: "SPY",
       historyStart: "1993-01-29",
+    });
+  });
+
+  it("testConnection words a bad answer as one, not as unreachable", async () => {
+    testApiKey.mockRejectedValueOnce(
+      serviceError("Tiingo", "Tiingo: /meta: x", "bad-response"),
+    );
+    expect(await caller.tiingo.testConnection()).toEqual({
+      success: false,
+      error: "Tiingo sent something Ledgr doesn't understand.",
     });
   });
 

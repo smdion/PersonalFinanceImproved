@@ -36,6 +36,7 @@ import {
   listFilings,
 } from "./client";
 import type { EdgarFiling } from "./schemas";
+import { userMessageFor } from "@/lib/budget-api/errors";
 
 type Db = typeof import("@/lib/db").db;
 
@@ -51,6 +52,13 @@ type SecFactsSummary = {
   stoppedBySec: boolean;
   errors: string[];
 };
+
+/** What a user reads about a failure: the service sentence, else its message. */
+function said(err: unknown): string {
+  return (
+    userMessageFor(err) ?? (err instanceof Error ? err.message : String(err))
+  );
+}
 
 function toRow(c: Composition) {
   const f = (n: number) => n.toFixed(6);
@@ -266,9 +274,7 @@ export async function syncSecurityFacts(
           else summary.updated += updated;
         } catch (err) {
           if (err instanceof SecRateLimitError) throw err;
-          summary.errors.push(
-            `${sec.ticker ?? sec.name}: ${err instanceof Error ? err.message : String(err)}`,
-          );
+          summary.errors.push(`${sec.ticker ?? sec.name}: ${said(err)}`);
         }
       }
     }
@@ -282,8 +288,7 @@ export async function syncSecurityFacts(
   } catch (err) {
     // The last run stays unset, so the next one tries again.
     if (!(err instanceof SecRateLimitError)) {
-      const message = err instanceof Error ? err.message : String(err);
-      await setSetting(db, LAST_ERROR_KEY, message);
+      await setSetting(db, LAST_ERROR_KEY, said(err));
       throw err;
     }
     summary.stoppedBySec = true;
@@ -392,7 +397,7 @@ async function refreshOne(
         nportAccession: previous?.nportAccession ?? null,
         ncsrAccession: previous?.ncsrAccession ?? null,
         checkedAt: now.toISOString(),
-        error: message,
+        error: said(err),
       };
     }
     // Only while it's still this same, unconfirmed suggestion — a confirm or

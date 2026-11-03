@@ -21,7 +21,7 @@ const sec = vi.hoisted(() => ({
   ncsrCalls: 0,
   ncsrFails: false,
   /** A shape that fails its check: the registry, or one fund's report list. */
-  badResponse: null as null | "registry" | "C1",
+  badResponse: null as null | "registry" | "C1" | "S4",
 }));
 
 vi.mock("@/lib/sec/client", async () => {
@@ -45,12 +45,16 @@ vi.mock("@/lib/sec/client", async () => {
     ...extra,
   });
   const { BudgetApiError } = await import("@/lib/budget-api/errors");
-  const bad = (endpoint: string) =>
-    new BudgetApiError(
+  const bad = (endpoint: string) => {
+    const e = new BudgetApiError(
       `SEC: ${endpoint}: 0.filingDate: expected string, received undefined`,
       "bad-response",
       null,
     );
+    e.service = "SEC";
+    e.field = "0.filingDate";
+    return e;
+  };
   return {
     ...actual,
     fetchRegistry: vi.fn(async () => {
@@ -320,13 +324,25 @@ describe("syncSecurityFacts", () => {
     });
   });
 
+  it("a stand-in preview SEC answers badly stores what the user is told", async () => {
+    sec.badResponse = "S4"; // the stand-in's own filings
+    await syncSecurityFacts(ctx.rawDb, {
+      securityIds: [ids.plan!],
+      now: new Date("2026-10-03T14:30:00Z"),
+    });
+    expect(security("plan").standinPreview).toMatchObject({
+      expenseRatio: 0.0035, // what was read before stays
+      error: "SEC sent something Ledgr doesn't understand (0.filingDate).",
+    });
+  });
+
   it("fails only the fund whose SEC answer doesn't check out", async () => {
     const now = new Date("2026-10-03T15:00:00Z");
     const checkedBefore = security("target").factsCheckedAt;
     sec.badResponse = "C1"; // the target fund's report list
     const r = await syncSecurityFacts(ctx.rawDb, { force: true, now });
     expect(r.errors).toEqual([
-      "EXTGX: SEC: /cgi-bin/browse-edgar: 0.filingDate: expected string, received undefined",
+      "EXTGX: SEC sent something Ledgr doesn't understand (0.filingDate).",
     ]);
     expect(security("target").factsCheckedAt).toEqual(checkedBefore);
     expect(security("mm").factsCheckedAt).toEqual(now);
@@ -349,8 +365,7 @@ describe("syncSecurityFacts", () => {
     // Recorded for Settings; the last run stays as it was, so the next retries.
     expect(await getSecFactsStatus(ctx.rawDb)).toEqual({
       lastRun,
-      lastError:
-        "SEC: /files/registry.csv: 0.filingDate: expected string, received undefined",
+      lastError: "SEC sent something Ledgr doesn't understand (0.filingDate).",
     });
   });
 
