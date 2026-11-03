@@ -41,7 +41,7 @@ A safety release: nothing a budget app, SimpleFIN, SEC or Tiingo sends is used u
 
 ### Changed
 
-- Ledgr runs on Node 26.12.1 everywhere (the image, CI and local development).
+- Ledgr runs on Node 26.13.0 everywhere (the image, CI and local development).
 
 ## [0.9.7] - 2026-11-01
 
