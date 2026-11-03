@@ -27,6 +27,8 @@ export type BudgetCategoryGroup = {
   id: string;
   name: string;
   hidden: boolean;
+  /** Its categories hold income, never expenses. */
+  isIncome: boolean;
   categories: BudgetCategory[];
 };
 

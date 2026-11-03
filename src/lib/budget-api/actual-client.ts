@@ -94,6 +94,7 @@ function mapCategoryGroup(
     id: g.id,
     name: g.name,
     hidden: g.hidden || g.is_income,
+    isIncome: g.is_income,
     categories: g.categories.map((c) => mapCategory(c, g.name)),
   };
 }

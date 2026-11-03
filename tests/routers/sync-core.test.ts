@@ -33,7 +33,7 @@ import {
 } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
 import { YnabClient } from "@/lib/budget-api/ynab-client";
-import { ynabTransaction } from "../fixtures/ynab-spec";
+import { ynabCategory, ynabTransaction } from "../fixtures/ynab-spec";
 
 // Keep references to mocks so we can adjust per test
 const mockGetActiveBudgetApi = vi.fn().mockResolvedValue("none");
@@ -1330,23 +1330,36 @@ describe("sync core — computeExpenseComparison", () => {
     service: "actual" | "ynab",
     client: ActualClient | YnabClient,
   ) {
-    const transactions = await client.getTransactions("2025-01-01");
+    const cached = {
+      transactions: await client.getTransactions("2025-01-01"),
+      categories: await client.getCategories(),
+    };
+    // Viewing the comparison asks the budget app for nothing.
     vi.unstubAllGlobals();
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
     mockGetActiveBudgetApi.mockResolvedValue(service);
     mockGetClientForService.mockResolvedValue(client);
-    mockCacheGet.mockResolvedValue({
-      data: transactions,
-      fetchedAt: new Date(),
-    });
-    return caller.sync.computeExpenseComparison({
-      currentStart: "2026-11-01",
-      currentEnd: "2026-11-30",
-      priorStart: "2026-10-01",
-      priorEnd: "2026-10-31",
-    });
+    mockCacheGet.mockImplementation(
+      async (_db: unknown, _service: unknown, key: string) => ({
+        data: cached[key as keyof typeof cached],
+        fetchedAt: new Date(),
+      }),
+    );
+    try {
+      return await caller.sync.computeExpenseComparison({
+        currentStart: "2026-11-01",
+        currentEnd: "2026-11-30",
+        priorStart: "2026-10-01",
+        priorEnd: "2026-10-31",
+      });
+    } finally {
+      vi.unstubAllGlobals();
+      expect(fetchMock).not.toHaveBeenCalled();
+    }
   }
 
-  it("compares categories on Actual, named from its category list", async () => {
+  it("compares expense categories on Actual, named from its list, income left out", async () => {
     resetActualWrapperGates();
     const recorded = (name: string) =>
       JSON.parse(
@@ -1356,61 +1369,164 @@ describe("sync core — computeExpenseComparison", () => {
     standIn((url) =>
       url.endsWith("/accounts")
         ? recorded("accounts")[0]
-        : url.endsWith("/categories")
-          ? recorded("categories")[0]
-          : url.endsWith("/payees")
-            ? { data: [] }
-            : {
-                data: checking.filter((t) =>
-                  url.includes(`/accounts/${t.account}/`),
-                ),
-              },
+        : url.endsWith("/categorygroups")
+          ? recorded("category-groups")[0]
+          : url.endsWith("/categories")
+            ? recorded("categories")[0]
+            : url.endsWith("/payees")
+              ? { data: [] }
+              : url.includes("/months/")
+                ? recorded("month")[0]
+                : url.includes("/notes/")
+                  ? { data: "" }
+                  : {
+                      data: checking.filter((t) =>
+                        url.includes(`/accounts/${t.account}/`),
+                      ),
+                    },
     );
     const result = await compareOverClient(
       "actual",
       new ActualClient("http://actual.local", "key", "sync-id"),
     );
-    expect(result.service).toBe("actual");
-    const byName = Object.fromEntries(
-      result.categories.map((c) => [c.name, [c.current, c.prior]]),
-    );
-    // The recorded checking account: Nov and Oct by category, in dollars.
-    expect(byName).toMatchObject({
-      "Test Groceries": [15.24, 0],
-      "Test Dining": [0, -1.1],
-      "Test Misc": [0, -300],
+    // The recorded checking account, Nov against Oct, in dollars. Its
+    // October salary (Test Salary, an income category) isn't an expense.
+    expect(result).toEqual({
+      service: "actual",
+      categories: [
+        {
+          name: "Test Groceries",
+          current: 15.24,
+          prior: 0,
+          diff: 15.24,
+          percentChange: null,
+        },
+        {
+          name: "Test Dining",
+          current: 0,
+          prior: -1.1,
+          diff: 1.1,
+          percentChange: 100,
+        },
+        {
+          name: "Test Misc",
+          current: 0,
+          prior: -300,
+          diff: 300,
+          percentChange: 100,
+        },
+      ],
     });
   });
 
-  it("compares categories on YNAB, named as YNAB sends them", async () => {
-    standIn(() => ({
+  it("compares expense categories on YNAB, named as YNAB sends them, income left out", async () => {
+    const group = (id: string, name: string, cats: unknown[]) => ({
+      id,
+      name,
+      hidden: false,
+      deleted: false,
+      categories: cats,
+    });
+    const categories = {
       data: {
         server_knowledge: 1,
-        transactions: [
-          ynabTransaction({
-            id: "y1",
-            date: "2026-11-03",
-            amount: -42000,
-            category_id: "cat-1",
-            category_name: "Groceries",
-          }),
-          ynabTransaction({
-            id: "y2",
-            date: "2026-10-03",
-            amount: -30000,
-            category_id: "cat-1",
-            category_name: "Groceries",
-          }),
+        category_groups: [
+          group("g-internal", "Internal Master Category", [
+            ynabCategory({
+              id: "inflow",
+              category_group_id: "g-internal",
+              name: "Inflow: Ready to Assign",
+            }),
+          ]),
+          group("g1", "Everyday", [
+            ynabCategory({ id: "cat-1", name: "Groceries" }),
+          ]),
         ],
       },
-    }));
+    };
+    const tx = (id: string, date: string, amount: number, cat: string) =>
+      ynabTransaction({
+        id,
+        date,
+        amount,
+        category_id: cat,
+        category_name:
+          cat === "inflow" ? "Inflow: Ready to Assign" : "Groceries",
+      });
+    standIn((url) =>
+      url.endsWith("/categories")
+        ? categories
+        : {
+            data: {
+              server_knowledge: 1,
+              transactions: [
+                tx("y1", "2026-11-03", -42000, "cat-1"),
+                tx("y2", "2026-10-03", -30000, "cat-1"),
+                tx("y3", "2026-11-01", 5_000_000, "inflow"),
+              ],
+            },
+          },
+    );
     const result = await compareOverClient(
       "ynab",
       new YnabClient("token", "budget-1"),
     );
-    expect(result.service).toBe("ynab");
-    expect(result.categories).toEqual([
-      expect.objectContaining({ name: "Groceries", current: -42, prior: -30 }),
-    ]);
+    expect(result).toEqual({
+      service: "ynab",
+      categories: [
+        {
+          name: "Groceries",
+          current: -42,
+          prior: -30,
+          diff: -12,
+          percentChange: -40,
+        },
+      ],
+    });
+  });
+
+  it("a category list cached before groups said which hold income counts none as income", async () => {
+    const tx = (id: string, categoryId: string, name: string) => ({
+      id,
+      date: "2026-11-05",
+      amount: -10,
+      categoryId,
+      categoryName: name,
+      deleted: false,
+    });
+    const cached = {
+      transactions: [
+        tx("t1", "c-salary", "Salary"),
+        tx("t2", "c-food", "Food"),
+      ],
+      categories: [
+        {
+          id: "g1",
+          name: "Income",
+          hidden: true,
+          categories: [{ id: "c-salary" }],
+        },
+        {
+          id: "g2",
+          name: "Usual",
+          hidden: false,
+          categories: [{ id: "c-food" }],
+        },
+      ],
+    };
+    mockGetActiveBudgetApi.mockResolvedValue("actual");
+    mockCacheGet.mockImplementation(
+      async (_db: unknown, _service: unknown, key: string) => ({
+        data: cached[key as keyof typeof cached],
+        fetchedAt: new Date(),
+      }),
+    );
+    const result = await caller.sync.computeExpenseComparison({
+      currentStart: "2026-11-01",
+      currentEnd: "2026-11-30",
+      priorStart: "2026-10-01",
+      priorEnd: "2026-10-31",
+    });
+    expect(result.categories.map((c) => c.name)).toEqual(["Salary", "Food"]);
   });
 });

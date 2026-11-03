@@ -95,6 +95,8 @@ function mapCategoryGroup(g: YnabCategoryGroup): BudgetCategoryGroup {
     id: g.id,
     name: g.name,
     hidden: g.hidden,
+    // YNAB's income ("Inflow: Ready to Assign") sits in its internal group.
+    isIncome: g.name === "Internal Master Category",
     categories: g.categories.map((c) => mapCategory(c, g.name)),
   };
 }
