@@ -12,6 +12,9 @@ describe("calculateMortgage", () => {
     interestRate: 0.065,
     termMonths: 360,
     startDate: new Date("2022-09-01"),
+    // G3 pin (v0.11 Household math "Loan math"): the true payment is
+    // 1,769.79 (answer-key household/C6); 1,770.09 clears the loan in
+    // month 360 and hides the stranded balance. Changed with the G3 fix.
     monthlyPI: 1770.09, // standard 30yr P&I at 6.5%
     isActive: true,
   };
