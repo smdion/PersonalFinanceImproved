@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { BudgetAPIClient } from "@/lib/budget-api/interface";
 import { YnabClient } from "@/lib/budget-api/ynab-client";
 import { YNAB_INTERNAL_GROUPS } from "@/lib/config/ynab";
+import {
+  ynabAccount,
+  ynabCategory,
+  ynabTransaction,
+} from "../fixtures/ynab-spec";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -110,7 +115,7 @@ describe("YnabClient", () => {
   describe("getAccountBalance", () => {
     it("returns balance in dollars", async () => {
       mockFetch.mockReturnValueOnce(
-        jsonResponse({ data: { account: { balance: 50000 } } }),
+        jsonResponse({ data: { account: ynabAccount({ balance: 50000 }) } }),
       );
       expect(await client.getAccountBalance("acct-1")).toBe(50);
     });
@@ -136,9 +141,12 @@ describe("YnabClient", () => {
         cleared: "cleared",
         approved: true,
         deleted,
+        subtransactions: [],
       });
       mockFetch.mockReturnValueOnce(
-        jsonResponse({ data: { account: { balance: 50_000_000 } } }),
+        jsonResponse({
+          data: { account: ynabAccount({ balance: 50_000_000 }) },
+        }),
       );
       mockFetch.mockReturnValueOnce(
         jsonResponse({
@@ -218,6 +226,7 @@ describe("YnabClient", () => {
                 cleared: "cleared",
                 approved: true,
                 deleted: false,
+                subtransactions: [],
               },
               {
                 id: "tx-2",
@@ -232,6 +241,7 @@ describe("YnabClient", () => {
                 cleared: "uncleared",
                 approved: false,
                 deleted: false,
+                subtransactions: [],
               },
             ],
           },
@@ -383,8 +393,12 @@ describe("YnabClient", () => {
         jsonResponse({
           data: {
             transactions: [
-              { id: "gone", import_id: sentImportId, deleted: true },
-              { id: "existing", import_id: sentImportId, deleted: false },
+              ynabTransaction({
+                id: "gone",
+                import_id: sentImportId,
+                deleted: true,
+              }),
+              ynabTransaction({ id: "existing", import_id: sentImportId }),
             ],
           },
         }),
@@ -416,7 +430,11 @@ describe("YnabClient", () => {
         jsonResponse({
           data: {
             transactions: [
-              { id: "gone", import_id: sentImportId, deleted: true },
+              ynabTransaction({
+                id: "gone",
+                import_id: sentImportId,
+                deleted: true,
+              }),
             ],
           },
         }),
@@ -492,21 +510,21 @@ describe("YnabClient", () => {
           data: {
             months: [
               {
-                month: "2025-12",
+                month: "2025-12-01",
                 income: 500000,
                 budgeted: 400000,
                 activity: -350000,
                 to_be_budgeted: 100000,
               },
               {
-                month: "2026-01",
+                month: "2026-01-01",
                 income: 600000,
                 budgeted: 500000,
                 activity: -450000,
                 to_be_budgeted: 50000,
               },
               {
-                month: "2026-02",
+                month: "2026-02-01",
                 income: 600000,
                 budgeted: 500000,
                 activity: -450000,
@@ -516,9 +534,9 @@ describe("YnabClient", () => {
           },
         }),
       );
-      const months = await client.getMonths("2026-01", "2026-02");
+      const months = await client.getMonths("2026-01-01", "2026-02-01");
       expect(months).toHaveLength(2);
-      expect(months[0]!.month).toBe("2026-01");
+      expect(months[0]!.month).toBe("2026-01-01");
       expect(months[0]!.income).toBe(600); // milliunits → dollars
     });
   });
@@ -529,7 +547,7 @@ describe("YnabClient", () => {
         jsonResponse({
           data: {
             month: {
-              month: "2026-01",
+              month: "2026-01-01",
               income: 500000,
               budgeted: 400000,
               activity: -350000,
@@ -566,8 +584,8 @@ describe("YnabClient", () => {
           },
         }),
       );
-      const detail = await client.getMonthDetail("2026-01");
-      expect(detail.month).toBe("2026-01");
+      const detail = await client.getMonthDetail("2026-01-01");
+      expect(detail.month).toBe("2026-01-01");
       expect(detail.income).toBe(500);
       // Internal category filtered out
       expect(detail.categories).toHaveLength(1);
@@ -578,9 +596,9 @@ describe("YnabClient", () => {
   describe("updateCategoryBudgeted", () => {
     it("PATCHes the month/category endpoint with milliunits conversion", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({}));
-      await client.updateCategoryBudgeted("2026-01", "cat-1", 150);
+      await client.updateCategoryBudgeted("2026-01-01", "cat-1", 150);
       const [url, init] = mockFetch.mock.calls[0]!;
-      expect(url).toContain("/months/2026-01/categories/cat-1");
+      expect(url).toContain("/months/2026-01-01/categories/cat-1");
       expect(init.method).toBe("PATCH");
       const body = JSON.parse(init.body);
       expect(body.category.budgeted).toBe(150_000);
@@ -588,7 +606,8 @@ describe("YnabClient", () => {
   });
 
   describe("prepareGoalWrite: monthly", () => {
-    const existing = (category: object) => jsonResponse({ data: { category } });
+    const existing = (category: Record<string, unknown>) =>
+      jsonResponse({ data: { category: ynabCategory(category) } });
 
     it("PATCHes the plan-level category endpoint with goal_frequency monthly and milliunits conversion", async () => {
       mockFetch.mockReturnValueOnce(existing({ goal_target: null }));
@@ -651,7 +670,7 @@ describe("YnabClient", () => {
   describe("prepareGoalWrite: reads only", () => {
     it("reads the category when prepared and PATCHes only on apply", async () => {
       mockFetch.mockReturnValueOnce(
-        jsonResponse({ data: { category: { goal_target: null } } }),
+        jsonResponse({ data: { category: ynabCategory() } }),
       );
       const write = await client.prepareGoalWrite("cat-1", "monthly", 500);
       expect(mockFetch).toHaveBeenCalledTimes(1);
@@ -720,6 +739,7 @@ describe("YnabClient", () => {
                 cleared: "cleared",
                 approved: true,
                 deleted: false,
+                subtransactions: [],
               },
               {
                 id: "tx-2-deleted",
@@ -734,6 +754,7 @@ describe("YnabClient", () => {
                 cleared: "uncleared",
                 approved: false,
                 deleted: true,
+                subtransactions: [],
               },
             ],
           },
