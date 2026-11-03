@@ -16,16 +16,11 @@
 // directory instead of calling SimpleFIN, so a dev instance never shares a
 // production connection's daily quota.
 
-import {
-  classifyResponse,
-  classifyThrown,
-  retryWithBackoff,
-} from "@/lib/budget-api/errors";
+import { externalRequest, uncheckedShape } from "@/lib/http/external-request";
 import { log } from "@/lib/logger";
 import { promises as fs } from "fs";
 import path from "path";
 
-const REQUEST_TIMEOUT_MS = 15_000;
 /** Full responses (holdings + 90 days of transactions) are much larger. */
 const FULL_REQUEST_TIMEOUT_MS = 60_000;
 
@@ -173,46 +168,35 @@ function parseAccessUrl(accessUrl: string): ParsedAccessUrl {
   };
 }
 
-/**
- * Fetch wrapper shared by claim + accounts calls. Throws typed
- * BudgetApiError (auth/rate-limit/server/network/timeout) instead of a
- * generic Error, wrapped in the same retryWithBackoff (exponential,
- * honors Retry-After on 429) used by the YNAB/Actual clients.
- */
-async function withRequest<T>(
-  url: string,
-  init: RequestInit | undefined,
-  parse: (res: Response) => Promise<T>,
-  { maxAttempts = 3, timeoutMs = REQUEST_TIMEOUT_MS } = {},
-): Promise<T> {
-  return retryWithBackoff(async () => {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-    try {
-      const res = await fetch(url, { ...init, signal: controller.signal });
-      if (!res.ok) {
-        const body = await res.text().catch(() => "");
-        throw classifyResponse(res, body);
-      }
-      return await parse(res);
-    } catch (e) {
-      throw classifyThrown(e);
-    } finally {
-      clearTimeout(timeout);
-    }
-  }, maxAttempts);
-}
-
+/** SimpleFIN's JSON and text reads, through the shared externalRequest
+ *  (typed BudgetApiError, timeout, retries with backoff honouring
+ *  Retry-After). */
 function requestJson<T>(
   url: string,
   init?: RequestInit,
   options?: { maxAttempts?: number; timeoutMs?: number },
 ): Promise<T> {
-  return withRequest(url, init, (res) => res.json() as Promise<T>, options);
+  return externalRequest({
+    service: "simplefin",
+    // A fixed name, never the URL: SimpleFIN URLs carry credentials.
+    endpoint: "/accounts",
+    url,
+    init,
+    schema: uncheckedShape<T>(),
+    ...options,
+  });
 }
 
 function requestText(url: string, init?: RequestInit): Promise<string> {
-  return withRequest(url, init, (res) => res.text());
+  return externalRequest({
+    service: "simplefin",
+    // The claim URL's path is the one-time setup token.
+    endpoint: "/claim",
+    url,
+    init,
+    read: "text",
+    schema: uncheckedShape<string>(),
+  });
 }
 
 /**

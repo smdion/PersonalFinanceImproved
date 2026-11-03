@@ -5,7 +5,8 @@
 // is fixed (never user-supplied), so unlike the SimpleFIN client there is no
 // SSRF surface to guard.
 
-import { BudgetApiError, budgetApiRequest } from "@/lib/budget-api/errors";
+import { BudgetApiError } from "@/lib/budget-api/errors";
+import { externalRequest, uncheckedShape } from "@/lib/http/external-request";
 
 const TIINGO_BASE_URL = "https://api.tiingo.com";
 
@@ -23,7 +24,7 @@ export function tiingoBlockedUntil(): number {
 }
 
 /**
- * GET a Tiingo endpoint as JSON via the shared budgetApiRequest wrapper
+ * GET a Tiingo endpoint as JSON via the shared externalRequest
  * (timeout + typed BudgetApiError + retries). Tiingo answers a bad key with
  * 403 `{"detail":"Invalid token."}`, which classifies as "auth". A rate
  * limit is never retried: the quota is hourly.
@@ -32,13 +33,13 @@ async function requestJson<T>(path: string, apiKey: string): Promise<T> {
   if (tiingoBlockedUntil())
     throw new BudgetApiError("Rate limited (429)", "rate-limit", 429);
   try {
-    return await budgetApiRequest<T>(
-      `${TIINGO_BASE_URL}${path}`,
-      { Authorization: `Token ${apiKey}` },
-      undefined,
-      undefined,
-      false,
-    );
+    return await externalRequest({
+      service: "tiingo",
+      endpoint: path,
+      url: `${TIINGO_BASE_URL}${path}`,
+      headers: { Authorization: `Token ${apiKey}` },
+      schema: uncheckedShape<T>(),
+    });
   } catch (err) {
     if (err instanceof BudgetApiError && err.code === "rate-limit") {
       const hour = 60 * 60 * 1000;

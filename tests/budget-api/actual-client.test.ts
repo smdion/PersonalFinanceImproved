@@ -883,7 +883,7 @@ describe("ActualClient", () => {
         }),
       );
       // 404, not 500/429 -- "client" errors aren't retried by
-      // budgetApiRequest (see errors.ts's isRetryable), so this stays a
+      // externalRequest (see errors.ts's isRetryable), so this stays a
       // single fast mock call instead of burning real wall-clock time on
       // exponential-backoff retries (no fake timers in this test file).
       mockFetch.mockReturnValueOnce(jsonResponse({ error: "not found" }, 404));

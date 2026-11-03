@@ -18,7 +18,7 @@ import type {
 } from "./types";
 import { fromMilliunits, toMilliunits } from "./conversions";
 import { roundToCents } from "@/lib/utils/math";
-import { budgetApiRequest } from "./errors";
+import { externalRequest, uncheckedShape } from "@/lib/http/external-request";
 import { transactionIdempotencyKey } from "./idempotency";
 import {
   YNAB_EXPENSE_EXCLUDED_CATEGORIES,
@@ -247,10 +247,17 @@ export class YnabClient implements BudgetAPIClient {
     this.budgetPath = `${YNAB_BASE}/budgets/${budgetId}`;
   }
 
-  /** Internal fetch wrapper — see budgetApiRequest in ./errors. */
+  /** Internal fetch wrapper — see externalRequest (lib/http). */
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     const url = path.startsWith("http") ? path : `${this.budgetPath}${path}`;
-    return budgetApiRequest<T>(url, this.headers, init);
+    return externalRequest({
+      service: "ynab",
+      endpoint: path,
+      url,
+      headers: this.headers,
+      init,
+      schema: uncheckedShape<T>(),
+    });
   }
 
   async testConnection(): Promise<boolean> {

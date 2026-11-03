@@ -15,7 +15,8 @@ import type {
   NewBudgetTransaction,
 } from "./types";
 import { fromCents, toCents } from "./conversions";
-import { budgetApiRequest, BudgetApiError, isResendable } from "./errors";
+import { BudgetApiError, isResendable } from "./errors";
+import { externalRequest, uncheckedShape } from "@/lib/http/external-request";
 import {
   mergeGoalIntoNote,
   parseGoalFromNote,
@@ -343,10 +344,17 @@ export class ActualClient implements BudgetAPIClient {
     this.gate = gateFor(base);
   }
 
-  /** Internal fetch wrapper — see budgetApiRequest in ./errors. */
+  /** Internal fetch wrapper — see externalRequest (lib/http). */
   private send<T>(path: string, init?: RequestInit): Promise<T> {
     const url = `${this.budgetPath}${path}`;
-    return budgetApiRequest<T>(url, this.headers, init);
+    return externalRequest({
+      service: "actual",
+      endpoint: path,
+      url,
+      headers: this.headers,
+      init,
+      schema: uncheckedShape<T>(),
+    });
   }
 
   /** send() behind the wrapper's cold-load gate — see WrapperGate above. */
@@ -425,7 +433,7 @@ export class ActualClient implements BudgetAPIClient {
     // Fetch balances for each account
     const accounts = res.data.map(mapAccount);
     // Balances one request per account, in parallel (each already retries
-    // with backoff in budgetApiRequest). The wrapper reloads the budget per
+    // with backoff in externalRequest). The wrapper reloads the budget per
     // request and struggles under concurrency, so a failure gets one more
     // try on its own. Still failing, the sync stops: an account without its
     // balance would be written as $0 into every Ledgr row mapped to it (a
