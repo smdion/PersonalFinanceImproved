@@ -674,14 +674,13 @@ function StepIndicator({
 // --- Main wizard ---
 
 export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
-  const [step, setStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState<Step>("Welcome");
   const [admin, setAdmin] = useState<AdminDraft>({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
   });
-  const [adminCreated, setAdminCreated] = useState(false);
   const [people, setPeople] = useState<PersonDraft[]>([]);
   const [jobs, setJobs] = useState<JobDraft[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -691,6 +690,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [isRestoring, setIsRestoring] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // The server says whether an admin is still needed: a reload or another
+  // tab can't bring back an Admin step the server would refuse.
+  const firstRun = trpc.settings.firstRunState.useQuery();
+  const adminNeeded = firstRun.data?.adminNeeded === true;
   const createLocalAdmin = trpc.settings.createLocalAdmin.useMutation();
   const createPerson = trpc.settings.people.create.useMutation();
   const createJob = trpc.settings.jobs.create.useMutation();
@@ -744,7 +747,10 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     }
   };
 
-  const currentStep: Step = STEPS[step]!;
+  const steps: readonly Step[] = adminNeeded
+    ? STEPS
+    : STEPS.filter((s) => s !== "Admin");
+  const step = Math.max(steps.indexOf(currentStep), 0);
 
   /** Validate whether the current step allows proceeding */
   function isAdminValid(): boolean {
@@ -766,7 +772,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
   /** Create the local admin account before advancing past the Admin step */
   const handleAdminCreate = async () => {
-    if (adminCreated) return true;
+    if (!adminNeeded) return true;
     setError(null);
     try {
       await createLocalAdmin.mutateAsync({
@@ -774,12 +780,18 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         email: admin.email.trim(),
         password: admin.password,
       });
-      setAdminCreated(true);
+      await utils.settings.firstRunState.invalidate();
       return true;
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "Failed to create admin account.",
       );
+      // Refused because an admin exists already: move past the step.
+      const { data } = await firstRun.refetch();
+      if (data?.adminNeeded === false) {
+        setError(null);
+        setCurrentStep("OIDC");
+      }
       return false;
     }
   };
@@ -859,6 +871,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
 
   const goNext = async () => {
+    // Which steps there are isn't known until the server answers.
+    if (firstRun.isPending) return;
     if (!canGoNext) {
       if (currentStep === "People" && people.length === 0) {
         setStepError("Add at least one household member to continue");
@@ -874,30 +888,31 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     if (currentStep === "Admin") {
       const ok = await handleAdminCreate();
       if (!ok) return;
+      setCurrentStep("OIDC");
+      return;
     }
 
-    if (step === STEPS.length - 1) {
-      // "Done" step -- finish
+    if (currentStep === "Done") {
       handleFinish();
       return;
     }
-    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+    setCurrentStep(steps[step + 1] ?? "Done");
   };
 
   const goBack = () => {
     setStepError(null);
-    setStep((s) => Math.max(s - 1, 0));
+    setCurrentStep(steps[step - 1] ?? "Welcome");
   };
 
-  const skipIncome = () => setStep(STEPS.indexOf("Done"));
-  const skipOidc = () => setStep(STEPS.indexOf("People"));
+  const skipIncome = () => setCurrentStep("Done");
+  const skipOidc = () => setCurrentStep("People");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-surface-primary border-default mx-4 max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border p-6 shadow-2xl sm:p-8">
-        <StepIndicator currentStep={step} steps={STEPS} />
+        <StepIndicator currentStep={step} steps={steps} />
         <div className="text-secondary mb-4 flex items-center justify-center gap-2 text-sm">
-          Step {step + 1} of {STEPS.length}
+          Step {step + 1} of {steps.length}
         </div>
 
         {/* Hidden file input for restore */}
