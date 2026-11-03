@@ -15,6 +15,7 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Disclaimer } from "@/components/ui/disclaimer";
 import { formatCurrency } from "@/lib/utils/format";
 
 type Props = {
@@ -133,6 +134,7 @@ export function ClaimingAgeExplorer({
             doesn&apos;t weigh health, other income, or survivor needs, and
             isn&apos;t a substitute for advice specific to your situation.
           </p>
+          <Disclaimer className="mt-1" />
         </div>
       )}
     </div>

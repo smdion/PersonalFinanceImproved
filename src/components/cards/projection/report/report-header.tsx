@@ -1,3 +1,4 @@
+import { Disclaimer } from "@/components/ui/disclaimer";
 import { formatDate } from "@/lib/utils/format";
 
 /** Print-only cover header for the retirement advisor report.
@@ -22,18 +23,13 @@ export function ReportHeader({
   );
 }
 
-/** Print-only footer disclaimer — pairs with `ReportHeader`, rendered once
- *  at the end of the advisor report. Extended to
- *  cover the risk-analysis section's methodology now that this report
- *  makes probability claims — the original one-sentence disclaimer
- *  predates that section and only covered the deterministic assumptions. */
+/** Print-only footer — pairs with `ReportHeader`, rendered once at the end
+ *  of the report: the shared disclaimer, then what the risk analysis rests
+ *  on. */
 export function ReportFooter({ generatedAt }: { generatedAt: Date }) {
   return (
     <div className="text-faint mt-6 space-y-1 border-t pt-3 text-xs">
-      <p>
-        This report is an estimate based on the assumptions listed above. It is
-        not financial, tax, or legal advice.
-      </p>
+      <Disclaimer />
       <p>
         The risk analysis in this report is based on a simulation of many
         possible sequences of market returns, using the return and volatility

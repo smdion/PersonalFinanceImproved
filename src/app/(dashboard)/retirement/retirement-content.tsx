@@ -14,6 +14,7 @@ import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { formatCurrency } from "@/lib/utils/format";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Disclaimer } from "@/components/ui/disclaimer";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
@@ -337,6 +338,8 @@ export function RetirementContent() {
               src/components/retirement/retirement-profile-tab.tsx. */}
         </>
       )}
+      {/* Plan Health's card carries its own. */}
+      {pageTab !== "planHealth" && <Disclaimer className="mt-3" />}
     </div>
   );
 }

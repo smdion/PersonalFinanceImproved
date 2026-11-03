@@ -183,6 +183,17 @@ describe("FinancialCheckupCard smoke", () => {
     expect(screen.getByText("4.5 mo covered")).toBeInTheDocument();
   });
 
+  it("shows the shared disclaimer", () => {
+    withMilestones(makeInput({}));
+    contribsQuery = withData(baseContribs);
+    render(<FinancialCheckupCard />);
+    expect(
+      screen.getByText(
+        "Estimates from the figures and assumptions you entered. Not financial, tax or legal advice.",
+      ),
+    ).toBeInTheDocument();
+  });
+
   it("shows the full match as captured", () => {
     withMilestones(makeInput({ match: { captured: 3000, available: 3000 } }));
     contribsQuery = withData(baseContribs);

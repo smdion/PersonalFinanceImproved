@@ -9,6 +9,7 @@ import { memo, useState, type ReactNode } from "react";
 import { trpc } from "@/lib/trpc";
 import { Card } from "@/components/ui/card";
 import { HelpTip } from "@/components/ui/help-tip";
+import { Disclaimer } from "@/components/ui/disclaimer";
 import { formatSavingsRate } from "@/lib/utils/format";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { CHECKUP_MILESTONES } from "@/lib/config/milestones";
@@ -310,6 +311,7 @@ function FinancialCheckupCardImpl() {
           <CheckupRow key={step.label} step={step} />
         ))}
       </div>
+      <Disclaimer className="mt-2" />
     </Card>
   );
 }

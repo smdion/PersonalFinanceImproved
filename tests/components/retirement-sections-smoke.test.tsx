@@ -385,6 +385,13 @@ describe("SocialSecuritySection smoke", () => {
     expect(screen.getByText("62")).toBeInTheDocument();
     expect(screen.getByText("70")).toBeInTheDocument();
     expect(screen.getByText("Recommended")).toBeInTheDocument();
+    // Its own caveat, then the shared disclaimer.
+    expect(screen.getByText(/survivor needs/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Estimates from the figures and assumptions you entered. Not financial, tax or legal advice.",
+      ),
+    ).toBeInTheDocument();
   });
 
   it("threads a pinned contribution/salary profile through to the sweep query — NOT cosmetic, the endpoint resolves budget/depletion against them", () => {

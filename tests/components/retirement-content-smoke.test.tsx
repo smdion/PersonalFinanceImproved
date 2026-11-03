@@ -233,4 +233,16 @@ describe("RetirementContent smoke", () => {
     expect(screen.getByTestId("plan-health")).toBeInTheDocument();
     expect(screen.queryByTestId("projection-card")).toBeNull();
   });
+
+  it("shows the shared disclaimer under the projection; Plan Health's card has its own", async () => {
+    const { RetirementContent } =
+      await import("@/app/(dashboard)/retirement/retirement-content");
+    render(<RetirementContent />);
+    const disclaimer =
+      "Estimates from the figures and assumptions you entered. Not financial, tax or legal advice.";
+    expect(screen.getByText(disclaimer)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Plan Health" }));
+    // The stubbed card stands in for the real one, which renders it.
+    expect(screen.queryByText(disclaimer)).toBeNull();
+  });
 });
