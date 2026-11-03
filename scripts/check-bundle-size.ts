@@ -37,15 +37,53 @@ import { fileURLToPath } from "url";
 /**
  * Per-page budget (gzipped KB, first load + lazy), keyed by the route as
  * the client reference manifest names it ("/(dashboard)/retirement/page").
- * TO SET from `pnpm check:bundle --report` on a real build: empty until
- * then, so every page falls back to DEFAULT_PAGE_BUDGET_KB.
+ * Today's sizes, from `pnpm check:bundle --report` on CI's build of
+ * v0.10.0 (2026-11-03). A page over its budget is cut, or its budget is
+ * raised in its own visible commit; a page that shrinks may lower it.
  */
-const PAGE_BUDGET_KB: Record<string, number> = {};
+const PAGE_BUDGET_KB: Record<string, number> = {
+  "/_global-error/page": 130,
+  "/_not-found/page": 184,
+  "/(dashboard)/analytics/page": 214,
+  "/(dashboard)/assets/page": 221,
+  "/(dashboard)/benchmarks/methodology/page": 216,
+  "/(dashboard)/benchmarks/page": 419,
+  "/(dashboard)/brokerage/page": 240,
+  "/(dashboard)/budget/page": 366,
+  "/(dashboard)/contributions/page": 286,
+  "/(dashboard)/data-browser/page": 217,
+  "/(dashboard)/expenses/page": 351,
+  "/(dashboard)/help/page": 230,
+  "/(dashboard)/historical/page": 227,
+  "/(dashboard)/house/page": 221,
+  "/(dashboard)/liabilities/page": 262,
+  "/(dashboard)/milestones/page": 283,
+  "/(dashboard)/mortgage/page": 214,
+  "/(dashboard)/networth/page": 403,
+  "/(dashboard)/page": 329,
+  "/(dashboard)/paycheck/page": 295,
+  "/(dashboard)/performance/page": 273,
+  "/(dashboard)/portfolio/page": 409,
+  "/(dashboard)/profiles/page": 366,
+  "/(dashboard)/recommendations/page": 283,
+  "/(dashboard)/retirement/accumulation-methodology/page": 218,
+  "/(dashboard)/retirement/decumulation-methodology/page": 229,
+  "/(dashboard)/retirement/methodology/page": 220,
+  "/(dashboard)/retirement/page": 535,
+  "/(dashboard)/savings/page": 424,
+  "/(dashboard)/settings/page": 258,
+  "/(dashboard)/tax-buckets/page": 279,
+  "/(dashboard)/tax-optimization/page": 266,
+  "/(dashboard)/taxes/page": 258,
+  "/(dashboard)/tools/page": 270,
+  "/(dashboard)/upkeep/utilities/page": 373,
+  "/(dashboard)/versions/page": 221,
+  "/demo/page": 185,
+  "/login/page": 188,
+};
 /**
- * WILL CHANGE with the budgets above. This was the first-load budget
- * before lazy chunks were counted (v0.9.2 build: heaviest pages ~420 KB
- * first load); a page whose lazy chunks push it over fails until its
- * PAGE_BUDGET_KB entry is set.
+ * A new page with no PAGE_BUDGET_KB entry: give it one at its first
+ * measured size in the commit that adds it.
  */
 const DEFAULT_PAGE_BUDGET_KB = 460;
 const CHUNK_ERROR_KB = 500; // raw, any single chunk
