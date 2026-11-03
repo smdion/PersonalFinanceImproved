@@ -54,6 +54,17 @@ import { toNumber } from "@/server/helpers/transforms";
 
 See `ls src/lib/pure/` for the existing modules — check there before adding one.
 
+## Commit rules
+
+One behavior per commit, and the message says why. `.husky/commit-msg` and a CI step over a pull request's commits check these with `scripts/check-commit.ts`; for now they only warn.
+
+- **Subject:** a type prefix, `fix:`, `feat:`, `refactor:`, `perf:`, `test:`, `docs:`, `build:`, `ci:`, `chore:`, `style:`, `revert:` or `release:`, with an optional `(scope)`.
+- **Body:** why the change is made, not only what changed.
+- **Size:** at most 400 changed `src/` lines (generated SQLite files don't count), and at most 8 `src/` files in a commit that touches the engine or tax code (`src/lib/calculators/`, `src/lib/tax-data/`, tax config). A pure move or rename carries a `Mechanical: <what>` line and is exempt.
+- **Second fix:** a fix to a function that already had a fix in the last 30 days names the missing concept in a `Concept: <concept>` line, or `Concept: none, <reason>`. A third fix there goes to the advisor first.
+
+`pnpm tsx scripts/check-commit.ts --history 50` reports how the last 50 commits measure against these, repeat fixes in one spot included.
+
 ## Coding Conventions
 
 - **Pure calculators.** `lib/calculators/` contains pure functions only — no DB, no tRPC, no React. Given the same inputs, always the same outputs. The engine is a modular subdirectory (`lib/calculators/engine/`) — see DESIGN.md § Engine Modularity.

@@ -33,6 +33,18 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # --- Warning only (never fails the pipeline) ---
+
+      - name: Commit rules over the pull request's commits (warnings only)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git fetch --no-tags --unshallow origin || true
+          git fetch --no-tags origin "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+          pnpm tsx scripts/check-commit.ts --range "origin/$BASE_REF..HEAD"
+
       # --- Blocking steps (fail the pipeline) ---
 
       - name: Type-check
