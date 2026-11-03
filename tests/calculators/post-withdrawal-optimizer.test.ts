@@ -4,6 +4,7 @@ import {
   checkIrmaa,
   checkAca,
 } from "@/lib/calculators/engine/post-withdrawal-optimizer";
+import { checkHouseholdIrmaa } from "@/lib/calculators/engine/household-irmaa";
 import type {
   RothConversionInput,
   IrmaaInput,
@@ -353,6 +354,38 @@ describe("checkIrmaa", () => {
     );
     expect(result.irmaaCost).toBeCloseTo(1148.4, 2);
     expect(result.warnings).toEqual([]);
+  });
+});
+
+describe("checkHouseholdIrmaa", () => {
+  const { anyPersonAge65: _unused, ...base } = makeIrmaaInput({
+    projectedMagi: 276000,
+    rothConversionAmount: 5000,
+  });
+
+  it("charges each person 65 or older the per-person surcharge", () => {
+    // MFJ tier 2 (> 274000; CMS 2026): 2884.80 a person, two people.
+    const result = checkHouseholdIrmaa({ ...base, personsAge65Plus: 2 });
+    expect(result.irmaaCost).toBeCloseTo(2 * 2884.8, 2);
+  });
+
+  it("one person 65 or older pays once", () => {
+    const result = checkHouseholdIrmaa({ ...base, personsAge65Plus: 1 });
+    expect(result.irmaaCost).toBeCloseTo(2884.8, 2);
+  });
+
+  it("no one 65 or older pays nothing and gets no warning", () => {
+    const result = checkHouseholdIrmaa({ ...base, personsAge65Plus: 0 });
+    expect(result.irmaaCost).toBe(0);
+    expect(result.warnings).toEqual([]);
+  });
+
+  it("passes checkIrmaa's warnings through once, not per person", () => {
+    const result = checkHouseholdIrmaa({ ...base, personsAge65Plus: 2 });
+    expect(result.warnings).toEqual(
+      checkIrmaa({ ...base, anyPersonAge65: true }).warnings,
+    );
+    expect(result.warnings).toHaveLength(1);
   });
 });
 

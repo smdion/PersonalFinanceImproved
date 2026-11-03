@@ -46,6 +46,7 @@ projection-year-handlers/    one year of work
 | `social-security-income.ts`    | Social Security paid in a year, per person; one computation for the year handler and strategies.                                                                                                                   |
 | `qcd.ts`                       | Qualified Charitable Distributions that satisfy part of an RMD.                                                                                                                                                    |
 | `post-withdrawal-optimizer.ts` | Roth conversions into bracket room, IRMAA and ACA cliff checks.                                                                                                                                                    |
+| `household-irmaa.ts`           | The household IRMAA surcharge: per-person cost × people 65+, for both decumulation-year sites.                                                                                                                     |
 | `rmd-smoothing.ts`             | Sizes Roth conversions to shrink future RMDs toward the spending need.                                                                                                                                             |
 
 **Balances**
@@ -92,7 +93,7 @@ projection-year-handlers/    one year of work
 4. `enforceRmd` — top up to the required minimum
 5. per-account distribution, `deductWithdrawals`, `clampBalances`, `reinvestRmdExcess`, `trackDepletions`
 6. `computeRmdSmoothingTargets`, `performRothConversion`
-7. `checkIrmaa`, `checkAca`
+7. `checkHouseholdIrmaa` (per person `checkIrmaa` × people 65+), `checkAca`
 8. `applyGrowth`
 9. `cleanupDust`, `reconcileIndividualToAggregate`, `syncAggregateBasis`
 
