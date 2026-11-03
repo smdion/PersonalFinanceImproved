@@ -26,7 +26,7 @@ export async function GET(request: Request) {
       { status: 500 },
     );
   }
-  if (cronCheck === "unauthorized") {
+  if (cronCheck !== "ok") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
