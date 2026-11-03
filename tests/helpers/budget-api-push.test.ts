@@ -8,6 +8,7 @@ import type { AccountMapping } from "@/lib/db/schema";
 import type { BudgetAPIClient } from "@/lib/budget-api/interface";
 import type { BudgetTransaction } from "@/lib/budget-api/types";
 import type { Db } from "@/server/helpers/transforms";
+import { BudgetApiError } from "@/lib/budget-api/errors";
 
 /** Fake db exposing only the select().from().where() chain the helper
  *  uses to load portfolioAccounts for a snapshot. */
@@ -72,6 +73,7 @@ function makeFakeClient(
     prepareGoalWrite: vi.fn(),
     getTransactions: vi.fn(),
     createTransaction: vi.fn().mockResolvedValue("new-tx-id"),
+    findCreatedTransaction: vi.fn().mockResolvedValue(null),
     updateTransaction: vi.fn(),
     deleteTransaction: vi.fn().mockResolvedValue(undefined),
     getAccountTransactions: vi.fn().mockResolvedValue([]),
@@ -321,6 +323,132 @@ describe("pushSnapshotToBudgetApi — resync mode", () => {
     ).rejects.toThrow(/could not be deleted.*old-1.*network down/s);
 
     expect(client.createTransaction).not.toHaveBeenCalled();
+  });
+});
+
+describe("pushSnapshotToBudgetApi — resync lists before deleting", () => {
+  it("a list that fails on a later account deletes nothing on the earlier ones", async () => {
+    const db = makeFakeDb([
+      { performanceAccountId: 1, amount: "1000.00" },
+      { performanceAccountId: 2, amount: "500.00" },
+    ]);
+    const client = makeFakeClient({
+      getAccountTransactions: vi
+        .fn()
+        .mockResolvedValueOnce([
+          makeTransaction({ id: "old-a", memo: "Ledgr snapshot:5 - x" }),
+        ])
+        .mockRejectedValueOnce(new Error("timed out")),
+    });
+    const mappings = [
+      makeMapping({ remoteAccountId: "remote-a", performanceAccountId: 1 }),
+      makeMapping({ remoteAccountId: "remote-b", performanceAccountId: 2 }),
+    ];
+
+    await expect(
+      pushSnapshotToBudgetApi({
+        db,
+        snapshotId: 5,
+        snapshotDate: "2026-01-01",
+        mappings,
+        client,
+        mode: "resync",
+        asOfDate: new Date("2026-01-01"),
+      }),
+    ).rejects.toThrow(/Failed to list transactions on remote-b/);
+    expect(client.deleteTransaction).not.toHaveBeenCalled();
+    expect(client.createTransaction).not.toHaveBeenCalled();
+  });
+});
+
+describe("pushSnapshotToBudgetApi — a create whose response was lost", () => {
+  const twoGroups = () => ({
+    db: makeFakeDb([
+      { performanceAccountId: 1, amount: "1000.00" },
+      { performanceAccountId: 2, amount: "500.00" },
+    ]),
+    mappings: [
+      makeMapping({ remoteAccountId: "remote-a", performanceAccountId: 1 }),
+      makeMapping({ remoteAccountId: "remote-b", performanceAccountId: 2 }),
+    ],
+  });
+
+  it("is found by its import id and rolled back with the others", async () => {
+    const { db, mappings } = twoGroups();
+    const client = makeFakeClient({
+      createTransaction: vi
+        .fn()
+        .mockResolvedValueOnce("created-1")
+        .mockRejectedValueOnce(new Error("timed out")),
+      findCreatedTransaction: vi.fn().mockResolvedValue("landed-2"),
+    });
+
+    await expect(
+      pushSnapshotToBudgetApi({
+        db,
+        snapshotId: 13,
+        snapshotDate: "2026-01-01",
+        mappings,
+        client,
+        mode: "create",
+        asOfDate: new Date("2026-01-01"),
+      }),
+    ).rejects.toThrow(/timed out Rolled back 2 created transactions\./);
+    expect(client.findCreatedTransaction).toHaveBeenCalledWith(
+      expect.objectContaining({ accountId: "remote-b", amount: 500 }),
+    );
+    expect(client.deleteTransaction).toHaveBeenCalledWith("created-1");
+    expect(client.deleteTransaction).toHaveBeenCalledWith("landed-2");
+  });
+
+  it("a lookup that fails says the adjustment may have been posted", async () => {
+    const { db, mappings } = twoGroups();
+    const client = makeFakeClient({
+      createTransaction: vi
+        .fn()
+        .mockResolvedValueOnce("created-1")
+        .mockRejectedValueOnce(new Error("timed out")),
+      findCreatedTransaction: vi.fn().mockRejectedValue(new Error("down")),
+    });
+
+    await expect(
+      pushSnapshotToBudgetApi({
+        db,
+        snapshotId: 14,
+        snapshotDate: "2026-01-01",
+        mappings,
+        client,
+        mode: "create",
+        asOfDate: new Date("2026-01-01"),
+      }),
+    ).rejects.toThrow(
+      /Rolled back 1 created transactions\. The last adjustment \(account remote-b, 2026-01-01, \$500\.00\) may have been posted/,
+    );
+    expect(client.deleteTransaction).toHaveBeenCalledWith("created-1");
+  });
+});
+
+describe("pushSnapshotToBudgetApi — a create refused before it ran", () => {
+  it("isn't looked up: nothing was posted", async () => {
+    const db = makeFakeDb([{ performanceAccountId: 1, amount: "1000.00" }]);
+    const client = makeFakeClient({
+      createTransaction: vi
+        .fn()
+        .mockRejectedValue(new BudgetApiError("unauthorized", "auth", 401)),
+    });
+
+    await expect(
+      pushSnapshotToBudgetApi({
+        db,
+        snapshotId: 15,
+        snapshotDate: "2026-01-01",
+        mappings: [makeMapping({ performanceAccountId: 1 })],
+        client,
+        mode: "create",
+        asOfDate: new Date("2026-01-01"),
+      }),
+    ).rejects.toThrow(/unauthorized Rolled back 0 created transactions\.$/);
+    expect(client.findCreatedTransaction).not.toHaveBeenCalled();
   });
 });
 

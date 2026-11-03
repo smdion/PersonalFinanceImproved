@@ -82,6 +82,11 @@ export interface BudgetAPIClient {
   /** Create a new transaction, returns the transaction ID */
   createTransaction(tx: NewBudgetTransaction): Promise<string>;
 
+  /** The transaction `createTransaction(tx)` would have written, found by
+   *  its deterministic import id on `tx.date`, or null. For a write whose
+   *  response was lost or unreadable: it may have been applied. */
+  findCreatedTransaction(tx: NewBudgetTransaction): Promise<string | null>;
+
   /** Update an existing transaction */
   updateTransaction(
     txId: string,

@@ -383,7 +383,7 @@ export function formatSyncResultToast(
   failureMessage?: string,
   /** Actual Budget has no writable field for a category's goal — pushing a
    *  goal there only writes a `#template` line into the category's note
-   *  (see ActualClient.updateCategoryGoalTarget's docblock). It does NOT
+   *  (see ActualClient.prepareGoalWrite's docblock). It does NOT
    *  become a real budgeted amount until the household manually runs
    *  Actual's own "Apply Budget Template" action, so a plain "Pushed N
    *  items" success message reads as "this is already live in Actual,"

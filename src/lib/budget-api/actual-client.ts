@@ -19,7 +19,7 @@ import type {
   NewBudgetTransaction,
 } from "./types";
 import { fromCents, toCents } from "./conversions";
-import { BudgetApiError, isResendable } from "./errors";
+import { BudgetApiError, isResendable, isTransientError } from "./errors";
 import { externalRequest, uncheckedShape } from "@/lib/http/external-request";
 import {
   mergeGoalIntoNote,
@@ -233,6 +233,19 @@ const ACTUAL_LIST_UNTIL = "9999-12-31";
 
 const WRAPPER_BATCH_SIZE = 10;
 
+/** Actual's `imported_id` dedupes imports: the canonical fingerprint's
+ *  hash, prefixed so it's recognizable as Ledgr's in the Actual UI. */
+function actualImportedId(tx: NewBudgetTransaction): string {
+  const idempotencyKey = transactionIdempotencyKey({
+    accountId: tx.accountId,
+    date: tx.date,
+    amount: toCents(tx.amount),
+    payee: tx.payeeName ?? null,
+    memo: tx.memo ?? null,
+  });
+  return `ledgr:${idempotencyKey.slice(0, 30)}`;
+}
+
 /** Runs `fn` over `items`, `size` at a time. */
 async function inBatches<T>(
   items: readonly T[],
@@ -436,13 +449,9 @@ export class ActualClient implements BudgetAPIClient {
     const res = await this.request<{ data: ActualAccount[] }>("/accounts");
     // Fetch balances for each account
     const accounts = res.data.map(mapAccount);
-    // Balances one request per account, in parallel (each already retries
-    // with backoff in externalRequest). The wrapper reloads the budget per
-    // request and struggles under concurrency, so a failure gets one more
-    // try on its own. Still failing, the sync stops: an account without its
-    // balance would be written as $0 into every Ledgr row mapped to it (a
-    // debt "paid off", a mortgage zeroed, cash gone) and replace the good
-    // cache — the sync's network phase throwing changes nothing locally.
+    // Balances in parallel; a transient failure gets one more try alone (the
+    // wrapper struggles under concurrency). Still failing, the sync stops: a
+    // missing balance would be written as $0 over the good cache.
     const failed: BudgetAccount[] = [];
     await inBatches(accounts, WRAPPER_BATCH_SIZE, async (acct) => {
       try {
@@ -450,27 +459,35 @@ export class ActualClient implements BudgetAPIClient {
         const balance = await this.getAccountBalance(acct.id);
         acct.balance = balance;
         acct.clearedBalance = balance;
-      } catch {
+      } catch (err) {
+        if (!isTransientError(err)) throw err;
         failed.push(acct);
       }
     });
     const unavailable: string[] = [];
+    let lastError: BudgetApiError | undefined;
     for (const acct of failed) {
       try {
         const balance = await this.getAccountBalance(acct.id);
         acct.balance = balance;
         acct.clearedBalance = balance;
       } catch (err) {
+        if (!isTransientError(err)) throw err;
+        lastError = err as BudgetApiError;
         log("warn", "actual_client.balance_fetch_failed", {
           accountId: acct.id,
-          error: err instanceof Error ? err.message : String(err),
+          error: lastError.message,
         });
         unavailable.push(acct.name);
       }
     }
-    if (unavailable.length > 0)
-      throw new Error(
+    // Keeps the failure's code, so a caller can tell a timeout from a 5xx.
+    if (lastError)
+      throw new BudgetApiError(
         `Actual didn't return a balance for ${unavailable.join(", ")} — nothing was synced; try again`,
+        lastError.code,
+        lastError.status,
+        lastError.retryAfterSeconds,
       );
     return accounts;
   }
@@ -584,33 +601,9 @@ export class ActualClient implements BudgetAPIClient {
     return detail;
   }
 
-  /**
-   * Overlays note-parsed goal amounts onto categories, in place. Actual's
-   * structured `goal` field (what `mapCategory`'s `goalTarget` reads,
-   * i.e. `cat.goal`) is never updated by `prepareGoalWrite`'s note-based
-   * write mechanism — there's no API to write it (see `prepareGoalWrite`'s
-   * own docblock). Comparing a push/pull preview's "current" value
-   * against a `goalTarget` derived purely from `cat.goal` shows every
-   * Ledgr-managed goal as permanently changed, even immediately after a
-   * successful push, because the two never touch the same field (every
-   * item in a budget push preview showed $0 "current" and its full new
-   * amount as the delta, regardless of whether it had already been
-   * pushed). Read the note back instead —
-   * the ONLY field Ledgr's own write path actually affects — and prefer
-   * it over `cat.goal` when a `#template` of either shape is present, so
-   * the diff stays internally consistent with what a push/pull actually
-   * did. Falls back to whatever `goalTarget` already was (possibly
-   * undefined) when no template is found, or on a per-category fetch
-   * failure — non-fatal, same "degrade, don't abort" pattern
-   * `getAccounts()`'s per-account balance fetch already uses.
-   *
-   * Parallelized across categories (same pattern as `getAccounts()`).
-   * Only called from `getMonthDetail`, which itself runs once per sync
-   * or post-push cache refresh (see `refreshCategoryCache`,
-   * `sync/core.ts`) — not once per page load — so the extra
-   * per-category request is amortized the same way every other
-   * per-item fetch in this client already is.
-   */
+  /** Reads each category's note and prefers its `#template` goal over
+   *  `cat.goal`, the field Ledgr's goal write never changes. A note failing
+   *  transiently twice keeps the old goalTarget; any other failure throws. */
   private async overlayNoteGoals(categories: BudgetCategory[]): Promise<void> {
     const readNote = async (cat: BudgetCategory) => {
       const noteRes = await this.request<{ data: string | null }>(
@@ -621,13 +614,14 @@ export class ActualClient implements BudgetAPIClient {
         parseGoalFromNote(noteRes.data, "target-balance");
       if (noteGoal !== undefined) cat.goalTarget = noteGoal;
     };
-    // A few at a time; a failed note gets one more try on its own (as
-    // account balances do) before it's left out.
+    // A few at a time; a note that fails transiently gets one more try on
+    // its own (as account balances do) before it's left out.
     const failed: BudgetCategory[] = [];
     await inBatches(categories, WRAPPER_BATCH_SIZE, async (cat) => {
       try {
         await readNote(cat);
-      } catch {
+      } catch (err) {
+        if (!isTransientError(err)) throw err;
         failed.push(cat);
       }
     });
@@ -635,6 +629,7 @@ export class ActualClient implements BudgetAPIClient {
       try {
         await readNote(cat);
       } catch (err) {
+        if (!isTransientError(err)) throw err;
         log("warn", "actual_client.goal_note_fetch_failed", {
           categoryId: cat.id,
           error: err instanceof Error ? err.message : String(err),
@@ -759,19 +754,7 @@ export class ActualClient implements BudgetAPIClient {
   }
 
   async createTransaction(tx: NewBudgetTransaction): Promise<string> {
-    // Deterministic idempotency key. Actual's
-    // transaction model includes an `imported_id` field that the server
-    // uses for dedupe on import. Mirror the YNAB pattern: hash the
-    // canonical fingerprint and prefix it so it's recognizable as
-    // ledgr-generated in the Actual UI.
-    const idempotencyKey = transactionIdempotencyKey({
-      accountId: tx.accountId,
-      date: tx.date,
-      amount: toCents(tx.amount),
-      payee: tx.payeeName ?? null,
-      memo: tx.memo ?? null,
-    });
-    const importedId = `ledgr:${idempotencyKey.slice(0, 30)}`;
+    const importedId = actualImportedId(tx);
 
     // The wrapper's `POST /accounts/:id/transactions` request body must be
     // nested under a `transaction` key (verified against the route's
@@ -810,13 +793,7 @@ export class ActualClient implements BudgetAPIClient {
         },
       }),
     });
-    // The read-back asks for exactly the day it wrote: the wrapper's lists
-    // otherwise end at its own today, and a transaction dated after that
-    // was posted but never found, so a retry posted it again.
-    const res = await this.request<{ data: ActualTransaction[] }>(
-      `/accounts/${tx.accountId}/transactions?since_date=${tx.date}&until_date=${tx.date}`,
-    );
-    const created = res.data.find((t) => t.imported_id === importedId);
+    const created = await this.findCreatedTransaction(tx);
     if (!created) {
       throw new BudgetApiError(
         `Created a transaction on Actual (account ${tx.accountId}, imported_id ${importedId}) but couldn't find it back afterward to return its id.`,
@@ -824,7 +801,19 @@ export class ActualClient implements BudgetAPIClient {
         null,
       );
     }
-    return created.id;
+    return created;
+  }
+
+  async findCreatedTransaction(
+    tx: NewBudgetTransaction,
+  ): Promise<string | null> {
+    const importedId = actualImportedId(tx);
+    // Exactly the day it wrote: the wrapper's lists otherwise end at its
+    // own today, so a later-dated transaction was posted but never found.
+    const res = await this.request<{ data: ActualTransaction[] }>(
+      `/accounts/${tx.accountId}/transactions?since_date=${tx.date}&until_date=${tx.date}`,
+    );
+    return res.data.find((t) => t.imported_id === importedId)?.id ?? null;
   }
 
   async deleteTransaction(transactionId: string): Promise<void> {

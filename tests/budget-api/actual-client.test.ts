@@ -177,7 +177,8 @@ describe("ActualClient", () => {
         if (url.endsWith("/accounts")) return list;
         if (url.includes("/a2/")) {
           a2Calls++;
-          if (a2Calls === 1) return Promise.reject(new Error("wrapper busy"));
+          if (a2Calls === 1)
+            return Promise.reject(new TypeError("fetch failed"));
           return jsonResponse({ data: -1234500 });
         }
         return jsonResponse({ data: 50000 });
@@ -189,12 +190,42 @@ describe("ActualClient", () => {
     it("still failing, the sync stops — never a $0 balance", async () => {
       mockFetch.mockImplementation((url: string) => {
         if (url.endsWith("/accounts")) return list;
-        if (url.includes("/a2/")) return Promise.reject(new Error("down"));
+        if (url.includes("/a2/"))
+          return Promise.reject(new TypeError("fetch failed"));
         return jsonResponse({ data: 50000 });
       });
       await expect(client.getAccounts()).rejects.toThrow(
         /didn't return a balance for Car loan — nothing was synced/,
       );
+    });
+
+    it("the error keeps the failure's code, never a plain Error", async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith("/accounts")) return list;
+        if (url.includes("/a2/"))
+          return Promise.reject(new TypeError("fetch failed"));
+        return jsonResponse({ data: 50000 });
+      });
+      await expect(client.getAccounts()).rejects.toMatchObject({
+        name: "BudgetApiError",
+        code: "network",
+      });
+    });
+
+    it("a failure that isn't transient stops at once, without the second try", async () => {
+      let a2Calls = 0;
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith("/accounts")) return list;
+        if (url.includes("/a2/")) {
+          a2Calls++;
+          return jsonResponse({ error: "unauthorized" }, 401);
+        }
+        return jsonResponse({ data: 50000 });
+      });
+      await expect(client.getAccounts()).rejects.toMatchObject({
+        code: "auth",
+      });
+      expect(a2Calls).toBe(1);
     });
   });
 
@@ -237,7 +268,8 @@ describe("ActualClient", () => {
     it("a network failure stops the sync too", async () => {
       mockFetch.mockImplementation((url: string) => {
         if (url.endsWith("/accounts")) return list;
-        if (url.includes("/a2/")) return Promise.reject(new Error("down"));
+        if (url.includes("/a2/"))
+          return Promise.reject(new TypeError("fetch failed"));
         return jsonResponse({ data: [tx] });
       });
       await expect(client.getTransactions("2026-01-01")).rejects.toThrow(
@@ -283,6 +315,46 @@ describe("ActualClient", () => {
       expect(months[0]!.income).toBe(6000); // 600000 cents = $6000
       // 2025-12 is out of range — only 3 fetch calls total (list + 2 details).
       expect(mockFetch).toHaveBeenCalledTimes(3);
+    });
+  });
+
+  describe("findCreatedTransaction", () => {
+    const tx = {
+      accountId: "acct-1",
+      date: "2026-01-20",
+      amount: -50,
+      payeeName: "Store",
+      memo: "Test",
+    };
+
+    it("finds the transaction createTransaction posted, by its imported_id, on that day only", async () => {
+      let sentImportedId = "";
+      mockFetch.mockImplementationOnce(
+        async (_url: string, init: RequestInit) => {
+          sentImportedId = JSON.parse(init.body as string).transaction
+            .imported_id;
+          return jsonResponse({ message: "ok" });
+        },
+      );
+      mockFetch.mockImplementation(async () =>
+        jsonResponse({
+          data: [
+            { id: "other", imported_id: "ledgr:else" },
+            { id: "posted", imported_id: sentImportedId },
+          ],
+        }),
+      );
+      await client.createTransaction(tx);
+      expect(await client.findCreatedTransaction(tx)).toBe("posted");
+      const listUrl = mockFetch.mock.calls.at(-1)![0] as string;
+      expect(listUrl).toContain("since_date=2026-01-20&until_date=2026-01-20");
+    });
+
+    it("null when nothing carries its imported_id", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ data: [{ id: "other", imported_id: "ledgr:else" }] }),
+      );
+      expect(await client.findCreatedTransaction(tx)).toBeNull();
     });
   });
 
@@ -877,7 +949,7 @@ describe("ActualClient", () => {
       expect(detail.categories[0]!.goalTarget).toBe(300);
     });
 
-    it("does not blow up the whole call when a single category's note fetch fails -- degrades to the structured value", async () => {
+    it("a note fetch that fails for a reason that isn't transient fails the call: a goal left out would read as unset", async () => {
       mockFetch.mockReturnValueOnce(
         jsonResponse({
           data: {
@@ -906,13 +978,12 @@ describe("ActualClient", () => {
           },
         }),
       );
-      // 404, not 500/429 -- "client" errors aren't retried by
-      // externalRequest (see errors.ts's isRetryable), so this stays a
-      // single fast mock call instead of burning real wall-clock time on
-      // exponential-backoff retries (no fake timers in this test file).
+      // A missing note is a 200 with `data: ""` (the wrapper's route), so a
+      // 404 is a real error.
       mockFetch.mockReturnValueOnce(jsonResponse({ error: "not found" }, 404));
-      const detail = await client.getMonthDetail("2026-01");
-      expect(detail.categories[0]!.goalTarget).toBe(300);
+      await expect(client.getMonthDetail("2026-01")).rejects.toMatchObject({
+        code: "client",
+      });
     });
   });
 

@@ -21,6 +21,9 @@ import { roundToCents } from "@/lib/utils/math";
 import * as schema from "@/lib/db/schema";
 import type { AccountMapping } from "@/lib/db/schema";
 import type { BudgetAPIClient } from "@/lib/budget-api";
+import type { NewBudgetTransaction } from "@/lib/budget-api/types";
+import { BudgetApiError } from "@/lib/budget-api";
+import { formatCurrency } from "@/lib/utils/format";
 import type { Db } from "./transforms";
 import { log } from "@/lib/logger";
 import { toNumber } from "./transforms";
@@ -177,6 +180,12 @@ export async function pushSnapshotToBudgetApi(input: {
   const cleanupFailures: Array<{ transactionId: string; error: string }> = [];
   const cleanupDeleted: string[] = [];
 
+  // Every account is listed before anything is deleted: a list that fails
+  // on the third group must not leave the first two cleaned out.
+  const taggedByGroup: Array<{
+    group: (typeof groups)[number];
+    tagged: Array<{ id: string }>;
+  }> = [];
   for (const group of groups) {
     let existing;
     try {
@@ -202,7 +211,10 @@ export async function pushSnapshotToBudgetApi(input: {
       skippedRemoteAccountIds.add(group.remoteAccountId);
       continue;
     }
+    taggedByGroup.push({ group, tagged });
+  }
 
+  for (const { tagged } of taggedByGroup) {
     // resync: delete each tagged transaction. Track successes and failures
     // so we can surface a precise reconciliation message on abort.
     for (const taggedTx of tagged) {
@@ -244,6 +256,9 @@ export async function pushSnapshotToBudgetApi(input: {
     transactionId: string;
   }> = [];
   let groupsPosted = 0;
+  // The transaction being created when a failure hit: its write may have
+  // landed even though no id came back (a lost or unreadable response).
+  let inFlight: NewBudgetTransaction | null = null;
 
   try {
     for (const group of groups) {
@@ -263,7 +278,7 @@ export async function pushSnapshotToBudgetApi(input: {
       );
       const difference = roundToCents(group.total - currentBalance);
       const memo = buildMemo(snapshotId, group.contributorLabels);
-      const transactionId = await client.createTransaction({
+      inFlight = {
         accountId: group.remoteAccountId,
         date: snapshotDate,
         amount: difference,
@@ -272,7 +287,9 @@ export async function pushSnapshotToBudgetApi(input: {
         cleared: true,
         reconciled: true,
         approved: true,
-      });
+      };
+      const transactionId = await client.createTransaction(inFlight);
+      inFlight = null;
       createdTransactionIds.push({
         remoteAccountId: group.remoteAccountId,
         transactionId,
@@ -283,6 +300,21 @@ export async function pushSnapshotToBudgetApi(input: {
     // Rollback: delete every transaction we just created.
     const rollbackFailures: Array<{ transactionId: string; error: string }> =
       [];
+    // A create that failed may still have been applied: look it up by its
+    // import id, so it's rolled back too instead of left behind.
+    let unverified = "";
+    if (inFlight && !rejectedBeforeRunning(cause)) {
+      try {
+        const landed = await client.findCreatedTransaction(inFlight);
+        if (landed)
+          createdTransactionIds.push({
+            remoteAccountId: inFlight.accountId,
+            transactionId: landed,
+          });
+      } catch (lookupCause) {
+        unverified = ` The last adjustment (account ${inFlight.accountId}, ${inFlight.date}, ${formatCurrency(inFlight.amount)}) may have been posted; couldn't check (${errorMessage(lookupCause)}): look for it in your budget app.`;
+      }
+    }
     for (const created of createdTransactionIds) {
       try {
         await client.deleteTransaction(created.transactionId);
@@ -299,6 +331,7 @@ export async function pushSnapshotToBudgetApi(input: {
       cause: errorMessage(cause),
       rolledBack: createdTransactionIds.length - rollbackFailures.length,
       rollbackFailures,
+      unverified: unverified || undefined,
     });
     const baseMessage = `Snapshot ${snapshotId} push failed: ${errorMessage(cause)}`;
     const rollbackMessage =
@@ -311,7 +344,7 @@ export async function pushSnapshotToBudgetApi(input: {
           ". Reconcile manually in your budget app.";
     throw new TRPCError({
       code: "INTERNAL_SERVER_ERROR",
-      message: baseMessage + rollbackMessage,
+      message: baseMessage + rollbackMessage + unverified,
       cause,
     });
   }
@@ -321,6 +354,17 @@ export async function pushSnapshotToBudgetApi(input: {
     groupsSkipped: skippedRemoteAccountIds.size,
     groupsCleaned,
   };
+}
+
+/** Auth, rate-limit and other 4xx answers refuse a request before it runs,
+ *  so nothing was posted and there's nothing to look up. */
+function rejectedBeforeRunning(cause: unknown): boolean {
+  return (
+    cause instanceof BudgetApiError &&
+    (cause.code === "auth" ||
+      cause.code === "rate-limit" ||
+      cause.code === "client")
+  );
 }
 
 function asOfYear(date: Date): number {

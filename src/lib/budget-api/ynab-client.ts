@@ -90,6 +90,7 @@ type YnabTransaction = {
   cleared: string;
   approved: boolean;
   deleted: boolean;
+  import_id?: string | null;
   subtransactions?: {
     amount: number;
     memo: string | null;
@@ -229,6 +230,20 @@ function mapTransaction(t: YnabTransaction): BudgetTransaction {
 }
 
 // -- Client --
+
+/** YNAB's `import_id` is its dedupe key (it has no Idempotency-Key header):
+ *  the canonical fingerprint's hash, prefixed so it's recognizable as
+ *  Ledgr's; YNAB allows 36 characters. */
+function ynabImportId(tx: NewBudgetTransaction): string {
+  const idempotencyKey = transactionIdempotencyKey({
+    accountId: tx.accountId,
+    date: tx.date,
+    amount: toMilliunits(tx.amount),
+    payee: tx.payeeName ?? null,
+    memo: tx.memo ?? null,
+  });
+  return `ledgr:${idempotencyKey.slice(0, 30)}`;
+}
 
 export class YnabClient implements BudgetAPIClient {
   readonly supportsDeltaSync = true;
@@ -476,24 +491,12 @@ export class YnabClient implements BudgetAPIClient {
   }
 
   async createTransaction(tx: NewBudgetTransaction): Promise<string> {
-    // Deterministic idempotency key. YNAB doesn't
-    // currently support an Idempotency-Key header officially, but the
-    // import_id field on /transactions IS the upstream-side dedupe key —
-    // YNAB rejects duplicate import_ids on the same account. We hash the
-    // canonical fingerprint and use it as import_id, prefixed so it's
-    // recognizable in the YNAB UI as ledgr-generated.
-    const idempotencyKey = transactionIdempotencyKey({
-      accountId: tx.accountId,
-      date: tx.date,
-      amount: toMilliunits(tx.amount),
-      payee: tx.payeeName ?? null,
-      memo: tx.memo ?? null,
-    });
-    // YNAB import_id is limited to 36 chars; truncate the base64url hash.
-    const importId = `ledgr:${idempotencyKey.slice(0, 30)}`;
-
+    const importId = ynabImportId(tx);
+    // A duplicate import_id isn't posted: YNAB answers without `transaction`
+    // (in `duplicate_import_ids`). A live one with the id is returned; a
+    // deleted one still holds the id, so nothing can be posted.
     const res = await this.request<
-      YnabResponse<{ transaction: { id: string } }>
+      YnabResponse<{ transaction?: { id: string } }>
     >("/transactions", {
       method: "POST",
       body: JSON.stringify({
@@ -518,7 +521,35 @@ export class YnabClient implements BudgetAPIClient {
         },
       }),
     });
-    return res.data.transaction.id;
+    if (res.data.transaction) return res.data.transaction.id;
+    const holders = await this.withImportId(tx);
+    const live = holders.find((t) => !t.deleted);
+    if (live) return live.id;
+    throw new BudgetApiError(
+      holders.length > 0
+        ? `YNAB won't post this transaction on account ${tx.accountId}: a deleted transaction holds its import_id ${importId}.`
+        : `YNAB reported import_id ${importId} as a duplicate on account ${tx.accountId}, but no transaction with it was found.`,
+      "client",
+      null,
+    );
+  }
+
+  async findCreatedTransaction(
+    tx: NewBudgetTransaction,
+  ): Promise<string | null> {
+    return (await this.withImportId(tx)).find((t) => !t.deleted)?.id ?? null;
+  }
+
+  /** Transactions on `tx.date` or later holding its import id, deleted
+   *  ones included. */
+  private async withImportId(
+    tx: NewBudgetTransaction,
+  ): Promise<YnabTransaction[]> {
+    const importId = ynabImportId(tx);
+    const res = await this.request<
+      YnabResponse<{ transactions: YnabTransaction[] }>
+    >(`/accounts/${tx.accountId}/transactions?since_date=${tx.date}`);
+    return res.data.transactions.filter((t) => t.import_id === importId);
   }
 
   async deleteTransaction(transactionId: string): Promise<void> {

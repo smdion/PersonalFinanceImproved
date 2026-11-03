@@ -367,6 +367,87 @@ describe("YnabClient", () => {
       expect(body1.transaction.import_id).toBe(body2.transaction.import_id);
     });
 
+    it("a duplicate import_id returns the transaction already there (YNAB answers without `transaction`)", async () => {
+      let sentImportId = "";
+      mockFetch.mockImplementationOnce(
+        async (_url: string, init: RequestInit) => {
+          sentImportId = JSON.parse(init.body as string).transaction.import_id;
+          return jsonResponse({
+            data: { transaction_ids: [], duplicate_import_ids: [sentImportId] },
+          });
+        },
+      );
+      mockFetch.mockImplementationOnce(async () =>
+        jsonResponse({
+          data: {
+            transactions: [
+              { id: "gone", import_id: sentImportId, deleted: true },
+              { id: "existing", import_id: sentImportId, deleted: false },
+            ],
+          },
+        }),
+      );
+      const id = await client.createTransaction({
+        accountId: "acct-1",
+        date: "2026-01-20",
+        amount: -50,
+        memo: "snapshot:7",
+      });
+      expect(id).toBe("existing");
+      expect(mockFetch.mock.calls[1]![0]).toContain(
+        "/accounts/acct-1/transactions?since_date=2026-01-20",
+      );
+    });
+
+    it("a duplicate held only by a deleted transaction says YNAB won't post it, as a non-retryable error", async () => {
+      let sentImportId = "";
+      mockFetch.mockImplementationOnce(
+        async (_url: string, init: RequestInit) => {
+          sentImportId = JSON.parse(init.body as string).transaction.import_id;
+          return jsonResponse({
+            data: { transaction_ids: [], duplicate_import_ids: [sentImportId] },
+          });
+        },
+      );
+      mockFetch.mockImplementationOnce(async () =>
+        jsonResponse({
+          data: {
+            transactions: [
+              { id: "gone", import_id: sentImportId, deleted: true },
+            ],
+          },
+        }),
+      );
+      await expect(
+        client.createTransaction({
+          accountId: "acct-1",
+          date: "2026-01-20",
+          amount: -50,
+        }),
+      ).rejects.toMatchObject({
+        code: "client",
+        message: expect.stringMatching(/a deleted transaction holds/),
+      });
+    });
+
+    it("a duplicate that can't be found back is an error, not a crash", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: { transaction_ids: [], duplicate_import_ids: ["x"] },
+        }),
+      );
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ data: { transactions: [] } }),
+      );
+      await expect(
+        client.createTransaction({
+          accountId: "acct-1",
+          date: "2026-01-20",
+          amount: -50,
+        }),
+      ).rejects.toThrow(/reported import_id .* as a duplicate/);
+    });
+
     it("defaults approved to true when not specified", async () => {
       mockFetch.mockReturnValueOnce(
         jsonResponse({ data: { transaction: { id: "tx-c" } } }),

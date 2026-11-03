@@ -9,6 +9,7 @@ import type { BudgetAPIClient } from "./interface";
 import { currentMonthKey } from "@/lib/pure/date-keys";
 
 type Db = typeof import("@/lib/db").db;
+type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
 /** Read a cached value. Returns null if not found or expired. */
 export async function cacheGet<T>(
@@ -49,7 +50,7 @@ export async function cacheGet<T>(
 
 /** Write a value to the cache (upsert by service + key). */
 export async function cacheSet(
-  db: Db,
+  db: Db | Tx,
   service: BudgetApiService,
   key: string,
   data: unknown,
@@ -106,6 +107,9 @@ export async function refreshCategoryCache(
     client.getCategories(),
     client.getMonthDetail(currentMonth),
   ]);
-  await cacheSet(db, service, "categories", categories);
-  await cacheSet(db, service, `months/${currentMonth}`, monthDetail);
+  // Together: categories and the month detail are read as one picture.
+  await db.transaction(async (tx) => {
+    await cacheSet(tx, service, "categories", categories);
+    await cacheSet(tx, service, `months/${currentMonth}`, monthDetail);
+  });
 }
