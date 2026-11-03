@@ -235,6 +235,17 @@ jobs:
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
           LEDGR_BACKUP_DIR: ${{ runner.temp }}/ledgr-backups
 
+      # Primary keys, foreign keys and indexes of the database just migrated
+      # from empty, against scripts/constraints/<dialect>.txt (a migration
+      # that drops one still applies cleanly).
+      - name: Constraint snapshot on PostgreSQL
+        run: pnpm check:constraints
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+
+      - name: Constraint snapshot on SQLite
+        run: pnpm check:constraints
+
       - name: Demo profiles on PostgreSQL (DEMO_ONLY)
         run: pnpm test tests/routers/demo-postgres.test.ts
         env:
