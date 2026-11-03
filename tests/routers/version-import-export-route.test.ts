@@ -33,6 +33,9 @@ vi.mock("@/lib/db/version-logic", () => ({
 vi.mock("@/server/auth", () => ({
   auth: vi.fn().mockResolvedValue(null),
 }));
+vi.mock("@/server/helpers/first-run", () => ({
+  settleFirstRunGate: vi.fn().mockResolvedValue(undefined),
+}));
 
 beforeEach(() => {
   process.env = { ...ORIGINAL_ENV };
@@ -144,5 +147,35 @@ describe("T3 — DEMO_ONLY guard", () => {
     });
     const res = await POST(request);
     expect(res.status).toBe(403);
+  });
+});
+
+describe("/api/versions/import settles the first-admin gate", () => {
+  it("runs settleFirstRunGate after the import", async () => {
+    process.env.ALLOW_DEV_MODE = "true";
+    vi.stubEnv("NODE_ENV", "development");
+
+    const { POST } = await import("@/app/api/versions/import/route");
+    const { importBackup } = await import("@/lib/db/version-logic");
+    const { settleFirstRunGate } = await import("@/server/helpers/first-run");
+    const body = new FormData();
+    const backup = {
+      schemaVersion: "0001",
+      exportedAt: "2026-01-01T00:00:00.000Z",
+      tables: {},
+    };
+    body.append("file", new File([JSON.stringify(backup)], "backup.json"));
+    const res = await POST(
+      new Request("http://localhost/api/versions/import", {
+        method: "POST",
+        body,
+      }),
+    );
+    expect(res.status).toBe(200);
+    expect(importBackup).toHaveBeenCalled();
+    expect(settleFirstRunGate).toHaveBeenCalledWith(
+      expect.anything(),
+      "import",
+    );
   });
 });

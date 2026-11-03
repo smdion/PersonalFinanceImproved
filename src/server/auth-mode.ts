@@ -26,3 +26,9 @@ export function devBypass(): "admin" | "viewer" | null {
   if (process.env.NODE_ENV !== "development") return null;
   return process.env.ALLOW_DEV_MODE === "true" ? "admin" : "viewer";
 }
+
+/** Whether Authentik sign-in is configured on this server (the issuer
+ *  auth.config.ts registers its provider for). */
+export function oidcConfigured(): boolean {
+  return !!process.env.AUTH_AUTHENTIK_ISSUER;
+}

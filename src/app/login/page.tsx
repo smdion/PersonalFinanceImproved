@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { db } from "@/lib/db";
 import { firstRunState } from "@/server/helpers/first-run";
+import { oidcConfigured } from "@/server/auth-mode";
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage() {
@@ -11,7 +12,7 @@ export default async function LoginPage() {
   // server's AUTH_AUTHENTIK_ISSUER (what auth.config.ts registers), not
   // the build machine's, and a fresh install is offered its first admin.
   await connection();
-  const hasOidc = !!process.env.AUTH_AUTHENTIK_ISSUER;
+  const hasOidc = oidcConfigured();
   const { adminNeeded } = await firstRunState(db);
   return (
     <Suspense>

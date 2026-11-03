@@ -9,6 +9,7 @@ import {
   versionProcedure,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
+import { settleFirstRunGate } from "@/server/helpers/first-run";
 import {
   createVersion,
   restoreVersion,
@@ -135,7 +136,9 @@ export const versionRouter = createTRPCRouter({
   restore: versionProcedure
     .input(z.object({ id: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
-      return restoreVersion(ctx.db, input.id);
+      const restored = await restoreVersion(ctx.db, input.id);
+      await settleFirstRunGate(ctx.db, "restore");
+      return restored;
     }),
 
   /** Delete a version. */
@@ -282,6 +285,7 @@ export const versionRouter = createTRPCRouter({
       const { reconcileReferenceData } =
         await import("@/lib/db/reference-data");
       await reconcileReferenceData(ctx.db);
+      await settleFirstRunGate(ctx.db, "reset");
 
       return { ok: true, tablesCleared: toTruncate.length };
     }),

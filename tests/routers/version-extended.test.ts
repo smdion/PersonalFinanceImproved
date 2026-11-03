@@ -652,7 +652,8 @@ describe("resetAllData", () => {
         .from(sqliteSchema.appSettings)
         .all()
         .find((s) => s.key === "onboarding_completed");
-      expect(onboardingSetting?.value).toBe("true");
+      // The local admin survives, so the first-admin gate stays closed.
+      expect(onboardingSetting?.value).toBe(true);
     } finally {
       ctx.cleanup();
     }
