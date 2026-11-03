@@ -14,9 +14,11 @@
  * takes. Every expected figure below is worked from the publication, never
  * read from those tables or from `src/`.
  *
- * Citations: RP24 / RP25 § 4.01 Tables 1-3 (MFJ, HOH, Single rate
- * schedules), § 4.03 (gains thresholds), § 4.14 (standard deduction and
- * the age add-on); Pub 915 (2025) Worksheet 1 (taxable Social Security,
+ * Citations: RP24 (2025) § 2.01 Tables 1-3 (MFJ, HOH, Single rate
+ * schedules), § 2.03 (gains thresholds), § 2.15(3) (the age add-on); RP25
+ * (2026) § 4.01 Tables 1-3, § 4.03, § 4.14(1) (standard deduction) and
+ * § 4.14(3) (add-on); 2025's standard deduction as OBBBA § 70102 set it,
+ * restated in RP25 § 3.01 (it replaces RP24 § 2.15(1)); Pub 915 (2025) Worksheet 1 (taxable Social Security,
  * line numbers kept); i1040 (2025) p.38, Qualified Dividends and Capital
  * Gain Tax Worksheet (QDCG, lines 1-25); Schedule 1-A (2025) Part V; IRC
  * 86, 1(h), 151(d)(5)(C), 1411 and Form 8960; IRC 3101(b)(2), 3102(f) and
@@ -659,7 +661,7 @@ describe("answer key: long-term gains", () => {
     });
   });
 
-  describe("tax/X3 [TAX-16]", () => {
+  describe("tax/X3 [TAX-16] {return 2025 MFJ}", () => {
     // Whole return, 2025 MFJ both 66: pension 20,000, LTCG 100,000. AGI
     // = MAGI = 120,000. Deductions: 31,500 + 2 × 1,600 (RP24 § 2.15(3))
     // = 34,700, plus senior 2 × 6,000 = 12,000 (MAGI under 150,000;
@@ -667,7 +669,7 @@ describe("answer key: long-term gains", () => {
     // = 0; L9 = 73,300 under 96,700: 0. Today: ordinary clamped to 0,
     // gains from 0: (100,000 − 96,700) × 15% = 495 (key).
     xfail({
-      id: "tax/X3 [TAX-16]",
+      id: "tax/X3 [TAX-16] {return 2025 MFJ}",
       todo: UNUSED_DEDUCTION,
       run: () =>
         yearTax({
@@ -994,9 +996,14 @@ describe("answer key: Additional Medicare", () => {
 // the engine takes no interest, dividend or pension input (v0.11 Tax "No
 // income beyond portfolio and SS"), so ordinary income is fed as a
 // Traditional draw and qualified dividends as gains.
+//
+// Each shipped tax year has a passing whole return per supported filing
+// status, titled `{return <year> <status>}`; X3 (2025 MFJ, an expected
+// failure) is tagged too. tests/lint/calculations-law-year.test.ts checks
+// that every year in tax-data/us-federal/ has them.
 
 describe("answer key: whole returns", () => {
-  it("tax/X1 [TAX-16] 2026 MFJ both 67: 4,484.00", () => {
+  it("tax/X1 [TAX-16] {return 2026 MFJ} both 67: 4,484.00", () => {
     // IRA 50,000 + interest 5,000 ordinary; gains 30,000 (10,000 qualified
     // dividends + 20,000 LTCG); SS 40,000. Pub 915: other 85,000, L8 =
     // 85,000 + 20,000 = 105,000; L15 6,000, L16 = 85% × 61,000 = 51,850,
@@ -1038,7 +1045,7 @@ describe("answer key: whole returns", () => {
     );
   });
 
-  it("tax/X2 [TAX-16] 2026 Single 70, senior phase-out: 14,875.60", () => {
+  it("tax/X2 [TAX-16] {return 2026 Single} 70, senior phase-out: 14,875.60", () => {
     // Pension 60,000 (ordinary), LTCG 40,000, SS 30,000. Pub 915: other
     // 100,000, L8 115,000; L15 4,500 + 85% × 81,000 = 73,350 > L18
     // 25,500: taxable 25,500. AGI 125,500. Std 16,100 + 2,050 = 18,150;
@@ -1072,7 +1079,7 @@ describe("answer key: whole returns", () => {
     );
   });
 
-  it("tax/X6 [TAX-01] 2026 HOH, 45, wages 120,000: 13,988.00", () => {
+  it("tax/X6 [TAX-01] {return 2026 HOH} 45, wages 120,000: 13,988.00", () => {
     // TI = 120,000 − 24,150 = 95,850; 7,740 (at 67,450) + 22% × 28,400 =
     // 13,988, exact schedule (the Taxes page's path).
     cents(householdTax("HOH", [120_000]).federalTax, 13_988);
@@ -1087,6 +1094,138 @@ describe("answer key: whole returns", () => {
         deductions: 16_100,
       }),
       0,
+    );
+  });
+
+  // 2025: RP24 § 2.01 Tables 1-3 (rate schedules), § 2.03 (gains tops:
+  // MFJ 96,700, Single 48,350, HOH 64,750), § 2.15(3) (add-on: 1,600
+  // married, 2,000 unmarried); the basic deduction as OBBBA § 70102 (IRC
+  // 63(c)(7)) set it, restated in RP25 § 3.01: Single 15,750, MFJ 31,500,
+  // HOH 23,625. Senior deduction: Schedule 1-A (2025) Part V.
+
+  it("tax/X8 [TAX-16] {return 2025 MFJ} both 67: 4,599.00", () => {
+    // X1's household in 2025. IRA 50,000 + interest 5,000 ordinary; gains
+    // 30,000 (10,000 qualified dividends + 20,000 LTCG); SS 40,000. Pub
+    // 915 (2025) Worksheet 1: L2 20,000; L3 85,000; L8 105,000 > L9
+    // 32,000; L10 73,000; L11 12,000; L12 61,000; L13 12,000; L14 6,000;
+    // L15 = min(20,000, 6,000) = 6,000; L16 = 85% × 61,000 = 51,850; L17
+    // 57,850 > L18 = 85% × 40,000 = 34,000: taxable 34,000. AGI = 55,000
+    // + 30,000 + 34,000 = 119,000. Deductions 31,500 + 2 × 1,600 = 34,700;
+    // senior 2 × 6,000 = 12,000 (MAGI 119,000 not over 150,000); 46,700.
+    // TI = 72,300. QDCG: L5 = 72,300 − 30,000 = 42,300; L7 = min(72,300,
+    // 96,700) = 72,300; L9 = 72,300 − 42,300 = 30,000, all gains at 0%.
+    // L22 TAX(42,300) = 10% × 23,850 + 12% × 18,450 = 2,385 + 2,214 =
+    // 4,599; L24 TAX(72,300) = 2,385 + 12% × 48,450 = 8,199 > L23: 4,599.
+    // NIIT 0 (MAGI under 250,000; IRC 1411(b)).
+    const ss = taxableSS(40_000, 55_000, "MFJ", 30_000);
+    const agi = 55_000 + 30_000 + ss;
+    const ded = deductions({
+      year: 2025,
+      status: "MFJ",
+      seniors: 2,
+      magi: agi,
+    });
+    cents(
+      {
+        taxableSS: ss,
+        agi,
+        deductions: ded,
+        tax: yearTax({
+          year: 2025,
+          status: "MFJ",
+          ordinary: 55_000,
+          gains: 30_000,
+          taxableSS: ss,
+          deductions: ded,
+        }),
+        niit: computeNiit(agi, 5_000 + 30_000, "MFJ"),
+      },
+      {
+        taxableSS: 34_000,
+        agi: 119_000,
+        deductions: 46_700,
+        tax: 4_599,
+        niit: 0,
+      },
+    );
+  });
+
+  it("tax/X9 [TAX-16] {return 2025 Single} 70, senior phase-out: 15,165.60", () => {
+    // X2's household in 2025. Pension 60,000 (ordinary), LTCG 40,000, SS
+    // 30,000. Pub 915: L2 15,000; L3 100,000; L8 115,000 > L9 25,000; L10
+    // 90,000; L11 9,000; L12 81,000; L14 4,500; L15 = min(15,000, 4,500)
+    // = 4,500; L16 = 85% × 81,000 = 68,850; L17 73,350 > L18 = 85% ×
+    // 30,000 = 25,500: taxable 25,500. AGI 125,500. Deductions 15,750 +
+    // 2,000 = 17,750; senior 6,000 − 6% × (125,500 − 75,000) = 6,000 −
+    // 3,030 = 2,970; 20,720. TI = 104,780. QDCG: L5 = 64,780, over the
+    // 48,350 top, so L9 0 and all 40,000 at 15% = 6,000 (L14 104,780
+    // under 533,400). L22 TAX(64,780) = 1,192.50 + 12% × 36,550 + 22% ×
+    // (64,780 − 48,475) = 1,192.50 + 4,386 + 3,587.10 = 9,165.60; L23
+    // 15,165.60 < L24 TAX(104,780) = 1,192.50 + 4,386 + 22% × 54,875 +
+    // 24% × 1,430 = 17,994.20. NIIT 0 (MAGI under 200,000).
+    const ss = taxableSS(30_000, 60_000, "Single", 40_000);
+    const agi = 60_000 + 40_000 + ss;
+    const ded = deductions({
+      year: 2025,
+      status: "Single",
+      seniors: 1,
+      magi: agi,
+    });
+    cents(
+      {
+        taxableSS: ss,
+        agi,
+        deductions: ded,
+        tax: yearTax({
+          year: 2025,
+          status: "Single",
+          ordinary: 60_000,
+          gains: 40_000,
+          taxableSS: ss,
+          deductions: ded,
+        }),
+        niit: computeNiit(agi, 40_000, "Single"),
+      },
+      {
+        taxableSS: 25_500,
+        agi: 125_500,
+        deductions: 20_720,
+        tax: 15_165.6,
+        niit: 0,
+      },
+    );
+  });
+
+  it("tax/X10 [TAX-16] {return 2025 HOH} 45, gains across the 0% top: 8,168.75", () => {
+    // HOH under 65, no Social Security: ordinary 80,000, long-term gains
+    // 20,000. AGI 100,000; deduction 23,625 (no add-on); TI 76,375. QDCG:
+    // L4 20,000; L5 = 56,375; L7 = min(76,375, 64,750) = 64,750; L8 =
+    // min(56,375, 64,750) = 56,375; L9 = 8,375 at 0%; L12 = 20,000 −
+    // 8,375 = 11,625; L14 = min(76,375, 566,700) = 76,375; L16 = 76,375 −
+    // (56,375 + 8,375) = 11,625; L17 11,625 × 15% = 1,743.75. L22
+    // TAX(56,375) = 10% × 17,000 + 12% × 39,375 = 1,700 + 4,725 = 6,425;
+    // L23 8,168.75 < L24 TAX(76,375) = 1,700 + 12% × 47,850 + 22% ×
+    // 11,525 = 9,977.50. NIIT 0 (MAGI under 200,000).
+    const agi = 80_000 + 20_000;
+    const ded = deductions({
+      year: 2025,
+      status: "HOH",
+      seniors: 0,
+      magi: agi,
+    });
+    cents(
+      {
+        deductions: ded,
+        tax: yearTax({
+          year: 2025,
+          status: "HOH",
+          ordinary: 80_000,
+          gains: 20_000,
+          deductions: ded,
+        }),
+        niit: computeNiit(agi, 20_000, "HOH"),
+      },
+      { deductions: 23_625, tax: 8_168.75, niit: 0 },
     );
   });
 });

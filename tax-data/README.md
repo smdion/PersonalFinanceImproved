@@ -35,6 +35,8 @@ pnpm test tests/tax-data/irs-published.test.ts
 
 The fixture is the second pair of eyes: CI compares every cell of the shipped tables to it, and fails for a shipped year without one.
 
+Then check the law, not just the figures: read what changed for the year, re-check each tax-law row of [docs/CALCULATIONS.md](../docs/CALCULATIONS.md) against it (fixing the function and its answer-key cases where the law moved), set its `Checked for` column to the new year, and add the year's whole-return cases ([§ Tax law, every year](../docs/CALCULATIONS.md#tax-law-every-year)); `tests/lint/calculations-law-year.test.ts` fails until both are done.
+
 The check refuses a blank, so no figure or citation can carry over from last year unnoticed — and Ledgr skips a year that still has one, so a half-done year never reaches an install. Use only figures from published notices — never estimates or projections.
 
 ## A year file
