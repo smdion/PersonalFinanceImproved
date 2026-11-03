@@ -30,6 +30,24 @@ async function pushGoal(
   await write.apply();
 }
 
+/** A transaction as the wrapper lists one. */
+function actualTx(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "t1",
+    account: "acct-1",
+    date: "2026-01-20",
+    amount: -5000,
+    payee: null,
+    category: null,
+    notes: "",
+    imported_id: null,
+    cleared: false,
+    reconciled: false,
+    subtransactions: [],
+    ...overrides,
+  };
+}
+
 describe("ActualClient", () => {
   let client: ActualClient;
 
@@ -195,8 +213,8 @@ describe("ActualClient", () => {
   describe("getTransactions — an account that won't answer", () => {
     const list = jsonResponse({
       data: [
-        { id: "a1", name: "Checking", type: "checking", closed: false },
-        { id: "a2", name: "Savings", type: "savings", closed: false },
+        { id: "a1", name: "Checking", offbudget: false, closed: false },
+        { id: "a2", name: "Savings", offbudget: false, closed: false },
       ],
     });
     const tx = {
@@ -204,7 +222,10 @@ describe("ActualClient", () => {
       date: "2026-01-02",
       amount: -500,
       account: "a1",
-      payee_name: "Shop",
+      payee: "payee-1",
+      cleared: false,
+      reconciled: false,
+      subtransactions: [],
     };
 
     it("skips an account that is gone (404) and keeps the rest", async () => {
@@ -303,8 +324,8 @@ describe("ActualClient", () => {
       mockFetch.mockImplementation(async () =>
         jsonResponse({
           data: [
-            { id: "other", imported_id: "ledgr:else" },
-            { id: "posted", imported_id: sentImportedId },
+            actualTx({ id: "other", imported_id: "ledgr:else" }),
+            actualTx({ id: "posted", imported_id: sentImportedId }),
           ],
         }),
       );
@@ -316,7 +337,9 @@ describe("ActualClient", () => {
 
     it("null when nothing carries its imported_id", async () => {
       mockFetch.mockReturnValueOnce(
-        jsonResponse({ data: [{ id: "other", imported_id: "ledgr:else" }] }),
+        jsonResponse({
+          data: [actualTx({ id: "other", imported_id: "ledgr:else" })],
+        }),
       );
       expect(await client.findCreatedTransaction(tx)).toBeNull();
     });
@@ -348,6 +371,7 @@ describe("ActualClient", () => {
               amount: -5000,
               cleared: true,
               reconciled: false,
+              subtransactions: [],
               imported_id: sentImportedId,
             },
           ],
@@ -390,6 +414,7 @@ describe("ActualClient", () => {
               amount: -5000,
               cleared: true,
               reconciled: false,
+              subtransactions: [],
               imported_id: importedIdCapture.value,
             },
           ],
@@ -441,6 +466,7 @@ describe("ActualClient", () => {
               amount: -5000,
               cleared: true,
               reconciled: false,
+              subtransactions: [],
               imported_id: capture[capture.length - 1],
             },
           ],
@@ -495,6 +521,7 @@ describe("ActualClient", () => {
               amount: -5000,
               cleared: true,
               reconciled: true,
+              subtransactions: [],
               imported_id: sentImportedId,
             },
           ],
@@ -541,7 +568,7 @@ describe("ActualClient", () => {
   // the HTTP plumbing (GET note → merge → PUT note) around it.
   describe("prepareGoalWrite: monthly", () => {
     it("appends a fresh #template line when the category has no note yet", async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: null })); // GET
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "" })); // GET
       mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" })); // PUT
       await pushGoal(client, "cat-1", "monthly", 250);
       const [getCall, putCall] = mockFetch.mock.calls;
@@ -585,7 +612,7 @@ describe("ActualClient", () => {
 
   describe("prepareGoalWrite: reads only", () => {
     it("reads the note when prepared and writes it only on apply", async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "" }));
       const write = await client.prepareGoalWrite("cat-1", "monthly", 250);
       expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(mockFetch.mock.calls[0]![1]?.method ?? "GET").toBe("GET");
@@ -597,7 +624,7 @@ describe("ActualClient", () => {
 
   describe("prepareGoalWrite: target-balance", () => {
     it("writes an 'up to' template, distinct from the fixed-amount shape", async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "" }));
       mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" }));
       await pushGoal(client, "cat-1", "target-balance", 5000);
       const putCall = mockFetch.mock.calls[1];
@@ -668,6 +695,7 @@ describe("ActualClient", () => {
                     id: "c1",
                     name: "Rent",
                     group_id: "g1",
+                    is_income: false,
                     hidden: false,
                     budgeted: 150000, // cents = $1500
                     spent: -140000,
@@ -684,7 +712,7 @@ describe("ActualClient", () => {
       // No #template here, so this category's goalTarget stays whatever
       // getMonthDetail/mapCategory already produced (undefined -- this
       // fixture doesn't set a `goal` field either).
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "" }));
       const groups = await client.getCategories();
       expect(groups).toHaveLength(1);
       expect(groups[0]!.name).toBe("Bills");
@@ -726,7 +754,7 @@ describe("ActualClient", () => {
           },
         }),
       );
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "" }));
       const groups = await client.getCategories();
       expect(groups[0]!.categories[0]).toMatchObject({
         name: "Rent",
@@ -763,6 +791,7 @@ describe("ActualClient", () => {
                     id: "c1",
                     name: "Rent",
                     group_id: "g1",
+                    is_income: false,
                     hidden: false,
                     budgeted: 150000,
                     spent: -140000,
@@ -780,6 +809,7 @@ describe("ActualClient", () => {
                     id: "c2",
                     name: "Groceries",
                     group_id: "g2",
+                    is_income: false,
                     hidden: false,
                     budgeted: 60000,
                     spent: -55000,
@@ -794,8 +824,8 @@ describe("ActualClient", () => {
       // getMonthDetail() overlays note-parsed goal amounts (see
       // overlayNoteGoals) -- one GET /notes/category/:id per category,
       // no #template in either fixture so goalTarget is unaffected here.
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "" }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "" }));
       const detail = await client.getMonthDetail("2026-01");
       expect(detail.month).toBe("2026-01");
       const url = mockFetch.mock.calls[0]![0] as string;
@@ -866,7 +896,11 @@ describe("ActualClient", () => {
                     id: "c1",
                     name: "Rent",
                     group_id: "g1",
+                    is_income: false,
                     hidden: false,
+                    budgeted: 0,
+                    spent: 0,
+                    balance: 0,
                     goal: 0, // structured field: stale/never-written
                   },
                 ],
@@ -902,7 +936,11 @@ describe("ActualClient", () => {
                     id: "c1",
                     name: "Rent",
                     group_id: "g1",
+                    is_income: false,
                     hidden: false,
+                    budgeted: 0,
+                    spent: 0,
+                    balance: 0,
                     goal: 30000, // $300, set directly in Actual's own UI
                   },
                 ],
@@ -938,7 +976,11 @@ describe("ActualClient", () => {
                     id: "c1",
                     name: "Rent",
                     group_id: "g1",
+                    is_income: false,
                     hidden: false,
+                    budgeted: 0,
+                    spent: 0,
+                    balance: 0,
                     goal: 30000,
                   },
                 ],
@@ -1014,6 +1056,7 @@ describe("ActualClient", () => {
               notes: "test",
               cleared: true,
               reconciled: false,
+              subtransactions: [],
             },
           ],
         }),
@@ -1058,8 +1101,18 @@ describe("ActualClient", () => {
               cleared: true,
               reconciled: false,
               subtransactions: [
-                { amount: -9010, category: "water", notes: null },
-                { amount: -5000, category: "trash", notes: "trash" },
+                {
+                  amount: -9010,
+                  category: "water",
+                  notes: null,
+                  tombstone: false,
+                },
+                {
+                  amount: -5000,
+                  category: "trash",
+                  notes: "trash",
+                  tombstone: false,
+                },
                 { amount: -100, category: "x", tombstone: true },
               ],
             },
@@ -1099,6 +1152,7 @@ describe("ActualClient", () => {
               notes: null,
               cleared: false,
               reconciled: false,
+              subtransactions: [],
             },
           ],
         }),
@@ -1314,7 +1368,12 @@ describe("ActualClient with dates after the wrapper's today", () => {
             .filter(
               (r) => r.account === m[1] && r.date >= since && r.date <= until,
             )
-            .map((r) => ({ ...r, cleared: true, reconciled: false })),
+            .map((r) => ({
+              ...r,
+              cleared: true,
+              reconciled: false,
+              subtransactions: [],
+            })),
         });
       }
       if (m?.[2] === "balance") {

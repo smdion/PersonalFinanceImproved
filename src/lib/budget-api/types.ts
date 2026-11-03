@@ -53,7 +53,8 @@ export type BudgetMonth = {
   income: number;
   budgeted: number;
   activity: number;
-  toBeBudgeted: number;
+  /** Null for an Actual tracking budget, which has no "to budget". */
+  toBeBudgeted: number | null;
 };
 
 /** Detailed monthly budget with per-category data */
@@ -62,7 +63,7 @@ export type BudgetMonthDetail = {
   income: number;
   budgeted: number;
   activity: number;
-  toBeBudgeted: number;
+  toBeBudgeted: number | null;
   categories: BudgetCategory[];
 };
 

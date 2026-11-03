@@ -23,6 +23,9 @@ type BudgetApiErrorCode =
   // note-based goal write finding an existing #template of a different
   // shape already there. See BudgetAPIClient.prepareGoalWrite and
   // actual-goal-notes.ts.
+  | "bad-response" // the service answered, but not in the shape Ledgr
+  // reads (a missing, renamed or mistyped field); the same answer would
+  // come back, so it's never retried.
   | "unknown";
 
 export class BudgetApiError extends Error {
