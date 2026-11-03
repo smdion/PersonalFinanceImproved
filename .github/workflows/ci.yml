@@ -100,6 +100,9 @@ jobs:
         run: |
           cp -r .next/static .next/standalone/.next/static
           [ -d public ] && cp -r public .next/standalone/public || true
+          # The app reads tax-data/ from its working directory (server.js
+          # chdirs to .next/standalone), as the Docker image copies it.
+          cp -r tax-data .next/standalone/tax-data
           # Write .env for the standalone server (reads dotenv, not shell env).
           # Values here must match the step env: block — single source of truth.
           printf 'SQLITE_PATH=%s\nDEMO_ONLY=%s\nNEXTAUTH_SECRET=%s\nNEXTAUTH_URL=%s\nAUTH_TRUST_HOST=%s\nCRON_SECRET=%s\nENCRYPTION_KEY=%s\n' \
