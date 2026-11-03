@@ -242,6 +242,9 @@ export const relocationProjectionRouter = createTRPCRouter({
         salaryProfileId: input.salaryProfileId ?? undefined,
       });
       if (!currentPayload) return null;
+      // No return rate: a state the card words, not an engine throw.
+      if (currentPayload.notConfigured)
+        return { notConfigured: currentPayload.notConfigured };
 
       const relocPayload = await buildEnginePayload(ctx.db, data, {
         accumulationExpenseOverride: relocationAnnualExpenses,

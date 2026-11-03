@@ -27,6 +27,7 @@
  * acknowledgment they're the same thing; `matchesCurrentPlan` annotates
  * the preset row instead of leaving that silently redundant.
  */
+import { NotConfiguredNotice } from "@/components/ui/not-configured-notice";
 import type { RouterInputs } from "@/lib/trpc";
 import { trpc } from "@/lib/trpc";
 import { formatCurrency } from "@/lib/utils/format";
@@ -86,6 +87,8 @@ export function WithdrawalComparison({ selection }: { selection: Selection }) {
     );
 
   if (isLoading) return <Skeleton className="h-40 w-full" />;
+  if (data && "notConfigured" in data)
+    return <NotConfiguredNotice reason={data.notConfigured} />;
   if (!data || data.strategies.length === 0) {
     return (
       <p className="text-muted text-xs">

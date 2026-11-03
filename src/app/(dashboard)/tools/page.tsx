@@ -38,6 +38,7 @@ import {
   DEFAULT_LOAN_TERM_YEARS,
 } from "@/lib/constants";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
+import { NotConfiguredNotice } from "@/components/ui/not-configured-notice";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 
 export default function ToolsPage() {
@@ -376,6 +377,14 @@ export default function ToolsPage() {
       placeholderData: (prev) => prev,
     },
   );
+  // No return rate: the engine figures wait for one (the notice says so).
+  const relocFiState = relocFiQuery.data;
+  const relocNotConfigured =
+    relocFiState && "notConfigured" in relocFiState
+      ? relocFiState.notConfigured
+      : null;
+  const relocFi =
+    relocFiState && !("notConfigured" in relocFiState) ? relocFiState : null;
 
   return (
     <div>
@@ -457,6 +466,10 @@ export default function ToolsPage() {
                   }
                 />
 
+                {relocNotConfigured && (
+                  <NotConfiguredNotice reason={relocNotConfigured} />
+                )}
+
                 {/* Planned Move Year input */}
                 <div className="flex items-center gap-3">
                   <label className="text-muted text-sm whitespace-nowrap">
@@ -466,8 +479,8 @@ export default function ToolsPage() {
                     type="number"
                     className="w-24 rounded border px-2 py-1 text-sm"
                     placeholder={
-                      relocFiQuery.data?.earliestRelocateYear != null
-                        ? String(relocFiQuery.data.earliestRelocateYear)
+                      relocFi?.earliestRelocateYear != null
+                        ? String(relocFi.earliestRelocateYear)
                         : "—"
                     }
                     value={relocMoveYearInput}
@@ -495,12 +508,11 @@ export default function ToolsPage() {
                       Clear
                     </button>
                   )}
-                  {relocFiQuery.data?.earliestRelocateYear != null &&
+                  {relocFi?.earliestRelocateYear != null &&
                     relocMoveYear === null && (
                       <span className="text-faint text-xs">
-                        Earliest viable:{" "}
-                        {relocFiQuery.data.earliestRelocateYear} (age{" "}
-                        {relocFiQuery.data.earliestRelocateAge})
+                        Earliest viable: {relocFi.earliestRelocateYear} (age{" "}
+                        {relocFi.earliestRelocateAge})
                       </span>
                     )}
                 </div>
@@ -510,7 +522,7 @@ export default function ToolsPage() {
                   engineResult={
                     relocFiQuery.isPending || relocFiQuery.isFetching
                       ? undefined
-                      : (relocFiQuery.data ?? null)
+                      : (relocFi ?? null)
                   }
                   moveYear={relocMoveYear}
                 />
@@ -545,7 +557,7 @@ export default function ToolsPage() {
                   engineResult={
                     relocFiQuery.isPending || relocFiQuery.isFetching
                       ? undefined
-                      : (relocFiQuery.data ?? null)
+                      : (relocFi ?? null)
                   }
                   moveYear={relocMoveYear}
                 />

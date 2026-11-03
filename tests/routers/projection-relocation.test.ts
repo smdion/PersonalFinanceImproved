@@ -6,7 +6,7 @@
  * computation, engine calls, blended path, binary search, etc.).
  */
 import "./setup-mocks";
-import { vi, describe, it, expect, beforeAll, afterAll } from "vitest";
+import { vi, describe, it, expect, assert, beforeAll, afterAll } from "vitest";
 import type { RelocationScenarioParams } from "@/lib/db/schema";
 import {
   createTestCaller,
@@ -116,6 +116,31 @@ async function seedRelocationDataset(
 // ---------------------------------------------------------------------------
 
 describe("projection.relocation — computeRelocationFiProjection", () => {
+  it("no return rate: says to set one, instead of the engine throwing", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const { currentProfileId, relocProfileId } =
+        await seedRelocationDataset(db);
+      db.delete(schema.returnRateTable).run();
+      const result = await caller.projection.computeRelocationFiProjection({
+        currentProfileId,
+        currentBudgetColumn: 0,
+        currentExpenseOverride: null,
+        currentContributionProfileId: null,
+        relocationProfileId: relocProfileId,
+        relocationBudgetColumn: 0,
+        relocationExpenseOverride: null,
+        relocationContributionProfileId: null,
+        yearAdjustments: [],
+        largePurchases: [],
+        moveYear: null,
+      });
+      expect(result).toEqual({ notConfigured: "no_return_rate" });
+    } finally {
+      cleanup();
+    }
+  });
+
   it("returns null when profile IDs are not found", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -158,6 +183,7 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
         largePurchases: [],
         moveYear: null,
       });
+      assert(result && !("notConfigured" in result));
 
       // FI target = annual budget ÷ 4% withdrawal rate: $2,000 vs $1,500 rent.
       expect(result!.currentFiTarget).toBeCloseTo((2000 * 12) / 0.04);
@@ -190,6 +216,7 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
         largePurchases: [],
         moveYear: null,
       });
+      assert(result && !("notConfigured" in result));
 
       // Overrides replace the budget totals ($2,000 / $1,500).
       expect(result!.currentFiTarget).toBeCloseTo((3000 * 12) / 0.04);
@@ -218,6 +245,7 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
         largePurchases: [],
         moveYear: null,
       });
+      assert(result && !("notConfigured" in result));
 
       expect(result!.isViableNow).toBe(true);
       expect(result!.earliestRelocateYear).toBe(
@@ -248,6 +276,7 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
         largePurchases: [],
         moveYear: nextYear,
       });
+      assert(result && !("notConfigured" in result));
 
       const rows = result!.blendedRows!;
       expect(rows.length).toBeGreaterThan(0);
@@ -294,6 +323,7 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
         largePurchases: [],
         moveYear: null,
       });
+      assert(result && !("notConfigured" in result));
 
       const adjusted = result!.projectionRows.filter((r) => r.hasAdjustment);
       expect(adjusted.map((r) => r.year)).toEqual([nextYear]);
@@ -333,6 +363,7 @@ describe("projection.relocation — computeRelocationFiProjection", () => {
         ],
         moveYear: null,
       });
+      assert(result && !("notConfigured" in result));
 
       // The down payment hits the purchase year; the loan payment and
       // upkeep raise what the relocation has to fund forever.
