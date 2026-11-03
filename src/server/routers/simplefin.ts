@@ -25,6 +25,11 @@ import {
   sql,
 } from "drizzle-orm";
 import { createTRPCRouter, protectedProcedure, syncProcedure } from "../trpc";
+import {
+  BudgetApiError,
+  nothingChanged,
+  userMessageFor,
+} from "@/lib/budget-api/errors";
 import { newestReportPerDay } from "@/lib/pure/simplefin-holdings";
 import * as schema from "@/lib/db/schema";
 import {
@@ -211,17 +216,23 @@ export const simplefinRouter = createTRPCRouter({
   saveToken: syncProcedure
     .input(z.object({ setupToken: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
+      let accessUrl: string;
       try {
-        const accessUrl = await claimSetupToken(input.setupToken);
-        await saveSimplefinConnection(ctx.db, accessUrl);
-        return { success: true as const };
+        accessUrl = await claimSetupToken(input.setupToken);
       } catch (e) {
+        // Nothing is stored until SimpleFIN hands over the access URL.
+        const cause = e instanceof BudgetApiError ? nothingChanged(e) : e;
         const msg = e instanceof Error ? e.message : "Unknown error";
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: `Failed to claim SimpleFIN setup token: ${msg.slice(0, 200)}`,
+          message:
+            userMessageFor(cause) ??
+            `Failed to claim SimpleFIN setup token: ${msg.slice(0, 200)}`,
+          cause,
         });
       }
+      await saveSimplefinConnection(ctx.db, accessUrl);
+      return { success: true as const };
     }),
 
   /** Test the stored connection without writing a snapshot. */
@@ -244,7 +255,10 @@ export const simplefinRouter = createTRPCRouter({
       };
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error";
-      return { success: false as const, error: msg.slice(0, 200) };
+      return {
+        success: false as const,
+        error: userMessageFor(e) ?? msg.slice(0, 200),
+      };
     }
   }),
 
@@ -273,6 +287,7 @@ export const simplefinRouter = createTRPCRouter({
       throw new TRPCError({
         code: "BAD_REQUEST",
         message: `SimpleFIN sync failed: ${msg.slice(0, 200)}`,
+        cause: e,
       });
     }
   }),

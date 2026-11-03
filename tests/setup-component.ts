@@ -23,3 +23,34 @@ vi.mock("next/link", () => ({
     return createElement("a", { href, ...rest }, children as string);
   },
 }));
+
+// Each test file gets its own storage. Node's built-in localStorage is one
+// file shared by every worker (vitest.config.ts), so a choice one test saved
+// leaked into another test running at the same time.
+class MemoryStorage implements Storage {
+  private items = new Map<string, string>();
+  get length() {
+    return this.items.size;
+  }
+  clear() {
+    this.items.clear();
+  }
+  getItem(key: string) {
+    return this.items.get(key) ?? null;
+  }
+  key(index: number) {
+    return [...this.items.keys()][index] ?? null;
+  }
+  removeItem(key: string) {
+    this.items.delete(key);
+  }
+  setItem(key: string, value: string) {
+    this.items.set(key, String(value));
+  }
+}
+const storage = new MemoryStorage();
+for (const target of [globalThis, globalThis.window].filter(Boolean))
+  Object.defineProperty(target, "localStorage", {
+    value: storage,
+    configurable: true,
+  });

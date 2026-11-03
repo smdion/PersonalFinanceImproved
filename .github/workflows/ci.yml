@@ -2,7 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    # Version branches (vX.Y.Z) too: releases are built and deployed from
+    # them before the release PR exists.
+    branches: [main, "v*"]
   pull_request:
     branches: [main]
 
@@ -25,7 +27,7 @@ jobs:
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
         with:
-          node-version: 26.5.1
+          node-version-file: .nvmrc
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -37,6 +39,9 @@ jobs:
 
       - name: Type-check tests
         run: pnpm check:types-tests
+
+      - name: Type-check scripts
+        run: pnpm check:types-scripts
 
       - name: Lint
         run: pnpm run lint
@@ -144,7 +149,10 @@ jobs:
         env:
           BASE: ${{ github.event_name == 'pull_request' && github.base_ref || github.event.before }}
         run: |
-          git fetch --depth=1 origin "$BASE" 2>/dev/null || true
+          base="$BASE"
+          # A branch's first push has no "before" commit: compare with main.
+          case "$base" in ""|0000000000000000000000000000000000000000) base=main ;; esac
+          git fetch --depth=1 origin "$base" 2>/dev/null || true
           pnpm tsx scripts/check-tax-data-version.ts FETCH_HEAD
 
       - name: Verify docs freshness
@@ -158,3 +166,45 @@ jobs:
         if: failure() && github.ref == 'refs/heads/main'
         run: |
           echo "::warning::CI failed on main — check ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+  # Demo profiles live in PostgreSQL schemas, so the SQLite suite above never
+  # reaches them. This runs the demo end to end on PostgreSQL with DEMO_ONLY
+  # on, as the public demo runs.
+  postgres-demo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ledgr
+          POSTGRES_PASSWORD: ledgr-ci-placeholder
+          POSTGRES_DB: ledgr_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ledgr -d ledgr_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v6
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Demo profiles on PostgreSQL (DEMO_ONLY)
+        run: pnpm test tests/routers/demo-postgres.test.ts
+        env:
+          # Throwaway service database; not a secret.
+          TEST_DATABASE_URL: postgresql://ledgr:ledgr-ci-placeholder@localhost:5432/ledgr_test
+          DEMO_ONLY: "true"
+          REQUIRE_TEST_DATABASE: "true"

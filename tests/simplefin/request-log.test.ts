@@ -38,8 +38,10 @@ import {
 import {
   SIMPLEFIN_DAILY_REQUEST_LIMIT,
   countSimplefinRequestsLastDay,
+  lastSimplefinRequestAt,
   recordSimplefinRequest,
 } from "@/lib/simplefin/request-log";
+import { serviceError } from "@/lib/budget-api/errors";
 
 const mockGetAccounts = vi.mocked(getAccounts);
 const emptyResponse = {
@@ -86,6 +88,17 @@ describe("SimpleFIN request ledger", () => {
     mockGetAccounts.mockRejectedValueOnce(new Error("network down"));
     await expect(runSimplefinSync(ctx.rawDb)).rejects.toThrow();
     expect(await countSimplefinRequestsLastDay(ctx.rawDb)).toBe(1);
+  });
+
+  it("records a bad response as its own outcome, counted as a request", async () => {
+    mockGetAccounts.mockRejectedValueOnce(
+      serviceError("SimpleFIN", "bad", "bad-response"),
+    );
+    await expect(runSimplefinSync(ctx.rawDb)).rejects.toThrow("bad");
+    const log = ctx.db.select().from(ctx.schema.syncRequestLog).all();
+    expect(log.map((r) => r.outcome)).toEqual(["bad_response"]);
+    expect(await countSimplefinRequestsLastDay(ctx.rawDb)).toBe(1);
+    expect(await lastSimplefinRequestAt(ctx.rawDb)).not.toBeNull();
   });
 
   it("does not count replayed reads", async () => {

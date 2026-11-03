@@ -16,6 +16,7 @@ import {
   isPullMapping,
   mappingsWithTypedIds,
 } from "@/lib/utils/account-mapping";
+import { toDecimalColumn } from "@/lib/utils/math";
 
 type ApplyPullMappingResult =
   | { applied: false }
@@ -62,7 +63,10 @@ export async function applyPullMapping(
     const updated = await db
       .update(schema.debts)
       .set({
-        apiBalance: String(Math.abs(apiBalance)),
+        apiBalance: toDecimalColumn(
+          Math.abs(apiBalance),
+          "a balance from the budget app",
+        ),
         apiBalanceDate: localDateStr(),
       })
       .where(eq(schema.debts.id, debtId))
@@ -82,7 +86,12 @@ export async function applyPullMapping(
       await db
         .update(schema.mortgageLoans)
         // The value only: purchase vs estimated is the household's choice.
-        .set({ propertyValueEstimated: String(apiBalance) })
+        .set({
+          propertyValueEstimated: toDecimalColumn(
+            apiBalance,
+            "a property value from the budget app",
+          ),
+        })
         .where(eq(schema.mortgageLoans.id, loanId));
       return { applied: true, kind: "mortgagePropertyValue" };
     }
@@ -93,7 +102,10 @@ export async function applyPullMapping(
       await db
         .update(schema.mortgageLoans)
         .set({
-          apiBalance: String(Math.abs(apiBalance)),
+          apiBalance: toDecimalColumn(
+            Math.abs(apiBalance),
+            "a balance from the budget app",
+          ),
           apiBalanceDate: localDateStr(),
         })
         .where(eq(schema.mortgageLoans.id, loanId));
@@ -147,7 +159,10 @@ export async function applyPullMapping(
     await db
       .update(schema.otherAssetItems)
       .set({
-        value: String(apiBalance),
+        value: toDecimalColumn(
+          apiBalance,
+          "an asset value from the budget app",
+        ),
         note: `Synced from ${service.toUpperCase()}`,
       })
       .where(eq(schema.otherAssetItems.id, existing.id));
@@ -155,7 +170,7 @@ export async function applyPullMapping(
     await db.insert(schema.otherAssetItems).values({
       name: assetName,
       year: currentYear,
-      value: String(apiBalance),
+      value: toDecimalColumn(apiBalance, "an asset value from the budget app"),
       note: `Synced from ${service.toUpperCase()}`,
     });
   }

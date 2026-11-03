@@ -68,6 +68,19 @@ export function roundToCents(value: number): number {
   );
 }
 
+/** A figure from outside Ledgr, as a decimal column takes it: refuses NaN
+ *  and Infinity (Postgres keeps NaN as a value, SQLite as text), naming
+ *  what was being written. `places` fixes the digits; omitted, as given. */
+export function toDecimalColumn(
+  value: number,
+  what: string,
+  places?: number,
+): string {
+  if (!Number.isFinite(value))
+    throw new Error(`Refused to store ${what}: ${value} isn't a number`);
+  return places === undefined ? String(value) : value.toFixed(places);
+}
+
 /**
  * Sum an array of objects by a numeric property.
  */

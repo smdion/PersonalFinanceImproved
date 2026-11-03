@@ -13,7 +13,15 @@ import {
   beforeAll,
   afterAll,
   beforeEach,
+  afterEach,
 } from "vitest";
+import fs from "node:fs";
+import { TRPCError } from "@trpc/server";
+import {
+  ActualClient,
+  resetActualWrapperGates,
+} from "@/lib/budget-api/actual-client";
+import { appRouter } from "@/server/routers";
 import {
   createTestCaller,
   seedBudgetProfile,
@@ -309,6 +317,150 @@ describe("sync core — syncAll", () => {
 
     await expect(caller.sync.syncAll({ service: "ynab" })).rejects.toThrow(
       /Sync failed: API rate limited/,
+    );
+  });
+
+  /** The real Actual client over a stand-in wrapper answering with the
+   *  recorded responses, one of them broken. */
+  describe("an Actual answer Ledgr can't read", () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reshaping recorded JSON
+    type Body = any;
+    const recorded = (name: string) =>
+      structuredClone(
+        JSON.parse(
+          fs.readFileSync(`tests/fixtures/actual-wrapper/${name}.json`, "utf8"),
+        ).bodies,
+      ) as Body[];
+    afterEach(() => vi.unstubAllGlobals());
+
+    it.each([
+      [
+        "a nested balance",
+        "balance",
+        (b: Body) => ({ data: { balance: b.data } }),
+        "data",
+      ],
+      [
+        "a renamed offbudget",
+        "accounts",
+        (b: Body) => {
+          for (const a of b.data) {
+            a.off_budget = a.offbudget;
+            delete a.offbudget;
+          }
+          return b;
+        },
+        "data.0.offbudget",
+      ],
+      [
+        "a renamed transaction amount",
+        "transactions",
+        () => ({
+          data: [
+            {
+              id: "t1",
+              account: "a1",
+              date: "2026-11-01",
+              amout: -100,
+              cleared: false,
+              reconciled: false,
+              subtransactions: [],
+            },
+          ],
+        }),
+        "data.0.amount",
+      ],
+      [
+        "renamed categoryGroups",
+        "month",
+        (b: Body) => {
+          b.data.groups = b.data.categoryGroups;
+          delete b.data.categoryGroups;
+          return b;
+        },
+        "data.categoryGroups",
+      ],
+    ])(
+      "%s fails the sync, names the field, and changes nothing",
+      async (_name, broken, breakIt, field) => {
+        resetActualWrapperGates();
+        const bodies = {
+          accounts: recorded("accounts")[0],
+          balance: { data: 123456 },
+          "category-groups": recorded("category-groups")[0],
+          categories: recorded("categories")[0],
+          month: recorded("month")[0],
+          note: { data: "" },
+          transactions: { data: [] },
+        } as Record<string, unknown>;
+        bodies[broken] = breakIt(bodies[broken]);
+        const route = (url: string) =>
+          url.includes("/balance")
+            ? "balance"
+            : url.includes("/transactions")
+              ? "transactions"
+              : url.includes("/notes/")
+                ? "note"
+                : url.includes("/months/")
+                  ? "month"
+                  : url.endsWith("/categorygroups")
+                    ? "category-groups"
+                    : url.endsWith("/categories")
+                      ? "categories"
+                      : "accounts";
+        vi.stubGlobal(
+          "fetch",
+          vi.fn(async (url: string) => {
+            const body = bodies[route(url)];
+            return {
+              ok: true,
+              status: 200,
+              text: async () => JSON.stringify(body),
+              json: async () => body,
+            };
+          }),
+        );
+        mockGetClientForService.mockResolvedValue(
+          new ActualClient("http://actual.local", "key", "sync-id"),
+        );
+        const tables = [
+          schema.otherAssetItems,
+          schema.mortgageLoans,
+          schema.debts,
+          schema.savingsMonthly,
+          schema.portfolioAccounts,
+          schema.apiConnections,
+        ];
+        const before = tables.map((t) => db.select().from(t).all());
+
+        const error = await caller.sync.syncAll({ service: "actual" }).then(
+          () => null,
+          (e: unknown) => e,
+        );
+        expect(error).toBeInstanceOf(TRPCError);
+        const { data } = appRouter._def._config.errorFormatter({
+          shape: {
+            message: "",
+            code: -32603,
+            data: { code: "INTERNAL_SERVER_ERROR", httpStatus: 500 },
+          },
+          error: error as TRPCError,
+          type: "mutation",
+          path: "sync.syncAll",
+          input: undefined,
+          ctx: undefined,
+        }) as { data: { externalError: unknown; userMessage: string } };
+        expect(data.externalError).toEqual({
+          service: "Actual",
+          code: "bad-response",
+          field,
+        });
+        expect(data.userMessage).toBe(
+          `Actual sent something Ledgr doesn't understand (${field}). Nothing was changed.`,
+        );
+        expect(tables.map((t) => db.select().from(t).all())).toEqual(before);
+        expect(mockCacheSet).not.toHaveBeenCalled();
+      },
     );
   });
 });

@@ -17,9 +17,9 @@
  *   .defaultNow()                      → .default(sql`(unixepoch())`)
  *   check("name", sql`...`)            → STRIPPED — see CHECK constraints note below
  *
- * CHECK constraints are stripped from the SQLite output. PostgreSQL is the
- * production dialect and enforces them; SQLite is dev/test only and the same
- * invariants are enforced at the application layer. Stripping them is required
+ * CHECK constraints are stripped from the SQLite output. PostgreSQL
+ * enforces them; on SQLite the same invariants are enforced at the application
+ * layer only. Stripping them is required
  * because drizzle-kit's SQLite generator falls back to a CREATE-NEW + COPY +
  * DROP + RENAME table-recreate pattern whenever new CHECK constraints are
  * added (SQLite can't ALTER TABLE ADD CONSTRAINT). That recreate then fails
@@ -28,7 +28,7 @@
  * emit clean ALTER TABLE ADD COLUMN migrations.
  *
  * Known SQLite-only divergence between a *fresh* migrate and an *upgraded*
- * one, accepted because SQLite is dev/test only and prod is PostgreSQL
+ * one on SQLite installs
  * (measured by replaying the full pre-squash SQLite chain and diffing
  * structure against a fresh v0.8 baseline — tables/columns/indexes match):
  *   - 6 FK ON DELETE actions differ: scenarios.{budget,salary,contribution,

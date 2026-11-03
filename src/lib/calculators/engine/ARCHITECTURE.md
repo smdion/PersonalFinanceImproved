@@ -43,6 +43,7 @@ projection-year-handlers/    one year of work
 | `bracket-growth.ts`            | Grows inflation-indexed thresholds (brackets, standard deduction, LTCG, IRMAA) year by year.                                                                                                                       |
 | `obbba-senior-deduction.ts`    | The 2025–2028 OBBBA senior deduction and its phase-out.                                                                                                                                                            |
 | `rmd-enforcement.ts`           | Required minimum distributions after routing. Multi-person households: each owner's RMD is pinned to that owner's accounts, including owner assignment; single-person: shortfall spread over Traditional accounts. |
+| `social-security-income.ts`    | Social Security paid in a year, per person; one computation for the year handler and strategies.                                                                                                                   |
 | `qcd.ts`                       | Qualified Charitable Distributions that satisfy part of an RMD.                                                                                                                                                    |
 | `post-withdrawal-optimizer.ts` | Roth conversions into bracket room, IRMAA and ACA cliff checks.                                                                                                                                                    |
 | `rmd-smoothing.ts`             | Sizes Roth conversions to shrink future RMDs toward the spending need.                                                                                                                                             |
@@ -67,6 +68,7 @@ projection-year-handlers/    one year of work
 | `spending-decline.ts`    | Fixed real decline per year                              |
 | `forgo-inflation.ts`     | Skip the inflation raise after a losing year             |
 | `rmd-spending.ts`        | Spending scaled by the RMD factor                        |
+| `vpw.ts`                 | Variable Percentage Withdrawal, % of the balance by age  |
 
 `fixed` is inline in the dispatcher. A new strategy = one module + one dispatch entry. Strategies size spending from the **retirement balance** only.
 
@@ -76,9 +78,9 @@ projection-year-handlers/    one year of work
 
 **Accumulation** — `runAccumulationYear`: route contributions (specs, limits, overflow), match, lump sums, goal draws from Portfolio brokerages, growth, then `reconcileIndividualToAggregate` and `syncAggregateBasis`.
 
-**When the phases change** — dates come from `lib/pure/household-timeline.ts`: ages count from the primary person, withdrawals start when the last person with a job retires (`retirementYear`), and the projection runs to the last person's end age (`projectionEndYear`). Nothing averages the people.
+**When the phases change** — dates come from `lib/pure/household-timeline.ts`: plan dates (retirement year, end year) count from the primary person; per-person rules (catch-up, RMDs, 59½, the senior deduction) use that person's age; withdrawals start when the last person with a job retires (`retirementYear`), and the projection's last row is the year before `projectionEndYear` (the last person's end age): the end year itself isn't run, so a Projection to 95 stops at 94 (RULES.md § Known Gaps). Nothing averages the people.
 
-**Gap years** — `gap-year-draw.ts`: an accumulation year where someone with a job has stopped draws the shortfall (spending less take-home pay and Social Security), before growth, through the same routing, eligibility, Roth split, penalty and tax pricing as a retirement year. Other accumulation years take pay as covering the budget: spending doesn't touch balances.
+**Gap years** — `gap-year-draw.ts`: an accumulation year where someone with a job has stopped draws the shortfall (spending less take-home pay and Social Security), before growth, through the same routing, eligibility, Roth split and penalty as a retirement year. Tax pricing differs today, until fixed: gap years size the draw with their own gross-up and leave out the 65+ deductions. Other accumulation years take pay as covering the budget: spending doesn't touch balances. RMDs aren't taken before withdrawals start: a gap year warns when one falls due; other accumulation years neither take nor warn (RULES.md § Known Gaps).
 
 **Budget lines that end** — `expense-endings.ts`: a loan's line leaves as a share of each phase's budget the year after payoff. Typed figures and rate-seeded retirements are left alone.
 
@@ -86,7 +88,7 @@ projection-year-handlers/    one year of work
 
 1. `resolveDecumulationConfig` — the year's settings
 2. `computeQcdAmounts` — charitable distributions against the RMD
-3. `estimateWithdrawalTaxCost` — size and route the withdrawal (gross-up)
+3. `estimateWithdrawalTaxCost` — size and route the withdrawal (gross-up), against the year's indexed figures (`bracket-growth.ts`: brackets, standard deduction with the 65+ add-on, LTCG thresholds)
 4. `enforceRmd` — top up to the required minimum
 5. per-account distribution, `deductWithdrawals`, `clampBalances`, `reinvestRmdExcess`, `trackDepletions`
 6. `computeRmdSmoothingTargets`, `performRothConversion`

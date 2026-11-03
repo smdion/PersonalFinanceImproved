@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { appSettings, localAdmins } from "@/lib/db/schema";
 import { verifyPassword } from "@/lib/auth/password";
 import { authConfig } from "./auth.config";
+import { isDevelopmentBuild } from "./auth-mode";
 import { log } from "@/lib/logger";
 
 /**
@@ -182,8 +183,12 @@ const localAdminProvider = Credentials({
  * Pure logic for the JWT callback's role + permission assignment.
  * Exported so tests can drive every branch without spinning up NextAuth.
  *
- * Mutates and returns the token. Takes loadGroups as a dependency so
- * tests can inject a mock instead of hitting the real db.
+ * Mutates and returns the token, or returns null to reject it (NextAuth
+ * then clears the session). A token is only ever accepted with the
+ * `authMethod` a known provider stamped on it at sign-in: the NextAuth
+ * secret is shared with the demo, so a token signed anywhere else (the
+ * demo's Dev Login, say) must not become a session here. Takes loadGroups
+ * as a dependency so tests can inject a mock instead of hitting the real db.
  */
 export async function assignRoleAndPermissions(
   token: Record<string, unknown>,
@@ -193,10 +198,14 @@ export async function assignRoleAndPermissions(
     adminGroup: string;
     groupToPermission: Record<string, Permission>;
   }> = loadPermissionGroups,
-): Promise<Record<string, unknown>> {
-  // No user object means this is a refresh, not a sign-in — leave the
-  // existing token alone.
-  if (!user) return token;
+): Promise<Record<string, unknown> | null> {
+  // No user object means this is a refresh, not a sign-in: keep the token
+  // only if a known provider signed it in.
+  if (!user) {
+    if (token.authMethod) return token;
+    log("warn", "auth_token_rejected", { reason: "no_auth_method" });
+    return null;
+  }
 
   // Local admin: always admin role, no RBAC lookup needed.
   if (account?.provider === "local-admin") {
@@ -225,27 +234,32 @@ export async function assignRoleAndPermissions(
     return token;
   }
 
-  // Dev credentials (kept for development only, not production).
-  if (
-    account?.provider === "credentials" &&
-    process.env.NODE_ENV !== "production"
-  ) {
+  // Dev Login: development builds only (auth.config.ts doesn't register it
+  // in production builds or DEMO_ONLY).
+  if (account?.provider === "credentials" && isDevelopmentBuild()) {
     token.role = "admin";
     token.permissions = [];
     token.authMethod = "local";
     return token;
   }
 
-  // Unknown provider — safe default.
-  token.role = token.role ?? "viewer";
-  token.permissions = token.permissions ?? [];
-  return token;
+  // Any other provider, or Dev Login in a production build: rejected.
+  log("warn", "auth_token_rejected", {
+    reason: "unknown_provider",
+    provider: account?.provider ?? null,
+  });
+  return null;
 }
 
 // Extend the edge-compatible base config with DB-dependent callbacks and local admin provider
 const fullAuthConfig: NextAuthConfig = {
   ...authConfig,
-  providers: [...authConfig.providers, localAdminProvider],
+  // DEMO_ONLY signs nobody in (auth.config.ts): not even a local admin, whose
+  // token the shared secret would make valid on another install.
+  providers:
+    process.env.DEMO_ONLY === "true"
+      ? authConfig.providers
+      : [...authConfig.providers, localAdminProvider],
   session: {
     strategy: "jwt",
     // 4 hours — explicit expiry instead of NextAuth default (30 days).

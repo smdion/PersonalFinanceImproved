@@ -31,6 +31,8 @@ import {
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
+import { goalClient } from "../helpers/goal-client";
+import { BudgetApiError } from "@/lib/budget-api/errors";
 
 const mockGetActiveBudgetApi = vi.fn().mockResolvedValue("none");
 const mockGetBudgetAPIClient = vi.fn().mockResolvedValue(null);
@@ -325,9 +327,7 @@ describe("savings.pushContributionsToApi", () => {
 
       const mockUpdateGoal = vi.fn().mockResolvedValue(undefined);
       mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
-      mockGetClientForService.mockResolvedValueOnce({
-        updateCategoryGoalTarget: mockUpdateGoal,
-      });
+      mockGetClientForService.mockResolvedValueOnce(goalClient(mockUpdateGoal));
 
       const result = await ctx.caller.savings.pushContributionsToApi();
       expect(result.pushed).toBe(1);
@@ -339,7 +339,7 @@ describe("savings.pushContributionsToApi", () => {
     }
   });
 
-  it("reports a genuine API failure as `failed`, not silently as pushed:0/skippedUnsupported:0 (found live, 2026-08-31 — this previously looked identical to 'nothing needed pushing')", async () => {
+  it("stops on a failure that won't pass by retrying (auth) and says how many were pushed", async () => {
     const ctx = await createTestCaller();
     try {
       const profileId = await seedBudgetProfile(ctx.db);
@@ -354,18 +354,13 @@ describe("savings.pushContributionsToApi", () => {
 
       const mockUpdateGoal = vi
         .fn()
-        .mockRejectedValue(new Error("401 Unauthorized"));
+        .mockRejectedValue(new BudgetApiError("401 Unauthorized", "auth", 401));
       mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
-      mockGetClientForService.mockResolvedValueOnce({
-        updateCategoryGoalTarget: mockUpdateGoal,
-      });
+      mockGetClientForService.mockResolvedValueOnce(goalClient(mockUpdateGoal));
 
-      const result = await ctx.caller.savings.pushContributionsToApi();
-      expect(result.pushed).toBe(0);
-      expect(result.failed).toBe(1);
-      expect(result.failureMessage).toBe("401 Unauthorized");
-      // The mutation itself must not throw — the household still gets a
-      // response back with the failure reported IN it, not a hard error.
+      await expect(ctx.caller.savings.pushContributionsToApi()).rejects.toThrow(
+        "Pushed 0 of 1 savings targets, then failed: 401 Unauthorized",
+      );
     } finally {
       ctx.cleanup();
       mockGetActiveBudgetApi.mockResolvedValue("none");
@@ -387,9 +382,7 @@ describe("savings.pushContributionsToApi", () => {
       });
 
       mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
-      mockGetClientForService.mockResolvedValueOnce({
-        updateCategoryGoalTarget: vi.fn(),
-      });
+      mockGetClientForService.mockResolvedValueOnce(goalClient(vi.fn()));
 
       const result = await ctx.caller.savings.pushContributionsToApi();
       expect(result.pushed).toBe(0);
@@ -417,9 +410,7 @@ describe("savings.pushContributionsToApi", () => {
 
       const mockUpdateGoal = vi.fn().mockResolvedValue(undefined);
       mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
-      mockGetClientForService.mockResolvedValueOnce({
-        updateCategoryGoalTarget: mockUpdateGoal,
-      });
+      mockGetClientForService.mockResolvedValueOnce(goalClient(mockUpdateGoal));
 
       const result = await ctx.caller.savings.pushContributionsToApi({
         goalId: g1,
@@ -433,7 +424,7 @@ describe("savings.pushContributionsToApi", () => {
     }
   });
 
-  it("handles API errors gracefully and continues pushing", async () => {
+  it("counts a transient write failure per goal and keeps pushing", async () => {
     const ctx = await createTestCaller();
     try {
       const profileId = await seedBudgetProfile(ctx.db);
@@ -443,14 +434,19 @@ describe("savings.pushContributionsToApi", () => {
         monthlyContribution: "300",
       });
 
-      const mockUpdateGoal = vi.fn().mockRejectedValue(new Error("API fail"));
+      const failure = new BudgetApiError("API fail", "server", 500);
+      failure.service = "YNAB";
+      const mockUpdateGoal = vi.fn().mockRejectedValue(failure);
       mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
-      mockGetClientForService.mockResolvedValueOnce({
-        updateCategoryGoalTarget: mockUpdateGoal,
-      });
+      mockGetClientForService.mockResolvedValueOnce(goalClient(mockUpdateGoal));
 
       const result = await ctx.caller.savings.pushContributionsToApi();
       expect(result.pushed).toBe(0);
+      expect(result.failed).toBe(1);
+      // What the user is told, not the raw response.
+      expect(result.failureMessage).toBe(
+        "YNAB didn't answer properly — try again.",
+      );
     } finally {
       ctx.cleanup();
       mockGetActiveBudgetApi.mockResolvedValue("none");
@@ -474,9 +470,7 @@ describe("savings.pushContributionsToApi", () => {
 
       const mockUpdateGoal = vi.fn().mockResolvedValue(undefined);
       mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
-      mockGetClientForService.mockResolvedValueOnce({
-        updateCategoryGoalTarget: mockUpdateGoal,
-      });
+      mockGetClientForService.mockResolvedValueOnce(goalClient(mockUpdateGoal));
 
       const result = await ctx.caller.savings.pushContributionsToApi();
       expect(result.pushed).toBe(1);

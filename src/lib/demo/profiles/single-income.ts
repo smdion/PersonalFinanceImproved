@@ -13,7 +13,7 @@ export const singleIncomeProfile: DemoProfile = {
   name: "Young Professional",
   description:
     "Single income, early career, building an emergency fund and starting to invest.",
-  keyStats: { income: "$85,000", portfolioSize: "$45,000", savingsRate: "18%" },
+  keyStats: { savingsRate: "21%" },
 
   people: [{ name: "Alex", dateOfBirth: "1996-06-15", isPrimaryUser: true }],
 
@@ -195,13 +195,14 @@ export const singleIncomeProfile: DemoProfile = {
   contributionAccounts: [
     {
       personName: "Alex",
+      employerName: "TechCorp",
       accountType: "401k",
       taxTreatment: "pre_tax",
       contributionMethod: "percent_of_salary",
       contributionValue: "10",
       employerMatchType: "percent_of_contribution",
       employerMatchValue: "50",
-      employerMaxMatchPct: "6",
+      employerMaxMatchPct: "0.06",
       perfAccountLabel: "401(k) - TechCorp",
     },
     {

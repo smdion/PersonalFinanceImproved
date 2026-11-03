@@ -3,6 +3,7 @@
 /** Settings tab for managing YNAB and Actual Budget API connections — handles credential entry, connection testing, syncing, activation, and renders the preview panel for each service. */
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { errorText } from "@/lib/utils/mutation-error";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -492,7 +493,7 @@ function ServiceCard({
         )}
         {syncAllMut.isError && (
           <ConnectionResultMessage tone="error">
-            {syncAllMut.error.message}
+            {errorText(syncAllMut.error)}
           </ConnectionResultMessage>
         )}
 

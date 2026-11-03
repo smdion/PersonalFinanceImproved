@@ -15,6 +15,7 @@ import {
 } from "@/lib/config/enum-values";
 import { localDateStr } from "@/lib/utils/date";
 import { syncSecurityFacts } from "@/lib/sec/facts-sync";
+import { WriteStopped } from "@/lib/budget-api/errors";
 import { loadHoldingsOverview } from "./holdings-overview";
 import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
@@ -80,6 +81,13 @@ export const investmentFundFactsRouter = createTRPCRouter({
         });
       const summary = await syncSecurityFacts(ctx.db, {
         securityIds: [input.securityId],
+      }).catch((e: unknown) => {
+        // Its facts are unchecked, so the next refresh fetches them.
+        throw new WriteStopped(
+          "Confirmed the stand-in, then fetching its facts failed",
+          "The stand-in is confirmed; its facts will be fetched on the next refresh.",
+          e,
+        );
       });
       return { fetched: summary.updated, stoppedBySec: summary.stoppedBySec };
     }),
@@ -158,12 +166,22 @@ export const investmentFundFactsRouter = createTRPCRouter({
     .input(z.object({ securityId: z.number().int() }))
     .mutation(async ({ ctx, input }) => {
       const s = schema.securities;
-      await ctx.db
+      const reopened = await ctx.db
         .update(s)
         .set({ factsBasis: null, factsCheckedAt: null })
-        .where(and(eq(s.id, input.securityId), eq(s.factsBasis, "none")));
+        .where(and(eq(s.id, input.securityId), eq(s.factsBasis, "none")))
+        .returning({ id: s.id });
       const summary = await syncSecurityFacts(ctx.db, {
         securityIds: [input.securityId],
+      }).catch((e: unknown) => {
+        // A reopened fund is unchecked, so the next refresh looks again.
+        throw reopened.length > 0
+          ? new WriteStopped(
+              "Looking for a stand-in failed",
+              "Ledgr will look for a stand-in on the next refresh.",
+              e,
+            )
+          : e;
       });
       const [after] = await ctx.db
         .select({ name: s.factsSeriesName })

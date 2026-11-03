@@ -13,11 +13,7 @@ export const earlyRetirementProfile: DemoProfile = {
   name: "FIRE Pursuer",
   description:
     "High income, aggressive savings rate, targeting early retirement at 45.",
-  keyStats: {
-    income: "$240,000",
-    portfolioSize: "$850,000",
-    savingsRate: "45%",
-  },
+  keyStats: { savingsRate: "51%" },
 
   people: [{ name: "Morgan", dateOfBirth: "1991-11-03", isPrimaryUser: true }],
 
@@ -178,6 +174,7 @@ export const earlyRetirementProfile: DemoProfile = {
   contributionAccounts: [
     {
       personName: "Morgan",
+      employerName: "FAANG",
       accountType: "401k",
       taxTreatment: "pre_tax",
       contributionMethod: "percent_of_salary",
@@ -186,7 +183,7 @@ export const earlyRetirementProfile: DemoProfile = {
       contributionValue: "10",
       employerMatchType: "percent_of_contribution",
       employerMatchValue: "100",
-      employerMaxMatchPct: "6",
+      employerMaxMatchPct: "0.06",
       perfAccountLabel: "401(k) Mega",
     },
     {

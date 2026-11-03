@@ -15,6 +15,15 @@ vi.mock("@/lib/simplefin/client", () => ({
   getAccounts: vi.fn(),
   isSimplefinReplayMode: () => false,
 }));
+// The real loan write, wrapped so a test can make it fail once.
+vi.mock("@/server/helpers/loan-feed", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@/server/helpers/loan-feed")>();
+  return {
+    ...actual,
+    applyLoanFeedBalances: vi.fn(actual.applyLoanFeedBalances),
+  };
+});
 
 // ENCRYPTION_KEY must be set before crypto.ts is imported (transitively via
 // sync.ts) so encryptJson/readMaybeEncrypted have a real key to work with.
@@ -30,6 +39,7 @@ afterAll(() => {
 });
 
 import { getAccounts, type SimplefinAccount } from "@/lib/simplefin/client";
+import { applyLoanFeedBalances } from "@/server/helpers/loan-feed";
 import { eq } from "drizzle-orm";
 import {
   getSimplefinConnection,
@@ -212,6 +222,49 @@ describe("simplefin/sync", () => {
         .filter((r) => r.snapshotDate === "2026-02-01");
       expect(rows).toHaveLength(1);
       expect(Number(rows[0]!.totalBalance)).toBe(250);
+    });
+
+    it("a write failing after the account upsert leaves every balance as it was", async () => {
+      await saveSimplefinConnection(
+        ctx.rawDb,
+        "https://u:p@bridge.simplefin.org",
+      );
+      await excludeAllCurrentlyIncluded();
+      const fetchOnce = (balance: number) =>
+        mockGetAccounts.mockResolvedValueOnce({
+          accounts: [
+            bare({ id: "tx-1", name: "Checking", balance, orgName: "Bank" }),
+          ],
+          providerErrors: [],
+          accountIdsWithErrors: [],
+        });
+      fetchOnce(100);
+      await runSimplefinSync(ctx.rawDb, new Date(2026, 1, 10));
+
+      fetchOnce(999);
+      vi.mocked(applyLoanFeedBalances).mockRejectedValueOnce(
+        new Error("disk full"),
+      );
+      await expect(
+        runSimplefinSync(ctx.rawDb, new Date(2026, 1, 11)),
+      ).rejects.toThrow("disk full");
+
+      const [row] = ctx.db
+        .select()
+        .from(ctx.schema.simplefinAccounts)
+        .all()
+        .filter((r) => r.externalAccountId === "tx-1");
+      expect(Number(row!.lastBalance)).toBe(100);
+      const snapshots = ctx.db
+        .select()
+        .from(ctx.schema.simplefinBalanceSnapshots)
+        .all()
+        .filter((r) => r.snapshotDate === "2026-02-11");
+      expect(snapshots).toHaveLength(0);
+      // Not marked synced (the next tick retries), and the error is kept.
+      const conn = await getSimplefinConnection(ctx.rawDb);
+      expect(conn!.lastSyncedAt).toEqual(new Date(2026, 1, 10));
+      expect(await getSimplefinLastError(ctx.rawDb)).toContain("disk full");
     });
 
     it("updates apiConnections.lastSyncedAt on success", async () => {

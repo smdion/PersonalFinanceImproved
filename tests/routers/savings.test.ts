@@ -34,6 +34,7 @@ import {
 } from "@/lib/budget-api";
 import type { BudgetMonthDetail } from "@/lib/budget-api";
 import type { BudgetAPIClient } from "@/lib/budget-api";
+import { goalClient } from "../helpers/goal-client";
 
 vi.mock("@/lib/budget-api", async () => {
   const actual =
@@ -48,6 +49,7 @@ vi.mock("@/lib/budget-api", async () => {
     refreshCategoryCache: vi.fn().mockResolvedValue(undefined),
     // Real class — pushContributionsToApi does `err instanceof BudgetApiError`.
     BudgetApiError: actual.BudgetApiError,
+    isTransientError: actual.isTransientError,
   };
 });
 
@@ -1642,7 +1644,7 @@ describe("savings.computeSummary — currentMonthBudgeted", () => {
 // savings.pushContributionsToApi — the active provider having no API for
 // this write at all (currently only Actual) must be counted and reported
 // separately from a real success, not silently treated as "nothing to
-// push". See ActualClient.updateCategoryGoalTarget/updateCategoryTargetBalance.
+// push". See BudgetAPIClient.prepareGoalWrite.
 // ══════════════════════════════════════════════════════════════════════════════
 
 describe("savings.pushContributionsToApi", () => {
@@ -1665,12 +1667,11 @@ describe("savings.pushContributionsToApi", () => {
           apiCategoryName: name,
         });
       }
-      const updateCategoryGoalTarget = vi.fn().mockResolvedValue(undefined);
+      const write = vi.fn().mockResolvedValue(undefined);
       vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("ynab");
-      vi.mocked(getClientForService).mockResolvedValueOnce({
-        updateCategoryGoalTarget,
-        updateCategoryTargetBalance: vi.fn(),
-      } as unknown as BudgetAPIClient);
+      vi.mocked(getClientForService).mockResolvedValueOnce(
+        goalClient(write) as unknown as BudgetAPIClient,
+      );
       vi.mocked(cacheGet).mockResolvedValueOnce({
         data: [
           {
@@ -1683,10 +1684,7 @@ describe("savings.pushContributionsToApi", () => {
       } as never);
       const result = await ctx.caller.savings.pushContributionsToApi();
       expect(result.pushed).toBe(1);
-      expect(updateCategoryGoalTarget).toHaveBeenCalledExactlyOnceWith(
-        "cat-had",
-        0,
-      );
+      expect(write).toHaveBeenCalledExactlyOnceWith("cat-had", 0);
     } finally {
       ctx.cleanup();
     }
@@ -1709,15 +1707,14 @@ describe("savings.pushContributionsToApi", () => {
         apiCategoryId: "cat-retired",
         apiCategoryName: "Retired Fund",
       });
-      const updateCategoryGoalTarget = vi.fn().mockResolvedValue(undefined);
+      const write = vi.fn().mockResolvedValue(undefined);
       vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("ynab");
-      vi.mocked(getClientForService).mockResolvedValueOnce({
-        updateCategoryGoalTarget,
-        updateCategoryTargetBalance: vi.fn(),
-      } as unknown as BudgetAPIClient);
+      vi.mocked(getClientForService).mockResolvedValueOnce(
+        goalClient(write) as unknown as BudgetAPIClient,
+      );
       const result = await ctx.caller.savings.pushContributionsToApi();
       expect(result.pushed).toBe(0);
-      expect(updateCategoryGoalTarget).not.toHaveBeenCalled();
+      expect(write).not.toHaveBeenCalled();
     } finally {
       ctx.cleanup();
     }
@@ -1744,26 +1741,16 @@ describe("savings.pushContributionsToApi", () => {
       });
 
       vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("actual");
-      vi.mocked(getClientForService).mockResolvedValueOnce({
-        updateCategoryGoalTarget: vi
-          .fn()
-          .mockRejectedValue(
-            new BudgetApiError(
-              "Actual Budget has no API to set a category's goal amount",
-              "unsupported",
-              null,
-            ),
+      vi.mocked(getClientForService).mockResolvedValueOnce(
+        goalClient(
+          undefined,
+          new BudgetApiError(
+            "Actual Budget has no API to set a category's goal amount",
+            "unsupported",
+            null,
           ),
-        updateCategoryTargetBalance: vi
-          .fn()
-          .mockRejectedValue(
-            new BudgetApiError(
-              "Actual Budget has no API to set a category's goal amount",
-              "unsupported",
-              null,
-            ),
-          ),
-      } as unknown as BudgetAPIClient);
+        ) as unknown as BudgetAPIClient,
+      );
 
       const result = await ctx.caller.savings.pushContributionsToApi();
       expect(result).toEqual({
@@ -1778,7 +1765,50 @@ describe("savings.pushContributionsToApi", () => {
     }
   });
 
-  it("a generic (non-unsupported) error is counted as `failed` and reported, not silently indistinguishable from 'nothing to push' (fixed 2026-08-31 — previously identical to skippedUnsupported:0/pushed:0, a real failure the user couldn't tell apart from success)", async () => {
+  it("reads every target before writing any: a read that fails stops the push with nothing written", async () => {
+    const ctx = await createTestCaller();
+    try {
+      const { profileId } = seedStandardDataset(ctx.db);
+      for (const [name, cat] of [
+        ["First", "cat-first"],
+        ["Second", "cat-second"],
+      ] as const) {
+        const goalId = seedSavingsGoal(ctx.db, { name });
+        seedSavingsGoalAllocation(ctx.db, goalId, profileId, {
+          monthlyContribution: "100",
+        });
+        await ctx.caller.savings.linkGoalToApi({
+          goalId,
+          service: "ynab",
+          apiCategoryId: cat,
+          apiCategoryName: name,
+        });
+      }
+      const write = vi.fn().mockResolvedValue(undefined);
+      const client = goalClient(write);
+      client.prepareGoalWrite
+        .mockImplementationOnce(async (id, _shape, amount) => ({
+          apply: () => write(id, amount),
+        }))
+        .mockRejectedValueOnce(
+          new BudgetApiError("401 Unauthorized", "auth", 401),
+        );
+      vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("ynab");
+      vi.mocked(getClientForService).mockResolvedValueOnce(
+        client as unknown as BudgetAPIClient,
+      );
+
+      await expect(ctx.caller.savings.pushContributionsToApi()).rejects.toThrow(
+        "401 Unauthorized",
+      );
+      expect(client.prepareGoalWrite).toHaveBeenCalledTimes(2);
+      expect(write).not.toHaveBeenCalled();
+    } finally {
+      ctx.cleanup();
+    }
+  });
+
+  it("a transient error is counted as `failed` and reported, never read as 'nothing to push'", async () => {
     const ctx = await createTestCaller();
     try {
       const { profileId } = seedStandardDataset(ctx.db);
@@ -1799,21 +1829,22 @@ describe("savings.pushContributionsToApi", () => {
       });
 
       vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("ynab");
-      vi.mocked(getClientForService).mockResolvedValueOnce({
-        updateCategoryGoalTarget: vi
-          .fn()
-          .mockRejectedValue(new Error("network blip")),
-        updateCategoryTargetBalance: vi
-          .fn()
-          .mockRejectedValue(new Error("network blip")),
-      } as unknown as BudgetAPIClient);
+      vi.mocked(getClientForService).mockResolvedValueOnce(
+        goalClient(
+          vi.fn().mockRejectedValue(
+            Object.assign(new BudgetApiError("network blip", "network", null), {
+              service: "YNAB",
+            }),
+          ),
+        ) as unknown as BudgetAPIClient,
+      );
 
       const result = await ctx.caller.savings.pushContributionsToApi();
       expect(result).toEqual({
         pushed: 0,
         skippedUnsupported: 0,
         failed: 1,
-        failureMessage: "network blip",
+        failureMessage: "Ledgr couldn't reach YNAB — try again.",
         service: "ynab",
       });
     } finally {

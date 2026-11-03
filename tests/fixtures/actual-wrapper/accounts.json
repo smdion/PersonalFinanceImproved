@@ -1,0 +1,72 @@
+{
+  "source": "actual-http-api 26.10.0, a throwaway test budget (review 2026-11-01): every distinct 200 response recorded",
+  "bodies": [
+    {
+      "data": [
+        {
+          "id": "65460984-2fac-480d-9215-a19537f0b942",
+          "name": "Test Brokerage",
+          "offbudget": true,
+          "closed": false,
+          "account_group_id": null
+        },
+        {
+          "id": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+          "name": "Test Checking",
+          "offbudget": false,
+          "closed": false,
+          "account_group_id": null
+        },
+        {
+          "id": "3a3504b7-675b-420a-a579-b61c0a182e79",
+          "name": "Test Roth",
+          "offbudget": true,
+          "closed": false,
+          "account_group_id": null
+        },
+        {
+          "id": "f63afa95-bb9e-47f2-90b7-fdfb321d7e26",
+          "name": "Test Savings",
+          "offbudget": false,
+          "closed": false,
+          "account_group_id": null
+        },
+        {
+          "id": "ad099e35-2446-4e8e-a313-105ad33d02df",
+          "name": "Test Mortgage",
+          "offbudget": true,
+          "closed": false,
+          "account_group_id": null
+        },
+        {
+          "id": "5318f40b-c21d-422d-aae1-3d86cc6bc0a5",
+          "name": "Test Visa",
+          "offbudget": false,
+          "closed": false,
+          "account_group_id": null
+        },
+        {
+          "id": "18b99b48-5440-4513-aca7-39372677302e",
+          "name": "Test House",
+          "offbudget": true,
+          "closed": false,
+          "account_group_id": null
+        },
+        {
+          "id": "b071a79a-d87f-4b00-bffb-77e628f646fe",
+          "name": "Test Old Bank",
+          "offbudget": false,
+          "closed": true,
+          "account_group_id": null
+        },
+        {
+          "id": "b9aa9a0c-2154-421a-a4b3-f9dd4c975701",
+          "name": "Test Spare",
+          "offbudget": true,
+          "closed": false,
+          "account_group_id": null
+        }
+      ]
+    }
+  ]
+}

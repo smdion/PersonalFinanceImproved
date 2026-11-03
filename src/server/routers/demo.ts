@@ -2,6 +2,7 @@
 import { BLANK_SALARY_ENTRY } from "@/lib/db/salary-entry-defaults";
 import {
   DEMO_SCHEMA_MARKER_PREFIX,
+  DEMO_SHARED_TABLES,
   MIGRATION_STAMP_SQL,
 } from "@/lib/db/demo-schema-marker";
 import { applyReferenceData } from "@/lib/db/reference-data";
@@ -50,7 +51,7 @@ function quoteIdent(name: string): string {
 const MAX_DEMO_SCHEMAS = 10;
 
 /** Seed a demo profile into the given database connection (already on the demo schema). */
-async function seedProfile(db: typeof appDb, profile: DemoProfile) {
+export async function seedProfile(db: typeof appDb, profile: DemoProfile) {
   // 1. People
   const personRows = await db
     .insert(schema.people)
@@ -78,6 +79,7 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
   // a demo Salary Profile below — a profile entry is all-or-nothing, never
   // a partial pin (mirrors the "Demo Contribution" profile pattern).
   const salaryPinsByJobId: Record<string, SalaryProfileEntry> = {};
+  const jobIdByEmployer = new Map<string, number>();
   for (const j of profile.jobs) {
     const [createdJob] = await db
       .insert(schema.jobs)
@@ -90,6 +92,7 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
       })
       .returning({ id: schema.jobs.id });
     if (!createdJob) continue;
+    jobIdByEmployer.set(j.employerName, createdJob.id);
     // The persona's own figures over the blank entry (the fields no demo
     // persona models: extra withholding, box 2c, extra-paycheck routing…).
     salaryPinsByJobId[String(createdJob.id)] = {
@@ -220,6 +223,9 @@ async function seedProfile(db: typeof appDb, profile: DemoProfile) {
     const [created] = await db
       .insert(schema.contributionAccounts)
       .values({
+        jobId: ca.employerName
+          ? (jobIdByEmployer.get(ca.employerName) ?? null)
+          : null,
         personId: personIdByName.get(ca.personName)!,
         accountType: ca.accountType,
         parentCategory:
@@ -618,9 +624,8 @@ export const demoRouter = createTRPCRouter({
         );
 
         for (const { tablename } of tables.rows) {
-          // Community tax-data updates are the install's, not household
-          // data: a demo reads the public table through its search_path.
-          if (tablename === "tax_data_updates") continue;
+          // Install-wide tables are read from public (search_path).
+          if (DEMO_SHARED_TABLES.includes(tablename)) continue;
           const quotedTable = quoteIdent(tablename);
           await cdb.execute(
             sql.raw(

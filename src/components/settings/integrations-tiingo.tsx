@@ -3,6 +3,7 @@
 /** Settings card for the Tiingo market-data connection (API key only — benchmark/index price history). Same layout as SimplefinCard. */
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { errorText } from "@/lib/utils/mutation-error";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -113,7 +114,7 @@ export function TiingoCard() {
             </div>
             {saveKeyMut.isError && (
               <ConnectionResultMessage tone="error">
-                {saveKeyMut.error.message}
+                {errorText(saveKeyMut.error)}
               </ConnectionResultMessage>
             )}
           </div>
@@ -152,7 +153,9 @@ export function TiingoCard() {
             tone={testConnectionMut.data.success ? "success" : "error"}
           >
             {testConnectionMut.data.success
-              ? `Connected: ${testConnectionMut.data.ticker} history available from ${testConnectionMut.data.historyStart}`
+              ? testConnectionMut.data.historyStart
+                ? `Connected: ${testConnectionMut.data.ticker} history available from ${testConnectionMut.data.historyStart}`
+                : `Connected: Tiingo lists no price history for ${testConnectionMut.data.ticker}`
               : testConnectionMut.data.error}
           </ConnectionResultMessage>
         )}

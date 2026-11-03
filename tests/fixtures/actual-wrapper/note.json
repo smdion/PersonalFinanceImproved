@@ -1,0 +1,35 @@
+{
+  "source": "actual-http-api 26.10.0, a throwaway test budget (review 2026-11-01): every distinct 200 response recorded",
+  "bodies": [
+    {
+      "data": "Weekly shop\n#template 400"
+    },
+    {
+      "data": "just a free-text note"
+    },
+    {
+      "data": ""
+    },
+    {
+      "data": "#template 50 up to 300"
+    },
+    {
+      "data": "#template 5.00"
+    },
+    {
+      "data": "just a free-text note\n#template 75.25"
+    },
+    {
+      "data": "#template 150.50"
+    },
+    {
+      "data": "#template-1 100"
+    },
+    {
+      "data": "#template up to 5000"
+    },
+    {
+      "data": "#template 33.33"
+    }
+  ]
+}

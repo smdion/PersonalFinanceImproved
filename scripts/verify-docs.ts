@@ -206,10 +206,10 @@ function parseDesignClaims(): Record<string, number> {
   const markerRe = /<!-- AUTO-GEN:(\w+) -->(\d+)<!-- \/AUTO-GEN -->/g;
   let match;
   while ((match = markerRe.exec(doc)) !== null) {
-    const key = match[1];
+    const [, key, count] = match;
     // Only take the first occurrence of each key (avoid duplicates inflating)
-    if (!(key in claims)) {
-      claims[key] = parseInt(match[2], 10);
+    if (key && count && !(key in claims)) {
+      claims[key] = parseInt(count, 10);
     }
   }
 
@@ -230,8 +230,9 @@ function parseTestingClaims(): Record<string, number> {
   const markerRe = /<!-- AUTO-GEN:(\w+) -->(\d+)<!-- \/AUTO-GEN -->/g;
   let match;
   while ((match = markerRe.exec(doc)) !== null) {
-    if (!(match[1] in claims)) {
-      claims[match[1]] = parseInt(match[2], 10);
+    const [, key, count] = match;
+    if (key && count && !(key in claims)) {
+      claims[key] = parseInt(count, 10);
     }
   }
 

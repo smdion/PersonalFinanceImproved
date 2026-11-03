@@ -8,7 +8,7 @@
  * subclass so the sync layer + UI can react appropriately.
  */
 
-type BudgetApiErrorCode =
+export type BudgetApiErrorCode =
   | "auth" // 401, 403 — token revoked or wrong scope
   | "rate-limit" // 429 — back off and retry
   | "client" // other 4xx — bad request, malformed payload, etc.
@@ -21,8 +21,11 @@ type BudgetApiErrorCode =
   // the target already has state that can't be safely overwritten without
   // clobbering something the household configured directly — e.g. Actual's
   // note-based goal write finding an existing #template of a different
-  // shape already there. See ActualClient.updateCategoryGoalTarget/
-  // updateCategoryTargetBalance and actual-goal-notes.ts.
+  // shape already there. See BudgetAPIClient.prepareGoalWrite and
+  // actual-goal-notes.ts.
+  | "bad-response" // the service answered, but not in the shape Ledgr
+  // reads (a missing, renamed or mistyped field); the same answer would
+  // come back, so it's never retried.
   | "unknown";
 
 export class BudgetApiError extends Error {
@@ -30,6 +33,10 @@ export class BudgetApiError extends Error {
   readonly status: number | null;
   /** Retry-After header value in seconds, if present (rate-limit only). */
   readonly retryAfterSeconds: number | null;
+  /** The service's name ("Actual"), and for a bad-response the first field
+   *  that didn't fit; set where the request is made. */
+  service?: string;
+  field?: string;
 
   constructor(
     message: string,
@@ -53,6 +60,106 @@ export class BudgetApiError extends Error {
       this.code === "timeout"
     );
   }
+}
+
+/** What a user is told about a failed request to a service. */
+export function externalErrorSentence(e: BudgetApiError): string {
+  const who = e.service ?? "The service";
+  switch (e.code) {
+    case "bad-response":
+      return `${who} sent something Ledgr doesn't understand${e.field ? ` (${e.field})` : ""}.`;
+    case "auth":
+      return `${who} didn't accept Ledgr's credentials — reconnect it in Settings.`;
+    case "rate-limit":
+      return `${who} asked Ledgr to slow down — try again in a few minutes.`;
+    case "network":
+    case "timeout":
+      return `Ledgr couldn't reach ${who} — try again.`;
+    case "client":
+      return `${who} refused Ledgr's request.`;
+    case "conflict":
+      return `${who} has a setting Ledgr won't overwrite.`;
+    default:
+      return `${who} didn't answer properly — try again.`;
+  }
+}
+
+/** An error a client raises itself, naming its service. */
+export function serviceError(
+  service: string,
+  message: string,
+  code: BudgetApiErrorCode,
+  status: number | null = null,
+): BudgetApiError {
+  const e = new BudgetApiError(message, code, status);
+  e.service = service;
+  return e;
+}
+
+/** A BudgetApiError with a new message, keeping what it knows. */
+export function retold(from: BudgetApiError, message: string): BudgetApiError {
+  const e = new BudgetApiError(
+    message,
+    from.code,
+    from.status,
+    from.retryAfterSeconds,
+  );
+  e.service = from.service;
+  e.field = from.field;
+  return e;
+}
+
+/** A write that stopped: `done` tells the user what had changed. Only a
+ *  site that knows what changed says so; the default says nothing. */
+export class WriteStopped extends Error {
+  readonly done: string;
+
+  constructor(message: string, done: string, cause?: unknown) {
+    super(message, { cause });
+    this.name = "WriteStopped";
+    this.done = done;
+  }
+}
+
+/** A failure before anything was written. */
+export function nothingChanged(cause: unknown): WriteStopped {
+  return new WriteStopped(
+    cause instanceof Error ? cause.message : String(cause),
+    "Nothing was changed.",
+    cause,
+  );
+}
+
+/** The service failure behind an error, and what it stopped, if any. */
+export function externalFailure(error: unknown): {
+  external: BudgetApiError | null;
+  stopped: WriteStopped | null;
+} {
+  let external: BudgetApiError | null = null;
+  let stopped: WriteStopped | null = null;
+  for (let c = error, i = 0; c instanceof Error && i < 6; i++) {
+    if (c instanceof WriteStopped) stopped ??= c;
+    if (c instanceof BudgetApiError) external ??= c;
+    c = c.cause;
+  }
+  return { external, stopped };
+}
+
+/** The sentence a user sees for an error, or null when no service failed
+ *  and no write says what stopped. */
+export function userMessageFor(error: unknown): string | null {
+  const { external, stopped } = externalFailure(error);
+  const what = external && externalErrorSentence(external);
+  if (stopped) return `${what ?? "Something went wrong."} ${stopped.done}`;
+  return what;
+}
+
+/** A failure that may pass on its own (rate limit, 5xx, network, timeout):
+ *  the only kind a caller may retry, skip or count per item. Anything else
+ *  (auth, a rejected request, an unexpected response) won't change by
+ *  trying again and must stop the operation. */
+export function isTransientError(err: unknown): boolean {
+  return err instanceof BudgetApiError && err.isRetryable;
 }
 
 /**
@@ -194,57 +301,4 @@ export async function retryWithBackoff<T>(
 export function isResendable(err: BudgetApiError, init?: RequestInit): boolean {
   const method = (init?.method ?? "GET").toUpperCase();
   return method !== "POST" || err.code === "rate-limit";
-}
-
-/**
- * Shared fetch wrapper for budget API clients (YNAB, Actual Budget).
- * Was structurally duplicated between YnabClient.request() and
- * ActualClient.request() — same timeout/AbortController/retry wiring, so a
- * future fix to either had to
- * be applied twice and could silently drift.
- *
- * - Throws typed BudgetApiError instead of generic Error so call sites
- *   can distinguish auth/rate-limit/server/network/timeout failures.
- * - Wrapped in retryWithBackoff which honors Retry-After on 429 and does
- *   exponential backoff (1s/2s/4s capped at 30s) for retryable errors.
- *   Auth + client errors are NOT retried, and a POST is retried only after
- *   a rate limit (isResendable).
- */
-export async function budgetApiRequest<T>(
-  url: string,
-  headers: Record<string, string>,
-  init?: RequestInit,
-  timeoutMs = 15_000,
-  /** False for an hourly/daily quota (Tiingo): a rate limit won't lift in
-   *  seconds, and each retry spends another request. */
-  resendRateLimited = true,
-): Promise<T> {
-  return retryWithBackoff(
-    async () => {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), timeoutMs);
-      try {
-        const res = await fetch(url, {
-          ...init,
-          headers: { ...headers, ...init?.headers },
-          signal: controller.signal,
-        });
-        if (!res.ok) {
-          const body = await res.text().catch(() => "");
-          throw classifyResponse(res, body);
-        }
-        return (await res.json()) as T;
-      } catch (e) {
-        // classifyThrown preserves BudgetApiError + classifies AbortError
-        // / network errors, so the retry logic can decide whether to retry.
-        throw classifyThrown(e);
-      } finally {
-        clearTimeout(timeout);
-      }
-    },
-    undefined,
-    (err) =>
-      isResendable(err, init) &&
-      (resendRateLimited || err.code !== "rate-limit"),
-  );
 }

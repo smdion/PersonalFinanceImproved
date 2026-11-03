@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { BudgetAPIClient } from "@/lib/budget-api/interface";
 import {
   ActualClient,
   resetActualWrapperGates,
@@ -18,6 +19,35 @@ function jsonResponse(data: unknown, status = 200) {
   });
 }
 
+/** Prepare a goal write, then apply it: what a push does per item. */
+async function pushGoal(
+  client: BudgetAPIClient,
+  categoryId: string,
+  shape: "monthly" | "target-balance",
+  amount: number,
+) {
+  const write = await client.prepareGoalWrite(categoryId, shape, amount);
+  await write.apply();
+}
+
+/** A transaction as the wrapper lists one. */
+function actualTx(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "t1",
+    account: "acct-1",
+    date: "2026-01-20",
+    amount: -5000,
+    payee: null,
+    category: null,
+    notes: "",
+    imported_id: null,
+    cleared: false,
+    reconciled: false,
+    subtransactions: [],
+    ...overrides,
+  };
+}
+
 describe("ActualClient", () => {
   let client: ActualClient;
 
@@ -31,19 +61,19 @@ describe("ActualClient", () => {
     );
   });
 
-  it("does not support delta sync", () => {
-    expect(client.supportsDeltaSync).toBe(false);
-  });
-
   describe("testConnection", () => {
-    it("returns true on success", async () => {
+    it("resolves when the budget answers", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ data: [] }));
-      expect(await client.testConnection()).toBe(true);
+      await expect(client.testConnection()).resolves.toBeUndefined();
     });
 
-    it("returns false on failure", async () => {
-      mockFetch.mockRejectedValueOnce(new Error("Connection refused"));
-      expect(await client.testConnection()).toBe(false);
+    it("lets a bad answer through, naming Actual and the field", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
+      await expect(client.testConnection()).rejects.toMatchObject({
+        code: "bad-response",
+        service: "Actual",
+        field: "data",
+      });
     });
   });
 
@@ -80,62 +110,25 @@ describe("ActualClient", () => {
       expect(accounts[0]).toMatchObject({
         id: "acct-1",
         name: "Checking",
-        type: "checking",
+        type: "other",
         onBudget: true,
         closed: false,
         balance: 150,
       });
     });
 
-    it("maps account types correctly", async () => {
+    it('every account is "other": the wrapper\'s list carries no type', async () => {
       mockFetch.mockReturnValueOnce(
         jsonResponse({
           data: [
-            {
-              id: "a1",
-              name: "Savings",
-              type: "savings",
-              offbudget: false,
-              closed: false,
-              balance: 0,
-            },
-            {
-              id: "a2",
-              name: "CC",
-              type: "credit",
-              offbudget: false,
-              closed: false,
-              balance: 0,
-            },
-            {
-              id: "a3",
-              name: "Invest",
-              type: "investment",
-              offbudget: true,
-              closed: false,
-              balance: 0,
-            },
-            {
-              id: "a4",
-              name: "Unknown",
-              type: "weird",
-              offbudget: false,
-              closed: false,
-              balance: 0,
-            },
+            { id: "a1", name: "Savings", offbudget: false, closed: false },
+            { id: "a2", name: "Invest", offbudget: true, closed: false },
           ],
         }),
       );
-      // Balance calls for each
-      for (let i = 0; i < 4; i++) {
-        mockFetch.mockReturnValueOnce(jsonResponse({ data: 0 }));
-      }
-
+      mockFetch.mockReturnValue(jsonResponse({ data: 0 }));
       const accounts = await client.getAccounts();
-      expect(accounts[0]!.type).toBe("savings");
-      expect(accounts[1]!.type).toBe("creditCard");
-      expect(accounts[2]!.type).toBe("tracking");
-      expect(accounts[3]!.type).toBe("other");
+      expect(accounts.map((a) => a.type)).toEqual(["other", "other"]);
     });
   });
 
@@ -165,7 +158,8 @@ describe("ActualClient", () => {
         if (url.endsWith("/accounts")) return list;
         if (url.includes("/a2/")) {
           a2Calls++;
-          if (a2Calls === 1) return Promise.reject(new Error("wrapper busy"));
+          if (a2Calls === 1)
+            return Promise.reject(new TypeError("fetch failed"));
           return jsonResponse({ data: -1234500 });
         }
         return jsonResponse({ data: 50000 });
@@ -177,20 +171,50 @@ describe("ActualClient", () => {
     it("still failing, the sync stops — never a $0 balance", async () => {
       mockFetch.mockImplementation((url: string) => {
         if (url.endsWith("/accounts")) return list;
-        if (url.includes("/a2/")) return Promise.reject(new Error("down"));
+        if (url.includes("/a2/"))
+          return Promise.reject(new TypeError("fetch failed"));
         return jsonResponse({ data: 50000 });
       });
       await expect(client.getAccounts()).rejects.toThrow(
         /didn't return a balance for Car loan — nothing was synced/,
       );
     });
+
+    it("the error keeps the failure's code, never a plain Error", async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith("/accounts")) return list;
+        if (url.includes("/a2/"))
+          return Promise.reject(new TypeError("fetch failed"));
+        return jsonResponse({ data: 50000 });
+      });
+      await expect(client.getAccounts()).rejects.toMatchObject({
+        name: "BudgetApiError",
+        code: "network",
+      });
+    });
+
+    it("a failure that isn't transient stops at once, without the second try", async () => {
+      let a2Calls = 0;
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith("/accounts")) return list;
+        if (url.includes("/a2/")) {
+          a2Calls++;
+          return jsonResponse({ error: "unauthorized" }, 401);
+        }
+        return jsonResponse({ data: 50000 });
+      });
+      await expect(client.getAccounts()).rejects.toMatchObject({
+        code: "auth",
+      });
+      expect(a2Calls).toBe(1);
+    });
   });
 
   describe("getTransactions — an account that won't answer", () => {
     const list = jsonResponse({
       data: [
-        { id: "a1", name: "Checking", type: "checking", closed: false },
-        { id: "a2", name: "Savings", type: "savings", closed: false },
+        { id: "a1", name: "Checking", offbudget: false, closed: false },
+        { id: "a2", name: "Savings", offbudget: false, closed: false },
       ],
     });
     const tx = {
@@ -198,7 +222,10 @@ describe("ActualClient", () => {
       date: "2026-01-02",
       amount: -500,
       account: "a1",
-      payee_name: "Shop",
+      payee: "payee-1",
+      cleared: false,
+      reconciled: false,
+      subtransactions: [],
     };
 
     it("skips an account that is gone (404) and keeps the rest", async () => {
@@ -225,7 +252,8 @@ describe("ActualClient", () => {
     it("a network failure stops the sync too", async () => {
       mockFetch.mockImplementation((url: string) => {
         if (url.endsWith("/accounts")) return list;
-        if (url.includes("/a2/")) return Promise.reject(new Error("down"));
+        if (url.includes("/a2/"))
+          return Promise.reject(new TypeError("fetch failed"));
         return jsonResponse({ data: [tx] });
       });
       await expect(client.getTransactions("2026-01-01")).rejects.toThrow(
@@ -274,6 +302,49 @@ describe("ActualClient", () => {
     });
   });
 
+  describe("findCreatedTransaction", () => {
+    const tx = {
+      importKey: "push-1",
+      accountId: "acct-1",
+      date: "2026-01-20",
+      amount: -50,
+      payeeName: "Store",
+      memo: "Test",
+    };
+
+    it("finds the transaction createTransaction posted, by its imported_id, on that day only", async () => {
+      let sentImportedId = "";
+      mockFetch.mockImplementationOnce(
+        async (_url: string, init: RequestInit) => {
+          sentImportedId = JSON.parse(init.body as string).transaction
+            .imported_id;
+          return jsonResponse({ message: "ok" });
+        },
+      );
+      mockFetch.mockImplementation(async () =>
+        jsonResponse({
+          data: [
+            actualTx({ id: "other", imported_id: "ledgr:else" }),
+            actualTx({ id: "posted", imported_id: sentImportedId }),
+          ],
+        }),
+      );
+      await client.createTransaction(tx);
+      expect(await client.findCreatedTransaction(tx)).toBe("posted");
+      const listUrl = mockFetch.mock.calls.at(-1)![0] as string;
+      expect(listUrl).toContain("since_date=2026-01-20&until_date=2026-01-20");
+    });
+
+    it("null when nothing carries its imported_id", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: [actualTx({ id: "other", imported_id: "ledgr:else" })],
+        }),
+      );
+      expect(await client.findCreatedTransaction(tx)).toBeNull();
+    });
+  });
+
   describe("createTransaction", () => {
     // Real response is `{"message":"ok"}` — confirmed LIVE against a
     // deployed actual-http-api instance, both with and without imported_id
@@ -300,6 +371,7 @@ describe("ActualClient", () => {
               amount: -5000,
               cleared: true,
               reconciled: false,
+              subtransactions: [],
               imported_id: sentImportedId,
             },
           ],
@@ -307,6 +379,7 @@ describe("ActualClient", () => {
       );
 
       await client.createTransaction({
+        importKey: "push-1",
         accountId: "acct-1",
         date: "2026-01-20",
         amount: -50,
@@ -341,12 +414,14 @@ describe("ActualClient", () => {
               amount: -5000,
               cleared: true,
               reconciled: false,
+              subtransactions: [],
               imported_id: importedIdCapture.value,
             },
           ],
         }),
       );
       const id = await client.createTransaction({
+        importKey: "push-1",
         accountId: "acct-1",
         date: "2026-01-20",
         amount: -50,
@@ -367,6 +442,7 @@ describe("ActualClient", () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ data: [] })); // GET — nothing found
       await expect(
         client.createTransaction({
+          importKey: "push-1",
           accountId: "acct-1",
           date: "2026-01-20",
           amount: -50,
@@ -390,6 +466,7 @@ describe("ActualClient", () => {
               amount: -5000,
               cleared: true,
               reconciled: false,
+              subtransactions: [],
               imported_id: capture[capture.length - 1],
             },
           ],
@@ -410,6 +487,7 @@ describe("ActualClient", () => {
       mockFetch.mockImplementationOnce(fakeLookup);
 
       const payload = {
+        importKey: "push-1",
         accountId: "acct-1",
         date: "2026-01-20",
         amount: -50,
@@ -443,12 +521,14 @@ describe("ActualClient", () => {
               amount: -5000,
               cleared: true,
               reconciled: true,
+              subtransactions: [],
               imported_id: sentImportedId,
             },
           ],
         }),
       );
       await client.createTransaction({
+        importKey: "push-1",
         accountId: "acct-1",
         date: "2026-01-20",
         amount: -50,
@@ -481,16 +561,16 @@ describe("ActualClient", () => {
     });
   });
 
-  // updateCategoryGoalTarget / updateCategoryTargetBalance write via
+  // Goal writes (prepareGoalWrite, then apply) go through
   // Actual's note-based #template mechanism — there's no structured goal
   // field the API can write (verified against @actual-app/api's docs).
   // See actual-goal-notes.ts for the pure merge logic; these tests cover
   // the HTTP plumbing (GET note → merge → PUT note) around it.
-  describe("updateCategoryGoalTarget", () => {
+  describe("prepareGoalWrite: monthly", () => {
     it("appends a fresh #template line when the category has no note yet", async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: null })); // GET
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "" })); // GET
       mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" })); // PUT
-      await client.updateCategoryGoalTarget("cat-1", 250);
+      await pushGoal(client, "cat-1", "monthly", 250);
       const [getCall, putCall] = mockFetch.mock.calls;
       expect(getCall![0]).toContain("/notes/category/cat-1");
       expect(putCall![0]).toContain("/notes/category/cat-1");
@@ -503,7 +583,7 @@ describe("ActualClient", () => {
         jsonResponse({ data: "Rent category\n#template 100" }),
       );
       mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" }));
-      await client.updateCategoryGoalTarget("cat-1", 175);
+      await pushGoal(client, "cat-1", "monthly", 175);
       const putCall = mockFetch.mock.calls[1];
       expect(JSON.parse(putCall![1].body).data).toBe(
         "Rent category\n#template 175",
@@ -515,7 +595,7 @@ describe("ActualClient", () => {
         jsonResponse({ data: "#template 10% of Paycheck" }),
       );
       await expect(
-        client.updateCategoryGoalTarget("cat-1", 250),
+        pushGoal(client, "cat-1", "monthly", 250),
       ).rejects.toMatchObject({ name: "BudgetApiError", code: "conflict" });
       expect(mockFetch).toHaveBeenCalledTimes(1); // only the GET
     });
@@ -525,16 +605,28 @@ describe("ActualClient", () => {
         jsonResponse({ data: "#template 10% of Paycheck" }),
       );
       await expect(
-        client.updateCategoryGoalTarget("cat-1", 250),
+        pushGoal(client, "cat-1", "monthly", 250),
       ).rejects.toBeInstanceOf(BudgetApiError);
     });
   });
 
-  describe("updateCategoryTargetBalance", () => {
-    it("writes an 'up to' template, distinct from the fixed-amount shape", async () => {
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
+  describe("prepareGoalWrite: reads only", () => {
+    it("reads the note when prepared and writes it only on apply", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "" }));
+      const write = await client.prepareGoalWrite("cat-1", "monthly", 250);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch.mock.calls[0]![1]?.method ?? "GET").toBe("GET");
       mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" }));
-      await client.updateCategoryTargetBalance("cat-1", 5000);
+      await write.apply();
+      expect(mockFetch.mock.calls[1]![1].method).toBe("PUT");
+    });
+  });
+
+  describe("prepareGoalWrite: target-balance", () => {
+    it("writes an 'up to' template, distinct from the fixed-amount shape", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "" }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" }));
+      await pushGoal(client, "cat-1", "target-balance", 5000);
       const putCall = mockFetch.mock.calls[1];
       expect(JSON.parse(putCall![1].body).data).toBe("#template up to 5000");
     });
@@ -542,7 +634,7 @@ describe("ActualClient", () => {
     it("a fixed-amount template does not satisfy a target-balance write — treated as conflict, not replaced", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ data: "#template 100" }));
       await expect(
-        client.updateCategoryTargetBalance("cat-1", 5000),
+        pushGoal(client, "cat-1", "target-balance", 5000),
       ).rejects.toMatchObject({ code: "conflict" });
     });
   });
@@ -603,6 +695,7 @@ describe("ActualClient", () => {
                     id: "c1",
                     name: "Rent",
                     group_id: "g1",
+                    is_income: false,
                     hidden: false,
                     budgeted: 150000, // cents = $1500
                     spent: -140000,
@@ -619,7 +712,7 @@ describe("ActualClient", () => {
       // No #template here, so this category's goalTarget stays whatever
       // getMonthDetail/mapCategory already produced (undefined -- this
       // fixture doesn't set a `goal` field either).
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "" }));
       const groups = await client.getCategories();
       expect(groups).toHaveLength(1);
       expect(groups[0]!.name).toBe("Bills");
@@ -661,7 +754,7 @@ describe("ActualClient", () => {
           },
         }),
       );
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "" }));
       const groups = await client.getCategories();
       expect(groups[0]!.categories[0]).toMatchObject({
         name: "Rent",
@@ -698,6 +791,7 @@ describe("ActualClient", () => {
                     id: "c1",
                     name: "Rent",
                     group_id: "g1",
+                    is_income: false,
                     hidden: false,
                     budgeted: 150000,
                     spent: -140000,
@@ -715,6 +809,7 @@ describe("ActualClient", () => {
                     id: "c2",
                     name: "Groceries",
                     group_id: "g2",
+                    is_income: false,
                     hidden: false,
                     budgeted: 60000,
                     spent: -55000,
@@ -729,8 +824,8 @@ describe("ActualClient", () => {
       // getMonthDetail() overlays note-parsed goal amounts (see
       // overlayNoteGoals) -- one GET /notes/category/:id per category,
       // no #template in either fixture so goalTarget is unaffected here.
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
-      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "" }));
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: "" }));
       const detail = await client.getMonthDetail("2026-01");
       expect(detail.month).toBe("2026-01");
       const url = mockFetch.mock.calls[0]![0] as string;
@@ -779,7 +874,7 @@ describe("ActualClient", () => {
     // Found live, 2026-09-01: a budget push-preview showed every linked
     // category's "current" value as $0, even for categories already
     // pushed successfully -- goalTarget was reading Actual's structured
-    // `goal` field, which writeGoalNote's note-based write never touches.
+    // `goal` field, which prepareGoalWrite's note-based write never touches.
     // overlayNoteGoals is the fix: read the note back and prefer it.
     it("overrides goalTarget with the note-parsed amount when a #template is present, even though the structured goal field says something else", async () => {
       mockFetch.mockReturnValueOnce(
@@ -801,7 +896,11 @@ describe("ActualClient", () => {
                     id: "c1",
                     name: "Rent",
                     group_id: "g1",
+                    is_income: false,
                     hidden: false,
+                    budgeted: 0,
+                    spent: 0,
+                    balance: 0,
                     goal: 0, // structured field: stale/never-written
                   },
                 ],
@@ -817,7 +916,7 @@ describe("ActualClient", () => {
       expect(noteCall[0]).toContain("/notes/category/c1");
     });
 
-    it("falls back to the structured goal field's value when the note has no #template", async () => {
+    it("a category has no goal unless its note has a #template: Actual sends no goal field", async () => {
       mockFetch.mockReturnValueOnce(
         jsonResponse({
           data: {
@@ -837,7 +936,11 @@ describe("ActualClient", () => {
                     id: "c1",
                     name: "Rent",
                     group_id: "g1",
+                    is_income: false,
                     hidden: false,
+                    budgeted: 0,
+                    spent: 0,
+                    balance: 0,
                     goal: 30000, // $300, set directly in Actual's own UI
                   },
                 ],
@@ -850,10 +953,51 @@ describe("ActualClient", () => {
         jsonResponse({ data: "Just a free-text note, no goal" }),
       );
       const detail = await client.getMonthDetail("2026-01");
-      expect(detail.categories[0]!.goalTarget).toBe(300);
+      expect(detail.categories[0]!.goalTarget).toBeUndefined();
     });
 
-    it("does not blow up the whole call when a single category's note fetch fails -- degrades to the structured value", async () => {
+    it("a note still failing after its second try stops the read: its goal would be cached as unset", async () => {
+      const monthBody = {
+        data: {
+          month: "2026-01",
+          totalIncome: 0,
+          totalBudgeted: 0,
+          totalSpent: 0,
+          toBudget: 0,
+          categoryGroups: [
+            {
+              id: "g1",
+              name: "Bills",
+              is_income: false,
+              hidden: false,
+              categories: [
+                {
+                  id: "c1",
+                  name: "Rent",
+                  group_id: "g1",
+                  is_income: false,
+                  hidden: false,
+                  budgeted: 0,
+                  spent: 0,
+                  balance: 0,
+                },
+              ],
+            },
+          ],
+        },
+      };
+      mockFetch.mockImplementation((url: string) =>
+        url.includes("/notes/")
+          ? Promise.reject(new TypeError("fetch failed"))
+          : jsonResponse(monthBody),
+      );
+      await expect(client.getMonthDetail("2026-01")).rejects.toMatchObject({
+        code: "network",
+        message: expect.stringMatching(/note for Rent/),
+      });
+    });
+
+    it("a note fetch that fails for a reason that isn't transient fails the call: a goal left out would read as unset", async () => {
       mockFetch.mockReturnValueOnce(
         jsonResponse({
           data: {
@@ -873,7 +1017,11 @@ describe("ActualClient", () => {
                     id: "c1",
                     name: "Rent",
                     group_id: "g1",
+                    is_income: false,
                     hidden: false,
+                    budgeted: 0,
+                    spent: 0,
+                    balance: 0,
                     goal: 30000,
                   },
                 ],
@@ -882,13 +1030,12 @@ describe("ActualClient", () => {
           },
         }),
       );
-      // 404, not 500/429 -- "client" errors aren't retried by
-      // budgetApiRequest (see errors.ts's isRetryable), so this stays a
-      // single fast mock call instead of burning real wall-clock time on
-      // exponential-backoff retries (no fake timers in this test file).
+      // A missing note is a 200 with `data: ""` (the wrapper's route), so a
+      // 404 is a real error.
       mockFetch.mockReturnValueOnce(jsonResponse({ error: "not found" }, 404));
-      const detail = await client.getMonthDetail("2026-01");
-      expect(detail.categories[0]!.goalTarget).toBe(300);
+      await expect(client.getMonthDetail("2026-01")).rejects.toMatchObject({
+        code: "client",
+      });
     });
   });
 
@@ -950,6 +1097,7 @@ describe("ActualClient", () => {
               notes: "test",
               cleared: true,
               reconciled: false,
+              subtransactions: [],
             },
           ],
         }),
@@ -994,8 +1142,18 @@ describe("ActualClient", () => {
               cleared: true,
               reconciled: false,
               subtransactions: [
-                { amount: -9010, category: "water", notes: null },
-                { amount: -5000, category: "trash", notes: "trash" },
+                {
+                  amount: -9010,
+                  category: "water",
+                  notes: null,
+                  tombstone: false,
+                },
+                {
+                  amount: -5000,
+                  category: "trash",
+                  notes: "trash",
+                  tombstone: false,
+                },
                 { amount: -100, category: "x", tombstone: true },
               ],
             },
@@ -1035,6 +1193,7 @@ describe("ActualClient", () => {
               notes: null,
               cleared: false,
               reconciled: false,
+              subtransactions: [],
             },
           ],
         }),
@@ -1190,5 +1349,121 @@ describe("ActualClient", () => {
       const url = mockFetch.mock.calls[0]![0];
       expect(url).not.toContain("//v1");
     });
+  });
+});
+
+describe("ActualClient with dates after the wrapper's today", () => {
+  // A stand-in that behaves as the real wrapper does (actual-http-api
+  // 26.10.0): a transaction list ends at the wrapper's own today unless
+  // until_date is sent, and a balance counts every transaction up to
+  // cutoff_date (inclusive) or, without it, up to that today.
+  const WRAPPER_TODAY = "2026-11-02";
+  type Row = {
+    id: string;
+    account: string;
+    date: string;
+    amount: number;
+    imported_id?: string;
+  };
+  let rows: Row[];
+  let client: ActualClient;
+
+  beforeEach(() => {
+    mockFetch.mockReset();
+    resetActualWrapperGates();
+    rows = [
+      {
+        id: "opening",
+        account: "acct-1",
+        date: "2026-10-01",
+        amount: 5_000_000,
+      },
+      { id: "later", account: "acct-1", date: "2026-11-03", amount: -333 },
+    ];
+    client = new ActualClient(
+      "http://actual.local",
+      "test-api-key",
+      "sync-id-123",
+    );
+    mockFetch.mockImplementation(async (url: string, init?: RequestInit) => {
+      const u = new URL(url);
+      const m = u.pathname.match(
+        /\/accounts\/([^/]+)\/(transactions|balance)$/,
+      );
+      if (m?.[2] === "transactions" && init?.method === "POST") {
+        const t = JSON.parse(init.body as string).transaction;
+        rows.push({
+          id: `tx-${rows.length}`,
+          account: m[1]!,
+          date: t.date,
+          amount: t.amount,
+          imported_id: t.imported_id,
+        });
+        return jsonResponse({ message: "ok" });
+      }
+      if (m?.[2] === "transactions") {
+        const since = u.searchParams.get("since_date")!;
+        const until = u.searchParams.get("until_date") ?? WRAPPER_TODAY;
+        return jsonResponse({
+          data: rows
+            .filter(
+              (r) => r.account === m[1] && r.date >= since && r.date <= until,
+            )
+            .map((r) => ({
+              ...r,
+              cleared: true,
+              reconciled: false,
+              subtransactions: [],
+            })),
+        });
+      }
+      if (m?.[2] === "balance") {
+        const cutoff = u.searchParams.get("cutoff_date") ?? WRAPPER_TODAY;
+        return jsonResponse({
+          data: rows
+            .filter((r) => r.account === m[1] && r.date <= cutoff)
+            .reduce((s, r) => s + r.amount, 0),
+        });
+      }
+      if (u.pathname.endsWith("/accounts"))
+        return jsonResponse({
+          data: [
+            { id: "acct-1", name: "Roth", offbudget: true, closed: false },
+          ],
+        });
+      throw new Error(`unexpected ${init?.method ?? "GET"} ${u.pathname}`);
+    });
+  });
+
+  it("finds back a transaction it wrote dated after the wrapper's today", async () => {
+    // A snapshot ahead of the wrapper's clock: the read-back used to miss
+    // it, report a failure with the adjustment posted, and post again on
+    // every retry.
+    const id = await client.createTransaction({
+      importKey: "push-1",
+      accountId: "acct-1",
+      date: "2026-12-15",
+      amount: 10_000,
+      payeeName: "Portfolio Sync",
+      memo: "snapshot:7",
+      cleared: true,
+    });
+    expect(id).toBe("tx-2");
+  });
+
+  it("lists transactions dated after the wrapper's today", async () => {
+    const own = await client.getAccountTransactions("acct-1", "2026-01-01");
+    expect(own.map((t) => t.id)).toEqual(["opening", "later"]);
+    const all = await client.getTransactions("2026-01-01");
+    expect(all.map((t) => t.id)).toEqual(["opening", "later"]);
+  });
+
+  it("reads a balance as of a date, whatever the wrapper's today is", async () => {
+    expect(await client.getAccountBalance("acct-1", "2026-11-02")).toBe(50_000);
+    expect(await client.getAccountBalance("acct-1", "2026-11-03")).toBe(
+      49_996.67,
+    );
+    // Without a date: up to the wrapper's today.
+    expect(await client.getAccountBalance("acct-1")).toBe(50_000);
   });
 });

@@ -333,6 +333,9 @@ export function useApiSync() {
   // independent useMutation() call, so the toolbar button's disabled/label
   // state never reflected an in-flight push at all.
   const pushToApi = trpc.savings.pushContributionsToApi.useMutation({
+    // A push can stop partway; reload so the page shows what was written.
+    // The global toast says what happened.
+    onError: () => utils.savings.invalidate(),
     onSuccess: (data) => {
       utils.savings.invalidate();
       const message = formatSyncResultToast(

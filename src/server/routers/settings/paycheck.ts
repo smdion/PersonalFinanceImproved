@@ -31,6 +31,7 @@ import {
   ACCOUNT_OWNERSHIP_VALUES,
 } from "@/lib/config/enum-values";
 import { zDecimal } from "./_shared";
+import { zFraction } from "@/lib/config/enum-values";
 import { dropContributionActiveFields } from "@/server/helpers/delete-references";
 
 // --- Zod schemas ---
@@ -94,7 +95,7 @@ const jobCreateInput = z.object(jobInput.shape);
 // (contributionProfile.update writes it, validated there — see
 // jointRequiresJobForPercentOfSalary below, moved to that write boundary
 // since it's the only place contributionMethod is ever set now).
-const contributionAccountInput = z.object({
+export const contributionAccountInput = z.object({
   jobId: z.number().int().nullable().optional(),
   personId: z.number().int().nullable(),
   accountType: z.enum(accountCategoryEnum()),
@@ -104,7 +105,8 @@ const contributionAccountInput = z.object({
   taxTreatment: z.enum(TAX_TREATMENT_VALUES),
   employerMatchType: z.enum(EMPLOYER_MATCH_TYPE_VALUES),
   employerMatchValue: zDecimal.nullable().optional(),
-  employerMaxMatchPct: zDecimal.nullable().optional(),
+  // A fraction of pay (0.06 = 6%); the form converts the percent typed.
+  employerMaxMatchPct: zFraction.nullable().optional(),
   employerMatchTaxTreatment: z
     .enum(MATCH_TAX_TREATMENT_VALUES)
     .default("pre_tax"),

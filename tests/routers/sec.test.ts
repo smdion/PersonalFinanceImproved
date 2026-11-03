@@ -3,8 +3,9 @@ import "./setup-mocks";
 import { describe, it, expect, vi, beforeAll, afterAll } from "vitest";
 import { randomBytes } from "node:crypto";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
+import { userMessageFor } from "@/lib/budget-api/errors";
 
-const mocks = vi.hoisted(() => ({ refuse: false }));
+const mocks = vi.hoisted(() => ({ refuse: false, bad: false }));
 vi.mock("@/lib/sec/client", async () => {
   const actual =
     await vi.importActual<typeof import("@/lib/sec/client")>(
@@ -15,6 +16,12 @@ vi.mock("@/lib/sec/client", async () => {
     testSecContact: vi.fn(async () => {
       if (mocks.refuse)
         throw new actual.SecRateLimitError("SEC declined the request (403)");
+      if (mocks.bad) {
+        const { serviceError } = await import("@/lib/budget-api/errors");
+        const e = serviceError("SEC", "SEC: tickers: not JSON", "bad-response");
+        e.field = "fields";
+        throw e;
+      }
       return 1234;
     }),
   };
@@ -74,6 +81,22 @@ describe("sec router", () => {
     mocks.refuse = false;
   });
 
+  it("a bad answer from SEC says so, keeps the cause, and saves nothing", async () => {
+    mocks.bad = true;
+    const error = await ctx.caller.sec
+      .saveContact({ contactEmail: "person@example.com" })
+      .then(
+        () => null,
+        (e: unknown) => e,
+      );
+    const said =
+      "SEC sent something Ledgr doesn't understand (fields). Nothing was changed.";
+    expect((error as Error).message).toBe(said);
+    expect(userMessageFor(error)).toBe(said);
+    expect((await ctx.caller.sec.getStatus()).connected).toBe(false);
+    mocks.bad = false;
+  });
+
   it("saves an accepted contact and never returns it", async () => {
     await ctx.caller.sec.saveContact({ contactEmail: "person@example.com" });
     const status = await ctx.caller.sec.getStatus();
@@ -81,6 +104,15 @@ describe("sec router", () => {
     expect(JSON.stringify(status)).not.toContain("person@example.com");
     const stored = ctx.db.select().from(sqliteSchema.apiConnections).all();
     expect(JSON.stringify(stored)).not.toContain("person@example.com"); // encrypted at rest
+  });
+
+  it("testConnection words a bad answer as one, not as unreachable", async () => {
+    mocks.bad = true;
+    expect(await ctx.caller.sec.testConnection()).toEqual({
+      success: false,
+      error: "SEC sent something Ledgr doesn't understand (fields).",
+    });
+    mocks.bad = false;
   });
 
   it("limits manual refreshes", async () => {

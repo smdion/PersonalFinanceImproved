@@ -8,6 +8,7 @@ import { SinceSnapshotBanner } from "@/components/portfolio/account-live-data";
 import React, { useState, useCallback, useMemo } from "react";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
+import { errorText } from "@/lib/utils/mutation-error";
 import { useUser, hasPermission } from "@/lib/context/user-context";
 import { HoldingHistorySection } from "@/components/investments/holding-history-section";
 import { useFocusReveal } from "@/lib/hooks/use-focus";
@@ -318,7 +319,7 @@ export function PortfolioContent() {
         );
       } catch (e) {
         toast.error(
-          `Sync failed: ${e instanceof Error ? e.message : "unknown error"}. Your edits are saved — the "Sync to ${syncServiceLabel}" button is still there to retry.`,
+          `Sync failed: ${errorText(e, "unknown error").replace(/\.$/, "")}. Your edits are saved — the "Sync to ${syncServiceLabel}" button is still there to retry.`,
           9000,
         );
       }
@@ -722,9 +723,7 @@ export function PortfolioContent() {
                                         `Resync complete: posted ${result.posted}, cleaned ${result.cleaned}.`,
                                       );
                                     } catch (e) {
-                                      alert(
-                                        `Resync failed: ${e instanceof Error ? e.message : "Unknown error"}`,
-                                      );
+                                      alert(`Resync failed: ${errorText(e)}`);
                                     }
                                   }}
                                   className="text-muted hover:text-primary text-xs disabled:opacity-50"

@@ -3,19 +3,30 @@
  * User-Agent (SEC's fair-access policy), is paced well under SEC's 10
  * requests/second, has a size cap and a timeout, and is streamed into a
  * parser. A 403/429 stops the whole run — no retries against SEC.
+ * Every response is checked (schemas.ts) before use.
  *
  * The contact is never logged or included in errors.
  */
 import "server-only";
+import type { z } from "zod/v4";
+import { BudgetApiError, serviceError } from "@/lib/budget-api/errors";
+import { parseExternal } from "@/lib/http/external-request";
 import {
   createNportParser,
   createNcsrExpenseParser,
   createRegistryParser,
   parseEdgarAtom,
-  type EdgarFiling,
-  type NportFiling,
-  type RegistryClass,
 } from "./parsers";
+import {
+  expenseRatiosSchema,
+  filingIndexSchema,
+  filingsSchema,
+  fundTickersSchema,
+  nportSchema,
+  registrySchema,
+  type EdgarFiling,
+  type RegistryClass,
+} from "./schemas";
 
 const MIN_GAP_MS = 150;
 const DEFAULT_TIMEOUT_MS = 90_000;
@@ -83,22 +94,38 @@ async function secText(contact: string, url: string): Promise<string> {
   return text;
 }
 
+/** A JSON file from SEC, checked against its schema. */
+async function secJson<S extends z.ZodType>(
+  contact: string,
+  url: string,
+  schema: S,
+  endpoint: string,
+): Promise<z.infer<S>> {
+  const text = await secText(contact, url);
+  let body: unknown;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    throw serviceError("SEC", `SEC: ${endpoint}: not JSON`, "bad-response");
+  }
+  return parseExternal(schema, body, { service: "sec", endpoint });
+}
+
 /** symbol → series/class, from SEC's mutual-fund ticker list. */
 export async function fetchFundTickers(
   contact: string,
 ): Promise<Map<string, { seriesId: string; classId: string }>> {
-  const json = JSON.parse(
-    await secText(contact, "https://www.sec.gov/files/company_tickers_mf.json"),
-  ) as { fields: string[]; data: (string | number)[][] };
-  const i = (f: string) => json.fields.indexOf(f);
+  const rows = await secJson(
+    contact,
+    "https://www.sec.gov/files/company_tickers_mf.json",
+    fundTickersSchema,
+    "/files/company_tickers_mf.json",
+  );
   const map = new Map<string, { seriesId: string; classId: string }>();
-  for (const row of json.data) {
-    const symbol = String(row[i("symbol")] ?? "").toUpperCase();
+  for (const row of rows) {
+    const symbol = row.symbol?.toUpperCase();
     if (symbol)
-      map.set(symbol, {
-        seriesId: String(row[i("seriesId")]),
-        classId: String(row[i("classId")]),
-      });
+      map.set(symbol, { seriesId: row.seriesId, classId: row.classId });
   }
   return map;
 }
@@ -114,12 +141,20 @@ export async function fetchRegistry(
   for (const year of [now.getFullYear(), now.getFullYear() - 1]) {
     const parser = createRegistryParser();
     try {
-      await secStream(contact, `${base}${year}.csv`, (c) => parser.write(c), {
+      const url = `${base}${year}.csv`;
+      await secStream(contact, url, (c) => parser.write(c), {
         maxBytes: 40 * 1024 * 1024,
       });
-      return parser.close();
+      return parseExternal(registrySchema, parser.close(), {
+        service: "sec",
+        endpoint: new URL(url).pathname,
+      });
     } catch (err) {
+      // Last year's file stands in when this year's can't be fetched, not
+      // when it fails its check.
       if (err instanceof SecRateLimitError) throw err;
+      if (err instanceof BudgetApiError && err.code === "bad-response")
+        throw err;
       lastError = err;
     }
   }
@@ -133,7 +168,14 @@ export async function listFilings(
   type: "NPORT-P" | "N-CSR" | "N-MFP",
 ): Promise<EdgarFiling[]> {
   const url = `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=${encodeURIComponent(seriesOrClassId)}&type=${encodeURIComponent(type)}&dateb=&owner=include&count=10&output=atom`;
-  return parseEdgarAtom(await secText(contact, url));
+  return parseExternal(
+    filingsSchema,
+    parseEdgarAtom(await secText(contact, url)),
+    {
+      service: "sec",
+      endpoint: "/cgi-bin/browse-edgar",
+    },
+  );
 }
 
 /** Folder URL of a filing, from its index link. */
@@ -144,12 +186,15 @@ function filingFolder(filing: EdgarFiling): string {
 export async function fetchNport(
   contact: string,
   filing: EdgarFiling,
-): Promise<NportFiling> {
+): Promise<z.infer<typeof nportSchema>> {
   const parser = createNportParser();
   await secStream(contact, `${filingFolder(filing)}primary_doc.xml`, (c) =>
     parser.write(c),
   );
-  return parser.close();
+  return parseExternal(nportSchema, parser.close(), {
+    service: "sec",
+    endpoint: "/Archives/edgar/data/:cik/:accession/primary_doc.xml",
+  });
 }
 
 /** Expense ratio of every share class in a shareholder report (class id → ratio). */
@@ -157,9 +202,12 @@ export async function fetchExpenseRatios(
   contact: string,
   filing: EdgarFiling,
 ): Promise<Map<string, number>> {
-  const index = JSON.parse(
-    await secText(contact, `${filingFolder(filing)}index.json`),
-  ) as { directory: { item: { name: string }[] } };
+  const index = await secJson(
+    contact,
+    `${filingFolder(filing)}index.json`,
+    filingIndexSchema,
+    "/Archives/edgar/data/:cik/:accession/index.json",
+  );
   // The inline-XBRL instance is the filing's "*_htm.xml" document.
   const instance = index.directory.item.find((i) => /_htm\.xml$/i.test(i.name));
   if (!instance) return new Map();
@@ -167,7 +215,10 @@ export async function fetchExpenseRatios(
   await secStream(contact, `${filingFolder(filing)}${instance.name}`, (c) =>
     parser.write(c),
   );
-  return parser.close();
+  return parseExternal(expenseRatiosSchema, parser.close(), {
+    service: "sec",
+    endpoint: "/Archives/edgar/data/:cik/:accession/:instance.xml",
+  });
 }
 
 /** Check SEC accepts this contact: one request for its fund ticker list. Returns how many funds it lists. */

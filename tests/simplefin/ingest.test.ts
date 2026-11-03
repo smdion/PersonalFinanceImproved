@@ -120,7 +120,6 @@ describe("ingestInvestmentData", () => {
         id: "sf-ira",
         holdings: [
           {
-            id: "h1",
             symbol: "EXMPX",
             description: "Example Index Fund",
             shares: 10,
@@ -128,7 +127,6 @@ describe("ingestInvestmentData", () => {
             costBasisPerShare: 80,
           },
           {
-            id: "h2",
             symbol: "EXMXX",
             description: "Example Money Market Fund",
             shares: 5,
@@ -153,7 +151,6 @@ describe("ingestInvestmentData", () => {
         id: "sf-ira",
         holdings: [
           {
-            id: "h1",
             symbol: "EXMPX",
             description: "Example Index Fund",
             shares: 10,
@@ -161,7 +158,6 @@ describe("ingestInvestmentData", () => {
             costBasisPerShare: 80,
           },
           {
-            id: "h2",
             symbol: "EXMXX",
             description: "Example Money Market Fund",
             shares: 5,
@@ -214,7 +210,6 @@ describe("ingestInvestmentData", () => {
         balanceDate: new Date("2026-05-19T08:00:00Z"), // Tuesday → Monday May 18
         holdings: [
           {
-            id: "h2",
             symbol: "EXMXX",
             description: "Example Money Market Fund",
             shares: 1010,
@@ -292,7 +287,6 @@ describe("ingestInvestmentData", () => {
         orgName: "Fidelity Investments",
         holdings: [
           {
-            id: "x",
             symbol: "EXHSX",
             description: "Example HSA Fund",
             shares: 3,
@@ -327,7 +321,6 @@ describe("ingestInvestmentData", () => {
         orgName: "Fidelity Investments",
         holdings: [
           {
-            id: "x",
             symbol: "EXHSX",
             description: "Example HSA Fund",
             shares: 3,
@@ -361,7 +354,6 @@ describe("ingestInvestmentData", () => {
           orgName: "Fidelity Investments",
           holdings: [
             {
-              id: "x",
               symbol: "EXHSX",
               description: "Example HSA Fund",
               shares: 3,
@@ -516,7 +508,6 @@ describe("ingestInvestmentData", () => {
         balanceDate: new Date("2026-05-28T08:00:00Z"),
         holdings: [
           {
-            id: "p1",
             symbol: "", // the client sends "" when the institution omits one
             description: "Example Plan Fund",
             shares: 5,

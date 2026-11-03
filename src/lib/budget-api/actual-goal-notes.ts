@@ -14,9 +14,9 @@
  * I/O here) so the merge behavior is unit-testable without mocking fetch.
  */
 
-/** The two goal shapes Ledgr's `BudgetAPIClient` interface writes —
- * matches `updateCategoryGoalTarget` (recurring monthly assignment) and
- * `updateCategoryTargetBalance` (refill-to-a-balance-cap) respectively. */
+/** The two goal shapes Ledgr's `BudgetAPIClient.prepareGoalWrite` writes —
+ * its `"monthly"` (recurring monthly assignment) and `"target-balance"`
+ * (refill-to-a-balance-cap) respectively. */
 export type ActualTemplateShape = "fixed" | "target-balance";
 
 type MergeGoalResult =
@@ -28,7 +28,7 @@ type MergeGoalResult =
 // `average`, `copy from`, `schedule`, `remainder`) are treated as "a
 // different shape already exists" rather than silently reinterpreted or
 // clobbered — the same "never touch an existing goal's shape, only its
-// amount" contract `updateCategoryTargetBalance`'s YNAB implementation
+// amount" contract YNAB's target-balance write
 // already keeps.
 const FIXED_RE = /^#template[ \t]+([0-9]+(?:\.[0-9]+)?)[ \t]*$/im;
 const TARGET_BALANCE_RE =
@@ -105,15 +105,8 @@ export function mergeGoalIntoNote(
  * Read counterpart to `mergeGoalIntoNote` — extracts the CURRENT amount
  * Ledgr itself last wrote to a category's note, for a given `shape`.
  *
- * Why this exists: `getCategories()`'s `cat.goal` (`actual-client.ts`)
- * reads Actual's newer `goal_def` field, which `writeGoalNote` never
- * writes to (there's no API to write it — see that function's own
- * docblock). Comparing a push/pull preview's "current" value against
- * `goal_def` would show every Ledgr-managed goal as permanently changed,
- * even immediately after a successful push, because the two never talk
- * to the same field. This function reads the note instead — the ONLY
- * field Ledgr's write path actually touches — so the diff is internally
- * consistent with what a push/pull will actually do.
+ * The note is where Ledgr writes a goal (Actual's API can't write its
+ * structured goal), so a preview compares against what a push wrote.
  *
  * Returns `undefined` when no template of the requested `shape` is
  * present (no goal set via this mechanism yet, or a different shape is

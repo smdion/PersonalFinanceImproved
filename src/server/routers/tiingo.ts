@@ -17,7 +17,12 @@ import {
   removeTiingoConnection,
 } from "@/lib/tiingo/connection";
 import { testApiKey } from "@/lib/tiingo/client";
-import { BudgetApiError } from "@/lib/budget-api/errors";
+import {
+  BudgetApiError,
+  externalErrorSentence,
+  nothingChanged,
+  userMessageFor,
+} from "@/lib/budget-api/errors";
 
 /** Only an auth failure means the key is bad — rate limits, timeouts and 5xx say nothing about the key. */
 function describeTiingoError(e: unknown): string {
@@ -25,6 +30,8 @@ function describeTiingoError(e: unknown): string {
   if (e instanceof BudgetApiError && e.code === "auth") {
     return `Tiingo rejected the API key: ${msg}`;
   }
+  if (e instanceof BudgetApiError && e.code === "bad-response")
+    return externalErrorSentence(e);
   return `Couldn't reach Tiingo to verify the key: ${msg}`;
 }
 
@@ -36,9 +43,12 @@ export const tiingoRouter = createTRPCRouter({
       try {
         await testApiKey(input.apiKey);
       } catch (e) {
+        // Nothing is stored until Tiingo accepts the key.
+        const cause = e instanceof BudgetApiError ? nothingChanged(e) : e;
         throw new TRPCError({
           code: "BAD_REQUEST",
-          message: describeTiingoError(e),
+          message: userMessageFor(cause) ?? describeTiingoError(e),
+          cause,
         });
       }
       await saveTiingoConnection(ctx.db, input.apiKey);

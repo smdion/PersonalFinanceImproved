@@ -6,7 +6,7 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 
 ### Planning & projections
 
-- **Retirement planning** — A full accumulation-and-decumulation projection engine with Monte Carlo simulation (labeled **Simulation** in the app), validated against Trinity Study benchmarks. Per-person retirement ages, Social Security amounts and start ages, and pre-retirement raise rates. Eight withdrawal strategies (Fixed, Forgo Inflation After Loss, Spending Decline, Constant Percentage, Endowment, Vanguard Dynamic, Guyton-Klinger, RMD Spending) and three withdrawal-routing modes (**Bracket Filling** — Traditional up to a target tax bracket, then the cheapest remaining source each year; **Waterfall** — accounts in a set priority order; **Percentage** — fixed shares). Retirement answers count retirement accounts only — savings tagged Portfolio never prop up the plan. Models RMDs and RMD smoothing, Qualified Charitable Distributions, the age-65+ standard deduction and the temporary OBBBA senior deduction, IRMAA cliff detection with a two-year MAGI lookback, ACA premium-subsidy cliffs, Rule-of-55 and early-withdrawal-penalty rules, lump-sum injections and withdrawals, and a multi-year Roth-conversion bracket-target optimizer.
+- **Retirement planning** — A full accumulation-and-decumulation projection engine with Monte Carlo simulation (labeled **Simulation** in the app), validated against Trinity Study benchmarks. Per-person retirement ages, Social Security amounts and start ages, and pre-retirement raise rates. Nine withdrawal strategies (Fixed, Forgo Inflation After Loss, Spending Decline, Constant Percentage, Endowment, Vanguard Dynamic, Variable Percentage Withdrawal, Guyton-Klinger, RMD Spending) and three withdrawal-routing modes (**Bracket Filling** — Traditional up to a target tax bracket, then the cheapest remaining source each year; **Waterfall** — accounts in a set priority order; **Percentage** — fixed shares). Retirement answers count retirement accounts only — savings tagged Portfolio never prop up the plan. Models RMDs and RMD smoothing, Qualified Charitable Distributions, the age-65+ standard deduction and the temporary OBBBA senior deduction, IRMAA cliff detection with a two-year MAGI lookback, ACA premium-subsidy cliffs, Rule-of-55 and early-withdrawal-penalty rules, lump-sum injections and withdrawals, and a multi-year Roth-conversion bracket-target optimizer.
 - **Profiles and Plans** — Salary, Contribution, Budget and Retirement profiles, each its own complete set of assumptions; a **Plan** is a saved set of one of each, applied in one step. A Retirement Profile can keep a specific tax year's tables so an old projection reproduces exactly.
 - **Plan Health** — A card that surfaces contribution-order warnings, glide-path mismatches, rosy-assumption flags, and a recommended withdrawal strategy in context.
 - **Print Advisor Report** — A purpose-built multi-page document: executive summary, Monte Carlo risk analysis with worst-case framing, a withdrawal-strategy narrative, an ACA/IRMAA watchlist, action items, and a condensed year-by-year table.
@@ -40,7 +40,7 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 - **RBAC** — Role-based access control via Authentik OIDC with granular viewer permissions, plus a standalone local-admin table for deployments without an identity provider.
 - **Onboarding wizard & demo mode** — Guided first-run setup with demo profiles to explore before entering real data; a separate read-only `DEMO_ONLY` mode with a profile chooser and no login.
 - **Dark mode & accessibility** — Full dark/light theming with semantic design tokens and a CI-enforced theme audit. WCAG AA-aligned contrast, `prefers-reduced-motion` support, keyboard skip-to-content, focus trapping in dialogs, screen-reader error announcements, and ARIA coverage on inline icons and table semantics.
-- **Versioning & backup** — Automatic database snapshots on startup as pre-migration recovery points. Cross-version backup import transforms data from any older schema era (v0.2 onward) to the current shape. `pnpm backup:export` / `pnpm backup:import` for headless use, and `scripts/encrypted-backup.sh` wraps `pg_dump` in AES-256 encryption for off-site backups.
+- **Versioning & backup** — Automatic database snapshots on startup, plus a backup before each migration. Cross-version backup import transforms data from any older schema era (v0.2 onward) to the current shape. `pnpm backup:export` / `pnpm backup:import` for headless use, and `scripts/encrypted-backup.sh` wraps `pg_dump` in AES-256 encryption for off-site backups.
 - **Raw Data Browser** — Admin-only live database table viewer with row counts, column metadata, pagination, and JSON export.
 - **Help & Guide** — A walkthrough of every feature by section, plus an in-app glossary for finance jargon.
 - **Health checks** — `/api/health` for container orchestration; an authenticated `/api/health/detailed` (gated by `CRON_SECRET`) exposes pool stats and integration status.
@@ -104,14 +104,14 @@ All configuration is through environment variables. Copy `.env.example` to `.env
 
 ### Optional — authentication
 
-| Variable                | Description                                                                        |
-| ----------------------- | ---------------------------------------------------------------------------------- |
-| `ALLOW_DEV_MODE`        | Set `true` to enable dev-mode login (type any name to log in; no Authentik needed) |
-| `AUTH_AUTHENTIK_ISSUER` | Authentik OIDC issuer URL (e.g. `https://auth.example.com/application/o/ledgr`)    |
-| `AUTH_AUTHENTIK_ID`     | Authentik OIDC client ID                                                           |
-| `AUTH_AUTHENTIK_SECRET` | Authentik OIDC client secret                                                       |
-| `DEMO_ONLY`             | Set `true` for demo-only mode — no login, read-only, with a profile chooser        |
-| `ALLOWED_ACTUAL_HOSTS`  | Comma-separated hostnames the Actual Budget client may reach on a private network  |
+| Variable                | Description                                                                                                                                                                                                                                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ALLOW_DEV_MODE`        | `next dev` only: `true` skips sign-in and makes every request an admin (without it, a read-only viewer). Refused in production builds                                                                                                                                                            |
+| `AUTH_AUTHENTIK_ISSUER` | Authentik OIDC issuer URL (e.g. `https://auth.example.com/application/o/ledgr`). Required in production: Ledgr refuses to start without it (except with `DEMO_ONLY`); the Docker image sets a placeholder at build time, since the login page reads it then to decide whether to offer Authentik |
+| `AUTH_AUTHENTIK_ID`     | Authentik OIDC client ID                                                                                                                                                                                                                                                                         |
+| `AUTH_AUTHENTIK_SECRET` | Authentik OIDC client secret                                                                                                                                                                                                                                                                     |
+| `DEMO_ONLY`             | Set `true` for demo-only mode — no login, read-only, with a profile chooser                                                                                                                                                                                                                      |
+| `ALLOWED_ACTUAL_HOSTS`  | Comma-separated hostnames the Actual Budget client may reach on a private network                                                                                                                                                                                                                |
 
 ### Integrations
 
@@ -146,7 +146,7 @@ YNAB, Actual Budget, and SimpleFIN credentials are **not** configured via enviro
 
 - **End-to-end type safety** — TypeScript strict mode from the database schema (Drizzle) through the API (tRPC) to the UI (React).
 - **Data-driven design** — Account-type behavior is declared in one config record; adding an account type is one entry, not code changes. Tax tables and limits are data, versioned by year.
-- **Single source of truth for schema** — `src/lib/db/schema-pg.ts` defines the model; `schema-sqlite.ts` is generated from it. Each release line starts from a squashed baseline; later migrations are incremental.
+- **Single source of truth for schema** — `src/lib/db/pg/*.ts` (re-exported by `schema-pg.ts`) define the model; `schema-sqlite.ts` is generated from it. Each release line starts from a squashed baseline; later migrations are incremental.
 - **Self-hosted** — No external SaaS dependencies. SQLite by default, PostgreSQL supported. Budget-provider sync is optional.
 
 ## Development
@@ -173,32 +173,32 @@ Open [http://localhost:3000](http://localhost:3000). On first launch you'll see 
 
 ### Commands
 
-| Command              | Description                                 |
-| -------------------- | ------------------------------------------- |
-| `pnpm dev`           | Start the development server                |
-| `pnpm build`         | Production build                            |
-| `pnpm start`         | Start the production server                 |
-| `pnpm test`          | Run all tests                               |
-| `pnpm test:watch`    | Run tests in watch mode                     |
-| `pnpm test:e2e`      | End-to-end browser tests (Playwright)       |
-| `pnpm test:coverage` | Run with coverage thresholds                |
-| `pnpm lint`          | ESLint + Prettier check                     |
-| `pnpm format`        | Auto-format with Prettier                   |
-| `pnpm db:generate`   | Generate a migration from schema changes    |
-| `pnpm db:migrate`    | Run pending migrations                      |
-| `pnpm db:studio`     | Open Drizzle Studio (visual DB browser)     |
-| `pnpm backup:export` | Export all data to JSON (stdout or `--out`) |
-| `pnpm backup:import` | Import a JSON backup (supports `--dry-run`) |
+| Command              | Description                                                 |
+| -------------------- | ----------------------------------------------------------- |
+| `pnpm dev`           | Start the development server                                |
+| `pnpm build`         | Production build                                            |
+| `pnpm start`         | Not for this build: standalone output runs `node server.js` |
+| `pnpm test`          | Run all tests                                               |
+| `pnpm test:watch`    | Run tests in watch mode                                     |
+| `pnpm test:e2e`      | End-to-end browser tests (Playwright)                       |
+| `pnpm test:coverage` | Run with coverage thresholds                                |
+| `pnpm lint`          | ESLint + Prettier check                                     |
+| `pnpm format`        | Auto-format with Prettier                                   |
+| `pnpm db:generate`   | Generate a migration from schema changes                    |
+| `pnpm db:migrate`    | Run pending migrations                                      |
+| `pnpm db:studio`     | Open Drizzle Studio (visual DB browser)                     |
+| `pnpm backup:export` | Export all data to JSON (stdout or `--out`)                 |
+| `pnpm backup:import` | Import a JSON backup (supports `--dry-run`)                 |
 
-After editing `schema-pg.ts`, regenerate the SQLite schema with `npx tsx scripts/gen-sqlite-schema.ts` — never edit `schema-sqlite.ts` by hand.
+After editing `src/lib/db/pg/*.ts`, regenerate the SQLite schema with `npx tsx scripts/gen-sqlite-schema.ts` — never edit `schema-sqlite.ts` by hand.
 
 ### Authentication modes
 
-| Mode               | When                                              | How                                                                                          |
-| ------------------ | ------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| **Local Admin**    | Always available                                  | Email/password against a `local_admins` table. The first admin is created during onboarding. |
-| **Authentik OIDC** | `AUTH_AUTHENTIK_ISSUER` is set                    | SSO with RBAC group mapping. Shown alongside the local-admin form.                           |
-| **Dev Mode**       | `ALLOW_DEV_MODE=true` and no Authentik configured | Type any name to auto-login as admin. Local development only — never in production.          |
+| Mode               | When                           | How                                                                                                               |
+| ------------------ | ------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| **Local Admin**    | Always available               | Email/password against a `local_admins` table. The first admin is created during onboarding.                      |
+| **Authentik OIDC** | `AUTH_AUTHENTIK_ISSUER` is set | SSO with RBAC group mapping. Shown alongside the local-admin form.                                                |
+| **Dev Mode**       | Running `next dev`             | No sign-in: a fixed session, admin with `ALLOW_DEV_MODE=true`, otherwise a read-only viewer. Never in production. |
 
 ## Deployment
 
@@ -241,16 +241,16 @@ Migrations are managed by Drizzle Kit: each release line starts from a squashed 
 
 All three are configured from **Settings → Integrations** — there are no credential environment variables. Only one budget provider (YNAB or Actual) can be active at a time; SimpleFIN runs alongside either.
 
-- **YNAB (You Need A Budget)** — Generate a personal access token at [YNAB Developer Settings](https://app.ynab.com/settings/developer), paste it in, and pick a budget. Syncs accounts, categories, monthly summaries, and transactions with delta sync for fast incremental updates. Two-way: category-goal targets and portfolio snapshots can be pushed back.
-- **Actual Budget** — Requires a running [Actual Budget HTTP API](https://github.com/jhonderson/actual-http-api) wrapper in front of your Actual server. Enter the server URL, API key, and budget sync ID. Outbound requests to private IP ranges are blocked unless the host is in `ALLOWED_ACTUAL_HOSTS`.
+- **YNAB (You Need A Budget)** — Generate a personal access token at [YNAB Developer Settings](https://app.ynab.com/settings/developer), paste it in, and pick a budget. Syncs accounts, categories, monthly summaries, and transactions. Two-way: category-goal targets and portfolio snapshots can be pushed back.
+- **Actual Budget** — Requires a running [Actual Budget HTTP API](https://github.com/jhonderson/actual-http-api) wrapper in front of your Actual server. Enter the server URL, API key, and budget sync ID. Outbound requests to private IP ranges are blocked unless the host is in `ALLOWED_ACTUAL_HOSTS`. Pin the wrapper to `jhonderson/actual-http-api` 26.10.0 (commit 8ef9a0ca), and move it together with `actual-server` to the same version. The wrapper checks its API key only when `NODE_ENV=production` (its Docker image sets it).
 - **SimpleFIN Bridge** — Read-only daily data per linked account: balances, holdings and investment transactions (used for live balances, benchmarks, holdings history and suggested Performance fills). No budget sync.
 - **Tax data updates** — Optional, off unless you turn it on (onboarding offers it). Once a week Ledgr checks this project's signed tax-data release on GitHub for new tax figures between Ledgr updates — one plain download from `github.com`, nothing about your household sent. A newer file is verified against a key built into Ledgr and checked, then waits in **Settings → Reference Data** for an admin to review and apply; figures you've changed are never touched. `LEDGR_TAX_DATA_SYNC=off` turns it off for the whole server. Behind a proxy, set `NODE_USE_ENV_PROXY=1`.
 
-The integration layer hardens every outbound call: typed error classification, exponential backoff with `Retry-After` support on rate limits, deterministic idempotency keys so retries don't create duplicate transactions, and drift detection after every sync that surfaces broken account mappings in the UI.
+The integration layer hardens every outbound call: typed error classification, exponential backoff with `Retry-After` support on rate limits, every response checked against its endpoint's schema before anything is written, duplicate guards on writes (each push's transactions carry an import id, so a push finds what it posted when a response was lost; a POST is resent only after a rate limit), and drift detection after every sync that surfaces broken account mappings in the UI.
 
 ## Testing
 
-6,000+ tests across 420+ Vitest files plus 14 Playwright end-to-end specs — covering the financial calculators, retirement benchmarks, server and router logic, UI components, database migrations and backup transforms, theme-token regressions, and full browser flows. CI enforces coverage thresholds of 85% statements / 70% branches / 80% functions / 85% lines, and also runs the lint/type-check, a file-size guard, a tax-parameter freshness check, a migration safety check, and a documentation-freshness check.
+6,000+ tests across 530+ Vitest files plus 15 Playwright end-to-end specs — covering the financial calculators, retirement benchmarks, server and router logic, UI components, database migrations and backup transforms, theme-token regressions, and full browser flows. CI enforces coverage thresholds of 85% statements / 70% branches / 80% functions / 85% lines, and also runs the lint/type-check, a file-size guard, a tax-parameter freshness check, a migration safety check, and a documentation-freshness check.
 
 ```bash
 pnpm test          # Run once

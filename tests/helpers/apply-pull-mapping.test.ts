@@ -152,6 +152,28 @@ describe("applyPullMapping — only known target kinds are written", () => {
     const rows = ctx.db.select().from(ctx.schema.otherAssetItems).all();
     expect(rows.find((r) => r.name === "Old Savings Bond")).toBeDefined();
   });
+
+  it.each([NaN, Infinity])(
+    "refuses a balance of %s and writes nothing",
+    async (apiBalance) => {
+      await expect(
+        applyPullMapping(ctx.rawDb, {
+          mapping: {
+            localName: `Broken ${apiBalance}`,
+            remoteAccountId: "r3",
+            syncDirection: "pull",
+          },
+          apiBalance,
+          service: "actual",
+          currentYear: year,
+        }),
+      ).rejects.toThrow("Refused to store an asset value from the budget app");
+      const rows = ctx.db.select().from(ctx.schema.otherAssetItems).all();
+      expect(
+        rows.find((r) => r.name === `Broken ${apiBalance}`),
+      ).toBeUndefined();
+    },
+  );
 });
 
 describe("applyPullMapping — debts, and clearing what nothing pulls", () => {

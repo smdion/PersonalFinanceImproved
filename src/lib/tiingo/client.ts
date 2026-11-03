@@ -5,7 +5,15 @@
 // is fixed (never user-supplied), so unlike the SimpleFIN client there is no
 // SSRF surface to guard.
 
-import { BudgetApiError, budgetApiRequest } from "@/lib/budget-api/errors";
+import { BudgetApiError, serviceError } from "@/lib/budget-api/errors";
+import type { z } from "zod/v4";
+import { externalRequest } from "@/lib/http/external-request";
+import {
+  dailyClosesSchema,
+  latestCloseSchema,
+  monthlyPricesSchema,
+  tickerMetaSchema,
+} from "./schemas";
 
 const TIINGO_BASE_URL = "https://api.tiingo.com";
 
@@ -23,22 +31,29 @@ export function tiingoBlockedUntil(): number {
 }
 
 /**
- * GET a Tiingo endpoint as JSON via the shared budgetApiRequest wrapper
- * (timeout + typed BudgetApiError + retries). Tiingo answers a bad key with
- * 403 `{"detail":"Invalid token."}`, which classifies as "auth". A rate
- * limit is never retried: the quota is hourly.
+ * GET a Tiingo endpoint via the shared externalRequest (timeout, typed
+ * BudgetApiError, retries, the schema check). A bad key answers 403, which
+ * classifies as "auth". A rate limit is never retried: the quota is hourly.
  */
-async function requestJson<T>(path: string, apiKey: string): Promise<T> {
+async function requestJson<S extends z.ZodType>(
+  path: string,
+  apiKey: string,
+  schema: S,
+): Promise<z.infer<S>> {
   if (tiingoBlockedUntil())
-    throw new BudgetApiError("Rate limited (429)", "rate-limit", 429);
+    throw serviceError("Tiingo", "Rate limited (429)", "rate-limit", 429);
   try {
-    return await budgetApiRequest<T>(
-      `${TIINGO_BASE_URL}${path}`,
-      { Authorization: `Token ${apiKey}` },
-      undefined,
-      undefined,
-      false,
-    );
+    return await externalRequest({
+      service: "tiingo",
+      // The ticker stays out of the endpoint; callers name it.
+      endpoint: path.replace(
+        /^\/tiingo\/daily\/[^/?]+/,
+        "/tiingo/daily/:ticker",
+      ),
+      url: `${TIINGO_BASE_URL}${path}`,
+      headers: { Authorization: `Token ${apiKey}` },
+      schema,
+    });
   } catch (err) {
     if (err instanceof BudgetApiError && err.code === "rate-limit") {
       const hour = 60 * 60 * 1000;
@@ -50,21 +65,17 @@ async function requestJson<T>(path: string, apiKey: string): Promise<T> {
   }
 }
 
-type TiingoTickerMeta = {
-  ticker: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-};
+type TiingoTickerMeta = z.infer<typeof tickerMetaSchema>;
 
-/** Fetch ticker metadata (name + available price history range). */
+/** Fetch ticker metadata: its symbol and where its price history starts. */
 export async function getTickerMeta(
   apiKey: string,
   ticker: string,
 ): Promise<TiingoTickerMeta> {
-  return requestJson<TiingoTickerMeta>(
+  return requestJson(
     `/tiingo/daily/${encodeURIComponent(ticker)}`,
     apiKey,
+    tickerMetaSchema,
   );
 }
 
@@ -89,9 +100,10 @@ export async function getMonthlyPrices(
   ticker: string,
   startDate: string,
 ): Promise<TiingoMonthlyPrice[]> {
-  const rows = await requestJson<{ date: string; adjClose: number }[]>(
+  const rows = await requestJson(
     `/tiingo/daily/${encodeURIComponent(ticker)}/prices?startDate=${encodeURIComponent(startDate)}&resampleFreq=monthly`,
     apiKey,
+    monthlyPricesSchema,
   );
   return rows.map((r) => ({ date: r.date.slice(0, 10), adjClose: r.adjClose }));
 }
@@ -114,17 +126,16 @@ export async function getDailyCloses(
   ticker: string,
   startDate: string,
 ): Promise<TiingoDailyClose[]> {
-  const rows = await requestJson<
-    { date: string; close: number; divCash?: number; splitFactor?: number }[]
-  >(
+  const rows = await requestJson(
     `/tiingo/daily/${encodeURIComponent(ticker)}/prices?startDate=${encodeURIComponent(startDate)}`,
     apiKey,
+    dailyClosesSchema,
   );
   return rows.map((r) => ({
     date: r.date.slice(0, 10),
     close: r.close,
-    divCash: r.divCash ?? 0,
-    splitFactor: r.splitFactor ?? 1,
+    divCash: r.divCash,
+    splitFactor: r.splitFactor,
   }));
 }
 
@@ -133,9 +144,10 @@ export async function getLatestClose(
   apiKey: string,
   ticker: string,
 ): Promise<{ date: string; close: number } | null> {
-  const rows = await requestJson<{ date: string; close: number }[]>(
+  const rows = await requestJson(
     `/tiingo/daily/${encodeURIComponent(ticker)}/prices`,
     apiKey,
+    latestCloseSchema,
   );
   const last = rows.at(-1);
   return last ? { date: last.date.slice(0, 10), close: last.close } : null;

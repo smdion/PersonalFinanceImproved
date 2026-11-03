@@ -41,8 +41,9 @@ import {
 } from "@/server/helpers";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
-import { safeDivide } from "@/lib/utils/math";
 import { serviceEnum } from "./_shared";
+import { nothingChanged } from "@/lib/budget-api/errors";
+import { safeDivide, toDecimalColumn } from "@/lib/utils/math";
 
 export const syncCoreRouter = createTRPCRouter({
   /**
@@ -169,7 +170,10 @@ export const syncCoreRouter = createTRPCRouter({
                 .values({
                   goalId: goal.id,
                   monthDate: currentMonth,
-                  balance: String(balance),
+                  balance: toDecimalColumn(
+                    balance,
+                    "a savings balance from the budget app",
+                  ),
                 })
                 .onConflictDoUpdate({
                   target: [
@@ -177,7 +181,12 @@ export const syncCoreRouter = createTRPCRouter({
                     schema.savingsMonthly.monthDate,
                   ],
                   // Only overwrite balance — never touch deposit_or_withdrawal or notes.
-                  set: { balance: String(balance) },
+                  set: {
+                    balance: toDecimalColumn(
+                      balance,
+                      "a savings balance from the budget app",
+                    ),
+                  },
                 });
             }
 
@@ -213,14 +222,18 @@ export const syncCoreRouter = createTRPCRouter({
               );
               for (const goal of linkedGoals) {
                 const balance = priorCatMap.get(goal.apiCategoryId!);
-                if (balance === undefined) continue;
+                // An old cached month may hold no number where a figure was missing.
+                if (typeof balance !== "number") continue;
                 // Insert only — never overwrite an existing month's recorded balance.
                 await tx
                   .insert(schema.savingsMonthly)
                   .values({
                     goalId: goal.id,
                     monthDate,
-                    balance: String(balance),
+                    balance: toDecimalColumn(
+                      balance,
+                      "a savings balance from the budget app",
+                    ),
                   })
                   .onConflictDoNothing();
                 harvested = true;
@@ -287,6 +300,8 @@ export const syncCoreRouter = createTRPCRouter({
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: `Sync failed: ${msg.slice(0, 200)}`,
+          // The network phase writes nothing; its transaction rolls back.
+          cause: nothingChanged(e),
         });
       }
     }),

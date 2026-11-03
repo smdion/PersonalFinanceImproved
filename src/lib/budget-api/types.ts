@@ -53,7 +53,8 @@ export type BudgetMonth = {
   income: number;
   budgeted: number;
   activity: number;
-  toBeBudgeted: number;
+  /** Null for an Actual tracking budget, which has no "to budget". */
+  toBeBudgeted: number | null;
 };
 
 /** Detailed monthly budget with per-category data */
@@ -62,7 +63,7 @@ export type BudgetMonthDetail = {
   income: number;
   budgeted: number;
   activity: number;
-  toBeBudgeted: number;
+  toBeBudgeted: number | null;
   categories: BudgetCategory[];
 };
 
@@ -97,6 +98,10 @@ export type BudgetTransaction = {
 
 /** Input for creating a new transaction */
 export type NewBudgetTransaction = {
+  /** Hashed into the import id: a fresh one gives a new id (YNAB keeps a
+   *  deleted transaction's id reserved); reuse it only to find this same
+   *  write again. */
+  importKey: string;
   accountId: string;
   date: string; // "YYYY-MM-DD"
   amount: number;
@@ -139,9 +144,3 @@ export type BudgetApiService = "ynab" | "actual";
 
 /** The active budget API setting stored in app_settings */
 export type ActiveBudgetApi = "none" | "ynab" | "actual";
-
-/** Result of a delta sync operation */
-export type DeltaSyncResult<T> = {
-  data: T;
-  serverKnowledge: number;
-};

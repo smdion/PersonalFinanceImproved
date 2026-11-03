@@ -7,15 +7,14 @@
 - **Architecture reference:** `docs/DESIGN.md`. Read sections on demand, not the
   whole file.
 - **Test inventory:** `docs/TESTING.md`. Tests live in `tests/` mirroring the
-  source layout: `tests/calculators/`, `tests/routers/`, `tests/server/`,
-  `tests/config/`, plus `tests/e2e/` for Playwright.
+  source layout, plus `tests/e2e/` for Playwright.
 
 ## When to consult the advisor
 
 The `advisor` subagent (`.claude/agents/advisor.md`) runs on Opus and exists
 to push back. Use it before committing when:
 
-- Changing anything in `lib/calculators/engine/` or `lib/db/schema*.ts`
+- Changing anything in `lib/calculators/engine/`, `lib/db/pg/*.ts` or `lib/db/schema*.ts`
 - Editing `lib/config/account-types.ts` or any `lib/config/*tables*.ts` —
   these are the data-driven foundation the engine reads; a wrong helper here
   silently corrupts every consumer

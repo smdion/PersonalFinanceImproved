@@ -103,7 +103,7 @@ describe("getAccounts", () => {
   });
 
   it("returns an empty array when the response has no accounts", async () => {
-    mockFetch.mockReturnValueOnce(jsonResponse({}));
+    mockFetch.mockReturnValueOnce(jsonResponse({ accounts: [] }));
     const { accounts } = await getAccounts("https://u:p@bridge.simplefin.org");
     expect(accounts).toEqual([]);
   });
@@ -132,7 +132,10 @@ describe("getAccounts", () => {
 
   it("throws when errors are present and no accounts came back", async () => {
     mockFetch.mockReturnValueOnce(
-      jsonResponse({ errors: ["Institution X needs re-authentication"] }),
+      jsonResponse({
+        errors: ["Institution X needs re-authentication"],
+        accounts: [],
+      }),
     );
     await expect(
       getAccounts("https://u:p@bridge.simplefin.org"),
@@ -178,7 +181,6 @@ describe("getAccounts — full request (holdings + transactions)", () => {
             org: { name: "Example Brokerage" },
             holdings: [
               {
-                id: "h1",
                 symbol: "EXMPX",
                 description: "Example Index Fund",
                 shares: "10.5",
@@ -186,7 +188,6 @@ describe("getAccounts — full request (holdings + transactions)", () => {
                 cost_basis: "80.25",
               },
               {
-                id: "h2",
                 symbol: "",
                 description: "Example Plan Fund",
                 shares: "3",
@@ -222,7 +223,6 @@ describe("getAccounts — full request (holdings + transactions)", () => {
     expect(a.balanceDate).toEqual(new Date(1778000000 * 1000));
     expect(a.holdings).toEqual([
       {
-        id: "h1",
         symbol: "EXMPX",
         description: "Example Index Fund",
         shares: 10.5,
@@ -231,7 +231,6 @@ describe("getAccounts — full request (holdings + transactions)", () => {
       },
       // A 0 cost basis means "not sent", not a free fund.
       {
-        id: "h2",
         symbol: "",
         description: "Example Plan Fund",
         shares: 3,

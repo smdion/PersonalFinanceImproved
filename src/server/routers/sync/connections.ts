@@ -19,6 +19,7 @@ import type { YnabConfig, ActualConfig } from "@/lib/budget-api";
 import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
 import { validateOutboundUrl } from "@/lib/url-safety";
 import { TRPCError } from "@trpc/server";
+import { userMessageFor } from "@/lib/budget-api/errors";
 import { serviceEnum } from "./_shared";
 
 export const syncConnectionsRouter = createTRPCRouter({
@@ -213,14 +214,15 @@ export const syncConnectionsRouter = createTRPCRouter({
       }
 
       try {
-        // getBudgetName implicitly tests the connection — no need to call both
+        // Actual's budget name is local, so the budget is asked first.
+        await client.testConnection();
         const budgetName = await client.getBudgetName();
         return { success: true, budgetName };
       } catch (e) {
         const msg = e instanceof Error ? e.message : "Unknown error";
         return {
           success: false,
-          error: msg.slice(0, 200),
+          error: userMessageFor(e) ?? msg.slice(0, 200),
         };
       }
     }),

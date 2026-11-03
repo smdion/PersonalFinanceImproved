@@ -1,6 +1,10 @@
 // Budget API — public exports
 
-export type { BudgetAPIClient } from "./interface";
+export type {
+  BudgetAPIClient,
+  GoalShape,
+  PreparedGoalWrite,
+} from "./interface";
 export type {
   BudgetAccount,
   BudgetCategoryGroup,
@@ -17,4 +21,4 @@ export {
 } from "./factory";
 export { cacheGet, cacheSet, cacheClear, refreshCategoryCache } from "./cache";
 export { YNAB_INTERNAL_GROUPS } from "@/lib/config/ynab";
-export { BudgetApiError } from "./errors";
+export { BudgetApiError, isTransientError } from "./errors";

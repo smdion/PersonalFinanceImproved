@@ -12,7 +12,12 @@
 FILE_PATH=$(jq -r '.tool_input.file_path // empty' 2>/dev/null)
 [ -z "$FILE_PATH" ] && exit 0
 
-if [[ "$FILE_PATH" =~ src/lib/calculators/engine/|src/server/routers/|src/lib/db/schema|src/lib/config/account-types|src/components/ui/|src/components/cards/dashboard/|drizzle/ ]]; then
+# The same roots scripts/verify-docs.ts counts in (engine modules,
+# calculators, routers, pages, components, DB tables in src/lib/db/pg/,
+# migrations, test files) plus account-types; tests/scripts/verify-docs-
+# hook.test.ts keeps the two in step.
+DOCS_SCOPE='src/lib/calculators/|src/server/routers/|src/app/|src/components/|src/lib/db/|src/lib/config/account-types|drizzle/|tests/'
+if [[ "$FILE_PATH" =~ $DOCS_SCOPE ]]; then
   cd "$CLAUDE_PROJECT_DIR" || exit 0
   if ! VERIFY_OUT=$(pnpm docs:verify 2>&1); then
     {
@@ -27,7 +32,8 @@ fi
 
 # API_ROUTERS.md / SCHEMA.md mirror routers/ and schema files specifically —
 # regenerate them directly rather than relying on docs:verify.
-if [[ "$FILE_PATH" =~ src/server/routers/|src/lib/db/schema ]]; then
+API_SCOPE='src/server/routers/|src/lib/db/schema|src/lib/db/pg/'
+if [[ "$FILE_PATH" =~ $API_SCOPE ]]; then
   cd "$CLAUDE_PROJECT_DIR" || exit 0
   if ! GEN_OUT=$(pnpm docs:gen-api 2>&1); then
     {

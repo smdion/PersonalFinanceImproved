@@ -8,6 +8,7 @@ import { and, eq, isNotNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { localDateStr } from "@/lib/utils/date";
 import type { DbOrTx } from "./transforms";
+import { toDecimalColumn } from "@/lib/utils/math";
 
 /** Loans whose balance comes from an included feed. */
 export async function loansFedBySimplefin(db: DbOrTx): Promise<Set<number>> {
@@ -45,7 +46,10 @@ export async function applyLoanFeedBalances(
     await db
       .update(schema.mortgageLoans)
       .set({
-        apiBalance: String(Math.abs(Number(feed.lastBalance))),
+        apiBalance: toDecimalColumn(
+          Math.abs(Number(feed.lastBalance)),
+          "a loan balance from SimpleFIN",
+        ),
         apiBalanceDate: localDateStr(feed.lastBalanceDate ?? feed.lastSeenAt),
       })
       .where(eq(schema.mortgageLoans.id, feed.linkedLoanId!));

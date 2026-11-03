@@ -22,7 +22,7 @@
 - **<!-- AUTO-GEN:primaryRouters -->27<!-- /AUTO-GEN --> primary tRPC routers + <!-- AUTO-GEN:settingsSubRouters -->5<!-- /AUTO-GEN --> settings sub-routers**, <!-- AUTO-GEN:tables -->84<!-- /AUTO-GEN -->+ tables, <!-- AUTO-GEN:migrations -->14<!-- /AUTO-GEN --> migrations (PG + SQLite).
 - **Integrations** — YNAB and Actual Budget (two-way budget sync, cash, assets, savings categories), SimpleFIN (balances, holdings, transactions), Tiingo prices, SEC fund facts.
 
-Two patterns shape everything (rules in RULES.md): account-type behavior is **declared in config** (`ACCOUNT_TYPE_CONFIG` — a new account type is one entry), and the engine is **one pure module per concern** behind an orchestrator.
+Two patterns shape everything (rules in RULES.md): account-type behavior is **declared in config** (`ACCOUNT_TYPE_CONFIG` — a new account type is meant to be one entry; see RULES.md § Known Gaps), and the engine is **one pure module per concern** behind an orchestrator.
 
 ---
 
@@ -35,9 +35,9 @@ Key concept → directory map:
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Calculators (pure)      | `src/lib/calculators/`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Engine modules          | `src/lib/calculators/engine/` (<!-- AUTO-GEN:engineModules -->32<!-- /AUTO-GEN --> modules)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| Calculator I/O types    | `src/lib/calculators/types.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Calculator I/O types    | `src/lib/calculators/types/` (barrel `types.ts`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | Config tables (declare) | `src/lib/config/` (account types, tax, RMD, IRMAA, ACA)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| DB schema               | `src/lib/db/schema.ts` (<!-- AUTO-GEN:tables -->84<!-- /AUTO-GEN -->+ tables)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| DB schema               | `src/lib/db/pg/*.ts` (re-exported by `schema-pg.ts`; <!-- AUTO-GEN:tables -->84<!-- /AUTO-GEN -->+ tables)                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | tRPC routers            | `src/server/routers/` (<!-- AUTO-GEN:primaryRouters -->27<!-- /AUTO-GEN --> primary + <!-- AUTO-GEN:settingsSubRouters -->5<!-- /AUTO-GEN --> settings sub-routers)                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Auth + tRPC middleware  | `src/server/auth.ts`, `src/server/trpc.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | Pages (App Router)      | `src/app/(dashboard)/` (<!-- AUTO-GEN:pages -->36<!-- /AUTO-GEN --> pages)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
@@ -67,7 +67,7 @@ Single-frontend, single-backend app with two users. tRPC gives end-to-end type s
 
 ### Authentication & RBAC
 
-Auth.js with Authentik OIDC. Base roles + permission addons:
+Auth.js with Authentik OIDC or a local admin (`local_admins`). Dev Login (any name, no password) is registered only in development builds, and a token is accepted only with the `authMethod` its provider stamped at sign-in. Whether this is a development build, and whether requests skip sign-in (`next dev` only), is answered once, in `src/server/auth-mode.ts`. Base roles + permission addons:
 
 **Base roles:** `admin` | `viewer`
 
@@ -89,7 +89,7 @@ Auth.js with Authentik OIDC. Base roles + permission addons:
 | `ledgr-brokerage`            | `brokerage`           | Manage brokerage goals + planned transactions                                                                                                  |
 | `ledgr-sync`                 | `sync`                | Trigger budget API sync operations                                                                                                             |
 
-Route-level protection via Next.js middleware on `/(dashboard)` routes. Permission enforcement at tRPC procedure level. UI gating via `UserContext` (`useUser()`, `hasPermission()`, `isAdmin()`).
+The `(dashboard)` layout redirects to `/login`; `src/proxy.ts` runs `auth` but has no `authorized` callback, so it blocks nothing. Permission enforcement is at tRPC procedure level, and API routes check for themselves. UI gating via `UserContext` (`useUser()`, `hasPermission()`, `isAdmin()`).
 
 ### Server/Client Component Boundary
 
@@ -153,7 +153,7 @@ Helpers: `taxTypeColor()`, `taxTypeTextColor()`, `taxTypeLabel()`
 - Account types and tax treatments use distinct hue families — no overlap
 - Generic UI badges (BG, PC, etc.) use indigo or gray to avoid collision
 - **Contrast floor (WCAG 1.4.11):** a data-carrying chart stroke or its legend swatch must clear 3:1 against the card background (and against any fill it's drawn over) in **both** themes. A single `CHART_COLORS` hex often can't — see `chartLinePalette(dark)` in `colors.ts` for the theme-aware escape hatch (mirrors `trajectoryChartPalette`). Decorative reference/zero lines are exempt.
-- Account type colors are derived from `ACCOUNT_TYPE_CONFIG` — adding a new account type with a `colors` block automatically wires it up in `colors.ts`
+- Account type colors are derived from `ACCOUNT_TYPE_CONFIG` — a `colors` block wires a new account type into `colors.ts` helpers; `CATEGORY_CHART_HEX` is still a separate table
 - **Portfolio scope:** "All accounts" = every account from the latest balance snapshot. "Retirement accounts" = only accounts with `parentCategory = 'Retirement'`. Retirement ⊂ Portfolio.
 - **Data freshness:** A global sidebar indicator shows when balance and performance data were last updated. Individual pages do not duplicate this information.
 - **ID-based entity matching:** All cross-entity references use stable database IDs, never display names or labels. `AccountMapping.localId` uses the format `"performance:{id}" | "asset:{id}" | "mortgage:{loanId}:{type}"`. Savings goals match by `goalId`, mortgage results carry `loanId`, asset class overrides/correlations/glide paths use numeric `id` keys, and person/owner matching uses `ownerPersonId`. Display names are cached in `localName` (mappings) or computed via `accountDisplayName()` — but never used for identity resolution.
@@ -238,7 +238,7 @@ IRA (Vanguard)                                    $260,000.00
 
 For years with `account_performance` data but missing `annual_performance` category rows, synthetic rows are computed at read time. Single-category years copy from the stored annual row to avoid account-level sum discrepancies.
 
-### Return % (Modified Dietz)
+### Return % (Simple Dietz, midpoint weighting)
 
 ```
 return = gain_loss / (beginning_balance + (contributions + rollovers - distributions - fees) / 2)
@@ -249,7 +249,7 @@ every account type — do not add employer_contributions again. See
 `computeReturn()` in `src/lib/pure/performance.ts`, the single canonical
 implementation.
 
-Stored values trusted. Null values computed. Division-by-zero returns null.
+On finalized rollup (`annual_performance`) rows the stored value is trusted and nulls are computed; per-account returns are always computed. Division-by-zero returns null.
 
 ### Finalization Flow
 
@@ -270,7 +270,7 @@ Stored values trusted. Null values computed. Division-by-zero returns null.
 Each calculator follows the same pattern:
 
 ```typescript
-// lib/calculators/types.ts — ALL types live here, decoupled from Drizzle
+// lib/calculators/types/ — shared I/O types, decoupled from Drizzle; a module's own types stay in it
 type XxxInput = { /* all number, never Drizzle string */ asOfDate: Date; };
 type XxxResult = { /* outputs */ warnings: string[]; };
 
@@ -295,7 +295,7 @@ export function calculateXxx(input: XxxInput): XxxResult { ... }
 | Savings          | Months of coverage, goal projections                                                                                                                                                                                                        |
 | E-Fund           | Essential expense coverage months                                                                                                                                                                                                           |
 | Brokerage Goals  | View enricher: maps engine projection to per-goal status (funded/shortfall/tax cost)                                                                                                                                                        |
-| Monte Carlo      | 1,000+ trial simulation with asset class correlations, glide path allocations, configurable presets                                                                                                                                         |
+| Monte Carlo      | 500-trial simulation by default (Coast FIRE 1,000, strategy comparison 200; about 1.3 points of standard error on a 90% success rate at 500), with asset class correlations, glide path allocations, configurable presets                   |
 | Random           | Distribution utilities (normal, log-normal) for Monte Carlo                                                                                                                                                                                 |
 | Relocation       | Budget comparison, FI target/age impact, earliest safe relocation, large purchase modeling                                                                                                                                                  |
 
@@ -321,7 +321,7 @@ The relocation decision tool (`lib/calculators/relocation.ts`) compares two budg
 
 **How purchases affect the projection:**
 
-1. **Purchase year**: Portfolio withdraws `purchasePrice × downPaymentPercent` (cash outlay), adds `saleProceeds`. Net impact shown in `largePurchaseImpact`.
+1. **Purchase year**: retirement money (the Retirement-parented balance the calculator starts from) pays `purchasePrice × downPaymentPercent` (cash outlay) and gets `saleProceeds`. Net impact shown in `largePurchaseImpact`.
 2. **Loan payments**: Monthly amortization payment added to relocation expenses for `loanTermYears` starting at `purchaseYear`.
 3. **Ongoing costs**: Added to relocation expenses from `purchaseYear` onward (permanent).
 4. **FI target**: Increased by ongoing costs (they're retirement expenses too). Loan payments do NOT increase FI target (they end).
@@ -330,14 +330,14 @@ The relocation decision tool (`lib/calculators/relocation.ts`) compares two budg
 
 `lib/calculators/engine/` runs accumulation and retirement in one pass, year by year. Module map and per-year order: `engine/ARCHITECTURE.md`. Public API: `engine/index.ts`.
 
-1. **Accumulation** (today → retirement): contributions routed per account from the contribution specs (or waterfall / percentage), IRS limits with overflow to a Retirement brokerage, employer match, salary growth with a cap, Roth/Traditional splits, lump sums, brokerage goals.
+1. **Accumulation** (today → retirement): contributions routed per account from the contribution specs (or waterfall / percentage), IRS limits (over-limit money reaches a Retirement brokerage only in some later years; RULES.md § Known Gaps), employer match, salary growth with a cap (each person's salary grows at its raise rate and stops at the cap), Roth/Traditional splits, lump sums, brokerage goals.
 2. **Retirement** — three withdrawal routing modes:
-   - **Bracket filling** (default): Traditional up to a target bracket, then the rest ranked by each year's real cost — free basis and 0% LTCG room first, then whichever of Roth growth or brokerage gains is cheaper (NIIT-aware), HSA on the same footing (`withdrawal-cost-ranking.ts`). Once Roth, brokerage and HSA are gone, Traditional above the target. Needs a `rothBracketTarget` and brackets; otherwise waterfall.
+   - **Bracket filling** (default): Traditional up to a target bracket, then the rest ranked by each year's real cost — Roth basis (free) and brokerage draws inside the 0% LTCG room first, then whichever of Roth growth or brokerage gains is cheaper (NIIT-aware), HSA on the same footing (`withdrawal-cost-ranking.ts`). Once Roth, brokerage and HSA are gone, Traditional above the target. Needs a `rothBracketTarget` and brackets; otherwise waterfall. A brokerage draw takes basis in proportion to the account's balance (average cost, not lot by lot).
    - **Waterfall:** accounts in priority order with per-account and per-tax-type caps.
-   - **Percentage:** fixed shares, with an emptied or capped account's share placed on the others.
-   - The withdrawal is grossed up to cover its own tax: brackets from W-4 withholding tables (with a tax multiplier), Social Security taxation (provisional income), NIIT, early-withdrawal penalties.
-   - Spending follows the household's strategy (fixed, Guyton-Klinger and five others).
-3. **Tax-aware features** (data in `lib/config/`): RMDs (Uniform Lifetime Table, SECURE 2.0 start ages), QCDs, graduated LTCG, Roth conversions into bracket room (and RMD smoothing), IRMAA and ACA cliffs, the OBBBA senior deduction, inflation-indexed thresholds.
+   - **Percentage:** fixed shares, with an emptied or capped account's share placed on the others. Once the accounts with a share are full or empty, accounts with a 0% share take the rest, in proportion to what each can still give.
+   - The withdrawal is grossed up to cover its own tax: federal income tax from the IRS Pub 15-T percentage-method tables with the rest of the standard deduction taken off first, which gives the tax owed, not withholding (with a tax multiplier, which scales the computed tax for future rate changes; 1.0 is current law), Social Security taxation (provisional income), NIIT, early-withdrawal penalties.
+   - Spending follows the household's strategy (fixed, Guyton-Klinger and seven others). A spending-sized strategy's figure, less Social Security, is what the gross-up works from. A portfolio-sized one (Constant Percentage, Endowment, Vanguard Dynamic, VPW, and RMD Spending in its RMD years) is the gross withdrawal itself, tax paid out of it and Social Security on top, unless the household's "Social Security comes out of this amount" switch is on. Guardrails judges its rate before the gross-up: (spending − Social Security) ÷ last year-end retirement balance, tax left out.
+3. **Tax-aware features** (data in `lib/config/`): RMDs (Uniform Lifetime Table only, SECURE 2.0 start ages; the Joint Life Table, required when the sole beneficiary is a spouse more than 10 years younger, isn't used), QCDs, graduated LTCG, Roth conversions into bracket room (and RMD smoothing), IRMAA and ACA cliffs, the OBBBA senior deduction, inflation-indexed thresholds.
 
 Every setting can change by year ("Changes by year", resolved in `override-resolution.ts`).
 
@@ -383,7 +383,7 @@ Inputs: year-level history from `milestones.computeInputs` (via `buildYearEndHis
 
 ## Current glide path (Benchmarks)
 
-The household can set a **current glide path** — its target mix by age for what it holds today — on Benchmarks ("Your mix vs your target"). It's separate from the retirement simulation's glide path (`glide_path_allocations`, which the engine and Monte Carlo read), so the real portfolio can be held more conservatively than the plan projects with. Stored in `app_settings.current_glide_path`, validated on write (`currentGlidePathSchema`: each age's mix adds to 100%); `loadHoldingsOverview` interpolates it at the primary person's age when set and falls back to the simulation's glide path when not (`targetSource`). Benchmarks' mix vs target and Milestones' rebalancing both read that target. Allocation counts only SimpleFIN accounts linked to a Ledgr account; unlinked ones are listed as left out. "What it costs" keeps the two kinds of cost apart (`COST_KINDS` in `lib/config/performance-help.ts`): **fund costs** — value × expense ratio (`blendedCost`), a rate on today's balance, already inside fund prices and so inside Performance gains — and **account fees**, the Performance Fees column per year (`accountFeesForYears`); the headline adds a year of each (`allInYearlyCost`), never folding one into the other. Next to "What it costs", a stacked chart shows that glide path by age (asset-class colors from their fund categories) with Vanguard Target Retirement's stock share (`VANGUARD_TDF_STOCK_SHARE`, shifted to the household's retirement age) as a dashed line to compare with the top of the stock bands.
+The household can set a **current glide path** — its target mix by age for what it holds today — on Benchmarks ("Your mix vs your target"). It's separate from the retirement simulation's glide path (`mc_preset_glide_paths` for a named preset, `glide_path_allocations` for Custom), so the real portfolio can be held more conservatively than the plan projects with. Stored in `app_settings.current_glide_path`, validated on write (`currentGlidePathSchema`: each age's mix adds to 100%); `loadHoldingsOverview` interpolates it at the primary person's age when set and falls back to the simulation's glide path when not (`targetSource`). Benchmarks' mix vs target and Milestones' rebalancing both read that target. Allocation counts only SimpleFIN accounts linked to a Ledgr account; unlinked ones are listed as left out. "What it costs" keeps the two kinds of cost apart (`COST_KINDS` in `lib/config/performance-help.ts`): **fund costs** — value × expense ratio (`blendedCost`), a rate on today's balance, already inside fund prices and so inside Performance gains — and **account fees**, the Performance Fees column per year (`accountFeesForYears`); the headline adds a year of each (`allInYearlyCost`), never folding one into the other. Next to "What it costs", a stacked chart shows that glide path by age (asset-class colors from their fund categories) with Vanguard Target Retirement's stock share (`VANGUARD_TDF_STOCK_SHARE`, shifted to the household's retirement age) as a dashed line to compare with the top of the stock bands.
 
 ## Household annual income and tax
 
@@ -420,7 +420,7 @@ Yearly brokerage-funded goals (e.g., new car in 2030). Unlike sinking funds held
 **Engine-integrated:** long-term goals are drawn inside the engine's accumulation years, not by a separate calculator, so:
 
 - goal draws come only from **Portfolio** brokerages and reduce them before retirement sees anything (holistic rule);
-- cost basis is tracked **per brokerage account** (`brokerage-basis.ts`): contributions add basis 1:1, growth doesn't, draws take basis in proportion;
+- cost basis is tracked **per brokerage account** (`brokerage-basis.ts`): it starts at the account's entered cost basis; money the projection adds (contributions, match, overflow, reinvested RMD money, lump sums) adds basis 1:1, growth doesn't, and draws take basis in proportion (average cost). A rollover is not a contribution (RULES.md § ESPP Accounting);
 - tax is on the gain only, at the brokerage distribution rate.
 
 ```
@@ -458,10 +458,12 @@ What each kind holds:
 - **Contribution Profile** — contribution account values/methods/match,
   whether each payroll account is also taken from bonus checks (`fromBonus`),
   and deduction amounts. It never touches `jobs`.
-- **Budget Profile** — budget items per column (spending level), optionally
-  weighted by months; savings goal allocations (%/$) are a facet of it
-  (`savings_goal_profile_allocations` is keyed to `budget_profile_id`), not a
-  fifth kind.
+- **Budget Profile** — budget items per column (spending level); savings
+  goal allocations (%/$) are a facet of it (`savings_goal_profile_allocations`
+  is keyed to `budget_profile_id`), not a fifth kind. Annual expenses are the
+  active column × 12. A profile with month weights (`column_months`, an
+  explicit blend) instead adds each column's monthly total × its months, and
+  the active column doesn't apply.
 - **Retirement Profile** — retirement assumptions (ages, inflation, strategy).
 
 Resolution: page-local selection (profile managers, What-If) → active. Budget
@@ -474,7 +476,7 @@ Plan tier.
 
 Documented deviations from general architectural rules, kept for pragmatic reasons:
 
-1. **Resolution helper lives in `helpers.ts`, not `override-resolution.ts`**: Profile resolution requires DB access. The engine layer (`lib/calculators/engine/`) is pure functions with no DB. Splitting into two layers adds complexity without proportional benefit at current scale. Revisit if override resolution logic grows beyond ~50 lines.
+1. **Resolution helper lives in `src/server/helpers/`, not `override-resolution.ts`**: Profile resolution requires DB access. The engine layer (`lib/calculators/engine/`) is pure functions with no DB. Splitting into two layers adds complexity without proportional benefit at current scale. Revisit if override resolution logic grows beyond ~50 lines.
 
 2. **Zod validation for a profile's active fields is manually defined, not derived from config**: `contribAccountActiveFieldsPatchSchema` / `deductionActiveFieldsSchema` / `salaryEntrySchema` are hand-written rather than derived from the Drizzle schema or `ACCOUNT_TYPE_CONFIG` — derivation adds abstraction with the risk of rejecting valid values if it has bugs, and the hand-written schemas are easy to audit at the current field count. Which fields a profile holds is still read from these schemas, never a hand-kept list (`lib/db/profile-fields.ts`). Revisit if the fields exceed ~25 or change often.
 
@@ -491,7 +493,7 @@ Live in production (self-hosted Docker). Procedures — deploy, release, rollbac
 | Image            | 3-stage Dockerfile (deps → builder → runner), digest-pinned `node` Alpine base, Next standalone output                                                                                               |
 | Compose          | `read_only`, `cap_drop: ALL`, `no-new-privileges`, localhost port binding, CPU + memory limits                                                                                                       |
 | Health           | `GET /api/health` (status + version); `GET /api/health/detailed` (authenticated: pool, budget API, sync times)                                                                                       |
-| Security headers | CSP without `unsafe-eval`, HSTS, `X-Frame-Options: DENY`, Permissions-Policy                                                                                                                         |
+| Security headers | CSP without `unsafe-eval` (`script-src` allows `unsafe-inline`), HSTS, `X-Frame-Options: DENY`, Permissions-Policy                                                                                   |
 | Migrations       | `db-migrate.ts`, compiled standalone, runs from the entrypoint before the server: pending migrations (with a pre-upgrade backup), then the reference-data seed. Data-converting migrations: RULES.md |
 | Monitoring       | Structured JSON logs                                                                                                                                                                                 |
 

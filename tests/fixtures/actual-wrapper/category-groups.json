@@ -1,0 +1,169 @@
+{
+  "source": "actual-http-api 26.10.0, a throwaway test budget (review 2026-11-01): every distinct 200 response recorded",
+  "bodies": [
+    {
+      "data": [
+        {
+          "id": "fc3825fd-b982-4b72-b768-5b30844cf832",
+          "name": "Usual Expenses",
+          "is_income": false,
+          "hidden": false,
+          "categories": [
+            {
+              "id": "541836f1-e756-4473-a5d0-6c1d3f06c7fa",
+              "name": "Food",
+              "is_income": false,
+              "hidden": false,
+              "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832"
+            },
+            {
+              "id": "af375fd4-d759-46b3-bffe-74a856151d57",
+              "name": "General",
+              "is_income": false,
+              "hidden": false,
+              "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832"
+            },
+            {
+              "id": "d4b0f075-3343-4408-91ed-fae94f74e5bf",
+              "name": "Bills",
+              "is_income": false,
+              "hidden": false,
+              "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832"
+            },
+            {
+              "id": "29ec2c58-8cd3-42fe-9187-7b5dfe0f70a6",
+              "name": "Bills (Flexible)",
+              "is_income": false,
+              "hidden": false,
+              "group_id": "fc3825fd-b982-4b72-b768-5b30844cf832"
+            }
+          ]
+        },
+        {
+          "id": "a137772f-cf2f-4089-9432-822d2ddc1466",
+          "name": "Investments and Savings",
+          "is_income": false,
+          "hidden": false,
+          "categories": [
+            {
+              "id": "6bbd8472-25d4-4cee-8a11-5bd9f7e83d61",
+              "name": "Savings",
+              "is_income": false,
+              "hidden": false,
+              "group_id": "a137772f-cf2f-4089-9432-822d2ddc1466"
+            }
+          ]
+        },
+        {
+          "id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38",
+          "name": "Test Expenses",
+          "is_income": false,
+          "hidden": false,
+          "categories": [
+            {
+              "id": "a12040f5-fee3-4358-a449-ff00ed41e1fe",
+              "name": "Test Misc",
+              "is_income": false,
+              "hidden": false,
+              "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38"
+            },
+            {
+              "id": "1f2c5370-3853-4b94-90fc-bf6470a18921",
+              "name": "Test Gas Utility",
+              "is_income": false,
+              "hidden": false,
+              "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38"
+            },
+            {
+              "id": "b00d2876-45a0-43a5-9076-56f31c214a0d",
+              "name": "Test Dining",
+              "is_income": false,
+              "hidden": false,
+              "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38"
+            },
+            {
+              "id": "3d5331c8-2fbb-4217-99d0-237b9a3bb321",
+              "name": "Test Groceries",
+              "is_income": false,
+              "hidden": false,
+              "group_id": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38"
+            }
+          ]
+        },
+        {
+          "id": "67560068-4375-4c3f-97a5-3b9ababee0ae",
+          "name": "Test Sinking Funds",
+          "is_income": false,
+          "hidden": false,
+          "categories": [
+            {
+              "id": "0f31b6d3-e4cc-4e6b-a718-d51f397e4c1c",
+              "name": "Test Car Fund",
+              "is_income": false,
+              "hidden": false,
+              "group_id": "67560068-4375-4c3f-97a5-3b9ababee0ae"
+            },
+            {
+              "id": "669acfa3-f479-4e39-a0d8-7b0eca6f58d2",
+              "name": "Test Vacation",
+              "is_income": false,
+              "hidden": false,
+              "group_id": "67560068-4375-4c3f-97a5-3b9ababee0ae"
+            },
+            {
+              "id": "abeba14f-8ac0-4881-a01b-cf2b03019d11",
+              "name": "Test Emergency Fund",
+              "is_income": false,
+              "hidden": false,
+              "group_id": "67560068-4375-4c3f-97a5-3b9ababee0ae"
+            }
+          ]
+        },
+        {
+          "id": "033d5edf-c3f3-4ee4-9242-898bc0f6c33b",
+          "name": "Test Hidden Group",
+          "is_income": false,
+          "hidden": true,
+          "categories": [
+            {
+              "id": "17d16605-b8aa-474d-934e-9622a36e905e",
+              "name": "Test Hidden Cat",
+              "is_income": false,
+              "hidden": false,
+              "group_id": "033d5edf-c3f3-4ee4-9242-898bc0f6c33b"
+            }
+          ]
+        },
+        {
+          "id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00",
+          "name": "Income",
+          "is_income": true,
+          "hidden": false,
+          "categories": [
+            {
+              "id": "911ebde8-bfec-4084-88a3-f2439645fa9b",
+              "name": "Test Salary",
+              "is_income": true,
+              "hidden": false,
+              "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00"
+            },
+            {
+              "id": "3c1699a5-522a-435e-86dc-93d900a14f0e",
+              "name": "Income",
+              "is_income": true,
+              "hidden": false,
+              "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00"
+            },
+            {
+              "id": "506e8d9d-7ed0-4397-84e4-07a9185dc6b2",
+              "name": "Starting Balances",
+              "is_income": true,
+              "hidden": false,
+              "group_id": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

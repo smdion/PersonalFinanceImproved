@@ -3,6 +3,7 @@
 /** Settings card for the SimpleFIN Bridge connection (Phase 1: daily linked-balance pulse only — no budget/category sync, so this doesn't reuse ServiceCard's YNAB/Actual-specific fields). */
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { errorText } from "@/lib/utils/mutation-error";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatCurrency } from "@/lib/utils/format";
@@ -358,7 +359,7 @@ export function SimplefinCard() {
             </div>
             {saveTokenMut.isError && (
               <ConnectionResultMessage tone="error">
-                {saveTokenMut.error.message}
+                {errorText(saveTokenMut.error)}
               </ConnectionResultMessage>
             )}
           </div>
@@ -419,7 +420,7 @@ export function SimplefinCard() {
         )}
         {syncNowMut.isError && (
           <ConnectionResultMessage tone="error">
-            {syncNowMut.error.message}
+            {errorText(syncNowMut.error)}
           </ConnectionResultMessage>
         )}
 

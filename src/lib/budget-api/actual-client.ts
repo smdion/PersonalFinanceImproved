@@ -4,7 +4,11 @@
 // Auth: x-api-key header
 // Amounts: integer cents (÷100 for dollars)
 
-import type { BudgetAPIClient } from "./interface";
+import type {
+  BudgetAPIClient,
+  GoalShape,
+  PreparedGoalWrite,
+} from "./interface";
 import type {
   BudgetAccount,
   BudgetCategoryGroup,
@@ -15,7 +19,22 @@ import type {
   NewBudgetTransaction,
 } from "./types";
 import { fromCents, toCents } from "./conversions";
-import { budgetApiRequest, BudgetApiError, isResendable } from "./errors";
+import {
+  BudgetApiError,
+  isResendable,
+  isTransientError,
+  retold,
+  serviceError,
+} from "./errors";
+import { externalRequest } from "@/lib/http/external-request";
+import type { z } from "zod/v4";
+import {
+  actualSchemas,
+  type ActualAccount,
+  type ActualCategoryGroup,
+  type ActualMonth,
+  type ActualTransaction,
+} from "./actual-schemas";
 import {
   mergeGoalIntoNote,
   parseGoalFromNote,
@@ -24,89 +43,16 @@ import {
 import { transactionIdempotencyKey } from "./idempotency";
 import { log } from "@/lib/logger";
 
-// -- Actual API response types --
-
-type ActualAccount = {
-  id: string;
-  name: string;
-  type: string;
-  offbudget: boolean;
-  closed: boolean;
-  balance?: number; // cents (may need separate call)
-};
-
-type ActualCategoryGroup = {
-  id: string;
-  name: string;
-  is_income: boolean;
-  hidden: boolean;
-  categories: ActualCategory[];
-};
-
-type ActualCategory = {
+/** A category's fields as the mappers read them: `/categories` has no
+ *  numbers, a month's income category has none either. */
+type CategoryFields = {
   id: string;
   name: string;
   group_id: string;
   hidden: boolean;
-  budgeted?: number; // cents
-  spent?: number; // cents (negative = spending)
-  balance?: number; // cents
-  goal?: number | null; // cents
-};
-
-// Field names AND shape re-verified LIVE against the deployed wrapper —
-// GET /months/:month does NOT return a flat `income`/`budgeted`/`spent`/
-// `to_budget`/`categories` object; it returns `totalIncome`/`totalBudgeted`/
-// `totalSpent`/`toBudget`/`categoryGroups` (categories nested one level
-// deeper, per group, not a flat top-level array). The old flat-shaped type
-// here silently read every field as `undefined` (NaN after fromCents) and
-// `categories` as always empty — getMonthDetail() never actually returned
-// any category data, breaking budget.syncBudgetFromApi's real pull for
-// every Actual household.
-type ActualMonth = {
-  month: string;
-  totalIncome: number;
-  totalBudgeted: number;
-  totalSpent: number;
-  toBudget: number;
-  categoryGroups?: ActualCategoryGroup[];
-};
-
-type ActualTransaction = {
-  id: string;
-  account: string;
-  account_name?: string;
-  date: string;
-  amount: number; // cents
-  payee?: string;
-  payee_name?: string;
-  category?: string;
-  category_name?: string;
-  notes?: string;
-  imported_id?: string;
-  cleared: boolean;
-  reconciled: boolean;
-  /** A split parent's parts (actual-http-api passes them through as-is). */
-  subtransactions?: {
-    amount: number; // cents
-    category?: string;
-    category_name?: string;
-    notes?: string;
-    tombstone?: boolean;
-  }[];
-};
-
-// -- Account type mapping --
-
-const ACTUAL_ACCOUNT_TYPE_MAP: Record<string, BudgetAccount["type"]> = {
-  checking: "checking",
-  savings: "savings",
-  cash: "cash",
-  credit: "creditCard",
-  mortgage: "mortgage",
-  debt: "lineOfCredit",
-  investment: "tracking",
-  other: "other",
+  budgeted?: number;
+  spent?: number;
+  balance?: number;
 };
 
 // -- Conversion helpers --
@@ -115,15 +61,17 @@ function mapAccount(a: ActualAccount): BudgetAccount {
   return {
     id: a.id,
     name: a.name,
-    type: ACTUAL_ACCOUNT_TYPE_MAP[a.type] ?? "other",
+    // The wrapper's account list carries no type.
+    type: "other",
     onBudget: !a.offbudget,
     closed: a.closed,
-    balance: fromCents(a.balance ?? 0),
-    clearedBalance: fromCents(a.balance ?? 0), // Actual doesn't distinguish
+    // The list has no balances: getAccounts reads each one, or stops.
+    balance: 0,
+    clearedBalance: 0, // Actual doesn't distinguish
   };
 }
 
-function mapCategory(c: ActualCategory, groupName: string): BudgetCategory {
+function mapCategory(c: CategoryFields, groupName: string): BudgetCategory {
   return {
     id: c.id,
     name: c.name,
@@ -133,11 +81,14 @@ function mapCategory(c: ActualCategory, groupName: string): BudgetCategory {
     budgeted: fromCents(c.budgeted ?? 0),
     activity: fromCents(c.spent ?? 0),
     balance: fromCents(c.balance ?? 0),
-    goalTarget: c.goal != null ? fromCents(c.goal) : undefined,
+    // Set from the category's note (overlayNoteGoals); Actual sends none.
+    goalTarget: undefined,
   };
 }
 
-function mapCategoryGroup(g: ActualCategoryGroup): BudgetCategoryGroup {
+function mapCategoryGroup(
+  g: ActualCategoryGroup & { categories: CategoryFields[] },
+): BudgetCategoryGroup {
   return {
     id: g.id,
     name: g.name,
@@ -156,12 +107,12 @@ function mapMonth(m: ActualMonth): BudgetMonth {
     // convention instead of surprising a caller expecting YNAB's sign.
     budgeted: Math.abs(fromCents(m.totalBudgeted)),
     activity: fromCents(m.totalSpent),
-    toBeBudgeted: fromCents(m.toBudget),
+    toBeBudgeted: m.toBudget === null ? null : fromCents(m.toBudget),
   };
 }
 
 function mapMonthDetail(m: ActualMonth): BudgetMonthDetail {
-  const categories = (m.categoryGroups ?? []).flatMap((g) =>
+  const categories = m.categoryGroups.flatMap((g) =>
     g.categories.map((c) => mapCategory(c, g.name)),
   );
   return {
@@ -184,7 +135,7 @@ function mapTransaction(t: ActualTransaction): BudgetTransaction {
     cleared: t.cleared || t.reconciled,
     approved: true, // Actual doesn't have approved flag
     deleted: false,
-    ...(t.subtransactions?.length && {
+    ...(t.subtransactions.length && {
       subtransactions: t.subtransactions
         .filter((st) => !st.tombstone)
         .map((st) => ({
@@ -219,7 +170,29 @@ function mapTransaction(t: ActualTransaction): BudgetTransaction {
  */
 /** At most this many requests to the wrapper at once: it reloads the
  *  budget per request and struggles when many run together. */
+/** The `until_date` every transaction list sends. The wrapper's lists end at
+ *  its own today unless told otherwise, which dropped every transaction
+ *  dated after that (a future-dated snapshot adjustment among them) from
+ *  sync, the snapshot scan and the read-back. The last day Actual's
+ *  YYYYMMDD dates can hold. */
+const ACTUAL_LIST_UNTIL = "9999-12-31";
+
 const WRAPPER_BATCH_SIZE = 10;
+
+/** The import id Ledgr writes to `imported_id`, prefixed so it's
+ *  recognizable in the Actual UI; createTransaction finds its new
+ *  transaction by it (the wrapper's POST doesn't dedupe on it). */
+function actualImportedId(tx: NewBudgetTransaction): string {
+  const idempotencyKey = transactionIdempotencyKey({
+    importKey: tx.importKey,
+    accountId: tx.accountId,
+    date: tx.date,
+    amount: toCents(tx.amount),
+    payee: tx.payeeName ?? null,
+    memo: tx.memo ?? null,
+  });
+  return `ledgr:${idempotencyKey.slice(0, 30)}`;
+}
 
 /** Runs `fn` over `items`, `size` at a time. */
 async function inBatches<T>(
@@ -306,8 +279,6 @@ function safeToResend(err: unknown, init?: RequestInit): boolean {
 }
 
 export class ActualClient implements BudgetAPIClient {
-  readonly supportsDeltaSync = false;
-
   getExcludedCategoryNames(): Set<string> {
     return new Set();
   }
@@ -336,23 +307,34 @@ export class ActualClient implements BudgetAPIClient {
     this.gate = gateFor(base);
   }
 
-  /** Internal fetch wrapper — see budgetApiRequest in ./errors. */
-  private send<T>(path: string, init?: RequestInit): Promise<T> {
-    const url = `${this.budgetPath}${path}`;
-    return budgetApiRequest<T>(url, this.headers, init);
+  /** Internal fetch wrapper — see externalRequest (lib/http). */
+  private send<S extends z.ZodType>(
+    path: string,
+    schema: S,
+    init?: RequestInit,
+  ): Promise<z.infer<S>> {
+    return externalRequest({
+      service: "actual",
+      endpoint: path,
+      url: `${this.budgetPath}${path}`,
+      headers: this.headers,
+      init,
+      schema,
+    });
   }
 
   /** send() behind the wrapper's cold-load gate — see WrapperGate above. */
-  private async request<T>(
+  private async request<S extends z.ZodType>(
     path: string,
+    schema: S,
     init?: RequestInit,
     retried = false,
-  ): Promise<T> {
+  ): Promise<z.infer<S>> {
     const gate = this.gate;
 
     if (gate.warm) {
       try {
-        return await this.send<T>(path, init);
+        return await this.send(path, schema, init);
       } catch (err) {
         if (retried || !isBudgetLoadFailure(err)) throw err;
         log("warn", "actual_client.wrapper_went_cold", {
@@ -361,17 +343,17 @@ export class ActualClient implements BudgetAPIClient {
         // The next request reloads the budget alone either way.
         gate.warm = false;
         if (!safeToResend(err, init)) throw err;
-        return this.request<T>(path, init, true);
+        return this.request(path, schema, init, true);
       }
     }
 
     if (gate.pending) {
       // Rejects only if the first request's budget load failed.
       await gate.pending;
-      return this.request<T>(path, init, retried);
+      return this.request(path, schema, init, retried);
     }
 
-    const attempt = this.send<T>(path, init);
+    const attempt = this.send(path, schema, init);
     const pending = attempt.then(
       () => undefined,
       (err: unknown) => {
@@ -395,14 +377,8 @@ export class ActualClient implements BudgetAPIClient {
     }
   }
 
-  async testConnection(): Promise<boolean> {
-    try {
-      // Try fetching accounts as a connection test
-      await this.request<{ data: unknown[] }>("/accounts");
-      return true;
-    } catch {
-      return false;
-    }
+  async testConnection(): Promise<void> {
+    await this.request("/accounts", actualSchemas.accounts);
   }
 
   async getBudgetName(): Promise<string> {
@@ -414,16 +390,12 @@ export class ActualClient implements BudgetAPIClient {
   // -- Accounts --
 
   async getAccounts(): Promise<BudgetAccount[]> {
-    const res = await this.request<{ data: ActualAccount[] }>("/accounts");
+    const res = await this.request("/accounts", actualSchemas.accounts);
     // Fetch balances for each account
     const accounts = res.data.map(mapAccount);
-    // Balances one request per account, in parallel (each already retries
-    // with backoff in budgetApiRequest). The wrapper reloads the budget per
-    // request and struggles under concurrency, so a failure gets one more
-    // try on its own. Still failing, the sync stops: an account without its
-    // balance would be written as $0 into every Ledgr row mapped to it (a
-    // debt "paid off", a mortgage zeroed, cash gone) and replace the good
-    // cache — the sync's network phase throwing changes nothing locally.
+    // Balances in parallel; a transient failure gets one more try alone (the
+    // wrapper struggles under concurrency). Still failing, the sync stops: a
+    // missing balance would be written as $0 over the good cache.
     const failed: BudgetAccount[] = [];
     await inBatches(accounts, WRAPPER_BATCH_SIZE, async (acct) => {
       try {
@@ -431,26 +403,32 @@ export class ActualClient implements BudgetAPIClient {
         const balance = await this.getAccountBalance(acct.id);
         acct.balance = balance;
         acct.clearedBalance = balance;
-      } catch {
+      } catch (err) {
+        if (!isTransientError(err)) throw err;
         failed.push(acct);
       }
     });
     const unavailable: string[] = [];
+    let lastError: BudgetApiError | undefined;
     for (const acct of failed) {
       try {
         const balance = await this.getAccountBalance(acct.id);
         acct.balance = balance;
         acct.clearedBalance = balance;
       } catch (err) {
+        if (!isTransientError(err)) throw err;
+        lastError = err as BudgetApiError;
         log("warn", "actual_client.balance_fetch_failed", {
           accountId: acct.id,
-          error: err instanceof Error ? err.message : String(err),
+          error: lastError.message,
         });
         unavailable.push(acct.name);
       }
     }
-    if (unavailable.length > 0)
-      throw new Error(
+    // Keeps the failure's code, so a caller can tell a timeout from a 5xx.
+    if (lastError)
+      throw retold(
+        lastError,
         `Actual didn't return a balance for ${unavailable.join(", ")} — nothing was synced; try again`,
       );
     return accounts;
@@ -463,40 +441,31 @@ export class ActualClient implements BudgetAPIClient {
    * under `data.balance`. Reading `res.data.balance` (the old code here)
    * silently produced NaN on every call — pushSnapshotToBudgetApi's
    * delta-vs-live-balance math was broken for every Actual household. */
-  async getAccountBalance(accountId: string): Promise<number> {
-    const res = await this.request<{ data: number }>(
-      `/accounts/${accountId}/balance`,
+  async getAccountBalance(
+    accountId: string,
+    asOfDate?: string,
+  ): Promise<number> {
+    // cutoff_date is inclusive and read as a local date by the wrapper, so
+    // the wrapper's time zone no longer moves the figure; without it the
+    // balance is "up to the wrapper's today".
+    const res = await this.request(
+      `/accounts/${accountId}/balance${asOfDate ? `?cutoff_date=${asOfDate}` : ""}`,
+      actualSchemas.balance,
     );
     return fromCents(res.data);
   }
 
   // -- Categories & Months --
 
-  /** The plain `/categorygroups` + `/categories` endpoints only carry
-   *  id/name/hidden/group_id — verified live: a raw `/categories` category
-   *  object has NO `budgeted`/`spent`/`balance`/`goal` keys at all, unlike
-   *  YNAB's categories endpoint, which does carry a real running balance
-   *  per category. Actual's balance/budgeted/activity are inherently
-   *  month-scoped (carryover + this month's budgeted − spent), only
-   *  returned by `/months/:id`. Reading `.balance`/`.budgeted` off the
-   *  plain-categories response (the original code here) silently produced
-   *  $0 for every category on every Actual household — the savings goal
-   *  balance override in savings.ts's computeSummary reads exactly this
-   *  cache, so every API-linked sinking fund showed a $0 current balance
-   *  even though its real Actual balance (and Ledgr's own separately-
-   *  tracked `savings_monthly` history) was correct (this had silently never worked for any Actual household,
-   *  masked until now because the same balance also renders correctly
-   *  from savings_monthly whenever the override doesn't fire). Fetch the
-   *  current month's detail too and merge its real per-category numbers
-   *  in by id — the ActualCategory type already carries these fields
-   *  (mapCategory needs no change), they just aren't populated by the
-   *  bare category list. */
+  /** `/categorygroups` and `/categories` carry names only; each category's
+   *  numbers come from the current month, merged in by id. A category the
+   *  month doesn't list yet (just created) has 0 for each. */
   async getCategories(): Promise<BudgetCategoryGroup[]> {
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const [groupsRes, catsRes, monthDetail] = await Promise.all([
-      this.request<{ data: ActualCategoryGroup[] }>("/categorygroups"),
-      this.request<{ data: ActualCategory[] }>("/categories"),
+      this.request("/categorygroups", actualSchemas.categoryGroups),
+      this.request("/categories", actualSchemas.categories),
       this.getMonthDetail(currentMonth),
     ]);
 
@@ -509,7 +478,7 @@ export class ActualClient implements BudgetAPIClient {
       monthDetail.categories.map((c) => [c.id, c]),
     );
 
-    const catsByGroup = new Map<string, ActualCategory[]>();
+    const catsByGroup = new Map<string, CategoryFields[]>();
     for (const cat of catsRes.data) {
       const list = catsByGroup.get(cat.group_id) ?? [];
       list.push(cat);
@@ -537,7 +506,7 @@ export class ActualClient implements BudgetAPIClient {
    * field off a string primitive — always NaN/undefined, though this
    * method currently has no live caller in the app so it never surfaced. */
   async getMonths(start: string, end: string): Promise<BudgetMonth[]> {
-    const res = await this.request<{ data: string[] }>("/months");
+    const res = await this.request("/months", actualSchemas.monthIds);
     const inRange = res.data.filter((id) => id >= start && id <= end);
     // Batched, not one unbounded Promise.all fan-out — a wide date range could otherwise fire dozens of
     // concurrent requests at the actual-http-api wrapper at once. No
@@ -551,58 +520,37 @@ export class ActualClient implements BudgetAPIClient {
   }
 
   async getMonthDetail(month: string): Promise<BudgetMonthDetail> {
-    const res = await this.request<{ data: ActualMonth }>(
+    const res = await this.request(
       `/months/${toActualMonthId(month)}`,
+      actualSchemas.month,
     );
     const detail = mapMonthDetail(res.data);
     await this.overlayNoteGoals(detail.categories);
     return detail;
   }
 
-  /**
-   * Overlays note-parsed goal amounts onto categories, in place. Actual's
-   * structured `goal` field (what `mapCategory`'s `goalTarget` reads,
-   * i.e. `cat.goal`) is never updated by `writeGoalNote`'s note-based
-   * write mechanism — there's no API to write it (see `writeGoalNote`'s
-   * own docblock). Comparing a push/pull preview's "current" value
-   * against a `goalTarget` derived purely from `cat.goal` shows every
-   * Ledgr-managed goal as permanently changed, even immediately after a
-   * successful push, because the two never touch the same field (every
-   * item in a budget push preview showed $0 "current" and its full new
-   * amount as the delta, regardless of whether it had already been
-   * pushed). Read the note back instead —
-   * the ONLY field Ledgr's own write path actually affects — and prefer
-   * it over `cat.goal` when a `#template` of either shape is present, so
-   * the diff stays internally consistent with what a push/pull actually
-   * did. Falls back to whatever `goalTarget` already was (possibly
-   * undefined) when no template is found, or on a per-category fetch
-   * failure — non-fatal, same "degrade, don't abort" pattern
-   * `getAccounts()`'s per-account balance fetch already uses.
-   *
-   * Parallelized across categories (same pattern as `getAccounts()`).
-   * Only called from `getMonthDetail`, which itself runs once per sync
-   * or post-push cache refresh (see `refreshCategoryCache`,
-   * `sync/core.ts`) — not once per page load — so the extra
-   * per-category request is amortized the same way every other
-   * per-item fetch in this client already is.
-   */
+  /** Reads each category's goal from its note's `#template` (Actual sends
+   *  no goal field). A note still failing after its second try stops the
+   *  read: a goal left out would be cached as "no goal" over a good one. */
   private async overlayNoteGoals(categories: BudgetCategory[]): Promise<void> {
     const readNote = async (cat: BudgetCategory) => {
-      const noteRes = await this.request<{ data: string | null }>(
+      const noteRes = await this.request(
         `/notes/category/${cat.id}`,
+        actualSchemas.note,
       );
       const noteGoal =
         parseGoalFromNote(noteRes.data, "fixed") ??
         parseGoalFromNote(noteRes.data, "target-balance");
       if (noteGoal !== undefined) cat.goalTarget = noteGoal;
     };
-    // A few at a time; a failed note gets one more try on its own (as
-    // account balances do) before it's left out.
+    // A few at a time; a note that fails transiently gets one more try on
+    // its own, as account balances do.
     const failed: BudgetCategory[] = [];
     await inBatches(categories, WRAPPER_BATCH_SIZE, async (cat) => {
       try {
         await readNote(cat);
-      } catch {
+      } catch (err) {
+        if (!isTransientError(err)) throw err;
         failed.push(cat);
       }
     });
@@ -610,10 +558,11 @@ export class ActualClient implements BudgetAPIClient {
       try {
         await readNote(cat);
       } catch (err) {
-        log("warn", "actual_client.goal_note_fetch_failed", {
-          categoryId: cat.id,
-          error: err instanceof Error ? err.message : String(err),
-        });
+        if (!isTransientError(err)) throw err;
+        throw retold(
+          err as BudgetApiError,
+          `Actual didn't return the note for ${cat.name}, so its goal is unknown — nothing was synced; try again`,
+        );
       }
     }
   }
@@ -630,6 +579,7 @@ export class ActualClient implements BudgetAPIClient {
   ): Promise<void> {
     await this.request(
       `/months/${toActualMonthId(month)}/categories/${categoryId}`,
+      actualSchemas.written,
       {
         method: "PATCH",
         body: JSON.stringify({ category: { budgeted: toCents(amount) } }),
@@ -637,76 +587,51 @@ export class ActualClient implements BudgetAPIClient {
     );
   }
 
-  /**
-   * There is no STRUCTURED field to write a category's goal amount —
-   * verified against `@actual-app/api`'s own docs: `updateCategory` only
-   * ever accepts name/group_id/is_income, on any release channel. Actual's
-   * newer Budget Automations engine stores a goal as `goal_def` directly on
-   * the category row (what `getCategories`' `cat.goal` reads — read-only
-   * via this wrapper), but that field is never exposed for writing.
-   *
-   * The REAL, working mechanism is Actual's older note-based template
-   * syntax (`#template <amount>` for a recurring monthly assignment,
-   * `#template up to <amount>` for a refill-to-balance target) — written
-   * through the actual-http-api wrapper's `PUT /notes/category/:id`
-   * endpoint, the same place a household's own free-text category notes
-   * live. `mergeGoalIntoNote` (`actual-goal-notes.ts`) does the actual
-   * read-merge-write so this never clobbers unrelated note content or a
-   * differently-shaped template the household configured directly in
-   * Actual — it either updates a matching-shape template in place, appends
-   * a fresh one if none exists, or throws `BudgetApiError` (code
-   * `"conflict"`) if an incompatible template is already there.
-   *
-   * Known caveat: this writes the OLD note-based mechanism, not the newer
-   * `goal_def` field `getCategories` reads back — so a goal pushed here
-   * won't appear in `cat.goal`/`goalTarget` reads until the household (or
-   * Actual itself) also sets it through the newer mechanism. The note-based
-   * `#template` IS what Actual's own "Apply Budget Template" action reads,
-   * though, so the push still does something real. */
-  private async writeGoalNote(
+  /** Actual's API can't write a structured goal, so a goal is a `#template`
+   *  line in the category's note (what "Apply Budget Template" reads),
+   *  merged by actual-goal-notes.ts without touching the rest of the note. */
+  async prepareGoalWrite(
     categoryId: string,
-    shape: ActualTemplateShape,
-    amount: number,
-  ): Promise<void> {
-    const noteRes = await this.request<{ data: string | null }>(
+    shape: GoalShape,
+    targetAmount: number,
+  ): Promise<PreparedGoalWrite> {
+    const templateShape: ActualTemplateShape =
+      shape === "monthly" ? "fixed" : "target-balance";
+    const noteRes = await this.request(
       `/notes/category/${categoryId}`,
+      actualSchemas.note,
     );
-    const merged = mergeGoalIntoNote(noteRes.data, shape, amount);
+    const merged = mergeGoalIntoNote(noteRes.data, templateShape, targetAmount);
     if (!merged.ok) {
-      throw new BudgetApiError(merged.reason, "conflict", null);
+      throw serviceError("Actual", merged.reason, "conflict");
     }
-    await this.request(`/notes/category/${categoryId}`, {
-      method: "PUT",
-      body: JSON.stringify({ data: merged.note }),
-    });
-  }
-
-  async updateCategoryGoalTarget(
-    categoryId: string,
-    targetAmount: number,
-  ): Promise<void> {
-    await this.writeGoalNote(categoryId, "fixed", targetAmount);
-  }
-
-  async updateCategoryTargetBalance(
-    categoryId: string,
-    targetAmount: number,
-  ): Promise<void> {
-    await this.writeGoalNote(categoryId, "target-balance", targetAmount);
+    return {
+      apply: async () => {
+        await this.request(
+          `/notes/category/${categoryId}`,
+          actualSchemas.written,
+          {
+            method: "PUT",
+            body: JSON.stringify({ data: merged.note }),
+          },
+        );
+      },
+    };
   }
 
   // -- Transactions --
 
   async getTransactions(sinceDate: string): Promise<BudgetTransaction[]> {
     // Actual requires transactions per account; fetch all accounts then aggregate
-    const accounts = await this.request<{ data: ActualAccount[] }>("/accounts");
+    const accounts = await this.request("/accounts", actualSchemas.accounts);
     const allTx: BudgetTransaction[] = [];
 
     for (const acct of accounts.data) {
       if (acct.closed) continue;
       try {
-        const res = await this.request<{ data: ActualTransaction[] }>(
-          `/accounts/${acct.id}/transactions?since_date=${sinceDate}`,
+        const res = await this.request(
+          `/accounts/${acct.id}/transactions?since_date=${sinceDate}&until_date=${ACTUAL_LIST_UNTIL}`,
+          actualSchemas.transactions,
         );
         allTx.push(
           ...res.data.map((t) =>
@@ -725,11 +650,9 @@ export class ActualClient implements BudgetAPIClient {
         });
         const reason = err instanceof Error ? err.message : String(err);
         if (err instanceof BudgetApiError) {
-          throw new BudgetApiError(
+          throw retold(
+            err,
             `Actual didn't return transactions for ${acct.name} — nothing was synced: ${reason}`,
-            err.code,
-            err.status,
-            err.retryAfterSeconds,
           );
         }
         throw new Error(
@@ -742,19 +665,7 @@ export class ActualClient implements BudgetAPIClient {
   }
 
   async createTransaction(tx: NewBudgetTransaction): Promise<string> {
-    // Deterministic idempotency key. Actual's
-    // transaction model includes an `imported_id` field that the server
-    // uses for dedupe on import. Mirror the YNAB pattern: hash the
-    // canonical fingerprint and prefix it so it's recognizable as
-    // ledgr-generated in the Actual UI.
-    const idempotencyKey = transactionIdempotencyKey({
-      accountId: tx.accountId,
-      date: tx.date,
-      amount: toCents(tx.amount),
-      payee: tx.payeeName ?? null,
-      memo: tx.memo ?? null,
-    });
-    const importedId = `ledgr:${idempotencyKey.slice(0, 30)}`;
+    const importedId = actualImportedId(tx);
 
     // The wrapper's `POST /accounts/:id/transactions` request body must be
     // nested under a `transaction` key (verified against the route's
@@ -774,49 +685,70 @@ export class ActualClient implements BudgetAPIClient {
     // client gets a real id back, which `deleteTransaction`,
     // `pushSnapshotToBudgetApi`'s in-run rollback, and any future caller
     // that needs the id all depend on.
-    await this.request(`/accounts/${tx.accountId}/transactions`, {
-      method: "POST",
-      body: JSON.stringify({
-        transaction: {
-          account: tx.accountId,
-          date: tx.date,
-          amount: toCents(tx.amount),
-          payee_name: tx.payeeName,
-          category: tx.categoryId,
-          notes: tx.memo,
-          // reconciled implies cleared — never send reconciled: true with
-          // cleared: false, an inconsistent state Actual's own UI can't
-          // produce. See NewBudgetTransaction.reconciled docblock.
-          cleared: tx.cleared || tx.reconciled || false,
-          reconciled: tx.reconciled,
-          imported_id: importedId,
-        },
-      }),
-    });
-    const res = await this.request<{ data: ActualTransaction[] }>(
-      `/accounts/${tx.accountId}/transactions?since_date=${tx.date}`,
+    await this.request(
+      `/accounts/${tx.accountId}/transactions`,
+      actualSchemas.written,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          transaction: {
+            account: tx.accountId,
+            date: tx.date,
+            amount: toCents(tx.amount),
+            payee_name: tx.payeeName,
+            category: tx.categoryId,
+            notes: tx.memo,
+            // reconciled implies cleared — never send reconciled: true with
+            // cleared: false, an inconsistent state Actual's own UI can't
+            // produce. See NewBudgetTransaction.reconciled docblock.
+            cleared: tx.cleared || tx.reconciled || false,
+            reconciled: tx.reconciled,
+            imported_id: importedId,
+          },
+        }),
+      },
     );
-    const created = res.data.find((t) => t.imported_id === importedId);
+    const created = await this.findCreatedTransaction(tx);
     if (!created) {
-      throw new BudgetApiError(
+      throw serviceError(
+        "Actual",
         `Created a transaction on Actual (account ${tx.accountId}, imported_id ${importedId}) but couldn't find it back afterward to return its id.`,
         "server",
-        null,
       );
     }
-    return created.id;
+    return created;
+  }
+
+  async findCreatedTransaction(
+    tx: NewBudgetTransaction,
+  ): Promise<string | null> {
+    const importedId = actualImportedId(tx);
+    // Exactly the day it wrote: the wrapper's lists otherwise end at its
+    // own today, so a later-dated transaction was posted but never found.
+    const res = await this.request(
+      `/accounts/${tx.accountId}/transactions?since_date=${tx.date}&until_date=${tx.date}`,
+      actualSchemas.transactions,
+    );
+    return res.data.find((t) => t.imported_id === importedId)?.id ?? null;
   }
 
   async deleteTransaction(transactionId: string): Promise<void> {
-    await this.request(`/transactions/${transactionId}`, { method: "DELETE" });
+    await this.request(
+      `/transactions/${transactionId}`,
+      actualSchemas.written,
+      {
+        method: "DELETE",
+      },
+    );
   }
 
   async getAccountTransactions(
     accountId: string,
     sinceDate: string,
   ): Promise<BudgetTransaction[]> {
-    const res = await this.request<{ data: ActualTransaction[] }>(
-      `/accounts/${accountId}/transactions?since_date=${sinceDate}`,
+    const res = await this.request(
+      `/accounts/${accountId}/transactions?since_date=${sinceDate}&until_date=${ACTUAL_LIST_UNTIL}`,
+      actualSchemas.transactions,
     );
     return res.data.map((t) => mapTransaction(t));
   }
@@ -843,7 +775,7 @@ export class ActualClient implements BudgetAPIClient {
       if (tx.reconciled) transaction.cleared = true;
     }
 
-    await this.request(`/transactions/${txId}`, {
+    await this.request(`/transactions/${txId}`, actualSchemas.written, {
       method: "PATCH",
       body: JSON.stringify({ transaction }),
     });

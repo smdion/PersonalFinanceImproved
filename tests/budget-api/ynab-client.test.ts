@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { BudgetAPIClient } from "@/lib/budget-api/interface";
 import { YnabClient } from "@/lib/budget-api/ynab-client";
 import { YNAB_INTERNAL_GROUPS } from "@/lib/config/ynab";
+import {
+  ynabAccount,
+  ynabCategory,
+  ynabTransaction,
+} from "../fixtures/ynab-spec";
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -16,6 +22,17 @@ function jsonResponse(data: unknown, status = 200) {
   });
 }
 
+/** Prepare a goal write, then apply it: what a push does per item. */
+async function pushGoal(
+  client: BudgetAPIClient,
+  categoryId: string,
+  shape: "monthly" | "target-balance",
+  amount: number,
+) {
+  const write = await client.prepareGoalWrite(categoryId, shape, amount);
+  await write.apply();
+}
+
 describe("YnabClient", () => {
   let client: YnabClient;
 
@@ -24,19 +41,18 @@ describe("YnabClient", () => {
     client = new YnabClient("test-token", "test-budget-id");
   });
 
-  it("supports delta sync", () => {
-    expect(client.supportsDeltaSync).toBe(true);
-  });
-
   describe("testConnection", () => {
-    it("returns true on success", async () => {
+    it("resolves when the budget answers", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ data: { settings: {} } }));
-      expect(await client.testConnection()).toBe(true);
+      await expect(client.testConnection()).resolves.toBeUndefined();
     });
 
-    it("returns false on failure", async () => {
-      mockFetch.mockRejectedValueOnce(new Error("Network error"));
-      expect(await client.testConnection()).toBe(false);
+    it("lets the failure through, naming YNAB", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ error: {} }, 401));
+      await expect(client.testConnection()).rejects.toMatchObject({
+        code: "auth",
+        service: "YNAB",
+      });
     });
   });
 
@@ -98,9 +114,54 @@ describe("YnabClient", () => {
   describe("getAccountBalance", () => {
     it("returns balance in dollars", async () => {
       mockFetch.mockReturnValueOnce(
-        jsonResponse({ data: { account: { balance: 50000 } } }),
+        jsonResponse({ data: { account: ynabAccount({ balance: 50000 }) } }),
       );
       expect(await client.getAccountBalance("acct-1")).toBe(50);
+    });
+
+    it("as of a date: today's balance less what's dated after it", async () => {
+      // YNAB reports only the balance now; a snapshot dated before later
+      // transactions must not count them in its adjustment.
+      const tx = (
+        id: string,
+        date: string,
+        amount: number,
+        deleted = false,
+      ) => ({
+        id,
+        account_id: "acct-1",
+        account_name: "Roth",
+        date,
+        amount,
+        payee_name: null,
+        category_id: null,
+        category_name: null,
+        memo: null,
+        cleared: "cleared",
+        approved: true,
+        deleted,
+        subtransactions: [],
+      });
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: { account: ynabAccount({ balance: 50_000_000 }) },
+        }),
+      );
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: {
+            transactions: [
+              tx("same-day", "2026-11-02", 1_000),
+              tx("after", "2026-11-03", -3_330),
+              tx("after-deleted", "2026-11-04", -99_000, true),
+            ],
+          },
+        }),
+      );
+      // 50,000.00 less the -3.33 dated after: same-day counts, deleted doesn't.
+      expect(await client.getAccountBalance("acct-1", "2026-11-02")).toBe(
+        50_003.33,
+      );
     });
   });
 
@@ -164,6 +225,7 @@ describe("YnabClient", () => {
                 cleared: "cleared",
                 approved: true,
                 deleted: false,
+                subtransactions: [],
               },
               {
                 id: "tx-2",
@@ -178,6 +240,7 @@ describe("YnabClient", () => {
                 cleared: "uncleared",
                 approved: false,
                 deleted: false,
+                subtransactions: [],
               },
             ],
           },
@@ -270,6 +333,7 @@ describe("YnabClient", () => {
         jsonResponse({ data: { transaction: { id: "new-tx" } } }),
       );
       const id = await client.createTransaction({
+        importKey: "push-1",
         accountId: "acct-1",
         date: "2026-01-20",
         amount: -50,
@@ -295,6 +359,7 @@ describe("YnabClient", () => {
         jsonResponse({ data: { transaction: { id: "tx-b" } } }),
       );
       const payload = {
+        importKey: "push-1",
         accountId: "acct-1",
         date: "2026-01-20",
         amount: -50,
@@ -313,11 +378,104 @@ describe("YnabClient", () => {
       expect(body1.transaction.import_id).toBe(body2.transaction.import_id);
     });
 
+    it("a duplicate import_id returns the transaction already there (YNAB answers without `transaction`)", async () => {
+      let sentImportId = "";
+      mockFetch.mockImplementationOnce(
+        async (_url: string, init: RequestInit) => {
+          sentImportId = JSON.parse(init.body as string).transaction.import_id;
+          return jsonResponse({
+            data: { transaction_ids: [], duplicate_import_ids: [sentImportId] },
+          });
+        },
+      );
+      mockFetch.mockImplementationOnce(async () =>
+        jsonResponse({
+          data: {
+            transactions: [
+              ynabTransaction({
+                id: "gone",
+                import_id: sentImportId,
+                deleted: true,
+              }),
+              ynabTransaction({ id: "existing", import_id: sentImportId }),
+            ],
+          },
+        }),
+      );
+      const id = await client.createTransaction({
+        importKey: "push-1",
+        accountId: "acct-1",
+        date: "2026-01-20",
+        amount: -50,
+        memo: "snapshot:7",
+      });
+      expect(id).toBe("existing");
+      expect(mockFetch.mock.calls[1]![0]).toContain(
+        "/accounts/acct-1/transactions?since_date=2026-01-20",
+      );
+    });
+
+    it("a duplicate held only by a deleted transaction says YNAB won't post it, as a non-retryable error", async () => {
+      let sentImportId = "";
+      mockFetch.mockImplementationOnce(
+        async (_url: string, init: RequestInit) => {
+          sentImportId = JSON.parse(init.body as string).transaction.import_id;
+          return jsonResponse({
+            data: { transaction_ids: [], duplicate_import_ids: [sentImportId] },
+          });
+        },
+      );
+      mockFetch.mockImplementationOnce(async () =>
+        jsonResponse({
+          data: {
+            transactions: [
+              ynabTransaction({
+                id: "gone",
+                import_id: sentImportId,
+                deleted: true,
+              }),
+            ],
+          },
+        }),
+      );
+      await expect(
+        client.createTransaction({
+          importKey: "push-1",
+          accountId: "acct-1",
+          date: "2026-01-20",
+          amount: -50,
+        }),
+      ).rejects.toMatchObject({
+        code: "client",
+        message: expect.stringMatching(/a deleted transaction holds/),
+      });
+    });
+
+    it("a duplicate that can't be found back is an error, not a crash", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({
+          data: { transaction_ids: [], duplicate_import_ids: ["x"] },
+        }),
+      );
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ data: { transactions: [] } }),
+      );
+      await expect(
+        client.createTransaction({
+          importKey: "push-1",
+          accountId: "acct-1",
+          date: "2026-01-20",
+          amount: -50,
+        }),
+      ).rejects.toThrow(/reported import_id .* as a duplicate/);
+    });
+
     it("defaults approved to true when not specified", async () => {
       mockFetch.mockReturnValueOnce(
         jsonResponse({ data: { transaction: { id: "tx-c" } } }),
       );
       await client.createTransaction({
+        importKey: "push-1",
         accountId: "a",
         date: "2026-01-20",
         amount: -10,
@@ -332,6 +490,7 @@ describe("YnabClient", () => {
         jsonResponse({ data: { transaction: { id: "tx-r" } } }),
       );
       await client.createTransaction({
+        importKey: "push-1",
         accountId: "a",
         date: "2026-01-20",
         amount: -10,
@@ -350,21 +509,21 @@ describe("YnabClient", () => {
           data: {
             months: [
               {
-                month: "2025-12",
+                month: "2025-12-01",
                 income: 500000,
                 budgeted: 400000,
                 activity: -350000,
                 to_be_budgeted: 100000,
               },
               {
-                month: "2026-01",
+                month: "2026-01-01",
                 income: 600000,
                 budgeted: 500000,
                 activity: -450000,
                 to_be_budgeted: 50000,
               },
               {
-                month: "2026-02",
+                month: "2026-02-01",
                 income: 600000,
                 budgeted: 500000,
                 activity: -450000,
@@ -374,9 +533,9 @@ describe("YnabClient", () => {
           },
         }),
       );
-      const months = await client.getMonths("2026-01", "2026-02");
+      const months = await client.getMonths("2026-01-01", "2026-02-01");
       expect(months).toHaveLength(2);
-      expect(months[0]!.month).toBe("2026-01");
+      expect(months[0]!.month).toBe("2026-01-01");
       expect(months[0]!.income).toBe(600); // milliunits → dollars
     });
   });
@@ -387,7 +546,7 @@ describe("YnabClient", () => {
         jsonResponse({
           data: {
             month: {
-              month: "2026-01",
+              month: "2026-01-01",
               income: 500000,
               budgeted: 400000,
               activity: -350000,
@@ -424,8 +583,8 @@ describe("YnabClient", () => {
           },
         }),
       );
-      const detail = await client.getMonthDetail("2026-01");
-      expect(detail.month).toBe("2026-01");
+      const detail = await client.getMonthDetail("2026-01-01");
+      expect(detail.month).toBe("2026-01-01");
       expect(detail.income).toBe(500);
       // Internal category filtered out
       expect(detail.categories).toHaveLength(1);
@@ -436,22 +595,23 @@ describe("YnabClient", () => {
   describe("updateCategoryBudgeted", () => {
     it("PATCHes the month/category endpoint with milliunits conversion", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({}));
-      await client.updateCategoryBudgeted("2026-01", "cat-1", 150);
+      await client.updateCategoryBudgeted("2026-01-01", "cat-1", 150);
       const [url, init] = mockFetch.mock.calls[0]!;
-      expect(url).toContain("/months/2026-01/categories/cat-1");
+      expect(url).toContain("/months/2026-01-01/categories/cat-1");
       expect(init.method).toBe("PATCH");
       const body = JSON.parse(init.body);
       expect(body.category.budgeted).toBe(150_000);
     });
   });
 
-  describe("updateCategoryGoalTarget", () => {
-    const existing = (category: object) => jsonResponse({ data: { category } });
+  describe("prepareGoalWrite: monthly", () => {
+    const existing = (category: Record<string, unknown>) =>
+      jsonResponse({ data: { category: ynabCategory(category) } });
 
     it("PATCHes the plan-level category endpoint with goal_frequency monthly and milliunits conversion", async () => {
       mockFetch.mockReturnValueOnce(existing({ goal_target: null }));
       mockFetch.mockReturnValueOnce(jsonResponse({}));
-      await client.updateCategoryGoalTarget("cat-1", 500);
+      await pushGoal(client, "cat-1", "monthly", 500);
       const [url, init] = mockFetch.mock.calls[1]!;
       expect(url).toContain("/categories/cat-1");
       expect(url).not.toMatch(/\/months\//);
@@ -473,7 +633,7 @@ describe("YnabClient", () => {
         }),
       );
       mockFetch.mockReturnValueOnce(jsonResponse({}));
-      await client.updateCategoryGoalTarget("cat-1", 500);
+      await pushGoal(client, "cat-1", "monthly", 500);
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
@@ -490,7 +650,7 @@ describe("YnabClient", () => {
         existing({ goal_target: 100_000, ...goal }),
       );
       await expect(
-        client.updateCategoryGoalTarget("cat-1", 500),
+        pushGoal(client, "cat-1", "monthly", 500),
       ).rejects.toMatchObject({ code: "conflict" });
       expect(mockFetch).toHaveBeenCalledTimes(1);
     });
@@ -500,16 +660,42 @@ describe("YnabClient", () => {
         existing({ goal_target: 100_000, goal_type: "NEED", goal_cadence: 1 }),
       );
       mockFetch.mockReturnValueOnce(jsonResponse({}));
-      await client.updateCategoryGoalTarget("cat-1", 0);
+      await pushGoal(client, "cat-1", "monthly", 0);
       const body = JSON.parse(mockFetch.mock.calls[1]![1].body);
       expect(body.category).toEqual({ goal_target: null });
     });
   });
 
-  describe("updateCategoryTargetBalance", () => {
+  describe("prepareGoalWrite: reads only", () => {
+    it("reads the category when prepared and PATCHes only on apply", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ data: { category: ynabCategory() } }),
+      );
+      const write = await client.prepareGoalWrite("cat-1", "monthly", 500);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch.mock.calls[0]![1]?.method ?? "GET").toBe("GET");
+      mockFetch.mockReturnValueOnce(jsonResponse({}));
+      await write.apply();
+      expect(mockFetch.mock.calls[1]![1].method).toBe("PATCH");
+    });
+
+    it("a target-balance write sends nothing until applied", async () => {
+      const write = await client.prepareGoalWrite(
+        "cat-1",
+        "target-balance",
+        1200,
+      );
+      expect(mockFetch).not.toHaveBeenCalled();
+      mockFetch.mockReturnValueOnce(jsonResponse({}));
+      await write.apply();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("prepareGoalWrite: target-balance", () => {
     it("PATCHes only goal_target, in a single request, touching nothing else", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({}));
-      await client.updateCategoryTargetBalance("cat-1", 1200);
+      await pushGoal(client, "cat-1", "target-balance", 1200);
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
 
@@ -552,6 +738,7 @@ describe("YnabClient", () => {
                 cleared: "cleared",
                 approved: true,
                 deleted: false,
+                subtransactions: [],
               },
               {
                 id: "tx-2-deleted",
@@ -566,6 +753,7 @@ describe("YnabClient", () => {
                 cleared: "uncleared",
                 approved: false,
                 deleted: true,
+                subtransactions: [],
               },
             ],
           },
@@ -609,26 +797,6 @@ describe("YnabClient", () => {
       const body = JSON.parse(mockFetch.mock.calls[0]![1].body);
       expect(body.transaction.amount).toBe(-75000);
       expect(body.transaction.cleared).toBe("uncleared");
-    });
-  });
-
-  describe("getDelta", () => {
-    it("returns mapped delta with server knowledge", async () => {
-      mockFetch.mockReturnValueOnce(
-        jsonResponse({
-          data: {
-            server_knowledge: 42,
-            accounts: [],
-            categories: [],
-            transactions: [],
-            months: [],
-          },
-        }),
-      );
-      const delta = await client.getDelta(10);
-      expect(delta.serverKnowledge).toBe(42);
-      expect(delta.data).toHaveProperty("accounts");
-      expect(delta.data).toHaveProperty("transactions");
     });
   });
 

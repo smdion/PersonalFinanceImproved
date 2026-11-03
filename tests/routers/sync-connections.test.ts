@@ -17,6 +17,7 @@ import {
   afterAll,
   beforeEach,
 } from "vitest";
+import { serviceError } from "@/lib/budget-api/errors";
 import { createTestCaller, adminSession } from "./setup";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import type * as sqliteSchema from "@/lib/db/schema-sqlite";
@@ -273,6 +274,7 @@ describe("sync.testConnection with client", () => {
 
   it("returns success with budget name when client works", async () => {
     mockGetClientForService.mockResolvedValueOnce({
+      testConnection: vi.fn().mockResolvedValue(undefined),
       getBudgetName: vi.fn().mockResolvedValue("My Budget"),
     });
 
@@ -283,12 +285,34 @@ describe("sync.testConnection with client", () => {
 
   it("returns failure when client throws", async () => {
     mockGetClientForService.mockResolvedValueOnce({
-      getBudgetName: vi.fn().mockRejectedValue(new Error("Auth failed")),
+      testConnection: vi.fn().mockRejectedValue(new Error("Auth failed")),
+      getBudgetName: vi.fn(),
     });
 
     const result = await caller.sync.testConnection({ service: "ynab" });
     expect(result.success).toBe(false);
     expect(result.error).toContain("Auth failed");
+  });
+
+  it("asks the budget even when its name is local (Actual), and says why it failed", async () => {
+    const bad = serviceError(
+      "Actual",
+      "Actual: /accounts: raw",
+      "bad-response",
+    );
+    bad.field = "data.0.offbudget";
+    const getBudgetName = vi.fn().mockResolvedValue("Actual (abc...)");
+    mockGetClientForService.mockResolvedValueOnce({
+      testConnection: vi.fn().mockRejectedValue(bad),
+      getBudgetName,
+    });
+
+    expect(await caller.sync.testConnection({ service: "actual" })).toEqual({
+      success: false,
+      error:
+        "Actual sent something Ledgr doesn't understand (data.0.offbudget).",
+    });
+    expect(getBudgetName).not.toHaveBeenCalled();
   });
 
   it("returns failure when no client configured", async () => {

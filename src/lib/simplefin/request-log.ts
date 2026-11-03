@@ -17,8 +17,10 @@ export const SIMPLEFIN_MANUAL_SYNC_MIN_GAP_MS = 10 * 60 * 1000;
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-type SimplefinRequestOutcome =
-  "ok" | "error" | "timeout" | "replay" | "skipped_quota";
+/** bad_response: SimpleFIN answered in a shape Ledgr can't read; it counts
+ *  against the quota like every real request. */
+export type SimplefinRequestOutcome =
+  "ok" | "error" | "bad_response" | "timeout" | "replay" | "skipped_quota";
 
 export async function recordSimplefinRequest(
   db: Db,

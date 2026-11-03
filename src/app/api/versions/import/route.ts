@@ -1,18 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod/v4";
 import { db } from "@/lib/db";
+import { devBypass } from "@/server/auth-mode";
 import { auth } from "@/server/auth";
 import { importBackup, type BackupData } from "@/lib/db/version-logic";
 import { log } from "@/lib/logger";
 
-// ALLOW_DEV_MODE is only honored in non-production environments — mirrors
-// the guard in src/server/trpc.ts.
-// The primary protection is validateEnv() at process startup (src/lib/env.ts),
-// which refuses to boot with both set; this is defense-in-depth for that
-// guard being bypassed (misconfigured process manager, env set post-boot).
-const allowDev =
-  process.env.ALLOW_DEV_MODE === "true" &&
-  process.env.NODE_ENV !== "production";
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 const MAX_STRING_LENGTH = 10_000; // guard against oversized string values in imported data
 const MAX_JSON_DEPTH = 10; // guard against deeply nested JSONB structures
@@ -59,7 +52,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Check auth — require session with version permission or admin
+    // Check auth — require session with version permission or admin. Only
+    // `next dev` with ALLOW_DEV_MODE skips it, the same rule as every
+    // request's session (auth-mode.ts); validateEnv() (src/lib/env.ts) also
+    // refuses to boot a production build with ALLOW_DEV_MODE set.
+    const allowDev = devBypass() === "admin";
     const session = await auth();
     if (!allowDev && !session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

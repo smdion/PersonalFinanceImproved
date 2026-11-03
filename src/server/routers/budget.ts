@@ -61,7 +61,12 @@ import {
   refreshCategoryCache,
   BudgetApiError,
 } from "@/lib/budget-api";
-import type { BudgetCategoryGroup, BudgetMonthDetail } from "@/lib/budget-api";
+import { WriteStopped, nothingChanged } from "@/lib/budget-api/errors";
+import type {
+  BudgetCategoryGroup,
+  BudgetMonthDetail,
+  PreparedGoalWrite,
+} from "@/lib/budget-api";
 import { YNAB_INTERNAL_GROUPS } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/pure/date-keys";
 
@@ -1991,17 +1996,16 @@ export const budgetRouter = createTRPCRouter({
         activeProfiles,
       );
 
-      let pushed = 0;
-      // Counted separately from a hard failure below — the provider
-      // COULDN'T perform this specific write, either because it has no API
-      // for the operation at all ("unsupported") or because the target
-      // already has incompatible state that can't be safely merged into
-      // ("conflict" — see ActualClient.updateCategoryGoalTarget /
-      // actual-goal-notes.ts). Caught per-item (not left to abort the whole
-      // loop) so one such item can't hide whether OTHER items pushed, and
-      // so the caller can tell "nothing to push" apart from "this item
-      // couldn't be pushed".
+      // Items the provider can't write ("unsupported") or whose target has
+      // another shape ("conflict", see BudgetAPIClient.prepareGoalWrite):
+      // counted per item, so "nothing to push" stays distinguishable.
       let skippedUnsupported = 0;
+      // Every read before the first write: a read that fails stops the push
+      // with nothing written.
+      const prepared: {
+        item: (typeof resolvedItems)[number];
+        write: PreparedGoalWrite;
+      }[] = [];
       for (const item of resolvedItems) {
         if (!item.apiCategoryId) continue;
         if (
@@ -2012,9 +2016,16 @@ export const budgetRouter = createTRPCRouter({
 
         const amount = item.amounts[Math.min(colIdx, numColumns - 1)] ?? 0;
 
-        // Push as YNAB goal target (plan-level, not month-specific)
+        // Push as a goal target (plan-level, not month-specific)
         try {
-          await client.updateCategoryGoalTarget(item.apiCategoryId, amount);
+          prepared.push({
+            item,
+            write: await client.prepareGoalWrite(
+              item.apiCategoryId,
+              "monthly",
+              amount,
+            ),
+          });
         } catch (err) {
           if (
             err instanceof BudgetApiError &&
@@ -2023,23 +2034,31 @@ export const budgetRouter = createTRPCRouter({
             skippedUnsupported++;
             continue;
           }
-          throw err;
+          throw nothingChanged(err);
         }
-        await setBudgetItemLink(ctx.db, {
-          budgetItemId: item.id,
-          service: active,
-          categoryId: item.apiCategoryId,
-          categoryName: item.apiCategoryName,
-          syncDirection: item.apiSyncDirection,
-          lastSyncedAt: new Date(),
-        });
-        pushed++;
       }
 
-      // Push writes directly to YNAB but doesn't touch budget_api_cache —
-      // refresh it so the next preview/comparison reflects what was just
-      // pushed instead of showing stale pre-push diffs until the next
-      // manual Sync.
+      let pushed = 0;
+      let writeError: unknown;
+      try {
+        for (const { item, write } of prepared) {
+          await write.apply();
+          pushed++;
+          await setBudgetItemLink(ctx.db, {
+            budgetItemId: item.id,
+            service: active,
+            categoryId: item.apiCategoryId!,
+            categoryName: item.apiCategoryName,
+            syncDirection: item.apiSyncDirection,
+            lastSyncedAt: new Date(),
+          });
+        }
+      } catch (err) {
+        writeError = err;
+      }
+
+      // Push writes to the budget app, not budget_api_cache: refresh it so
+      // previews show what was just pushed, not pre-push diffs.
       if (pushed > 0) {
         try {
           await refreshCategoryCache(ctx.db, active, client);
@@ -2051,6 +2070,18 @@ export const budgetRouter = createTRPCRouter({
           });
         }
       }
+
+      if (writeError !== undefined)
+        // Some targets may already be written: say how many.
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Pushed ${pushed} of ${prepared.length} budget targets, then failed: ${writeError instanceof Error ? writeError.message : String(writeError)}`,
+          cause: new WriteStopped(
+            `Pushed ${pushed} of ${prepared.length} budget targets`,
+            `Pushed ${pushed} of ${prepared.length} budget targets before it stopped.`,
+            writeError,
+          ),
+        });
 
       return { pushed, skippedUnsupported, service: active };
     }),

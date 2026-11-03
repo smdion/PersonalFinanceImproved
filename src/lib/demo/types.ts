@@ -21,9 +21,12 @@ export type DemoProfile = {
   slug: string;
   name: string;
   description: string;
+  /** The chooser card's stats. Income and portfolio size are derived from
+   *  the seeded rows (demoKeyStats); the savings rate is stored because
+   *  the server computes it from database rows — tests/routers/demo-seed-
+   *  stats.test.ts seeds each profile and checks it against the
+   *  Contribution page's figure. */
   keyStats: {
-    income: string;
-    portfolioSize: string;
     savingsRate: string;
   };
 
@@ -82,6 +85,10 @@ export type DemoProfile = {
 
   contributionAccounts: {
     personName: string;
+    /** The job (by employerName) the account is deducted from: its pay
+     *  sizes the contribution and its match. Required for any account with
+     *  an employer match or a percent-of-salary contribution. */
+    employerName?: string;
     accountType: AccountCategory;
     taxTreatment: TaxTreatment;
     contributionMethod: string;

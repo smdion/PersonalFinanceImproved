@@ -1,0 +1,38 @@
+{
+  "source": "actual-http-api 26.10.0, a throwaway test budget (review 2026-11-01): every distinct 200 response recorded",
+  "bodies": [
+    {
+      "data": 1406179
+    },
+    {
+      "data": 0
+    },
+    {
+      "data": 35000033
+    },
+    {
+      "data": -25000075
+    },
+    {
+      "data": 123
+    },
+    {
+      "data": 5000000
+    },
+    {
+      "data": 1264567
+    },
+    {
+      "data": 5100001
+    },
+    {
+      "data": 120050
+    },
+    {
+      "data": -134456
+    },
+    {
+      "data": 120
+    }
+  ]
+}

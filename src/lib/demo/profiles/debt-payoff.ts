@@ -13,7 +13,7 @@ export const debtPayoffProfile: DemoProfile = {
   name: "Debt Payoff Journey",
   description:
     "Moderate income, significant debt, focused on building emergency fund and paying down loans.",
-  keyStats: { income: "$62,000", portfolioSize: "$12,000", savingsRate: "8%" },
+  keyStats: { savingsRate: "9%" },
 
   people: [{ name: "Casey", dateOfBirth: "1993-02-20", isPrimaryUser: true }],
 
@@ -193,13 +193,14 @@ export const debtPayoffProfile: DemoProfile = {
   contributionAccounts: [
     {
       personName: "Casey",
+      employerName: "ConsultingFirm",
       accountType: "401k",
       taxTreatment: "pre_tax",
       contributionMethod: "percent_of_salary",
       contributionValue: "6",
       employerMatchType: "percent_of_contribution",
       employerMatchValue: "50",
-      employerMaxMatchPct: "6",
+      employerMaxMatchPct: "0.06",
       perfAccountLabel: "401(k) - ConsultingFirm",
     },
   ],
