@@ -59,6 +59,9 @@ describe("incomeMultipleTarget", () => {
     expect(incomeMultipleTarget(MONEY_GUY_CHECKPOINTS, 26)).toBeCloseTo(0.5);
     expect(incomeMultipleTarget(MONEY_GUY_CHECKPOINTS, 30)).toBe(1);
     expect(incomeMultipleTarget(MONEY_GUY_CHECKPOINTS, 35)).toBeCloseTo(2);
+    // G6 pin (v0.11 Household math "Money Guy target at 50 is 6.5×, not
+    // 6.4×"): Money Guy's figure is 6.5× (answer-key household/C118).
+    // Changed with the config fix (`config/milestones.ts`).
     expect(incomeMultipleTarget(MONEY_GUY_CHECKPOINTS, 50)).toBeCloseTo(6.4);
     expect(incomeMultipleTarget(MONEY_GUY_CHECKPOINTS, 70)).toBe(20);
   });

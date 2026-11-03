@@ -25,6 +25,8 @@
  *   S148).
  * - Fund cost = Σ value × expense ratio, blended = cost ÷ value (DESIGN
  *   § Current glide path; S150).
+ * - The income-multiple checkpoints, the savings-rate target and the debt
+ *   line: their sources at the end of the file.
  *
  * Inputs are invented. Percent figures are fractions, held to half of
  * 0.01% (the key shows two places).
@@ -40,6 +42,15 @@ import { totalReturnSeries } from "@/lib/pure/total-return";
 import { blendedCost, type EffectiveFacts } from "@/lib/pure/fund-facts";
 import { matchedMixLevels, type MatchedMixInput } from "@/lib/pure/matched-mix";
 import type { CompositionBucket } from "@/lib/config/enum-values";
+import {
+  FIDELITY_CHECKPOINTS,
+  MONEY_GUY_CHECKPOINTS,
+} from "@/lib/config/milestones";
+import { isHighInterestDebt } from "@/lib/config/debts";
+import {
+  incomeMultipleTarget,
+  meetsRateTarget,
+} from "@/lib/pure/milestones.shared";
 
 /** Half of 0.01%: a percent figure shown to two places. */
 const PCT = 0.00005;
@@ -382,5 +393,99 @@ describe("household: fund cost", () => {
     expect(b.expenseRatio).not.toBeNull();
     cents(b.expenseRatio!, 415 / 150_000, 0.000005);
     expect(b.coveredShare).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Checkpoints, the savings-rate target and the debt line (plan commit 22).
+// Fidelity, "How much do I need to retire?": 1× by 30, 3× by 40, 6× by
+// 50, 8× by 60, 10× by 67 (S123). Money Guy, "Net worth by age, 2025
+// edition" and "targets and benchmarks": 1×, 3×, 6.5×, 13.7×, 20× by 30,
+// 40, 50, 60, 65 (S125; verdict G6, fetched twice). Money Guy's
+// high-interest line by age (moneyguy.com/?p=26978): car loans over 10% /
+// 9% / 8% in the 20s / 30s / 40s, and any car loan at 50+ (verdict G8).
+// ---------------------------------------------------------------------------
+
+/** v0.11.x.md § Household math, the Money Guy item (G6, G8). */
+const MONEY_GUY_ITEM =
+  'v0.11 Household math "Money Guy target at 50 is 6.5×, not 6.4×"';
+
+describe("household: income-multiple checkpoints", () => {
+  const AGES_FIDELITY = [30, 40, 50, 60, 67];
+  const AGES_MONEY_GUY = [30, 40, 50, 60, 65];
+  const targets = (
+    table: Parameters<typeof incomeMultipleTarget>[0],
+    ages: number[],
+  ) =>
+    Object.fromEntries(
+      ages.map((age) => [
+        `age${age}`,
+        incomeMultipleTarget(table, age) * 100_000,
+      ]),
+    );
+
+  it("household/C117 [HH-38] Fidelity on 100,000 at 30 / 40 / 50 / 60 / 67: 100k; 300k; 600k; 800k; 1M", () => {
+    // Multiples × 100,000. Decision H5 keeps both tables; 2/4/7× at
+    // 35/45/55 aren't asserted (not on Fidelity's page; check before
+    // touching them).
+    cents(targets(FIDELITY_CHECKPOINTS, AGES_FIDELITY), {
+      age30: 100_000,
+      age40: 300_000,
+      age50: 600_000,
+      age60: 800_000,
+      age67: 1_000_000,
+    });
+  });
+
+  xfail({
+    id: "household/C118 [HH-38]",
+    todo: `${MONEY_GUY_ITEM} (verdict G6)`,
+    // Multiples × 100,000: 100,000; 300,000; 650,000; 1,370,000;
+    // 2,000,000. Today the config has 6.4× at 50 (640,000), pinned by
+    // tests/pure/milestones.test.ts:60.
+    run: () => targets(MONEY_GUY_CHECKPOINTS, AGES_MONEY_GUY),
+    expected: {
+      age30: 100_000,
+      age40: 300_000,
+      age50: 650_000,
+      age60: 1_370_000,
+      age65: 2_000_000,
+    },
+    today: {
+      age30: 100_000,
+      age40: 300_000,
+      age50: 640_000,
+      age60: 1_370_000,
+      age65: 2_000_000,
+    },
+  });
+});
+
+describe("household: the savings-rate target and the debt line", () => {
+  xfail({
+    id: "household/SAV-14.5 [HH-40]",
+    todo: 'v0.11 Household math "Historical loan "Original Balance" double-counts" (the 14.5% float; verdict A8)',
+    // 14,500 saved on 100,000 gross is 14.5%, which rounds half up to a
+    // whole 15% and meets a 15% target (DESIGN § Milestones: judged to
+    // whole percents). Today 0.145 × 100 = 14.499999999999998 rounds to
+    // 14: not met.
+    run: () => (meetsRateTarget(14_500 / 100_000, 0.15) ? 1 : 0),
+    expected: 1,
+    today: 0,
+  });
+
+  xfail({
+    id: "household/CAR-55 [HH-06]",
+    todo: `${MONEY_GUY_ITEM} (the 50+ debt band; verdict G8)`,
+    // A car loan at 5% for a 55-year-old: at 50+ any car loan is
+    // high-interest. Today the 40s line (above 8%) holds for ever: not
+    // high-interest. At 45 the 40s line is right (5% ≤ 8%), today and
+    // after the fix.
+    run: () => ({
+      at55: isHighInterestDebt("auto_loan", 0.05, 55) ? 1 : 0,
+      at45: isHighInterestDebt("auto_loan", 0.05, 45) ? 1 : 0,
+    }),
+    expected: { at55: 1, at45: 0 },
+    today: { at55: 0, at45: 0 },
   });
 });
