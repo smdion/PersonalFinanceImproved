@@ -117,13 +117,18 @@ export async function createContext(): Promise<Context> {
   return { db, session, demoSchema };
 }
 
+/** The cause of a request refused for its demo profile (missing or built
+ *  before the latest migration) — the client shows the way back to the
+ *  demo picker instead of retrying. */
+export class DemoSessionEnded extends Error {}
+
 const t = initTRPC
   .context<Context>()
   .meta<ProcedureMeta>()
   .create({
-    // For the client's global error toast (friendlyMutationError): Zod
-    // input failures as `data.zodError`; a failed service as
-    // `data.externalError` and the sentence to show, `data.userMessage`.
+    // For the client's global error handling (providers.tsx): Zod input
+    // failures as `data.zodError`; a failed service as `data.externalError`
+    // and its sentence, `data.userMessage`; `data.demoSessionEnded`.
     errorFormatter({ shape, error }) {
       const { external } = externalFailure(error);
       return {
@@ -141,6 +146,7 @@ const t = initTRPC
             field: external.field ?? null,
           },
           userMessage: userMessageFor(error),
+          demoSessionEnded: error.cause instanceof DemoSessionEnded,
         },
       };
     },
@@ -242,10 +248,12 @@ const demoSchemaMiddleware = t.middleware(async ({ ctx, next, path }) => {
     )) as { rows: { complete: boolean }[] };
     if (!rows[0]?.complete) {
       if (path.startsWith("demo.")) return await next({ ctx });
+      const message =
+        "This demo profile needs to be set up again (Ledgr was updated). Choose a demo profile again to continue.";
       throw new TRPCError({
         code: "PRECONDITION_FAILED",
-        message:
-          "This demo profile needs to be set up again (Ledgr was updated). Choose a demo profile again to continue.",
+        message,
+        cause: new DemoSessionEnded(message),
       });
     }
     await client.query(`SET search_path TO ${quotedSchema}, public`);
