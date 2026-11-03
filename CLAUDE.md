@@ -2,12 +2,17 @@
 
 ## Rules & design
 
-- **Authoritative rules:** `docs/RULES.md`. Grep it for the relevant rule when
-  finishing non-trivial work — don't bulk-read.
+- **Authoritative rules:** `docs/RULES.md`, imported below: every session has
+  all of it.
 - **Architecture reference:** `docs/DESIGN.md`. Read sections on demand, not the
   whole file.
+- **Code conventions:** `CONTRIBUTING.md`.
 - **Test inventory:** `docs/TESTING.md`. Tests live in `tests/` mirroring the
   source layout, plus `tests/e2e/` for Playwright.
+- **Install, deploy, backups, release:** `docs/OPS.md` (generic; host
+  specifics stay in `.scratch/docs/ops/OPS.md`).
+
+@docs/RULES.md
 
 ## When to consult the advisor
 
@@ -28,7 +33,7 @@ The advisor should have enough context to disagree.
 
 ## Local docs & planning
 
-`.scratch/docs/INDEX.md` (gitignored, not shipped) is the index for everything not covered above: `TODO.md`/`FEATURE-ROADMAP.md` (what's next), `OPS.md` (deploy/release/CI/security), per-feature implementation plans, and `advisor`'s five sibling subagents in `.claude/agents/` (`planner`, `release`, `reviewer`, `schema-reviewer`, `test-writer`). Check it before starting new feature work or asking "has this already been designed."
+`.scratch/docs/INDEX.md` (gitignored, not shipped) is the index for everything not covered above: `TODO.md`/`FEATURE-ROADMAP.md` (what's next), `ops/OPS.md` (this household's hosts, deploy, CI, security), per-feature implementation plans, and `advisor`'s five sibling subagents in `.claude/agents/` (`planner`, `release`, `reviewer`, `schema-reviewer`, `test-writer`). Check it before starting new feature work or asking "has this already been designed."
 
 ## Project shortcuts
 

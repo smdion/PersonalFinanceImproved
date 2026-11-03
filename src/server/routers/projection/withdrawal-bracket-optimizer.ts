@@ -8,7 +8,7 @@
  * server-side projection cache — advisor round 1 confirmed this matches
  * Coast FIRE's own precedent for a synchronous, cheap, uncached search.
  * Split into its own file (not added to `coast-fire.ts`, already at 521
- * lines, over RULES.md §8's ~500-line Composed Router guideline).
+ * lines, over CONTRIBUTING.md § Composed Router Convention's ~500-line guideline).
  *
  * Client-side cache policy (staleTime/refetchOnMount) is a Phase 4
  * concern — standard tRPC query semantics already cache client-side by

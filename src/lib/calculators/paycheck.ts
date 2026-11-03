@@ -991,7 +991,7 @@ export function getExtraPaycheckMonthKeys(
  * `rules`/`overrides`). No rules configured yet defaults to Budget mode —
  * `enabled` only has meaning once there's something to enable/disable.
  * Loosely typed (not `ExtraPaycheckRoutingData`) so calculator code never
- * needs to import from a schema file — see RULES.md's pure-calculator rule.
+ * needs to import from a schema file — see CONTRIBUTING.md's pure-calculator rule.
  */
 export function isExtraPaycheckBudgetMode(
   routing: { rules?: unknown[]; enabled?: boolean } | null | undefined,

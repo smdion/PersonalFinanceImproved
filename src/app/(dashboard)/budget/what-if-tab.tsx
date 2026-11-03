@@ -1077,7 +1077,7 @@ export function WhatIfTab({
 
       {/* ── Step 2: Contribution accounts + deductions — both resolve via
           the Contribution Profile now (paycheck_deductions carries no
-          amount of its own, see RULES.md's Salary Profile layer section) ── */}
+          amount of its own, see DESIGN.md's Salary Profile layer section) ── */}
       <WhatIfStep
         number={2}
         title={`Contributions${contribProfileName ? ` — ${contribProfileName}` : ""}`}

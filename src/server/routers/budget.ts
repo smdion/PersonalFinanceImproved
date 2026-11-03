@@ -117,7 +117,7 @@ async function renumberItems(
 }
 
 /**
- * docs/RULES.md's profile precedence as the caller supplies it: its own
+ * docs/DESIGN.md's profile precedence as the caller supplies it: its own
  * local selection (What-If), else the active profile. Both fields are
  * required (nullable) so a caller can't silently omit one.
  */

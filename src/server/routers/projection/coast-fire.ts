@@ -6,7 +6,7 @@
  * and `computeCoastFireMC` (Monte Carlo validation variant).
  *
  * Split out of `scenarios.ts` to keep individual router files
- * under ~500 lines (Composed Router convention, RULES.md §8). Shared
+ * under ~500 lines (Composed Router convention, CONTRIBUTING.md § Composed Router Convention). Shared
  * schemas + helpers remain in `_shared.ts`.
  */
 import {

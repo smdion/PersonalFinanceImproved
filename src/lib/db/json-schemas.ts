@@ -274,7 +274,7 @@ export const extraPaycheckRoutingSchema = z
  * apply," and "where does my extra paycheck go" are all the same category
  * of fact as "what is my salary" — this collapses income, withholding/
  * schedule elections, and comp-routing decisions into one axis (see
- * RULES.md's Salary Profile layer section for the accepted tradeoff). A
+ * DESIGN.md's Salary Profile layer section for the accepted tradeoff). A
  * Contribution Profile still owns the *deductions* bucket (paycheck_
  * deductions amounts) — a distinct fact from what the job elects on its
  * W-4/pay schedule.
@@ -425,7 +425,7 @@ export const deductionActiveFieldsSchema = z
  * touches jobs at all. Pay schedule, W-4 elections, bonus pay date/flags,
  * and employerName-override all either moved to the Salary Profile entry
  * (the first three) or lost their profile-override path entirely
- * (employerName — accepted feature reduction, see RULES.md's Salary
+ * (employerName — accepted feature reduction, see DESIGN.md's Salary
  * Profile layer section).
  */
 export const contributionActiveFieldsSchema = z

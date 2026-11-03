@@ -70,7 +70,7 @@ function summarizeEntries(salaries: SalaryEntryMap) {
  * propagate immediately, the same way an explicit
  * extraPaycheckRouting.save/saveGrowth would. Editing a NON-active profile
  * must NOT trigger this — that's exactly the "routine profile switch
- * silently rewrites a plan" case RULES.md's no-cascade-by-design note
+ * silently rewrites a plan" case DESIGN.md's no-cascade-by-design note
  * warns about; the distinction is active-vs-not, not edited-vs-not.
  *
  * Single computation path for this refresh — called from every mutation

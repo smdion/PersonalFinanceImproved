@@ -1,6 +1,6 @@
 /**
  * A focus link opens a page in a state and marks a section; the page's own
- * choices take over from there (lib/config/focus-topics, RULES.md § Links
+ * choices take over from there (lib/config/focus-topics, DESIGN.md § Links
  * into Pages).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";

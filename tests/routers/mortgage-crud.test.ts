@@ -7,7 +7,7 @@
  *   - mortgage.mortgageExtraPayments (list / create / update / delete)
  *
  * Moved from routers/settings/mortgage.ts to routers/mortgage.ts
- * (page-ownership rule, RULES.md's "Settings Belong on Their Pages") —
+ * (page-ownership rule, DESIGN.md's "Settings Belong on Their Pages") —
  * this file moved alongside it.
  */
 import "./setup-mocks";

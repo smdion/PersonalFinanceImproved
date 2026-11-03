@@ -11,12 +11,12 @@
  *
  * Every figure is worked by hand from the owner's rules, never read from
  * `src/`:
- * - Gain `G = E − B − C + D − R + F` (RULES § ESPP Accounting 6) and
+ * - Gain `G = E − B − C + D − R + F` (DESIGN § ESPP Accounting 6) and
  *   Return % `G / (B + (C + R − D − F) / 2)` (DESIGN § Return %); a rollup
  *   sums its rows and a transfer inside it nets to 0 (S45, S46).
  * - The ESPP wire is a negative rollover on the ESPP row and a positive one
- *   on the destination (RULES § ESPP Accounting 4–5).
- * - Edits (RULES § Data Model 4, Performance account edits): a balanced
+ *   on the destination (DESIGN § ESPP Accounting 4–5).
+ * - Edits (DESIGN § Data Model 4, Performance account edits): a balanced
  *   row's gain follows its ending, a row with a gap keeps its gain; a
  *   changed ending moves next year's beginning, whose gain follows only if
  *   that row balanced; a finalized year takes only the edit's change, as

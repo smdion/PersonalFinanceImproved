@@ -59,7 +59,7 @@ export type ExtraPaycheckRoutingData = {
    * LIVE entry in the globally-active Salary Profile when absent (e.g.
    * routing saved before this field existed). Freezes the schedule at save
    * time so a later job/Salary-Profile correction doesn't retroactively move
-   * already-materialized planned-transaction dates — see RULES.md's
+   * already-materialized planned-transaction dates — see DESIGN.md's
    * extraPaycheckRouting section.
    */
   payPeriod?: PayPeriod;

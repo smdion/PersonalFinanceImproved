@@ -1,6 +1,6 @@
 /**
  * Links that land on the data — the one table every "take me to this" link
- * reads (RULES.md § Links into Pages).
+ * reads (DESIGN.md § Links into Pages).
  *
  * A sender says what a link is about (a `Focus`); this table says where that
  * lives and how its page must open to show it. Pages opt in with

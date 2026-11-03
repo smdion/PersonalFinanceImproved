@@ -2,7 +2,7 @@
  * RULES.md violations sweep.
  *
  * Static-string scan of src/ for the Data-Driven Architecture violations
- * enumerated in docs/RULES.md § "Violations to Watch For". Each rule pairs
+ * enumerated in docs/TESTING.md § "Violations to Watch For". Each rule pairs
  * with a numbered bullet in that section.
  *
  * Checked rules:
@@ -709,7 +709,7 @@ function findMissingDemoOnlyGuardViolations(): Violation[] {
 // config home (F4). Deliberately scoped to FIGURE values (the value after
 // `MFJ:` must start with a digit, `[`, or `{` — a number, array, or nested
 // object) so it does NOT flag `{ MFJ: "Married Filing Jointly", … }`-style
-// UI display-label maps, which are a real but separate concern (RULES.md's
+// UI display-label maps, which are a real but separate concern (TESTING.md's
 // "local label map duplicating config" rule already covers those) —
 // several exist in Settings editor components and are legitimate there.
 // Whole-file regex (not line-by-line — a real multi-line literal spans

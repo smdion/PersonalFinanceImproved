@@ -427,7 +427,7 @@ export function BudgetContent({
             {/* Ordered to match the dependency chain: Salary sets gross pay,
                 Contributions (often % of salary) derive take-home, the Budget
                 (its own page) spends it, Savings allocates what's left —
-                see docs/RULES.md "Lever Order". Retirement consumes all of
+                see docs/DESIGN.md "Lever Order". Retirement consumes all of
                 these, and What-If previews combinations of them, so they
                 come last. */}
             <div className="mb-4 flex items-center justify-between border-b">

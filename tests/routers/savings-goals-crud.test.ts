@@ -2,7 +2,7 @@
  * savings.savingsGoals router CRUD integration tests.
  *
  * Moved from routers/settings/admin.ts to routers/savings.ts
- * (page-ownership rule, RULES.md's "Settings Belong on Their Pages") —
+ * (page-ownership rule, DESIGN.md's "Settings Belong on Their Pages") —
  * these describe blocks moved out of settings-admin.test.ts alongside it.
  */
 import "./setup-mocks";

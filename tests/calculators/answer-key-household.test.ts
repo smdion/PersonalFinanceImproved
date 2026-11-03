@@ -11,7 +11,7 @@
  * - Net worth = everything owned − everything owed (Money Guy, "Net worth
  *   by age, 2025 edition"); at cost, the home is what was paid plus
  *   improvements (same page; S70). Retirement is inside Portfolio and
- *   counted once (RULES § Account Categories; S68).
+ *   counted once (DESIGN § Account Categories; S68).
  * - Emergency fund months = balance ÷ essential monthly spending (S86);
  *   no figure at 0 essentials (decision H6: the screen asks for them).
  * - FI number = annual expenses ÷ withdrawal rate, 25× at 4% (Money Guy,
@@ -22,7 +22,7 @@
  * - Wealth formula `(age × income) ÷ (10 + years until 40)` (Money Guy,
  *   "Are you a Prodigious Accumulator of Wealth": the "enhanced
  *   Millionaire Next Door calculation"; verdict G5).
- * - Coast FIRE reads retirement money only (RULES § Account Categories;
+ * - Coast FIRE reads retirement money only (DESIGN § Account Categories;
  *   S154).
  *
  * Blocked: FI-FINAL ("a finalized year keeps the FI target it had") needs

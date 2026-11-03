@@ -1,6 +1,6 @@
 # Engine Module Architecture
 
-The engine is the projection calculator: one pass, year by year, through accumulation (working years) and decumulation (retirement), with per-account tracking, tax estimation and spending strategies. Every module is a pure function with typed inputs and outputs. Rules for changing it: `docs/RULES.md` § Engine Modularity.
+The engine is the projection calculator: one pass, year by year, through accumulation (working years) and decumulation (retirement), with per-account tracking, tax estimation and spending strategies. Every module is a pure function with typed inputs and outputs. Rules for changing it: `docs/DESIGN.md` § Engine Modularity.
 
 ## Layout
 

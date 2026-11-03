@@ -1222,7 +1222,7 @@ export const retirementRouter = createTRPCRouter({
    * "duplicate to compare" be the primary action.
    *
    * adminProcedure throughout, matching retirementSettings.upsert's existing
-   * gate — RULES.md Composed Router: an inconsistent procedure type within
+   * gate — CONTRIBUTING.md Composed Router Convention: an inconsistent procedure type within
    * one group is a bug, not a design choice.
    */
   retirementProfiles: createTRPCRouter({

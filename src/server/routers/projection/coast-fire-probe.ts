@@ -8,7 +8,7 @@
  * picks. Split into its own file (not a param bolted onto
  * `computeCoastFireMC`) because the result shape is genuinely different —
  * see `CoastFireProbeResult`'s docblock — and because `coast-fire.ts` is
- * already at 521 lines, over RULES.md §8's ~500-line Composed Router
+ * already at 521 lines, over CONTRIBUTING.md § Composed Router Convention's ~500-line
  * guideline.
  */
 import {

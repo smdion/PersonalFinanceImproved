@@ -93,7 +93,7 @@ export const TAX_TYPE_COLORS: Record<
 };
 
 /** Bar color for tax treatment breakdown (e.g. `bg-emerald-400` for Roth).
- *  @public — the documented helper for tax-treatment bar fills (RULES.md § Colors). */
+ *  @public — the documented helper for tax-treatment bar fills (CONTRIBUTING.md § Coding Conventions, Colors). */
 export function taxTypeColor(taxType: string): string {
   return TAX_TYPE_COLORS[taxType]?.bg ?? "bg-gray-400";
 }
