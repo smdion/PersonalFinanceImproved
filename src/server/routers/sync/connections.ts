@@ -19,7 +19,8 @@ import type { YnabConfig, ActualConfig } from "@/lib/budget-api";
 import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
 import { validateOutboundUrl } from "@/lib/url-safety";
 import { TRPCError } from "@trpc/server";
-import { userMessageFor } from "@/lib/budget-api/errors";
+import { BudgetApiError, userMessageFor } from "@/lib/budget-api/errors";
+import { listYnabBudgets } from "@/lib/budget-api/ynab-client";
 import { serviceEnum } from "./_shared";
 
 export const syncConnectionsRouter = createTRPCRouter({
@@ -165,38 +166,19 @@ export const syncConnectionsRouter = createTRPCRouter({
     .input(z.object({ accessToken: z.string().min(1) }))
     .mutation(async ({ input }) => {
       try {
-        const res = await fetch("https://api.ynab.com/v1/budgets", {
-          headers: { Authorization: `Bearer ${input.accessToken}` },
-        });
-        if (!res.ok) {
-          const text = await res.text();
-          return {
-            success: false as const,
-            error: `YNAB API error ${res.status}: ${text}`,
-          };
-        }
-        const json = (await res.json()) as {
-          data: {
-            budgets: Array<{
-              id: string;
-              name: string;
-              last_modified_on: string;
-            }>;
-          };
-        };
         return {
           success: true as const,
-          budgets: json.data.budgets.map((b) => ({
-            id: b.id,
-            name: b.name,
-            lastModified: b.last_modified_on,
-          })),
+          budgets: await listYnabBudgets(input.accessToken),
         };
       } catch (e) {
-        const msg = e instanceof Error ? e.message : "Unknown error";
+        // The token isn't saved yet, so an auth failure means this token.
+        const auth = e instanceof BudgetApiError && e.code === "auth";
         return {
           success: false as const,
-          error: msg.slice(0, 200),
+          error: auth
+            ? "YNAB didn't accept this access token — check it and try again."
+            : (userMessageFor(e) ??
+              "Couldn't load your YNAB budgets — try again."),
         };
       }
     }),

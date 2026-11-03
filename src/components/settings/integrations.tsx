@@ -77,7 +77,7 @@ function ServiceCard({
   const [ynabToken, setYnabToken] = useState("");
   const [ynabBudgetId, setYnabBudgetId] = useState("");
   const [ynabBudgets, setYnabBudgets] = useState<
-    Array<{ id: string; name: string; lastModified: string }>
+    Array<{ id: string; name: string; lastModified: string | null }>
   >([]);
   const [actualUrl, setActualUrl] = useState("");
   const [actualApiKey, setActualApiKey] = useState("");

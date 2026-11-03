@@ -475,60 +475,91 @@ describe("sync.fetchYnabBudgets", () => {
     globalThis.fetch = originalFetch;
   });
 
-  it("returns budgets on successful YNAB API call", async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue({
-        data: {
-          budgets: [
-            { id: "b-1", name: "Main Budget", last_modified_on: "2026-01-01" },
-            {
-              id: "b-2",
-              name: "Savings Budget",
-              last_modified_on: "2026-02-01",
-            },
-          ],
-        },
-      }),
-    }) as unknown as typeof fetch;
+  /** YNAB answering every request with `status` and `body`. */
+  function ynabAnswers(status: number, body: unknown) {
+    const text = typeof body === "string" ? body : JSON.stringify(body);
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: status >= 200 && status < 300,
+      status,
+      headers: new Headers(),
+      text: vi.fn().mockResolvedValue(text),
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    return fetchMock;
+  }
+
+  it("lists the token's budgets from YNAB's /budgets", async () => {
+    const fetchMock = ynabAnswers(200, {
+      data: {
+        budgets: [
+          { id: "b-1", name: "Main Budget", last_modified_on: "2026-01-01" },
+          { id: "b-2", name: "Savings Budget" },
+        ],
+        default_budget: null,
+      },
+    });
 
     const result = await caller.sync.fetchYnabBudgets({
       accessToken: "test-token",
     });
-    expect(result.success).toBe(true);
-    if (result.success) {
-      expect(result.budgets).toHaveLength(2);
-      expect(result.budgets![0]!.name).toBe("Main Budget");
-    }
+    expect(result).toEqual({
+      success: true,
+      budgets: [
+        { id: "b-1", name: "Main Budget", lastModified: "2026-01-01" },
+        { id: "b-2", name: "Savings Budget", lastModified: null },
+      ],
+    });
+    const [url, init] = fetchMock.mock.calls[0]!;
+    expect(url).toBe("https://api.ynab.com/v1/budgets?include_accounts=false");
+    expect(init.headers).toMatchObject({ Authorization: "Bearer test-token" });
   });
 
-  it("returns error on YNAB API failure", async () => {
-    globalThis.fetch = vi.fn().mockResolvedValue({
-      ok: false,
-      status: 401,
-      text: vi.fn().mockResolvedValue("Unauthorized"),
-    }) as unknown as typeof fetch;
-
+  it("a token YNAB refuses says so, without YNAB's answer", async () => {
+    ynabAnswers(401, '{"error":{"id":"401","detail":"token-detail-xyz"}}');
     const result = await caller.sync.fetchYnabBudgets({
       accessToken: "bad-token",
     });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("401");
-    }
+    expect(result).toEqual({
+      success: false,
+      error: "YNAB didn't accept this access token — check it and try again.",
+    });
+  });
+
+  it("any other failure is told in words, never as YNAB's raw body", async () => {
+    ynabAnswers(400, "body-detail-xyz");
+    const result = await caller.sync.fetchYnabBudgets({ accessToken: "t" });
+    expect(result).toEqual({
+      success: false,
+      error: "YNAB refused Ledgr's request.",
+    });
+  });
+
+  it("a list in another shape is bad-response, naming the field", async () => {
+    ynabAnswers(200, { data: { plans: [{ id: "b-1", name: "Main" }] } });
+    const result = await caller.sync.fetchYnabBudgets({ accessToken: "t" });
+    expect(result).toEqual({
+      success: false,
+      error: "YNAB sent something Ledgr doesn't understand (data.budgets).",
+    });
   });
 
   it("returns error on network failure", async () => {
-    globalThis.fetch = vi
-      .fn()
-      .mockRejectedValue(new Error("Network error")) as unknown as typeof fetch;
-
-    const result = await caller.sync.fetchYnabBudgets({
-      accessToken: "any-token",
-    });
-    expect(result.success).toBe(false);
-    if (!result.success) {
-      expect(result.error).toContain("Network error");
+    vi.useFakeTimers();
+    try {
+      globalThis.fetch = vi
+        .fn()
+        .mockRejectedValue(
+          new TypeError("fetch failed"),
+        ) as unknown as typeof fetch;
+      const pending = caller.sync.fetchYnabBudgets({ accessToken: "t" });
+      await vi.runAllTimersAsync();
+      const result = await pending;
+      expect(result).toEqual({
+        success: false,
+        error: "Ledgr couldn't reach YNAB — try again.",
+      });
+    } finally {
+      vi.useRealTimers();
     }
   });
 });
