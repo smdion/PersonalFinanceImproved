@@ -38,6 +38,16 @@ describe("tax-data file", () => {
 
 describe("validateTaxDataFile catches", () => {
   const clone = () => JSON.parse(JSON.stringify(file)) as typeof file;
+  type Year = (typeof file)["years"][string];
+  /** The poverty guidelines moved 3% (each size, whole dollars). */
+  const moveFpl = (
+    fpl: NonNullable<Year["fpl"]>,
+  ): NonNullable<Year["fpl"]> => ({
+    ...fpl,
+    amounts: Object.fromEntries(
+      Object.entries(fpl.amounts).map(([k, v]) => [k, Math.round(v * 1.03)]),
+    ),
+  });
   const latest = (f: typeof file) =>
     f.years[String(Math.max(...Object.keys(f.years).map(Number)))]!;
 
@@ -91,8 +101,12 @@ describe("validateTaxDataFile catches", () => {
         ["MFJ", "Single", "HOH"].map((st) => `${next} ${s} ${st}`),
       ),
     ]);
+    // The poverty guidelines too, as one table.
+    expect(problems.map((p) => p.split(":")[0])).toContain(
+      `${next} fpl amounts`,
+    );
     // Nothing else is wrong with the copy, and no limit is named.
-    expect(problems).toHaveLength(copied.length);
+    expect(problems).toHaveLength(copied.length + 1);
     // The message tells a contributor what to do.
     expect(problems[0]).toMatch(
       new RegExp(
@@ -118,6 +132,7 @@ describe("validateTaxDataFile catches", () => {
     for (const s of ["ltcg", "irmaa"] as const)
       for (const b of Object.values(moved[s]!.brackets))
         b.forEach((r) => up(r as never));
+    moved.fpl = moveFpl(moved.fpl!);
     g.years[next] = moved;
     expect(validateTaxDataFile(g)).toEqual([]);
 
@@ -158,6 +173,7 @@ describe("validateTaxDataFile catches", () => {
     const frozen = JSON.parse(JSON.stringify(prev)) as typeof prev;
     frozen.withholding = moved.withholding;
     frozen.ltcg = moved.ltcg;
+    frozen.fpl = moved.fpl;
     for (const rows of Object.values(frozen.irmaa!.brackets))
       (rows as { annualSurcharge: number }[]).forEach((r) => {
         r.annualSurcharge = r.annualSurcharge * 1.02;
@@ -191,6 +207,7 @@ describe("validateTaxDataFile catches", () => {
         [...t.standard, ...t.checkbox].forEach((r) => up(r as never));
       for (const b of Object.values(y.irmaa!.brackets))
         b.forEach((r) => up(r as never));
+      y.fpl = moveFpl(y.fpl!);
       y.ltcg = { ...base.ltcg!, exception };
       return y;
     };
@@ -205,6 +222,150 @@ describe("validateTaxDataFile catches", () => {
     g.years[y1] = copy;
     const flagged = validateTaxDataFile(g).map((p) => p.split(":")[0]);
     expect(flagged).toContain(`${y1} withholding Single standard`);
+  });
+
+  /** The latest year carried to the next with every indexed table moved
+   *  2% (and the guidelines 3%): a clean next year to break one thing in. */
+  const nextYear = (base: Year): Year => {
+    const y = JSON.parse(JSON.stringify(base)) as Year;
+    const up = (r: Record<string, number | null>) => {
+      for (const k of [
+        "threshold",
+        "magiThreshold",
+        "baseWithholding",
+        "annualSurcharge",
+      ])
+        if (typeof r[k] === "number") r[k] = r[k] * 1.02;
+    };
+    for (const t of Object.values(y.withholding.tables))
+      [...t.standard, ...t.checkbox].forEach((r) => up(r as never));
+    for (const s of ["ltcg", "irmaa"] as const)
+      for (const b of Object.values(y[s]!.brackets))
+        b.forEach((r) => up(r as never));
+    y.fpl = moveFpl(y.fpl!);
+    delete y.withholding.exception;
+    return y;
+  };
+  const years = (f: typeof file) => {
+    const y1 = String(Math.max(...Object.keys(f.years).map(Number)) + 1);
+    return { y1, y2: String(Number(y1) + 1) };
+  };
+
+  // The poverty guidelines move every year (HHS), so a next year whose
+  // amounts equal the prior year's, size for size, was copied.
+  it("poverty guidelines copied from the prior year, unless the year's own exception says why", () => {
+    const f = clone();
+    const prev = latest(f);
+    const { y1, y2 } = years(f);
+    const copied = nextYear(prev);
+    copied.fpl = JSON.parse(JSON.stringify(prev.fpl)) as Year["fpl"];
+    f.years[y1] = copied;
+    const problems = validateTaxDataFile(f);
+    expect(problems.map((p) => p.split(":")[0])).toEqual([`${y1} fpl amounts`]);
+    expect(problems[0]).toMatch(
+      new RegExp(`the same amounts as .*give ${y1} fpl an exception`),
+    );
+
+    // The year's own exception ships it, and the same exception carried
+    // into a second year that repeats again still counts.
+    const exception = {
+      reason: "Published unchanged",
+      source: prev.fpl!.source,
+    };
+    copied.fpl!.exception = exception;
+    expect(validateTaxDataFile(f)).toEqual([]);
+    const again = nextYear(copied);
+    again.fpl = JSON.parse(JSON.stringify(copied.fpl)) as Year["fpl"];
+    f.years[y2] = again;
+    expect(validateTaxDataFile(f)).toEqual([]);
+
+    // Carried from a year whose amounts moved, it excuses nothing.
+    const g = clone();
+    latest(g).fpl!.exception = exception;
+    g.years[y1] = { ...nextYear(latest(g)), fpl: latest(g).fpl };
+    expect(validateTaxDataFile(g).map((p) => p.split(":")[0])).toEqual([
+      `${y1} fpl amounts`,
+    ]);
+  });
+
+  // The bounds check counts an exception the way the copy check does:
+  // the year's own, or carried from a prior year that broke the bounds
+  // too. A limit's exception is per limit.
+  it("an out-of-bounds jump excused only by an exception copied from a year in bounds", () => {
+    const f = clone();
+    const prev = latest(f);
+    const { y1 } = years(f);
+    const wageBase = prev.limits.ss_wage_base!;
+    const exception = { reason: "Law change", source: wageBase.source };
+    wageBase.exception = exception;
+    // The prior year's own exception, with the figure in bounds: harmless.
+    expect(validateTaxDataFile(f)).toEqual([]);
+    const jumped = nextYear(prev);
+    jumped.limits.ss_wage_base!.value *= 2;
+    f.years[y1] = jumped;
+    expect(validateTaxDataFile(f).map((p) => p.split(":")[0])).toEqual([
+      `${y1} ss_wage_base`,
+    ]);
+    // The year's own exception (a different reason) excuses the jump.
+    jumped.limits.ss_wage_base!.exception = { ...exception, reason: "New law" };
+    expect(validateTaxDataFile(f)).toEqual([]);
+
+    // A section's exception the same way: LTCG given one in a year whose
+    // thresholds stayed in bounds, then carried into a 20% jump.
+    const g = clone();
+    latest(g).ltcg!.exception = {
+      ...exception,
+      source: latest(g).ltcg!.source,
+    };
+    const ltcg = nextYear(latest(g));
+    for (const b of Object.values(ltcg.ltcg!.brackets))
+      for (const r of b as { threshold: number | null }[])
+        if (r.threshold) r.threshold *= 1.2;
+    g.years[y1] = ltcg;
+    const flagged = validateTaxDataFile(g).map((p) => p.split(":")[0]!);
+    expect(flagged.length).toBeGreaterThan(0);
+    expect(flagged.every((p) => p.startsWith(`${y1} ltcg `))).toBe(true);
+  });
+
+  it("an excused jump lasting several years, one exception carried through", () => {
+    const f = clone();
+    const prev = latest(f);
+    const { y1, y2 } = years(f);
+    const exception = {
+      reason: "Phased in over two years",
+      source: prev.limits.ss_wage_base!.source,
+    };
+    const step = (base: Year) => {
+      const y = nextYear(base);
+      y.limits.ss_wage_base = {
+        ...y.limits.ss_wage_base!,
+        value: base.limits.ss_wage_base!.value * 1.5,
+        exception,
+      };
+      return y;
+    };
+    f.years[y1] = step(prev);
+    f.years[y2] = step(f.years[y1]!);
+    expect(validateTaxDataFile(f)).toEqual([]);
+
+    // The shipped 2026 withholding exception (the OBBBA jump from 2025)
+    // carried into a next year that jumps again: excused the same way.
+    const g = clone();
+    const withholding = nextYear(latest(g));
+    withholding.withholding = JSON.parse(
+      JSON.stringify(latest(g).withholding),
+    ) as Year["withholding"];
+    for (const t of Object.values(withholding.withholding.tables))
+      for (const r of [...t.standard, ...t.checkbox] as {
+        threshold: number;
+        baseWithholding: number;
+      }[]) {
+        r.threshold *= 1.2;
+        r.baseWithholding *= 1.2;
+      }
+    g.years[y1] = withholding;
+    expect(latest(clone()).withholding.exception).toBeDefined();
+    expect(validateTaxDataFile(g)).toEqual([]);
   });
 
   it("brackets out of shape and a withholding table that doesn't add up", () => {

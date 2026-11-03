@@ -85,8 +85,9 @@ The check refuses a blank, so no figure or citation can carry over from last yea
 
 - only known keys; every year, section and figure cites a source, and every citation links to its document;
 - every year keeps the keys and filing statuses the year before had;
-- inflation-indexed figures move −2%…+15% a year; rates and fixed-by-law amounts don't move — unless an `exception` says why;
-- no indexed table (withholding, LTCG, IRMAA) is the same as the year before's, row for row, and IRMAA's surcharges don't repeat either: that's a copy not yet updated. A single limit may repeat. A table the publication really repeats needs an `exception` on that section, the year's own, or the same one carried through a repeat lasting several years (an exception copied from a year whose tables moved doesn't count);
+- inflation-indexed figures (limits, and the withholding, LTCG and IRMAA thresholds) move −2%…+15% a year; rates and fixed-by-law amounts don't move — unless an `exception` (on the limit, or on the section) says why;
+- no indexed table (withholding, LTCG, IRMAA, and the poverty guidelines in `fpl`, sizes 1–8) is the same as the year before's, row for row, and IRMAA's surcharges don't repeat either: that's a copy not yet updated. A single limit may repeat. A table the publication really repeats needs an `exception` on that section;
+- an `exception` counts, for the bounds and the repeat checks alike, when it's the year's own (not the same as the year before's), or the same one carried from a year before that needed it too (a freeze or a jump lasting several years). One copied along with a whole file, from a year that needed none, doesn't count;
 - withholding tables add up; no blanks;
 - the generated schemas and the key table below are current.
 

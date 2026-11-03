@@ -24,7 +24,8 @@ const within = (prev: number, next: number) =>
   (next / prev >= INDEXED_BOUNDS[0] && next / prev <= INDEXED_BOUNDS[1]);
 
 type Row = Record<string, unknown>;
-type Section = "withholding" | "ltcg" | "irmaa";
+type Section = "withholding" | "ltcg" | "irmaa" | "fpl";
+type Exception = { reason: string; source: string };
 
 const rowsOf = (rows: unknown): Row[] =>
   Array.isArray(rows) ? (rows as Row[]) : [];
@@ -71,6 +72,19 @@ function repeatsIn(
   s: Section,
 ): { table: string; what: string }[] {
   const out: { table: string; what: string }[] = [];
+  if (s === "fpl") {
+    // Household sizes 1-8: the guidelines move every year.
+    const was = prev.fpl?.amounts;
+    const now = next.fpl?.amounts;
+    const sizes = ["1", "2", "3", "4", "5", "6", "7", "8"];
+    if (
+      was &&
+      now &&
+      sizes.every((k) => Number.isFinite(now[k]) && now[k] === was[k])
+    )
+      out.push({ table: "amounts", what: "the same amounts" });
+    return out;
+  }
   if (s === "withholding") {
     for (const [st, t] of Object.entries(next.withholding?.tables ?? {}))
       for (const kind of ["standard", "checkbox"] as const)
@@ -91,19 +105,39 @@ function repeatsIn(
 }
 
 /**
+ * Whether `next`'s exception (`pick` finds it: a section's, or one
+ * limit's) excuses what a check found against `prev`. It counts when it's
+ * the year's own (not the same as `prev`'s), or when it's carried over
+ * from a `prev` that needed it against `older` too (`broke`: the same
+ * check found something there), like a freeze lasting several years
+ * (IRMAA's 2011-2017). An exception copied along with a whole file, from
+ * a year that needed none, doesn't count. `older` is the shipped year
+ * before `prev` (none: a carried exception never counts).
+ */
+function exceptionCounts(
+  older: TaxDataYear | undefined,
+  prev: TaxDataYear,
+  next: TaxDataYear,
+  pick: (d: TaxDataYear) => Exception | undefined,
+  broke: (was: TaxDataYear, now: TaxDataYear) => boolean,
+): boolean {
+  const mine = pick(next);
+  if (!mine) return false;
+  const was = pick(prev);
+  if (!was || rowText(mine) !== rowText(was)) return true;
+  return !!older && broke(older, prev);
+}
+
+/**
  * The indexed tables in `next` that repeat the prior year's (`prev`), in
  * full: each withholding table (the 1040 brackets are derived from the
- * standard ones), each status's LTCG and IRMAA table, and IRMAA's
- * surcharges on their own. An indexed table moves every year, so a repeat
- * was copied and not updated. Tables only: a single `limits` value can
- * legitimately repeat (the 401(k) limit was $16,500 in 2009, 2010 and
- * 2011). A blank table (no figures yet) is left to the blank checks.
- *
- * The section's `exception` (reason and source) ships a table that really
- * repeats. It counts when it's the year's own, or when it's carried over
- * from a prior year that repeated too (a freeze lasting several years,
- * like IRMAA's 2011-2017): an exception copied along with a whole file,
- * from a year whose tables moved, doesn't count.
+ * standard ones), each status's LTCG and IRMAA table, IRMAA's surcharges
+ * on their own, and the poverty guidelines (`fpl`, sizes 1-8). An indexed
+ * table moves every year, so a repeat was copied and not updated. Tables
+ * only: a single `limits` value can legitimately repeat (the 401(k) limit
+ * was $16,500 in 2009, 2010 and 2011). A blank table (no figures yet) is
+ * left to the blank checks. The section's `exception` (reason and source)
+ * ships a table that really repeats, when it counts (`exceptionCounts`).
  */
 function copiedTables(
   older: TaxDataYear | undefined,
@@ -111,16 +145,64 @@ function copiedTables(
   next: TaxDataYear,
 ): { section: Section; table: string; what: string }[] {
   const out: { section: Section; table: string; what: string }[] = [];
-  for (const s of ["withholding", "ltcg", "irmaa"] as const) {
+  for (const s of ["withholding", "ltcg", "irmaa", "fpl"] as const) {
     const repeats = repeatsIn(prev, next, s);
-    if (repeats.length === 0) continue;
-    const mine = next[s]?.exception;
-    const carried =
-      !!mine && JSON.stringify(mine) === JSON.stringify(prev[s]?.exception);
-    const excused =
-      !!mine && (!carried || (!!older && repeatsIn(older, prev, s).length > 0));
-    if (!excused) out.push(...repeats.map((r) => ({ section: s, ...r })));
+    if (
+      repeats.length > 0 &&
+      !exceptionCounts(
+        older,
+        prev,
+        next,
+        (d) => d[s]?.exception,
+        (w, n) => repeatsIn(w, n, s).length > 0,
+      )
+    )
+      out.push(...repeats.map((r) => ({ section: s, ...r })));
   }
+  return out;
+}
+
+/** A limit's move from `was` to `now` its kind doesn't allow (indexed:
+ *  outside the bounds; a rate or fixed amount: any move), as text. */
+function limitBreak(
+  k: string,
+  was: number | undefined,
+  now: number | undefined,
+): string | undefined {
+  const kind = taxLimitKey(k)?.kind;
+  if (was === undefined || !kind) return undefined;
+  const ok = kind === "indexed" ? within(was, now as number) : was === now;
+  return ok ? undefined : `${was} → ${now} (${kind})`;
+}
+
+/** Thresholds in one bounds-checked section of `now` that moved outside
+ *  the bounds from `was`, as text (each with its table and row). */
+function sectionBreaks(
+  was: TaxDataYear,
+  now: TaxDataYear,
+  s: "withholding" | "ltcg" | "irmaa",
+): string[] {
+  const out: string[] = [];
+  type T = { threshold?: number | null; magiThreshold?: number };
+  const check = (label: string, p: T[], n: T[]) =>
+    n.forEach((r, i) => {
+      const a = p[i]?.threshold ?? p[i]?.magiThreshold;
+      const b = r.threshold ?? r.magiThreshold;
+      if (a && b && !within(a, b)) out.push(`${label} row ${i}: ${a} → ${b}`);
+    });
+  if (s === "withholding") {
+    for (const [st, t] of Object.entries(now.withholding?.tables ?? {}))
+      for (const kind of ["standard", "checkbox"] as const)
+        check(
+          `withholding ${st} ${kind}`,
+          (was.withholding?.tables[st]?.[kind] ?? []) as T[],
+          (t?.[kind] ?? []) as T[],
+        );
+    return out;
+  }
+  if (!was[s] || !now[s]) return out;
+  for (const [st, br] of Object.entries(now[s]!.brackets))
+    check(`${s} ${st}`, (was[s]!.brackets[st] ?? []) as T[], br as T[]);
   return out;
 }
 
@@ -295,8 +377,12 @@ export function validateTaxDataFile(
   }
 
   for (const [prev, next] of pairs) {
-    const before = file.years[prev]!.limits;
-    const after = file.years[next]!.limits;
+    const a = file.years[prev]!;
+    const b = file.years[next]!;
+    const before = a.limits;
+    const after = b.limits;
+    const olderYear = pairs.find(([, n]) => n === prev)?.[0];
+    const older = olderYear === undefined ? undefined : file.years[olderYear];
     const sunset = before.obbba_senior_deduction_sunset_year?.value;
     for (const k of Object.keys(before))
       if (
@@ -304,48 +390,38 @@ export function validateTaxDataFile(
         !(k.startsWith("obbba_") && sunset !== undefined && next > sunset)
       )
         add(`${next}: dropped ${k}`);
+    // An exception lets a figure move outside its bounds when it counts
+    // (`exceptionCounts`): a limit's own, per limit; a section's for its
+    // tables.
     for (const [k, l] of Object.entries(after)) {
-      const was = before[k]?.value;
-      const kind = taxLimitKey(k)?.kind;
-      if (was === undefined || !kind || l.exception) continue;
-      const ok = kind === "indexed" ? within(was, l.value) : was === l.value;
-      if (!ok) add(`${next} ${k}: ${was} → ${l.value} (${kind})`);
+      const broke = limitBreak(k, before[k]?.value, l.value);
+      if (
+        broke &&
+        !exceptionCounts(
+          older,
+          a,
+          b,
+          (d) => d.limits[k]?.exception,
+          (w, n) => !!limitBreak(k, w.limits[k]?.value, n.limits[k]?.value),
+        )
+      )
+        add(`${next} ${k}: ${broke}`);
     }
-    const a = file.years[prev]!;
-    const b = file.years[next]!;
-    const check = (
-      label: string,
-      was: { threshold?: number | null }[],
-      now: { threshold?: number | null }[],
-    ) =>
-      now.forEach((r, i) => {
-        const p = was[i]?.threshold;
-        if (p && r.threshold && !within(p, r.threshold))
-          add(`${label} row ${i}: ${p} → ${r.threshold}`);
-      });
-    if (!b.withholding.exception)
-      for (const [st, t] of Object.entries(b.withholding.tables))
-        for (const kind of ["standard", "checkbox"] as const)
-          check(
-            `${next} withholding ${st} ${kind}`,
-            (a.withholding.tables[st]?.[kind] ?? []) as { threshold: number }[],
-            t[kind] as { threshold: number }[],
-          );
-    for (const s of ["ltcg", "irmaa"] as const)
-      if (a[s] && b[s] && !b[s]!.exception)
-        for (const [st, br] of Object.entries(b[s]!.brackets)) {
-          const norm = (rows: unknown[]) =>
-            (
-              rows as { magiThreshold?: number; threshold?: number | null }[]
-            ).map((r) => ({ threshold: r.threshold ?? r.magiThreshold }));
-          check(`${next} ${s} ${st}`, norm(a[s]!.brackets[st] ?? []), norm(br));
-        }
-    const older = pairs.find(([, n]) => n === prev)?.[0];
-    for (const { section, table, what } of copiedTables(
-      older === undefined ? undefined : file.years[older],
-      a,
-      b,
-    ))
+    for (const s of ["withholding", "ltcg", "irmaa"] as const) {
+      const broke = sectionBreaks(a, b, s);
+      if (
+        broke.length > 0 &&
+        !exceptionCounts(
+          older,
+          a,
+          b,
+          (d) => d[s]?.exception,
+          (w, n) => sectionBreaks(w, n, s).length > 0,
+        )
+      )
+        for (const p of broke) add(`${next} ${p}`);
+    }
+    for (const { section, table, what } of copiedTables(older, a, b))
       add(
         `${next} ${section} ${table}: ${what} as ${prev}'s. Indexed tables change every year, so this one looks copied and not updated: key it from the ${next} publication. If the publication really repeats it, give ${next} ${section} an exception (reason and source).`,
       );
