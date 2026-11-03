@@ -20,8 +20,6 @@ import {
   createTestCaller,
   seedPerformanceAccount,
   seedPerson,
-  seedRetirementProfile,
-  seedRetirementProfilePerson,
   viewerSession,
   adminSession,
 } from "./setup";
@@ -629,15 +627,9 @@ describe("retirement.returnRates", () => {
 // ---------------------------------------------------------------------------
 // RETIREMENT PROFILES (multiple profiles + the Plan field).
 //
-// Every real household starts with exactly one profile ("Current Plan"),
-// created by step A's migration backfill against pre-existing data. There is
-// no bare `create` on this router -- retirement_settings has too many
-// NOT NULL columns with no sensible blank default, so `duplicate` is the
-// only creation path (matching the design plan's own recommendation that
-// "duplicate to compare" be the primary action). Tests here bootstrap their
-// first profile the same way the real migration did: seedRetirementProfile
-// inserts the retirement_profiles row directly and points existing
-// retirement_settings rows at it.
+// A household's first profile ("Current Retirement") comes from its first
+// retirement settings save (adoptFirstRetirementProfile). There is no bare
+// `create` on this router -- `duplicate` is the only way to add more.
 // ---------------------------------------------------------------------------
 
 describe("retirement.retirementProfiles", () => {
@@ -673,13 +665,17 @@ describe("retirement.retirementProfiles", () => {
       salaryAnnualIncrease: "0.02",
     });
 
-    firstProfileId = await seedRetirementProfile(ctx.db, "Current Plan");
-    await seedRetirementProfilePerson(ctx.db, firstProfileId, personA, {
-      retirementAge: 65,
-      endAge: 95,
+    // The first save made the first profile, with a row per person.
+    const [first] = await caller.retirement.retirementProfiles.list();
+    firstProfileId = first!.id;
+    await caller.retirement.retirementProfilePeople.upsertPerson({
+      profileId: firstProfileId,
+      personId: personA,
       ssStartAge: 67,
     });
-    await seedRetirementProfilePerson(ctx.db, firstProfileId, personB, {
+    await caller.retirement.retirementProfilePeople.upsertPerson({
+      profileId: firstProfileId,
+      personId: personB,
       retirementAge: 62,
       endAge: 90,
       ssStartAge: 65,
@@ -688,10 +684,10 @@ describe("retirement.retirementProfiles", () => {
 
   afterAll(() => cleanup());
 
-  it("list returns the seeded profile", async () => {
+  it("list returns the first profile", async () => {
     const rows = await caller.retirement.retirementProfiles.list();
     expect(rows).toHaveLength(1);
-    expect(rows[0]!.name).toBe("Current Plan");
+    expect(rows[0]!.name).toBe("Current Retirement");
     expect(rows[0]!.id).toBe(firstProfileId);
   });
 

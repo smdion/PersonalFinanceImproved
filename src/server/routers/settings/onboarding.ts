@@ -12,6 +12,7 @@ import {
   firstRunState,
 } from "@/server/helpers/first-run";
 import { lockForTransaction } from "@/server/helpers/transaction-lock";
+import { adoptFirstRetirementProfile } from "@/server/helpers/retirement-profile";
 import type { DbOrTx } from "@/server/helpers/transforms";
 
 /** Refuse unless the install still needs its first admin (first-run.ts). */
@@ -37,6 +38,8 @@ export const onboardingProcedures = {
         target: schema.appSettings.key,
         set: { value: true },
       });
+    // Settings saved before onboarding finished become the first profile.
+    await adoptFirstRetirementProfile(ctx.db);
     return { ok: true };
   }),
 

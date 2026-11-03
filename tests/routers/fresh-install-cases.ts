@@ -199,7 +199,7 @@ export function freshInstallCases(fresh: () => Promise<FreshInstall>): void {
     timeout,
   );
 
-  it.fails(
+  it(
     "first run (admin, onboarding, retirement settings) leaves a Retirement profile",
     async () => {
       const install = await fresh();
@@ -215,7 +215,7 @@ export function freshInstallCases(fresh: () => Promise<FreshInstall>): void {
     timeout,
   );
 
-  it.fails(
+  it(
     "after the first run and a budget profile, the active profiles save as a Plan",
     async () => {
       const install = await fresh();

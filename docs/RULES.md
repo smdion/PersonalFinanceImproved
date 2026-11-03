@@ -469,6 +469,16 @@ baseline to diff against — only the **active** profile of each kind
 the active profiles, and an edit to a profile field saves to the profile it
 belongs to.
 
+**The first Retirement profile** is "Current Retirement", made once by
+`adoptFirstRetirementProfile` (`server/helpers/retirement-profile.ts`) from
+the household's first saved retirement settings: on the first
+`retirementSettings.upsert` with no profile, on `completeOnboarding`, and by
+the demo seed. It takes every settings row with no profile, adds everyone
+without one the way `people.create` adds a person (one helper), so each
+person has both rows, and makes the profile active, in one transaction
+under the first-profile lock (which `people.create` takes too). An install that already has a
+profile is never touched.
+
 **A Plan is a named set of profiles** — one of each kind, nothing else
 (`scenarios`: `name`, `description`, four profile FKs, `ON DELETE set null`).
 It holds no values of its own. **Applying** a Plan (`settings.scenarios.activate`

@@ -64,6 +64,8 @@ import {
   resolveRetirementProfileIdFrom,
   pickProfileSettingsRow,
   resolveRetirementProfileId,
+  adoptFirstRetirementProfile,
+  lockFirstRetirementProfile,
 } from "@/server/helpers/retirement-profile";
 
 /** VPW's end age as its editor bounds it (config paramFields). */
@@ -869,40 +871,49 @@ export const retirementRouter = createTRPCRouter({
                 "Unspent required withdrawals can only go to an active Retirement brokerage",
             });
         }
-        const profileIdGiven = Object.prototype.hasOwnProperty.call(
-          input,
-          "profileId",
-        );
-        const resolvedProfileId = profileIdGiven
-          ? input.profileId!
-          : await resolveRetirementProfileId(ctx.db);
-        const profileScope =
-          resolvedProfileId != null
-            ? eq(schema.retirementSettings.profileId, resolvedProfileId)
-            : isNull(schema.retirementSettings.profileId);
-
-        const existing = await ctx.db
-          .select()
-          .from(schema.retirementSettings)
-          .where(
-            and(
-              eq(schema.retirementSettings.personId, input.personId),
-              profileScope,
-            ),
-          );
-        // filing_status: null = "Auto" (follow this year's filing status,
-        // resolved when read — lib/pure/filing-status.ts); not sent = keep
-        // what's stored. Never defaulted here.
-        const { profileId: _profileIdKey, ...inputFields } = input;
-        const resolvedInput = {
-          ...inputFields,
-          profileId: resolvedProfileId,
-          filingStatus:
-            input.filingStatus === undefined
-              ? (existing[0]?.filingStatus ?? null)
-              : input.filingStatus,
-        };
         return ctx.db.transaction(async (tx) => {
+          const profileIdGiven = Object.prototype.hasOwnProperty.call(
+            input,
+            "profileId",
+          );
+          let resolvedProfileId = profileIdGiven
+            ? input.profileId!
+            : await resolveRetirementProfileId(tx);
+          // No profile at all yet: this save makes the first one. Wait out
+          // a first save in flight, then look again, so two can't make two.
+          const firstSave =
+            resolvedProfileId == null &&
+            (!profileIdGiven || (await resolveRetirementProfileId(tx)) == null);
+          if (firstSave) {
+            await lockFirstRetirementProfile(tx);
+            resolvedProfileId = await resolveRetirementProfileId(tx);
+          }
+          const profileScope =
+            resolvedProfileId != null
+              ? eq(schema.retirementSettings.profileId, resolvedProfileId)
+              : isNull(schema.retirementSettings.profileId);
+
+          const existing = await tx
+            .select()
+            .from(schema.retirementSettings)
+            .where(
+              and(
+                eq(schema.retirementSettings.personId, input.personId),
+                profileScope,
+              ),
+            );
+          // filing_status: null = "Auto" (follow this year's filing status,
+          // resolved when read — lib/pure/filing-status.ts); not sent = keep
+          // what's stored. Never defaulted here.
+          const { profileId: _profileIdKey, ...inputFields } = input;
+          const resolvedInput = {
+            ...inputFields,
+            profileId: resolvedProfileId,
+            filingStatus:
+              input.filingStatus === undefined
+                ? (existing[0]?.filingStatus ?? null)
+                : input.filingStatus,
+          };
           const saved =
             existing.length > 0
               ? await tx
@@ -970,6 +981,10 @@ export const retirementRouter = createTRPCRouter({
               );
           }
 
+          if (firstSave && resolvedProfileId == null) {
+            const adopted = await adoptFirstRetirementProfile(tx);
+            if (adopted != null) return { ...saved!, profileId: adopted };
+          }
           return saved;
         });
       }),
