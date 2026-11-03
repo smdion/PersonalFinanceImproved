@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
 # Deploy script for Ledgr
 #
-# Usage: pnpm deploy <version> [--skip-demo] [--force]
+# Usage: pnpm deploy <version> [--skip-demo] [--force] [--dry-run]
 #   e.g.: pnpm deploy 0.3.2
 #         pnpm deploy 0.3.2 --skip-demo   # skip demo health check
-#         pnpm deploy 0.3.2 --force        # deploy even if version mismatch
+#         pnpm deploy 0.3.2 --force       # deploy despite a version mismatch,
+#                                         # uncommitted changes or no green CI
+#         pnpm deploy 0.3.2 --dry-run     # run the local checks (version, CI,
+#                                         # clean tree), then stop: no SSH, no
+#                                         # build; .env.deploy not needed
 #
 # Configuration: create .env.deploy (gitignored) with:
 #   DEPLOY_SSH_KEY=/path/to/ssh/key
@@ -16,7 +20,9 @@
 #
 # Steps:
 #   1. Validate version matches package.json (bump it on the feature branch
-#      before running this — the git tag does NOT need to exist yet)
+#      before running this — the git tag does NOT need to exist yet), and
+#      refuse unless CI is green for HEAD's commit (scripts/ci-gate.ts: the
+#      newest push run of ci.yml, every job in it, PostgreSQL included)
 #   2. Build Docker image on host (tagged as ledgr:X.Y.Z + ledgr:latest)
 #   3. Restart demo container first (canary)
 #   4. Health-check demo
@@ -38,11 +44,39 @@ YELLOW='\033[0;33m'
 BOLD='\033[1m'
 NC='\033[0m'
 
+# --- Parse arguments ---
+VERSION=""
+SKIP_DEMO=false
+FORCE=false
+DRY_RUN=false
+
+for arg in "$@"; do
+  case "$arg" in
+    --skip-demo) SKIP_DEMO=true ;;
+    --force) FORCE=true ;;
+    --dry-run) DRY_RUN=true ;;
+    -*) echo -e "${RED}Unknown flag: $arg${NC}"; exit 1 ;;
+    *) VERSION="$arg" ;;
+  esac
+done
+
+if [[ -z "$VERSION" ]]; then
+  echo -e "${RED}Usage: pnpm deploy <version> [--skip-demo] [--force] [--dry-run]${NC}"
+  echo "  e.g.: pnpm deploy 0.3.2"
+  exit 1
+fi
+
 # --- Load configuration from .env.deploy ---
 ENV_FILE="$(dirname "$0")/../.env.deploy"
 if [[ -f "$ENV_FILE" ]]; then
   # shellcheck source=/dev/null
   source "$ENV_FILE"
+elif $DRY_RUN; then
+  echo -e "${YELLOW}--dry-run: no .env.deploy; host settings shown as placeholders${NC}"
+  DEPLOY_SSH_KEY="${DEPLOY_SSH_KEY:-<ssh-key>}"
+  DEPLOY_SSH_HOST="${DEPLOY_SSH_HOST:-<user@host>}"
+  DEPLOY_BUILD_DIR="${DEPLOY_BUILD_DIR:-<build-dir>}"
+  DEPLOY_STACK_DIR="${DEPLOY_STACK_DIR:-<stack-dir>}"
 else
   echo -e "${RED}.env.deploy not found at $ENV_FILE${NC}"
   echo ""
@@ -67,35 +101,19 @@ SSH_CMD="ssh -i $SSH_KEY -o StrictHostKeyChecking=no -o ConnectTimeout=10 $SSH_H
 HEALTH_TIMEOUT=30
 HEALTH_INTERVAL=5
 
-# --- Parse arguments ---
-VERSION=""
-SKIP_DEMO=false
-FORCE=false
-
-for arg in "$@"; do
-  case "$arg" in
-    --skip-demo) SKIP_DEMO=true ;;
-    --force) FORCE=true ;;
-    -*) echo -e "${RED}Unknown flag: $arg${NC}"; exit 1 ;;
-    *) VERSION="$arg" ;;
-  esac
-done
-
-if [[ -z "$VERSION" ]]; then
-  echo -e "${RED}Usage: pnpm deploy <version> [--skip-demo] [--force]${NC}"
-  echo "  e.g.: pnpm deploy 0.3.2"
-  exit 1
-fi
-
 TAG="v$VERSION"
 
-echo -e "${BOLD}Deploying Ledgr $TAG${NC}"
+if $DRY_RUN; then
+  echo -e "${BOLD}Deploying Ledgr $TAG (dry run)${NC}"
+else
+  echo -e "${BOLD}Deploying Ledgr $TAG${NC}"
+fi
 echo "=============================="
 
 # --- Preflight checks ---
 
 # 1. Verify SSH key exists
-if [[ ! -f "$SSH_KEY" ]]; then
+if ! $DRY_RUN && [[ ! -f "$SSH_KEY" ]]; then
   echo -e "${RED}SSH key not found at $SSH_KEY${NC}"
   echo "Extract from vault first — see OPS.md § Container Build & Deploy"
   exit 1
@@ -112,7 +130,23 @@ if [[ "$PKG_VERSION" != "$VERSION" ]]; then
   echo -e "${YELLOW}--force: continuing despite mismatch${NC}"
 fi
 
-# 3. (Tag check removed — in the deploy-then-release flow, the tag is created
+# 3. CI must be green for the commit being deployed. Without a green run
+#    (none yet, still running, failed, or a job missing), refuse; --force
+#    deploys anyway with a warning.
+HEAD_SHA=$(git rev-parse HEAD)
+echo "Checking CI for ${HEAD_SHA:0:8}..."
+if npx tsx scripts/ci-gate.ts "$HEAD_SHA"; then
+  echo -e "${GREEN}  CI green${NC}"
+elif $FORCE; then
+  echo -e "${YELLOW}${BOLD}WARNING: --force: deploying ${HEAD_SHA:0:8} WITHOUT a green CI run.${NC}"
+  echo -e "${YELLOW}  This commit has no passing CI run.${NC}"
+else
+  echo -e "${RED}Refusing to deploy ${HEAD_SHA:0:8}: no green CI run (reason above).${NC}"
+  echo "Push the commit and wait for CI, or use --force to deploy anyway"
+  exit 1
+fi
+
+# (Tag check removed — in the deploy-then-release flow, the tag is created
 #    AFTER deploy by `pnpm release`. The version is already in package.json,
 #    so the build will bake it in correctly.)
 
@@ -123,6 +157,12 @@ if [[ -n "$(git status --porcelain)" ]]; then
     echo "Commit or stash changes, or use --force to deploy anyway"
     exit 1
   fi
+fi
+
+if $DRY_RUN; then
+  echo -e "\n${GREEN}${BOLD}Dry run: the checks passed; stopping before SSH.${NC}"
+  echo "A deploy would now build ledgr:$VERSION on $SSH_HOST, restart $DEMO_CONTAINER then $PROD_CONTAINER, and prune."
+  exit 0
 fi
 
 # 5. Verify host is reachable

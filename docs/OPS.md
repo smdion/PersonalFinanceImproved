@@ -16,7 +16,7 @@ The supported install is the Docker image with the sample compose file (README ย
 A version is deployed before it is released, so a deploy problem is fixed on the version branch without using up a version number. Before `pnpm deploy X.Y.Z`:
 
 - `package.json` holds the version being deployed (`deploy.sh` refuses a mismatch unless `--force`).
-- CI is green on the branch: type-check, lint, tests, build, docs freshness, migrations check.
+- CI is green for the commit being deployed. `deploy.sh` checks before it builds (`scripts/ci-gate.ts`, through `gh`): the newest push run of `ci.yml` for HEAD's exact commit must have completed with success, with every job that commit's `ci.yml` defines (`ci` and `PostgreSQL`) run and green. Push runs only: the image build and the compose boot test, which signs in through the first-run wizard, run on pushes. No run yet, a run still going, a red or skipped job, or `gh` not signed in: it refuses. `--force` deploys anyway after a printed warning; `--dry-run` runs the version, CI and clean-tree checks and stops before touching the host.
 - If the release has a migration: it was tried against a copy of production data, and a database dump was taken (ยง Backups).
 
 `pnpm deploy X.Y.Z` (`scripts/deploy.sh`, configured by a gitignored `.env.deploy`) builds the image on the host, restarts the demo container first and stops if it isn't healthy, then restarts production and checks `/api/health` reports the new version. It is safe to re-run with the same version. After it, check both containers' logs for the migration events and for errors, and smoke-test production.
