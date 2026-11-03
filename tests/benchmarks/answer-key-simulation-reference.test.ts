@@ -20,8 +20,6 @@
  * inflation shock, plan inflation 0 (SP-116). The counts are exact.
  */
 import { describe, expect, it } from "vitest";
-import * as fs from "fs";
-import * as path from "path";
 import {
   ALL_IN_ONE,
   NO_CLAMP,
@@ -30,9 +28,9 @@ import {
 } from "../fixtures/answer-key-simulation";
 import { createPRNG, sampleCorrelatedReturns } from "@/lib/calculators/random";
 import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
-import { calculateProjection } from "@/lib/calculators/engine";
-import { assessPlan } from "@/lib/calculators/plan-outcome";
 import type { MonteCarloResult } from "@/lib/calculators/types";
+import { REPLAY_RATES, replayGrid } from "./history-replay";
+import { REPLAY_GRID_BASELINE } from "./behavior-baseline-replay-grid";
 
 /** SP-98: two-sided α = 1e-4. */
 const Z = 3.89;
@@ -76,6 +74,13 @@ function once<T>(f: () => T): () => T {
   let value: T | undefined;
   return () => (value ??= f());
 }
+
+/** P2 at n 20,000, seed 31: shared by K13 and the behavior baseline. */
+const p2Seed31 = once((): MonteCarloResult =>
+  calculateMonteCarlo(p2(20_000, 31)),
+);
+/** The § 11.6 replay grid: shared by K15 and the behavior baseline. */
+const replayed = once(replayGrid);
 
 // ---------------------------------------------------------------------------
 // K2: the log-normal sampler (§ 12.2)
@@ -192,7 +197,7 @@ describe("answer key: P2, 60/40 at 4%, 30 years", () => {
   // start on the end-of-year-30 index (quantile SE about .001). n 20,000,
   // seed 31 (the review's seed, fixed in advance; on 24bae33b it gave
   // .8935, SE .00218).
-  const run = once((): MonteCarloResult => calculateMonteCarlo(p2(20_000, 31)));
+  const run = p2Seed31;
   const n = 20_000;
 
   it(
@@ -294,66 +299,6 @@ describe("answer key: P0, one class, no flows", () => {
 // K15: the 30-year rolling grid, replayed through the engine (§ 11.6)
 // ---------------------------------------------------------------------------
 
-/** The export's year-by-year series (spec Appendix A): stock growth `g`
- *  and dividends `d` as shares of the year's equity start, bond return
- *  `b` (`braw`, the raw yield a cycle's last year earns, only where no
- *  other cycle covers the year) and CPI change `pi`, each the median over
- *  the cycles that contain the year (they agree to rounding). */
-function exportSeries() {
-  const text = fs.readFileSync(
-    path.join(__dirname, "cfiresim-export.csv"),
-    "utf8",
-  );
-  const [head, ...lines] = text.split(/\r?\n/);
-  const cols = head!.split(",");
-  const at = (k: string) => cols.indexOf(k);
-  const rows = lines
-    .map((l) => l.split(","))
-    .filter((c) => /^\d+$/.test((c[at("cycle_starting_year")] ?? "").trim()));
-  const num = (c: string[], k: string) => Number(c[at(k)] || 0);
-  const by = new Map<
-    number,
-    Record<"g" | "d" | "b" | "braw" | "pi", number[]>
-  >();
-  const slot = (y: number) => {
-    if (!by.has(y)) by.set(y, { g: [], d: [], b: [], braw: [], pi: [] });
-    return by.get(y)!;
-  };
-  const cycles = new Map<number, string[][]>();
-  for (const c of rows) {
-    const y = num(c, "year");
-    const s = slot(y);
-    s.g.push(num(c, "equities_growth") / num(c, "equities_start"));
-    s.d.push(num(c, "dividends") / num(c, "equities_start"));
-    (num(c, "segment_number") === 56 ? s.braw : s.b).push(
-      num(c, "bonds_growth") / num(c, "bonds_start"),
-    );
-    const start = num(c, "cycle_starting_year");
-    cycles.set(start, [...(cycles.get(start) ?? []), c]);
-  }
-  for (const cyc of cycles.values())
-    for (let i = 1; i < cyc.length; i++)
-      slot(num(cyc[i]!, "year")).pi.push(
-        num(cyc[i]!, "cumulative_cpi") / num(cyc[i - 1]!, "cumulative_cpi"),
-      );
-  const median = (xs: number[]) =>
-    quantile(
-      [...xs].sort((x, y) => x - y),
-      0.5,
-    );
-  const g = new Map<number, number>();
-  const d = new Map<number, number>();
-  const b = new Map<number, number>();
-  const pi = new Map<number, number>();
-  for (const [y, s] of by) {
-    g.set(y, median(s.g));
-    d.set(y, median(s.d));
-    b.set(y, median(s.b.length ? s.b : s.braw));
-    if (s.pi.length) pi.set(y, median(s.pi) - 1);
-  }
-  return { g, d, b, pi };
-}
-
 describe("answer key: history replayed through the engine", () => {
   it(
     "sim/K15 [SIM-09] the 42 cells of the 30-year grid, and the 4% failures",
@@ -362,8 +307,9 @@ describe("answer key: history replayed through the engine", () => {
       // (125 periods of 30 years), the stock share's return g + d plus the
       // bond share's b, rebalanced yearly, no fee; withdraw rate × start at
       // the start of each year, indexed by the export's CPI; success when
-      // every withdrawal is paid. Expected counts, out of 125 (the spec's
-      // own replay; the review matched all 42 through Ledgr):
+      // every withdrawal is paid (`history-replay.ts`). Expected counts,
+      // out of 125 (the spec's own replay; the review matched all 42
+      // through Ledgr):
       const expected: Record<string, number[]> = {
         // stocks: successes at 3%, 3.5%, 4%, 4.5%, 5%, 6%, 7%
         "1": [125, 125, 120, 113, 99, 85, 66],
@@ -398,42 +344,84 @@ describe("answer key: history replayed through the engine", () => {
           [1969, 26],
         ],
       };
-      const rates = [0.03, 0.035, 0.04, 0.045, 0.05, 0.06, 0.07];
-      const { g, d, b, pi } = exportSeries();
-      const got: Record<string, number[]> = {};
-      const fails: Record<string, [number, number][]> = {};
-      for (const key of Object.keys(expected)) {
-        const w = Number(key);
-        got[key] = rates.map((rate) => {
-          let ok = 0;
-          for (let s0 = 1871; s0 <= 1995; s0++) {
-            const years = Array.from({ length: 30 }, (_, j) => s0 + j);
-            const outcome = assessPlan(
-              calculateProjection(
-                retiree({
-                  start: 1_000_000,
-                  spend: rate * 1_000_000,
-                  years: 30,
-                  inflation: 0,
-                  returnPath: years.map(
-                    (y) => w * (g.get(y)! + d.get(y)!) + (1 - w) * b.get(y)!,
-                  ),
-                  // Year 1's withdrawal is unindexed; year j's carries the
-                  // CPI change into calendar year s0 + j.
-                  shocks: years.map((y, j) => (j === 0 ? 0 : pi.get(y)!)),
-                }),
-              ),
-            );
-            if (outcome.succeeded) ok++;
-            else if (rate === 0.04)
-              (fails[key] ??= []).push([s0, outcome.failureYear - 2026 + 1]);
-          }
-          return ok;
-        });
-      }
+      const grid = replayed();
+      const got = Object.fromEntries(
+        Object.keys(expected).map((key) => [
+          key,
+          REPLAY_RATES.map((rate) => grid[`${key}|${rate}`]!.successes),
+        ]),
+      );
       expect(got).toEqual(expected);
       for (const key of Object.keys(failingAt4))
-        expect(fails[key], `stocks ${key} at 4%`).toEqual(failingAt4[key]);
+        expect(grid[`${key}|0.04`]!.failures, `stocks ${key} at 4%`).toEqual(
+          failingAt4[key],
+        );
+    },
+    SLOW,
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Behavior baseline (v0.10.x), part b: pins current behavior
+// ---------------------------------------------------------------------------
+
+describe("behavior baseline: the seeded Simulation and the replay grid", () => {
+  // v0.10.x is structure only: no displayed figure may change. These pin
+  // today's output, bugs included (K12's shared trials, K13b's deflator
+  // date), not correctness: the answer-key cases above judge that. Never
+  // re-pin to make one pass; a change is a figure change. Removed by the
+  // v0.11 change that moves them (seed mixing, the deflator date).
+  // Recorded on v0.10.0; Node 22.23.2 and 26.13.0 gave identical figures.
+  it(
+    "baseline: P2, seed 31, n 20,000 succeeds 0.8935 exactly",
+    () => {
+      const r = p2Seed31();
+      expect(r.successRate).toBe(0.8935);
+      expect(r.failureReasonRates).toEqual({
+        depleted: 0.1065,
+        penaltyGap: 0,
+        shortfall: 0,
+      });
+      // Terminal balances to the cent: nominal, then today's dollars.
+      const pins: [string, number, number][] = [
+        ["nominal p25", r.distributions.terminalBalance.p25, 899561.0725],
+        ["nominal median", r.distributions.terminalBalance.median, 2481552.5],
+        ["nominal p75", r.distributions.terminalBalance.p75, 4905161.7075],
+        ["nominal p90", r.distributions.terminalBalance.p90, 8229944.555],
+        ["nominal mean", r.distributions.terminalBalance.mean, 3568032.1123],
+        ["today p25", r.today.terminalBalance.p25, 381725.4675],
+        ["today median", r.today.terminalBalance.median, 1053037.775],
+        ["today p75", r.today.terminalBalance.p75, 2081487.5275],
+        ["today p90", r.today.terminalBalance.p90, 3492347.036],
+        ["today mean", r.today.terminalBalance.mean, 1514081.4475],
+      ];
+      for (const [label, got, want] of pins)
+        expect(Math.abs(got - want), `${label}: ${got}`).toBeLessThan(0.005);
+    },
+    SLOW,
+  );
+
+  it(
+    "baseline: every cell of the 30-year replay grid, as computed today",
+    () => {
+      const grid = replayed();
+      expect(Object.keys(grid)).toEqual(Object.keys(REPLAY_GRID_BASELINE));
+      for (const [cell, want] of Object.entries(REPLAY_GRID_BASELINE)) {
+        const got = grid[cell]!;
+        expect(got.successes, cell).toBe(want.successes);
+        expect(
+          got.failures.map(([start]) => start),
+          cell,
+        ).toEqual(want.failingStarts);
+        expect(
+          got.failures.map(([, year]) => year),
+          cell,
+        ).toEqual(want.firstUnpaidYears);
+        expect(
+          Math.abs(got.medianEndBalance - want.medianEndBalance),
+          `${cell} median end ${got.medianEndBalance}`,
+        ).toBeLessThan(0.005);
+      }
     },
     SLOW,
   );
