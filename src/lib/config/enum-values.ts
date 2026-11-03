@@ -12,10 +12,10 @@ import { z } from "zod";
 
 // ── Decimal string (shared across routers and JSONB active-field schemas) ──
 
-/** Validates a string represents a valid decimal number. */
+/** A string holding a finite number: never "", "NaN" or "Infinity". */
 export const zDecimal = z
   .string()
-  .refine((v) => !isNaN(Number(v)) && v.trim() !== "", {
+  .refine((v) => v.trim() !== "" && Number.isFinite(Number(v)), {
     message: "Must be a valid number",
   });
 

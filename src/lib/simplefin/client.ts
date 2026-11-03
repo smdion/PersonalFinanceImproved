@@ -16,10 +16,24 @@
 // directory instead of calling SimpleFIN, so a dev instance never shares a
 // production connection's daily quota.
 
-import { externalRequest, uncheckedShape } from "@/lib/http/external-request";
+import { z } from "zod/v4";
+import { BudgetApiError } from "@/lib/budget-api/errors";
+import {
+  externalRequest,
+  parseExternal,
+  type ExternalSource,
+} from "@/lib/http/external-request";
 import { log } from "@/lib/logger";
 import { promises as fs } from "fs";
 import path from "path";
+import {
+  simplefinAccountSchema,
+  simplefinHoldingSchema,
+  simplefinSchemas,
+  simplefinTransactionSchema,
+  type SimplefinAccountsBody,
+  type SimplefinRawAccount,
+} from "./schemas";
 
 /** Full responses (holdings + 90 days of transactions) are much larger. */
 const FULL_REQUEST_TIMEOUT_MS = 60_000;
@@ -68,7 +82,6 @@ function assertSafeRemoteUrl(rawUrl: string, context: string): URL {
 }
 
 type SimplefinHolding = {
-  id: string;
   /** Symbol as sent — may be empty or a plan pseudo-symbol. */
   symbol: string;
   description: string;
@@ -100,56 +113,6 @@ export type SimplefinAccount = {
   transactions: SimplefinTransaction[];
 };
 
-type SimplefinAccountsResponse = {
-  errors?: string[];
-  /**
-   * Protocol v2: the institutions behind the accounts. An account names
-   * its connection by `conn_id`; v1's per-account `org` is gone.
-   */
-  connections?: Array<{
-    conn_id: string;
-    name?: string;
-    /** Not in the attribute tables, but present in the protocol's samples. */
-    org_name?: string;
-    org_id?: string;
-  }>;
-  /** Protocol v2: structured errors, optionally scoped to an account/connection. */
-  errlist?: Array<{
-    code?: string;
-    msg?: string;
-    account_id?: string;
-    conn_id?: string;
-  }>;
-  accounts?: Array<{
-    id: string;
-    name: string;
-    balance: string;
-    "balance-date"?: number;
-    /** Protocol v1 only. */
-    org?: { name?: string };
-    /** Protocol v2: the connection (institution) this account belongs to. */
-    conn_id?: string;
-    /** Present in the protocol's samples. */
-    conn_name?: string;
-    holdings?: Array<{
-      id?: string;
-      symbol?: string;
-      description?: string;
-      shares?: string;
-      market_value?: string;
-      cost_basis?: string;
-    }>;
-    transactions?: Array<{
-      id: string;
-      posted: number;
-      transacted_at?: number;
-      amount: string;
-      description?: string;
-      pending?: boolean;
-    }>;
-  }>;
-};
-
 type ParsedAccessUrl = {
   baseUrl: string;
   authHeader: string;
@@ -168,26 +131,31 @@ function parseAccessUrl(accessUrl: string): ParsedAccessUrl {
   };
 }
 
-/** SimpleFIN's JSON and text reads, through the shared externalRequest
- *  (typed BudgetApiError, timeout, retries with backoff honouring
- *  Retry-After). */
-function requestJson<T>(
+/** Where every accounts answer, live or replayed, comes from: a fixed name,
+ *  never the URL (SimpleFIN URLs carry credentials). */
+const ACCOUNTS: ExternalSource = {
+  service: "simplefin",
+  endpoint: "/accounts",
+};
+
+/** The accounts answer as JSON; readAccounts checks it, where live and
+ *  replayed answers meet. */
+function requestAccounts(
   url: string,
-  init?: RequestInit,
+  init: RequestInit,
   options?: { maxAttempts?: number; timeoutMs?: number },
-): Promise<T> {
+): Promise<unknown> {
   return externalRequest({
     service: "simplefin",
-    // A fixed name, never the URL: SimpleFIN URLs carry credentials.
-    endpoint: "/accounts",
+    endpoint: ACCOUNTS.endpoint,
     url,
     init,
-    schema: uncheckedShape<T>(),
+    schema: z.unknown(),
     ...options,
   });
 }
 
-function requestText(url: string, init?: RequestInit): Promise<string> {
+function requestAccessUrl(url: string, init: RequestInit): Promise<string> {
   return externalRequest({
     service: "simplefin",
     // The claim URL's path is the one-time setup token.
@@ -195,7 +163,7 @@ function requestText(url: string, init?: RequestInit): Promise<string> {
     url,
     init,
     read: "text",
-    schema: uncheckedShape<string>(),
+    schema: simplefinSchemas.accessUrl,
   });
 }
 
@@ -207,7 +175,7 @@ function requestText(url: string, init?: RequestInit): Promise<string> {
 export async function claimSetupToken(setupToken: string): Promise<string> {
   const claimUrl = Buffer.from(setupToken, "base64").toString("utf8");
   assertSafeRemoteUrl(claimUrl, "SimpleFIN setup token");
-  const accessUrl = await requestText(claimUrl, { method: "POST" });
+  const accessUrl = await requestAccessUrl(claimUrl, { method: "POST" });
   return accessUrl.trim();
 }
 
@@ -230,7 +198,8 @@ type GetAccountsResult = {
   notices?: string[];
   /** A transaction-history limit (days) the provider reported, if any. */
   windowLimitDays?: number | null;
-  /** Account ids named by a v2 `errlist` entry — their data this run is not trustworthy. */
+  /** Account ids named by a v2 `errlist` entry, or sent in a shape Ledgr
+   *  can't read: their data this run is not trustworthy. */
   accountIdsWithErrors: string[];
 };
 
@@ -242,8 +211,9 @@ type GetAccountsOptions = {
   startDate?: Date;
 };
 
+/** A money field that may not be sent: absent or "" is null. */
 const num = (v: string | undefined): number | null =>
-  v === undefined || v === "" || Number.isNaN(Number(v)) ? null : Number(v);
+  v === undefined || v === "" ? null : Number(v);
 
 /** A message saying our requested history was trimmed to the provider's limit — informational, not an error. */
 const CAPPED_NOTICE = /date range.*\bcapped\b/i;
@@ -251,10 +221,10 @@ const LIMIT_DAYS = /limit of (\d+) days?/i;
 
 /**
  * An account's institution: v2 resolves it through the account's
- * connection; v1 sent it on the account.
+ * connection; v1 sent it on the account. None of them sent: "".
  */
 function institutionName(
-  a: NonNullable<SimplefinAccountsResponse["accounts"]>[number],
+  a: SimplefinRawAccount,
   connectionNames: ReadonlyMap<string, string>,
 ): string {
   return (
@@ -265,27 +235,116 @@ function institutionName(
   );
 }
 
-function mapResponse(json: SimplefinAccountsResponse): GetAccountsResult {
-  const errlist = json.errlist ?? [];
+/** Items checked one by one: the ones that fit, and what was wrong with the
+ *  others (field named with its index), or null when all fit. */
+function checkItems<S extends z.ZodType>(
+  field: string,
+  schema: S,
+  items: readonly unknown[],
+): { ok: z.infer<S>[]; problem: string | null } {
+  const ok = items.flatMap((item) => {
+    const r = schema.safeParse(item);
+    return r.success ? [r.data as z.infer<S>] : [];
+  });
+  if (ok.length === items.length) return { ok, problem: null };
+  try {
+    parseExternal(
+      z.looseObject({ [field]: z.array(schema) }),
+      { [field]: items },
+      ACCOUNTS,
+    );
+  } catch (e) {
+    if (e instanceof BudgetApiError) return { ok, problem: e.message };
+    throw e;
+  }
+  return { ok, problem: null };
+}
+
+/**
+ * An account's holdings and transactions, checked. A bad holding makes the
+ * list unknown (null): a list missing a fund would read as sold. A bad
+ * transaction is left out; the account is errored so it's asked for again.
+ */
+function withItems(a: SimplefinRawAccount) {
+  const holdings =
+    a.holdings && checkItems("holdings", simplefinHoldingSchema, a.holdings);
+  const transactions = checkItems(
+    "transactions",
+    simplefinTransactionSchema,
+    a.transactions ?? [],
+  );
+  const problems = [
+    holdings?.problem &&
+      `${holdings.problem} (account "${a.name}": holdings kept as last known)`,
+    transactions.problem &&
+      `${transactions.problem} (account "${a.name}": those transactions left out)`,
+  ].filter((p): p is string => !!p);
+  const ok = holdings && !holdings.problem ? holdings.ok : null;
+  return { a, holdings: ok, transactions: transactions.ok, problems };
+}
+
+/**
+ * Each account checked on its own: one whose own fields don't fit is left
+ * out and reported; one with a bad holding or transaction is kept. Either
+ * way its id (when readable) is errored.
+ */
+function checkAccounts(raw: readonly unknown[]) {
+  const accounts: ReturnType<typeof withItems>[] = [];
+  const problems: string[] = [];
+  const erroredIds: string[] = [];
+  raw.forEach((item, i) => {
+    try {
+      const checked = withItems(
+        parseExternal(simplefinAccountSchema, item, ACCOUNTS),
+      );
+      accounts.push(checked);
+      problems.push(...checked.problems);
+      if (checked.problems.length > 0) erroredIds.push(checked.a.id);
+    } catch (e) {
+      if (!(e instanceof BudgetApiError)) throw e;
+      const { id, name } = (item ?? {}) as { id?: unknown; name?: unknown };
+      if (typeof id === "string") erroredIds.push(id);
+      const label =
+        typeof name === "string" ? `"${name}"` : `#${i + 1} of ${raw.length}`;
+      problems.push(`${e.message} (account ${label}, not updated this sync)`);
+    }
+  });
+  return { accounts, problems, erroredIds };
+}
+
+function mapResponse(
+  json: SimplefinAccountsBody & { accounts: unknown[] },
+): GetAccountsResult {
   const connectionNames = new Map(
     (json.connections ?? [])
-      .map((c) => [c.conn_id, (c.org_name ?? c.name ?? "").trim()] as const)
+      .map((c) => [c.conn_id, (c.org_name ?? c.name).trim()] as const)
       .filter(([, name]) => name !== ""),
   );
-  const messages = [
-    ...(json.errors ?? []),
-    ...errlist.map((e) => e.msg ?? e.code ?? "Unknown SimpleFIN error"),
-  ];
+  const checked = checkAccounts(json.accounts);
+  const errlist = json.errlist ?? [];
+  const messages = [...(json.errors ?? []), ...errlist.map((e) => e.msg)];
+  // No account fits: the answer as a whole is bad.
+  if (json.accounts.length > 0 && checked.accounts.length === 0) {
+    const said =
+      messages.length > 0 ? `; SimpleFIN said: ${messages.join("; ")}` : "";
+    throw new BudgetApiError(
+      `${checked.problems[0]}${said}`,
+      "bad-response",
+      null,
+    );
+  }
   const notices = messages.filter((m) => CAPPED_NOTICE.test(m));
-  const providerErrors = messages.filter((m) => !CAPPED_NOTICE.test(m));
+  const providerErrors = [
+    ...messages.filter((m) => !CAPPED_NOTICE.test(m)),
+    ...checked.problems,
+  ];
   const windowLimitDays =
     notices
       .map((m) => Number(m.match(LIMIT_DAYS)?.[1]))
       .find((n) => Number.isFinite(n) && n > 0) ?? null;
   if (notices.length > 0)
     log("info", "simplefin_window_capped", { windowLimitDays });
-  const hasAccounts = json.accounts && json.accounts.length > 0;
-  if (providerErrors.length > 0 && !hasAccounts) {
+  if (providerErrors.length > 0 && checked.accounts.length === 0) {
     throw new Error(`SimpleFIN provider error: ${providerErrors.join("; ")}`);
   }
   // Per the SimpleFIN protocol, errors can arrive alongside a populated
@@ -297,7 +356,7 @@ function mapResponse(json: SimplefinAccountsResponse): GetAccountsResult {
     });
   }
   return {
-    accounts: (json.accounts ?? []).map((a) => ({
+    accounts: checked.accounts.map(({ a, holdings, transactions }) => ({
       id: a.id,
       name: a.name,
       balance: Number(a.balance),
@@ -307,25 +366,24 @@ function mapResponse(json: SimplefinAccountsResponse): GetAccountsResult {
           ? new Date(a["balance-date"] * 1000)
           : null,
       holdings:
-        a.holdings === undefined
+        holdings === null
           ? null
-          : a.holdings.map((h) => {
+          : holdings.map((h) => {
               const cost = num(h.cost_basis);
               return {
-                id: h.id ?? "",
                 symbol: (h.symbol ?? "").trim(),
-                description: (h.description ?? "").trim(),
-                shares: num(h.shares) ?? 0,
+                description: h.description.trim(),
+                shares: Number(h.shares),
                 marketValue: num(h.market_value),
                 costBasisPerShare: cost !== null && cost > 0 ? cost : null,
               };
             }),
-      transactions: (a.transactions ?? []).map((t) => ({
+      transactions: transactions.map((t) => ({
         id: t.id,
         posted: t.posted,
         transactedAt: t.transacted_at ?? null,
         amount: Number(t.amount),
-        description: t.description ?? "",
+        description: t.description,
         pending: t.pending ?? false,
       })),
     })),
@@ -336,21 +394,35 @@ function mapResponse(json: SimplefinAccountsResponse): GetAccountsResult {
     // one. A connection-level error (e.g. "sign in again") covers every
     // account on that connection.
     accountIdsWithErrors: [
-      ...new Set(
-        errlist
-          .filter((e) => !CAPPED_NOTICE.test(e.msg ?? ""))
+      ...new Set([
+        ...checked.erroredIds,
+        ...errlist
+          .filter((e) => !CAPPED_NOTICE.test(e.msg))
           .flatMap((e) =>
             e.account_id
               ? [e.account_id]
               : e.conn_id
-                ? (json.accounts ?? [])
-                    .filter((a) => a.conn_id === e.conn_id)
-                    .map((a) => a.id)
+                ? checked.accounts
+                    .filter(({ a }) => a.conn_id === e.conn_id)
+                    .map(({ a }) => a.id)
                 : [],
           ),
-      ),
+      ]),
     ],
   };
+}
+
+/** Check every answer (one live, or each saved one) and read them as one. */
+function readAccounts(bodies: readonly unknown[]): GetAccountsResult {
+  const parsed = bodies.map((b) =>
+    parseExternal(simplefinSchemas.accounts, b, ACCOUNTS),
+  );
+  return mapResponse({
+    errors: parsed.flatMap((p) => p.errors ?? []),
+    errlist: parsed.flatMap((p) => p.errlist ?? []),
+    connections: parsed.flatMap((p) => p.connections ?? []),
+    accounts: parsed.flatMap((p) => p.accounts ?? []),
+  });
 }
 
 /** Replay mode: saved responses instead of real calls — never in production. */
@@ -363,15 +435,11 @@ export function isSimplefinReplayMode(): boolean {
 /** Development-only: read saved responses instead of calling SimpleFIN. */
 async function readReplayResponses(dir: string): Promise<GetAccountsResult> {
   const files = (await fs.readdir(dir)).filter((f) => f.endsWith(".json"));
-  const merged: SimplefinAccountsResponse = { accounts: [], errors: [] };
+  const bodies: unknown[] = [];
   for (const f of files.sort()) {
-    const json = JSON.parse(
-      await fs.readFile(path.join(dir, f), "utf8"),
-    ) as SimplefinAccountsResponse;
-    merged.accounts!.push(...(json.accounts ?? []));
-    merged.errors!.push(...(json.errors ?? []));
+    bodies.push(JSON.parse(await fs.readFile(path.join(dir, f), "utf8")));
   }
-  return mapResponse(merged);
+  return readAccounts(bodies);
 }
 
 /**
@@ -390,7 +458,7 @@ export async function getAccounts(
   const query = options.startDate
     ? `version=2&pending=1&start-date=${Math.floor(options.startDate.getTime() / 1000)}`
     : "balances-only=1";
-  const json = await requestJson<SimplefinAccountsResponse>(
+  const body = await requestAccounts(
     `${baseUrl}/accounts?${query}`,
     { headers: { Authorization: authHeader } },
     // Full requests are never retried here: every call counts against the
@@ -399,5 +467,5 @@ export async function getAccounts(
       ? { maxAttempts: 1, timeoutMs: FULL_REQUEST_TIMEOUT_MS }
       : undefined,
   );
-  return mapResponse(json);
+  return readAccounts([body]);
 }

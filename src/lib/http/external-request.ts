@@ -67,12 +67,6 @@ export type ExternalSource = {
   endpoint: string;
 };
 
-/** Accepts any body, typed as T: an endpoint's placeholder until its own
- *  schema is written. */
-export function uncheckedShape<T>(): z.ZodType<T> {
-  return z.custom<T>(() => true);
-}
-
 const SERVICE_NAMES: Record<ExternalSource["service"], string> = {
   ynab: "YNAB",
   actual: "Actual",
