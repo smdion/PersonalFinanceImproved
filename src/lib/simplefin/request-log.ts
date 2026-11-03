@@ -6,6 +6,7 @@
 import "server-only";
 import { and, eq, gte, lt, ne, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
+import { BudgetApiError } from "@/lib/budget-api/errors";
 
 type Db = typeof import("@/lib/db").db;
 
@@ -21,6 +22,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  *  against the quota like every real request. */
 export type SimplefinRequestOutcome =
   "ok" | "error" | "bad_response" | "timeout" | "replay" | "skipped_quota";
+
+/** How a failed /accounts request is logged. */
+export function simplefinRequestOutcome(e: unknown): SimplefinRequestOutcome {
+  if (!(e instanceof BudgetApiError)) return "error";
+  if (e.code === "timeout") return "timeout";
+  return e.code === "bad-response" ? "bad_response" : "error";
+}
 
 export async function recordSimplefinRequest(
   db: Db,

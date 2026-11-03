@@ -3,7 +3,7 @@
  * and auth enforcement for the sync-permission-gated mutation.
  */
 import "./setup-mocks";
-import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
 import { TRPCError } from "@trpc/server";
 import { eq } from "drizzle-orm";
 import {
@@ -14,6 +14,8 @@ import {
   seedSnapshot,
 } from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
+import { saveSimplefinConnection } from "@/lib/simplefin/sync";
+import { countSimplefinRequestsLastDay } from "@/lib/simplefin/request-log";
 
 describe("simplefin router", () => {
   let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
@@ -492,6 +494,53 @@ describe("simplefin router", () => {
         expect(matched?.snapshotBalance).toBe(5000);
       } finally {
         matchCleanup();
+      }
+    });
+  });
+
+  describe("testConnection", () => {
+    it("logs every request it sends against the quota, retries included", async () => {
+      const ctx = await createTestCaller();
+      vi.useFakeTimers();
+      try {
+        await saveSimplefinConnection(
+          ctx.rawDb,
+          "https://u:p@bridge.simplefin.org/simplefin",
+        );
+        const answers = [503, 503, 200];
+        vi.stubGlobal(
+          "fetch",
+          vi.fn(async () => {
+            const status = answers.shift()!;
+            return {
+              ok: status === 200,
+              status,
+              headers: new Headers(),
+              text: async () =>
+                status === 200 ? JSON.stringify({ accounts: [] }) : "busy",
+            };
+          }),
+        );
+
+        const pending = ctx.caller.simplefin.testConnection();
+        await vi.runAllTimersAsync();
+        expect(await pending).toMatchObject({ success: true });
+
+        const rows = ctx.db
+          .select()
+          .from(sqliteSchema.syncRequestLog)
+          .all()
+          .map((r) => [r.endpoint, r.outcome, r.httpStatus]);
+        expect(rows).toEqual([
+          ["/accounts", "error", 503],
+          ["/accounts", "error", 503],
+          ["/accounts", "ok", 200],
+        ]);
+        expect(await countSimplefinRequestsLastDay(ctx.rawDb)).toBe(3);
+      } finally {
+        vi.useRealTimers();
+        vi.unstubAllGlobals();
+        ctx.cleanup();
       }
     });
   });

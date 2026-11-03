@@ -143,7 +143,11 @@ const ACCOUNTS: ExternalSource = {
 function requestAccounts(
   url: string,
   init: RequestInit,
-  options?: { maxAttempts?: number; timeoutMs?: number },
+  options?: {
+    maxAttempts?: number;
+    timeoutMs?: number;
+    onAttempt?: AttemptHook;
+  },
 ): Promise<unknown> {
   return externalRequest({
     service: "simplefin",
@@ -209,7 +213,13 @@ type GetAccountsOptions = {
    * (protocol v2, pending included). Omit for a balances-only request.
    */
   startDate?: Date;
+  /** Called for each HTTP request sent, retries included (the quota). */
+  onAttempt?: AttemptHook;
 };
+
+type AttemptHook = NonNullable<
+  Parameters<typeof externalRequest>[0]["onAttempt"]
+>;
 
 /** A money field that may not be sent: absent or "" is null. */
 const num = (v: string | undefined): number | null =>
@@ -463,9 +473,13 @@ export async function getAccounts(
     { headers: { Authorization: authHeader } },
     // Full requests are never retried here: every call counts against the
     // daily quota, and a timeout on a large response usually repeats.
-    options.startDate
-      ? { maxAttempts: 1, timeoutMs: FULL_REQUEST_TIMEOUT_MS }
-      : undefined,
+    {
+      onAttempt: options.onAttempt,
+      ...(options.startDate && {
+        maxAttempts: 1,
+        timeoutMs: FULL_REQUEST_TIMEOUT_MS,
+      }),
+    },
   );
   return readAccounts([body]);
 }

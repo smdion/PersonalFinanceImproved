@@ -52,6 +52,8 @@ import {
   SIMPLEFIN_MANUAL_SYNC_MIN_GAP_MS,
   countSimplefinRequestsLastDay,
   lastSimplefinRequestAt,
+  recordSimplefinRequest,
+  simplefinRequestOutcome,
 } from "@/lib/simplefin/request-log";
 import { redactStoredCardSpending } from "@/lib/simplefin/ingest";
 import { loadLatestSubAccounts } from "@/server/helpers/sub-accounts";
@@ -246,7 +248,15 @@ export const simplefinRouter = createTRPCRouter({
     }
     try {
       const { accessUrl } = readMaybeEncrypted<SimplefinConfig>(conn.config);
-      const { accounts, providerErrors } = await getAccounts(accessUrl);
+      // Each request counts against the daily quota, retries included.
+      const { accounts, providerErrors } = await getAccounts(accessUrl, {
+        onAttempt: ({ status, error }) =>
+          recordSimplefinRequest(ctx.db, {
+            endpoint: "/accounts",
+            outcome: error ? simplefinRequestOutcome(error) : "ok",
+            httpStatus: status,
+          }),
+      });
       await upsertSimplefinAccounts(ctx.db, accounts);
       return {
         success: true as const,

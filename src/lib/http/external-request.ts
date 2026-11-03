@@ -12,6 +12,7 @@
  */
 import "server-only";
 import { z } from "zod/v4";
+import { log } from "@/lib/logger";
 import {
   BudgetApiError,
   classifyResponse,
@@ -133,15 +134,36 @@ export async function externalRequest<S extends z.ZodType>(request: {
   /** Overrides of the service's rule for this call. */
   maxAttempts?: number;
   timeoutMs?: number;
+  /** Called once per HTTP request sent, retries included: `error` is null
+   *  for a 2xx answer. */
+  onAttempt?: (attempt: {
+    status: number | null;
+    error: BudgetApiError | null;
+  }) => Promise<void>;
 }): Promise<z.infer<S>> {
   const rule = SERVICE_RULES[request.service];
   const timeoutMs = request.timeoutMs ?? rule.timeoutMs;
+  // Bookkeeping: its failure is logged, never retried or thrown.
+  const noteAttempt = async (attempt: {
+    status: number | null;
+    error: BudgetApiError | null;
+  }) => {
+    try {
+      await request.onAttempt?.(attempt);
+    } catch (e) {
+      log("warn", "external_request.on_attempt_failed", {
+        service: request.service,
+        error: e instanceof Error ? e.message : String(e),
+      });
+    }
+  };
   const body = await retryWithBackoff(
     async () => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      let res: Response | undefined;
       try {
-        const res = await fetch(request.url, {
+        res = await fetch(request.url, {
           ...request.init,
           headers: { ...request.headers, ...request.init?.headers },
           signal: controller.signal,
@@ -150,6 +172,7 @@ export async function externalRequest<S extends z.ZodType>(request: {
           const text = await res.text().catch(() => "");
           throw classifyResponse(res, text);
         }
+        await noteAttempt({ status: res.status, error: null });
         if (request.read === "text") return await res.text();
         const text = await res.text();
         try {
@@ -165,7 +188,9 @@ export async function externalRequest<S extends z.ZodType>(request: {
       } catch (e) {
         // classifyThrown keeps a BudgetApiError and classifies AbortError
         // and network errors, so the retry decides whether to send again.
-        throw classifyThrown(e);
+        const error = classifyThrown(e);
+        if (!res?.ok) await noteAttempt({ status: res?.status ?? null, error });
+        throw error;
       } finally {
         clearTimeout(timeout);
       }

@@ -32,7 +32,7 @@ import {
   countSimplefinRequestsLastDay,
   pruneSimplefinRequestLog,
   recordSimplefinRequest,
-  type SimplefinRequestOutcome,
+  simplefinRequestOutcome,
 } from "./request-log";
 import { ingestInvestmentData, type IngestSummary } from "./ingest";
 import { utcDayOf } from "@/lib/utils/date";
@@ -195,13 +195,6 @@ export async function hasSyncedToday(
   const conn = await getSimplefinConnection(db);
   if (!conn?.lastSyncedAt) return false;
   return localDateStr(conn.lastSyncedAt) === localDateStr(asOfDate);
-}
-
-/** How a failed /accounts request is logged. */
-function requestOutcome(e: unknown): SimplefinRequestOutcome {
-  if (!(e instanceof BudgetApiError)) return "error";
-  if (e.code === "timeout") return "timeout";
-  return e.code === "bad-response" ? "bad_response" : "error";
 }
 
 /** Record (or clear) the last SimpleFIN sync error for display in the UI. */
@@ -463,7 +456,7 @@ export async function runSimplefinSync(
     } catch (e) {
       await recordSimplefinRequest(db, {
         endpoint: "/accounts",
-        outcome: requestOutcome(e),
+        outcome: simplefinRequestOutcome(e),
         httpStatus: e instanceof BudgetApiError ? e.status : null,
       });
       // Nothing a user sees is written before this answer (the request log

@@ -136,3 +136,61 @@ describe("externalRequest names the service on every failure", () => {
     });
   });
 });
+
+describe("externalRequest reports each request it sends", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  function answering(...statuses: number[]) {
+    const fetchMock = vi.fn(async () => {
+      const status = statuses.shift()!;
+      return {
+        ok: status < 400,
+        status,
+        headers: new Headers(),
+        text: async () => (status < 400 ? "{}" : "busy"),
+      };
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    return fetchMock;
+  }
+
+  it("once per attempt, retries included", async () => {
+    vi.useFakeTimers();
+    answering(503, 200);
+    const attempts: Array<[number | null, string | null]> = [];
+    const pending = externalRequest({
+      service: "simplefin",
+      endpoint: "/accounts",
+      url: "http://sf.local/accounts",
+      schema: z.unknown(),
+      onAttempt: async ({ status, error }) => {
+        attempts.push([status, error?.code ?? null]);
+      },
+    });
+    await vi.runAllTimersAsync();
+    await pending;
+    expect(attempts).toEqual([
+      [503, "server"],
+      [200, null],
+    ]);
+  });
+
+  it("a failing report is not a failed request: nothing is sent again", async () => {
+    const fetchMock = answering(200);
+    await expect(
+      externalRequest({
+        service: "simplefin",
+        endpoint: "/accounts",
+        url: "http://sf.local/accounts",
+        schema: z.unknown(),
+        onAttempt: async () => {
+          throw new Error("log write failed");
+        },
+      }),
+    ).resolves.toEqual({});
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
