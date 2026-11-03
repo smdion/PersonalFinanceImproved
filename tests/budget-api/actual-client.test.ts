@@ -320,6 +320,7 @@ describe("ActualClient", () => {
 
   describe("findCreatedTransaction", () => {
     const tx = {
+      importKey: "push-1",
       accountId: "acct-1",
       date: "2026-01-20",
       amount: -50,
@@ -391,6 +392,7 @@ describe("ActualClient", () => {
       );
 
       await client.createTransaction({
+        importKey: "push-1",
         accountId: "acct-1",
         date: "2026-01-20",
         amount: -50,
@@ -431,6 +433,7 @@ describe("ActualClient", () => {
         }),
       );
       const id = await client.createTransaction({
+        importKey: "push-1",
         accountId: "acct-1",
         date: "2026-01-20",
         amount: -50,
@@ -451,6 +454,7 @@ describe("ActualClient", () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ data: [] })); // GET — nothing found
       await expect(
         client.createTransaction({
+          importKey: "push-1",
           accountId: "acct-1",
           date: "2026-01-20",
           amount: -50,
@@ -494,6 +498,7 @@ describe("ActualClient", () => {
       mockFetch.mockImplementationOnce(fakeLookup);
 
       const payload = {
+        importKey: "push-1",
         accountId: "acct-1",
         date: "2026-01-20",
         amount: -50,
@@ -533,6 +538,7 @@ describe("ActualClient", () => {
         }),
       );
       await client.createTransaction({
+        importKey: "push-1",
         accountId: "acct-1",
         date: "2026-01-20",
         amount: -50,
@@ -1371,6 +1377,7 @@ describe("ActualClient with dates after the wrapper's today", () => {
     // it, report a failure with the adjustment posted, and post again on
     // every retry.
     const id = await client.createTransaction({
+      importKey: "push-1",
       accountId: "acct-1",
       date: "2026-12-15",
       amount: 10_000,

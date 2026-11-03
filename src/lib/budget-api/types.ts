@@ -97,6 +97,10 @@ export type BudgetTransaction = {
 
 /** Input for creating a new transaction */
 export type NewBudgetTransaction = {
+  /** Hashed into the import id: a fresh one gives a new id (YNAB keeps a
+   *  deleted transaction's id reserved); reuse it only to find this same
+   *  write again. */
+  importKey: string;
   accountId: string;
   date: string; // "YYYY-MM-DD"
   amount: number;

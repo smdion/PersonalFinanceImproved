@@ -227,6 +227,7 @@ describe("isResendable", () => {
 describe("transactionIdempotencyKey", () => {
   it("produces the same key for the same fingerprint", () => {
     const fp = {
+      importKey: "push-1",
       accountId: "acct-1",
       date: "2026-04-12",
       amount: -5000,
@@ -236,13 +237,22 @@ describe("transactionIdempotencyKey", () => {
     expect(transactionIdempotencyKey(fp)).toBe(transactionIdempotencyKey(fp));
   });
 
+  it("produces different keys for different pushes of the same transaction", () => {
+    const fp = { accountId: "x", date: "2026-04-12", amount: -5000 };
+    expect(transactionIdempotencyKey({ importKey: "push-1", ...fp })).not.toBe(
+      transactionIdempotencyKey({ importKey: "push-2", ...fp }),
+    );
+  });
+
   it("produces different keys for different amounts", () => {
     const a = transactionIdempotencyKey({
+      importKey: "push-1",
       accountId: "x",
       date: "2026-04-12",
       amount: -5000,
     });
     const b = transactionIdempotencyKey({
+      importKey: "push-1",
       accountId: "x",
       date: "2026-04-12",
       amount: -5001,
@@ -252,11 +262,13 @@ describe("transactionIdempotencyKey", () => {
 
   it("produces different keys for different dates", () => {
     const a = transactionIdempotencyKey({
+      importKey: "push-1",
       accountId: "x",
       date: "2026-04-12",
       amount: -5000,
     });
     const b = transactionIdempotencyKey({
+      importKey: "push-1",
       accountId: "x",
       date: "2026-04-13",
       amount: -5000,
@@ -266,12 +278,14 @@ describe("transactionIdempotencyKey", () => {
 
   it("treats null and undefined memo equivalently", () => {
     const a = transactionIdempotencyKey({
+      importKey: "push-1",
       accountId: "x",
       date: "d",
       amount: 1,
       memo: null,
     });
     const b = transactionIdempotencyKey({
+      importKey: "push-1",
       accountId: "x",
       date: "d",
       amount: 1,
@@ -282,6 +296,7 @@ describe("transactionIdempotencyKey", () => {
 
   it("produces base64url-safe output (no +/= chars)", () => {
     const k = transactionIdempotencyKey({
+      importKey: "push-1",
       accountId: "abc",
       date: "2026-04-12",
       amount: 1,

@@ -236,6 +236,7 @@ function mapTransaction(t: YnabTransaction): BudgetTransaction {
  *  Ledgr's; YNAB allows 36 characters. */
 function ynabImportId(tx: NewBudgetTransaction): string {
   const idempotencyKey = transactionIdempotencyKey({
+    importKey: tx.importKey,
     accountId: tx.accountId,
     date: tx.date,
     amount: toMilliunits(tx.amount),

@@ -233,10 +233,12 @@ const ACTUAL_LIST_UNTIL = "9999-12-31";
 
 const WRAPPER_BATCH_SIZE = 10;
 
-/** Actual's `imported_id` dedupes imports: the canonical fingerprint's
- *  hash, prefixed so it's recognizable as Ledgr's in the Actual UI. */
+/** The import id Ledgr writes to `imported_id`, prefixed so it's
+ *  recognizable in the Actual UI; createTransaction finds its new
+ *  transaction by it (the wrapper's POST doesn't dedupe on it). */
 function actualImportedId(tx: NewBudgetTransaction): string {
   const idempotencyKey = transactionIdempotencyKey({
+    importKey: tx.importKey,
     accountId: tx.accountId,
     date: tx.date,
     amount: toCents(tx.amount),

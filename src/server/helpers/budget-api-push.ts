@@ -15,6 +15,7 @@
  * the run. Cleanup of pre-resync deletes is not possible (YNAB delete is final).
  */
 
+import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { TRPCError } from "@trpc/server";
 import { roundToCents } from "@/lib/utils/math";
@@ -259,6 +260,9 @@ export async function pushSnapshotToBudgetApi(input: {
   // The transaction being created when a failure hit: its write may have
   // landed even though no id came back (a lost or unreadable response).
   let inFlight: NewBudgetTransaction | null = null;
+  // Fresh per push, so an adjustment an earlier run deleted can't reserve
+  // this run's import id; runs are matched by the memo's snapshot tag.
+  const importKey = randomUUID();
 
   try {
     for (const group of groups) {
@@ -279,6 +283,7 @@ export async function pushSnapshotToBudgetApi(input: {
       const difference = roundToCents(group.total - currentBalance);
       const memo = buildMemo(snapshotId, group.contributorLabels);
       inFlight = {
+        importKey,
         accountId: group.remoteAccountId,
         date: snapshotDate,
         amount: difference,

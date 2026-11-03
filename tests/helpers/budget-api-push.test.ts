@@ -326,6 +326,30 @@ describe("pushSnapshotToBudgetApi — resync mode", () => {
   });
 });
 
+describe("pushSnapshotToBudgetApi — import key", () => {
+  it("each push gets its own, so a resync of an unchanged amount isn't a duplicate of the deleted post", async () => {
+    const client = makeFakeClient();
+    const push = () =>
+      pushSnapshotToBudgetApi({
+        db: makeFakeDb([{ performanceAccountId: 1, amount: "1000.00" }]),
+        snapshotId: 5,
+        snapshotDate: "2026-01-01",
+        mappings: [makeMapping({ performanceAccountId: 1 })],
+        client,
+        mode: "resync",
+        asOfDate: new Date("2026-01-01"),
+      });
+    await push();
+    await push();
+    const [first, second] = vi
+      .mocked(client.createTransaction)
+      .mock.calls.map(([tx]) => tx);
+    expect(first!.amount).toBe(second!.amount);
+    expect(first!.importKey).toBeTruthy();
+    expect(first!.importKey).not.toBe(second!.importKey);
+  });
+});
+
 describe("pushSnapshotToBudgetApi — resync lists before deleting", () => {
   it("a list that fails on a later account deletes nothing on the earlier ones", async () => {
     const db = makeFakeDb([
@@ -394,9 +418,10 @@ describe("pushSnapshotToBudgetApi — a create whose response was lost", () => {
         asOfDate: new Date("2026-01-01"),
       }),
     ).rejects.toThrow(/timed out Rolled back 2 created transactions\./);
-    expect(client.findCreatedTransaction).toHaveBeenCalledWith(
-      expect.objectContaining({ accountId: "remote-b", amount: 500 }),
-    );
+    // The lookup asks for exactly what the failed create sent.
+    const create = vi.mocked(client.createTransaction).mock.calls[1]![0];
+    expect(client.findCreatedTransaction).toHaveBeenCalledWith(create);
+    expect(create).toMatchObject({ accountId: "remote-b", amount: 500 });
     expect(client.deleteTransaction).toHaveBeenCalledWith("created-1");
     expect(client.deleteTransaction).toHaveBeenCalledWith("landed-2");
   });

@@ -324,6 +324,7 @@ describe("YnabClient", () => {
         jsonResponse({ data: { transaction: { id: "new-tx" } } }),
       );
       const id = await client.createTransaction({
+        importKey: "push-1",
         accountId: "acct-1",
         date: "2026-01-20",
         amount: -50,
@@ -349,6 +350,7 @@ describe("YnabClient", () => {
         jsonResponse({ data: { transaction: { id: "tx-b" } } }),
       );
       const payload = {
+        importKey: "push-1",
         accountId: "acct-1",
         date: "2026-01-20",
         amount: -50,
@@ -388,6 +390,7 @@ describe("YnabClient", () => {
         }),
       );
       const id = await client.createTransaction({
+        importKey: "push-1",
         accountId: "acct-1",
         date: "2026-01-20",
         amount: -50,
@@ -420,6 +423,7 @@ describe("YnabClient", () => {
       );
       await expect(
         client.createTransaction({
+          importKey: "push-1",
           accountId: "acct-1",
           date: "2026-01-20",
           amount: -50,
@@ -441,6 +445,7 @@ describe("YnabClient", () => {
       );
       await expect(
         client.createTransaction({
+          importKey: "push-1",
           accountId: "acct-1",
           date: "2026-01-20",
           amount: -50,
@@ -453,6 +458,7 @@ describe("YnabClient", () => {
         jsonResponse({ data: { transaction: { id: "tx-c" } } }),
       );
       await client.createTransaction({
+        importKey: "push-1",
         accountId: "a",
         date: "2026-01-20",
         amount: -10,
@@ -467,6 +473,7 @@ describe("YnabClient", () => {
         jsonResponse({ data: { transaction: { id: "tx-r" } } }),
       );
       await client.createTransaction({
+        importKey: "push-1",
         accountId: "a",
         date: "2026-01-20",
         amount: -10,
