@@ -129,7 +129,8 @@ describe("runSimplefinSync with an answer Ledgr can't fully read", () => {
     const log = ctx.db.select().from(ctx.schema.syncRequestLog).all();
     expect(log.at(-1)).toMatchObject({
       outcome: "bad_response",
-      httpStatus: null,
+      // SimpleFIN answered; the answer didn't read.
+      httpStatus: 200,
     });
     expect(await countSimplefinRequestsLastDay(ctx.rawDb, new Date())).toBe(
       log.length,

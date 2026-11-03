@@ -67,8 +67,17 @@ describe("SimpleFIN request ledger", () => {
     ctx.db.delete(ctx.schema.syncRequestLog).run();
   });
 
+  /** getAccounts as it reports a real request: once, then answers. */
+  function sends(status: number | null, error: unknown = null) {
+    mockGetAccounts.mockImplementationOnce(async (_url, options) => {
+      await options?.onRequest?.({ status, error });
+      if (error) throw error;
+      return emptyResponse;
+    });
+  }
+
   it("records every real request", async () => {
-    mockGetAccounts.mockResolvedValueOnce(emptyResponse);
+    sends(200);
     await runSimplefinSync(ctx.rawDb);
     expect(await countSimplefinRequestsLastDay(ctx.rawDb)).toBe(1);
   });
@@ -85,18 +94,18 @@ describe("SimpleFIN request ledger", () => {
   });
 
   it("records a failed request too (it still used quota)", async () => {
-    mockGetAccounts.mockRejectedValueOnce(new Error("network down"));
+    sends(null, new Error("network down"));
     await expect(runSimplefinSync(ctx.rawDb)).rejects.toThrow();
     expect(await countSimplefinRequestsLastDay(ctx.rawDb)).toBe(1);
   });
 
   it("records a bad response as its own outcome, counted as a request", async () => {
-    mockGetAccounts.mockRejectedValueOnce(
-      serviceError("SimpleFIN", "bad", "bad-response"),
-    );
+    sends(200, serviceError("SimpleFIN", "bad", "bad-response"));
     await expect(runSimplefinSync(ctx.rawDb)).rejects.toThrow("bad");
     const log = ctx.db.select().from(ctx.schema.syncRequestLog).all();
-    expect(log.map((r) => r.outcome)).toEqual(["bad_response"]);
+    expect(log.map((r) => [r.outcome, r.httpStatus])).toEqual([
+      ["bad_response", 200],
+    ]);
     expect(await countSimplefinRequestsLastDay(ctx.rawDb)).toBe(1);
     expect(await lastSimplefinRequestAt(ctx.rawDb)).not.toBeNull();
   });
@@ -106,6 +115,8 @@ describe("SimpleFIN request ledger", () => {
     mockGetAccounts.mockResolvedValueOnce(emptyResponse);
     await runSimplefinSync(ctx.rawDb);
     expect(await countSimplefinRequestsLastDay(ctx.rawDb)).toBe(0);
+    const log = ctx.db.select().from(ctx.schema.syncRequestLog).all();
+    expect(log.map((r) => r.outcome)).toEqual(["replay"]);
   });
 
   it("ignores requests older than 24 hours", async () => {

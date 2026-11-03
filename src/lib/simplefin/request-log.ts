@@ -7,6 +7,7 @@ import "server-only";
 import { and, eq, gte, lt, ne, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { BudgetApiError } from "@/lib/budget-api/errors";
+import { isSimplefinReplayMode } from "./client";
 
 type Db = typeof import("@/lib/db").db;
 
@@ -46,6 +47,34 @@ export async function recordSimplefinRequest(
     httpStatus: entry.httpStatus ?? null,
     ...(entry.at ? { requestedAt: entry.at } : {}),
   });
+}
+
+/** getAccounts' `onRequest` for `db`: one row per request sent. */
+export function simplefinRequestRecorder(db: Db) {
+  return ({ status, error }: { status: number | null; error: unknown }) =>
+    recordSimplefinRequest(db, {
+      endpoint: "/accounts",
+      outcome: error ? simplefinRequestOutcome(error) : "ok",
+      httpStatus: status,
+    });
+}
+
+/** Before any real request: at Ledgr's daily limit, logs the skip and
+ *  throws the pause. Replays never count, so they're never stopped. */
+export async function stopAtSimplefinQuota(
+  db: Db,
+  now: Date = new Date(),
+): Promise<void> {
+  if (isSimplefinReplayMode()) return;
+  const used = await countSimplefinRequestsLastDay(db, now);
+  if (used < SIMPLEFIN_DAILY_REQUEST_LIMIT) return;
+  await recordSimplefinRequest(db, {
+    endpoint: "/accounts",
+    outcome: "skipped_quota",
+  });
+  throw new Error(
+    `Paused: ${used} SimpleFIN requests in the last 24 hours (Ledgr's limit is ${SIMPLEFIN_DAILY_REQUEST_LIMIT}, below SimpleFIN's daily quota). Syncing resumes automatically.`,
+  );
 }
 
 /** Real requests (not replays or skips) in the 24 hours before `now`. */
