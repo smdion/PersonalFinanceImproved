@@ -153,3 +153,114 @@ describe("limits/D2-50: 415(c) dollar leg, 50+", () => {
     today: { employee: 24_500, employer: 60_000 },
   });
 });
+
+// ---------------------------------------------------------------------------
+// IRA-2JOB: every current job counts toward IRA pay (IRC 219(f)(1))
+// ---------------------------------------------------------------------------
+
+/**
+ * Single, born 1985-01-15 (41). Two current jobs: 5,000 a year (the first
+ * on file) and 100,000 a year, with 10,000 a year pre-tax to a 401(k) at
+ * the second. Taxable compensation (W-2 box 1) = 5,000 + 100,000 − 10,000
+ * = 95,000 (219(f)(1); Pub 590-A Table 1-1), so the whole 7,500 IRA limit
+ * (Notice 2025-67 p.4) fits. Today the cap pass sees one job per person,
+ * the 5,000 one, takes the other job's 401(k) off it anyway and finds
+ * compensation 0: the IRA is cut to 0 and a save is refused with "set it
+ * to 0" (verdict "New: concurrent jobs"; the Paycheck gross is 192.31).
+ */
+describe("limits/IRA-2JOB: all current jobs count toward pay", () => {
+  let t: TestCaller;
+  let personId = 0;
+  let iraId = 0;
+  let summaryProfileId = 0;
+  let activeProfileId = 0;
+  beforeAll(async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(FIXED_NOW);
+    t = await createTestCaller();
+    personId = await seedPerson(t.db, "Robin", "1985-01-15");
+    seedJob(t.db, personId, {
+      employerName: "Side Co",
+      startDate: "2020-01-01",
+      annualSalary: "5000",
+    });
+    const mainJobId = seedJob(t.db, personId, {
+      employerName: "Main Co",
+      startDate: "2024-01-01",
+      annualSalary: "100000",
+    });
+    seedSingleFiler(t, personId);
+    const k401 = seedContributionAccount(t.db, {
+      personId,
+      jobId: mainJobId,
+      accountType: "401k",
+      taxTreatment: "pre_tax",
+    });
+    iraId = seedContributionAccount(t.db, {
+      personId,
+      jobId: null,
+      accountType: "ira",
+      taxTreatment: "tax_free",
+    });
+    const fields = (ira: string) => ({
+      contributionAccounts: {
+        [String(k401)]: {
+          contributionValue: "10000",
+          contributionMethod: "fixed_annual",
+        },
+        [String(iraId)]: {
+          contributionValue: ira,
+          contributionMethod: "fixed_annual",
+        },
+      },
+      jobs: {},
+    });
+    // The summary reads a profile with the IRA at 7,500; the save is
+    // judged on the active profile, where the IRA starts at 0.
+    summaryProfileId = seedContributionProfile(t.db, {
+      name: "IRA at 7,500",
+      contributionActiveFields: fields("7500"),
+    });
+    activeProfileId = seedContributionProfile(t.db, {
+      name: "Active",
+      contributionActiveFields: fields("0"),
+    });
+    activate(t, activeProfileId);
+  });
+  afterAll(() => {
+    vi.useRealTimers();
+    t.cleanup();
+  });
+
+  xfail({
+    id: "limits/IRA-2JOB [LIM-07]",
+    todo: 'v0.11 Limits "All current jobs count in the cap pass and Paycheck"',
+    run: async () =>
+      (await summaryFor(t, summaryProfileId, personId, "ira")).employeeContrib,
+    expected: 7_500,
+    today: 0,
+  });
+
+  // The same rule at save time: raising the IRA from 0 to 7,500 is
+  // within the limit (1 = refused, 0 = saved).
+  xfail({
+    id: "limits/IRA-2JOB:save [LIM-07]",
+    todo: 'v0.11 Limits "All current jobs count in the cap pass and Paycheck"',
+    run: () =>
+      t.caller.contributionProfile
+        .setAccountActiveFields({
+          profileId: activeProfileId,
+          accountId: iraId,
+          fields: {
+            contributionValue: "7500",
+            contributionMethod: "fixed_annual",
+          },
+        })
+        .then(
+          () => 0,
+          (e: Error) => (/set it to 0/.test(e.message) ? 1 : -1),
+        ),
+    expected: 0,
+    today: 1,
+  });
+});

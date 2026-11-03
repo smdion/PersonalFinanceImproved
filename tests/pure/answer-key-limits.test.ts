@@ -31,6 +31,15 @@
  *   Medicare check (Advice).
  * - C135–C137: HSA testing-period failure: disclosed (v0.12 list).
  * - C144: HSA dependent flag: disclosed (v0.12 list).
+ * - C59: MFS, lived together: closed (MFS unsupported, decision B2).
+ * - C90–C114: covered-by-a-workplace-plan flags and deduction MAGI
+ *   (R61–R65) → a per-person "covered" flag with the IRA deduction
+ *   phase-out keys (v0.11 Limits "Tax data lacks keys").
+ * - C115–C117: pro-rata fraction (R67) → v0.11 Retirement rules "No IRA
+ *   basis input".
+ *
+ * Ledgr has no QSS or MFS filing status, so C79–C84 and C89 test the
+ * phase-out range function only, with the range (or a net MAGI) fed in.
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -39,6 +48,7 @@ import {
   type CapRow,
 } from "@/lib/pure/contribution-caps";
 import { resolveIrsLimit } from "@/lib/pure/contributions";
+import { judgeRothIra, rothIraAllowed } from "@/lib/pure/roth-ira";
 import { megaBackdoorRoom } from "@/lib/pure/milestone-input";
 import { computeEmployerMatch } from "@/server/helpers/contribution-match";
 import { taxDataLimitMap } from "../helpers/tax-data";
@@ -117,6 +127,12 @@ function deferralLimit(year: number, birthYear: number, wages = 200_000) {
 //   HSA self-only / family        2025 4,300 / 8,550; 2026 4,400 / 8,750
 //                                 (Rev. Proc. 2024-25 / 2025-19 § 2.01(1))
 //   HSA catch-up, 223(b)(3)(B)    1,000 (statutory, not indexed)
+//   IRA limit, 219(b)(5)(A)       2025  7,000  2026  7,500  (N2024-80 / N2025-67 p.4)
+//   IRA catch-up, 219(b)(5)(B)    2025  1,000  2026  1,100  (same, p.4)
+//   Roth phase-out start, Single and HOH 2025 150,000  2026 153,000;
+//     MFJ (and QSS) 2025 236,000  2026 242,000; MFS 0 (same, pp.4–5).
+//     Widths are statutory: 15,000 Single/HOH, 10,000 MFJ/QSS/MFS
+//     (408A(c)(3)(A)).
 
 // ---------------------------------------------------------------------------
 // A. Deferrals and age (IRC 402(g)(1), 414(v)(2)(B), (v)(2)(E), (v)(5))
@@ -448,6 +464,411 @@ describe("limits: total additions and mega backdoor room", () => {
 });
 
 // ---------------------------------------------------------------------------
+// E. IRA limit (IRC 219(b), (c); Pub 590-A (2025) ch. 1)
+// ---------------------------------------------------------------------------
+
+/** One person's IRA row far over any limit, capped (single filer): the
+ *  IRA limit with catch-up, bounded by taxable pay. */
+function iraLimit(year: number, age: number, pay: number): number {
+  const r = row({ personId: 1, accountType: "ira", regularAnnual: 20_000 });
+  return cap(year, [person(1, year, age, pay)], [r]).get(r.id)!.cappedAnnual;
+}
+
+/**
+ * Joint return: the higher earner (person 1) puts `higherIra` in; the most
+ * the lower earner (person 2, nothing in yet) can put in. 219(c): the
+ * lower earner's limit is min(limit, own pay + spouse's pay − spouse's
+ * IRA money).
+ */
+function spousalRoom(
+  year: number,
+  ages: [number, number],
+  pays: [number, number],
+  higherIra: number,
+): number {
+  const a = row({ personId: 1, accountType: "ira", regularAnnual: higherIra });
+  const b = row({ personId: 2, accountType: "ira", regularAnnual: 0 });
+  const capped = cap(
+    year,
+    [person(1, year, ages[0], pays[0]), person(2, year, ages[1], pays[1])],
+    [a, b],
+    "MFJ",
+  );
+  expect(capped.get(a.id)!.cappedAnnual, "the higher earner isn't cut").toBe(
+    higherIra,
+  );
+  return capped.get(b.id)!.maxEmployee!;
+}
+
+/** Joint return, both spouses' IRA rows capped. */
+function coupleIra(
+  pays: [number, number],
+  iras: [number, number],
+  ages: [number, number] = [45, 45],
+) {
+  const a = row({ personId: 1, accountType: "ira", regularAnnual: iras[0] });
+  const b = row({ personId: 2, accountType: "ira", regularAnnual: iras[1] });
+  const capped = cap(
+    2026,
+    [person(1, 2026, ages[0], pays[0]), person(2, 2026, ages[1], pays[1])],
+    [a, b],
+    "MFJ",
+  );
+  return {
+    higher: capped.get(a.id)!.cappedAnnual,
+    lower: capped.get(b.id)!.cappedAnnual,
+  };
+}
+
+/** The Roth IRA "Allowed" figure (`maxDirect`) for one person with
+ *  `traditional` already in a traditional IRA. */
+const allowedDirect = (
+  status: "Single" | "MFJ",
+  age: number,
+  magi: number,
+  traditional: number,
+) => {
+  const r = row({
+    personId: 1,
+    accountType: "ira",
+    regularAnnual: traditional,
+  });
+  const capped = cap(2026, [person(1, 2026, age, 300_000)], [r], status).get(
+    r.id,
+  )!;
+  const judged = judgeRothIra({
+    magi,
+    phaseOut: rothRange(2026, status === "MFJ" ? "mfj" : "single"),
+    marginOverride: null,
+    combinedCompensation: status === "MFJ",
+    people: [
+      {
+        personId: 1,
+        name: "P",
+        compensation: 300_000,
+        iraLimit: capped.limit!,
+        iraRoom: capped.maxEmployee,
+      },
+    ],
+  });
+  return judged!.people[0]!.maxDirect;
+};
+
+describe("limits: IRA", () => {
+  it("limits/C49 [LIM-11] IRA (2026, 49, pay 100,000): 7,500", () => {
+    // 219(b)(5)(A), Notice 2025-67 p.4: 7,500. Under 50, no catch-up.
+    cents(iraLimit(2026, 49, 100_000), 7_500);
+  });
+
+  it("limits/C50 [LIM-11] IRA catch-up (2026, 50): 8,600", () => {
+    // 7,500 + 1,100 (219(b)(5)(B); Notice 2025-67 p.4) = 8,600.
+    cents(iraLimit(2026, 50, 100_000), 8_600);
+  });
+
+  it("limits/C51 [LIM-11] 2025 IRA (49): 7,000", () => {
+    // Notice 2024-80 p.4: 7,000.
+    cents(iraLimit(2025, 49, 100_000), 7_000);
+  });
+
+  it("limits/C52 [LIM-11] 2025 catch-up (50): 8,000", () => {
+    // 7,000 + 1,000 = 8,000.
+    cents(iraLimit(2025, 50, 100_000), 8_000);
+  });
+
+  it("limits/C53 [LIM-11] no upper age (2026, 80, pay 40,000): 8,600", () => {
+    // The age-70½ cut-off is gone for years after 2019 (Pub 590-A (2025)
+    // ch. 1): 7,500 + 1,100 = 8,600, pay 40,000 doesn't bind.
+    cents(iraLimit(2026, 80, 40_000), 8_600);
+  });
+
+  it('limits/C54 [LIM-11] pay binds (Pub 590-A "Danny"; 2025, unmarried, pay 3,500): 3,500', () => {
+    // 219(b)(1): the lesser of 7,000 and taxable compensation, 3,500 (Pub
+    // 590-A (2025) ch. 1, the Danny example; a student, under 50).
+    cents(iraLimit(2025, 20, 3_500), 3_500);
+  });
+
+  // C55: Roth room after a traditional IRA. 2026, 50, 5,000 traditional,
+  // MAGI under the range. One limit across both kinds (408A(c)(2); Pub
+  // 590-A Worksheet 2-2 lines 9–11): 8,600 − 5,000 = 3,600. Today the
+  // "Allowed" figure stops at line 8 and shows the whole 8,600 (verdict
+  // D5). Fed as the Paycheck router does (`routers/paycheck.ts:904`): the
+  // cap pass's room goes in as `iraRoom`.
+  xfail({
+    id: "limits/C55 [LIM-13]",
+    todo: "v0.11 Limits \"Roth 'Allowed today' stops at worksheet line 8\" (verdict D5)",
+    run: () => allowedDirect("Single", 50, 50_000, 5_000),
+    expected: 3_600,
+    today: 8_600,
+  });
+
+  it("limits/C56 [LIM-11] spousal IRA (Pub 590-A; 2025 MFJ, A pay 30,000 gives 7,000, B no pay): 7,000", () => {
+    // 219(c): min(7,000, 0 + 30,000 − 7,000) = 7,000.
+    cents(spousalRoom(2025, [45, 45], [30_000, 0], 7_000), 7_000);
+  });
+
+  it("limits/C57 [LIM-11] spousal, low pay (2026 MFJ, A pay 10,000 gives 7,500, B none): 2,500", () => {
+    // 219(c): min(7,500, 0 + 10,000 − 7,500) = 2,500.
+    cents(spousalRoom(2026, [45, 45], [10_000, 0], 7_500), 2_500);
+  });
+
+  it("limits/C58 [LIM-11] lower earner (Pub 590-A; 2025 MFJ, both 53, pay 3,800 and 48,000): 8,000", () => {
+    // The higher earner puts in 8,000; the lower earner:
+    // min(7,000 + 1,000, 3,800 + 48,000 − 8,000) = 8,000.
+    cents(spousalRoom(2025, [53, 53], [48_000, 3_800], 8_000), 8_000);
+  });
+
+  it("limits/C60 [LIM-11] combined maximum (2026 MFJ, 55 and 45, pay above the limits): 16,100", () => {
+    // Each spouse's own limit (Pub 590-A p.10): 8,600 + 7,500 = 16,100.
+    const both = coupleIra([300_000, 300_000], [20_000, 20_000], [55, 45]);
+    cents(both.higher + both.lower, 16_100);
+  });
+
+  // D4: the higher earner is held to their own pay (219(c)(2)(B): only
+  // the spouse with less compensation uses the couple's). Ledgr pools both
+  // spouses' pay for both (limits-report D4: today's figures below).
+  //
+  // D4-a: pay 5,000 / 3,000, IRA 7,500 / 500. Higher earner:
+  // min(7,500, 5,000) = 5,000. Lower: min(7,500, 3,000 + 5,000 − 5,000)
+  // = 3,000 ≥ 500, so 500. Today: 8,000 pooled pay holds 7,500 + 500.
+  xfail({
+    id: "limits/D4-a [LIM-11]",
+    todo: 'v0.11 Limits "Higher earner held to own pay, not joint" (verdict D4)',
+    run: () => coupleIra([5_000, 3_000], [7_500, 500]),
+    expected: { higher: 5_000, lower: 500 },
+    today: { higher: 7_500, lower: 500 },
+  });
+  // D4-b: pay 5,000 / 1,000, IRA 7,500 / 1,000. Higher: 5,000. Lower:
+  // min(7,500, 1,000 + 5,000 − 5,000) = 1,000. Today: 8,500 cut to the
+  // pooled 6,000 by one factor 6,000 / 8,500: 7,500 × 0.70588… = 5,294.12,
+  // 1,000 × 0.70588… = 705.88.
+  xfail({
+    id: "limits/D4-b [LIM-11]",
+    todo: 'v0.11 Limits "Higher earner held to own pay, not joint" (verdict D4)',
+    run: () => coupleIra([5_000, 1_000], [7_500, 1_000]),
+    expected: { higher: 5_000, lower: 1_000 },
+    today: { higher: 5_294.12, lower: 705.88 },
+  });
+});
+
+// ---------------------------------------------------------------------------
+// F. Roth IRA phase-out (IRC 408A(c)(3); Pub 590-A (2025) Worksheet 2-2)
+// ---------------------------------------------------------------------------
+
+/** The shipped Roth IRA phase-out range for a status's table. */
+function rothRange(year: number, table: "single" | "mfj" | "hoh") {
+  const limits = limitsFor(year);
+  return {
+    start: limits[`roth_ira_phaseout_start_${table}`]!,
+    end: limits[`roth_ira_phaseout_end_${table}`]!,
+  };
+}
+
+/** MFS, lived with the spouse at any time in the year: 0 to 10,000
+ *  (408A(c)(3)(A); Notice 2025-67 p.5). Hand-keyed: Ledgr has no MFS. */
+const MFS_LIVED_TOGETHER = { start: 0, end: 10_000 };
+
+/** The IRA base the worksheet reduces (line 4 against compensation): the
+ *  cap pass's most for one person, nothing in yet. */
+function iraBase(year: number, age: number, pay = 300_000): number {
+  const r = row({ personId: 1, accountType: "ira", regularAnnual: 0 });
+  return cap(year, [person(1, year, age, pay)], [r]).get(r.id)!.maxEmployee!;
+}
+
+/** Worksheet 2-2 on the shipped range: the reduced Roth IRA limit. */
+const roth = (
+  year: number,
+  table: "single" | "mfj" | "hoh",
+  age: number,
+  magi: number,
+) => rothIraAllowed(magi, rothRange(year, table), iraBase(year, age));
+
+// Working, Worksheet 2-2 (Pub 590-A 2025): reduction = base × (MAGI −
+// start) / width; base − reduction rounded UP to the next $10 (line 8);
+// any result above 0 and under 200 is 200; at or past the end, 0.
+describe("limits: Roth IRA phase-out", () => {
+  it("limits/C61 [LIM-12] phase-out start (2026 Single, 45, MAGI 153,000): 7,500", () => {
+    // At the start: no reduction.
+    cents(roth(2026, "single", 45, 153_000), 7_500);
+  });
+
+  it("limits/C62 [LIM-12] $0.50 rounds to 0 (MAGI 153,001): 7,500", () => {
+    // 7,500 × 1 / 15,000 = 0.50; 7,499.50 rounds up to 7,500.
+    cents(roth(2026, "single", 45, 153_001), 7_500);
+  });
+
+  it("limits/C63 [LIM-12] $9.50 rounds to 0 (MAGI 153,019): 7,500", () => {
+    // 7,500 × 19 / 15,000 = 9.50; 7,490.50 rounds up to 7,500.
+    cents(roth(2026, "single", 45, 153_019), 7_500);
+  });
+
+  it("limits/C64 [LIM-12] $10 (MAGI 153,020): 7,490", () => {
+    // 7,500 × 20 / 15,000 = 10; 7,490 exactly.
+    cents(roth(2026, "single", 45, 153_020), 7_490);
+  });
+
+  it("limits/C65 [LIM-12] half (MAGI 160,500): 3,750", () => {
+    // 7,500 × 7,500 / 15,000 = 3,750; 3,750.
+    cents(roth(2026, "single", 45, 160_500), 3_750);
+  });
+
+  it("limits/C66 [LIM-12] half at 55 (MAGI 160,500): 4,300", () => {
+    // Base 8,600; × 0.5 = 4,300 off; 4,300.
+    cents(roth(2026, "single", 55, 160_500), 4_300);
+  });
+
+  it("limits/C67 [LIM-12] near the end (45, MAGI 167,500): 250", () => {
+    // 7,500 × 14,500 / 15,000 = 7,250; 250.
+    cents(roth(2026, "single", 45, 167_500), 250);
+  });
+
+  it("limits/C68 [LIM-12] MAGI 167,600: 200", () => {
+    // 7,500 × 14,600 / 15,000 = 7,300; 200.
+    cents(roth(2026, "single", 45, 167_600), 200);
+  });
+
+  it("limits/C69 [LIM-12] MAGI 167,601: 200", () => {
+    // 7,300.50 off; 199.50 rounds up to 200.
+    cents(roth(2026, "single", 45, 167_601), 200);
+  });
+
+  it("limits/C70 [LIM-12] $200 floor (MAGI 167,620): 200", () => {
+    // 7,310 off; 190, under 200, becomes 200 (219(g)(2)(B)).
+    cents(roth(2026, "single", 45, 167_620), 200);
+  });
+
+  it("limits/C71 [LIM-12] floor (MAGI 167,999): 200", () => {
+    // 7,499.50 off; 0.50 rounds up to 10, floored to 200.
+    cents(roth(2026, "single", 45, 167_999), 200);
+  });
+
+  it("limits/C72 [LIM-12] out (MAGI 168,000): 0", () => {
+    // At the end of the range: fully phased out.
+    cents(roth(2026, "single", 45, 168_000), 0);
+  });
+
+  it("limits/C73 [LIM-12] HOH uses the Single range (2026 HOH, 45, MAGI 160,000): 4,000", () => {
+    // 153,000–168,000 (Notice 2025-67 p.5): 7,500 × 7,000 / 15,000 =
+    // 3,500 off; 4,000.
+    cents(roth(2026, "hoh", 45, 160_000), 4_000);
+  });
+
+  it("limits/C74 [LIM-12] MFJ start (2026 MFJ, 45, MAGI 242,000): 7,500", () => {
+    // At the start of 242,000–252,000.
+    cents(roth(2026, "mfj", 45, 242_000), 7_500);
+  });
+
+  it("limits/C75 [LIM-12] MFJ half (MAGI 247,000): 3,750", () => {
+    // 7,500 × 5,000 / 10,000 = 3,750 off; 3,750.
+    cents(roth(2026, "mfj", 45, 247_000), 3_750);
+  });
+
+  it("limits/C76 [LIM-12] MFJ at 50 (MAGI 245,000): 6,020", () => {
+    // 8,600 × 3,000 / 10,000 = 2,580 off; 6,020.
+    cents(roth(2026, "mfj", 50, 245_000), 6_020);
+  });
+
+  it("limits/C77 [LIM-12] MFJ floor (45, MAGI 251,999): 200", () => {
+    // 7,500 × 9,999 / 10,000 = 7,499.25 off; 0.75 → 10 → floored to 200.
+    cents(roth(2026, "mfj", 45, 251_999), 200);
+  });
+
+  it("limits/C78 [LIM-12] MFJ out (MAGI 252,000): 0", () => {
+    cents(roth(2026, "mfj", 45, 252_000), 0);
+  });
+
+  it("limits/C79 [LIM-12] QSS uses the MFJ table, range function only (2026, 45, MAGI 247,000): 3,750", () => {
+    // 408A(c)(3)(B)(ii) and Notice 2025-67 p.5 put QSS on the MFJ range;
+    // Ledgr has no QSS status, so the MFJ range is fed in. As C75: 3,750.
+    cents(rothIraAllowed(247_000, rothRange(2026, "mfj"), 7_500), 3_750);
+  });
+
+  it("limits/C80 [LIM-12] MFS lived together, start, range function only (45, MAGI 0): 7,500", () => {
+    // Range 0–10,000 fed in. At the start: 7,500.
+    cents(rothIraAllowed(0, MFS_LIVED_TOGETHER, 7_500), 7_500);
+  });
+
+  it("limits/C81 [LIM-12] MFS half, range function only (MAGI 5,000): 3,750", () => {
+    // 7,500 × 5,000 / 10,000 = 3,750 off; 3,750.
+    cents(rothIraAllowed(5_000, MFS_LIVED_TOGETHER, 7_500), 3_750);
+  });
+
+  it("limits/C82 [LIM-12] MFS floor, range function only (MAGI 9,999): 200", () => {
+    // 7,499.25 off; 0.75 → 10 → floored to 200.
+    cents(rothIraAllowed(9_999, MFS_LIVED_TOGETHER, 7_500), 200);
+  });
+
+  it("limits/C83 [LIM-12] MFS out, range function only (MAGI 10,000): 0", () => {
+    cents(rothIraAllowed(10_000, MFS_LIVED_TOGETHER, 7_500), 0);
+  });
+
+  it("limits/C84 [LIM-12] MFS apart = Single, range function only (45, MAGI 160,500): 3,750", () => {
+    // Lived apart all year: treated as single (408A(c)(3)(C)), so the
+    // Single range is fed in. As C65: 3,750.
+    cents(rothIraAllowed(160_500, rothRange(2026, "single"), 7_500), 3_750);
+  });
+
+  it("limits/C85 [LIM-12] Pub 590-A Worksheet 2-2 (2025 Single, 45, MAGI 151,000): 6,540", () => {
+    // 150,000–165,000 (Notice 2024-80 p.5): 7,000 × 1,000 / 15,000 =
+    // 466.67 off; 6,533.33 rounds up to 6,540.
+    cents(roth(2025, "single", 45, 151_000), 6_540);
+  });
+
+  it("limits/C86 [LIM-12] exact ratio (2026 Single, 45, MAGI 154,100): 6,950", () => {
+    // 7,500 × 1,100 / 15,000 = 550 exactly; 6,950. The worksheet's ratio
+    // "to at least three places" (0.073) gives 547.50 → 6,960; Ledgr keeps
+    // the exact ratio, as the statute does (spec Q-2).
+    cents(roth(2026, "single", 45, 154_100), 6_950);
+  });
+
+  it("limits/C87 [LIM-12] worksheet rounding, base set by pay (2026 Single, 45, pay 3,335, MAGI 160,500): 1,670", () => {
+    // Base min(7,500, 3,335) = 3,335. 3,335 × 7,500 / 15,000 = 1,667.50
+    // off; 1,667.50 rounded up to the next $10 = 1,670: Pub 590-A (2025)
+    // Worksheet 2-2 line 8 ("Round the result up to the nearest $10") and
+    // the Form 8606 instructions' worksheet line 9 both give this.
+    // Disclosed: the statute, 219(g)(2)(C) via 408A(c)(3)(A), rounds the
+    // reduction down to $10 (1,660), giving 3,335 − 1,660 = 1,675. Ledgr
+    // follows the worksheets (verdict D3).
+    const base = iraBase(2026, 45, 3_335);
+    cents(base, 3_335);
+    cents(rothIraAllowed(160_500, rothRange(2026, "single"), base), 1_670);
+  });
+
+  it("limits/C87b [LIM-12] the same rule the other way (pay 3,335, MAGI 160,800): 1,610", () => {
+    // 3,335 × 7,800 / 15,000 = 1,734.20 off; 1,600.80 rounds up to 1,610
+    // (Worksheet 2-2 line 8; Form 8606 worksheet line 9). The statute's
+    // reading: 1,730 off, 1,605, so here Ledgr is 5 above it.
+    cents(
+      rothIraAllowed(
+        160_800,
+        rothRange(2026, "single"),
+        iraBase(2026, 45, 3_335),
+      ),
+      1_610,
+    );
+  });
+
+  // C88: phase-out first, then the traditional money. 2026 MFJ, 45, MAGI
+  // 247,000, 5,000 traditional. Worksheet 2-2: line 8 on 7,500 = 3,750;
+  // lines 9–11, 7,500 − 5,000 = 2,500; the smaller wins: 2,500 (reducing
+  // the base first would give the wrong 1,250). Today the text says 3,750
+  // (verdict D5).
+  xfail({
+    id: "limits/C88 [LIM-13]",
+    todo: "v0.11 Limits \"Roth 'Allowed today' stops at worksheet line 8\" (verdict D5)",
+    run: () => allowedDirect("MFJ", 45, 247_000, 5_000),
+    expected: 2_500,
+    today: 3_750,
+  });
+
+  it("limits/C89 [LIM-12] conversion income left out of MAGI, range function only (2026 MFJ, 45, AGI 300,000 with 80,000 conversion): 7,500", () => {
+    // Roth MAGI leaves out conversion income (408A(c)(3)(B)(i); Worksheet
+    // 2-1): 300,000 − 80,000 = 220,000, under 242,000. Ledgr has no
+    // conversion item in its MAGI parts, so the net MAGI is fed in.
+    cents(rothIraAllowed(220_000, rothRange(2026, "mfj"), 7_500), 7_500);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // I. HSA (IRC 223(b); Pub 969 (2025))
 // ---------------------------------------------------------------------------
 
@@ -682,5 +1103,10 @@ describe("limits: hand worksheet", () => {
     };
     for (const [age, figures] of Object.entries(want))
       cents(at(Number(age)), figures);
+  });
+
+  it("limits/HW-IRA-3000 [LIM-11] part-timer on 3,000 of wages (2026, 45): IRA 3,000", () => {
+    // 219(b)(1): min(7,500, 3,000 of taxable compensation) = 3,000.
+    cents(iraLimit(2026, 45, 3_000), 3_000);
   });
 });
