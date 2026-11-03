@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.9
 
-## [0.9.8] - 2026-11-02
+## [0.9.8] - 2026-11-03
 
 A safety release: nothing a budget app, SimpleFIN, SEC or Tiingo sends is used until it has been checked, and a sync or push that fails says what happened and what changed.
 
