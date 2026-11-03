@@ -76,6 +76,11 @@ describe("with shocks", () => {
 });
 
 describe("Spending Decline in a trial", () => {
+  // Bug pin (strategies verdict N2): this asserts the closed form from the
+  // first amount, which ignores typed budgets and expense endings. The
+  // answer key's strategies/N2 (61,133.30, answer-key-strategies.test.ts)
+  // replaces it in v0.11 Strategies "RMD Spending starts at a hard-coded
+  // 72" (Spending Decline: carry last year's amount). Values unchanged.
   it("uses the CPI each year saw, not this year's rate for every year", () => {
     const result = applySpendingDecline({ annualDeclineRate: 0.02 }, {
       projectedExpenses: 1,
