@@ -40,6 +40,10 @@ describe("blendedPortfolioStats", () => {
     expect(stats.blendedReturn).toBeGreaterThan(0);
     expect(stats.blendedVol).toBeGreaterThan(0);
     // Volatility = weighted sum of stdDevs
+    // Pins a bug (answer key sim/K7, SIM-18): the sum leaves out
+    // correlation, so it isn't the trials' volatility. Changes with v0.11
+    // Simulation "Baseline and displayed return/vol use different math from
+    // trials" (read blendedReturnStats); K7's figure waits on decision F1.
     expect(stats.blendedVol).toBeCloseTo(0.7 * 0.18 + 0.3 * 0.06);
   });
 });
