@@ -48,7 +48,10 @@ test.describe("First run on an empty install", () => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/login/);
     await expect(
-      page.getByRole("heading", { name: "Create the first admin" }),
+      page.getByRole("heading", {
+        name: "Create the first admin",
+        exact: true,
+      }),
     ).toBeVisible();
 
     await page.getByLabel("Name", { exact: true }).fill(ADMIN.name);
@@ -71,14 +74,17 @@ test.describe("First run on an empty install", () => {
     await expect(async () => {
       await page.getByRole("button", { name: "Get Started" }).click();
       await expect(
-        page.getByRole("heading", { name: "Connect to Authentik" }),
+        page.getByRole("heading", {
+          name: "Connect to Authentik",
+          exact: true,
+        }),
       ).toBeVisible({ timeout: 2_000 });
     }).toPass({ timeout: 15_000 });
     await expect(page.getByText("Step 2 of 5")).toBeVisible();
     await page.getByRole("button", { name: "Configure Later" }).click();
 
     await expect(
-      page.getByRole("heading", { name: "Household Members" }),
+      page.getByRole("heading", { name: "Household Members", exact: true }),
     ).toBeVisible();
     await page.getByPlaceholder("Name").fill("Avery Example");
     await page.getByPlaceholder("Birth year").fill("1985");
@@ -86,7 +92,9 @@ test.describe("First run on an empty install", () => {
     await expect(page.getByText("(born 1985)")).toBeVisible();
     await page.getByRole("button", { name: "Next" }).click();
 
-    await expect(page.getByRole("heading", { name: "Income" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Income", exact: true }),
+    ).toBeVisible();
     await page.getByPlaceholder("Employer name").fill("Example Works");
     await page.getByPlaceholder("Annual salary").fill("85000");
     await page.getByRole("button", { name: "Add Job" }).click();
@@ -122,7 +130,10 @@ test.describe("First run on an empty install", () => {
     await page.goto("/");
     await expect(page).toHaveURL(/\/login/);
     await expect(
-      page.getByRole("heading", { name: "Create the first admin" }),
+      page.getByRole("heading", {
+        name: "Create the first admin",
+        exact: true,
+      }),
     ).toHaveCount(0);
 
     await page.getByLabel("Email").fill(ADMIN.email);
