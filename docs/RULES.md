@@ -39,7 +39,7 @@ These apply to every change, and to every review of one.
 
 These stop the failure this codebase is most prone to: maintenance by addition, where each change fixes its bug and leaves the shape alone.
 
-1. **Comments state what is true now.** At most three lines of current reason. Past tense, "the fix", counts of bugs and claims like "can't drift" are rejected; history goes in the commit. If a comment needs more, the code or the type changes first. Deleting code deletes its comment.
+1. **Comments explain the code, not its history: they state what is true now.** At most three lines of current reason. Past tense, "the fix", counts of bugs and claims like "can't drift" are rejected; history goes in the commit, incident stories, finding ids (`H10`), roadmap numbers (`R32`), date-stamps and links to plan or review notes included. If a comment needs more, the code or the type changes first. Deleting code deletes its comment. These are not history, so they stay: statute and tax-law citations (`SECURE 2.0 (2023)`, IRS Notice numbers, `tax_year` values); `@deprecated` tags saying what to do instead; answer-key case ids written `<area>/<id>` (`ret/R12`; [TESTING.md](TESTING.md) § Suites worth knowing; a bare `R12` is a citation); references to the `docs/` files; and the `PROJECTION_CACHE_ENGINE_VERSION` changelog in `projection-cache.ts`.
 2. **Change the model, not the branch.** A second fix in the same spot within 30 days first asks what concept is missing. No function over 150 lines may grow. A rename or removal sweeps all callers, aliases and comments.
 3. **Types carry the state.** New domain fields use enums and config-derived unions, never `string`. Fields that appear together are grouped into one optional object. A field has one meaning. Identity is an id, never a formatted or display value. A new `as` needs a parser or a one-line reason.
 4. **No guards for impossible states.** A default in money code needs a real absent state; a missing key that should exist throws or warns rather than becoming $0.
@@ -74,6 +74,8 @@ Rules below state the target. These parts aren't true yet; don't build on them.
 - **The Simulation's fixed-return line compounds below the portfolio's median** (a weighted sum of each class's geometric mean), until it uses the portfolio's median rate (decision F2, v0.11).
 - **Today's-dollar balances are deflated at their row's start,** up to a year's inflation high, until each balance is deflated by its own date (decision F3, v0.11).
 - **Inflation shocks are independent year to year,** so long-run inflation spread is understated, until persistent inflation is modelled (decision F4, v0.11).
+- **Missing data still becomes $0 in many money paths** (`?? 0`, `return 0`), until each gets a real absent state (§ The Holistic Rule, rule 1). Don't add one.
+- **Some helpers still default `asOfDate = new Date()`,** until every caller passes its request's date (§ Time Resolution, rule 2). Don't add one.
 - **There are two success bars,** 90% and the report's 85%, until one 90% bar judges every verdict (decision F5, v0.11).
 
 ## Data-Driven Architecture
@@ -124,7 +126,7 @@ Where year-level data, shared state and Salary Profile figures come from: DESIGN
 
 ### Rules
 
-1. **No hardcoded fallbacks for user-specific data.** If data doesn't exist, return 0 — don't invent a number. Universal defaults (4% withdrawal rate, IRS limits) are acceptable if stored in DB.
+1. **Absent is a state, not zero.** Missing data shows as missing, never as $0; 0 only when the data says none. Don't invent a number for user-specific data. Universal defaults (4% withdrawal rate, IRS limits) are acceptable if stored in DB.
 2. **One budget column controls everything.** `budget_active_column` determines which spending level (column) is shown across all pages.
 3. **What-ifs are explicit opt-ins.** Sandbox controls (the What-If tab) are clearly labeled as "what-if", never write the active profiles, and never leak into other pages.
 4. **Shared helpers, not duplicated queries.** Use `src/server/helpers/` when multiple routers need the same derived value.
@@ -136,9 +138,6 @@ Where year-level data, shared state and Salary Profile figures come from: DESIGN
 
 The rest of the conventions are in CONTRIBUTING.md § Coding Conventions.
 
-- **Comments explain the code, not its history.** A comment should make sense to a developer reading the code cold, with no access to the review session, PR, or roadmap item that produced it. Keep the technical _why_ (a race condition, a real constraint, a non-obvious edge case, a user-reported bug and what actually happened); drop the _citation_ — finding IDs (`H10`, `M42`, `C2`), severity/priority tags (`Critical`, `P0`, `Blocker`), roadmap item numbers (`R32`, `R43`), PR/batch/phase references ("Extracted in PR 8/3a of the v0.5.2 refactor"), bare date-stamps ("found 2026-08-31:", "Decision confirmed 2026-08-19."), and references to plan/review/scratch docs (`PLAN-*.md`, `REVIEW-*.md`, `.scratch/docs/**`) — those docs get renamed and deleted, and the citation rots into a dangling pointer while the comment itself never gets fixed. That context belongs in the commit message, which doesn't rot. A comment that is pure citation with nothing left once the citation is stripped gets deleted outright, not left as an orphaned tag.
-  - **Exceptions — these are not provenance, keep them:** references to `docs/RULES.md` / `docs/DESIGN.md` / `docs/TESTING.md` / `docs/OPS.md` (permanent, load-bearing); statutory/tax dates and law versions (`SECURE 2.0 (2023)`, `OBBBA (2025)`, IRS Notice/Rev. Proc. numbers, `tax_year` values); answer-key case ids written as `<area>/<id>` (`ret/R12`, `household/C1`), which name the answer key's cases: each test's title starts with its id, and a closed case is listed by id in its file's header ([TESTING.md](TESTING.md) § Suites worth knowing; a bare `R12` or `(C1)` is still a citation); the `PROJECTION_CACHE_ENGINE_VERSION` per-bump changelog in `projection-cache.ts` (a live, code-dependent version history); `@deprecated` tags describing what to do about the deprecated thing (drop the bare `R##`/finding-ID if one rides along, keep the reasoning); a `v0.8.0 squash` (or similar) constraint that tells a reader "don't remove this dead-but-present column/key yet" — reword to drop the version number if it's not otherwise meaningful, but keep the constraint.
-  - **Do keep incident narratives where the story is the documentation** — "found live 2026-08-31: a household that had linked both YNAB and Actual saw their YNAB links vanish while fixing stale Actual links" is not a citation, it's the only record of a real, non-obvious edge case. The test is whether the sentence still means something to a cold reader with the date/tag deleted — if yes, and the remaining prose still explains a genuinely surprising behavior, keep it; if the date/tag was the whole point, cut it.
 - **New shared primitives ship with a real consumer.** A component/hook/util introduced specifically to replace duplicated logic (a new `lib/pure/` function, a `lib/hooks/` hook, a `components/ui/` primitive) must migrate at least one genuine call site in the same PR — never merge one with zero adopters "for later." `FormField`, `useOptimisticMutation`, and `safeDivide()` all shipped unused and the duplication they were meant to kill kept spreading for months until a dedicated audit rediscovered them.
 
 ### Refactoring: LOC vs per-file size
@@ -159,7 +158,7 @@ The rest of the conventions are in CONTRIBUTING.md § Coding Conventions.
 ### Rules
 
 1. **Routers resolve once.** Each tRPC procedure resolves `const asOfDate = new Date()` (or from snapshot date) once at the top. All downstream function calls receive this date as a parameter.
-2. **Helpers accept asOfDate.** Functions like `buildYearEndHistory()`, `getEffectiveOtherAssets()`, and `isPriorYearContribWindow()` must accept an `asOfDate` parameter with a `= new Date()` default for backward compatibility. They must never call `new Date()` internally.
+2. **Helpers require asOfDate.** Functions like `buildYearEndHistory()`, `getEffectiveOtherAssets()`, and `isPriorYearContribWindow()` take `asOfDate` as a required parameter, with no `= new Date()` default: a default guards a state that shouldn't exist. They never call `new Date()` internally.
 3. **Calculator inputs require asOfDate.** All calculator input types already include `asOfDate: Date`. This is enforced by TypeScript — maintain it.
 4. **No stray `new Date()` in called functions.** If a function is called from a router that already resolved a date, the function must use the passed date — not create its own.
 

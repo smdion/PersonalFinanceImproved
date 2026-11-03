@@ -834,8 +834,8 @@ function findRedeclaredConfigExportViolations(): Violation[] {
 // "expert-review" citation, CodeRabbit). Broader shapes — bare R## roadmap
 // tags, date-stamps, PLAN-*.md filenames — are real but too free-text/
 // context-dependent for a reliable regex (an R## could be a real
-// identifier; a date could be a legitimate incident narrative per RULES.md's
-// own exception) and are left to code review, not a lint gate.
+// identifier; a year could be a statute or tax-law year, which RULES.md
+// keeps) and are left to code review, not a lint gate.
 // An answer-key case id written as `<area>/<id>` (`ret/R12`,
 // `household/C1`) names an answer-key case: every answer-key test title
 // starts with its id, and a file's header lists its closed cases by id
@@ -901,10 +901,9 @@ function findReviewCitationViolations(): Violation[] {
 const BROAD_CITATION_FILE_EXEMPT = new Set<string>([
   "src/server/helpers/projection-cache.ts",
 ]);
-// A bare attribution phrase or a bare roadmap R## tag is NEVER a
-// legitimate "the story is the documentation" incident narrative
-// (RULES.md's exception is about DATES, not these) — safe to enforce
-// everywhere (src/, tests/, scripts/).
+// A bare attribution phrase or a bare roadmap R## tag is never one of
+// RULES.md's comment exceptions — safe to enforce everywhere (src/,
+// tests/, scripts/).
 const BROAD_CITATION_ATTRIBUTION_PATTERN = new RegExp(
   [
     "advisor[- ]caught",
@@ -921,12 +920,10 @@ const BROAD_CITATION_ATTRIBUTION_PATTERN = new RegExp(
 );
 // A bare ISO date-stamp, by contrast, is genuinely ambiguous outside
 // src/: test fixtures legitimately describe simulated wall-clock dates
-// ("AS_OF is 2025-01-01, so projection year 0 = 2025"), and RULES.md
-// explicitly blesses a dated incident narrative ("found live 2026-08-31:
-// a household that...") as documentation, not a citation, when the story
-// itself is the point. A blunt regex can't tell that apart from an
-// actual rotting citation — kept src/-only, where app code doesn't
-// narrate test scenarios and that ambiguity essentially doesn't arise.
+// ("AS_OF is 2025-01-01, so projection year 0 = 2025"). A blunt regex
+// can't tell that apart from an actual rotting citation — kept
+// src/-only, where app code doesn't narrate test scenarios and that
+// ambiguity essentially doesn't arise.
 const BROAD_CITATION_DATE_PATTERN =
   /\b20[0-9]{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])\b/;
 function findBroadCitationViolations(): Violation[] {
@@ -1375,7 +1372,7 @@ describe("RULES.md violations sweep", () => {
           `bare ISO date-stamps, and bare roadmap R## tags. Keep the ` +
           `technical reasoning, drop the citation — it belongs in the commit ` +
           `message. If this is a genuine RULES.md-exempt case (a statutory ` +
-          `date range, an incident narrative where the date IS the point), ` +
+          `date range), ` +
           `add \`lint-violation-ok\` to that line rather than reintroducing ` +
           `the citation shape elsewhere.\n` +
           formatViolations("Violations", violations),
