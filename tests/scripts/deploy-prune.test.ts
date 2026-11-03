@@ -28,10 +28,11 @@ describe("deploy.sh pruning", () => {
   });
 
   it("removes old tags only below the newest one it keeps", () => {
-    // Current and latest are excluded; `head -n -1` keeps the highest
+    // Current and latest are excluded as whole tags (fixed strings, so a
+    // version's dots aren't wildcards); `head -n -1` keeps the highest
     // remaining tag, the previous version.
     expect(deploy).toMatch(
-      /grep -v '\$VERSION' \| grep -v 'latest' \| grep -v '<none>' \| sort -V \| head -n -1/,
+      /grep -v -x -F '\$VERSION' \| grep -v -x -F 'latest' \| grep -v -x -F '<none>' \| sort -V \| head -n -1/,
     );
   });
 });

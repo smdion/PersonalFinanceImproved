@@ -243,7 +243,7 @@ fi
 
 echo -e "\n${BOLD}[6/6] Cleaning up old images...${NC}"
 # Keep current version, previous version, and latest tag
-OLD_IMAGES=$($SSH_CMD "docker images ledgr --format '{{.Tag}}' | grep -v '$VERSION' | grep -v 'latest' | grep -v '<none>' | sort -V | head -n -1" 2>/dev/null || true)
+OLD_IMAGES=$($SSH_CMD "docker images ledgr --format '{{.Tag}}' | grep -v -x -F '$VERSION' | grep -v -x -F 'latest' | grep -v -x -F '<none>' | sort -V | head -n -1" 2>/dev/null || true)
 if [[ -n "$OLD_IMAGES" ]]; then
   for old_tag in $OLD_IMAGES; do
     echo "  Removing ledgr:$old_tag"
