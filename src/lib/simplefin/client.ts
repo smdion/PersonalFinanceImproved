@@ -380,7 +380,7 @@ function mapResponse(
             }),
       transactions: transactions.map((t) => ({
         id: t.id,
-        posted: t.posted,
+        posted: t.posted > 0 ? t.posted : t.transacted_at!,
         transactedAt: t.transacted_at ?? null,
         amount: Number(t.amount),
         description: t.description,

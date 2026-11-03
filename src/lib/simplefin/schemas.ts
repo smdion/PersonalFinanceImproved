@@ -20,16 +20,22 @@ export const simplefinHoldingSchema = z.looseObject({
   cost_basis: sentDecimal,
 });
 
-export const simplefinTransactionSchema = z.looseObject({
-  id: z.string(),
-  /** May be 0 while pending. */
-  posted: unixSeconds,
-  transacted_at: unixSeconds.optional(),
-  amount: zDecimal,
-  description: z.string(),
-  /** Absent means posted. */
-  pending: z.boolean().optional(),
-});
+/** `posted` may be 0 while pending; the transaction's own date stands in,
+ *  and a row with neither has no date to store. */
+export const simplefinTransactionSchema = z
+  .looseObject({
+    id: z.string(),
+    posted: unixSeconds,
+    transacted_at: unixSeconds.optional(),
+    amount: zDecimal,
+    description: z.string(),
+    /** Absent means posted. */
+    pending: z.boolean().optional(),
+  })
+  .refine((t) => t.posted > 0 || (t.transacted_at ?? 0) > 0, {
+    path: ["posted"],
+    message: "0 (pending) with no transacted_at",
+  });
 
 /** One account's own fields, checked on their own: an account that doesn't
  *  fit is errored for this sync, not a failed sync. Its holdings and

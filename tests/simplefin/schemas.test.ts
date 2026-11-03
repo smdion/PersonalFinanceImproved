@@ -118,6 +118,35 @@ describe("known-good answers", () => {
     ]);
   });
 
+  it("a pending row with posted 0 is dated by when it happened, never 1970", async () => {
+    const r = await read(
+      withAccount({
+        transactions: [
+          sfTransaction({ id: "TRN-P", posted: 0, pending: true }),
+        ],
+      }),
+    );
+    expect(r.accounts[0]!.transactions[0]!.posted).toBe(1777890000);
+    expect(r.accountIdsWithErrors).toEqual([]);
+  });
+
+  it("a row with posted 0 and no transacted_at is left out, and its account errored", async () => {
+    const r = await read(
+      withAccount({
+        transactions: [
+          sfTransaction(),
+          sfTransaction({ id: "TRN-X", posted: 0, transacted_at: undefined }),
+        ],
+      }),
+    );
+    const a = r.accounts[0]!;
+    expect(a.transactions.map((t) => t.id)).toEqual(["TRN-1"]);
+    expect(r.accountIdsWithErrors).toEqual([a.id]);
+    expect(r.providerErrors.join(" ")).toMatch(
+      /posted: 0 \(pending\) with no transacted_at/,
+    );
+  });
+
   it.each([
     [
       "absent",
