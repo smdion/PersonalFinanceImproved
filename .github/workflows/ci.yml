@@ -18,7 +18,8 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # Pushes also build the image and boot both compose files.
+    timeout-minutes: 20
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -165,11 +166,13 @@ jobs:
         if: github.event_name == 'push'
         run: docker build --build-arg APP_VERSION=ci-${{ github.sha }} -t ledgr:ci-test .
 
-      # The default install: the image on an empty volume with SQLite. The
-      # entrypoint runs the migrator, then the server must answer /api/health.
-      - name: Docker image boots on an empty volume
+      # The sample compose install on an empty volume, SQLite and PostgreSQL:
+      # missing required variables are refused by name, .env reaches the
+      # container, and each boots to /api/health 200. Builds reuse the cache
+      # from the step above.
+      - name: Compose install boots on an empty volume
         if: github.event_name == 'push'
-        run: bash scripts/ci-image-boot.sh ledgr:ci-test
+        run: bash scripts/ci-image-boot.sh
 
       - name: Notify on failure
         if: failure() && github.ref == 'refs/heads/main'

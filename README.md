@@ -53,16 +53,20 @@ A self-hosted personal finance dashboard for tracking income, budgets, investmen
 git clone <repo-url> && cd ledgr
 
 cp .env.example .env
-# Edit .env — at minimum set NEXTAUTH_SECRET, CRON_SECRET, and ENCRYPTION_KEY
+# Edit .env: set NEXTAUTH_SECRET, CRON_SECRET and ENCRYPTION_KEY (see below)
 
 # SQLite, zero config:
 docker compose up -d
 
-# Or PostgreSQL:
+# Or PostgreSQL (also set POSTGRES_PASSWORD in .env):
 # docker compose -f docker-compose.postgres.yml up -d
 ```
 
 By default Ledgr uses SQLite — no database setup required. On first launch, migrations run automatically and you'll see the onboarding wizard.
+
+Finish first-run setup (create the admin) before you expose the port or put a public proxy in front of it.
+
+Both compose files pass every variable in `.env` to the container, so the optional ones below (Authentik, `TZ`, `LEDGR_BACKUP_DIR`, …) need no compose edits. Until each required variable is set, `docker compose` refuses to start and names the one that's missing.
 
 ### Generate secrets
 
