@@ -37,20 +37,18 @@
  * - C03, C05 (the aggregate method): Ledgr withholds bonuses at the flat
  *   rate only (U5); closed, v0.12 UI "Disclosure list additions".
  * - C18, HW-H2b, C52, C53: blocked, below as `it.todo`.
- * - C48 (a $20,000 bonus after regular pay used the whole base): held
- *   back. The key lists it as passing, but on this code the undated bonus
- *   is priced by the estimate, which charges no Additional Medicare (FICA
- *   290.00, net 15,310.00 against the spec's 380.00 and 15,220.00), and a
+ * - C48's bonus-check split (a $20,000 bonus after regular pay used the
+ *   whole base): written below as an expected failure on its year totals
+ *   only (owner, 2026-11-03). The bonus's own FICA and net (spec 380.00
+ *   and 15,220.00, today 290.00 and 15,310.00) wait on an N8 ruling: a
  *   bonus dated onto check 26 shares that check's last 1,807.75 of base
- *   pro rata (verdict N8). Reported for the key; it waits on v0.11
- *   Paycheck "Take-home, wider than reported" (undated bonus placed last)
- *   and an N8 ruling.
+ *   pro rata.
  * - The December per-check split of C47 (spec $372 / $1,767, Ledgr
  *   $279 / $1,860 pro rata): verdict N8 calls it an app definition the
  *   owner hasn't recorded, so only the year totals and January are held.
  */
 import { describe, expect, it } from "vitest";
-import { cents } from "../fixtures/answer-key";
+import { cents, xfail } from "../fixtures/answer-key";
 import {
   account,
   deduction,
@@ -379,6 +377,50 @@ describe("paycheck/C38–C51: wage bases on the year schedule", () => {
     );
     cents(scheduleNet(january), 146_745, 0.26);
     cents(scheduleNet(january), scheduleNet(december));
+  });
+
+  // C48: regular pay alone uses the whole base, then a $20,000 bonus with
+  // no date (spec: paid after check 26). $190,000, 26 biweekly checks of
+  // 7,307.69 (= 189,999.94), Single 2026. Year wages 209,999.94.
+  // Closed form (PW-6.8, PW-7.9):
+  //   SS 6.2% × min(209,999.94, 184,500) = 11,439.00 (IRC 3101(a),
+  //     3121(a)(1); Pub 15 (2026) § 9);
+  //   Medicare 1.45% × 209,999.94 = 3,045.00 (3101(b)(1));
+  //   Additional Medicare 0.9% × (209,999.94 − 200,000) = 90.00, all on
+  //     the bonus: regular pay never passes $200,000 (3102(f) withholding;
+  //     3101(b)(2) liability, Single threshold also $200,000);
+  //   FICA 14,574.00.
+  // Federal: regular 1c 189,999.94; 1g 8,600; 2a 181,399.94; T26 Single
+  //   standard row A 113,200, C 17,966, D 24%: 2g 17,966 + 24% × 68,199.94
+  //   = 34,333.99; bonus 22% × 20,000 = 4,400.00 (Pub 15 § 7, 1a).
+  // Year net 209,999.94 − 34,333.99 − 4,400 − 14,574.00 = 156,691.95,
+  //   ±$0.26 for 26 checks' rounding (PW-3.15).
+  // Today the undated bonus isn't on the schedule; its estimate charges
+  // Medicare 290.00 and no Additional Medicare (bonus net 15,310.00, spec
+  // 15,220.00), so the year is 90.00 short: FICA 14,484.00, net
+  // 156,781.95. The bonus's own split isn't asserted (verdict N8).
+  xfail({
+    id: "paycheck/C48 [PAY-19]",
+    todo: 'v0.11 Paycheck "Take-home, wider than reported"',
+    run: () => {
+      const r = calculatePaycheck(
+        job({ salary: 190_000, period: "biweekly", bonus: 20_000 }),
+      );
+      // The bonus is counted once: from its schedule row once it has one,
+      // from the estimate while it's undated and off the schedule.
+      const onSchedule = r.yearSchedule.some((p) => p.bonusGross > 0);
+      const b = r.bonusEstimate;
+      return {
+        fica:
+          sum(
+            r.yearSchedule.map((p) => p.ficaSS + p.ficaMedicare + p.bonusFica),
+          ) + (onSchedule ? 0 : b.bonusFica),
+        net: scheduleNet(r) + (onSchedule ? 0 : b.bonusNet),
+      };
+    },
+    expected: { fica: 14_574, net: 156_691.95 },
+    today: { fica: 14_484, net: 156_781.95 },
+    tolerance: 0.26,
   });
 
   it("paycheck/C51 [PAY-17] the bonus's 401(k) comes off before the flat rate", () => {

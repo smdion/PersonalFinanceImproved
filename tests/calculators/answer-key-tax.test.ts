@@ -34,6 +34,10 @@
  * - S18 (an adjustment larger than income): closed, adjustments to income
  *   can't be entered and none is planned; v0.12 UI "Disclosure list
  *   additions".
+ * - P24 (a dependent's deduction, Pub 501 Dependent Example 1) and P25's
+ *   dependent half (Example 3): closed, a dependent filer is disclosed,
+ *   not built (owner, 2026-11-02 and 2026-11-03); v0.12 UI "Disclosure
+ *   list additions". P25's blindness half stays below as `it.todo`.
  */
 import { describe, it } from "vitest";
 import { cents, xfail } from "../fixtures/answer-key";
@@ -1201,9 +1205,9 @@ describe("answer key: tax cases blocked on a feature", () => {
     'tax/G1-60: blocked on v0.11 Tax "No income beyond portfolio and SS"',
   );
 
-  // D4 also needs QSS; D2, D3, P22 the blindness add-on built with it;
-  // P24 and P25 a dependent filer, which is disclosed rather than built
-  // (decision 2026-11-02), so their dependent part may close unwritten.
+  // D4 also needs QSS; D2, D3, P22 and P25's blindness half the blindness
+  // add-on built with it (v0.11 has no separate blindness item). P24 and
+  // P25's dependent half are closed (header).
   const RETURN_DEDUCTIONS = 'v0.11 Tax "One returnDeductions()"';
   it.todo(`tax/D1: blocked on ${RETURN_DEDUCTIONS}`);
   it.todo(`tax/D2: blocked on ${RETURN_DEDUCTIONS}`);
@@ -1213,8 +1217,9 @@ describe("answer key: tax cases blocked on a feature", () => {
   it.todo(`tax/P21: blocked on ${RETURN_DEDUCTIONS}`);
   it.todo(`tax/P22: blocked on ${RETURN_DEDUCTIONS}`);
   it.todo(`tax/P23: blocked on ${RETURN_DEDUCTIONS}`);
-  it.todo(`tax/P24: blocked on ${RETURN_DEDUCTIONS}`);
-  it.todo(`tax/P25: blocked on ${RETURN_DEDUCTIONS}`);
+  it.todo(
+    `tax/P25: blindness half (Single, blind: the $2,000 add-on, Pub 501 Dependent Example 3) blocked on ${RETURN_DEDUCTIONS} (its blindness add-on)`,
+  );
   it.todo(`tax/P28: blocked on ${RETURN_DEDUCTIONS}`);
 
   // A spouse who died: the day-before-birthday rule (i1040 p.110).
