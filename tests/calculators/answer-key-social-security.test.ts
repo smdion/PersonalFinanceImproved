@@ -521,6 +521,12 @@ describe("answer key: Social Security cases blocked on a feature", () => {
   it.todo(`ret/S37: blocked on ${EARNINGS_TEST}`);
   it.todo(`ret/S38: blocked on ${EARNINGS_TEST}`);
   it.todo(`ret/S39: blocked on ${EARNINGS_TEST}`);
+  // P27, P28 (SSA27): the 2027 exempt amounts, 670 × 72,800.33 ÷
+  // 22,935.42 = 2,126.68 → 2,130 a month (25,560 a year) and 2,500 ×
+  // 72,800.33 ÷ 32,154.82 = 5,660.14 → 5,660 (67,920), rounded to the
+  // nearest 10 (42 USC 403(f)(8)(B)). They also need 2027's tax data.
+  it.todo(`ret/P27: blocked on ${EARNINGS_TEST} and 2027 tax data`);
+  it.todo(`ret/P28: blocked on ${EARNINGS_TEST} and 2027 tax data`);
 
   // P11 (Pub 590-B p.35): a Roth contribution's clock starts January 1 of
   // its tax year (ROTH-5), which needs K-F's five-year clock. P12 (Pub
