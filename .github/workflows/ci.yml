@@ -83,8 +83,12 @@ jobs:
 
       # Blocking: each page's first-load JS (gzipped) against its budget,
       # and no single chunk over 500 KB (scripts/check-bundle-size.ts).
+      # The report prints every page's measured size (and the budget block)
+      # before the check, so a failing run shows what moved.
       - name: Check bundle size
-        run: pnpm check:bundle
+        run: |
+          pnpm check:bundle --report
+          pnpm check:bundle
 
       - name: Cache Playwright browsers
         id: pw-cache
