@@ -9,7 +9,7 @@ pnpm test:e2e         # Playwright (needs a running app; PLAYWRIGHT_BASE_URL to 
 pnpm vitest run tests/calculators   # one area — prefer this while working
 ```
 
-**<!-- AUTO-GEN:vitestFiles -->550<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->15<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
+**<!-- AUTO-GEN:vitestFiles -->551<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->15<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
 
 ## Suites
 
@@ -37,6 +37,7 @@ pnpm vitest run tests/calculators   # one area — prefer this while working
 - **`calculators/engine-invariants.test.ts`** — property-based ([fast-check](https://github.com/dubzzz/fast-check)): balance conservation, limits never exceeded, phases never reverse, non-negative tax, generated inputs consistent with themselves. 20 runs by default; `FAST_CHECK_NUM_RUNS` for more.
 - **`calculators/retirement-scope-invariance.test.ts`** — adding $1M of Portfolio money (or saving into it) changes no retirement answer.
 - **`lint/violations.test.ts`** — the RULES.md sweeps; numbered rules in its header.
+- **`**/answer-key-*.test.ts`** — the answer key: figures worked by hand from the published rules, each with its derivation and source beside it, titled `<area>/<id> [CALCULATIONS row]`. Helpers in `fixtures/answer-key.ts` (`cents`, `ledgerRow`, `xfail`, `runOneYear`). An expected failure is `it.fails` naming the release and TODO item that fix it (`v0.11 …`), with today's figure pinned beside it; `lint/answer-key.test.ts` enforces the naming and unique ids.
 - **`e2e/privacy-mode.spec.ts`** — every route with the privacy cookie set must show no `$<digit>`; server HTML must carry no amounts.
 
 ## Fixtures and harnesses
