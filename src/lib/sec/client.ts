@@ -9,7 +9,7 @@
  */
 import "server-only";
 import type { z } from "zod/v4";
-import { BudgetApiError } from "@/lib/budget-api/errors";
+import { BudgetApiError, serviceError } from "@/lib/budget-api/errors";
 import { parseExternal } from "@/lib/http/external-request";
 import {
   createNportParser,
@@ -106,11 +106,7 @@ async function secJson<S extends z.ZodType>(
   try {
     body = JSON.parse(text);
   } catch {
-    throw new BudgetApiError(
-      `SEC: ${endpoint}: not JSON`,
-      "bad-response",
-      null,
-    );
+    throw serviceError("SEC", `SEC: ${endpoint}: not JSON`, "bad-response");
   }
   return parseExternal(schema, body, { service: "sec", endpoint });
 }

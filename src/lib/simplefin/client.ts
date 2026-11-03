@@ -17,7 +17,7 @@
 // production connection's daily quota.
 
 import { z } from "zod/v4";
-import { BudgetApiError } from "@/lib/budget-api/errors";
+import { BudgetApiError, serviceError } from "@/lib/budget-api/errors";
 import {
   externalRequest,
   parseExternal,
@@ -327,10 +327,10 @@ function mapResponse(
   if (json.accounts.length > 0 && checked.accounts.length === 0) {
     const said =
       messages.length > 0 ? `; SimpleFIN said: ${messages.join("; ")}` : "";
-    throw new BudgetApiError(
+    throw serviceError(
+      "SimpleFIN",
       `${checked.problems[0]}${said}`,
       "bad-response",
-      null,
     );
   }
   const notices = messages.filter((m) => CAPPED_NOTICE.test(m));

@@ -3,7 +3,7 @@
 // Auth: Bearer token
 // Amounts: milliunits (÷1000 for dollars)
 
-import { BudgetApiError } from "./errors";
+import { serviceError } from "./errors";
 import "server-only";
 import type {
   BudgetAPIClient,
@@ -315,10 +315,10 @@ export class YnabClient implements BudgetAPIClient {
       ynabSchemas.category,
     );
     if (!isPlainMonthlyGoal(data.category))
-      throw new BudgetApiError(
+      throw serviceError(
+        "YNAB",
         "This category's target isn't a plain monthly one — left untouched to avoid overwriting a target configured directly in YNAB.",
         "conflict",
-        null,
       );
     return {
       apply: () => this.writeMonthlyGoal(categoryId, targetAmount),
@@ -458,12 +458,12 @@ export class YnabClient implements BudgetAPIClient {
     const holders = await this.withImportId(tx);
     const live = holders.find((t) => !t.deleted);
     if (live) return live.id;
-    throw new BudgetApiError(
+    throw serviceError(
+      "YNAB",
       holders.length > 0
         ? `YNAB won't post this transaction on account ${tx.accountId}: a deleted transaction holds its import_id ${importId}.`
         : `YNAB reported import_id ${importId} as a duplicate on account ${tx.accountId}, but no transaction with it was found.`,
       "client",
-      null,
     );
   }
 

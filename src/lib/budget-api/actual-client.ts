@@ -19,7 +19,13 @@ import type {
   NewBudgetTransaction,
 } from "./types";
 import { fromCents, toCents } from "./conversions";
-import { BudgetApiError, isResendable, isTransientError } from "./errors";
+import {
+  BudgetApiError,
+  isResendable,
+  isTransientError,
+  retold,
+  serviceError,
+} from "./errors";
 import { externalRequest } from "@/lib/http/external-request";
 import type { z } from "zod/v4";
 import {
@@ -427,11 +433,9 @@ export class ActualClient implements BudgetAPIClient {
     }
     // Keeps the failure's code, so a caller can tell a timeout from a 5xx.
     if (lastError)
-      throw new BudgetApiError(
+      throw retold(
+        lastError,
         `Actual didn't return a balance for ${unavailable.join(", ")} — nothing was synced; try again`,
-        lastError.code,
-        lastError.status,
-        lastError.retryAfterSeconds,
       );
     return accounts;
   }
@@ -561,12 +565,9 @@ export class ActualClient implements BudgetAPIClient {
         await readNote(cat);
       } catch (err) {
         if (!isTransientError(err)) throw err;
-        const cause = err as BudgetApiError;
-        throw new BudgetApiError(
+        throw retold(
+          err as BudgetApiError,
           `Actual didn't return the note for ${cat.name}, so its goal is unknown — nothing was synced; try again`,
-          cause.code,
-          cause.status,
-          cause.retryAfterSeconds,
         );
       }
     }
@@ -608,7 +609,7 @@ export class ActualClient implements BudgetAPIClient {
     );
     const merged = mergeGoalIntoNote(noteRes.data, templateShape, targetAmount);
     if (!merged.ok) {
-      throw new BudgetApiError(merged.reason, "conflict", null);
+      throw serviceError("Actual", merged.reason, "conflict");
     }
     return {
       apply: async () => {
@@ -655,11 +656,9 @@ export class ActualClient implements BudgetAPIClient {
         });
         const reason = err instanceof Error ? err.message : String(err);
         if (err instanceof BudgetApiError) {
-          throw new BudgetApiError(
+          throw retold(
+            err,
             `Actual didn't return transactions for ${acct.name} — nothing was synced: ${reason}`,
-            err.code,
-            err.status,
-            err.retryAfterSeconds,
           );
         }
         throw new Error(
@@ -717,10 +716,10 @@ export class ActualClient implements BudgetAPIClient {
     );
     const created = await this.findCreatedTransaction(tx);
     if (!created) {
-      throw new BudgetApiError(
+      throw serviceError(
+        "Actual",
         `Created a transaction on Actual (account ${tx.accountId}, imported_id ${importedId}) but couldn't find it back afterward to return its id.`,
         "server",
-        null,
       );
     }
     return created;

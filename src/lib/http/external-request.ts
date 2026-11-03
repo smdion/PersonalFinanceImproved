@@ -109,11 +109,14 @@ export function parseExternal<S extends z.ZodType>(
     .slice(0, 3)
     .map(({ line, more }) => (more > 0 ? `${line} (+${more} more)` : line))
     .join("; ");
-  throw new BudgetApiError(
+  const err = new BudgetApiError(
     `${SERVICE_NAMES[source.service]}: ${endpointPattern(source.endpoint)}: ${fields}`,
     "bad-response",
     null,
   );
+  err.service = SERVICE_NAMES[source.service];
+  err.field = result.error.issues[0]?.path.join(".") || undefined;
+  throw err;
 }
 
 export async function externalRequest<S extends z.ZodType>(request: {
@@ -171,6 +174,10 @@ export async function externalRequest<S extends z.ZodType>(request: {
     (err: BudgetApiError) =>
       (rule.resend === "all" || isResendable(err, request.init)) &&
       (rule.onRateLimit === "retry" || err.code !== "rate-limit"),
-  );
+  ).catch((e: unknown) => {
+    if (e instanceof BudgetApiError)
+      e.service ??= SERVICE_NAMES[request.service];
+    throw e;
+  });
   return parseExternal(request.schema, body, request);
 }

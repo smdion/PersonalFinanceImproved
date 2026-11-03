@@ -8,7 +8,7 @@
  * subclass so the sync layer + UI can react appropriately.
  */
 
-type BudgetApiErrorCode =
+export type BudgetApiErrorCode =
   | "auth" // 401, 403 — token revoked or wrong scope
   | "rate-limit" // 429 — back off and retry
   | "client" // other 4xx — bad request, malformed payload, etc.
@@ -33,6 +33,10 @@ export class BudgetApiError extends Error {
   readonly status: number | null;
   /** Retry-After header value in seconds, if present (rate-limit only). */
   readonly retryAfterSeconds: number | null;
+  /** The service's name ("Actual"), and for a bad-response the first field
+   *  that didn't fit; set where the request is made. */
+  service?: string;
+  field?: string;
 
   constructor(
     message: string,
@@ -56,6 +60,98 @@ export class BudgetApiError extends Error {
       this.code === "timeout"
     );
   }
+}
+
+/** What a user is told about a failed request to a service. */
+export function externalErrorSentence(e: BudgetApiError): string {
+  const who = e.service ?? "The service";
+  switch (e.code) {
+    case "bad-response":
+      return `${who} sent something Ledgr doesn't understand${e.field ? ` (${e.field})` : ""}.`;
+    case "auth":
+      return `${who} didn't accept Ledgr's credentials — reconnect it in Settings.`;
+    case "rate-limit":
+      return `${who} asked Ledgr to slow down — try again in a few minutes.`;
+    case "network":
+    case "timeout":
+      return `Ledgr couldn't reach ${who} — try again.`;
+    case "client":
+      return `${who} refused Ledgr's request.`;
+    case "conflict":
+      return `${who} has a setting Ledgr won't overwrite.`;
+    default:
+      return `${who} didn't answer properly — try again.`;
+  }
+}
+
+/** An error a client raises itself, naming its service. */
+export function serviceError(
+  service: string,
+  message: string,
+  code: BudgetApiErrorCode,
+  status: number | null = null,
+): BudgetApiError {
+  const e = new BudgetApiError(message, code, status);
+  e.service = service;
+  return e;
+}
+
+/** A BudgetApiError with a new message, keeping what it knows. */
+export function retold(from: BudgetApiError, message: string): BudgetApiError {
+  const e = new BudgetApiError(
+    message,
+    from.code,
+    from.status,
+    from.retryAfterSeconds,
+  );
+  e.service = from.service;
+  e.field = from.field;
+  return e;
+}
+
+/** A write that stopped: `done` tells the user what had changed. Only a
+ *  site that knows what changed says so; the default says nothing. */
+export class WriteStopped extends Error {
+  readonly done: string;
+
+  constructor(message: string, done: string, cause?: unknown) {
+    super(message, { cause });
+    this.name = "WriteStopped";
+    this.done = done;
+  }
+}
+
+/** A failure before anything was written. */
+export function nothingChanged(cause: unknown): WriteStopped {
+  return new WriteStopped(
+    cause instanceof Error ? cause.message : String(cause),
+    "Nothing was changed.",
+    cause,
+  );
+}
+
+/** The service failure behind an error, and what it stopped, if any. */
+export function externalFailure(error: unknown): {
+  external: BudgetApiError | null;
+  stopped: WriteStopped | null;
+} {
+  let external: BudgetApiError | null = null;
+  let stopped: WriteStopped | null = null;
+  for (let c = error, i = 0; c instanceof Error && i < 6; i++) {
+    if (c instanceof WriteStopped) stopped ??= c;
+    if (c instanceof BudgetApiError) external ??= c;
+    c = c.cause;
+  }
+  return { external, stopped };
+}
+
+/** The sentence a user sees for an error, or null when no service failed
+ *  and no write says what stopped. */
+export function userMessageFor(error: unknown): string | null {
+  const { external, stopped } = externalFailure(error);
+  const what = external && externalErrorSentence(external);
+  if (stopped) return `${what ?? "Something went wrong."} ${stopped.done}`;
+  return what;
 }
 
 /** A failure that may pass on its own (rate limit, 5xx, network, timeout):

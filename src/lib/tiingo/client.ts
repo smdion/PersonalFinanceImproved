@@ -5,7 +5,7 @@
 // is fixed (never user-supplied), so unlike the SimpleFIN client there is no
 // SSRF surface to guard.
 
-import { BudgetApiError } from "@/lib/budget-api/errors";
+import { BudgetApiError, serviceError } from "@/lib/budget-api/errors";
 import type { z } from "zod/v4";
 import { externalRequest } from "@/lib/http/external-request";
 import {
@@ -41,7 +41,7 @@ async function requestJson<S extends z.ZodType>(
   schema: S,
 ): Promise<z.infer<S>> {
   if (tiingoBlockedUntil())
-    throw new BudgetApiError("Rate limited (429)", "rate-limit", 429);
+    throw serviceError("Tiingo", "Rate limited (429)", "rate-limit", 429);
   try {
     return await externalRequest({
       service: "tiingo",
