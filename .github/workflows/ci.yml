@@ -208,3 +208,10 @@ jobs:
           TEST_DATABASE_URL: postgresql://ledgr:ledgr-ci-placeholder@localhost:5432/ledgr_test
           DEMO_ONLY: "true"
           REQUIRE_TEST_DATABASE: "true"
+
+      - name: Fresh install on PostgreSQL
+        run: pnpm test tests/routers/fresh-install-postgres.test.ts
+        env:
+          # Throwaway service database; not a secret.
+          TEST_DATABASE_URL: postgresql://ledgr:ledgr-ci-placeholder@localhost:5432/ledgr_test
+          REQUIRE_TEST_DATABASE: "true"
