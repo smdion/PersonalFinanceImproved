@@ -168,8 +168,8 @@ jobs:
 
       # The sample compose install on an empty volume, SQLite and PostgreSQL:
       # missing required variables are refused by name, .env reaches the
-      # container, and each boots to /api/health 200. Builds reuse the cache
-      # from the step above.
+      # container, and each boots to /api/health 200 and answers a public
+      # tRPC query with no Authentik. Builds reuse the cache from the step above.
       - name: Compose install boots on an empty volume
         if: github.event_name == 'push'
         run: bash scripts/ci-image-boot.sh

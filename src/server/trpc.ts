@@ -68,19 +68,6 @@ const demoOnlySession: Session = {
   expires: "2099-12-31T23:59:59.999Z",
 };
 
-// Validate required env vars in production (skip for demo-only mode and build phase).
-// Next.js sets NEXT_PHASE during `next build` — deferring this check avoids build
-// failures when OIDC isn't configured (e.g. dev environments with local login only).
-const isBuildPhase = process.env.NEXT_PHASE === "phase-production-build";
-if (
-  process.env.NODE_ENV === "production" &&
-  !process.env.AUTH_AUTHENTIK_ISSUER &&
-  !isDemoOnly &&
-  !isBuildPhase
-) {
-  throw new Error("AUTH_AUTHENTIK_ISSUER is required in production");
-}
-
 // Block dangerous combination: ALLOW_DEV_MODE should never be set in production
 if (
   process.env.NODE_ENV === "production" &&

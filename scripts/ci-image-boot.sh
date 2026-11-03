@@ -5,7 +5,8 @@
 #      each required variable, naming it;
 #   2. with a throwaway .env it forwards .env's optional variables;
 #   3. `docker compose up --build` on an empty volume answers
-#      GET /api/health 200 (the entrypoint runs the migrator first).
+#      GET /api/health 200 (the entrypoint runs the migrator first), and a
+#      public tRPC query answers 200 with no Authentik configured.
 #
 # Usage: bash scripts/ci-image-boot.sh   (writes ./.env, removes it on exit)
 # Every value below is a throwaway placeholder, not a secret.
@@ -114,12 +115,28 @@ wait_for_health() {
   echo "$current_file: /api/health 200 on an empty volume: ok"
 }
 
+# A public tRPC query must answer 200 with no Authentik configured: local
+# admin is the default install's sign-in.
+check_public_trpc() {
+  local body code
+  body=$(mktemp)
+  code=$(curl -s -o "$body" -w '%{http_code}' "$base_url/api/trpc/settings.testOidcConnection" || true)
+  if [ "$code" != "200" ]; then
+    fail "$current_file: settings.testOidcConnection answered $code, not 200: $(head -c 500 "$body")"
+  fi
+  jq -e '.result.data.configured == false' "$body" >/dev/null ||
+    fail "$current_file: settings.testOidcConnection didn't report OIDC unconfigured: $(head -c 500 "$body")"
+  rm -f "$body"
+  echo "$current_file: public tRPC call 200 without Authentik: ok"
+}
+
 boot() {
   current_file="$1"
   current_project="$2"
   write_env
   docker compose -f "$current_file" -p "$current_project" up -d --build --quiet-pull
   wait_for_health
+  check_public_trpc
   docker compose -f "$current_file" -p "$current_project" down -v --remove-orphans
   current_file=""
 }
