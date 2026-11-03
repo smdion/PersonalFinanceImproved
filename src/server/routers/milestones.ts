@@ -357,8 +357,9 @@ async function activeMilestoneInput(ctx: Context) {
   const efundColumn = setting(SK_EFUND_BUDGET_COLUMN);
   const optional = <T>(p: Promise<T>) => p.catch(() => null);
   // Contributions need the profile ids the page sends; with none they're $0.
-  const { contribProfileId, salaryProfileId } =
-    await resolveActiveProfilePair(ctx.db);
+  const { contribProfileId, salaryProfileId } = await resolveActiveProfilePair(
+    ctx.db,
+  );
   const [
     inputs,
     contributions,

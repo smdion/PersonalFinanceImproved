@@ -272,15 +272,13 @@ describe("milestones.recordReached on a household with contributions", () => {
 
   it("records the same reached set the page judges on the active profiles", async () => {
     const { caller } = ctx;
-    const [inputs, contributions, savings, mortgage, line] = await Promise.all(
-      [
-        caller.milestones.computeInputs({}),
-        caller.contribution.computeSummary({ contributionProfileId }),
-        caller.savings.computeSummary(),
-        caller.mortgage.computeActiveSummary(),
-        caller.contribution.highIncomeLine(),
-      ],
-    );
+    const [inputs, contributions, savings, mortgage, line] = await Promise.all([
+      caller.milestones.computeInputs({}),
+      caller.contribution.computeSummary({ contributionProfileId }),
+      caller.savings.computeSummary(),
+      caller.mortgage.computeActiveSummary(),
+      caller.contribution.highIncomeLine(),
+    ]);
     const efund = savings.efund;
     const pageReached = evaluateMilestones(
       buildMilestoneInput({
