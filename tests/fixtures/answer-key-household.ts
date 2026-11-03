@@ -1,7 +1,8 @@
 /**
- * Invented households for the answer key's engine-year tax cases
- * (`tests/calculators/answer-key-tax-engine.test.ts`, and the survivor
- * m30-MAGI in `answer-key-tax.test.ts`), built as a plain
+ * Invented households for the answer key's engine-year cases
+ * (`tests/calculators/answer-key-tax-engine.test.ts`,
+ * `answer-key-retirement-engine.test.ts`, and the survivor m30-MAGI in
+ * `answer-key-tax.test.ts`), built as a plain
  * `ProjectionInput` the way `build-engine-payload.ts` fills one for a
  * retired household: person 1 owns the accounts, every account is a
  * Retirement account tracked on its own, and the tax tables are the
@@ -45,6 +46,19 @@ export interface KeyHousehold {
   people: readonly KeyPerson[];
   /** Person 1's Traditional IRA. */
   traditionalIra?: number;
+  /** Person 2's own Traditional IRA (per-owner RMDs). */
+  spouseTraditionalIra?: number;
+  /** Person 1's Roth IRA: its balance and the basis layers inside it
+   *  (regular contributions, conversions and the latest conversion's
+   *  year, as of the plan's start); the rest of the balance is earnings. */
+  rothIra?: {
+    balance: number;
+    regular: number;
+    conversions: number;
+    latestConversionYear: number | null;
+  };
+  /** The household takes penalized early draws from every account. */
+  allowPenalizedWithdrawals?: boolean;
   /** Person 1's taxable brokerage account. */
   brokerage?: { balance: number; basis: number };
   /** Spending a year (2026 dollars). */
@@ -128,17 +142,58 @@ export function engineHousehold(h: KeyHousehold): ProjectionInput {
     parentCategory: "Retirement",
     ...(ownerRetirementYear ? { ownerRetirementYear } : {}),
   };
-  const ira = h.traditionalIra ?? 0;
+  const penalized = h.allowPenalizedWithdrawals
+    ? { allowPenalizedWithdrawals: true }
+    : {};
+  const ownIra = h.traditionalIra ?? 0;
+  const spouseIra = h.spouseTraditionalIra ?? 0;
+  const ira = ownIra + spouseIra;
+  const roth = h.rothIra?.balance ?? 0;
   const brokerage = h.brokerage ?? { balance: 0, basis: 0 };
   const accounts: IndividualAccountInput[] = [];
-  if (ira > 0)
+  if (ownIra > 0)
     accounts.push({
       name: "A IRA",
       category: "ira",
       taxType: "preTax",
       accountType: "ira",
-      startingBalance: ira,
+      startingBalance: ownIra,
       ...owned,
+      ...penalized,
+    } as IndividualAccountInput);
+  if (spouseIra > 0) {
+    const spouse = people[1];
+    if (!spouse) throw new Error("a spouse's IRA needs a second person");
+    accounts.push({
+      name: "B IRA",
+      category: "ira",
+      taxType: "preTax",
+      accountType: "ira",
+      startingBalance: spouseIra,
+      ownerName: "B",
+      ownerPersonId: 2,
+      ownerBirthYear: spouse.birthYear,
+      parentCategory: "Retirement",
+      ...penalized,
+    } as IndividualAccountInput);
+  }
+  if (h.rothIra)
+    accounts.push({
+      name: "A Roth IRA",
+      category: "ira",
+      taxType: "taxFree",
+      accountType: "ira",
+      startingBalance: roth,
+      ...owned,
+      ...penalized,
+      rothBasisMeta: {
+        year: YEAR,
+        contributionBasis: h.rothIra.regular,
+        conversionBasis: h.rothIra.conversions,
+        latestConversionYear: h.rothIra.latestConversionYear,
+        isSeeded: false,
+        updatedAt: new Date(Date.UTC(YEAR, 0, 1)),
+      },
     } as IndividualAccountInput);
   if (brokerage.balance > 0)
     accounts.push({
@@ -149,6 +204,7 @@ export function engineHousehold(h: KeyHousehold): ProjectionInput {
       startingBalance: brokerage.balance,
       startingBasis: brokerage.basis,
       ...owned,
+      ...penalized,
     } as IndividualAccountInput);
   // Production adds a projected-only brokerage for overflow and reinvested
   // RMDs when the plan holds none.
@@ -164,7 +220,7 @@ export function engineHousehold(h: KeyHousehold): ProjectionInput {
     } as IndividualAccountInput);
 
   const order: AccountCategory[] = [];
-  if (ira > 0) order.push("ira");
+  if (ira > 0 || roth > 0) order.push("ira");
   if (brokerage.balance > 0) order.push("brokerage");
   const splits = zero();
   splits[order[0] ?? "brokerage"] = 1;
@@ -182,7 +238,7 @@ export function engineHousehold(h: KeyHousehold): ProjectionInput {
           : {
               structure: "roth_traditional",
               traditional: c === "ira" ? ira : 0,
-              roth: 0,
+              roth: c === "ira" ? roth : 0,
             },
     ]),
   );
@@ -200,7 +256,8 @@ export function engineHousehold(h: KeyHousehold): ProjectionInput {
       withdrawalRoutingMode: "waterfall",
       withdrawalOrder: order,
       withdrawalSplits: splits,
-      withdrawalTaxPreference: ira > 0 ? { ira: "traditional" } : {},
+      withdrawalTaxPreference:
+        ira > 0 ? { ira: "traditional" } : roth > 0 ? { ira: "roth" } : {},
       distributionTaxRates: taxRates(h, limits),
       withdrawalStrategy: "fixed",
       rmdExcessHandling: "reinvest",
@@ -256,7 +313,7 @@ export function engineHousehold(h: KeyHousehold): ProjectionInput {
     brokerageGoals: [],
     startingBalances: {
       preTax: ira,
-      taxFree: 0,
+      taxFree: roth,
       hsa: 0,
       afterTax: brokerage.balance,
       afterTaxBasis: brokerage.basis,

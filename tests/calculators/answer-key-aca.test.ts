@@ -85,6 +85,11 @@ function cliff(opts: {
   };
 }
 
+/** Exactly 400% reads as over the cliff (verdict N4; IRC 36B(c)(1)(A):
+ *  "not more than" 400%). */
+const N4 =
+  'v0.11 Retirement rules "January 1 birthday" (its "exactly 400% FPL"; verdict N4)';
+
 /** One spouse 65 or older skips the check for the other (verdict N7). */
 const N7 =
   'v0.11 Retirement rules "59½ tested by year" (verdict N7: one spouse on Medicare skips ACA for the other)';
@@ -100,6 +105,23 @@ describe("answer key: the 400% cliff, 2026", () => {
     cents(cliff({ familySize: 1, ordinary: 62_601 }), {
       preserved: 0,
       headroom: 0,
+    });
+  });
+
+  describe("ret/A1:flag [RET-17]", () => {
+    // A1's household (family of one, 2026, household income 62,600):
+    // 400% × 15,650 = 62,600 is "not more than" 400% (ACA-10; Form 8962
+    // instructions, "more than" 400% loses it), so the credit is kept;
+    // headroom 62,600 − 62,600 = 0. A1's credit amount (5,765.04) waits on
+    // the credit function (todo below); this is the flag alone. Today
+    // `checkAca` keeps it only below the cliff (`<`): lost. Audit RT44 (the
+    // `<=` fix) passes the decided flag and fails today's pin.
+    xfail({
+      id: "ret/A1:flag [RET-17]",
+      todo: N4,
+      run: () => cliff({ familySize: 1, ordinary: 62_600 }),
+      expected: { preserved: 1, headroom: 0 },
+      today: { preserved: 0, headroom: 0 },
     });
   });
 
@@ -249,7 +271,8 @@ describe("answer key: premium tax credit cases blocked on the credit amount", ()
   // stands: 9.96% × 62,600 = 6,234.96; 12,000 benchmark − 6,234.96 =
   // 5,765.04 (Rev. Proc. 2025-25 § 3.01; Reg. 1.36B-3(d)). Form 8962
   // rounds the contribution to whole dollars (ACA-18): 5,765. Today
-  // `checkAca` reads exactly 400% as over (verdict N4, audit RT44).
+  // `checkAca` reads exactly 400% as over (verdict N4, audit RT44): the
+  // flag alone is `ret/A1:flag` above.
   it.todo(`ret/A1: blocked on ${CREDIT} (then N4, exactly 400%)`);
   // A21 (expected failure, N4): family of two, 84,600 = 400% of 21,150:
   // 9.96% × 84,600 = 8,426.16; 20,000 − 8,426.16 = 11,573.84.
