@@ -134,8 +134,8 @@ export async function externalRequest<S extends z.ZodType>(request: {
   /** Overrides of the service's rule for this call. */
   maxAttempts?: number;
   timeoutMs?: number;
-  /** Called once per HTTP request sent, retries included: `error` is null
-   *  for a 2xx answer. */
+  /** Called once per HTTP request sent, retries included, after its answer
+   *  is read: `error` is null for a 2xx answer that read as JSON (or text). */
   onAttempt?: (attempt: {
     status: number | null;
     error: BudgetApiError | null;
@@ -161,39 +161,46 @@ export async function externalRequest<S extends z.ZodType>(request: {
     async () => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), timeoutMs);
-      let res: Response | undefined;
+      let status: number | null = null;
+      let answer: unknown;
       try {
-        res = await fetch(request.url, {
+        const res = await fetch(request.url, {
           ...request.init,
           headers: { ...request.headers, ...request.init?.headers },
           signal: controller.signal,
         });
+        status = res.status;
         if (!res.ok) {
           const text = await res.text().catch(() => "");
           throw classifyResponse(res, text);
         }
-        await noteAttempt({ status: res.status, error: null });
-        if (request.read === "text") return await res.text();
         const text = await res.text();
-        try {
-          return JSON.parse(text);
-        } catch {
-          // An HTML page from a proxy or sign-in screen, answered with a 200.
-          throw new BudgetApiError(
-            `${SERVICE_NAMES[request.service]}: ${endpointPattern(request.endpoint)}: not JSON`,
-            "bad-response",
-            null,
-          );
+        if (request.read === "text") answer = text;
+        else {
+          try {
+            answer = JSON.parse(text);
+          } catch {
+            // An HTML page from a proxy or sign-in screen, answered with a 200.
+            throw new BudgetApiError(
+              `${SERVICE_NAMES[request.service]}: ${endpointPattern(request.endpoint)}: not JSON`,
+              "bad-response",
+              null,
+            );
+          }
         }
       } catch (e) {
         // classifyThrown keeps a BudgetApiError and classifies AbortError
         // and network errors, so the retry decides whether to send again.
         const error = classifyThrown(e);
-        if (!res?.ok) await noteAttempt({ status: res?.status ?? null, error });
+        clearTimeout(timeout);
+        await noteAttempt({ status, error });
         throw error;
       } finally {
         clearTimeout(timeout);
       }
+      // After the timer is cleared: a slow note can't time the request out.
+      await noteAttempt({ status, error: null });
+      return answer;
     },
     request.maxAttempts ?? rule.maxAttempts,
     (err: BudgetApiError) =>
