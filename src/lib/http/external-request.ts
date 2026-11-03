@@ -106,7 +106,7 @@ export function parseExternal<S extends z.ZodType>(
   const byField = new Map<string, { line: string; more: number }>();
   for (const issue of result.error.issues) {
     const line = `${issue.path.join(".") || "(body)"}: ${issue.message.replace(/^Invalid input: /, "")}`;
-    const key = line.replace(/\.\d+(?=\.|:)/g, ".#");
+    const key = line.replace(/(^|\.)\d+(?=\.|:)/g, "$1#");
     const seen = byField.get(key);
     if (seen) seen.more++;
     else byField.set(key, { line, more: 0 });

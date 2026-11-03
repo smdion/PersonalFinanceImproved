@@ -2,46 +2,42 @@
  * Streaming parsers for SEC data: N-PORT holdings, shareholder-report
  * (N-CSR) expense ratios, EDGAR filing lists and the fund series/class
  * registry. Each takes text in chunks so large filings (a bond fund's
- * N-PORT can be ~20 MB) are never held as a document tree.
+ * N-PORT can be ~20 MB) are never held as a document tree. Output is
+ * unchecked: a field not found stays undefined for schemas.ts to refuse.
  */
 import { SaxesParser } from "saxes";
 import type { NportHolding } from "@/lib/pure/sec-composition";
+import type { EdgarFiling, RegistryClass } from "./schemas";
 
 type Chunked<T> = { write(chunk: string): void; close(): T };
 
 /** Local element name without namespace prefix. */
 const local = (name: string) => name.slice(name.indexOf(":") + 1);
 
-export type NportFiling = {
-  seriesId: string | null;
-  seriesName: string | null;
+type NportFiling = {
   seriesLei: string | null;
   /** Date the holdings are as of (repPdDate). */
   periodDate: string | null;
-  holdings: NportHolding[];
+  holdings: Partial<NportHolding>[];
 };
 
 export function createNportParser(): Chunked<NportFiling> {
   const p = new SaxesParser();
   const result: NportFiling = {
-    seriesId: null,
-    seriesName: null,
     seriesLei: null,
     periodDate: null,
     holdings: [],
   };
   const path: string[] = [];
   let text = "";
-  let current: NportHolding | null = null;
+  let current: Partial<NportHolding> | null = null;
   p.on("opentag", (node) => {
     const name = local(node.name);
     path.push(name);
     text = "";
     if (name === "invstOrSec") {
       current = {
-        name: "",
         lei: null,
-        pctVal: 0,
         assetCat: null,
         invCountry: null,
         payoffProfile: null,
@@ -70,16 +66,15 @@ export function createNportParser(): Chunked<NportFiling> {
         if (name === "name") current.name = value;
         else if (name === "lei")
           current.lei = value && value !== "N/A" ? value : null;
-        else if (name === "pctVal") current.pctVal = Number(value) || 0;
+        else if (name === "pctVal")
+          current.pctVal = value ? Number(value) : NaN;
         else if (name === "assetCat") current.assetCat = value || null;
         else if (name === "invCountry") current.invCountry = value || null;
         else if (name === "payoffProfile")
           current.payoffProfile = value || null;
         else if (name === "issuerCat") current.issuerCat = value || null;
       }
-    } else if (name === "seriesId") result.seriesId = value || null;
-    else if (name === "seriesName") result.seriesName = value || null;
-    else if (name === "seriesLei") result.seriesLei = value || null;
+    } else if (name === "seriesLei") result.seriesLei = value || null;
     else if (name === "repPdDate") result.periodDate = value || null;
     path.pop();
     text = "";
@@ -114,8 +109,9 @@ export function createNcsrExpenseParser(): Chunked<Map<string, number>> {
   });
   p.on("closetag", (node) => {
     if (classId && local(node.name) === "ExpenseRatioPct") {
-      const v = Number(text.trim());
-      if (Number.isFinite(v) && !found.has(classId)) found.set(classId, v);
+      // An empty (nil) ratio is absent; non-numeric text is NaN, refused.
+      const v = text.trim();
+      if (v && !found.has(classId)) found.set(classId, Number(v));
       classId = null;
     }
   });
@@ -128,18 +124,13 @@ export function createNcsrExpenseParser(): Chunked<Map<string, number>> {
   };
 }
 
-export type EdgarFiling = {
-  accession: string;
-  filingHref: string;
-  filingDate: string;
-  filingType: string;
-};
+type ParsedFiling = Partial<EdgarFiling>;
 
 /** Entries of an EDGAR "browse" Atom feed, newest first as served. */
-export function parseEdgarAtom(xml: string): EdgarFiling[] {
+export function parseEdgarAtom(xml: string): ParsedFiling[] {
   const p = new SaxesParser();
-  const out: EdgarFiling[] = [];
-  let entry: Partial<EdgarFiling> | null = null;
+  const out: ParsedFiling[] = [];
+  let entry: ParsedFiling | null = null;
   let text = "";
   p.on("opentag", (node) => {
     if (local(node.name) === "entry") entry = {};
@@ -155,15 +146,8 @@ export function parseEdgarAtom(xml: string): EdgarFiling[] {
       if (name === "accession-number") entry.accession = v;
       else if (name === "filing-href") entry.filingHref = v;
       else if (name === "filing-date") entry.filingDate = v;
-      else if (name === "filing-type") entry.filingType = v;
       else if (name === "entry") {
-        if (entry.accession && entry.filingHref)
-          out.push({
-            accession: entry.accession,
-            filingHref: entry.filingHref,
-            filingDate: entry.filingDate ?? "",
-            filingType: entry.filingType ?? "",
-          });
+        out.push(entry);
         entry = null;
       }
     }
@@ -196,17 +180,10 @@ export function splitCsvLine(line: string): string[] {
   return out;
 }
 
-export type RegistryClass = {
-  cik: string;
-  seriesId: string;
-  seriesName: string;
-  classId: string;
-  ticker: string | null;
-};
-
-/** SEC "Investment Company Series and Class" CSV, line by line. */
-export function createRegistryParser(): Chunked<RegistryClass[]> {
-  const rows: RegistryClass[] = [];
+/** SEC "Investment Company Series and Class" CSV, line by line. A row
+ *  with no series or class id is skipped; a missing column is undefined. */
+export function createRegistryParser(): Chunked<Partial<RegistryClass>[]> {
+  const rows: Partial<RegistryClass>[] = [];
   let header: string[] | null = null;
   let buffer = "";
   const take = (line: string) => {
@@ -216,16 +193,21 @@ export function createRegistryParser(): Chunked<RegistryClass[]> {
       header = fields.map((f) => f.trim());
       return;
     }
-    const get = (name: string) => fields[header!.indexOf(name)]?.trim() ?? "";
+    const get = (name: string) => {
+      const i = header!.indexOf(name);
+      // A short row leaves its last fields empty.
+      return i < 0 ? undefined : (fields[i]?.trim() ?? "");
+    };
     const seriesId = get("Series ID");
     const classId = get("Class ID");
-    if (!seriesId || !classId) return;
+    if (seriesId === "" || classId === "") return;
+    const ticker = get("Class Ticker");
     rows.push({
       cik: get("CIK Number"),
       seriesId,
       seriesName: get("Series Name"),
       classId,
-      ticker: get("Class Ticker").toUpperCase() || null,
+      ticker: ticker === undefined ? undefined : ticker.toUpperCase() || null,
     });
   };
   return {

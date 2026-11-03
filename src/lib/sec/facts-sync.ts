@@ -35,7 +35,7 @@ import {
   fetchRegistry,
   listFilings,
 } from "./client";
-import type { EdgarFiling } from "./parsers";
+import type { EdgarFiling } from "./schemas";
 
 type Db = typeof import("@/lib/db").db;
 
@@ -135,7 +135,7 @@ class Composer {
       }
     }
     const composition = composeFund(nport.holdings, (i) => resolutions[i]!);
-    const periodDate = nport.periodDate ?? filing.filingDate;
+    const periodDate = nport.periodDate;
     await this.db
       .insert(schema.secFilingCache)
       .values({
@@ -167,6 +167,10 @@ class Composer {
       return { kind: "fund", composition };
     } catch (err) {
       if (err instanceof SecRateLimitError) throw err;
+      log("warn", "sec_look_through_failed", {
+        seriesId,
+        error: err instanceof Error ? err.message : String(err),
+      });
       return { kind: "unresolved_fund" };
     }
   }
@@ -276,7 +280,12 @@ export async function syncSecurityFacts(
       summary.errors.length ? summary.errors.slice(0, 5).join("; ") : null,
     );
   } catch (err) {
-    if (!(err instanceof SecRateLimitError)) throw err;
+    // The last run stays unset, so the next one tries again.
+    if (!(err instanceof SecRateLimitError)) {
+      const message = err instanceof Error ? err.message : String(err);
+      await setSetting(db, LAST_ERROR_KEY, message);
+      throw err;
+    }
     summary.stoppedBySec = true;
     await setSetting(
       db,

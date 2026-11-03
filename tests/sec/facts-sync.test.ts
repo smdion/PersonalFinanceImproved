@@ -20,6 +20,8 @@ const sec = vi.hoisted(() => ({
   nportCalls: 0,
   ncsrCalls: 0,
   ncsrFails: false,
+  /** A shape that fails its check: the registry, or one fund's report list. */
+  badResponse: null as null | "registry" | "C1",
 }));
 
 vi.mock("@/lib/sec/client", async () => {
@@ -42,11 +44,19 @@ vi.mock("@/lib/sec/client", async () => {
     payoffProfile: "Long",
     ...extra,
   });
+  const { BudgetApiError } = await import("@/lib/budget-api/errors");
+  const bad = (endpoint: string) =>
+    new BudgetApiError(
+      `SEC: ${endpoint}: 0.filingDate: expected string, received undefined`,
+      "bad-response",
+      null,
+    );
   return {
     ...actual,
     fetchRegistry: vi.fn(async () => {
       if (sec.rateLimited)
         throw new actual.SecRateLimitError("SEC declined the request (429)");
+      if (sec.badResponse === "registry") throw bad("/files/registry.csv");
       return [
         {
           cik: "1",
@@ -80,6 +90,7 @@ vi.mock("@/lib/sec/client", async () => {
     }),
     fetchFundTickers: vi.fn(async () => new Map()),
     listFilings: vi.fn(async (_c: string, id: string, type: string) => {
+      if (sec.badResponse === id) throw bad("/cgi-bin/browse-edgar");
       if (type === "NPORT-P" && (id === "S1" || id === "S2" || id === "S4"))
         return [filing(`nport-${id}`)];
       if (type === "N-MFP" && id === "S3") return [filing("nmfp-S3")];
@@ -186,6 +197,7 @@ describe("syncSecurityFacts", () => {
     sec.nportCalls = 0;
     sec.ncsrCalls = 0;
     sec.ncsrFails = false;
+    sec.badResponse = null;
   });
 
   const facts = (key: string) =>
@@ -305,6 +317,40 @@ describe("syncSecurityFacts", () => {
     expect(security("plan").standinPreview).toMatchObject({
       expenseRatio: 0.0035,
       error: null,
+    });
+  });
+
+  it("fails only the fund whose SEC answer doesn't check out", async () => {
+    const now = new Date("2026-10-03T15:00:00Z");
+    const checkedBefore = security("target").factsCheckedAt;
+    sec.badResponse = "C1"; // the target fund's report list
+    const r = await syncSecurityFacts(ctx.rawDb, { force: true, now });
+    expect(r.errors).toEqual([
+      "EXTGX: SEC: /cgi-bin/browse-edgar: 0.filingDate: expected string, received undefined",
+    ]);
+    expect(security("target").factsCheckedAt).toEqual(checkedBefore);
+    expect(security("mm").factsCheckedAt).toEqual(now);
+    expect(r.checked - r.errors.length).toBe(2);
+  });
+
+  it("fails the whole run, writing nothing, when the registry doesn't check out", async () => {
+    const before = ctx.db.select().from(ctx.schema.securityFacts).all();
+    const { lastRun } = await getSecFactsStatus(ctx.rawDb);
+    sec.badResponse = "registry";
+    await expect(
+      syncSecurityFacts(ctx.rawDb, {
+        force: true,
+        now: new Date("2026-10-03T16:00:00Z"),
+      }),
+    ).rejects.toMatchObject({ code: "bad-response" });
+    expect(ctx.db.select().from(ctx.schema.securityFacts).all()).toEqual(
+      before,
+    );
+    // Recorded for Settings; the last run stays as it was, so the next retries.
+    expect(await getSecFactsStatus(ctx.rawDb)).toEqual({
+      lastRun,
+      lastError:
+        "SEC: /files/registry.csv: 0.filingDate: expected string, received undefined",
     });
   });
 

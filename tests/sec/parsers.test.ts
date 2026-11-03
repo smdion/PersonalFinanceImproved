@@ -41,13 +41,11 @@ const NPORT = `<?xml version="1.0"?>
 </edgarSubmission>`;
 
 describe("createNportParser", () => {
-  it("reads the series identity and every holding, in any chunking", () => {
+  it("reads the series LEI, the period and every holding, in any chunking", () => {
     const p = createNportParser();
     for (let i = 0; i < NPORT.length; i += 7) p.write(NPORT.slice(i, i + 7));
     const f = p.close();
     expect(f).toMatchObject({
-      seriesId: "S000000001",
-      seriesName: "EXAMPLE TARGET 2050 FUND",
       seriesLei: "LEI0000000000000FUND",
       periodDate: "2026-06-30",
     });
@@ -91,6 +89,17 @@ describe("createNcsrExpenseParser", () => {
   });
 });
 
+describe("createNcsrExpenseParser on a missing or unreadable ratio", () => {
+  it("skips a nil ratio and keeps non-numeric text as NaN for the check", () => {
+    const p = createNcsrExpenseParser();
+    p.write(`<xbrli:xbrl xmlns:xbrli="x" xmlns:oef="y" xmlns:xsi="z">
+      <oef:ExpenseRatioPct contextRef="FY2025_C000000001Member" xsi:nil="true"/>
+      <oef:ExpenseRatioPct contextRef="FY2025_C000000002Member">n/a</oef:ExpenseRatioPct>
+    </xbrli:xbrl>`);
+    expect(p.close()).toEqual(new Map([["C000000002", NaN]]));
+  });
+});
+
 describe("parseEdgarAtom", () => {
   it("lists filings with accession, link, date and type", () => {
     const atom = `<feed xmlns="http://www.w3.org/2005/Atom"><entry><content>
@@ -104,7 +113,6 @@ describe("parseEdgarAtom", () => {
         filingDate: "2026-08-28",
         filingHref:
           "https://www.sec.gov/Archives/edgar/data/1/000000000026000001/0000000000-26-000001-index.htm",
-        filingType: "NPORT-P",
       },
     ]);
   });
