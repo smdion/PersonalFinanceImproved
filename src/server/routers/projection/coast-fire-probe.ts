@@ -165,9 +165,12 @@ export const coastFireProbeRouter = createTRPCRouter({
         });
       }
 
-      if (!mc.preset?.found) {
-        return { result: null, computedAt: null };
-      }
+      if (mc.notConfigured || !mc.preset)
+        return {
+          result: null,
+          computedAt: null,
+          notConfigured: mc.notConfigured ?? ("no_presets" as const),
+        };
 
       const { mcAssetClasses, mcCorrelations, mcGlidePath } = mc;
       const { returnClampMin, returnClampMax } = mc.preset;

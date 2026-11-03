@@ -146,16 +146,34 @@ export function freshInstallCases(fresh: () => Promise<FreshInstall>): void {
     timeout,
   );
 
-  it.fails(
+  it(
     "simulated Coast FIRE runs instead of returning unreachable for lack of a preset",
     async () => {
       const install = await fresh();
       await firstRun(install);
+      const admin = install.caller(firstAdminSession);
+      // The return-rate table starts empty (the next case).
+      await admin.retirement.returnRates.upsert({
+        age: 18,
+        rateOfReturn: "0.06",
+      });
+      const { result } = await admin.projection.computeCoastFireMC({});
+      expect(result).not.toBeNull();
+      expect(result!.probesRun, result!.warning ?? "").toBeGreaterThan(0);
+    },
+    timeout,
+  );
+
+  it.fails(
+    "projections run before any return rate is set",
+    async () => {
+      const install = await fresh();
+      await firstRun(install);
+      // Throws "No return rate configured for age …": no rows ship.
       const { result } = await install
         .caller(firstAdminSession)
         .projection.computeCoastFireMC({});
       expect(result).not.toBeNull();
-      expect(result!.probesRun, result!.warning ?? "").toBeGreaterThan(0);
     },
     timeout,
   );

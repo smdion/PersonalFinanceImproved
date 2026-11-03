@@ -50,7 +50,8 @@ import {
 } from "@/server/helpers/projection-cache";
 
 /** Shape of `computeCoastFireMC`'s cacheable result — every branch of the
- *  search except the "preset not found" config error, which is never cached. */
+ *  search. A not-configured state (no preset, classes or glide path)
+ *  returns no result and is never cached. */
 type CoastFireMcResult = {
   coastFireAge: number | null;
   status: "already_coast" | "unreachable" | "found";
@@ -282,25 +283,13 @@ export const coastFireRouter = createTRPCRouter({
         }),
       };
 
-      if (!mc.preset?.found) {
+      // No preset or nothing to draw returns from: a state, not a verdict.
+      if (mc.notConfigured || !mc.preset)
         return {
-          result: {
-            coastFireAge: null,
-            status: "unreachable" as const,
-            successRate: 0,
-            stopNowSuccessRate: 0,
-            stopNowPenaltyAvoidedShortfallRate: 0,
-            stopNowMedianPenaltyAvoidedShortfallPV: 0,
-            spendingStabilityRate: 0,
-            confidenceThreshold: MC_CONFIDENCE_THRESHOLD,
-            probesRun: 0,
-            warning: "Default MC preset not found in database.",
-            mcResult: null,
-            stopNowMcResult: null,
-          },
+          result: null,
           computedAt: null,
+          notConfigured: mc.notConfigured ?? ("no_presets" as const),
         };
-      }
 
       const { mcAssetClasses, mcCorrelations, mcGlidePath } = mc;
       const { returnClampMin, returnClampMax } = mc.preset;

@@ -13,6 +13,10 @@ import {
 } from "@/server/helpers/simulation-preset";
 import type { SimulationPresetKey } from "@/lib/constants";
 import { glidePathFromRows } from "@/lib/pure/stock-share";
+import {
+  simulationNotConfigured,
+  type SimulationNotConfigured,
+} from "@/lib/calculators/monte-carlo";
 import { z } from "zod/v4";
 import { eq, asc } from "drizzle-orm";
 import { toNumber } from "@/server/helpers";
@@ -408,6 +412,9 @@ export async function buildMcInputs(
   effectiveInflationRisk: { stdDev: number };
   /** The preset used; null without `presetKey`. */
   preset: SimulationPreset | null;
+  /** Why these inputs can't run a Simulation (simulationNotConfigured),
+   *  or null when they can. */
+  notConfigured: SimulationNotConfigured | null;
   /** Raw saved inflation override — null if none saved. Callers that surface
    *  this to the client (e.g. computeMonteCarloProjection) use this as-is. */
   savedInflationOverrides: SavedInflationOverrides;
@@ -459,6 +466,7 @@ export async function buildMcInputs(
     mcGlidePath,
     effectiveInflationRisk,
     preset,
+    notConfigured: simulationNotConfigured(preset, mcAssetClasses, mcGlidePath),
     savedInflationOverrides,
   };
 }

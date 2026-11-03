@@ -25,7 +25,10 @@ import {
   expensiveRateLimitMiddleware,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import { calculateMonteCarlo } from "@/lib/calculators/monte-carlo";
+import {
+  calculateMonteCarlo,
+  simulationNotConfigured,
+} from "@/lib/calculators/monte-carlo";
 import {
   runMonteCarloOffThread,
   getMonteCarloProgress,
@@ -274,6 +277,21 @@ export const monteCarloRouter = createTRPCRouter({
         input.assetClassOverrides,
       );
       const mcGlidePath = preset.glidePath;
+      // Nothing to draw returns from: say so rather than run on 0%.
+      const notConfigured = simulationNotConfigured(
+        preset,
+        mcAssetClasses,
+        mcGlidePath,
+      );
+      if (notConfigured)
+        return {
+          result: null,
+          notConfigured,
+          savedOverrides: {
+            assetClassOverrides: savedAssetOverrides,
+            inflationOverrides: savedInflationOverrides,
+          },
+        };
 
       const effectiveInflationRisk = resolveInflationRisk({
         ui: input.inflationRisk,

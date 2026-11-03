@@ -43,6 +43,7 @@ import {
 import * as schema from "@/lib/db/schema";
 import { calculateProjection } from "@/lib/calculators/engine";
 import { runMonteCarloOffThread } from "@/server/helpers/monte-carlo-worker-client";
+import type { SimulationNotConfigured } from "@/lib/calculators/monte-carlo";
 import {
   interpolateAllocations,
   geometricMean,
@@ -126,6 +127,7 @@ export const strategyRouter = createTRPCRouter({
           mcGlidePath,
           effectiveInflationRisk,
           preset,
+          notConfigured,
         },
       ] = await Promise.all([
         fetchRetirementData(ctx.db, {
@@ -185,7 +187,9 @@ export const strategyRouter = createTRPCRouter({
             planEndAgeOf(baseEngineInput),
           ) ?? undefined,
       };
-      const hasMcData = mcAssetClasses.length > 0 && mcGlidePath.length > 0;
+      // Without a runnable Simulation the comparison still shows each
+      // strategy, with no Success or Stability, and says why.
+      const hasMcData = notConfigured === null;
 
       const userStrategyParams = buildStrategyParams(settings);
       const activeStrategy =
@@ -212,6 +216,8 @@ export const strategyRouter = createTRPCRouter({
       type StrategyComparisonResult = {
         /** The Simulation preset behind the Success and Stability columns. */
         presetLabel: string;
+        /** Why those columns are empty (simulationNotConfigured), or null. */
+        notConfigured: SimulationNotConfigured | null;
         strategies: Awaited<ReturnType<typeof buildStrategyResults>>;
         activeStrategy: WithdrawalStrategyType;
         retirementAge: number;
@@ -381,6 +387,7 @@ export const strategyRouter = createTRPCRouter({
         strategies: await buildStrategyResults(),
         activeStrategy,
         presetLabel: preset!.label,
+        notConfigured,
         retirementAge: planRetirementAge,
       };
       await writeProjectionCache(ctx.db, inputHash, result, null);
@@ -424,6 +431,7 @@ export const strategyRouter = createTRPCRouter({
           mcGlidePath,
           effectiveInflationRisk,
           preset,
+          notConfigured,
         },
       ] = await Promise.all([
         fetchRetirementData(ctx.db, {
@@ -460,12 +468,13 @@ export const strategyRouter = createTRPCRouter({
         perPersonSettings,
       } = payload;
 
-      if (mcAssetClasses.length === 0 || mcGlidePath.length === 0)
+      if (notConfigured)
         return {
           baseline: null,
           recommendations: [],
           diagnosis: null as string | null,
           strategyLabel: "",
+          notConfigured,
         };
 
       // Build MC return rates
