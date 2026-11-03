@@ -18,15 +18,19 @@
  * schedules), § 4.03 (gains thresholds), § 4.14 (standard deduction and
  * the age add-on); Pub 915 (2025) Worksheet 1 (taxable Social Security,
  * line numbers kept); i1040 (2025) p.38, Qualified Dividends and Capital
- * Gain Tax Worksheet (QDCG, lines 1-25); IRC 86, 1(h), 151(d)(5)(C).
+ * Gain Tax Worksheet (QDCG, lines 1-25); Schedule 1-A (2025) Part V; IRC
+ * 86, 1(h), 151(d)(5)(C), 1411 and Form 8960; IRC 3101(b)(2), 3102(f) and
+ * the Form 8959 instructions (i8959); the IRS NIIT Q&A.
  *
  * Not written here, on purpose:
- * - MFS cases B6, B7, B12, L8, L14, P5, P10: closed under decision B2 (MFS
+ * - MFS cases B6, B7, B12, L8, L14, P5, P10, E12, N1, A3, X5: closed under decision B2 (MFS
  *   stays disclosed as unsupported), v0.11 Tax "Filing statuses: no QSS;
  *   MFS unrepresentable".
  * - P26 and P27 (the Tax Table figure): closed, Ledgr uses the exact
  *   schedule and discloses it (spec BR-5); P26b below pins the schedule
  *   figure. v0.12 UI "Disclosure list additions".
+ * - Self-employment and railroad (RRTA) cases P7, P8, P9, P12, P13, P14:
+ *   closed, no such input is planned; v0.12 UI "Disclosure list additions".
  * - S18 (an adjustment larger than income): closed, adjustments to income
  *   can't be entered and none is planned; v0.12 UI "Disclosure list
  *   additions".
@@ -48,9 +52,12 @@ import {
   type WithholdingBracket,
 } from "@/lib/calculators/engine/tax-estimation";
 import { computeObbbaSeniorDeduction } from "@/lib/calculators/engine/obbba-senior-deduction";
+import { computeNiit } from "@/lib/config/niit";
+import { calculateHouseholdTax } from "@/lib/calculators/tax";
 import type {
   DecumulationSlot,
   FilingStatusType,
+  TaxBracketInput,
 } from "@/lib/calculators/types";
 
 type Year = 2025 | 2026;
@@ -189,11 +196,38 @@ function taxableSS(
 }
 
 /**
+ * The senior deduction (IRC 151(d)(5)(C), `computeObbbaSeniorDeduction`)
+ * on the shipped limits. `year` is the tax year; the figures come from the
+ * latest shipped file at or before it (they aren't indexed, spec SR-12).
+ */
+function seniorDeduction(c: {
+  year: number;
+  status: FilingStatusType;
+  seniors: number;
+  magi: number;
+}) {
+  const from: Year = c.year <= 2025 ? 2025 : 2026;
+  return computeObbbaSeniorDeduction({
+    seniorCount: c.seniors,
+    magi: c.magi,
+    perPerson: limit(from, "obbba_senior_deduction_per_person"),
+    phaseoutStart: limit(
+      from,
+      c.status === "MFJ"
+        ? "obbba_senior_deduction_phaseout_start_mfj"
+        : "obbba_senior_deduction_phaseout_start_unmarried",
+    ),
+    phaseoutRate: limit(from, "obbba_senior_deduction_phaseout_rate"),
+    year: c.year,
+    sunsetYear: limit(from, "obbba_senior_deduction_sunset_year"),
+  });
+}
+
+/**
  * The return's deductions, composed from the shipped limits the way the
  * engine folds them (there's no one function yet: v0.11 Tax "One
  * `returnDeductions()`"): basic + one add-on per person 65+ (IRC 63(f)) +
- * the senior deduction (IRC 151(d)(5)(C), `computeObbbaSeniorDeduction`)
- * on this return's MAGI.
+ * the senior deduction on this return's MAGI.
  */
 function deductions(c: {
   year: Year;
@@ -201,7 +235,6 @@ function deductions(c: {
   seniors: number;
   magi: number;
 }) {
-  const s = c.status.toLowerCase();
   const addOn = limit(
     c.year,
     c.status === "MFJ"
@@ -209,26 +242,72 @@ function deductions(c: {
       : "additional_std_deduction_65_unmarried",
   );
   return (
-    limit(c.year, `standard_deduction_${s}`) +
+    limit(c.year, `standard_deduction_${c.status.toLowerCase()}`) +
     c.seniors * addOn +
-    computeObbbaSeniorDeduction({
-      seniorCount: c.seniors,
-      magi: c.magi,
-      perPerson: limit(c.year, "obbba_senior_deduction_per_person"),
-      phaseoutStart: limit(
-        c.year,
-        c.status === "MFJ"
-          ? "obbba_senior_deduction_phaseout_start_mfj"
-          : "obbba_senior_deduction_phaseout_start_unmarried",
-      ),
-      phaseoutRate: limit(c.year, "obbba_senior_deduction_phaseout_rate"),
-      year: c.year,
-      sunsetYear: limit(c.year, "obbba_senior_deduction_sunset_year"),
-    })
+    seniorDeduction(c)
   );
 }
 
+/** The Taxes page's bracket input for a status, on the shipped 2026
+ *  figures (the shape `buildLiabilityBracketInput` gives
+ *  `calculateHouseholdTax`). */
+function liabilityInput(status: FilingStatusType): TaxBracketInput {
+  return {
+    filingStatus: status,
+    w4Checkbox: false,
+    brackets: rateSchedule(2026, status),
+    standardDeduction: limit(
+      2026,
+      `standard_deduction_${status.toLowerCase()}`,
+    ),
+    w4Adjustment: 0,
+    socialSecurityWageBase: limit(2026, "ss_wage_base"),
+    socialSecurityRate: limit(2026, "fica_ss_rate"),
+    medicareRate: limit(2026, "fica_medicare_rate"),
+    medicareAdditionalRate: limit(2026, "fica_medicare_surtax_rate"),
+    medicareAdditionalThreshold: limit(2026, "fica_medicare_surtax_threshold"),
+  };
+}
+
+/**
+ * The household's 2026 annual tax (`calculateHouseholdTax`), one entry per
+ * job's wages. The Additional Medicare liability threshold is the status's
+ * (`fica_medicare_surtax_liability_<status>`); employers withhold above
+ * the per-employer 200,000 (IRC 3102(f)).
+ */
+function householdTax(status: FilingStatusType, jobs: number[]) {
+  return calculateHouseholdTax({
+    people: jobs.map((w) => ({ federalWages: w, ficaWages: w })),
+    taxBrackets: liabilityInput(status),
+    medicareLiabilityThreshold: limit(
+      2026,
+      `fica_medicare_surtax_liability_${status.toLowerCase()}`,
+    ),
+  });
+}
+
+/**
+ * Additional Medicare: the liability, and the balance due at filing
+ * (liability − withheld, Form 8959 Part V). `calculateHouseholdTax`
+ * returns the liability; withholding shows only in its warning, rounded to
+ * the dollar, so the balance is read from there (none when they're within
+ * a dollar).
+ */
+function additionalMedicare(status: FilingStatusType, jobs: number[]) {
+  const r = householdTax(status, jobs);
+  const note = r.warnings.find((w) => w.startsWith("Additional Medicare"));
+  const amount = (re: RegExp) =>
+    Number(note?.match(re)?.[1]?.replace(/,/g, "") ?? NaN);
+  const balance = !note
+    ? 0
+    : /more is due/.test(note)
+      ? amount(/about \$([\d,]+) more is due/)
+      : -amount(/about \$([\d,]+) comes back/);
+  return { liability: r.additionalMedicare, balance };
+}
+
 const UNUSED_DEDUCTION = `v0.11 Tax "Unused standard deduction never shelters gains"`;
+const ONE_RETURN_DEDUCTIONS = `v0.11 Tax "One returnDeductions()" (with "Senior deduction phases out against the combined amount")`;
 const LINE_25_CAP = `v0.11 Tax "Gap years have no 65+ deductions" (Schedule D line 25 cap, min(L23, L24))`;
 
 // ── Social Security (Pub 915 Worksheet 1; IRC 86) ───────────────────────
@@ -606,6 +685,409 @@ describe("answer key: long-term gains", () => {
   });
 });
 
+// ── Senior deduction (IRC 151(d)(5)(C); Schedule 1-A Part V) ────────────
+// Per qualified person: 6,000 − 6% × max(0, MAGI − start), floor 0; start
+// 150,000 on a joint return, 75,000 otherwise (spec SR-6). Line 35's one
+// reduced amount is entered for each person (lines 36a, 36b), so a joint
+// return with two seniors gets 2 × that: gone at MAGI 250,000 (SR-7,
+// SR-8). Tax years 2025-2028 only (SR-1).
+
+describe("answer key: senior deduction", () => {
+  it("tax/E1 [TAX-22] full amount, 2025 Single 70: 6,000", () => {
+    // MAGI 75,000, not over the start.
+    cents(
+      seniorDeduction({
+        year: 2025,
+        status: "Single",
+        seniors: 1,
+        magi: 75_000,
+      }),
+      6_000,
+    );
+  });
+
+  it("tax/E2 [TAX-22] phase-out: 4,500", () => {
+    // Single, MAGI 100,000: 6% × 25,000 = 1,500 off.
+    cents(
+      seniorDeduction({
+        year: 2026,
+        status: "Single",
+        seniors: 1,
+        magi: 100_000,
+      }),
+      4_500,
+    );
+  });
+
+  it("tax/E3 [TAX-22] last cent: 0.06", () => {
+    // MAGI 174,999: 6,000 − 6% × 99,999 = 6,000 − 5,999.94.
+    cents(
+      seniorDeduction({
+        year: 2026,
+        status: "Single",
+        seniors: 1,
+        magi: 174_999,
+      }),
+      0.06,
+    );
+  });
+
+  it("tax/E4 [TAX-22] gone at 175,000: 0", () => {
+    // 6% × 100,000 = 6,000.
+    cents(
+      seniorDeduction({
+        year: 2026,
+        status: "Single",
+        seniors: 1,
+        magi: 175_000,
+      }),
+      0,
+    );
+  });
+
+  it("tax/E5 [TAX-22] MFJ both 65+ at the start: 12,000", () => {
+    // MAGI 150,000, not over: 2 × 6,000.
+    cents(
+      seniorDeduction({ year: 2026, status: "MFJ", seniors: 2, magi: 150_000 }),
+      12_000,
+    );
+  });
+
+  it("tax/E11 [TAX-22] MFJ, one 65+: 3,000 (Schedule 1-A lines 35-37)", () => {
+    // MAGI 200,000: 6,000 − 6% × 50,000 = 3,000, for the one person.
+    cents(
+      seniorDeduction({ year: 2026, status: "MFJ", seniors: 1, magi: 200_000 }),
+      3_000,
+    );
+  });
+
+  it("tax/E14 [TAX-22] HOH 70: 3,300", () => {
+    // Start 75,000; MAGI 120,000: 6% × 45,000 = 2,700 off.
+    cents(
+      seniorDeduction({ year: 2026, status: "HOH", seniors: 1, magi: 120_000 }),
+      3_300,
+    );
+  });
+
+  it("tax/E15 [TAX-22] 2028, the last year: 12,000", () => {
+    // MFJ both 65+, MAGI 50,000; "tax years beginning before 2029".
+    cents(
+      seniorDeduction({ year: 2028, status: "MFJ", seniors: 2, magi: 50_000 }),
+      12_000,
+    );
+  });
+
+  it("tax/E16 [TAX-22] 2029, after the sunset: 0", () => {
+    cents(
+      seniorDeduction({ year: 2029, status: "MFJ", seniors: 2, magi: 50_000 }),
+      0,
+    );
+  });
+
+  // Today the function reduces the pooled 2 × 6,000 once
+  // (`obbba-senior-deduction.ts:78`): 12,000 − 6% × (MAGI − 150,000),
+  // gone at 350,000. Pinned as a feature by
+  // `obbba-senior-deduction.test.ts:76`.
+  const twoSeniors = (magi: number) => () =>
+    seniorDeduction({ year: 2026, status: "MFJ", seniors: 2, magi });
+
+  describe("tax/E6 [TAX-22]", () => {
+    // MAGI 150,001: 2 × (6,000 − 0.06) = 11,999.88. Today: 12,000 − 0.06
+    // = 11,999.94 (worked here; the key says "pooled").
+    xfail({
+      id: "tax/E6 [TAX-22]",
+      todo: ONE_RETURN_DEDUCTIONS,
+      run: twoSeniors(150_001),
+      expected: 11_999.88,
+      today: 11_999.94,
+    });
+  });
+
+  describe("tax/E7 [TAX-22] (also tax/HW-PO200)", () => {
+    // MAGI 200,000: 2 × (6,000 − 3,000) = 6,000. Today: 12,000 − 3,000 =
+    // 9,000 (key). The CPA hand worksheet's phase-out variant (HW-PO200,
+    // `comparison.md`) is the same household: two seniors, 200,000.
+    xfail({
+      id: "tax/E7 [TAX-22] (also tax/HW-PO200)",
+      todo: ONE_RETURN_DEDUCTIONS,
+      run: twoSeniors(200_000),
+      expected: 6_000,
+      today: 9_000,
+    });
+  });
+
+  describe("tax/E8 [TAX-22]", () => {
+    // MAGI 249,999: 2 × (6,000 − 5,999.94) = 0.12. Today: 12,000 −
+    // 5,999.94 = 6,000.06 (worked here; the key says "pooled").
+    xfail({
+      id: "tax/E8 [TAX-22]",
+      todo: ONE_RETURN_DEDUCTIONS,
+      run: twoSeniors(249_999),
+      expected: 0.12,
+      today: 6_000.06,
+    });
+  });
+
+  describe("tax/E9 [TAX-22] (also tax/HW-PO250)", () => {
+    // MAGI 250,000: 6% × 100,000 = 6,000 off each: 0. Today: 12,000 −
+    // 6,000 = 6,000 (key). HW-PO250 is the same household.
+    xfail({
+      id: "tax/E9 [TAX-22] (also tax/HW-PO250)",
+      todo: ONE_RETURN_DEDUCTIONS,
+      run: twoSeniors(250_000),
+      expected: 0,
+      today: 6_000,
+    });
+  });
+
+  describe("tax/E10 [TAX-22]", () => {
+    // MAGI 300,000: 0. Today: 12,000 − 9,000 = 3,000 (key).
+    xfail({
+      id: "tax/E10 [TAX-22]",
+      todo: ONE_RETURN_DEDUCTIONS,
+      run: twoSeniors(300_000),
+      expected: 0,
+      today: 3_000,
+    });
+  });
+});
+
+// ── NIIT (IRC 1411; Form 8960 lines 12-17) ──────────────────────────────
+// 3.8% × min(NII, max(0, MAGI − threshold)); thresholds 250,000 MFJ,
+// 200,000 Single and HOH, not indexed. NII floors at 0 (line 12). Wages,
+// SS and IRA distributions aren't NII but are in MAGI (IRC 1411(c)(5)).
+
+describe("answer key: net investment income tax", () => {
+  it("tax/P15 [TAX-20] under the threshold: 0 (Reg. 1.1411-2(a) example, year 1)", () => {
+    // Single, MAGI 190,000, NII 50,000.
+    cents(computeNiit(190_000, 50_000, "Single"), 0);
+  });
+
+  it("tax/P16 [TAX-20] over it: 760 (same example, year 2)", () => {
+    // MAGI 220,000: min(50,000, 20,000) × 3.8%.
+    cents(computeNiit(220_000, 50_000, "Single"), 760);
+  });
+
+  it("tax/P17 [TAX-20] wages plus NII under the threshold: 0 (IRS NIIT Q&A Q19)", () => {
+    // Wages 180,000 + NII 15,000 = MAGI 195,000.
+    cents(computeNiit(180_000 + 15_000, 15_000, "Single"), 0);
+  });
+
+  it("tax/P18 [TAX-20] 2,660 (Q&A Q20)", () => {
+    // Wages 180,000 + NII 90,000 = MAGI 270,000: min(90,000, 70,000) ×
+    // 3.8%.
+    cents(computeNiit(180_000 + 90_000, 90_000, "Single"), 2_660);
+  });
+
+  it("tax/P19 [TAX-20] MFJ: 1,900 (Q&A Q11 Example 2)", () => {
+    // MAGI 300,000, NII 225,000: min(225,000, 50,000) × 3.8%.
+    cents(computeNiit(300_000, 225_000, "MFJ"), 1_900);
+  });
+
+  it("tax/P20 [TAX-20] large NII, MAGI under: 0 (Q&A Q11 Example 3)", () => {
+    cents(computeNiit(195_000, 150_000, "Single"), 0);
+  });
+
+  it("tax/N3 [TAX-20] HOH: 380", () => {
+    // MAGI 230,000, NII 10,000: min(10,000, 30,000) × 3.8%.
+    cents(computeNiit(230_000, 10_000, "HOH"), 380);
+  });
+
+  it("tax/N4 [TAX-20] MFJ at the threshold: 0", () => {
+    // Not over 250,000 (spec NI-10).
+    cents(computeNiit(250_000, 5_000, "MFJ"), 0);
+  });
+
+  it("tax/N5 [TAX-20] one dollar over: 0.038", () => {
+    // min(5,000, 1) × 3.8% = 0.038 (the function rounds to 0.04, within
+    // the half cent).
+    cents(computeNiit(250_001, 5_000, "MFJ"), 0.038);
+  });
+
+  it("tax/N6 [TAX-20] an IRA draw raises MAGI but isn't NII: 1,900", () => {
+    // MFJ, IRA 300,000 + LTCG 50,000: MAGI 350,000, NII 50,000 only;
+    // min(50,000, 100,000) × 3.8%.
+    cents(computeNiit(300_000 + 50_000, 50_000, "MFJ"), 1_900);
+  });
+
+  it("tax/N7 [TAX-20] wages aren't NII: 0", () => {
+    cents(computeNiit(300_000, 0, "Single"), 0);
+  });
+
+  it("tax/N8 [TAX-20] negative NII floors at 0 (Form 8960 line 12)", () => {
+    cents(computeNiit(300_000, -5_000, "Single"), 0);
+  });
+});
+
+// ── Additional Medicare (IRC 3101(b)(2), 3102(f); i8959) ────────────────
+// Liability 0.9% × max(0, combined Medicare wages − threshold): 250,000
+// MFJ, 200,000 Single and HOH. Each employer withholds 0.9% on what it
+// alone pays over 200,000. Balance = liability − withheld (negative is a
+// credit on Form 8959 line 24).
+
+describe("answer key: Additional Medicare", () => {
+  it("tax/P11 [TAX-09] joint wages: 675, nothing withheld (i8959 Example 5)", () => {
+    // MFJ, 150,000 + 175,000 = 325,000: 75,000 × 0.9% = 675; neither
+    // employer pays over 200,000, so 675 is due.
+    cents(additionalMedicare("MFJ", [150_000, 175_000]), {
+      liability: 675,
+      balance: 675,
+    });
+  });
+
+  it("tax/A1 [TAX-09] one job: 900 owed, 900 withheld", () => {
+    // Single, 300,000: 100,000 × 0.9% = 900; the employer withholds on
+    // the same 100,000: balance 0.
+    cents(additionalMedicare("Single", [300_000]), {
+      liability: 900,
+      balance: 0,
+    });
+  });
+
+  it("tax/A2 [TAX-09] two jobs: 360 owed, nothing withheld", () => {
+    // Single, 120,000 at each of two employers: 40,000 × 0.9% = 360;
+    // neither pays over 200,000. (Each job is one entry; only the surtax
+    // is read, since Social Security per person is a separate row.)
+    cents(additionalMedicare("Single", [120_000, 120_000]), {
+      liability: 360,
+      balance: 360,
+    });
+  });
+
+  it("tax/A5 [TAX-09] HOH at the threshold: 0", () => {
+    cents(additionalMedicare("HOH", [200_000]), { liability: 0, balance: 0 });
+  });
+
+  it("tax/A6 [TAX-09] HOH one dollar over: 0.009, withheld alike", () => {
+    // 1 × 0.9% = 0.009 owed and withheld (the function rounds both to
+    // 0.01, within the half cent): balance 0.
+    cents(additionalMedicare("HOH", [200_001]), {
+      liability: 0.009,
+      balance: 0,
+    });
+  });
+
+  it("tax/A7 [TAX-09] MFJ withheld over liability: a 180 credit", () => {
+    // 220,000 + 0 = 220,000, under 250,000: owes 0. The employer withholds
+    // on 20,000: 180. Balance −180.
+    cents(additionalMedicare("MFJ", [220_000, 0]), {
+      liability: 0,
+      balance: -180,
+    });
+  });
+
+  it("tax/A8 [TAX-09] MFJ under the per-employer trigger: 450 due", () => {
+    // 150,000 + 150,000 = 300,000: 50,000 × 0.9% = 450; nothing withheld.
+    cents(additionalMedicare("MFJ", [150_000, 150_000]), {
+      liability: 450,
+      balance: 450,
+    });
+  });
+});
+
+// ── Whole returns (spec § 7.9) ──────────────────────────────────────────
+// The steps in order (spec § 5): taxable SS from other income (Pub 915);
+// AGI; senior deduction on that AGI; TI; QDCG worksheet. Function level:
+// the engine takes no interest, dividend or pension input (v0.11 Tax "No
+// income beyond portfolio and SS"), so ordinary income is fed as a
+// Traditional draw and qualified dividends as gains.
+
+describe("answer key: whole returns", () => {
+  it("tax/X1 [TAX-16] 2026 MFJ both 67: 4,484.00", () => {
+    // IRA 50,000 + interest 5,000 ordinary; gains 30,000 (10,000 qualified
+    // dividends + 20,000 LTCG); SS 40,000. Pub 915: other 85,000, L8 =
+    // 85,000 + 20,000 = 105,000; L15 6,000, L16 = 85% × 61,000 = 51,850,
+    // L17 57,850 > L18 34,000: taxable 34,000. AGI = 55,000 + 30,000 +
+    // 34,000 = 119,000. Std 32,200 + 2 × 1,650 = 35,500; senior 2 × 6,000
+    // (under 150,000) = 12,000; TI = 119,000 − 47,500 = 71,500. L5 41,500:
+    // 2,480 + 12% × 16,700 = 4,484; L9 = all 30,000 at 0% (98,900 top).
+    // NIIT 0 (MAGI under 250,000).
+    const ss = taxableSS(40_000, 55_000, "MFJ", 30_000);
+    const agi = 55_000 + 30_000 + ss;
+    const ded = deductions({
+      year: 2026,
+      status: "MFJ",
+      seniors: 2,
+      magi: agi,
+    });
+    cents(
+      {
+        taxableSS: ss,
+        agi,
+        deductions: ded,
+        tax: yearTax({
+          year: 2026,
+          status: "MFJ",
+          ordinary: 55_000,
+          gains: 30_000,
+          taxableSS: ss,
+          deductions: ded,
+        }),
+        niit: computeNiit(agi, 5_000 + 30_000, "MFJ"),
+      },
+      {
+        taxableSS: 34_000,
+        agi: 119_000,
+        deductions: 47_500,
+        tax: 4_484,
+        niit: 0,
+      },
+    );
+  });
+
+  it("tax/X2 [TAX-16] 2026 Single 70, senior phase-out: 14,875.60", () => {
+    // Pension 60,000 (ordinary), LTCG 40,000, SS 30,000. Pub 915: other
+    // 100,000, L8 115,000; L15 4,500 + 85% × 81,000 = 73,350 > L18
+    // 25,500: taxable 25,500. AGI 125,500. Std 16,100 + 2,050 = 18,150;
+    // senior 6,000 − 6% × 50,500 = 2,970; TI = 125,500 − 21,120 =
+    // 104,380. L5 64,380: 1,240 + 4,560 + 22% × 13,980 = 8,875.60; L17
+    // all 40,000 at 15% (over the 49,450 top) = 6,000; L23 14,875.60 <
+    // L24 TAX(104,380) = 17,675.60.
+    const ss = taxableSS(30_000, 60_000, "Single", 40_000);
+    const agi = 60_000 + 40_000 + ss;
+    const ded = deductions({
+      year: 2026,
+      status: "Single",
+      seniors: 1,
+      magi: agi,
+    });
+    cents(
+      {
+        taxableSS: ss,
+        agi,
+        deductions: ded,
+        tax: yearTax({
+          year: 2026,
+          status: "Single",
+          ordinary: 60_000,
+          gains: 40_000,
+          taxableSS: ss,
+          deductions: ded,
+        }),
+      },
+      { taxableSS: 25_500, agi: 125_500, deductions: 21_120, tax: 14_875.6 },
+    );
+  });
+
+  it("tax/X6 [TAX-01] 2026 HOH, 45, wages 120,000: 13,988.00", () => {
+    // TI = 120,000 − 24,150 = 95,850; 7,740 (at 67,450) + 22% × 28,400 =
+    // 13,988, exact schedule (the Taxes page's path).
+    cents(householdTax("HOH", [120_000]).federalTax, 13_988);
+  });
+
+  it("tax/X7 [TAX-16] 2026 Single, no income: 0", () => {
+    cents(
+      yearTax({
+        year: 2026,
+        status: "Single",
+        ordinary: 0,
+        deductions: 16_100,
+      }),
+      0,
+    );
+  });
+});
+
 // ── Blocked, with an item that unblocks them ────────────────────────────
 
 describe("answer key: tax cases blocked on a feature", () => {
@@ -613,7 +1095,33 @@ describe("answer key: tax cases blocked on a feature", () => {
   const QSS = 'v0.11 Tax "Filing statuses: no QSS"';
   it.todo(`tax/B9: blocked on ${QSS}`);
   it.todo(`tax/L11: blocked on ${QSS}`);
+  it.todo(`tax/E13: blocked on ${QSS}`);
+  it.todo(`tax/N2: blocked on ${QSS}`);
+  it.todo(`tax/A4: blocked on ${QSS}`);
+  it.todo(`tax/X4: blocked on ${QSS}`);
   it.todo(
     'tax/G1-60: blocked on v0.11 Tax "No income beyond portfolio and SS"',
   );
+
+  // D4 also needs QSS; D2, D3, P22 the blindness add-on built with it;
+  // P24 and P25 a dependent filer, which is disclosed rather than built
+  // (decision 2026-11-02), so their dependent part may close unwritten.
+  const RETURN_DEDUCTIONS = 'v0.11 Tax "One returnDeductions()"';
+  it.todo(`tax/D1: blocked on ${RETURN_DEDUCTIONS}`);
+  it.todo(`tax/D2: blocked on ${RETURN_DEDUCTIONS}`);
+  it.todo(`tax/D3: blocked on ${RETURN_DEDUCTIONS}`);
+  it.todo(`tax/D4: blocked on ${RETURN_DEDUCTIONS}`);
+  it.todo(`tax/D5: blocked on ${RETURN_DEDUCTIONS}`);
+  it.todo(`tax/P21: blocked on ${RETURN_DEDUCTIONS}`);
+  it.todo(`tax/P22: blocked on ${RETURN_DEDUCTIONS}`);
+  it.todo(`tax/P23: blocked on ${RETURN_DEDUCTIONS}`);
+  it.todo(`tax/P24: blocked on ${RETURN_DEDUCTIONS}`);
+  it.todo(`tax/P25: blocked on ${RETURN_DEDUCTIONS}`);
+  it.todo(`tax/P28: blocked on ${RETURN_DEDUCTIONS}`);
+
+  // A spouse who died: the day-before-birthday rule (i1040 p.110).
+  const FIRST_DEATH =
+    'v0.11 Retirement rules "Add: survivor benefit and first death"';
+  it.todo(`tax/P29: blocked on ${FIRST_DEATH}`);
+  it.todo(`tax/P30: blocked on ${FIRST_DEATH}`);
 });
