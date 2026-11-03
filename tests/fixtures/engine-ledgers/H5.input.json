@@ -1,0 +1,115 @@
+{
+  "asOfDate": "2026-01-01",
+  "taxYearBase": 2026,
+  "inflation": "0.03",
+  "limitGrowth": "0.02",
+  "taxMultiplier": 1,
+  "spendingStrategy": "fixed",
+  "withdrawalRouting": "waterfall",
+  "rothConversions": "off",
+  "qcdAnnual": 0,
+  "lumpSums": [
+    {
+      "year": 2031,
+      "amount": 50000,
+      "account": "A-brokerage",
+      "note": "Inheritance, not taxable. A retirement lump sum."
+    }
+  ],
+  "id": "H5",
+  "name": "Single, retires mid-plan at 60",
+  "purpose": "Deferral limit binds and overflows to a Retirement brokerage, catch-up at 50, lump sum, Portfolio savings, return rate step at 60, full phase change in 2039, designated Roth exempt from RMD, first RMD at 75.",
+  "filingStatus": "Single",
+  "people": [
+    {
+      "id": "A",
+      "primary": true,
+      "birthDate": "1979-01-15",
+      "ssAnnualToday": 30000,
+      "ssStartAge": 67,
+      "jobs": [
+        {
+          "employer": "J1",
+          "start": "2012-01-01",
+          "end": "2038-12-31",
+          "salary": 130000,
+          "salaryGrowth": "0.03"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "id": "A-401k-trad",
+      "owner": "A",
+      "category": "401k",
+      "tax": "traditional",
+      "parent": "Retirement",
+      "balance": 700000
+    },
+    {
+      "id": "A-401k-roth",
+      "owner": "A",
+      "category": "401k",
+      "tax": "roth",
+      "parent": "Retirement",
+      "balance": 50000
+    },
+    {
+      "id": "A-brokerage",
+      "owner": "A",
+      "category": "brokerage",
+      "tax": "brokerage",
+      "parent": "Retirement",
+      "balance": 40000,
+      "basis": 30000
+    },
+    {
+      "id": "P-brokerage",
+      "owner": "A",
+      "category": "brokerage",
+      "tax": "brokerage",
+      "parent": "Portfolio",
+      "balance": 60000,
+      "basis": 50000
+    }
+  ],
+  "contributions": [
+    {
+      "person": "A",
+      "account": "A-401k-roth",
+      "kind": "fixed",
+      "value": 36000,
+      "payroll": "roth",
+      "group": "401k",
+      "overflowTo": "A-brokerage",
+      "match": {
+        "rate": "1",
+        "capPercent": "0.03",
+        "account": "A-401k-trad"
+      },
+      "note": "Fixed dollars above the limit on purpose. All deferrals are Roth, so the mandatory Roth catch-up is satisfied."
+    },
+    {
+      "person": "A",
+      "account": "P-brokerage",
+      "kind": "fixed",
+      "value": 6000,
+      "payroll": "aftertax",
+      "group": null
+    }
+  ],
+  "returnRates": [
+    {
+      "fromAge": 0,
+      "rate": "0.07"
+    },
+    {
+      "fromAge": 60,
+      "rate": "0.05"
+    }
+  ],
+  "annualSpendingToday": 62000,
+  "waterfall": ["A-401k-trad", "A-brokerage", "A-401k-roth"],
+  "endYear": 2056
+}

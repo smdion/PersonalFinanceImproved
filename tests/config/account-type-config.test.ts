@@ -216,6 +216,10 @@ describe("getRothFraction", () => {
     expect(getRothFraction("401k", splits)).toBe(0.7);
   });
 
+  // Pins engine verdict E3, a bug: a 403(b) reads the 401(k)'s Roth share
+  // instead of its own. Changes with the fix, v0.11 Engine "Plan 'to 95'
+  // stops at 94" (its 403(b) part); answer-key case `engine/E3` in
+  // tests/calculators/answer-key-ledgers.test.ts.
   it("403b shares 401k split (via irsLimitGroup)", () => {
     expect(getRothFraction("403b", splits)).toBe(0.7);
   });

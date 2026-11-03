@@ -1,0 +1,63 @@
+{
+  "asOfDate": "2026-01-01",
+  "taxYearBase": 2026,
+  "inflation": "0.03",
+  "limitGrowth": "0.02",
+  "taxMultiplier": 1,
+  "spendingStrategy": "fixed",
+  "withdrawalRouting": "waterfall",
+  "rothConversions": "off",
+  "qcdAnnual": 0,
+  "lumpSums": [],
+  "id": "H4",
+  "name": "Early retiree living on a Retirement-parented brokerage",
+  "purpose": "Decumulation from year 0 at 48, brokerage draws with average-cost gains, 0% LTCG stacking, gross-up on gains, brokerage running out mid-year into Traditional, first RMD at 75.",
+  "filingStatus": "Single",
+  "people": [
+    {
+      "id": "A",
+      "primary": true,
+      "birthDate": "1978-01-15",
+      "ssAnnualToday": 20000,
+      "ssStartAge": 67,
+      "jobs": []
+    }
+  ],
+  "accounts": [
+    {
+      "id": "A-brokerage",
+      "owner": "A",
+      "category": "brokerage",
+      "tax": "brokerage",
+      "parent": "Retirement",
+      "balance": 1000000,
+      "basis": 600000
+    },
+    {
+      "id": "A-ira-trad",
+      "owner": "A",
+      "category": "ira",
+      "tax": "traditional",
+      "parent": "Retirement",
+      "balance": 500000
+    },
+    {
+      "id": "A-ira-roth",
+      "owner": "A",
+      "category": "ira",
+      "tax": "roth",
+      "parent": "Retirement",
+      "balance": 100000
+    }
+  ],
+  "contributions": [],
+  "returnRates": [
+    {
+      "fromAge": 0,
+      "rate": "0.05"
+    }
+  ],
+  "annualSpendingToday": 60000,
+  "waterfall": ["A-brokerage", "A-ira-trad", "A-ira-roth"],
+  "endYear": 2054
+}

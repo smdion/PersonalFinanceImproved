@@ -1,0 +1,46 @@
+{
+  "asOfDate": "2026-01-01",
+  "taxYearBase": 2026,
+  "inflation": "0.03",
+  "limitGrowth": "0.02",
+  "taxMultiplier": 1,
+  "spendingStrategy": "fixed",
+  "withdrawalRouting": "waterfall",
+  "rothConversions": "off",
+  "qcdAnnual": 0,
+  "lumpSums": [],
+  "id": "H7",
+  "name": "Plan that fails: Traditional runs out",
+  "purpose": "First RMD at 73 inside a normal draw, the depletion year, unmet need, Social Security alone afterwards.",
+  "filingStatus": "Single",
+  "people": [
+    {
+      "id": "A",
+      "primary": true,
+      "birthDate": "1956-01-15",
+      "ssAnnualToday": 20000,
+      "ssStartAge": 67,
+      "jobs": []
+    }
+  ],
+  "accounts": [
+    {
+      "id": "A-ira-trad",
+      "owner": "A",
+      "category": "ira",
+      "tax": "traditional",
+      "parent": "Retirement",
+      "balance": 250000
+    }
+  ],
+  "contributions": [],
+  "returnRates": [
+    {
+      "fromAge": 0,
+      "rate": "0.05"
+    }
+  ],
+  "annualSpendingToday": 50000,
+  "waterfall": ["A-ira-trad"],
+  "endYear": 2036
+}
