@@ -67,7 +67,7 @@ Single-frontend, single-backend app with two users. tRPC gives end-to-end type s
 
 ### Authentication & RBAC
 
-Auth.js with Authentik OIDC. Base roles + permission addons:
+Auth.js with Authentik OIDC or a local admin (`local_admins`). Dev Login (any name, no password) is registered only in development builds, and a token is accepted only with the `authMethod` its provider stamped at sign-in. Whether this is a development build, and whether requests skip sign-in (`next dev` only), is answered once, in `src/server/auth-mode.ts`. Base roles + permission addons:
 
 **Base roles:** `admin` | `viewer`
 

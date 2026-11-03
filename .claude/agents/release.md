@@ -191,7 +191,7 @@ ansible-vault view vars/secrets.yaml \
 
 ```
 [ ] pnpm test             (must pass)
-[ ] pnpm lint             (zero errors)
+[ ] pnpm lint             (zero errors and warnings)
 [ ] pnpm build            (must succeed)
 [ ] CHANGELOG.md updated  (dated entry, user-focused language)
 [ ] npm version X.Y.Z --no-git-tag-version

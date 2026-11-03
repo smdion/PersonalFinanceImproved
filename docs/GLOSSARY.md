@@ -128,6 +128,6 @@ are IRS-level categories independent of the account type that holds them.
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **tRPC**               | End-to-end typesafe RPC for the API layer. No REST routes.                                                                                                                     |
 | **Drizzle**            | TypeScript ORM with a SQL-like query builder. Used for both PG and SQLite.                                                                                                     |
-| **Authentik**          | OIDC identity provider used in production. Dev mode has a bypass via `ALLOW_DEV_MODE=true`.                                                                                    |
+| **Authentik**          | OIDC identity provider; a local admin is the other way to sign in. Under `next dev` sign-in is skipped (admin with `ALLOW_DEV_MODE=true`, otherwise a read-only viewer).       |
 | **Squash migration**   | Consolidating a release line's migrations into one fresh baseline (`0000_v<N>_initial_schema`); later migrations are incremental.                                              |
 | **`AUTO-GEN` markers** | HTML comments in DESIGN.md / TESTING.md that `pnpm docs:update` rewrites from counts read from the filesystem (`pnpm docs:verify` checks them) (e.g., number of tRPC routers). |
