@@ -18,8 +18,9 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    # Pushes also build the image and boot both compose files.
-    timeout-minutes: 20
+    # Pushes also build the image, boot both compose files and run the
+    # first-run sign-in against each (18 of 20 minutes used before that).
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -204,11 +205,22 @@ jobs:
 
       # The sample compose install on an empty volume, SQLite and PostgreSQL:
       # missing required variables are refused by name, .env reaches the
-      # container, and each boots to /api/health 200 and answers a public
-      # tRPC query with no Authentik. Builds reuse the cache from the step above.
+      # container, and each boots to /api/health 200, answers a public
+      # tRPC query with no Authentik, and a browser creates the first admin
+      # and runs the wizard to Done (tests/e2e/first-run.spec.ts, no
+      # DEMO_ONLY). Builds reuse the cache from the step above.
       - name: Compose install boots on an empty volume
         if: github.event_name == 'push'
         run: bash scripts/ci-image-boot.sh
+
+      - name: Upload first-run E2E results (screenshots, traces)
+        if: failure() && github.event_name == 'push'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: first-run-e2e-results
+          path: test-results/first-run-*/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Notify on failure
         if: failure() && github.ref == 'refs/heads/main'

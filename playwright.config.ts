@@ -34,12 +34,15 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"] },
     },
   ],
-  webServer: process.env.CI
-    ? {
-        command: "node .next/standalone/server.js",
-        url: "http://localhost:3000",
-        reuseExistingServer: false,
-        timeout: 30_000,
-      }
-    : undefined,
+  // CI starts the standalone build, unless PLAYWRIGHT_BASE_URL points at a
+  // server already running (scripts/ci-image-boot.sh's booted container).
+  webServer:
+    process.env.CI && !process.env.PLAYWRIGHT_BASE_URL
+      ? {
+          command: "node .next/standalone/server.js",
+          url: "http://localhost:3000",
+          reuseExistingServer: false,
+          timeout: 30_000,
+        }
+      : undefined,
 });

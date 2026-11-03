@@ -9,7 +9,7 @@ pnpm test:e2e         # Playwright (needs a running app; PLAYWRIGHT_BASE_URL to 
 pnpm vitest run tests/calculators   # one area — prefer this while working
 ```
 
-**<!-- AUTO-GEN:vitestFiles -->595<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->15<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
+**<!-- AUTO-GEN:vitestFiles -->595<!-- /AUTO-GEN --> Vitest files** + **<!-- AUTO-GEN:e2eFiles -->16<!-- /AUTO-GEN --> Playwright specs** (counts checked by `pnpm docs:verify`). Tests mirror the source layout; to see what covers a module, look in the matching `tests/` folder.
 
 ## Suites
 
@@ -39,6 +39,7 @@ pnpm vitest run tests/calculators   # one area — prefer this while working
 - **`lint/violations.test.ts`** — the RULES.md sweeps; numbered rules in its header.
 - **`**/answer-key-*.test.ts`** — the answer key: figures worked by hand from the published rules, each with its derivation and source beside it, titled `<area>/<id> [CALCULATIONS row]`; [CALCULATIONS.md](CALCULATIONS.md)'s Tested column counts them per row (`pnpm docs:update`). Helpers in `fixtures/answer-key.ts` (`cents`, `ledgerRow`, `xfail`, `runOneYear`). An expected failure is `it.fails` naming the release and TODO item that fix it (`v0.11 …`), with today's figure pinned beside it; `lint/answer-key.test.ts` enforces the naming and unique ids. `lint/calculations-law-year.test.ts` fails when a newer tax year ships than CALCULATIONS' tax-law rows were checked for, or a shipped year lacks a whole-return case for a filing status.
 - **`e2e/privacy-mode.spec.ts`** — every route with the privacy cookie set must show no `$<digit>`; server HTML must carry no amounts.
+- **`e2e/first-run.spec.ts`** — a fresh install signs in: the first local admin is created on /login and the onboarding wizard runs to Done, no `DEMO_ONLY`. Runs only inside `scripts/ci-image-boot.sh` (CI pushes), against the real image booted from each sample compose file on an empty volume.
 
 ## Fixtures and harnesses
 
