@@ -8,6 +8,41 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.9
 
+## [0.9.8] - 2026-11-02
+
+A safety release: nothing a budget app, SimpleFIN, SEC or Tiingo sends is used until it has been checked, and a sync or push that fails says what happened and what changed.
+
+### Fixed
+
+- **Ledgr checks what your budget app and data feeds send before using any of it.** A changed or broken answer from Actual, YNAB, SimpleFIN, SEC or Tiingo used to be stored as $0 or a blank — a debt shown as paid off, a savings balance zeroed, a balance stored as "NaN" — with the sync reporting success. Now the sync stops, nothing is changed, and you're told what was wrong (for example "Actual sent something Ledgr doesn't understand").
+- **Failed syncs and pushes say what happened and what changed**, instead of "Something went wrong on our end": an expired sign-in says to reconnect, a push that stopped partway says how many targets it wrote, and a failure before any write says nothing was changed. The Settings cards show the same words.
+- **Retirement withdrawals never take the whole balance to cover taxes.** In some plans the tax gross-up overshot and withdrew everything in one year, so the plan failed the next. It now finds the withdrawal that covers the need, within a cent.
+- **Pushing goals to your budget app reads every target before writing any**, so a failed read no longer leaves some targets updated and others not.
+- **Snapshot pushes to your budget app:**
+  - A snapshot dated after your Actual server's "today" posts once, instead of again on every retry, and its adjustment uses balances as of the snapshot's date.
+  - A resync checks every account before removing the old adjustments.
+  - An adjustment whose confirmation was lost is found and removed when the push is rolled back.
+  - A YNAB resync of an unchanged balance posts again; it was blocked by the deleted adjustment's import id.
+- **SimpleFIN:**
+  - One unreadable account no longer stops the others; a holding or transaction it can't read leaves that account's holdings as last known, and its balance still updates.
+  - Balances, loan balances and today's snapshot are saved together.
+  - A pending transaction is dated by when it happened, not as 1970, so it isn't counted twice once it posts.
+  - An account that misses a sync no longer loses that stretch of transactions.
+- **Actual goals:** a category note that won't load stops the sync instead of showing that goal as unset.
+- **Testing your Actual connection really asks Actual.** The Test button always said "Connected".
+- **Adding a fund or confirming a stand-in** says what was saved when SEC can't be reached.
+- **The public demo works again**, and its profiles show sensible figures (match caps, linked jobs, income and portfolio size).
+- **Database upgrades never record a failed migration as applied.**
+- **Restoring a backup from the command line works on SQLite again.**
+
+### Security
+
+- **Dev Login is available only in development builds**, never in production or the demo, and sign-in tokens without a sign-in method are rejected.
+
+### Changed
+
+- Ledgr runs on Node 26.12.1 everywhere (the image, CI and local development).
+
 ## [0.9.7] - 2026-11-01
 
 ### Fixed
