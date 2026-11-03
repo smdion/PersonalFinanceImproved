@@ -40,7 +40,7 @@ A version is deployed before it is released, so a deploy problem is fixed on the
 
 ## Rollback
 
-- **No migration in the release:** retag the previous image as `latest` and restart. Old images are pruned on a schedule; if it's gone, rebuild that version from its git tag.
+- **No migration in the release:** retag the previous image as `latest` and restart. `deploy.sh` keeps the current and the previous version's tag and prunes only older tags, dangling images and build cache; old images are also pruned on a schedule, so if it's gone, rebuild that version from its git tag.
 - **With a migration:** stop the app, restore the pre-deploy dump, deploy the previous version from its tag, start. Never roll back the image alone: the old code would meet a schema it doesn't know.
 - Never import the backup an older image writes at startup after rolling back with it; use the dump or a Versions-page export.
 

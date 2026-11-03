@@ -28,7 +28,7 @@
 #   4. Health-check demo
 #   5. Restart prod container
 #   6. Health-check prod
-#   7. Prune old images (keep N-1)
+#   7. Prune old images (keep N-1), then dangling images and build cache
 #
 # In the deploy-then-release flow, this script runs from the feature branch
 # BEFORE the release tag exists. After smoke-testing the deployed prod, merge
@@ -252,6 +252,18 @@ if [[ -n "$OLD_IMAGES" ]]; then
 else
   echo -e "  No old images to clean"
 fi
+
+# Build leftovers: each build leaves 2-3 GB of untagged layers and build
+# cache. `docker image prune -f` (no -a) removes dangling images only:
+# untagged and not used by any container. A tagged image is never dangling,
+# so ledgr:$VERSION, ledgr:latest and the previous ledgr tag kept above (the
+# no-migration rollback retags it) stay, and so does any layer they use.
+# `docker builder prune -f` removes unused build cache, never an image; the
+# next build runs cold. A failed prune doesn't fail the deploy.
+echo "  Pruning dangling images and build cache"
+$SSH_CMD "docker image prune -f" 2>/dev/null | tail -n 1 || true
+$SSH_CMD "docker builder prune -f" 2>/dev/null | tail -n 1 || true
+echo "  Kept: $($SSH_CMD "docker images ledgr --format '{{.Tag}}'" 2>/dev/null | tr '\n' ' ' || true)"
 
 echo -e "\n${GREEN}${BOLD}Deploy $TAG complete!${NC}"
 echo ""
