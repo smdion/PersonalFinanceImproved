@@ -8,6 +8,50 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 # v0.9
 
+## [0.9.9] - 2026-11-03
+
+Fresh installs and integrations: the sample Docker Compose install starts, signs in and saves a Plan with no extra setup, the Simulation runs on a new install, and Actual budgets get their category and payee names.
+
+### Upgrading
+
+- **Self-hosting with the sample compose files:** your `.env` must set `NEXTAUTH_SECRET`, `CRON_SECRET` and `ENCRYPTION_KEY` (and `POSTGRES_PASSWORD` for the PostgreSQL file). Compose now refuses to start and names the one that's missing, and passes every other variable in `.env` to Ledgr. `pnpm setup` fills the secrets for you.
+- **Behind a reverse proxy other than one that overwrites `X-Real-IP`** (or with no proxy at all), set `TRUSTED_PROXY_HEADER` so sign-in limits and rate limits see each visitor's real address. Leaving it unset keeps today's behaviour.
+
+### Added
+
+- **Create the first admin from the sign-in page.** A new install shows "Create the first admin" until one exists, then signs you in and opens the setup wizard. Finish this before you expose Ledgr publicly: whoever reaches a new install first becomes its admin.
+- **Ledgr ships its Simulation presets** (Default, Aggressive and Conservative, with their asset classes and how holdings count toward them). A new install, a "Reset all data" and the demo run the Simulation and simulated Coast FIRE on them. Installs that already have presets keep theirs exactly, so their figures don't change.
+- **A new install gets its first Retirement profile, "Current Retirement",** the first time you save retirement settings, so "Save as a new Plan" works. An install that saved retirement settings before this release is set up the same way on its next save.
+- **One disclaimer on every advice and projection page:** "Estimates from the figures and assumptions you entered. Not financial, tax or legal advice." (Recommendations, Milestones, the Checkup, Plan Health, Retirement, the claiming-age explorer and the printed report).
+
+### Changed
+
+- **Local admin is the default sign-in.** Authentik is optional: without it, the sign-in page offers the local admin form only, and the Authentik button shows only when Authentik is configured on the running install (it used to depend on how the image was built).
+- **Failed local-admin sign-ins are limited:** after 5 failed attempts from one address, or 10 for one email, that address or email waits up to 15 minutes. A successful sign-in clears the count.
+- **When the Simulation can't run, it says why** (no presets, no asset classes, no glide path, or a glide path that doesn't add up to 100%) instead of running on 0% returns and reporting "unreachable".
+- **Projections ask for a return rate first** when none is set, with a link to where it's set, instead of failing.
+- **"Save as a new Plan" says why it's disabled** when a profile kind isn't active.
+- "Print Advisor Report" is now **"Print Full Report"**.
+- **Actual: Expense year-over-year fills in.** It was empty on Actual because Ledgr didn't have category names. Income categories (salary, starting balances) are left out, as they already were on YNAB. Split transactions and closed accounts are still not counted on either app; that's planned.
+
+### Fixed
+
+- **The sample Docker Compose install starts.** The database setup step couldn't load SQLite in the image, compose didn't pass `ENCRYPTION_KEY` or optional settings, and the app refused to run without Authentik.
+- **Actual transactions carry their category and payee names** (they were blank, or showed an id). A payee with no name shows blank, never an id.
+- **Five milestones now record when reached** (savings rate and the contribution steps); they were judged on $0 contributions. Each gets the date you next visit Milestones.
+- **The setup wizard no longer dead-ends** on its Admin step after a reload or once an admin exists.
+- **The public demo shows "Choose a demo profile again"** when its demo session has ended, instead of loading forever.
+- **SimpleFIN:** testing the connection counts against SimpleFIN's daily request limit, stops at it, and sends one request instead of up to three; "Sync Now" right after a test says when Ledgr last asked SimpleFIN, instead of "synced moments ago".
+- **YNAB setup:** loading your budget list checks YNAB's answer and shows a plain message on failure, never YNAB's raw reply.
+- **Tiingo:** a saved key that can't be decrypted (saved with a different `ENCRYPTION_KEY`) says so and asks you to enter it again, instead of "Couldn't reach Tiingo".
+
+### Security
+
+- **Restoring, importing or resetting can't leave the sign-in page offering "Create the first admin" to anyone** while a local admin or Authentik remains to sign in with.
+- Two people creating the first admin at the same moment can no longer both succeed (PostgreSQL).
+
+---
+
 ## [0.9.8] - 2026-11-03
 
 A safety release: nothing a budget app, SimpleFIN, SEC or Tiingo sends is used until it has been checked, and a sync or push that fails says what happened and what changed.
