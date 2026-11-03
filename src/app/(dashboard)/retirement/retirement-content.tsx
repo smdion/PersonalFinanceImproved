@@ -4,6 +4,7 @@
  *  retirement/page.tsx is a thin server component that prefetches the most
  *  expensive query before rendering this. */
 
+import { NotConfiguredNotice } from "@/components/ui/not-configured-notice";
 import { useSimulationPreset } from "@/lib/hooks/use-simulation-preset";
 import { useFocusedState } from "@/lib/hooks/use-focus";
 import { useState, useMemo } from "react";
@@ -283,6 +284,12 @@ export function RetirementContent() {
             <Skeleton className="h-4 w-2/3" />
             <Skeleton className="h-4 w-1/2" />
             <Skeleton className="h-4 w-3/4" />
+          </div>
+        ) : comparisonData &&
+          "notConfigured" in comparisonData &&
+          comparisonData.notConfigured === "no_return_rate" ? (
+          <div className="p-4">
+            <NotConfiguredNotice reason={comparisonData.notConfigured} />
           </div>
         ) : comparisonData && "retirementAge" in comparisonData ? (
           <WithdrawalComparisonCard

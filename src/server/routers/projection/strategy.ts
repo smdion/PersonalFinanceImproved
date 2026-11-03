@@ -150,6 +150,12 @@ export const strategyRouter = createTRPCRouter({
         retirementProfileId: input?.retirementProfileId,
       });
       if (!payload) return { strategies: [], activeStrategy: null };
+      if (payload.notConfigured)
+        return {
+          strategies: [],
+          activeStrategy: null,
+          notConfigured: payload.notConfigured,
+        };
 
       const {
         settings,

@@ -11,6 +11,7 @@
  * decision #1/#5), so this component is never rendered for them (see
  * `SocialSecuritySection`'s call site).
  */
+import { NotConfiguredNotice } from "@/components/ui/not-configured-notice";
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { HelpTip } from "@/components/ui/help-tip";
@@ -84,6 +85,8 @@ export function ClaimingAgeExplorer({
         <div className="bg-surface-elevated mt-2 overflow-x-auto rounded border p-2">
           {query.isLoading ? (
             <Skeleton className="h-24 w-full" />
+          ) : query.data && "notConfigured" in query.data ? (
+            <NotConfiguredNotice reason={query.data.notConfigured} />
           ) : !result ? (
             <p className="text-caption text-muted">
               Couldn&apos;t compute a comparison for this household.

@@ -317,6 +317,21 @@ describe("projection router — computeProjection edge cases (continued)", () =>
     }
   });
 
+  it("no return rate: the strategy comparison says to set one", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      db.delete(schema.returnRateTable).run();
+      expect(await caller.projection.computeStrategyComparison()).toEqual({
+        strategies: [],
+        activeStrategy: null,
+        notConfigured: "no_return_rate",
+      });
+    } finally {
+      cleanup();
+    }
+  });
+
   it("client decumulation defaults set the routing mode, not the rate", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {

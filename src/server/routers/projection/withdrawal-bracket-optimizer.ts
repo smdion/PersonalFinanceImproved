@@ -88,6 +88,8 @@ export const withdrawalBracketOptimizerRouter = createTRPCRouter({
         retirementProfileId: input.retirementProfileId,
       });
       if (!payload) return { result: null };
+      if (payload.notConfigured)
+        return { result: null, notConfigured: payload.notConfigured };
 
       const { settings, distributionTaxRates, baseEngineInput } = payload;
 

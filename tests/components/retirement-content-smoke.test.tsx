@@ -106,6 +106,9 @@ vi.mock("@/lib/context/scenario-context", () => ({
   useScenario: () => ({ activeScenario: null }),
 }));
 
+/** What computeStrategyComparison returns (null = nothing yet). */
+const mockComparison: { data: unknown } = { data: null };
+
 const mockSettings = {
   personId: 1,
   profileId: 1,
@@ -179,7 +182,7 @@ vi.mock("@/lib/trpc", () => ({
         }),
       },
       computeStrategyComparison: {
-        useQuery: () => ({ data: null, isLoading: false }),
+        useQuery: () => ({ data: mockComparison.data, isLoading: false }),
       },
     },
     retirement: {
@@ -204,6 +207,26 @@ vi.mock("@/lib/trpc", () => ({
 describe("RetirementContent smoke", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockComparison.data = null;
+  });
+
+  it("the comparison tab says to set a return rate when none is set, not Loading", async () => {
+    mockComparison.data = {
+      strategies: [],
+      activeStrategy: null,
+      notConfigured: "no_return_rate",
+    };
+    const { RetirementContent } =
+      await import("@/app/(dashboard)/retirement/retirement-content");
+    render(<RetirementContent />);
+    fireEvent.click(
+      screen.getByRole("button", { name: "Strategy Comparison" }),
+    );
+    expect(screen.getByText(/Set a return rate first/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Set return rates" }),
+    ).toHaveAttribute("href", expect.stringContaining("section=returns"));
+    expect(screen.queryByText(/Loading strategy comparison/)).toBeNull();
   });
 
   it("renders the 3 main tabs", async () => {
