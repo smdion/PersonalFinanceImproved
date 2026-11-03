@@ -1,5 +1,25 @@
 [
   {
+    "rule": "engine-through-index",
+    "from": "src/lib/calculators/monte-carlo.ts",
+    "to": "src/lib/calculators/engine/inflation-path.ts"
+  },
+  {
+    "rule": "engine-through-index",
+    "from": "src/lib/calculators/plan-outcome.ts",
+    "to": "src/lib/calculators/engine/gap-year-draw.ts"
+  },
+  {
+    "rule": "engine-through-index",
+    "from": "src/lib/calculators/simple-tax-mode.ts",
+    "to": "src/lib/calculators/engine/projection-year-handlers/lump-sum.ts"
+  },
+  {
+    "rule": "engine-through-index",
+    "from": "src/lib/calculators/types/engine-projection.ts",
+    "to": "src/lib/calculators/engine/gap-year-draw.ts"
+  },
+  {
     "rule": "foundation-is-the-floor",
     "from": "src/lib/config/display-labels.ts",
     "to": "src/lib/pure/profiles.ts"

@@ -31,6 +31,8 @@ const LAYERS = {
   shapes: `^src/lib/db/${SHAPE_FILES}`,
   // lib/calculators and lib/pure merge into lib/pure in v0.10.x.
   pure: "^src/lib/(pure|calculators)/",
+  // The engine's public API is its index.ts.
+  engine: "^src/lib/(pure|calculators)/engine/",
   infra: `^src/lib/(db/(?!${SHAPE_FILES})|http/|budget-api/|simplefin/|sec/|tiingo/|tax-data/|auth/|(crypto|logger|rate-limit|env|error-reporting|url-safety)\\.ts$)`,
   data: "^src/server/data/",
   // server/helpers and server/retirement are today's composition layer;
@@ -85,6 +87,13 @@ const config = {
       to: {
         path: `${L.infra}|^src/server/|^src/components/|^src/app/|${IO_PACKAGES}`,
       },
+    },
+    {
+      name: "engine-through-index",
+      severity: "error",
+      comment: "Resolved paths: relative imports count as much as @/ ones.",
+      from: { path: "^src/", pathNot: L.engine },
+      to: { path: L.engine, pathNot: `${L.engine}index\\.ts$` },
     },
     {
       name: "infra-below-server",

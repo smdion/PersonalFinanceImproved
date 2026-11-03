@@ -16,7 +16,8 @@
  *    8. useState with hardcoded account type ("401k", "ira", etc.)
  *    9. Inline `.toFixed(N) + "%"` instead of formatPercent()
  *   10. Mutation using `z.string()` for enum-typed fields (accountType, service) instead of z.enum()
- *   11. Absolute imports from engine internals instead of the barrel
+ *   11. (Engine imports past the barrel: now the dependency-cruiser rule
+ *       engine-through-index, `pnpm check:layers`, which sees relative imports too.)
  *   12. Hand-rolled Modified-Dietz denominators outside performance.ts
  *   13. Raw division inside formatPercent() instead of safeDivide() (H1/M1/M36/L9 class)
  *   14. Tailwind-class-returning color helper passed to inline style backgroundColor (M18 class)
@@ -444,17 +445,6 @@ function findStringEnumFieldViolations(): Violation[] {
     {
       additionalExempt: new Set(["src/server/routers/settings/admin.ts"]),
     },
-  );
-}
-
-// Rule 11: absolute imports from engine internals. The public API is the
-// `@/lib/calculators/engine` barrel; any deeper absolute import is a layering
-// violation. (Relative imports between engine sibling files are fine — that's
-// how the engine composes itself internally.)
-function findEngineInternalImportViolations(): Violation[] {
-  return findPatternViolations(
-    /from\s+["']@\/lib\/calculators\/engine\/[^"']+["']/,
-    "no-engine-internal-import",
   );
 }
 
@@ -1141,20 +1131,6 @@ describe("RULES.md violations sweep", () => {
     }
   });
 
-  it("no absolute imports from engine internals (use the barrel)", () => {
-    const violations = findEngineInternalImportViolations();
-    if (violations.length > 0) {
-      expect.fail(
-        `Found ${violations.length} engine-internal-import violations. ` +
-          `Import from '@/lib/calculators/engine' (the barrel) — only the 4 ` +
-          `public functions (calculateProjection, estimateEffectiveTaxRate, ` +
-          `incomeCapForMarginalRate, computeTaxableSS) are part of the public ` +
-          `API. Relative imports between engine siblings are fine.\n` +
-          formatViolations("Violations", violations),
-      );
-    }
-  });
-
   it("no hand-rolled Modified-Dietz denominators (use computeReturn()/sumAccounts() from src/lib/pure/performance.ts)", () => {
     const violations = findHandRolledDietzDenominatorViolations();
     if (violations.length > 0) {
@@ -1485,14 +1461,6 @@ const POSITIVE_CONTROLS: [string, () => Violation[], Record<string, string>][] =
       "z.string() enum field",
       findStringEnumFieldViolations,
       { "src/a.ts": "const s = z.object({ accountType: z.string() });\n" },
-    ],
-    [
-      "engine internal import",
-      findEngineInternalImportViolations,
-      {
-        "src/a.ts":
-          'import { x } from "@/lib/calculators/engine/projection";\n',
-      },
     ],
     [
       "hand-rolled Dietz",
