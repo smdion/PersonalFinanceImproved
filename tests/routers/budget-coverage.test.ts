@@ -24,6 +24,8 @@ import {
 } from "./setup";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
+import { goalClient } from "../helpers/goal-client";
+import { BudgetApiError } from "@/lib/budget-api/errors";
 
 vi.mock("@/lib/budget-api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/budget-api")>();
@@ -1005,9 +1007,9 @@ describe("budget router — syncBudgetToApi", () => {
     (getActiveBudgetApi as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       "ynab",
     );
-    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      updateCategoryGoalTarget: mockUpdateGoal,
-    });
+    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      goalClient(mockUpdateGoal),
+    );
     (refreshCategoryCache as ReturnType<typeof vi.fn>).mockClear();
 
     const { caller, db, cleanup } = await createTestCaller(adminSession);
@@ -1038,9 +1040,9 @@ describe("budget router — syncBudgetToApi", () => {
     (getActiveBudgetApi as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       "ynab",
     );
-    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      updateCategoryGoalTarget: vi.fn(),
-    });
+    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      goalClient(vi.fn()),
+    );
     (refreshCategoryCache as ReturnType<typeof vi.fn>).mockClear();
 
     const { caller, db, cleanup } = await createTestCaller(adminSession);
@@ -1062,9 +1064,9 @@ describe("budget router — syncBudgetToApi", () => {
     (getActiveBudgetApi as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       "ynab",
     );
-    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      updateCategoryGoalTarget: mockUpdateGoal,
-    });
+    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      goalClient(mockUpdateGoal),
+    );
 
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -1092,9 +1094,9 @@ describe("budget router — syncBudgetToApi", () => {
     (getActiveBudgetApi as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       "ynab",
     );
-    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      updateCategoryGoalTarget: mockUpdateGoal,
-    });
+    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      goalClient(mockUpdateGoal),
+    );
 
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
@@ -1114,6 +1116,81 @@ describe("budget router — syncBudgetToApi", () => {
     }
   });
 
+  it("reads every target before writing any: a read that fails writes nothing", async () => {
+    const { getActiveBudgetApi, getClientForService } =
+      await import("@/lib/budget-api");
+    const write = vi.fn().mockResolvedValue(undefined);
+    const client = goalClient(write);
+    client.prepareGoalWrite
+      .mockImplementationOnce(async (id, _shape, amount) => ({
+        apply: () => write(id, amount),
+      }))
+      .mockRejectedValueOnce(new BudgetApiError("timed out", "timeout", null));
+    (getActiveBudgetApi as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      "ynab",
+    );
+    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      client,
+    );
+
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const seed = seedStandardDataset(db);
+      for (const [i, id] of seed.itemIds.slice(0, 2).entries())
+        await caller.budget.linkToApi({
+          budgetItemId: id,
+          service: "ynab",
+          apiCategoryId: `api-cat-${i}`,
+          apiCategoryName: `Cat ${i}`,
+          syncDirection: "push",
+        });
+
+      await expect(caller.budget.syncBudgetToApi()).rejects.toThrow(
+        "timed out",
+      );
+      expect(client.prepareGoalWrite).toHaveBeenCalledTimes(2);
+      expect(write).not.toHaveBeenCalled();
+    } finally {
+      cleanup();
+    }
+  });
+
+  it("a write that fails after others landed says how many and still refreshes the cache", async () => {
+    const { getActiveBudgetApi, getClientForService, refreshCategoryCache } =
+      await import("@/lib/budget-api");
+    const write = vi
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new BudgetApiError("server down", "server", 503));
+    (getActiveBudgetApi as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      "ynab",
+    );
+    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      goalClient(write),
+    );
+    (refreshCategoryCache as ReturnType<typeof vi.fn>).mockClear();
+
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      const seed = seedStandardDataset(db);
+      for (const [i, id] of seed.itemIds.slice(0, 2).entries())
+        await caller.budget.linkToApi({
+          budgetItemId: id,
+          service: "ynab",
+          apiCategoryId: `api-cat-${i}`,
+          apiCategoryName: `Cat ${i}`,
+          syncDirection: "push",
+        });
+
+      await expect(caller.budget.syncBudgetToApi()).rejects.toThrow(
+        "Pushed 1 of 2 budget targets, then failed: server down",
+      );
+      expect(refreshCategoryCache).toHaveBeenCalledTimes(1);
+    } finally {
+      cleanup();
+    }
+  });
+
   it("uses linked profile from apiConnections when configured", async () => {
     const { getActiveBudgetApi, getClientForService } =
       await import("@/lib/budget-api");
@@ -1121,9 +1198,9 @@ describe("budget router — syncBudgetToApi", () => {
     (getActiveBudgetApi as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       "ynab",
     );
-    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      updateCategoryGoalTarget: mockUpdateGoal,
-    });
+    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      goalClient(mockUpdateGoal),
+    );
 
     const { caller, db, sqlite, cleanup } =
       await createTestCaller(adminSession);
@@ -1159,9 +1236,9 @@ describe("budget router — syncBudgetToApi", () => {
       await import("@/lib/budget-api");
     const mockUpdateGoal = vi.fn().mockResolvedValue(undefined);
     (getActiveBudgetApi as ReturnType<typeof vi.fn>).mockResolvedValue("ynab");
-    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValue({
-      updateCategoryGoalTarget: mockUpdateGoal,
-    });
+    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValue(
+      goalClient(mockUpdateGoal),
+    );
     (cacheGet as ReturnType<typeof vi.fn>).mockImplementation(
       async (_db: unknown, _service: unknown, key: string) => {
         if (key === "accounts")
@@ -2179,9 +2256,9 @@ describe("budget router — syncBudgetToApi no profile", () => {
     (getActiveBudgetApi as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
       "ynab",
     );
-    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      updateCategoryGoalTarget: mockUpdateGoal,
-    });
+    (getClientForService as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      goalClient(mockUpdateGoal),
+    );
 
     const { caller, sqlite, cleanup } = await createTestCaller(adminSession);
     try {

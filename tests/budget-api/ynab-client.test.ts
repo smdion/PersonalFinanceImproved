@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { BudgetAPIClient } from "@/lib/budget-api/interface";
 import { YnabClient } from "@/lib/budget-api/ynab-client";
 import { YNAB_INTERNAL_GROUPS } from "@/lib/config/ynab";
 
@@ -14,6 +15,17 @@ function jsonResponse(data: unknown, status = 200) {
     json: () => Promise.resolve(data),
     text: () => Promise.resolve(JSON.stringify(data)),
   });
+}
+
+/** Prepare a goal write, then apply it: what a push does per item. */
+async function pushGoal(
+  client: BudgetAPIClient,
+  categoryId: string,
+  shape: "monthly" | "target-balance",
+  amount: number,
+) {
+  const write = await client.prepareGoalWrite(categoryId, shape, amount);
+  await write.apply();
 }
 
 describe("YnabClient", () => {
@@ -487,13 +499,13 @@ describe("YnabClient", () => {
     });
   });
 
-  describe("updateCategoryGoalTarget", () => {
+  describe("prepareGoalWrite: monthly", () => {
     const existing = (category: object) => jsonResponse({ data: { category } });
 
     it("PATCHes the plan-level category endpoint with goal_frequency monthly and milliunits conversion", async () => {
       mockFetch.mockReturnValueOnce(existing({ goal_target: null }));
       mockFetch.mockReturnValueOnce(jsonResponse({}));
-      await client.updateCategoryGoalTarget("cat-1", 500);
+      await pushGoal(client, "cat-1", "monthly", 500);
       const [url, init] = mockFetch.mock.calls[1]!;
       expect(url).toContain("/categories/cat-1");
       expect(url).not.toMatch(/\/months\//);
@@ -515,7 +527,7 @@ describe("YnabClient", () => {
         }),
       );
       mockFetch.mockReturnValueOnce(jsonResponse({}));
-      await client.updateCategoryGoalTarget("cat-1", 500);
+      await pushGoal(client, "cat-1", "monthly", 500);
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });
 
@@ -532,7 +544,7 @@ describe("YnabClient", () => {
         existing({ goal_target: 100_000, ...goal }),
       );
       await expect(
-        client.updateCategoryGoalTarget("cat-1", 500),
+        pushGoal(client, "cat-1", "monthly", 500),
       ).rejects.toMatchObject({ code: "conflict" });
       expect(mockFetch).toHaveBeenCalledTimes(1);
     });
@@ -542,16 +554,42 @@ describe("YnabClient", () => {
         existing({ goal_target: 100_000, goal_type: "NEED", goal_cadence: 1 }),
       );
       mockFetch.mockReturnValueOnce(jsonResponse({}));
-      await client.updateCategoryGoalTarget("cat-1", 0);
+      await pushGoal(client, "cat-1", "monthly", 0);
       const body = JSON.parse(mockFetch.mock.calls[1]![1].body);
       expect(body.category).toEqual({ goal_target: null });
     });
   });
 
-  describe("updateCategoryTargetBalance", () => {
+  describe("prepareGoalWrite: reads only", () => {
+    it("reads the category when prepared and PATCHes only on apply", async () => {
+      mockFetch.mockReturnValueOnce(
+        jsonResponse({ data: { category: { goal_target: null } } }),
+      );
+      const write = await client.prepareGoalWrite("cat-1", "monthly", 500);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch.mock.calls[0]![1]?.method ?? "GET").toBe("GET");
+      mockFetch.mockReturnValueOnce(jsonResponse({}));
+      await write.apply();
+      expect(mockFetch.mock.calls[1]![1].method).toBe("PATCH");
+    });
+
+    it("a target-balance write sends nothing until applied", async () => {
+      const write = await client.prepareGoalWrite(
+        "cat-1",
+        "target-balance",
+        1200,
+      );
+      expect(mockFetch).not.toHaveBeenCalled();
+      mockFetch.mockReturnValueOnce(jsonResponse({}));
+      await write.apply();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("prepareGoalWrite: target-balance", () => {
     it("PATCHes only goal_target, in a single request, touching nothing else", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({}));
-      await client.updateCategoryTargetBalance("cat-1", 1200);
+      await pushGoal(client, "cat-1", "target-balance", 1200);
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
 

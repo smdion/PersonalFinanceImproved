@@ -4,7 +4,11 @@
 // Auth: x-api-key header
 // Amounts: integer cents (÷100 for dollars)
 
-import type { BudgetAPIClient } from "./interface";
+import type {
+  BudgetAPIClient,
+  GoalShape,
+  PreparedGoalWrite,
+} from "./interface";
 import type {
   BudgetAccount,
   BudgetCategoryGroup,
@@ -583,8 +587,8 @@ export class ActualClient implements BudgetAPIClient {
   /**
    * Overlays note-parsed goal amounts onto categories, in place. Actual's
    * structured `goal` field (what `mapCategory`'s `goalTarget` reads,
-   * i.e. `cat.goal`) is never updated by `writeGoalNote`'s note-based
-   * write mechanism — there's no API to write it (see `writeGoalNote`'s
+   * i.e. `cat.goal`) is never updated by `prepareGoalWrite`'s note-based
+   * write mechanism — there's no API to write it (see `prepareGoalWrite`'s
    * own docblock). Comparing a push/pull preview's "current" value
    * against a `goalTarget` derived purely from `cat.goal` shows every
    * Ledgr-managed goal as permanently changed, even immediately after a
@@ -684,36 +688,28 @@ export class ActualClient implements BudgetAPIClient {
    * Actual itself) also sets it through the newer mechanism. The note-based
    * `#template` IS what Actual's own "Apply Budget Template" action reads,
    * though, so the push still does something real. */
-  private async writeGoalNote(
+  async prepareGoalWrite(
     categoryId: string,
-    shape: ActualTemplateShape,
-    amount: number,
-  ): Promise<void> {
+    shape: GoalShape,
+    targetAmount: number,
+  ): Promise<PreparedGoalWrite> {
+    const templateShape: ActualTemplateShape =
+      shape === "monthly" ? "fixed" : "target-balance";
     const noteRes = await this.request<{ data: string | null }>(
       `/notes/category/${categoryId}`,
     );
-    const merged = mergeGoalIntoNote(noteRes.data, shape, amount);
+    const merged = mergeGoalIntoNote(noteRes.data, templateShape, targetAmount);
     if (!merged.ok) {
       throw new BudgetApiError(merged.reason, "conflict", null);
     }
-    await this.request(`/notes/category/${categoryId}`, {
-      method: "PUT",
-      body: JSON.stringify({ data: merged.note }),
-    });
-  }
-
-  async updateCategoryGoalTarget(
-    categoryId: string,
-    targetAmount: number,
-  ): Promise<void> {
-    await this.writeGoalNote(categoryId, "fixed", targetAmount);
-  }
-
-  async updateCategoryTargetBalance(
-    categoryId: string,
-    targetAmount: number,
-  ): Promise<void> {
-    await this.writeGoalNote(categoryId, "target-balance", targetAmount);
+    return {
+      apply: async () => {
+        await this.request(`/notes/category/${categoryId}`, {
+          method: "PUT",
+          body: JSON.stringify({ data: merged.note }),
+        });
+      },
+    };
   }
 
   // -- Transactions --

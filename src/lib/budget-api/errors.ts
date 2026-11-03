@@ -21,8 +21,8 @@ type BudgetApiErrorCode =
   // the target already has state that can't be safely overwritten without
   // clobbering something the household configured directly — e.g. Actual's
   // note-based goal write finding an existing #template of a different
-  // shape already there. See ActualClient.updateCategoryGoalTarget/
-  // updateCategoryTargetBalance and actual-goal-notes.ts.
+  // shape already there. See BudgetAPIClient.prepareGoalWrite and
+  // actual-goal-notes.ts.
   | "unknown";
 
 export class BudgetApiError extends Error {
@@ -53,6 +53,14 @@ export class BudgetApiError extends Error {
       this.code === "timeout"
     );
   }
+}
+
+/** A failure that may pass on its own (rate limit, 5xx, network, timeout):
+ *  the only kind a caller may retry, skip or count per item. Anything else
+ *  (auth, a rejected request, an unexpected response) won't change by
+ *  trying again and must stop the operation. */
+export function isTransientError(err: unknown): boolean {
+  return err instanceof BudgetApiError && err.isRetryable;
 }
 
 /**

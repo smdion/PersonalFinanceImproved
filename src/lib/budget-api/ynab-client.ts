@@ -5,7 +5,11 @@
 
 import { BudgetApiError } from "./errors";
 import "server-only";
-import type { BudgetAPIClient } from "./interface";
+import type {
+  BudgetAPIClient,
+  GoalShape,
+  PreparedGoalWrite,
+} from "./interface";
 import type {
   BudgetAccount,
   BudgetCategoryGroup,
@@ -346,6 +350,32 @@ export class YnabClient implements BudgetAPIClient {
     });
   }
 
+  /** Reads the category for a monthly goal (only a plain monthly target or
+   *  none may be replaced); a target-balance write needs no read. */
+  async prepareGoalWrite(
+    categoryId: string,
+    shape: GoalShape,
+    targetAmount: number,
+  ): Promise<PreparedGoalWrite> {
+    if (shape === "target-balance")
+      return { apply: () => this.writeTargetBalance(categoryId, targetAmount) };
+    // goal_frequency replaces whatever target is there, so a target of any
+    // other shape is left alone and reported — the interface's contract,
+    // and what Actual's note-based write does.
+    const { data } = await this.request<
+      YnabResponse<{ category: YnabCategory }>
+    >(`/categories/${categoryId}`);
+    if (!isPlainMonthlyGoal(data.category))
+      throw new BudgetApiError(
+        "This category's target isn't a plain monthly one — left untouched to avoid overwriting a target configured directly in YNAB.",
+        "conflict",
+        null,
+      );
+    return {
+      apply: () => this.writeMonthlyGoal(categoryId, targetAmount),
+    };
+  }
+
   /**
    * Set a recurring "assign this every month" goal (what YNAB's UI/response
    * *displays* as goal_type "NEED", or legacy "MF" — same concept, just an
@@ -380,22 +410,10 @@ export class YnabClient implements BudgetAPIClient {
    * missing or the value is empty or invalid: category" (the month-category
    * schema only accepts `budgeted`).
    */
-  async updateCategoryGoalTarget(
+  private async writeMonthlyGoal(
     categoryId: string,
     targetAmount: number,
   ): Promise<void> {
-    // goal_frequency replaces whatever target is there, so a target of any
-    // other shape is left alone and reported — the interface's contract,
-    // and what Actual's note-based write does.
-    const { data } = await this.request<
-      YnabResponse<{ category: YnabCategory }>
-    >(`/categories/${categoryId}`);
-    if (!isPlainMonthlyGoal(data.category))
-      throw new BudgetApiError(
-        "This category's target isn't a plain monthly one — left untouched to avoid overwriting a target configured directly in YNAB.",
-        "conflict",
-        null,
-      );
     await this.request(`/categories/${categoryId}`, {
       method: "PATCH",
       body: JSON.stringify({
@@ -436,7 +454,7 @@ export class YnabClient implements BudgetAPIClient {
    * up once, manually, in the YNAB app — this method is only safe to keep
    * the target dollar amount in sync with Ledgr afterward.
    */
-  async updateCategoryTargetBalance(
+  private async writeTargetBalance(
     categoryId: string,
     targetAmount: number,
   ): Promise<void> {

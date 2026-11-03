@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { BudgetAPIClient } from "@/lib/budget-api/interface";
 import {
   ActualClient,
   resetActualWrapperGates,
@@ -16,6 +17,17 @@ function jsonResponse(data: unknown, status = 200) {
     json: () => Promise.resolve(data),
     text: () => Promise.resolve(JSON.stringify(data)),
   });
+}
+
+/** Prepare a goal write, then apply it: what a push does per item. */
+async function pushGoal(
+  client: BudgetAPIClient,
+  categoryId: string,
+  shape: "monthly" | "target-balance",
+  amount: number,
+) {
+  const write = await client.prepareGoalWrite(categoryId, shape, amount);
+  await write.apply();
 }
 
 describe("ActualClient", () => {
@@ -481,16 +493,16 @@ describe("ActualClient", () => {
     });
   });
 
-  // updateCategoryGoalTarget / updateCategoryTargetBalance write via
+  // Goal writes (prepareGoalWrite, then apply) go through
   // Actual's note-based #template mechanism — there's no structured goal
   // field the API can write (verified against @actual-app/api's docs).
   // See actual-goal-notes.ts for the pure merge logic; these tests cover
   // the HTTP plumbing (GET note → merge → PUT note) around it.
-  describe("updateCategoryGoalTarget", () => {
+  describe("prepareGoalWrite: monthly", () => {
     it("appends a fresh #template line when the category has no note yet", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ data: null })); // GET
       mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" })); // PUT
-      await client.updateCategoryGoalTarget("cat-1", 250);
+      await pushGoal(client, "cat-1", "monthly", 250);
       const [getCall, putCall] = mockFetch.mock.calls;
       expect(getCall![0]).toContain("/notes/category/cat-1");
       expect(putCall![0]).toContain("/notes/category/cat-1");
@@ -503,7 +515,7 @@ describe("ActualClient", () => {
         jsonResponse({ data: "Rent category\n#template 100" }),
       );
       mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" }));
-      await client.updateCategoryGoalTarget("cat-1", 175);
+      await pushGoal(client, "cat-1", "monthly", 175);
       const putCall = mockFetch.mock.calls[1];
       expect(JSON.parse(putCall![1].body).data).toBe(
         "Rent category\n#template 175",
@@ -515,7 +527,7 @@ describe("ActualClient", () => {
         jsonResponse({ data: "#template 10% of Paycheck" }),
       );
       await expect(
-        client.updateCategoryGoalTarget("cat-1", 250),
+        pushGoal(client, "cat-1", "monthly", 250),
       ).rejects.toMatchObject({ name: "BudgetApiError", code: "conflict" });
       expect(mockFetch).toHaveBeenCalledTimes(1); // only the GET
     });
@@ -525,16 +537,28 @@ describe("ActualClient", () => {
         jsonResponse({ data: "#template 10% of Paycheck" }),
       );
       await expect(
-        client.updateCategoryGoalTarget("cat-1", 250),
+        pushGoal(client, "cat-1", "monthly", 250),
       ).rejects.toBeInstanceOf(BudgetApiError);
     });
   });
 
-  describe("updateCategoryTargetBalance", () => {
+  describe("prepareGoalWrite: reads only", () => {
+    it("reads the note when prepared and writes it only on apply", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
+      const write = await client.prepareGoalWrite("cat-1", "monthly", 250);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch.mock.calls[0]![1]?.method ?? "GET").toBe("GET");
+      mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" }));
+      await write.apply();
+      expect(mockFetch.mock.calls[1]![1].method).toBe("PUT");
+    });
+  });
+
+  describe("prepareGoalWrite: target-balance", () => {
     it("writes an 'up to' template, distinct from the fixed-amount shape", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
       mockFetch.mockReturnValueOnce(jsonResponse({ message: "ok" }));
-      await client.updateCategoryTargetBalance("cat-1", 5000);
+      await pushGoal(client, "cat-1", "target-balance", 5000);
       const putCall = mockFetch.mock.calls[1];
       expect(JSON.parse(putCall![1].body).data).toBe("#template up to 5000");
     });
@@ -542,7 +566,7 @@ describe("ActualClient", () => {
     it("a fixed-amount template does not satisfy a target-balance write — treated as conflict, not replaced", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ data: "#template 100" }));
       await expect(
-        client.updateCategoryTargetBalance("cat-1", 5000),
+        pushGoal(client, "cat-1", "target-balance", 5000),
       ).rejects.toMatchObject({ code: "conflict" });
     });
   });
@@ -779,7 +803,7 @@ describe("ActualClient", () => {
     // Found live, 2026-09-01: a budget push-preview showed every linked
     // category's "current" value as $0, even for categories already
     // pushed successfully -- goalTarget was reading Actual's structured
-    // `goal` field, which writeGoalNote's note-based write never touches.
+    // `goal` field, which prepareGoalWrite's note-based write never touches.
     // overlayNoteGoals is the fix: read the note back and prefer it.
     it("overrides goalTarget with the note-parsed amount when a #template is present, even though the structured goal field says something else", async () => {
       mockFetch.mockReturnValueOnce(

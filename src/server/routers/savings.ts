@@ -83,8 +83,10 @@ import {
   cacheGet,
   refreshCategoryCache,
   BudgetApiError,
+  isTransientError,
 } from "@/lib/budget-api";
 import type {
+  PreparedGoalWrite,
   BudgetCategoryGroup,
   BudgetMonthDetail,
   BudgetTransaction,
@@ -1845,12 +1847,13 @@ export const savingsRouter = createTRPCRouter({
 
   /**
    * Push goal target amounts to the budget API for linked sinking funds.
-   * - Sinking funds: pushes monthlyContribution via updateCategoryGoalTarget
+   * - Sinking funds: pushes monthlyContribution as a "monthly" goal write
    *   (recurring monthly-assignment amount).
    * - Emergency fund: pushes computed targetAmount (targetMonths × essentials)
-   *   via updateCategoryTargetBalance — amount only, never touches the
+   *   as a "target-balance" goal write — amount only, never touches the
    *   goal's type/cadence (that has to be configured once, manually, in
-   *   YNAB; see updateCategoryTargetBalance's implementation for why).
+   *   YNAB; see YnabClient's writeTargetBalance for why).
+   * Every target is read before the first write.
    * Can optionally push a single goal by ID.
    */
   pushContributionsToApi: savingsProcedure
@@ -1954,48 +1957,30 @@ export const savingsRouter = createTRPCRouter({
           .map((c) => [c.id, c.goalTarget ?? 0]),
       );
 
-      let pushed = 0;
-      // Counted separately from a generic failure (network/auth/rate-limit,
-      // still just logged and skipped below) — the provider COULDN'T
-      // perform this specific write, either because it has no API for the
-      // operation at all ("unsupported") or because the target already has
-      // incompatible state that can't be safely merged into ("conflict" —
-      // e.g. Actual's note-based goal write finding a differently-shaped
-      // #template already there; see ActualClient.updateCategoryGoalTarget/
-      // updateCategoryTargetBalance / actual-goal-notes.ts). Surfaced
-      // distinctly to the caller so the UI doesn't tell the user "already
-      // up to date" when nothing was ever pushed.
+      // Goals the provider can't write ("unsupported") or whose target has
+      // another shape ("conflict", see BudgetAPIClient.prepareGoalWrite):
+      // reported apart, so the UI never says "already up to date" for them.
       let skippedUnsupported = 0;
-      // A genuine failure (network/auth/rate-limit/unexpected API shape) was
-      // previously only `log("warn", ...)`'d server-side and otherwise
-      // treated identically to "nothing needed pushing" — the caller got
-      // back `pushed: 0, skippedUnsupported: 0` either way, and
-      // formatSyncResultToast reads that combination as "No changes to
-      // push — already up to date," an actively misleading success message
-      // for what was really a silent failure (a
-      // household whose goals DO have nonzero resolved amounts still saw
-      // "0 pushed" with no error on every attempt). Counted and reported
-      // distinctly, same reasoning as skippedUnsupported above but for the
-      // "provider request itself failed" case rather than "provider
-      // rejected this specific write."
-      let failed = 0;
-      let firstFailureMessage: string | undefined;
+      // Every read before the first write: a read that fails stops the push
+      // with nothing written.
+      const prepared: { goalId: number; write: PreparedGoalWrite }[] = [];
       for (const goal of toPush) {
         try {
           if (goal.isEmergencyFund) {
-            // E-fund: push the computed total target amount only. The
-            // goal's type/cadence (target-balance vs. recurring) has to be
-            // configured once, manually, in YNAB — updateCategoryTargetBalance
-            // intentionally only updates goal_target and never touches the
-            // goal's shape (see its implementation for why).
+            // E-fund: the total target amount only. Its goal type is set up
+            // once in YNAB; a "target-balance" write never changes it (see
+            // YnabClient's writeTargetBalance).
             const targetMonths = goal.targetMonths ?? 4;
             const targetAmount = targetMonths * essentialExpenses;
             if (targetAmount > 0) {
-              await client.updateCategoryTargetBalance(
-                goal.apiCategoryId!,
-                targetAmount,
-              );
-              pushed++;
+              prepared.push({
+                goalId: goal.id,
+                write: await client.prepareGoalWrite(
+                  goal.apiCategoryId!,
+                  "target-balance",
+                  targetAmount,
+                ),
+              });
             }
           } else {
             // Push the resolved snapshot, not a live percentage-of-income
@@ -2011,11 +1996,14 @@ export const savingsRouter = createTRPCRouter({
               monthly > 0 ||
               (currentTarget.get(goal.apiCategoryId!) ?? 0) > 0
             ) {
-              await client.updateCategoryGoalTarget(
-                goal.apiCategoryId!,
-                monthly,
-              );
-              pushed++;
+              prepared.push({
+                goalId: goal.id,
+                write: await client.prepareGoalWrite(
+                  goal.apiCategoryId!,
+                  "monthly",
+                  monthly,
+                ),
+              });
             }
           }
         } catch (err) {
@@ -2025,23 +2013,53 @@ export const savingsRouter = createTRPCRouter({
           ) {
             skippedUnsupported++;
           } else {
-            const message = err instanceof Error ? err.message : String(err);
-            log("warn", "push_goal_target_failed", {
-              goalId: goal.id,
-              error: message,
-            });
-            failed++;
-            firstFailureMessage ??= message;
+            throw err;
           }
         }
       }
 
-      // Refresh the cache so subsequent previews reflect what was just
-      // pushed instead of stale pre-push data (see budget.syncBudgetToApi
-      // for the same fix and full rationale).
-      if (pushed > 0) {
-        await refreshCategoryCache(ctx.db, active, client);
+      let pushed = 0;
+      // A transient write failure is counted per goal (never read as "up to
+      // date"); any other failure stops the push, since the next goal fails
+      // the same way.
+      let failed = 0;
+      let firstFailureMessage: string | undefined;
+      let stopError: unknown;
+      for (const { goalId, write } of prepared) {
+        try {
+          await write.apply();
+          pushed++;
+        } catch (err) {
+          if (!isTransientError(err)) {
+            stopError = err;
+            break;
+          }
+          const message = err instanceof Error ? err.message : String(err);
+          log("warn", "push_goal_target_failed", { goalId, error: message });
+          failed++;
+          firstFailureMessage ??= message;
+        }
       }
+
+      // Previews must show what was just pushed (as budget.syncBudgetToApi);
+      // a refresh failure must not turn pushes that landed into an error.
+      if (pushed > 0) {
+        try {
+          await refreshCategoryCache(ctx.db, active, client);
+        } catch (err) {
+          log("error", "post_push_cache_refresh_failed", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+
+      if (stopError !== undefined)
+        // Some targets may already be written: say how many.
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Pushed ${pushed} of ${prepared.length} savings targets, then failed: ${stopError instanceof Error ? stopError.message : String(stopError)}`,
+          cause: stopError,
+        });
 
       return {
         pushed,
