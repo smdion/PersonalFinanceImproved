@@ -15,6 +15,7 @@ import { eq, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { countsInLiveBalance } from "@/lib/pure/simplefin-feeds";
 import { applyLoanFeedBalances } from "@/server/helpers/loan-feed";
+import type { DbOrTx } from "@/server/helpers/transforms";
 import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
 import {
   getAccounts,
@@ -223,7 +224,7 @@ type PartialSyncState = { date: string; attempts: number };
  *  new attempt count for today. Resets to 1 whenever the stored date isn't
  *  today's local date. */
 async function bumpPartialSyncAttempts(
-  db: Db,
+  db: DbOrTx,
   asOfDate: Date,
 ): Promise<number> {
   const today = localDateStr(asOfDate);
@@ -246,7 +247,7 @@ async function bumpPartialSyncAttempts(
 }
 
 /** Clear the partial-sync retry counter — called on a fully-successful sync. */
-async function clearPartialSyncAttempts(db: Db): Promise<void> {
+async function clearPartialSyncAttempts(db: DbOrTx): Promise<void> {
   await db
     .delete(schema.appSettings)
     .where(eq(schema.appSettings.key, PARTIAL_SYNC_STATE_KEY));
@@ -294,7 +295,7 @@ type SimplefinAccountRow = {
  * explicitly toggle themselves.
  */
 export async function upsertSimplefinAccounts(
-  db: Db,
+  db: DbOrTx,
   accounts: SimplefinAccount[],
 ): Promise<SimplefinAccountRow[]> {
   if (accounts.length === 0) return [];
@@ -343,7 +344,7 @@ export async function upsertSimplefinAccounts(
 
 /** Upsert today's simplefin_balance_snapshots row — the single write path shared by every sync/recompute flow. */
 async function writeSnapshot(
-  db: Db,
+  db: DbOrTx,
   snapshotDate: string,
   totalBalance: number,
   accountCount: number,
@@ -468,58 +469,63 @@ export async function runSimplefinSync(
       (a) => !fetchedIds.has(a.externalAccountId),
     );
 
-    await upsertSimplefinAccounts(db, fetched);
-    const errored = new Set(accountIdsWithErrors ?? []);
-    await applyLoanFeedBalances(
-      db,
-      new Set([...fetchedIds].filter((id) => !errored.has(id))),
-    );
-
-    // Re-query the full included set rather than trusting the upsert's
-    // RETURNING rows — those only cover accounts present in this fetch, so
-    // a missing account's stale (but still real) balance needs to be
-    // re-read from the DB to keep contributing to today's total.
-    const allIncluded = (
-      await db
-        .select()
-        .from(schema.simplefinAccounts)
-        .where(eq(schema.simplefinAccounts.isIncluded, true))
-    ).filter(countsInLiveBalance);
-    const totalBalance = allIncluded.reduce(
-      (sum, a) => sum + Number(a.lastBalance),
-      0,
-    );
-    const accountCount = allIncluded.length;
     const snapshotDate = localDateStr(asOfDate);
-
-    await writeSnapshot(db, snapshotDate, totalBalance, accountCount);
-
     const missingWarning =
       missingAccounts.length > 0
         ? `${missingAccounts.length} of ${expectedIncluded.length} linked account${expectedIncluded.length === 1 ? "" : "s"} didn't respond this sync (will retry): ${missingAccounts.map((a) => `${a.orgName} ${a.accountName}`).join(", ")}`
         : null;
 
-    if (missingAccounts.length === 0) {
-      // Full success — mark synced today and reset the retry counter.
-      await db
-        .update(schema.apiConnections)
-        .set({ lastSyncedAt: asOfDate })
-        .where(eq(schema.apiConnections.service, "simplefin"));
-      await clearPartialSyncAttempts(db);
-    } else {
-      const attempts = await bumpPartialSyncAttempts(db, asOfDate);
-      if (attempts >= MAX_PARTIAL_SYNC_RETRIES_PER_DAY) {
-        // Give up retrying today (protects the ~24/day quota from a
-        // permanently-broken account) but the warning below still says so.
-        await db
+    // Every balance write together: a failure partway leaves the accounts,
+    // loans and today's snapshot as they were, never half updated.
+    const { totalBalance, accountCount } = await db.transaction(async (tx) => {
+      await upsertSimplefinAccounts(tx, fetched);
+      const errored = new Set(accountIdsWithErrors ?? []);
+      await applyLoanFeedBalances(
+        tx,
+        new Set([...fetchedIds].filter((id) => !errored.has(id))),
+      );
+
+      // Re-query the full included set rather than trusting the upsert's
+      // RETURNING rows — those only cover accounts present in this fetch, so
+      // a missing account's stale (but still real) balance needs to be
+      // re-read from the DB to keep contributing to today's total.
+      const allIncluded = (
+        await tx
+          .select()
+          .from(schema.simplefinAccounts)
+          .where(eq(schema.simplefinAccounts.isIncluded, true))
+      ).filter(countsInLiveBalance);
+      const totalBalance = allIncluded.reduce(
+        (sum, a) => sum + Number(a.lastBalance),
+        0,
+      );
+      const accountCount = allIncluded.length;
+
+      await writeSnapshot(tx, snapshotDate, totalBalance, accountCount);
+
+      if (missingAccounts.length === 0) {
+        // Full success — mark synced today and reset the retry counter.
+        await tx
           .update(schema.apiConnections)
           .set({ lastSyncedAt: asOfDate })
           .where(eq(schema.apiConnections.service, "simplefin"));
+        await clearPartialSyncAttempts(tx);
+      } else {
+        const attempts = await bumpPartialSyncAttempts(tx, asOfDate);
+        if (attempts >= MAX_PARTIAL_SYNC_RETRIES_PER_DAY) {
+          // Give up retrying today (protects the ~24/day quota from a
+          // permanently-broken account) but the warning below still says so.
+          await tx
+            .update(schema.apiConnections)
+            .set({ lastSyncedAt: asOfDate })
+            .where(eq(schema.apiConnections.service, "simplefin"));
+        }
+        // Otherwise: deliberately leave lastSyncedAt at its previous value —
+        // hasSyncedToday() will then return false, so the next hourly cron
+        // tick retries instead of treating a partial sync as done for the day.
       }
-      // Otherwise: deliberately leave lastSyncedAt at its previous value —
-      // hasSyncedToday() will then return false, so the next hourly cron
-      // tick retries instead of treating a partial sync as done for the day.
-    }
+      return { totalBalance, accountCount };
+    });
 
     // Investment detail (holdings, transactions). A failure here must not
     // lose the balance snapshot already written — it becomes a warning.
