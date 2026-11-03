@@ -65,6 +65,13 @@ jobs:
       - name: Dead code (unused files, exports, dependencies)
         run: pnpm check:dead-code
 
+      # Layer rules: no new violation, and the known list only shrinks
+      # (checked against main's copy).
+      - name: Layer rules (dependency-cruiser)
+        run: |
+          git fetch --no-tags --depth=1 origin main
+          pnpm check:layers --base FETCH_HEAD
+
       - name: Size baseline (no file or recorded function grows)
         run: pnpm check:file-size
 
