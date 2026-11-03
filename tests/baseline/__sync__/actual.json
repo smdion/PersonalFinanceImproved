@@ -1,0 +1,486 @@
+{
+ "savings_monthly": {
+  "written": [
+   {
+    "id": 1,
+    "goalId": 1,
+    "monthDate": "2026-02-01",
+    "balance": "36500",
+    "depositOrWithdrawal": null,
+    "notes": null
+   },
+   {
+    "id": 2,
+    "goalId": 2,
+    "monthDate": "2026-02-01",
+    "balance": "4200",
+    "depositOrWithdrawal": null,
+    "notes": null
+   },
+   {
+    "id": 3,
+    "goalId": 1,
+    "monthDate": "2026-03-01",
+    "balance": "38000",
+    "depositOrWithdrawal": null,
+    "notes": null
+   },
+   {
+    "id": 4,
+    "goalId": 2,
+    "monthDate": "2026-03-01",
+    "balance": "3550",
+    "depositOrWithdrawal": null,
+    "notes": null
+   }
+  ],
+  "replacedOrRemoved": 0
+ },
+ "other_asset_items": {
+  "written": [
+   {
+    "id": 1,
+    "name": "Family Car",
+    "year": 2026,
+    "value": "21500",
+    "note": "Synced from ACTUAL"
+   }
+  ],
+  "replacedOrRemoved": 1
+ },
+ "mortgage_loans": {
+  "written": [
+   {
+    "id": 1,
+    "name": "Home loan",
+    "isActive": true,
+    "refinancedFromId": null,
+    "paidOffDate": null,
+    "principalAndInterest": "2955.44",
+    "pmi": "0",
+    "insuranceAndTaxes": "0",
+    "totalEscrow": "0",
+    "interestRate": "0.0625",
+    "termYears": 30,
+    "originalLoanAmount": "480000",
+    "firstPaymentDate": "2022-06-01",
+    "propertyValuePurchase": "600000",
+    "propertyValueEstimated": "685000",
+    "usePurchaseOrEstimated": "estimated",
+    "apiBalance": "451683.88",
+    "apiBalanceDate": "2026-03-07"
+   }
+  ],
+  "replacedOrRemoved": 1
+ },
+ "debts": {
+  "written": [
+   {
+    "id": 1,
+    "name": "Car loan",
+    "kind": "auto_loan",
+    "ownerPersonId": null,
+    "balance": "14000",
+    "balanceAsOf": "2026-01-31",
+    "originalAmount": null,
+    "interestRate": "0.069",
+    "monthlyPayment": "435",
+    "openedDate": null,
+    "paidOffDate": null,
+    "notes": null,
+    "sortOrder": 0,
+    "purchasePrice": null,
+    "termMonths": null,
+    "apiBalance": "13580.4",
+    "apiBalanceDate": "2026-03-07"
+   }
+  ],
+  "replacedOrRemoved": 1
+ },
+ "budget_api_cache": {
+  "written": [
+   {
+    "id": 1,
+    "service": "actual",
+    "cacheKey": "accounts",
+    "data": [
+     {
+      "id": "acct-checking",
+      "name": "Joint Checking",
+      "type": "other",
+      "onBudget": true,
+      "closed": false,
+      "balance": 8450.25,
+      "clearedBalance": 8450.25
+     },
+     {
+      "id": "acct-savings",
+      "name": "High-Yield Savings",
+      "type": "other",
+      "onBudget": true,
+      "closed": false,
+      "balance": 22000,
+      "clearedBalance": 22000
+     },
+     {
+      "id": "acct-visa",
+      "name": "Rewards Visa",
+      "type": "other",
+      "onBudget": true,
+      "closed": false,
+      "balance": -1234.56,
+      "clearedBalance": -1234.56
+     },
+     {
+      "id": "acct-mortgage",
+      "name": "Home Loan",
+      "type": "other",
+      "onBudget": false,
+      "closed": false,
+      "balance": -451683.88,
+      "clearedBalance": -451683.88
+     },
+     {
+      "id": "acct-home",
+      "name": "Home Value",
+      "type": "other",
+      "onBudget": false,
+      "closed": false,
+      "balance": 685000,
+      "clearedBalance": 685000
+     },
+     {
+      "id": "acct-carloan",
+      "name": "Car Loan",
+      "type": "other",
+      "onBudget": false,
+      "closed": false,
+      "balance": -13580.4,
+      "clearedBalance": -13580.4
+     },
+     {
+      "id": "acct-car",
+      "name": "Family Car",
+      "type": "other",
+      "onBudget": false,
+      "closed": false,
+      "balance": 21500,
+      "clearedBalance": 21500
+     },
+     {
+      "id": "acct-brokerage",
+      "name": "Joint Brokerage",
+      "type": "other",
+      "onBudget": false,
+      "closed": false,
+      "balance": 141200,
+      "clearedBalance": 141200
+     }
+    ],
+    "serverKnowledge": null
+   },
+   {
+    "id": 2,
+    "service": "actual",
+    "cacheKey": "categories",
+    "data": [
+     {
+      "id": "grp-bills",
+      "name": "Bills",
+      "hidden": false,
+      "isIncome": false,
+      "categories": [
+       {
+        "id": "cat-utilities",
+        "name": "Utilities",
+        "groupId": "grp-bills",
+        "groupName": "Bills",
+        "hidden": false,
+        "budgeted": 350,
+        "activity": -96.4,
+        "balance": 261.42
+       },
+       {
+        "id": "cat-childcare",
+        "name": "Childcare",
+        "groupId": "grp-bills",
+        "groupName": "Bills",
+        "hidden": false,
+        "budgeted": 1600,
+        "activity": -800,
+        "balance": 800
+       }
+      ]
+     },
+     {
+      "id": "grp-everyday",
+      "name": "Everyday",
+      "hidden": false,
+      "isIncome": false,
+      "categories": [
+       {
+        "id": "cat-groceries",
+        "name": "Grocery store",
+        "groupId": "grp-everyday",
+        "groupName": "Everyday",
+        "hidden": false,
+        "budgeted": 1100,
+        "activity": -288.15,
+        "balance": 868.08
+       },
+       {
+        "id": "cat-dining",
+        "name": "Dining out",
+        "groupId": "grp-everyday",
+        "groupName": "Everyday",
+        "hidden": false,
+        "budgeted": 400,
+        "activity": -61.25,
+        "balance": 338.75
+       }
+      ]
+     },
+     {
+      "id": "grp-goals",
+      "name": "Savings Goals",
+      "hidden": false,
+      "isIncome": false,
+      "categories": [
+       {
+        "id": "cat-efund",
+        "name": "Emergency fund",
+        "groupId": "grp-goals",
+        "groupName": "Savings Goals",
+        "hidden": false,
+        "budgeted": 1500,
+        "activity": 0,
+        "balance": 38000
+       },
+       {
+        "id": "cat-roof",
+        "name": "New roof",
+        "groupId": "grp-goals",
+        "groupName": "Savings Goals",
+        "hidden": false,
+        "budgeted": 600,
+        "activity": -1250,
+        "balance": 3550
+       }
+      ]
+     },
+     {
+      "id": "grp-income",
+      "name": "Income",
+      "hidden": true,
+      "isIncome": true,
+      "categories": [
+       {
+        "id": "cat-paychecks",
+        "name": "Paychecks",
+        "groupId": "grp-income",
+        "groupName": "Income",
+        "hidden": false,
+        "budgeted": 0,
+        "activity": 0,
+        "balance": 0
+       }
+      ]
+     }
+    ],
+    "serverKnowledge": null
+   },
+   {
+    "id": 4,
+    "service": "actual",
+    "cacheKey": "transactions",
+    "data": [
+     {
+      "id": "tx-1",
+      "accountId": "acct-checking",
+      "accountName": "Joint Checking",
+      "date": "2026-02-03",
+      "amount": -1043.77,
+      "payeeName": "Corner Market",
+      "categoryId": "cat-groceries",
+      "categoryName": "Grocery store",
+      "memo": "",
+      "cleared": true,
+      "approved": true,
+      "deleted": false
+     },
+     {
+      "id": "tx-2",
+      "accountId": "acct-checking",
+      "accountName": "Joint Checking",
+      "date": "2026-02-13",
+      "amount": 9125.2,
+      "payeeName": "Contoso Energy",
+      "categoryId": "cat-paychecks",
+      "categoryName": "Paychecks",
+      "memo": "",
+      "cleared": true,
+      "approved": true,
+      "deleted": false
+     },
+     {
+      "id": "tx-4",
+      "accountId": "acct-checking",
+      "accountName": "Joint Checking",
+      "date": "2026-02-27",
+      "amount": 9125.2,
+      "payeeName": "Contoso Energy",
+      "categoryId": "cat-paychecks",
+      "categoryName": "Paychecks",
+      "memo": "",
+      "cleared": true,
+      "approved": true,
+      "deleted": false
+     },
+     {
+      "id": "tx-5",
+      "accountId": "acct-checking",
+      "accountName": "Joint Checking",
+      "date": "2026-03-02",
+      "amount": -288.15,
+      "payeeName": "Corner Market",
+      "categoryId": "cat-groceries",
+      "categoryName": "Grocery store",
+      "memo": "",
+      "cleared": true,
+      "approved": true,
+      "deleted": false
+     },
+     {
+      "id": "tx-7",
+      "accountId": "acct-checking",
+      "accountName": "Joint Checking",
+      "date": "2026-03-06",
+      "amount": 9125.2,
+      "payeeName": "Contoso Energy",
+      "categoryId": "cat-paychecks",
+      "categoryName": "Paychecks",
+      "memo": "",
+      "cleared": true,
+      "approved": true,
+      "deleted": false
+     },
+     {
+      "id": "tx-6",
+      "accountId": "acct-savings",
+      "accountName": "High-Yield Savings",
+      "date": "2026-03-04",
+      "amount": -1250,
+      "payeeName": "Ridge Roofing",
+      "categoryId": "cat-roof",
+      "categoryName": "New roof",
+      "memo": "",
+      "cleared": true,
+      "approved": true,
+      "deleted": false
+     },
+     {
+      "id": "tx-3",
+      "accountId": "acct-visa",
+      "accountName": "Rewards Visa",
+      "date": "2026-02-20",
+      "amount": -455.1,
+      "payeeName": "Bistro Nine",
+      "categoryId": "cat-dining",
+      "categoryName": "Dining out",
+      "memo": "",
+      "cleared": true,
+      "approved": true,
+      "deleted": false
+     }
+    ],
+    "serverKnowledge": null
+   },
+   {
+    "id": 7,
+    "service": "actual",
+    "cacheKey": "months/2026-03-01",
+    "data": {
+     "month": "2026-03",
+     "income": 9125.2,
+     "budgeted": 5550,
+     "activity": -2495.8,
+     "toBeBudgeted": 1250,
+     "categories": [
+      {
+       "id": "cat-utilities",
+       "name": "Utilities",
+       "groupId": "grp-bills",
+       "groupName": "Bills",
+       "hidden": false,
+       "budgeted": 350,
+       "activity": -96.4,
+       "balance": 261.42
+      },
+      {
+       "id": "cat-childcare",
+       "name": "Childcare",
+       "groupId": "grp-bills",
+       "groupName": "Bills",
+       "hidden": false,
+       "budgeted": 1600,
+       "activity": -800,
+       "balance": 800
+      },
+      {
+       "id": "cat-groceries",
+       "name": "Grocery store",
+       "groupId": "grp-everyday",
+       "groupName": "Everyday",
+       "hidden": false,
+       "budgeted": 1100,
+       "activity": -288.15,
+       "balance": 868.08
+      },
+      {
+       "id": "cat-dining",
+       "name": "Dining out",
+       "groupId": "grp-everyday",
+       "groupName": "Everyday",
+       "hidden": false,
+       "budgeted": 400,
+       "activity": -61.25,
+       "balance": 338.75
+      },
+      {
+       "id": "cat-efund",
+       "name": "Emergency fund",
+       "groupId": "grp-goals",
+       "groupName": "Savings Goals",
+       "hidden": false,
+       "budgeted": 1500,
+       "activity": 0,
+       "balance": 38000
+      },
+      {
+       "id": "cat-roof",
+       "name": "New roof",
+       "groupId": "grp-goals",
+       "groupName": "Savings Goals",
+       "hidden": false,
+       "budgeted": 600,
+       "activity": -1250,
+       "balance": 3550
+      },
+      {
+       "id": "cat-paychecks",
+       "name": "Paychecks",
+       "groupId": "grp-income",
+       "groupName": "Income",
+       "hidden": false,
+       "budgeted": 0,
+       "activity": 0,
+       "balance": 0
+      }
+     ]
+    },
+    "serverKnowledge": null
+   }
+  ],
+  "replacedOrRemoved": 0
+ }
+}
