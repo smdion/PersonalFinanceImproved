@@ -132,4 +132,22 @@ describe("CoastFireCard", () => {
     );
     expect(screen.getByText("Running simulations...")).toBeInTheDocument();
   });
+
+  it("says why there's no simulated answer when the Simulation can't run", () => {
+    setDeterministic({
+      coastFireAge: 52,
+      status: "found",
+      sustainableWithdrawalToday: 40000,
+      projectedExpensesAtRetirementToday: 45000,
+    });
+    render(
+      <CoastFireCard
+        ageLabel={(age) => `Age ${age}`}
+        input={baseInput}
+        coastFireMcNotConfigured="no_presets"
+      />,
+    );
+    expect(screen.getByText(/No simulation preset/)).toBeInTheDocument();
+    expect(screen.queryByText(/Not reachable/)).not.toBeInTheDocument();
+  });
 });

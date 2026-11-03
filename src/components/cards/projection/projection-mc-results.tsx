@@ -21,6 +21,7 @@ import {
 } from "@/lib/utils/format";
 import type { EngineDecumulationYear } from "@/lib/calculators/types";
 import { simulationDollars } from "@/lib/pure/simulation-dollars";
+import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/calculators/monte-carlo";
 import type { ProjectionState } from "./projection-table-types";
 
 /** Compact depletion callout (1-liner) shown when MC has a depletion age. */
@@ -90,6 +91,10 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
     dollarMode,
   } = state;
   const utils = trpc.useUtils();
+  const notConfigured =
+    mcQuery.data && "notConfigured" in mcQuery.data
+      ? mcQuery.data.notConfigured
+      : null;
 
   if (projectionMode !== "monteCarlo") return null;
 
@@ -140,6 +145,11 @@ export function McResultsSection({ state }: { state: ProjectionState }) {
       {mcQuery.error && (
         <div className="py-4 text-sm text-red-500">
           Simulation failed: {mcQuery.error.message}
+        </div>
+      )}
+      {notConfigured && !mcLoading && (
+        <div className="rounded bg-amber-50 px-3 py-2 text-sm text-amber-600">
+          {SIMULATION_NOT_CONFIGURED_MESSAGE[notConfigured]}
         </div>
       )}
       {mcQuery.data?.result && !mcLoading && (

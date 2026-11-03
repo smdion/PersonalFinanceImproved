@@ -289,6 +289,7 @@ export function RetirementContent() {
             strategies={comparisonData.strategies}
             activeStrategy={comparisonData.activeStrategy}
             presetLabel={comparisonData.presetLabel}
+            notConfigured={comparisonData.notConfigured}
             dollarMode={dollarMode}
             onDollarModeChange={setDollarMode}
             inflationRate={parseFloat(settings.annualInflation)}
