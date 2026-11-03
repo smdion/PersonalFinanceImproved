@@ -33,7 +33,7 @@ The advisor should have enough context to disagree.
 
 ## Local docs & planning
 
-`.scratch/docs/INDEX.md` (gitignored, not shipped) is the index for everything not covered above: `TODO.md`/`FEATURE-ROADMAP.md` (what's next), `ops/OPS.md` (this household's hosts, deploy, CI, security), per-feature implementation plans, and `advisor`'s five sibling subagents in `.claude/agents/` (`planner`, `release`, `reviewer`, `schema-reviewer`, `test-writer`). Check it before starting new feature work or asking "has this already been designed."
+`.scratch/docs/INDEX.md` (gitignored, not shipped) is the index for everything not covered above: `TODO.md`/`FEATURE-ROADMAP.md` (what's next), `ops/OPS.md` (this household's hosts, deploy, CI, security), per-feature implementation plans, and `advisor`'s four sibling subagents in `.claude/agents/` (`release`, `reviewer`, `schema-reviewer`, `test-writer`). Check it before starting new feature work or asking "has this already been designed."
 
 ## Project shortcuts
 
