@@ -4,6 +4,8 @@
  * its length; a recorded entry never grows and is lowered when it shrinks.
  * An unrecorded file over FILE_LIMIT fails. New long functions are caught by
  * ESLint's max-lines-per-function. `--update` lowers entries, never raises.
+ * `--record <file>…` records each part of a split at its size, so a part
+ * can't regrow to the limit; a file over the limit can't be recorded.
  */
 import * as fs from "fs";
 import * as path from "path";
@@ -237,9 +239,31 @@ function lowered(baseline: Baseline, measured: Baseline): Baseline {
   return { files, functions };
 }
 
+/** Adds new parts of a split at their size; never one over FILE_LIMIT. */
+function recorded(baseline: Baseline, measured: Baseline, files: string[]) {
+  const problems: string[] = [];
+  const next = { ...baseline.files };
+  for (const file of files) {
+    const lines = measured.files[file];
+    if (lines === undefined) problems.push(`${file}: not a measured src/ file`);
+    else if (baseline.files[file] !== undefined)
+      problems.push(`${file}: already recorded at ${baseline.files[file]}`);
+    else if (lines > FILE_LIMIT)
+      problems.push(`${file}: ${lines} lines, limit ${FILE_LIMIT} — ${GROW}`);
+    else next[file] = lines;
+  }
+  return { baseline: { ...baseline, files: next }, problems };
+}
+
 const measured = measure();
 const mode = process.argv[2];
-if (mode === "--update") {
+if (mode === "--record") {
+  const result = recorded(readBaseline(), measured, process.argv.slice(3));
+  for (const line of result.problems) console.log(line);
+  if (result.problems.length) process.exit(1);
+  writeBaseline(result.baseline);
+  console.log(`Recorded ${process.argv.length - 3} file(s) at their size.`);
+} else if (mode === "--update") {
   writeBaseline(lowered(readBaseline(), measured));
   console.log(`Lowered ${BASELINE_PATH} to today's counts.`);
   const left = check(readBaseline(), measured);
