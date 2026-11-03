@@ -301,3 +301,8 @@ jobs:
 
       - name: Seeded routers and backup round trip on PostgreSQL
         run: pnpm test tests/routers/seeded-postgres.test.ts
+
+      # Behavior baseline part c: every router query for the 17 households
+      # in tests/baseline/, compared with the files SQLite pins.
+      - name: Router baseline on PostgreSQL (same numbers as SQLite)
+        run: pnpm test tests/baseline/router-baseline-postgres.test.ts

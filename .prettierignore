@@ -7,3 +7,6 @@ pnpm-lock.yaml
 pre-upgrade-backup-*.json
 # Written by ESLint (--suppress-rule, --prune-suppressions).
 eslint-suppressions*.json
+# Written by the behavior baseline (tests/baseline/router-baseline.test.ts).
+tests/baseline/__baseline__/
+tests/baseline/__sync__/
