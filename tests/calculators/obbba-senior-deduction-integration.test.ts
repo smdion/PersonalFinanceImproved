@@ -154,6 +154,11 @@ function decumYears(input: ProjectionInput) {
 }
 
 describe("OBBBA senior deduction — end-to-end engine integration", () => {
+  // Pins a bug: the first retired year gets the senior deduction too, on
+  // that year's own MAGI (Schedule 1-A line 1 reads the same return's AGI;
+  // spec ORD-4). Inverted by v0.11 Tax "Senior deduction must use same-year
+  // MAGI in every year"; the answer key's tax/S70-50k and tax/MFJ69-100k
+  // (`answer-key-tax-engine.test.ts`) hold the decided figures.
   it("decumulation year 1 (2026 — the household's first full decumulation year) gets NO OBBBA addon: no prior-year MAGI exists yet", () => {
     const withObbba = decumYears(makeInput(true));
     const without = decumYears(makeInput(false));

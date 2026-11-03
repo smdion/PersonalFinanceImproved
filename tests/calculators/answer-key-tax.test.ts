@@ -34,11 +34,10 @@
  * - S18 (an adjustment larger than income): closed, adjustments to income
  *   can't be entered and none is planned; v0.12 UI "Disclosure list
  *   additions".
- * - The survivor cases m14-MFJ, m21-edge, m30-MAGI: no worked figure yet
- *   (v0.9.x Tax "Answer key: derive the three survivor cases").
  */
 import { describe, it } from "vitest";
 import { cents, xfail } from "../fixtures/answer-key";
+import { retiredYear } from "../fixtures/answer-key-household";
 import { readTaxData, taxDataLimitMap } from "../helpers/tax-data";
 import {
   sumBracketTax,
@@ -1084,6 +1083,105 @@ describe("answer key: whole returns", () => {
         deductions: 16_100,
       }),
       0,
+    );
+  });
+});
+
+// ── Survivors of the mutation audit ─────────────────────────────────────
+// The tax verdict's test audit (`rebuild/annual-tax-verdicts.md` § Test
+// audit) left wrong rules that no test caught; these cases fail under
+// each. Worked here from `specs/annual-tax.md` § 4 (2026 figures) and § 6
+// (the Pub 915 and QDCG worksheet lines it keeps); the verdict names the
+// cases but works none.
+
+describe("answer key: survivors of the mutation audit", () => {
+  it("tax/m14-MFJ [TAX-15] low-benefit MFJ, half of benefits caps the 50% tier: 3,000 (survivor m14)", () => {
+    // MFJ, B 6,000, other income 38,000 (Pub 915 Worksheet 1; spec §
+    // 6.5): L1 6,000; L2 = ½ × 6,000 = 3,000; L3 38,000; L6 = 3,000 +
+    // 38,000 = 41,000; L7 0; L8 41,000 > L9 32,000; L10 = 9,000; L11
+    // 12,000; L12 = max(0, 9,000 − 12,000) = 0; L13 = min(9,000, 12,000)
+    // = 9,000; L14 = 4,500; L15 = min(L2 3,000, L14 4,500) = 3,000; L16 =
+    // 85% × 0 = 0; L17 3,000; L18 = 85% × 6,000 = 5,100; taxable =
+    // min(3,000, 5,100) = 3,000. Without the line 15 cap (m14) it's 4,500.
+    cents(taxableSS(6_000, 38_000, "MFJ"), 3_000);
+  });
+
+  it("tax/m21-edge [TAX-16] a mixed year at the 0% gains top: 2,840.00, then 2,840.15 (survivor m21)", () => {
+    // 2026 MFJ under 65: Traditional 60,000 and long-term gains G;
+    // deduction 32,200 (no add-ons). QDCG worksheet (i1040 p.38; spec §
+    // 6.4), G 71,100: T = 131,100 − 32,200 = 98,900; L4 71,100; L5 = T −
+    // L4 = 27,800; L7 = min(T, 98,900) = 98,900; L8 = min(L5, L7) =
+    // 27,800; L9 = 71,100 at 0%; L10 = min(T, L4) = 71,100; L12 = 0; L17
+    // 0; L20 0; L22 TAX(27,800) = 2,480 + 12% × 3,000 = 2,840; L23 2,840;
+    // L24 TAX(98,900) = 2,480 + 12% × 74,100 = 11,372; L25 2,840.00.
+    // G 71,101: T 98,901; L5 27,800; L9 71,100; L10 71,101; L12 1; L14 =
+    // min(T, 613,700) = 98,901; L16 = 98,901 − (27,800 + 71,100) = 1; L17
+    // = min(L12, L16) = 1 at 15%; L23 = 0.15 + 2,840 = 2,840.15 < L24
+    // 11,372.12. Ordinary income exceeds the deduction, so neither the
+    // unused-deduction nor the line 25 item moves this. Gains stacked on
+    // gross ordinary income (60,000, m21) leave 38,900 of 0% room: 2,840 +
+    // 15% × 32,200 = 7,670.00 at G 71,100.
+    const tax = (gains: number) =>
+      yearTax({
+        year: 2026,
+        status: "MFJ",
+        ordinary: 60_000,
+        gains,
+        deductions: 32_200,
+      });
+    cents(
+      { atTop: tax(71_100), overTop: tax(71_101) },
+      { atTop: 2_840, overTop: 2_840.15 },
+    );
+  });
+
+  it("tax/m30-MAGI [TAX-20] taxable Social Security is in NIIT and senior MAGI: NIIT 152, senior 0 (survivors m30, m39)", () => {
+    // Engine year (the MAGI is wired in `decumulation-year.ts`, no
+    // function of its own). Single, born 1956 (71 in 2027), Social
+    // Security 40,000 (claimed), a brokerage with basis 0, so the draw W
+    // is all long-term gain; flat 0% return and inflation; read 2027.
+    // Spending 187,734 − 40,000 SS = need 147,734 = W − tax at W 170,000:
+    // Pub 915: L8 = 170,000 + 20,000 = 190,000, far over 34,000: taxable
+    // = L18 = 85% × 40,000 = 34,000. AGI = MAGI = 170,000 + 34,000 =
+    // 204,000 (IRC 1411(d); IRC 151(d)(5)(C)(iii); spec NI-3, SR-5).
+    // Senior: 6,000 − 6% × 129,000 < 0 → 0 (gone at 175,000), in 2026
+    // and 2027 alike, so the prior-year MAGI the engine reads today gives
+    // the same 0; deductions 16,100 + 2,050 = 18,150. TI = 204,000 −
+    // 18,150 = 185,850; L5 = 185,850 − 170,000 = 15,850, TAX = 1,240 +
+    // 12% × 3,450 = 1,654; L9 = 49,450 − 15,850 = 33,600 at 0%; L17 =
+    // 136,400 × 15% = 20,460 (under the 545,500 top); L23 22,114.
+    // NIIT (Form 8960 lines 12-17): 3.8% × min(NII 170,000, 204,000 −
+    // 200,000) = 152. Tax 22,114 + 152 = 22,266 = 170,000 − 147,734.
+    // Without taxable SS in MAGI: NIIT 0 (m30), and senior 6,000 − 6% ×
+    // 95,000 = 300 (m39).
+    const r = retiredYear(
+      {
+        status: "Single",
+        people: [{ birthYear: 1956, socialSecurity: 40_000 }],
+        brokerage: { balance: 5_000_000, basis: 0 },
+        spending: 187_734,
+        endYear: 2028,
+      },
+      2027,
+    );
+    // ±1: the gross-up stops within a cent of the need (answer key §
+    // Re-run on 24bae33b).
+    cents(
+      {
+        withdrawal: r.totalWithdrawal,
+        taxableSS: r.taxableSS,
+        deductions: r.standardDeduction ?? NaN,
+        niit: r.niitAmount,
+        tax: r.taxCost,
+      },
+      {
+        withdrawal: 170_000,
+        taxableSS: 34_000,
+        deductions: 18_150,
+        niit: 152,
+        tax: 22_266,
+      },
+      1,
     );
   });
 });
