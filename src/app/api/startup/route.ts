@@ -4,7 +4,7 @@ import { backfillPerformanceAccountIds } from "@/lib/db/backfill-perf-ids";
 import { backfillMappingLocalIds } from "@/lib/db/backfill-local-ids";
 import { backfillJointPersonId } from "@/lib/db/backfill-joint-person-id";
 import { log } from "@/lib/logger";
-import { getValidCronSecret, timingSafeSecretMatch } from "@/lib/auth/cron";
+import { validateCronHeaderRequest } from "@/lib/auth/cron";
 
 /**
  * Internal startup route called by instrumentation.ts after server init.
@@ -18,18 +18,15 @@ export async function GET(request: Request) {
     );
   }
 
-  const cronSecret = getValidCronSecret();
-
-  if (!cronSecret) {
+  const cronCheck = validateCronHeaderRequest(request);
+  if (cronCheck === "misconfigured") {
     return NextResponse.json(
       { error: "Server misconfiguration" },
       { status: 500 },
     );
   }
 
-  if (
-    !timingSafeSecretMatch(request.headers.get("X-Cron-Secret"), cronSecret)
-  ) {
+  if (cronCheck === "unauthorized") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

@@ -1,9 +1,10 @@
 /**
  * T3 — src/lib/auth/cron.ts had zero direct test coverage despite being the
  * shared auth primitive for every cron/internal-endpoint route
- * (startup, versions/daily, simplefin/daily, health/detailed). All four
- * routes are unauthenticated-by-default except for this header check, so a
- * bug here is a real auth-bypass surface, not just a missing-test nit.
+ * (startup, versions/daily, simplefin/daily, tax-data/weekly, sec/weekly,
+ * health/detailed). All six routes are unauthenticated-by-default except
+ * for this header check, so a bug here is a real auth-bypass surface, not
+ * just a missing-test nit.
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
@@ -65,34 +66,42 @@ describe("timingSafeSecretMatch", () => {
 });
 
 describe("validateCronHeaderRequest (X-Cron-Secret)", () => {
-  it("rejects when CRON_SECRET is not configured, even with a header present", () => {
+  it("reports misconfigured when CRON_SECRET is not configured, even with a header present", () => {
     delete process.env.CRON_SECRET;
     const request = new Request("http://localhost/api/versions/daily", {
       headers: { "X-Cron-Secret": VALID_SECRET },
     });
-    expect(validateCronHeaderRequest(request)).toBe(false);
+    expect(validateCronHeaderRequest(request)).toBe("misconfigured");
   });
 
-  it("rejects a request with no X-Cron-Secret header", () => {
+  it("reports misconfigured when CRON_SECRET is shorter than 32 characters", () => {
+    process.env.CRON_SECRET = "a".repeat(31);
+    const request = new Request("http://localhost/api/versions/daily", {
+      headers: { "X-Cron-Secret": "a".repeat(31) },
+    });
+    expect(validateCronHeaderRequest(request)).toBe("misconfigured");
+  });
+
+  it("reports unauthorized for a request with no X-Cron-Secret header", () => {
     process.env.CRON_SECRET = VALID_SECRET;
     const request = new Request("http://localhost/api/versions/daily");
-    expect(validateCronHeaderRequest(request)).toBe(false);
+    expect(validateCronHeaderRequest(request)).toBe("unauthorized");
   });
 
-  it("rejects a request with the wrong X-Cron-Secret header", () => {
+  it("reports unauthorized for the wrong X-Cron-Secret header", () => {
     process.env.CRON_SECRET = VALID_SECRET;
     const request = new Request("http://localhost/api/versions/daily", {
       headers: { "X-Cron-Secret": "wrong-secret-wrong-secret-wrong" },
     });
-    expect(validateCronHeaderRequest(request)).toBe(false);
+    expect(validateCronHeaderRequest(request)).toBe("unauthorized");
   });
 
-  it("accepts a request with the correct X-Cron-Secret header", () => {
+  it("reports ok for the correct X-Cron-Secret header", () => {
     process.env.CRON_SECRET = VALID_SECRET;
     const request = new Request("http://localhost/api/versions/daily", {
       headers: { "X-Cron-Secret": VALID_SECRET },
     });
-    expect(validateCronHeaderRequest(request)).toBe(true);
+    expect(validateCronHeaderRequest(request)).toBe("ok");
   });
 });
 

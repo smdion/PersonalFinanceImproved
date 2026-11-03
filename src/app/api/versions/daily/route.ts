@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { appSettings, stateVersions } from "@/lib/db/schema";
 import { createVersion } from "@/lib/db/version-logic";
 import { log } from "@/lib/logger";
-import { getValidCronSecret, timingSafeSecretMatch } from "@/lib/auth/cron";
+import { validateCronHeaderRequest } from "@/lib/auth/cron";
 
 export async function GET(request: Request) {
   if (process.env.DEMO_ONLY === "true") {
@@ -14,10 +14,8 @@ export async function GET(request: Request) {
     );
   }
 
-  // Validate cron secret (must be at least 32 characters when set)
-  const cronSecret = getValidCronSecret();
-
-  if (!cronSecret) {
+  const cronCheck = validateCronHeaderRequest(request);
+  if (cronCheck === "misconfigured") {
     log("error", "cron_secret_misconfigured", {
       message: "CRON_SECRET is missing or too short",
     });
@@ -27,9 +25,7 @@ export async function GET(request: Request) {
     );
   }
 
-  if (
-    !timingSafeSecretMatch(request.headers.get("X-Cron-Secret"), cronSecret)
-  ) {
+  if (cronCheck === "unauthorized") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
