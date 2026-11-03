@@ -99,6 +99,12 @@ describe("estimateWithdrawalTaxCost", () => {
       acctBal: makeAccountBalances(),
       totalBalance: 1050000,
     });
+    // Bounds only: an over-withdrawal passes them. The gross-up's equation
+    // (W − cost(W) = need, never over) is asserted through the engine in
+    // gross-up-delivers-need.test.ts (answer key E1, E1-prop) and
+    // answer-key-ledgers.test.ts (engine/H6-2026); a derived case here waits
+    // for v0.11 Engine "Tests: NIIT in the gross-up and the 10% penalty
+    // survive mutation".
     expect(result.grossUpFactor).toBeGreaterThanOrEqual(1);
     expect(result.grossedUpNeed).toBeGreaterThanOrEqual(60000);
     expect(result.targetWithdrawal).toBeGreaterThanOrEqual(60000);
