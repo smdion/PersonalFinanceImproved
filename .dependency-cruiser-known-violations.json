@@ -111,16 +111,6 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/components/paycheck/contributions-section.tsx",
-    "to": "src/lib/hooks/use-paycheck-person-views.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/components/paycheck/person-paycheck.tsx",
-    "to": "src/lib/hooks/use-paycheck-person-views.ts"
-  },
-  {
-    "rule": "no-circular",
     "from": "src/lib/calculators/engine/balance-deduction.ts",
     "to": "src/lib/calculators/engine/individual-account-tracking.ts"
   },

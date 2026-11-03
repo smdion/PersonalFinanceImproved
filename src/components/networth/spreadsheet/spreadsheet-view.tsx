@@ -13,12 +13,10 @@ import { SpreadsheetYearOverYearTable } from "./spreadsheet-year-over-year-table
 import { SpreadsheetHealthStats } from "./spreadsheet-health-stats";
 import { SpreadsheetTaxLocation } from "./spreadsheet-tax-location";
 import { SpreadsheetNetWorthLocation } from "./spreadsheet-net-worth-location";
-import {
-  NetWorthLineChart,
-  JourneyToAbundanceChart,
-  NetWorthLocationPie,
-  TaxLocationPie,
-} from "@/components/networth";
+import { NetWorthLineChart } from "@/components/networth/net-worth-line-chart";
+import { JourneyToAbundanceChart } from "@/components/networth/journey-to-abundance-chart";
+import { NetWorthLocationPie } from "@/components/networth/net-worth-location-pie";
+import { TaxLocationPie } from "@/components/networth/tax-location-pie";
 import type { HistoryRow } from "@/components/networth/types";
 import type { DetailedHistoryRow } from "./types";
 

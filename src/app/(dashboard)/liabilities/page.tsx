@@ -15,14 +15,12 @@ import {
   maskAmountsInText,
 } from "@/lib/utils/format";
 import { DebtsCard } from "@/components/liabilities/debts-card";
-import {
-  ActiveLoanCard,
-  HistoricalLoans,
-  RefinanceCalculator,
-  RefinanceHistory,
-  RefinanceImpact,
-  WhatIfSection,
-} from "@/components/mortgage";
+import { ActiveLoanCard } from "@/components/mortgage/active-loan-card";
+import { HistoricalLoans } from "@/components/mortgage/historical-loans";
+import { RefinanceCalculator } from "@/components/mortgage/refinance-calculator";
+import { RefinanceHistory } from "@/components/mortgage/refinance-history";
+import { RefinanceImpact } from "@/components/mortgage/refinance-impact";
+import { WhatIfSection } from "@/components/mortgage/what-if-section";
 import { SyncBadge } from "@/components/ui/sync-badge";
 
 export default function LiabilitiesPage() {

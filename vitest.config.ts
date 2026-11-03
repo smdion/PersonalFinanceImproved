@@ -152,7 +152,6 @@ export default defineConfig({
         // Router re-export barrels and documentation-only files
         "src/server/routers/index.ts",
         "src/server/routers/settings/index.ts",
-        "src/server/routers/settings.ts",
         "src/server/helpers/index.ts",
         // Documentation-only (no executable statements)
         "src/server/routers/_shared.ts",

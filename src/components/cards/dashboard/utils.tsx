@@ -17,78 +17,50 @@ export function LoadingCard({ title }: { title: string }) {
 }
 
 /**
- * Categorize a tRPC error for the user-facing message + retry decision.
+ * Categorize a tRPC error for the user-facing message.
  * Distinguishes:
- *   - 401 / UNAUTHORIZED → re-auth needed (retry won't help)
- *   - 403 / FORBIDDEN → permission issue (retry won't help)
- *   - 5xx / INTERNAL_SERVER_ERROR → server problem (retry might)
- *   - default → generic (retry might)
+ *   - 401 / UNAUTHORIZED → re-auth needed
+ *   - 403 / FORBIDDEN → permission issue
+ *   - 5xx / INTERNAL_SERVER_ERROR → server problem
+ *   - default → generic
  */
-function categorizeErrorMessage(error: unknown): {
-  message: string;
-  canRetry: boolean;
-} {
+function categorizeErrorMessage(error: unknown): string {
   if (error instanceof TRPCClientError) {
     const code = error.data?.code;
     if (code === "UNAUTHORIZED") {
-      return {
-        message: "You're signed out. Refresh the page to sign in again.",
-        canRetry: false,
-      };
+      return "You're signed out. Refresh the page to sign in again.";
     }
     if (code === "FORBIDDEN") {
-      return {
-        message:
-          "You don't have permission to view this. Ask an admin to grant access.",
-        canRetry: false,
-      };
+      return "You don't have permission to view this. Ask an admin to grant access.";
     }
     if (code === "INTERNAL_SERVER_ERROR") {
-      return {
-        message: error.message || "The server hit an error. Please try again.",
-        canRetry: true,
-      };
+      return error.message || "The server hit an error. Please try again.";
     }
-    return {
-      message: error.message || "Failed to load",
-      canRetry: true,
-    };
+    return error.message || "Failed to load";
   }
   if (error instanceof Error) {
-    return { message: error.message, canRetry: true };
+    return error.message;
   }
-  return { message: "Failed to load", canRetry: true };
+  return "Failed to load";
 }
 
 export function ErrorCard({
   title,
   message,
   error,
-  onRetry,
 }: {
   title: string;
   /** Plain string message — shown as-is. Pass either this OR `error`. */
   message?: string;
-  /** Error object (typically a TRPCClientError) — message + retry-eligibility derived. */
+  /** Error object (typically a TRPCClientError) — message derived. */
   error?: unknown;
-  /** Optional retry callback. If provided AND the error is retryable, a Retry button renders. */
-  onRetry?: () => void;
 }) {
-  const categorized = error
+  const shown = error
     ? categorizeErrorMessage(error)
-    : { message: message ?? "Failed to load", canRetry: true };
+    : (message ?? "Failed to load");
   return (
     <Card title={title}>
-      <p className="text-sm text-red-600">{categorized.message}</p>
-      {onRetry && categorized.canRetry && (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="mt-2 text-xs text-blue-600 underline hover:text-blue-700"
-        >
-          Try again
-        </button>
-      )}
+      <p className="text-sm text-red-600">{shown}</p>
     </Card>
   );
 }

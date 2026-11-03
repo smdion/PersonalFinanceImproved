@@ -16,7 +16,7 @@ import {
   YAxis,
 } from "recharts";
 import { formatCurrency, compactCurrency } from "@/lib/utils/format";
-import { gridProps, axisProps } from "@/components/charts";
+import { gridProps, axisProps } from "@/components/charts/chart-defaults";
 
 /** Minimal per-year shape this chart needs — decoupled from the page's
  *  fuller UtilityYearRow. */

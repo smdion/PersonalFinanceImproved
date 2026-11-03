@@ -33,28 +33,27 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { HelpTip } from "@/components/ui/help-tip";
 import { sumBy } from "@/lib/utils/math";
 import { RealizedVsAssumedCard } from "@/components/performance/realized-vs-assumed-card";
+import { LifetimeSummaryCards } from "@/components/performance/lifetime-summary-cards";
+import { CategoryTabs, TabGroup } from "@/components/performance/category-tabs";
+import { PerformanceTable } from "@/components/performance/performance-table";
+import { FinalizeYearModal } from "@/components/performance/finalize-year-modal";
+import { AccountNotesDialog } from "@/components/performance/account-notes-dialog";
+import { PastYearEditDialog } from "@/components/performance/past-year-edit-dialog";
+import { UpdatePerformanceForm } from "@/components/performance/update-performance-form";
+import { UpdateBasisForm } from "@/components/performance/update-basis-form";
+import { AccountPicker } from "@/components/performance/account-picker";
 import {
-  LifetimeSummaryCards,
-  CategoryTabs,
-  TabGroup,
-  PerformanceTable,
-  FinalizeYearModal,
-  AccountNotesDialog,
-  PastYearEditDialog,
-  UpdatePerformanceForm,
-  UpdateBasisForm,
-  AccountPicker,
   YearRangePicker,
-  FilteredSummary,
-  FilteredAccountTable,
-} from "@/components/performance";
-import type { YearRange } from "@/components/performance";
+  type YearRange,
+} from "@/components/performance/year-range-picker";
+import { FilteredSummary } from "@/components/performance/filtered-summary";
+import { FilteredAccountTable } from "@/components/performance/filtered-account-table";
 import type {
   AnnualRow,
   AccountRow,
   MasterAccount,
+  EditingCell,
 } from "@/components/performance/types";
-import type { EditingCell } from "@/components/performance";
 import {
   aggregateAccountsByYear,
   chainReturns,

@@ -1,5 +1,4 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
 import { Button } from "./button";
 
 type EmptyStateProps = {
@@ -10,8 +9,6 @@ type EmptyStateProps = {
   icon?: ReactNode;
   /** Primary action button. */
   action?: { label: string; onClick: () => void };
-  /** Link to a settings page or related section. */
-  link?: { label: string; href: string };
 };
 
 /**
@@ -20,13 +17,7 @@ type EmptyStateProps = {
  * Basic usage:   <EmptyState message="No data." />
  * Enhanced:      <EmptyState icon={<Inbox />} message="No goals yet." action={{ label: "Add Goal", onClick: ... }} />
  */
-export function EmptyState({
-  message,
-  hint,
-  icon,
-  action,
-  link,
-}: EmptyStateProps) {
+export function EmptyState({ message, hint, icon, action }: EmptyStateProps) {
   return (
     <div role="status" className="py-12 text-center">
       {icon && (
@@ -36,21 +27,11 @@ export function EmptyState({
       )}
       <p className="text-muted">{message}</p>
       {hint && <p className="text-faint mt-2 text-sm">{hint}</p>}
-      {(action || link) && (
+      {action && (
         <div className="mt-4 flex items-center justify-center gap-3">
-          {action && (
-            <Button variant="primary" size="sm" onClick={action.onClick}>
-              {action.label}
-            </Button>
-          )}
-          {link && (
-            <Link
-              href={link.href}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              {link.label}
-            </Link>
-          )}
+          <Button variant="primary" size="sm" onClick={action.onClick}>
+            {action.label}
+          </Button>
         </div>
       )}
     </div>

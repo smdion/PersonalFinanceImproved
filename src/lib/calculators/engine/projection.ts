@@ -26,13 +26,11 @@ import {
 } from "../../config/account-types";
 import { expenseEndingFactor } from "./expense-endings";
 import { resolveDecumulationConfig } from "./override-resolution";
-import {
-  buildProjectionContext,
-  buildProjectionState,
-  runPreYearSetup,
-  runAccumulationYear,
-  runDecumulationYear,
-} from "./projection-year-handlers";
+import { buildProjectionContext } from "./projection-year-handlers/context";
+import { buildProjectionState } from "./projection-year-handlers/state";
+import { runPreYearSetup } from "./projection-year-handlers/pre-year-setup";
+import { runAccumulationYear } from "./projection-year-handlers/accumulation-year";
+import { runDecumulationYear } from "./projection-year-handlers/decumulation-year";
 
 // ---------------------------------------------------------------------------
 // Input validation
