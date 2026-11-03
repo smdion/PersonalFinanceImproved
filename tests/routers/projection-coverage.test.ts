@@ -302,6 +302,21 @@ describe("projection router — computeProjection edge cases (continued)", () =>
     }
   });
 
+  it("no return rate: a metadata read still gets settings and budgets", async () => {
+    const { caller, db, cleanup } = await createTestCaller(adminSession);
+    try {
+      seedFullProjectionData(db);
+      db.delete(schema.returnRateTable).run();
+      const meta = await caller.projection.computeProjection({
+        metadataOnly: true,
+      });
+      expect(meta).not.toHaveProperty("notConfigured");
+      expect(meta).toHaveProperty("settings");
+    } finally {
+      cleanup();
+    }
+  });
+
   it("client decumulation defaults set the routing mode, not the rate", async () => {
     const { caller, db, cleanup } = await createTestCaller(adminSession);
     try {
