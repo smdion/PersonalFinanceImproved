@@ -20,6 +20,10 @@ const baseSchema = z.object({
   AUTH_AUTHENTIK_ISSUER: z.string().url().optional(),
   AUTH_AUTHENTIK_ID: z.string().min(1).optional(),
   AUTH_AUTHENTIK_SECRET: z.string().min(1).optional(),
+  // Which proxy header names the client for rate limits (client-address.ts).
+  TRUSTED_PROXY_HEADER: z
+    .enum(["x-real-ip", "x-forwarded-for", "none"])
+    .optional(),
   // Cron secret — optional but must be strong when set
   CRON_SECRET: z.string().min(32).optional(),
   // At-rest encryption key for api_connections.config (AES-256-GCM).
