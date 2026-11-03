@@ -85,7 +85,11 @@ import {
   BudgetApiError,
   isTransientError,
 } from "@/lib/budget-api";
-import { WriteStopped, nothingChanged } from "@/lib/budget-api/errors";
+import {
+  WriteStopped,
+  nothingChanged,
+  userMessageFor,
+} from "@/lib/budget-api/errors";
 import type {
   PreparedGoalWrite,
   BudgetCategoryGroup,
@@ -2038,7 +2042,7 @@ export const savingsRouter = createTRPCRouter({
           const message = err instanceof Error ? err.message : String(err);
           log("warn", "push_goal_target_failed", { goalId, error: message });
           failed++;
-          firstFailureMessage ??= message;
+          firstFailureMessage ??= userMessageFor(err) ?? message;
         }
       }
 

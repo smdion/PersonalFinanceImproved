@@ -62,14 +62,18 @@ describe("ActualClient", () => {
   });
 
   describe("testConnection", () => {
-    it("returns true on success", async () => {
+    it("resolves when the budget answers", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ data: [] }));
-      expect(await client.testConnection()).toBe(true);
+      await expect(client.testConnection()).resolves.toBeUndefined();
     });
 
-    it("returns false on failure", async () => {
-      mockFetch.mockRejectedValueOnce(new Error("Connection refused"));
-      expect(await client.testConnection()).toBe(false);
+    it("lets a bad answer through, naming Actual and the field", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ data: null }));
+      await expect(client.testConnection()).rejects.toMatchObject({
+        code: "bad-response",
+        service: "Actual",
+        field: "data",
+      });
     });
   });
 

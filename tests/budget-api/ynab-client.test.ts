@@ -42,14 +42,17 @@ describe("YnabClient", () => {
   });
 
   describe("testConnection", () => {
-    it("returns true on success", async () => {
+    it("resolves when the budget answers", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ data: { settings: {} } }));
-      expect(await client.testConnection()).toBe(true);
+      await expect(client.testConnection()).resolves.toBeUndefined();
     });
 
-    it("returns false on failure", async () => {
-      mockFetch.mockRejectedValueOnce(new Error("Network error"));
-      expect(await client.testConnection()).toBe(false);
+    it("lets the failure through, naming YNAB", async () => {
+      mockFetch.mockReturnValueOnce(jsonResponse({ error: {} }, 401));
+      await expect(client.testConnection()).rejects.toMatchObject({
+        code: "auth",
+        service: "YNAB",
+      });
     });
   });
 

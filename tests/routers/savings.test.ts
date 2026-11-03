@@ -1831,11 +1831,11 @@ describe("savings.pushContributionsToApi", () => {
       vi.mocked(getActiveBudgetApi).mockResolvedValueOnce("ynab");
       vi.mocked(getClientForService).mockResolvedValueOnce(
         goalClient(
-          vi
-            .fn()
-            .mockRejectedValue(
-              new BudgetApiError("network blip", "network", null),
-            ),
+          vi.fn().mockRejectedValue(
+            Object.assign(new BudgetApiError("network blip", "network", null), {
+              service: "YNAB",
+            }),
+          ),
         ) as unknown as BudgetAPIClient,
       );
 
@@ -1844,7 +1844,7 @@ describe("savings.pushContributionsToApi", () => {
         pushed: 0,
         skippedUnsupported: 0,
         failed: 1,
-        failureMessage: "network blip",
+        failureMessage: "Ledgr couldn't reach YNAB — try again.",
         service: "ynab",
       });
     } finally {

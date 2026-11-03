@@ -434,16 +434,19 @@ describe("savings.pushContributionsToApi", () => {
         monthlyContribution: "300",
       });
 
-      const mockUpdateGoal = vi
-        .fn()
-        .mockRejectedValue(new BudgetApiError("API fail", "server", 500));
+      const failure = new BudgetApiError("API fail", "server", 500);
+      failure.service = "YNAB";
+      const mockUpdateGoal = vi.fn().mockRejectedValue(failure);
       mockGetActiveBudgetApi.mockResolvedValueOnce("ynab");
       mockGetClientForService.mockResolvedValueOnce(goalClient(mockUpdateGoal));
 
       const result = await ctx.caller.savings.pushContributionsToApi();
       expect(result.pushed).toBe(0);
       expect(result.failed).toBe(1);
-      expect(result.failureMessage).toBe("API fail");
+      // What the user is told, not the raw response.
+      expect(result.failureMessage).toBe(
+        "YNAB didn't answer properly — try again.",
+      );
     } finally {
       ctx.cleanup();
       mockGetActiveBudgetApi.mockResolvedValue("none");

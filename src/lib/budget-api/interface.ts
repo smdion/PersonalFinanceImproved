@@ -18,8 +18,9 @@ export interface PreparedGoalWrite {
 }
 
 export interface BudgetAPIClient {
-  /** Test that the connection is valid and the budget is accessible */
-  testConnection(): Promise<boolean>;
+  /** Resolves when the budget answers; throws the service's error, so the
+   *  user can be told why it didn't. */
+  testConnection(): Promise<void>;
 
   /** Human-readable name of the connected budget */
   getBudgetName(): Promise<string>;

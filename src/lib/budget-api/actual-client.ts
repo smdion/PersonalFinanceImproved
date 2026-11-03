@@ -377,14 +377,8 @@ export class ActualClient implements BudgetAPIClient {
     }
   }
 
-  async testConnection(): Promise<boolean> {
-    try {
-      // Try fetching accounts as a connection test
-      await this.request("/accounts", actualSchemas.accounts);
-      return true;
-    } catch {
-      return false;
-    }
+  async testConnection(): Promise<void> {
+    await this.request("/accounts", actualSchemas.accounts);
   }
 
   async getBudgetName(): Promise<string> {

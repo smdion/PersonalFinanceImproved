@@ -215,14 +215,9 @@ export class YnabClient implements BudgetAPIClient {
     });
   }
 
-  async testConnection(): Promise<boolean> {
-    try {
-      // Use /settings — lightweight endpoint, avoids fetching the full budget object
-      await this.request("/settings", ynabSchemas.written);
-      return true;
-    } catch {
-      return false;
-    }
+  async testConnection(): Promise<void> {
+    // /settings — lightweight endpoint, avoids fetching the full budget object
+    await this.request("/settings", ynabSchemas.written);
   }
 
   async getBudgetName(): Promise<string> {
