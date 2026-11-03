@@ -5,7 +5,8 @@
  * SQLite-only function, a transaction) fails here by name.
  *
  * For each demo household (invented data, seeded into `public` as a
- * self-hosted install holds it, not into a demo schema): every page's main
+ * self-hosted install holds it, not into a demo schema, from the same empty
+ * tables a demo schema starts from): every page's main
  * read, a write through a transaction, then the backup round trip through
  * the real CLI scripts — `scripts/export-backup.ts`, a database migrated
  * from empty, `scripts/import-backup.ts` — must give back every row.
@@ -162,8 +163,24 @@ describe.skipIf(skipWithoutPostgres)("seeded routers on PostgreSQL", () => {
     beforeAll(async () => {
       await dropAllSchemas(admin);
       runMigrator();
+      // Seeded as demo.activateProfile seeds a demo schema: its tables start
+      // empty (CREATE TABLE LIKE copies no rows), then the reference data,
+      // then the household. seedProfile inserts its own active-profile
+      // settings, which would collide with the first-run rows the migrator
+      // writes into public (the "Current" profiles and their settings).
+      const { DEMO_SHARED_TABLES } =
+        await import("@/lib/db/demo-schema-marker");
+      const { rows } = await admin.query<{ tablename: string }>(
+        "SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND NOT tablename = ANY($1::text[])",
+        [DEMO_SHARED_TABLES],
+      );
+      await admin.query(
+        `TRUNCATE ${rows.map((row) => `public."${row.tablename}"`).join(", ")} RESTART IDENTITY CASCADE`,
+      );
       const { db } = await import("@/lib/db");
+      const { applyReferenceData } = await import("@/lib/db/reference-data");
       const { seedProfile } = await import("@/server/routers/demo");
+      await applyReferenceData(db);
       await seedProfile(db, profile);
     }, timeout);
 
