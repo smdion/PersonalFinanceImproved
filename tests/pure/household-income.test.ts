@@ -140,6 +140,10 @@ describe("computeAnnualEarnings", () => {
       0,
     );
     expect(earnings.netRegular).toBeCloseTo(paycheck.netPay * 26, 2);
+    // Pins a bug (verdict K1): the bonus's net is the estimate's, which
+    // holds only because this bonus has no date. v0.11 Paycheck "year
+    // totals equal the check-by-check sum" moves it to the bonus's
+    // schedule row (answer-key paycheck/K1-*).
     expect(earnings.netBonus).toBe(paycheck.bonusEstimate.bonusNet);
   });
 

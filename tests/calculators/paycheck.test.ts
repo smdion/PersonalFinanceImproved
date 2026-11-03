@@ -480,6 +480,10 @@ function makeSegment(
   };
 }
 
+// Pins a bug (verdict N2): no Additional Medicare keys, the shape that lets
+// the blended walk leave Additional Medicare out of the Year-end estimate.
+// v0.11 Paycheck "One yearTotals(schedule, first, last)" retires it
+// (answer-key paycheck/N2).
 const TAX_BRACKETS = {
   socialSecurityWageBase: 176_100,
   socialSecurityRate: 0.062,
