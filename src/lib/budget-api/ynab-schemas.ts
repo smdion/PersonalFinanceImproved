@@ -103,7 +103,5 @@ export const ynabSchemas = {
 export type YnabAccount = z.infer<typeof account>;
 export type YnabCategory = z.infer<typeof category>;
 export type YnabCategoryGroup = z.infer<typeof categoryGroup>;
-export type YnabMonth = z.infer<typeof monthSummary> & {
-  categories?: YnabCategory[];
-};
+export type YnabMonth = z.infer<typeof monthSummary>;
 export type YnabTransaction = z.infer<typeof transaction>;

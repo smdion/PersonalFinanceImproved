@@ -61,10 +61,6 @@ describe("ActualClient", () => {
     );
   });
 
-  it("does not support delta sync", () => {
-    expect(client.supportsDeltaSync).toBe(false);
-  });
-
   describe("testConnection", () => {
     it("returns true on success", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ data: [] }));

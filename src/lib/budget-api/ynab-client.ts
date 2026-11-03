@@ -18,11 +18,10 @@ import type {
   BudgetMonthDetail,
   BudgetTransaction,
   NewBudgetTransaction,
-  DeltaSyncResult,
 } from "./types";
 import { fromMilliunits, toMilliunits } from "./conversions";
 import { roundToCents } from "@/lib/utils/math";
-import { externalRequest, uncheckedShape } from "@/lib/http/external-request";
+import { externalRequest } from "@/lib/http/external-request";
 import type { z } from "zod/v4";
 import {
   ynabSchemas,
@@ -39,10 +38,6 @@ import {
 } from "@/lib/config/ynab";
 
 const YNAB_BASE = "https://api.ynab.com/v1";
-
-type YnabDeltaResponse<T> = {
-  data: T & { server_knowledge: number };
-};
 
 // -- Account type mapping --
 
@@ -185,8 +180,6 @@ function ynabImportId(tx: NewBudgetTransaction): string {
 }
 
 export class YnabClient implements BudgetAPIClient {
-  readonly supportsDeltaSync = true;
-
   getExcludedCategoryNames(): Set<string> {
     return YNAB_EXPENSE_EXCLUDED_CATEGORIES;
   }
@@ -529,32 +522,5 @@ export class YnabClient implements BudgetAPIClient {
       method: "PUT",
       body: JSON.stringify({ transaction: body }),
     });
-  }
-
-  // -- Delta sync --
-
-  async getDelta(serverKnowledge: number): Promise<DeltaSyncResult<unknown>> {
-    // No caller; reads the wrong shape, so its answer isn't checked.
-    const res = await this.request(
-      `?last_knowledge_of_server=${serverKnowledge}`,
-      uncheckedShape<
-        YnabDeltaResponse<{
-          accounts: YnabAccount[];
-          categories: YnabCategoryGroup[];
-          transactions: YnabTransaction[];
-          months: YnabMonth[];
-        }>
-      >(),
-    );
-
-    return {
-      data: {
-        accounts: res.data.accounts.map(mapAccount),
-        categories: res.data.categories.map(mapCategoryGroup),
-        transactions: res.data.transactions.map(mapTransaction),
-        months: res.data.months.map(mapMonth),
-      },
-      serverKnowledge: res.data.server_knowledge,
-    };
   }
 }

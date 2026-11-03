@@ -144,9 +144,3 @@ export type BudgetApiService = "ynab" | "actual";
 
 /** The active budget API setting stored in app_settings */
 export type ActiveBudgetApi = "none" | "ynab" | "actual";
-
-/** Result of a delta sync operation */
-export type DeltaSyncResult<T> = {
-  data: T;
-  serverKnowledge: number;
-};

@@ -273,8 +273,6 @@ function safeToResend(err: unknown, init?: RequestInit): boolean {
 }
 
 export class ActualClient implements BudgetAPIClient {
-  readonly supportsDeltaSync = false;
-
   getExcludedCategoryNames(): Set<string> {
     return new Set();
   }

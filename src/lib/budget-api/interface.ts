@@ -8,7 +8,6 @@ import type {
   BudgetMonthDetail,
   BudgetTransaction,
   NewBudgetTransaction,
-  DeltaSyncResult,
 } from "./types";
 
 export type GoalShape = "monthly" | "target-balance";
@@ -106,12 +105,4 @@ export interface BudgetAPIClient {
    *  (system/non-expense categories — e.g. YNAB's "Split", "Uncategorized").
    *  Returns an empty set for services with no such concept. */
   getExcludedCategoryNames(): Set<string>;
-
-  // -- Delta sync --
-
-  /** Whether this client supports incremental delta sync */
-  readonly supportsDeltaSync: boolean;
-
-  /** Get changes since last sync (YNAB only). Returns null if not supported. */
-  getDelta?(serverKnowledge: number): Promise<DeltaSyncResult<unknown> | null>;
 }

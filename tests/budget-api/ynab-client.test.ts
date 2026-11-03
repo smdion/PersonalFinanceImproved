@@ -41,10 +41,6 @@ describe("YnabClient", () => {
     client = new YnabClient("test-token", "test-budget-id");
   });
 
-  it("supports delta sync", () => {
-    expect(client.supportsDeltaSync).toBe(true);
-  });
-
   describe("testConnection", () => {
     it("returns true on success", async () => {
       mockFetch.mockReturnValueOnce(jsonResponse({ data: { settings: {} } }));
@@ -798,26 +794,6 @@ describe("YnabClient", () => {
       const body = JSON.parse(mockFetch.mock.calls[0]![1].body);
       expect(body.transaction.amount).toBe(-75000);
       expect(body.transaction.cleared).toBe("uncleared");
-    });
-  });
-
-  describe("getDelta", () => {
-    it("returns mapped delta with server knowledge", async () => {
-      mockFetch.mockReturnValueOnce(
-        jsonResponse({
-          data: {
-            server_knowledge: 42,
-            accounts: [],
-            categories: [],
-            transactions: [],
-            months: [],
-          },
-        }),
-      );
-      const delta = await client.getDelta(10);
-      expect(delta.serverKnowledge).toBe(42);
-      expect(delta.data).toHaveProperty("accounts");
-      expect(delta.data).toHaveProperty("transactions");
     });
   });
 
