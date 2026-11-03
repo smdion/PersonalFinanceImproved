@@ -26,9 +26,6 @@ ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
 ENV NEXTAUTH_SECRET=build-placeholder-secret-at-least-32-chars
 ENV NEXTAUTH_URL=http://localhost:3000
 ENV AUTH_TRUST_HOST=true
-ENV AUTH_AUTHENTIK_ISSUER=https://build-placeholder/application/o/ledgr/
-ENV AUTH_AUTHENTIK_ID=build-placeholder
-ENV AUTH_AUTHENTIK_SECRET=build-placeholder
 
 RUN pnpm build
 

@@ -68,9 +68,12 @@ jobs:
           NEXTAUTH_SECRET: build-placeholder-secret-at-least-32-chars
           NEXTAUTH_URL: http://localhost:3000
           AUTH_TRUST_HOST: "true"
-          AUTH_AUTHENTIK_ISSUER: https://build-placeholder/application/o/ledgr/
-          AUTH_AUTHENTIK_ID: build-placeholder
-          AUTH_AUTHENTIK_SECRET: build-placeholder
+
+      # Pages that depend on the running server (sign-in, Authentik, the
+      # database) must render per request: a prerendered one would ship
+      # the build machine's answer. Built above with no Authentik issuer.
+      - name: No prerendered sign-in or dashboard page
+        run: pnpm tsx scripts/check-prerender.ts
 
       - name: Test with coverage thresholds
         run: pnpm test:coverage
