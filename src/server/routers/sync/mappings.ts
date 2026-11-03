@@ -23,6 +23,7 @@ import { accountMappingSchema } from "@/lib/db/json-schemas";
 import { pushSnapshotToBudgetApi } from "@/server/helpers/budget-api-push";
 import { formatList } from "@/lib/utils/format";
 import { serviceEnum } from "./_shared";
+import { toDecimalColumn } from "@/lib/utils/math";
 
 /** Why a mapping's direction isn't allowed for its target, or null when it
  *  is. Names the account by its localName, never a raw id. */
@@ -131,13 +132,13 @@ export const syncMappingsRouter = createTRPCRouter({
         .values({
           name: input.assetName,
           year: currentYear,
-          value: String(input.balance),
+          value: toDecimalColumn(input.balance, "a tracking account balance"),
           note: `Created from ${input.service.toUpperCase()} tracking account`,
         })
         .onConflictDoUpdate({
           target: [schema.otherAssetItems.name, schema.otherAssetItems.year],
           set: {
-            value: String(input.balance),
+            value: toDecimalColumn(input.balance, "a tracking account balance"),
             note: `Created from ${input.service.toUpperCase()} tracking account`,
           },
         })

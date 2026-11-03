@@ -12,7 +12,7 @@ import {
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { PERF_CATEGORY_PORTFOLIO } from "@/lib/config/display-labels";
-import { roundToCents, safeDivide } from "@/lib/utils/math";
+import { roundToCents, safeDivide, toDecimalColumn } from "@/lib/utils/math";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import {
   toNumber,
@@ -1168,7 +1168,11 @@ export const networthRouter = createTRPCRouter({
                       performanceAccountId?: number;
                     };
                     const apiBalance = pullBalanceMap.get(m.remoteAccountId);
-                    if (apiBalance === undefined || !m.performanceAccountId)
+                    // The cache may hold no number where a figure was missing.
+                    if (
+                      typeof apiBalance !== "number" ||
+                      !m.performanceAccountId
+                    )
                       continue;
                     const matchingRows = pullSnapshotAccounts.filter(
                       (a) => a.performanceAccountId === m.performanceAccountId,
@@ -1181,7 +1185,12 @@ export const networthRouter = createTRPCRouter({
                     if (matchingRows.length === 1) {
                       await tx
                         .update(schema.portfolioAccounts)
-                        .set({ amount: String(apiBalance) })
+                        .set({
+                          amount: toDecimalColumn(
+                            apiBalance,
+                            "a balance from the budget app",
+                          ),
+                        })
                         .where(
                           eq(schema.portfolioAccounts.id, matchingRows[0]!.id),
                         );
@@ -1192,7 +1201,10 @@ export const networthRouter = createTRPCRouter({
                         await tx
                           .update(schema.portfolioAccounts)
                           .set({
-                            amount: String(roundToCents(scaled)),
+                            amount: toDecimalColumn(
+                              roundToCents(scaled),
+                              "a balance from the budget app",
+                            ),
                           })
                           .where(eq(schema.portfolioAccounts.id, row.id));
                       }

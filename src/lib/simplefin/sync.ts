@@ -31,6 +31,7 @@ import {
 } from "./request-log";
 import { ingestInvestmentData, type IngestSummary } from "./ingest";
 import { utcDayOf } from "@/lib/utils/date";
+import { toDecimalColumn } from "@/lib/utils/math";
 import { localDateStr } from "@/lib/utils/date";
 
 export { localDateStr };
@@ -312,7 +313,7 @@ export async function upsertSimplefinAccounts(
         externalAccountId: a.id,
         orgName: a.orgName,
         accountName: a.name,
-        lastBalance: a.balance.toFixed(2),
+        lastBalance: toDecimalColumn(a.balance, "a SimpleFIN balance", 2),
         // Paired with lastBalance: null when not reported, never an older date.
         lastBalanceDate: a.balanceDate ?? null,
         lastSeenAt: now,
@@ -353,12 +354,15 @@ async function writeSnapshot(
     .insert(schema.simplefinBalanceSnapshots)
     .values({
       snapshotDate,
-      totalBalance: totalBalance.toFixed(2),
+      totalBalance: toDecimalColumn(totalBalance, "the SimpleFIN total", 2),
       accountCount,
     })
     .onConflictDoUpdate({
       target: schema.simplefinBalanceSnapshots.snapshotDate,
-      set: { totalBalance: totalBalance.toFixed(2), accountCount },
+      set: {
+        totalBalance: toDecimalColumn(totalBalance, "the SimpleFIN total", 2),
+        accountCount,
+      },
     });
 }
 

@@ -24,6 +24,7 @@ import { classifySimplefinTransaction } from "@/lib/pure/simplefin-transactions"
 import { addDays, utcDayOf } from "@/lib/utils/date";
 import { valuationDateFor } from "@/lib/pure/market-calendar";
 import { isHsaCategory } from "@/lib/config/account-types";
+import { toDecimalColumn } from "@/lib/utils/math";
 
 type Db = typeof import("@/lib/db").db;
 
@@ -188,13 +189,15 @@ async function ingestHoldings(
       securityId,
       balanceDate: account.balanceDate,
       asOf,
-      shares: row.shares.toFixed(8),
+      shares: toDecimalColumn(row.shares, "a holding's shares", 8),
       reportedMarketValue:
-        row.marketValue === null ? null : row.marketValue.toFixed(2),
+        row.marketValue === null
+          ? null
+          : toDecimalColumn(row.marketValue, "a holding's value", 2),
       avgCostPerShare:
         row.costBasisPerShare === null
           ? null
-          : row.costBasisPerShare.toFixed(8),
+          : toDecimalColumn(row.costBasisPerShare, "a holding's cost", 8),
       source: "simplefin" as const,
     };
     assertHoldingHasOneAccount(values);
@@ -309,7 +312,7 @@ async function ingestTransactions(
         externalId: t.externalId,
         posted: t.posted,
         transacted: transactedById.get(t.externalId) ?? null,
-        amount: t.amount.toFixed(2),
+        amount: toDecimalColumn(t.amount, "a transaction amount", 2),
         description: t.description,
         pending: t.pending,
         kindOverride: lock ? "withdrawal" : null,
@@ -326,7 +329,7 @@ async function ingestTransactions(
       .update(schema.investmentTransactions)
       .set({
         posted: u.next.posted,
-        amount: u.next.amount.toFixed(2),
+        amount: toDecimalColumn(u.next.amount, "a transaction amount", 2),
         description: u.next.description,
         pending: u.next.pending,
         voidedAt: null,
@@ -493,14 +496,16 @@ export async function ingestInvestmentData(
         .values({
           simplefinAccountId: reg.id,
           balanceDate: account.balanceDate,
-          balance: account.balance.toFixed(2),
+          balance: toDecimalColumn(account.balance, "a SimpleFIN balance", 2),
         })
         .onConflictDoUpdate({
           target: [
             schema.simplefinAccountBalances.simplefinAccountId,
             schema.simplefinAccountBalances.balanceDate,
           ],
-          set: { balance: account.balance.toFixed(2) },
+          set: {
+            balance: toDecimalColumn(account.balance, "a SimpleFIN balance", 2),
+          },
         });
     }
 

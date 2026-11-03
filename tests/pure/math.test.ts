@@ -8,6 +8,7 @@ import {
   safeDivide,
   sumBy,
   parsePositiveInt,
+  toDecimalColumn,
 } from "@/lib/utils/math";
 
 describe("parsePositiveInt", () => {
@@ -154,5 +155,23 @@ describe("shareScaleMax / shareScaleTicks", () => {
     expect(shareScaleTicks(0.4)).toEqual([0, 0.1, 0.2, 0.3, 0.4]);
     expect(shareScaleTicks(0.7)).toEqual([0, 0.2, 0.4, 0.6]);
     expect(shareScaleTicks(1)).toEqual([0, 0.25, 0.5, 0.75, 1]);
+  });
+});
+
+describe("toDecimalColumn", () => {
+  it.each([NaN, Infinity, -Infinity])(
+    "refuses %s, naming what was being written",
+    (value) => {
+      expect(() => toDecimalColumn(value, "a test balance")).toThrow(
+        `Refused to store a test balance: ${value} isn't a number`,
+      );
+    },
+  );
+
+  it("passes a finite figure as given, or to fixed digits", () => {
+    expect(toDecimalColumn(1234.5, "x")).toBe("1234.5");
+    expect(toDecimalColumn(-0.1, "x")).toBe("-0.1");
+    expect(toDecimalColumn(1234.5, "x", 2)).toBe("1234.50");
+    expect(toDecimalColumn(10.123456789, "x", 8)).toBe("10.12345679");
   });
 });
