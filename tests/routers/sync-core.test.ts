@@ -32,6 +32,8 @@ import {
   seedSnapshot,
 } from "./setup";
 import * as schema from "@/lib/db/schema-sqlite";
+import { YnabClient } from "@/lib/budget-api/ynab-client";
+import { ynabTransaction } from "../fixtures/ynab-spec";
 
 // Keep references to mocks so we can adjust per test
 const mockGetActiveBudgetApi = vi.fn().mockResolvedValue("none");
@@ -380,6 +382,19 @@ describe("sync core — syncAll", () => {
         },
         "data.categoryGroups",
       ],
+      [
+        "a renamed category name",
+        "categories",
+        (b: Body) => {
+          for (const c of b.data) {
+            c.title = c.name;
+            delete c.name;
+          }
+          return b;
+        },
+        "data.0.name",
+      ],
+      ["a payee list that isn't one", "payees", () => ({ data: {} }), "data"],
     ])(
       "%s fails the sync, names the field, and changes nothing",
       async (_name, broken, breakIt, field) => {
@@ -391,6 +406,7 @@ describe("sync core — syncAll", () => {
           categories: recorded("categories")[0],
           month: recorded("month")[0],
           note: { data: "" },
+          payees: { data: [] },
           transactions: { data: [] },
         } as Record<string, unknown>;
         bodies[broken] = breakIt(bodies[broken]);
@@ -407,7 +423,9 @@ describe("sync core — syncAll", () => {
                     ? "category-groups"
                     : url.endsWith("/categories")
                       ? "categories"
-                      : "accounts";
+                      : url.endsWith("/payees")
+                        ? "payees"
+                        : "accounts";
         vi.stubGlobal(
           "fetch",
           vi.fn(async (url: string) => {
@@ -1289,5 +1307,110 @@ describe("sync core — computeExpenseComparison", () => {
 
     const oldCat = result.categories.find((c) => c.name === "OldCat")!;
     expect(oldCat.percentChange).toBe(0); // same amount: (-100 - -100) / |-100| * 100 = 0
+  });
+
+  /** A stand-in for each service's API; `body(url)` answers each request. */
+  function standIn(body: (url: string) => unknown) {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        const b = body(url);
+        return {
+          ok: true,
+          status: 200,
+          text: async () => JSON.stringify(b),
+          json: async () => b,
+        };
+      }),
+    );
+  }
+
+  /** What a sync caches, from the real client, compared month over month. */
+  async function compareOverClient(
+    service: "actual" | "ynab",
+    client: ActualClient | YnabClient,
+  ) {
+    const transactions = await client.getTransactions("2025-01-01");
+    vi.unstubAllGlobals();
+    mockGetActiveBudgetApi.mockResolvedValue(service);
+    mockGetClientForService.mockResolvedValue(client);
+    mockCacheGet.mockResolvedValue({
+      data: transactions,
+      fetchedAt: new Date(),
+    });
+    return caller.sync.computeExpenseComparison({
+      currentStart: "2026-11-01",
+      currentEnd: "2026-11-30",
+      priorStart: "2026-10-01",
+      priorEnd: "2026-10-31",
+    });
+  }
+
+  it("compares categories on Actual, named from its category list", async () => {
+    resetActualWrapperGates();
+    const recorded = (name: string) =>
+      JSON.parse(
+        fs.readFileSync(`tests/fixtures/actual-wrapper/${name}.json`, "utf8"),
+      ).bodies as Array<{ data: Array<{ account: string }> }>;
+    const checking = recorded("transactions")[0]!.data;
+    standIn((url) =>
+      url.endsWith("/accounts")
+        ? recorded("accounts")[0]
+        : url.endsWith("/categories")
+          ? recorded("categories")[0]
+          : url.endsWith("/payees")
+            ? { data: [] }
+            : {
+                data: checking.filter((t) =>
+                  url.includes(`/accounts/${t.account}/`),
+                ),
+              },
+    );
+    const result = await compareOverClient(
+      "actual",
+      new ActualClient("http://actual.local", "key", "sync-id"),
+    );
+    expect(result.service).toBe("actual");
+    const byName = Object.fromEntries(
+      result.categories.map((c) => [c.name, [c.current, c.prior]]),
+    );
+    // The recorded checking account: Nov and Oct by category, in dollars.
+    expect(byName).toMatchObject({
+      "Test Groceries": [15.24, 0],
+      "Test Dining": [0, -1.1],
+      "Test Misc": [0, -300],
+    });
+  });
+
+  it("compares categories on YNAB, named as YNAB sends them", async () => {
+    standIn(() => ({
+      data: {
+        server_knowledge: 1,
+        transactions: [
+          ynabTransaction({
+            id: "y1",
+            date: "2026-11-03",
+            amount: -42000,
+            category_id: "cat-1",
+            category_name: "Groceries",
+          }),
+          ynabTransaction({
+            id: "y2",
+            date: "2026-10-03",
+            amount: -30000,
+            category_id: "cat-1",
+            category_name: "Groceries",
+          }),
+        ],
+      },
+    }));
+    const result = await compareOverClient(
+      "ynab",
+      new YnabClient("token", "budget-1"),
+    );
+    expect(result.service).toBe("ynab");
+    expect(result.categories).toEqual([
+      expect.objectContaining({ name: "Groceries", current: -42, prior: -30 }),
+    ]);
   });
 });
