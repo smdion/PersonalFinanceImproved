@@ -3,6 +3,7 @@
 /** Settings card for SEC fund facts — the contact SEC requires, and the weekly refresh. Same layout as TiingoCard. */
 import React, { useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { errorText } from "@/lib/utils/mutation-error";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { formatRelativeTime } from "@/lib/utils/format";
@@ -123,7 +124,7 @@ export function SecCard() {
             </div>
             {saveMut.isError && (
               <ConnectionResultMessage tone="error">
-                {saveMut.error.message}
+                {errorText(saveMut.error)}
               </ConnectionResultMessage>
             )}
           </div>
@@ -192,7 +193,7 @@ export function SecCard() {
         )}
         {refreshMut.isError && (
           <ConnectionResultMessage tone="error">
-            {refreshMut.error.message}
+            {errorText(refreshMut.error)}
           </ConnectionResultMessage>
         )}
       </div>

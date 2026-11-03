@@ -11,6 +11,7 @@
  */
 import { useState } from "react";
 import { trpc, type RouterOutputs } from "@/lib/trpc";
+import { errorText } from "@/lib/utils/mutation-error";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatNumber } from "@/lib/utils/format";
 import { roundToCents, sumBy } from "@/lib/utils/math";
@@ -477,7 +478,7 @@ function PeriodForm({
       </div>
       {(byTicker.error || byName.error) && (
         <p className={STATUS_COLORS.red.text}>
-          {(byTicker.error ?? byName.error)!.message}
+          {errorText(byTicker.error ?? byName.error)}
         </p>
       )}
       {Math.abs(total - 100) > 0.5 && draft.rows.some((r) => r.pct) && (
