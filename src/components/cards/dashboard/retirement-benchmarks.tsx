@@ -18,11 +18,11 @@ import {
   MONEY_GUY_CHECKPOINTS,
   type CheckpointSource,
 } from "@/lib/config/milestones";
+import { type MilestoneYear } from "@/lib/pure/milestones";
 import {
   checkpointBalance,
   incomeMultipleTarget,
-  type MilestoneYear,
-} from "@/lib/pure/milestones";
+} from "@/lib/pure/milestones.shared";
 
 /** A projection with its settings (not the no-people stub). */
 type Projection = Extract<

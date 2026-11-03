@@ -6,15 +6,9 @@ import {
 import {
   currentFooStep,
   evaluateMilestones,
-  firstReachedYear,
-  incomeMultipleTarget,
-  inflateTarget,
-  meetsMoneyGuyRate,
-  meetsRateTarget,
   milestoneTimeline,
   nextUpMilestones,
   parseMilestoneSettings,
-  projectedFiYear,
   sinceLastYear,
   classesUnderTarget,
   extraPrincipalToPayOffBy,
@@ -22,6 +16,14 @@ import {
   type MilestoneResult,
 } from "@/lib/pure/milestones";
 import type { MilestoneDebt } from "@/lib/pure/milestones";
+import {
+  firstReachedYear,
+  incomeMultipleTarget,
+  inflateTarget,
+  meetsMoneyGuyRate,
+  meetsRateTarget,
+  projectedFiYear,
+} from "@/lib/pure/milestones.shared";
 import {
   buildMilestoneInput,
   milestoneHoldings,
