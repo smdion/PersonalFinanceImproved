@@ -185,8 +185,15 @@ export function makeEmployerMatch(
 }
 
 // ---------------------------------------------------------------------------
-// Tax Brackets (2025 MFJ withholding)
+// Tax Brackets: an invented withholding table
 // ---------------------------------------------------------------------------
+
+// Invented, not a published table: once labelled "2025 MFJ withholding",
+// but it matches no table in Pub 15-T (2025) or (2026), any status or
+// column (2025 MFJ STANDARD starts taxing at $17,100; this at $16,550,
+// with a $17,175 10% band against the published $23,850). The values
+// stay as they are: every engine snapshot reads them. Published tables are
+// keyed in tests/fixtures/irs-published/.
 
 export const TEST_BRACKETS: WithholdingBracket[] = [
   { threshold: 0, baseWithholding: 0, rate: 0 },

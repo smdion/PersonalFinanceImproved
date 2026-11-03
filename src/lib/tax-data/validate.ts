@@ -23,6 +23,107 @@ const within = (prev: number, next: number) =>
   prev === 0 ||
   (next / prev >= INDEXED_BOUNDS[0] && next / prev <= INDEXED_BOUNDS[1]);
 
+type Row = Record<string, unknown>;
+type Section = "withholding" | "ltcg" | "irmaa";
+
+const rowsOf = (rows: unknown): Row[] =>
+  Array.isArray(rows) ? (rows as Row[]) : [];
+/** A row as text, key order ignored. */
+const rowText = (r: Row) =>
+  JSON.stringify(
+    Object.keys(r ?? {})
+      .sort()
+      .map((k) => [k, r[k]]),
+  );
+const hasFigure = (rows: Row[], col?: string) =>
+  rows.some((r) =>
+    (col ? [r?.[col]] : Object.values(r ?? {})).some(
+      (v) => typeof v === "number" && Number.isFinite(v),
+    ),
+  );
+/** Every row identical, field for field (a blank table never matches). */
+const sameRows = (was: unknown, now: unknown) => {
+  const p = rowsOf(was);
+  const n = rowsOf(now);
+  return (
+    n.length > 0 &&
+    n.length === p.length &&
+    hasFigure(n) &&
+    n.every((r, i) => rowText(r) === rowText(p[i]!))
+  );
+};
+/** One column identical in every row, the rest free to differ. */
+const sameColumn = (was: unknown, now: unknown, col: string) => {
+  const p = rowsOf(was);
+  const n = rowsOf(now);
+  return (
+    n.length > 0 &&
+    n.length === p.length &&
+    hasFigure(n, col) &&
+    n.every((r, i) => r?.[col] === p[i]?.[col])
+  );
+};
+
+/** The tables of one section in `next` that repeat `prev`'s. */
+function repeatsIn(
+  prev: TaxDataYear,
+  next: TaxDataYear,
+  s: Section,
+): { table: string; what: string }[] {
+  const out: { table: string; what: string }[] = [];
+  if (s === "withholding") {
+    for (const [st, t] of Object.entries(next.withholding?.tables ?? {}))
+      for (const kind of ["standard", "checkbox"] as const)
+        if (sameRows(prev.withholding?.tables[st]?.[kind], t?.[kind]))
+          out.push({ table: `${st} ${kind}`, what: "the same table" });
+    return out;
+  }
+  if (!prev[s] || !next[s]) return out;
+  for (const [st, br] of Object.entries(next[s]!.brackets)) {
+    const was = prev[s]!.brackets[st];
+    if (sameRows(was, br)) out.push({ table: st, what: "the same table" });
+    // Surcharges follow the Part B premium, which moves every year even
+    // when the thresholds are frozen (2011-2017).
+    else if (s === "irmaa" && sameColumn(was, br, "annualSurcharge"))
+      out.push({ table: st, what: "the same surcharges" });
+  }
+  return out;
+}
+
+/**
+ * The indexed tables in `next` that repeat the prior year's (`prev`), in
+ * full: each withholding table (the 1040 brackets are derived from the
+ * standard ones), each status's LTCG and IRMAA table, and IRMAA's
+ * surcharges on their own. An indexed table moves every year, so a repeat
+ * was copied and not updated. Tables only: a single `limits` value can
+ * legitimately repeat (the 401(k) limit was $16,500 in 2009, 2010 and
+ * 2011). A blank table (no figures yet) is left to the blank checks.
+ *
+ * The section's `exception` (reason and source) ships a table that really
+ * repeats. It counts when it's the year's own, or when it's carried over
+ * from a prior year that repeated too (a freeze lasting several years,
+ * like IRMAA's 2011-2017): an exception copied along with a whole file,
+ * from a year whose tables moved, doesn't count.
+ */
+function copiedTables(
+  older: TaxDataYear | undefined,
+  prev: TaxDataYear,
+  next: TaxDataYear,
+): { section: Section; table: string; what: string }[] {
+  const out: { section: Section; table: string; what: string }[] = [];
+  for (const s of ["withholding", "ltcg", "irmaa"] as const) {
+    const repeats = repeatsIn(prev, next, s);
+    if (repeats.length === 0) continue;
+    const mine = next[s]?.exception;
+    const carried =
+      !!mine && JSON.stringify(mine) === JSON.stringify(prev[s]?.exception);
+    const excused =
+      !!mine && (!carried || (!!older && repeatsIn(older, prev, s).length > 0));
+    if (!excused) out.push(...repeats.map((r) => ({ section: s, ...r })));
+  }
+  return out;
+}
+
 /** The citations in a `source` string ("A; B" → ["A", "B"]). */
 export function citationsOf(source: string | undefined): string[] {
   return (source ?? "")
@@ -239,6 +340,15 @@ export function validateTaxDataFile(
             ).map((r) => ({ threshold: r.threshold ?? r.magiThreshold }));
           check(`${next} ${s} ${st}`, norm(a[s]!.brackets[st] ?? []), norm(br));
         }
+    const older = pairs.find(([, n]) => n === prev)?.[0];
+    for (const { section, table, what } of copiedTables(
+      older === undefined ? undefined : file.years[older],
+      a,
+      b,
+    ))
+      add(
+        `${next} ${section} ${table}: ${what} as ${prev}'s. Indexed tables change every year, so this one looks copied and not updated: key it from the ${next} publication. If the publication really repeats it, give ${next} ${section} an exception (reason and source).`,
+      );
   }
   return problems;
 }

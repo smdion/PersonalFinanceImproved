@@ -22,11 +22,18 @@ Ledgr reads the folder as one file (the year files assembled under `index.json`)
 ## Adding a year
 
 ```sh
-pnpm tax-data:new-year 2027   # copies 2026.json to 2027.json with every figure blank
+pnpm tax-data:new-year 2027   # copies 2026.json to 2027.json with every figure blank,
+                              # and writes a blank tests/fixtures/irs-published/2027.ts
 # fill in each figure from its published notice, with its citation and link,
 # then raise dataVersion in index.json
 pnpm tax-data:check           # seconds; no database or .env needed
+# fill tests/fixtures/irs-published/2027.ts by hand from the notices, on its own
+# (never copy it from the JSON, or the JSON from it), add it to PUBLISHED in
+# tests/tax-data/irs-published.test.ts, then
+pnpm test tests/tax-data/irs-published.test.ts
 ```
+
+The fixture is the second pair of eyes: CI compares every cell of the shipped tables to it, and fails for a shipped year without one.
 
 The check refuses a blank, so no figure or citation can carry over from last year unnoticed — and Ledgr skips a year that still has one, so a half-done year never reaches an install. Use only figures from published notices — never estimates or projections.
 
@@ -79,8 +86,11 @@ The check refuses a blank, so no figure or citation can carry over from last yea
 - only known keys; every year, section and figure cites a source, and every citation links to its document;
 - every year keeps the keys and filing statuses the year before had;
 - inflation-indexed figures move −2%…+15% a year; rates and fixed-by-law amounts don't move — unless an `exception` says why;
+- no indexed table (withholding, LTCG, IRMAA) is the same as the year before's, row for row, and IRMAA's surcharges don't repeat either: that's a copy not yet updated. A single limit may repeat. A table the publication really repeats needs an `exception` on that section, the year's own, or the same one carried through a repeat lasting several years (an exception copied from a year whose tables moved doesn't count);
 - withholding tables add up; no blanks;
 - the generated schemas and the key table below are current.
+
+CI also compares every shipped table cell (brackets, standard deduction and add-ons, LTCG, withholding) to the hand-keyed published figures in `tests/fixtures/irs-published/<year>.ts` (`tests/tax-data/irs-published.test.ts`), and fails for a shipped year without them.
 
 ## Keys
 

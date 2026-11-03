@@ -7,6 +7,12 @@
  * link in `sources`. Structure (keys, filing statuses, rows) and plain-words
  * `notes` are kept. Raise dataVersion once it's filled in (CI requires it).
  *
+ * It also writes the year's blank published-figures fixture,
+ * `tests/fixtures/irs-published/YYYY.ts` (every figure NaN, every citation
+ * empty), to key by hand from the same notices: the shipped file is
+ * checked against it (tests/tax-data/irs-published.test.ts), and a
+ * shipped year without one fails.
+ *
  * Usage: pnpm tax-data:new-year YYYY
  */
 import * as fs from "fs";
@@ -16,6 +22,12 @@ import {
   TAX_DATA_DIR,
   readTaxDataDir,
 } from "../src/lib/db/reference-reconcile-core";
+import type {
+  FilingStatus,
+  PublishedYear,
+} from "../tests/fixtures/irs-published/types";
+
+const FIXTURE_DIR = "tests/fixtures/irs-published";
 
 const year = process.argv[2];
 const fail = (msg: string): never => {
@@ -72,10 +84,73 @@ const next = {
   ...(from.fpl ? { fpl: section(from.fpl, "amounts") } : {}),
 };
 
+/** The published-figures fixture for the year, shaped like the latest
+ *  year's tables, with nothing filled in. */
+function blankFixture(): PublishedYear {
+  const statuses: FilingStatus[] = ["Single", "MFJ", "HOH"];
+  const rows = <T>(n: number, row: T) => ({
+    cite: "",
+    value: Array.from({ length: n }, () => ({ ...row })),
+  });
+  const each = <T>(f: (st: FilingStatus) => T) =>
+    Object.fromEntries(statuses.map((st) => [st, f(st)])) as Record<
+      FilingStatus,
+      T
+    >;
+  const table = (st: FilingStatus) =>
+    from.withholding.tables[st] as
+      Record<"standard" | "checkbox", { rate: number }[]> | undefined;
+  const one = { value: NaN, cite: "" };
+  return {
+    year: Number(year),
+    rateSchedule: each((st) =>
+      rows(table(st)?.standard.filter((r) => r.rate !== 0).length ?? 7, {
+        over: NaN,
+        baseTax: NaN,
+        rate: NaN,
+      }),
+    ),
+    standardDeduction: each(() => ({ ...one })),
+    agedOrBlind: { married: { ...one }, unmarried: { ...one } },
+    ltcg: each(() => ({
+      value: { zeroRateTop: NaN, fifteenRateTop: NaN },
+      cite: "",
+    })),
+    withholding: each((st) => {
+      const row = { atLeast: NaN, tentative: NaN, rate: NaN };
+      return {
+        standard: rows(table(st)?.standard.length ?? 8, row),
+        checkbox: rows(table(st)?.checkbox.length ?? 8, row),
+      };
+    }),
+  };
+}
+
+const fixtureText = (f: PublishedYear) => `/**
+ * ${year} tax figures as published: BLANK. Key every figure (NaN) and
+ * citation ("") by hand from the documents themselves, never from
+ * tax-data/us-federal/${year}.json: the Rev. Proc. of ${year} inflation
+ * adjustments (§ 1 rate tables, § 1(h) maximum zero and 15% rate amounts,
+ * § 63(c)(2) standard deduction, § 63(f) aged-or-blind amounts) and
+ * Pub 15-T (${year}) § 1 annual percentage-method tables, both columns.
+ * Cite each table (document, section or table, page). Then add it to
+ * PUBLISHED in tests/tax-data/irs-published.test.ts; that test lists any
+ * blank left.
+ */
+import type { PublishedYear } from "./types";
+
+export const PUBLISHED_${year}: PublishedYear = ${JSON.stringify(
+  f,
+  (_k, v: unknown) =>
+    typeof v === "number" && Number.isNaN(v) ? "__BLANK__" : v,
+).replaceAll('"__BLANK__"', "NaN")};
+`;
+
 async function write(file: string, value: unknown) {
+  const text = typeof value === "string" ? value : JSON.stringify(value);
   fs.writeFileSync(
     file,
-    await prettier.format(JSON.stringify(value), {
+    await prettier.format(text, {
       ...(await prettier.resolveConfig(file)),
       filepath: file,
     }),
@@ -89,8 +164,17 @@ async function main() {
   console.log(
     `wrote ${file} (from ${latest}, every figure blank). Ledgr skips it until every figure is filled in.`,
   );
+  const fixture = path.join(FIXTURE_DIR, `${year}.ts`);
+  if (fs.existsSync(fixture)) console.log(`${fixture} already exists; kept.`);
+  else {
+    await write(fixture, fixtureText(blankFixture()));
+    console.log(`wrote ${fixture} (every published figure blank).`);
+  }
   console.log(
     "Fill in each figure and its citation, add each citation's link to `sources`, raise dataVersion in index.json, then run pnpm tax-data:check.",
+  );
+  console.log(
+    `Then key ${fixture} by hand from the same notices (not from the JSON), add it to PUBLISHED in tests/tax-data/irs-published.test.ts, and run pnpm test tests/tax-data/irs-published.test.ts: CI fails for a shipped year without it.`,
   );
 }
 
