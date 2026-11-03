@@ -53,10 +53,10 @@ const month = z.looseObject({
 });
 
 /** `/payees`: a transfer payee may have an empty name and points at its
- *  account instead. */
+ *  account instead; an imported payee may have none. */
 const payee = z.looseObject({
   id: z.string(),
-  name: z.string(),
+  name: z.string().nullish(),
   transfer_acct: z.string().nullish(),
 });
 

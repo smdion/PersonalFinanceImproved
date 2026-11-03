@@ -58,6 +58,7 @@ const CATEGORIES = [
 const PAYEES = [
   { id: "p1", name: "Store", category: null, transfer_acct: null },
   { id: "p-xfer", name: "", category: null, transfer_acct: "a1" },
+  { id: "p-imported", name: null, category: null, transfer_acct: null },
 ];
 
 /** Answers the name lists by URL and hands every other request to `rest`. */
@@ -1146,6 +1147,7 @@ describe("ActualClient", () => {
         a1: [
           actualTx({ id: "t1", category: "groceries", payee: "p1" }),
           actualTx({ id: "t2", category: null, payee: null }),
+          actualTx({ id: "t4", category: null, payee: "p-imported" }),
         ],
         "a-sav": [actualTx({ id: "t3", account: "a-sav", payee: "p-xfer" })],
       });
@@ -1155,6 +1157,8 @@ describe("ActualClient", () => {
       ).toEqual([
         ["t1", "Groceries", "Store", "Checking"],
         ["t2", null, null, "Checking"],
+        // A payee Actual holds without a name has none here either.
+        ["t4", null, null, "Checking"],
         // A transfer payee has no name of its own: its account's name.
         ["t3", null, "Checking", "Savings"],
       ]);

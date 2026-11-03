@@ -153,7 +153,7 @@ function payeeNames(
   const out = new Map<string, string>();
   for (const p of payees) {
     const name =
-      p.name.trim() || (p.transfer_acct && accountNames.get(p.transfer_acct));
+      p.name?.trim() || (p.transfer_acct && accountNames.get(p.transfer_acct));
     if (name) out.set(p.id, name);
   }
   return out;
