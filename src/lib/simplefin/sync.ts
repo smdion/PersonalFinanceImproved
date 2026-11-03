@@ -558,9 +558,12 @@ export async function runSimplefinSync(
       const { warnings, ...counts } = summary;
       investments = counts;
       ingestWarnings.push(...warnings);
-      // Only a complete ingest moves the window forward; an account that
-      // reported an error is re-requested from the old start next time.
-      if ((accountIdsWithErrors ?? []).length === 0)
+      // Only a complete ingest moves the window forward: an account that
+      // errored or didn't answer is re-requested from the old start.
+      if (
+        (accountIdsWithErrors ?? []).length === 0 &&
+        missingAccounts.length === 0
+      )
         await setInvestmentsSyncedAt(db, asOfDate);
     } catch (e) {
       ingestWarnings.push(

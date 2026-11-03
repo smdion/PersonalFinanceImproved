@@ -94,6 +94,33 @@ describe("transaction window across syncs", () => {
     expect(requestedStart()).toEqual(new Date("2026-05-29T12:00:00Z")); // still from Jun 3
   });
 
+  it("doesn't move the window forward when a linked account didn't answer", async () => {
+    const second = {
+      ...response().accounts[0]!,
+      id: "acct-2",
+      name: "Example Savings",
+    };
+    mockGetAccounts.mockResolvedValueOnce({
+      ...response(),
+      accounts: [...response().accounts, second],
+    });
+    await runSimplefinSync(ctx.rawDb, new Date("2026-06-06T12:00:00Z"));
+    expect(await getInvestmentsSyncedAt(ctx.rawDb)).toEqual(
+      new Date("2026-06-06T12:00:00Z"),
+    );
+    // acct-2 is missing from the next answer, with no error reported.
+    mockGetAccounts.mockResolvedValueOnce(response());
+    await runSimplefinSync(ctx.rawDb, new Date("2026-06-07T12:00:00Z"));
+    expect(await getInvestmentsSyncedAt(ctx.rawDb)).toEqual(
+      new Date("2026-06-06T12:00:00Z"),
+    );
+    // Leave only acct-1 included for the tests after this one.
+    await ctx.rawDb
+      .update(ctx.appSchema.simplefinAccounts)
+      .set({ isIncluded: false })
+      .where(eq(ctx.schema.simplefinAccounts.externalAccountId, "acct-2"));
+  });
+
   it("reports a 'capped' notice as information, not an error, and learns the limit", async () => {
     const capped = {
       ...response(),
