@@ -3,7 +3,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { z, ZodError } from "zod/v4";
-import { friendlyMutationError } from "@/lib/utils/mutation-error";
+import { errorText, friendlyMutationError } from "@/lib/utils/mutation-error";
 
 describe("friendlyMutationError", () => {
   it("passes a hand-written BAD_REQUEST message straight through", () => {
@@ -110,5 +110,25 @@ describe("friendlyMutationError", () => {
     ).toBe(
       "Actual sent something Ledgr doesn't understand (data.0.offbudget). Nothing was changed.",
     );
+  });
+});
+
+describe("errorText", () => {
+  it("prefers the server's userMessage", () => {
+    expect(
+      errorText({
+        message: "Sync failed: Actual: /accounts: data.0.offbudget",
+        data: {
+          userMessage: "Actual sent something Ledgr doesn't understand.",
+        },
+      }),
+    ).toBe("Actual sent something Ledgr doesn't understand.");
+  });
+
+  it("falls back to the error's message, then to the fallback", () => {
+    expect(errorText(new Error("Token expired"))).toBe("Token expired");
+    expect(errorText({ message: "x", data: { userMessage: null } })).toBe("x");
+    expect(errorText("boom", "unknown error")).toBe("unknown error");
+    expect(errorText(null)).toBe("Unknown error");
   });
 });

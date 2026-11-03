@@ -8,9 +8,11 @@
  *   <FormError message="Name is required" />
  *   <FormError error={mutation.error} prefix="Failed to save" />
  *
- * Renders nothing when there is no error. Extracts the user-facing message
- * from tRPC TRPCClientError objects automatically.
+ * Renders nothing when there is no error. Shows a tRPC error's
+ * `data.userMessage` when a service failed (errorText), else its message.
  */
+
+import { errorText } from "@/lib/utils/mutation-error";
 
 type FormErrorProps = {
   /** A tRPC mutation `.error` value, a native Error, or null/undefined. */
@@ -29,7 +31,7 @@ export function FormError({
   prefix,
   className,
 }: FormErrorProps) {
-  const text = message ?? error?.message ?? null;
+  const text = message ?? (error ? errorText(error) : null);
   if (!text) return null;
 
   const display = prefix ? `${prefix}: ${text}` : text;
@@ -51,7 +53,7 @@ export function FormErrorBlock({
   prefix,
   className,
 }: FormErrorProps) {
-  const text = message ?? error?.message ?? null;
+  const text = message ?? (error ? errorText(error) : null);
   if (!text) return null;
 
   const display = prefix ? `${prefix}: ${text}` : text;

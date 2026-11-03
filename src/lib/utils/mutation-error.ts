@@ -84,3 +84,13 @@ export function friendlyMutationError(error: unknown): string | null {
 
   return GENERIC;
 }
+
+/**
+ * Inline error text for a screen: the server's sentence when a service
+ * failed, else the error's own message (else `fallback`).
+ */
+export function errorText(error: unknown, fallback = "Unknown error"): string {
+  const e = (error ?? {}) as TrpcClientErrorShape;
+  if (e.data?.userMessage) return e.data.userMessage;
+  return typeof e.message === "string" ? e.message : fallback;
+}

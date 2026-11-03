@@ -3,11 +3,11 @@
 /**
  * YNAB / API-sync mutations for the budget page.
  *
- * Both mutations busts the computeActiveSummary cache on success since
+ * Both mutations bust the computeActiveSummary cache on success since
  * a pull rewrites local budgeted amounts and a push sends the current
  * amounts upstream (no local state change needed for a push, but
  * invalidation ensures any YNAB actuals refreshed upstream are
- * re-fetched on the next load).
+ * re-fetched on the next load). A failed push busts it too.
  */
 
 import { trpc } from "@/lib/trpc";
@@ -35,6 +35,9 @@ export function useSyncMutations() {
     },
   });
   const syncToApi = trpc.budget.syncBudgetToApi.useMutation({
+    // A push can stop partway; reload so the page shows what was written.
+    // The global toast says what happened.
+    onError: () => invalidateSummary(),
     onSuccess: (data) => {
       invalidateSummary();
       toast.success(
