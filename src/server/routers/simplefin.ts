@@ -276,13 +276,16 @@ export const simplefinRouter = createTRPCRouter({
         last &&
         Date.now() - last.getTime() < SIMPLEFIN_MANUAL_SYNC_MIN_GAP_MS
       ) {
+        const since = Date.now() - last.getTime();
+        const ago = Math.floor(since / 60_000);
         const minutes = Math.ceil(
-          (SIMPLEFIN_MANUAL_SYNC_MIN_GAP_MS - (Date.now() - last.getTime())) /
-            60_000,
+          (SIMPLEFIN_MANUAL_SYNC_MIN_GAP_MS - since) / 60_000,
         );
+        const plural = (n: number) => `${n} minute${n === 1 ? "" : "s"}`;
+        // The last request may have been a sync or a connection test.
         throw new TRPCError({
           code: "TOO_MANY_REQUESTS",
-          message: `SimpleFIN was synced moments ago. Try again in ${minutes} minute${minutes === 1 ? "" : "s"} — SimpleFIN allows only about 24 requests a day.`,
+          message: `Ledgr sent SimpleFIN a request ${ago < 1 ? "less than a minute" : plural(ago)} ago. Try again in ${plural(minutes)} — SimpleFIN allows only about 24 requests a day.`,
         });
       }
     }

@@ -590,12 +590,32 @@ describe("simplefin router", () => {
   });
 
   describe("syncNow", () => {
+    it("after a connection test, says a request was sent, not that it synced", async () => {
+      const ctx = await createTestCaller();
+      try {
+        ctx.db
+          .insert(sqliteSchema.syncRequestLog)
+          .values({
+            service: "simplefin",
+            endpoint: "/accounts",
+            outcome: "ok",
+            requestedAt: new Date(Date.now() - 3 * 60_000 - 1_000),
+          })
+          .run();
+        await expect(ctx.caller.simplefin.syncNow()).rejects.toThrow(
+          "Ledgr sent SimpleFIN a request 3 minutes ago. Try again in 7 minutes — SimpleFIN allows only about 24 requests a day.",
+        );
+      } finally {
+        ctx.cleanup();
+      }
+    });
+
     it("refuses a manual sync within 10 minutes of the last SimpleFIN request (quota)", async () => {
       db.insert(sqliteSchema.syncRequestLog)
         .values({ service: "simplefin", endpoint: "/accounts", outcome: "ok" })
         .run();
       await expect(caller.simplefin.syncNow()).rejects.toThrow(
-        /Try again in \d+ minute/,
+        "Ledgr sent SimpleFIN a request less than a minute ago. Try again in 10 minutes — SimpleFIN allows only about 24 requests a day.",
       );
     });
   });
