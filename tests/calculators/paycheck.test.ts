@@ -57,10 +57,8 @@ describe("calculatePaycheck", () => {
       expect(result.gross).toBeCloseTo(4615.38, 0);
     });
 
-    it("computes correct federal withholding", () => {
-      expect(result.federalWithholding).toBeGreaterThan(600);
-      expect(result.federalWithholding).toBeLessThan(700);
-    });
+    // Federal withholding is held to the cent by Pub 15-T Worksheet 1A in
+    // answer-key-paycheck.test.ts (C16–C30, every period and status).
 
     it("computes correct FICA Social Security", () => {
       // FICA base = gross - FICA-exempt (STD $30 + LTD $22) = $4,563.38
