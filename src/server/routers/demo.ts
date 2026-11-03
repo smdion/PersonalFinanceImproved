@@ -15,6 +15,7 @@ import { DEMO_PROFILES, getDemoProfileList } from "@/lib/demo";
 import type { DemoProfile } from "@/lib/demo";
 import * as schema from "@/lib/db/schema";
 import { db as appDb, pool } from "@/lib/db";
+import { serializeQueries } from "@/lib/db/serial-client";
 import { isPostgres } from "@/lib/db/dialect";
 import { getParentCategory } from "@/lib/config/account-types";
 import type { AccountCategory } from "@/lib/config/account-types";
@@ -598,6 +599,7 @@ export const demoRouter = createTRPCRouter({
 
       // Enforce max demo schema count to prevent DoS
       const client = await pool.connect();
+      const serial = serializeQueries(client);
       try {
         const schemaCount = await client.query(
           `SELECT count(*)::int AS cnt FROM information_schema.schemata WHERE schema_name LIKE 'demo\\_%'`,
@@ -610,8 +612,9 @@ export const demoRouter = createTRPCRouter({
         }
 
         const { drizzle } = await import("drizzle-orm/node-postgres");
+        const conn = serial.client;
         // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM type limitation
-        const cdb = drizzle(client, { schema }) as unknown as typeof appDb;
+        const cdb = drizzle(conn, { schema }) as unknown as typeof appDb;
 
         // Create schema if not exists
         await cdb.execute(
@@ -680,6 +683,8 @@ export const demoRouter = createTRPCRouter({
 
         await seedProfile(cdb, profile);
       } finally {
+        // Queries still queued run on the demo schema before the reset.
+        await serial.close();
         await client.query("SET search_path TO public");
         client.release();
       }

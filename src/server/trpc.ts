@@ -12,6 +12,7 @@ import { cookies, headers } from "next/headers";
 import { auth } from "./auth";
 import { type Permission, ALL_PERMISSIONS } from "./auth";
 import { db, pool } from "@/lib/db";
+import { serializeQueries } from "@/lib/db/serial-client";
 import { isPostgres } from "@/lib/db/dialect";
 import { rateLimit } from "@/lib/rate-limit";
 import { clientAddress } from "@/lib/client-address";
@@ -89,8 +90,8 @@ export async function createContext(): Promise<Context> {
       : await auth();
 
   // Detect demo profile from cookie — actual search_path switching happens
-  // in the demoSchema middleware (which wraps queries in a transaction so
-  // every query hits the same pooled connection).
+  // in the demoSchema middleware (a session-level SET on one dedicated
+  // pooled connection that every query of the request uses).
   let demoSchema: string | null = null;
   try {
     const cookieStore = await cookies();
@@ -207,6 +208,8 @@ function logMutation(session: Session, path: string, rawInput: unknown) {
 // set search_path on it, and use it for all queries in this procedure.
 // This avoids the pool-connection-hop problem where SET search_path on one
 // connection doesn't apply to queries that land on a different connection.
+// Its queries run one at a time (serializeQueries): procedures written for
+// the pool read with Promise.all.
 const demoSchemaMiddleware = t.middleware(async ({ ctx, next, path }) => {
   // Demo schemas require PG (uses SET search_path for isolation)
   if (!ctx.demoSchema || !isPostgres()) return next({ ctx });
@@ -215,6 +218,7 @@ const demoSchemaMiddleware = t.middleware(async ({ ctx, next, path }) => {
   // but double-quote the identifier defensively.
   const quotedSchema = `"${ctx.demoSchema.replace(/"/g, '""')}"`;
   const client = await pool.connect();
+  const serial = serializeQueries(client);
   try {
     // Fail closed: PostgreSQL silently skips a missing schema in
     // search_path, so a demo schema dropped by an upgrade (or missing a
@@ -247,9 +251,12 @@ const demoSchemaMiddleware = t.middleware(async ({ ctx, next, path }) => {
     await client.query(`SET search_path TO ${quotedSchema}, public`);
     const { drizzle: pgDrizzle } = await import("drizzle-orm/node-postgres");
     // eslint-disable-next-line no-restricted-syntax -- Drizzle ORM type limitation
-    const demoDb = pgDrizzle(client, { schema }) as unknown as typeof db;
+    const demoDb = pgDrizzle(serial.client, { schema }) as unknown as typeof db;
     return await next({ ctx: { ...ctx, db: demoDb } });
   } finally {
+    // Queries still queued (siblings of a rejected Promise.all) run on the
+    // demo schema before the reset; later ones are refused.
+    await serial.close();
     await client.query("SET search_path TO public");
     client.release();
   }
