@@ -21,7 +21,7 @@ const CACHE_MODULE = "src/server/helpers/projection-cache.ts";
 const WORKER = "src/workers/monte-carlo-worker.ts";
 
 /** Every src/ file that writes projection_cache, and the worker they run. */
-function entryPoints(): string[] {
+export function entryPoints(): string[] {
   const writers = fs
     .readdirSync(path.join(ROOT, "src"), { recursive: true, encoding: "utf8" })
     .map((f) => path.posix.join("src", f.split(path.sep).join("/")))
@@ -99,7 +99,11 @@ async function main(): Promise<void> {
   console.log(`Wrote ${OUT}: ${hash} (${files.length} files).`);
 }
 
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+if (
+  process.argv[1] &&
+  path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+)
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
