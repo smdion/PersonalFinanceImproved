@@ -142,11 +142,6 @@ export const HSA_NON_MEDICAL_PENALTY_AGE = 65;
  *  is deliberately NOT modeled — see `toLtcgTaxableIncome`. */
 export const ADDITIONAL_STANDARD_DEDUCTION_AGE = 65;
 
-/** Medicare eligibility age (Social Security Act §226). IRMAA surcharges
- *  apply from this age onward; it also backs ACA subsidy-eligibility checks
- *  elsewhere, since gaining Medicare ends marketplace-subsidy eligibility. */
-export const MEDICARE_START_AGE = 65;
-
 /** 10% early-withdrawal penalty rate for Traditional/Roth IRA and 401k/403b
  *  (IRC §72(t)) — every account type this module gates EXCEPT HSA, which
  *  has its own, higher rate (see `HSA_NON_MEDICAL_PENALTY_RATE` immediately
@@ -327,23 +322,6 @@ export const MIN_INFLATION_RATE = -0.1;
 
 /** Cap the brokerage ramp multiplier year to prevent unbounded growth. */
 export const MAX_BROKERAGE_RAMP_YEARS = 40;
-
-// ---------------------------------------------------------------------------
-// RMD / Qualified Charitable Distribution
-// ---------------------------------------------------------------------------
-
-/** Minimum age for QCD eligibility (IRC §408(d)(8)(B)(ii): age 70½) — the
- *  engine tracks whole-year ages only, so this rounds DOWN to 70 rather
- *  than 71, since someone who turns 70 mid-year is already 70½-eligible
- *  for part of that projection year and the engine has no sub-year
- *  granularity to model the exact month. Deliberately independent of
- *  `getRmdStartAge` (72/73/75 by birth year) — QCD eligibility was NOT
- *  moved by SECURE 2.0's RMD-age delay, so a household can (and often
- *  should, to shrink a future RMD) start QCDs years before RMDs are even
- *  required (QCD was previously computed
- *  only for people who'd already reached RMD age, silently zeroing out
- *  this whole pre-RMD window, its highest-value use case). */
-export const QCD_MIN_ELIGIBILITY_AGE = 70;
 
 // ---------------------------------------------------------------------------
 // RMD-aware Roth conversion smoothing

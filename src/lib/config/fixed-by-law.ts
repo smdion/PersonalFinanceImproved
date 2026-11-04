@@ -17,13 +17,12 @@ import {
   HSA_NON_MEDICAL_PENALTY_AGE,
   HSA_NON_MEDICAL_PENALTY_RATE,
   PENALTY_FREE_AGE,
-  QCD_MIN_ELIGIBILITY_AGE,
   RMD_EXCISE_TAX_RATE,
   ROTH_CONVERSION_SEASONING_YEARS,
   RULE_OF_55_AGE,
   ADDITIONAL_STANDARD_DEDUCTION_AGE,
-  MEDICARE_START_AGE,
 } from "@/lib/constants";
+import { AGE_RULES } from "./age-rules";
 import { NIIT_RATE, NIIT_THRESHOLDS } from "./niit";
 import {
   SS_TAX_THRESHOLDS,
@@ -162,7 +161,7 @@ export function fixedByLawGroups(): FixedByLawGroup[] {
         },
         {
           label: "Medicare (and IRMAA) from",
-          value: `${MEDICARE_START_AGE}`,
+          value: `${AGE_RULES.medicare.age}`,
           citation: "Social Security Act §226",
         },
         {
@@ -172,7 +171,7 @@ export function fixedByLawGroups(): FixedByLawGroup[] {
         },
         {
           label: "Charitable distributions (QCDs) from IRAs",
-          value: `70½ (Ledgr counts from the year you turn ${QCD_MIN_ELIGIBILITY_AGE})`,
+          value: `70½ (Ledgr counts from the year you turn ${AGE_RULES.qcd.age})`,
           citation: "IRC §408(d)(8)(B)(ii)",
         },
         {

@@ -10,13 +10,12 @@ import {
   HSA_NON_MEDICAL_PENALTY_AGE,
   HSA_NON_MEDICAL_PENALTY_RATE,
   PENALTY_FREE_AGE,
-  QCD_MIN_ELIGIBILITY_AGE,
   RMD_EXCISE_TAX_RATE,
   ROTH_CONVERSION_SEASONING_YEARS,
   RULE_OF_55_AGE,
   ADDITIONAL_STANDARD_DEDUCTION_AGE,
-  MEDICARE_START_AGE,
 } from "@/lib/constants";
+import { AGE_RULES } from "@/lib/config/age-rules";
 import { NIIT_RATE, NIIT_THRESHOLDS } from "@/lib/config/niit";
 import {
   SS_TAX_THRESHOLDS,
@@ -49,9 +48,9 @@ describe("fixed by law", () => {
     expect(PENALTY_FREE_AGE).toBe(59.5);
     expect(RULE_OF_55_AGE).toBe(55);
     expect(ADDITIONAL_STANDARD_DEDUCTION_AGE).toBe(65);
-    expect(MEDICARE_START_AGE).toBe(65);
+    expect(AGE_RULES.medicare.age).toBe(65);
     expect(HSA_NON_MEDICAL_PENALTY_AGE).toBe(65);
-    expect(QCD_MIN_ELIGIBILITY_AGE).toBe(70);
+    expect(AGE_RULES.qcd.age).toBe(70);
     expect([1950, 1951, 1959, 1960].map(getRmdStartAge)).toEqual([
       72, 73, 73, 75,
     ]);

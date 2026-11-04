@@ -3655,10 +3655,10 @@
   },
   "src/lib/constants.ts": {
     "ratchet/max-comment-lines": {
-      "count": 12
+      "count": 11
     },
     "ratchet/no-history-comment": {
-      "count": 3
+      "count": 2
     }
   },
   "src/lib/constants/settings-keys.ts": {

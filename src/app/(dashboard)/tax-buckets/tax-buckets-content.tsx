@@ -638,7 +638,7 @@ function AccountDetailRow({
           </Badge>
           <HelpTip
             text={
-              entry.ageThresholdStatus.thresholdAge === 65
+              isHsaCategory(entry.category)
                 ? "At 65, non-medical HSA withdrawals stop incurring the 20% penalty — ordinary income tax still applies. Qualified medical withdrawals are always penalty-free and tax-free at any age."
                 : "At 59½, retirement-account withdrawals become penalty-free generally. There's no Rule-of-55 equivalent for an IRA (only SEPP/72(t), not modeled here)."
             }

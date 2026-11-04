@@ -30,10 +30,9 @@ import { computeRmdSmoothingTargets } from "../rmd-smoothing";
 import { computeObbbaSeniorDeduction } from "../obbba-senior-deduction";
 import {
   MAX_BROKERAGE_RAMP_YEARS,
-  QCD_MIN_ELIGIBILITY_AGE,
   ADDITIONAL_STANDARD_DEDUCTION_AGE,
-  MEDICARE_START_AGE,
 } from "../../../constants";
+import { countReachingAgeRule, reachesAgeRule } from "@/lib/pure/household/age";
 import { cloneAccountBalances, scopedBalances } from "../balance-utils";
 import {
   getLtcgRate,
@@ -287,7 +286,7 @@ export function runDecumulationYear(
   // Only meaningful with individual accounts tracked (same limitation
   // per-person RMD itself already has).
   //
-  // Eligibility is QCD_MIN_ELIGIBILITY_AGE (70), NOT rmdByPerson's
+  // Eligibility is AGE_RULES.qcd (70), NOT rmdByPerson's
   // RMD-start-age gate -- QCD eligibility
   // predates SECURE 2.0's RMD-age delay, so someone with startAge 75 is
   // still QCD-eligible for years before any RMD is even required. Built
@@ -299,10 +298,7 @@ export function runDecumulationYear(
   const qcdEligiblePersonIds =
     hasIndividualAccounts && rmdStartAgeByPerson.size > 0
       ? Array.from(rmdStartAgeByPerson.entries())
-          .filter(
-            ([, { birthYear }]) =>
-              ageInYear(birthYear, year) >= QCD_MIN_ELIGIBILITY_AGE,
-          )
+          .filter(([, { birthYear }]) => reachesAgeRule(birthYear, "qcd", year))
           .map(([personId]) => personId)
       : [];
   if (qcdEligiblePersonIds.length > 0) {
@@ -547,13 +543,12 @@ export function runDecumulationYear(
     tableYears.fpl,
   );
 
-  const personsAge65Plus =
-    perPersonBirthYears && perPersonBirthYears.length > 0
-      ? perPersonBirthYears.filter((by) => year - by >= MEDICARE_START_AGE)
-          .length
-      : age >= MEDICARE_START_AGE
-        ? 1
-        : 0;
+  const personsAge65Plus = countReachingAgeRule(
+    perPersonBirthYears,
+    age,
+    "medicare",
+    year,
+  );
   // IRMAA paid on top of the budget joins a need-sized year's need, so the
   // gross-up, shortfall and RMD excess all see it. It's a cost beside the
   // need: never in projectedExpenses (a strategy would carry it forward)
@@ -1326,11 +1321,8 @@ export function runDecumulationYear(
   // Under-65 is the ACA marketplace-subsidy eligibility criterion this
   // checks — it's the same real-world Medicare-eligibility event the IRMAA
   // block above tests, not an independent regulatory threshold, so it
-  // shares MEDICARE_START_AGE.
-  const allPersonsUnder65 =
-    perPersonBirthYears && perPersonBirthYears.length > 0
-      ? perPersonBirthYears.every((by) => year - by < MEDICARE_START_AGE)
-      : age < MEDICARE_START_AGE;
+  // shares AGE_RULES.medicare.
+  const allPersonsUnder65 = personsAge65Plus === 0;
   const acaResult = checkAca({
     enableAcaAwareness,
     allPersonsUnder65,
