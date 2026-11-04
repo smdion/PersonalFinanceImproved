@@ -31,7 +31,7 @@ import { valueHoldings } from "./holdings-overview";
 
 export const investmentAccountInsightsRouter = createTRPCRouter({
   getAccountInsights: portfolioProcedure.query(async ({ ctx }) => {
-    const today = utcDayOf(new Date());
+    const today = utcDayOf(ctx.scope.asOf);
     const since = addDays(today, -RECENT_ACTIVITY_DAYS);
     const [context, accounts, mix, holdings, coverage, perfRows] =
       await Promise.all([
@@ -159,7 +159,7 @@ export const investmentAccountInsightsRouter = createTRPCRouter({
       })
       .filter((a): a is NonNullable<typeof a> => a !== null);
     const days: string[] = [];
-    const today = utcDayOf(new Date());
+    const today = utcDayOf(ctx.scope.asOf);
     for (let d = addDays(snapshotDate, 1); d <= today; d = addDays(d, 1))
       days.push(d);
     return {

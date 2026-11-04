@@ -1,7 +1,6 @@
 /** Always Be Buying, month by month: whether SimpleFIN saw a deposit into
  *  a counted feed each whole month it covered (lib/pure/always-buying.ts). */
 import { createTRPCRouter, portfolioProcedure } from "../../trpc";
-import { localDateStr } from "@/lib/utils/date";
 import { buyingMonths } from "@/lib/pure/always-buying";
 import {
   loadAccounts,
@@ -42,7 +41,7 @@ export const investmentBuyingRouter = createTRPCRouter({
         (first, r) => (first === null || r.posted < first ? r.posted : first),
         null,
       ),
-      today: localDateStr(),
+      today: ctx.scope.today,
     });
   }),
 });
