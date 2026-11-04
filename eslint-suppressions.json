@@ -2336,11 +2336,6 @@
       "count": 1
     }
   },
-  "src/components/settings/api-docs.tsx": {
-    "ratchet/no-raw-input": {
-      "count": 1
-    }
-  },
   "src/components/settings/auth-settings.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
@@ -5166,22 +5161,6 @@
       "count": 1
     }
   },
-  "src/lib/utils/zod-introspect.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 20
-    },
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "src/server/api-docs.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 7
-    },
-    "ratchet/max-comment-lines": {
-      "count": 1
-    }
-  },
   "src/server/auth-mode.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
@@ -5616,11 +5595,6 @@
   "src/server/routers/_shared.ts": {
     "ratchet/max-comment-lines": {
       "count": 10
-    }
-  },
-  "src/server/routers/api-docs.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
     }
   },
   "src/server/routers/assets.ts": {

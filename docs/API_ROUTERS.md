@@ -2,15 +2,9 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**394 procedures across 55 routers.**
+**393 procedures across 54 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
-
-## `api-docs`
-
-| Procedure | Kind  | Auth             | Description      |
-| --------- | ----- | ---------------- | ---------------- |
-| `list`    | query | `adminProcedure` | (no description) |
 
 ## `assets`
 

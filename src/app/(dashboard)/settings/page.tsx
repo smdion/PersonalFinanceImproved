@@ -12,7 +12,6 @@ import {
 } from "@/components/settings/access-control";
 import { GeneralSettings } from "@/components/settings/general";
 import { DebugSettings } from "@/components/settings/debug";
-import { ApiDocsSettings } from "@/components/settings/api-docs";
 import { IntegrationsSettings } from "@/components/settings/integrations";
 import { PageHeader } from "@/components/ui/page-header";
 import { useUser, isAdmin } from "@/lib/context/user-context";
@@ -28,9 +27,10 @@ import {
 
 const SECTION_PARAM_ONLY = [SETTINGS_SECTION_PARAM];
 
-// "people" folded into General as a sub-item — an existing user's
-// SK_SETTINGS_ACTIVE_TAB may still hold it.
-const OLD_GENERAL_TAB_KEYS = ["people"];
+// "people" folded into General as a sub-item, and the admin "api" tab is
+// gone (docs/API_ROUTERS.md is the API reference) — an existing user's
+// SK_SETTINGS_ACTIVE_TAB may still hold either.
+const OLD_GENERAL_TAB_KEYS = ["people", "api"];
 
 export default function SettingsPage() {
   const user = useUser();
@@ -86,7 +86,6 @@ export default function SettingsPage() {
         {activeTab === "integrations" && <IntegrationsSettings />}
         {activeTab === "access" && admin && <AccessControlSettings />}
         {activeTab === "debug" && admin && <DebugSettings />}
-        {activeTab === "api" && admin && <ApiDocsSettings />}
       </div>
     </div>
   );

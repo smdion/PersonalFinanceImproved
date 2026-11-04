@@ -153,9 +153,6 @@ export default defineConfig({
         "src/server/helpers/index.ts",
         // Documentation-only (no executable statements)
         "src/server/routers/_shared.ts",
-        // OpenAPI doc generator — runtime-only
-        "src/server/api-docs.ts",
-        "src/server/routers/api-docs.ts",
         // Data browser — all procedures use db.execute() (Postgres raw SQL)
         "src/server/routers/data-browser.ts",
         // Budget API — types and barrel re-exports

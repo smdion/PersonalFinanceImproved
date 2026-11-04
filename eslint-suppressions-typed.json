@@ -714,11 +714,6 @@
       "count": 1
     }
   },
-  "src/lib/utils/zod-introspect.ts": {
-    "@typescript-eslint/no-unnecessary-condition": {
-      "count": 2
-    }
-  },
   "src/server/auth.config.ts": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 1

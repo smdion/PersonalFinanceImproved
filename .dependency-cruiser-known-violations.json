@@ -440,16 +440,6 @@
     "to": "src/server/retirement/payload/profile-switches.ts"
   },
   {
-    "rule": "no-circular",
-    "from": "src/server/routers/api-docs.ts",
-    "to": "src/server/routers/index.ts"
-  },
-  {
-    "rule": "no-router-to-router",
-    "from": "src/server/routers/api-docs.ts",
-    "to": "src/server/routers/index.ts"
-  },
-  {
     "rule": "no-router-to-router",
     "from": "src/server/routers/assets.ts",
     "to": "src/server/routers/_shared.ts"
