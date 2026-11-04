@@ -8,8 +8,7 @@ import { and, eq, gte, lt, ne, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { BudgetApiError } from "@/lib/budget-api/errors";
 import { isSimplefinReplayMode } from "./client";
-
-type Db = typeof import("@/lib/db").db;
+import type { Db } from "@/lib/db";
 
 const SERVICE = "simplefin";
 /** Hard stop below SimpleFIN Bridge's ~24/day quota, leaving headroom. */

@@ -8,9 +8,9 @@
  */
 import { eq, and } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type { Db } from "./transforms";
 import { toNumber } from "./transforms";
 import { computeRothBasisRollover } from "@/lib/pure/roth-basis-rollover";
+import type { Db } from "@/lib/db";
 
 /**
  * Finalize the given year's non-finalized rothBasis rows and seed next

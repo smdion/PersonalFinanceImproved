@@ -6,9 +6,8 @@
  */
 import { eq, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import { isPostgres } from "@/lib/db";
+import { isPostgres, type Db } from "@/lib/db";
 import { execRaw } from "@/lib/db/compat";
-import type { Db } from "./transforms";
 
 let queue: Promise<unknown> = Promise.resolve();
 function oneAtATime<T>(fn: () => Promise<T>): Promise<T> {

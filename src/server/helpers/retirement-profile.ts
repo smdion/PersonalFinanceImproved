@@ -21,7 +21,8 @@ import { asc, eq, isNull } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { SK_ACTIVE_RETIREMENT_PROFILE_ID } from "@/lib/constants/settings-keys";
 import { lockForTransaction } from "./transaction-lock";
-import { getPrimaryPerson, type Db, type DbOrTx } from "./transforms";
+import { getPrimaryPerson } from "./transforms";
+import type { Db, DbOrTx } from "@/lib/db";
 
 /** Coerce an app_settings jsonb value to a profile id. Stored as a bare
  *  number (`1`), but tolerate a numeric string from older writes. */

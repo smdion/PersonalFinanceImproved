@@ -32,8 +32,7 @@ import {
   loadHoldingSplits,
   loadObservedPeriods,
 } from "./_shared";
-
-type Db = typeof import("@/lib/db").db;
+import type { Db } from "@/lib/db";
 
 const PROBLEM_TEXT: Record<string, string> = {
   weightsDontSum: "The funds' shares must add up to 100%",

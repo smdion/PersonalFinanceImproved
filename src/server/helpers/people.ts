@@ -1,6 +1,6 @@
 import { asc } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type { Db } from "./transforms";
+import type { Db } from "@/lib/db";
 
 /**
  * Every person, ordered by id — the household roster.

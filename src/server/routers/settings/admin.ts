@@ -56,7 +56,7 @@ import { applyPlan } from "@/server/helpers/plans";
 import { mergeSettingAtomically } from "@/server/helpers/merge-setting";
 import { firstReachedSchema } from "@/lib/pure/milestone-first-reached";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
-import type { Db } from "@/server/helpers/transforms";
+import type { Db } from "@/lib/db";
 
 // --- Zod schemas ---
 

@@ -15,10 +15,7 @@
 import { and, eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { toNumber } from "./transforms";
-import type { Context } from "../trpc";
-
-type DbType =
-  Context["db"] | Parameters<Parameters<Context["db"]["transaction"]>[0]>[0];
+import type { DbOrTx } from "@/lib/db";
 
 interface ResolvedGoalAllocation {
   goalId: number;
@@ -32,7 +29,7 @@ interface GoalAllocationFields {
 
 /** Batched — one query for all rows in the profile, not N+1 per goal. */
 export async function getResolvedGoalAllocations(
-  db: DbType,
+  db: DbOrTx,
   goals: GoalAllocationFields[],
   profileId: number | null,
 ): Promise<Map<number, ResolvedGoalAllocation>> {
@@ -71,7 +68,7 @@ export async function getResolvedGoalAllocations(
 
 /** Upsert a single (goal, profile) row. Replaces both fields as a unit. */
 export async function upsertGoalProfileAllocation(
-  db: DbType,
+  db: DbOrTx,
   goalId: number,
   profileId: number,
   values: { allocationPercent: number | null; monthlyContribution: number },
@@ -113,7 +110,7 @@ export async function upsertGoalProfileAllocation(
  *  transaction (caller passes a tx db handle) rather than delete+reseed,
  *  since every pair must keep an explicit row. */
 export async function resetProfileAllocationsToZero(
-  db: DbType,
+  db: DbOrTx,
   goalIds: number[],
   profileId: number,
 ): Promise<void> {

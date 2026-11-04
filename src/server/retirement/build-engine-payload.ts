@@ -83,15 +83,13 @@ import {
 import { retirementContributions } from "./payload/retirement-contributions";
 import { buildIndividualAccounts } from "./payload/individual-accounts";
 import { resolveTaxParams, type TaxSection } from "@/lib/config/tax-params";
-import type { db as _db } from "@/lib/db";
 import { projectionJobs, workingYears } from "@/lib/pure/profiles";
 import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
 import {
   SK_BUDGET_ACTIVE_COLUMN,
   SK_IRS_LIMIT_GROWTH_RATE,
 } from "@/lib/constants/settings-keys";
-
-type Db = typeof _db;
+import type { Db } from "@/lib/db";
 
 /**
  * Fetch all DB tables needed by the contribution engine / Monte Carlo projection.

@@ -8,8 +8,7 @@ import type { BudgetAPIClient } from "./interface";
 import type { ActiveBudgetApi, YnabConfig, ActualConfig } from "./types";
 import { YnabClient } from "./ynab-client";
 import { ActualClient } from "./actual-client";
-
-type Db = typeof import("@/lib/db").db;
+import type { Db } from "@/lib/db";
 
 /** Get the active budget API setting. Returns 'none' if not configured. */
 export async function getActiveBudgetApi(db: Db): Promise<ActiveBudgetApi> {

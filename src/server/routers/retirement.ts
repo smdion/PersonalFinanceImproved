@@ -40,7 +40,6 @@ import {
   resolveActiveProfilePair,
 } from "@/server/helpers";
 import { getAllPeople } from "@/server/helpers/people";
-import type { Db } from "@/server/helpers";
 import {
   aggregateContributionsByCategory,
   type ContribRowWithActiveFields,
@@ -67,6 +66,7 @@ import {
   adoptFirstRetirementProfile,
   lockFirstRetirementProfile,
 } from "@/server/helpers/retirement-profile";
+import type { Db } from "@/lib/db";
 
 /** VPW's end age as its editor bounds it (config paramFields). */
 const VPW_END_AGE_FIELD = (() => {

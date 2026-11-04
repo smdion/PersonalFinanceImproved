@@ -12,8 +12,7 @@ import type { SnapshotParts } from "@/lib/pure/holding-periods";
 import { taxTypeLabel } from "@/lib/utils/colors";
 import type { AccountCategory } from "@/lib/config/account-types.types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
-
-type Db = typeof import("@/lib/db").db;
+import type { Db } from "@/lib/db";
 
 /** "Alex — Roth", "Employer Match (Traditional)" — one rule for every part label. */
 function partLabel(

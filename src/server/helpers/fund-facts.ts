@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { CompositionBucket } from "@/lib/config/enum-values";
 import type { FactRow } from "@/lib/pure/fund-facts";
-import type { Db } from "./transforms";
+import type { Db } from "@/lib/db";
 
 /**
  * Which active asset class each composition bucket counts toward. A link to

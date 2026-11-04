@@ -26,7 +26,7 @@ import {
   setTaxDataSyncEnabled,
 } from "@/lib/tax-data/sync";
 import * as schema from "@/lib/db/schema-sqlite";
-import type { Db } from "@/server/helpers";
+import type { Db } from "@/lib/db";
 
 /** A fake GitHub serving `asset` as the release (null: nothing published). */
 function github(asset: string | null, tag = "tax-data") {

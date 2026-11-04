@@ -21,8 +21,7 @@ import type { DailyClose } from "@/lib/pure/current-balances";
 import { valuationDateFor } from "@/lib/pure/market-calendar";
 import { totalReturnSeries } from "@/lib/pure/total-return";
 import { addDays } from "@/lib/utils/date";
-
-type Db = typeof import("@/lib/db").db;
+import type { Db } from "@/lib/db";
 
 const TTL_MS = 12 * 60 * 60 * 1000;
 const cache = new Map<string, { at: number; prices: Map<string, number> }>();

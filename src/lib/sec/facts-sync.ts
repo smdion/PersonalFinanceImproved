@@ -37,8 +37,7 @@ import {
 } from "./client";
 import type { EdgarFiling } from "./schemas";
 import { userMessageFor } from "@/lib/budget-api/errors";
-
-type Db = typeof import("@/lib/db").db;
+import type { Db } from "@/lib/db";
 
 const CHECK_EVERY_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_LOOK_THROUGH_DEPTH = 2;

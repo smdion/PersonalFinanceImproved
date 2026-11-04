@@ -49,8 +49,7 @@ import {
   loadFeedContext,
   loadLatestHoldings,
 } from "./_shared";
-
-type Db = Parameters<typeof loadFeedContext>[0];
+import type { Db } from "@/lib/db";
 
 /** Days of closes before the oldest date in play — enough for a long
  *  weekend and a feed a few sessions behind. */

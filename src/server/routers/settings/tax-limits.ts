@@ -7,7 +7,6 @@ import {
   adminProcedure,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import type { Db } from "@/server/helpers";
 import { zDecimal } from "./_shared";
 import {
   taxBracketsSchema,
@@ -29,6 +28,7 @@ import { citationsOf } from "@/lib/tax-data/validate";
 import { taxDataStatus, type CarriedFigure } from "@/lib/pure/tax-data-status";
 import { pendingUpdate } from "./tax-data-sync";
 import { localDateStr } from "@/lib/utils/date";
+import type { Db } from "@/lib/db";
 
 // --- Where a figure came from (lib/db/reference-reconcile-core.ts) ---
 

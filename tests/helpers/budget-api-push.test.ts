@@ -7,8 +7,8 @@ import {
 import type { AccountMapping } from "@/lib/db/schema";
 import type { BudgetAPIClient } from "@/lib/budget-api/interface";
 import type { BudgetTransaction } from "@/lib/budget-api/types";
-import type { Db } from "@/server/helpers/transforms";
 import { BudgetApiError, userMessageFor } from "@/lib/budget-api/errors";
+import type { Db } from "@/lib/db";
 
 /** Fake db exposing only the select().from().where() chain the helper
  *  uses to load portfolioAccounts for a snapshot. */

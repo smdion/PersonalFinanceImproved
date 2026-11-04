@@ -15,7 +15,6 @@ import {
   type CapPassRow,
 } from "@/server/helpers/contribution-caps";
 import { inArray } from "drizzle-orm";
-import type { db as _db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 import {
   toNumber,
@@ -35,8 +34,8 @@ import { sumBy, safeDivide } from "@/lib/utils/math";
 import { FALLBACK_CONTRIBUTION_RATE } from "@/lib/constants";
 import type { fetchRetirementData } from "../build-engine-payload";
 import { retirementContributions } from "./retirement-contributions";
+import type { Db } from "@/lib/db";
 
-type Db = typeof _db;
 type RetirementData = Awaited<ReturnType<typeof fetchRetirementData>>;
 type SalaryOverrideRow = RetirementData["salaryOverrideRows"][number];
 

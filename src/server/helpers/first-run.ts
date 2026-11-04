@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { oidcConfigured } from "@/server/auth-mode";
-import type { DbOrTx } from "./transforms";
+import type { DbOrTx } from "@/lib/db";
 
 const ONBOARDING_KEY = "onboarding_completed";
 

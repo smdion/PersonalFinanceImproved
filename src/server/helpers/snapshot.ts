@@ -19,7 +19,6 @@ import {
   calendarYear,
 } from "@/lib/utils/date";
 import { DEFAULT_WITHDRAWAL_RATE } from "@/lib/constants";
-import type { Db } from "./transforms";
 import { parseAppSettings } from "./settings";
 import {
   getTotalCompensation,
@@ -52,6 +51,7 @@ import { sumAccounts, computeReturn } from "@/lib/pure/performance";
 import { filterActiveJobs } from "@/lib/pure/profiles";
 import { isDiscountBasisEmployerContrib } from "@/lib/config/account-types";
 import { getEffectiveOtherLiabilities } from "./debts";
+import type { Db } from "@/lib/db";
 
 // ---------------------------------------------------------------------------
 // Snapshot account grouping

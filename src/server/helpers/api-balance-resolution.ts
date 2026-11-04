@@ -6,10 +6,10 @@
  *   resolveAccountBalance    — pure, picks API or snapshot balance for one account
  */
 
-import type { Db } from "./transforms";
 import type { BudgetAccount, BudgetApiService } from "@/lib/budget-api";
 import { cacheGet } from "@/lib/budget-api";
 import type { AccountMapping } from "@/lib/db/schema";
+import type { Db } from "@/lib/db";
 
 // ---------------------------------------------------------------------------
 // 1. Build Map<remoteAccountId, balance> from cached budget accounts

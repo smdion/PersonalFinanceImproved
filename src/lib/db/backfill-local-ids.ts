@@ -9,10 +9,8 @@ import { eq, sql } from "drizzle-orm";
 import * as schema from "./schema";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { log } from "@/lib/logger";
-import type { db as appDb } from "./index";
 import type { AccountMapping } from "./schema";
-
-type Db = typeof appDb;
+import type { Db } from "@/lib/db";
 
 export async function backfillMappingLocalIds(db: Db) {
   const connections = await db.select().from(schema.apiConnections);

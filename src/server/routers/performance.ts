@@ -13,7 +13,6 @@ import {
   performanceProcedure,
 } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import type { db as appDb } from "@/lib/db";
 import {
   toNumber,
   getLatestSnapshot,
@@ -114,10 +113,6 @@ const performanceAccountInput = z.object({
   displayOrder: z.number().int().default(0),
 });
 
-/** Accepts both the main db instance and transaction handles. */
-type DbType =
-  typeof appDb | Parameters<Parameters<typeof appDb.transaction>[0]>[0];
-
 function resolveOwnerName(
   ownerPersonId: number | null,
   peopleMap: Map<number, string>,
@@ -138,7 +133,7 @@ function resolveOwnerName(
 class DryRunRollback extends Error {}
 
 /** Stamp performance_last_updated in app_settings */
-async function stampPerformanceUpdated(db: DbType) {
+async function stampPerformanceUpdated(db: DbOrTx) {
   const now = new Date().toISOString();
   await db
     .insert(schema.appSettings)
@@ -205,6 +200,7 @@ export {
   sumAnnualRows,
 } from "@/lib/pure/performance";
 import { dropMappingsTo } from "@/server/helpers/delete-references";
+import type { DbOrTx } from "@/lib/db";
 export type { AccountLike, AnnualRowLike } from "@/lib/pure/performance";
 
 export const performanceRouter = createTRPCRouter({
@@ -968,7 +964,7 @@ export const performanceRouter = createTRPCRouter({
       ) as AccountEdit;
       if (Object.keys(edit).length === 0 && annualReturnPct === undefined)
         return { success: true, preview: null };
-      const run = async (tx: DbType) => {
+      const run = async (tx: DbOrTx) => {
         if (annualReturnPct !== undefined)
           await tx
             .update(schema.accountPerformance)

@@ -15,7 +15,6 @@ import { eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "./transforms";
-import type { Db, DbOrTx } from "./transforms";
 import { parseAppSettings } from "./settings";
 import type { ActiveBudgetApi } from "@/lib/budget-api/types";
 import {
@@ -42,6 +41,7 @@ import {
   resolveContribPeriods,
   classifyContribResolution,
 } from "./contribution";
+import type { Db, DbOrTx } from "@/lib/db";
 
 /** No TTL — cached YNAB data is kept until the user manually triggers a resync. */
 const BUDGET_CACHE_MAX_AGE_MS = undefined;

@@ -38,7 +38,7 @@ import {
   type SubAccount,
 } from "@/server/helpers/sub-accounts";
 import { loadTrackedAccountNames } from "@/server/helpers/account-names";
-import { toNumber, type DbOrTx } from "@/server/helpers/transforms";
+import { toNumber } from "@/server/helpers/transforms";
 import type { FeedAccount } from "@/lib/pure/flow-suggestions";
 import {
   suggestSnapshotAmounts,
@@ -52,8 +52,7 @@ import {
   type DailyPosition,
   type HoldingPeriod,
 } from "@/lib/pure/holding-periods";
-
-type Db = typeof import("@/lib/db").db;
+import type { Db, DbOrTx } from "@/lib/db";
 
 type AccountInfo = {
   id: number;

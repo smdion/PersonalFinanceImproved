@@ -49,8 +49,7 @@ import {
   loadEnteredPeriods,
   loadHoldingSplits,
 } from "./_shared";
-
-type Db = typeof import("@/lib/db").db;
+import type { Db } from "@/lib/db";
 
 /** Label of the matched-mix entry (key "matched_mix"). */
 const MATCHED_MIX_LABEL = "Your mix, in index funds";

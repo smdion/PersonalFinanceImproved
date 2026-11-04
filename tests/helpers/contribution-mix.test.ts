@@ -19,7 +19,7 @@ import {
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
 import { loadContributionMix } from "@/server/helpers/contribution-mix";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
-import type { Db } from "@/server/helpers/transforms";
+import type { Db } from "@/lib/db";
 
 async function mixFor(fromBonus: boolean, asOf: Date) {
   const ctx = await createTestCaller();

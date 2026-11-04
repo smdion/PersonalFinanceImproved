@@ -12,7 +12,6 @@
  */
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type { Db } from "@/server/helpers";
 import {
   TAX_DATA_ASSET,
   TAX_DATA_RELEASE_TAG,
@@ -34,6 +33,7 @@ import {
 import { unpackSignedTaxData, verifyTaxDataSignature } from "./signature";
 import { validateTaxDataFile } from "./validate";
 import { log } from "@/lib/logger";
+import type { Db } from "@/lib/db";
 
 const TIMEOUT_MS = 15_000;
 const MAX_BYTES = 1024 * 1024;

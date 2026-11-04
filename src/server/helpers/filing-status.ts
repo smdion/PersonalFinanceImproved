@@ -10,7 +10,7 @@ import {
   type FilingStatusSource,
 } from "@/lib/pure/filing-status";
 import { w4FilingStatusOf, type SalaryProfileActiveMap } from "./salary";
-import type { Db } from "./transforms";
+import type { Db } from "@/lib/db";
 
 /** People ids, the primary person first (whose W-4 stands in first). */
 function primaryFirst(

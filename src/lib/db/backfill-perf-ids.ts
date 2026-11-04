@@ -12,9 +12,7 @@ import * as schema from "./schema";
 import { stripInstitutionSuffix } from "@/lib/utils/format";
 import { getDisplayConfig } from "@/lib/config/account-types";
 import { log } from "@/lib/logger";
-import type { db as appDb } from "./index";
-
-type Db = typeof appDb;
+import type { Db } from "@/lib/db";
 
 export async function backfillPerformanceAccountIds(db: Db) {
   // Load master registry

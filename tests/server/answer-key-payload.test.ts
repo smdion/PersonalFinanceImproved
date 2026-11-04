@@ -31,7 +31,6 @@ import {
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { eq } from "drizzle-orm";
 import * as sqliteSchema from "@/lib/db/schema-sqlite";
-import type { Db } from "@/server/helpers/transforms";
 import {
   buildEnginePayload,
   fetchRetirementData,
@@ -50,6 +49,7 @@ import {
   seedJob,
   seedPerformanceAccount,
 } from "../routers/setup";
+import type { Db } from "@/lib/db";
 
 type SqliteDb = BetterSQLite3Database<typeof sqliteSchema>;
 

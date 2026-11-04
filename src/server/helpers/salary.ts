@@ -14,7 +14,6 @@ import { and, eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "./transforms";
-import type { Db } from "./transforms";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import type {
   BonusDestination,
@@ -23,6 +22,7 @@ import type {
   W4FilingStatus,
 } from "@/lib/config/enum-values";
 import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
+import type { Db } from "@/lib/db";
 
 // ---------------------------------------------------------------------------
 // What-If sandbox tier — independent of Salary Profiles.

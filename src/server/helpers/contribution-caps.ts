@@ -33,7 +33,7 @@ import {
   type JobRef,
   type JobSalaryRef,
 } from "./contribution";
-import { getPrimaryPerson, type Db } from "./transforms";
+import { getPrimaryPerson } from "./transforms";
 import { asc, eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { findActiveJob, type JobLike } from "@/lib/pure/profiles";
@@ -49,9 +49,9 @@ import {
   type SalaryActiveMap,
   type SalaryProfileActiveMap,
 } from "./salary";
+import type { Db } from "@/lib/db";
 
 export type CappedRowFields = CapPassed;
-
 export type CapPassContext = {
   activeJobs: readonly JobRef[];
   /** Each job's pay; `totalComp` = salary + bonus (W-2 taxable pay before

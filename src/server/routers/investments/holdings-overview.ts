@@ -29,8 +29,7 @@ import {
   parseCurrentGlidePath,
   unknownAssetClassIds,
 } from "@/lib/pure/current-glide-path";
-
-type Db = typeof import("@/lib/db").db;
+import type { Db } from "@/lib/db";
 
 /**
  * Target allocation by asset class for the primary person's age: the

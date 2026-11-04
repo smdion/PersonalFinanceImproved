@@ -6,8 +6,8 @@
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AccountMapping } from "@/lib/db/schema";
-import type { DbOrTx } from "./transforms";
 import { mappingWithTypedIds } from "@/lib/utils/account-mapping";
+import type { DbOrTx } from "@/lib/db";
 
 /** The kind of Ledgr row a mapping can point at. */
 export type MappedRow =

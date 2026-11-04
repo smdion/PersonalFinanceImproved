@@ -36,8 +36,8 @@ import { createHash } from "crypto";
 import { localDateStr } from "@/lib/utils/date";
 import { and, eq, lt, asc, sql, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
-import type { Db } from "./transforms";
 import { log } from "@/lib/logger";
+import type { Db } from "@/lib/db";
 
 /** Bump when a change to the engine's computation logic could change
  *  output for the same inputs — invalidates all existing cache rows.

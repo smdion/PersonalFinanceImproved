@@ -100,6 +100,7 @@ import { currentMonthKey } from "@/lib/pure/date-keys";
 import { resolveTaxParams } from "@/lib/config/tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions";
 import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
+import type { DbOrTx } from "@/lib/db";
 
 /**
  * Compute the current net-pay-per-check for a job by running the paycheck
@@ -129,7 +130,7 @@ import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
  * fabricated schedule.
  */
 export async function computeJobNetPayPerCheck(
-  db: DbType,
+  db: DbOrTx,
   jobId: number,
 ): Promise<{
   netPayPerCheck: number;
@@ -367,7 +368,7 @@ export async function computeJobNetPayPerCheck(
  * than fabricate a home for the data" rule as computeJobNetPayPerCheck.
  */
 async function writeJobExtraPaycheckRouting(
-  db: DbType,
+  db: DbOrTx,
   jobId: number,
   routing: ExtraPaycheckRoutingData | null,
 ): Promise<void> {
@@ -554,10 +555,6 @@ async function computeLiveMaxMonthlyFunding(
     : null;
 }
 
-/** Accepts both the main db instance and transaction handles. */
-type DbType =
-  Context["db"] | Parameters<Parameters<Context["db"]["transaction"]>[0]>[0];
-
 /**
  * Delete a savings goal, detaching its sub-goals first (they become
  * top-level). The database can't be relied on for this: installs since
@@ -577,7 +574,7 @@ async function deleteSavingsGoal(db: Context["db"], id: number) {
 /** A transfer's two legs must settle/unsettle together — otherwise money
  *  silently vanishes from (or reappears in) the combined projection. */
 async function resolvePairedPlannedTxIds(
-  db: DbType,
+  db: DbOrTx,
   plannedTxId: number,
 ): Promise<number[]> {
   const [row] = await db
@@ -603,7 +600,7 @@ async function resolvePairedPlannedTxIds(
 }
 
 async function settleOccurrence(
-  db: DbType,
+  db: DbOrTx,
   input: { plannedTxId: number; occurrenceMonth: string },
 ) {
   const pairIds = await resolvePairedPlannedTxIds(db, input.plannedTxId);
@@ -660,7 +657,7 @@ const savingsGoalInput = z.object({
  * only some goals' overrides.
  */
 async function replaceMonthOverrides(
-  db: DbType,
+  db: DbOrTx,
   months: string[],
   allocations: { goalId: number; amount: number }[],
 ): Promise<void> {

@@ -12,7 +12,8 @@ import {
   pickProfileSettingsRow,
   resolveRetirementProfileIdFrom,
 } from "./retirement-profile";
-import { getPrimaryPerson, type Db } from "./transforms";
+import { getPrimaryPerson } from "./transforms";
+import type { Db } from "@/lib/db";
 
 export async function householdHighIncomeLine(db: Db) {
   const [appSettings, retSettings, retProfiles, people] = await Promise.all([

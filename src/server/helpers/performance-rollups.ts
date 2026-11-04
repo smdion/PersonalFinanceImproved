@@ -34,7 +34,8 @@ import {
   sumAccounts,
   type Rollup,
 } from "@/lib/pure/performance";
-import { toNumber, type DbOrTx } from "@/server/helpers/transforms";
+import { toNumber } from "@/server/helpers/transforms";
+import type { DbOrTx } from "@/lib/db";
 
 type PerfAccount = typeof schema.performanceAccounts.$inferSelect;
 type AnnualRow = typeof schema.annualPerformance.$inferSelect;

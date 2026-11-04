@@ -7,7 +7,7 @@
 import { sql } from "drizzle-orm";
 import { isPostgres } from "@/lib/db/dialect";
 import { execRaw } from "@/lib/db/compat";
-import type { DbOrTx } from "./transforms";
+import type { DbOrTx } from "@/lib/db";
 
 /** First key of every lock here (two-key form): never collides with
  *  single-key locks such as merge-setting.ts's. "LDGR" in ASCII. */

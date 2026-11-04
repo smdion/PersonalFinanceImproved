@@ -21,7 +21,6 @@ import { z } from "zod/v4";
 import { eq, asc } from "drizzle-orm";
 import { toNumber } from "@/server/helpers";
 import * as schema from "@/lib/db/schema";
-import type { db as _db } from "@/lib/db";
 import { DEFAULT_MC_INFLATION_RISK } from "@/lib/constants";
 import { DEFAULT_WITHDRAWAL_ROUTING_MODE } from "@/lib/config/withdrawal-routing";
 import type {
@@ -39,6 +38,7 @@ import {
   getStrategyMeta,
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
+import type { Db } from "@/lib/db";
 
 /**
  * Baseline "current" SS claiming age for the strategy optimizer's
@@ -348,8 +348,6 @@ export function buildDecumulationDefaults(
 // (lib/calculators/coast-fire.ts) so the baseline finder and every
 // router probe stop contributions the same way.
 export { buildCoastFireProfileSwitches } from "@/lib/calculators/coast-fire";
-
-type Db = typeof _db;
 
 /** The saved Simulation inflation override (Simulation assumptions). */
 export type SavedInflationOverrides = { stdDev?: number } | null;

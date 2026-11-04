@@ -25,8 +25,7 @@ import { addDays, utcDayOf } from "@/lib/utils/date";
 import { valuationDateFor } from "@/lib/pure/market-calendar";
 import { isHsaCategory } from "@/lib/config/account-types";
 import { toDecimalColumn } from "@/lib/utils/math";
-
-type Db = typeof import("@/lib/db").db;
+import type { Db } from "@/lib/db";
 
 export const REDACTED_MEDICAL_DESCRIPTION = "Medical withdrawal";
 /** Look back this far before the requested window when loading stored rows (pending matching). */

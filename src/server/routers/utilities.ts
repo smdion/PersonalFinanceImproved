@@ -3,7 +3,7 @@ import { and, asc, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
-import { toNumber, type Db } from "@/server/helpers";
+import { toNumber } from "@/server/helpers";
 import { zDecimal } from "./settings/_shared";
 import {
   utilityKindSchema,
@@ -25,11 +25,11 @@ import {
 import { createHash } from "crypto";
 import { TRPCError } from "@trpc/server";
 import { safeDivide } from "@/lib/utils/math";
+import type { Db } from "@/lib/db";
 
 // ── Shared field validators ──
 // Year/month bounded per CONTRIBUTING.md "Validation Consistency"; decimal columns use
 // the shared `zDecimal` (string input) — never bare z.number()/z.string().
-
 const yearSchema = z.number().int().min(1900).max(2100);
 const monthSchema = z.number().int().min(1).max(12);
 

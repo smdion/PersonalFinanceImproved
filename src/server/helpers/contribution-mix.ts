@@ -20,7 +20,7 @@ import type {
 } from "@/lib/pure/flow-suggestions";
 import { filterActiveJobs } from "@/lib/pure/profiles";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
-import { getPeriodsPerYear, toNumber, type Db } from "./transforms";
+import { getPeriodsPerYear, toNumber } from "./transforms";
 import {
   contribRemainingFraction,
   contribStepFraction,
@@ -41,6 +41,7 @@ import {
   matchPayGroupsWithBonus,
   resolveContribPeriods,
 } from "./contribution";
+import type { Db } from "@/lib/db";
 
 export async function loadContributionMix(
   db: Db,

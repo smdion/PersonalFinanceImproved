@@ -19,7 +19,7 @@ vi.mock("@/server/helpers", () => ({
 }));
 
 import { pushSnapshotIfConfigured } from "@/server/helpers/snapshot-derivatives";
-import type { DbType } from "@/server/routers/settings/_shared";
+import type { DbOrTx } from "@/lib/db";
 
 // setup-mocks owns the budget-api mock; this file sets what it needs.
 beforeEach(() => {
@@ -31,7 +31,7 @@ beforeEach(() => {
 });
 
 const run = () =>
-  pushSnapshotIfConfigured({} as DbType, {
+  pushSnapshotIfConfigured({} as DbOrTx, {
     snapshotId: 1,
     snapshotDate: "2026-10-31",
     mode: "create",

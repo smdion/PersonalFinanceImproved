@@ -80,16 +80,6 @@
     "to": "src/server/helpers/loan-feed.ts"
   },
   {
-    "rule": "infra-below-server",
-    "from": "src/lib/simplefin/sync.ts",
-    "to": "src/server/helpers/transforms.ts"
-  },
-  {
-    "rule": "infra-below-server",
-    "from": "src/lib/tax-data/sync.ts",
-    "to": "src/server/helpers/index.ts"
-  },
-  {
     "rule": "no-circular",
     "from": "src/components/cards/coast-fire-card.tsx",
     "to": "src/components/cards/projection/projection-hero-kpis.tsx"
@@ -643,16 +633,6 @@
     "rule": "server-pages-prefetch-only",
     "from": "src/app/login/page.tsx",
     "to": "src/server/helpers/first-run.ts"
-  },
-  {
-    "rule": "services-below-routers",
-    "from": "src/server/helpers/savings-allocation.ts",
-    "to": "src/server/trpc.ts"
-  },
-  {
-    "rule": "services-below-routers",
-    "from": "src/server/helpers/snapshot-derivatives.ts",
-    "to": "src/server/routers/settings/_shared.ts"
   },
   {
     "rule": "services-below-routers",

@@ -15,7 +15,6 @@ import {
   getSessionUserLabel,
 } from "../../trpc";
 import * as schema from "@/lib/db/schema";
-import type { Db } from "@/server/helpers";
 import type { TaxDataFile } from "@/lib/db/reference-reconcile-core";
 import {
   applyCommunityTaxData,
@@ -32,6 +31,7 @@ import {
   setTaxDataSyncEnabled,
   taxDataSyncOffReason,
 } from "@/lib/tax-data/sync";
+import type { Db } from "@/lib/db";
 
 /** The waiting update (the newest pending one above everything this
  *  install has applied or ships), or null. */

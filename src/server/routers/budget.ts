@@ -50,7 +50,6 @@ import {
   setBudgetItemLink,
   deleteBudgetItemLink,
 } from "@/server/helpers";
-import type { DbOrTx } from "@/server/helpers/transforms";
 import { budgetApiServiceSchema } from "@/lib/config/enum-values";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { TAX_TREATMENT_LABELS } from "@/lib/config/display-labels";
@@ -69,6 +68,7 @@ import type {
 } from "@/lib/budget-api";
 import { YNAB_INTERNAL_GROUPS } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/pure/date-keys";
+import type { DbOrTx } from "@/lib/db";
 
 type BudgetItemRow = typeof schema.budgetItems.$inferSelect;
 

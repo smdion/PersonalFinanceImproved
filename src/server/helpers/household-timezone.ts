@@ -13,8 +13,7 @@ import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { SK_HOUSEHOLD_TIMEZONE } from "@/lib/constants/settings-keys";
-
-type Db = typeof import("@/lib/db").db;
+import type { Db } from "@/lib/db";
 
 /** The container's own zone, before any household setting applied. */
 const containerTimeZone = process.env.TZ;

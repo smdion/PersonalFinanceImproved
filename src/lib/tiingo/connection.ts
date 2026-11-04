@@ -7,8 +7,7 @@ import "server-only";
 import { eq } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import { encryptJson, readMaybeEncrypted } from "@/lib/crypto";
-
-type Db = typeof import("@/lib/db").db;
+import type { Db } from "@/lib/db";
 
 const TIINGO_SERVICE = "tiingo";
 

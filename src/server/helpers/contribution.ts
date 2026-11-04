@@ -30,7 +30,6 @@ import type {
 import { computeValue, type CapPassed } from "@/lib/pure/contribution-caps";
 import type { ContribSaveChecker } from "./contribution-caps";
 import { toNumber, getPeriodsPerYear } from "./transforms";
-import type { Db, DbOrTx } from "./transforms";
 import {
   filterActiveJobs,
   resolveContribFieldDisplayState,
@@ -54,6 +53,7 @@ import {
   matchGroupKey,
   matchPayGroupsWithBonus,
 } from "./contribution-match";
+import type { Db, DbOrTx } from "@/lib/db";
 
 // Employer match lives in contribution-match.ts; re-exported so callers
 // keep importing contribution helpers from one place.
