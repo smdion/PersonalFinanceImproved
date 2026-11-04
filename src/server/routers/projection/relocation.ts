@@ -617,7 +617,7 @@ export const relocationProjectionRouter = createTRPCRouter({
         inflationRate: toNumber(currentPayload.settings.annualInflation ?? 0),
         // The year "today's dollars" deflate to: the calendar year, as on
         // the Retirement page (use-projection-state), so the two agree.
-        baseYear: new Date().getFullYear(),
+        baseYear: ctx.scope.asOf.getFullYear(),
       };
     }),
 
