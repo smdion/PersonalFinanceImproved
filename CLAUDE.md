@@ -30,7 +30,9 @@ change → stage → pnpm gate → fresh reviewer → commit → push → CI →
    the gate's output. Never give it the plan, the advisor's report, your
    reasoning or an earlier round. It answers PASS, or BLOCK citing a rule.
    On a BLOCK, fix, re-stage, re-run the gate and spawn a new reviewer. Two
-   rounds at most; then, or if you disagree with a BLOCK, the owner decides.
+   rounds at most. After a second-round BLOCK you agree with: a docs- or
+   staging-only fix lands as committed; a code fix gets one more fresh
+   reviewer. Only a BLOCK you disagree with goes to the owner.
    Needs review: any staged change to `src/`, unless it is under 20 changed
    lines and outside the engine, `lib/config`, `lib/db`, router procedure
    types and tax data. Tests-only, docs-only and generated changes need none.
