@@ -1,7 +1,7 @@
 /**
  * Accessibility tests using axe-core.
  *
- * Renders key UI components into jsdom and runs axe-core checks for ARIA /
+ * Renders key UI components into happy-dom and runs axe-core checks for ARIA /
  * accessibility violations.  These are lightweight smoke tests — they catch
  * missing labels, invalid roles, color-contrast markup issues, etc.
  */

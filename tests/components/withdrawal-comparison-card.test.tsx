@@ -5,7 +5,7 @@ import { WithdrawalComparisonCard } from "@/components/cards/withdrawal-comparis
 // Smoke test for WithdrawalComparisonCard. Follows the leaf-component smoke
 // pattern used elsewhere (e.g. networth-sections-smoke.test.tsx): mock
 // HelpTip/StrategyGuideButton (noisy) and recharts (heavy, canvas-less in
-// jsdom).
+// happy-dom).
 
 vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
 vi.mock("@/components/cards/strategy-guide-panel", () => ({

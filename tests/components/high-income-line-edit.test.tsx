@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 /**
  * The high-income line: the saved setting wins; without one, the default by
  * filing status, labelled with what it follows; cleared, back to the

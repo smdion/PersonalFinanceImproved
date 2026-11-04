@@ -1,4 +1,4 @@
-// @vitest-environment jsdom
+// @vitest-environment happy-dom
 /**
  * Privacy mode's text guard: any "$<digit>" left in the page's text is
  * masked (typed names, labels, server sentences), except where marked

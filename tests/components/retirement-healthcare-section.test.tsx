@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 /**
  * The IRMAA surcharge choice shows only with IRMAA awareness on (without it
  * there's no surcharge to place) and saves through the settings patch.

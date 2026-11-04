@@ -640,16 +640,6 @@
     "to": "src/lib/budget-api/types.ts"
   },
   {
-    "rule": "scripts-skip-server",
-    "from": "scripts/capture-golden-baseline.ts",
-    "to": "src/server/routers/index.ts"
-  },
-  {
-    "rule": "scripts-skip-server",
-    "from": "scripts/capture-golden-baseline.ts",
-    "to": "src/server/trpc.ts"
-  },
-  {
     "rule": "server-pages-prefetch-only",
     "from": "src/app/(dashboard)/layout.tsx",
     "to": "src/lib/db/compat.ts"

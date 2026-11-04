@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { FundCard } from "@/components/savings/fund-card";
 import type { GoalProjection } from "@/components/savings/types";
 
-// next/dynamic doesn't resolve in jsdom — call the factory and render once resolved
+// next/dynamic doesn't resolve in happy-dom — call the factory and render once resolved
 vi.mock("next/dynamic", () => ({
   default: (fn: () => Promise<{ default: React.ComponentType }>) => {
     let Resolved: React.ComponentType | null = null;
