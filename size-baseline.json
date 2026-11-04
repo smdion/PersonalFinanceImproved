@@ -32,7 +32,7 @@
     "src/components/cards/mc-simulation-assumptions.tsx": 1111,
     "src/components/cards/projection/decumulation-config.tsx": 480,
     "src/components/cards/projection/index.tsx": 1520,
-    "src/components/cards/projection/overrides-panel-v2.tsx": 1132,
+    "src/components/cards/projection/overrides-panel.tsx": 1132,
     "src/components/cards/projection/projection-chart.tsx": 1151,
     "src/components/cards/projection/projection-hero-kpis.tsx": 507,
     "src/components/cards/projection/projection-mc-results.tsx": 463,
@@ -354,10 +354,10 @@
     "src/components/cards/projection/lump-sum-form.tsx": {
       "LumpSumForm": 158
     },
-    "src/components/cards/projection/overrides-panel-v2.tsx": {
-      "OverridesPanelV2": 668,
-      "OverridesPanelV2.allOverrides.useMemo()": 166,
-      "OverridesPanelV2.renderFields": 229
+    "src/components/cards/projection/overrides-panel.tsx": {
+      "OverridesPanel": 668,
+      "OverridesPanel.allOverrides.useMemo()": 166,
+      "OverridesPanel.renderFields": 229
     },
     "src/components/cards/projection/projection-chart.tsx": {
       "ProjectionChart": 1089,

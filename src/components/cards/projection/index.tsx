@@ -21,7 +21,7 @@ import { formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { SimulationAssumptions } from "@/components/cards/mc-simulation-assumptions";
 import { DecumulationConfig } from "./decumulation-config";
-import { OverridesPanelV2 as OverridesPanel } from "./overrides-panel-v2";
+import { OverridesPanel } from "./overrides-panel";
 import { ProjectionTable } from "./projection-table";
 import { ProjectionHeroKpis } from "./projection-hero-kpis";
 import { ProjectionChartSkeleton } from "./projection-chart-skeleton";

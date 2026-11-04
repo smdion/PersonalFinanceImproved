@@ -16,7 +16,7 @@ import { catDisplayLabel } from "./utils";
 import { LumpSumForm } from "./lump-sum-form";
 import { investedAtStartOf } from "@/lib/pure/goldilocks";
 
-type OverridesPanelV2Props = {
+type OverridesPanelProps = {
   state: ProjectionState;
   accumulationExpenseOverride?: number;
 };
@@ -89,10 +89,10 @@ const OVERRIDE_OPTIONS: {
   },
 ];
 
-export function OverridesPanelV2({
+export function OverridesPanel({
   state,
   accumulationExpenseOverride: _accumulationExpenseOverride,
-}: OverridesPanelV2Props) {
+}: OverridesPanelProps) {
   const [showWizard, setShowWizard] = useState(false);
   const [wizardStep, setWizardStep] = useState<"year" | "type" | "fields">(
     "year",

@@ -179,7 +179,7 @@
       "count": 6
     }
   },
-  "src/components/cards/projection/overrides-panel-v2.tsx": {
+  "src/components/cards/projection/overrides-panel.tsx": {
     "@typescript-eslint/no-unnecessary-condition": {
       "count": 2
     }

@@ -911,7 +911,7 @@
       "count": 3
     }
   },
-  "src/components/cards/projection/overrides-panel-v2.tsx": {
+  "src/components/cards/projection/overrides-panel.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 5
     },

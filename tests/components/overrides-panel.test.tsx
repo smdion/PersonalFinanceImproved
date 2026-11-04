@@ -1,5 +1,5 @@
 /**
- * Tests for OverridesPanelV2 — the step-by-step wizard for adding/editing
+ * Tests for OverridesPanel — the step-by-step wizard for adding/editing
  * projection overrides (contribution rate, withdrawal rate, lump sums,
  * salary/budget changes, Roth conversion, routing, reset). This is one of
  * the most complex interaction surfaces in the app: a 3-step wizard whose
@@ -8,7 +8,7 @@
  *
  * Strategy: mirror the baseMockState pattern from projection-splits.test.tsx
  * — a loosely-typed mock of `ProjectionState` with only the fields
- * OverridesPanelV2 actually reads.
+ * OverridesPanel actually reads.
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
@@ -19,7 +19,7 @@ vi.mock("@/components/ui/help-tip", () => ({
   ),
 }));
 
-import { OverridesPanelV2 } from "@/components/cards/projection/overrides-panel-v2";
+import { OverridesPanel } from "@/components/cards/projection/overrides-panel";
 
 const CURRENT_YEAR = new Date().getFullYear();
 const RETIREMENT_AGE = 65;
@@ -67,9 +67,9 @@ function openWizardToTypeStep(year?: string) {
   fireEvent.click(screen.getByText("Next"));
 }
 
-describe("OverridesPanelV2", () => {
+describe("OverridesPanel", () => {
   it("renders without crashing with no overrides", () => {
-    render(<OverridesPanelV2 state={baseMockState()} />);
+    render(<OverridesPanel state={baseMockState()} />);
     expect(screen.getByText("Changes by year")).toBeInTheDocument();
     expect(
       screen.getByText("No changes — every year uses the page settings"),
@@ -80,7 +80,7 @@ describe("OverridesPanelV2", () => {
     const s = baseMockState({
       accumOverrides: [{ year: 2030, contributionRate: 0.2 }],
     });
-    render(<OverridesPanelV2 state={s} />);
+    render(<OverridesPanel state={s} />);
     expect(screen.getByText("1 active")).toBeInTheDocument();
   });
 
@@ -88,7 +88,7 @@ describe("OverridesPanelV2", () => {
     const s = baseMockState({
       accumOverrides: [{ year: 2030, contributionRate: 0.2, notes: "Raise" }],
     });
-    render(<OverridesPanelV2 state={s} />);
+    render(<OverridesPanel state={s} />);
     expect(screen.getByText("2030")).toBeInTheDocument();
     expect(screen.getByText("Contribution")).toBeInTheDocument();
     expect(screen.getByText(/Rate: 20.0%/)).toBeInTheDocument();
@@ -101,7 +101,7 @@ describe("OverridesPanelV2", () => {
       accumOverrides: [{ year: 2030, contributionRate: 0.2 }],
       setAccumOverrides,
     });
-    render(<OverridesPanelV2 state={s} />);
+    render(<OverridesPanel state={s} />);
     fireEvent.click(screen.getByLabelText("Delete"));
     expect(setAccumOverrides).toHaveBeenCalledTimes(1);
     const updater = setAccumOverrides.mock.calls[0]![0];
@@ -116,20 +116,20 @@ describe("OverridesPanelV2", () => {
       ],
       deleteSalaryOverride,
     });
-    render(<OverridesPanelV2 state={s} />);
+    render(<OverridesPanel state={s} />);
     fireEvent.click(screen.getByLabelText("Delete"));
     expect(deleteSalaryOverride.mutate).toHaveBeenCalledWith({ id: 7 });
   });
 
   it("opens the wizard on '+ Add a change' and shows the Year step", () => {
-    render(<OverridesPanelV2 state={baseMockState()} />);
+    render(<OverridesPanel state={baseMockState()} />);
     fireEvent.click(screen.getByText("+ Add a change"));
     expect(screen.getByText("Cancel")).toBeInTheDocument();
     expect(screen.getByText("Starting Year")).toBeInTheDocument();
   });
 
   it("closes the wizard when Cancel is clicked", () => {
-    render(<OverridesPanelV2 state={baseMockState()} />);
+    render(<OverridesPanel state={baseMockState()} />);
     fireEvent.click(screen.getByText("+ Add a change"));
     fireEvent.click(screen.getByText("Cancel"));
     expect(screen.queryByText("Starting Year")).not.toBeInTheDocument();
@@ -137,7 +137,7 @@ describe("OverridesPanelV2", () => {
   });
 
   it("advances from Year step to Type step showing pre-retirement options", () => {
-    render(<OverridesPanelV2 state={baseMockState()} />);
+    render(<OverridesPanel state={baseMockState()} />);
     openWizardToTypeStep(String(RET_YEAR - 5));
     expect(screen.getByText(/pre-retirement/)).toBeInTheDocument();
     expect(screen.getByText(/Contribution Rate/)).toBeInTheDocument();
@@ -145,7 +145,7 @@ describe("OverridesPanelV2", () => {
   });
 
   it("advances from Year step to Type step showing post-retirement options", () => {
-    render(<OverridesPanelV2 state={baseMockState()} />);
+    render(<OverridesPanel state={baseMockState()} />);
     openWizardToTypeStep(String(RET_YEAR + 5));
     expect(screen.getByText(/post-retirement/)).toBeInTheDocument();
     expect(screen.getByText(/Budget Change/)).toBeInTheDocument();
@@ -153,13 +153,13 @@ describe("OverridesPanelV2", () => {
   });
 
   it("does not offer Withdrawal Rate as a new-override type (R45 Step 3, Finding 2 — inert for every strategy)", () => {
-    render(<OverridesPanelV2 state={baseMockState()} />);
+    render(<OverridesPanel state={baseMockState()} />);
     openWizardToTypeStep(String(RET_YEAR + 5));
     expect(screen.queryByText(/Withdrawal Rate/)).not.toBeInTheDocument();
   });
 
   it("always shows phase-agnostic options (Lump Sum, Account Routing, Reset)", () => {
-    render(<OverridesPanelV2 state={baseMockState()} />);
+    render(<OverridesPanel state={baseMockState()} />);
     openWizardToTypeStep(String(RET_YEAR - 5));
     expect(screen.getByText(/Lump Sum/)).toBeInTheDocument();
     expect(screen.getByText(/Account Routing/)).toBeInTheDocument();
@@ -169,7 +169,7 @@ describe("OverridesPanelV2", () => {
   it("completes the contribution_rate flow and calls setAccumOverrides with the right shape", () => {
     const setAccumOverrides = vi.fn();
     const s = baseMockState({ setAccumOverrides });
-    render(<OverridesPanelV2 state={s} />);
+    render(<OverridesPanel state={s} />);
     openWizardToTypeStep(String(RET_YEAR - 5));
     fireEvent.click(screen.getByText(/Contribution Rate/));
 
@@ -188,7 +188,7 @@ describe("OverridesPanelV2", () => {
   it("does not submit the SimpleNumberForm when value is invalid", () => {
     const setAccumOverrides = vi.fn();
     const s = baseMockState({ setAccumOverrides });
-    render(<OverridesPanelV2 state={s} />);
+    render(<OverridesPanel state={s} />);
     openWizardToTypeStep(String(RET_YEAR - 5));
     fireEvent.click(screen.getByText(/Contribution Rate/));
     fireEvent.click(screen.getByText("Save"));
@@ -203,7 +203,7 @@ describe("OverridesPanelV2", () => {
   it("completes the lump_sum flow for a pre-retirement year via setAccumOverrides", () => {
     const setAccumOverrides = vi.fn();
     const s = baseMockState({ setAccumOverrides });
-    render(<OverridesPanelV2 state={s} />);
+    render(<OverridesPanel state={s} />);
     openWizardToTypeStep(String(RET_YEAR - 5));
     fireEvent.click(screen.getByText(/Lump Sum/));
 
@@ -222,7 +222,7 @@ describe("OverridesPanelV2", () => {
   it("completes the lump_sum flow for a post-retirement year via setDecumOverrides", () => {
     const setDecumOverrides = vi.fn();
     const s = baseMockState({ setDecumOverrides });
-    render(<OverridesPanelV2 state={s} />);
+    render(<OverridesPanel state={s} />);
     openWizardToTypeStep(String(RET_YEAR + 5));
     fireEvent.click(screen.getByText(/Lump Sum/));
 
@@ -239,7 +239,7 @@ describe("OverridesPanelV2", () => {
   it("completes the roth_conversion flow and calls setDecumOverrides", () => {
     const setDecumOverrides = vi.fn();
     const s = baseMockState({ setDecumOverrides });
-    render(<OverridesPanelV2 state={s} />);
+    render(<OverridesPanel state={s} />);
     openWizardToTypeStep(String(RET_YEAR + 5));
     fireEvent.click(screen.getByText(/Roth Conversion/));
 
@@ -257,7 +257,7 @@ describe("OverridesPanelV2", () => {
   it("completes the routing flow for a pre-retirement year (waterfall/percentage only)", () => {
     const setAccumOverrides = vi.fn();
     const s = baseMockState({ setAccumOverrides });
-    render(<OverridesPanelV2 state={s} />);
+    render(<OverridesPanel state={s} />);
     openWizardToTypeStep(String(RET_YEAR - 5));
     fireEvent.click(screen.getByText(/Account Routing/));
 
@@ -272,7 +272,7 @@ describe("OverridesPanelV2", () => {
   it("completes the reset flow for a pre-retirement year", () => {
     const setAccumOverrides = vi.fn();
     const s = baseMockState({ setAccumOverrides });
-    render(<OverridesPanelV2 state={s} />);
+    render(<OverridesPanel state={s} />);
     openWizardToTypeStep(String(RET_YEAR - 5));
     fireEvent.click(screen.getByText(/Reset to Defaults/));
     fireEvent.click(screen.getByText(`Reset from ${RET_YEAR - 5}`));
@@ -284,7 +284,7 @@ describe("OverridesPanelV2", () => {
   it("cancels out of the reset confirmation without submitting", () => {
     const setAccumOverrides = vi.fn();
     const s = baseMockState({ setAccumOverrides });
-    render(<OverridesPanelV2 state={s} />);
+    render(<OverridesPanel state={s} />);
     openWizardToTypeStep(String(RET_YEAR - 5));
     fireEvent.click(screen.getByText(/Reset to Defaults/));
     // Both the wizard header and the reset step have a "Cancel" button —
@@ -298,7 +298,7 @@ describe("OverridesPanelV2", () => {
   it("completes the salary_change flow with a custom salary and calls createSalaryOverride", () => {
     const createSalaryOverride = { mutate: vi.fn() };
     const s = baseMockState({ createSalaryOverride });
-    render(<OverridesPanelV2 state={s} />);
+    render(<OverridesPanel state={s} />);
     openWizardToTypeStep(String(RET_YEAR - 5));
     fireEvent.click(screen.getByText(/Contribution \/ Salary/));
 
@@ -320,7 +320,7 @@ describe("OverridesPanelV2", () => {
   it("completes the budget_change flow with a custom amount and calls createBudgetOverride", () => {
     const createBudgetOverride = { mutate: vi.fn() };
     const s = baseMockState({ createBudgetOverride });
-    render(<OverridesPanelV2 state={s} />);
+    render(<OverridesPanel state={s} />);
     openWizardToTypeStep(String(RET_YEAR + 5));
     fireEvent.click(screen.getByText(/Budget Change/));
 
@@ -342,7 +342,7 @@ describe("OverridesPanelV2", () => {
     const s = baseMockState({
       accumOverrides: [{ year: 2030, contributionRate: 0.15 }],
     });
-    render(<OverridesPanelV2 state={s} />);
+    render(<OverridesPanel state={s} />);
     fireEvent.click(screen.getByLabelText("Edit"));
     expect(screen.getByText("Editing the change for 2030")).toBeInTheDocument();
     const rateInput = screen.getByPlaceholderText("15") as HTMLInputElement;
@@ -350,14 +350,14 @@ describe("OverridesPanelV2", () => {
   });
 
   it("supports navigating back from the Type step to the Year step", () => {
-    render(<OverridesPanelV2 state={baseMockState()} />);
+    render(<OverridesPanel state={baseMockState()} />);
     openWizardToTypeStep(String(RET_YEAR - 5));
     fireEvent.click(screen.getByText("← Back"));
     expect(screen.getByText("Starting Year")).toBeInTheDocument();
   });
 
   it("supports navigating back from the Fields step to the Type step", () => {
-    render(<OverridesPanelV2 state={baseMockState()} />);
+    render(<OverridesPanel state={baseMockState()} />);
     openWizardToTypeStep(String(RET_YEAR - 5));
     fireEvent.click(screen.getByText(/Contribution Rate/));
     // Fields step shows "New Retirement Contribution Rate (%)" — confirm we left Type step.
