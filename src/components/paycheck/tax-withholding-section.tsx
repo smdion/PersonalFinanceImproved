@@ -8,10 +8,10 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { SectionHeader } from "./section-header";
 import {
   W4_FILING_STATUS_VALUES,
-  type W4FilingStatus,
+  type FilingStatusKey,
 } from "@/lib/config/filing-status";
 
-const W4_BOX_LABELS: Record<W4FilingStatus, string> = {
+const W4_BOX_LABELS: Record<FilingStatusKey, string> = {
   MFJ: "Married jointly",
   Single: "Single",
   HOH: "Head of household",

@@ -16,10 +16,12 @@ import { InlineEdit } from "@/components/ui/inline-edit";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   FILING_STATUS_ORDER,
+  filingTable,
+  type FilingStatusKey,
   type ReturnFilingStatus,
 } from "@/lib/config/filing-status";
 
-const STATUS_LABELS: Record<ReturnFilingStatus, string> = {
+const STATUS_LABELS: Record<FilingStatusKey, string> = {
   MFJ: "Married Filing Jointly",
   Single: "Single",
   HOH: "Head of Household",
@@ -234,7 +236,7 @@ export function BracketTableEditor<TEntry>({
             <div key={status} className="overflow-hidden rounded-lg border">
               <div className="bg-surface-sunken border-b px-4 py-2">
                 <h3 className="text-primary font-medium">
-                  {STATUS_LABELS[status]}
+                  {filingTable(STATUS_LABELS, status)}
                   {admin && row.shipped && row.origin === "user" && (
                     <button
                       type="button"

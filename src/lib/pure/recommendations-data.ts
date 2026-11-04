@@ -5,7 +5,7 @@
  */
 import type { DataSourceStatus } from "@/lib/pure/data-freshness";
 import type { Recommendation } from "@/lib/pure/recommendations";
-import { FILING_STATUS_LABELS } from "@/lib/config/display-labels";
+import { filingStatusLabel } from "@/lib/config/display-labels";
 import { FILING_STATUS_IF_UNKNOWN } from "@/lib/pure/filing-status";
 
 export function recommendationsFromDataSources(
@@ -50,7 +50,7 @@ export function recommendationsFromFilingStatus(
       urgency: "soon",
       title: "Filing status",
       action: "Set your tax filing status on the Taxes page",
-      context: `Nothing says how you file (no setting and no W-4), so Ledgr figures your taxes and Social Security as ${FILING_STATUS_LABELS[FILING_STATUS_IF_UNKNOWN]} — the highest tax and no spousal benefits — until you do.`,
+      context: `Nothing says how you file (no setting and no W-4), so Ledgr figures your taxes and Social Security as ${filingStatusLabel(FILING_STATUS_IF_UNKNOWN)} — the highest tax and no spousal benefits — until you do.`,
       impact: null,
       focus: { topic: "filingStatus" },
       source: "ledgr",

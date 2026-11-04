@@ -3493,9 +3493,6 @@
     }
   },
   "src/lib/config/display-labels.ts": {
-    "@typescript-eslint/consistent-type-assertions": {
-      "count": 1
-    },
     "ratchet/max-comment-lines": {
       "count": 3
     },
