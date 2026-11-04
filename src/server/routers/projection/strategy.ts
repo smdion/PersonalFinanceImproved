@@ -28,7 +28,7 @@ import {
   planRetirementAge as planRetirementAgeOf,
 } from "@/lib/pure/household-timeline";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
-import { DEFAULT_SIMULATION } from "@/lib/constants";
+import { COMPARISON_SEED, DEFAULT_SIMULATION } from "@/lib/constants";
 import { SIMULATION_PRESET_KEYS } from "@/lib/constants";
 import { strategySpending } from "@/lib/calculators/strategy-spending";
 import { assessPlan } from "@/lib/calculators/plan-outcome";
@@ -316,7 +316,7 @@ export const strategyRouter = createTRPCRouter({
                   ...saved,
                 },
                 numTrials: 200,
-                seed: 42,
+                seed: COMPARISON_SEED,
                 assetClasses: mcAssetClasses,
                 correlations: mcCorrelations,
                 glidePath: mcGlidePath,
@@ -535,7 +535,7 @@ export const strategyRouter = createTRPCRouter({
       const baselineMc = await runMonteCarloOffThread({
         engineInput: mcBaseEngineInput,
         numTrials: 200,
-        seed: 42,
+        seed: COMPARISON_SEED,
         assetClasses: mcAssetClasses,
         correlations: mcCorrelations,
         glidePath: mcGlidePath,
@@ -780,7 +780,7 @@ export const strategyRouter = createTRPCRouter({
         const variantMc = await runMonteCarloOffThread({
           engineInput: variantInput,
           numTrials: 200,
-          seed: 42,
+          seed: COMPARISON_SEED,
           assetClasses: mcAssetClasses,
           correlations: mcCorrelations,
           glidePath: mcGlidePath,

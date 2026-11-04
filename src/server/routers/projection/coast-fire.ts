@@ -14,7 +14,7 @@ import {
   planRetirementAge as planRetirementAgeOf,
 } from "@/lib/pure/household-timeline";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
-import { DEFAULT_SIMULATION } from "@/lib/constants";
+import { COMPARISON_SEED, DEFAULT_SIMULATION } from "@/lib/constants";
 import { z } from "zod/v4";
 import {
   createTRPCRouter,
@@ -193,7 +193,7 @@ export const coastFireRouter = createTRPCRouter({
    * Finds the earliest age at which stopping contributions still produces
    * a ≥90% Monte Carlo success rate. Binary searches candidate ages in
    * [currentAge, retirementAge), running `calculateMonteCarlo` at each
-   * probe with `seed: 42` (common random numbers across probes for
+   * probe with `COMPARISON_SEED` (common random numbers across probes for
    * variance reduction) and a hardcoded "default" MC preset for
    * reproducibility.
    *
@@ -344,7 +344,6 @@ export const coastFireRouter = createTRPCRouter({
 
       const CONFIDENCE = MC_CONFIDENCE_THRESHOLD;
       const NUM_TRIALS = DEFAULT_SIMULATION.coastFireTrials;
-      const SEED = 42;
 
       // Probe helper: run MC with a profile switch at `coastAge` that zeros
       // contributions AND employer match from that year forward. Pre-coast
@@ -366,7 +365,7 @@ export const coastFireRouter = createTRPCRouter({
               ),
             },
             numTrials: NUM_TRIALS,
-            seed: SEED,
+            seed: COMPARISON_SEED,
             assetClasses: mcAssetClasses,
             returnClampMin,
             returnClampMax,

@@ -16,7 +16,7 @@ import {
   planRetirementAge as planRetirementAgeOf,
 } from "@/lib/pure/household-timeline";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
-import { DEFAULT_SIMULATION } from "@/lib/constants";
+import { COMPARISON_SEED, DEFAULT_SIMULATION } from "@/lib/constants";
 import { z } from "zod/v4";
 import { TRPCError } from "@trpc/server";
 import {
@@ -187,7 +187,6 @@ export const coastFireProbeRouter = createTRPCRouter({
       const inflationRisk = mc.effectiveInflationRisk;
 
       const NUM_TRIALS = DEFAULT_SIMULATION.coastFireTrials;
-      const SEED = 42;
 
       // Own hashEngineInput `kind` -- "coastFireProbe", never
       // "coastFireMc". hashEngineInput hashes this DERIVED payload, not
@@ -229,7 +228,7 @@ export const coastFireProbeRouter = createTRPCRouter({
             ),
           },
           numTrials: NUM_TRIALS,
-          seed: SEED,
+          seed: COMPARISON_SEED,
           assetClasses: mcAssetClasses,
           returnClampMin,
           returnClampMax,

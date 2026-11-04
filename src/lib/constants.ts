@@ -239,6 +239,10 @@ export const DEFAULT_SIMULATION = {
   taxMode: "advanced",
 } as const;
 
+/** The seed of compared runs (Coast FIRE probes, strategy variants, a
+ *  year's return range): a difference is the change, not the draws. */
+export const COMPARISON_SEED = 42;
+
 /** React Query staleTime for projection queries (1 minute). */
 export const PROJECTION_STALE_TIME_MS = 60_000;
 
@@ -326,18 +330,10 @@ export const MAX_BROKERAGE_RAMP_YEARS = 40;
 // RMD-aware Roth conversion smoothing
 // ---------------------------------------------------------------------------
 
-/** Fallback ceiling for how far RMD smoothing may elevate a household's
- *  effective Roth-conversion target rate above their own
- *  `rothBracketTarget`/`rothConversionTarget`, used only when a household
- *  has `rmdSmoothingEnabled` on but never explicitly set
- *  `rmdSmoothingMaxBracketTarget` — the UI's own default for a NEWLY
- *  enabled household should seed from that household's current
- *  `rothBracketTarget` instead of relying on this constant, so opting in
- *  never visibly changes a rate the household already chose. This is a
- *  last-resort backstop (e.g. for direct API/engine-input use bypassing
- *  the UI), not the primary default path. 24% keeps the backstop below
- *  the two highest ordinary brackets, matching the same "moderate, not
- *  the top bracket" intent as the schema/UI default. */
+/** RMD smoothing's ceiling when `rmdSmoothingEnabled` is on and no
+ *  `rmdSmoothingMaxBracketTarget` is set: a backstop for input that skips
+ *  the UI (which seeds from the household's `rothBracketTarget`). 24% stays
+ *  below the two highest ordinary brackets. */
 export const RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK = 0.24;
 
 // ---------------------------------------------------------------------------
