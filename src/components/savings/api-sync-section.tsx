@@ -13,6 +13,7 @@ import {
   type PushPreviewItem,
 } from "@/components/ui/push-preview-modal";
 import type { RawGoal } from "./types";
+import type { PayProfileSelection } from "@/lib/pure/household/profile-selection";
 
 /** The caller's already-resolved Contribution/Salary Profile selection —
  *  see computeLiveMaxMonthlyFunding's `income` param docblock (savings.ts)
@@ -21,6 +22,8 @@ import type { RawGoal } from "./types";
 export interface RecalcIncomeParams {
   contributionProfileId?: number;
   salaryProfileId?: number;
+  /** The page's budget-summary selection, forwarded to the server's. */
+  selection?: PayProfileSelection;
 }
 
 interface ApiCategoryGroup {

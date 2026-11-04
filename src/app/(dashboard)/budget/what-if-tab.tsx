@@ -627,14 +627,13 @@ export function WhatIfTab({
   });
 
   // ── Budget panel ──
-  // The tab's picks are the request's selection; one it hasn't resolved
-  // falls back to the active profile, server and client alike.
+  // The tab's picks, else the active ids (null while loading = none).
   const selection = useMemo(
     () => ({
-      ...(contribId != null && { contribution: contribId }),
-      ...(salaryId != null && { salary: salaryId }),
+      contribution: contribId ?? activeContribSetting,
+      salary: salaryId ?? activeSalarySetting,
     }),
-    [contribId, salaryId],
+    [contribId, salaryId, activeContribSetting, activeSalarySetting],
   );
 
   const [activeColumn, setActiveColumn] = useState(0);
@@ -704,8 +703,8 @@ export function WhatIfTab({
     data: budgetData,
     savingsGoals,
     apiActualsData: null,
-    contribProfileId: contribId ?? activeContribSetting,
-    salaryProfileId: salaryId ?? activeSalarySetting,
+    contribProfileId: selection.contribution,
+    salaryProfileId: selection.salary,
     editMode: true,
     getDraft: sandbox.getDraft,
     // No pagination in the sandbox — a "load more" sentinel that never

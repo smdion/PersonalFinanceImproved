@@ -2,12 +2,12 @@
   "files": {
     "src/app/(dashboard)/assets/assets-content.tsx": 430,
     "src/app/(dashboard)/brokerage/brokerage-content.tsx": 1067,
-    "src/app/(dashboard)/budget/budget-content.tsx": 653,
+    "src/app/(dashboard)/budget/budget-content.tsx": 663,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 390,
     "src/app/(dashboard)/budget/what-if-editors.tsx": 564,
-    "src/app/(dashboard)/budget/what-if-tab.tsx": 1367,
+    "src/app/(dashboard)/budget/what-if-tab.tsx": 1366,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 988,
-    "src/app/(dashboard)/expenses/expenses-content.tsx": 813,
+    "src/app/(dashboard)/expenses/expenses-content.tsx": 819,
     "src/app/(dashboard)/historical/page.tsx": 1026,
     "src/app/(dashboard)/house/page.tsx": 746,
     "src/app/(dashboard)/networth/page.tsx": 448,
@@ -76,7 +76,7 @@
     "src/components/retirement/retirement-profile-tab.tsx": 610,
     "src/components/retirement/sections/taxes.tsx": 569,
     "src/components/savings/all-transactions-tab.tsx": 1457,
-    "src/components/savings/api-sync-section.tsx": 634,
+    "src/components/savings/api-sync-section.tsx": 637,
     "src/components/savings/contribution-grid.tsx": 471,
     "src/components/savings/extra-paycheck-rules-editor.tsx": 1260,
     "src/components/savings/fund-card.tsx": 1042,
@@ -191,13 +191,13 @@
       "YearByYearTable": 162
     },
     "src/app/(dashboard)/budget/budget-content.tsx": {
-      "BudgetContent": 575
+      "BudgetContent": 585
     },
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": {
       "useBudgetDerivedData": 322
     },
     "src/app/(dashboard)/budget/use-budget-page-state.ts": {
-      "useBudgetPageState": 198
+      "useBudgetPageState": 207
     },
     "src/app/(dashboard)/budget/what-if-editors.tsx": {
       "WhatIfContributionsEditor": 176,
@@ -205,7 +205,7 @@
     },
     "src/app/(dashboard)/budget/what-if-tab.tsx": {
       "useSandboxState": 234,
-      "WhatIfTab": 831
+      "WhatIfTab": 830
     },
     "src/app/(dashboard)/contributions/contributions-content.tsx": {
       "ContributionsContent": 887,
@@ -216,7 +216,7 @@
       "DataBrowserContent": 249
     },
     "src/app/(dashboard)/expenses/expenses-content.tsx": {
-      "ExpensesContent": 578
+      "ExpensesContent": 583
     },
     "src/app/(dashboard)/historical/page.tsx": {
       "HistoricalPage": 191,
@@ -233,7 +233,7 @@
       "MilestonesContent": 223
     },
     "src/app/(dashboard)/networth/page.tsx": {
-      "NetWorthPage": 387
+      "NetWorthPage": 396
     },
     "src/app/(dashboard)/paycheck/page.tsx": {
       "PaycheckPage": 645,
@@ -330,7 +330,7 @@
       "LinkedBalanceCardImpl": 210
     },
     "src/components/cards/dashboard/living-costs-card.tsx": {
-      "LivingCostsCardImpl": 579
+      "LivingCostsCardImpl": 583
     },
     "src/components/cards/dashboard/retirement-card.tsx": {
       "RetirementCardImpl": 400

@@ -30,6 +30,7 @@ import {
 } from "@/lib/calculators/paycheck";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { useEffectiveContribProfileId } from "@/lib/hooks/use-effective-contrib-profile-id";
+import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { useBudgetProfilesList } from "@/lib/hooks/use-budget-profiles-list";
 import { SK_BUDGET_ACTIVE_COLUMN } from "@/lib/constants/settings-keys";
@@ -99,6 +100,7 @@ function LivingCostsCardImpl() {
   );
   const { data: appSettings } = trpc.settings.appSettings.list.useQuery();
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
+  const [rawActiveSalaryProfileId] = useActiveSalaryProfile();
   const {
     contributionProfileId: effectiveContribId,
     queryInput: contribProfileInput,
@@ -127,7 +129,10 @@ function LivingCostsCardImpl() {
       ...(displayBudgetProfileId != null
         ? { profileId: displayBudgetProfileId }
         : {}),
-      selection: { contribution: effectiveContribId },
+      selection: {
+        contribution: effectiveContribId,
+        salary: rawActiveSalaryProfileId,
+      },
     });
   // Spent this month in the linked budget app (YNAB/Actual) — the "how am
   // I actually doing" line next to the plan.

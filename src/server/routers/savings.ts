@@ -97,6 +97,10 @@ import { resolveTaxParams } from "@/lib/config/tax-params";
 import { ficaCapContext } from "@/lib/pure/contributions";
 import { deductionLine, earningLines } from "@/lib/pure/paycheck-lines";
 import type { DbOrTx } from "@/lib/db";
+import {
+  payProfileSelectionSchema,
+  type PayProfileSelection,
+} from "@/lib/pure/household/profile-selection";
 
 /**
  * Compute the current net-pay-per-check for a job by running the paycheck
@@ -485,12 +489,13 @@ function resolveEfundTierIndex(
 async function computeLiveMaxMonthlyFunding(
   ctx: Context,
   profileId?: number,
-  /** The page's Contribution/Salary Profile ids for the paycheck side. The
-   *  budget side runs on the active profiles, as the page's own
-   *  computeActiveSummary query does, so the pool matches its preview. */
+  /** The page's Contribution/Salary Profile ids for the paycheck side, and
+   *  its budget summary's selection for the budget side, so the pool
+   *  matches its preview. */
   income?: {
     contributionProfileId?: number;
     salaryProfileId?: number;
+    selection?: PayProfileSelection;
   },
 ): Promise<number | null> {
   const paycheckCaller = createCallerFactory(paycheckRouter)(internalCtx(ctx));
@@ -507,7 +512,10 @@ async function computeLiveMaxMonthlyFunding(
     paycheckCaller.computeSummary(
       Object.keys(paycheckInput).length > 0 ? paycheckInput : undefined,
     ),
-    budgetCaller.computeActiveSummary(profileId ? { profileId } : {}),
+    budgetCaller.computeActiveSummary({
+      ...(profileId ? { profileId } : {}),
+      ...(income?.selection ? { selection: income.selection } : {}),
+    }),
   ]);
   const budgetMonthlyTotal = deriveBudgetMonthlyTotal(budgetSummary);
   return paycheckData && budgetMonthlyTotal !== null
@@ -2068,6 +2076,7 @@ export const savingsRouter = createTRPCRouter({
           // can't silently diverge from what its own preview showed.
           contributionProfileId: z.number().int().optional(),
           salaryProfileId: z.number().int().optional(),
+          selection: payProfileSelectionSchema.optional(),
         })
         .optional(),
     )
@@ -2107,6 +2116,7 @@ export const savingsRouter = createTRPCRouter({
         {
           contributionProfileId: input?.contributionProfileId,
           salaryProfileId: input?.salaryProfileId,
+          selection: input?.selection,
         },
       );
       if (maxMonthlyFunding === null) {
@@ -2162,6 +2172,7 @@ export const savingsRouter = createTRPCRouter({
           // See computeLiveMaxMonthlyFunding's `income` param docblock.
           contributionProfileId: z.number().int().optional(),
           salaryProfileId: z.number().int().optional(),
+          selection: payProfileSelectionSchema.optional(),
         })
         .optional(),
     )
@@ -2197,6 +2208,7 @@ export const savingsRouter = createTRPCRouter({
         {
           contributionProfileId: input?.contributionProfileId,
           salaryProfileId: input?.salaryProfileId,
+          selection: input?.selection,
         },
       );
       if (maxMonthlyFunding === null) {

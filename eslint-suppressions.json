@@ -341,12 +341,9 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 3
+      "count": 2
     },
     "ratchet/no-guarded-division": {
-      "count": 1
-    },
-    "ratchet/no-history-comment": {
       "count": 1
     },
     "ratchet/no-jsx-iife": {

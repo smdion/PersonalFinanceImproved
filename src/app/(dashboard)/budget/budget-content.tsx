@@ -112,8 +112,18 @@ export function BudgetContent({
     SK_ACTIVE_SALARY_PROFILE_ID,
     null,
   );
+  // The active ids, sent explicitly (null while loading = none), shared by
+  // the summary query and the edit batch so they resolve alike.
+  const paySelection = useMemo(
+    () => ({
+      contribution: activeContribProfileId,
+      salary: activeSalaryProfileIdSetting,
+    }),
+    [activeContribProfileId, activeSalaryProfileIdSetting],
+  );
   const { data, isLoading, error } = trpc.budget.computeActiveSummary.useQuery({
     selectedColumn: activeColumn,
+    selection: paySelection,
     ...(displayProfileId != null ? { profileId: displayProfileId } : {}),
   });
   const { data: apiActualsData } = trpc.budget.listApiActuals.useQuery(
@@ -232,6 +242,7 @@ export function BudgetContent({
     nameColWidth,
     setNameColWidth,
     updateBatch,
+    paySelection,
   });
 
   const {
@@ -255,7 +266,6 @@ export function BudgetContent({
     data,
     savingsGoals,
     apiActualsData,
-    // The active profiles, as computeActiveSummary resolves them unpicked.
     contribProfileId: activeContribProfileId,
     salaryProfileId: activeSalaryProfileIdSetting,
     editMode,

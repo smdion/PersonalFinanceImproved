@@ -21,6 +21,7 @@ import type { RouterOutputs } from "@/lib/trpc";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { EDIT_LOCK_KEYS } from "@/components/ui/edit-lock-toggle";
 import { toast } from "@/lib/hooks/use-toast";
+import type { PayProfileSelection } from "@/lib/pure/household/profile-selection";
 
 const INITIAL_VISIBLE = 15;
 const LOAD_MORE_COUNT = 10;
@@ -30,6 +31,7 @@ type UpdateBatchResult = RouterOutputs["budget"]["updateItemAmounts"];
 type UpdateBatch = {
   mutateAsync: (args: {
     updates: Array<{ id: number; colIndex: number; amount: number }>;
+    selection?: PayProfileSelection;
   }) => Promise<UpdateBatchResult>;
 };
 
@@ -38,11 +40,15 @@ export function useBudgetPageState({
   nameColWidth,
   setNameColWidth,
   updateBatch,
+  paySelection,
 }: {
   data: object | null | undefined;
   nameColWidth: number;
   setNameColWidth: (w: number) => void;
   updateBatch: UpdateBatch;
+  /** The summary query's pay selection, so a linked edit lands in the
+   *  Contribution Profile that query resolved. */
+  paySelection: PayProfileSelection;
 }) {
   // ---- Edit mode + draft store ----
 
@@ -83,10 +89,12 @@ export function useBudgetPageState({
   // Stable refs so saveAllDrafts never closes over stale values
   const editDraftsRef = useRef(editDrafts);
   const updateBatchRef = useRef(updateBatch);
+  const paySelectionRef = useRef(paySelection);
   useEffect(() => {
     editDraftsRef.current = editDrafts;
     updateBatchRef.current = updateBatch;
-  }, [editDrafts, updateBatch]);
+    paySelectionRef.current = paySelection;
+  }, [editDrafts, updateBatch, paySelection]);
 
   const saveAllDrafts = async () => {
     const drafts = editDraftsRef.current;
@@ -102,7 +110,10 @@ export function useBudgetPageState({
         amount,
       };
     });
-    const res = await updateBatchRef.current.mutateAsync({ updates });
+    const res = await updateBatchRef.current.mutateAsync({
+      updates,
+      selection: paySelectionRef.current,
+    });
     // Cells the server couldn't apply (a since-deleted item, or a column
     // that no longer exists because the budget's columns changed while
     // editing). They can't be re-saved without a reload, so clear the
