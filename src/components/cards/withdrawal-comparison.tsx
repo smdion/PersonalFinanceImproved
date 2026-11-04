@@ -7,11 +7,10 @@ import {
 import { strategySummary } from "@/lib/pure/strategy-summary";
 import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import type { DollarBasis } from "@/lib/config/enum-values";
-import type { PlanFailureReason } from "@/lib/calculators/plan-outcome";
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { StrategyGuideButton } from "@/components/cards/strategy-guide-panel";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
 import {
   formatCurrency,
   compactCurrency,
@@ -30,34 +29,10 @@ import {
 import { CHART_FONT } from "@/components/charts/chart-defaults";
 import { STRATEGY_COMPARISON_COLORS, CHART_COLORS } from "@/lib/utils/colors";
 
-type StrategyResult = {
-  strategy: string;
-  label: string;
-  shortLabel: string;
-  failureAge: number | null;
-  failureYear: number | null;
-  failureReason: PlanFailureReason | null;
-  /** What the strategy has the household spend (Social Security
-   *  included) — comparable across strategies, unlike the withdrawals. */
-  year1Spending: number;
-  avgAnnualSpending: number;
-  year1Withdrawal: number;
-  avgAnnualWithdrawal: number;
-  minAnnualWithdrawal: number;
-  maxAnnualWithdrawal: number;
-  endRetirementBalance: number;
-  legacyAmount: number;
-  successRate: number | null;
-  spendingStabilityRate: number | null;
-  budgetStabilityRate: number | null;
-  yearByYear: {
-    age: number;
-    year: number;
-    withdrawal: number;
-    spending: number;
-    retirementBalance: number;
-  }[];
-};
+type StrategyResult = Extract<
+  RouterOutputs["projection"]["computeStrategyComparison"],
+  { strategies: unknown }
+>["strategies"][number];
 
 type AnalyzerInput = {
   contributionProfileId?: number;

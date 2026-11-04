@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { ComponentProps } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { WithdrawalComparisonCard } from "@/components/cards/withdrawal-comparison";
 import { resetTrpcMock, setQuery, setQueryState } from "./trpc-mock";
@@ -34,7 +35,9 @@ vi.mock("@/lib/trpc", async () => ({
 
 const ANALYZE = "projection.analyzeStrategy";
 
-const strategies = [
+const strategies: ComponentProps<
+  typeof WithdrawalComparisonCard
+>["strategies"] = [
   {
     strategy: "fixed",
     label: "Fixed Withdrawal",
@@ -71,7 +74,7 @@ const strategies = [
     ],
   },
   {
-    strategy: "guardrails",
+    strategy: "guyton_klinger",
     label: "Guyton-Klinger Guardrails",
     shortLabel: "Guardrails",
     failureAge: 88,

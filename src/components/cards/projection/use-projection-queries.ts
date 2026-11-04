@@ -1,6 +1,6 @@
 /** Data fetching and mutations for the projection card — deterministic engine query, Monte Carlo queries with prefetch, salary/budget override CRUD, and glide-path mutations. */
 import { useMemo, useEffect, useRef, useState } from "react";
-import { trpc } from "@/lib/trpc";
+import { trpc, type RouterOutputs } from "@/lib/trpc";
 import { useDebouncedValue } from "@/lib/hooks/use-debounced-value";
 import { useBoundedPollInterval } from "@/lib/hooks/use-bounded-poll-interval";
 import { usePersistedToggle } from "@/lib/hooks/use-persisted-setting";
@@ -24,21 +24,9 @@ import type { ProjectionFormState } from "./use-projection-form-state";
 import type { UseProjectionStateProps } from "./use-projection-state";
 import { filterYearByParentCategory } from "./utils";
 
-/** Mirrors the server's `CoastFireProbeResult`
- *  (server/routers/projection/coast-fire-probe.ts) — hand-rolled, not
- *  imported, since src/components/** is lint-forbidden from importing
- *  @/server/* (no-restricted-imports rule, eslint.config.mjs; same
- *  reasoning as projection/sections/types.ts's own docblock). */
-type CoastFireProbeResult = {
-  probeAge: number;
-  successRate: number;
-  passes: boolean;
-  spendingStabilityRate: number;
-  penaltyAvoidedShortfallRate: number;
-  medianPenaltyAvoidedShortfallPV: number;
-  confidenceThreshold: number;
-  mcResult: MonteCarloResult;
-};
+type CoastFireProbeResult = NonNullable<
+  RouterOutputs["projection"]["computeCoastFireProbe"]["result"]
+>;
 
 // Safety ceiling for every getMonteCarloProgress poller below (400ms
 // interval x 450 = ~3 minutes) — see useBoundedPollInterval's own
@@ -450,7 +438,7 @@ export function useProjectionQueries(
         probeAge,
         runId,
       });
-      setCoastFireProbeResult(response.result as CoastFireProbeResult | null);
+      setCoastFireProbeResult(response.result);
       // Can't simulate: say why where a failed check would.
       if ("notConfigured" in response)
         setCoastFireProbeError(

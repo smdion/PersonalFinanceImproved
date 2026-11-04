@@ -5,62 +5,22 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { WITHDRAWAL_STRATEGY_CONFIG } from "@/lib/config/withdrawal-strategies";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
+import type { RouterInputs, RouterOutputs } from "@/lib/trpc";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-export type SimulationInputs = {
-  currentAge: number;
-  retirementAge: number;
-  endAge: number;
-  startingBalance: number;
-  annualContributions: number;
-  annualExpenses: number;
-  inflationRate: number;
-  salary: number;
-  assetClasses: {
-    id: number;
-    name: string;
-    meanReturn: number;
-    stdDev: number;
-  }[];
-  dbAssetClasses: {
-    id: number;
-    name: string;
-    meanReturn: number;
-    stdDev: number;
-  }[];
-  currentAllocation: Record<number, number>;
-  glidePathAges: number[];
-  glidePath: { age: number; allocations: Record<number, number> }[];
-  preset: "aggressive" | "default" | "conservative" | "custom";
-  presetLabel: string;
-  presetDescription: string;
-  blendedReturn: number;
-  blendedVol: number;
-  /** The spread of each year's inflation around the plan's own rates. */
-  inflationRisk: { stdDev: number };
-  /** The plan's post-retirement raise — it moves with each trial's inflation. */
-  postRetirementInflationRate: number;
-  withdrawalRate: number;
-  withdrawalStrategy?: string;
-  decumulationExpenseOverride?: number;
-  accumulationExpenseOverride?: number;
-  taxMode: "simple" | "advanced";
-  hasAssetClassOverrides: boolean;
-  correlations: { classAId: number; classBId: number; correlation: number }[];
-  returnClampMin: number;
-  returnClampMax: number;
-  returnMultiplier: number;
-  volMultiplier: number;
-};
+/** The inputs computeMonteCarloProjection reports it ran with. */
+export type SimulationInputs = Extract<
+  RouterOutputs["projection"]["computeMonteCarloProjection"],
+  { simulationInputs: unknown }
+>["simulationInputs"];
 
-export type AssetClassOverride = {
-  id: number;
-  meanReturn?: number;
-  stdDev?: number;
-};
+/** One asset class's return/volatility override, as the query takes it. */
+export type AssetClassOverride = NonNullable<
+  RouterInputs["projection"]["computeMonteCarloProjection"]["assetClassOverrides"]
+>[number];
 
 // ---------------------------------------------------------------------------
 // SimulationAssumptions

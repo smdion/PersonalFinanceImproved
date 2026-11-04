@@ -728,10 +728,10 @@
   },
   "src/components/cards/coast-fire-card.tsx": {
     "ratchet/max-comment-lines": {
-      "count": 9
+      "count": 7
     },
     "ratchet/no-history-comment": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/cards/dashboard/contributions-card.tsx": {
@@ -1202,13 +1202,13 @@
   },
   "src/components/cards/projection/use-projection-queries.ts": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
+      "count": 3
     },
     "max-lines-per-function": {
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 28
+      "count": 27
     },
     "ratchet/no-history-comment": {
       "count": 1
