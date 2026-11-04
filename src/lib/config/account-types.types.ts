@@ -122,6 +122,8 @@ export type AccountTypeConfig = {
 
   // --- UI ---
   colors: ColorSet;
+  /** Chart hex (Recharts/SVG): the standard and the lighter Roth shade. */
+  chartHex: { standard: string; roth: string };
   employerMatchLabel: string;
   hasDiscountBar: boolean;
   /** Whether this account type's employer_contributions represents real cash

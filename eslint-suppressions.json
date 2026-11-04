@@ -5246,7 +5246,7 @@
   },
   "src/lib/utils/colors.ts": {
     "ratchet/max-comment-lines": {
-      "count": 11
+      "count": 10
     }
   },
   "src/lib/utils/date.ts": {

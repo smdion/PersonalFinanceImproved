@@ -7,6 +7,7 @@
  *  tooltip-string builder these were extracted from. */
 import type { EngineDecumulationYear } from "@/lib/calculators/types/engine-projection";
 import type { BracketOptimizerResult } from "@/lib/calculators/withdrawal-bracket-optimizer";
+import type { WithdrawalSourceKind } from "@/lib/calculators/engine";
 import { formatPercent, formatCurrency } from "@/lib/utils/format";
 import type { ReportWithdrawalStrategySection } from "./types";
 import {
@@ -14,7 +15,7 @@ import {
   describeDiscretionaryCapacityMath,
 } from "./bracket-target-narrative";
 
-const TIER_SOURCE_LABEL: Record<"roth" | "brokerage" | "hsa", string> = {
+const TIER_SOURCE_LABEL: Record<WithdrawalSourceKind, string> = {
   roth: "Roth",
   brokerage: "Brokerage",
   hsa: "HSA",
@@ -34,7 +35,7 @@ const TIER_SOURCE_LABEL: Record<"roth" | "brokerage" | "hsa", string> = {
  *  possibilities rather than guessing.
  */
 function describeTierRate(
-  source: "roth" | "brokerage" | "hsa",
+  source: WithdrawalSourceKind,
   costRate: number,
   includesNiit: boolean,
 ): string {
@@ -76,7 +77,7 @@ function describeTierRate(
 export function formatDiscretionaryTierBreakdown(
   breakdown:
     | {
-        source: "roth" | "brokerage" | "hsa";
+        source: WithdrawalSourceKind;
         costRate: number;
         amount: number;
         includesNiit?: true;

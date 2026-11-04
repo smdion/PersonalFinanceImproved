@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import {
   W4_FILING_STATUS_VALUES,
+  type FilingStatusKey,
   type W4FilingStatus,
 } from "@/lib/config/filing-status";
 
@@ -68,7 +69,7 @@ export function TaxBracketsSettings({ year }: { year: number }) {
   const yearShipped = yearData.some((tb) => tb.shipped);
   const effectiveCopyFrom = copyFrom ?? years[0] ?? null;
 
-  const statusLabels: Record<string, string> = {
+  const statusLabels: Record<FilingStatusKey, string> = {
     MFJ: "Married Filing Jointly",
     Single: "Single",
     HOH: "Head of Household",

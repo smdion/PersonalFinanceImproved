@@ -15,7 +15,7 @@
     "src/app/(dashboard)/performance/performance-content.tsx": 873,
     "src/app/(dashboard)/portfolio/portfolio-content.tsx": 893,
     "src/app/(dashboard)/savings/page.tsx": 952,
-    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1024,
+    "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": 1023,
     "src/app/(dashboard)/tools/page.tsx": 585,
     "src/app/(dashboard)/upkeep/utilities/page.tsx": 522,
     "src/app/(dashboard)/versions/page.tsx": 954,
@@ -139,7 +139,7 @@
     "src/lib/simplefin/ingest.ts": 534,
     "src/lib/simplefin/sync.ts": 616,
     "src/lib/tax-data/validate.ts": 411,
-    "src/lib/utils/colors.ts": 434,
+    "src/lib/utils/colors.ts": 431,
     "src/lib/utils/format.ts": 421,
     "src/server/helpers/budget-api-push.ts": 434,
     "src/server/helpers/budget.ts": 668,
@@ -258,7 +258,7 @@
     "src/app/(dashboard)/tax-buckets/tax-buckets-content.tsx": {
       "AccountDetailRow": 155,
       "BulkRothBasisForm": 181,
-      "TaxBucketsContent": 388
+      "TaxBucketsContent": 380
     },
     "src/app/(dashboard)/tools/page.tsx": {
       "ToolsPage": 542

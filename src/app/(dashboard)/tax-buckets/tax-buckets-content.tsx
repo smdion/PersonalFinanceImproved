@@ -112,8 +112,15 @@ function buildBuckets(entries: AccountEntry[]) {
   return { buckets, householdTotal, householdAccessible, householdLocked };
 }
 
-type BucketKey =
-  "traditional" | "rothIra" | "rothEmployer" | "brokerage" | "hsa";
+/** The page's buckets, in display order. */
+const BUCKET_KEYS = [
+  "traditional",
+  "rothIra",
+  "rothEmployer",
+  "brokerage",
+  "hsa",
+] as const;
+type BucketKey = (typeof BUCKET_KEYS)[number];
 
 const BUCKET_META: Record<BucketKey, { label: string; helpText?: string }> = {
   traditional: { label: "Traditional" },
@@ -291,14 +298,6 @@ export function TaxBucketsContent() {
     );
   }
 
-  const bucketOrder: BucketKey[] = [
-    "traditional",
-    "rothIra",
-    "rothEmployer",
-    "brokerage",
-    "hsa",
-  ];
-
   // Never merge the two views' entries — "At Retirement" only renders once
   // its own projection has actually resolved, so a stale "now" number can
   // never masquerade as a projected one.
@@ -459,7 +458,7 @@ export function TaxBucketsContent() {
 
       {/* Household-first bucket summary + expandable per-account detail */}
       {activeEntries !== null &&
-        bucketOrder.map((key) => {
+        BUCKET_KEYS.map((key) => {
           const b = buckets.get(key);
           if (!b || b.entries.length === 0) return null;
           const meta = BUCKET_META[key];

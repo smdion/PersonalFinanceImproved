@@ -12,11 +12,7 @@ import { ACCOUNT_TYPE_CONFIG } from "@/lib/config/account-types";
 
 type ColorSet = { bg: string; bgLight: string; border: string; text: string };
 
-// Build ACCOUNT_TYPE_COLORS from the central config.
-// Config uses bg/bgLight/border/text too, but with slightly different Tailwind
-// classes (e.g. config uses `bg-blue-600` and `border-blue-300` while this
-// module historically used `bg-blue-500` and `border-l-blue-500`).
-// We translate config colors into the border-l variant expected by cards.
+// ACCOUNT_TYPE_COLORS from the config, the border as the cards' border-l form.
 const ACCOUNT_TYPE_COLORS: Record<string, ColorSet> = Object.fromEntries(
   Object.entries(ACCOUNT_TYPE_CONFIG).map(([cat, cfg]) => [
     cat,
@@ -337,15 +333,16 @@ export const TAX_PIE_COLORS: Record<string, string> = {
   afterTax: "#f97316", // orange-500
 };
 
-/** Hex chart colors per account category, with roth (lighter) and traditional (standard) variants */
+/** Chart hex per category (config `chartHex`), plus ESPP and pension. */
 const CATEGORY_CHART_HEX: Record<string, { standard: string; roth: string }> = {
-  "401k": { standard: "#3b82f6", roth: "#93c5fd" }, // blue-500 / blue-300
-  "403b": { standard: "#3b82f6", roth: "#93c5fd" }, // shares 401k colors
-  ira: { standard: "#8b5cf6", roth: "#c4b5fd" }, // violet-500 / violet-300
-  hsa: { standard: "#10b981", roth: "#6ee7b7" }, // emerald-500 / emerald-300
-  brokerage: { standard: "#f97316", roth: "#fdba74" }, // orange-500 / orange-300
-  espp: { standard: "#f59e0b", roth: "#fcd34d" }, // amber-500 / amber-300
-  pension: { standard: "#6366f1", roth: "#a5b4fc" }, // indigo-500 / indigo-300
+  ...Object.fromEntries(
+    Object.entries(ACCOUNT_TYPE_CONFIG).map(([cat, cfg]) => [
+      cat,
+      cfg.chartHex,
+    ]),
+  ),
+  espp: { standard: "#f59e0b", roth: "#fcd34d" },
+  pension: { standard: "#6366f1", roth: "#a5b4fc" },
 };
 const DEFAULT_CHART_HEX = { standard: "#6b7280", roth: "#9ca3af" }; // gray-500 / gray-400
 

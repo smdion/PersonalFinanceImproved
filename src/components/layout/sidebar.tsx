@@ -51,7 +51,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { BRAND_COLORS } from "@/lib/utils/colors";
-import { BUDGET_SERVICES } from "@/lib/config/enum-values";
+import { budgetApiServiceLabel } from "@/lib/utils/format";
 
 // ── Navigation data structure ──
 
@@ -307,7 +307,7 @@ function BudgetApiLink({
   const { data } = trpc.sync.getActiveBudgetApiLink.useQuery();
   if (!data || data.service === "none" || !data.url) return null;
 
-  const label = BUDGET_SERVICES[data.service].label;
+  const label = budgetApiServiceLabel(data.service);
   return (
     <a
       href={data.url}
