@@ -58,6 +58,8 @@ interface SavingsProjectionResult {
   hasOverride: boolean[];
 }
 
+/** `YYYY-MM`: the savings projection's month key, and the savings UI's.
+ *  Not `lib/pure/date-keys`' `monthKey` (`YYYY-MM-01`, the budget-API key). */
 export function monthKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }

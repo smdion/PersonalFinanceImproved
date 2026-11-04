@@ -17,7 +17,7 @@ import {
 } from "@/lib/utils/format";
 import { CHART_COLORS } from "@/lib/utils/colors";
 import { CHART_FONT } from "@/components/charts/chart-defaults";
-import { monthKey } from "./types";
+import { monthKey } from "@/lib/pure/savings-projection";
 
 interface FundMiniChartProps {
   balances: number[];

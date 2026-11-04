@@ -12,10 +12,9 @@ import {
   accountDisplayName,
   personDisplayName,
 } from "@/lib/utils/format";
-import { taxTypeLabel } from "@/lib/utils/colors";
 import { localDateStr } from "@/lib/utils/date";
 import { snapshotAccountKey } from "@/lib/pure/portfolio";
-import { getDisplayConfig } from "@/lib/config/account-types";
+import { snapshotRowLabel } from "@/lib/pure/portfolio/snapshot-row-label";
 import { TrendingUp, TrendingDown } from "lucide-react";
 import { SettingsLink } from "@/components/ui/settings-link";
 import { PortfolioAccountsLink } from "@/components/portfolio/portfolio-accounts-link";
@@ -220,46 +219,15 @@ function groupFormRows(
       group.rows.map((r: AccountRow & { subLabel: string }) => r.ownerPersonId),
     );
     const hasMultipleOwners = isJointPerfAccount && ownerIds.size > 1;
-    const perfAccountType = (pa?.accountType ?? "").toLowerCase();
 
     for (const row of group.rows) {
-      const owner = hasMultipleOwners
-        ? personDisplayName(row.ownerPersonId, peopleMap)
-        : null;
-      const taxLabel = taxTypeLabel(row.taxType);
-      // DESIGN.md's sub-account-type rule only names subType, but `label` is
-      // a real, separate free-text override column — takes precedence when
-      // set (see DESIGN.md).
-      const displayName = row.label || row.subType;
-
-      let typeLabel: string;
-      if (displayName) {
-        typeLabel = displayName;
-      } else {
-        const rawType = row.accountType.toLowerCase();
-        // Documented rule (DESIGN.md): show accountType only if it differs
-        // from the parent performance account's type. The extra
-        // `rawType !== taxType` condition previously suppressed this label
-        // whenever accountType happened to equal the taxType string (e.g.
-        // "hsa" vs "hsa"), which isn't in the spec.
-        typeLabel =
-          rawType !== perfAccountType
-            ? getDisplayConfig(row.accountType).displayLabel
-            : taxLabel;
-      }
-
-      if (owner) {
-        // Owner prefix uses an em dash (DESIGN.md "Snapshot Display" — WHO
-        // owns it), distinct from parens (WHAT kind of sub-account). Same
-        // fix as portfolio-content.tsx's buildSubRowLabel — this file has
-        // its own copy of the same logic.
-        const qualifier =
-          typeLabel !== taxLabel ? `${typeLabel} · ${taxLabel}` : typeLabel;
-        row.subLabel = `${owner} — ${qualifier}`;
-      } else {
-        row.subLabel =
-          typeLabel !== taxLabel ? `${typeLabel} (${taxLabel})` : typeLabel;
-      }
+      row.subLabel = snapshotRowLabel({
+        ...row,
+        owner: hasMultipleOwners
+          ? personDisplayName(row.ownerPersonId, peopleMap)
+          : null,
+        perfAccountType: pa?.accountType ?? null,
+      });
     }
   }
 

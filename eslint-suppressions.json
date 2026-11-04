@@ -292,10 +292,7 @@
       "count": 2
     },
     "ratchet/max-comment-lines": {
-      "count": 7
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
+      "count": 5
     },
     "ratchet/no-raw-input": {
       "count": 2
@@ -1917,10 +1914,10 @@
       "count": 3
     },
     "ratchet/max-comment-lines": {
-      "count": 6
+      "count": 4
     },
     "ratchet/no-history-comment": {
-      "count": 5
+      "count": 4
     },
     "ratchet/no-jsx-iife": {
       "count": 2

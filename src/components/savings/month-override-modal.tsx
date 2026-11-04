@@ -7,7 +7,8 @@ import {
 } from "./pool-distribution-editor";
 import { formatCurrency } from "@/lib/utils/format";
 import { sumBy } from "@/lib/utils/math";
-import { type GoalProjection, monthKey } from "./types";
+import { type GoalProjection } from "./types";
+import { monthKey } from "@/lib/pure/savings-projection";
 import { monthKey as fullMonthKey } from "@/lib/pure/date-keys";
 
 const MONTH_NAMES = [
