@@ -7,7 +7,6 @@ import type {
   PayPeriod,
   PayWeek,
   TaxTreatment,
-  W4FilingStatus,
 } from "@/lib/config/enum-values";
 import type { WithdrawalStrategyType } from "@/lib/config/withdrawal-strategies";
 import type { DebtKind } from "@/lib/config/enum-values";
