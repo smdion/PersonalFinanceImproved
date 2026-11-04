@@ -379,7 +379,7 @@
     "src/lib/calculators/engine/contribution-projection.ts:projectSpecAmount",
     "src/lib/calculators/engine/contribution-routing.ts:capSpecs",
     "src/lib/calculators/engine/contribution-routing.ts:slotLimits",
-    "src/lib/calculators/engine/gap-year-draw.ts:gapShortfallFloor",
+    "src/lib/calculators/engine/gap-year-draw.ts:shortfallFloor",
     "src/lib/calculators/engine/guyton-klinger.ts:applyGuytonKlingerStrategy",
     "src/lib/calculators/engine/individual-account-tracking.ts:accrueIndividualBasis",
     "src/lib/calculators/engine/individual-account-tracking.ts:buildIndividualYearBalances",

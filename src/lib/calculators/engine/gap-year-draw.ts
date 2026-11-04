@@ -90,7 +90,7 @@ export type GapYearAccounts = {
 
 /** Below this a gap or retirement year counts as funded: rounding, not a
  *  shortfall (SHORTFALL_MATERIALITY). */
-export function gapShortfallFloor(need: number): number {
+export function shortfallFloor(need: number): number {
   const { minimum, shareOfNeed } = SHORTFALL_MATERIALITY;
   return Math.max(minimum, need * shareOfNeed);
 }
@@ -204,7 +204,7 @@ export function runGapYearDraw(
     slots: [],
     warnings: [],
   };
-  if (need < gapShortfallFloor(need))
+  if (need < shortfallFloor(need))
     return { draw: { ...noDraw, need: 0 }, accounts: null };
   if (input.gapYearDraws === false)
     return { draw: { ...noDraw, spendingCut: need }, accounts: null };

@@ -55,7 +55,7 @@ import {
   rowTotal,
 } from "./utils";
 import type { ProjectionState } from "./projection-table-types";
-import { gapShortfallFloor } from "@/lib/calculators/engine";
+import { shortfallFloor } from "@/lib/calculators/engine";
 import {
   buildEligibilityNote,
   ownerAccountLabel,
@@ -989,7 +989,7 @@ export function AccumulationRow({
             header: `${isPersonFiltered ? personFilterName : "Employee"}: ${formatCurrency(empAmount)}`,
             meta: gapScoped ? undefined : gapMeta,
             shortfall:
-              gap && !gapScoped && gap.unmetNeed >= gapShortfallFloor(gap.need)
+              gap && !gapScoped && gap.unmetNeed >= shortfallFloor(gap.need)
                 ? { amount: deflate(gap.unmetNeed, yr.year) }
                 : undefined,
             withdrawals:

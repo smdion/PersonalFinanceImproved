@@ -32,7 +32,7 @@ import {
   MAX_BROKERAGE_RAMP_YEARS,
   ADDITIONAL_STANDARD_DEDUCTION_AGE,
 } from "../../../constants";
-import { gapShortfallFloor } from "../gap-year-draw";
+import { shortfallFloor } from "../gap-year-draw";
 import { countReachingAgeRule, reachesAgeRule } from "@/lib/pure/household/age";
 import { cloneAccountBalances, scopedBalances } from "../balance-utils";
 import {
@@ -1240,7 +1240,7 @@ export function runDecumulationYear(
       : Math.max(0, afterTaxNeed - deliveredAfterTax - surplusCredit(taxCost)),
   );
   // Materiality floor, not a correctness tolerance (SHORTFALL_MATERIALITY).
-  const shortfallMaterialityFloor = gapShortfallFloor(afterTaxNeed);
+  const shortfallMaterialityFloor = shortfallFloor(afterTaxNeed);
   const finalUnmetNeed =
     fundingShortfall > shortfallMaterialityFloor
       ? Math.max(routedUnmetNeed ?? 0, fundingShortfall)

@@ -454,7 +454,7 @@ describe("gap-year figures (pins current behavior)", () => {
       accounts,
     );
     // Grossed up, the draw nets 56,499.46 against a 56,590 need: 90.54
-    // short, under the funded floor (gapShortfallFloor), so pinned as is.
+    // short, under the funded floor (shortfallFloor), so pinned as is.
     expect(figures(input)).toEqual({
       contributions: 0,
       need: 56590,

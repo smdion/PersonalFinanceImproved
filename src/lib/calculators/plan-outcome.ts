@@ -16,7 +16,7 @@
  * Survival only — callers with an extra test (Coast FIRE's first-year need)
  * add it on top.
  */
-import { gapShortfallFloor } from "./engine/gap-year-draw";
+import { shortfallFloor } from "./engine/gap-year-draw";
 import type { EngineDecumulationYear, ProjectionResult } from "./types";
 
 /** Why a plan failed:
@@ -74,7 +74,7 @@ export function assessPlan(
     if (
       y.phase === "accumulation" &&
       y.gapDraw &&
-      y.gapDraw.unmetNeed >= gapShortfallFloor(y.gapDraw.need)
+      y.gapDraw.unmetNeed >= shortfallFloor(y.gapDraw.need)
     )
       return {
         succeeded: false,

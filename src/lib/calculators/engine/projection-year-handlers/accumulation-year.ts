@@ -63,7 +63,7 @@ import type {
   ProjectionContext,
   ProjectionLoopState,
 } from "./types";
-import { gapShortfallFloor, runGapYearDraw } from "../gap-year-draw";
+import { shortfallFloor, runGapYearDraw } from "../gap-year-draw";
 import { updatePerPersonTradBalance } from "./helpers";
 import { applyLumpSums } from "./lump-sum";
 import {
@@ -628,7 +628,7 @@ export function runAccumulationYear(
   const gapDraw = gapRun?.draw ?? null;
   if (gapDraw) {
     routeWarnings.push(...gapDraw.warnings);
-    if (gapDraw.unmetNeed >= gapShortfallFloor(gapDraw.need))
+    if (gapDraw.unmetNeed >= shortfallFloor(gapDraw.need))
       routeWarnings.push(
         `${year}: $${Math.round(gapDraw.unmetNeed).toLocaleString()} of spending can't be funded with a paycheck gone: no reachable money without a penalty.`,
       );
