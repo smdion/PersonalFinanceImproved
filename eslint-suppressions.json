@@ -3644,10 +3644,10 @@
   },
   "src/lib/config/withdrawal-routing.ts": {
     "ratchet/max-comment-lines": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-history-comment": {
-      "count": 3
+      "count": 2
     }
   },
   "src/lib/config/withdrawal-strategies.ts": {
@@ -5807,7 +5807,7 @@
       "count": 6
     },
     "ratchet/max-comment-lines": {
-      "count": 12
+      "count": 7
     }
   },
   "src/server/routers/projection/coast-fire-probe.ts": {
@@ -5950,7 +5950,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 24
+      "count": 21
     },
     "ratchet/no-history-comment": {
       "count": 4

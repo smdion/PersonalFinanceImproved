@@ -51,12 +51,12 @@ import {
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildMcInputs,
   resolveInflationRisk,
   resolveProjectionOverrides,
 } from "./_shared";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
 import {
   hashEngineInput,
   readProjectionCache,

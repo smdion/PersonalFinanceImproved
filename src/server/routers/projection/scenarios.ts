@@ -39,11 +39,11 @@ import {
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
   resolveProjectionOverrides,
 } from "./_shared";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
 
 export const scenariosRouter = createTRPCRouter({
   /**

@@ -31,8 +31,11 @@ import {
   accountCategoryEnum,
   getDefaultDecumulationOrder,
   DEFAULT_WITHDRAWAL_SPLITS as CONFIG_WITHDRAWAL_SPLITS,
-  PARENT_CATEGORY_VALUES,
 } from "@/lib/config/account-types";
+import {
+  decumulationOverrideArraySchema,
+  lumpSumSchema,
+} from "@/lib/pure/engine";
 import {
   getAllStrategyKeys,
   getStrategyMeta,
@@ -63,25 +66,6 @@ export function resolveSsStartAgeBaseline(
     : baseEngineInputSsStartAge;
 }
 
-const lumpSumSchema = z
-  .array(
-    z.object({
-      amount: z.number().positive(),
-      targetAccount: z.enum(accountCategoryEnum()),
-      taxType: z.enum(["traditional", "roth"]).optional(),
-      targetAccountName: z.string().max(200).optional(),
-      // Disambiguates two household members' identically-named
-      // accounts — see LumpSum.targetOwnerName's docblock (calculators/types/shared.ts).
-      // Optional so lump sums saved before this field existed keep parsing.
-      targetOwnerName: z.string().max(200).optional(),
-      // Whose money a lump sum with no named account is (the Brokerage
-      // page's are Portfolio savings) — see LumpSum.targetParentCategory.
-      targetParentCategory: z.enum(PARENT_CATEGORY_VALUES).optional(),
-      label: z.string().max(100).optional(),
-    }),
-  )
-  .optional();
-
 // Shared Zod schemas for accumulation/decumulation overrides ("Changes by
 // year") — used by every projection procedure's input. OMITTED means the
 // household's saved rows (resolveProjectionOverrides): every surface — the
@@ -107,91 +91,6 @@ const accumulationOverrideArraySchema = z.array(
         roth: z.number().optional(),
       })
       .optional(),
-    lumpSums: lumpSumSchema,
-    reset: z.boolean().optional(),
-    notes: z.string().optional(),
-  }),
-);
-
-/**
- * Top-level `decumulationDefaults` query input — the live withdrawal-strategy
- * settings a client can send to override DB defaults. Was byte-identical
- * across scenarios.ts, monte-carlo.ts, and coast-fire.ts (x2).
- */
-//
-// No `withdrawalRate`: buildDecumulationDefaults always takes the rate from
-// retirement_settings (it seeds rate-based first-year spending), so a
-// client-sent rate was accepted and silently ignored.
-export const decumulationDefaultsInputSchema = z
-  .object({
-    // Deliberately `.optional()`, NOT `.default("bracket_filling")` — a
-    // default here would make "the caller omitted this" indistinguishable
-    // from "the caller explicitly chose bracket_filling," which would
-    // permanently hide the household's own `retirement_settings
-    // .withdrawal_routing_mode` behind an unreachable request-level
-    // default. `buildDecumulationDefaults` below is where the real
-    // fallback (client override > DB setting > "bracket_filling") lives.
-    withdrawalRoutingMode: z
-      .enum(["bracket_filling", "waterfall", "percentage"])
-      .optional(),
-    // `.optional()`, NOT `.default(...)` — same reasoning as
-    // `withdrawalRoutingMode` above: a field-level default here makes "the
-    // caller omitted this" indistinguishable from "the caller sent the
-    // config default," which permanently hides the household's persisted
-    // `retirement_settings.withdrawal_order` / `.withdrawal_splits` behind
-    // an unreachable request default. The client (the Retirement page's
-    // Configure editors) only sends these once the user has actively
-    // touched them; `buildDecumulationDefaults` owns the real fallback
-    // (client override > DB setting > config default).
-    withdrawalOrder: z.array(z.enum(accountCategoryEnum())).optional(),
-    withdrawalSplits: z
-      .record(z.enum(accountCategoryEnum()), z.number())
-      .optional(),
-    withdrawalTaxPreference: z
-      .record(z.string(), z.enum(["traditional", "roth"]))
-      .default({}),
-  })
-  // NOTE: no `withdrawalRoutingMode` / `withdrawalOrder` / `withdrawalSplits`
-  // key in this object-level default — same reason as the field-level
-  // `.optional()` on each above. A caller that omits `decumulationDefaults`
-  // entirely (Tax Optimization's comparison procedures) must still reach the
-  // DB fallback in `buildDecumulationDefaults`, not get the config default
-  // baked in here a second way.
-  .default({
-    withdrawalTaxPreference: {},
-  });
-
-const decumulationOverrideArraySchema = z.array(
-  // No per-year `withdrawalRate`: none of the spending strategies reads
-  // it, so an override could only ever change nothing.
-  z.object({
-    year: z.number().int(),
-    withdrawalRoutingMode: z
-      .enum(["bracket_filling", "waterfall", "percentage"])
-      .optional(),
-    withdrawalOrder: z.array(z.enum(accountCategoryEnum())).optional(),
-    withdrawalSplits: z
-      .record(z.enum(accountCategoryEnum()), z.number())
-      .optional(),
-    withdrawalTaxPreference: z
-      .record(z.enum(accountCategoryEnum()), z.enum(["traditional", "roth"]))
-      .optional(),
-    withdrawalAccountCaps: z
-      .record(z.enum(accountCategoryEnum()), z.number())
-      .optional(),
-    withdrawalTaxTypeCaps: z
-      .object({
-        traditional: z.number().optional(),
-        roth: z.number().optional(),
-      })
-      .optional(),
-    rothConversionTarget: z.number().min(0).max(1).optional(),
-    // See DecumulationOverride's docblock in
-    // engine-config.ts. Without these two, zod silently strips both
-    // fields at this boundary regardless of what the engine/type layer
-    // supports underneath.
-    rothBracketTarget: z.number().min(0).max(1).optional(),
-    rmdSmoothingMaxBracketTarget: z.number().min(0).max(1).optional(),
     lumpSums: lumpSumSchema,
     reset: z.boolean().optional(),
     notes: z.string().optional(),

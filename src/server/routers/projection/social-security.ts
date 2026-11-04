@@ -38,10 +38,10 @@ import {
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   resolveProjectionOverrides,
 } from "./_shared";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
 
 export const socialSecurityRouter = createTRPCRouter({
   /**

@@ -37,12 +37,12 @@ import {
 import {
   accumulationOverrideSchema,
   decumulationOverrideSchema,
-  decumulationDefaultsInputSchema,
   buildDecumulationDefaults,
   buildCoastFireProfileSwitches,
   buildMcInputs,
   resolveProjectionOverrides,
 } from "./_shared";
+import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
 import {
   hashEngineInput,
   readProjectionCache,
