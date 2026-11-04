@@ -44,8 +44,6 @@ import {
   resolveTargetBudgetProfile,
   getResolvedGoalAllocations,
   resolveLinkedBudgetItemAmounts,
-  resolveActiveProfilePair,
-  type ProfilePair,
   loadBudgetItemLinks,
   setBudgetItemLink,
   deleteBudgetItemLink,
@@ -69,6 +67,7 @@ import type {
 import { YNAB_INTERNAL_GROUPS } from "@/lib/budget-api";
 import { currentMonthKey } from "@/lib/pure/date-keys";
 import type { DbOrTx } from "@/lib/db";
+import { resolveProfileSelection } from "@/server/services/profile-selection";
 
 type BudgetItemRow = typeof schema.budgetItems.$inferSelect;
 
@@ -140,7 +139,7 @@ async function profileFromTiers(
   kind: "contribProfileId" | "salaryProfileId",
 ): Promise<number | null> {
   if (tiers) return tiers.localSelectionId ?? tiers.globalDefaultId;
-  return (await resolveActiveProfilePair(db))[kind];
+  return (await resolveProfileSelection({ db }))[kind];
 }
 
 /**
@@ -225,7 +224,7 @@ export const budgetRouter = createTRPCRouter({
         .select()
         .from(schema.savingsGoals)
         .where(eq(schema.savingsGoals.isActive, true)),
-      resolveActiveProfilePair(ctx.db),
+      resolveProfileSelection(ctx.scope),
     ]);
     // Savings funding is per-(goal, profile) — resolve once per profile and
     // fold the monthly total into annualTotal so it isn't silently excluded
@@ -715,7 +714,7 @@ export const budgetRouter = createTRPCRouter({
       // pair the page shows: its own local selection (What-If), else the
       // active profiles. A budget column is a spending level, so the pair is
       // the same for every column (and matches use-budget-derived-data.ts).
-      const profiles: ProfilePair = {
+      const profiles = {
         contribProfileId: await profileFromTiers(
           ctx.db,
           input?.contributionProfile,
@@ -1983,7 +1982,7 @@ export const budgetRouter = createTRPCRouter({
       });
 
       const numColumns = (profile.columnLabels as string[]).length;
-      const activeProfiles = await resolveActiveProfilePair(ctx.db);
+      const activeProfiles = await resolveProfileSelection(ctx.scope);
       // Contribution-linked items freeze `amounts` on edit (see
       // resolveLinkedBudgetItemAmounts docblock) — pushing raw `amounts`
       // would push the stale value instead of the profile's live one.

@@ -580,7 +580,7 @@ same (Contribution, Salary) pair — the page's local selection → the active
 one. `budget.computeActiveSummary` takes two-tier
 `{ localSelectionId, globalDefaultId }` objects (`profileResolutionTiersSchema`
 / `profileFromTiers`) with no column tier; callers with no page context use
-`resolveActiveProfilePair`. A linked item's dollars are computed once
+`resolveProfileSelection` (`server/services/profile-selection.ts`). A linked item's dollars are computed once
 (`resolveLinkedBudgetItemAmounts(db, items, n, pair)`) and repeated across
 columns. Migration 0009 dropped the old per-column profile ids. Never add a
 per-column profile back — a different set of profiles is a different Plan.

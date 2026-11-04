@@ -1,5 +1,5 @@
 /**
- * ProfileSelection (RULES § Profile Resolution): a page sends only what it
+ * ProfileSelection (DESIGN § Profile Resolution): a page sends only what it
  * picked, the server hands the engine payload exactly those picks, and a
  * stale flat key is refused rather than dropped.
  */

@@ -41,8 +41,8 @@ import {
   resolveProfile,
   getPrimaryPerson,
   resolveLinkedBudgetItemAmounts,
-  resolveActiveProfilePair,
 } from "@/server/helpers";
+import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { getAllPeople } from "@/server/helpers/people";
 import {
   aggregateContributionsByCategory,
@@ -302,7 +302,7 @@ export const retirementRouter = createTRPCRouter({
           const labels = p.columnLabels as string[];
           const months = (p.columnMonths as number[] | null) ?? null;
           const numColumns = labels.length;
-          const activeProfiles = await resolveActiveProfilePair(ctx.db);
+          const activeProfiles = await resolveProfileSelection(ctx.scope);
           const resolvedItems = await resolveLinkedBudgetItemAmounts(
             ctx.db,
             items,

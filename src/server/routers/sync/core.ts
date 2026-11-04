@@ -36,8 +36,8 @@ import {
   loadBudgetItemLinks,
   loadSavingsGoalLinks,
   resolveLinkedBudgetItemAmounts,
-  resolveActiveProfilePair,
 } from "@/server/helpers";
+import { resolveProfileSelection } from "@/server/services/profile-selection";
 import { calculateMortgage } from "@/lib/calculators/mortgage";
 import { portfolioAccountLabel } from "@/server/helpers/portfolio-labels";
 import { serviceEnum } from "./_shared";
@@ -547,7 +547,7 @@ export const syncCoreRouter = createTRPCRouter({
         // stale DB column.
         const previewNumColumns = (activeProfile.columnLabels as string[])
           .length;
-        const activeProfiles = await resolveActiveProfilePair(ctx.db);
+        const activeProfiles = await resolveProfileSelection(ctx.scope);
         budgetItemRows = await resolveLinkedBudgetItemAmounts(
           ctx.db,
           linkedRows,
