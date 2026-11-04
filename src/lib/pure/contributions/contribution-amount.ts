@@ -8,6 +8,7 @@ import {
   type ContributionMethod,
   type EmployerMatchType,
 } from "@/lib/config/enum-values";
+import { assertNever } from "@/lib/utils/assert-never";
 import { storedCeiling, type Ceiling } from "@/lib/utils/ceiling";
 
 /** A share as a fraction: 0.06 means 6%. */
@@ -39,10 +40,8 @@ export function computeAnnualContribution(
       return value * 12;
     case "fixed_annual":
       return value;
-    default: {
-      const unreachable: never = method;
-      throw new Error(`Unknown contribution method: ${String(unreachable)}`);
-    }
+    default:
+      return assertNever(method);
   }
 }
 
@@ -77,9 +76,7 @@ export function parseEmployerMatch(
     case "dollar_match":
     case "fixed_annual":
       return { kind: "flat", perYear: value };
-    default: {
-      const unreachable: never = type;
-      throw new Error(`Unknown employer match type: ${String(unreachable)}`);
-    }
+    default:
+      return assertNever(type);
   }
 }
