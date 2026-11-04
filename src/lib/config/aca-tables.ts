@@ -56,35 +56,6 @@ export function getAcaSubsidyCliff(
   return povertyLevel(householdSize, fplByHousehold) * 4;
 }
 
-/**
- * ACA MAGI (§36B(d)(2)(B)) for a decumulation year — single computation
- * path shared by `checkAca` and any future consumer. Adds back the
- * FULL gross SS benefit, unlike IRMAA MAGI
- * (which uses the 0-85% taxable slice) — this is the one real difference
- * between the two MAGI definitions, so it lives here rather than being
- * re-derived at each call site.
- */
-export function acaMagi(input: {
-  totalTraditionalWithdrawal: number;
-  rothConversionAmount: number;
-  brokerageGainsPortion: number;
-  /** Non-qualified Roth growth income — ordinary income, belongs in AGI/MAGI
-   *  like any other (previously omitted here
-   *  while currentYearMagi/NIIT/the IRMAA lookback already included it —
-   *  see decumulation-year.ts's own comment on this exact field, which
-   *  named "the ACA subsidy check below" as needing it too). */
-  rothTaxableGrowth: number;
-  ssIncome: number;
-}): number {
-  return (
-    input.totalTraditionalWithdrawal +
-    input.rothConversionAmount +
-    input.brokerageGainsPortion +
-    input.rothTaxableGrowth +
-    input.ssIncome
-  );
-}
-
 // `estimateAcaSubsidyValue` was removed. It had no production
 // caller (the audit and a prior advisor pass both confirmed it dead), and
 // it carried the last of the inline ACA rate ladders — the applicable-

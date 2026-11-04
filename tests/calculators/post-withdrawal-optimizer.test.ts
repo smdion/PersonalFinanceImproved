@@ -228,6 +228,26 @@ describe("performRothConversion", () => {
     expect(result.rothConversionAmount).toBe(6000);
   });
 
+  it("adds the IRMAA-cap MAGI in today's term order (a float tie at the cliff)", () => {
+    // Traditional + gains + taxable SS + Roth growth is 218000.00000000003
+    // in this order and exactly 218000 in yearMagi's: today the MAGI reads
+    // as past the first MFJ tier, so the cap is the next tier's headroom,
+    // not $0. Pins today's figure until yearMagi rounds to cents (v0.11).
+    const result = performRothConversion(
+      makeRothInput({
+        irmaaAwareRothConversions: true,
+        totalTraditionalWithdrawal: 50944.48,
+        brokerageGainsPortion: 49494.23,
+        taxableSS: 105244.31,
+        rothTaxableGrowth: 12316.98,
+        rothBracketTarget: 0.35,
+      }),
+    );
+    // In yearMagi's order the cliff would be 218000 and the conversion $0.
+    expect(result.rothConversionAmount).toBe(56000);
+    expect(result.rothConversionIrmaaCapped).toBe(true);
+  });
+
   it("leaves rothConversionIrmaaCapped unset when IRMAA awareness is off", () => {
     // Same capping-scale inputs as the test above, but the
     // irmaaAwareRothConversions clamp is disabled — the flag must not
@@ -393,8 +413,24 @@ describe("checkHouseholdIrmaa", () => {
 // checkAca
 // ---------------------------------------------------------------------------
 
-function makeAcaInput(overrides: Partial<AcaInput> = {}): AcaInput {
-  return {
+/** checkAca's input with the year's income streams flat, for overrides. */
+type AcaFixture = Omit<AcaInput, "income"> & {
+  totalTraditionalWithdrawal: number;
+  rothConversionAmount: number;
+  brokerageGainsPortion: number;
+  rothTaxableGrowth: number;
+  ssIncome: number;
+};
+
+function makeAcaInput(overrides: Partial<AcaFixture> = {}): AcaInput {
+  const {
+    totalTraditionalWithdrawal,
+    rothConversionAmount,
+    brokerageGainsPortion,
+    rothTaxableGrowth,
+    ssIncome,
+    ...rest
+  }: AcaFixture = {
     enableAcaAwareness: true,
     allPersonsUnder65: true,
     householdSize: 2,
@@ -411,6 +447,16 @@ function makeAcaInput(overrides: Partial<AcaInput> = {}): AcaInput {
     fplGrowthFactor: 1,
     fplByHousehold: shippedTaxTables().fplByHousehold,
     ...overrides,
+  };
+  return {
+    ...rest,
+    income: {
+      traditionalDraws: totalTraditionalWithdrawal,
+      rothTaxableGrowth,
+      rothConversions: rothConversionAmount,
+      realizedGains: brokerageGainsPortion,
+      socialSecurity: { gross: ssIncome },
+    },
   };
 }
 
@@ -460,6 +506,24 @@ describe("checkAca", () => {
     expect(result.warnings.length).toBeGreaterThan(0);
     expect(result.warnings[0]).toContain("ACA");
     expect(result.warnings[0]).toContain("cliff");
+  });
+
+  it("adds the ACA MAGI in today's term order (a float tie at the cliff)", () => {
+    // Traditional + conversion + gains + Roth growth + Social Security is
+    // exactly 84600 (the 2-person cliff) in this order and 84599.99999999999
+    // in yearMagi's: today it reads as at the cliff, so the subsidy is lost.
+    // Pins today's result until yearMagi rounds to cents (v0.11).
+    const result = checkAca(
+      makeAcaInput({
+        totalTraditionalWithdrawal: 15821.05,
+        rothConversionAmount: 46201.95,
+        brokerageGainsPortion: 7842.51,
+        rothTaxableGrowth: 3097.57,
+        ssIncome: 11636.92,
+      }),
+    );
+    expect(result.acaSubsidyPreserved).toBe(false);
+    expect(result.acaMagiHeadroom).toBe(0);
   });
 
   it("warning attributes the overage to brokerage when brokerage gains could cover it", () => {

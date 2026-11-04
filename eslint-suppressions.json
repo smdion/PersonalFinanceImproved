@@ -3062,10 +3062,10 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 24
+      "count": 22
     },
     "ratchet/no-history-comment": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": {
@@ -3095,7 +3095,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 47
+      "count": 46
     },
     "ratchet/no-guarded-division": {
       "count": 2
@@ -3213,7 +3213,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 21
+      "count": 19
     },
     "ratchet/no-guarded-division": {
       "count": 1
@@ -3444,10 +3444,10 @@
   },
   "src/lib/config/aca-tables.ts": {
     "ratchet/max-comment-lines": {
-      "count": 5
+      "count": 3
     },
     "ratchet/no-history-comment": {
-      "count": 2
+      "count": 1
     }
   },
   "src/lib/config/account-balance.ts": {

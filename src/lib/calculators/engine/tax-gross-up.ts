@@ -40,6 +40,7 @@ import type {
   IndividualAccountInput,
 } from "../types";
 import { computeNiit } from "../../config/niit";
+import { yearMagi } from "@/lib/pure/tax/year-income";
 import { roundToCents } from "../../utils/math";
 import { cloneAccountBalances } from "./balance-utils";
 import {
@@ -237,12 +238,8 @@ function evaluateCost(
     clonedAcctBal,
     {
       taxBrackets: taxRates.taxBrackets,
-      // Read the resolved (possibly per-year-overridden)
-      // value, same fix as the real router's own call site
-      // (decumulation-year.ts) -- this file's own header docblock (Part
-      // "2." above) says this estimate and the real router must never
-      // diverge on what routing rule applies; leaving this unresolved
-      // would violate that for any household using the new override.
+      // The resolved (possibly per-year) value, as the real router reads
+      // it: this estimate and the router apply the same routing rule.
       rothBracketTarget: config.rothBracketTarget ?? taxRates.rothBracketTarget,
       // Same rule, same reason as rothBracketTarget above: the
       // reserved-room estimate must target the rate a conversion will
@@ -257,12 +254,7 @@ function evaluateCost(
       rothBasisAvailable,
       brokerageBasisRatio,
       conversionsEnabled: taxRates.enableRothConversions,
-      // This was missing entirely, a
-      // live divergence from the real router's own call site
-      // (decumulation-year.ts), which has passed this since the LTCG fix
-      // earlier in this same session. Same rule as the rothBracketTarget
-      // comment above: this estimate and the real router must never
-      // diverge on what routing rule applies.
+      // Passed as the real router passes it (same rule as above).
       standardDeduction: taxRates.standardDeduction,
       discretionaryWithdrawalOrder: config.discretionaryWithdrawalOrder,
     },
@@ -326,18 +318,20 @@ function evaluateCost(
     taxableSS = taxableSSFor(input.ssIncome, taxResult, filingStatus);
     taxResult = price(taxableSS);
   }
-  // NIIT, priced as the year handler charges it (decumulation-year.ts):
-  // left out, a household above the threshold came up short by exactly the
-  // surtax every year. Roth conversions run later and stay out of MAGI here.
+  // NIIT, priced as the year handler charges it (decumulation-year.ts).
+  // Roth conversions run later and stay out of MAGI here.
+  const niitMagi = yearMagi(
+    {
+      traditionalDraws: taxResult.totalTraditionalWithdrawal,
+      rothTaxableGrowth: taxResult.rothTaxableGrowth,
+      rothConversions: 0,
+      realizedGains: taxResult.brokerageGainsPortion,
+      socialSecurity: { taxable: taxableSS },
+    },
+    "niit",
+  );
   const niit = filingStatus
-    ? computeNiit(
-        taxResult.totalTraditionalWithdrawal +
-          taxResult.rothTaxableGrowth +
-          taxResult.brokerageGainsPortion +
-          taxableSS,
-        taxResult.brokerageGainsPortion,
-        filingStatus,
-      )
+    ? computeNiit(niitMagi, taxResult.brokerageGainsPortion, filingStatus)
     : 0;
   const taxCost = roundToCents(taxResult.taxCost + niit);
   const totalCost = roundToCents(taxCost + taxResult.penaltyCost);

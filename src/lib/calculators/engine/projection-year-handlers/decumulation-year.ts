@@ -89,6 +89,7 @@ import type {
 } from "./types";
 import { updatePerPersonTradBalance } from "./helpers";
 import { applyLumpSums } from "./lump-sum";
+import { yearMagi, type YearIncome } from "@/lib/pure/tax/year-income";
 
 // ---------------------------------------------------------------------------
 // Decumulation year handler
@@ -1199,19 +1200,17 @@ export function runDecumulationYear(
             : taxRates.brokerage;
   }
 
+  const income: YearIncome = {
+    traditionalDraws: totalTraditionalWithdrawal,
+    rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
+    rothConversions: rothConversionAmount,
+    realizedGains: brokerageGainsPortion,
+    socialSecurity: { gross: ssIncome, taxable: taxableSS },
+  };
   // --- NIIT (Net Investment Income Tax, 3.8% surtax) ---
   // Applies to lesser of net investment income or MAGI exceeding threshold.
   // Roth conversions raise MAGI but are NOT net investment income.
-  // Non-qualified Roth growth income
-  // (taxFromSlots.rothTaxableGrowth) was missing here too, understating
-  // MAGI fed into NIIT, the 2-year IRMAA lookback, and the ACA subsidy
-  // check below — same root cause as the taxCost recompute fix above.
-  const currentYearMagi =
-    totalTraditionalWithdrawal +
-    taxFromSlots.rothTaxableGrowth +
-    rothConversionAmount +
-    brokerageGainsPortion +
-    taxableSS;
+  const currentYearMagi = yearMagi(income, "niit");
   const niitAmount = filingStatus
     ? computeNiit(currentYearMagi, brokerageGainsPortion, filingStatus)
     : 0;
@@ -1327,11 +1326,7 @@ export function runDecumulationYear(
     enableAcaAwareness,
     allPersonsUnder65,
     householdSize: householdSize ?? 2,
-    totalTraditionalWithdrawal,
-    rothConversionAmount,
-    brokerageGainsPortion,
-    rothTaxableGrowth: taxFromSlots.rothTaxableGrowth,
-    ssIncome,
+    income,
     fplGrowthFactor,
     fplByHousehold: taxRates.fplByHousehold,
   });

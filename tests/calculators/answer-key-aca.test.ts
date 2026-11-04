@@ -28,8 +28,9 @@
  *   person on it, not for the spouse (ACA-11, ACA-12).
  *
  * Under test: `checkAca` (`engine/post-withdrawal-optimizer.ts`), the
- * engine's cliff check, and `getAcaSubsidyCliff` / `acaMagi`
- * (`src/lib/config/aca-tables.ts`), on the shipped 2026 poverty levels
+ * engine's cliff check, `getAcaSubsidyCliff`
+ * (`src/lib/config/aca-tables.ts`) and `yearMagi`'s `aca` rule
+ * (`src/lib/pure/tax/year-income.ts`), on the shipped 2026 poverty levels
  * (commit 3 checks sizes 1-8 against HHS). `checkAca` answers whether the
  * subsidy is kept and the MAGI headroom below the cliff; it has no credit
  * amount (v0.11 Retirement rules "Add: survivor benefit and first death",
@@ -48,7 +49,8 @@
 import { describe, it } from "vitest";
 import { cents, runOneYear, xfail } from "../fixtures/answer-key";
 import { checkAca } from "@/lib/calculators/engine/post-withdrawal-optimizer";
-import { acaMagi, getAcaSubsidyCliff } from "@/lib/config/aca-tables";
+import { getAcaSubsidyCliff } from "@/lib/config/aca-tables";
+import { yearMagi } from "@/lib/pure/tax/year-income";
 import { engineHousehold } from "../fixtures/answer-key-household";
 import { shippedTaxTables } from "../helpers/tax-data";
 
@@ -70,11 +72,13 @@ function cliff(opts: {
     enableAcaAwareness: true,
     allPersonsUnder65: opts.allPersonsUnder65 ?? true,
     householdSize: opts.familySize,
-    totalTraditionalWithdrawal: opts.ordinary,
-    rothConversionAmount: opts.conversion ?? 0,
-    brokerageGainsPortion: 0,
-    rothTaxableGrowth: 0,
-    ssIncome: 0,
+    income: {
+      traditionalDraws: opts.ordinary,
+      rothTaxableGrowth: 0,
+      rothConversions: opts.conversion ?? 0,
+      realizedGains: 0,
+      socialSecurity: { gross: 0 },
+    },
     // 2026 coverage on 2026's own table: no growth.
     fplGrowthFactor: 1,
     fplByHousehold: FPL_2026(),
@@ -176,13 +180,16 @@ describe("answer key: the poverty line and household income", () => {
     // ret/I24). Ledgr's ACA sum takes the whole benefit; the municipal
     // interest has no input of its own and goes in with the other income.
     cents(
-      acaMagi({
-        totalTraditionalWithdrawal: 35_000 + 2_000,
-        rothConversionAmount: 0,
-        brokerageGainsPortion: 0,
-        rothTaxableGrowth: 0,
-        ssIncome: 30_000,
-      }),
+      yearMagi(
+        {
+          traditionalDraws: 35_000 + 2_000,
+          rothConversions: 0,
+          realizedGains: 0,
+          rothTaxableGrowth: 0,
+          socialSecurity: { gross: 30_000 },
+        },
+        "aca",
+      ),
       67_000,
     );
   });
