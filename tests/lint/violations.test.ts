@@ -77,11 +77,22 @@ import { describe, it, expect } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
+import ts from "typescript";
 import {
   ACCOUNT_TYPE_CONFIG,
+  DEFAULT_WITHDRAWAL_SPLITS,
   accountCategoryEnum,
+  buildCategoryRecord,
+  getAllCategories,
   getDefaultDecumulationOrder,
 } from "@/lib/config/account-types";
+import { calculateProjection } from "@/lib/calculators/engine";
+import type { ProjectionInput } from "@/lib/calculators/types";
+import { decumulationOverrideArraySchema } from "@/lib/pure/engine";
+import { computeTaxBucketBreakdown } from "@/lib/pure/tax-buckets";
+import { categoryChartHex } from "@/lib/utils/colors";
+import { accountDisplayName } from "@/lib/utils/format";
+import { engineHousehold } from "../fixtures/answer-key-household";
 import {
   BUDGET_API_SERVICE_VALUES,
   DOLLAR_BASIS_VALUES,
@@ -1781,9 +1792,16 @@ describe("RULES.md violations sweep — positive controls", () => {
 
 const SYNTHETIC_CATEGORY = "synthetic-test-category";
 
+/** A brokerage-like entry with its own label and chart colours. */
+const SYNTHETIC_ENTRY = {
+  ...ACCOUNT_TYPE_CONFIG.brokerage,
+  displayLabel: "Synthetic Plan",
+  chartHex: { standard: "#123456", roth: "#654321" },
+};
+
 function withSyntheticCategory<T>(fn: () => T): T {
   const config = ACCOUNT_TYPE_CONFIG as Record<string, unknown>;
-  config[SYNTHETIC_CATEGORY] = { ...ACCOUNT_TYPE_CONFIG.brokerage };
+  config[SYNTHETIC_CATEGORY] = { ...SYNTHETIC_ENTRY };
   try {
     return fn();
   } finally {
@@ -1888,4 +1906,243 @@ describe("one config entry adds an account type", () => {
       expect(slot?.withdrawal).toBeGreaterThan(0);
     });
   });
+
+  it("the default withdrawal order and the Retirement page's order editor include it", () => {
+    withSyntheticCategory(() => {
+      expect(getDefaultDecumulationOrder()).toContain(SYNTHETIC_CATEGORY);
+      expect(getAllCategories()).toContain(SYNTHETIC_CATEGORY);
+    });
+  });
+
+  it.fails(
+    "the default withdrawal splits include it (v0.11 One config entry: DEFAULT_WITHDRAWAL_SPLITS is built at load)",
+    () => {
+      withSyntheticCategory(() => {
+        expect(DEFAULT_WITHDRAWAL_SPLITS).toHaveProperty([SYNTHETIC_CATEGORY]);
+      });
+    },
+  );
+
+  it("an account's name shows its label", () => {
+    withSyntheticCategory(() => {
+      expect(
+        accountDisplayName(
+          { accountType: SYNTHETIC_CATEGORY, institution: "Bank" },
+          "Pat",
+        ),
+      ).toContain("Synthetic Plan");
+    });
+  });
+
+  it.fails(
+    "charts draw it in its own colour (v0.11 One config entry: CATEGORY_CHART_HEX is built at load)",
+    () => {
+      withSyntheticCategory(() => {
+        expect(categoryChartHex(SYNTHETIC_CATEGORY, false)).toBe("#123456");
+      });
+    },
+  );
+
+  it.fails(
+    "the projection inputs accept it (v0.11 One config entry: router schemas are built at load)",
+    () => {
+      withSyntheticCategory(() => {
+        const parsed = decumulationOverrideArraySchema.safeParse([
+          { year: 2030, withdrawalOrder: [SYNTHETIC_CATEGORY] },
+        ]);
+        expect(parsed.success).toBe(true);
+      });
+    },
+  );
+
+  it("a two-year projection contributes to it, then draws from it", () => {
+    withSyntheticCategory(() => {
+      const input = twoYearHousehold();
+      const [working, retired] = calculateProjection(input).projectionByYear;
+      if (
+        working?.phase !== "accumulation" ||
+        retired?.phase !== "decumulation"
+      )
+        throw new Error("expected a working year, then a retired one");
+      expect(
+        working.slots.find((s) => String(s.category) === SYNTHETIC_CATEGORY)
+          ?.employeeContrib,
+      ).toBeGreaterThan(0);
+      expect(
+        retired.slots.find((s) => String(s.category) === SYNTHETIC_CATEGORY)
+          ?.withdrawal,
+      ).toBeGreaterThan(0);
+    });
+  });
+
+  it("Tax Buckets count its balance in its tax bucket", () => {
+    withSyntheticCategory(() => {
+      const breakdown = computeTaxBucketBreakdown(
+        {
+          accounts: [
+            {
+              institution: "Bank",
+              taxType: "afterTax",
+              accountType: "brokerage" as const,
+              subType: null,
+              label: null,
+              parentCategory: "Retirement",
+              amount: 1000,
+              ownerPersonId: 1,
+              performanceAccountId: null,
+              displayName: null,
+              accountLabel: null,
+            },
+          ].map((a) => {
+            Reflect.set(a, "accountType", SYNTHETIC_CATEGORY);
+            return a;
+          }),
+        },
+        [{ id: 1, name: "Pat" }],
+        [],
+      );
+      expect(breakdown.portfolioByTaxType.afterTax).toBe(1000);
+      expect(
+        Reflect.get(breakdown.portfolioByAccount, SYNTHETIC_CATEGORY),
+      ).toMatchObject({
+        balance: 1000,
+      });
+    });
+  });
+
+  it("no other category list or schema is built when its module loads", () => {
+    expect(moduleLoadLists()).toEqual([...BUILT_AT_LOAD].sort());
+  });
+
+  for (const site of BUILT_AT_LOAD)
+    it.fails(
+      `${site} reads the config when used (v0.11 One config entry: lists and schemas built at load)`,
+      () => {
+        expect(moduleLoadLists()).not.toContain(site);
+      },
+    );
 });
+
+/** Category lists and schemas still built when their module loads, so a
+ *  category added later misses them. */
+const BUILT_AT_LOAD = [
+  "src/app/(dashboard)/historical/page.tsx ALL_portfolioBreakdownCols",
+  "src/components/cards/projection/projection-table-decum-row.tsx CATEGORY_ORDER",
+  "src/components/cards/projection/types.ts emptyAccumForm",
+  "src/components/cards/projection/types.ts emptyDecumForm",
+  "src/components/cards/projection/utils.ts catDisplayLabel",
+  "src/components/cards/projection/utils.ts bucketSlotMap",
+  "src/components/cards/projection/utils.ts _singleBucketCategories",
+  "src/lib/config/account-types.ts DEFAULT_WITHDRAWAL_SPLITS",
+  "src/lib/pure/engine/types/overrides.schema.ts lumpSumSchema",
+  "src/lib/pure/engine/types/overrides.schema.ts decumulationDefaultsInputSchema",
+  "src/lib/pure/engine/types/overrides.schema.ts decumulationOverrideArraySchema",
+  "src/lib/pure/engine/types/overrides.schema.ts storedWithdrawalOrderSchema",
+  "src/lib/pure/engine/types/overrides.schema.ts storedWithdrawalSplitsSchema",
+  "src/lib/utils/colors.ts ACCOUNT_TYPE_COLORS",
+  "src/lib/utils/colors.ts CATEGORY_CHART_HEX",
+  "src/server/routers/_shared.ts zSandboxContribAdditions",
+  "src/server/routers/networth.ts portfolioSnapshotInput",
+  "src/server/routers/networth.ts networthRouter",
+  "src/server/routers/performance.ts performanceAccountInput",
+  "src/server/routers/projection/_shared.ts accumulationOverrideArraySchema",
+  "src/server/routers/projection/tax-optimization.ts withdrawalStrategyChoiceSchema",
+  "src/server/routers/settings/paycheck.ts contributionAccountInput",
+];
+
+const CATEGORY_LIST_CALLS = new Set([
+  "getAllCategories",
+  "getEngineCategories",
+  "categoriesWithTaxPreference",
+  "categoriesWithoutTaxPreference",
+  "categoriesWithIrsLimit",
+  "getDefaultDecumulationOrder",
+  "getDefaultAccumulationOrder",
+  "accountCategoryEnum",
+  "tradPreferenceEngineCategories",
+]);
+
+/** Every top-level `const` under src/ whose value calls a category-list
+ *  function or iterates ACCOUNT_TYPE_CONFIG outside a function body, as
+ *  "<file> <name>". */
+function moduleLoadLists(): string[] {
+  const root = path.resolve(__dirname, "../..");
+  const readsAtLoad = (node: ts.Node): boolean => {
+    if (ts.isFunctionLike(node)) return false;
+    if (ts.isCallExpression(node)) {
+      const callee = node.expression;
+      if (ts.isIdentifier(callee) && CATEGORY_LIST_CALLS.has(callee.text))
+        return true;
+      const arg = node.arguments[0];
+      if (
+        ts.isPropertyAccessExpression(callee) &&
+        ts.isIdentifier(callee.expression) &&
+        callee.expression.text === "Object" &&
+        arg &&
+        ts.isIdentifier(arg) &&
+        arg.text === "ACCOUNT_TYPE_CONFIG"
+      )
+        return true;
+    }
+    return (
+      ts.forEachChild(node, (child) => readsAtLoad(child) || undefined) ?? false
+    );
+  };
+  const found: string[] = [];
+  for (const file of walkTsFiles(path.join(root, "src"))) {
+    const source = ts.createSourceFile(
+      file,
+      fs.readFileSync(file, "utf8"),
+      ts.ScriptTarget.Latest,
+      true,
+    );
+    for (const statement of source.statements) {
+      if (!ts.isVariableStatement(statement)) continue;
+      for (const decl of statement.declarationList.declarations)
+        if (decl.initializer && readsAtLoad(decl.initializer))
+          found.push(
+            `${path.relative(root, file).split(path.sep).join("/")} ${decl.name.getText(source)}`,
+          );
+    }
+  }
+  return found.sort();
+}
+
+/** A household working in 2026 and retired in 2027, with all its money in
+ *  the synthetic category: contributions and withdrawals both go there. */
+function twoYearHousehold(): ProjectionInput {
+  const input = engineHousehold({
+    status: "Single",
+    people: [{ birthYear: 1961, job: { salary: 100_000, lastYear: 2026 } }],
+    spending: 40_000,
+    // The end year itself isn't run (RULES Known Gaps), so 2028 gives two.
+    endYear: 2028,
+  });
+  const only = () => {
+    const record = buildCategoryRecord(() => 0);
+    Reflect.set(record, SYNTHETIC_CATEGORY, 1);
+    return record;
+  };
+  input.accumulationDefaults = makeAccumulationDefaults({
+    contributionRate: 0.1,
+    routingMode: "percentage",
+    accountSplits: only(),
+    taxSplits: {},
+  });
+  input.decumulationDefaults.withdrawalOrder = [];
+  Reflect.set(
+    input.decumulationDefaults.withdrawalOrder,
+    0,
+    SYNTHETIC_CATEGORY,
+  );
+  input.decumulationDefaults.withdrawalSplits = only();
+  if (!input.startingAccountBalances) throw new Error("no account balances");
+  Reflect.set(input.startingAccountBalances, SYNTHETIC_CATEGORY, {
+    structure: "basis_tracking",
+    balance: 500_000,
+    basis: 500_000,
+  });
+  input.startingBalances.afterTax += 500_000;
+  input.startingBalances.afterTaxBasis += 500_000;
+  return input;
+}
