@@ -616,24 +616,28 @@ The rules are RULES.md § Data-Driven Architecture.
 
 The rest of `src/lib/config/` holds the other data tables (tax, RMD, IRMAA, ACA, NIIT, Social Security, milestones, recommendations, withdrawal strategies, …) — one module per subject.
 
-### Fixing a violation: add the predicate first
+### Fixing a violation: read a behavior field
 
-When you find a category check (`=== '401k'`, `parentCategory === 'Portfolio'`,
-`balanceStructure === 'basis_tracking'`, etc.) that should use a config helper,
-**the helper may not exist yet**. Don't reach into `ACCOUNT_TYPE_CONFIG[cat].field`
-directly from the call site as a workaround — that just moves the violation. The
-correct workflow:
+When you find a category check (`=== '401k'`, `isHsaCategory(cat)`,
+`parentCategory === 'Portfolio'`, etc.), ask what the code needs to know
+about the account, and read the config field that says it (RULES.md
+§ Data-Driven Architecture, rule 10):
 
-1. Add a small predicate to `src/lib/config/account-types.ts` next to the
-   existing helpers (`isPortfolioParent`, `isOverflowTarget`, etc.). One
-   line of doc-comment naming the config field it reads.
-2. Export it.
-3. Update every call site to use the new predicate.
+1. If a field and its helper exist (`getLimitGroup` reads `irsLimitGroup`,
+   `isOverflowTarget`, `tracksCostBasis`), call the helper. Don't reach into
+   `ACCOUNT_TYPE_CONFIG[cat].field` from the call site.
+2. If not, add a field to `AccountTypeConfig` named for the behavior (the
+   planned `earlyAccessRule` and `qcdEligible` are examples), set it on
+   every entry, and add its helper in `src/lib/config/account-types.ts`
+   with a one-line doc comment naming the field.
+3. Update every call site to use it.
 
-This keeps the data-driven boundary intact: call sites stay generic, and the
-config file remains the only place that knows what each field means.
-Examples: `getLimitGroup` (reads `irsLimitGroup`),
-`tracksCostBasis` (reads `balanceStructure === "basis_tracking"`).
+Never add a predicate that names an account type (`isHsaCategory`,
+`isIraCategory`): a new type with the same behavior would have to be added
+to it by hand. Inside the engine, dispatching on `balanceStructure`
+(`roth_traditional`, `single_bucket`, `basis_tracking`) is allowed, since
+that is the shape of the balance, not its identity; outside the engine, use
+the helper (`tracksCostBasis`).
 
 ### Contribution Stubs
 

@@ -96,8 +96,9 @@ All account-type behavior is defined in `src/lib/config/account-types.ts` (`ACCO
 7. **Tax type checks use predicates.** Use `isTaxFree()` and config helpers — never `taxType === "preTax"` or `=== "roth"` directly. Internal engine keys (`preTax`, `taxFree`, `hsa`, `afterTax`) are canonical but must be accessed through helpers, not inline string comparisons.
 8. **Display ordering lives in config.** Category tab order, finalize modal sort order, and any other display ordering of account types or performance categories must be defined once in config and imported — never hardcoded as local arrays in components.
 9. **Form defaults come from config.** Initial `useState()` values for account type selectors must use `getAllCategories()[0]` or a config-derived default — never `useState("401k")` or other hardcoded category strings.
+10. **Behavior fields, not identity predicates.** Code asks what an account type does (a config field such as `supportsRothSplit` or `irsLimitGroup`, read through its helper), never which type it is: no `isHsaCategory`-style predicate naming an account. Inside the engine, dispatch on `balanceStructure` (the shape of the balance) is allowed.
 
-Key files, adding a predicate, and contribution stubs: DESIGN.md § Data-Driven Architecture.
+Key files, adding a behavior field, and contribution stubs: DESIGN.md § Data-Driven Architecture.
 
 ## Pure Business Logic Boundary
 
