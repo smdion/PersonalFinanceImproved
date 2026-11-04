@@ -32,6 +32,7 @@ import {
 import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/display-labels";
 import { projectSpecAmount } from "./contribution-projection";
 import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
+import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import {
   accrueContributionBasis,
   drawFromBasis,
@@ -72,13 +73,6 @@ export function retirementFirst<T>(
   const retirement = items.filter((x) => isRetirementMoney(parentOf(x)));
   return retirement.length > 0 ? retirement : [...items];
 }
-
-export type IndKeyFn = (ia: {
-  name: string;
-  category: string;
-  taxType: string;
-  ownerPersonId?: number;
-}) => string;
 
 /** Creates the standard composite key function.
  *

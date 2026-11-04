@@ -111,11 +111,6 @@
   },
   {
     "rule": "no-circular",
-    "from": "src/lib/calculators/engine/balance-deduction.ts",
-    "to": "src/lib/calculators/engine/individual-account-tracking.ts"
-  },
-  {
-    "rule": "no-circular",
     "from": "src/lib/calculators/engine/balance-utils.ts",
     "to": "src/lib/pure/withdrawal-eligibility.ts"
   },
@@ -133,11 +128,6 @@
     "rule": "no-circular",
     "from": "src/lib/calculators/engine/bracket-growth.ts",
     "to": "src/lib/config/tax-tables.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/brokerage-basis.ts",
-    "to": "src/lib/calculators/engine/individual-account-tracking.ts"
   },
   {
     "rule": "no-circular",
@@ -313,11 +303,6 @@
     "rule": "no-circular",
     "from": "src/lib/calculators/engine/withdrawal-cost-ranking.ts",
     "to": "src/lib/pure/roth-distribution-tax.ts"
-  },
-  {
-    "rule": "no-circular",
-    "from": "src/lib/calculators/engine/withdrawal-cost-ranking.ts",
-    "to": "src/lib/pure/withdrawal-eligibility.ts"
   },
   {
     "rule": "no-circular",

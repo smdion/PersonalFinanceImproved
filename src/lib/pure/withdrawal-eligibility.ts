@@ -67,6 +67,7 @@ import { formatCurrency } from "@/lib/utils/format";
 import { PENALTY_FREE_AGE } from "@/lib/constants";
 import { roundToCents } from "@/lib/utils/math";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
+import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 
 /** The account shape this module needs — a structural subset of
  *  `IndividualAccountInput` (`lib/calculators/types/shared.ts`), named
@@ -117,19 +118,6 @@ export type EligibilityAccountInput = {
    *  two exclusion sources from double-counting the same dollar). */
   parentCategory?: string;
 };
-
-/** Composite-key function — deliberately the same shape as the engine's own
- *  `IndKeyFn` (`engine/individual-account-tracking.ts`) without importing
- *  it: this module lives outside `lib/calculators/engine/`, and reaching
- *  into engine internals from outside is a layering violation (the
- *  `engine-through-index` rule in `.dependency-cruiser.mjs`). The engine
- *  passes its own `makeIndKey()` instance in. */
-export type IndKeyFn = (ia: {
-  name: string;
-  category: string;
-  taxType: string;
-  ownerPersonId?: number;
-}) => string;
 
 /** Dollars of one individual account that are penalty-free this projected
  *  year, and dollars that are not (see module docblock).

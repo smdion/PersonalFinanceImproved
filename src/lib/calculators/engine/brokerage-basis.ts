@@ -28,7 +28,7 @@ import type {
   IndividualAccountInput,
   TaxBuckets,
 } from "../types";
-import type { IndKeyFn } from "./individual-account-tracking";
+import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 
 export type BrokerageBasis = Map<string, number>;
 

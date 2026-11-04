@@ -22,7 +22,7 @@ import {
 import { computeRmdAmount } from "../../config/rmd-tables";
 import { RMD_EXCISE_TAX_RATE } from "../../constants";
 import type { NonRetirementExclusion } from "@/lib/pure/withdrawal-eligibility";
-import type { IndKeyFn } from "./individual-account-tracking";
+import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 
 // ---------------------------------------------------------------------------
 // Types

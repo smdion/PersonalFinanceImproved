@@ -36,7 +36,7 @@ import {
 import { isRetirementMoney, isTaxFreeBucket } from "../../config/account-types";
 import { NIIT_RATE, NIIT_THRESHOLDS } from "../../config/niit";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
-import type { IndKeyFn } from "@/lib/pure/withdrawal-eligibility";
+import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 
 export type WithdrawalSourceKind = "roth" | "brokerage" | "hsa";
 

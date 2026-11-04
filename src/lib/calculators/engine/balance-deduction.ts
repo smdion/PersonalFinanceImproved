@@ -31,7 +31,7 @@ import {
   addBalance,
   addBasis,
 } from "../../config/account-types";
-import type { IndKeyFn } from "./individual-account-tracking";
+import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 
 // ---------------------------------------------------------------------------
 // Withdrawal Deduction

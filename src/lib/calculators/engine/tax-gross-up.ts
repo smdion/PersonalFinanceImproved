@@ -57,8 +57,8 @@ import type {
 import {
   distributeWithdrawals,
   depleteIndividualBasis,
-  type IndKeyFn,
 } from "./individual-account-tracking";
+import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 import { splitRothWithdrawalForTax } from "@/lib/pure/roth-distribution-tax";
 import type { RothBasisState } from "@/lib/pure/roth-basis-tracking";
 import { computeEarlyWithdrawalPenalty } from "@/lib/pure/early-withdrawal-penalty";
