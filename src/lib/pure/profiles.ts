@@ -227,28 +227,6 @@ export function jobYearsNote(
     : `${parts.join("; ")} — counted in whole years.`;
 }
 
-// --- Profile linking ---
-
-/** Minimal profile shape for resolution. */
-type ProfileLike = {
-  id: number;
-  isActive: boolean;
-};
-
-/**
- * Resolve which profile to use: linked profile if specified, otherwise the active one.
- * Centralizes the duplicated linkedProfileId fallback pattern.
- */
-export function resolveLinkedProfile<T extends ProfileLike>(
-  linkedProfileId: number | null | undefined,
-  allProfiles: T[],
-): T | undefined {
-  if (linkedProfileId) {
-    return allProfiles.find((p) => p.id === linkedProfileId);
-  }
-  return allProfiles.find((p) => p.isActive);
-}
-
 // --- Contribution account per-profile active-field resolution (concept 4) ---
 
 /** A contribution account's raw active-field entry under one Contribution

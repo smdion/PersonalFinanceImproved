@@ -147,18 +147,12 @@ export default defineConfig({
         "src/server/helpers/server-trpc.ts",
         // Demo router — requires Postgres pool, cookies, schema isolation
         "src/server/routers/demo.ts",
-        // Testing router — admin-only on-demand vitest runner
-        "src/server/routers/testing.ts",
         // Router re-export barrels and documentation-only files
         "src/server/routers/index.ts",
         "src/server/routers/settings/index.ts",
-        "src/server/routers/settings.ts",
         "src/server/helpers/index.ts",
         // Documentation-only (no executable statements)
         "src/server/routers/_shared.ts",
-        // OpenAPI doc generator — runtime-only
-        "src/server/api-docs.ts",
-        "src/server/routers/api-docs.ts",
         // Data browser — all procedures use db.execute() (Postgres raw SQL)
         "src/server/routers/data-browser.ts",
         // Budget API — types and barrel re-exports

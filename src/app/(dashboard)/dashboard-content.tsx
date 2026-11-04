@@ -2,16 +2,14 @@
 
 import { PageHeader } from "@/components/ui/page-header";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
-import {
-  HouseholdIncomeCard,
-  SavingsGoalsCard,
-  RetirementCard,
-  NetWorthCard,
-  LinkedBalanceCard,
-  ContributionsCard,
-  FinancialCheckupCard,
-  LivingCostsCard,
-} from "@/components/cards/dashboard";
+import { HouseholdIncomeCard } from "@/components/cards/dashboard/household-income-card";
+import { SavingsGoalsCard } from "@/components/cards/dashboard/savings-goals-card";
+import { RetirementCard } from "@/components/cards/dashboard/retirement-card";
+import { NetWorthCard } from "@/components/cards/dashboard/net-worth-card";
+import { LinkedBalanceCard } from "@/components/cards/dashboard/linked-balance-card";
+import { ContributionsCard } from "@/components/cards/dashboard/contributions-card";
+import { FinancialCheckupCard } from "@/components/cards/dashboard/financial-checkup-card";
+import { LivingCostsCard } from "@/components/cards/dashboard/living-costs-card";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { trpc } from "@/lib/trpc";
 

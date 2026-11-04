@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 /**
  * The report states the active strategy's own parameters — read from each
  * field's column — and where Social Security sits.

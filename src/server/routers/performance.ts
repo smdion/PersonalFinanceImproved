@@ -915,7 +915,7 @@ export const performanceRouter = createTRPCRouter({
       // on finalized rows are authoritative and move only with edits to the
       // year's account_performance rows (syncYearRollups carries the change
       // forward) — never directly via the user-facing updateAnnual mutation.
-      // RULES.md § Data Model Principles point 4 cascade rule.
+      // DESIGN.md § Data Model Principles point 4 cascade rule.
       const LIFETIME_FIELDS = new Set([
         "lifetimeGains",
         "lifetimeContributions",

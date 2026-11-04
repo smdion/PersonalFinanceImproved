@@ -42,28 +42,3 @@ export function FormError({
     </p>
   );
 }
-
-/**
- * Larger block-level form error, matching the onboarding wizard style.
- * Use for top-of-form or section-level errors.
- */
-export function FormErrorBlock({
-  error,
-  message,
-  prefix,
-  className,
-}: FormErrorProps) {
-  const text = message ?? (error ? errorText(error) : null);
-  if (!text) return null;
-
-  const display = prefix ? `${prefix}: ${text}` : text;
-
-  return (
-    <div
-      role="alert"
-      className={`rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700 ${className ?? ""}`}
-    >
-      {display}
-    </div>
-  );
-}

@@ -6,7 +6,6 @@ import { describe, it, expect } from "vitest";
 import {
   assessPlan,
   dominantFailureReason,
-  planFailurePhrase,
 } from "@/lib/calculators/plan-outcome";
 import type { ProjectionResult } from "@/lib/calculators/types";
 
@@ -160,9 +159,6 @@ describe("failure wording", () => {
     expect(
       dominantFailureReason({ depleted: 0.05, penaltyGap: 0.2, shortfall: 0 }),
     ).toBe("penaltyGap");
-    expect(planFailurePhrase("penaltyGap")).toMatch(
-      /early-withdrawal penalties/,
-    );
     expect(
       dominantFailureReason({ depleted: 0, penaltyGap: 0, shortfall: 0 }),
     ).toBeNull();

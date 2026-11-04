@@ -299,7 +299,7 @@ describe("answer key: over-limit money overflows (verdict E8, decision C4)", () 
   // Single, born 1979 (47 in 2026, no catch-up), a $130,000 job, a Roth
   // 401(k) (balance 100,000) set to a fixed 36,000 a year. The 2026
   // 401(k) employee limit is 24,500 (`401k_employee_limit`, IRS Notice
-  // 2025-67). Decided (C4, RULES § retirement-scope: "contribution
+  // 2025-67). Decided (C4, DESIGN § Account Categories, retirement scope: "contribution
   // overflow … go to Retirement brokerages"): 24,500 to the 401(k) and
   // 36,000 − 24,500 = 11,500 to a Retirement brokerage, every year. Today
   // the server's cap pass (`contribution-caps.ts:206`) sends the spec as
@@ -358,7 +358,7 @@ describe("answer key: Retirement money when one person funds the other's Portfol
   // Two people. A (born 1975) has a $100,000 job and a 401(k) of 300,000;
   // A also owns a Portfolio brokerage (50,000, all basis). B (born 1977)
   // has an $80,000 job and saves a fixed 2,428 a year into A's Portfolio
-  // brokerage. RULES § retirement-scope: Retirement money is the
+  // brokerage. DESIGN § Account Categories, retirement scope: Retirement money is the
   // Retirement-parented accounts, so `retirementBalance` must equal their
   // sum every year (EY-SC-06), and the Portfolio account shows the 2,428.
   // Today `matchAccountForContribution` (`server/helpers/contribution.ts:1505`)

@@ -143,7 +143,7 @@ export function incomeCapForMarginalRate(
   return Infinity;
 }
 
-/**
+/** @internal Only tests import it (knip --production).
  * The marginal ordinary rate that applies to a dollar of income sitting
  * JUST ABOVE `targetRate`'s bracket ceiling — i.e. the rate on the next
  * bracket up. Companion to `incomeCapForMarginalRate` (same bracket walk,

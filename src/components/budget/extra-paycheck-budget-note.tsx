@@ -10,7 +10,7 @@
  * figure the budget-income-materializer wrote to `budget_income_adjustments`
  * for that job/month — a clearly separate, additively-labeled line, never
  * merged into any other number this component or the Budget page shows. See
- * RULES.md's extraPaycheckRouting section.
+ * DESIGN.md's extraPaycheckRouting section.
  */
 
 import { trpc } from "@/lib/trpc";

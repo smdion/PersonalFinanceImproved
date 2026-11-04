@@ -15,7 +15,7 @@ import {
 
 // HelpTip needs a Radix TooltipProvider ancestor this component doesn't
 // supply on its own — stub it to render `text` as a queryable title, same
-// pattern as overrides-panel-v2.test.tsx / projection-splits.test.tsx.
+// pattern as overrides-panel.test.tsx / projection-splits.test.tsx.
 vi.mock("@/components/ui/help-tip", () => ({
   HelpTip: ({ text }: { text?: string }) => (
     <span data-testid="help-tip" title={text} />

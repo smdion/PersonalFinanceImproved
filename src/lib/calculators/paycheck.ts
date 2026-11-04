@@ -991,7 +991,7 @@ export function getExtraPaycheckMonthKeys(
  * `rules`/`overrides`). No rules configured yet defaults to Budget mode —
  * `enabled` only has meaning once there's something to enable/disable.
  * Loosely typed (not `ExtraPaycheckRoutingData`) so calculator code never
- * needs to import from a schema file — see RULES.md's pure-calculator rule.
+ * needs to import from a schema file — see CONTRIBUTING.md's pure-calculator rule.
  */
 export function isExtraPaycheckBudgetMode(
   routing: { rules?: unknown[]; enabled?: boolean } | null | undefined,
@@ -1268,138 +1268,6 @@ function buildPayFrequencyLabel(
 // ---------------------------------------------------------------------------
 // Salary Timeline → Period Mapping
 // ---------------------------------------------------------------------------
-
-/**
- * Map a salary timeline (date-based changes) to period-based segments.
- * Returns which pay periods use which salary rate.
- *
- * Each salary change takes effect on the first pay period whose pay date
- * falls on or after the change's effective date.
- */
-export function mapSalaryTimelineToPeriods(
-  timeline: { salary: number; effectiveDate: string | null }[],
-  payPeriod: string,
-  anchorPayDate: Date,
-  year: number,
-): {
-  salary: number;
-  effectiveDate: string | null;
-  startPeriod: number;
-  endPeriod: number;
-}[] {
-  const periodsPerYear = getPeriodsPerYear(payPeriod);
-  if (timeline.length === 0) return [];
-  if (timeline.length === 1) {
-    return [
-      {
-        salary: timeline[0]!.salary,
-        effectiveDate: timeline[0]!.effectiveDate,
-        startPeriod: 1,
-        endPeriod: periodsPerYear,
-      },
-    ];
-  }
-
-  // Build a list of pay dates for the year
-  const payDates: Date[] = [];
-  const yearStart = new Date(`${year}-01-01T00:00:00`);
-  const yearEnd = new Date(`${year}-12-31T23:59:59`);
-
-  if (payPeriod === "monthly") {
-    for (let m = 0; m < 12; m++) {
-      payDates.push(new Date(year, m, 1));
-    }
-  } else if (payPeriod === "semimonthly") {
-    for (let m = 0; m < 12; m++) {
-      payDates.push(new Date(year, m, 1));
-      payDates.push(new Date(year, m, 15));
-    }
-  } else {
-    // Weekly or biweekly: walk from anchor
-    const interval = payPeriod === "weekly" ? 7 : 14;
-    const anchorMs = anchorPayDate.getTime();
-    const startMs = yearStart.getTime();
-    const endMs = yearEnd.getTime();
-
-    // Find the first pay date on or after Jan 1
-    let current = anchorMs;
-    if (current > startMs) {
-      while (current - interval * MS_PER_DAY >= startMs) {
-        current -= interval * MS_PER_DAY;
-      }
-    } else {
-      while (current < startMs) {
-        current += interval * MS_PER_DAY;
-      }
-    }
-
-    while (current <= endMs && payDates.length < periodsPerYear) {
-      payDates.push(new Date(current));
-      current += interval * MS_PER_DAY;
-    }
-  }
-
-  // Sort timeline changes by date (skip the first entry which has null effectiveDate = start of year)
-  const changes = timeline
-    .filter((t) => t.effectiveDate !== null)
-    .map((t) => ({
-      salary: t.salary,
-      date: new Date(t.effectiveDate + "T00:00:00"),
-    }))
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  // For each pay period, determine which salary is active
-  const periodSalaries: { salary: number; effectiveDate: string | null }[] = [];
-  let currentSalary = timeline[0]!.salary;
-  let currentEffDate = timeline[0]!.effectiveDate;
-  let changeIdx = 0;
-
-  for (const payDate of payDates) {
-    // Advance through changes that have taken effect by this pay date
-    while (changeIdx < changes.length && changes[changeIdx]!.date <= payDate) {
-      currentSalary = changes[changeIdx]!.salary;
-      currentEffDate = timeline[changeIdx + 1]?.effectiveDate ?? null;
-      changeIdx++;
-    }
-    periodSalaries.push({
-      salary: currentSalary,
-      effectiveDate: currentEffDate,
-    });
-  }
-
-  // Compress into segments (consecutive periods at the same salary)
-  const segments: {
-    salary: number;
-    effectiveDate: string | null;
-    startPeriod: number;
-    endPeriod: number;
-  }[] = [];
-  let segStart = 1;
-  let segSalary = periodSalaries[0]!.salary;
-  let segEffDate = periodSalaries[0]!.effectiveDate;
-
-  for (let i = 1; i < periodSalaries.length; i++) {
-    if (periodSalaries[i]!.salary !== segSalary) {
-      segments.push({
-        salary: segSalary,
-        effectiveDate: segEffDate,
-        startPeriod: segStart,
-        endPeriod: i,
-      });
-      segStart = i + 1;
-      segSalary = periodSalaries[i]!.salary;
-      segEffDate = periodSalaries[i]!.effectiveDate;
-    }
-  }
-  segments.push({
-    salary: segSalary,
-    effectiveDate: segEffDate,
-    startPeriod: segStart,
-    endPeriod: periodSalaries.length,
-  });
-
-  return segments;
-}
 
 // ---------------------------------------------------------------------------
 // Blended Annual Calculator

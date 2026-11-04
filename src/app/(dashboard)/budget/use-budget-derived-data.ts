@@ -28,7 +28,7 @@ import type {
 } from "@/components/budget";
 import type { PushPreviewItem } from "@/components/ui/push-preview-modal";
 
-/** Non-column tiers of docs/RULES.md's profile precedence, supplied by the
+/** Non-column tiers of docs/DESIGN.md's profile precedence, supplied by the
  *  page ([column profile] → local selection → active). */
 type ProfileResolutionTiers = {
   localSelectionId: number | null;

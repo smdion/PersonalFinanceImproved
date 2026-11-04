@@ -447,7 +447,7 @@ describe("classifyContribResolution", () => {
 // W-4 elections, and bonus pay date/flags now come from the Salary
 // Profile entry (see mergeSalaryProfileJobFields), and employerName has no
 // profile-override path at all any more (accepted feature reduction, see
-// RULES.md's Salary Profile layer section).
+// DESIGN.md's Salary Profile layer section).
 
 // ---------------------------------------------------------------------------
 // resolveProfile

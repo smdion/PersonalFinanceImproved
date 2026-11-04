@@ -26,7 +26,7 @@ export async function getActiveBudgetApi(db: Db): Promise<ActiveBudgetApi> {
   return "none";
 }
 
-/**
+/** @internal Only tests import it (knip --production).
  * Instantiate the correct BudgetAPIClient based on app settings (active API).
  * Returns null if no budget API is configured or the connection is missing.
  */

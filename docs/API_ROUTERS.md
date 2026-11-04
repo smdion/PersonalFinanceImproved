@@ -2,15 +2,9 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**396 procedures across 56 routers.**
+**392 procedures across 54 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
-
-## `api-docs`
-
-| Procedure | Kind  | Auth             | Description      |
-| --------- | ----- | ---------------- | ---------------- |
-| `list`    | query | `adminProcedure` | (no description) |
 
 ## `assets`
 
@@ -92,7 +86,6 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `duplicate`                | mutation | `contributionProfileProcedure` | contributionAccountId (contributionValue/method/match fields/ autoMaximize/isActive) with no FK to owned rows and no external write-through path — multiple profiles already reference the same account  |
 | `getById`                  | query    | `protectedProcedure`           | Get a single profile with fully resolved per-account details.                                                                                                                                            |
 | `list`                     | query    | `protectedProcedure`           | List all contribution profiles with resolved summary totals.                                                                                                                                             |
-| `resolve`                  | query    | `protectedProcedure`           | Resolve a profile to aggregate totals — used by the relocation tool and any other consumer that needs salary/contribution/match numbers for a given profile.                                             |
 | `setAccountActiveFields`   | mutation | `contributionProfileProcedure` | field optional, no cross-field constraint); the paired-or-neither contributionValue/contributionMethod invariant is checked on the MERGED result below, not on the patch itself, since a legitimate sing |
 | `setActive`                | mutation | `contributionProfileProcedure` | (`(id: number \| null) => void`) documents null as a valid call, so a caller that reaches it silently loses the write. Deleting the app_settings row mirrors settings.appSettings.upsert's own existing  |
 | `setDeductionActiveFields` | mutation | `contributionProfileProcedure` | Patch (merge) one deduction's active amount within a profile — same field-level-patch, same-transaction pattern as setAccountActiveFields. A deduction has no live amountPerPeriod any more (Stage B dro |
@@ -140,7 +133,6 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | ---------------------- | ----- | -------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `getAccountInsights`   | query | `portfolioProcedure` | (no description)                                                                                                                                                                                         |
 | `getLiveSinceSnapshot` | query | `portfolioProcedure` | How the household's linked accounts moved each day since the latest snapshot, as a change from it — the Portfolio chart's live line and the Net Worth page's "today" estimate add it to the snapshot's o |
-| `getRecentChanges`     | query | `portfolioProcedure` | tracked account, counted feeds only (deposits included).                                                                                                                                                 |
 
 ## `investments/buying`
 
@@ -373,7 +365,7 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
 | `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
 | `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
-| `list`                      | query    | `protectedProcedure` | adminProcedure throughout, matching retirementSettings.upsert's existing gate — RULES.md Composed Router: an inconsistent procedure type within one group is a bug, not a design choice.                 |
+| `list`                      | query    | `protectedProcedure` | adminProcedure throughout, matching retirementSettings.upsert's existing gate — CONTRIBUTING.md Composed Router Convention: an inconsistent procedure type within one group is a bug, not a design choic |
 | `list`                      | query    | `protectedProcedure` | (no description)                                                                                                                                                                                         |
 | `save`                      | mutation | `brokerageProcedure` | (no description)                                                                                                                                                                                         |
 | `update`                    | mutation | `adminProcedure`     | (no description)                                                                                                                                                                                         |
@@ -631,12 +623,6 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `computeBreakdown`     | query    | `protectedProcedure`   | Rule of 55 / Roth-basis-driven penalty-free/tax-free flags per account.                                                                                                                                 |
 | `updateRothBasis`      | mutation | `performanceProcedure` | needed from the caller. An explicit `year` lets the caller deliberately correct an older, already-finalized year (no hard reject — matches how updateAccount already edits finalized accountPerformance |
 | `updateSeparationDate` | mutation | `performanceProcedure` | Set the durable Rule of 55 source-of-truth date for a 401k/403b account.                                                                                                                                |
-
-## `testing`
-
-| Procedure  | Kind     | Auth             | Description      |
-| ---------- | -------- | ---------------- | ---------------- |
-| `runTests` | mutation | `adminProcedure` | (no description) |
 
 ## `tiingo`
 

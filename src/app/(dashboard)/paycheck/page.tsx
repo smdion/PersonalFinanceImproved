@@ -24,12 +24,9 @@ import {
 } from "@/lib/db/profile-fields";
 import { EmptyState } from "@/components/ui/empty-state";
 import { confirm } from "@/components/ui/confirm-dialog";
-import {
-  PersonPaycheck,
-  ContributionSnapshot,
-  type RawDeduction,
-  type RawContrib,
-} from "@/components/paycheck";
+import { PersonPaycheck } from "@/components/paycheck/person-paycheck";
+import { ContributionSnapshot } from "@/components/paycheck/contribution-snapshot";
+import type { RawDeduction, RawContrib } from "@/components/paycheck/types";
 import { usePaycheckPersonViews } from "@/lib/hooks/use-paycheck-person-views";
 import {
   EditLockToggle,

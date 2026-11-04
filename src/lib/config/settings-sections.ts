@@ -13,7 +13,6 @@ export const SETTINGS_TABS = [
 export const ADMIN_SETTINGS_TABS = [
   { key: "access", label: "Access Control" },
   { key: "debug", label: "Debug" },
-  { key: "api", label: "API" },
 ] as const;
 
 export const GENERAL_SECTIONS = [

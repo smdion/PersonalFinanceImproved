@@ -15,7 +15,7 @@
  * tests moved to savings-goals-crud.test.ts / performance.test.ts /
  * networth.test.ts / projection-relocation.test.ts alongside them.
  * Everything remaining in adminProcedures is a genuine cross-cutting
- * exception per RULES.md's Settings-page ownership table.
+ * exception per DESIGN.md's Settings-page ownership table.
  *
  * All procedures live at caller.settings.* because adminProcedures is spread
  * into settingsRouter (see src/server/routers/settings/index.ts).

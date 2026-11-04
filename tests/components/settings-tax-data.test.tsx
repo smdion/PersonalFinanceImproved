@@ -200,7 +200,7 @@ describe("TaxDataSettings smoke", () => {
 
   it("switches sections via the left nav (all stay mounted, visibility toggles)", () => {
     render(<TaxDataSettings />);
-    // jsdom doesn't load Tailwind, so `.hidden` has no computed display —
+    // happy-dom doesn't load Tailwind, so `.hidden` has no computed display —
     // assert on the wrapper class the nav toggles + the active nav button
     // highlight rather than on toBeVisible().
     const limitsWrapper = () =>

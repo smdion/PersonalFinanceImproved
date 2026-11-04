@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
-import { FundCardGrid } from "./fund-card-grid";
 import { FundCard } from "./fund-card";
 import { FundTimelineDetail } from "./fund-timeline-detail";
 import { EmergencyFundDetail } from "./emergency-fund-detail";
@@ -532,7 +531,7 @@ export function FundManagementSection({
           />
         )}
 
-        <FundCardGrid>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {goalProjections.map((gp, i) => {
             const raw = goalById.get(gp.goalId);
             if (!raw) return null;
@@ -637,7 +636,7 @@ export function FundManagementSection({
               </div>
             );
           })}
-        </FundCardGrid>
+        </div>
       </section>
 
       {/* Timeline Detail Slide Panel */}

@@ -9,10 +9,9 @@
  * a real gap to flag, not a benign fallback, since accounts carry no value
  * of their own (see applyContribActiveFields).
  *
- * Kept as its own file rather than folded into contribution-profile-manager.tsx
- * (already ~1,457 lines, near the 1,500-line pnpm check:file-size warn
- * threshold) — see that file's `compareData` query, the single shared data
- * source this and the swap-time diff both consume.
+ * Its own file so contribution-profile-manager.tsx doesn't grow (it's in
+ * size-baseline.json); that file's `compareData` query is the one data
+ * source this and the swap-time diff share.
  *
  * Cell display state (hasActiveFields/value, amber highlight when set,
  * DISABLED badge when isActive:false) is resolved via the same

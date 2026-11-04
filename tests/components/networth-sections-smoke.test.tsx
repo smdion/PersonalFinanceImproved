@@ -8,7 +8,7 @@ import { render, screen } from "@testing-library/react";
 // Follows the leaf-component smoke pattern from
 // tests/components/contribution-accounts-card.test.tsx: mock HelpTip
 // (radix tooltip — noisy/irrelevant to these tests) and recharts (heavy,
-// canvas-less in jsdom), exercise real Card/InlineEdit.
+// canvas-less in happy-dom), exercise real Card/InlineEdit.
 
 vi.mock("@/components/ui/help-tip", () => ({
   HelpTip: () => null,

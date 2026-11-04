@@ -28,14 +28,14 @@ import type { FicaRates } from "@/lib/pure/paystub-check";
 import type { BonusDestination } from "@/lib/config/enum-values";
 import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import {
-  alignDeductionRows,
-  type RawDeduction,
-  type RawContrib,
-  type DeductionRowData,
-  type JointContrib,
-  type EarningRow,
-} from "@/components/paycheck";
+import { alignDeductionRows } from "@/components/paycheck/utils";
+import type {
+  RawDeduction,
+  RawContrib,
+  DeductionRowData,
+  JointContrib,
+  EarningRow,
+} from "@/components/paycheck/types";
 import {
   getLimitGroup as configGetLimitGroup,
   getAccountTypeConfig,

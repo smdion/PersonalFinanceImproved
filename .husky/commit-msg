@@ -1,0 +1,2 @@
+# Commit rules (CONTRIBUTING.md § Commit rules): warnings only, never blocks.
+npx tsx scripts/check-commit.ts --message-file "$1" || true

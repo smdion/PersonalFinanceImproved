@@ -135,17 +135,6 @@ export async function resetSequences(
 }
 
 // ---------------------------------------------------------------------------
-// JSONB value formatting
-// ---------------------------------------------------------------------------
-
-/** Format a JSON value for raw SQL insertion. PG: '...'::jsonb. SQLite: '...' (plain text). */
-export function jsonbLiteral(val: unknown): string {
-  const escaped = JSON.stringify(val).replace(/'/g, "''");
-  if (isPostgres()) return `'${escaped}'::jsonb`;
-  return `'${escaped}'`;
-}
-
-// ---------------------------------------------------------------------------
 // Column name validation (prevents SQL injection in backup import/restore)
 // ---------------------------------------------------------------------------
 

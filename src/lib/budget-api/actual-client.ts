@@ -282,7 +282,7 @@ function gateFor(wrapperUrl: string): WrapperGate {
   return gate;
 }
 
-/** Test-only: forget every wrapper's warm state. */
+/** @internal Test-only: forget every wrapper's warm state. */
 export function resetActualWrapperGates(): void {
   wrapperGates.clear();
 }

@@ -65,7 +65,7 @@ export function ContributionsContent() {
   const { queryInput: salaryProfileInput } = useEffectiveSalaryProfileId();
   // the active profile — the primary summary below must stay
   // in sync with Paycheck/Budget's resolution instead of always reading raw
-  // Live data (see docs/RULES.md "Profile Resolution"). This is distinct from
+  // Live data (see docs/DESIGN.md "Profile Resolution"). This is distinct from
   // selectedProfileId below, which is a "compare against a specific other
   // profile" picker and deliberately stays local-only.
   const { profileId: effectiveActiveContribProfileId } = useEffectiveProfileId(

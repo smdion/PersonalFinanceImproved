@@ -19,7 +19,7 @@
  *   fully amortizing loan's last payment clears it (12 CFR 1026.43(b)(2);
  *   S8). Schedules were iterated in exact decimals, outside the repo.
  * - A what-if adds only to months after its start (S15); a feed balance
- *   wins over the amortized one (S25, RULES § Shared State Sources).
+ *   wins over the amortized one (S25, DESIGN § Shared State Sources).
  *
  * Inputs: invented loans. Ledgr dates schedule row `m` at the loan's
  * `startDate` plus `m` months (v0.11 Household math "Mortgage a month

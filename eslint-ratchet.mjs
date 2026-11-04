@@ -1,0 +1,356 @@
+// Ratchet rules (docs/RULES.md § Refactoring): each is an error, today's
+// cases are counted per file in eslint-suppressions.json, and a count only
+// goes down (`npx eslint <files> --prune-suppressions` after a cleanup).
+// One rule id per pattern, so a file can't trade one pattern for another.
+
+const TEXT_FIELD =
+  /(?:reason|label|message|note|description|warning|text|name|title|explanation|summary|detail)s?$/i;
+const STRING_TRANSFORMS = new Set(["toLowerCase", "toUpperCase", "trim"]);
+
+/** A rule that reports every node a selector matches. */
+function selectorRule(description, selector, message) {
+  return {
+    meta: { type: "suggestion", docs: { description }, schema: [] },
+    create(context) {
+      return { [selector]: (node) => context.report({ node, message }) };
+    },
+  };
+}
+
+function isStringLiteral(node) {
+  return (
+    (node?.type === "Literal" && typeof node.value === "string") ||
+    (node?.type === "TemplateLiteral" && node.expressions.length === 0)
+  );
+}
+
+/** The identifier a value was read from, past .toLowerCase() and friends. */
+function sourceName(node) {
+  let n = node;
+  while (
+    n?.type === "CallExpression" &&
+    n.callee.type === "MemberExpression" &&
+    !n.callee.computed &&
+    STRING_TRANSFORMS.has(n.callee.property.name)
+  ) {
+    n = n.callee.object;
+  }
+  if (n?.type === "ChainExpression") n = n.expression;
+  if (n?.type === "Identifier") return n.name;
+  if (n?.type === "MemberExpression" && !n.computed) return n.property.name;
+  return undefined;
+}
+
+const CLASS_TOKENS = /(?:^|\s)fixed(?:\s|$)/;
+const INSET_TOKEN = /(?:^|\s)inset-0(?:\s|$)/;
+const isOverlayClasses = (text) =>
+  CLASS_TOKENS.test(text) && INSET_TOKEN.test(text);
+
+// Past tense about the code, "the fix", drift claims, citations of versions,
+// findings, scratch docs and file:line. RULES review rule 1.
+const HISTORY_PHRASE =
+  /\bthe fix\b|\bused to\b|\bpreviously\b|\bno longer\b|\bcan(?:'|no)?t drift\b|\b(?:was|were) (?:changed|added|removed|moved|renamed|replaced|fixed|introduced)\b|\bregress(?:ed|ion)\b|\bfinding \d|\.scratch\/|\b[\w-]+\.tsx?:\d+\b|\bv\d+\.\d+\.\d+\b/i;
+const MAX_COMMENT_LINES = 3;
+
+/** Text lines of a comment, without the delimiter-only lines of a block. */
+function commentTextLines(comment) {
+  if (comment.type === "Line") return 1;
+  return comment.value
+    .split("\n")
+    .filter((line) => line.replace(/^\s*\*?/, "").trim() !== "").length;
+}
+
+/** Comments grouped into blocks: a block comment, or adjacent line comments. */
+function commentBlocks(sourceCode) {
+  const blocks = [];
+  for (const comment of sourceCode.getAllComments()) {
+    if (/^\s*(?:eslint|@ts-|prettier-ignore)/.test(comment.value)) continue;
+    const last = blocks.at(-1);
+    const prev = last?.comments.at(-1);
+    const ownLine =
+      sourceCode.getTokenBefore(comment, { includeComments: true })?.loc.end
+        .line !== comment.loc.start.line;
+    if (
+      comment.type === "Line" &&
+      prev?.type === "Line" &&
+      ownLine &&
+      prev.loc.end.line === comment.loc.start.line - 1
+    ) {
+      last.comments.push(comment);
+      last.lines += 1;
+    } else {
+      blocks.push({ comments: [comment], lines: commentTextLines(comment) });
+    }
+  }
+  return blocks;
+}
+
+function unparen(text) {
+  let t = text.trim();
+  while (t.startsWith("(") && t.endsWith(")")) t = t.slice(1, -1).trim();
+  return t;
+}
+
+const isZero = (node) => node.type === "Literal" && node.value === 0;
+
+/**
+ * For a ternary test that checks a denominator against zero, the denominator
+ * and which branch runs when it is non-zero ("consequent" or "alternate").
+ */
+function guardOf(test, sourceCode) {
+  if (test.type === "UnaryExpression" && test.operator === "!")
+    return { d: unparen(sourceCode.getText(test.argument)), live: "alternate" };
+  if (test.type === "BinaryExpression") {
+    const [other, zeroOnLeft] = isZero(test.right)
+      ? [test.left, false]
+      : isZero(test.left)
+        ? [test.right, true]
+        : [undefined, false];
+    if (!other) return undefined;
+    const d = unparen(sourceCode.getText(other));
+    const op = test.operator;
+    if (op === "!==" || op === "!=") return { d, live: "consequent" };
+    if (op === "===" || op === "==") return { d, live: "alternate" };
+    if ((op === ">" && !zeroOnLeft) || (op === "<" && zeroOnLeft))
+      return { d, live: "consequent" };
+    if ((op === "<=" && !zeroOnLeft) || (op === ">=" && zeroOnLeft))
+      return { d, live: "alternate" };
+    return undefined;
+  }
+  if (
+    test.type === "Identifier" ||
+    test.type === "MemberExpression" ||
+    test.type === "ChainExpression"
+  )
+    return { d: unparen(sourceCode.getText(test)), live: "consequent" };
+  return undefined;
+}
+
+function dividesBy(node, d, sourceCode) {
+  let found = false;
+  const visit = (n) => {
+    if (found || !n || typeof n.type !== "string") return;
+    if (
+      n.type === "BinaryExpression" &&
+      n.operator === "/" &&
+      unparen(sourceCode.getText(n.right)) === d
+    ) {
+      found = true;
+      return;
+    }
+    for (const key of Object.keys(n)) {
+      if (key === "parent") continue;
+      const child = n[key];
+      if (Array.isArray(child)) child.forEach(visit);
+      else if (child && typeof child.type === "string") visit(child);
+    }
+  };
+  visit(node);
+  return found;
+}
+
+const isFallbackLiteral = (node) =>
+  node.type === "Literal" ||
+  (node.type === "Identifier" && node.name === "undefined") ||
+  (node.type === "UnaryExpression" && node.argument.type === "Literal");
+
+const customRules = {
+  "no-history-comment": {
+    meta: {
+      type: "suggestion",
+      docs: { description: "Comments state what is true now." },
+      schema: [],
+    },
+    create(context) {
+      return {
+        Program() {
+          for (const comment of context.sourceCode.getAllComments()) {
+            const match = HISTORY_PHRASE.exec(comment.value);
+            if (match)
+              context.report({
+                loc: comment.loc,
+                message: `History in a comment ("${match[0]}"). State what is true now; history goes in the commit.`,
+              });
+          }
+        },
+      };
+    },
+  },
+  "max-comment-lines": {
+    meta: {
+      type: "suggestion",
+      docs: { description: "At most three lines of current reason." },
+      schema: [],
+    },
+    create(context) {
+      return {
+        Program() {
+          for (const block of commentBlocks(context.sourceCode)) {
+            if (block.lines <= MAX_COMMENT_LINES) continue;
+            const first = block.comments[0];
+            context.report({
+              loc: {
+                start: first.loc.start,
+                end: block.comments.at(-1).loc.end,
+              },
+              message: `Comment of ${block.lines} lines; at most ${MAX_COMMENT_LINES}. If it needs more, change the code or the type first.`,
+            });
+          }
+        },
+      };
+    },
+  },
+  "no-stacked-docblock": {
+    meta: {
+      type: "suggestion",
+      docs: { description: "One docblock per declaration." },
+      schema: [],
+    },
+    create(context) {
+      return {
+        Program() {
+          const sourceCode = context.sourceCode;
+          const isDoc = (c) => c?.type === "Block" && c.value.startsWith("*");
+          // A file's header docblock may sit right above the first declaration's.
+          const firstCode = sourceCode.ast.body.find((s) => !s.directive);
+          const header = sourceCode
+            .getAllComments()
+            .find(
+              (c) =>
+                isDoc(c) && (!firstCode || c.range[1] <= firstCode.range[0]),
+            );
+          for (const comment of sourceCode.getAllComments()) {
+            if (!isDoc(comment) || comment === header) continue;
+            const next = sourceCode.getTokenAfter(comment, {
+              includeComments: true,
+            });
+            if (isDoc(next))
+              context.report({
+                loc: comment.loc,
+                message:
+                  "Docblock followed by another docblock; the first documents nothing. Merge them or delete the orphan.",
+              });
+          }
+        },
+      };
+    },
+  },
+  "no-guarded-division": {
+    meta: {
+      type: "suggestion",
+      docs: {
+        description: "Division by a possibly-zero value uses safeDivide.",
+      },
+      schema: [],
+    },
+    create(context) {
+      const sourceCode = context.sourceCode;
+      return {
+        ConditionalExpression(node) {
+          const guard = guardOf(node.test, sourceCode);
+          if (!guard) return;
+          const live = node[guard.live];
+          const dead =
+            node[guard.live === "consequent" ? "alternate" : "consequent"];
+          if (isFallbackLiteral(dead) && dividesBy(live, guard.d, sourceCode))
+            context.report({
+              node,
+              message: `Hand-guarded division by '${guard.d}'. Use safeDivide(n, d, fallback) from @/lib/utils/math.`,
+            });
+        },
+      };
+    },
+  },
+};
+
+const ratchetPlugin = {
+  rules: {
+    ...customRules,
+    "no-jsx-iife": selectorRule(
+      "No immediately-invoked function inside JSX.",
+      "JSXExpressionContainer CallExpression[callee.type=/^(ArrowFunctionExpression|FunctionExpression)$/]",
+      "Immediately-invoked function in JSX. Compute the value above the return, or in a <component>.model.ts beside the component.",
+    ),
+    "no-raw-input": selectorRule(
+      "Inputs go through the form primitives.",
+      "JSXOpeningElement[name.name='input']",
+      "Raw <input>. Use FormInput from @/components/forms or a primitive in @/components/ui.",
+    ),
+    "no-text-includes": {
+      meta: {
+        type: "suggestion",
+        docs: { description: "Nothing branches on human-readable text." },
+        schema: [],
+      },
+      create(context) {
+        return {
+          "CallExpression[callee.property.name='includes']"(node) {
+            if (!isStringLiteral(node.arguments[0])) return;
+            const name = sourceName(node.callee.object);
+            if (name && TEXT_FIELD.test(name))
+              context.report({
+                node,
+                message: `.includes() on the text field '${name}'. Branch on a fact the engine emits (an enum, flag or id), never on its wording.`,
+              });
+          },
+        };
+      },
+    },
+    "no-fixed-inset-overlay": {
+      meta: {
+        type: "suggestion",
+        docs: { description: "Overlays go through the ui primitives." },
+        schema: [],
+      },
+      create(context) {
+        const message =
+          "Hand-built overlay (`fixed inset-0`). Use ConfirmDialog, SlidePanel or another primitive in @/components/ui.";
+        return {
+          Literal(node) {
+            if (typeof node.value === "string" && isOverlayClasses(node.value))
+              context.report({ node, message });
+          },
+          TemplateLiteral(node) {
+            const text = node.quasis.map((q) => q.value.cooked ?? "").join(" ");
+            if (isOverlayClasses(text)) context.report({ node, message });
+          },
+        };
+      },
+    },
+  },
+};
+
+export const ratchetConfig = [
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    plugins: { ratchet: ratchetPlugin },
+    rules: {
+      "max-lines-per-function": ["error", { max: 150, IIFEs: true }],
+      "@typescript-eslint/consistent-type-assertions": [
+        "error",
+        { assertionStyle: "never" },
+      ],
+      "ratchet/no-jsx-iife": "error",
+      "ratchet/no-text-includes": "error",
+      "ratchet/no-raw-input": "error",
+      "ratchet/no-fixed-inset-overlay": "error",
+      "ratchet/no-history-comment": "error",
+      "ratchet/max-comment-lines": "error",
+      "ratchet/no-stacked-docblock": "error",
+      "ratchet/no-guarded-division": "error",
+    },
+  },
+  {
+    // The primitives themselves.
+    files: ["src/components/forms/**", "src/components/ui/**"],
+    rules: {
+      "ratchet/no-raw-input": "off",
+      "ratchet/no-fixed-inset-overlay": "off",
+    },
+  },
+  {
+    // Its engine-version changelog is the documentation (RULES § comments).
+    files: ["src/server/helpers/projection-cache.ts"],
+    rules: { "ratchet/no-history-comment": "off" },
+  },
+];

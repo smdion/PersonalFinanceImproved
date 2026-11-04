@@ -1,10 +1,10 @@
 /**
- * FormError / FormErrorBlock — the server's sentence for a failed service
+ * FormError — the server's sentence for a failed service
  * wins over the raw message; otherwise the message shows as before.
  */
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { FormError, FormErrorBlock } from "@/components/ui/form-error";
+import { FormError } from "@/components/ui/form-error";
 
 const serviceError = {
   message: "Actual: /accounts: data.0.offbudget: expected boolean",
@@ -14,10 +14,7 @@ const serviceError = {
   },
 };
 
-describe.each([
-  ["FormError", FormError],
-  ["FormErrorBlock", FormErrorBlock],
-])("%s", (_name, Component) => {
+describe.each([["FormError", FormError]])("%s", (_name, Component) => {
   it("shows data.userMessage instead of the raw message", () => {
     render(<Component error={serviceError} prefix="Sync failed" />);
     expect(screen.getByRole("alert")).toHaveTextContent(

@@ -68,8 +68,6 @@ interface PlanHealthCardProps {
   hasSocialSecurity?: boolean;
   /** Deterministic nest-egg estimate to derive a band around. */
   deterministicNestEgg?: number;
-  /** Optional rangeFraction override for the band (default 0.25). */
-  bandRangeFraction?: number;
 }
 
 function CalloutLine({
@@ -169,10 +167,7 @@ export function PlanHealthCard(props: PlanHealthCardProps) {
     typeof props.deterministicNestEgg === "number" &&
     props.deterministicNestEgg > 0
   ) {
-    band = deriveProjectionBand(
-      props.deterministicNestEgg,
-      props.bandRangeFraction,
-    );
+    band = deriveProjectionBand(props.deterministicNestEgg);
   }
 
   // Don't render the card at all if there's nothing to say.

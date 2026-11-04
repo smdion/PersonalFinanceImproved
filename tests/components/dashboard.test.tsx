@@ -2,20 +2,34 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 // Mock all dashboard card components to isolate the page test
-vi.mock("@/components/cards/dashboard", () => ({
+vi.mock("@/components/cards/dashboard/household-income-card", () => ({
   HouseholdIncomeCard: () => (
     <div data-testid="household-income">HouseholdIncome</div>
   ),
+}));
+vi.mock("@/components/cards/dashboard/savings-goals-card", () => ({
   SavingsGoalsCard: () => <div data-testid="savings-goals">SavingsGoals</div>,
+}));
+vi.mock("@/components/cards/dashboard/retirement-card", () => ({
   RetirementCard: () => <div data-testid="retirement">Retirement</div>,
+}));
+vi.mock("@/components/cards/dashboard/net-worth-card", () => ({
   NetWorthCard: () => <div data-testid="net-worth">NetWorth</div>,
+}));
+vi.mock("@/components/cards/dashboard/linked-balance-card", () => ({
   LinkedBalanceCard: () => (
     <div data-testid="linked-balance">LinkedBalance</div>
   ),
+}));
+vi.mock("@/components/cards/dashboard/contributions-card", () => ({
   ContributionsCard: () => <div data-testid="contributions">Contributions</div>,
+}));
+vi.mock("@/components/cards/dashboard/financial-checkup-card", () => ({
   FinancialCheckupCard: () => (
     <div data-testid="financial-checkup">FinancialCheckup</div>
   ),
+}));
+vi.mock("@/components/cards/dashboard/living-costs-card", () => ({
   LivingCostsCard: () => <div data-testid="living-costs">LivingCosts</div>,
 }));
 

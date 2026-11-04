@@ -16,7 +16,6 @@ import { historicalRouter } from "./historical";
 import { assetsRouter } from "./assets";
 import { utilitiesRouter } from "./utilities";
 import { debtsRouter } from "./debts";
-import { apiDocsRouter } from "./api-docs";
 import { versionRouter } from "./version";
 import { contributionProfileRouter } from "./contribution-profiles";
 import { salaryProfileRouter } from "./salary-profiles";
@@ -27,7 +26,6 @@ import { investmentsRouter } from "./investments";
 import { secRouter } from "./sec";
 import { demoRouter } from "./demo";
 import { dataBrowserRouter } from "./data-browser";
-import { testingRouter } from "./testing";
 import { taxBucketsRouter } from "./tax-buckets";
 
 export const appRouter = createTRPCRouter({
@@ -47,7 +45,6 @@ export const appRouter = createTRPCRouter({
   assets: assetsRouter,
   utilities: utilitiesRouter,
   debts: debtsRouter,
-  apiDocs: apiDocsRouter,
   version: versionRouter,
   contributionProfile: contributionProfileRouter,
   salaryProfile: salaryProfileRouter,
@@ -58,7 +55,6 @@ export const appRouter = createTRPCRouter({
   sec: secRouter,
   demo: demoRouter,
   dataBrowser: dataBrowserRouter,
-  testing: testingRouter,
   taxBuckets: taxBucketsRouter,
 });
 

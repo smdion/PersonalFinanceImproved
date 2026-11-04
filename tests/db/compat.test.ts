@@ -12,7 +12,6 @@ import { isPostgres } from "@/lib/db/dialect";
 import {
   tableExistsSQL,
   listTablesSQL,
-  jsonbLiteral,
   validateColumns,
   tablesWithIdColumn,
 } from "@/lib/db/compat";
@@ -53,39 +52,6 @@ describe("listTablesSQL", () => {
     mockedIsPostgres.mockReturnValue(true);
     const q = new PgDialect().sqlToQuery(listTablesSQL());
     expect(q.sql).toMatch(/FROM pg_tables WHERE schemaname = 'public'/);
-  });
-});
-
-describe("jsonbLiteral", () => {
-  it("formats as plain JSON string for SQLite", () => {
-    mockedIsPostgres.mockReturnValue(false);
-    const result = jsonbLiteral({ key: "value" });
-    expect(result).toBe(`'{"key":"value"}'`);
-    expect(result).not.toContain("::jsonb");
-  });
-
-  it("formats with ::jsonb cast for PostgreSQL", () => {
-    mockedIsPostgres.mockReturnValue(true);
-    const result = jsonbLiteral({ key: "value" });
-    expect(result).toContain("::jsonb");
-  });
-
-  it("escapes single quotes in JSON", () => {
-    mockedIsPostgres.mockReturnValue(false);
-    const result = jsonbLiteral({ name: "it's" });
-    expect(result).toContain("it''s");
-  });
-
-  it("handles arrays", () => {
-    mockedIsPostgres.mockReturnValue(false);
-    const result = jsonbLiteral([1, 2, 3]);
-    expect(result).toBe("'[1,2,3]'");
-  });
-
-  it("handles null", () => {
-    mockedIsPostgres.mockReturnValue(false);
-    const result = jsonbLiteral(null);
-    expect(result).toBe("'null'");
   });
 });
 

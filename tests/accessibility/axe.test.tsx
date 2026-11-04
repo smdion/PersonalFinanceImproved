@@ -1,7 +1,7 @@
 /**
  * Accessibility tests using axe-core.
  *
- * Renders key UI components into jsdom and runs axe-core checks for ARIA /
+ * Renders key UI components into happy-dom and runs axe-core checks for ARIA /
  * accessibility violations.  These are lightweight smoke tests — they catch
  * missing labels, invalid roles, color-contrast markup issues, etc.
  */
@@ -11,7 +11,7 @@ import * as axe from "axe-core";
 
 import { Card, Metric, ProgressBar } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
-import { FormError, FormErrorBlock } from "@/components/ui/form-error";
+import { FormError } from "@/components/ui/form-error";
 import { PageHeader } from "@/components/ui/page-header";
 import { Toggle } from "@/components/ui/toggle";
 
@@ -144,14 +144,6 @@ describe("Accessibility — axe-core", () => {
   it("FormError renders without violations", async () => {
     const { container } = render(
       <FormError message="Name is required" prefix="Validation error" />,
-    );
-    const violations = await getViolations(container);
-    expect(violations, formatViolations(violations)).toHaveLength(0);
-  });
-
-  it("FormErrorBlock renders without violations", async () => {
-    const { container } = render(
-      <FormErrorBlock message="Failed to save changes" />,
     );
     const violations = await getViolations(container);
     expect(violations, formatViolations(violations)).toHaveLength(0);

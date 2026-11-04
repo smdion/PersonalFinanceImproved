@@ -1,0 +1,1 @@
+{"accounts":[{"balance":260000,"slices":[{"amount":260000}]},{"ageThresholdStatus":{"thresholdAge":65},"balance":22000,"slices":[{"amount":22000}]}],"people":[{"birthYear":1981},{"birthYear":1982}],"portfolioByTaxType":{"afterTax":45000,"afterTaxBasis":30000,"hsa":22000,"preTax":260000,"taxFree":0}}

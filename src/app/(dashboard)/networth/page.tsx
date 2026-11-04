@@ -15,13 +15,11 @@ import dynamic from "next/dynamic";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { NetWorthCompare } from "@/components/cards/net-worth-compare";
-import {
-  NetWorthComposition,
-  AssetsLiabilitiesCards,
-  MetricsRow,
-  YoYTable,
-  FinancialIndependenceCard,
-} from "@/components/networth";
+import { NetWorthComposition } from "@/components/networth/net-worth-composition";
+import { AssetsLiabilitiesCards } from "@/components/networth/assets-liabilities-cards";
+import { MetricsRow } from "@/components/networth/metrics-row";
+import { YoYTable } from "@/components/networth/yoy-table";
+import { FinancialIndependenceCard } from "@/components/networth/financial-independence-card";
 
 // Code-split Recharts-heavy chart components into separate chunks. Each
 // chart is ~250KB of bundle when bundled into the
@@ -56,7 +54,7 @@ const TaxLocationPie = dynamic(
     })),
   { loading: () => <SkeletonChart />, ssr: false },
 );
-import { SpreadsheetView } from "@/components/networth/spreadsheet";
+import { SpreadsheetView } from "@/components/networth/spreadsheet/spreadsheet-view";
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { useYearEndTargetingInput } from "@/lib/hooks/use-year-end-targeting";
 import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";

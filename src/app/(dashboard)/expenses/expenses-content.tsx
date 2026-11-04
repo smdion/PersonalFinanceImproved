@@ -129,7 +129,7 @@ export function ExpensesContent() {
     ...(effectiveBudgetProfileId != null
       ? { profileId: effectiveBudgetProfileId }
       : {}),
-    // Tiers — the shape every budget caller sends (docs/RULES.md "Profile
+    // Tiers — the shape every budget caller sends (docs/DESIGN.md "Profile
     // Resolution").
     contributionProfile: {
       localSelectionId: null,

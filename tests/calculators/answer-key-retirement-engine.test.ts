@@ -58,13 +58,12 @@
  *   balance ÷ the Uniform Lifetime divisor.
  *
  * Mutation-checked by hand when written (break, see a failure, restore):
- * RT56 (penalty 5%), RT34 (charge once a household, `:1327`) and its twin
- * at the need (`:582`), RT33 (one-year lookback, `:1316`) and its twin at
- * the need (`:579`), RT38 (on-top need from the fourth year, `:572`), RT08
- * (`context.ts:149`, the spouse takes the primary's cohort). v0.10.0
- * commit 39 (one IRMAA-cost function in place of `:582` and `:1327`)
- * rests on the I10/I11 and RT38 tests: together they fail an engine that
- * charges IRMAA once a household at either site.
+ * RT56 (penalty 5%), RT34 (charge once a household, at the cost site and
+ * its twin at the need), RT33 (one-year lookback, `:1310`) and its twin
+ * at the need (`:574`), RT38 (on-top need from the fourth year, `:568`),
+ * RT08 (`context.ts:149`, the spouse takes the primary's cohort). Both
+ * sites charge through `household-irmaa.ts:checkHouseholdIrmaa`;
+ * charging it once a household there fails I10, I11, RT38, I26 and C5.
  */
 import { describe, expect, it } from "vitest";
 import { calculateProjection } from "@/lib/calculators/engine";

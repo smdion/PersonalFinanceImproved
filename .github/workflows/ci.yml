@@ -18,8 +18,9 @@ concurrency:
 jobs:
   ci:
     runs-on: ubuntu-latest
-    # Pushes also build the image and boot both compose files.
-    timeout-minutes: 20
+    # Pushes also build the image, boot both compose files and run the
+    # first-run sign-in against each (18 of 20 minutes used before that).
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -32,6 +33,18 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      # --- Warning only (never fails the pipeline) ---
+
+      - name: Commit rules over the pull request's commits (warnings only)
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          git fetch --no-tags --unshallow origin || true
+          git fetch --no-tags origin "+refs/heads/$BASE_REF:refs/remotes/origin/$BASE_REF"
+          pnpm tsx scripts/check-commit.ts --range "origin/$BASE_REF..HEAD"
 
       # --- Blocking steps (fail the pipeline) ---
 
@@ -47,11 +60,26 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
+      - name: Lint, type-aware ratchet
+        run: pnpm lint:typed
+
       - name: Dead code (unused files, exports, dependencies)
         run: pnpm check:dead-code
 
-      - name: Check file sizes
-        run: bash scripts/check-file-size.sh
+      # Production mode: an export only tests import is dead code too
+      # (tag a deliberate test seam @internal).
+      - name: Dead code, production (test imports don't count)
+        run: pnpm check:dead-code:production
+
+      # Layer rules: no new violation, and the known list only shrinks
+      # (checked against main's copy).
+      - name: Layer rules (dependency-cruiser)
+        run: |
+          git fetch --no-tags --depth=1 origin main
+          pnpm check:layers --base FETCH_HEAD
+
+      - name: Size baseline (no file or recorded function grows)
+        run: pnpm check:file-size
 
       - name: Cache Next.js build
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v5
@@ -83,8 +111,12 @@ jobs:
 
       # Blocking: each page's first-load JS (gzipped) against its budget,
       # and no single chunk over 500 KB (scripts/check-bundle-size.ts).
+      # The report prints every page's measured size (and the budget block)
+      # before the check, so a failing run shows what moved.
       - name: Check bundle size
-        run: pnpm check:bundle
+        run: |
+          pnpm check:bundle --report
+          pnpm check:bundle
 
       - name: Cache Playwright browsers
         id: pw-cache
@@ -165,29 +197,58 @@ jobs:
       - name: Verify docs freshness
         run: pnpm docs:verify
 
+      # Every calculator, engine and lib/pure export has a row in
+      # docs/CALCULATIONS.md; the exports without one and the high-risk
+      # rows with no independent test may only shrink
+      # (scripts/calculation-register-baseline.json).
+      - name: Calculation register check
+        run: pnpm check:calculation-register
+
       - name: Docker build smoke test
         if: github.event_name == 'push'
         run: docker build --build-arg APP_VERSION=ci-${{ github.sha }} -t ledgr:ci-test .
 
       # The sample compose install on an empty volume, SQLite and PostgreSQL:
       # missing required variables are refused by name, .env reaches the
-      # container, and each boots to /api/health 200 and answers a public
-      # tRPC query with no Authentik. Builds reuse the cache from the step above.
+      # container, and each boots to /api/health 200, answers a public
+      # tRPC query with no Authentik, and a browser creates the first admin
+      # and runs the wizard to Done (tests/e2e/first-run.spec.ts, no
+      # DEMO_ONLY). Builds reuse the cache from the step above.
       - name: Compose install boots on an empty volume
         if: github.event_name == 'push'
         run: bash scripts/ci-image-boot.sh
+
+      - name: Upload first-run E2E results (screenshots, traces)
+        if: failure() && github.event_name == 'push'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: first-run-e2e-results
+          path: test-results/first-run-*/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Notify on failure
         if: failure() && github.ref == 'refs/heads/main'
         run: |
           echo "::warning::CI failed on main — check ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
-  # Demo profiles live in PostgreSQL schemas, so the SQLite suite above never
-  # reaches them. This runs the demo end to end on PostgreSQL with DEMO_ONLY
-  # on, as the public demo runs.
-  postgres-demo:
+  # The suite above runs on SQLite only. This job checks what must also
+  # hold on PostgreSQL (16, the version installs run): migrations from
+  # empty, the demo profiles (PostgreSQL schemas), a fresh install, a
+  # seeded router subset and the backup round trip. One throwaway service
+  # database; every test step drops and rebuilds it, so steps don't depend
+  # on each other's data and a new PostgreSQL step is appended as its own
+  # named step.
+  postgres:
+    name: PostgreSQL
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
+
+    env:
+      # Throwaway service database; not a secret.
+      TEST_DATABASE_URL: postgresql://ledgr:ledgr-ci-placeholder@localhost:5432/ledgr_test
+      # A missing database fails the PostgreSQL tests instead of skipping them.
+      REQUIRE_TEST_DATABASE: "true"
 
     services:
       postgres:
@@ -216,17 +277,37 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      # The service database starts empty. db-migrate.ts reads no .env:
+      # the URL comes from the step's environment.
+      - name: Migrations from empty on PostgreSQL
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+          LEDGR_BACKUP_DIR: ${{ runner.temp }}/ledgr-backups
+
+      # Primary keys, foreign keys and indexes of the database just migrated
+      # from empty, against scripts/constraints/<dialect>.txt (a migration
+      # that drops one still applies cleanly).
+      - name: Constraint snapshot on PostgreSQL
+        run: pnpm check:constraints
+        env:
+          DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
+
+      - name: Constraint snapshot on SQLite
+        run: pnpm check:constraints
+
       - name: Demo profiles on PostgreSQL (DEMO_ONLY)
         run: pnpm test tests/routers/demo-postgres.test.ts
         env:
-          # Throwaway service database; not a secret.
-          TEST_DATABASE_URL: postgresql://ledgr:ledgr-ci-placeholder@localhost:5432/ledgr_test
           DEMO_ONLY: "true"
-          REQUIRE_TEST_DATABASE: "true"
 
       - name: Fresh install on PostgreSQL
         run: pnpm test tests/routers/fresh-install-postgres.test.ts
-        env:
-          # Throwaway service database; not a secret.
-          TEST_DATABASE_URL: postgresql://ledgr:ledgr-ci-placeholder@localhost:5432/ledgr_test
-          REQUIRE_TEST_DATABASE: "true"
+
+      - name: Seeded routers and backup round trip on PostgreSQL
+        run: pnpm test tests/routers/seeded-postgres.test.ts
+
+      # Behavior baseline part c: every router query for the 17 households
+      # in tests/baseline/, compared with the files SQLite pins.
+      - name: Router baseline on PostgreSQL (same numbers as SQLite)
+        run: pnpm test tests/baseline/router-baseline-postgres.test.ts

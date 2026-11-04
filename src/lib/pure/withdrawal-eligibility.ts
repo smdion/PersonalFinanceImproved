@@ -121,9 +121,9 @@ export type EligibilityAccountInput = {
 /** Composite-key function — deliberately the same shape as the engine's own
  *  `IndKeyFn` (`engine/individual-account-tracking.ts`) without importing
  *  it: this module lives outside `lib/calculators/engine/`, and reaching
- *  into engine internals from outside is a lint-enforced layering
- *  violation (`tests/lint/violations.test.ts`'s `no-engine-internal-import`
- *  rule). The engine passes its own `makeIndKey()` instance in. */
+ *  into engine internals from outside is a layering violation (the
+ *  `engine-through-index` rule in `.dependency-cruiser.mjs`). The engine
+ *  passes its own `makeIndKey()` instance in. */
 export type IndKeyFn = (ia: {
   name: string;
   category: string;

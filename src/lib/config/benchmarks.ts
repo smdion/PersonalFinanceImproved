@@ -145,10 +145,6 @@ export const VANGUARD_TDF_STOCK_SHARE: readonly {
   { yearsToRetirement: -7, stockShare: 0.3 },
 ];
 
-/** Windows (days) for the recent balance change; each shows once the stored
- *  daily balances reach back that far. */
-export const RECENT_CHANGE_WINDOWS_DAYS: readonly number[] = [1, 7, 30, 90];
-
 /**
  * A plain index fund standing in for each composition bucket — what the
  * matched-mix line prices a household's own weights with, and the "same

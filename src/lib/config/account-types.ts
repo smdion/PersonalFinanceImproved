@@ -807,16 +807,6 @@ export function getAccountSegments(): AccountSegment[] {
 }
 
 /**
- * Build column key for a category + optional sub-key.
- */
-export function getCategoryColumnKey(
-  category: AccountCategory,
-  subKey?: string | null,
-): string {
-  return subKey ? `${category}_${subKey}` : category;
-}
-
-/**
  * Parse a column key back to category + sub-key.
  */
 export function parseColumnKey(

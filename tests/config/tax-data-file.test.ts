@@ -7,11 +7,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { readTaxData } from "../helpers/tax-data";
-import {
-  unknownTaxDataKeys,
-  validateTaxDataFile,
-  withKnownKeysOnly,
-} from "@/lib/tax-data/validate";
+import { validateTaxDataFile } from "@/lib/tax-data/validate";
 import { irmaaBracketsSchema, ltcgBracketsSchema } from "@/lib/db/json-schemas";
 import {
   assembleTaxData,
@@ -61,7 +57,6 @@ describe("validateTaxDataFile catches", () => {
       /unknown key .*made_up_limit/,
     );
     expect(validateTaxDataFile(f, { unknownKeys: "ignore" })).toEqual([]);
-    expect(unknownTaxDataKeys(withKnownKeysOnly(f))).toEqual([]);
   });
 
   it("a missing citation, a dropped key, an out-of-bounds jump", () => {

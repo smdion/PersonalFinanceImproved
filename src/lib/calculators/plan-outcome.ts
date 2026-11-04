@@ -116,18 +116,6 @@ export function assessPlan(
   return SUCCEEDED;
 }
 
-/** What failing means, by reason, as a phrase ("money runs out"). */
-export function planFailurePhrase(reason: PlanFailureReason): string {
-  switch (reason) {
-    case "depleted":
-      return "money runs out";
-    case "penaltyGap":
-      return "the plan falls short — money locked by early-withdrawal penalties";
-    case "shortfall":
-      return "the plan can't fully fund spending";
-  }
-}
-
 /** The most common failure reason among failing trials (ties: depleted,
  *  then penaltyGap). Null when nothing failed. */
 export function dominantFailureReason(

@@ -89,7 +89,7 @@ Every schema change must follow the project's established conventions.
 **JSONB:**
 
 - JSONB columns must use `.$type<T>()` for TypeScript safety
-- The type `T` must be defined in `lib/config/enum-values.ts` or a dedicated types file — not inline in the schema
+- The type `T` must be defined in `src/lib/config/enum-values.ts` or a dedicated types file — not inline in the schema
 
 **Indexes:**
 
@@ -122,21 +122,20 @@ Every schema change must follow the project's established conventions.
 
 A schema change is not done when the `.ts` file is saved. Check that these follow-up steps are planned.
 
-### 1. Regenerate schema-sqlite.ts
+### 1. Regenerate the SQLite schema
 
-`src/lib/db/schema-sqlite.ts` is auto-generated from `schema-pg.ts`. It must be regenerated after every change:
+`src/lib/db/sqlite/*.ts` and `src/lib/db/schema-sqlite.ts` are generated from `src/lib/db/pg/*.ts`. Regenerate them after every change, then format them:
 
 ```bash
 npx tsx scripts/gen-sqlite-schema.ts
+npx prettier --write src/lib/db/sqlite src/lib/db/schema-sqlite.ts
 ```
 
-Failure to do this means the SQLite dev/test path uses a stale schema. **Never edit `schema-sqlite.ts` directly** — it will be silently overwritten on the next regen.
+Failure to do this means the SQLite install and the tests use a stale schema. **Never edit `src/lib/db/sqlite/` or `schema-sqlite.ts` directly** — it will be silently overwritten on the next regen.
 
-### 2. Write a migration file
+### 2. Write the migrations, both dialects
 
-Every structural change (add column, add table, add index, change type, add constraint) requires a migration file in `drizzle/`. The migration must be idempotent where possible — adding a column that already exists should be `IF NOT EXISTS`.
-
-The migration journal at `drizzle/meta/_journal.json` must be updated with the new entry.
+Every structural change (add column, add table, add index, change type, add constraint) needs a migration in `drizzle/` (PostgreSQL, `drizzle.config.ts`) and one in `drizzle-sqlite/` (SQLite, `drizzle-sqlite.config.ts`), each with its snapshot and journal entry (`drizzle/meta/_journal.json`, `drizzle-sqlite/meta/_journal.json`). `pnpm db:generate` writes the PostgreSQL one; `npx drizzle-kit generate --config drizzle-sqlite.config.ts` the SQLite one. `pnpm check:migrations` checks them. A migration that rewrites data follows DESIGN.md § Data-converting migrations.
 
 ### 3. Update backup-transforms.ts
 
@@ -157,7 +156,7 @@ The auto-gen markers in `DESIGN.md` (table counts, migration counts) must stay a
 Before deploying any release with schema changes, run the migration test against a prod snapshot:
 
 ```bash
-# See OPS.md § "Release Process" (step 5: test the migration against prod data)
+# See docs/OPS.md § Release Process (and the private .scratch/docs/ops/OPS.md step 5)
 ./scripts/test-migration.sh "$PROD_DATABASE_URL"
 ```
 
@@ -167,7 +166,7 @@ This is not optional for schema changes that ship to production.
 
 ## Step 5 — Data model principles
 
-Beyond conventions, check that the change aligns with the project's data model philosophy.
+Beyond conventions, check that the change aligns with DESIGN.md § Data Model Principles (the stored-value classes and their sync paths) and CONTRIBUTING.md § Drizzle ORM Conventions.
 
 **Computed values are not stored — with documented exceptions:**
 

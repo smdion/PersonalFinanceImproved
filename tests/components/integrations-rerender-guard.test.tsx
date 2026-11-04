@@ -7,7 +7,7 @@
  * pending flip — exactly the problem the 5-hook split is designed to prevent.
  *
  * Each hook returns a flat `{ mutationName: UseMutationResult, ... }` object
- * per RULES.md's Mutation Hook Convention (no `{ mutations: {...},
+ * per CONTRIBUTING.md's Mutation Hook Convention (no `{ mutations: {...},
  * invalidate }` wrapper — `invalidate` is used internally as each
  * mutation's own `onSuccess` and is not part of the public return). This
  * test asserts each hook's flat key set so that a future refactor that
@@ -178,7 +178,7 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
     ]);
     // Smoke: every hook exports a factory whose return is flat — each value
     // is a mutation object (has `.mutate`), and neither `mutations` nor
-    // `invalidate` appears as a top-level key. Guards against RULES.md's
+    // `invalidate` appears as a top-level key. Guards against CONTRIBUTING.md's
     // Mutation Hook Convention wrapper shape creeping back in.
     for (const mod of [drift, budget, savings, contrib, portfolio]) {
       const hookName = Object.keys(mod).find((k) => k.startsWith("use")) as

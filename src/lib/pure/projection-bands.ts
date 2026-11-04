@@ -68,19 +68,3 @@ export function deriveProjectionBand(
     label: `Most likely ${compactCurrency(point)} (range ${compactCurrency(low)}–${compactCurrency(high)})`,
   };
 }
-
-/**
- * Adjust the band width based on horizon and equity allocation.
- * Longer horizons + higher equity exposure = wider band.
- */
-export function bandFractionForPortfolio(
-  yearsToRetirement: number,
-  equityPercent: number,
-): number {
-  // Base 20% ± modifiers
-  let fraction = 0.2;
-  if (yearsToRetirement > 20) fraction += 0.1; // long horizon → wider
-  if (equityPercent > 80) fraction += 0.05; // heavy equity → wider
-  if (equityPercent < 40) fraction -= 0.05; // bond-heavy → narrower
-  return Math.max(0.1, Math.min(0.5, fraction));
-}

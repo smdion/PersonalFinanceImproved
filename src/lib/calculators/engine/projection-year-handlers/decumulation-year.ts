@@ -55,11 +55,8 @@ import { estimateWithdrawalTaxCost } from "../tax-gross-up";
 import { routeForMode } from "../withdrawal-routing";
 import { deriveBasisRankingInputs } from "../withdrawal-cost-ranking";
 import { enforceOwnerRmds, enforceRmd, rmdOwnerOf } from "../rmd-enforcement";
-import {
-  performRothConversion,
-  checkIrmaa,
-  checkAca,
-} from "../post-withdrawal-optimizer";
+import { performRothConversion, checkAca } from "../post-withdrawal-optimizer";
+import { checkHouseholdIrmaa } from "../household-irmaa";
 import {
   distributeWithdrawals,
   applyIndividualGrowth,
@@ -510,8 +507,8 @@ export function runDecumulationYear(
   //
   // TWO different growth factors, not one -- this is not a copy-paste
   // duplication, it answers two different questions:
-  //  - grownIrmaaBracketsForCheck (checkIrmaa, below): "what surcharge
-  //    schedule applies THIS calendar year" -- anchored on `year`.
+  //  - grownIrmaaBracketsForCheck (checkHouseholdIrmaa, below): "what
+  //    surcharge schedule applies THIS calendar year" -- anchored on `year`.
   //  - grownIrmaaBracketsForCap (performRothConversion, above -- passed
   //    in via rothResult's call below): "what surcharge schedule will
   //    apply when THIS year's MAGI is looked back at" -- IRMAA has a
@@ -557,7 +554,6 @@ export function runDecumulationYear(
       : age >= MEDICARE_START_AGE
         ? 1
         : 0;
-  const anyPersonAge65 = personsAge65Plus > 0;
   // IRMAA paid on top of the budget joins a need-sized year's need, so the
   // gross-up, shortfall and RMD excess all see it. It's a cost beside the
   // need: never in projectedExpenses (a strategy would carry it forward)
@@ -571,15 +567,14 @@ export function runDecumulationYear(
     state.portfolioWithdrawal === null &&
     magiHistory.length >= 2
   ) {
-    const irmaaInNeed =
-      checkIrmaa({
-        enableIrmaaAwareness,
-        filingStatus,
-        anyPersonAge65,
-        projectedMagi: magiHistory[magiHistory.length - 2]!,
-        rothConversionAmount: 0,
-        irmaaBrackets: grownIrmaaBracketsForCheck,
-      }).irmaaCost * personsAge65Plus;
+    const irmaaInNeed = checkHouseholdIrmaa({
+      enableIrmaaAwareness,
+      filingStatus,
+      personsAge65Plus,
+      projectedMagi: magiHistory[magiHistory.length - 2]!,
+      rothConversionAmount: 0,
+      irmaaBrackets: grownIrmaaBracketsForCheck,
+    }).irmaaCost;
     afterTaxNeed = roundToCents(
       Math.max(0, state.projectedExpenses + irmaaInNeed - ssIncome),
     );
@@ -1315,16 +1310,15 @@ export function runDecumulationYear(
     magiHistory.length > 2
       ? magiHistory[magiHistory.length - 3]!
       : currentYearMagi;
-  const irmaaResult = checkIrmaa({
+  const irmaaResult = checkHouseholdIrmaa({
     enableIrmaaAwareness,
     filingStatus,
-    anyPersonAge65,
+    personsAge65Plus,
     projectedMagi: irmaaLookbackMagi,
     rothConversionAmount,
     irmaaBrackets: grownIrmaaBracketsForCheck,
   });
-  // IRMAA surcharge is per-person — each Medicare-eligible person pays separately
-  const irmaaCost = irmaaResult.irmaaCost * personsAge65Plus;
+  const irmaaCost = irmaaResult.irmaaCost;
   const irmaaPaid = input.irmaaOnTopOfBudget === true ? irmaaCost : 0;
   routeWarnings.push(...irmaaResult.warnings);
 

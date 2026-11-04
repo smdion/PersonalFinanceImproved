@@ -35,16 +35,14 @@ function StrategyGuidePanel({
   open,
   onClose,
   activeStrategy,
-  visibleStrategies,
 }: {
   open: boolean;
   onClose: () => void;
   activeStrategy?: string | null;
-  visibleStrategies?: string[];
 }) {
-  const keys =
-    visibleStrategies ??
-    (Object.keys(WITHDRAWAL_STRATEGY_CONFIG) as WithdrawalStrategyType[]);
+  const keys = Object.keys(
+    WITHDRAWAL_STRATEGY_CONFIG,
+  ) as WithdrawalStrategyType[];
 
   return (
     <SlidePanel

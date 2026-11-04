@@ -15,12 +15,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { useLocalStorageSet } from "@/lib/hooks/use-local-storage-set";
-import {
-  SummaryCards,
-  NewFundFormCard,
-  GoalProjection,
-  type NewFundForm,
-} from "@/components/savings";
+import { SummaryCards } from "@/components/savings/summary-cards";
+import { NewFundFormCard } from "@/components/savings/new-fund-form-card";
+import type { GoalProjection, NewFundForm } from "@/components/savings/types";
 import {
   projectGoalBalances,
   buildSettledOccurrencesSet,

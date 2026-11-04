@@ -10,7 +10,7 @@
  * concern). Salary Profile Manager instead renders only
  * ExtraPaycheckDestinationToggle, next to a job's payPeriod/anchorPayDate —
  * just the comp-layer decision of whether the extra check is diverted at
- * all (see RULES.md's extraPaycheckRouting section), not the mechanics of
+ * all (see DESIGN.md's extraPaycheckRouting section), not the mechanics of
  * where. Saves via savings.extraPaycheckRouting.save/saveGrowth/
  * saveOverride/setEnabled.
  */

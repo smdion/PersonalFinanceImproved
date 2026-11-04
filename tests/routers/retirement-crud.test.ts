@@ -8,7 +8,7 @@
  *   - retirement.returnRates (list / upsert / delete)
  *
  * Moved from routers/settings/retirement.ts to routers/retirement.ts
- * (page-ownership rule, RULES.md's "Settings Belong on Their Pages") —
+ * (page-ownership rule, DESIGN.md's "Settings Belong on Their Pages") —
  * this file moved alongside it.
  */
 import "./setup-mocks";

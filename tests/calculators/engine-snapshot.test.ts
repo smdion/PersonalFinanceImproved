@@ -24,6 +24,7 @@ import {
   startingBalanceGaps,
   withConsistentStart,
 } from "./fixtures/engine-fixtures";
+import { expectFirstRmdAndClaimYears } from "./fixtures/retirement-milestones";
 import { describe, it, expect } from "vitest";
 import { calculateProjection } from "@/lib/calculators/engine";
 
@@ -825,6 +826,7 @@ describe("engine snapshot parity", () => {
     expect(result.retirementDepletionYear).toBeNull();
     expect(metrics.finalYear?.allAccountsBalance).toBe(1751834.61);
 
+    expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
 
@@ -873,6 +875,7 @@ describe("engine snapshot parity", () => {
     expect(result.retirementDepletionAge).toBeNull();
     expect(metrics.finalYear?.allAccountsBalance).toBeGreaterThan(0);
 
+    expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
 
@@ -938,6 +941,7 @@ describe("engine snapshot parity", () => {
     expect(result.retirementDepletionYear).toBeNull();
     expect(metrics.finalYear?.allAccountsBalance).toBe(3436611.41);
 
+    expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
 
@@ -990,6 +994,7 @@ describe("engine snapshot parity", () => {
     expect(result.retirementDepletionYear).toBeNull();
     expect(metrics.finalYear?.allAccountsBalance).toBe(1968430.08);
 
+    expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
 
@@ -1626,6 +1631,7 @@ describe("engine snapshot parity", () => {
     // 2024 thresholds and estimated surcharges) — cliffs moved up, surcharges
     // too.
     expect(metrics.finalYear?.allAccountsBalance).toBe(4132183.48);
+    expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2344,6 +2350,7 @@ describe("engine snapshot parity", () => {
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(91130.77);
     expect(metrics.finalYear?.allAccountsBalance).toBe(9764296.08);
+    expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2813,6 +2820,7 @@ describe("engine snapshot parity", () => {
     // alone used to grow from a built-in 2026; v0.9.0). v0.9.2: the
     // corrected 2026 IRMAA table, as fixture 31.
     expect(metrics.finalYear?.allAccountsBalance).toBe(2508447.2);
+    expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2892,6 +2900,7 @@ describe("engine snapshot parity", () => {
     // Same rmd-enforcement.ts residual fix
     // as fixture 31.
     expect(metrics.finalYear?.allAccountsBalance).toBe(2502570.34);
+    expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
 
@@ -2968,6 +2977,7 @@ describe("engine snapshot parity", () => {
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(17148.94);
     expect(metrics.finalYear?.allAccountsBalance).toBe(5843935.86);
+    expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3045,6 +3055,7 @@ describe("engine snapshot parity", () => {
     // T13: explicit numeric assertions (see fixture 1 comment).
     expect(result.sustainableWithdrawal).toBe(15549.67);
     expect(metrics.finalYear?.allAccountsBalance).toBe(2786319.24);
+    expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3379,6 +3390,7 @@ describe("engine snapshot parity", () => {
     // toMatchSnapshot() alone for its financial content).
     expect(result.sustainableWithdrawal).toBe(116041.87);
     expect(metrics.finalYear?.allAccountsBalance).toBe(4549937.43);
+    expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3540,6 +3552,7 @@ describe("engine snapshot parity", () => {
     // the remaining 10-year horizon, same direction the allAccountsBalance drop
     // in fixture 66/67 shows.
     expect(metrics.finalYear?.allAccountsBalance).toBe(2242061.03);
+    expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3690,6 +3703,7 @@ describe("engine snapshot parity", () => {
     // QCD (cap raised 105k->115k) leaves the account as charity instead
     // of compounding.
     expect(metrics.finalYear?.allAccountsBalance).toBe(6848515.19);
+    expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3815,6 +3829,7 @@ describe("engine snapshot parity", () => {
     // trajectory nets out the same either way.
     expect(metrics.finalYear?.allAccountsBalance).toBe(6459482.7);
     expect(metrics.finalYear?.allAccountsBalance).toBeLessThan(6877392.31); // vs. fixture 66's "reinvest"
+    expectFirstRmdAndClaimYears(result, input); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3961,6 +3976,7 @@ describe("engine snapshot parity", () => {
       true,
     );
     const metrics = extractMetrics(result);
+    expectFirstRmdAndClaimYears(result, r47HouseholdInput(true)); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
 
@@ -3993,6 +4009,7 @@ describe("engine snapshot parity", () => {
     expect(unsmoothedRmdAt75).toBeGreaterThan(0);
     expect(smoothedRmdAt75!).toBeLessThan(unsmoothedRmdAt75!);
     const metrics = extractMetrics(unsmoothedResult);
+    expectFirstRmdAndClaimYears(unsmoothedResult, r47HouseholdInput(false)); // pins current behavior
     expect(metrics).toMatchSnapshot();
   });
 

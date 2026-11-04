@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { getSecConnection } from "@/lib/sec/connection";
 import { secFactsRefreshDue, syncSecurityFacts } from "@/lib/sec/facts-sync";
 import { log } from "@/lib/logger";
-import { getValidCronSecret, timingSafeSecretMatch } from "@/lib/auth/cron";
+import { validateCronHeaderRequest } from "@/lib/auth/cron";
 
 /** Weekly SEC fund-facts refresh — polled hourly by instrumentation.node.ts; runs once a week. */
 export async function GET(request: Request) {
@@ -13,8 +13,8 @@ export async function GET(request: Request) {
       { status: 403 },
     );
   }
-  const cronSecret = getValidCronSecret();
-  if (!cronSecret) {
+  const cronCheck = validateCronHeaderRequest(request);
+  if (cronCheck === "misconfigured") {
     log("error", "cron_secret_misconfigured", {
       message: "CRON_SECRET is missing or too short",
     });
@@ -23,9 +23,7 @@ export async function GET(request: Request) {
       { status: 500 },
     );
   }
-  if (
-    !timingSafeSecretMatch(request.headers.get("X-Cron-Secret"), cronSecret)
-  ) {
+  if (cronCheck !== "ok") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

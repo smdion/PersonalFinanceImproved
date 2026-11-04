@@ -8,7 +8,7 @@
  * row.
  *
  * Every figure is worked by hand, never read from `src/`:
- * - Gain `G = E − B − C + D − R + F` (RULES § ESPP Accounting 6; spec
+ * - Gain `G = E − B − C + D − R + F` (DESIGN § ESPP Accounting 6; spec
  *   S28) and Return % `G / (B + (C + R − D − F) / 2)` (DESIGN § Return %;
  *   S34): Simple Dietz, the midpoint case of Modified Dietz (Wikipedia,
  *   "Modified Dietz method" and "Simple Dietz method"; GIPS Q&A, Cash

@@ -1,5 +1,5 @@
 /**
- * Links into pages go through the focus table (RULES.md § Links into Pages):
+ * Links into pages go through the focus table (DESIGN.md § Links into Pages):
  * senders carry a `Focus`, never a route string; every topic has a target
  * on its home page; a home is never a redirect (it drops the query).
  */
@@ -33,7 +33,7 @@ const SENDERS = [
 /** A link written as data (`href: "/…"`), or a JSX link carrying a query or
  *  hash. A card header's plain `href="/page"` is the card's general link. */
 const ROUTE_LITERAL = /href: "\/|href="\/[^"]*[?#]/;
-/** Not yet moved to topics — may only shrink (docs/RULES.md § Links into Pages). */
+/** Not yet moved to topics — may only shrink (docs/DESIGN.md § Links into Pages). */
 const NOT_YET = new Set<string>([]);
 
 function senderFiles(): string[] {

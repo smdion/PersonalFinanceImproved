@@ -2,7 +2,7 @@
  * RULES.md violations sweep.
  *
  * Static-string scan of src/ for the Data-Driven Architecture violations
- * enumerated in docs/RULES.md § "Violations to Watch For". Each rule pairs
+ * enumerated in docs/TESTING.md § "Violations to Watch For". Each rule pairs
  * with a numbered bullet in that section.
  *
  * Checked rules:
@@ -16,7 +16,8 @@
  *    8. useState with hardcoded account type ("401k", "ira", etc.)
  *    9. Inline `.toFixed(N) + "%"` instead of formatPercent()
  *   10. Mutation using `z.string()` for enum-typed fields (accountType, service) instead of z.enum()
- *   11. Absolute imports from engine internals instead of the barrel
+ *   11. (Engine imports past the barrel: now the dependency-cruiser rule
+ *       engine-through-index, `pnpm check:layers`, which sees relative imports too.)
  *   12. Hand-rolled Modified-Dietz denominators outside performance.ts
  *   13. Raw division inside formatPercent() instead of safeDivide() (H1/M1/M36/L9 class)
  *   14. Tailwind-class-returning color helper passed to inline style backgroundColor (M18 class)
@@ -45,7 +46,8 @@
  *   - "Procedure computing mortgage/cash/salary independently" (#8)
  *   - "Tax location derived from config instead of stored data" (#9)
  *   - "Local label map duplicating config" (#11) — false-positive prone
- *   - "New account type requiring code changes beyond config entry" (#13) — review-only
+ *   - "New account type requiring code changes beyond config entry" (#13) — review-only;
+ *     the synthetic-category tests at the bottom check the parts that can be checked
  *   - "Appending (Owner) suffix separately" (#15) — too many ways to write it
  *   - "Snapshot rows flat instead of grouped" (#17)
  *   - "Sub-row showing raw accountType instead of subType" (#18)
@@ -75,6 +77,11 @@ import { describe, it, expect } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as os from "node:os";
+import {
+  ACCOUNT_TYPE_CONFIG,
+  DEFAULT_DECUMULATION_ORDER,
+} from "@/lib/config/account-types";
+import { accountCategoryEnum } from "@/lib/config/account-types.types";
 
 // `let`, not `const`: the positive controls at the bottom point every
 // scanner at a temporary tree with planted violations (withRepoRoot).
@@ -116,7 +123,13 @@ const EXEMPT: Record<string, string> = {
   "src/lib/db/seed-defaults.ts": "Seed data initializer",
 };
 
-const CATEGORY_VALUES = ["401k", "403b", "hsa", "ira", "brokerage"];
+// The category rules match every key of ACCOUNT_TYPE_CONFIG, read at scan
+// time: a category added to the config is covered with no edit here.
+function categoryAlternation(): string {
+  return Object.keys(ACCOUNT_TYPE_CONFIG)
+    .map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"))
+    .join("|");
+}
 
 // Canonical performance-category display strings — these should always be
 // referenced via the PERF_CATEGORY_* constants from display-labels.ts,
@@ -174,7 +187,7 @@ interface Violation {
 function findCategoryEqualityViolations(): Violation[] {
   const violations: Violation[] = [];
   const pattern = new RegExp(
-    `(?:!==|===)\\s*['"](?:${CATEGORY_VALUES.join("|")})['"]`,
+    `(?:!==|===)\\s*['"](?:${categoryAlternation()})['"]`,
     "g",
   );
   for (const file of walkTsFiles(SRC_DIR)) {
@@ -215,7 +228,7 @@ function findHardcodedCategoryArrayViolations(): Violation[] {
   // Match an array literal that contains 3+ category strings (4+ would be
   // an obvious match against ALL categories; 3 still suspicious).
   const pattern = new RegExp(
-    `\\[\\s*(?:['"](${CATEGORY_VALUES.join("|")})['"]\\s*,\\s*){2,}['"](${CATEGORY_VALUES.join("|")})['"]`,
+    `\\[\\s*(?:['"](${categoryAlternation()})['"]\\s*,\\s*){2,}['"](${categoryAlternation()})['"]`,
   );
   for (const file of walkTsFiles(SRC_DIR)) {
     const rel = relPath(file);
@@ -409,7 +422,7 @@ function findHardcodedPerfCategoryViolations(): Violation[] {
 function findHardcodedAccountTypeStateViolations(): Violation[] {
   return findPatternViolations(
     new RegExp(
-      `\\buseState\\s*(?:<[^>]*>)?\\s*\\(\\s*["'](?:${CATEGORY_VALUES.join("|")})["']`,
+      `\\buseState\\s*(?:<[^>]*>)?\\s*\\(\\s*["'](?:${categoryAlternation()})["']`,
     ),
     "no-hardcoded-account-type-state",
   );
@@ -444,17 +457,6 @@ function findStringEnumFieldViolations(): Violation[] {
     {
       additionalExempt: new Set(["src/server/routers/settings/admin.ts"]),
     },
-  );
-}
-
-// Rule 11: absolute imports from engine internals. The public API is the
-// `@/lib/calculators/engine` barrel; any deeper absolute import is a layering
-// violation. (Relative imports between engine sibling files are fine — that's
-// how the engine composes itself internally.)
-function findEngineInternalImportViolations(): Violation[] {
-  return findPatternViolations(
-    /from\s+["']@\/lib\/calculators\/engine\/[^"']+["']/,
-    "no-engine-internal-import",
   );
 }
 
@@ -709,7 +711,7 @@ function findMissingDemoOnlyGuardViolations(): Violation[] {
 // config home (F4). Deliberately scoped to FIGURE values (the value after
 // `MFJ:` must start with a digit, `[`, or `{` — a number, array, or nested
 // object) so it does NOT flag `{ MFJ: "Married Filing Jointly", … }`-style
-// UI display-label maps, which are a real but separate concern (RULES.md's
+// UI display-label maps, which are a real but separate concern (TESTING.md's
 // "local label map duplicating config" rule already covers those) —
 // several exist in Settings editor components and are legitimate there.
 // Whole-file regex (not line-by-line — a real multi-line literal spans
@@ -834,8 +836,8 @@ function findRedeclaredConfigExportViolations(): Violation[] {
 // "expert-review" citation, CodeRabbit). Broader shapes — bare R## roadmap
 // tags, date-stamps, PLAN-*.md filenames — are real but too free-text/
 // context-dependent for a reliable regex (an R## could be a real
-// identifier; a date could be a legitimate incident narrative per RULES.md's
-// own exception) and are left to code review, not a lint gate.
+// identifier; a year could be a statute or tax-law year, which RULES.md
+// keeps) and are left to code review, not a lint gate.
 // An answer-key case id written as `<area>/<id>` (`ret/R12`,
 // `household/C1`) names an answer-key case: every answer-key test title
 // starts with its id, and a file's header lists its closed cases by id
@@ -901,10 +903,9 @@ function findReviewCitationViolations(): Violation[] {
 const BROAD_CITATION_FILE_EXEMPT = new Set<string>([
   "src/server/helpers/projection-cache.ts",
 ]);
-// A bare attribution phrase or a bare roadmap R## tag is NEVER a
-// legitimate "the story is the documentation" incident narrative
-// (RULES.md's exception is about DATES, not these) — safe to enforce
-// everywhere (src/, tests/, scripts/).
+// A bare attribution phrase or a bare roadmap R## tag is never one of
+// RULES.md's comment exceptions — safe to enforce everywhere (src/,
+// tests/, scripts/).
 const BROAD_CITATION_ATTRIBUTION_PATTERN = new RegExp(
   [
     "advisor[- ]caught",
@@ -921,12 +922,10 @@ const BROAD_CITATION_ATTRIBUTION_PATTERN = new RegExp(
 );
 // A bare ISO date-stamp, by contrast, is genuinely ambiguous outside
 // src/: test fixtures legitimately describe simulated wall-clock dates
-// ("AS_OF is 2025-01-01, so projection year 0 = 2025"), and RULES.md
-// explicitly blesses a dated incident narrative ("found live 2026-08-31:
-// a household that...") as documentation, not a citation, when the story
-// itself is the point. A blunt regex can't tell that apart from an
-// actual rotting citation — kept src/-only, where app code doesn't
-// narrate test scenarios and that ambiguity essentially doesn't arise.
+// ("AS_OF is 2025-01-01, so projection year 0 = 2025"). A blunt regex
+// can't tell that apart from an actual rotting citation — kept
+// src/-only, where app code doesn't narrate test scenarios and that
+// ambiguity essentially doesn't arise.
 const BROAD_CITATION_DATE_PATTERN =
   /\b20[0-9]{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])\b/;
 function findBroadCitationViolations(): Violation[] {
@@ -1139,20 +1138,6 @@ describe("RULES.md violations sweep", () => {
           `Use z.enum(accountCategoryEnum()) for accountType, ` +
           `z.enum(["ynab","actual"]) for service. ` +
           `Budget category and account subType are free-text and exempt.\n` +
-          formatViolations("Violations", violations),
-      );
-    }
-  });
-
-  it("no absolute imports from engine internals (use the barrel)", () => {
-    const violations = findEngineInternalImportViolations();
-    if (violations.length > 0) {
-      expect.fail(
-        `Found ${violations.length} engine-internal-import violations. ` +
-          `Import from '@/lib/calculators/engine' (the barrel) — only the 4 ` +
-          `public functions (calculateProjection, estimateEffectiveTaxRate, ` +
-          `incomeCapForMarginalRate, computeTaxableSS) are part of the public ` +
-          `API. Relative imports between engine siblings are fine.\n` +
           formatViolations("Violations", violations),
       );
     }
@@ -1375,7 +1360,7 @@ describe("RULES.md violations sweep", () => {
           `bare ISO date-stamps, and bare roadmap R## tags. Keep the ` +
           `technical reasoning, drop the citation — it belongs in the commit ` +
           `message. If this is a genuine RULES.md-exempt case (a statutory ` +
-          `date range, an incident narrative where the date IS the point), ` +
+          `date range), ` +
           `add \`lint-violation-ok\` to that line rather than reintroducing ` +
           `the citation shape elsewhere.\n` +
           formatViolations("Violations", violations),
@@ -1488,14 +1473,6 @@ const POSITIVE_CONTROLS: [string, () => Violation[], Record<string, string>][] =
       "z.string() enum field",
       findStringEnumFieldViolations,
       { "src/a.ts": "const s = z.object({ accountType: z.string() });\n" },
-    ],
-    [
-      "engine internal import",
-      findEngineInternalImportViolations,
-      {
-        "src/a.ts":
-          'import { x } from "@/lib/calculators/engine/projection";\n',
-      },
     ],
     [
       "hand-rolled Dietz",
@@ -1619,4 +1596,59 @@ describe("RULES.md violations sweep — positive controls", () => {
       ),
     ).toEqual([]);
   });
+});
+
+// ── One config entry adds an account type ──────────────────────────
+//
+// RULES.md § Account Types promises that adding an account type is one
+// ACCOUNT_TYPE_CONFIG entry. These tests add a synthetic category to the
+// config object for the length of one test. The entry is added at run
+// time, so a list derived when its module loads would miss it too: a fix
+// derives at call time (or this test re-evaluates the modules).
+
+const SYNTHETIC_CATEGORY = "synthetic-test-category";
+
+function withSyntheticCategory<T>(fn: () => T): T {
+  const config = ACCOUNT_TYPE_CONFIG as Record<string, unknown>;
+  config[SYNTHETIC_CATEGORY] = { ...ACCOUNT_TYPE_CONFIG.brokerage };
+  try {
+    return fn();
+  } finally {
+    delete config[SYNTHETIC_CATEGORY];
+  }
+}
+
+describe("one config entry adds an account type", () => {
+  it("the category rules here cover a category added to the config", () => {
+    withSyntheticCategory(() => {
+      expect(
+        scanPlanted(findCategoryEqualityViolations, {
+          "src/a.ts": `if (t === "${SYNTHETIC_CATEGORY}") run();\n`,
+        }),
+      ).toEqual(["src/a.ts"]);
+    });
+    expect(Object.keys(ACCOUNT_TYPE_CONFIG)).not.toContain(SYNTHETIC_CATEGORY);
+  });
+
+  // Broken today: AccountCategory and its enum are hand copies (RULES.md
+  // § Known Gaps).
+  it.fails(
+    "the account-category enum includes it (until v0.10.1 Test every promise)",
+    () => {
+      withSyntheticCategory(() => {
+        expect(accountCategoryEnum()).toContain(SYNTHETIC_CATEGORY);
+      });
+    },
+  );
+
+  // Broken today: the default withdrawal order is a hand list, so a new
+  // category is never drawn.
+  it.fails(
+    "the default withdrawal order includes it (until v0.10.1 Test every promise)",
+    () => {
+      withSyntheticCategory(() => {
+        expect(DEFAULT_DECUMULATION_ORDER).toContain(SYNTHETIC_CATEGORY);
+      });
+    },
+  );
 });

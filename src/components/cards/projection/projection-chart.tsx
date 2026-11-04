@@ -322,8 +322,6 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
   const hasMcData = mcBandsByYear != null;
   const showMc = hasMcData && fanBandRange !== "off";
   const { showBars, showIncome } = state;
-  // Keep hasMc for backward compat in data building (always build MC data points)
-  const hasMc = hasMcData;
 
   // Decumulation-year income overlay (total portfolio withdrawal + Social
   // Security, secondary axis) — only worth a second axis + legend entry
@@ -391,7 +389,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
               Simulating...
             </span>
           )}
-          {hasMc && mcIsPrefetch && (
+          {hasMcData && mcIsPrefetch && (
             <span className="text-micro ml-2 font-normal text-purple-600 normal-case">
               Sim. preview
             </span>
@@ -530,7 +528,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
                         {formatCurrency(totalBal)}
                       </span>
                     </div>
-                    {hasMc && d.mc_p50 != null && (
+                    {hasMcData && d.mc_p50 != null && (
                       <div className="mt-1 border-t border-white/10 pt-1">
                         <div
                           className={`flex justify-between ${tipColorClass.purple}`}
@@ -1078,7 +1076,7 @@ export function ProjectionChart({ state }: { state: ProjectionState }) {
             </span>
           </>
         )}
-        {hasMc && (
+        {hasMcData && (
           <>
             <span className="flex items-center gap-1">
               <span

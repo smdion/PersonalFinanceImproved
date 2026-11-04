@@ -27,7 +27,7 @@ import { TRPCError } from "@trpc/server";
 import { safeDivide } from "@/lib/utils/math";
 
 // ── Shared field validators ──
-// Year/month bounded per RULES.md "Validation Consistency"; decimal columns use
+// Year/month bounded per CONTRIBUTING.md "Validation Consistency"; decimal columns use
 // the shared `zDecimal` (string input) — never bare z.number()/z.string().
 
 const yearSchema = z.number().int().min(1900).max(2100);

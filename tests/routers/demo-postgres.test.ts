@@ -9,67 +9,20 @@
  * runs it against a PostgreSQL service with DEMO_ONLY on, as the public
  * demo runs.
  */
+// First: its mocks must be in place before any app module loads.
+import {
+  closeAppPool,
+  dropAllSchemas,
+  pointAtTestDatabase,
+  skipWithoutPostgres,
+} from "./setup-postgres";
 import { describe, it, expect, beforeAll, afterAll, vi } from "vitest";
-
-// Not ./setup-mocks: it swaps the db, dialect and schema modules for
-// SQLite. Only what has no request context outside Next.js is mocked here.
-vi.mock("next/headers", () => ({
-  cookies: vi.fn().mockRejectedValue(new Error("No request context")),
-  headers: vi.fn().mockRejectedValue(new Error("No request context")),
-}));
-vi.mock("next/server", () => ({
-  NextResponse: { json: vi.fn(), redirect: vi.fn(), next: vi.fn() },
-  NextRequest: vi.fn(),
-}));
-// Sessions come straight from the caller's context, as in setup-mocks.
-vi.mock("@/server/auth", () => ({
-  auth: vi.fn().mockResolvedValue(null),
-  Permission: {},
-  RBAC_ADMIN_GROUP_KEY: "rbac_admin_group",
-  RBAC_SETTINGS_PREFIX: "rbac_group_",
-  ALL_PERMISSIONS: [
-    "scenario",
-    "portfolio",
-    "performance",
-    "budget",
-    "savings",
-    "brokerage",
-    "version",
-    "contributionProfile",
-    "sync",
-  ],
-}));
-// The real connection, built as src/lib/db/index.ts builds it: that module
-// loads its schema with a runtime require() of a .ts file, which only the
-// app's bundler resolves.
-vi.mock("@/lib/db", async () => {
-  const { default: pgDriver } = await import("pg");
-  const { drizzle } = await import("drizzle-orm/node-postgres");
-  const schema = await import("@/lib/db/schema-pg");
-  const { isPostgres } = await import("@/lib/db/dialect");
-  const pool = new pgDriver.Pool({
-    connectionString: process.env.TEST_DATABASE_URL,
-  });
-  return { db: drizzle(pool, { schema }), pool, isPostgres };
-});
-vi.mock("@/lib/rate-limit", () => ({
-  rateLimit: vi.fn(() => ({
-    success: true,
-    remaining: 999,
-    firstExceedance: false,
-  })),
-}));
-import { spawnSync } from "node:child_process";
-import * as fs from "node:fs";
-import * as path from "node:path";
-import { tmpdir } from "node:os";
 import { cookies } from "next/headers";
 import pg from "pg";
 import type { Session } from "next-auth";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
+import { runMigrator } from "./fresh-install-cases";
 
-const TEST_DATABASE_URL = process.env.TEST_DATABASE_URL;
-const TSX = path.join(process.cwd(), "node_modules", ".bin", "tsx");
 // Not imported from ./setup: that module loads the db module (as SQLite)
 // before this file can point DATABASE_URL at PostgreSQL.
 const adminSession: Session = {
@@ -83,20 +36,8 @@ const adminSession: Session = {
   expires: "2099-12-31T23:59:59.999Z",
 };
 
-function assertThrowaway(url: string) {
-  const name = new URL(url).pathname.replace(/^\//, "");
-  if (!name.endsWith("_test"))
-    throw new Error(
-      `TEST_DATABASE_URL must name a throwaway database ending in _test (got "${name}"): this test drops its public schema`,
-    );
-}
-
-// CI sets REQUIRE_TEST_DATABASE so a missing URL fails instead of skipping.
-const skip = !TEST_DATABASE_URL && process.env.REQUIRE_TEST_DATABASE !== "true";
-
-describe.skipIf(skip)("demo profiles on PostgreSQL", () => {
-  const env = { ...process.env };
-  let backupDir: string;
+describe.skipIf(skipWithoutPostgres)("demo profiles on PostgreSQL", () => {
+  let restoreEnv: () => void = () => {};
   let admin: pg.Client;
   let schemaName: string;
 
@@ -115,36 +56,13 @@ describe.skipIf(skip)("demo profiles on PostgreSQL", () => {
   }
 
   beforeAll(async () => {
-    if (!TEST_DATABASE_URL) throw new Error("TEST_DATABASE_URL is not set");
-    assertThrowaway(TEST_DATABASE_URL);
-    process.env.DATABASE_URL = TEST_DATABASE_URL;
-    // The db module validates the environment on import; a placeholder,
-    // not a secret (no session is ever signed in this test).
-    process.env.NEXTAUTH_SECRET ??= "demo-postgres-test-placeholder-secret-32+";
-    backupDir = fs.mkdtempSync(path.join(tmpdir(), "ledgr-demo-pg-"));
-    process.env.LEDGR_BACKUP_DIR = backupDir;
-
-    admin = new pg.Client({ connectionString: TEST_DATABASE_URL });
+    const testDatabase = pointAtTestDatabase("demo-pg");
+    restoreEnv = testDatabase.restore;
+    admin = new pg.Client({ connectionString: testDatabase.url });
     await admin.connect();
-    const { rows } = await admin.query<{ nspname: string }>(
-      "SELECT nspname FROM pg_namespace WHERE nspname LIKE 'demo\\_%' OR nspname = 'drizzle'",
-    );
-    for (const { nspname } of rows)
-      await admin.query(`DROP SCHEMA "${nspname}" CASCADE`);
-    await admin.query("DROP SCHEMA public CASCADE; CREATE SCHEMA public");
+    await dropAllSchemas(admin);
 
-    // db-migrate.ts does nothing when VITEST is set (so tests can import
-    // it): the child must not inherit the runner's VITEST variables.
-    const migratorEnv: NodeJS.ProcessEnv = { ...process.env };
-    for (const key of Object.keys(migratorEnv))
-      if (key.startsWith("VITEST")) delete migratorEnv[key];
-    const migrated = spawnSync(TSX, ["db-migrate.ts"], {
-      cwd: process.cwd(),
-      env: migratorEnv,
-      encoding: "utf8",
-      timeout: 180_000,
-    });
-    expect(migrated.status, migrated.stderr).toBe(0);
+    runMigrator();
 
     // activateProfile sets the demo cookie; only `set` is called.
     // eslint-disable-next-line no-restricted-syntax -- a partial cookie store stands in for Next's request-scoped one
@@ -162,10 +80,8 @@ describe.skipIf(skip)("demo profiles on PostgreSQL", () => {
 
   afterAll(async () => {
     await admin?.end();
-    const { pool } = await import("@/lib/db");
-    await (pool as pg.Pool | null)?.end();
-    process.env = { ...env };
-    fs.rmSync(backupDir, { recursive: true, force: true });
+    await closeAppPool();
+    restoreEnv();
   });
 
   it("serves data calls with a demo profile active", async () => {

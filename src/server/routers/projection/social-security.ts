@@ -4,7 +4,7 @@
  * Modeled directly on `withdrawal-bracket-optimizer.ts`/`coast-fire.ts`
  * (same `fetchRetirementData`/`buildEnginePayload` input shape,
  * `protectedProcedure.query`, no server-side cache). Split into its own
- * file rather than added to `retirement.ts` for the same RULES.md §8
+ * file rather than added to `retirement.ts` for the same CONTRIBUTING.md § Composed Router Convention
  * Composed Router size reason.
  *
  * `pia` is caller-supplied (a real what-if axis the client already has

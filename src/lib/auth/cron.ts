@@ -27,14 +27,20 @@ export function timingSafeSecretMatch(
   );
 }
 
-/** Validates the `X-Cron-Secret` header used by the daily/startup cron routes. */
-export function validateCronHeaderRequest(request: Request): boolean {
+/**
+ * Result of the `X-Cron-Secret` check. The routes answer the two failures
+ * differently: `misconfigured` (CRON_SECRET missing or under 32 characters)
+ * is a server fault (500), `unauthorized` (wrong or missing header) is 401.
+ */
+export type CronHeaderCheck = "ok" | "misconfigured" | "unauthorized";
+
+/** Validates the `X-Cron-Secret` header used by the daily/weekly/startup cron routes. */
+export function validateCronHeaderRequest(request: Request): CronHeaderCheck {
   const cronSecret = getValidCronSecret();
-  if (!cronSecret) return false;
-  return timingSafeSecretMatch(
-    request.headers.get("X-Cron-Secret"),
-    cronSecret,
-  );
+  if (!cronSecret) return "misconfigured";
+  return timingSafeSecretMatch(request.headers.get("X-Cron-Secret"), cronSecret)
+    ? "ok"
+    : "unauthorized";
 }
 
 /** Validates the `Authorization: Bearer` header used by `health/detailed`. */

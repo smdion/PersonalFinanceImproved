@@ -72,12 +72,12 @@ function countCalculators(): number {
 }
 
 function countRouters(): number {
-  const dir = path.join(ROOT, "src/server/routers");
-  const files = listFiles(dir, /\.ts$/);
-  // Exclude index.ts (barrel) and _shared.ts (helpers)
-  return files.filter(
-    (f) => path.basename(f) !== "index.ts" && path.basename(f) !== "_shared.ts",
-  ).length;
+  // The entries of appRouter: a router may be one file or a folder, and
+  // routers/ also holds helpers, so counting files doesn't work.
+  return countInFile(
+    path.join(ROOT, "src/server/routers/index.ts"),
+    /^ {2}\w+: \w+Router,$/gm,
+  );
 }
 
 function countSettingsSubRouters(): number {

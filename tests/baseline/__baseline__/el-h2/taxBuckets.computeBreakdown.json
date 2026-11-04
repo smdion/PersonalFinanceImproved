@@ -1,0 +1,1 @@
+{"accounts":[{"balance":1500000,"slices":[{"amount":1500000}]},{"balance":350000,"slices":[{"amount":350000}]},{"balance":60000,"slices":[{"amount":0},{"amount":60000}]}],"people":[{"birthYear":1964},{"birthYear":1968}],"portfolioByTaxType":{"afterTax":0,"afterTaxBasis":0,"hsa":0,"preTax":1850000,"taxFree":60000}}

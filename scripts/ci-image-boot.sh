@@ -6,9 +6,14 @@
 #   2. with a throwaway .env it forwards .env's optional variables;
 #   3. `docker compose up --build` on an empty volume answers
 #      GET /api/health 200 (the entrypoint runs the migrator first), and a
-#      public tRPC query answers 200 with no Authentik configured.
+#      public tRPC query answers 200 with no Authentik configured;
+#   4. a browser creates the first local admin on /login and runs the
+#      onboarding wizard to Done, then signs in again in a new browser
+#      (tests/e2e/first-run.spec.ts; no DEMO_ONLY, no Authentik).
 #
 # Usage: bash scripts/ci-image-boot.sh   (writes ./.env, removes it on exit)
+# Step 4 needs Playwright's Chromium (`npx playwright install chromium`);
+# SKIP_FIRST_RUN_E2E=true leaves it out.
 # Every value below is a throwaway placeholder, not a secret.
 set -euo pipefail
 
@@ -130,6 +135,21 @@ check_public_trpc() {
   echo "$current_file: public tRPC call 200 without Authentik: ok"
 }
 
+# The first-run spec against the booted container. localhost, not
+# 127.0.0.1: the compose default NEXTAUTH_URL is http://localhost:3000, and
+# sign-in redirects and cookies follow it.
+check_first_run() {
+  if [ "${SKIP_FIRST_RUN_E2E:-}" = "true" ]; then
+    echo "$current_file: first-run sign-in skipped (SKIP_FIRST_RUN_E2E=true)"
+    return
+  fi
+  E2E_FIRST_RUN=true PLAYWRIGHT_BASE_URL="http://localhost:3000" \
+    pnpm exec playwright test tests/e2e/first-run.spec.ts --reporter=line \
+    --output "test-results/first-run-$current_project" ||
+    fail "$current_file: the first-run sign-in and wizard failed (Playwright output above)."
+  echo "$current_file: first admin signs in and the wizard reaches Done: ok"
+}
+
 boot() {
   current_file="$1"
   current_project="$2"
@@ -137,6 +157,7 @@ boot() {
   docker compose -f "$current_file" -p "$current_project" up -d --build --quiet-pull
   wait_for_health
   check_public_trpc
+  check_first_run
   docker compose -f "$current_file" -p "$current_project" down -v --remove-orphans
   current_file=""
 }

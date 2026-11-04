@@ -121,17 +121,15 @@ const DOT_SIZE = {
 export function StatusDot({
   color = "gray",
   size = "sm",
-  pulse = false,
   className = "",
 }: {
   color?: DotColor;
   size?: keyof typeof DOT_SIZE;
-  pulse?: boolean;
   className?: string;
 }) {
   return (
     <span
-      className={`inline-block shrink-0 rounded-full ${DOT_SIZE[size]} ${DOT_FILL[color]} ${pulse ? "animate-pulse" : ""} ${className}`}
+      className={`inline-block shrink-0 rounded-full ${DOT_SIZE[size]} ${DOT_FILL[color]} ${className}`}
       aria-hidden="true"
     />
   );

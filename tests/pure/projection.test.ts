@@ -1,12 +1,9 @@
 /**
  * Tests for pure MC projection blending logic.
- * Covers: blendedReturnForAge, blendedPortfolioStats.
+ * Covers: blendedReturnForAge.
  */
 import { describe, it, expect } from "vitest";
-import {
-  blendedReturnForAge,
-  blendedPortfolioStats,
-} from "@/lib/pure/projection";
+import { blendedReturnForAge } from "@/lib/pure/projection";
 
 const equityClass = { id: 1, meanReturn: 0.1, stdDev: 0.18 };
 const bondClass = { id: 2, meanReturn: 0.04, stdDev: 0.06 };
@@ -30,20 +27,5 @@ describe("blendedReturnForAge", () => {
     // Should equal geometricMean(0.10, 0.18)
     expect(result).toBeGreaterThan(0.06);
     expect(result).toBeLessThan(0.1);
-  });
-});
-
-describe("blendedPortfolioStats", () => {
-  it("returns both return and volatility", () => {
-    const allocs = { 1: 0.7, 2: 0.3 };
-    const stats = blendedPortfolioStats(assetClasses, allocs);
-    expect(stats.blendedReturn).toBeGreaterThan(0);
-    expect(stats.blendedVol).toBeGreaterThan(0);
-    // Volatility = weighted sum of stdDevs
-    // Pins a bug (answer key sim/K7, SIM-18): the sum leaves out
-    // correlation, so it isn't the trials' volatility. Changes with v0.11
-    // Simulation "Baseline and displayed return/vol use different math from
-    // trials" (read blendedReturnStats); K7's figure waits on decision F1.
-    expect(stats.blendedVol).toBeCloseTo(0.7 * 0.18 + 0.3 * 0.06);
   });
 });

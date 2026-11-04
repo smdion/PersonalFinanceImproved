@@ -25,7 +25,10 @@ Also read the existing test file for that module if one exists. Match its style:
 | Pure calculator function (`lib/calculators/`) | Unit test               | `tests/calculators/<name>.test.ts`            |
 | Engine module (`lib/calculators/engine/`)     | Unit test or snapshot   | `tests/calculators/engine-*.test.ts`          |
 | tRPC router procedure                         | Router integration test | `tests/routers/<name>.test.ts`                |
+| Pure business logic (`lib/pure/`)             | Unit test, no DB        | `tests/pure/<name>.test.ts`                   |
 | Server helper (`server/helpers/`)             | Helper unit test        | `tests/helpers/<name>.test.ts`                |
+| Engine payload, auth, tRPC setup (`server/`)  | Server test             | `tests/server/<name>.test.ts`                 |
+| A figure worked by hand from published rules  | Answer key              | `tests/**/answer-key-<area>.test.ts`          |
 | React component (`components/`)               | Component test          | `tests/components/<name>.test.tsx`            |
 | Config table (`lib/config/`)                  | Config test             | `tests/config/<name>.test.ts`                 |
 | Cross-calculator consistency                  | Logic gaps              | `tests/calculators/logic-gaps.test.ts`        |
@@ -70,34 +73,37 @@ describe("calculateXxx", () => {
 - `asOfDate` must always be a fixed date — never `new Date()` without a fixed value
 - Assert specific numeric outputs — `toBe(23000)` not `toBeTruthy()`
 - One behavior per test — split multiple assertions into multiple `it()` blocks if they test different things
-- Use `fixtures.ts` values when testing against real household data
+- Derive the expected figure by hand from the rule or source and write the arithmetic beside it; never paste the function's current output as the expected value
+- Invented households only (`tests/calculators/fixtures.ts`, `tests/fixtures/`), never a real household's figures
 
 ### Router integration tests
 
 ```typescript
-import { describe, it, expect, beforeAll } from "vitest";
-import { createTestContext } from "../helpers/test-context";
-import { appRouter } from "@/server/routers/_app";
+import "./setup-mocks";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { createTestCaller, adminSession, viewerSession } from "./setup";
 
 describe("routerName", () => {
-  let ctx: Awaited<ReturnType<typeof createTestContext>>;
+  let caller: Awaited<ReturnType<typeof createTestCaller>>["caller"];
+  let cleanup: () => void;
 
   beforeAll(async () => {
-    ctx = await createTestContext({ role: "admin" }); // or "viewer"
+    ({ caller, cleanup } = await createTestCaller(adminSession));
   });
 
+  afterAll(() => cleanup());
+
   it("procedure returns expected shape", async () => {
-    const caller = appRouter.createCaller(ctx);
     const result = await caller.routerName.procedureName({/* input */});
     expect(result).toMatchObject({/* expected shape */});
   });
 
   it("viewer cannot call admin mutation", async () => {
-    const viewerCtx = await createTestContext({ role: "viewer" });
-    const caller = appRouter.createCaller(viewerCtx);
+    const viewer = await createTestCaller(viewerSession);
     await expect(
-      caller.routerName.adminMutation({/* input */}),
+      viewer.caller.routerName.adminMutation({/* input */}),
     ).rejects.toThrow(); // auth rejection
+    viewer.cleanup();
   });
 });
 ```
@@ -105,8 +111,8 @@ describe("routerName", () => {
 **Rules:**
 
 - Every new mutation needs an auth enforcement test (viewer rejection)
-- Use the SQLite in-memory test DB — never the dev or prod PostgreSQL
-- Clean up created records in `afterEach` or use transaction rollbacks
+- `createTestCaller()` (`tests/routers/setup.ts`) gives each suite its own in-memory SQLite copy, migrated and seeded — never the dev or prod PostgreSQL
+- Seed with the helpers in `tests/routers/setup.ts` (`seedPerson`, `seedStandardDataset`, …); `createViewerSessionWithPermissions([...])` for permission add-ons
 
 ### Component tests
 
@@ -116,7 +122,7 @@ import { render, screen } from "@testing-library/react";
 import { ComponentName } from "@/components/path/to/component";
 
 // Mock tRPC — components never import from server/
-vi.mock("@/lib/trpc/client", () => ({ /* mock hooks */ }));
+vi.mock("@/lib/trpc", () => ({ /* mock hooks */ }));
 
 describe("ComponentName", () => {
   it("renders key elements", () => {

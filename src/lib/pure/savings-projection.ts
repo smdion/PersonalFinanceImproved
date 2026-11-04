@@ -245,7 +245,7 @@ export function projectGoalBalances(
   return { monthDates, balances, monthEvents, monthlyAllocations, hasOverride };
 }
 
-/**
+/** @internal Only tests import it (knip --production).
  * Is this planned transaction (or, for recurring rows, at least one future
  * occurrence of it) still upcoming and unsettled as of `now`? Single shared
  * predicate for the "upcoming" list filters that were previously re-cut

@@ -1,0 +1,309 @@
+# Primary keys, foreign keys and indexes after migrating an empty database.
+# Checked by scripts/check-constraints.ts; rewrite with its --write flag
+# when a migration changes a constraint on purpose.
+account_basis: foreign key (owner_person_id) references people(id) on delete restrict on update no action
+account_basis: foreign key (performance_account_id) references performance_accounts(id) on delete cascade on update no action
+account_basis: index account_basis_owner_person_id_idx (owner_person_id)
+account_basis: index account_basis_year_idx (year)
+account_basis: primary key (id)
+account_basis: unique index account_basis_account_owner_year_idx (performance_account_id, owner_person_id, year)
+account_performance: foreign key (owner_person_id) references people(id) on delete restrict on update no action
+account_performance: foreign key (performance_account_id) references performance_accounts(id) on delete restrict on update no action
+account_performance: index account_performance_is_active_idx (is_active)
+account_performance: index account_performance_owner_id_idx (owner_person_id)
+account_performance: index account_performance_perf_acct_idx (performance_account_id)
+account_performance: primary key (id)
+account_performance: unique index account_perf_year_inst_label_owner_idx (year, institution, account_label, owner_person_id)
+annual_performance: primary key (id)
+annual_performance: unique index annual_performance_year_cat_idx (year, category)
+api_connections: index api_connections_linked_profile_id_idx (linked_profile_id)
+api_connections: primary key (id)
+api_connections: unique index api_connections_service_unique (service)
+app_settings: primary key (id)
+app_settings: unique index app_settings_key_unique (key)
+asset_class_buckets: foreign key (asset_class_id) references asset_class_params(id) on delete cascade on update no action
+asset_class_buckets: index asset_class_buckets_class_idx (asset_class_id)
+asset_class_buckets: primary key (bucket)
+asset_class_correlations: foreign key (class_a_id) references asset_class_params(id) on delete cascade on update no action
+asset_class_correlations: foreign key (class_b_id) references asset_class_params(id) on delete cascade on update no action
+asset_class_correlations: index asset_class_correlations_class_a_idx (class_a_id)
+asset_class_correlations: index asset_class_correlations_class_b_idx (class_b_id)
+asset_class_correlations: primary key (id)
+asset_class_correlations: unique index asset_class_correlations_pair_idx (class_a_id, class_b_id)
+asset_class_params: index asset_class_params_is_active_idx (is_active)
+asset_class_params: primary key (id)
+asset_class_params: unique index asset_class_params_name_unique (name)
+brokerage_goals: index brokerage_goals_is_active_idx (is_active)
+brokerage_goals: primary key (id)
+brokerage_planned_transactions: foreign key (goal_id) references brokerage_goals(id) on delete cascade on update no action
+brokerage_planned_transactions: index brokerage_planned_tx_goal_id_idx (goal_id)
+brokerage_planned_transactions: primary key (id)
+budget_api_cache: primary key (id)
+budget_api_cache: unique index budget_api_cache_service_key_idx (service, cache_key)
+budget_income_adjustments: foreign key (job_id) references jobs(id) on delete cascade on update no action
+budget_income_adjustments: primary key (id)
+budget_income_adjustments: unique index budget_income_adjustments_job_month_idx (job_id, month_date)
+budget_item_category_links: foreign key (budget_item_id) references budget_items(id) on delete cascade on update no action
+budget_item_category_links: index budget_item_category_links_budget_item_id_idx (budget_item_id)
+budget_item_category_links: primary key (id)
+budget_item_category_links: unique index budget_item_category_links_item_service_idx (budget_item_id, service)
+budget_items: foreign key (contribution_account_id) references contribution_accounts(id) on delete set null on update no action
+budget_items: foreign key (mortgage_loan_id) references mortgage_loans(id) on delete set null on update no action
+budget_items: foreign key (profile_id) references budget_profiles(id) on delete cascade on update no action
+budget_items: index budget_items_contribution_account_id_idx (contribution_account_id)
+budget_items: index budget_items_mortgage_loan_id_idx (mortgage_loan_id)
+budget_items: index budget_items_profile_id_idx (profile_id)
+budget_items: primary key (id)
+budget_items: unique index budget_items_profile_cat_sub_idx (profile_id, category, subcategory)
+budget_profiles: index budget_profiles_is_active_idx (is_active)
+budget_profiles: primary key (id)
+budget_profiles: unique index budget_profiles_name_unique (name)
+change_log: index change_log_changed_at_idx (changed_at)
+change_log: index change_log_table_record_idx (table_name, record_id)
+change_log: primary key (id)
+contribution_accounts: foreign key (job_id) references jobs(id) on delete cascade on update no action
+contribution_accounts: foreign key (performance_account_id) references performance_accounts(id) on delete set null on update no action
+contribution_accounts: foreign key (person_id) references people(id) on delete restrict on update no action
+contribution_accounts: index contribution_accounts_acct_type_idx (account_type)
+contribution_accounts: index contribution_accounts_is_active_idx (is_active)
+contribution_accounts: index contribution_accounts_job_id_idx (job_id)
+contribution_accounts: index contribution_accounts_parent_cat_idx (parent_category)
+contribution_accounts: index contribution_accounts_perf_acct_idx (performance_account_id)
+contribution_accounts: index contribution_accounts_person_id_idx (person_id)
+contribution_accounts: primary key (id)
+contribution_accounts: unique index contribution_accounts_job_match_unq (job_id, account_type, parent_category) partial
+contribution_accounts: unique index contribution_accounts_person_match_unq (person_id, account_type, parent_category) partial
+contribution_limits: primary key (id)
+contribution_limits: unique index contribution_limits_year_type_idx (tax_year, limit_type)
+contribution_profiles: primary key (id)
+contribution_profiles: unique index contribution_profiles_name_unique (name)
+debts: foreign key (owner_person_id) references people(id) on delete restrict on update no action
+debts: index debts_owner_person_id_idx (owner_person_id)
+debts: primary key (id)
+fpl_by_household: primary key (id)
+fpl_by_household: unique index fpl_by_household_year_idx (tax_year)
+glide_path_allocations: foreign key (asset_class_id) references asset_class_params(id) on delete cascade on update no action
+glide_path_allocations: index glide_path_asset_class_idx (asset_class_id)
+glide_path_allocations: primary key (id)
+glide_path_allocations: unique index glide_path_age_class_idx (age, asset_class_id)
+historical_notes: primary key (id)
+historical_notes: unique index historical_notes_year_field_idx (year, field)
+historical_salaries: foreign key (person_id) references people(id) on delete cascade on update no action
+historical_salaries: primary key (id)
+historical_salaries: unique index historical_salaries_person_year_idx (person_id, year)
+holding_observations: foreign key (performance_account_id) references performance_accounts(id) on delete restrict on update no action
+holding_observations: foreign key (security_id) references securities(id) on delete restrict on update no action
+holding_observations: foreign key (simplefin_account_id) references simplefin_accounts(id) on delete restrict on update no action
+holding_observations: index holding_observations_perf_account_idx (performance_account_id)
+holding_observations: index holding_observations_security_idx (security_id)
+holding_observations: primary key (id)
+holding_observations: unique index holding_observations_manual_idx (performance_account_id, security_id, as_of) partial
+holding_observations: unique index holding_observations_simplefin_idx (simplefin_account_id, security_id, as_of) partial
+holding_observations: unique index holding_observations_simplefin_report_idx (simplefin_account_id, security_id, balance_date) partial
+holding_period_weights: foreign key (holding_period_id) references holding_periods(id) on delete cascade on update no action
+holding_period_weights: foreign key (security_id) references securities(id) on delete restrict on update no action
+holding_period_weights: index holding_period_weights_security_idx (security_id)
+holding_period_weights: primary key (id)
+holding_period_weights: unique index holding_period_weights_period_security_idx (holding_period_id, security_id)
+holding_periods: foreign key (performance_account_id) references performance_accounts(id) on delete restrict on update no action
+holding_periods: index holding_periods_account_part_start_idx (performance_account_id, sub_key, start_date)
+holding_periods: primary key (id)
+home_improvement_items: primary key (id)
+investment_transactions: foreign key (simplefin_account_id) references simplefin_accounts(id) on delete restrict on update no action
+investment_transactions: index investment_transactions_account_posted_idx (simplefin_account_id, posted)
+investment_transactions: primary key (id)
+investment_transactions: unique index investment_transactions_external_idx (simplefin_account_id, external_id)
+irmaa_brackets: primary key (id)
+irmaa_brackets: unique index irmaa_brackets_year_status_idx (tax_year, filing_status)
+jobs: foreign key (person_id) references people(id) on delete restrict on update no action
+jobs: index jobs_is_speculative_idx (is_speculative)
+jobs: index jobs_person_id_idx (person_id)
+jobs: primary key (id)
+jobs: unique index jobs_one_speculative_per_person_idx (person_id) partial
+local_admins: primary key (id)
+local_admins: unique index local_admins_email_unique (email)
+ltcg_brackets: primary key (id)
+ltcg_brackets: unique index ltcg_brackets_year_status_idx (tax_year, filing_status)
+market_closes: primary key (id)
+market_closes: unique index market_closes_ticker_date_idx (ticker, date)
+mc_preset_glide_paths: foreign key (asset_class_id) references asset_class_params(id) on delete cascade on update no action
+mc_preset_glide_paths: foreign key (preset_id) references mc_presets(id) on delete cascade on update no action
+mc_preset_glide_paths: index mc_preset_gp_asset_class_idx (asset_class_id)
+mc_preset_glide_paths: index mc_preset_gp_preset_idx (preset_id)
+mc_preset_glide_paths: primary key (id)
+mc_preset_glide_paths: unique index mc_preset_gp_idx (preset_id, age, asset_class_id)
+mc_preset_return_overrides: foreign key (asset_class_id) references asset_class_params(id) on delete cascade on update no action
+mc_preset_return_overrides: foreign key (preset_id) references mc_presets(id) on delete cascade on update no action
+mc_preset_return_overrides: index mc_preset_ro_asset_class_idx (asset_class_id)
+mc_preset_return_overrides: primary key (id)
+mc_preset_return_overrides: unique index mc_preset_ro_idx (preset_id, asset_class_id)
+mc_presets: index mc_presets_is_active_idx (is_active)
+mc_presets: primary key (id)
+mc_presets: unique index mc_presets_key_unique (key)
+mc_user_presets: primary key (id)
+mortgage_extra_payments: foreign key (loan_id) references mortgage_loans(id) on delete cascade on update no action
+mortgage_extra_payments: index mortgage_extra_payments_loan_id_idx (loan_id)
+mortgage_extra_payments: primary key (id)
+mortgage_loans: foreign key (refinanced_from_id) references mortgage_loans(id) on delete set null on update no action
+mortgage_loans: index mortgage_loans_is_active_idx (is_active)
+mortgage_loans: index mortgage_loans_refinanced_from_id_idx (refinanced_from_id)
+mortgage_loans: primary key (id)
+mortgage_what_if_scenarios: foreign key (loan_id) references mortgage_loans(id) on delete cascade on update no action
+mortgage_what_if_scenarios: index mortgage_what_if_loan_id_idx (loan_id)
+mortgage_what_if_scenarios: primary key (id)
+net_worth_annual: primary key (id)
+net_worth_annual: unique index net_worth_annual_year_end_date_unique (year_end_date)
+other_asset_items: primary key (id)
+other_asset_items: unique index other_asset_items_name_year_idx (name, year)
+paycheck_deductions: foreign key (job_id) references jobs(id) on delete cascade on update no action
+paycheck_deductions: index paycheck_deductions_job_id_idx (job_id)
+paycheck_deductions: primary key (id)
+paycheck_earnings: foreign key (job_id) references jobs(id) on delete cascade on update no action
+paycheck_earnings: index paycheck_earnings_job_id_idx (job_id)
+paycheck_earnings: primary key (id)
+people: primary key (id)
+performance_accounts: foreign key (owner_person_id) references people(id) on delete restrict on update no action
+performance_accounts: index idx_perf_accounts_inst_label (institution, account_label)
+performance_accounts: index performance_accounts_category_idx (parent_category)
+performance_accounts: index performance_accounts_is_active_idx (is_active)
+performance_accounts: index performance_accounts_owner_id_idx (owner_person_id)
+performance_accounts: primary key (id)
+performance_accounts: unique index performance_accounts_inst_type_idx (institution, account_type, sub_type, label, owner_person_id)
+portfolio_accounts: foreign key (owner_person_id) references people(id) on delete restrict on update no action
+portfolio_accounts: foreign key (performance_account_id) references performance_accounts(id) on delete set null on update no action
+portfolio_accounts: foreign key (snapshot_id) references portfolio_snapshots(id) on delete cascade on update no action
+portfolio_accounts: index portfolio_accounts_acct_type_idx (account_type)
+portfolio_accounts: index portfolio_accounts_is_active_idx (is_active)
+portfolio_accounts: index portfolio_accounts_owner_id_idx (owner_person_id)
+portfolio_accounts: index portfolio_accounts_parent_cat_idx (parent_category)
+portfolio_accounts: index portfolio_accounts_perf_acct_idx (performance_account_id)
+portfolio_accounts: index portfolio_accounts_snapshot_id_idx (snapshot_id)
+portfolio_accounts: primary key (id)
+portfolio_snapshots: index portfolio_snapshots_date_idx (snapshot_date)
+portfolio_snapshots: primary key (id)
+portfolio_snapshots: unique index portfolio_snapshots_snapshot_date_unique (snapshot_date)
+projection_cache: index projection_cache_expires_at_idx (expires_at)
+projection_cache: primary key (id)
+projection_cache: unique index projection_cache_hash_version_idx (input_hash, engine_version)
+projection_overrides: primary key (id)
+projection_overrides: unique index projection_overrides_type_idx (override_type)
+property_taxes: foreign key (loan_id) references mortgage_loans(id) on delete cascade on update no action
+property_taxes: primary key (id)
+property_taxes: unique index property_taxes_loan_year_idx (loan_id, year)
+relocation_scenarios: primary key (id)
+retirement_budget_overrides: foreign key (person_id) references people(id) on delete restrict on update no action
+retirement_budget_overrides: index retirement_budget_overrides_person_id_idx (person_id)
+retirement_budget_overrides: primary key (id)
+retirement_budget_overrides: unique index retirement_budget_overrides_person_year_idx (person_id, projection_year)
+retirement_profile_people: foreign key (person_id) references people(id) on delete cascade on update no action
+retirement_profile_people: foreign key (profile_id) references retirement_profiles(id) on delete cascade on update no action
+retirement_profile_people: index retirement_profile_people_person_id_idx (person_id)
+retirement_profile_people: index retirement_profile_people_profile_id_idx (profile_id)
+retirement_profile_people: primary key (id)
+retirement_profile_people: unique index retirement_profile_people_profile_person_unq (profile_id, person_id)
+retirement_profiles: primary key (id)
+retirement_profiles: unique index retirement_profiles_name_unique (name)
+retirement_salary_overrides: foreign key (contribution_profile_id) references contribution_profiles(id) on delete set null on update no action
+retirement_salary_overrides: foreign key (person_id) references people(id) on delete restrict on update no action
+retirement_salary_overrides: foreign key (salary_profile_id) references salary_profiles(id) on delete set null on update no action
+retirement_salary_overrides: index retirement_salary_overrides_contribution_profile_id_idx (contribution_profile_id)
+retirement_salary_overrides: index retirement_salary_overrides_person_id_idx (person_id)
+retirement_salary_overrides: index retirement_salary_overrides_salary_profile_id_idx (salary_profile_id)
+retirement_salary_overrides: primary key (id)
+retirement_salary_overrides: unique index retirement_salary_overrides_person_year_idx (person_id, projection_year)
+retirement_scenarios: primary key (id)
+retirement_settings: foreign key (person_id) references people(id) on delete restrict on update no action
+retirement_settings: foreign key (profile_id) references retirement_profiles(id) on delete cascade on update no action
+retirement_settings: foreign key (rmd_excess_target_performance_account_id) references performance_accounts(id) on delete set null on update no action
+retirement_settings: index retirement_settings_person_id_idx (person_id)
+retirement_settings: index retirement_settings_profile_id_idx (profile_id)
+retirement_settings: index retirement_settings_rmd_excess_target_idx (rmd_excess_target_performance_account_id)
+retirement_settings: primary key (id)
+retirement_settings: unique index retirement_settings_profile_person_unq (profile_id, person_id)
+return_rate_table: primary key (id)
+return_rate_table: unique index return_rate_table_age_unique (age)
+salary_profiles: primary key (id)
+salary_profiles: unique index salary_profiles_name_unique (name)
+savings_allocation_overrides: foreign key (goal_id) references savings_goals(id) on delete cascade on update no action
+savings_allocation_overrides: primary key (id)
+savings_allocation_overrides: unique index savings_alloc_override_goal_month_idx (goal_id, month_date)
+savings_goal_category_links: foreign key (savings_goal_id) references savings_goals(id) on delete cascade on update no action
+savings_goal_category_links: index savings_goal_category_links_savings_goal_id_idx (savings_goal_id)
+savings_goal_category_links: primary key (id)
+savings_goal_category_links: unique index savings_goal_category_links_goal_service_role_idx (savings_goal_id, service, role)
+savings_goal_profile_allocations: foreign key (budget_profile_id) references budget_profiles(id) on delete cascade on update no action
+savings_goal_profile_allocations: foreign key (goal_id) references savings_goals(id) on delete cascade on update no action
+savings_goal_profile_allocations: index savings_goal_profile_alloc_profile_idx (budget_profile_id)
+savings_goal_profile_allocations: primary key (id)
+savings_goal_profile_allocations: unique index savings_goal_profile_alloc_goal_profile_idx (goal_id, budget_profile_id)
+savings_goals: foreign key (parent_goal_id) references savings_goals(id) on delete set null on update no action
+savings_goals: index savings_goals_is_active_idx (is_active)
+savings_goals: index savings_goals_parent_goal_id_idx (parent_goal_id)
+savings_goals: primary key (id)
+savings_goals: unique index savings_goals_name_unique (name)
+savings_monthly: foreign key (goal_id) references savings_goals(id) on delete cascade on update no action
+savings_monthly: index savings_monthly_goal_id_idx (goal_id)
+savings_monthly: primary key (id)
+savings_monthly: unique index savings_monthly_goal_month_idx (goal_id, month_date)
+savings_planned_transactions: foreign key (goal_id) references savings_goals(id) on delete cascade on update no action
+savings_planned_transactions: index savings_planned_tx_goal_id_idx (goal_id)
+savings_planned_transactions: index savings_planned_tx_source_idx (source)
+savings_planned_transactions: primary key (id)
+savings_planned_tx_settlements: foreign key (planned_tx_id) references savings_planned_transactions(id) on delete cascade on update no action
+savings_planned_tx_settlements: primary key (id)
+savings_planned_tx_settlements: unique index savings_planned_tx_settlements_occurrence_idx (planned_tx_id, occurrence_month)
+scenarios: foreign key (budget_profile_id) references budget_profiles(id) on delete set null on update no action
+scenarios: foreign key (contribution_profile_id) references contribution_profiles(id) on delete set null on update no action
+scenarios: foreign key (retirement_profile_id) references retirement_profiles(id) on delete set null on update no action
+scenarios: foreign key (salary_profile_id) references salary_profiles(id) on delete set null on update no action
+scenarios: index scenarios_budget_profile_id_idx (budget_profile_id)
+scenarios: index scenarios_contribution_profile_id_idx (contribution_profile_id)
+scenarios: index scenarios_retirement_profile_id_idx (retirement_profile_id)
+scenarios: index scenarios_salary_profile_id_idx (salary_profile_id)
+scenarios: primary key (id)
+scenarios: unique index scenarios_name_unique (name)
+sec_filing_cache: index sec_filing_cache_series_idx (series_id)
+sec_filing_cache: primary key (accession)
+securities: primary key (id)
+securities: unique index securities_ticker_idx (ticker) partial
+securities: unique index securities_untickered_identity_idx (institution, source_description) partial
+security_facts: foreign key (security_id) references securities(id) on delete restrict on update no action
+security_facts: index security_facts_security_idx (security_id)
+security_facts: primary key (id)
+security_facts: unique index security_facts_identity_idx (security_id, source, as_of)
+self_loans: foreign key (from_goal_id) references savings_goals(id) on delete restrict on update no action
+self_loans: foreign key (to_goal_id) references savings_goals(id) on delete restrict on update no action
+self_loans: index self_loans_from_goal_id_idx (from_goal_id)
+self_loans: index self_loans_to_goal_id_idx (to_goal_id)
+self_loans: primary key (id)
+simplefin_account_balances: foreign key (simplefin_account_id) references simplefin_accounts(id) on delete restrict on update no action
+simplefin_account_balances: primary key (id)
+simplefin_account_balances: unique index simplefin_account_balances_account_date_idx (simplefin_account_id, balance_date)
+simplefin_accounts: foreign key (linked_loan_id) references mortgage_loans(id) on delete set null on update no action
+simplefin_accounts: foreign key (linked_performance_account_id) references performance_accounts(id) on delete set null on update no action
+simplefin_accounts: index simplefin_accounts_linked_perf_account_idx (linked_performance_account_id)
+simplefin_accounts: index simplefin_accounts_org_name_idx (org_name, account_name)
+simplefin_accounts: primary key (id)
+simplefin_accounts: unique index simplefin_accounts_external_account_id_unique (external_account_id)
+simplefin_accounts: unique index simplefin_accounts_linked_loan_idx (linked_loan_id)
+simplefin_balance_snapshots: index simplefin_balance_snapshots_date_idx (snapshot_date)
+simplefin_balance_snapshots: primary key (id)
+simplefin_balance_snapshots: unique index simplefin_balance_snapshots_snapshot_date_unique (snapshot_date)
+state_version_tables: foreign key (version_id) references state_versions(id) on delete cascade on update no action
+state_version_tables: index state_version_tables_version_id_idx (version_id)
+state_version_tables: primary key (id)
+state_version_tables: unique index state_version_tables_version_table_idx (version_id, table_name)
+state_versions: index state_versions_created_at_idx (created_at)
+state_versions: primary key (id)
+sync_request_log: index sync_request_log_service_requested_idx (service, requested_at)
+sync_request_log: primary key (id)
+tax_brackets: primary key (id)
+tax_brackets: unique index tax_brackets_year_status_checkbox_idx (tax_year, filing_status, w4_checkbox)
+tax_data_updates: primary key (data_version)
+tax_params: primary key (id)
+tax_params: unique index tax_params_year_idx (tax_year)
+utility_reading: foreign key (service_id) references utility_service(id) on delete cascade on update no action
+utility_reading: primary key (id)
+utility_reading: unique index utility_reading_service_year_month_idx (service_id, year, month)
+utility_service: primary key (id)
+utility_service: unique index utility_service_kind_idx (kind)

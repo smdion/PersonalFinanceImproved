@@ -1,7 +1,7 @@
 /**
  * Tests for pure profile management, active job detection, and profile linking logic.
  * Covers: canDeleteBudgetProfile, canDeleteContribProfile, canRemoveColumn,
- * findActiveJob, filterActiveJobs, resolveLinkedProfile, canDeletePerformanceAccount.
+ * findActiveJob, filterActiveJobs, canDeletePerformanceAccount.
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -15,7 +15,6 @@ import {
   projectionJobs,
   workingYears,
   jobYearsNote,
-  resolveLinkedProfile,
   canDeletePerformanceAccount,
   resolveContribFieldDisplayState,
   type ContribAccountActiveFields,
@@ -328,33 +327,6 @@ describe("jobYearsNote", () => {
       "Alex's job ends in 2027; Sam's job starts in 2028 — counted in whole years.",
     );
     expect(jobYearsNote({}, () => "")).toBeNull();
-  });
-});
-
-describe("resolveLinkedProfile", () => {
-  const profiles = [
-    { id: 1, isActive: false, name: "saved" },
-    { id: 2, isActive: true, name: "live" },
-    { id: 3, isActive: false, name: "scenario" },
-  ];
-
-  it("returns linked profile when specified", () => {
-    const p = resolveLinkedProfile(3, profiles);
-    expect(p?.name).toBe("scenario");
-  });
-
-  it("falls back to active profile when no link", () => {
-    const p = resolveLinkedProfile(null, profiles);
-    expect(p?.name).toBe("live");
-  });
-
-  it("falls back to active when linkedProfileId is undefined", () => {
-    const p = resolveLinkedProfile(undefined, profiles);
-    expect(p?.name).toBe("live");
-  });
-
-  it("returns undefined when linked profile not found", () => {
-    expect(resolveLinkedProfile(99, profiles)).toBeUndefined();
   });
 });
 

@@ -165,8 +165,7 @@ export function validateOutboundUrl(input: string): UrlSafetyResult {
   return { ok: true };
 }
 
-/**
- * Zod refinement helper. Use as:
+/** @internal Zod refinement helper, imported only by tests. Use as:
  *   z.string().url().refine(isOutboundUrlSafe, { message: "..." })
  * — but prefer validateOutboundUrl() for richer error messages.
  */

@@ -1,6 +1,6 @@
 /**
  * Where an edit on the Paycheck page saves — one rule, used for both the
- * write and the label that says so (docs/RULES.md "Profiles and Plans").
+ * write and the label that says so (docs/DESIGN.md "Profiles and Plans").
  *
  * - Profile fields save to the active profile of their kind: the Salary
  *   Profile for pay, bonus, schedule, W-4, extra-paycheck routing and other

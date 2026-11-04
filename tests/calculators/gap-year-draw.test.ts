@@ -312,3 +312,96 @@ describe("gap-year draw from Roth past the Rule of 55 age", () => {
     expect(gapDraw.taxCost).toBeGreaterThan(0);
   });
 });
+
+// Direct pins (behavior baseline, v0.10.0): the gap year's tax figures and
+// draw, as runGapYearDraw writes them on the year row. The tests above
+// check relations; these PIN CURRENT BEHAVIOR to the cent, so a reshape of
+// gap-year-draw.ts can't move a figure unseen. Not checked answers.
+describe("gap-year figures (pins current behavior)", () => {
+  const figures = (input: ProjectionInput, y = 2031) => {
+    const d = year(input, y).gapDraw;
+    assert(d);
+    const { slots, warnings, ...numbers } = d;
+    return {
+      ...numbers,
+      slots: slots
+        .filter((s) => s.withdrawal !== 0)
+        .map((s) => [
+          s.category,
+          s.traditionalWithdrawal,
+          s.rothWithdrawal,
+          s.withdrawal,
+        ]),
+      warnings,
+    };
+  };
+
+  it("Ann retired, Bo working: drawn from Ann's Roth IRA", () => {
+    expect(figures(couple())).toEqual({
+      contributions: 0,
+      need: 56590,
+      pay: 60000,
+      slots: [["ira", 0, 56590, 56590]],
+      spending: 100000,
+      spendingCut: 0,
+      ssIncome: 0,
+      taxCost: 0,
+      taxOnIncome: 16590,
+      unmetNeed: 0,
+      warnings: [],
+      withdrawal: 56590,
+    });
+  });
+
+  it("with Ann's Social Security paid", () => {
+    const paid = people.map((p) =>
+      p.personId === 1 ? { ...p, annualAmount: 24000, startAge: 50 } : p,
+    );
+    expect(figures(couple({ socialSecurityEntries: paid }))).toEqual({
+      contributions: 0,
+      need: 36670,
+      pay: 60000,
+      slots: [["ira", 0, 36670, 36670]],
+      spending: 100000,
+      spendingCut: 0,
+      ssIncome: 24000,
+      taxCost: 0,
+      taxOnIncome: 20670,
+      unmetNeed: 0,
+      warnings: [],
+      withdrawal: 36670,
+    });
+  });
+
+  it("Traditional money past 59½: ordinary tax on the draw on top of Bo's pay", () => {
+    const accounts = [
+      { ...acct("Ann IRA", "ira", 600000, 1), ownerBirthYear: 1966 },
+      acct("Bo Brokerage", "brokerage", 100000, 2, "afterTax"),
+    ];
+    const input = couple(
+      {
+        birthYear: 1966,
+        currentAge: 60,
+        perPersonBirthYears: [1966, 1966],
+        socialSecurityEntries: people.map((p) => ({ ...p, birthYear: 1966 })),
+      },
+      accounts,
+    );
+    // Grossed up, the draw nets 56,499.46 against a 56,590 need: 90.54
+    // short, under the funded floor (gapShortfallFloor), so pinned as is.
+    expect(figures(input)).toEqual({
+      contributions: 0,
+      need: 56590,
+      pay: 60000,
+      slots: [["ira", 70624.32, 0, 70624.32]],
+      spending: 100000,
+      spendingCut: 0,
+      ssIncome: 0,
+      taxCost: 14124.86,
+      taxOnIncome: 16590,
+      unmetNeed: 90.54,
+      warnings: [],
+      withdrawal: 70624.32,
+    });
+  });
+});
