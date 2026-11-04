@@ -38,8 +38,6 @@ import type {
 // Constants
 // ---------------------------------------------------------------------------
 
-export const ALL_CATEGORIES = getAllCategories();
-
 /** Roth conversion target bracket presets for the decumulation form dropdown. */
 export const ROTH_CONVERSION_BRACKET_PRESETS = [
   "0",

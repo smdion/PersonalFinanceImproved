@@ -4,7 +4,7 @@
     "src/app/(dashboard)/brokerage/brokerage-content.tsx": 1069,
     "src/app/(dashboard)/budget/budget-content.tsx": 671,
     "src/app/(dashboard)/budget/use-budget-derived-data.ts": 403,
-    "src/app/(dashboard)/budget/what-if-editors.tsx": 569,
+    "src/app/(dashboard)/budget/what-if-editors.tsx": 564,
     "src/app/(dashboard)/budget/what-if-tab.tsx": 1375,
     "src/app/(dashboard)/contributions/contributions-content.tsx": 988,
     "src/app/(dashboard)/expenses/expenses-content.tsx": 825,
@@ -44,7 +44,7 @@
     "src/components/cards/projection/tooltip-renderer.tsx": 410,
     "src/components/cards/projection/use-projection-derived.ts": 641,
     "src/components/cards/projection/use-projection-queries.ts": 998,
-    "src/components/cards/projection/utils.ts": 883,
+    "src/components/cards/projection/utils.ts": 881,
     "src/components/cards/withdrawal-comparison.tsx": 585,
     "src/components/decumulation-methodology-content.tsx": 880,
     "src/components/help-content.tsx": 1030,
@@ -59,7 +59,7 @@
     "src/components/mortgage/mortgage-settings.tsx": 728,
     "src/components/networth/spreadsheet/spreadsheet-year-over-year-table.tsx": 467,
     "src/components/onboarding/onboarding-wizard.tsx": 1020,
-    "src/components/paycheck/contrib-account-form.tsx": 629,
+    "src/components/paycheck/contrib-account-form.tsx": 627,
     "src/components/paycheck/contrib-card.tsx": 539,
     "src/components/paycheck/contribution-snapshot.tsx": 716,
     "src/components/paycheck/contributions-section.tsx": 429,
@@ -572,7 +572,7 @@
       "PortfolioQuickLook": 287
     },
     "src/components/portfolio/use-contribution-accounts-mutations.ts": {
-      "useContributionAccountsMutations": 285
+      "useContributionAccountsMutations": 283
     },
     "src/components/retirement/assumptions-band.tsx": {
       "AssumptionsBand": 344

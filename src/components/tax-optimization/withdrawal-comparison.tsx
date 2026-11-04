@@ -45,28 +45,24 @@ type Selection = Partial<
   >
 >;
 
-// Orders are derived from config, never hardcoded (RULES.md). The default
-// decumulation order is already pre-tax-first ("traditional first");
-// "brokerage first" hoists the overflow/taxable bucket to the front.
-const TRAD_FIRST_ORDER = getDefaultDecumulationOrder();
-const BROKERAGE_FIRST_ORDER = [
-  ...TRAD_FIRST_ORDER.filter((c) => isOverflowTarget(c)),
-  ...TRAD_FIRST_ORDER.filter((c) => !isOverflowTarget(c)),
-];
-
-const STRATEGIES: RouterInputs["projection"]["compareWithdrawalStrategies"]["strategies"] =
-  [
-    { label: "Traditional first", mode: "waterfall", order: TRAD_FIRST_ORDER },
-    {
-      label: "Brokerage first",
-      mode: "waterfall",
-      order: BROKERAGE_FIRST_ORDER,
-    },
+// Orders are read from config when called. The default decumulation order
+// is already pre-tax-first ("traditional first"); "brokerage first" hoists
+// the overflow/taxable bucket to the front.
+function presetStrategies(): RouterInputs["projection"]["compareWithdrawalStrategies"]["strategies"] {
+  const tradFirst = getDefaultDecumulationOrder();
+  const brokerageFirst = [
+    ...tradFirst.filter((c) => isOverflowTarget(c)),
+    ...tradFirst.filter((c) => !isOverflowTarget(c)),
+  ];
+  return [
+    { label: "Traditional first", mode: "waterfall", order: tradFirst },
+    { label: "Brokerage first", mode: "waterfall", order: brokerageFirst },
     {
       label: WITHDRAWAL_ROUTING_MODE_LABELS.bracket_filling,
       mode: "bracket_filling",
     },
   ];
+}
 
 /** A named preset's row and "Your current plan" can legitimately describe
  *  the exact same run — e.g. a household already on Bracket Filling.
@@ -80,9 +76,10 @@ function ordersMatch(a: readonly string[], b: readonly string[]): boolean {
 }
 
 export function WithdrawalComparison({ selection }: { selection: Selection }) {
+  const strategies = presetStrategies();
   const { data, isLoading } =
     trpc.projection.compareWithdrawalStrategies.useQuery(
-      { ...selection, strategies: STRATEGIES },
+      { ...selection, strategies },
       { placeholderData: (prev) => prev },
     );
 
@@ -105,7 +102,7 @@ export function WithdrawalComparison({ selection }: { selection: Selection }) {
     if (!currentPlan || "isCurrentPlan" in s) return false;
     if (s.mode !== currentPlan.mode) return false;
     if (s.mode === "waterfall") {
-      const preset = STRATEGIES.find((p) => p.label === s.label);
+      const preset = strategies.find((p) => p.label === s.label);
       if (
         !preset?.order ||
         !("withdrawalOrder" in currentPlan) ||

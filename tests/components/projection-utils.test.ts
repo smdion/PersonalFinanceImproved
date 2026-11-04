@@ -34,12 +34,12 @@ import {
   lumpSumsForBucket,
   lumpSumsForCategory,
   lumpSumTotal,
-  ALL_CATEGORIES,
   catDisplayLabel,
   bucketSlotMap,
   formatDiscretionaryTierBreakdown,
 } from "@/components/cards/projection/utils";
 import { accountBalancesFromTaxBuckets } from "@/lib/calculators/engine/balance-utils";
+import { getAllCategories } from "@/lib/config/account-types";
 import type { EngineYearProjection } from "@/lib/calculators/types";
 import type { LumpSum } from "@/lib/calculators/types/shared";
 
@@ -47,16 +47,16 @@ import type { LumpSum } from "@/lib/calculators/types/shared";
 // Constants
 // ---------------------------------------------------------------------------
 
-describe("ALL_CATEGORIES / catDisplayLabel", () => {
+describe("catDisplayLabel", () => {
   it("includes the core account categories", () => {
-    expect(ALL_CATEGORIES).toContain("401k");
-    expect(ALL_CATEGORIES).toContain("ira");
-    expect(ALL_CATEGORIES).toContain("hsa");
-    expect(ALL_CATEGORIES).toContain("brokerage");
+    expect(getAllCategories()).toContain("401k");
+    expect(getAllCategories()).toContain("ira");
+    expect(getAllCategories()).toContain("hsa");
+    expect(getAllCategories()).toContain("brokerage");
   });
 
   it("has a display label for every category", () => {
-    for (const cat of ALL_CATEGORIES) {
+    for (const cat of getAllCategories()) {
       expect(typeof catDisplayLabel[cat]).toBe("string");
       expect(catDisplayLabel[cat]!.length).toBeGreaterThan(0);
     }

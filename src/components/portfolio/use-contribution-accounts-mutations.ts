@@ -8,7 +8,11 @@
  * The parent component still owns query calls and UI state.
  */
 
-import type { RothIraRoute } from "@/lib/config/enum-values";
+import type {
+  EmployerMatchType,
+  RothIraRoute,
+  TaxTreatment,
+} from "@/lib/config/enum-values";
 import { trpc } from "@/lib/trpc";
 import type { AccountCategory } from "@/lib/config/account-types";
 
@@ -286,12 +290,10 @@ export function useContributionAccountsMutations({
       id: c.id,
       personId: updates.personId !== undefined ? updates.personId : c.personId,
       jobId: updates.jobId !== undefined ? updates.jobId : c.jobId,
-      accountType: (updates.accountType ?? c.accountType) as
-        "401k" | "403b" | "ira" | "hsa" | "brokerage",
-      taxTreatment: (updates.taxTreatment ?? c.taxTreatment) as
-        "pre_tax" | "tax_free" | "after_tax" | "hsa",
-      employerMatchType: (updates.employerMatchType ?? c.employerMatchType) as
-        "none" | "percent_of_contribution" | "dollar_match" | "fixed_annual",
+      accountType: (updates.accountType ?? c.accountType) as AccountCategory,
+      taxTreatment: (updates.taxTreatment ?? c.taxTreatment) as TaxTreatment,
+      employerMatchType: (updates.employerMatchType ??
+        c.employerMatchType) as EmployerMatchType,
       employerMatchValue:
         updates.employerMatchValue !== undefined
           ? updates.employerMatchValue

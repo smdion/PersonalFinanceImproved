@@ -45,6 +45,7 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "@/lib/hooks/use-toast";
 import { formatCurrency, accountDisplayName } from "@/lib/utils/format";
 import {
+  getAllCategories,
   getParentCategory,
   getDefaultTaxTreatment,
 } from "@/lib/config/account-types";
@@ -78,7 +79,6 @@ import {
 } from "./use-budget-derived-data";
 import { WhatIfPaycheckSummary } from "./what-if-paycheck-summary";
 import {
-  SANDBOX_ACCOUNT_TYPES,
   WhatIfContributionsEditor,
   WhatIfDeductionsEditor,
   WhatIfPinnedCell,
@@ -313,7 +313,7 @@ function useSandboxState(salaryId: number | null, budgetId: number | null) {
       {
         localId,
         personId,
-        accountType: SANDBOX_ACCOUNT_TYPES[0]!,
+        accountType: getAllCategories()[0]!,
         contributionMethod: "percent_of_salary",
         contributionValue: "0",
       },
