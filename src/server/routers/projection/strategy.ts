@@ -226,8 +226,7 @@ export const strategyRouter = createTRPCRouter({
       // routing mode for the life of the cached row. Every other cache
       // site in this codebase (scenarios.ts, monte-carlo.ts, coast-fire.ts)
       // hashes the full built engine input; this was the one exception.
-      // No PROJECTION_CACHE_ENGINE_VERSION bump — the hash change
-      // self-invalidates every existing row; they simply orphan and evict.
+      // A changed input hash misses every older row; they orphan and evict.
       const inputHash = hashEngineInput("strategyComparison", {
         baseEngineInput,
         mcBaseEngineInput,

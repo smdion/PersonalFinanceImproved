@@ -464,11 +464,9 @@ export function useProjectionQueries(
       },
     );
 
-  // Operational escape hatch: wipe every cached
-  // projection row server-side without bumping PROJECTION_CACHE_ENGINE_VERSION
-  // and redeploying, then invalidate every projection query on THIS page so
-  // it refetches against the now-empty cache immediately, rather than
-  // requiring a manual reload.
+  // Operational escape hatch: wipe every cached projection row server-side
+  // without a deploy, then invalidate every projection query on this page so
+  // it refetches against the now-empty cache at once.
   const clearProjectionCacheMutation = trpc.projection.clearCache.useMutation({
     onSuccess: () => {
       utils.projection.computeProjection.invalidate();

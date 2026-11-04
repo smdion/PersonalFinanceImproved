@@ -3834,7 +3834,7 @@
   },
   "src/lib/db/pg/api-sync.ts": {
     "ratchet/max-comment-lines": {
-      "count": 14
+      "count": 13
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -3976,7 +3976,7 @@
   },
   "src/lib/db/sqlite/api-sync.ts": {
     "ratchet/max-comment-lines": {
-      "count": 14
+      "count": 13
     },
     "ratchet/no-history-comment": {
       "count": 1
@@ -5541,7 +5541,7 @@
       "count": 3
     },
     "ratchet/max-comment-lines": {
-      "count": 5
+      "count": 4
     }
   },
   "src/server/helpers/retirement-profile.ts": {

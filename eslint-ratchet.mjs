@@ -389,9 +389,4 @@ export const ratchetConfig = [
       "ratchet/no-fixed-inset-overlay": "off",
     },
   },
-  {
-    // Its engine-version changelog is the documentation (RULES § comments).
-    files: ["src/server/helpers/projection-cache.ts"],
-    rules: { "ratchet/no-history-comment": "off" },
-  },
 ];

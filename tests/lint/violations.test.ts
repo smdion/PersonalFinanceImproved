@@ -1062,15 +1062,6 @@ function findReviewCitationViolations(): Violation[] {
 //     so this can't collide with RULES.md's statutory-date exception
 //   - a bare roadmap R## tag (R48a, R17, R6b, ...) — not a real
 //     identifier anywhere else in this codebase
-// One dedicated file exemption: projection-cache.ts's
-// PROJECTION_CACHE_ENGINE_VERSION changelog is RULES.md's own named
-// exception (the R##/date history there IS the documentation) — every
-// other file must pass clean. The narrower rule 25 above is unaffected;
-// keeping both means a regression against either shape still fails loudly
-// with the more specific message.
-const BROAD_CITATION_FILE_EXEMPT = new Set<string>([
-  "src/server/helpers/projection-cache.ts",
-]);
 // A bare attribution phrase or a bare roadmap R## tag is never one of
 // RULES.md's comment exceptions — safe to enforce everywhere (src/,
 // tests/, scripts/).
@@ -1106,12 +1097,7 @@ function findBroadCitationViolations(): Violation[] {
   for (const { dir, includeDatePattern } of roots) {
     for (const file of walkTsFiles(dir)) {
       const rel = relPath(file);
-      if (
-        isExempt(rel) ||
-        BROAD_CITATION_FILE_EXEMPT.has(rel) ||
-        CITATION_RULE_FILE_EXEMPT.has(rel)
-      )
-        continue;
+      if (isExempt(rel) || CITATION_RULE_FILE_EXEMPT.has(rel)) continue;
       const lines = readFileLines(file);
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i]!;

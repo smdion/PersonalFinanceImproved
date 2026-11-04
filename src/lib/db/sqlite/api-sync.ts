@@ -117,10 +117,8 @@ export const projectionCache = sqliteTable(
     lastReadAt: integer("last_read_at", { mode: "timestamp" })
       .notNull()
       .default(sql`(unixepoch())`),
-    /** Bumped whenever the engine's computation logic changes in a way
-     *  that could change output for the same inputs — auto-invalidates
-     *  stale-shaped/stale-computed rows after a deploy without needing a
-     *  manual cache-clear. See PROJECTION_CACHE_ENGINE_VERSION. */
+    /** A hash of the engine code (src/lib/generated/engine-hash.ts): rows
+     *  written by other code never match. See PROJECTION_CACHE_ENGINE_VERSION. */
     engineVersion: integer("engine_version").notNull(),
   },
   (table) => [

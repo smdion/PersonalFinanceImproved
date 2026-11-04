@@ -543,8 +543,8 @@ export const monteCarloRouter = createTRPCRouter({
     }),
 
   /** Wipes every cached deterministic/MC/Coast-FIRE projection row —
-   *  forces a full recompute without bumping PROJECTION_CACHE_ENGINE_VERSION
-   *  and redeploying. Admin-only: destructive against shared cache state. */
+   *  forces a full recompute without a deploy. Admin-only: destructive
+   *  against shared cache state. */
   clearCache: adminProcedure.mutation(async ({ ctx }) => {
     const cleared = await clearProjectionCache(ctx.db);
     return { cleared };

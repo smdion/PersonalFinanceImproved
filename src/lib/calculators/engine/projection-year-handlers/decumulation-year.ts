@@ -1248,8 +1248,8 @@ export function runDecumulationYear(
   // Single canonical "is this a REAL shortfall worth alerting on" verdict
   // `finalUnmetNeed` above intentionally
   // preserves its existing byte-identical value/undefined-ness for
-  // existing consumers (no cache-version bump needed for an additive
-  // field), but its own two branches apply the materiality floor
+  // existing consumers (an additive field), but its own two branches
+  // apply the materiality floor
   // inconsistently: the `routedUnmetNeed` fallback branch is NEVER
   // floor-filtered, so a rounding-scale routed residual could read as
   // `unmetNeed > 0` without being material. Chart/table/KPI alerting

@@ -194,6 +194,10 @@ jobs:
       - name: Verify docs freshness
         run: pnpm docs:verify
 
+      # The projection cache's engine version is a hash of the engine code.
+      - name: Verify the engine hash is current
+        run: pnpm check:engine-hash
+
       # Every calculator, engine and lib/pure export has a row in
       # docs/CALCULATIONS.md; the exports without one and the high-risk
       # rows with no independent test may only shrink
