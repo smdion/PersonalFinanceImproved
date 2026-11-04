@@ -1,19 +1,12 @@
-// Central account type configuration — the ONLY place account-type-specific
-// knowledge lives. Everything else imports from here.
-//
-// Philosophy: Config declares, code executes.
-// Nothing in the codebase knows what a "401k" is — it only knows how to process
-// an account type with properties like supportsRothSplit: true and
-// balanceStructure: 'roth_traditional'.
+// Account types: one ACCOUNT_TYPE_CONFIG entry per category, and the helpers
+// and predicates that read it. Code asks about properties (supportsRothSplit,
+// balanceStructure), never a category name (RULES.md § Data-Driven Architecture).
 
 // ---------------------------------------------------------------------------
-// Re-exports — maintain backwards compatibility for all consumers
+// Re-exports
 // ---------------------------------------------------------------------------
 
-// Types
-export type { AccountBalance, AccountCategory } from "./account-types.types";
-
-export { accountCategoryEnum } from "./account-types.types";
+export type { AccountBalance } from "./account-types.types";
 
 // Balance helpers
 export {
@@ -34,7 +27,6 @@ export {
 } from "./account-balance";
 
 import type {
-  AccountCategory,
   AccountTypeConfig,
   DisplayGroup,
   AccountBalance,
@@ -91,6 +83,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     fixedContribScalesWithSalary: false,
     generateOverflowWarnings: true,
     defaultWithdrawalSplit: 0.35,
+    decumulationRank: 1,
     isPayrollDeductible: true,
     payrollFicaExempt: false,
     supportsPriorYearContrib: false,
@@ -142,6 +135,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     fixedContribScalesWithSalary: false,
     generateOverflowWarnings: true,
     defaultWithdrawalSplit: 0,
+    decumulationRank: 2,
     isPayrollDeductible: true,
     payrollFicaExempt: false,
     supportsPriorYearContrib: false,
@@ -191,6 +185,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     fixedContribScalesWithSalary: false,
     generateOverflowWarnings: true,
     defaultWithdrawalSplit: 0.25,
+    decumulationRank: 3,
     isPayrollDeductible: false,
     payrollFicaExempt: false,
     supportsPriorYearContrib: true,
@@ -240,6 +235,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     fixedContribScalesWithSalary: false,
     generateOverflowWarnings: true,
     defaultWithdrawalSplit: 0.1,
+    decumulationRank: 5,
     isPayrollDeductible: true,
     payrollFicaExempt: true,
     supportsPriorYearContrib: true,
@@ -292,6 +288,7 @@ export const ACCOUNT_TYPE_CONFIG = {
     fixedContribScalesWithSalary: true,
     generateOverflowWarnings: false,
     defaultWithdrawalSplit: 0.3,
+    decumulationRank: 4,
     isPayrollDeductible: false,
     payrollFicaExempt: false,
     supportsPriorYearContrib: false,
@@ -327,14 +324,17 @@ export const ACCOUNT_TYPE_CONFIG = {
       },
     },
   },
-} as const;
+} as const satisfies Record<string, AccountTypeConfig>;
 
-// Validate: every config entry must conform to AccountTypeConfig.
-// Using a helper function avoids hardcoding keys and preserves literal key inference.
-function _validateConfig<T extends Record<string, AccountTypeConfig>>(c: T): T {
-  return c;
+/** An account category: one key of `ACCOUNT_TYPE_CONFIG`. */
+export type AccountCategory = keyof typeof ACCOUNT_TYPE_CONFIG;
+
+/** Zod-compatible tuple for `z.enum(accountCategoryEnum())`, read at call time. */
+export function accountCategoryEnum(): [AccountCategory, ...AccountCategory[]] {
+  const [first, ...rest] = getAllCategories();
+  if (first === undefined) throw new Error("ACCOUNT_TYPE_CONFIG is empty");
+  return [first, ...rest];
 }
-_validateConfig(ACCOUNT_TYPE_CONFIG);
 
 // ---------------------------------------------------------------------------
 // Budget ↔ contribution matching
@@ -422,14 +422,6 @@ export function isDiscountBasisEmployerContrib(
 // ---------------------------------------------------------------------------
 // Module-level defaults
 // ---------------------------------------------------------------------------
-
-export const DEFAULT_DECUMULATION_ORDER: AccountCategory[] = [
-  "401k",
-  "403b",
-  "ira",
-  "brokerage",
-  "hsa",
-];
 
 export const DEFAULT_WITHDRAWAL_SPLITS: Record<AccountCategory, number> =
   Object.fromEntries(
@@ -775,8 +767,8 @@ export function getDefaultTaxTreatment(category: AccountCategory): string {
 /**
  * Get the column segments for all engine categories.
  */
-export function getAccountSegments(): AccountSegment[] {
-  const segments: AccountSegment[] = [];
+export function getAccountSegments(): AccountSegment<AccountCategory>[] {
+  const segments: AccountSegment<AccountCategory>[] = [];
   for (const cat of getEngineCategories()) {
     const cfg = ACCOUNT_TYPE_CONFIG[cat];
     if (cfg.balanceStructure === "roth_traditional") {
@@ -851,10 +843,10 @@ export function getDefaultAccumulationOrder(): AccountCategory[] {
  * Get the default decumulation order.
  */
 export function getDefaultDecumulationOrder(): AccountCategory[] {
-  return DEFAULT_DECUMULATION_ORDER.filter(
-    (c) =>
-      ACCOUNT_TYPE_CONFIG[c].participatesInEngine &&
-      !ACCOUNT_TYPE_CONFIG[c].engineParent,
+  return getEngineCategories().sort(
+    (a, b) =>
+      ACCOUNT_TYPE_CONFIG[a].decumulationRank -
+      ACCOUNT_TYPE_CONFIG[b].decumulationRank,
   );
 }
 

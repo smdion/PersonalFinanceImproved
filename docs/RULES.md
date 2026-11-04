@@ -57,7 +57,7 @@ These stop the failure this codebase is most prone to: maintenance by addition, 
 
 Rules below state the target. These parts aren't true yet; don't build on them.
 
-- **"One config entry" for an account type.** `AccountCategory` and its enum are hand copies, the default withdrawal order is a hand list (a category missing from it is never drawn), and early access is identity branches.
+- **"One config entry" for an account type.** Early access is identity branches.
 - **Calculations are answer-keyed only in part.** [CALCULATIONS.md](CALCULATIONS.md) lists every calculation: its Tested column says which rows have hand-worked answer-key cases, and its Gaps column is where calculation bugs are listed. A row with no case has only its pinned tests, which can move with the code. A figure changes only with its source and its cause in dollars.
 - **There is no named layer for composition that needs I/O.** It lives in router procedures and `src/server/helpers/`, and some routers call others. Don't add more; a shared service layer is planned.
 - **`lib/pure` imports from `@/server/helpers/transforms` and `/settings`.** Both are recorded layer breaks (§ Pure Business Logic Boundary); don't extend them.

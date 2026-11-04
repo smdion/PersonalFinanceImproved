@@ -79,9 +79,9 @@ import * as path from "node:path";
 import * as os from "node:os";
 import {
   ACCOUNT_TYPE_CONFIG,
-  DEFAULT_DECUMULATION_ORDER,
+  accountCategoryEnum,
+  getDefaultDecumulationOrder,
 } from "@/lib/config/account-types";
-import { accountCategoryEnum } from "@/lib/config/account-types.types";
 
 // `let`, not `const`: the positive controls at the bottom point every
 // scanner at a temporary tree with planted violations (withRepoRoot).
@@ -1630,25 +1630,15 @@ describe("one config entry adds an account type", () => {
     expect(Object.keys(ACCOUNT_TYPE_CONFIG)).not.toContain(SYNTHETIC_CATEGORY);
   });
 
-  // Broken today: AccountCategory and its enum are hand copies (RULES.md
-  // § Known Gaps).
-  it.fails(
-    "the account-category enum includes it (until v0.10.1 Test every promise)",
-    () => {
-      withSyntheticCategory(() => {
-        expect(accountCategoryEnum()).toContain(SYNTHETIC_CATEGORY);
-      });
-    },
-  );
+  it("the account-category enum includes it", () => {
+    withSyntheticCategory(() => {
+      expect(accountCategoryEnum()).toContain(SYNTHETIC_CATEGORY);
+    });
+  });
 
-  // Broken today: the default withdrawal order is a hand list, so a new
-  // category is never drawn.
-  it.fails(
-    "the default withdrawal order includes it (until v0.10.1 Test every promise)",
-    () => {
-      withSyntheticCategory(() => {
-        expect(DEFAULT_DECUMULATION_ORDER).toContain(SYNTHETIC_CATEGORY);
-      });
-    },
-  );
+  it("the default withdrawal order includes it", () => {
+    withSyntheticCategory(() => {
+      expect(getDefaultDecumulationOrder()).toContain(SYNTHETIC_CATEGORY);
+    });
+  });
 });

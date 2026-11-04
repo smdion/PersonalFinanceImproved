@@ -19,8 +19,7 @@ import {
   getAllCategories,
   getAccountTypeConfig,
   buildCategoryRecord,
-  getEngineCategories,
-  DEFAULT_DECUMULATION_ORDER,
+  getDefaultDecumulationOrder,
 } from "../../config/account-types";
 import { RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK } from "../../constants";
 
@@ -48,7 +47,7 @@ const ACCOUNT_CATEGORIES: AccountCategory[] = getAllCategories();
  * category in practice) without touching that separate, deliberately
  * partial test contract.
  *
- * Missing categories are appended in `DEFAULT_DECUMULATION_ORDER`'s
+ * Missing categories are appended in `getDefaultDecumulationOrder()`'s
  * relative order — deterministic, and matches what an un-customized
  * household already sees for those same categories.
  */
@@ -56,9 +55,7 @@ function ensureCompleteWithdrawalOrder(
   order: AccountCategory[],
 ): AccountCategory[] {
   const present = new Set(order);
-  const missing = DEFAULT_DECUMULATION_ORDER.filter(
-    (c) => getEngineCategories().includes(c) && !present.has(c),
-  );
+  const missing = getDefaultDecumulationOrder().filter((c) => !present.has(c));
   return missing.length > 0 ? [...order, ...missing] : order;
 }
 

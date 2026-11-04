@@ -95,6 +95,8 @@ export type AccountTypeConfig = {
   fixedContribScalesWithSalary: boolean;
   generateOverflowWarnings: boolean;
   defaultWithdrawalSplit: number;
+  /** Position in the default withdrawal order (lowest drawn first). */
+  decumulationRank: number;
   /** Whether contributions to this account type are deducted from the paycheck.
    *  true = employer-plan (401k, 403b, HSA) — deducted before take-home pay.
    *  false = individual account (IRA, brokerage) — paid from take-home pay. */
@@ -155,37 +157,10 @@ export type AccountBalance =
 // UI segment type
 // ---------------------------------------------------------------------------
 
-export type AccountSegment = {
+/** `C` is `AccountCategory`, declared with the config in `account-types.ts`. */
+export type AccountSegment<C extends string> = {
   key: string;
-  category: AccountCategory;
+  category: C;
   label: string;
   subKey: string | null; // 'trad', 'roth', null
 };
-
-// ---------------------------------------------------------------------------
-// Derived category type — needs the config object, so we use a generic
-// constraint that will be satisfied by the main module's re-export.
-// We define it here as a string literal union matching the known keys.
-// ---------------------------------------------------------------------------
-
-// NOTE: AccountCategory is derived from ACCOUNT_TYPE_CONFIG keys in the main
-// module. We re-declare it here as the known union so pure-type consumers
-// don't need to import runtime data.
-export type AccountCategory = "401k" | "403b" | "ira" | "hsa" | "brokerage";
-
-// ---------------------------------------------------------------------------
-// Zod-compatible enum helpers (type-level only — runtime values live in main)
-// ---------------------------------------------------------------------------
-
-const ACCOUNT_CATEGORY_VALUES: [AccountCategory, ...AccountCategory[]] = [
-  "401k",
-  "403b",
-  "ira",
-  "hsa",
-  "brokerage",
-];
-
-/** Zod-compatible tuple for z.enum() — import { accountCategoryEnum } and use z.enum(accountCategoryEnum()) */
-export function accountCategoryEnum(): [AccountCategory, ...AccountCategory[]] {
-  return ACCOUNT_CATEGORY_VALUES;
-}

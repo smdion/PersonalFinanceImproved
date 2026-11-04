@@ -134,14 +134,9 @@ describe("getAllCategories", () => {
     expect(getAllCategories()).toContain("brokerage");
   });
 
-  // `accountCategoryEnum()` (a hardcoded literal tuple in
-  // account-types.types.ts) and `getAllCategories()` (derived from
-  // ACCOUNT_TYPE_CONFIG's keys) are independent sources of truth. Zod
-  // schemas that use the enum for element type AND getAllCategories() for a
-  // completeness check (retirement.ts's `withdrawalOrder`) become
-  // unsatisfiable the moment the two disagree — add a config entry without
-  // the enum literal and every withdrawal-order save 400s. RULES.md's
-  // "adding an account type = one config entry" makes that an easy mistake.
+  // Zod schemas use the enum for the element type and getAllCategories()
+  // for a completeness check (retirement.ts's `withdrawalOrder`): if the two
+  // disagreed, every withdrawal-order save would be rejected.
   it("agrees exactly with accountCategoryEnum()", () => {
     expect([...accountCategoryEnum()].sort()).toEqual(
       [...getAllCategories()].sort(),
@@ -392,6 +387,37 @@ describe("defaults", () => {
     for (const c of getEngineCategories()) {
       expect(order).toContain(c);
     }
+  });
+
+  // The config's `decumulationRank` and `defaultWithdrawalSplit` give
+  // these pinned orders and splits.
+  it("derived orders and splits equal the pinned literals", () => {
+    const ranks = getAllCategories().map(
+      (c) => ACCOUNT_TYPE_CONFIG[c].decumulationRank,
+    );
+    expect(new Set(ranks).size).toBe(ranks.length);
+    expect(getDefaultDecumulationOrder()).toEqual([
+      "401k",
+      "403b",
+      "ira",
+      "brokerage",
+      "hsa",
+    ]);
+    expect(accountCategoryEnum()).toEqual([
+      "401k",
+      "403b",
+      "ira",
+      "hsa",
+      "brokerage",
+    ]);
+    expect(DEFAULT_WITHDRAWAL_SPLITS).toStrictEqual({
+      "401k": 0.35,
+      "403b": 0,
+      ira: 0.25,
+      hsa: 0.1,
+      brokerage: 0.3,
+    });
+    expect(Object.keys(DEFAULT_WITHDRAWAL_SPLITS)).toEqual(getAllCategories());
   });
 
   it("DEFAULT_WITHDRAWAL_SPLITS values sum to ~1", () => {

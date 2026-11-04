@@ -3468,7 +3468,7 @@
       "count": 16
     },
     "ratchet/max-comment-lines": {
-      "count": 8
+      "count": 7
     },
     "ratchet/no-history-comment": {
       "count": 3
@@ -3476,7 +3476,7 @@
   },
   "src/lib/config/account-types.types.ts": {
     "ratchet/max-comment-lines": {
-      "count": 6
+      "count": 5
     },
     "ratchet/no-history-comment": {
       "count": 1

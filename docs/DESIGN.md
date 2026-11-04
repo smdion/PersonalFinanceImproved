@@ -606,13 +606,13 @@ The rules are RULES.md § Data-Driven Architecture.
 
 ### Key Files
 
-| File                                    | Role                                                                                                              |
-| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `src/lib/config/account-types.ts`       | `ACCOUNT_TYPE_CONFIG` + every derived helper and predicate                                                        |
-| `src/lib/config/account-balance.ts`     | Balance-structure helpers (Traditional, Roth, basis)                                                              |
-| `src/lib/config/display-labels.ts`      | Label maps and performance-category constants                                                                     |
-| `src/lib/config/account-types.types.ts` | `AccountCategory` (a hand-kept union matching the config keys, see RULES.md § Known Gaps), `AccountBalance` union |
-| `src/lib/constants.ts`                  | App-wide defaults and thresholds                                                                                  |
+| File                                    | Role                                                                                     |
+| --------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `src/lib/config/account-types.ts`       | `ACCOUNT_TYPE_CONFIG`, `AccountCategory` (its keys) + every derived helper and predicate |
+| `src/lib/config/account-balance.ts`     | Balance-structure helpers (Traditional, Roth, basis)                                     |
+| `src/lib/config/display-labels.ts`      | Label maps and performance-category constants                                            |
+| `src/lib/config/account-types.types.ts` | `AccountTypeConfig` (the entry shape), `AccountBalance` union                            |
+| `src/lib/constants.ts`                  | App-wide defaults and thresholds                                                         |
 
 The rest of `src/lib/config/` holds the other data tables (tax, RMD, IRMAA, ACA, NIIT, Social Security, milestones, recommendations, withdrawal strategies, …) — one module per subject.
 
