@@ -1,7 +1,7 @@
 // A person's age for a rule, and how many in the household meet one; the
 // rules live in lib/config/age-rules.ts.
 import { AGE_RULES, type AgeRuleKey } from "@/lib/config/age-rules";
-import { ageInYear } from "@/lib/utils/date";
+import { ageInYear, calendarYear, getAge } from "@/lib/utils/date";
 
 /** Whether someone born in `birthYear` meets `rule` in `year`. */
 export function reachesAgeRule(
@@ -28,4 +28,15 @@ export function countReachingAgeRule(
       .length;
   }
   return representativeAge >= AGE_RULES[rule].age ? 1 : 0;
+}
+
+/** The age in `year` (at Dec 31) of a stored `YYYY-MM-DD` date of birth. */
+export function ageInYearFromDob(dateOfBirth: string, year: number): number {
+  return ageInYear(calendarYear(dateOfBirth), year);
+}
+
+/** Age on `asOf` of a stored `YYYY-MM-DD` birth date read as UTC midnight
+ *  (milestones and holdings parse local midnight on purpose). */
+export function ageOnDate(dateOfBirth: string, asOf: Date): number {
+  return getAge(new Date(dateOfBirth), asOf);
 }

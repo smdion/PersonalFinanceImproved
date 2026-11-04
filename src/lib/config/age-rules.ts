@@ -1,6 +1,6 @@
 // Age rules as Ledgr applies them today: every age is the age at Dec 31
-// (`year - birthYear`). The statutory measures are v0.11 edits to one row
-// each. Tests of an age against a rule go through lib/pure/household/age.ts.
+// (`year - birthYear`), not the statutory measure. Tests of an age against
+// a rule go through lib/pure/household/age.ts.
 
 /** When a rule's age is measured. Today: always the age at Dec 31. */
 export type AgeMeasure = "dec31";

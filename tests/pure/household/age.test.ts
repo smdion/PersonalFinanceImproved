@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { countReachingAgeRule, reachesAgeRule } from "@/lib/pure/household/age";
+import {
+  ageInYearFromDob,
+  ageOnDate,
+  countReachingAgeRule,
+  reachesAgeRule,
+} from "@/lib/pure/household/age";
 
 describe("reachesAgeRule (age at Dec 31)", () => {
   it("QCD from the year the person turns 70", () => {
@@ -22,5 +27,19 @@ describe("countReachingAgeRule", () => {
   it("without birth years, the representative age stands for one person", () => {
     expect(countReachingAgeRule(undefined, 65, "medicare", 2026)).toBe(1);
     expect(countReachingAgeRule([], 64, "medicare", 2026)).toBe(0);
+  });
+});
+
+describe("ageInYearFromDob", () => {
+  it("is the year minus the stored birth year", () => {
+    expect(ageInYearFromDob("1980-12-31", 2026)).toBe(46);
+    expect(ageInYearFromDob("1980-01-01", 2026)).toBe(46);
+  });
+});
+
+describe("ageOnDate", () => {
+  it("counts the birthday once it has passed", () => {
+    expect(ageOnDate("1980-06-15", new Date(2026, 5, 20))).toBe(46);
+    expect(ageOnDate("1980-06-15", new Date(2026, 5, 10))).toBe(45);
   });
 });

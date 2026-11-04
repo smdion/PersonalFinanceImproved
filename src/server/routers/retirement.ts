@@ -52,7 +52,7 @@ import {
   tracksCostBasis,
   type AccountCategory,
 } from "@/lib/config/account-types";
-import { getAge } from "@/lib/utils/date";
+import { ageOnDate } from "@/lib/pure/household/age";
 import { roundToCents, sumBy } from "@/lib/utils/math";
 import {
   filterActiveJobs,
@@ -396,8 +396,8 @@ export const retirementRouter = createTRPCRouter({
       const referenceDate = snapshotData?.snapshot.snapshotDate
         ? new Date(snapshotData.snapshot.snapshotDate)
         : new Date();
-      // Age as of reference date (calendar-accurate via getAge)
-      const age = getAge(new Date(primaryPerson.dateOfBirth), referenceDate);
+      // Age as of reference date (calendar-accurate)
+      const age = ageOnDate(primaryPerson.dateOfBirth, referenceDate);
 
       // Portfolio — only retirement-category accounts from latest balance snapshot
       let portfolioTotal = 0;

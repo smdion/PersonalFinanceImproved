@@ -13,7 +13,7 @@ import {
 import { HSA_FAMILY_COVERAGE } from "@/lib/config/enum-values";
 import { requireLimit } from "@/server/helpers/settings";
 import { safeDivide, roundToCents } from "@/lib/utils/math";
-import { ageInYear } from "@/lib/utils/date";
+import { ageInYearFromDob } from "@/lib/pure/household/age";
 import type { ViewMode } from "@/lib/calculators/types";
 import { formatCurrency, formatPercent } from "@/lib/utils/format";
 
@@ -125,9 +125,7 @@ export function ficaCapContext(
   return {
     limits,
     ageAtYearEnd:
-      dateOfBirth === null
-        ? null
-        : ageInYear(Number(dateOfBirth.slice(0, 4)), taxYear),
+      dateOfBirth === null ? null : ageInYearFromDob(dateOfBirth, taxYear),
   };
 }
 

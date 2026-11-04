@@ -47,7 +47,8 @@ import {
 } from "./_shared";
 import { roundToCents, safeDivide, sumBy } from "@/lib/utils/math";
 import { DEFAULT_PAY_PERIODS_PER_YEAR } from "@/lib/constants";
-import { getAge, isPriorYearContribWindow } from "@/lib/utils/date";
+import { isPriorYearContribWindow } from "@/lib/utils/date";
+import { ageOnDate } from "@/lib/pure/household/age";
 import { ficaCapContext } from "@/lib/pure/contributions";
 import {
   resolveIrsLimit,
@@ -91,10 +92,6 @@ import {
   isRetirementParent,
   isPortfolioParent,
 } from "@/lib/config/account-types";
-
-function getAgeFromDob(dob: string, asOf: Date): number {
-  return getAge(new Date(dob), asOf);
-}
 
 type AccountTypeSnapshot = {
   accountType: string; // display label (e.g. '401k', 'ESPP', 'Long Term Brokerage')
@@ -606,7 +603,7 @@ export const contributionRouter = createTRPCRouter({
             activeJob.anchorPayDate,
             periodsPerYear,
           );
-          const age = getAgeFromDob(person.dateOfBirth, asOfDate);
+          const age = ageOnDate(person.dateOfBirth, asOfDate);
 
           const jobContribs = effectiveContribs.filter(
             (c) => c.jobId === activeJob.id,
@@ -1270,7 +1267,7 @@ export const contributionRouter = createTRPCRouter({
       // as each person's, at the oldest member's age for any catch-up.
       const householdAge = Math.max(
         0,
-        ...people.map((p) => getAgeFromDob(p.dateOfBirth, asOfDate)),
+        ...people.map((p) => ageOnDate(p.dateOfBirth, asOfDate)),
       );
       for (const c of jointContribs) {
         const val = toNumber(String(c.contributionValue));
