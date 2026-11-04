@@ -48,7 +48,7 @@
     "src/components/cards/withdrawal-comparison.tsx": 587,
     "src/components/decumulation-methodology-content.tsx": 880,
     "src/components/help-content.tsx": 1030,
-    "src/components/historical/cells.tsx": 694,
+    "src/components/historical/cells.tsx": 683,
     "src/components/investments/fund-holding-row.tsx": 498,
     "src/components/investments/holding-history-section.tsx": 522,
     "src/components/investments/holdings-section.tsx": 790,

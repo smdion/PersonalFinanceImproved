@@ -5,6 +5,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils/format";
 import { parseLocalDateOnly } from "@/lib/utils/date";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useInlineNumberEdit } from "@/lib/hooks/use-inline-number-edit";
+import { useClickOutside } from "@/lib/hooks/use-click-outside";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -606,25 +607,13 @@ export function ReadOnlyLineItemCell({
   isCurrent: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-  const popoverRef = useRef<HTMLDivElement>(null);
+  // The ref sits on the breakdown, which only renders while expanded, so
+  // the hook's mousedown check is a no-op while collapsed.
+  const popoverRef = useClickOutside<HTMLDivElement>(() => setExpanded(false));
 
   const field = type === "homeImprovement" ? "homeImprovements" : "otherAssets";
   const noteKey = `${year}:${field}`;
   const existingNote = notes[noteKey];
-
-  useEffect(() => {
-    if (!expanded) return;
-    const handleClick = (e: MouseEvent) => {
-      if (
-        popoverRef.current &&
-        !popoverRef.current.contains(e.target as Node)
-      ) {
-        setExpanded(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [expanded]);
 
   const hasItems = items.length > 0;
 

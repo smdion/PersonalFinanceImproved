@@ -1,10 +1,10 @@
 "use client";
 
 /**
- * useClickOutside — the "close this dropdown on an outside click" effect
- * reinvented identically in profile-pill.tsx and scenario-bar.tsx (Batch 29
- * Finding 11: copy-pasted verbatim in the same directory rather than
- * extracted, even as a minimal shared hook).
+ * useClickOutside — close a dropdown or popover on a mousedown outside it
+ * (scenario-bar.tsx, historical/cells.tsx). The listener is document-wide
+ * and `mousedown`, so a touch counts through the browser's synthesized
+ * mouse events.
  *
  *   const ref = useClickOutside<HTMLDivElement>(() => setOpen(false));
  *   <div ref={ref}>...</div>

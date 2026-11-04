@@ -1241,7 +1241,7 @@
   },
   "src/components/historical/cells.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
+      "count": 3
     },
     "ratchet/no-raw-input": {
       "count": 2
@@ -4116,9 +4116,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 2
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/lib/hooks/use-clone-profile.ts": {

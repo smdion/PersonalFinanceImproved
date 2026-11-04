@@ -4,6 +4,7 @@ import {
   EditableCell,
   EditableRateCell,
   NoteButton,
+  ReadOnlyLineItemCell,
 } from "@/components/historical/cells";
 
 // First direct coverage for these two cells. Written alongside their
@@ -190,5 +191,55 @@ describe("NoteButton", () => {
     fireEvent.click(screen.getByText("Cancel"));
 
     expect(onUpsertNote).not.toHaveBeenCalled();
+  });
+});
+
+describe("ReadOnlyLineItemCell", () => {
+  const props = {
+    value: 12000,
+    items: [
+      { id: 1, year: 2022, description: "New roof", cost: 9000, note: null },
+      { id: 2, year: 2024, description: "Fence", cost: 3000, note: null },
+    ],
+    year: 2024,
+    type: "homeImprovement" as const,
+    notes: {},
+    onUpsertNote: vi.fn(),
+    isCurrent: true,
+  };
+
+  function renderInTable() {
+    return render(
+      <table>
+        <tbody>
+          <tr>
+            <ReadOnlyLineItemCell {...props} />
+          </tr>
+        </tbody>
+      </table>,
+    );
+  }
+
+  it("a click on the value opens the breakdown; a mousedown inside it keeps it open", () => {
+    renderInTable();
+    fireEvent.click(screen.getByTitle("Click to expand breakdown"));
+    expect(screen.getByText("New roof")).toBeInTheDocument();
+
+    fireEvent.mouseDown(screen.getByText("New roof"));
+    expect(screen.getByText("New roof")).toBeInTheDocument();
+  });
+
+  it("a mousedown outside the breakdown closes it (mousedown, not click)", () => {
+    renderInTable();
+    fireEvent.click(screen.getByTitle("Click to expand breakdown"));
+    expect(
+      screen.getByText("Home Improvements (through 2024)"),
+    ).toBeInTheDocument();
+
+    fireEvent.click(document.body);
+    expect(screen.getByText("New roof")).toBeInTheDocument();
+
+    fireEvent.mouseDown(document.body);
+    expect(screen.queryByText("New roof")).not.toBeInTheDocument();
   });
 });
