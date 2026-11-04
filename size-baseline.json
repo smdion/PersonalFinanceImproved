@@ -175,7 +175,7 @@
     "src/server/routers/settings/paycheck.ts": 734,
     "src/server/routers/settings/tax-limits.ts": 784,
     "src/server/routers/simplefin.ts": 872,
-    "src/server/routers/sync/core.ts": 1119,
+    "src/server/routers/sync/core.ts": 1118,
     "src/server/routers/utilities.ts": 581,
     "src/server/trpc.ts": 591
   },
