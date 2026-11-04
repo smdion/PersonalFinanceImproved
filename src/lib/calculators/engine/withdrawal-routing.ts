@@ -37,8 +37,6 @@ import type {
 import { rankWithdrawalTiers } from "./withdrawal-cost-ranking";
 import type { WithdrawalSourceKind } from "./withdrawal-cost-ranking";
 
-const ACCOUNT_CATEGORIES: AccountCategory[] = getAllCategories();
-
 /**
  * Route withdrawals from accounts for one year.
  * Draws from accounts in withdrawal order, respecting caps and tax preferences.
@@ -209,7 +207,7 @@ export function routeWithdrawalsPercentage(
   // Apply account caps and clamp to available balance
   let excess = 0;
   const cappedAccounts = new Set<AccountCategory>();
-  for (const cat of ACCOUNT_CATEGORIES) {
+  for (const cat of getAllCategories()) {
     const accountCap = config.withdrawalAccountCaps[cat];
     // A cap moves the cut-off share to other accounts like an emptied
     // account's does (it was dropped: delivered short with no unmet need).
@@ -241,10 +239,10 @@ export function routeWithdrawalsPercentage(
   const placeExcess = () => {
     for (
       let pass = 0;
-      excess > 0.01 && pass < ACCOUNT_CATEGORIES.length * 2;
+      excess > 0.01 && pass < getAllCategories().length * 2;
       pass++
     ) {
-      const withRoom = ACCOUNT_CATEGORIES.filter((c) => roomOf(c) > 0);
+      const withRoom = getAllCategories().filter((c) => roomOf(c) > 0);
       if (withRoom.length === 0) break;
       const splitWeighted = withRoom.filter(
         (c) => (config.withdrawalSplits[c] ?? 0) > 0,
@@ -276,7 +274,7 @@ export function routeWithdrawalsPercentage(
     let totalTradWithdrawn = 0;
     let totalRothWithdrawn = 0;
 
-    for (const category of ACCOUNT_CATEGORIES) {
+    for (const category of getAllCategories()) {
       const withdrawal = targets[category];
       let rothWithdrawal = 0;
       let tradWithdrawal = 0;
@@ -354,7 +352,7 @@ export function routeWithdrawalsPercentage(
   };
 
   let builtSlots = buildSlots();
-  for (let pass = 0; pass < ACCOUNT_CATEGORIES.length * 2; pass++) {
+  for (let pass = 0; pass < getAllCategories().length * 2; pass++) {
     const cut = builtSlots.filter(
       (s) => targets[s.category] - s.withdrawal > 0.01,
     );
@@ -611,7 +609,7 @@ export function routeWithdrawalsBracketFilling(
     }
   }
 
-  const overflowCats = ACCOUNT_CATEGORIES.filter(isOverflowTarget);
+  const overflowCats = getAllCategories().filter(isOverflowTarget);
   function drawBrokerageTierCapped(cap: number): void {
     let tierRemaining = Math.min(remaining, cap);
     for (const brokCat of overflowCats) {
@@ -654,7 +652,7 @@ export function routeWithdrawalsBracketFilling(
     }
   }
 
-  const singleBucketCats = ACCOUNT_CATEGORIES.filter(
+  const singleBucketCats = getAllCategories().filter(
     (cat) => getAccountTypeConfig(cat).balanceStructure === "single_bucket",
   );
   function drawHsaTierCapped(cap: number): void {
@@ -869,12 +867,8 @@ export function routeWithdrawalsBracketFilling(
 
   if (pastTarget > 0) warnings.push(pastTargetWarning(pastTarget));
 
-  // Ensure all 4 categories have slots (brokerage might be missing if not needed)
-  // (this ACCOUNT_CATEGORIES loop already
-  // covers every singleBucketCats entry too, since singleBucketCats is a
-  // subset — a separate identical loop over just that subset ran first
-  // and was fully dead code, removed here.)
-  for (const cat of ACCOUNT_CATEGORIES) {
+  // Every category gets a slot, including ones nothing was drawn from.
+  for (const cat of getAllCategories()) {
     if (!slots.find((s) => s.category === cat)) {
       slots.push({
         category: cat,

@@ -92,7 +92,7 @@
     "src/components/validation-content.tsx": 578,
     "src/lib/budget-api/actual-client.ts": 837,
     "src/lib/budget-api/ynab-client.ts": 540,
-    "src/lib/calculators/engine/contribution-routing.ts": 629,
+    "src/lib/calculators/engine/contribution-routing.ts": 627,
     "src/lib/calculators/engine/individual-account-tracking.ts": 1480,
     "src/lib/calculators/engine/post-withdrawal-optimizer.ts": 746,
     "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": 866,
@@ -102,7 +102,7 @@
     "src/lib/calculators/engine/tax-estimation.ts": 519,
     "src/lib/calculators/engine/tax-gross-up.ts": 587,
     "src/lib/calculators/engine/withdrawal-cost-ranking.ts": 506,
-    "src/lib/calculators/engine/withdrawal-routing.ts": 1448,
+    "src/lib/calculators/engine/withdrawal-routing.ts": 1442,
     "src/lib/calculators/monte-carlo.ts": 761,
     "src/lib/calculators/mortgage.ts": 424,
     "src/lib/calculators/paycheck.ts": 1398,
@@ -776,7 +776,7 @@
       "rankWithdrawalTiers": 277
     },
     "src/lib/calculators/engine/withdrawal-routing.ts": {
-      "routeWithdrawalsBracketFilling": 475,
+      "routeWithdrawalsBracketFilling": 471,
       "routeWithdrawalsPercentage": 189
     },
     "src/lib/calculators/monte-carlo.ts": {

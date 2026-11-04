@@ -23,8 +23,6 @@ import {
 } from "../../config/account-types";
 import { RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK } from "../../constants";
 
-const ACCOUNT_CATEGORIES: AccountCategory[] = getAllCategories();
-
 /**
  * Guarantee `withdrawalOrder` covers every engine category, appending any
  * that are missing. `withdrawalOrder` is validated with no completeness/
@@ -122,7 +120,7 @@ export function resolveAccumulationConfig(
     }
     if (o.accountCaps !== undefined) {
       // Merge partial caps — explicitly set null to remove a cap
-      for (const cat of ACCOUNT_CATEGORIES) {
+      for (const cat of getAllCategories()) {
         if (cat in o.accountCaps) {
           config.accountCaps[cat] = o.accountCaps[cat] ?? null;
         }
@@ -224,7 +222,7 @@ export function resolveDecumulationConfig(
     if (o.withdrawalOrder !== undefined)
       config.withdrawalOrder = [...o.withdrawalOrder];
     if (o.withdrawalSplits !== undefined) {
-      for (const cat of ACCOUNT_CATEGORIES) {
+      for (const cat of getAllCategories()) {
         if (cat in o.withdrawalSplits) {
           config.withdrawalSplits[cat] =
             o.withdrawalSplits[cat] ?? config.withdrawalSplits[cat];
@@ -232,7 +230,7 @@ export function resolveDecumulationConfig(
       }
     }
     if (o.withdrawalTaxPreference !== undefined) {
-      for (const cat of ACCOUNT_CATEGORIES) {
+      for (const cat of getAllCategories()) {
         if (cat in o.withdrawalTaxPreference) {
           config.withdrawalTaxPreference[cat] =
             o.withdrawalTaxPreference[cat] ?? null;
@@ -240,7 +238,7 @@ export function resolveDecumulationConfig(
       }
     }
     if (o.withdrawalAccountCaps !== undefined) {
-      for (const cat of ACCOUNT_CATEGORIES) {
+      for (const cat of getAllCategories()) {
         if (cat in o.withdrawalAccountCaps) {
           config.withdrawalAccountCaps[cat] =
             o.withdrawalAccountCaps[cat] ?? null;

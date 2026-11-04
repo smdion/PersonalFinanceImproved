@@ -82,6 +82,17 @@ import {
   accountCategoryEnum,
   getDefaultDecumulationOrder,
 } from "@/lib/config/account-types";
+import { routePercentage } from "@/lib/calculators/engine/contribution-routing";
+import { resolveAccumulationConfig } from "@/lib/calculators/engine/override-resolution";
+import { routeWithdrawalsPercentage } from "@/lib/calculators/engine/withdrawal-routing";
+import {
+  makeAccountBalances,
+  makeAccumulationConfig,
+  makeAccumulationDefaults,
+  makeDecumulationConfig,
+  makeEmployerMatch,
+  makeYearLimits,
+} from "../calculators/fixtures/engine-fixtures";
 
 // `let`, not `const`: the positive controls at the bottom point every
 // scanner at a temporary tree with planted violations (withRepoRoot).
@@ -1639,6 +1650,52 @@ describe("one config entry adds an account type", () => {
   it("the default withdrawal order includes it", () => {
     withSyntheticCategory(() => {
       expect(getDefaultDecumulationOrder()).toContain(SYNTHETIC_CATEGORY);
+    });
+  });
+
+  // The engine reads the category list at call time, so an entry added at
+  // run time reaches each router.
+  it("percentage contribution routing reaches it", () => {
+    withSyntheticCategory(() => {
+      const config = makeAccumulationConfig({ routingMode: "percentage" });
+      Reflect.set(config.accountSplits, SYNTHETIC_CATEGORY, 1);
+      const limits = makeYearLimits();
+      Reflect.set(limits, SYNTHETIC_CATEGORY, Infinity);
+      const match = makeEmployerMatch();
+      Reflect.set(match, SYNTHETIC_CATEGORY, 0);
+      const { slots } = routePercentage(1000, config, limits, match);
+      expect(slots.map((s) => s.category)).toContain(SYNTHETIC_CATEGORY);
+    });
+  });
+
+  it("an override's account caps reach it", () => {
+    withSyntheticCategory(() => {
+      const accountCaps = {};
+      Reflect.set(accountCaps, SYNTHETIC_CATEGORY, 500);
+      const config = resolveAccumulationConfig(
+        2030,
+        makeAccumulationDefaults(),
+        [{ year: 2030, accountCaps }],
+      );
+      expect(Reflect.get(config.accountCaps, SYNTHETIC_CATEGORY)).toBe(500);
+    });
+  });
+
+  it("percentage withdrawal routing draws from it", () => {
+    withSyntheticCategory(() => {
+      const config = makeDecumulationConfig({
+        withdrawalRoutingMode: "percentage",
+      });
+      Reflect.set(config.withdrawalSplits, SYNTHETIC_CATEGORY, 1);
+      const balances = makeAccountBalances();
+      Reflect.set(balances, SYNTHETIC_CATEGORY, {
+        structure: "basis_tracking",
+        balance: 10000,
+        basis: 10000,
+      });
+      const { slots } = routeWithdrawalsPercentage(1000, config, balances);
+      const slot = slots.find((s) => String(s.category) === SYNTHETIC_CATEGORY);
+      expect(slot?.withdrawal).toBeGreaterThan(0);
     });
   });
 });
