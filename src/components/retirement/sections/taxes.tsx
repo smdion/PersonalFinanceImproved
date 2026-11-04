@@ -21,8 +21,8 @@ import {
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
 import {
-  W4_FILING_STATUS_VALUES,
-  type W4FilingStatus,
+  parseReturnFilingStatus,
+  RETURN_FILING_STATUS_VALUES,
 } from "@/lib/config/filing-status";
 import {
   FILING_STATUS_LABELS,
@@ -156,7 +156,7 @@ export function TaxesSection({
             const val = e.target.value || null;
             upsertSettings.mutate(
               buildSettingsPatch(settings, {
-                filingStatus: val as W4FilingStatus | null,
+                filingStatus: parseReturnFilingStatus(val),
               }),
             );
           }}
@@ -164,7 +164,7 @@ export function TaxesSection({
           <option value="">
             Auto ({filingStatusLabel(filingStatus ?? "")})
           </option>
-          {W4_FILING_STATUS_VALUES.map((s) => (
+          {RETURN_FILING_STATUS_VALUES.map((s) => (
             <option key={s} value={s}>
               {FILING_STATUS_LABELS[s]}
             </option>

@@ -11,7 +11,7 @@ import { trpc } from "@/lib/trpc";
 import { useUser, isAdmin } from "@/lib/context/user-context";
 import { usePersistedSetting } from "@/lib/hooks/use-persisted-setting";
 import { SK_TAX_FILING_STATUS } from "@/lib/constants/settings-keys";
-import { W4_FILING_STATUS_VALUES } from "@/lib/config/filing-status";
+import { RETURN_FILING_STATUS_VALUES } from "@/lib/config/filing-status";
 import {
   FILING_STATUS_LABELS,
   filingStatusLabel,
@@ -71,7 +71,7 @@ export function FilingStatusRow({
             onChange={(e) => setSetting(e.target.value || null)}
           >
             <option value="">{followed}</option>
-            {W4_FILING_STATUS_VALUES.map((s) => (
+            {RETURN_FILING_STATUS_VALUES.map((s) => (
               <option key={s} value={s}>
                 {FILING_STATUS_LABELS[s]}
               </option>

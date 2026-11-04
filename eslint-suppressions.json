@@ -2102,7 +2102,7 @@
   },
   "src/components/retirement/sections/taxes.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 5
+      "count": 4
     },
     "max-lines-per-function": {
       "count": 1

@@ -2,7 +2,7 @@ import {
   SK_SIMULATION_PRESET,
   SK_TAX_FILING_STATUS,
 } from "@/lib/constants/settings-keys";
-import { w4FilingStatusSchema } from "@/lib/config/filing-status";
+import { returnFilingStatusSchema } from "@/lib/config/filing-status";
 import { z } from "zod/v4";
 import {
   parseCurrentGlidePath,
@@ -68,7 +68,7 @@ const appSettingInput = z.object({
 /** Settings whose value has a shape: checked on every write, so a bad save
  *  is refused instead of read back later as empty. */
 const STRUCTURED_SETTINGS: Record<string, z.ZodType> = {
-  [SK_TAX_FILING_STATUS]: w4FilingStatusSchema,
+  [SK_TAX_FILING_STATUS]: returnFilingStatusSchema,
   [SK_SIMULATION_PRESET]: z.enum(SIMULATION_PRESET_KEYS),
   [SK_MILESTONE_CUSTOM_GOALS]: customGoalsSchema,
   [SK_MILESTONE_CHECKLIST]: milestoneChecklistSchema,
