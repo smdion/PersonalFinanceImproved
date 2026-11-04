@@ -646,11 +646,6 @@
   },
   {
     "rule": "services-below-routers",
-    "from": "src/server/helpers/plans.ts",
-    "to": "src/server/auth.ts"
-  },
-  {
-    "rule": "services-below-routers",
     "from": "src/server/helpers/savings-allocation.ts",
     "to": "src/server/trpc.ts"
   },
@@ -673,11 +668,6 @@
     "rule": "shared-stays-in-group",
     "from": "src/server/routers/investments/comparison.ts",
     "to": "src/server/routers/projection/_shared.ts"
-  },
-  {
-    "rule": "ui-never-imports-server",
-    "from": "src/lib/context/user-context.tsx",
-    "to": "src/server/auth.ts"
   },
   {
     "rule": "ui-never-runs-infra",

@@ -7,8 +7,9 @@ import { authConfig } from "./auth.config";
 import { isDevelopmentBuild } from "./auth-mode";
 import { log } from "@/lib/logger";
 import { authorizeLocalAdmin } from "./local-admin-login";
+import { PERMISSIONS, type Permission } from "@/lib/config/permissions";
 
-/**
+/*
  * ── NextAuth v5 Beta Notice ──
  *
  * This project uses NextAuth v5 (currently pinned at 5.0.0-beta.30 in
@@ -22,30 +23,6 @@ import { authorizeLocalAdmin } from "./local-admin-login";
  *
  * Monitor: https://github.com/nextauthjs/next-auth/releases
  */
-
-export type Permission =
-  | "scenario"
-  | "portfolio"
-  | "performance"
-  | "budget"
-  | "savings"
-  | "brokerage"
-  | "version"
-  | "contributionProfile"
-  | "sync";
-
-/** All permission keys — used to iterate when building group mapping. */
-export const ALL_PERMISSIONS: Permission[] = [
-  "scenario",
-  "portfolio",
-  "performance",
-  "budget",
-  "savings",
-  "brokerage",
-  "version",
-  "contributionProfile",
-  "sync",
-];
 
 /** Default Authentik group names per permission. */
 const DEFAULT_PERMISSION_GROUPS: Record<Permission, string> = {
@@ -89,7 +66,7 @@ export async function loadPermissionGroups(): Promise<{
         : null) || DEFAULT_ADMIN_GROUP;
 
     const groupToPermission: Record<string, Permission> = {};
-    for (const perm of ALL_PERMISSIONS) {
+    for (const perm of PERMISSIONS) {
       const override = map.get(`${RBAC_SETTINGS_PREFIX}${perm}`);
       const groupName =
         (typeof override === "string" ? override : null) ||
@@ -105,7 +82,7 @@ export async function loadPermissionGroups(): Promise<{
       message: "Falling back to default RBAC groups",
     });
     const groupToPermission: Record<string, Permission> = {};
-    for (const perm of ALL_PERMISSIONS) {
+    for (const perm of PERMISSIONS) {
       groupToPermission[DEFAULT_PERMISSION_GROUPS[perm]] = perm;
     }
     return { adminGroup: DEFAULT_ADMIN_GROUP, groupToPermission };

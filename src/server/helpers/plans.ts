@@ -29,7 +29,7 @@ import {
   planProfileIds,
 } from "@/lib/pure/plans";
 import { resolveRetirementProfileIdFrom } from "./retirement-profile";
-import type { Permission } from "@/server/auth";
+import type { Permission } from "@/lib/config/permissions";
 import type { Db } from "./transforms";
 
 /** Who may make a profile of each kind active — the rule that kind's own

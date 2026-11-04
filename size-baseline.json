@@ -171,7 +171,7 @@
     "src/server/routers/retirement.ts": 1489,
     "src/server/routers/salary-profiles.ts": 738,
     "src/server/routers/savings.ts": 2898,
-    "src/server/routers/settings/admin.ts": 426,
+    "src/server/routers/settings/admin.ts": 423,
     "src/server/routers/settings/paycheck.ts": 734,
     "src/server/routers/settings/tax-limits.ts": 784,
     "src/server/routers/simplefin.ts": 872,

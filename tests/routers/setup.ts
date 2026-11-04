@@ -21,7 +21,7 @@ import { drizzle } from "drizzle-orm/better-sqlite3";
 import { eq } from "drizzle-orm";
 import type { Session } from "next-auth";
 import { openTestSqlite } from "../helpers/db-harness";
-import type { Permission } from "@/server/auth";
+import type { Permission } from "@/lib/config/permissions";
 import type { BetterSQLite3Database } from "drizzle-orm/better-sqlite3";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
 import type { SalaryProfileEntry } from "@/server/helpers/salary";

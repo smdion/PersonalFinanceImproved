@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { Permission } from "@/server/auth";
+import type { Permission } from "@/lib/config/permissions";
 
 type UserContextValue = {
   name: string;

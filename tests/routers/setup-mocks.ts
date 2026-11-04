@@ -26,20 +26,8 @@ vi.mock("next/server", () => ({
 // Mock the auth function — we provide sessions directly via context
 vi.mock("@/server/auth", () => ({
   auth: vi.fn().mockResolvedValue(null),
-  Permission: {},
   RBAC_ADMIN_GROUP_KEY: "rbac_admin_group",
   RBAC_SETTINGS_PREFIX: "rbac_group_",
-  ALL_PERMISSIONS: [
-    "scenario",
-    "portfolio",
-    "performance",
-    "budget",
-    "savings",
-    "brokerage",
-    "version",
-    "contributionProfile",
-    "sync",
-  ],
 }));
 
 // Mock the db module — we provide our own SQLite db via context.

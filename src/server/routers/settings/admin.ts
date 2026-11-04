@@ -49,11 +49,8 @@ import {
   isValidTimeZone,
 } from "@/server/helpers/household-timezone";
 import { invalidateYearEndCache } from "@/server/helpers";
-import {
-  ALL_PERMISSIONS,
-  RBAC_SETTINGS_PREFIX,
-  RBAC_ADMIN_GROUP_KEY,
-} from "@/server/auth";
+import { RBAC_SETTINGS_PREFIX, RBAC_ADMIN_GROUP_KEY } from "@/server/auth";
+import { PERMISSIONS } from "@/lib/config/permissions";
 import { settingValue } from "./_shared";
 import { applyPlan } from "@/server/helpers/plans";
 import { mergeSettingAtomically } from "@/server/helpers/merge-setting";
@@ -315,7 +312,7 @@ export const adminProcedures = {
           ? (map.get(RBAC_ADMIN_GROUP_KEY) as string)
           : null) || "ledgr-admin";
 
-      const permissions = ALL_PERMISSIONS.map((perm) => {
+      const permissions = PERMISSIONS.map((perm) => {
         const override = map.get(`${RBAC_SETTINGS_PREFIX}${perm}`);
         return {
           permission: perm,

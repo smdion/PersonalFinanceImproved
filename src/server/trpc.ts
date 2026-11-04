@@ -10,7 +10,7 @@ import { externalFailure, userMessageFor } from "@/lib/budget-api/errors";
 import type { Session } from "next-auth";
 import { cookies, headers } from "next/headers";
 import { auth } from "./auth";
-import { type Permission, ALL_PERMISSIONS } from "./auth";
+import { type Permission, PERMISSIONS } from "@/lib/config/permissions";
 import { db, pool } from "@/lib/db";
 import { serializeQueries } from "@/lib/db/serial-client";
 import { isPostgres } from "@/lib/db/dialect";
@@ -65,7 +65,7 @@ const demoOnlySession: Session = {
     name: "Demo User",
     email: "demo@demo.local",
     role: "viewer",
-    permissions: [...ALL_PERMISSIONS],
+    permissions: [...PERMISSIONS],
   },
   expires: "2099-12-31T23:59:59.999Z",
 };

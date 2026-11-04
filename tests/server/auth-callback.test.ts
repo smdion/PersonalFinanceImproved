@@ -68,7 +68,8 @@ vi.mock("@/server/auth.config", () => ({
   },
 }));
 
-import { assignRoleAndPermissions, type Permission } from "@/server/auth";
+import { assignRoleAndPermissions } from "@/server/auth";
+import type { Permission } from "@/lib/config/permissions";
 
 const mockGroups = async () => ({
   adminGroup: "ledgr-admin",
