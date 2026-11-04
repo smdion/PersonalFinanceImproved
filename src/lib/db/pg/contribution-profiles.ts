@@ -1,14 +1,8 @@
 // Part of the Drizzle schema (PostgreSQL) — see schema-pg.ts.
 
 import { pgTable, serial, text, timestamp, jsonb } from "drizzle-orm/pg-core";
-import type {
-  PayPeriod,
-  PayWeek,
-  BonusDestination,
-} from "@/lib/config/enum-values";
-import type { W4FilingStatus } from "@/lib/config/filing-status";
+import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import type { EntityFieldMap } from "./scenarios";
-import type { ExtraPaycheckRoutingData } from "./shared";
 
 // ────────────────────────────────────────────────────────────────────────────
 // 16. Contribution profiles
@@ -52,32 +46,7 @@ export const salaryProfiles = pgTable("salary_profiles", {
    *  fallback to some other value). No partial entries — see
    *  salaryEntriesSchema in json-schemas.ts. */
   salaries: jsonb("salaries")
-    .$type<
-      Record<
-        string,
-        {
-          salary: number;
-          bonusPercent: number;
-          bonusMultiplier: number;
-          monthsInBonusYear: number;
-          bonusOverride: number | null;
-          payPeriod: PayPeriod;
-          payWeek: PayWeek;
-          anchorPayDate: string | null;
-          budgetPeriodsPerMonth: number | null;
-          w4FilingStatus: W4FilingStatus;
-          w4Box2cChecked: boolean;
-          additionalFedWithholding: number;
-          bonusMonth: number | null;
-          bonusDayOfMonth: number | null;
-          extraPaycheckRouting: ExtraPaycheckRoutingData | null;
-          /** Where the bonus goes; absent = the budget. */
-          bonusDestination?: BonusDestination;
-          /** Other pay per check, by paycheck_earnings id; absent = none. */
-          otherEarnings?: Record<string, number>;
-        }
-      >
-    >()
+    .$type<Record<string, SalaryEntry>>()
     .notNull()
     .default({}),
   createdAt: timestamp("created_at", { withTimezone: true })

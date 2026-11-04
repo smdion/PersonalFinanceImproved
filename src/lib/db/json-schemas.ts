@@ -265,8 +265,9 @@ export const extraPaycheckRoutingSchema = z
  * world, not a set of overrides on a shared baseline. If you want different
  * numbers, use a different profile.
  *
- * `.strict()` so a stale payload shape from an old client is rejected
- * loudly rather than being stored and silently ignored.
+ * `.strict()`: an old client's stale shape is rejected, not stored and
+ * ignored. So a new required field ships with its default in
+ * BLANK_SALARY_ENTRY (tests/db/salary-entry-defaults.test.ts checks it).
  *
  * Bonus terms, pay schedule, W-4 elections, and extra-paycheck routing all
  * live HERE, not split across `jobs` columns or a Contribution Profile:
@@ -275,9 +276,8 @@ export const extraPaycheckRoutingSchema = z
  * of fact as "what is my salary" — this collapses income, withholding/
  * schedule elections, and comp-routing decisions into one axis (see
  * DESIGN.md's Salary Profile layer section for the accepted tradeoff). A
- * Contribution Profile still owns the *deductions* bucket (paycheck_
- * deductions amounts) — a distinct fact from what the job elects on its
- * W-4/pay schedule.
+ * Contribution Profile still owns the *deductions* (paycheck_deductions
+ * amounts), a distinct fact from the job's W-4/pay schedule elections.
  */
 export const salaryEntrySchema = z
   .object({

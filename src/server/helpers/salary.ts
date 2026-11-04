@@ -14,14 +14,9 @@ import { and, eq, inArray } from "drizzle-orm";
 import type { SalaryEntry } from "@/lib/db/salary-entry-defaults";
 import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
+import type { W4FilingStatus } from "@/lib/config/filing-status";
 import { toNumber } from "./transforms";
 import { SK_ACTIVE_SALARY_PROFILE_ID } from "@/lib/constants/settings-keys";
-import type {
-  PayPeriod,
-  PayWeek,
-} from "@/lib/config/enum-values";
-import type { W4FilingStatus } from "@/lib/config/filing-status";
-import type { ExtraPaycheckRoutingData } from "@/lib/db/schema-pg";
 import type { Db } from "@/lib/db";
 
 // ---------------------------------------------------------------------------
@@ -366,20 +361,21 @@ export function applySalaryProfileRow(
   return map;
 }
 
-/** A job merged with its resolved Salary Profile entry's non-comp fields —
- *  every field is `undefined` when the job has no entry in the active
- *  Salary Profile (an incomplete/absent state), never a fallback value. */
+/** A job merged with its Salary Profile entry's non-comp fields (not pay,
+ *  bonus terms or bonus destination) — every one `undefined` when the job
+ *  has no entry (an incomplete/absent state), never a fallback value. */
 type JobWithSalaryFields<J> = J & {
-  payPeriod: PayPeriod | undefined;
-  payWeek: PayWeek | undefined;
-  anchorPayDate: string | null | undefined;
-  budgetPeriodsPerMonth: number | null | undefined;
-  w4FilingStatus: W4FilingStatus | undefined;
-  w4Box2cChecked: boolean | undefined;
-  additionalFedWithholding: number | undefined;
-  bonusMonth: number | null | undefined;
-  bonusDayOfMonth: number | null | undefined;
-  extraPaycheckRouting: ExtraPaycheckRoutingData | null | undefined;
+  [
+    K in keyof Omit<
+      SalaryEntry,
+      | "salary"
+      | "bonusPercent"
+      | "bonusMultiplier"
+      | "monthsInBonusYear"
+      | "bonusOverride"
+      | "bonusDestination"
+    >
+  ]: SalaryEntry[K] | undefined;
 };
 
 /**

@@ -146,7 +146,7 @@
     "src/server/helpers/contribution-caps.ts": 560,
     "src/server/helpers/contribution.ts": 1826,
     "src/server/helpers/projection-cache.ts": 556,
-    "src/server/helpers/salary.ts": 507,
+    "src/server/helpers/salary.ts": 503,
     "src/server/helpers/snapshot.ts": 1218,
     "src/server/retirement/build-engine-payload.ts": 1415,
     "src/server/retirement/payload/profile-switches.ts": 505,
@@ -169,7 +169,7 @@
     "src/server/routers/projection/strategy.ts": 876,
     "src/server/routers/projection/tax-optimization.ts": 552,
     "src/server/routers/retirement.ts": 1420,
-    "src/server/routers/salary-profiles.ts": 738,
+    "src/server/routers/salary-profiles.ts": 694,
     "src/server/routers/savings.ts": 2895,
     "src/server/routers/settings/admin.ts": 423,
     "src/server/routers/settings/paycheck.ts": 734,
@@ -924,9 +924,6 @@
     },
     "src/server/routers/retirement.ts": {
       "retirementRouter.computeRelocationAnalysis.query()": 399
-    },
-    "src/server/routers/salary-profiles.ts": {
-      "salaryProfileRouter.getById.query()": 178
     },
     "src/server/routers/savings.ts": {
       "computeJobNetPayPerCheck": 224,
