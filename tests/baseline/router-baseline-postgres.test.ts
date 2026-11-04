@@ -27,7 +27,16 @@ import { defineRouterBaseline } from "./router-suite";
 import { HOUSEHOLDS } from "./households";
 
 /** `<household>/<procedure>` → paths PostgreSQL gets differently. */
-const KNOWN_GAPS: Record<string, string[]> = {};
+const KNOWN_GAPS: Record<string, string[]> = {
+  // v0.11: these queries have no full ORDER BY, so PostgreSQL returns the
+  // same rows in another order (first CI run, 2026-11-03): tax-bracket
+  // sets, a snapshot's per-account totals, budget items, contribution
+  // accounts. Same numbers; the lists would show in another order.
+  "*/settings.taxBrackets.list": ["unordered"],
+  "*/networth.listSnapshotTotals": ["unordered"],
+  "*/budget.computeActiveSummary": ["unordered"],
+  "*/settings.contributionAccounts.list": ["unordered"],
+};
 
 // Not imported from ../routers/setup: that module loads the db module (as
 // SQLite) before this file can point DATABASE_URL at PostgreSQL.

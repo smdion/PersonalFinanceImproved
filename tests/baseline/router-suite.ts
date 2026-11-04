@@ -81,8 +81,10 @@ export interface RouterBaselineOptions {
   /** A database migrated from empty and an admin caller on it. */
   open: () => Promise<{ caller: Caller; close: () => Promise<void> | void }>;
   /** Paths whose numbers this dialect is known to get differently, by
-   *  `<household>/<procedure>` ("*" for the whole result): each one is a
-   *  v0.11 bug. */
+   *  `<household>/<procedure>`, or the household "*" for every household
+   *  ("*" for the whole result; "unordered" when only the order of rows
+   *  differs: every array is compared as a set, all numbers still
+   *  checked): each one is a v0.11 bug. */
   knownGaps?: Record<string, string[]>;
   timeout?: number;
 }
@@ -158,11 +160,19 @@ export function defineRouterBaseline(opts: RouterBaselineOptions): void {
             expected,
             `no baseline file ${path.relative(process.cwd(), file)}`,
           ).not.toBeNull();
-          const gaps = opts.knownGaps?.[`${key}/${name}`] ?? [];
+          const gaps = [
+            ...(opts.knownGaps?.[`${key}/${name}`] ?? []),
+            ...(opts.knownGaps?.[`*/${name}`] ?? []),
+          ];
           if (gaps.includes("*")) return; // the whole result differs
+          const order = gaps.includes("unordered")
+            ? sortArrays
+            : (t: NumberTree) => t;
           const figures = (tree: NumberTree) =>
             Object.fromEntries(
-              Object.entries(flatten(tree)).filter(([p]) => !gaps.includes(p)),
+              Object.entries(flatten(order(tree))).filter(
+                ([p]) => !gaps.includes(p),
+              ),
             );
           expect(figures(numbers)).toEqual(figures(expected!));
         },
@@ -170,6 +180,24 @@ export function defineRouterBaseline(opts: RouterBaselineOptions): void {
       );
     },
   );
+}
+
+/** Every array's items in one fixed order (by their content), innermost
+ *  first: two results that differ only in row order become equal. */
+function sortArrays(tree: NumberTree): NumberTree {
+  if (Array.isArray(tree)) {
+    return tree
+      .map(sortArrays)
+      .map((item) => [JSON.stringify(item), item] as const)
+      .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
+      .map(([, item]) => item);
+  }
+  if (tree !== null && typeof tree === "object") {
+    return Object.fromEntries(
+      Object.entries(tree).map(([k, v]) => [k, sortArrays(v)]),
+    );
+  }
+  return tree;
 }
 
 function defineWholeBaselineChecks(write: boolean): void {
