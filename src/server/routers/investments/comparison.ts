@@ -238,7 +238,7 @@ export const investmentComparisonRouter = createTRPCRouter({
       const yourMonths = yourWindowMonths(
         years,
         benchmarks.map((b) => b.years),
-        ctx.scope.asOf,
+        new Date(), // after the fetch
       );
 
       return {

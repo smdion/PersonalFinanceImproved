@@ -112,7 +112,7 @@ export const syncCoreRouter = createTRPCRouter({
           client.getCategories(),
         ]);
 
-        const now = ctx.scope.asOf;
+        const now = new Date(); // after the fetch
         const currentMonth = currentMonthKey(now);
         const monthDetail = await client.getMonthDetail(currentMonth);
 
@@ -130,7 +130,7 @@ export const syncCoreRouter = createTRPCRouter({
         const { getApiAccountBalanceMapFromAccounts } =
           await import("@/server/helpers/api-balance-resolution");
         const apiBalanceMap = getApiAccountBalanceMapFromAccounts(accounts);
-        const currentYear = ctx.scope.asOf.getFullYear();
+        const currentYear = new Date().getFullYear(); // after the fetch
 
         // ── Drift detection ──
         // Diff cached account list against new fetch. Surfaces broken

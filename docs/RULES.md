@@ -167,6 +167,7 @@ The rest of the conventions are in CONTRIBUTING.md § Coding Conventions.
 2. **Helpers require asOfDate.** Functions like `buildYearEndHistory()`, `getEffectiveOtherAssets()`, and `isPriorYearContribWindow()` take `asOfDate` as a required parameter, with no `= new Date()` default: a default guards a state that shouldn't exist. They never call `new Date()` internally.
 3. **Calculator inputs require asOfDate.** All calculator input types already include `asOfDate: Date`. This is enforced by TypeScript — maintain it.
 4. **No stray `new Date()` in called functions.** If a function is called from a router that already resolved a date, the function must use the passed date — not create its own.
+5. **After a fetch.** A step that means now, after a network fetch, may read the clock again, with a one-line comment.
 
 ## Permission & Security Gates
 

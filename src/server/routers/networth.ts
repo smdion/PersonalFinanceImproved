@@ -1246,7 +1246,7 @@ export const networthRouter = createTRPCRouter({
           snapshotId: snapshot.id,
           snapshotDate: input.snapshotDate,
           mode: "create",
-          asOfDate: ctx.scope.asOf,
+          asOfDate: new Date(), // after the fetch
         });
 
         return { ...snapshot, apiSyncResult, apiPullResult };
