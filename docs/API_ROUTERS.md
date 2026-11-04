@@ -2,7 +2,7 @@
 
 > **Auto-generated** by `scripts/gen-api-docs.ts`. Do not edit by hand. Run `npx tsx scripts/gen-api-docs.ts` to regenerate.
 
-**393 procedures across 54 routers.**
+**392 procedures across 54 routers.**
 
 Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure` (admin role), `<domain>Procedure` (permission-scoped), `publicProcedure` (no auth).
 
@@ -86,7 +86,6 @@ Procedure type tags: `protectedProcedure` (any signed-in user), `adminProcedure`
 | `duplicate`                | mutation | `contributionProfileProcedure` | contributionAccountId (contributionValue/method/match fields/ autoMaximize/isActive) with no FK to owned rows and no external write-through path — multiple profiles already reference the same account  |
 | `getById`                  | query    | `protectedProcedure`           | Get a single profile with fully resolved per-account details.                                                                                                                                            |
 | `list`                     | query    | `protectedProcedure`           | List all contribution profiles with resolved summary totals.                                                                                                                                             |
-| `resolve`                  | query    | `protectedProcedure`           | Resolve a profile to aggregate totals — used by the relocation tool and any other consumer that needs salary/contribution/match numbers for a given profile.                                             |
 | `setAccountActiveFields`   | mutation | `contributionProfileProcedure` | field optional, no cross-field constraint); the paired-or-neither contributionValue/contributionMethod invariant is checked on the MERGED result below, not on the patch itself, since a legitimate sing |
 | `setActive`                | mutation | `contributionProfileProcedure` | (`(id: number \| null) => void`) documents null as a valid call, so a caller that reaches it silently loses the write. Deleting the app_settings row mirrors settings.appSettings.upsert's own existing  |
 | `setDeductionActiveFields` | mutation | `contributionProfileProcedure` | Patch (merge) one deduction's active amount within a profile — same field-level-patch, same-transaction pattern as setAccountActiveFields. A deduction has no live amountPerPeriod any more (Stage B dro |

@@ -139,7 +139,7 @@
     "src/lib/simplefin/ingest.ts": 535,
     "src/lib/simplefin/sync.ts": 618,
     "src/lib/tax-data/validate.ts": 430,
-    "src/lib/utils/colors.ts": 440,
+    "src/lib/utils/colors.ts": 434,
     "src/lib/utils/format.ts": 421,
     "src/server/helpers/budget-api-push.ts": 434,
     "src/server/helpers/budget.ts": 668,
@@ -152,7 +152,7 @@
     "src/server/retirement/payload/profile-switches.ts": 509,
     "src/server/routers/assets.ts": 528,
     "src/server/routers/budget.ts": 2186,
-    "src/server/routers/contribution-profiles.ts": 970,
+    "src/server/routers/contribution-profiles.ts": 914,
     "src/server/routers/contribution.ts": 1440,
     "src/server/routers/demo.ts": 663,
     "src/server/routers/investments/_shared.ts": 637,
@@ -727,9 +727,6 @@
     },
     "src/components/tools/relocation/year-adjustments.tsx": {
       "RelocationYearAdjustments": 249
-    },
-    "src/components/ui/data-table.tsx": {
-      "DataTable": 235
     },
     "src/components/ui/push-preview-modal.tsx": {
       "PushPreviewModal": 203

@@ -92,12 +92,6 @@ export const TAX_TYPE_COLORS: Record<
   },
 };
 
-/** Bar color for tax treatment breakdown (e.g. `bg-emerald-400` for Roth).
- *  @public — the documented helper for tax-treatment bar fills (CONTRIBUTING.md § Coding Conventions, Colors). */
-export function taxTypeColor(taxType: string): string {
-  return TAX_TYPE_COLORS[taxType]?.bg ?? "bg-gray-400";
-}
-
 /** Text color for tax treatment labels (e.g. `text-blue-500` for Pre-Tax) */
 export function taxTypeTextColor(taxType: string): string {
   return TAX_TYPE_COLORS[taxType]?.text ?? "text-gray-500";

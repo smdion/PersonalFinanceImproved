@@ -70,7 +70,7 @@ Key concept → directory map:
 | tRPC routers            | `src/server/routers/` (<!-- AUTO-GEN:primaryRouters -->27<!-- /AUTO-GEN --> primary + <!-- AUTO-GEN:settingsSubRouters -->5<!-- /AUTO-GEN --> settings sub-routers)                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Auth + tRPC middleware  | `src/server/auth.ts`, `src/server/trpc.ts`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | Pages (App Router)      | `src/app/(dashboard)/` (<!-- AUTO-GEN:pages -->36<!-- /AUTO-GEN --> pages)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Shared UI primitives    | `src/components/ui/` (<!-- AUTO-GEN:uiComponents -->37<!-- /AUTO-GEN --> components)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Shared UI primitives    | `src/components/ui/` (<!-- AUTO-GEN:uiComponents -->36<!-- /AUTO-GEN --> components)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Domain components       | `src/components/{paycheck,budget,savings,networth,performance,mortgage,settings}/` — paycheck (<!-- AUTO-GEN:paycheckComponents -->21<!-- /AUTO-GEN -->), budget (<!-- AUTO-GEN:budgetComponents -->20<!-- /AUTO-GEN -->), savings (<!-- AUTO-GEN:savingsComponents -->22<!-- /AUTO-GEN -->), networth (<!-- AUTO-GEN:networthComponents -->9<!-- /AUTO-GEN -->), performance (<!-- AUTO-GEN:performanceComponents -->17<!-- /AUTO-GEN -->), mortgage (<!-- AUTO-GEN:mortgageComponents -->9<!-- /AUTO-GEN -->), settings (<!-- AUTO-GEN:settingsComponents -->29<!-- /AUTO-GEN -->) |
 | Dashboard cards         | `src/components/cards/` (<!-- AUTO-GEN:dashboardCards -->23<!-- /AUTO-GEN --> cards)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Budget API clients      | `src/lib/budget-api/` (YNAB + Actual)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -173,7 +173,7 @@ Helpers: `accountColor()`, `accountMatchColor()`, `accountBorderColor()`, `accou
 | HSA         | hsa      | emerald-500 | green-600     | HSA         |
 | After-Tax   | afterTax | orange-500  | orange-600    | After-Tax   |
 
-Helpers: `taxTypeColor()`, `taxTypeTextColor()`, `taxTypeLabel()`
+Helpers: `taxTypeTextColor()`, `taxTypeLabel()`; bar fills read `TAX_TYPE_COLORS[key].bg`
 
 **Label convention:** The DB stores IRS bucket keys (`preTax`/`taxFree`/`hsa`/`afterTax`) — these are the correct data model. The UI displays user-friendly labels via `taxTypeLabel()`: `preTax → "Traditional"`, `taxFree → "Roth"`. These are the terms on Vanguard statements, 401k enrollment, and finance articles. IRS-level context is available in `TAX_BUCKET_DESCRIPTIONS` tooltips (e.g. "Traditional (pre-tax) contributions..."). Payroll terms like "Pre-Tax Deductions" on pay stubs are a different concept (payroll section headers) and are not changed.
 
@@ -614,7 +614,7 @@ The rules are RULES.md § Data-Driven Architecture.
 | `src/lib/config/account-types.types.ts` | `AccountCategory` (a hand-kept union matching the config keys, see RULES.md § Known Gaps), `AccountBalance` union |
 | `src/lib/constants.ts`                  | App-wide defaults and thresholds                                                                                  |
 
-The rest of `src/lib/config/` holds the other data tables (tax, RMD, IRMAA, ACA, NIIT, Social Security, milestones, recommendations, withdrawal strategies, glossary, …) — one module per subject.
+The rest of `src/lib/config/` holds the other data tables (tax, RMD, IRMAA, ACA, NIIT, Social Security, milestones, recommendations, withdrawal strategies, …) — one module per subject.
 
 ### Fixing a violation: add the predicate first
 
@@ -1100,7 +1100,7 @@ and the status rows on Milestones, Recommendations and Settings.
 
 ### Component Catalog
 
-Run `ls src/components/ui/` for the live list (<!-- AUTO-GEN:uiComponents -->37<!-- /AUTO-GEN --> components). Each
+Run `ls src/components/ui/` for the live list (<!-- AUTO-GEN:uiComponents -->36<!-- /AUTO-GEN --> components). Each
 component exports a `*Props` type with the full prop contract — read the file
 directly rather than maintaining a duplicate table here. Imports are barreled
 via `@/components/ui` or available per-file (`@/components/ui/button`, etc.).

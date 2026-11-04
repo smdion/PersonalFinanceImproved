@@ -1,7 +1,7 @@
 /**
  * Contribution Profiles router integration tests.
  *
- * Tests list, getById, create, update, delete, and resolve
+ * Tests list, getById, create, update and delete
  * using an isolated SQLite database per test suite.
  */
 import "./setup-mocks";
@@ -302,43 +302,6 @@ describe("contributionProfiles router", () => {
   });
 
   // ── RESOLVE ──
-
-  describe("resolve", () => {
-    let profileId: number;
-
-    beforeAll(async () => {
-      const profile = await caller.contributionProfile.create({
-        name: "Resolve Test Profile",
-        description: "Used to test resolve",
-        contributionActiveFields: { contributionAccounts: {} },
-      });
-      profileId = profile.id;
-    });
-
-    it("returns null for a non-existent profile id", async () => {
-      const result = await caller.contributionProfile.resolve({ id: 99999 });
-      expect(result).toBeNull();
-    });
-
-    it("returns aggregate totals for an existing profile", async () => {
-      const result = await caller.contributionProfile.resolve({
-        id: profileId,
-      });
-      expect(result).toBeDefined();
-      expect(typeof result!.combinedSalary).toBe("number");
-      expect(typeof result!.annualContributions).toBe("number");
-      expect(typeof result!.annualEmployerMatch).toBe("number");
-    });
-
-    it("resolve result includes contribByCategory and employerMatchByCategory", async () => {
-      const result = await caller.contributionProfile.resolve({
-        id: profileId,
-      });
-      expect(result).toBeDefined();
-      expect(typeof result!.contribByCategory).toBe("object");
-      expect(typeof result!.employerMatchByCategory).toBe("object");
-    });
-  });
 
   // Write-time bracket validation for w4FilingStatus/w4Box2cChecked moved
   // to salaryProfile.create/update (assertSalaryEntryTaxBracketsExist in
@@ -1158,10 +1121,10 @@ describe("contributionProfiles coverage", () => {
     });
   });
 
-  // ── RESOLVE: with real seeded data ──
+  // ── LIST: a family HSA is capped at the family limit ──
 
-  describe("resolve — with seeded job and contributions", () => {
-    it("the profile list caps a family HSA at the family limit, like resolve", async () => {
+  describe("list — with seeded job and contributions", () => {
+    it("the profile list caps a family HSA at the family limit", async () => {
       const { caller, db, cleanup } = await createTestCaller(adminSession);
       try {
         const personId = await seedPerson(db, "Alex");
@@ -1184,55 +1147,10 @@ describe("contributionProfiles coverage", () => {
             jobs: {},
           },
         });
-        const resolved = await caller.contributionProfile.resolve({
-          id: profileId,
-        });
         const listed = (await caller.contributionProfile.list()).find(
           (p) => p.id === profileId,
         )!;
-        expect(resolved!.annualContributions).toBeCloseTo(7000, 0);
-        expect(listed.summary.annualContributions).toBeCloseTo(
-          resolved!.annualContributions,
-          2,
-        );
-      } finally {
-        cleanup();
-      }
-    });
-
-    it("returns meaningful totals when data is seeded", async () => {
-      const { caller, db, cleanup } = await createTestCaller(adminSession);
-      try {
-        const personId = await seedPerson(db, "Alex");
-        seedJob(db, personId, { annualSalary: "100000" });
-        const acctId = seedContribAccount(db, {
-          personId,
-          employerMatchType: "percent_of_contribution",
-          employerMatchValue: "0.50",
-          employerMaxMatchPct: "0.06",
-        });
-
-        const profileId = seedContribProfile(db, {
-          name: "ResolveData",
-          contributionActiveFields: {
-            contributionAccounts: {
-              [String(acctId)]: {
-                contributionValue: "0.10",
-                contributionMethod: "percent_of_salary",
-              },
-            },
-            jobs: {},
-          },
-        });
-
-        const result = await caller.contributionProfile.resolve({
-          id: profileId,
-        });
-        expect(result).not.toBeNull();
-        expect(result!.combinedSalary).toBe(100000);
-        expect(result!.annualContributions).toBeGreaterThan(0);
-        expect(result!.contribByCategory).toBeDefined();
-        expect(result!.employerMatchByCategory).toBeDefined();
+        expect(listed.summary.annualContributions).toBeCloseTo(7000, 0);
       } finally {
         cleanup();
       }
@@ -1404,36 +1322,6 @@ describe("contributionProfiles coverage", () => {
         });
         expect(result).not.toBeNull();
         expect(result!.accountDetails.length).toBe(2);
-      } finally {
-        cleanup();
-      }
-    });
-  });
-
-  // ── RESOLVE: salary is live, not profile-driven ──
-  // (Salary override coverage moved to tests/routers/salary-profiles.test.ts
-  // when salary became its own first-class entity.)
-
-  describe("resolve — combined salary is live", () => {
-    it("ignores any salary axis and reports live combined salary", async () => {
-      const { caller, db, cleanup } = await createTestCaller(adminSession);
-      try {
-        const personId = await seedPerson(db, "Alex");
-        seedJob(db, personId, { annualSalary: "100000" });
-        seedContribAccount(db, {
-          personId,
-          employerMatchType: "none",
-        });
-
-        const profileId = seedContribProfile(db, {
-          name: "SalaryOverrideResolve",
-        });
-
-        const result = await caller.contributionProfile.resolve({
-          id: profileId,
-        });
-        expect(result).not.toBeNull();
-        expect(result!.combinedSalary).toBe(100000);
       } finally {
         cleanup();
       }
