@@ -1,6 +1,6 @@
 /**
- * Commit rules (CONTRIBUTING.md § Commit rules). Warns only: the exit code is
- * 0 unless `--strict` is passed.
+ * Commit rules (CONTRIBUTING.md § Commit rules). The commit-msg hook and CI pass
+ * `--strict`, so a breach blocks; without it (`--history`) the script only reports.
  *
  *   tsx scripts/check-commit.ts --message-file .git/COMMIT_EDITMSG  (commit-msg hook: the staged change)
  *   tsx scripts/check-commit.ts --range origin/main..HEAD           (CI: every commit in a pull request)
@@ -391,7 +391,7 @@ function main() {
   }
   if (warnings.length > 0) {
     console.warn(
-      `${warnings.length} commit-rule warning(s); see CONTRIBUTING.md § Commit rules. Warnings only for now.`,
+      `${warnings.length} commit-rule warning(s); see CONTRIBUTING.md § Commit rules.${strict ? "" : " Report only (no --strict)."}`,
     );
   }
   process.exit(strict && warnings.length > 0 ? 1 : 0);

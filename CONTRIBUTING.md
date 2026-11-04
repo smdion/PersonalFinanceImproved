@@ -56,7 +56,7 @@ See `ls src/lib/pure/` for the existing modules — check there before adding on
 
 ## Commit rules
 
-One behavior per commit, and the message says why. `.husky/commit-msg` and a CI step over a pull request's commits check these with `scripts/check-commit.ts`; for now they only warn.
+One behavior per commit, and the message says why. `.husky/commit-msg` and a CI step over a pull request's commits check these with `scripts/check-commit.ts --strict`, and a breach blocks (since v0.10.1).
 
 - **Subject:** a type prefix, `fix:`, `feat:`, `refactor:`, `perf:`, `test:`, `docs:`, `build:`, `ci:`, `chore:`, `style:`, `revert:` or `release:`, with an optional `(scope)`.
 - **Body:** why the change is made, not only what changed.
