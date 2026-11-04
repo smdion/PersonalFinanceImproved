@@ -888,8 +888,9 @@ v0.8.10 converter's live copy went with the v0.9.0 squash — only the
 restore path in `src/lib/db/v0810-profile-sets.ts` remains.) Converters work
 on snake_case rows (JSON as object or text), are idempotent (a no-op once
 their source is gone) and write only non-default values; the restore path
-also drops the columns the migration drops, and each new data-changing
-migration tag goes in `V08_SCHEMA_TAGS`. Pending migrations apply
+also drops the columns the migration drops. A new migration's tag reaches
+`KNOWN_SCHEMA_VERSIONS` from the drizzle journal, so only a data-changing
+one needs a transform. Pending migrations apply
 strictly, all in one transaction, and the schema is checked against the
 latest snapshot (every table, column and index) before it commits: a failed
 statement or a missing object rolls everything back and records nothing.
