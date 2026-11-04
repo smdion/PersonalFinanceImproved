@@ -43,7 +43,7 @@
     "src/components/cards/projection/spending-stability-chart.tsx": 557,
     "src/components/cards/projection/tooltip-renderer.tsx": 410,
     "src/components/cards/projection/use-projection-derived.ts": 637,
-    "src/components/cards/projection/use-projection-queries.ts": 979,
+    "src/components/cards/projection/use-projection-queries.ts": 977,
     "src/components/cards/projection/utils.ts": 870,
     "src/components/cards/withdrawal-comparison.tsx": 559,
     "src/components/decumulation-methodology-content.tsx": 880,
@@ -166,7 +166,7 @@
     "src/server/routers/projection/monte-carlo.ts": 552,
     "src/server/routers/projection/relocation.ts": 666,
     "src/server/routers/projection/scenarios.ts": 491,
-    "src/server/routers/projection/strategy.ts": 849,
+    "src/server/routers/projection/strategy.ts": 848,
     "src/server/routers/projection/tax-optimization.ts": 538,
     "src/server/routers/retirement.ts": 1420,
     "src/server/routers/salary-profiles.ts": 694,
@@ -406,7 +406,7 @@
       "useProjectionFormState": 343
     },
     "src/components/cards/projection/use-projection-queries.ts": {
-      "useProjectionQueries": 941
+      "useProjectionQueries": 939
     },
     "src/components/cards/projection/use-projection-state.ts": {
       "useProjectionState": 284
@@ -917,7 +917,7 @@
     },
     "src/server/routers/projection/strategy.ts": {
       "strategyRouter.analyzeStrategy.query()": 415,
-      "strategyRouter.computeStrategyComparison.query()": 280
+      "strategyRouter.computeStrategyComparison.query()": 279
     },
     "src/server/routers/retirement.ts": {
       "retirementRouter.computeRelocationAnalysis.query()": 399
