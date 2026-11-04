@@ -77,7 +77,7 @@ import {
   isPortfolioParent,
 } from "@/lib/config/account-types";
 import type { ParentCategory } from "@/lib/config/account-types";
-import type { AccountCategory } from "@/lib/config/account-types.types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import { TRPCError } from "@trpc/server";
 

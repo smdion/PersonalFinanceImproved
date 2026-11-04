@@ -13,7 +13,7 @@
  * Data, not code: generic words institutions use, never household names.
  * First match wins, so more specific patterns come first.
  */
-import type { AccountCategory } from "./account-types.types";
+import type { AccountCategory } from "./account-types";
 import type { PortfolioTaxType } from "./enum-values";
 
 type SimplefinAccountKind = {

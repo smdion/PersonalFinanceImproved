@@ -14,7 +14,7 @@ import {
 } from "@/lib/config/account-types";
 import { canSwitchFunds } from "@/lib/pure/fund-findings";
 import { sharesHouseholdLimit } from "@/lib/pure/contribution-caps";
-import type { AccountCategory } from "@/lib/config/account-types.types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import {
   FUND_MAIN_BUCKET_SHARE,
   type SavingsTargetSource,

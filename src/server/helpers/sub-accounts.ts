@@ -10,7 +10,7 @@ import * as schema from "@/lib/db/schema";
 import { snapshotAccountKey } from "@/lib/pure/portfolio";
 import type { SnapshotParts } from "@/lib/pure/holding-periods";
 import { taxTypeLabel } from "@/lib/utils/colors";
-import type { AccountCategory } from "@/lib/config/account-types.types";
+import type { AccountCategory } from "@/lib/config/account-types";
 import type { PortfolioTaxType } from "@/lib/config/enum-values";
 import type { Db } from "@/lib/db";
 
