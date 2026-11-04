@@ -1,6 +1,8 @@
 // Shared types for budget API integrations (YNAB, Actual Budget).
 // All amounts are in dollars (number). Each client converts at its boundary.
 
+import type { BudgetApiService } from "@/lib/config/enum-values";
+
 /** A budget account (checking, savings, tracking, etc.) */
 export type BudgetAccount = {
   id: string;
@@ -141,8 +143,8 @@ export type ActualConfig = {
   externalUrl?: string;
 };
 
-/** Budget API service identifier */
-export type BudgetApiService = "ynab" | "actual";
+/** Budget API service identifier: the keys of BUDGET_SERVICES. */
+export type { BudgetApiService };
 
 /** The active budget API setting stored in app_settings */
-export type ActiveBudgetApi = "none" | "ynab" | "actual";
+export type ActiveBudgetApi = "none" | BudgetApiService;

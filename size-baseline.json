@@ -53,7 +53,7 @@
     "src/components/investments/holding-history-section.tsx": 522,
     "src/components/investments/holdings-section.tsx": 790,
     "src/components/layout/scenario-bar.tsx": 497,
-    "src/components/layout/sidebar.tsx": 526,
+    "src/components/layout/sidebar.tsx": 525,
     "src/components/liabilities/debts-card.tsx": 536,
     "src/components/methodology-content.tsx": 555,
     "src/components/mortgage/mortgage-settings.tsx": 728,
