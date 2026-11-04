@@ -26,10 +26,8 @@ import {
   addBasis,
 } from "@/lib/config/account-balance";
 import { accountDisplayName } from "@/lib/utils/format";
-import {
-  emptyTaxBucketMap,
-  type PortfolioTaxType,
-} from "@/lib/config/enum-values";
+import type { PortfolioTaxType } from "@/lib/config/enum-values";
+import { emptyTaxBucketMap } from "@/lib/config/tax-treatment-buckets";
 import { toNumber } from "@/server/helpers/transforms";
 import { roundToCents, sumBy, safeDivide } from "@/lib/utils/math";
 

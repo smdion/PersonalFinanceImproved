@@ -6,7 +6,7 @@ import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_SALARY_PROFILE_ID,
 } from "@/lib/constants/settings-keys";
-import type { PayProfileSelection } from "@/lib/pure/household/profile-selection";
+import type { PayProfileSelection } from "@/lib/pure/household/profile-selection.schema";
 import type { RequestScope } from "@/server/data/request-scope";
 
 export type ProfilePair = {

@@ -42,10 +42,8 @@ import {
   resolveProjectionOverrides,
 } from "./_shared";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
-import {
-  profileSelectionSchema,
-  engineProfileOptions,
-} from "@/lib/pure/household/profile-selection";
+import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 export const socialSecurityRouter = createTRPCRouter({
   /**

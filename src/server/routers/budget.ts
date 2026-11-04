@@ -70,7 +70,7 @@ import type { DbOrTx } from "@/lib/db";
 import {
   payProfileSelectionSchema,
   type PayProfileSelection,
-} from "@/lib/pure/household/profile-selection";
+} from "@/lib/pure/household/profile-selection.schema";
 import { resolveProfileSelection } from "@/server/services/profile-selection";
 
 type BudgetItemRow = typeof schema.budgetItems.$inferSelect;

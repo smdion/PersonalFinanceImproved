@@ -263,30 +263,6 @@ export const PORTFOLIO_TAX_TYPE_VALUES = [
 export type PortfolioTaxType = (typeof PORTFOLIO_TAX_TYPE_VALUES)[number];
 export const portfolioTaxTypeSchema = z.enum(PORTFOLIO_TAX_TYPE_VALUES);
 
-/** A fresh zero counter per portfolio tax type. */
-export function emptyTaxBucketMap(): Record<PortfolioTaxType, number> {
-  return { preTax: 0, taxFree: 0, hsa: 0, afterTax: 0 };
-}
-
-/** A contribution's tax treatment → the portfolio tax type its money lands in. */
-export const TAX_TREATMENT_TO_TAX_TYPE: Readonly<
-  Record<TaxTreatment, PortfolioTaxType>
-> = {
-  pre_tax: "preTax",
-  tax_free: "taxFree",
-  after_tax: "afterTax",
-  hsa: "hsa",
-};
-
-/** The portfolio tax type for a stored treatment; undefined for a value that
- *  isn't a tax treatment. */
-export function portfolioTaxTypeOf(
-  treatment: string,
-): PortfolioTaxType | undefined {
-  const parsed = taxTreatmentSchema.safeParse(treatment);
-  return parsed.success ? TAX_TREATMENT_TO_TAX_TYPE[parsed.data] : undefined;
-}
-
 // ── Utility Kind ──
 
 export const UTILITY_KIND_VALUES = ["gas", "water", "electric"] as const;

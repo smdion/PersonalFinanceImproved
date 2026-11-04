@@ -7,8 +7,8 @@ import { describe, it, expect } from "vitest";
 import {
   engineProfileOptions,
   profileSelectionFrom,
-  profileSelectionSchema,
 } from "@/lib/pure/household/profile-selection";
+import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 describe("profileSelectionFrom", () => {
   it("leaves out every key the page didn't pick", () => {

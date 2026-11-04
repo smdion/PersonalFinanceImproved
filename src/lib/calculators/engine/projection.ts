@@ -24,7 +24,7 @@ import {
   getAccountTypeConfig,
   isTaxFreeBucket,
 } from "../../config/account-types";
-import { emptyTaxBucketMap } from "../../config/enum-values";
+import { emptyTaxBucketMap } from "../../config/tax-treatment-buckets";
 import { expenseEndingFactor } from "./expense-endings";
 import { resolveDecumulationConfig } from "./override-resolution";
 import { buildProjectionContext } from "./projection-year-handlers/context";

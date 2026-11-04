@@ -25,10 +25,8 @@ import { useActiveSalaryProfile } from "@/lib/hooks/use-active-salary-profile";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { defaultDecumulationConfig } from "@/lib/config/account-types";
-import {
-  profileSelectionFrom,
-  type ProfileSelection,
-} from "@/lib/pure/household/profile-selection";
+import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
+import type { ProfileSelection } from "@/lib/pure/household/profile-selection.schema";
 import {
   SK_RETIREMENT_DEC_BUDGET_COL,
   SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,

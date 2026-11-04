@@ -31,7 +31,7 @@ import {
   getRothBalance,
   getTotalBalance,
 } from "../../config/account-balance";
-import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/enum-values";
+import { TAX_TREATMENT_TO_TAX_TYPE } from "../../config/tax-treatment-buckets";
 import { projectSpecAmount } from "./contribution-projection";
 import type { EligibilityRecord } from "@/lib/pure/withdrawal-eligibility";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";

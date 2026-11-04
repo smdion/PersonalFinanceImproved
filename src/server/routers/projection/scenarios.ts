@@ -30,7 +30,7 @@ import {
   getAllCategories,
   categoriesWithTaxPreference,
 } from "@/lib/config/account-types";
-import { portfolioTaxTypeOf } from "@/lib/config/enum-values";
+import { portfolioTaxTypeOf } from "@/lib/config/tax-treatment-buckets";
 import {
   strategyParamFields,
   type StrategyParamColumn,
@@ -48,10 +48,8 @@ import {
   resolveProjectionOverrides,
 } from "./_shared";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
-import {
-  profileSelectionSchema,
-  engineProfileOptions,
-} from "@/lib/pure/household/profile-selection";
+import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 /** A settings row's strategy param columns, as stored. */
 function pickStrategyParamColumns<

@@ -18,10 +18,8 @@ import {
   resolveProjectionOverrides,
 } from "./_shared";
 import type { ProjectionInput } from "@/lib/calculators/types";
-import {
-  profileSelectionSchema,
-  engineProfileOptions,
-} from "@/lib/pure/household/profile-selection";
+import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 export const stressTestRouter = createTRPCRouter({
   /**

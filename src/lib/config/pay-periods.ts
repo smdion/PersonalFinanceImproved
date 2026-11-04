@@ -5,7 +5,7 @@
  * periods per month, and UI labels/notes. Replaces all inline maps and
  * hardcoded help text strings throughout the codebase.
  */
-import { payPeriodSchema, type PayPeriod } from "./enum-values";
+import type { PayPeriod } from "./enum-values";
 
 type PayPeriodConfig = {
   periodsPerYear: number;
@@ -45,8 +45,12 @@ export const PAY_PERIOD_CONFIG: Readonly<Record<PayPeriod, PayPeriodConfig>> = {
 export function payPeriodConfig(
   payPeriod: string,
 ): PayPeriodConfig | undefined {
-  const parsed = payPeriodSchema.safeParse(payPeriod);
-  return parsed.success ? PAY_PERIOD_CONFIG[parsed.data] : undefined;
+  return isPayPeriod(payPeriod) ? PAY_PERIOD_CONFIG[payPeriod] : undefined;
+}
+
+// A key check, not payPeriodSchema: client code reads this file.
+function isPayPeriod(value: string): value is PayPeriod {
+  return Object.hasOwn(PAY_PERIOD_CONFIG, value);
 }
 
 /** Paychecks per year for a pay period; throws for a value that isn't one. */

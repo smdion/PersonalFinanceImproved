@@ -23,10 +23,10 @@ import {
   isPayrollFicaExemptCategory,
 } from "@/lib/config/account-types";
 import {
-  portfolioTaxTypeOf,
   type TaxTreatment,
   type ContributionMethod,
 } from "@/lib/config/enum-values";
+import { portfolioTaxTypeOf } from "@/lib/config/tax-treatment-buckets";
 import { computeValue, type CapPassed } from "@/lib/pure/contribution-caps";
 import {
   computeAnnualContribution,

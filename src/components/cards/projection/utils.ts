@@ -25,7 +25,7 @@ import {
 import {
   emptyTaxBucketMap,
   TAX_TREATMENT_TO_TAX_TYPE,
-} from "@/lib/config/enum-values";
+} from "@/lib/config/tax-treatment-buckets";
 import {
   roundToCents,
   sumBy,

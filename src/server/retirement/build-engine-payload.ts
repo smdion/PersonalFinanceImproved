@@ -17,7 +17,7 @@ import {
   planEndAge,
   planRetirementAge,
 } from "@/lib/pure/household-timeline";
-import { emptyTaxBucketMap } from "@/lib/config/enum-values";
+import { emptyTaxBucketMap } from "@/lib/config/tax-treatment-buckets";
 import { loadSimulationPreset } from "@/server/helpers/simulation-preset";
 import { classifyAssetClasses, stockShareByAge } from "@/lib/pure/stock-share";
 import {

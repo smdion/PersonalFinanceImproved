@@ -64,10 +64,8 @@ import {
   generateSeed,
   clearProjectionCache,
 } from "@/server/helpers/projection-cache";
-import {
-  profileSelectionSchema,
-  engineProfileOptions,
-} from "@/lib/pure/household/profile-selection";
+import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 export const monteCarloRouter = createTRPCRouter({
   /**

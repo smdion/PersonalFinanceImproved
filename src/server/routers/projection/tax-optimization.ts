@@ -51,10 +51,8 @@ import {
   resolveProjectionOverrides,
 } from "./_shared";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
-import {
-  engineProfileOptions,
-  profileSelectionSchema,
-} from "@/lib/pure/household/profile-selection";
+import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 /**
  * `RoutingMode` as a Zod enum — the withdrawal-sequencing strategies the

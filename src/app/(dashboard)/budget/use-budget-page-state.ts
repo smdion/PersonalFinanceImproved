@@ -21,7 +21,7 @@ import type { RouterOutputs } from "@/lib/trpc";
 import { useLocalStorage } from "@/lib/hooks/use-local-storage";
 import { EDIT_LOCK_KEYS } from "@/components/ui/edit-lock-toggle";
 import { toast } from "@/lib/hooks/use-toast";
-import type { PayProfileSelection } from "@/lib/pure/household/profile-selection";
+import type { PayProfileSelection } from "@/lib/pure/household/profile-selection.schema";
 
 const INITIAL_VISIBLE = 15;
 const LOAD_MORE_COUNT = 10;

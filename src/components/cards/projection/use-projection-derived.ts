@@ -19,7 +19,7 @@ import {
   isOverflowTarget,
 } from "@/lib/config/account-types";
 import { getSegmentBalance } from "@/lib/config/account-balance";
-import { emptyTaxBucketMap } from "@/lib/config/enum-values";
+import { emptyTaxBucketMap } from "@/lib/config/tax-treatment-buckets";
 import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";
 import type { ProjectionFormState } from "./use-projection-form-state";

@@ -13,7 +13,7 @@ import {
   type PushPreviewItem,
 } from "@/components/ui/push-preview-modal";
 import type { RawGoal } from "./types";
-import type { PayProfileSelection } from "@/lib/pure/household/profile-selection";
+import type { PayProfileSelection } from "@/lib/pure/household/profile-selection.schema";
 
 /** The caller's already-resolved Contribution/Salary Profile selection —
  *  see computeLiveMaxMonthlyFunding's `income` param docblock (savings.ts)

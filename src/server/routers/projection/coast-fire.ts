@@ -48,10 +48,8 @@ import {
   readProjectionCache,
   writeProjectionCache,
 } from "@/server/helpers/projection-cache";
-import {
-  profileSelectionSchema,
-  engineProfileOptions,
-} from "@/lib/pure/household/profile-selection";
+import { engineProfileOptions } from "@/lib/pure/household/profile-selection";
+import { profileSelectionSchema } from "@/lib/pure/household/profile-selection.schema";
 
 /** Shape of `computeCoastFireMC`'s cacheable result — every branch of the
  *  search. A not-configured state (no preset, classes or glide path)

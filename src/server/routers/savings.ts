@@ -100,7 +100,7 @@ import type { DbOrTx } from "@/lib/db";
 import {
   payProfileSelectionSchema,
   type PayProfileSelection,
-} from "@/lib/pure/household/profile-selection";
+} from "@/lib/pure/household/profile-selection.schema";
 
 /**
  * Compute the current net-pay-per-check for a job by running the paycheck

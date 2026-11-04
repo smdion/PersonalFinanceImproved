@@ -1,10 +1,10 @@
 /**
  * Tests for display-labels utility functions.
- * Covers wealthScoreTier, and emptyTaxBucketMap (enum-values).
+ * Covers wealthScoreTier, and emptyTaxBucketMap (tax-treatment-buckets).
  */
 import { describe, it, expect } from "vitest";
 import { wealthScoreTier } from "@/lib/config/display-labels";
-import { emptyTaxBucketMap } from "@/lib/config/enum-values";
+import { emptyTaxBucketMap } from "@/lib/config/tax-treatment-buckets";
 
 describe("emptyTaxBucketMap", () => {
   it("returns a zero-initialized tax bucket map", () => {
