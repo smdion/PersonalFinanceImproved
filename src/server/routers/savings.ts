@@ -809,7 +809,7 @@ export const savingsRouter = createTRPCRouter({
         .filter((g) => g.apiCategoryId);
       const currentMonthBudgetedMap = new Map<number, number>();
       if (apiLinkedGoals.length > 0 && activeServiceForSummary !== "none") {
-        const now = new Date();
+        const now = ctx.scope.asOf;
         const monthCache = await cacheGet<BudgetMonthDetail>(
           ctx.db,
           activeServiceForSummary,
@@ -907,7 +907,7 @@ export const savingsRouter = createTRPCRouter({
           outstandingSelfLoans,
           essentialMonthlyExpenses,
           targetMonths: efundGoal.targetMonths ?? 4,
-          asOfDate: new Date(),
+          asOfDate: ctx.scope.asOf,
         };
         efundResult = calculateEFund(efundInput);
       }
@@ -954,7 +954,7 @@ export const savingsRouter = createTRPCRouter({
         }),
         monthlySavingsPool: totalMonthlyPool,
         essentialMonthlyExpenses,
-        asOfDate: new Date(),
+        asOfDate: ctx.scope.asOf,
       };
 
       const savingsResult = calculateSavings(savingsInput);
@@ -2607,7 +2607,7 @@ export const savingsRouter = createTRPCRouter({
           payPeriod,
           anchorPayDate,
         } = await computeJobNetPayPerCheck(ctx.db, input.jobId);
-        const nowYear = new Date().getFullYear();
+        const nowYear = ctx.scope.asOf.getFullYear();
         await writeJobExtraPaycheckRouting(
           ctx.db,
           input.jobId,
@@ -2658,7 +2658,7 @@ export const savingsRouter = createTRPCRouter({
           payPeriod,
           anchorPayDate,
         } = await computeJobNetPayPerCheck(ctx.db, input.jobId);
-        const nowYear = new Date().getFullYear();
+        const nowYear = ctx.scope.asOf.getFullYear();
         await writeJobExtraPaycheckRouting(ctx.db, input.jobId, {
           ...existing,
           baseNetPayPerCheck,

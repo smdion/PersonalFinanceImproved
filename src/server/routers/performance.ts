@@ -1045,7 +1045,7 @@ export const performanceRouter = createTRPCRouter({
                 ? toNumber(row.rollovers)
                 : check.amount,
             note: input.accept.note,
-            on: localDateStr(new Date()),
+            on: ctx.scope.today,
           };
         }
         await tx
@@ -1588,7 +1588,7 @@ export const performanceRouter = createTRPCRouter({
         const salaryRowByPerson = new Map(
           yearSalaryRows.map((r) => [r.personId, r]),
         );
-        const currentYear = new Date().getFullYear();
+        const currentYear = ctx.scope.asOf.getFullYear();
         const salaryProfileActiveMap =
           year === currentYear
             ? await loadEffectiveSalaryProfile(tx, null)
@@ -1596,7 +1596,7 @@ export const performanceRouter = createTRPCRouter({
         let grossIncome = 0;
         let anyIncomeRecorded = false;
         for (const person of allPeople) {
-          const activeJob = findActiveJob(allJobs, person.id, new Date());
+          const activeJob = findActiveJob(allJobs, person.id, ctx.scope.asOf);
           const income = resolvePersonYearIncome(
             year,
             currentYear,

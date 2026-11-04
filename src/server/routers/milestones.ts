@@ -328,7 +328,7 @@ export const milestonesRouter = createTRPCRouter({
     const results = evaluateMilestones(
       await activeMilestoneInput(ctx as Context),
     );
-    const today = localDateStr();
+    const today = ctx.scope.today;
     const reachedNow = results
       .filter((r) => r.status === "reached")
       .map((r) => ({ id: r.id, reachedYear: r.reachedYear }));

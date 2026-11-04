@@ -5,7 +5,7 @@ import { createTRPCRouter, protectedProcedure, adminProcedure } from "../trpc";
 import * as schema from "@/lib/db/schema";
 import { toNumber } from "@/server/helpers";
 import { zDecimal, debtKindSchema } from "@/lib/config/enum-values";
-import { isCalendarDate, localDateStr } from "@/lib/utils/date";
+import { isCalendarDate } from "@/lib/utils/date";
 import { debtPayoffEstimate } from "@/lib/pure/debts";
 import {
   debtBalance,
@@ -48,7 +48,7 @@ export const debtsRouter = createTRPCRouter({
       .select()
       .from(schema.debts)
       .orderBy(asc(schema.debts.sortOrder), asc(schema.debts.id));
-    const today = localDateStr();
+    const today = ctx.scope.today;
     return rows.map((d) => {
       const now = debtBalance(d);
       const row = {

@@ -144,7 +144,7 @@ export const taxBucketsRouter = createTRPCRouter({
         name: p.name,
         birthYear: new Date(p.dateOfBirth).getUTCFullYear(),
       })),
-      currentDate: new Date(),
+      currentDate: ctx.scope.asOf,
     });
 
     return {
@@ -206,7 +206,7 @@ export const taxBucketsRouter = createTRPCRouter({
             isFinalized: r.isFinalized,
           })),
         );
-        targetYear = current?.year ?? new Date().getFullYear();
+        targetYear = current?.year ?? ctx.scope.asOf.getFullYear();
       }
 
       await ctx.db

@@ -229,7 +229,7 @@ export const contributionRouter = createTRPCRouter({
         .optional(),
     )
     .query(async ({ ctx, input }) => {
-      const currentYear = new Date().getFullYear();
+      const currentYear = ctx.scope.asOf.getFullYear();
       const inPriorYearWindow = isPriorYearContribWindow();
       const priorYear = currentYear - 1;
 
@@ -386,7 +386,7 @@ export const contributionRouter = createTRPCRouter({
       }
       const effectiveJobs = profileResult.jobs;
 
-      const asOfDate = new Date();
+      const asOfDate = ctx.scope.asOf;
       // The IRS-limit cap pass: every figure below reads the capped value.
       const capHousehold = await loadCapHousehold(
         ctx.db,

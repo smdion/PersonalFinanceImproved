@@ -396,7 +396,7 @@ export const retirementRouter = createTRPCRouter({
       // When a historical snapshot is selected, use its date as the reference point
       const referenceDate = snapshotData?.snapshot.snapshotDate
         ? new Date(snapshotData.snapshot.snapshotDate)
-        : new Date();
+        : ctx.scope.asOf;
       const age = ageOnDate(primaryPerson.dateOfBirth, referenceDate);
 
       // Portfolio — only retirement-category accounts from latest balance snapshot

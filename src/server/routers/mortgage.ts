@@ -90,7 +90,7 @@ export const mortgageRouter = createTRPCRouter({
       loans: loanInputs,
       extraPayments: extras,
       whatIfScenarios,
-      asOfDate: new Date(),
+      asOfDate: ctx.scope.asOf,
     };
 
     const result = calculateMortgage(input);

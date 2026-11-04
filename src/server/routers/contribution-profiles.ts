@@ -196,7 +196,7 @@ export const contributionProfileRouter = createTRPCRouter({
       ctx.db,
       await getAllPeople(ctx.db),
       null,
-      new Date().getFullYear(),
+      ctx.scope.asOf.getFullYear(),
     );
 
     const resolved = profiles.map((profile) => {

@@ -642,12 +642,12 @@ export const budgetRouter = createTRPCRouter({
       // can't be used to silently corrupt a What-If scenario comparison
       // (the advisor rejected folding this into netMonthlyIncome for
       // exactly that reason: netMonthlyIncome is per-selectedColumn and has
-      // no "this is the live view" signal). Same value regardless of which
-      // scenario column the caller asked for — see
-      // tests/routers/budget-coverage.test.ts for the invariant test.
-      const nowMonthStart = currentMonthKey(new Date());
+      // no "this is the live view" signal). Same value for every scenario
+      // column (invariant test: tests/routers/budget-coverage.test.ts).
+      const { asOf } = ctx.scope;
+      const nowMonthStart = currentMonthKey(asOf);
       const nextMonthStart = currentMonthKey(
-        new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1),
+        new Date(asOf.getFullYear(), asOf.getMonth() + 1, 1),
       );
       const budgetIncomeAdjustmentRows = await ctx.db
         .select({ amount: schema.budgetIncomeAdjustments.amount })
@@ -794,7 +794,7 @@ export const budgetRouter = createTRPCRouter({
         })),
         columnLabels,
         selectedColumn,
-        asOfDate: new Date(),
+        asOfDate: ctx.scope.asOf,
       };
 
       const result = calculateBudget(budgetInput);
@@ -1821,7 +1821,7 @@ export const budgetRouter = createTRPCRouter({
       }
 
       // Get current month detail from cache
-      const now = new Date();
+      const now = ctx.scope.asOf;
       const currentMonth = currentMonthKey(now);
       const monthCache = await cacheGet<BudgetMonthDetail>(
         ctx.db,
@@ -2098,7 +2098,7 @@ export const budgetRouter = createTRPCRouter({
           linkedColumnIndex: 0,
         };
 
-      const now = new Date();
+      const now = ctx.scope.asOf;
       const currentMonth = currentMonthKey(now);
       const monthCache = await cacheGet<BudgetMonthDetail>(
         ctx.db,

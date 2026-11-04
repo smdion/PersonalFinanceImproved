@@ -244,7 +244,7 @@ export const paycheckRouter = createTRPCRouter({
       const taxYear =
         resolvedTax?.resolvedYear ??
         input?.taxYearOverride ??
-        new Date().getFullYear();
+        ctx.scope.asOf.getFullYear();
       const allBrackets = resolvedTax
         ? allBracketRows.filter((b) => b.taxYear === resolvedTax.resolvedYear)
         : [];
@@ -306,7 +306,7 @@ export const paycheckRouter = createTRPCRouter({
       }
       const effectiveJobs = profileResult.jobs;
 
-      const asOfDate = new Date();
+      const asOfDate = ctx.scope.asOf;
       // The IRS-limit cap pass: every figure below reads the capped value.
       const capHousehold = await loadCapHousehold(
         ctx.db,
