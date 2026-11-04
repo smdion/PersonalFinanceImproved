@@ -21,11 +21,13 @@ import {
   isOverflowTarget,
   categoriesWithTaxPreference,
   tradPreferenceEngineCategories,
+  getDefaultDecumulationOrder,
+} from "../../config/account-types";
+import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
-  getDefaultDecumulationOrder,
-} from "../../config/account-types";
+} from "../../config/account-balance";
 import { incomeCapForMarginalRate } from "./tax-estimation";
 import type { WithholdingBracket } from "./tax-estimation";
 import { subtractExcluded, applySlotsToBalances } from "./balance-utils";
@@ -469,16 +471,10 @@ export function routeWithdrawalsBracketFilling(
   const tradTypeCap = config.withdrawalTaxTypeCaps.traditional;
   const rothTypeCap = config.withdrawalTaxTypeCaps.roth;
 
-  // Computed ONCE, shared
-  // by both Phase 1 (below) and `drawRothTierCapped` further down — both
-  // loops need "which Traditional-preference account first," and a single
-  // local here means the two can't drift the way they would if each
-  // independently filtered `config.withdrawalOrder`. Previously both
-  // loops ignored `config.withdrawalOrder` entirely and iterated
-  // `categoriesWithTaxPreference()` directly (a config-declaration-order
-  // list, not the user's own editable order) — waterfall and percentage
-  // modes already honored the user's order; bracket_filling silently
-  // didn't. Filtering the user's FULL order down to just the
+  // Computed ONCE, shared by Phase 1 (below) and `drawRothTierCapped`
+  // further down, so both read "which Traditional-preference account
+  // first" from the user's own `config.withdrawalOrder`, as waterfall and
+  // percentage modes do. Filtering the user's FULL order down to just the
   // Traditional-preference categories preserves their relative order
   // among themselves; `tradPreferenceEngineCategories()` (not
   // `categoriesWithTaxPreference()` alone) is the correct membership test

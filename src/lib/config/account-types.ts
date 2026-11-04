@@ -1,30 +1,6 @@
-// Account types: one ACCOUNT_TYPE_CONFIG entry per category, and the helpers
-// and predicates that read it. Code asks about properties (supportsRothSplit,
-// balanceStructure), never a category name (RULES.md § Data-Driven Architecture).
-
-// ---------------------------------------------------------------------------
-// Re-exports
-// ---------------------------------------------------------------------------
-
-export type { AccountBalance } from "./account-types.types";
-
-// Balance helpers
-export {
-  getTraditionalBalance,
-  getRothBalance,
-  getTotalBalance,
-  getBasis,
-  addTraditional,
-  addRoth,
-  addBalance,
-  addBasis,
-  setTraditional,
-  setRoth,
-  setBalance,
-  setBasis,
-  cloneBalance,
-  getSegmentBalance,
-} from "./account-balance";
+// Account types: one ACCOUNT_TYPE_CONFIG entry per category and the helpers
+// that read it (types: account-types.types.ts; balances: account-balance.ts).
+// Code asks about properties, never a category (RULES.md § Data-Driven Architecture).
 
 import type {
   AccountTypeConfig,

@@ -21,7 +21,6 @@ import type {
 } from "@/lib/calculators/types";
 import {
   getAccountSegments,
-  getSegmentBalance,
   getAllCategories,
   getAccountTypeConfig,
   getDisplayConfig,
@@ -30,6 +29,7 @@ import {
   isTaxFreeBucket,
   isOverflowTarget,
 } from "@/lib/config/account-types";
+import { getSegmentBalance } from "@/lib/config/account-balance";
 import type { TipColor, TooltipLineItem } from "./types";
 import { PERF_CATEGORY_RETIREMENT } from "@/lib/config/display-labels";
 import {

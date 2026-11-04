@@ -28,7 +28,6 @@ import {
 import { HSA_DRAW_TREATMENT } from "@/lib/pure/early-access";
 import {
   getAccountSegments,
-  getSegmentBalance,
   getAllCategories,
   categoriesWithTaxPreference,
   getAccountTypeConfig,
@@ -41,6 +40,7 @@ import {
   tradPreferenceEngineCategories,
   isOverflowTarget,
 } from "@/lib/config/account-types";
+import { getSegmentBalance } from "@/lib/config/account-balance";
 import type { TipColor, TooltipLineItem } from "./types";
 import {
   catDisplayLabel,

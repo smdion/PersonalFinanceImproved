@@ -23,8 +23,8 @@ import {
   isPreTaxType,
   isQcdEligible,
   nonMedicalPenaltyRate,
-  addTraditional,
 } from "../../../config/account-types";
+import { addTraditional } from "../../../config/account-balance";
 import { computeQcdAmounts, totalQcdAmount } from "../qcd";
 import { computeRmdSmoothingTargets } from "../rmd-smoothing";
 import { computeObbbaSeniorDeduction } from "../obbba-senior-deduction";

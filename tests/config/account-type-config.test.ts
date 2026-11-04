@@ -14,10 +14,6 @@ import {
   getLimitGroup,
   getParentCategory,
   getDisplayGroup,
-  getTraditionalBalance,
-  getRothBalance,
-  getTotalBalance,
-  getBasis,
   getAccountSegments,
   parseColumnKey,
   getColumnLabel,
@@ -31,12 +27,18 @@ import {
   isDiscountBasisEmployerContrib,
   tracksRothBasis,
   type AccountCategory,
-  type AccountBalance,
   isPreTaxTreatment,
   isHsaCategory,
   isIraCategory,
   isRuleOf55EligibleCategory,
 } from "@/lib/config/account-types";
+import { type AccountBalance } from "@/lib/config/account-types.types";
+import {
+  getTraditionalBalance,
+  getRothBalance,
+  getTotalBalance,
+  getBasis,
+} from "@/lib/config/account-balance";
 import {
   CONTRIBUTION_METHOD_LABELS,
   CONTRIBUTION_METHOD_LABELS_SHORT,

@@ -21,8 +21,8 @@ import { roundToCents } from "../../utils/math";
 import {
   getAccountTypeConfig,
   isRetirementMoney,
-  setBasis,
 } from "../../config/account-types";
+import { setBasis } from "../../config/account-balance";
 import type {
   AccountBalances,
   IndividualAccountInput,

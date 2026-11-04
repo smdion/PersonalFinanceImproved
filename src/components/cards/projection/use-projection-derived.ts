@@ -10,7 +10,6 @@ import type {
 import {
   type AccountCategory,
   getAccountSegments,
-  getSegmentBalance,
   getAllCategories,
   getAccountTypeConfig,
   taxTypeToSubKey,
@@ -19,6 +18,7 @@ import {
   isTaxFreeBucket,
   isOverflowTarget,
 } from "@/lib/config/account-types";
+import { getSegmentBalance } from "@/lib/config/account-balance";
 import { emptyTaxBucketMap } from "@/lib/config/enum-values";
 import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import { DEFAULT_INFLATION_RATE } from "@/lib/constants";

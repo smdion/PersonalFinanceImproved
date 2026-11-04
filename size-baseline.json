@@ -33,7 +33,7 @@
     "src/components/cards/projection/decumulation-config.tsx": 480,
     "src/components/cards/projection/index.tsx": 1520,
     "src/components/cards/projection/overrides-panel.tsx": 1132,
-    "src/components/cards/projection/projection-chart.tsx": 1149,
+    "src/components/cards/projection/projection-chart.tsx": 1147,
     "src/components/cards/projection/projection-hero-kpis.tsx": 507,
     "src/components/cards/projection/projection-mc-results.tsx": 406,
     "src/components/cards/projection/projection-table-accum-row.tsx": 1447,
@@ -44,7 +44,7 @@
     "src/components/cards/projection/tooltip-renderer.tsx": 410,
     "src/components/cards/projection/use-projection-derived.ts": 637,
     "src/components/cards/projection/use-projection-queries.ts": 986,
-    "src/components/cards/projection/utils.ts": 871,
+    "src/components/cards/projection/utils.ts": 870,
     "src/components/cards/withdrawal-comparison.tsx": 559,
     "src/components/decumulation-methodology-content.tsx": 880,
     "src/components/help-content.tsx": 1030,
@@ -93,23 +93,23 @@
     "src/lib/budget-api/actual-client.ts": 837,
     "src/lib/budget-api/ynab-client.ts": 540,
     "src/lib/calculators/engine/contribution-routing.ts": 627,
-    "src/lib/calculators/engine/individual-account-tracking.ts": 1478,
+    "src/lib/calculators/engine/individual-account-tracking.ts": 1474,
     "src/lib/calculators/engine/post-withdrawal-optimizer.ts": 723,
-    "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": 855,
+    "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": 854,
     "src/lib/calculators/engine/projection-year-handlers/decumulation-year.ts": 1603,
     "src/lib/calculators/engine/projection-year-handlers/pre-year-setup.ts": 471,
     "src/lib/calculators/engine/rmd-enforcement.ts": 468,
     "src/lib/calculators/engine/tax-estimation.ts": 515,
     "src/lib/calculators/engine/tax-gross-up.ts": 578,
     "src/lib/calculators/engine/withdrawal-cost-ranking.ts": 502,
-    "src/lib/calculators/engine/withdrawal-routing.ts": 1442,
+    "src/lib/calculators/engine/withdrawal-routing.ts": 1438,
     "src/lib/calculators/monte-carlo.ts": 761,
     "src/lib/calculators/mortgage.ts": 424,
     "src/lib/calculators/paycheck.ts": 1381,
     "src/lib/calculators/relocation.ts": 490,
     "src/lib/calculators/types/engine-config.ts": 803,
     "src/lib/calculators/types/engine-projection.ts": 725,
-    "src/lib/config/account-types.ts": 886,
+    "src/lib/config/account-types.ts": 862,
     "src/lib/config/milestones.ts": 691,
     "src/lib/config/withdrawal-strategies.ts": 779,
     "src/lib/constants.ts": 370,
@@ -751,10 +751,10 @@
       "distributeContributions": 387
     },
     "src/lib/calculators/engine/post-withdrawal-optimizer.ts": {
-      "performRothConversion": 377
+      "performRothConversion": 375
     },
     "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": {
-      "runAccumulationYear": 772
+      "runAccumulationYear": 769
     },
     "src/lib/calculators/engine/projection-year-handlers/context.ts": {
       "buildProjectionContext": 188
@@ -776,7 +776,7 @@
       "rankWithdrawalTiers": 274
     },
     "src/lib/calculators/engine/withdrawal-routing.ts": {
-      "routeWithdrawalsBracketFilling": 471,
+      "routeWithdrawalsBracketFilling": 465,
       "routeWithdrawalsPercentage": 189
     },
     "src/lib/calculators/monte-carlo.ts": {

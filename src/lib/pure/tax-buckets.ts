@@ -14,15 +14,17 @@ import type {
 import {
   getAllCategories,
   zeroBalance,
-  addTraditional,
-  addRoth,
-  addBalance,
-  addBasis,
   isTaxFreeBucket,
   tracksCostBasis,
   isRetirementParent,
   PARENT_CATEGORY_VALUES,
 } from "@/lib/config/account-types";
+import {
+  addTraditional,
+  addRoth,
+  addBalance,
+  addBasis,
+} from "@/lib/config/account-balance";
 import { accountDisplayName } from "@/lib/utils/format";
 import {
   emptyTaxBucketMap,

@@ -23,13 +23,15 @@ import {
   isOverflowTarget,
   isPortfolioParent,
   getRothFraction as configGetRothFraction,
+} from "../../../config/account-types";
+import {
   addTraditional,
   addRoth,
   addBalance,
   addBasis,
   setBasis,
   getBasis,
-} from "../../../config/account-types";
+} from "../../../config/account-balance";
 import {
   OVERFLOW_TOLERANCE,
   MAX_BROKERAGE_RAMP_YEARS,
@@ -752,12 +754,9 @@ export function runAccumulationYear(
       )
     : [];
 
-  // Reconcile indBal to acctBal once per year -- same mechanism and
-  // rationale as decumulation-year.ts's identical call. Runs after this
-  // year's output row is built (matching the existing pattern of "output
-  // reflects pre-cleanup figures, carried-forward state reflects
-  // post-cleanup") and before the divergence check below, which reads the
-  // same two tracks this closes the gap between.
+  // Reconcile indBal to acctBal once per year, as decumulation-year.ts does:
+  // after the output row is built (output shows pre-cleanup figures, the
+  // carried state post-cleanup) and before the divergence check below.
   if (hasIndividualAccounts) {
     routeWarnings.push(
       ...followReconciliation(

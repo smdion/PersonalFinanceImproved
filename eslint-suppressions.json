@@ -1232,9 +1232,6 @@
     "ratchet/no-guarded-division": {
       "count": 1
     },
-    "ratchet/no-history-comment": {
-      "count": 1
-    },
     "ratchet/no-string-closed-set-field": {
       "count": 9
     }
@@ -3101,7 +3098,7 @@
       "count": 24
     },
     "ratchet/no-history-comment": {
-      "count": 2
+      "count": 1
     },
     "ratchet/no-stacked-docblock": {
       "count": 3
@@ -3134,9 +3131,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 22
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/lib/calculators/engine/projection-year-handlers/accumulation-year.ts": {
@@ -3147,7 +3141,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 7
+      "count": 6
     },
     "ratchet/no-guarded-division": {
       "count": 1
@@ -3334,7 +3328,7 @@
       "count": 32
     },
     "ratchet/no-history-comment": {
-      "count": 9
+      "count": 7
     }
   },
   "src/lib/calculators/monte-carlo.ts": {

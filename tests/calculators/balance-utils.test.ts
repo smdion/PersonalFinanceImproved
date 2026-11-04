@@ -19,11 +19,8 @@ import type {
   EligibilityRecord,
   NonRetirementExclusion,
 } from "@/lib/pure/withdrawal-eligibility";
-import {
-  getAllCategories,
-  getTotalBalance,
-  getBasis,
-} from "@/lib/config/account-types";
+import { getAllCategories } from "@/lib/config/account-types";
+import { getTotalBalance, getBasis } from "@/lib/config/account-balance";
 
 function makeBuckets(overrides: Partial<TaxBuckets> = {}): TaxBuckets {
   return {

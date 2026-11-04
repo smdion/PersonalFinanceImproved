@@ -1,10 +1,8 @@
 // Shared types used across multiple calculator domains.
 // These are the building blocks that other domain files depend on.
 
-import type {
-  AccountCategory,
-  AccountBalance,
-} from "@/lib/config/account-types";
+import type { AccountCategory } from "@/lib/config/account-types";
+import type { AccountBalance } from "@/lib/config/account-types.types";
 import type {
   RuleOf55Status,
   RothBasisMeta,
@@ -301,7 +299,5 @@ export type IndividualAccountYearBalance = {
 };
 
 /** Account category — auto-derived from ACCOUNT_TYPE_CONFIG keys. Re-exported for convenience. */
-export type {
-  AccountCategory,
-  AccountBalance,
-} from "@/lib/config/account-types";
+export type { AccountCategory } from "@/lib/config/account-types";
+export type { AccountBalance } from "@/lib/config/account-types.types";

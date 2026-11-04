@@ -9,12 +9,14 @@ import {
   getAllCategories,
   getLimitGroup,
   zeroBalance,
+} from "../../config/account-types";
+import {
   cloneBalance,
   getTotalBalance,
   setTraditional,
   setRoth,
   setBalance,
-} from "../../config/account-types";
+} from "../../config/account-balance";
 import { roundToCents } from "../../utils/math";
 import type {
   EligibilityRecord,

@@ -7,9 +7,6 @@ import type {
 } from "@/lib/calculators/types";
 import {
   type AccountCategory,
-  getTraditionalBalance,
-  getRothBalance,
-  getTotalBalance,
   getAllCategories,
   getAccountTypeConfig,
   parseColumnKey,
@@ -20,6 +17,11 @@ import {
   isPreTaxType,
   tracksCostBasis,
 } from "@/lib/config/account-types";
+import {
+  getTraditionalBalance,
+  getRothBalance,
+  getTotalBalance,
+} from "@/lib/config/account-balance";
 import {
   emptyTaxBucketMap,
   TAX_TREATMENT_TO_TAX_TYPE,
@@ -779,12 +781,9 @@ export function lumpSumTotal(lumpSums: LumpSum[]): number {
 }
 
 // ---------------------------------------------------------------------------
-// Guardrail/strategy event styling (shared between the Balance chart's
-// ReferenceLine markers and the table's "Total Withdrawals" tooltip —
-// the table tooltip previously had no
-// user-visible explanation for a spending jump/drop, only the hidden
-// diagMode diagnostic dump. Factored out here so both call sites can never
-// independently drift on color/wording.)
+// Guardrail/strategy event styling, shared by the Balance chart's
+// ReferenceLine markers and the table's "Total Withdrawals" tooltip so the
+// two never drift on color or wording.
 // ---------------------------------------------------------------------------
 
 type StrategyEventStyle = {

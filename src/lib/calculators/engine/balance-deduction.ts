@@ -20,6 +20,8 @@ import {
   getAccountTypeConfig,
   isOverflowTarget,
   isRetirementMoney,
+} from "../../config/account-types";
+import {
   getTraditionalBalance,
   getRothBalance,
   getTotalBalance,
@@ -30,7 +32,7 @@ import {
   setBasis,
   addBalance,
   addBasis,
-} from "../../config/account-types";
+} from "../../config/account-balance";
 import type { IndKeyFn } from "@/lib/pure/accounts/account-part";
 
 // ---------------------------------------------------------------------------

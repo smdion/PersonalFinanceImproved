@@ -16,14 +16,16 @@ import { roundToCents } from "../../utils/math";
 import {
   getAllCategories,
   isOverflowTarget,
+  isRetirementMoney,
+} from "../../config/account-types";
+import {
   getTotalBalance,
   getBasis,
   setTraditional,
   setRoth,
   setBalance,
   setBasis,
-  isRetirementMoney,
-} from "../../config/account-types";
+} from "../../config/account-balance";
 import type { AccountBalances, IndividualAccountInput } from "../types";
 import {
   getIrmaaCost,
@@ -440,14 +442,12 @@ export function performRothConversion(
   }
 
   // Update per-account balances: distribute proportionally across Traditional
-  // accounts. The WEIGHT used to size each category's share must also
-  // be Retirement-only (`bal.traditional - nonRetirement.trad[cat]`), not
-  // the raw blended `bal.traditional` — otherwise a category whose blended
-  // balance is inflated by a Portfolio-parented account gets an oversized
-  // share of an already-correctly-capped `conversion` total, and the
-  // aggregate mutation below (still full-category-sized, by design — both
-  // trackers must move together) would disagree with what the individual
-  // debit further down can actually place in Retirement-only accounts.
+  // accounts, each category weighted by its Retirement-only balance
+  // (`bal.traditional - nonRetirement.trad[cat]`), not the blended one: a
+  // Portfolio-parented account would otherwise inflate a category's share
+  // of the capped `conversion`, and the aggregate mutation below (full-
+  // category-sized by design, both trackers move together) would disagree
+  // with what the individual debit can place in Retirement-only accounts.
   const tradAccounts: { cat: AccountCategory; balance: number }[] = [];
   for (const cat of getAllCategories()) {
     const bal = acctBal[cat];

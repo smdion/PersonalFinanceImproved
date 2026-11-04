@@ -9,12 +9,12 @@ import type { TaxBuckets, AccountBalances } from "../types";
 import { roundToCents } from "../../utils/math";
 import { MIN_RETURN_RATE } from "../../constants";
 import { returnRateAtAge } from "@/lib/pure/return-rate-breakpoints";
+import { getAllCategories } from "../../config/account-types";
 import {
-  getAllCategories,
   setTraditional,
   setRoth,
   setBalance,
-} from "../../config/account-types";
+} from "../../config/account-balance";
 
 // ---------------------------------------------------------------------------
 // Return rate lookup
