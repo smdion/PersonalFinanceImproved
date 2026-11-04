@@ -1,4 +1,5 @@
 import { useOwnRateLimitBucket } from "./rate-limit-bucket";
+import { seedPrivacyHousehold } from "./privacy-household";
 import { test, expect, type Page } from "@playwright/test";
 
 /**
@@ -9,6 +10,12 @@ import { test, expect, type Page } from "@playwright/test";
  * outside the shared format helpers (format.ts), now or in the future.
  * Elements marked `data-privacy-visible` (the growth-multiplier "per $1"
  * ratios, which aren't account amounts) are exempt.
+ *
+ * CI's database starts empty (fresh SQLite, DEMO_ONLY), where a route with
+ * no amounts passes the scan trivially: the spec seeds one invented
+ * household first (privacy-household.ts, when SQLITE_PATH names the
+ * server's database), and the full report is checked to show an amount
+ * with privacy off before it is checked to hide them with privacy on.
  */
 
 const PRIVACY_COOKIE = "ledgr-privacy";
@@ -66,6 +73,54 @@ async function expectAmountsShown(page: Page, shown: boolean) {
     .toBe(shown);
 }
 
+/** The report's title. A CSS locator, not a role: the report is hidden
+ *  on screen (print-only), and role locators skip hidden elements. */
+function reportHeading(page: Page) {
+  return page.locator("h1", { hasText: "Retirement Projection Report" });
+}
+
+/** The full report's text (print-only, mounted once the report gate
+ *  passes), minus anything opted out of privacy masking. */
+async function reportText(page: Page): Promise<string> {
+  // The report's own root: the nearest print-only block around the title.
+  return reportHeading(page)
+    .locator(
+      "xpath=ancestor::div[contains(concat(' ', @class, ' '), ' print:block ')][1]",
+    )
+    .evaluate((root) => {
+      const clone = root.cloneNode(true) as HTMLElement;
+      clone
+        .querySelectorAll("[data-privacy-visible], script, style")
+        .forEach((el) => el.remove());
+      return clone.innerText;
+    });
+}
+
+/** Open the full report the way a person does: "Print Full Report" on the
+ *  Retirement page. Until the projection and the simulation are fresh the
+ *  report gate (report-gate-modal.tsx) answers instead; run the simulation
+ *  from it when it offers that, close it otherwise, and try again. The
+ *  print dialog is stubbed out (see the test). */
+async function openFullReport(page: Page) {
+  await page.goto("/retirement");
+  const print = page.getByRole("button", { name: "Print Full Report" });
+  await expect(print).toBeVisible({ timeout: 60_000 });
+  const report = reportHeading(page);
+  await expect(async () => {
+    const gate = page.getByRole("alertdialog");
+    if (await gate.isVisible()) {
+      const run = gate.getByRole("button", { name: "Run the simulation" });
+      if (await run.isVisible()) await run.click({ timeout: 5_000 });
+      else
+        await gate
+          .getByRole("button", { name: "Close" })
+          .click({ timeout: 5_000 });
+    }
+    await print.click({ timeout: 5_000 });
+    await expect(report).toBeAttached({ timeout: 5_000 });
+  }).toPass({ timeout: 4 * 60_000 });
+}
+
 async function waitForContent(page: Page) {
   await page.waitForLoadState("networkidle");
   await expect
@@ -75,6 +130,38 @@ async function waitForContent(page: Page) {
 
 test.describe("Privacy mode", () => {
   useOwnRateLimitBucket(test, "privacy-mode");
+
+  test.beforeAll(() => {
+    if (process.env.SQLITE_PATH) seedPrivacyHousehold(process.env.SQLITE_PATH);
+  });
+
+  test("the full report shows amounts, and hides them with the cookie set", async ({
+    page,
+    context,
+    baseURL,
+  }) => {
+    // Two simulation runs at the default trial count on a slow CI runner.
+    test.setTimeout(10 * 60_000);
+    // The report prints through window.print(): no dialog in a test run.
+    await page.addInitScript(() => {
+      window.print = () => {};
+    });
+
+    // The positive control: without it, a report with no amounts (or no
+    // report at all) would pass the privacy check below.
+    await openFullReport(page);
+    expect(await reportText(page)).toMatch(DOLLAR_AMOUNT);
+
+    await context.addCookies([
+      { name: PRIVACY_COOKIE, value: "1", url: baseURL! },
+    ]);
+    await openFullReport(page);
+    const text = await reportText(page);
+    const match = text.match(
+      new RegExp(`.{0,40}${DOLLAR_AMOUNT.source}.{0,20}`),
+    );
+    expect(match?.[0].replace(/\s+/g, " ") ?? null).toBeNull();
+  });
 
   test("no dollar amount is visible on any route when the cookie is set", async ({
     page,
