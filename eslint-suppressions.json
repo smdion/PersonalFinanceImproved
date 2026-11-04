@@ -3101,7 +3101,7 @@
       "count": 2
     },
     "ratchet/no-history-comment": {
-      "count": 10
+      "count": 8
     }
   },
   "src/lib/calculators/engine/projection-year-handlers/lump-sum.ts": {

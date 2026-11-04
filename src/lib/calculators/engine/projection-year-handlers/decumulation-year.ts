@@ -135,7 +135,7 @@ export function runDecumulationYear(
     indBasis,
     brokBasis,
     spendingState,
-    magiHistory,
+    incomeHistory,
     depletionTracked,
     accountDepletions,
   } = state;
@@ -460,16 +460,16 @@ export function runDecumulationYear(
   // OBBBA temporary senior deduction (2025-2028) — same injection point as
   // §63(f) above (folded in BEFORE routing/tax estimation runs; see
   // obbba-senior-deduction.ts's docblock for why it can't be applied later).
-  // Uses LAST YEAR's MAGI (magiHistory, not yet pushed for `year` at this
+  // Uses LAST YEAR's MAGI (incomeHistory, not yet pushed for `year` at this
   // point in the function) as the phaseout basis, the same 1-year-lag
   // circularity-breaking pattern IRMAA's 2-year lookback uses further below.
-  // Decumulation year 1 has no MAGI history yet ⇒ $0 that year only, a
+  // Decumulation year 1 has no prior year's income ⇒ $0 that year only, a
   // deliberate, understood, self-healing gap (not a silent omission) —
   // real accuracy resumes from year 2 on.
+  const lastYearIncome = incomeHistory.at(-1);
   const obbbaAddon = computeObbbaSeniorDeduction({
     seniorCount,
-    magi:
-      magiHistory.length > 0 ? magiHistory[magiHistory.length - 1] : undefined,
+    magi: lastYearIncome && yearMagi(lastYearIncome, "seniorDeduction"),
     perPerson: taxRates.obbbaSeniorDeductionPerPerson,
     phaseoutStart: taxRates.obbbaSeniorPhaseoutStart,
     phaseoutRate: taxRates.obbbaSeniorPhaseoutRate,
@@ -561,13 +561,13 @@ export function runDecumulationYear(
   if (
     input.irmaaOnTopOfBudget === true &&
     state.portfolioWithdrawal === null &&
-    magiHistory.length >= 2
+    incomeHistory.length >= 2
   ) {
     const irmaaInNeed = checkHouseholdIrmaa({
       enableIrmaaAwareness,
       filingStatus,
       personsAge65Plus,
-      projectedMagi: magiHistory[magiHistory.length - 2]!,
+      projectedMagi: yearMagi(incomeHistory.at(-2)!, "irmaa"),
       rothConversionAmount: 0,
       irmaaBrackets: grownIrmaaBracketsForCheck,
     }).irmaaCost;
@@ -636,17 +636,9 @@ export function runDecumulationYear(
   // deriveBasisRankingInputs's docblock for why the basis-derived fields
   // are shared with tax-gross-up.ts's estimate.
   //
-  // magiBeforeThisDraw is intentionally OMITTED here. Was previously
-  // magiHistory's prior-YEAR MAGI, a real
-  // bug: NIIT's MAGI test has no lookback, unlike IRMAA's genuine 2-year
-  // lookback that magiHistory exists for; RouteBracketInfo's own docblock
-  // says "MAGI before THIS YEAR'S gains/growth," which prior-year data
-  // never was). Omitting it lets withdrawal-routing.ts's own `??
-  // baseOrdinaryFloor` fallback apply -- the correct current-year
-  // pre-this-draw figure (taxableSS + totalTradWithdrawn +
-  // conversionReservedRoom) -- which is also exactly what
-  // tax-gross-up.ts's estimate already falls back to, so the two paths
-  // can no longer disagree on this number.
+  // magiBeforeThisDraw is omitted: NIIT's MAGI has no lookback, so the
+  // router's `?? baseOrdinaryFloor` (this year's pre-draw figure) applies,
+  // as in tax-gross-up.ts's estimate.
   const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
     balances,
     brokerageBasisRatio: retirementBasisRatio,
@@ -1297,13 +1289,13 @@ export function runDecumulationYear(
     shortfallMaterialityFloor;
 
   // --- IRMAA Awareness (Phase 6) ---
-  // Store MAGI for 2-year lookback (#18).
-  magiHistory.push(currentYearMagi);
+  // This year's income, for next years' lookbacks.
+  incomeHistory.push(income);
   // IRMAA uses year N-2 MAGI per IRS rules; fall back to current year for first 2 years.
-  const irmaaLookbackMagi =
-    magiHistory.length > 2
-      ? magiHistory[magiHistory.length - 3]!
-      : currentYearMagi;
+  const irmaaLookbackMagi = yearMagi(
+    incomeHistory.length > 2 ? incomeHistory.at(-3)! : income,
+    "irmaa",
+  );
   const irmaaResult = checkHouseholdIrmaa({
     enableIrmaaAwareness,
     filingStatus,

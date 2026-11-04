@@ -220,9 +220,8 @@ function evaluateCost(
   const clonedAcctBal = cloneAccountBalances(acctBal);
   // Same basis-derived ranking inputs the real
   // execution passes (deriveBasisRankingInputs's docblock) — no
-  // magiBeforeThisDraw here (this file has no magiHistory access; falls
-  // back to routeForMode's own ordinary-income-floor proxy, acceptable
-  // for a convergence-loop trial, not final pricing).
+  // magiBeforeThisDraw here, as in the real execution: routeForMode falls
+  // back to its own ordinary-income floor.
   const { rothBasisAvailable, brokerageBasisRatio } = deriveBasisRankingInputs({
     balances,
     brokerageBasisRatio: input.brokerageBasisRatio,

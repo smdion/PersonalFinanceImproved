@@ -14,6 +14,8 @@ export const MAGI_DEFINITIONS = {
   aca: { socialSecurity: "gross" },
   /** NIIT (IRC § 1411(d)). */
   niit: { socialSecurity: "taxable" },
+  /** The senior deduction's phase-out (IRC § 151(d)(5)(C)). */
+  seniorDeduction: { socialSecurity: "taxable" },
 } as const satisfies Record<string, MagiDefinition>;
 
 export type MagiRule = keyof typeof MAGI_DEFINITIONS;

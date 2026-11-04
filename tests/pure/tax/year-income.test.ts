@@ -16,7 +16,7 @@ describe("yearMagi", () => {
     expect(yearMagi(income, "aca")).toBe(agiStreams + 24_000);
   });
 
-  it.each(["irmaa", "niit"] as const)(
+  it.each(["irmaa", "niit", "seniorDeduction"] as const)(
     "%s adds only the taxable share of Social Security",
     (rule) => {
       expect(yearMagi(income, rule)).toBe(agiStreams + 12_000);

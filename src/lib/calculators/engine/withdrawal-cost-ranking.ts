@@ -47,10 +47,8 @@ export type WithdrawalSourceKind = "roth" | "brokerage" | "hsa";
  * need to compute identically (RULES.md single-computation-path rule
  * applies across those two call sites the same way it applies within
  * `tax-gross-up.ts`'s own retries — see that file's header docblock).
- * `magiBeforeThisDraw` is deliberately NOT derived here — the real
- * execution has a precise `magiHistory` lookback available, the estimate
- * does not, and forcing them onto the same approximation would make the
- * estimate no more accurate while making the real path less accurate.
+ * `magiBeforeThisDraw` is not derived here: both callers leave it to the
+ * router's own ordinary-income floor.
  */
 export function deriveBasisRankingInputs(params: {
   balances: Pick<TaxBuckets, "afterTax" | "afterTaxBasis">;
