@@ -22,7 +22,7 @@ export function useYearEndTargetingInput(): {
     {
       validIds: budgetProfiles?.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: activeBudgetProfileId,
+      activeProfileId: activeBudgetProfileId,
     },
   );
 

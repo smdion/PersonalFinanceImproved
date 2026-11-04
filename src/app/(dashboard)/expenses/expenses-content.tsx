@@ -110,7 +110,7 @@ export function ExpensesContent() {
     {
       validIds: budgetProfilesList?.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: activeBudgetProfileId,
+      activeProfileId: activeBudgetProfileId,
     },
   );
   const { profileId: effectiveContribProfileId } = useEffectiveProfileId(
@@ -118,7 +118,7 @@ export function ExpensesContent() {
     {
       validIds: contribProfilesList?.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: activeContribProfileId,
+      activeProfileId: activeContribProfileId,
     },
   );
 

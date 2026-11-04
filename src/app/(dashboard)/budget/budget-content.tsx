@@ -101,7 +101,7 @@ export function BudgetContent({
   const { profileId: displayProfileId } = useEffectiveProfileId("budget", {
     validIds: allProfiles?.map((p) => p.id),
     localSelection: viewingProfileId,
-    globalDefaultId: activeProfileId,
+    activeProfileId,
   });
 
   const [activeContribProfileId] = usePersistedSetting<number | null>(
@@ -208,7 +208,7 @@ export function BudgetContent({
     useEffectiveProfileId("retirement", {
       validIds: (retirementProfilesForResolve ?? []).map((p) => p.id),
       localSelection: viewingRetirementProfileId,
-      globalDefaultId: activeRetirementProfileId,
+      activeProfileId: activeRetirementProfileId,
     });
   const [showModeManager, setShowModeManager] = useState(false);
   const [addingItemToCategory, setAddingItemToCategory] = useState<

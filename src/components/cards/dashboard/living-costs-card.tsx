@@ -112,7 +112,7 @@ function LivingCostsCardImpl() {
     {
       validIds: budgetProfilesList?.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: globalActiveBudgetId,
+      activeProfileId: globalActiveBudgetId,
     },
   );
   const activeBudgetProfileName = budgetProfilesList?.find(

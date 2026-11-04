@@ -67,20 +67,20 @@ export function usePlanEngineInput(): {
     {
       validIds: contribProfiles.data?.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: activeContribId,
+      activeProfileId: activeContribId,
     },
   );
   const { profileId: salaryProfileId } = useEffectiveProfileId("salary", {
     validIds: salaryProfiles.data?.map((p) => p.id),
     localSelection: null,
-    globalDefaultId: activeSalaryId,
+    activeProfileId: activeSalaryId,
   });
   const { profileId: retirementProfileId } = useEffectiveProfileId(
     "retirement",
     {
       validIds: retirementProfiles.data?.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: activeRetirementId,
+      activeProfileId: activeRetirementId,
     },
   );
   const [decBudgetProfileId, , l1] = usePersistedSetting<number | null>(

@@ -1,6 +1,6 @@
 "use client";
 
-type EffectiveProfileSource = "user-selection" | "global-default";
+type EffectiveProfileSource = "user-selection" | "active";
 
 type EffectiveProfileId = {
   profileId: number | null;
@@ -29,14 +29,14 @@ export function useEffectiveProfileId(
     /** The page's own local selection tier, if any. */
     localSelection?: number | null;
     /** The active profile id — budget's isActive row, or the active-profile setting. */
-    globalDefaultId: number | null;
+    activeProfileId: number | null;
   },
 ): EffectiveProfileId {
-  const { validIds, localSelection, globalDefaultId } = options;
+  const { validIds, localSelection, activeProfileId } = options;
   const validSet = validIds instanceof Set ? validIds : new Set(validIds ?? []);
 
   if (localSelection != null && (!validIds || validSet.has(localSelection))) {
     return { profileId: localSelection, source: "user-selection" };
   }
-  return { profileId: globalDefaultId, source: "global-default" };
+  return { profileId: activeProfileId, source: "active" };
 }

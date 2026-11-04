@@ -73,7 +73,7 @@ export function RetirementProfileManager({
   const { profileId: activeEffectiveId } = useEffectiveProfileId("retirement", {
     validIds,
     localSelection: null,
-    globalDefaultId: activeRetirementId,
+    activeProfileId: activeRetirementId,
   });
   // "Viewing" — which row is selected/highlighted, independent of
   // activation. Falls back to the active profile when nothing's been
@@ -83,7 +83,7 @@ export function RetirementProfileManager({
     {
       validIds,
       localSelection: viewingProfileId,
-      globalDefaultId: activeRetirementId,
+      activeProfileId: activeRetirementId,
     },
   );
 

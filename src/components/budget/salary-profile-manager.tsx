@@ -110,7 +110,7 @@ export function SalaryProfileManager({
     useEffectiveProfileId("salary", {
       validIds: profiles?.map((p) => p.id),
       localSelection: selectedProfileId,
-      globalDefaultId: globalActiveSalaryId,
+      activeProfileId: globalActiveSalaryId,
     });
   const activeProfileName = profiles?.find(
     (p) => p.id === globalActiveSalaryId,

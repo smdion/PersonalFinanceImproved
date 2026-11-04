@@ -13,7 +13,7 @@ const resolve = (localSelection: number | null, validIds?: number[]) =>
     useEffectiveProfileId("budget", {
       validIds,
       localSelection,
-      globalDefaultId: 1,
+      activeProfileId: 1,
     }),
   ).result.current;
 
@@ -21,7 +21,7 @@ describe("useEffectiveProfileId", () => {
   it("returns the active profile when the page has no selection", () => {
     expect(resolve(null, [1, 2, 3])).toEqual({
       profileId: 1,
-      source: "global-default",
+      source: "active",
     });
   });
 
@@ -35,7 +35,7 @@ describe("useEffectiveProfileId", () => {
   it("a local selection of a deleted profile falls back to the active one", () => {
     expect(resolve(9, [1, 2, 3])).toEqual({
       profileId: 1,
-      source: "global-default",
+      source: "active",
     });
   });
 

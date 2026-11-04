@@ -58,7 +58,7 @@ export function RetirementContent() {
     {
       validIds: retirementProfiles.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: activeRetirementId,
+      activeProfileId: activeRetirementId,
     },
   );
   // The plan's projection input — the one builder the dashboard uses too

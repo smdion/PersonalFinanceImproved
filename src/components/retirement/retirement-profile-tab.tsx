@@ -120,7 +120,7 @@ export function RetirementProfileTab({
     {
       validIds: contribProfiles.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: contribProfileId,
+      activeProfileId: contribProfileId,
     },
   );
   const { profileId: effectiveSalaryProfileId } = useEffectiveProfileId(
@@ -128,7 +128,7 @@ export function RetirementProfileTab({
     {
       validIds: salaryProfiles.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: salaryProfileId,
+      activeProfileId: salaryProfileId,
     },
   );
 

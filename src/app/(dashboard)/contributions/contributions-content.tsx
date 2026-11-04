@@ -73,7 +73,7 @@ export function ContributionsContent() {
     {
       validIds: profiles?.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: activeProfileId,
+      activeProfileId,
     },
   );
   const dataInput = {

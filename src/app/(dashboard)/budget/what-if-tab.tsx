@@ -572,20 +572,20 @@ export function WhatIfTab({
   const { profileId: defaultBudgetId } = useEffectiveProfileId("budget", {
     validIds: budgetProfiles?.map((p) => p.id),
     localSelection: null,
-    globalDefaultId: activeBudgetProfileId,
+    activeProfileId: activeBudgetProfileId,
   });
   const { profileId: defaultContribId } = useEffectiveProfileId(
     "contribution",
     {
       validIds: contribProfiles?.map((p) => p.id),
       localSelection: null,
-      globalDefaultId: activeContribSetting,
+      activeProfileId: activeContribSetting,
     },
   );
   const { profileId: defaultSalaryId } = useEffectiveProfileId("salary", {
     validIds: salaryProfiles?.map((p) => p.id),
     localSelection: null,
-    globalDefaultId: activeSalarySetting,
+    activeProfileId: activeSalarySetting,
   });
 
   // ── The three local pickers (plain state; null = "use the default") ──

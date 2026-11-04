@@ -241,7 +241,7 @@ function mergeContributionAccountEdit(
  * Writes into `contributionProfileId`'s active fields — accounts carry no
  * value of their own (see applyContribActiveFields), so the caller must
  * have already resolved which profile this edit belongs to (same
- * Plan-pin → column-pin → local-selection → global-default precedence the
+ * local selection → active profile precedence the
  * rest of the page uses; see resolveEffectiveContribProfileIdForItem in
  * routers/budget.ts).
  *
