@@ -24,7 +24,6 @@ import { calculateHouseholdTax } from "@/lib/calculators/tax";
 import { toTaxableIncomeBrackets } from "@/lib/calculators/tax-brackets";
 import {
   toNumber,
-  getPeriodsPerYear,
   getRegularPeriodsPerMonth,
   getBudgetFrequencyNote,
   resolveCompensation,
@@ -41,6 +40,7 @@ import {
   getIncompleteContribAccountIds,
   contributionPay,
 } from "@/server/helpers";
+import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { getAllPeople } from "@/server/helpers/people";
 import { applySandboxSalaryEntries } from "@/server/helpers/salary";
 import {

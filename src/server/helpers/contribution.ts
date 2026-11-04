@@ -29,7 +29,8 @@ import {
 } from "@/lib/config/enum-values";
 import { computeValue, type CapPassed } from "@/lib/pure/contribution-caps";
 import type { ContribSaveChecker } from "./contribution-caps";
-import { toNumber, getPeriodsPerYear } from "./transforms";
+import { toNumber } from "./transforms";
+import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import {
   filterActiveJobs,
   resolveContribFieldDisplayState,

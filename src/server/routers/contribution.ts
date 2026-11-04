@@ -24,7 +24,6 @@ import {
 import { accountDisplayName, stripInstitutionSuffix } from "@/lib/utils/format";
 import {
   toNumber,
-  getPeriodsPerYear,
   contributionPay,
   getTotalCompensation,
   resolveCompensation,
@@ -38,6 +37,7 @@ import {
   applyContribActiveFields,
   buildSandboxContribRow,
 } from "@/server/helpers";
+import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import { getAllPeople } from "@/server/helpers/people";
 import { householdHighIncomeLine } from "@/server/helpers/high-income-line";
 import {

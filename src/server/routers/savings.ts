@@ -35,7 +35,6 @@ import {
 import {
   toNumber,
   computeBudgetAnnualTotal,
-  getPeriodsPerYear,
   resolveCompensation,
   loadEffectiveSalaryProfile,
   resolveActiveSalaryProfileId,
@@ -57,6 +56,7 @@ import {
   copySavingsGoalLinks,
   contributionPay,
 } from "@/server/helpers";
+import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_BUDGET_ACTIVE_COLUMN,

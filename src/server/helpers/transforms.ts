@@ -1,7 +1,7 @@
 /**
  * Low-level transform utilities shared across all helper modules.
  */
-import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
+import { PAY_PERIOD_CONFIG, payPeriodConfig } from "@/lib/config/pay-periods";
 
 /** Parse Drizzle decimal string to number. */
 export function toNumber(v: string | null | undefined): number {
@@ -17,16 +17,6 @@ export function getPrimaryPerson<T extends { isPrimaryUser: boolean }>(
   people: T[],
 ): T | null {
   return people.find((p) => p.isPrimaryUser) ?? people[0] ?? null;
-}
-
-export function getPeriodsPerYear(payPeriod: string): number {
-  const periods = PAY_PERIOD_CONFIG[payPeriod]?.periodsPerYear;
-  if (periods === undefined) {
-    throw new Error(
-      `Unknown pay period "${payPeriod}". Expected: weekly, biweekly, semimonthly, or monthly.`,
-    );
-  }
-  return periods;
 }
 
 /**
@@ -47,8 +37,10 @@ export function getRegularPeriodsPerMonth(
   if (budgetPeriodsOverride != null && budgetPeriodsOverride > 0) {
     return budgetPeriodsOverride;
   }
-  const map: Record<number, number> = { 52: 4, 26: 2, 24: 2, 12: 1 };
-  return map[periodsPerYear] ?? periodsPerYear / 12;
+  const config = Object.values(PAY_PERIOD_CONFIG).find(
+    (c) => c.periodsPerYear === periodsPerYear,
+  );
+  return config?.defaultBudgetPerMonth ?? periodsPerYear / 12;
 }
 
 /**
@@ -59,7 +51,7 @@ export function getBudgetFrequencyNote(
   payPeriod: string,
   budgetPeriodsOverride?: number | null,
 ): string {
-  const config = PAY_PERIOD_CONFIG[payPeriod];
+  const config = payPeriodConfig(payPeriod);
   if (!config) return "";
   if (
     budgetPeriodsOverride != null &&

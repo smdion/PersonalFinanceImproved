@@ -8,7 +8,7 @@ import {
   PAY_WEEK_LABELS,
 } from "@/lib/config/display-labels";
 import { PAY_PERIOD_VALUES, PAY_WEEK_VALUES } from "@/lib/config/enum-values";
-import { PAY_PERIOD_CONFIG } from "@/lib/config/pay-periods";
+import { payPeriodConfig } from "@/lib/config/pay-periods";
 import { DateInput } from "@/components/ui/date-input";
 import { SectionHeader } from "./section-header";
 
@@ -39,9 +39,7 @@ export function PayScheduleSection({
   const editable = !readOnly;
   const selectClass =
     "bg-surface-primary w-36 rounded border px-2 py-0.5 text-sm disabled:opacity-60";
-  const defaultPerMonth =
-    PAY_PERIOD_CONFIG[job.payPeriod as keyof typeof PAY_PERIOD_CONFIG]
-      ?.defaultBudgetPerMonth;
+  const defaultPerMonth = payPeriodConfig(job.payPeriod)?.defaultBudgetPerMonth;
   return (
     <div className="space-y-2">
       <SectionHeader note={note}>Pay schedule</SectionHeader>

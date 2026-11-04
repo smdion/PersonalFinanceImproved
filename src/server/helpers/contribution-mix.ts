@@ -20,7 +20,8 @@ import type {
 } from "@/lib/pure/flow-suggestions";
 import { filterActiveJobs } from "@/lib/pure/profiles";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
-import { getPeriodsPerYear, toNumber } from "./transforms";
+import { toNumber } from "./transforms";
+import { getPeriodsPerYear } from "@/lib/config/pay-periods";
 import {
   contribRemainingFraction,
   contribStepFraction,
