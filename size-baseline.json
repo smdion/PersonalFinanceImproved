@@ -33,7 +33,7 @@
     "src/components/cards/projection/decumulation-config.tsx": 480,
     "src/components/cards/projection/index.tsx": 1520,
     "src/components/cards/projection/overrides-panel.tsx": 1132,
-    "src/components/cards/projection/projection-chart.tsx": 1151,
+    "src/components/cards/projection/projection-chart.tsx": 1149,
     "src/components/cards/projection/projection-hero-kpis.tsx": 507,
     "src/components/cards/projection/projection-mc-results.tsx": 406,
     "src/components/cards/projection/projection-table-accum-row.tsx": 1450,
@@ -360,7 +360,7 @@
       "OverridesPanel.renderFields": 229
     },
     "src/components/cards/projection/projection-chart.tsx": {
-      "ProjectionChart": 1089,
+      "ProjectionChart": 1087,
       "ProjectionChart.chartData.map()": 152,
       "ProjectionChart.content": 356
     },
