@@ -74,7 +74,7 @@
     "src/components/portfolio/portfolio-chart.tsx": 476,
     "src/components/retirement/assumptions-band.tsx": 453,
     "src/components/retirement/retirement-profile-tab.tsx": 615,
-    "src/components/retirement/sections/taxes.tsx": 578,
+    "src/components/retirement/sections/taxes.tsx": 576,
     "src/components/savings/all-transactions-tab.tsx": 1457,
     "src/components/savings/api-sync-section.tsx": 646,
     "src/components/savings/contribution-grid.tsx": 471,
@@ -112,7 +112,7 @@
     "src/lib/config/account-types.ts": 886,
     "src/lib/config/milestones.ts": 691,
     "src/lib/config/withdrawal-strategies.ts": 779,
-    "src/lib/constants.ts": 377,
+    "src/lib/constants.ts": 374,
     "src/lib/db/backup-transforms.ts": 1118,
     "src/lib/db/json-schemas.ts": 459,
     "src/lib/db/pg/api-sync.ts": 619,
@@ -600,7 +600,7 @@
       "StrategyParamsSection.renderField": 171
     },
     "src/components/retirement/sections/taxes.tsx": {
-      "TaxesSection": 493
+      "TaxesSection": 483
     },
     "src/components/savings/all-transactions-tab.tsx": {
       "AllTransactionsTab": 1408,
@@ -807,7 +807,7 @@
       "capContributionsByLimitGroup": 271
     },
     "src/lib/pure/distribution-tax-rates.ts": {
-      "buildDistributionTaxRates": 201
+      "buildDistributionTaxRates": 199
     },
     "src/lib/pure/milestone-input.ts": {
       "buildMilestoneInput": 218

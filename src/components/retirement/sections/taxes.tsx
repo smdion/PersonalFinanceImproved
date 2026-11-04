@@ -51,6 +51,7 @@ import type {
   IsEditable,
 } from "./types";
 import { buildSettingsPatch } from "./settings-patch";
+import { rothTargetOf } from "./helpers";
 import {
   WITHDRAWAL_ROUTING_MODES,
   WITHDRAWAL_ROUTING_MODE_LABELS,
@@ -101,15 +102,9 @@ export function TaxesSection({
     0,
   );
 
-  // Multi-year withdrawal-policy optimizer, Phase 4 — live recommendation
-  // next to the Bracket Ceiling control below. Not gated on
-  // withdrawalRoutingMode (Settings DOES carry that field now — the
-  // persisted default below — but this recommendation is about
-  // rothBracketTarget, a genuinely separate lever) and not gated on
-  // enableRothConversions either: rothBracketTarget also
-  // governs RMD smoothing's ceiling and (when routing IS bracket_filling,
-  // the site-wide default) distribution routing itself, so the
-  // recommendation is relevant regardless of which toggles happen to be on.
+  // The withdrawal-policy optimizer's recommendation beside the Bracket
+  // Ceiling, whatever the toggles: rothBracketTarget also sets RMD
+  // smoothing's ceiling and, under bracket filling, distribution routing.
   const recommendedTarget = bracketOptimizerResult?.recommendedTarget ?? null;
   const willChangeSmoothingCeiling =
     recommendedTarget != null && (settings.rmdSmoothingEnabled ?? false);
@@ -120,11 +115,8 @@ export function TaxesSection({
     upsertSettings.mutate(
       buildSettingsPatch(settings, {
         rothBracketTarget: target,
-        // Joint movement, mirroring how the optimizer itself scores a
-        // candidate (withdrawal-bracket-optimizer.ts's buildCandidateInput)
-        // -- each gated on its OWN toggle, independently, per the design
-        // doc's correction (rmdSmoothingMaxBracketTarget must key off
-        // rmdSmoothingEnabled specifically, NOT enableRothConversions).
+        // Moved together as the optimizer scores a candidate
+        // (buildCandidateInput), each on its own toggle.
         ...(settings.enableRothConversions
           ? { rothConversionTarget: target }
           : {}),
@@ -275,7 +267,7 @@ export function TaxesSection({
           </span>
           <div className="font-medium">
             <select
-              value={String(Number(settings?.rothBracketTarget ?? "0.12"))}
+              value={String(rothTargetOf(settings?.rothBracketTarget))}
               onChange={(e) => {
                 if (!settings) return;
                 upsertSettings.mutate(
@@ -349,10 +341,9 @@ export function TaxesSection({
             {(settings?.enableRothConversions ?? false) && (
               <select
                 value={String(
-                  Number(
+                  rothTargetOf(
                     settings?.rothConversionTarget ??
-                      settings?.rothBracketTarget ??
-                      "0.12",
+                      settings?.rothBracketTarget,
                   ),
                 )}
                 onChange={(e) => {

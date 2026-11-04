@@ -58,6 +58,9 @@ export const DEFAULT_PAY_PERIODS_PER_YEAR = 26;
 
 export const DEFAULT_TAX_RATE_BROKERAGE = 0.15;
 
+/** The Roth bracket target when none is set: stay in the 12% bracket. */
+export const DEFAULT_ROTH_BRACKET_TARGET = 0.12;
+
 // ---------------------------------------------------------------------------
 // Wealth Score (Millionaire Next Door formula)
 // ---------------------------------------------------------------------------
@@ -143,14 +146,8 @@ export const HSA_NON_MEDICAL_PENALTY_AGE = 65;
 export const ADDITIONAL_STANDARD_DEDUCTION_AGE = 65;
 
 /** 10% early-withdrawal penalty rate for Traditional/Roth IRA and 401k/403b
- *  (IRC §72(t)) — every account type this module gates EXCEPT HSA, which
- *  has its own, higher rate (see `HSA_NON_MEDICAL_PENALTY_RATE` immediately
- *  below — this is NOT a uniform "one rate for every account type" the way
- *  the age thresholds above are per-account-type but the penalty rate
- *  itself is not: HSA's non-medical penalty is legally 20%, not 10%, and
- *  applying 10% there would understate a real cost for exactly the account
- *  type where this feature is
- *  making the biggest behavior change). Used by
+ *  (IRC §72(t)): every gated account type but HSA, whose non-medical
+ *  penalty is 20% (`HSA_NON_MEDICAL_PENALTY_RATE`). Used by
  *  `src/lib/pure/early-withdrawal-penalty.ts`. */
 export const EARLY_WITHDRAWAL_PENALTY_RATE = 0.1;
 

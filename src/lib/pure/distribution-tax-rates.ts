@@ -8,6 +8,7 @@ import { estimateEffectiveTaxRate } from "@/lib/calculators/engine";
 import { getLtcgRate } from "@/lib/config/tax-tables";
 import { requireLimit } from "@/server/helpers/settings";
 import { toNumber } from "@/server/helpers/transforms";
+import { DEFAULT_ROTH_BRACKET_TARGET } from "@/lib/constants";
 import type { resolveTaxParams } from "@/lib/config/tax-params";
 
 type Decimal = string | null | undefined;
@@ -122,13 +123,9 @@ export function buildDistributionTaxRates({
   // obbba-senior-deduction.ts's docblock for why — same circularity IRMAA's
   // 2-year lookback already breaks).
   //
-  // Deliberately KEPT undefined-tolerant (bare `limitsMap[key]`, not
-  // `requireLimit`), unlike the two evergreen deductions above: OBBBA is
-  // statutorily self-expiring (obbbaSeniorSunsetYear gates
-  // computeObbbaSeniorDeduction's own `year > sunsetYear ⇒ 0`), so a
-  // future tax year seeded AFTER 2028 that correctly omits these rows
-  // must degrade to "no OBBBA deduction," not throw. Making this strict
-  // would turn a legitimate post-sunset state into a crash.
+  // Undefined-tolerant (bare `limitsMap[key]`, not `requireLimit`): OBBBA
+  // expires (obbbaSeniorSunsetYear), so a tax year after 2028 that omits
+  // these rows means "no OBBBA deduction", not a crash.
   const obbbaSeniorDeductionPerPerson =
     limitsMap["obbba_senior_deduction_per_person"];
   const obbbaSeniorPhaseoutStart = filingStatus
@@ -200,7 +197,9 @@ export function buildDistributionTaxRates({
     fplYear: sectionYears?.fpl ?? latestTaxYear,
     taxMultiplier: taxMult,
     grossUpForTaxes: settings.grossUpForTaxes,
-    rothBracketTarget: toNumber(settings.rothBracketTarget ?? "0.12"),
+    rothBracketTarget: toNumber(
+      settings.rothBracketTarget ?? String(DEFAULT_ROTH_BRACKET_TARGET),
+    ),
     enableRothConversions: settings.enableRothConversions,
     rothConversionTarget:
       settings.rothConversionTarget != null

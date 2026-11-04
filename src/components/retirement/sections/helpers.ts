@@ -3,6 +3,7 @@
  *
  * Previously duplicated in income.tsx and raise-and-rate.tsx.
  */
+import { DEFAULT_ROTH_BRACKET_TARGET } from "@/lib/constants";
 
 /** Convert a decimal string (e.g. '0.04') to a whole-number string for display ('4'). */
 export function decToWhole(v: string): string {
@@ -16,4 +17,9 @@ export function wholeToDec(v: string): string {
   const n = parseFloat(v);
   if (isNaN(n)) return "0";
   return String(Math.round(n * 100) / 10000); // 4 → 0.04
+}
+
+/** A stored Roth bracket target, or the default when none is set. */
+export function rothTargetOf(stored: string | null | undefined): number {
+  return Number(stored ?? DEFAULT_ROTH_BRACKET_TARGET);
 }
