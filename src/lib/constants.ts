@@ -115,14 +115,9 @@ export const RMD_EXCISE_TAX_RATE = 0.25;
 export const RULE_OF_55_AGE = 55;
 
 /** Age at which retirement-account withdrawals become penalty-free generally
- *  (and, combined with the 5-year clock, "qualified"/tax-free for Roth).
- *
- *  Non-integer threshold under year-granularity age modeling
- *  (`ageInYear` in `src/lib/utils/date.ts`, used everywhere the engine
- *  reasons about age): `ageInYear(...) >= 59.5` is only ever true when
- *  `ageInYear(...) >= 60` — integer age comparison against a `.5` threshold
- *  rounds the eligibility start up to the year the person turns 60, not the
- *  year they turn 59.5. Correct and intentional, not an off-by-one. */
+ *  (and, with the 5-year clock, "qualified"/tax-free for Roth). Against the
+ *  engine's whole-year `ageInYear`, it holds from the year the person turns
+ *  60, not 59 — intended, not an off-by-one. */
 export const PENALTY_FREE_AGE = 59.5;
 
 /** Years a Roth conversion must season before it's penalty-free to withdraw
@@ -253,9 +248,9 @@ export const PROJECTION_DEBOUNCE_MS = 600;
 /** Allocation tolerance — allocations summing within this of 1.0 are acceptable. */
 export const ALLOCATION_TOLERANCE = 0.01;
 
-/** A year's funding gap is unmet need only above the greater of these. NIIT
- *  and the conversion-year LTCG recompute run after routing, so a small gap
- *  is expected; a real shortfall is a large share of the need. */
+/** A year's funding gap is unmet need only above the greater of these: NIIT
+ *  and the LTCG recompute run after routing, so a $0.01 floor would flag UNMET
+ *  NEED on every ordinary NIIT year. A real shortfall is a large share. */
 export const SHORTFALL_MATERIALITY = {
   minimum: 50,
   shareOfNeed: 0.01,
@@ -329,8 +324,9 @@ export const MAX_BROKERAGE_RAMP_YEARS = 40;
 
 /** RMD smoothing's ceiling when `rmdSmoothingEnabled` is on and no
  *  `rmdSmoothingMaxBracketTarget` is set: a backstop for input that skips
- *  the UI (which seeds from the household's `rothBracketTarget`). 24% stays
- *  below the two highest ordinary brackets. */
+ *  the UI, which seeds from the household's `rothBracketTarget` so opting in
+ *  never visibly changes a rate it already chose. 24% stays below the two
+ *  highest ordinary brackets. */
 export const RMD_SMOOTHING_MAX_BRACKET_TARGET_FALLBACK = 0.24;
 
 // ---------------------------------------------------------------------------

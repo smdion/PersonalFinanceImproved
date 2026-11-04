@@ -3550,9 +3550,6 @@
     },
     "ratchet/max-comment-lines": {
       "count": 3
-    },
-    "ratchet/no-history-comment": {
-      "count": 1
     }
   },
   "src/lib/config/account-types.types.ts": {

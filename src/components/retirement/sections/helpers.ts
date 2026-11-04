@@ -19,7 +19,8 @@ export function wholeToDec(v: string): string {
   return String(Math.round(n * 100) / 10000); // 4 → 0.04
 }
 
-/** A stored Roth bracket target, or the default when none is set. */
+/** A stored Roth bracket target as a number: null or undefined gives the
+ *  default; an empty string gives 0, as `Number("")` does. */
 export function rothTargetOf(stored: string | null | undefined): number {
   return Number(stored ?? DEFAULT_ROTH_BRACKET_TARGET);
 }

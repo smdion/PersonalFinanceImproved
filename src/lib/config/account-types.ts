@@ -651,16 +651,11 @@ export function isRetirementMoney(
 }
 
 /**
- * Whether an account counts toward the synthesized "Retirement"
- * parent-category performance rollup: either a fully-retirement performance
- * category (401k/IRA, HSA — always Retirement regardless of parentCategory),
- * or a Brokerage-category account explicitly tagged parentCategory ===
- * "Retirement" (Brokerage is mixed — spans both Retirement and Portfolio
- * goals, e.g. Retirement Brokerage vs. a taxable brokerage account).
- *
- * Single source of truth for this rule — shared between the performance
- * router's actual rollup computation and the performance page's
- * selection-matching UI (audit Batch 31 Finding 1).
+ * Whether an account counts toward the "Retirement" performance rollup: a
+ * fully-retirement performance category (401k/IRA, HSA, whatever its
+ * parentCategory), or a Brokerage account tagged parentCategory "Retirement"
+ * (Brokerage spans both goals). The performance router's rollup and the
+ * page's selection matching share this one rule.
  */
 export function isInRetirementPerformanceRollup(
   accountType: string | null,

@@ -352,9 +352,9 @@ function evaluateCost(
   };
 }
 
-/** Rounds of the routing fixed point below, and how close (dollars) the
- *  share routing saw must come to the share the trial priced: solver
- *  parameters, where falling short costs routing quality, never correctness. */
+/** Rounds of the routing fixed point and how close (dollars) the routed share
+ *  must come to the priced one. Short of it costs routing quality, never
+ *  correctness: the real year routes with the accepted trial's figure. */
 const SS_ROUTING_ROUNDS = 6;
 const SS_ROUTING_TOLERANCE = 1;
 /** The first trial's flat 85% share (a seed, not the statutory tier-2 rate). */
