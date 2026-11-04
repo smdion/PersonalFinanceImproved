@@ -105,7 +105,7 @@
     "src/lib/calculators/engine/withdrawal-routing.ts": 1442,
     "src/lib/calculators/monte-carlo.ts": 761,
     "src/lib/calculators/mortgage.ts": 424,
-    "src/lib/calculators/paycheck.ts": 1398,
+    "src/lib/calculators/paycheck.ts": 1381,
     "src/lib/calculators/relocation.ts": 490,
     "src/lib/calculators/types/engine-config.ts": 803,
     "src/lib/calculators/types/engine-projection.ts": 725,

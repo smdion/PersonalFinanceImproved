@@ -33,25 +33,8 @@ import { formatCurrency, formatPercent } from "../utils/format";
 import { roundToCents, safeDivide, sumBy } from "../utils/math";
 import { MS_PER_DAY } from "../constants";
 import { PAY_PERIOD_LABELS } from "../config/display-labels";
+import { getPeriodsPerYear } from "../config/pay-periods";
 import { sumBracketTax } from "./tax-brackets";
-
-/** Maps pay frequency to the number of pay periods per year. */
-const PERIODS_PER_YEAR: Record<string, number> = {
-  weekly: 52,
-  biweekly: 26,
-  semimonthly: 24,
-  monthly: 12,
-};
-
-function getPeriodsPerYear(payPeriod: string): number {
-  const periods = PERIODS_PER_YEAR[payPeriod];
-  if (periods === undefined) {
-    throw new Error(
-      `Unknown pay period "${payPeriod}". Expected: weekly, biweekly, semimonthly, or monthly.`,
-    );
-  }
-  return periods;
-}
 
 /**
  * IRS annualized bracket lookup for federal withholding.
