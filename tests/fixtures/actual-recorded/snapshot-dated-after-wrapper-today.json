@@ -1,0 +1,110 @@
+{
+  "description": "Snapshot dated 2026-12-15 (after the wrapper's today): the POST lands, the read-back without until_date omits it, so Ledgr reports failure with nothing rolled back.",
+  "source": {
+    "wrapper": "jhonderson/actual-http-api 26.10.0 @ 8ef9a0caab01fdbe1d5255e9f81eba007fd9217a (unmodified, NODE_ENV=production)",
+    "actualApi": "@actual-app/api 26.10.0 (wrapper lockfile)",
+    "actualServer": "@actual-app/sync-server 26.10.0",
+    "budget": "invented throwaway budget, see ids",
+    "recorded": "2026-11-02",
+    "paths": "relative to /v1/budgets/{syncId}",
+    "ledgr": "85f3e0a8 (v0.9.7)"
+  },
+  "pairs": [
+    {
+      "method": "GET",
+      "path": "/accounts/3a3504b7-675b-420a-a579-b61c0a182e79/transactions?since_date=2016-01-01",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": [
+          {
+            "id": "c469c804-b264-4f8f-8b46-4e3050bb372c",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "3a3504b7-675b-420a-a579-b61c0a182e79",
+            "category": null,
+            "amount": 100001,
+            "payee": "1ff0eb8f-8327-442c-ad39-2709549c6d5c",
+            "notes": "Ledgr snapshot:538009 - Roth",
+            "date": "2026-10-31",
+            "imported_id": "ledgr:YtKNyVLh4cdP1H91FBFUnD0axhqMm8",
+            "error": null,
+            "imported_payee": "Portfolio Sync",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793629312716,
+            "cleared": true,
+            "reconciled": true,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          },
+          {
+            "id": "68379b33-9619-4e06-ad9c-589bcfbe1048",
+            "is_parent": false,
+            "is_child": false,
+            "parent_id": null,
+            "account": "3a3504b7-675b-420a-a579-b61c0a182e79",
+            "category": null,
+            "amount": 5000000,
+            "payee": "1674b957-cb7e-4108-980f-2c9960c61390",
+            "notes": "roth open",
+            "date": "2025-12-31",
+            "imported_id": null,
+            "error": null,
+            "imported_payee": "Test Payee roth",
+            "starting_balance_flag": false,
+            "transfer_id": null,
+            "sort_order": 1793628922053,
+            "cleared": true,
+            "reconciled": false,
+            "tombstone": false,
+            "schedule": null,
+            "raw_synced_data": null,
+            "subtransactions": []
+          }
+        ]
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/3a3504b7-675b-420a-a579-b61c0a182e79/balance",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": 5100001
+      }
+    },
+    {
+      "method": "POST",
+      "path": "/accounts/3a3504b7-675b-420a-a579-b61c0a182e79/transactions",
+      "requestBody": {
+        "transaction": {
+          "account": "3a3504b7-675b-420a-a579-b61c0a182e79",
+          "date": "2026-12-15",
+          "amount": 899999,
+          "payee_name": "Portfolio Sync",
+          "notes": "Ledgr snapshot:538010 - Roth",
+          "cleared": true,
+          "reconciled": true,
+          "imported_id": "ledgr:foBiX-YGwO1JxXU3rRCFpOUBP9lQve"
+        }
+      },
+      "status": 200,
+      "responseBody": {
+        "message": "ok"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/accounts/3a3504b7-675b-420a-a579-b61c0a182e79/transactions?since_date=2026-12-15",
+      "requestBody": null,
+      "status": 200,
+      "responseBody": {
+        "data": []
+      }
+    }
+  ]
+}

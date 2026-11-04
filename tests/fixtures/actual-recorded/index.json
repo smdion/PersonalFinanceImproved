@@ -1,0 +1,94 @@
+{
+  "source": {
+    "wrapper": "jhonderson/actual-http-api 26.10.0 @ 8ef9a0caab01fdbe1d5255e9f81eba007fd9217a (unmodified, NODE_ENV=production)",
+    "actualApi": "@actual-app/api 26.10.0 (wrapper lockfile)",
+    "actualServer": "@actual-app/sync-server 26.10.0",
+    "budget": "invented throwaway budget, see ids",
+    "recorded": "2026-11-02",
+    "paths": "relative to /v1/budgets/{syncId}",
+    "ledgr": "85f3e0a8 (v0.9.7)"
+  },
+  "ids": {
+    "syncId": "dbc63d63-7ea3-415c-b6e0-70217f2ad97d",
+    "accounts": {
+      "chk": "885e64fa-0ef9-4288-9d60-d6d4c8e51786",
+      "sav": "f63afa95-bb9e-47f2-90b7-fdfb321d7e26",
+      "visa": "5318f40b-c21d-422d-aae1-3d86cc6bc0a5",
+      "old": "b071a79a-d87f-4b00-bffb-77e628f646fe",
+      "brk": "65460984-2fac-480d-9215-a19537f0b942",
+      "roth": "3a3504b7-675b-420a-a579-b61c0a182e79",
+      "mtg": "ad099e35-2446-4e8e-a313-105ad33d02df",
+      "house": "18b99b48-5440-4513-aca7-39372677302e",
+      "gone": "b9aa9a0c-2154-421a-a4b3-f9dd4c975701"
+    },
+    "categories": {
+      "groc": "3d5331c8-2fbb-4217-99d0-237b9a3bb321",
+      "dine": "b00d2876-45a0-43a5-9076-56f31c214a0d",
+      "gas": "1f2c5370-3853-4b94-90fc-bf6470a18921",
+      "misc": "a12040f5-fee3-4358-a449-ff00ed41e1fe",
+      "ef": "abeba14f-8ac0-4881-a01b-cf2b03019d11",
+      "vac": "669acfa3-f479-4e39-a0d8-7b0eca6f58d2",
+      "car": "0f31b6d3-e4cc-4e6b-a718-d51f397e4c1c",
+      "hid": "17d16605-b8aa-474d-934e-9622a36e905e",
+      "sal": "911ebde8-bfec-4084-88a3-f2439645fa9b"
+    },
+    "groups": {
+      "exp": "2d9cd632-4869-4935-8b7c-4e2ce7a5ca38",
+      "fund": "67560068-4375-4c3f-97a5-3b9ababee0ae",
+      "hid": "033d5edf-c3f3-4ee4-9242-898bc0f6c33b",
+      "inc": "2E1F5BDB-209B-43F9-AF2C-3CE28E380C00"
+    }
+  },
+  "fixtures": [
+    {
+      "file": "endpoints.json",
+      "pairs": 45,
+      "description": "One call per wrapper endpoint Ledgr uses, plus edge and error cases, in this order (name on each pair). The wrong-api-key and unknown-sync-id pairs were sent with a bad key / bad sync id."
+    },
+    {
+      "file": "sync-all.json",
+      "pairs": 55,
+      "description": "Every request of one sync.syncAll (55): accounts, 9 balances, categories, months, 2 reads per category note, per-account transactions."
+    },
+    {
+      "file": "create-transaction-twice.json",
+      "pairs": 4,
+      "description": "ActualClient.createTransaction twice with one payload: POST, read-back, POST, read-back. Both POSTs answer {\"message\":\"ok\"}; the second read-back holds two rows with the same imported_id."
+    },
+    {
+      "file": "budget-push-with-orphan-link.json",
+      "pairs": 42,
+      "description": "budget.syncBudgetToApi with one link to a category id that does not exist: GET note returns \"\", PUT returns 200, then the cache refresh."
+    },
+    {
+      "file": "snapshot-create.json",
+      "pairs": 8,
+      "description": "pushSnapshotToBudgetApi create: scan two accounts, balance, POST adjustment, read-back."
+    },
+    {
+      "file": "snapshot-resync.json",
+      "pairs": 10,
+      "description": "resyncPortfolioPush: scan, DELETE old adjustment, balance, POST, read-back, per account."
+    },
+    {
+      "file": "snapshot-dated-after-wrapper-today.json",
+      "pairs": 4,
+      "description": "Snapshot dated 2026-12-15 (after the wrapper's today): the POST lands, the read-back without until_date omits it, so Ledgr reports failure with nothing rolled back."
+    },
+    {
+      "file": "put-rejected-500-sent-six-times.json",
+      "pairs": 6,
+      "description": "A request the wrapper rejects with 500 (\"Unknown error\"), sent through ActualClient.request: 6 identical PUTs."
+    },
+    {
+      "file": "patch-malformed-date-accepted.json",
+      "pairs": 1,
+      "description": "PATCH /transactions/:id with date \"06/10/2026\": 200 \"Transaction updated\"; the stored date did not change."
+    },
+    {
+      "file": "cold-start-race.json",
+      "pairs": 24,
+      "description": "12 concurrent requests to a freshly started wrapper (through the proxy): 8 failed with 500, then the same 12 again all 200. Order is completion order."
+    }
+  ]
+}

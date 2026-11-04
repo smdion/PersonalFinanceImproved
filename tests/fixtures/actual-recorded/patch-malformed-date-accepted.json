@@ -1,0 +1,27 @@
+{
+  "description": "PATCH /transactions/:id with date \"06/10/2026\": 200 \"Transaction updated\"; the stored date did not change.",
+  "source": {
+    "wrapper": "jhonderson/actual-http-api 26.10.0 @ 8ef9a0caab01fdbe1d5255e9f81eba007fd9217a (unmodified, NODE_ENV=production)",
+    "actualApi": "@actual-app/api 26.10.0 (wrapper lockfile)",
+    "actualServer": "@actual-app/sync-server 26.10.0",
+    "budget": "invented throwaway budget, see ids",
+    "recorded": "2026-11-02",
+    "paths": "relative to /v1/budgets/{syncId}",
+    "ledgr": "85f3e0a8 (v0.9.7)"
+  },
+  "pairs": [
+    {
+      "method": "PATCH",
+      "path": "/transactions/689d2414-39ad-4777-931c-e9aefd579787",
+      "requestBody": {
+        "transaction": {
+          "date": "06/10/2026"
+        }
+      },
+      "status": 200,
+      "responseBody": {
+        "message": "Transaction updated"
+      }
+    }
+  ]
+}
