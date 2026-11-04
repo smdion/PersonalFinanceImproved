@@ -7,6 +7,7 @@ import { HelpTip } from "@/components/ui/help-tip";
 import { SyncBadge } from "@/components/ui/sync-badge";
 import { formatCurrency } from "@/lib/utils/format";
 import { taxTypeLabel } from "@/lib/utils/colors";
+import type { BudgetApiService } from "@/lib/config/enum-values";
 
 export function AssetsLiabilitiesCards({
   portfolioTotal,
@@ -30,7 +31,7 @@ export function AssetsLiabilitiesCards({
   portfolioAccounts: { taxType: string; amount: number }[];
   byTaxType: Map<string, number>;
   cash: number;
-  cashSource: "ynab" | "actual" | "manual";
+  cashSource: BudgetApiService | "manual";
   /** Mapped cash accounts the budget app no longer lists. */
   cashMissingAccounts?: number;
   displayHomeValue: number;

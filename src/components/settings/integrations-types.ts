@@ -1,6 +1,8 @@
 /** Shared TypeScript types, interfaces, and style constants for the budget API integration sub-components (YNAB/Actual). */
 
-export type Service = "ynab" | "actual";
+import type { BudgetApiService } from "@/lib/config/enum-values";
+
+export type Service = BudgetApiService;
 
 export type ApiCategoryOption = {
   id: string;

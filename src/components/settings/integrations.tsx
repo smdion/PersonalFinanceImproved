@@ -18,6 +18,11 @@ import {
 } from "@/lib/config/settings-sections";
 import { SK_SETTINGS_INTEGRATIONS_SECTION } from "@/lib/constants/settings-keys";
 import type { Service, PreviewData } from "./integrations-types";
+import {
+  BUDGET_API_SERVICE_VALUES,
+  BUDGET_SERVICES,
+  isBudgetApiService,
+} from "@/lib/config/enum-values";
 import { PreviewPanel } from "./integrations-preview-panel";
 import { SimplefinCard } from "./integrations-simplefin";
 import { TiingoCard } from "./integrations-tiingo";
@@ -630,12 +635,9 @@ export function IntegrationsSettings() {
                   : "text-secondary hover:bg-surface-elevated"
               }`}
             >
-              {s.key === "ynab" && (
-                <NavStatusDot connected={connection?.ynab.connected ?? false} />
-              )}
-              {s.key === "actual" && (
+              {isBudgetApiService(s.key) && (
                 <NavStatusDot
-                  connected={connection?.actual.connected ?? false}
+                  connected={connection?.[s.key].connected ?? false}
                 />
               )}
               {s.key === "simplefin" && (
@@ -661,33 +663,30 @@ export function IntegrationsSettings() {
               list, test/sync results) that would silently reset if the nav
               unmounted them on every switch away and back. Only visibility
               toggles. */}
-          <div className={section === "ynab" ? "" : "hidden"}>
-            <ServiceCard
-              service="ynab"
-              label="YNAB"
-              isActive={activeApi === "ynab"}
-              isConnected={connection?.ynab.connected ?? false}
-              lastSyncedAt={
-                connection?.ynab.lastSyncedAt
-                  ? new Date(connection.ynab.lastSyncedAt)
-                  : null
-              }
-            />
-          </div>
-          <div className={section === "actual" ? "" : "hidden"}>
-            <ServiceCard
-              service="actual"
-              label="Actual Budget"
-              isActive={activeApi === "actual"}
-              isConnected={connection?.actual.connected ?? false}
-              lastSyncedAt={
-                connection?.actual.lastSyncedAt
-                  ? new Date(connection.actual.lastSyncedAt)
-                  : null
-              }
-              savedActualExternalUrl={connection?.actual.externalUrl}
-            />
-          </div>
+          {BUDGET_API_SERVICE_VALUES.map((service) => {
+            const conn = connection?.[service];
+            return (
+              <div
+                key={service}
+                className={section === service ? "" : "hidden"}
+              >
+                <ServiceCard
+                  service={service}
+                  label={BUDGET_SERVICES[service].label}
+                  isActive={activeApi === service}
+                  isConnected={conn?.connected ?? false}
+                  lastSyncedAt={
+                    conn?.lastSyncedAt ? new Date(conn.lastSyncedAt) : null
+                  }
+                  savedActualExternalUrl={
+                    service === "actual"
+                      ? connection?.actual.externalUrl
+                      : undefined
+                  }
+                />
+              </div>
+            );
+          })}
           <div className={section === "simplefin" ? "space-y-4" : "hidden"}>
             <SimplefinCard />
           </div>

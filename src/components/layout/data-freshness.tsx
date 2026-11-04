@@ -6,6 +6,7 @@ import { RefreshCw } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 import { budgetApiServiceLabel, formatDate } from "@/lib/utils/format";
 import type { DataSourceStatus } from "@/lib/pure/data-freshness";
+import type { BudgetApiService } from "@/lib/config/enum-values";
 import { useDataSourceStatuses } from "@/lib/hooks/use-data-source-statuses";
 
 export function DataFreshness({ compact }: { compact?: boolean }) {
@@ -57,7 +58,7 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
     if (Date.now() - lastSynced > staleMs) {
       hasFiredAutoSync.current = true;
       syncAllMut.mutate({
-        service: syncStatus.service as "ynab" | "actual",
+        service: syncStatus.service as BudgetApiService,
       });
     }
   }, [syncStatus]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -71,7 +72,7 @@ export function DataFreshness({ compact }: { compact?: boolean }) {
     if (!canSync || isSyncing) return;
     if (budgetApiCanSync) {
       syncAllMut.mutate({
-        service: syncStatus!.service! as "ynab" | "actual",
+        service: syncStatus!.service! as BudgetApiService,
       });
     }
     if (simplefinCanSync) {

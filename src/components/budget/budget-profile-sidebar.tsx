@@ -120,11 +120,9 @@ export function BudgetProfileSidebar({
                         case="normal"
                         subtle
                         className="shrink-0"
-                        title={`This profile's "${mode}" mode two-way syncs with ${budgetApiServiceLabel(apiService as "ynab" | "actual")}`}
+                        title={`This profile's "${mode}" mode two-way syncs with ${budgetApiServiceLabel(apiService)}`}
                       >
-                        ⇄{" "}
-                        {budgetApiServiceLabel(apiService as "ynab" | "actual")}{" "}
-                        → {mode}
+                        ⇄ {budgetApiServiceLabel(apiService)} → {mode}
                       </Badge>
                     );
                   })()

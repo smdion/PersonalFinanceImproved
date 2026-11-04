@@ -12,6 +12,7 @@ import * as schema from "@/lib/db/schema";
 import { getActiveBudgetApi, getApiConnection } from "@/lib/budget-api";
 import type { ActualConfig } from "@/lib/budget-api";
 import { readMaybeEncrypted } from "@/lib/crypto";
+import { BUDGET_API_SERVICE_VALUES } from "@/lib/config/enum-values";
 import { serviceEnum } from "./_shared";
 
 const YNAB_APP_URL = "https://app.youneedabudget.com/";
@@ -39,7 +40,7 @@ export const syncConfigRouter = createTRPCRouter({
 
   /** Set the active_budget_api setting */
   setActiveBudgetApi: syncProcedure
-    .input(z.object({ value: z.enum(["none", "ynab", "actual"]) }))
+    .input(z.object({ value: z.enum(["none", ...BUDGET_API_SERVICE_VALUES]) }))
     .mutation(async ({ ctx, input }) => {
       if (input.value !== "none") {
         const conn = await getApiConnection(ctx.db, input.value);

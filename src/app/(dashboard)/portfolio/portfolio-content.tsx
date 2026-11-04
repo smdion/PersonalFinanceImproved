@@ -213,9 +213,7 @@ export function PortfolioContent() {
 
   const { data: syncStatus } = trpc.sync.getSyncStatus.useQuery();
   const budgetApiConnected = !!syncStatus?.connected;
-  const syncServiceLabel = budgetApiServiceLabel(
-    (syncStatus?.service as "ynab" | "actual" | null | undefined) ?? "none",
-  );
+  const syncServiceLabel = budgetApiServiceLabel(syncStatus?.service ?? "none");
 
   const {
     pending: syncPendingRaw,

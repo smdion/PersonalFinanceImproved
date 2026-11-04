@@ -1703,9 +1703,7 @@ export const budgetRouter = createTRPCRouter({
 
   /** Get cached categories from the active (or specified) budget API for the category picker. */
   listApiCategories: protectedProcedure
-    .input(
-      z.object({ service: z.enum(["ynab", "actual"]).optional() }).optional(),
-    )
+    .input(z.object({ service: budgetApiServiceSchema.optional() }).optional())
     .query(async ({ ctx, input }) => {
       const active = await getActiveBudgetApi(ctx.db);
       const service = input?.service ?? (active !== "none" ? active : null);

@@ -16,7 +16,7 @@ import * as schema from "@/lib/db/schema";
 import { roundToCents } from "@/lib/utils/math";
 import { toNumber } from "./transforms";
 import { parseAppSettings } from "./settings";
-import type { ActiveBudgetApi } from "@/lib/budget-api/types";
+import type { ActiveBudgetApi, BudgetApiService } from "@/lib/budget-api/types";
 import {
   SK_ACTIVE_CONTRIB_PROFILE_ID,
   SK_ACTIVE_SALARY_PROFILE_ID,
@@ -117,7 +117,7 @@ export async function resolveTargetBudgetProfile(
  */
 async function sumMappedAccountBalances(
   db: Db,
-  service: "ynab" | "actual",
+  service: BudgetApiService,
   localId: "cash" | "creditCard",
 ): Promise<{
   total: number;
@@ -193,7 +193,7 @@ export async function getEffectiveCash(
   activeBudgetApi?: ActiveBudgetApi,
 ): Promise<{
   cash: number;
-  source: "ynab" | "actual" | "manual";
+  source: BudgetApiService | "manual";
   cacheAgeDays: number | null;
   /** Mapped cash accounts the budget app no longer lists. */
   missingAccounts: number;

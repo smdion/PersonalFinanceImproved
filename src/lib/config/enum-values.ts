@@ -304,8 +304,7 @@ export const UTILITY_USUAL_UNIT: Record<UtilityKind, UtilityUnit> = {
 export const UTILITY_SOURCE_VALUES = [
   "import",
   "manual",
-  "ynab",
-  "actual",
+  ...BUDGET_API_SERVICE_VALUES,
 ] as const;
 export type UtilitySource = (typeof UTILITY_SOURCE_VALUES)[number];
 export const utilitySourceSchema = z.enum(UTILITY_SOURCE_VALUES);

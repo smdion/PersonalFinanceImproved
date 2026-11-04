@@ -85,7 +85,7 @@
     "src/components/savings/savings-trajectory-table.tsx": 550,
     "src/components/settings/general.tsx": 449,
     "src/components/settings/integrations-simplefin.tsx": 493,
-    "src/components/settings/integrations.tsx": 708,
+    "src/components/settings/integrations.tsx": 707,
     "src/components/settings/integrations/budget-section.tsx": 712,
     "src/components/settings/integrations/portfolio-section.tsx": 659,
     "src/components/tools/relocation/projection-table.tsx": 416,
@@ -151,7 +151,7 @@
     "src/server/retirement/build-engine-payload.ts": 1416,
     "src/server/retirement/payload/profile-switches.ts": 508,
     "src/server/routers/assets.ts": 528,
-    "src/server/routers/budget.ts": 2186,
+    "src/server/routers/budget.ts": 2184,
     "src/server/routers/contribution-profiles.ts": 914,
     "src/server/routers/contribution.ts": 1440,
     "src/server/routers/demo.ts": 663,
@@ -684,7 +684,7 @@
       "TiingoCard": 152
     },
     "src/components/settings/integrations.tsx": {
-      "IntegrationsSettings": 186,
+      "IntegrationsSettings": 180,
       "ServiceCard": 455
     },
     "src/components/settings/integrations/budget-section.tsx": {
