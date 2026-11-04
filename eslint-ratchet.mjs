@@ -20,6 +20,17 @@ const HELPER_FIELDS = [
   "payrollFicaExempt",
 ].join("|");
 
+/** Fields whose value is a member of a closed set (account categories,
+ *  tax types, filing statuses): a plain `string` type lets any text in. */
+const CLOSED_SET_FIELDS = [
+  "accountType",
+  "category",
+  "parentCategory",
+  "taxType",
+  "taxTreatment",
+  "filingStatus",
+].join("|");
+
 /** A rule that reports every node a selector matches. */
 function selectorRule(description, selector, message) {
   return {
@@ -289,6 +300,11 @@ const ratchetPlugin = {
       `MemberExpression[property.name=/^(${HELPER_FIELDS})$/]:matches([object.callee.name='getAccountTypeConfig'], [object.object.name='ACCOUNT_TYPE_CONFIG'])`,
       "Read this account-type field through its helper in lib/config/account-types.ts (isOverflowTarget, getLimitGroup, isQcdEligible, …), not the config entry.",
     ),
+    "no-string-closed-set-field": selectorRule(
+      "A field holding a closed set's value is typed by the set, not string.",
+      `TSPropertySignature[key.name=/^(${CLOSED_SET_FIELDS})$/] > TSTypeAnnotation > TSStringKeyword`,
+      "This field holds a closed set's value: type it by the set (AccountCategory, PortfolioTaxType, ReturnFilingStatus, …), not string.",
+    ),
     "no-raw-input": selectorRule(
       "Inputs go through the form primitives.",
       "JSXOpeningElement[name.name='input']",
@@ -351,6 +367,7 @@ export const ratchetConfig = [
       "ratchet/no-jsx-iife": "error",
       "ratchet/no-text-includes": "error",
       "ratchet/no-raw-input": "error",
+      "ratchet/no-string-closed-set-field": "error",
       "ratchet/no-config-reach-through": "error",
       "ratchet/no-fixed-inset-overlay": "error",
       "ratchet/no-history-comment": "error",

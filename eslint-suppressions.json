@@ -29,6 +29,9 @@
     },
     "ratchet/no-raw-input": {
       "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
     }
   },
   "src/app/(dashboard)/brokerage/page.tsx": {
@@ -58,6 +61,9 @@
   "src/app/(dashboard)/budget/budget-detail-panel.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
     }
   },
   "src/app/(dashboard)/budget/page.tsx": {
@@ -74,6 +80,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 9
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/app/(dashboard)/budget/use-budget-page-state.ts": {
@@ -189,6 +198,9 @@
     },
     "ratchet/no-guarded-division": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
     }
   },
   "src/app/(dashboard)/expenses/page.tsx": {
@@ -204,6 +216,9 @@
       "count": 3
     },
     "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
@@ -292,6 +307,9 @@
       "count": 5
     },
     "ratchet/no-raw-input": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 2
     }
   },
@@ -468,6 +486,9 @@
   "src/components/budget/add-item-form.tsx": {
     "ratchet/no-raw-input": {
       "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/components/budget/api-category-picker.tsx": {
@@ -595,6 +616,9 @@
     },
     "ratchet/no-raw-input": {
       "count": 13
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/components/budget/extra-paycheck-budget-note.tsx": {
@@ -610,6 +634,9 @@
       "count": 3
     },
     "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
@@ -686,6 +713,9 @@
   "src/components/budget/types.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/components/cards/brokerage-goals.tsx": {
@@ -712,6 +742,9 @@
       "count": 3
     },
     "ratchet/no-guarded-division": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
@@ -903,6 +936,9 @@
     },
     "ratchet/no-raw-input": {
       "count": 3
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
     }
   },
   "src/components/cards/projection/overrides-panel.tsx": {
@@ -1134,6 +1170,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 3
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
     }
   },
   "src/components/cards/projection/use-projection-derived.ts": {
@@ -1145,6 +1184,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 6
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 5
     }
   },
   "src/components/cards/projection/use-projection-form-state.ts": {
@@ -1181,6 +1223,9 @@
     },
     "max-lines-per-function": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
     }
   },
   "src/components/cards/projection/utils.ts": {
@@ -1198,6 +1243,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 9
     }
   },
   "src/components/cards/strategy-guide-panel.tsx": {
@@ -1445,6 +1493,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/components/networth/net-worth-composition.tsx": {
@@ -1582,6 +1633,11 @@
       "count": 1
     }
   },
+  "src/components/paycheck/funding-bar.tsx": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
   "src/components/paycheck/inline-account-type.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -1652,6 +1708,9 @@
   "src/components/paycheck/types.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
     }
   },
   "src/components/performance/account-notes-dialog.tsx": {
@@ -1737,6 +1796,11 @@
   "src/components/performance/performance-table.tsx": {
     "max-lines-per-function": {
       "count": 1
+    }
+  },
+  "src/components/performance/types.ts": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 4
     }
   },
   "src/components/performance/update-basis-form.tsx": {
@@ -1831,6 +1895,9 @@
     },
     "ratchet/no-raw-input": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 6
     }
   },
   "src/components/portfolio/contribution-accounts-contrib-row.tsx": {
@@ -1845,6 +1912,9 @@
     },
     "ratchet/no-raw-input": {
       "count": 4
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
     }
   },
   "src/components/portfolio/contribution-accounts-create-form.tsx": {
@@ -1859,6 +1929,9 @@
     },
     "ratchet/no-raw-input": {
       "count": 4
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/components/portfolio/contribution-accounts-inline.tsx": {
@@ -1872,6 +1945,14 @@
   "src/components/portfolio/contribution-accounts-sub-account.tsx": {
     "ratchet/no-raw-input": {
       "count": 4
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 7
+    }
+  },
+  "src/components/portfolio/contribution-accounts-types.ts": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
     }
   },
   "src/components/portfolio/contribution-accounts.tsx": {
@@ -1917,6 +1998,9 @@
     "ratchet/no-raw-input": {
       "count": 3
     },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
+    },
     "ratchet/no-text-includes": {
       "count": 1
     }
@@ -1954,6 +2038,9 @@
   "src/components/portfolio/unlinked-contribs-banner.tsx": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
     }
   },
   "src/components/portfolio/use-contribution-accounts-mutations.ts": {
@@ -1965,6 +2052,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 4
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 7
     }
   },
   "src/components/recommendations/dismiss-controls.tsx": {
@@ -2338,6 +2428,9 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
@@ -2882,6 +2975,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/lib/calculators/budget.ts": {
@@ -3036,6 +3132,9 @@
       "count": 2
     },
     "ratchet/no-stacked-docblock": {
+      "count": 3
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 3
     }
   },
@@ -3247,6 +3346,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
     }
   },
   "src/lib/calculators/engine/withdrawal-routing.ts": {
@@ -3356,6 +3458,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/lib/calculators/social-security.ts": {
@@ -3387,6 +3492,9 @@
   "src/lib/calculators/types/calculators.ts": {
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/lib/calculators/types/engine-config.ts": {
@@ -3394,6 +3502,9 @@
       "count": 31
     },
     "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
@@ -3405,6 +3516,9 @@
       "count": 5
     },
     "ratchet/no-stacked-docblock": {
+      "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 2
     }
   },
@@ -3419,6 +3533,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 5
     }
   },
   "src/lib/calculators/withdrawal-bracket-optimizer.ts": {
@@ -3477,6 +3594,11 @@
   "src/lib/config/benchmarks.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
+    }
+  },
+  "src/lib/config/budget-template.ts": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/lib/config/data-sources.ts": {
@@ -3618,6 +3740,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 4
     }
   },
   "src/lib/config/tax-tables.ts": {
@@ -4018,6 +4143,9 @@
   "src/lib/demo/types.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/lib/env.ts": {
@@ -4268,6 +4396,11 @@
       "count": 1
     }
   },
+  "src/lib/pure/accounts/account-part.ts": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
+    }
+  },
   "src/lib/pure/always-buying.ts": {
     "@typescript-eslint/consistent-type-assertions": {
       "count": 1
@@ -4284,6 +4417,9 @@
   "src/lib/pure/basis-consistency.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/lib/pure/benchmark-yearly.ts": {
@@ -4316,6 +4452,9 @@
     },
     "ratchet/no-guarded-division": {
       "count": 3
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
     }
   },
   "src/lib/pure/contributions.ts": {
@@ -4327,6 +4466,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
     }
   },
   "src/lib/pure/controlled-overrides.ts": {
@@ -4500,6 +4642,9 @@
     },
     "ratchet/no-guarded-division": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/lib/pure/market-calendar.ts": {
@@ -4532,6 +4677,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 4
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
     }
   },
   "src/lib/pure/milestones.shared.ts": {
@@ -4574,6 +4722,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 3
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/lib/pure/performance-annotations.ts": {
@@ -4595,6 +4746,9 @@
   "src/lib/pure/performance.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/lib/pure/plan-pace.ts": {
@@ -4613,6 +4767,14 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
+  "src/lib/pure/portfolio/snapshot-row-label.ts": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
     }
   },
   "src/lib/pure/profiles.ts": {
@@ -4648,6 +4810,9 @@
   },
   "src/lib/pure/recommendations-caps.ts": {
     "ratchet/max-comment-lines": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
@@ -4739,6 +4904,9 @@
   "src/lib/pure/rmd-excess-target.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 4
     }
   },
   "src/lib/pure/roth-basis-rollover.ts": {
@@ -4767,6 +4935,9 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
+      "count": 8
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 8
     }
   },
@@ -4848,6 +5019,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/lib/pure/standin-advice.ts": {
@@ -4882,6 +5056,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 6
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/lib/pure/tax-bucket-projection.ts": {
@@ -4907,6 +5084,9 @@
     },
     "ratchet/no-guarded-division": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 7
     }
   },
   "src/lib/pure/tax-data-status.ts": {
@@ -4950,6 +5130,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 5
     }
   },
   "src/lib/pure/withdrawal-strategy-recommendation.ts": {
@@ -5110,6 +5293,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
     }
   },
   "src/lib/utils/math.ts": {
@@ -5220,6 +5406,9 @@
     },
     "ratchet/no-guarded-division": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
     }
   },
   "src/server/helpers/contribution-match.ts": {
@@ -5231,6 +5420,9 @@
     },
     "ratchet/no-stacked-docblock": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 4
     }
   },
   "src/server/helpers/contribution-mix.ts": {
@@ -5265,6 +5457,9 @@
     },
     "ratchet/no-stacked-docblock": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 11
     }
   },
   "src/server/helpers/debts.ts": {
@@ -5358,6 +5553,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/server/helpers/performance-rollups.ts": {
@@ -5379,6 +5577,9 @@
   "src/server/helpers/portfolio-labels.ts": {
     "ratchet/max-comment-lines": {
       "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/server/helpers/projection-cache.ts": {
@@ -5454,6 +5655,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 3
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
     }
   },
   "src/server/helpers/sub-accounts.ts": {
@@ -5462,6 +5666,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 2
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/server/helpers/transaction-lock.ts": {
@@ -5548,6 +5755,11 @@
       "count": 1
     }
   },
+  "src/server/retirement/payload/retirement-contributions.ts": {
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
+    }
+  },
   "src/server/retirement/social-security-entries.ts": {
     "ratchet/max-comment-lines": {
       "count": 4
@@ -5581,6 +5793,9 @@
     },
     "ratchet/no-stacked-docblock": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
     }
   },
   "src/server/routers/contribution-profiles.ts": {
@@ -5609,6 +5824,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 3
     }
   },
   "src/server/routers/demo.ts": {
@@ -5742,6 +5960,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 2
     }
   },
   "src/server/routers/paycheck.ts": {
@@ -5778,6 +5999,9 @@
     },
     "ratchet/max-comment-lines": {
       "count": 6
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/server/routers/projection/_shared.ts": {
@@ -5859,6 +6083,9 @@
       "count": 9
     },
     "ratchet/no-history-comment": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },
@@ -5987,6 +6214,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 3
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/server/routers/settings/tax-data-sync.ts": {
@@ -6047,6 +6277,9 @@
     },
     "ratchet/no-history-comment": {
       "count": 5
+    },
+    "ratchet/no-string-closed-set-field": {
+      "count": 1
     }
   },
   "src/server/routers/sync/mappings.ts": {
@@ -6062,6 +6295,9 @@
       "count": 7
     },
     "max-lines-per-function": {
+      "count": 1
+    },
+    "ratchet/no-string-closed-set-field": {
       "count": 1
     }
   },

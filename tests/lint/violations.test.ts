@@ -82,6 +82,17 @@ import {
   accountCategoryEnum,
   getDefaultDecumulationOrder,
 } from "@/lib/config/account-types";
+import {
+  BUDGET_API_SERVICE_VALUES,
+  DOLLAR_BASIS_VALUES,
+  PAY_PERIOD_VALUES,
+  PORTFOLIO_TAX_TYPE_VALUES,
+} from "@/lib/config/enum-values";
+import {
+  RETURN_FILING_STATUS_VALUES,
+  W4_FILING_STATUS_VALUES,
+} from "@/lib/config/filing-status";
+import { PERMISSIONS } from "@/lib/config/permissions";
 import { routePercentage } from "@/lib/calculators/engine/contribution-routing";
 import { resolveAccumulationConfig } from "@/lib/calculators/engine/override-resolution";
 import { routeWithdrawalsPercentage } from "@/lib/calculators/engine/withdrawal-routing";
@@ -125,8 +136,6 @@ const EXEMPT: Record<string, string> = {
   // The config FILE itself defines what categories exist.
   "src/lib/config/account-types.ts":
     "Defines ACCOUNT_TYPE_CONFIG and the predicate helpers",
-  "src/lib/config/account-types.types.ts":
-    "Type definitions for the config schema",
   "src/lib/config/enum-values.ts": "Exports the enum array for Zod validators",
   // Database schema files reference column names but the field name happens
   // to match a category — not a violation, just naming.
@@ -236,35 +245,170 @@ function findCategoryEqualityViolations(): Violation[] {
   return violations;
 }
 
-function findHardcodedCategoryArrayViolations(): Violation[] {
-  const violations: Violation[] = [];
-  // Match an array literal that contains 3+ category strings (4+ would be
-  // an obvious match against ALL categories; 3 still suspicious).
-  const pattern = new RegExp(
-    `\\[\\s*(?:['"](${categoryAlternation()})['"]\\s*,\\s*){2,}['"](${categoryAlternation()})['"]`,
+// Every closed set the config derives its lists from. A hand-written array
+// of its members (`["401k", "403b", "ira"]`, `["MFJ", "Single", "HOH"]`)
+// goes stale when the set changes: read the set, or a list the config
+// derives from it. Each set is read at scan time, so a member added to
+// the config is covered with no edit here.
+interface ClosedSet {
+  name: string;
+  members: () => readonly string[];
+  /** Where the set is defined (its own file may list it). */
+  definedIn: string;
+  /** What to use instead. */
+  use: string;
+}
+
+const CLOSED_SETS: ClosedSet[] = [
+  {
+    name: "account category",
+    members: () => Object.keys(ACCOUNT_TYPE_CONFIG),
+    definedIn: "src/lib/config/account-types.ts",
+    use: "getAllCategories() / categoriesWithIrsLimit() / similar (account-types.ts)",
+  },
+  {
+    name: "filing status",
+    members: () => [...RETURN_FILING_STATUS_VALUES, ...W4_FILING_STATUS_VALUES],
+    definedIn: "src/lib/config/filing-status.ts",
+    use: "RETURN_FILING_STATUS_VALUES / FILING_STATUS_ORDER (filing-status.ts)",
+  },
+  {
+    name: "portfolio tax type",
+    members: () => PORTFOLIO_TAX_TYPE_VALUES,
+    definedIn: "src/lib/config/enum-values.ts",
+    use: "PORTFOLIO_TAX_TYPE_VALUES (enum-values.ts)",
+  },
+  {
+    name: "budget service",
+    members: () => BUDGET_API_SERVICE_VALUES,
+    definedIn: "src/lib/config/enum-values.ts",
+    use: "BUDGET_API_SERVICE_VALUES / BUDGET_PROVIDERS",
+  },
+  {
+    name: "dollar basis",
+    members: () => DOLLAR_BASIS_VALUES,
+    definedIn: "src/lib/config/enum-values.ts",
+    use: "DOLLAR_BASIS_VALUES (enum-values.ts)",
+  },
+  {
+    name: "pay period",
+    members: () => PAY_PERIOD_VALUES,
+    definedIn: "src/lib/config/enum-values.ts",
+    use: "PAY_PERIOD_VALUES (enum-values.ts) / PAY_PERIOD_CONFIG",
+  },
+  {
+    name: "permission",
+    members: () => PERMISSIONS,
+    definedIn: "src/lib/config/permissions.ts",
+    use: "PERMISSIONS (permissions.ts)",
+  },
+];
+
+const escapeRegExp = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+/** An array literal opening with `k` or more of the set's members, on one
+ *  line or wrapped: k is 3, or every member of a smaller set. */
+function closedSetArrayPattern(set: ClosedSet): RegExp {
+  const members = [...new Set(set.members())];
+  const alt = members.map(escapeRegExp).join("|");
+  const k = Math.min(3, members.length);
+  return new RegExp(
+    `\\[\\s*(?:['"](?:${alt})['"]\\s*,\\s*){${k - 1},}['"](?:${alt})['"]`,
+    "g",
   );
+}
+
+/** Comment lines blanked (line numbers kept), so a list in a comment or a
+ *  docblock isn't a violation. */
+function codeOnly(lines: string[]): string {
+  return lines
+    .map((l) => {
+      const t = l.trim();
+      return t.startsWith("//") || t.startsWith("*") || t.startsWith("/*")
+        ? ""
+        : l;
+    })
+    .join("\n");
+}
+
+/** Today's hand-written closed-set lists, per file, each with its reason.
+ *  Shrink-only, like the size baseline: a new one fails, and a file whose
+ *  count drops fails until its entry is lowered (or removed). */
+const CLOSED_SET_LISTS_KNOWN: Record<
+  string,
+  { count: number; reason: string }
+> = (() => {
+  const reason =
+    "Tax-type column order, equal to PORTFOLIO_TAX_TYPE_VALUES; using it " +
+    "reflows a long render chain in a file at its size ceiling: goes when " +
+    "the projection table is split";
+  return {
+    "src/components/cards/projection/projection-chart.tsx": {
+      count: 1,
+      reason,
+    },
+    "src/components/cards/projection/projection-table-accum-row.tsx": {
+      count: 3,
+      reason,
+    },
+    "src/components/cards/projection/projection-table-decum-row.tsx": {
+      count: 3,
+      reason,
+    },
+    "src/components/cards/projection/projection-table.tsx": {
+      count: 4,
+      reason,
+    },
+  };
+})();
+
+/** What fails against CLOSED_SET_LISTS_KNOWN: a file over its count (or
+ *  not listed), or under it (stale entry). */
+function closedSetListProblems(violations: Violation[]): string[] {
+  const byFile = new Map<string, Violation[]>();
+  for (const v of violations)
+    byFile.set(v.file, [...(byFile.get(v.file) ?? []), v]);
+  const problems: string[] = [];
+  for (const [file, vs] of byFile) {
+    const known = CLOSED_SET_LISTS_KNOWN[file]?.count ?? 0;
+    if (vs.length > known)
+      problems.push(
+        `${file}: ${vs.length} lists, ${known} known\n` +
+          vs.map((v) => `  :${v.line} ${v.rule}: ${v.snippet}`).join("\n"),
+      );
+  }
+  for (const [file, { count }] of Object.entries(CLOSED_SET_LISTS_KNOWN)) {
+    const now = byFile.get(file)?.length ?? 0;
+    if (now < count)
+      problems.push(
+        `${file}: ${now} lists, ${count} known — lower its entry in CLOSED_SET_LISTS_KNOWN`,
+      );
+  }
+  return problems;
+}
+
+function findHardcodedClosedSetArrayViolations(): Violation[] {
+  const violations: Violation[] = [];
   for (const file of walkTsFiles(SRC_DIR)) {
     const rel = relPath(file);
     if (isExempt(rel)) continue;
     const lines = readFileLines(file);
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]!;
-      const trimmed = line.trim();
-      if (trimmed.startsWith("//") || trimmed.startsWith("*")) continue;
-      if (
-        line.includes("lint-violation-ok") ||
-        (i > 0 && lines[i - 1]!.includes("lint-violation-ok")) ||
-        (i > 1 && lines[i - 2]!.includes("lint-violation-ok")) ||
-        (i > 2 && lines[i - 3]!.includes("lint-violation-ok"))
-      ) {
-        continue;
-      }
-      if (pattern.test(line)) {
+    const code = codeOnly(lines);
+    for (const set of CLOSED_SETS) {
+      if (rel === set.definedIn) continue;
+      for (const m of code.matchAll(closedSetArrayPattern(set))) {
+        const i = code.slice(0, m.index).split("\n").length - 1;
+        if (
+          lines
+            .slice(Math.max(0, i - 3), i + 1)
+            .some((l) => l.includes("lint-violation-ok"))
+        )
+          continue;
         violations.push({
           file: rel,
           line: i + 1,
-          rule: "no-hardcoded-category-array",
-          snippet: trimmed.slice(0, 100),
+          rule: `no-hardcoded-closed-set-array (${set.name}; use ${set.use})`,
+          snippet: m[0].replace(/\s+/g, " ").slice(0, 100),
         });
       }
     }
@@ -1045,14 +1189,16 @@ describe("RULES.md violations sweep", () => {
     }
   });
 
-  it("no hardcoded category arrays (['401k', '403b', ...])", () => {
-    const violations = findHardcodedCategoryArrayViolations();
-    if (violations.length > 0) {
+  it("no hand-written list of a closed set (['401k', '403b', ...], ['MFJ', 'Single', 'HOH'], ...)", () => {
+    const problems = closedSetListProblems(
+      findHardcodedClosedSetArrayViolations(),
+    );
+    if (problems.length > 0) {
       expect.fail(
-        `Found ${violations.length} hardcoded-category-array violations. ` +
-          `Use getAllCategories() / categoriesWithIrsLimit() / similar from ` +
-          `src/lib/config/account-types.ts.\n` +
-          formatViolations("Violations", violations),
+        `Hand-written closed-set lists. Read the set from src/lib/config/ ` +
+          `(each rule names what to use); a list fixed lowers its count in ` +
+          `CLOSED_SET_LISTS_KNOWN.\n` +
+          problems.join("\n"),
       );
     }
   });
@@ -1443,8 +1589,8 @@ const POSITIVE_CONTROLS: [string, () => Violation[], Record<string, string>][] =
       { "src/a.ts": 'if (t === "401k") run();\n' },
     ],
     [
-      "category array",
-      findHardcodedCategoryArrayViolations,
+      "closed-set array",
+      findHardcodedClosedSetArrayViolations,
       { "src/a.ts": 'const c = ["401k", "403b", "ira"];\n' },
     ],
     [
@@ -1586,6 +1732,20 @@ describe("RULES.md violations sweep — positive controls", () => {
         (f) => !f.startsWith("src/lib/config/"),
       );
       expect(scanPlanted(finder, files)).toEqual(planted);
+    },
+  );
+
+  it.each(CLOSED_SETS.map((set) => [set.name, set] as const))(
+    "closed-set array: flags a wrapped hand list of %s, not its own file",
+    (_, set) => {
+      const members = [...new Set(set.members())].slice(0, 3);
+      const list = `export const L = [\n${members.map((m) => `  "${m}",`).join("\n")}\n];\n`;
+      expect(
+        scanPlanted(findHardcodedClosedSetArrayViolations, {
+          "src/a.ts": list,
+          [set.definedIn]: list,
+        }),
+      ).toEqual(["src/a.ts"]);
     },
   );
 
