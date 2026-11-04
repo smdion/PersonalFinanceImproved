@@ -20,6 +20,7 @@ import * as schema from "@/lib/db/schema";
 import { log } from "@/lib/logger";
 import { redactSecrets } from "@/lib/utils/redact-secrets";
 import { notifyMutationSucceeded } from "./mutation-events";
+import { createRequestScope } from "./data/request-scope";
 
 type AuthLevel = "public" | "protected" | "admin" | Permission;
 
@@ -469,21 +470,20 @@ const mutationEventsMiddleware = t.middleware(async ({ next, type }) => {
   return result;
 });
 
-// Base procedure with error logging, demo schema support + demo-only guard
+// Base procedure: error logging, demo-only guard, demo schema, then the
+// request scope (after the demo switch, so its db; per call, so its asOf).
 const baseProcedure = t.procedure
   .use(errorLoggingMiddleware)
   .use(mutationEventsMiddleware)
   .use(demoOnlyGuard)
-  .use(demoSchemaMiddleware);
+  .use(demoSchemaMiddleware)
+  .use(({ ctx, next }) =>
+    next({ ctx: { scope: createRequestScope(ctx.db, new Date()) } }),
+  );
 
-// Shared by every procedure that requires a session (protected, admin, and
-// every withPermission() addon below) — the authenticated rate limit used
-// to apply to protectedProcedure alone, leaving adminProcedure and every
-// permission-gated (budget/savings/sync/etc.) procedure completely
-// unlimited: the write-capable half of the API had no throttle at all
-// while read-only queries carried the whole burden. One shared base keeps
-// the limit (and the `internal` bypass) uniform across all of them instead
-// of applying to one of several builders.
+// Shared by every procedure that requires a session (protected, admin and
+// every withPermission() addon below), so the authenticated rate limit and
+// its `internal` bypass apply to all of them alike.
 const rateLimitedAuthedBase = baseProcedure.use(
   authenticatedRateLimitMiddleware,
 );

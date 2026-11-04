@@ -41,6 +41,7 @@ tests/.tmp/
 # is unset; contains ledgr.db + pre-migration backups). The *.db pattern
 # catches the files but git still reports the empty dir as untracked,
 # which trips scripts/release.sh + scripts/deploy.sh's clean-tree check.
-data/
+# Anchored: src/server/data/ is source.
+/data/
 # Migrator pre-upgrade backups (a full copy of the database) when run from the repo
 pre-upgrade-backup-*

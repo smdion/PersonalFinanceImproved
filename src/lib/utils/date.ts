@@ -1,3 +1,5 @@
+import { calendarDateOf } from "./calendar-date";
+
 /**
  * Get a person's age as of a given date.
  */
@@ -59,11 +61,7 @@ export function isPriorYearContribWindow(date: Date = new Date()): boolean {
  * share the same fix instead of re-deriving it.
  */
 export function localDateStr(date: Date = new Date()): string {
-  return [
-    date.getFullYear(),
-    String(date.getMonth() + 1).padStart(2, "0"),
-    String(date.getDate()).padStart(2, "0"),
-  ].join("-");
+  return calendarDateOf(date);
 }
 
 /** The year of a YYYY-MM-DD date. `new Date(d).getFullYear()` parses it as

@@ -6335,7 +6335,7 @@
       "count": 5
     },
     "ratchet/max-comment-lines": {
-      "count": 9
+      "count": 8
     }
   },
   "src/workers/monte-carlo-worker.ts": {
