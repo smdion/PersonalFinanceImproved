@@ -6,6 +6,97 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+# v0.10
+
+## [0.10.0] - 2026-11-04
+
+> Rollup of everything since v0.9.0. For patch-level detail, see the v0.9.x entries below.
+
+v0.10.0's own work is structure: checks that stop the code from drifting, a test that records every figure the app shows, and unused features removed. No figure in the app changed in v0.10.0 itself; the figure changes below came in v0.9.1–v0.9.10.
+
+### Upgrading from v0.9.x
+
+- **Pull the new image and restart.** v0.10.0 itself has no database changes. Coming from an earlier v0.9.x, the start applies the migrations from v0.9.2–v0.9.7 that you don't have yet, after its usual pre-upgrade backup. It upgrades from any v0.9.x.
+- **Self-hosting with the sample compose files:** your `.env` must set `NEXTAUTH_SECRET`, `CRON_SECRET` and `ENCRYPTION_KEY` (and `POSTGRES_PASSWORD` for PostgreSQL). Compose refuses to start and names the one that's missing; `pnpm setup` fills them in.
+- **Behind a reverse proxy that doesn't overwrite `X-Real-IP`, or with no proxy,** set `TRUSTED_PROXY_HEADER` so sign-in and rate limits see each visitor's real address.
+- **Rotate your budget and market-data keys** if you ran a version before v0.9.5: until then the change log stored saved API keys and tokens in plain text. The upgrade scrubs them, but rotate the Actual and Tiingo keys and revoke any YNAB token you connected.
+- **Expect retirement figures to move** if you're coming from v0.9.4 or earlier: Social Security now grows with inflation and its taxable share is taxed, each person's RMD, raise and ages are their own, years with one paycheck draw from your accounts, and the Simulation follows your own inflation. The sections below say how.
+
+### Installing and signing in
+
+- **The sample Docker Compose install starts, signs in and runs with no extra setup.** A new install offers "Create the first admin" on the sign-in page, then opens the setup wizard; finish it before you expose Ledgr publicly. Local admin is the default sign-in and Authentik is optional.
+- **Ledgr ships its Simulation presets** (Default, Aggressive, Conservative), so a new install, a reset and the demo can run the Simulation; installs that already have presets keep theirs. A new install also gets its first Retirement profile the first time you save retirement settings, so "Save as a new Plan" works.
+- **When something can't run, it says why:** the Simulation names what's missing instead of reporting "unreachable", projections ask for a return rate first, and "Save as a new Plan" says why it's disabled.
+- One disclaimer on every advice and projection page; "Print Advisor Report" is now **"Print Full Report"**.
+- A new public `docs/OPS.md` covers install, backups, release and rollback in generic terms.
+
+### Retirement projections
+
+- **Each person is their own person.** The plan runs from each person's own age and retirement date instead of the couple's average age, and reads in years (hover a year for everyone's age). Each person's RMD comes from their own accounts on the year-end balance, each salary grows at its own raise rate, and the employer match follows the pay of the person whose account gets it.
+- **Years with one paycheck.** When one person retires first or a job ends early, you choose whether to keep saving and whether to withdraw what pay doesn't cover; the projection marks those years. Jobs count from their start date to their end date, and contributions get catch-up room as people age (from 50, the larger one at 60–63).
+- **Social Security gets its cost-of-living raise, and its tax is charged.** Benefits grow with your inflation rate, the taxable share is taxed (counting brokerage gains and taxable Roth growth, as the IRS formula does), and the projection table shows that tax on its own line.
+- **New spending strategy: Variable Percentage Withdrawal (VPW)**, matching the published table. Constant Percentage, Endowment, Vanguard Dynamic, RMD Spending and VPW each have a switch for whether Social Security comes out of the amount or on top of it; older profiles keep their behaviour.
+- **The mortgage ends in the projection** — pick the budget line that pays it and spending drops the year after payoff.
+- **A bracket target is a preference, not a spending limit:** withdrawals go past it to fund your spending and say so; your own caps stay hard.
+- Guyton-Klinger judges the portfolio's own withdrawal rate (spending less Social Security) and carries through years Social Security covers. Withdrawals never take the whole balance to cover taxes; a year's 0% contribution rate pauses contributions; Roth basis at retirement reflects gap-year draws; dozens more two-person, RMD, QCD and HSA fixes.
+
+### The Simulation
+
+- **It follows your inflation.** Trials vary around your own inflation and post-retirement raise (keeping your gap between them), inflation varies year by year inside each trial, and each trial's today's dollars use the inflation it ran with.
+- **Presets mean the same thing everywhere:** the preset you pick sets both the Simulation and the strategy comparison, and Coast FIRE uses the same returns and limits.
+- The projection chart's tooltip shows each year's assumptions (plan return, the Simulation's return and spread, inflation, Guyton-Klinger's anchor).
+
+### Taxes and paychecks
+
+- **This year's tax return has its own filing status** (Taxes page), separate from a Retirement Profile's. A profile can be set to Auto to follow it, and with nothing set Ledgr assumes Single rather than married filing jointly. The Roth IRA check and household tax use it, not the W-4.
+- **Paychecks match payroll more closely:** a bonus is withheld at 22% on its taxable amount, Additional Medicare shows on each check past $200,000, a job started this year is paid from its start date, and the pay-stub check compares bonus checks.
+- **Two tax tables held the wrong year's figures** (2025 capital-gains brackets and 2026 IRMAA brackets) and are corrected; a figure you changed yourself stays yours.
+- **Every tax figure links to its source document**, tax data is one file per year with contributor tooling, and new years are checked strictly: a table identical to last year's is rejected as an unupdated copy.
+- **The answer key:** about 650 test cases worked by hand from IRS, SSA, CMS and HHS publications, plus `docs/CALCULATIONS.md`, a register of every calculation Ledgr does with its source and known gaps. Cases Ledgr gets wrong today are recorded with the correct figure for a later fix.
+
+### Budget-app and data-feed sync
+
+- **Ledgr checks what Actual, YNAB, SimpleFIN, SEC and Tiingo send before using it.** A broken or changed answer used to be stored as $0 or blank — a debt shown as paid off, a balance zeroed — with the sync reporting success. Now the sync stops, nothing changes, and you're told what was wrong. Failed syncs and pushes say what happened and what was written.
+- **Actual transactions carry their category and payee names**, so Expense year-over-year fills in on Actual, and testing an Actual connection really asks Actual.
+- **Debts can follow a budget account**, and a mortgage servicer's SimpleFIN feed can be your loan's balance. One budget account can't be counted in two places.
+- **Budget targets follow one rule in every integration:** a monthly push replaces only a monthly target; others are left alone and reported as skipped.
+- **Market prices are kept in the database**, so each close is fetched once and Tiingo is asked far less; fund history keeps every sync.
+- Many SimpleFIN, snapshot-push and goal-push fixes: partial failures no longer leave half-written results, pending transactions aren't counted twice, and one unreadable account no longer stops the others.
+
+### Insights
+
+- **Current Balances replaces the Live Balance card**: the most accurate figure per account, moved to the latest market close, with daily movement from each fund's own price change and money paid in or out shown beside it.
+- **New milestones:** "Save your raises (60/40)", "Always Be Buying", Money Guy's 20/3/8 car rule and student loans against first-year pay. Milestones remember when they were first reached, and your own goals can count invested money without cash.
+- **Milestones, Recommendations and Benchmarks read as one set**, recommendations lead with one line saying what to do, and your plan is shown where it's used (Net Worth, Benchmarks, Budget, Contributions, the mortgage).
+- Benchmarks shows what fund costs take from your balance over 10, 20 and 30 years; Money Guy's Goldilocks rule paces large lump sums; the high-income line follows your filing status and can be set.
+
+### Keeping your records straight
+
+- Finalizing a year works on SQLite, Performance's lifetime totals keep their history, past dates use the loan's schedule, and savings transfers stay paired.
+- Deleting a person, account, debt or profile cleans up what pointed at it, and "Reset all data" clears the settings that pointed at the wiped data.
+
+### Removed
+
+- **The Settings → API tab.** It listed the server's procedures for admins; that list lives in `docs/API_ROUTERS.md`. A saved API tab opens General.
+- **The in-app test runner** (Settings → Debug). It could never run in the Docker image, which ships no tests; the Diagnostics switch stays.
+- **The 30- and 90-day balance change** behind the old Live Balance card. No screen has shown it since Current Balances replaced that card in v0.9.5, so nothing on screen changes.
+
+### Security
+
+- Saved credentials no longer land in the change log (and old entries are scrubbed); backup previews need the Backups permission and never show credentials.
+- Failed local-admin sign-ins are rate-limited, two people can't both create the first admin, restoring or resetting can't reopen "Create the first admin", Dev Login exists only in development builds, and rate limits use the address the proxy saw.
+- The scheduled-job endpoints share one secret check and refuse anything but a valid secret.
+- Runs on Node.js 26.13.0.
+
+### Under the hood
+
+- **Checks that only tighten:** file and function sizes and ESLint rule counts are recorded at today's level and may only go down; layer rules (dependency-cruiser) keep calculation code out of server and UI code; every calculation must appear in `docs/CALCULATIONS.md`; each page has a download-size budget; and dead code, including code only tests used, fails CI.
+- **A behavior baseline** records the numbers every query returns for 17 invented households on both SQLite and PostgreSQL, the rows a YNAB or Actual sync writes, and a seeded Simulation run, so later restructuring can't move a figure unnoticed.
+- **CI on PostgreSQL:** migrations from empty, seeded queries, a backup round trip and a constraint snapshot (keys and indexes) now run on PostgreSQL; the image's compose boot test signs in through the first-run wizard on both databases; and the deploy script refuses without a green CI run.
+- RULES.md is split into RULES, DESIGN, TESTING, CONTRIBUTING and OPS; unused code, re-export files and the jsdom test dependency are removed; v0.7.11 and earlier changelog entries move to `docs/CHANGELOG-pre-0.8.md`.
+
+---
+
 # v0.9
 
 ## [0.9.10] - 2026-11-03
