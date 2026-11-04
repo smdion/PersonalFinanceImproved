@@ -6,33 +6,19 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 // src/components/settings/ (RBAC/credentials/limits) outside the
 // integrations/ subfolder (covered elsewhere).
 
-let queryResult: {
-  configured: boolean;
-  reachable: boolean;
-  issuer?: string;
-} | null = null;
-const isFetching = false;
-const refetch = vi.fn();
-
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    settings: {
-      testOidcConnection: {
-        useQuery: (_input: unknown, opts?: { enabled: boolean }) => ({
-          data: opts?.enabled ? queryResult : undefined,
-          isFetching,
-          refetch,
-        }),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+import { resetTrpcMock, setQuery } from "./trpc-mock";
+
+const OIDC = "settings.testOidcConnection";
 
 import { AuthSettings } from "@/components/settings/auth-settings";
 
 describe("AuthSettings smoke", () => {
   beforeEach(() => {
-    queryResult = null;
+    resetTrpcMock();
+    setQuery(OIDC, null);
   });
 
   it("renders required env vars and local admin info without testing yet", () => {
@@ -48,11 +34,11 @@ describe("AuthSettings smoke", () => {
   });
 
   it("shows 'Connected' when configured and reachable after testing", async () => {
-    queryResult = {
+    setQuery(OIDC, {
       configured: true,
       reachable: true,
       issuer: "https://auth.example.com/application/o/ledgr/",
-    };
+    });
     render(<AuthSettings />);
     fireEvent.click(screen.getByRole("button", { name: "Test Connection" }));
     await waitFor(() => {
@@ -63,7 +49,7 @@ describe("AuthSettings smoke", () => {
   });
 
   it("shows 'Configured but unreachable' when configured but not reachable", async () => {
-    queryResult = { configured: true, reachable: false };
+    setQuery(OIDC, { configured: true, reachable: false });
     render(<AuthSettings />);
     fireEvent.click(screen.getByRole("button", { name: "Test Connection" }));
     await waitFor(() => {
@@ -74,7 +60,7 @@ describe("AuthSettings smoke", () => {
   });
 
   it("shows 'Not configured' when Authentik env vars are unset", async () => {
-    queryResult = { configured: false, reachable: false };
+    setQuery(OIDC, { configured: false, reachable: false });
     render(<AuthSettings />);
     fireEvent.click(screen.getByRole("button", { name: "Test Connection" }));
     await waitFor(() => {

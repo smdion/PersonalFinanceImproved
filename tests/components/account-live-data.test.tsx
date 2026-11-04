@@ -1,31 +1,10 @@
 /** Portfolio account card → Holdings & Deposits. Invented data only. */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { holdMutation, mutationCalls, resetTrpcMock } from "./trpc-mock";
 
-const confirmStandIn = vi.fn();
-const updateCostBasis = vi.fn();
-const mutation = (fn = vi.fn()) => ({
-  useMutation: () => ({ mutate: fn, isPending: false, isSuccess: false }),
-});
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      investments: {
-        invalidate: vi.fn(),
-        getAccountInsights: { invalidate: vi.fn() },
-      },
-      performance: { invalidate: vi.fn() },
-    }),
-    performance: { updateCostBasis: mutation(updateCostBasis) },
-    investments: {
-      confirmStandIn: mutation(confirmStandIn),
-      rejectStandIn: mutation(),
-      findStandIn: mutation(),
-      checkStandIn: mutation(),
-      setUserFacts: mutation(),
-      clearUserFacts: mutation(),
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 import type { AccountInsight } from "@/components/portfolio/account-live-data";
@@ -97,6 +76,13 @@ const holding: Holding = {
   standInPreview: null,
 };
 
+beforeEach(() => {
+  resetTrpcMock();
+  // The writes don't settle: the test reads what was sent.
+  holdMutation("investments.confirmStandIn");
+  holdMutation("performance.updateCostBasis");
+});
+
 describe("AccountLiveSection", () => {
   it("shows link coverage, the deposit check and the stand-in controls", () => {
     render(<AccountLiveSection insight={insight} holdings={[holding]} />);
@@ -114,9 +100,11 @@ describe("AccountLiveSection", () => {
     // Two "Use it" buttons: the stand-in fund (first) and the cost basis.
     const [standIn, cost] = screen.getAllByRole("button", { name: "Use it" });
     fireEvent.click(standIn!);
-    expect(confirmStandIn).toHaveBeenCalledWith({ securityId: 5 });
+    expect(mutationCalls("investments.confirmStandIn")).toEqual([
+      { securityId: 5 },
+    ]);
     fireEvent.click(cost!);
-    expect(updateCostBasis).toHaveBeenCalledWith({
+    expect(mutationCalls("performance.updateCostBasis")).toContainEqual({
       performanceAccountId: 1,
       costBasis: "800.00",
     });

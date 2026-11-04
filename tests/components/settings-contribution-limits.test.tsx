@@ -21,11 +21,6 @@ vi.mock("@/lib/context/user-context", () => ({
   isAdmin: (u: { role: string }) => u.role === "admin",
 }));
 
-const updateMutate = vi.fn();
-const createMutate = vi.fn();
-const deleteMutate = vi.fn();
-const invalidate = vi.fn();
-
 const mockLimits2025 = [
   {
     id: 1,
@@ -69,59 +64,25 @@ const mockLimits2024 = [
   },
 ];
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      settings: {
-        contributionLimits: { list: { invalidate } },
-      },
-    }),
-    settings: {
-      contributionLimits: {
-        list: {
-          useQuery: () => ({
-            data: [...mockLimits2025, ...mockLimits2024],
-            isLoading: false,
-          }),
-        },
-        update: {
-          useMutation: (opts: { onSuccess?: () => void }) => ({
-            mutate: (input: unknown) => {
-              updateMutate(input);
-              opts.onSuccess?.();
-            },
-            isPending: false,
-          }),
-        },
-        create: {
-          useMutation: (opts: { onSuccess?: () => void }) => ({
-            mutate: (input: unknown) => {
-              createMutate(input);
-              opts.onSuccess?.();
-            },
-            mutateAsync: async (input: unknown) => {
-              createMutate(input);
-              opts.onSuccess?.();
-            },
-            isPending: false,
-          }),
-        },
-        delete: {
-          useMutation: (opts: { onSuccess?: () => void }) => ({
-            mutateAsync: async (input: unknown) => {
-              deleteMutate(input);
-              opts.onSuccess?.();
-            },
-            isPending: false,
-          }),
-        },
-        resetToShipped: {
-          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-        },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+import {
+  holdMutation,
+  mutationCalls,
+  resetTrpcMock,
+  setQuery,
+} from "./trpc-mock";
+
+beforeEach(() => {
+  resetTrpcMock();
+  setQuery("settings.contributionLimits.list", [
+    ...mockLimits2025,
+    ...mockLimits2024,
+  ]);
+  // Its old stand-in never settled; update/create/delete did.
+  holdMutation("settings.contributionLimits.resetToShipped");
+});
 
 import { ContributionLimitsSettings } from "@/components/settings/contribution-limits";
 
@@ -140,9 +101,6 @@ describe("ContributionLimitsSettings smoke", () => {
 
   beforeEach(() => {
     currentRole = "admin";
-    updateMutate.mockClear();
-    createMutate.mockClear();
-    deleteMutate.mockClear();
   });
 
   it("renders the FICA/Medicare group for the given year", () => {
@@ -182,7 +140,7 @@ describe("ContributionLimitsSettings smoke", () => {
     const input = screen.getByDisplayValue("176100");
     fireEvent.change(input, { target: { value: "180000" } });
     fireEvent.blur(input);
-    expect(updateMutate).toHaveBeenCalledWith(
+    expect(mutationCalls("settings.contributionLimits.update")).toContainEqual(
       expect.objectContaining({
         id: 1,
         limitType: "ss_wage_base",

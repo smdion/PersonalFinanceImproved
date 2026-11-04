@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import {
+  holdMutation,
+  resetTrpcMock,
+  setQuery,
+  type MockOutput,
+} from "./trpc-mock";
 
 // Smoke test for RetirementProfileTab — the "Projection Assumptions" card
 // relocated from the Retirement page to the Budget page's Retirement
@@ -77,63 +83,39 @@ const mockProjectionData = {
   budgetProfileSummaries: [],
 };
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      retirement: { invalidate: vi.fn() },
-      projection: {
-        invalidate: vi.fn(),
-        computeProjection: { cancel: vi.fn(), setData: vi.fn() },
-      },
-    }),
-    settings: { appSettings: { list: { useQuery: () => ({ data: [] }) } } },
-    contributionProfile: { list: { useQuery: () => ({ data: [] }) } },
-    salaryProfile: { list: { useQuery: () => ({ data: [] }) } },
-    projection: {
-      computeProjection: {
-        useQuery: () => ({
-          data: mockProjectionData,
-          isLoading: false,
-          error: null,
-        }),
-      },
-      // retirement-profile-tab.tsx queries this directly (TaxesSection is a pure
-      // presentational leaf, see retirement-sections-smoke.test.tsx) and
-      // passes the result down as a prop. `data: undefined` here matches
-      // "query hasn't resolved yet" -- TaxesSection renders no
-      // recommendation either way, so this smoke test's assertions are
-      // unaffected.
-      computeWithdrawalBracketOptimizer: {
-        useQuery: () => ({ data: undefined }),
-      },
-    },
-    // RMD Handling's "Reinvested into" picker lists Retirement brokerages.
-    performance: {
-      performanceAccounts: { list: { useQuery: () => ({ data: [] }) } },
-    },
-    retirement: {
-      retirementSettings: {
-        upsert: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
-        upsertPersonRaiseRate: {
-          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-        },
-      },
-      retirementProfilePeople: {
-        upsertPerson: {
-          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-        },
-        upsertHouseholdFields: {
-          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-        },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 describe("RetirementProfileTab smoke", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     currentRole = "admin";
+    resetTrpcMock();
+    setQuery("settings.appSettings.list", []);
+    setQuery("contributionProfile.list", []);
+    setQuery("salaryProfile.list", []);
+    // The fixture is a partial projection with the stored-row field types.
+    setQuery(
+      "projection.computeProjection",
+      mockProjectionData as MockOutput<"projection.computeProjection">,
+    );
+    // retirement-profile-tab.tsx queries this directly (TaxesSection is a pure
+    // presentational leaf, see retirement-sections-smoke.test.tsx) and
+    // passes the result down as a prop. No data here matches "query hasn't
+    // resolved yet" -- TaxesSection renders no recommendation either way, so
+    // this smoke test's assertions are unaffected.
+    setQuery("projection.computeWithdrawalBracketOptimizer", undefined);
+    // RMD Handling's "Reinvested into" picker lists Retirement brokerages.
+    setQuery("performance.performanceAccounts.list", []);
+    // No write settled before (no onSuccess): keep it so.
+    for (const path of [
+      "retirement.retirementSettings.upsert",
+      "retirement.retirementSettings.upsertPersonRaiseRate",
+      "retirement.retirementProfilePeople.upsertPerson",
+      "retirement.retirementProfilePeople.upsertHouseholdFields",
+    ] as const)
+      holdMutation(path);
   });
 
   it("renders the relocated Projection Assumptions content", async () => {

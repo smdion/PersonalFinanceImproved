@@ -13,52 +13,10 @@ vi.mock("@/components/ui/confirm-dialog", () => ({
   confirm: vi.fn(async () => true),
 }));
 
-const createMutate = vi.fn();
-const updateMutate = vi.fn();
-const deleteMutate = vi.fn();
-const invalidate = vi.fn();
-
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      mortgage: { computeActiveSummary: { invalidate } },
-    }),
-    mortgage: {
-      mortgageWhatIfScenarios: {
-        create: {
-          useMutation: (opts: { onSuccess?: () => void }) => ({
-            mutate: (input: unknown) => {
-              createMutate(input);
-              opts.onSuccess?.();
-            },
-            isPending: false,
-          }),
-        },
-        update: {
-          useMutation: (opts: { onSuccess?: () => void }) => ({
-            mutate: (input: unknown) => {
-              updateMutate(input);
-              opts.onSuccess?.();
-            },
-            mutateAsync: async (input: unknown) => {
-              updateMutate(input);
-              opts.onSuccess?.();
-            },
-            isPending: false,
-          }),
-        },
-        delete: {
-          useMutation: (opts: { onSuccess?: () => void }) => ({
-            mutate: (input: unknown) => {
-              deleteMutate(input);
-              opts.onSuccess?.();
-            },
-          }),
-        },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+import { mutationCalls, resetTrpcMock } from "./trpc-mock";
 
 import { WhatIfSection } from "@/components/mortgage/what-if-section";
 import type {
@@ -110,9 +68,7 @@ const results: WhatIfResultRow[] = [
 
 describe("WhatIfSection smoke", () => {
   beforeEach(() => {
-    createMutate.mockClear();
-    updateMutate.mockClear();
-    deleteMutate.mockClear();
+    resetTrpcMock();
   });
 
   it("renders the results table with scenario rows", () => {
@@ -143,7 +99,9 @@ describe("WhatIfSection smoke", () => {
       target: { value: "1000" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
-    expect(createMutate).toHaveBeenCalledWith(
+    expect(
+      mutationCalls("mortgage.mortgageWhatIfScenarios.create"),
+    ).toContainEqual(
       expect.objectContaining({
         label: "+$1000/mo",
         extraMonthlyPrincipal: "1000",
@@ -167,6 +125,8 @@ describe("WhatIfSection smoke", () => {
     fireEvent.click(delButtons[0]!);
     await Promise.resolve();
     await Promise.resolve();
-    expect(deleteMutate).toHaveBeenCalledWith({ id: 1 });
+    expect(
+      mutationCalls("mortgage.mortgageWhatIfScenarios.delete"),
+    ).toContainEqual({ id: 1 });
   });
 });

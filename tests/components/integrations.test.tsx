@@ -1,173 +1,59 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+import * as staticTrpcMock from "./trpc-mock";
+import type { MockOutput } from "./trpc-mock";
 
 // Mock tRPC before importing the component
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      sync: {
-        getConnection: { invalidate: vi.fn() },
-        getSyncStatus: { invalidate: vi.fn() },
-        getActiveBudgetApi: { invalidate: vi.fn() },
-        getPreview: { invalidate: vi.fn() },
-      },
-      tiingo: {
-        getStatus: { invalidate: vi.fn() },
-      },
-      simplefin: {
-        getStatus: { invalidate: vi.fn() },
-        listBalanceHistory: { invalidate: vi.fn() },
-        listAccounts: { invalidate: vi.fn() },
-      },
-      settings: {
-        appSettings: { list: { invalidate: vi.fn() } },
-      },
-    }),
-    settings: {
-      taxDataSync: {
-        status: { useQuery: () => ({ data: undefined }) },
-        preview: { useQuery: () => ({ data: undefined }) },
-        setEnabled: {
-          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-        },
-        checkNow: {
-          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-        },
-        approve: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
-        dismiss: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
-      },
-      appSettings: {
-        list: { useQuery: () => ({ data: [] }) },
-        upsert: {
-          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-        },
-      },
-    },
-    sync: {
-      getConnection: {
-        useQuery: () => ({
-          data: {
-            ynab: { isConnected: false, lastSyncedAt: null },
-            actual: { isConnected: false, lastSyncedAt: null },
-          },
-        }),
-      },
-      getSyncStatus: {
-        useQuery: () => ({ data: null }),
-      },
-      getPreview: {
-        useQuery: () => ({ data: null }),
-      },
-      getActiveBudgetApi: {
-        useQuery: () => ({ data: { service: null } }),
-      },
-      saveConnection: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-      },
-      testConnection: {
-        useMutation: () => ({
-          mutate: vi.fn(),
-          isPending: false,
-          isSuccess: false,
-          data: null,
-        }),
-      },
-      updateActualExternalUrl: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-      },
-      fetchYnabBudgets: {
-        useMutation: () => ({
-          mutate: vi.fn(),
-          isPending: false,
-          isSuccess: false,
-          data: null,
-        }),
-      },
-      deleteConnection: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-      },
-      syncAll: {
-        useMutation: () => ({
-          mutate: vi.fn(),
-          isPending: false,
-          isSuccess: false,
-          data: null,
-        }),
-      },
-      setActiveBudgetApi: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-      },
-    },
-    sec: { getStatus: { useQuery: () => ({ data: { connected: false } }) } },
-    tiingo: {
-      getStatus: {
-        useQuery: () => ({ data: { connected: false, lastSyncedAt: null } }),
-      },
-      saveKey: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-      },
-      testConnection: {
-        useMutation: () => ({
-          mutate: vi.fn(),
-          isPending: false,
-          isSuccess: false,
-          data: null,
-        }),
-      },
-      removeConnection: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-      },
-    },
-    simplefin: {
-      getStatus: {
-        useQuery: () => ({ data: { connected: false, lastSyncedAt: null } }),
-      },
-      listAccounts: {
-        useQuery: () => ({ data: undefined }),
-      },
-      listMatchableAccounts: {
-        useQuery: () => ({ data: undefined }),
-      },
-      listLinkableLoans: { useQuery: () => ({ data: undefined }) },
-      setLoanLink: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-      },
-      saveToken: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-      },
-      testConnection: {
-        useMutation: () => ({
-          mutate: vi.fn(),
-          isPending: false,
-          isSuccess: false,
-          data: null,
-        }),
-      },
-      syncNow: {
-        useMutation: () => ({
-          mutate: vi.fn(),
-          isPending: false,
-          isSuccess: false,
-          isError: false,
-          data: null,
-        }),
-      },
-      removeConnection: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-      },
-      setAccountIncluded: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-      },
-      setAccountMapping: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-      },
-
-      acceptLinkSuggestions: {
-        useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-      },
-    },
-  },
+// Mock tRPC before importing the component
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+
+type TrpcMock = typeof import("./trpc-mock");
+
+/** Every test's tRPC unless it says otherwise: nothing connected, and no
+ *  write settles (none of these tests writes). */
+function defaults(m: TrpcMock) {
+  m.resetTrpcMock();
+  m.setQuery("settings.appSettings.list", []);
+  // `isConnected` isn't the output's field (`connected`): kept as the test
+  // had it; the card reads both services as not connected either way.
+  m.setQuery("sync.getConnection", {
+    ynab: { isConnected: false, lastSyncedAt: null },
+    actual: { isConnected: false, lastSyncedAt: null },
+  } as MockOutput<"sync.getConnection">);
+  m.setQuery("sync.getSyncStatus", null);
+  m.setQuery("sync.getPreview", null);
+  m.setQuery("sec.getStatus", { connected: false });
+  m.setQuery("tiingo.getStatus", { connected: false, lastSyncedAt: null });
+  m.setQuery("simplefin.getStatus", { connected: false, lastSyncedAt: null });
+  for (const path of [
+    "settings.taxDataSync.setEnabled",
+    "settings.taxDataSync.checkNow",
+    "settings.taxDataSync.approve",
+    "settings.taxDataSync.dismiss",
+    "settings.appSettings.upsert",
+    "sync.saveConnection",
+    "sync.testConnection",
+    "sync.updateActualExternalUrl",
+    "sync.fetchYnabBudgets",
+    "sync.deleteConnection",
+    "sync.syncAll",
+    "sync.setActiveBudgetApi",
+    "tiingo.saveKey",
+    "tiingo.testConnection",
+    "tiingo.removeConnection",
+    "simplefin.setLoanLink",
+    "simplefin.saveToken",
+    "simplefin.testConnection",
+    "simplefin.syncNow",
+    "simplefin.removeConnection",
+    "simplefin.setAccountIncluded",
+    "simplefin.setAccountMapping",
+    "simplefin.acceptLinkSuggestions",
+  ] as const)
+    m.holdMutation(path);
+}
 
 vi.mock("@/lib/context/user-context", () => ({
   useUser: () => ({ role: "admin" }),
@@ -198,6 +84,7 @@ vi.mock("@/components/settings/integrations-preview-panel", () => ({
 
 describe("IntegrationsSettings", () => {
   it("renders when user is admin", async () => {
+    defaults(staticTrpcMock);
     const { IntegrationsSettings } =
       await import("@/components/settings/integrations");
     render(<IntegrationsSettings />);
@@ -220,134 +107,12 @@ describe("IntegrationsSettings", () => {
     vi.resetModules();
 
     // Re-mock dependencies that will be re-imported
-    vi.doMock("@/lib/trpc", () => ({
-      trpc: {
-        useUtils: () => ({
-          sync: {
-            getConnection: { invalidate: vi.fn() },
-            getSyncStatus: { invalidate: vi.fn() },
-            getActiveBudgetApi: { invalidate: vi.fn() },
-            getPreview: { invalidate: vi.fn() },
-          },
-          tiingo: {
-            getStatus: { invalidate: vi.fn() },
-          },
-          simplefin: {
-            getStatus: { invalidate: vi.fn() },
-            listBalanceHistory: { invalidate: vi.fn() },
-            listAccounts: { invalidate: vi.fn() },
-          },
-          settings: {
-            appSettings: { list: { invalidate: vi.fn() } },
-          },
-        }),
-        settings: {
-          taxDataSync: {
-            status: { useQuery: () => ({ data: undefined }) },
-            preview: { useQuery: () => ({ data: undefined }) },
-            setEnabled: {
-              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-            },
-            checkNow: {
-              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-            },
-            approve: {
-              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-            },
-            dismiss: {
-              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-            },
-          },
-          appSettings: {
-            list: { useQuery: () => ({ data: [] }) },
-            upsert: {
-              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-            },
-          },
-        },
-        sec: {
-          getStatus: { useQuery: () => ({ data: { connected: false } }) },
-        },
-        tiingo: {
-          getStatus: {
-            useQuery: () => ({
-              data: { connected: false, lastSyncedAt: null },
-            }),
-          },
-          saveKey: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          testConnection: {
-            useMutation: () => ({
-              mutate: vi.fn(),
-              isPending: false,
-              isSuccess: false,
-              data: null,
-            }),
-          },
-          removeConnection: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-        },
-        simplefin: {
-          getStatus: {
-            useQuery: () => ({
-              data: { connected: false, lastSyncedAt: null },
-            }),
-          },
-        },
-        sync: {
-          getConnection: {
-            useQuery: () => ({ data: null }),
-          },
-          getSyncStatus: {
-            useQuery: () => ({ data: null }),
-          },
-          getPreview: {
-            useQuery: () => ({ data: null }),
-          },
-          getActiveBudgetApi: {
-            useQuery: () => ({ data: { service: null } }),
-          },
-          saveConnection: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          testConnection: {
-            useMutation: () => ({
-              mutate: vi.fn(),
-              isPending: false,
-              isSuccess: false,
-              data: null,
-            }),
-          },
-          updateActualExternalUrl: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          fetchYnabBudgets: {
-            useMutation: () => ({
-              mutate: vi.fn(),
-              isPending: false,
-              isSuccess: false,
-              data: null,
-            }),
-          },
-          deleteConnection: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          syncAll: {
-            useMutation: () => ({
-              mutate: vi.fn(),
-              isPending: false,
-              isSuccess: false,
-              data: null,
-            }),
-          },
-          setActiveBudgetApi: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-        },
-      },
+    vi.doMock("@/lib/trpc", async () => ({
+      trpc: (await import("./trpc-mock")).trpc,
     }));
+    // After resetModules: the instance the re-imported component gets.
+    const trpcMock = await import("./trpc-mock");
+    defaults(trpcMock);
 
     vi.doMock("@/components/ui/card", () => ({
       Card: ({
@@ -390,192 +155,31 @@ describe("IntegrationsSettings", () => {
       isAdmin: () => true,
     }));
 
-    vi.doMock("@/lib/trpc", () => ({
-      trpc: {
-        useUtils: () => ({
-          sync: {
-            getConnection: { invalidate: vi.fn() },
-            getSyncStatus: { invalidate: vi.fn() },
-            getActiveBudgetApi: { invalidate: vi.fn() },
-            getPreview: { invalidate: vi.fn() },
-          },
-          savings: { invalidate: vi.fn() },
-          budget: { invalidate: vi.fn() },
-          assets: { invalidate: vi.fn() },
-          tiingo: {
-            getStatus: { invalidate: vi.fn() },
-          },
-          simplefin: {
-            getStatus: { invalidate: vi.fn() },
-            listBalanceHistory: { invalidate: vi.fn() },
-            listAccounts: { invalidate: vi.fn() },
-          },
-          settings: {
-            appSettings: { list: { invalidate: vi.fn() } },
-          },
-        }),
-        settings: {
-          taxDataSync: {
-            status: { useQuery: () => ({ data: undefined }) },
-            preview: { useQuery: () => ({ data: undefined }) },
-            setEnabled: {
-              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-            },
-            checkNow: {
-              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-            },
-            approve: {
-              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-            },
-            dismiss: {
-              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-            },
-          },
-          appSettings: {
-            list: { useQuery: () => ({ data: [] }) },
-            upsert: {
-              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-            },
-          },
-        },
-        sync: {
-          getConnection: {
-            // Active provider is YNAB; Actual has a real saved connection
-            // (matches the live-DB finding: config present, last_synced_at
-            // NULL) but was never synced.
-            useQuery: () => ({
-              data: {
-                activeApi: "ynab",
-                ynab: { connected: true, lastSyncedAt: new Date() },
-                actual: { connected: true, lastSyncedAt: null },
-              },
-            }),
-          },
-          getSyncStatus: { useQuery: () => ({ data: null }) },
-          getPreview: {
-            // Only the "actual" service's preview is relevant here --
-            // never synced, so getPreview's real server behavior is
-            // `{ synced: false }`.
-            useQuery: ({ service }: { service: string }) => ({
-              data:
-                service === "actual"
-                  ? { synced: false }
-                  : { synced: true, accounts: [] },
-            }),
-          },
-          getActiveBudgetApi: {
-            useQuery: () => ({ data: { service: "ynab" } }),
-          },
-          saveConnection: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          testConnection: {
-            useMutation: () => ({
-              mutate: vi.fn(),
-              isPending: false,
-              isSuccess: false,
-              data: null,
-            }),
-          },
-          updateActualExternalUrl: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          fetchYnabBudgets: {
-            useMutation: () => ({
-              mutate: vi.fn(),
-              isPending: false,
-              isSuccess: false,
-              data: null,
-            }),
-          },
-          deleteConnection: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          syncAll: {
-            useMutation: () => ({
-              mutate: vi.fn(),
-              isPending: false,
-              isSuccess: false,
-              isError: false,
-              data: null,
-            }),
-          },
-          setActiveBudgetApi: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-        },
-        sec: {
-          getStatus: { useQuery: () => ({ data: { connected: false } }) },
-        },
-        tiingo: {
-          getStatus: {
-            useQuery: () => ({
-              data: { connected: false, lastSyncedAt: null },
-            }),
-          },
-          saveKey: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          testConnection: {
-            useMutation: () => ({
-              mutate: vi.fn(),
-              isPending: false,
-              isSuccess: false,
-              data: null,
-            }),
-          },
-          removeConnection: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-        },
-        simplefin: {
-          getStatus: {
-            useQuery: () => ({
-              data: { connected: false, lastSyncedAt: null },
-            }),
-          },
-          listAccounts: { useQuery: () => ({ data: undefined }) },
-          listMatchableAccounts: { useQuery: () => ({ data: undefined }) },
-          listLinkableLoans: { useQuery: () => ({ data: undefined }) },
-          setLoanLink: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          saveToken: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          testConnection: {
-            useMutation: () => ({
-              mutate: vi.fn(),
-              isPending: false,
-              isSuccess: false,
-              data: null,
-            }),
-          },
-          syncNow: {
-            useMutation: () => ({
-              mutate: vi.fn(),
-              isPending: false,
-              isSuccess: false,
-              isError: false,
-              data: null,
-            }),
-          },
-          removeConnection: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          setAccountIncluded: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          setAccountMapping: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-
-          acceptLinkSuggestions: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-        },
-      },
+    vi.doMock("@/lib/trpc", async () => ({
+      trpc: (await import("./trpc-mock")).trpc,
     }));
+    // After resetModules: the instance the re-imported component gets.
+    const trpcMock = await import("./trpc-mock");
+    defaults(trpcMock);
+    // Active provider is YNAB; Actual has a real saved connection
+    // (matches the live-DB finding: config present, last_synced_at
+    // NULL) but was never synced.
+    // lastSyncedAt is the ISO string the procedure returns (the card wraps it
+    // in new Date(), so this renders as the Date the test had before).
+    trpcMock.setQuery("sync.getConnection", {
+      activeApi: "ynab",
+      ynab: { connected: true, lastSyncedAt: new Date().toISOString() },
+      actual: { connected: true, lastSyncedAt: null },
+    });
+    // Only the "actual" service's preview is relevant here -- never
+    // synced, so getPreview's real server behavior is `{ synced: false }`.
+    trpcMock.setQuery(
+      "sync.getPreview",
+      ({ service }: { service: string }) =>
+        (service === "actual"
+          ? { synced: false }
+          : { synced: true, accounts: [] }) as MockOutput<"sync.getPreview">,
+    );
 
     vi.doMock("@/components/ui/card", () => ({
       Card: ({
@@ -618,172 +222,24 @@ describe("IntegrationsSettings", () => {
       isAdmin: () => true,
     }));
 
-    vi.doMock("@/lib/trpc", () => ({
-      trpc: {
-        useUtils: () => ({
-          sync: {
-            getConnection: { invalidate: vi.fn() },
-            getSyncStatus: { invalidate: vi.fn() },
-            getActiveBudgetApi: { invalidate: vi.fn() },
-            getPreview: { invalidate: vi.fn() },
-          },
-          tiingo: {
-            getStatus: { invalidate: vi.fn() },
-          },
-          simplefin: {
-            getStatus: { invalidate: vi.fn() },
-            listBalanceHistory: { invalidate: vi.fn() },
-            listAccounts: { invalidate: vi.fn() },
-          },
-          settings: { appSettings: { list: { invalidate: vi.fn() } } },
-        }),
-        settings: {
-          taxDataSync: {
-            status: { useQuery: () => ({ data: undefined }) },
-            preview: { useQuery: () => ({ data: undefined }) },
-            setEnabled: {
-              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-            },
-            checkNow: {
-              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-            },
-            approve: {
-              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-            },
-            dismiss: {
-              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-            },
-          },
-          appSettings: {
-            list: { useQuery: () => ({ data: [] }) },
-            upsert: {
-              useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-            },
-          },
-        },
-        sync: {
-          getConnection: {
-            useQuery: () => ({
-              data: {
-                activeApi: "ynab",
-                ynab: { connected: true, lastSyncedAt: new Date() },
-                actual: { connected: false, lastSyncedAt: null },
-              },
-            }),
-          },
-          getSyncStatus: { useQuery: () => ({ data: null }) },
-          getPreview: { useQuery: () => ({ data: null }) },
-          getActiveBudgetApi: {
-            useQuery: () => ({ data: { service: "ynab" } }),
-          },
-          saveConnection: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          testConnection: {
-            useMutation: () => ({
-              mutate: vi.fn(),
-              isPending: false,
-              isSuccess: false,
-              data: null,
-            }),
-          },
-          updateActualExternalUrl: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          fetchYnabBudgets: {
-            useMutation: () => ({
-              mutate: vi.fn(),
-              isPending: false,
-              isSuccess: false,
-              data: null,
-            }),
-          },
-          deleteConnection: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          syncAll: {
-            useMutation: () => ({
-              mutate: vi.fn(),
-              isPending: false,
-              isSuccess: false,
-              isError: false,
-              data: null,
-            }),
-          },
-          setActiveBudgetApi: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-        },
-        sec: {
-          getStatus: { useQuery: () => ({ data: { connected: false } }) },
-        },
-        tiingo: {
-          getStatus: {
-            useQuery: () => ({
-              data: { connected: false, lastSyncedAt: null },
-            }),
-          },
-          saveKey: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          testConnection: {
-            useMutation: () => ({
-              mutate: vi.fn(),
-              isPending: false,
-              isSuccess: false,
-              data: null,
-            }),
-          },
-          removeConnection: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-        },
-        simplefin: {
-          getStatus: {
-            useQuery: () => ({ data: { connected: true, lastSyncedAt: null } }),
-          },
-          listAccounts: { useQuery: () => ({ data: undefined }) },
-          listMatchableAccounts: { useQuery: () => ({ data: undefined }) },
-          listLinkableLoans: { useQuery: () => ({ data: undefined }) },
-          setLoanLink: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          saveToken: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          testConnection: {
-            useMutation: () => ({
-              mutate: vi.fn(),
-              isPending: false,
-              isSuccess: false,
-              data: null,
-            }),
-          },
-          syncNow: {
-            useMutation: () => ({
-              mutate: vi.fn(),
-              isPending: false,
-              isSuccess: false,
-              isError: false,
-              data: null,
-            }),
-          },
-          removeConnection: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          setAccountIncluded: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-          setAccountMapping: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-
-          acceptLinkSuggestions: {
-            useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-          },
-        },
-      },
+    vi.doMock("@/lib/trpc", async () => ({
+      trpc: (await import("./trpc-mock")).trpc,
     }));
+    // After resetModules: the instance the re-imported component gets.
+    const trpcMock = await import("./trpc-mock");
+    defaults(trpcMock);
+    // lastSyncedAt is the ISO string the procedure returns (the card wraps it
+    // in new Date(), so this renders as the Date the test had before).
+    trpcMock.setQuery("sync.getConnection", {
+      activeApi: "ynab",
+      ynab: { connected: true, lastSyncedAt: new Date().toISOString() },
+      actual: { connected: false, lastSyncedAt: null },
+    });
+
+    trpcMock.setQuery("simplefin.getStatus", {
+      connected: true,
+      lastSyncedAt: null,
+    });
 
     vi.doMock("@/components/ui/card", () => ({
       Card: ({

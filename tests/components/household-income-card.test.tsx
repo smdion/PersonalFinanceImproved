@@ -89,7 +89,7 @@ const summary = {
   },
   taxYear: 2026,
   filingStatus: "Single",
-  filingStatusSource: "retirementProfile",
+  filingStatusSource: "retirementProfile" as const,
   // Fictional phase-out range.
   rothIra: {
     filingStatus: "Single",
@@ -110,7 +110,7 @@ const rothInputs = {
     estimate: 4500,
     ytd: 3000,
     lastYearRemainder: 1500,
-    basis: "ytdPlusLastYear",
+    basis: "ytdPlusLastYear" as const,
     annualizedFeeds: [],
     noHistoryFeeds: [],
   },
@@ -120,42 +120,24 @@ const rothInputs = {
   unownedPreTaxIra: 0,
 };
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      settings: { appSettings: { list: { invalidate: vi.fn() } } },
-    }),
-    settings: {
-      appSettings: {
-        list: { useQuery: () => ({ data: [] }) },
-        upsert: {
-          useMutation: () => ({ mutateAsync: vi.fn(), isPending: false }),
-        },
-      },
-    },
-    salaryProfile: {
-      list: { useQuery: () => ({ data: [] }) },
-      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
-    },
-    contributionProfile: {
-      list: { useQuery: () => ({ data: [] }) },
-      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
-    },
-    paycheck: {
-      computeSummary: {
-        useQuery: () => ({ isLoading: false, error: null, data: summary }),
-      },
-    },
-    investments: {
-      getRothIraInputs: {
-        useQuery: (_: unknown, opts: { enabled: boolean }) => ({
-          isLoading: false,
-          data: opts.enabled ? rothInputs : undefined,
-        }),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+import { holdMutation, resetTrpcMock, setQuery } from "./trpc-mock";
+
+beforeEach(() => {
+  resetTrpcMock();
+  setQuery("settings.appSettings.list", []);
+  setQuery("salaryProfile.list", []);
+  setQuery("contributionProfile.list", []);
+  setQuery("paycheck.computeSummary", summary);
+  // Answers only when the component enables it (portfolio access).
+  setQuery("investments.getRothIraInputs", rothInputs);
+  // The old stand-ins never settled these writes.
+  holdMutation("settings.appSettings.upsert");
+  holdMutation("salaryProfile.setActive");
+  holdMutation("contributionProfile.setActive");
+});
 
 import { HouseholdIncomeCard } from "@/components/cards/dashboard/household-income-card";
 import { TaxesContent } from "@/app/(dashboard)/taxes/taxes-content";

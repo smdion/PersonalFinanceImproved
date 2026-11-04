@@ -16,76 +16,18 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook } from "@testing-library/react";
+import { resetTrpcMock, utilsCalls } from "./trpc-mock";
 
-// Mock tRPC before importing the hooks. We capture the `onSuccess` callback
-// passed to each useMutation so that an optional follow-up test can fire it
-// and observe the invalidate path, but the primary assertion is on the
-// shape + stability of the returned mutation bundle.
-const makeMutation = () => ({
-  mutate: vi.fn(),
-  isPending: false,
-  isSuccess: false,
-  isError: false,
-  data: null,
-  error: null,
-  reset: vi.fn(),
-});
-
-const invalidatePreview = vi.fn();
-// Stable utils reference — tRPC's real useUtils() returns a stable object
-// across renders, and our useCallback-based invalidate hook relies on that
-// stability for its dependency array. A fresh object each call would force a
-// new callback each render and break the anti-tRPC-anti-pattern guard below.
-const stableUtils = {
-  sync: {
-    getPreview: { invalidate: invalidatePreview },
-  },
-};
-
-vi.mock("@/lib/trpc", () => {
-  const mutationFactory = () => ({
-    useMutation: (_opts?: { onSuccess?: () => void }) => makeMutation(),
-  });
-
-  return {
-    trpc: {
-      useUtils: () => stableUtils,
-      sync: {
-        syncAllNames: mutationFactory(),
-        setLinkedProfile: mutationFactory(),
-        setLinkedColumn: mutationFactory(),
-        skipCategory: mutationFactory(),
-        unskipCategory: mutationFactory(),
-        renameBudgetItemToApi: mutationFactory(),
-        renameBudgetItemApiName: mutationFactory(),
-        moveBudgetItemToApiGroup: mutationFactory(),
-        renameSavingsGoalToApi: mutationFactory(),
-        renameSavingsGoalApiName: mutationFactory(),
-        updateAccountMappings: mutationFactory(),
-        createAssetAndMap: mutationFactory(),
-      },
-      budget: {
-        linkToApi: mutationFactory(),
-        unlinkFromApi: mutationFactory(),
-        createItem: mutationFactory(),
-        setSyncDirection: mutationFactory(),
-        linkContributionAccount: mutationFactory(),
-        unlinkContributionAccount: mutationFactory(),
-      },
-      savings: {
-        linkGoalToApi: mutationFactory(),
-        unlinkGoalFromApi: mutationFactory(),
-        linkReimbursementCategory: mutationFactory(),
-        savingsGoals: {
-          create: mutationFactory(),
-        },
-      },
-    },
-  };
-});
+// Mock tRPC before importing the hooks. trpc-mock's useUtils() returns one
+// stable object across renders, as tRPC's real one does: the
+// useCallback-based invalidate hook relies on that for its dependency
+// array, and a fresh object each call would break the guard below.
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
+}));
 
 beforeEach(() => {
-  invalidatePreview.mockClear();
+  resetTrpcMock();
 });
 
 describe("integrations per-section mutation hooks — re-render guard", () => {
@@ -165,7 +107,7 @@ describe("integrations per-section mutation hooks — re-render guard", () => {
     // guarding against.
     expect(second).toBe(first);
     first();
-    expect(invalidatePreview).toHaveBeenCalledTimes(1);
+    expect(utilsCalls("sync.getPreview.invalidate")).toHaveLength(1);
   });
 
   it("every section hook returns a flat mutation bundle, not a { mutations, invalidate } wrapper", async () => {

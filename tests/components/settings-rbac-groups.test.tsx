@@ -8,63 +8,39 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 // tests/components/networth-sections-smoke.test.tsx: mock tRPC directly
 // with representative query/mutation shapes.
 
-const upsertMutate = vi.fn();
-const deleteMutate = vi.fn();
-const invalidateRbac = vi.fn();
-const invalidateList = vi.fn();
-
 const mockData = {
   adminGroup: "ledgr-admin",
   isAdminCustom: false,
   permissions: [
-    { permission: "scenario", group: "ledgr-scenario", isCustom: false },
-    { permission: "portfolio", group: "ledgr-portfolio", isCustom: false },
-    { permission: "budget", group: "custom-budget-group", isCustom: true },
+    {
+      permission: "scenario" as const,
+      group: "ledgr-scenario",
+      isCustom: false,
+    },
+    {
+      permission: "portfolio" as const,
+      group: "ledgr-portfolio",
+      isCustom: false,
+    },
+    {
+      permission: "budget" as const,
+      group: "custom-budget-group",
+      isCustom: true,
+    },
   ],
 };
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      settings: {
-        rbacGroups: { get: { invalidate: invalidateRbac } },
-        appSettings: { list: { invalidate: invalidateList } },
-      },
-    }),
-    settings: {
-      rbacGroups: {
-        get: {
-          useQuery: () => ({ data: mockData, isLoading: false }),
-        },
-      },
-      appSettings: {
-        upsert: {
-          useMutation: (opts: { onSuccess?: () => void }) => ({
-            mutateAsync: async (input: unknown) => {
-              upsertMutate(input);
-              opts.onSuccess?.();
-            },
-          }),
-        },
-        delete: {
-          useMutation: (opts: { onSuccess?: () => void }) => ({
-            mutateAsync: async (input: unknown) => {
-              deleteMutate(input);
-              opts.onSuccess?.();
-            },
-          }),
-        },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 import { RbacGroupsSettings } from "@/components/settings/rbac-groups";
+import { mutationCalls, resetTrpcMock, setQuery } from "./trpc-mock";
 
 describe("RbacGroupsSettings smoke", () => {
   beforeEach(() => {
-    upsertMutate.mockClear();
-    deleteMutate.mockClear();
+    resetTrpcMock();
+    setQuery("settings.rbacGroups.get", mockData);
   });
 
   it("renders setup instructions and group mapping inputs", () => {
@@ -109,13 +85,15 @@ describe("RbacGroupsSettings smoke", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() =>
-      expect(upsertMutate).toHaveBeenCalledWith({
+      expect(mutationCalls("settings.appSettings.upsert")).toContainEqual({
         key: "rbac_admin_group",
         value: "custom-admins",
       }),
     );
     await waitFor(() =>
-      expect(deleteMutate).toHaveBeenCalledWith({ key: "rbac_group_budget" }),
+      expect(mutationCalls("settings.appSettings.delete")).toContainEqual({
+        key: "rbac_group_budget",
+      }),
     );
   });
 

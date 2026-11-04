@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { Sidebar } from "@/components/layout/sidebar";
+import { resetTrpcMock, setQuery } from "./trpc-mock";
 
 // Mock DataFreshness (uses tRPC internally)
 vi.mock("@/components/layout/data-freshness", () => ({
@@ -26,18 +27,16 @@ vi.mock("@/components/ui/privacy-toggle", () => ({
 // BudgetApiLink (rendered inline in Sidebar, not a separate importable
 // component) uses tRPC internally — mock the one query it calls so these
 // tests don't need a full tRPC provider wrapper.
-const mockGetActiveBudgetApiLink = vi.fn().mockReturnValue({
-  data: { service: "none", url: null },
-});
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    sync: {
-      getActiveBudgetApiLink: {
-        useQuery: () => mockGetActiveBudgetApiLink(),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+
+const LINK = "sync.getActiveBudgetApiLink";
+
+beforeEach(() => {
+  resetTrpcMock();
+  setQuery(LINK, { service: "none", url: null });
+});
 
 const defaultProps = {
   user: { name: "Admin", role: "admin" },
@@ -113,25 +112,22 @@ describe("Sidebar", () => {
 
   describe("budget API link", () => {
     it("is hidden when no budget API is active", () => {
-      mockGetActiveBudgetApiLink.mockReturnValueOnce({
-        data: { service: "none", url: null },
-      });
+      setQuery(LINK, { service: "none", url: null });
       render(<Sidebar {...defaultProps} />);
       expect(screen.queryByText("YNAB")).not.toBeInTheDocument();
       expect(screen.queryByText("Actual Budget")).not.toBeInTheDocument();
     });
 
     it("is hidden when Actual is active but has no saved External URL", () => {
-      mockGetActiveBudgetApiLink.mockReturnValueOnce({
-        data: { service: "actual", url: null },
-      });
+      setQuery(LINK, { service: "actual", url: null });
       render(<Sidebar {...defaultProps} />);
       expect(screen.queryByText("Actual Budget")).not.toBeInTheDocument();
     });
 
     it("links to the hosted app when YNAB is active", () => {
-      mockGetActiveBudgetApiLink.mockReturnValueOnce({
-        data: { service: "ynab", url: "https://app.youneedabudget.com/" },
+      setQuery(LINK, {
+        service: "ynab",
+        url: "https://app.youneedabudget.com/",
       });
       render(<Sidebar {...defaultProps} />);
       // Renders twice (mobile + desktop spans), same as every other nav item.
@@ -142,9 +138,7 @@ describe("Sidebar", () => {
     });
 
     it("links to the saved External URL when Actual is active", () => {
-      mockGetActiveBudgetApiLink.mockReturnValueOnce({
-        data: { service: "actual", url: "https://actual.mydomain.com" },
-      });
+      setQuery(LINK, { service: "actual", url: "https://actual.mydomain.com" });
       render(<Sidebar {...defaultProps} />);
       const link = screen.getAllByText("Actual Budget")[0]!.closest("a");
       expect(link).toHaveAttribute("href", "https://actual.mydomain.com");

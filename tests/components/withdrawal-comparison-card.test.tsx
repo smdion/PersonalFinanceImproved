@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { WithdrawalComparisonCard } from "@/components/cards/withdrawal-comparison";
+import { resetTrpcMock, setQuery, setQueryState } from "./trpc-mock";
 
 // Smoke test for WithdrawalComparisonCard. Follows the leaf-component smoke
 // pattern used elsewhere (e.g. networth-sections-smoke.test.tsx): mock
@@ -27,16 +28,11 @@ vi.mock("recharts", () => ({
   Legend: () => null,
 }));
 
-const mockAnalyzerQuery = vi.fn();
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    projection: {
-      analyzeStrategy: {
-        useQuery: (...args: unknown[]) => mockAnalyzerQuery(...args),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+
+const ANALYZE = "projection.analyzeStrategy";
 
 const strategies = [
   {
@@ -121,7 +117,7 @@ function baseProps(
 
 describe("WithdrawalComparisonCard", () => {
   beforeEach(() => {
-    mockAnalyzerQuery.mockReturnValue({ isLoading: false, data: undefined });
+    resetTrpcMock();
   });
 
   it("renders nothing when there are no strategies", () => {
@@ -168,7 +164,6 @@ describe("WithdrawalComparisonCard", () => {
   });
 
   it("opt-in analyzer: shows the 'Analyze My Strategy' button, then loading, then recommendations", () => {
-    mockAnalyzerQuery.mockReturnValue({ isLoading: false, data: undefined });
     const { rerender } = render(
       <WithdrawalComparisonCard
         {...baseProps({ analyzerInput: { snapshotId: 1 } })}
@@ -176,7 +171,7 @@ describe("WithdrawalComparisonCard", () => {
     );
     expect(screen.getByText("Analyze My Strategy →")).toBeInTheDocument();
 
-    mockAnalyzerQuery.mockReturnValue({ isLoading: true, data: undefined });
+    setQueryState(ANALYZE, { isLoading: true });
     fireEvent.click(screen.getByText("Analyze My Strategy →"));
     rerender(
       <WithdrawalComparisonCard
@@ -187,24 +182,21 @@ describe("WithdrawalComparisonCard", () => {
       screen.getByText("Running scenario analysis..."),
     ).toBeInTheDocument();
 
-    mockAnalyzerQuery.mockReturnValue({
-      isLoading: false,
-      isError: false,
-      data: {
-        strategyLabel: "Fixed Withdrawal",
-        baseline: { successRate: 0.9, stabilityRate: 0.8 },
-        recommendations: [
-          {
-            label: "Withdrawal Rate",
-            currentValue: "4%",
-            adjustedValue: "3.5%",
-            successRate: 0.95,
-            successDelta: 0.05,
-            stabilityRate: 0.85,
-            stabilityDelta: 0.05,
-          },
-        ],
-      },
+    setQueryState(ANALYZE, { isLoading: false, isError: false });
+    setQuery(ANALYZE, {
+      strategyLabel: "Fixed Withdrawal",
+      baseline: { successRate: 0.9, stabilityRate: 0.8 },
+      recommendations: [
+        {
+          label: "Withdrawal Rate",
+          currentValue: "4%",
+          adjustedValue: "3.5%",
+          successRate: 0.95,
+          successDelta: 0.05,
+          stabilityRate: 0.85,
+          stabilityDelta: 0.05,
+        },
+      ],
     });
     rerender(
       <WithdrawalComparisonCard

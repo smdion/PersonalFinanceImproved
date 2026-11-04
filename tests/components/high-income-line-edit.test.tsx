@@ -5,6 +5,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { resetTrpcMock, setQuery } from "./trpc-mock";
 
 let saved: number | null = null;
 const setSaved = vi.fn();
@@ -16,14 +17,8 @@ vi.mock("@/lib/context/user-context", () => ({
   isAdmin: () => true,
 }));
 vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    contribution: {
-      highIncomeLine: {
-        useQuery: () => ({ data: { threshold: 100_000, basis: "Single" } }),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 import { HighIncomeLineEdit } from "@/components/cards/dashboard/high-income-line-edit";
@@ -32,6 +27,11 @@ describe("HighIncomeLineEdit", () => {
   beforeEach(() => {
     saved = null;
     setSaved.mockClear();
+    resetTrpcMock();
+    setQuery("contribution.highIncomeLine", {
+      threshold: 100_000,
+      basis: "Single",
+    });
   });
 
   it("shows the default with the filing status it follows", () => {

@@ -1,6 +1,7 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { resetTrpcMock, setQuery } from "./trpc-mock";
 
 // Smoke tests for src/components/settings/tax-data.tsx — the shell that
 // consolidates IRS Limits / Tax Brackets / LTCG Brackets / IRMAA Tables /
@@ -36,154 +37,54 @@ vi.mock("@/lib/hooks/use-persisted-setting", () => {
   };
 });
 
-// vi.mock factories are hoisted above these module-scope consts, so
-// anything they reference must go through vi.hoisted.
-const {
-  noopMutation,
-  limits2025,
-  taxBrackets2025,
-  taxBrackets2024,
-  ltcg2025,
-  fpl2025,
-} = vi.hoisted(() => ({
-  noopMutation: () => ({
-    mutate: vi.fn(),
-    mutateAsync: vi.fn(async () => {}),
-    isPending: false,
-  }),
-  // One row of 2025 data per table (enough for each child to render its
-  // "has data" branch), plus a second 2024 row on Tax Brackets only — so
-  // the union toggle shows two years with different coverage, and IRMAA
-  // (no data for either year) exercises the new empty-year state.
-  limits2025: [
-    {
-      id: 1,
-      taxYear: 2025,
-      limitType: "ss_wage_base",
-      value: "176100",
-      notes: null,
-      shippedSources: [],
-    },
-  ],
-  taxBrackets2025: [
-    {
-      id: 1,
-      taxYear: 2025,
-      filingStatus: "MFJ",
-      w4Checkbox: false,
-      brackets: [{ threshold: 0, baseWithholding: 0, rate: 0.1 }],
-    },
-  ],
-  taxBrackets2024: [
-    {
-      id: 2,
-      taxYear: 2024,
-      filingStatus: "MFJ",
-      w4Checkbox: false,
-      brackets: [{ threshold: 0, baseWithholding: 0, rate: 0.1 }],
-    },
-  ],
-  ltcg2025: [
-    {
-      id: 1,
-      taxYear: 2025,
-      filingStatus: "MFJ",
-      brackets: [{ threshold: 0, rate: 0 }],
-    },
-  ],
-  fpl2025: [{ id: 1, taxYear: 2025, amounts: { "1": 15000 } }],
-}));
+// The tables' rows, registered with the tRPC stand-in in beforeEach.
+const { limits2025, taxBrackets2025, taxBrackets2024, ltcg2025, fpl2025 } =
+  vi.hoisted(() => ({
+    // One row of 2025 data per table (enough for each child to render its
+    // "has data" branch), plus a second 2024 row on Tax Brackets only — so
+    // the union toggle shows two years with different coverage, and IRMAA
+    // (no data for either year) exercises the new empty-year state.
+    limits2025: [
+      {
+        id: 1,
+        taxYear: 2025,
+        limitType: "ss_wage_base",
+        value: "176100",
+        notes: null,
+        shippedSources: [],
+      },
+    ],
+    taxBrackets2025: [
+      {
+        id: 1,
+        taxYear: 2025,
+        filingStatus: "MFJ" as const,
+        w4Checkbox: false,
+        brackets: [{ threshold: 0, baseWithholding: 0, rate: 0.1 }],
+      },
+    ],
+    taxBrackets2024: [
+      {
+        id: 2,
+        taxYear: 2024,
+        filingStatus: "MFJ" as const,
+        w4Checkbox: false,
+        brackets: [{ threshold: 0, baseWithholding: 0, rate: 0.1 }],
+      },
+    ],
+    ltcg2025: [
+      {
+        id: 1,
+        taxYear: 2025,
+        filingStatus: "MFJ" as const,
+        brackets: [{ threshold: 0, rate: 0 }],
+      },
+    ],
+    fpl2025: [{ id: 1, taxYear: 2025, amounts: { "1": 15000 } }],
+  }));
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      settings: {
-        contributionLimits: { list: { invalidate: vi.fn() } },
-        taxBrackets: { invalidate: vi.fn() },
-        ltcgBrackets: { invalidate: vi.fn() },
-        irmaaBrackets: { invalidate: vi.fn() },
-        fplByHousehold: { invalidate: vi.fn() },
-        appSettings: { list: { invalidate: vi.fn() } },
-        taxData: { status: { invalidate: vi.fn() } },
-        invalidate: vi.fn(),
-      },
-      retirement: {
-        returnRates: { list: { invalidate: vi.fn() } },
-      },
-    }),
-    retirement: {
-      returnRates: {
-        list: { useQuery: () => ({ data: [], isLoading: false }) },
-        upsert: { useMutation: noopMutation },
-        delete: { useMutation: noopMutation },
-        resetToShipped: { useMutation: noopMutation },
-      },
-    },
-    settings: {
-      appSettings: {
-        list: { useQuery: () => ({ data: [], isLoading: false }) },
-        upsert: { useMutation: noopMutation },
-      },
-      taxDataSync: {
-        status: { useQuery: () => ({ data: undefined }) },
-        preview: { useQuery: () => ({ data: undefined }) },
-        setEnabled: {
-          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-        },
-        checkNow: {
-          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-        },
-        approve: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
-        dismiss: { useMutation: () => ({ mutate: vi.fn(), isPending: false }) },
-      },
-      taxData: {
-        status: { useQuery: () => ({ data: undefined }) },
-        sectionSources: { useQuery: () => ({ data: undefined }) },
-        addYear: { useMutation: noopMutation },
-        confirm: { useMutation: noopMutation },
-      },
-      contributionLimits: {
-        list: { useQuery: () => ({ data: limits2025, isLoading: false }) },
-        update: { useMutation: noopMutation },
-        create: { useMutation: noopMutation },
-        delete: { useMutation: noopMutation },
-        resetToShipped: { useMutation: noopMutation },
-      },
-      taxBrackets: {
-        list: {
-          useQuery: () => ({
-            data: [...taxBrackets2025, ...taxBrackets2024],
-            isLoading: false,
-          }),
-        },
-        update: { useMutation: noopMutation },
-        create: { useMutation: noopMutation },
-        delete: { useMutation: noopMutation },
-        resetToShipped: { useMutation: noopMutation },
-      },
-      ltcgBrackets: {
-        list: { useQuery: () => ({ data: ltcg2025, isLoading: false }) },
-        update: { useMutation: noopMutation },
-        create: { useMutation: noopMutation },
-        delete: { useMutation: noopMutation },
-        resetToShipped: { useMutation: noopMutation },
-      },
-      irmaaBrackets: {
-        list: { useQuery: () => ({ data: [], isLoading: false }) },
-        update: { useMutation: noopMutation },
-        create: { useMutation: noopMutation },
-        delete: { useMutation: noopMutation },
-        resetToShipped: { useMutation: noopMutation },
-      },
-      fplByHousehold: {
-        list: { useQuery: () => ({ data: fpl2025, isLoading: false }) },
-        update: { useMutation: noopMutation },
-        create: { useMutation: noopMutation },
-        delete: { useMutation: noopMutation },
-        resetToShipped: { useMutation: noopMutation },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 import { TaxDataSettings } from "@/components/settings/tax-data";
@@ -191,6 +92,18 @@ import { TaxDataSettings } from "@/components/settings/tax-data";
 describe("TaxDataSettings smoke", () => {
   beforeEach(() => {
     currentRole = "admin";
+    // No test here writes: nothing to hold.
+    resetTrpcMock();
+    setQuery("retirement.returnRates.list", []);
+    setQuery("settings.appSettings.list", []);
+    setQuery("settings.contributionLimits.list", limits2025);
+    setQuery("settings.taxBrackets.list", [
+      ...taxBrackets2025,
+      ...taxBrackets2024,
+    ]);
+    setQuery("settings.ltcgBrackets.list", ltcg2025);
+    setQuery("settings.irmaaBrackets.list", []);
+    setQuery("settings.fplByHousehold.list", fpl2025);
   });
 
   it("defaults to the IRS Limits section", () => {

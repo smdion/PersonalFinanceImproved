@@ -2,24 +2,22 @@
  * Current glide path editor — Save only enables for a mix it can store:
  * whole ages, each once, every row adding to 100%.
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { CurrentGlidePathEditor } from "@/components/investments/current-glide-path-editor";
+import { holdMutation, mutationCalls, resetTrpcMock } from "./trpc-mock";
 
-const mutate = vi.fn();
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      investments: { invalidate: vi.fn() },
-      settings: { appSettings: { list: { invalidate: vi.fn() } } },
-    }),
-    settings: {
-      appSettings: {
-        upsert: { useMutation: () => ({ mutate, isPending: false }) },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+
+const UPSERT = "settings.appSettings.upsert";
+
+beforeEach(() => {
+  resetTrpcMock();
+  // The save never settles: these tests read what it was sent.
+  holdMutation(UPSERT);
+});
 
 function renderEditor() {
   render(
@@ -42,7 +40,7 @@ describe("CurrentGlidePathEditor", () => {
     const save = renderEditor();
     expect(save).toBeEnabled();
     fireEvent.click(save);
-    expect(mutate).toHaveBeenCalledWith(
+    expect(mutationCalls(UPSERT)).toContainEqual(
       expect.objectContaining({
         value: [{ age: 40, allocations: { "1": 0.6, "2": 0.4 } }],
       }),

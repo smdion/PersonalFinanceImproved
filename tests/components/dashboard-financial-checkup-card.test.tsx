@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import {
   evaluateMilestones,
@@ -6,6 +6,12 @@ import {
   type MilestoneResult,
 } from "@/lib/pure/milestones";
 import { makeInput } from "../fixtures/milestones";
+import {
+  holdMutation,
+  resetTrpcMock,
+  setQuery,
+  type MockOutput,
+} from "./trpc-mock";
 
 // Direct smoke test for
 // src/components/cards/dashboard/financial-checkup-card.tsx: milestone rows
@@ -33,7 +39,6 @@ vi.mock("@/lib/hooks/use-year-end-targeting", () => ({
   useYearEndTargetingInput: () => ({}),
 }));
 
-let contribsQuery: { data: unknown; isLoading: boolean; error: unknown };
 let milestonesState: {
   isLoading: boolean;
   projectionLoading: boolean;
@@ -75,32 +80,21 @@ vi.mock("@/lib/hooks/use-high-income-line", () => ({
   }),
 }));
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      settings: { appSettings: { list: { invalidate: vi.fn() } } },
-    }),
-    contribution: { computeSummary: { useQuery: () => contribsQuery } },
-    sync: { getSyncStatus: { useQuery: () => ({ data: undefined }) } },
-    simplefin: { getStatus: { useQuery: () => ({ data: undefined }) } },
-    sec: { getStatus: { useQuery: () => ({ data: undefined }) } },
-    investments: { getHealth: { useQuery: () => ({ data: undefined }) } },
-    settings: {
-      getDataFreshness: { useQuery: () => ({ data: undefined }) },
-      taxData: { status: { useQuery: () => ({ data: undefined }) } },
-      appSettings: {
-        list: { useQuery: () => ({ data: [] }) },
-        setDismissal: {
-          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-        },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 import { FinancialCheckupCard } from "@/components/cards/dashboard/financial-checkup-card";
 
-const withData = (data: unknown) => ({ data, isLoading: false, error: null });
+/** What contribution.computeSummary answers (loaded, no error). */
+const contribsAre = (data: MockOutput<"contribution.computeSummary">) =>
+  setQuery("contribution.computeSummary", data);
+
+beforeEach(() => {
+  resetTrpcMock();
+  setQuery("settings.appSettings.list", []);
+  holdMutation("settings.appSettings.setDismissal");
+});
 
 const baseContribs = {
   people: [
@@ -157,7 +151,7 @@ describe("FinancialCheckupCard smoke", () => {
       input: null,
       results: [],
     };
-    contribsQuery = withData(baseContribs);
+    contribsAre(baseContribs);
     render(<FinancialCheckupCard />);
     expect(screen.getByText("Financial Checkup")).toBeInTheDocument();
   });
@@ -170,14 +164,14 @@ describe("FinancialCheckupCard smoke", () => {
       input: null,
       results: [],
     };
-    contribsQuery = withData(baseContribs);
+    contribsAre(baseContribs);
     render(<FinancialCheckupCard />);
     expect(screen.getByText("Failed to load")).toBeInTheDocument();
   });
 
   it("shows the emergency fund months from the engine", () => {
     withMilestones(makeInput({ efundMonths: 4.5 }));
-    contribsQuery = withData(baseContribs);
+    contribsAre(baseContribs);
     render(<FinancialCheckupCard />);
     expect(screen.getByText("Emergency Fund")).toBeInTheDocument();
     expect(screen.getByText("4.5 mo covered")).toBeInTheDocument();
@@ -185,7 +179,7 @@ describe("FinancialCheckupCard smoke", () => {
 
   it("shows the shared disclaimer", () => {
     withMilestones(makeInput({}));
-    contribsQuery = withData(baseContribs);
+    contribsAre(baseContribs);
     render(<FinancialCheckupCard />);
     expect(
       screen.getByText(
@@ -196,7 +190,7 @@ describe("FinancialCheckupCard smoke", () => {
 
   it("shows the full match as captured", () => {
     withMilestones(makeInput({ match: { captured: 3000, available: 3000 } }));
-    contribsQuery = withData(baseContribs);
+    contribsAre(baseContribs);
     render(<FinancialCheckupCard />);
     expect(screen.getByText("Employer Match")).toBeInTheDocument();
     expect(screen.getByText("$3,000.00/yr captured")).toBeInTheDocument();
@@ -204,14 +198,14 @@ describe("FinancialCheckupCard smoke", () => {
 
   it("flags match left on the table", () => {
     withMilestones(makeInput({ match: { captured: 2000, available: 3000 } }));
-    contribsQuery = withData(baseContribs);
+    contribsAre(baseContribs);
     render(<FinancialCheckupCard />);
     expect(screen.getByText("$1,000.00/yr missed")).toBeInTheDocument();
   });
 
   it("judges high-interest debt, not mortgage prepayment", () => {
     withMilestones(makeInput());
-    contribsQuery = withData(baseContribs);
+    contribsAre(baseContribs);
     render(<FinancialCheckupCard />);
     expect(screen.getByText("High-Interest Debt")).toBeInTheDocument();
     expect(
@@ -221,7 +215,7 @@ describe("FinancialCheckupCard smoke", () => {
 
   it("shows the FI pace from the projection", () => {
     withMilestones(makeInput());
-    contribsQuery = withData(baseContribs);
+    contribsAre(baseContribs);
     render(<FinancialCheckupCard />);
     expect(screen.getByText("FI Progress")).toBeInTheDocument();
     expect(screen.getAllByText(/On pace for \d{4}/)[0]).toBeInTheDocument();
@@ -229,7 +223,7 @@ describe("FinancialCheckupCard smoke", () => {
 
   it("links to Recommendations with the count and counts what's on track", () => {
     withMilestones(makeInput());
-    contribsQuery = withData(baseContribs);
+    contribsAre(baseContribs);
     render(<FinancialCheckupCard />);
     expect(screen.getByText(/\/\d+ on track/)).toBeInTheDocument();
     const link = screen.getByRole("link", { name: /recommendation/i });
@@ -240,7 +234,7 @@ describe("FinancialCheckupCard smoke", () => {
   it("a savings rate that rounds to the target is green", () => {
     withMilestones(makeInput());
     // 24.96% retirement-only without the match: rounds to 25%.
-    contribsQuery = withData({
+    contribsAre({
       people: [
         {
           ...baseContribs.people[0],
@@ -269,7 +263,7 @@ describe("FinancialCheckupCard smoke", () => {
 
   it("expands the Savings Rate row into what it's made of", () => {
     withMilestones(makeInput());
-    contribsQuery = withData(baseContribs);
+    contribsAre(baseContribs);
     render(<FinancialCheckupCard />);
     // Below the high-income threshold: the match counts by default.
     expect(screen.getByText("22%")).toBeInTheDocument();

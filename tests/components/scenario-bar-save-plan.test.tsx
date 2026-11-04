@@ -10,21 +10,10 @@ const mocks = vi.hoisted(() => ({
   activeIds: {} as Record<string, number | null>,
 }));
 
-vi.mock("@/lib/trpc", () => {
-  // Any procedure: queries return no data, mutations do nothing.
-  const node = (): unknown =>
-    new Proxy(() => {}, {
-      get: (_t, key) => {
-        if (key === "useQuery") return () => ({ data: undefined });
-        if (key === "useMutation")
-          return () => ({ mutate: vi.fn(), isPending: false, error: null });
-        if (key === "useUtils") return () => node();
-        return node();
-      },
-      apply: () => undefined,
-    });
-  return { trpc: node() };
-});
+// Any procedure: queries return no data (none registered here).
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
+}));
 vi.mock("@/lib/context/scenario-context", () => ({
   useScenario: () => ({ viewMode: "plan", setViewMode: vi.fn() }),
 }));

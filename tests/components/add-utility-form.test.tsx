@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import { mutationCalls, resetTrpcMock, utilsCalls } from "./trpc-mock";
 
 // Utilities ▸ add a utility (src/components/upkeep/add-utility-form.tsx):
 // a household starting from nothing can add a service; each kind once;
@@ -12,25 +13,8 @@ vi.mock("@/lib/context/user-context", () => ({
   isAdmin: (u: { role: string }) => u.role === "admin",
 }));
 
-const upsertMutate = vi.fn();
-const invalidate = vi.fn();
-
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({ utilities: { invalidate } }),
-    utilities: {
-      upsertService: {
-        useMutation: (opts: { onSuccess?: () => void }) => ({
-          mutate: (input: unknown) => {
-            upsertMutate(input);
-            opts.onSuccess?.();
-          },
-          isPending: false,
-          error: null,
-        }),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 import { AddUtilityForm } from "@/components/upkeep/add-utility-form";
@@ -38,8 +22,7 @@ import { AddUtilityForm } from "@/components/upkeep/add-utility-form";
 describe("AddUtilityForm", () => {
   beforeEach(() => {
     currentRole = "admin";
-    upsertMutate.mockClear();
-    invalidate.mockClear();
+    resetTrpcMock();
   });
 
   it("adds the first utility with its usual unit", () => {
@@ -49,12 +32,14 @@ describe("AddUtilityForm", () => {
       target: { value: "Example Gas Co" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Add" }));
-    expect(upsertMutate).toHaveBeenCalledWith({
-      kind: "gas",
-      providerName: "Example Gas Co",
-      usageUnit: "ccf",
-    });
-    expect(invalidate).toHaveBeenCalled();
+    expect(mutationCalls("utilities.upsertService")).toEqual([
+      {
+        kind: "gas",
+        providerName: "Example Gas Co",
+        usageUnit: "ccf",
+      },
+    ]);
+    expect(utilsCalls("utilities.invalidate")).not.toHaveLength(0);
   });
 
   it("offers only the kinds not added yet", () => {

@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { ContributionSnapshot } from "@/components/paycheck/contribution-snapshot";
+import {
+  holdMutation,
+  resetTrpcMock,
+  setQuery,
+  setQueryState,
+  type MockOutput,
+} from "./trpc-mock";
 
 vi.mock("@/components/ui/help-tip", () => ({
   HelpTip: () => null,
@@ -26,10 +33,6 @@ vi.mock("@/lib/utils/colors", () => ({
   accountTextColor: () => "text-blue-600",
 }));
 
-let queryData: unknown;
-let queryLoading = false;
-let queryError: unknown = null;
-
 vi.mock("@/lib/hooks/use-high-income-line", () => ({
   useHighIncomeLine: () => ({
     threshold: 200_000,
@@ -39,29 +42,14 @@ vi.mock("@/lib/hooks/use-high-income-line", () => ({
   }),
 }));
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      settings: { appSettings: { list: { invalidate: vi.fn() } } },
-    }),
-    contribution: {
-      computeSummary: {
-        useQuery: () => ({
-          data: queryData,
-          isLoading: queryLoading,
-          error: queryError,
-        }),
-      },
-    },
-    // Reached via useEffectiveSalaryProfileId → useActiveSalaryProfile.
-    // An empty list is the "nothing to resolve" case: the hook leaves the
-    // active id alone rather than re-pointing it.
-    salaryProfile: {
-      list: { useQuery: () => ({ data: [] }) },
-      setActive: { useMutation: () => ({ mutateAsync: vi.fn() }) },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
+
+const SUMMARY = "contribution.computeSummary";
+/** The summary answers with `data` (a partial fixture, loosely typed). */
+const summary = (data: unknown) =>
+  setQuery(SUMMARY, data as MockOutput<typeof SUMMARY>);
 
 const basePerson = { id: 1, name: "Alice" };
 
@@ -127,23 +115,22 @@ function makeData(overrides: Partial<Record<string, unknown>> = {}) {
 
 describe("ContributionSnapshot", () => {
   beforeEach(() => {
-    queryData = undefined;
-    queryLoading = false;
-    queryError = null;
+    resetTrpcMock();
+    // Reached via useEffectiveSalaryProfileId → useActiveSalaryProfile.
+    // An empty list is the "nothing to resolve" case: the hook leaves the
+    // active id alone rather than re-pointing it.
+    setQuery("salaryProfile.list", []);
+    holdMutation("salaryProfile.setActive");
   });
 
   it("renders nothing while loading", () => {
-    queryData = undefined;
-    queryLoading = true;
-    queryError = null;
+    setQueryState(SUMMARY, { isLoading: true });
     const { container } = render(<ContributionSnapshot />);
     expect(container.querySelector(".animate-pulse")).toBeInTheDocument();
   });
 
   it("renders an error message on query error", () => {
-    queryData = undefined;
-    queryLoading = false;
-    queryError = new Error("boom");
+    setQueryState(SUMMARY, { error: new Error("boom") });
     render(<ContributionSnapshot />);
     expect(
       screen.getByText("Failed to load contribution snapshot"),
@@ -151,17 +138,13 @@ describe("ContributionSnapshot", () => {
   });
 
   it("renders nothing when there is no people data", () => {
-    queryData = { people: [], jointAccountTypes: [] };
-    queryLoading = false;
-    queryError = null;
+    summary({ people: [], jointAccountTypes: [] });
     const { container } = render(<ContributionSnapshot />);
     expect(container.firstChild).toBeNull();
   });
 
   it("renders the household snapshot heading with seeded data", () => {
-    queryData = makeData();
-    queryLoading = false;
-    queryError = null;
+    summary(makeData());
     render(<ContributionSnapshot />);
     expect(
       screen.getByText("Household Contribution Snapshot"),
@@ -169,7 +152,7 @@ describe("ContributionSnapshot", () => {
   });
 
   it("renders per-person account type card with employee contribution", () => {
-    queryData = makeData();
+    summary(makeData());
     render(<ContributionSnapshot />);
     expect(screen.getByText("401k")).toBeInTheDocument();
     expect(screen.getAllByText("$5,000.00").length).toBeGreaterThan(0);
@@ -177,23 +160,25 @@ describe("ContributionSnapshot", () => {
 
   it("shows Over limit and what to fix from the cap pass", () => {
     const msg = "$11,500 over the IRS limit — set it to at most 20.41% of pay.";
-    queryData = makeData({
-      people: [
-        {
-          ...makeData().people[0]!,
-          accountTypes: [
-            makeAccountType({ overBy: 11500, capMessages: [msg] }),
-          ],
-        },
-      ],
-    });
+    summary(
+      makeData({
+        people: [
+          {
+            ...makeData().people[0]!,
+            accountTypes: [
+              makeAccountType({ overBy: 11500, capMessages: [msg] }),
+            ],
+          },
+        ],
+      }),
+    );
     render(<ContributionSnapshot />);
     expect(screen.getByText("Over limit")).toBeInTheDocument();
     expect(screen.getByText(msg)).toBeInTheDocument();
   });
 
   it("renders household totals section", () => {
-    queryData = makeData();
+    summary(makeData());
     render(<ContributionSnapshot />);
     expect(screen.getByText("Retirement")).toBeInTheDocument();
     expect(screen.getByText("Brokerage")).toBeInTheDocument();
@@ -201,52 +186,54 @@ describe("ContributionSnapshot", () => {
   });
 
   it("renders joint account type once without per-person breakdown", () => {
-    queryData = makeData({
-      people: [
-        {
-          person: basePerson,
-          periodsPerYear: 26,
-          accountTypes: [],
-          totals: {
-            views: {
-              projected: {
-                retirementWithoutMatch: 0,
-                retirementWithMatch: 0,
-                portfolioWithoutMatch: 0,
-                portfolioWithMatch: 0,
-                totalWithoutMatch: 0,
-                totalWithMatch: 0,
+    summary(
+      makeData({
+        people: [
+          {
+            person: basePerson,
+            periodsPerYear: 26,
+            accountTypes: [],
+            totals: {
+              views: {
+                projected: {
+                  retirementWithoutMatch: 0,
+                  retirementWithMatch: 0,
+                  portfolioWithoutMatch: 0,
+                  portfolioWithMatch: 0,
+                  totalWithoutMatch: 0,
+                  totalWithMatch: 0,
+                },
               },
             },
           },
-        },
-      ],
-      jointAccountTypes: [
-        {
-          accountType: "brokerage",
-          categoryKey: "brokerage",
-          overBy: 0,
-          capMessages: [],
-          parentCategory: "Portfolio",
-          hasDiscountBar: false,
-          employerMatchLabel: "match",
-          isJoint: true,
-          employeeContrib: 2000,
-          employerMatch: 0,
-          totalContrib: 2000,
-          afterTaxContrib: 2000,
-          tradContrib: 0,
-          taxFreeContrib: 0,
-          hsaContrib: 0,
-          views: Object.fromEntries(
-            ["projected", "blended", "ytd"].map((v) => [
-              v,
-              { employeeContrib: 2000, employerMatch: 0, totalContrib: 2000 },
-            ]),
-          ),
-        },
-      ],
-    });
+        ],
+        jointAccountTypes: [
+          {
+            accountType: "brokerage",
+            categoryKey: "brokerage",
+            overBy: 0,
+            capMessages: [],
+            parentCategory: "Portfolio",
+            hasDiscountBar: false,
+            employerMatchLabel: "match",
+            isJoint: true,
+            employeeContrib: 2000,
+            employerMatch: 0,
+            totalContrib: 2000,
+            afterTaxContrib: 2000,
+            tradContrib: 0,
+            taxFreeContrib: 0,
+            hsaContrib: 0,
+            views: Object.fromEntries(
+              ["projected", "blended", "ytd"].map((v) => [
+                v,
+                { employeeContrib: 2000, employerMatch: 0, totalContrib: 2000 },
+              ]),
+            ),
+          },
+        ],
+      }),
+    );
     render(<ContributionSnapshot />);
     expect(screen.getByText("brokerage")).toBeInTheDocument();
     expect(screen.getByText(/\(Joint\)/)).toBeInTheDocument();

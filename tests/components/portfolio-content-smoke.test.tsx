@@ -1,12 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+import {
+  holdMutation,
+  mutationCalls,
+  resetTrpcMock,
+  setQuery,
+} from "./trpc-mock";
 
 // Smoke test for PortfolioContent — confirms the top-level PortfolioContent
 // mounts and its main structural sections render (NewSnapshotForm,
 // SummaryTable, AccountBalanceOverview, PortfolioQuickLook). Also exercises
 // the delete-snapshot mutation path.
-
-const createMutate = vi.fn();
 
 vi.mock("@/lib/context/user-context", () => ({
   useUser: () => ({ role: "admin" }),
@@ -84,7 +88,7 @@ const mockLatestSnap = {
       institution: "Fidelity",
       accountType: "401k",
       subType: null,
-      taxType: "preTax",
+      taxType: "preTax" as const,
       ownerPersonId: 1,
       amount: "250000",
       performanceAccountId: 1,
@@ -93,7 +97,7 @@ const mockLatestSnap = {
       institution: "Vanguard",
       accountType: "ira",
       subType: null,
-      taxType: "taxFree",
+      taxType: "taxFree" as const,
       ownerPersonId: 1,
       amount: "250000",
       performanceAccountId: 2,
@@ -133,10 +137,10 @@ const mockPaginatedSnapshots = {
     {
       id: 42,
       snapshotDate: "2026-04-01",
-      total: "500000",
+      total: 500000,
       accountCount: 2,
-      delta: "50000",
-      deltaPct: "0.1111",
+      delta: 50000,
+      deltaPct: 0.1111,
       notes: null,
     },
   ],
@@ -145,90 +149,32 @@ const mockPaginatedSnapshots = {
   pageSize: 52,
 };
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      networth: {
-        computeSummary: { invalidate: vi.fn() },
-        listHistory: { invalidate: vi.fn() },
-        listSnapshots: { invalidate: vi.fn() },
-        portfolioSnapshots: { getLatest: { invalidate: vi.fn() } },
-      },
-    }),
-    investments: {
-      suggestSnapshot: { useQuery: () => ({ data: undefined }) },
-      getHoldingsOverview: { useQuery: () => ({ data: undefined }) },
-      getAccountInsights: { useQuery: () => ({ data: undefined }) },
-      getLiveSinceSnapshot: { useQuery: () => ({ data: undefined }) },
-    },
-    networth: {
-      computeSummary: {
-        useQuery: () => ({
-          data: mockSummary,
-          isLoading: false,
-          error: null,
-        }),
-      },
-      listSnapshotTotals: {
-        useQuery: () => ({ data: mockSnapshotTotals }),
-      },
-      listSnapshots: {
-        useQuery: () => ({ data: mockPaginatedSnapshots }),
-      },
-      portfolioSnapshots: {
-        getLatest: {
-          useQuery: () => ({ data: mockLatestSnap, isLoading: false }),
-        },
-        delete: {
-          useMutation: () => ({ mutate: vi.fn(), isPending: false }),
-        },
-        updateAccount: {
-          useMutation: () => ({
-            mutate: vi.fn(),
-            mutateAsync: vi.fn(),
-            isPending: false,
-          }),
-        },
-        create: {
-          useMutation: () => ({
-            mutate: createMutate,
-            isPending: false,
-            isError: false,
-            error: null,
-          }),
-        },
-      },
-    },
-    settings: {
-      people: {
-        list: { useQuery: () => ({ data: [{ id: 1, name: "Alice" }] }) },
-      },
-    },
-    performance: {
-      performanceAccounts: {
-        list: { useQuery: () => ({ data: mockPerfAccounts }) },
-      },
-    },
-    sync: {
-      getSyncStatus: {
-        useQuery: () => ({
-          data: { service: null, connected: false, lastSynced: null },
-        }),
-      },
-      resyncPortfolioPush: {
-        useMutation: () => ({
-          mutate: vi.fn(),
-          mutateAsync: vi.fn(),
-          isPending: false,
-        }),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 describe("PortfolioContent smoke", () => {
   beforeEach(() => {
-    createMutate.mockClear();
+    resetTrpcMock();
+    setQuery("networth.computeSummary", mockSummary);
+    setQuery("networth.listSnapshotTotals", mockSnapshotTotals);
+    setQuery("networth.listSnapshots", mockPaginatedSnapshots);
+    setQuery("networth.portfolioSnapshots.getLatest", mockLatestSnap);
+    setQuery("settings.people.list", [{ id: 1, name: "Alice" }]);
+    setQuery("performance.performanceAccounts.list", mockPerfAccounts);
+    setQuery("sync.getSyncStatus", {
+      service: null,
+      connected: false,
+      lastSynced: null,
+    });
+    // The old stand-in's mutations never settled.
+    for (const path of [
+      "networth.portfolioSnapshots.delete",
+      "networth.portfolioSnapshots.updateAccount",
+      "networth.portfolioSnapshots.create",
+      "sync.resyncPortfolioPush",
+    ] as const)
+      holdMutation(path);
   });
 
   it("renders main sections after Quick Look and New Snapshot are opened", async () => {
@@ -264,6 +210,8 @@ describe("PortfolioContent smoke", () => {
     // Click the "Save Snapshot" button inside the form
     fireEvent.click(screen.getByRole("button", { name: /Save Snapshot/i }));
 
-    expect(createMutate).toHaveBeenCalled();
+    expect(
+      mutationCalls("networth.portfolioSnapshots.create"),
+    ).not.toHaveLength(0);
   });
 });

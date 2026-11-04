@@ -41,12 +41,8 @@ vi.mock("@/components/ui/help-tip", () => ({
 // tests/components/projection-mc-results-clear-cache.test.tsx), which
 // means it now calls trpc.useUtils() unconditionally on every render, not
 // just when the button is reachable.
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      projection: { invalidate: vi.fn() },
-    }),
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
 }));
 
 // CoastFireCard uses trpc.projection.computeCoastFire.useQuery internally,

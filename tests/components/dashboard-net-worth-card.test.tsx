@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
 // Direct smoke test for src/components/cards/dashboard/net-worth-card.tsx.
@@ -18,30 +18,32 @@ vi.mock("@/lib/hooks/use-year-end-targeting", () => ({
   useYearEndTargetingInput: () => ({}),
 }));
 
-let networthQuery: {
-  data: unknown;
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("./trpc-mock")).trpc,
+}));
+import {
+  resetTrpcMock,
+  setQuery,
+  setQueryState,
+  type MockOutput,
+} from "./trpc-mock";
+
+const SUMMARY = "networth.computeSummary";
+/** The summary query: its data, loading and error. */
+function networth({
+  data,
+  isLoading,
+  error,
+}: {
+  data: MockOutput<typeof SUMMARY> | undefined;
   isLoading: boolean;
   error: unknown;
-} = { data: undefined, isLoading: true, error: null };
-let syncStatusData: { lastSynced?: string; service?: string } | undefined =
-  undefined;
+}) {
+  setQuery(SUMMARY, data);
+  setQueryState(SUMMARY, { isLoading, error });
+}
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    networth: {
-      computeSummary: { useQuery: () => networthQuery },
-    },
-    sync: {
-      getSyncStatus: { useQuery: () => ({ data: syncStatusData }) },
-    },
-    mortgage: {
-      computeActiveSummary: { useQuery: () => ({ data: undefined }) },
-    },
-    investments: {
-      getLiveSinceSnapshot: { useQuery: () => ({ data: undefined }) },
-    },
-  },
-}));
+beforeEach(() => resetTrpcMock());
 
 import { NetWorthCard } from "@/components/cards/dashboard/net-worth-card";
 
@@ -54,29 +56,29 @@ const mockData = {
   hasHouse: true,
   mortgageBalance: 250000,
   snapshotDate: "2026-04-01",
-  cashSource: "manual",
+  cashSource: "manual" as const,
   otherAssetItems: [],
 };
 
 describe("NetWorthCard smoke", () => {
   it("renders a loading skeleton while the query is pending", () => {
-    networthQuery = { data: undefined, isLoading: true, error: null };
+    networth({ data: undefined, isLoading: true, error: null });
     render(<NetWorthCard />);
     expect(screen.getByText("Net Worth")).toBeInTheDocument();
   });
 
   it("renders an error card when the query fails", () => {
-    networthQuery = {
+    networth({
       data: undefined,
       isLoading: false,
       error: new Error("x"),
-    };
+    });
     render(<NetWorthCard />);
     expect(screen.getByText("Failed to load")).toBeInTheDocument();
   });
 
   it("renders the empty-state prompt when there is no data", () => {
-    networthQuery = { data: undefined, isLoading: false, error: null };
+    networth({ data: undefined, isLoading: false, error: null });
     render(<NetWorthCard />);
     expect(
       screen.getByText("Add a portfolio snapshot to start tracking net worth."),
@@ -84,7 +86,7 @@ describe("NetWorthCard smoke", () => {
   });
 
   it("renders market net worth, home value, cash, and mortgage rows", () => {
-    networthQuery = { data: mockData, isLoading: false, error: null };
+    networth({ data: mockData, isLoading: false, error: null });
     render(<NetWorthCard />);
     expect(screen.getByText("$670,000.00")).toBeInTheDocument();
     expect(screen.getByText("Home (est.)")).toBeInTheDocument();
@@ -94,7 +96,7 @@ describe("NetWorthCard smoke", () => {
   });
 
   it("toggles to cost-basis net worth when the Market/Cost Basis button is clicked", () => {
-    networthQuery = { data: mockData, isLoading: false, error: null };
+    networth({ data: mockData, isLoading: false, error: null });
     render(<NetWorthCard />);
     fireEvent.click(screen.getByRole("button", { name: "Market" }));
     expect(screen.getByText("$620,000.00")).toBeInTheDocument();
@@ -103,22 +105,25 @@ describe("NetWorthCard smoke", () => {
   });
 
   it("hides house-related rows when hasHouse is false", () => {
-    networthQuery = {
+    networth({
       data: { ...mockData, hasHouse: false },
       isLoading: false,
       error: null,
-    };
+    });
     render(<NetWorthCard />);
     expect(screen.queryByText("Mortgage")).toBeNull();
   });
 
   it("shows a synced-source freshness note when cash comes from a linked budget API", () => {
-    networthQuery = {
+    networth({
       data: { ...mockData, cashSource: "ynab" },
       isLoading: false,
       error: null,
-    };
-    syncStatusData = { lastSynced: "2026-08-07T10:00:00Z", service: "ynab" };
+    });
+    setQuery("sync.getSyncStatus", {
+      lastSynced: "2026-08-07T10:00:00Z",
+      service: "ynab",
+    });
     render(<NetWorthCard />);
     expect(screen.getByText(/YNAB synced/)).toBeInTheDocument();
   });
