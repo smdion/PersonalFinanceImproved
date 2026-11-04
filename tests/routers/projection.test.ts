@@ -518,9 +518,9 @@ describe("projection router — computeProjection", () => {
   it("the contribution rate counts retirement contributions only", async () => {
     const rate = async (contributionProfileId: number) => {
       const r = await caller.projection.computeProjection({
+        selection: { contribution: contributionProfileId },
         accumulationOverrides: [],
         decumulationOverrides: [],
-        contributionProfileId,
       });
       return r.result!.projectionByYear.find((y) => y.phase === "accumulation")!
         .config.contributionRate;

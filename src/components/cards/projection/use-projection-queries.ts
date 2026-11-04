@@ -23,6 +23,7 @@ import { simulationDollars } from "@/lib/pure/simulation/dollars";
 import type { ProjectionFormState } from "./use-projection-form-state";
 import type { UseProjectionStateProps } from "./use-projection-state";
 import { filterYearByParentCategory } from "./utils";
+import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 
 type CoastFireProbeResult = NonNullable<
   RouterOutputs["projection"]["computeCoastFireProbe"]["result"]
@@ -104,29 +105,21 @@ export function useProjectionQueries(
       ...(decumOverridesTouched
         ? { decumulationOverrides: decumOverrides }
         : {}),
-      ...(accumulationBudgetProfileId != null
-        ? { accumulationBudgetProfileId }
-        : {}),
-      ...(accumulationBudgetColumn != null ? { accumulationBudgetColumn } : {}),
-      ...(accumulationExpenseOverride != null
-        ? { accumulationExpenseOverride }
-        : {}),
-      ...(decumulationBudgetProfileId != null
-        ? { decumulationBudgetProfileId }
-        : {}),
-      ...(decumulationBudgetColumn != null ? { decumulationBudgetColumn } : {}),
-      ...(decumulationExpenseOverride != null
-        ? { decumulationExpenseOverride }
-        : {}),
-      ...(contributionProfileId != null ? { contributionProfileId } : {}),
-      ...(salaryProfileId != null ? { salaryProfileId } : {}),
-      // This object is spread into every engine
-      // query in this hook (computeProjection, computeMonteCarloProjection,
-      // computeCoastFire/MC/Probe, the bracket optimizer) — adding
-      // retirementProfileId here once threads the AssumptionsBand's "view
-      // a non-active profile" selection to all of them in one place,
-      // instead of needing it wired into each query's input separately.
-      ...(retirementProfileId != null ? { retirementProfileId } : {}),
+      // Spread into every engine query in this hook (computeProjection,
+      // computeMonteCarloProjection, computeCoastFire/MC/Probe, the bracket
+      // optimizer), so the AssumptionsBand's "view a non-active profile"
+      // reaches all of them from one place.
+      selection: profileSelectionFrom({
+        accumulationBudgetProfileId,
+        accumulationBudgetColumn,
+        accumulationExpenseOverride,
+        decumulationBudgetProfileId,
+        decumulationBudgetColumn,
+        decumulationExpenseOverride,
+        contributionProfileId,
+        salaryProfileId,
+        retirementProfileId,
+      }),
       ...(snapshotId != null ? { snapshotId } : {}),
     }),
     [

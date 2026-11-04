@@ -66,10 +66,7 @@ export function TaxOptimizationContent() {
   // Settings / per-person settings for the assumptions band — metadataOnly
   // skips the heavy projection, same call the Retirement page uses.
   const metaQuery = trpc.projection.computeProjection.useQuery(
-    {
-      metadataOnly: true as const,
-      retirementProfileId: effectiveRetirementProfileId ?? undefined,
-    },
+    { metadataOnly: true as const, ...selection },
     { placeholderData: (prev) => prev },
   );
   const meta = metaQuery.data;

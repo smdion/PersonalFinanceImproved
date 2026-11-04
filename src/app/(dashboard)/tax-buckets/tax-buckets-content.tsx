@@ -33,6 +33,7 @@ import {
 import { penaltyFreePrefixAmount } from "@/lib/pure/early-access";
 import { flatDeflator, toTodaysDollars } from "@/lib/pure/simulation/dollars";
 import type { DollarBasis } from "@/lib/config/enum-values";
+import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 
 // The pure type, not a tRPC-inferred one — inferRouterOutputs types
 // `rothBasisMeta.updatedAt` as `Date` (the procedure's TS return type),
@@ -191,16 +192,14 @@ export function TaxBucketsContent() {
   // does NOT fall back to "whatever's active" — the server has no default
   // profile to resolve to, so every contribution account silently gets $0
   // configured value and the whole target contribution overflows to
-  // brokerage. That's a real bug this page shipped with, caught by a wildly
-  // implausible "At Retirement" brokerage total.
-  const { queryInput: contribProfileQueryInput } =
-    useEffectiveContribProfileId();
-  const { queryInput: salaryProfileQueryInput } = useEffectiveSalaryProfileId();
+  // brokerage.
+  const { queryInput: contribPick } = useEffectiveContribProfileId();
+  const { queryInput: salaryPick } = useEffectiveSalaryProfileId();
   // Only fetched when the user actually switches to "At Retirement" — the
   // "now" view stays free of any projected bleed-through, and the page
   // doesn't pay for the heavier call on every visit.
   const projectionQuery = trpc.projection.computeProjection.useQuery(
-    { ...contribProfileQueryInput, ...salaryProfileQueryInput },
+    { selection: profileSelectionFrom({ ...contribPick, ...salaryPick }) },
     { enabled: view === "atRetirement" },
   );
 

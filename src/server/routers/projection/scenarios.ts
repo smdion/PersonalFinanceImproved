@@ -48,6 +48,10 @@ import {
   resolveProjectionOverrides,
 } from "./_shared";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
+import {
+  profileSelectionSchema,
+  engineProfileOptions,
+} from "@/lib/pure/household/profile-selection";
 
 /** A settings row's strategy param columns, as stored. */
 function pickStrategyParamColumns<
@@ -73,7 +77,7 @@ export const scenariosRouter = createTRPCRouter({
    */
   computeProjection: protectedProcedure
     .input(
-      z.object({
+      z.strictObject({
         // Accumulation defaults are derived from paycheck/contribution accounts on the server.
         // No client-side accumulation defaults input.
 
@@ -86,25 +90,7 @@ export const scenariosRouter = createTRPCRouter({
         // --- Decumulation overrides ---
         decumulationOverrides: decumulationOverrideSchema,
 
-        // --- Optional salary overrides from UI ---
-        // --- Optional contribution profile (overrides contribution accounts + salary) ---
-        contributionProfileId: z.number().int().optional(),
-        /** Optional Salary Profile — the independent "what if I earned X" axis. */
-        salaryProfileId: z.number().int().optional(),
-        /** View a non-active Retirement Profile (phase 4 assumptions band) —
-         *  same "view without activating" contract as the two profile ids
-         *  above. Falls back to the household's globally-active profile
-         *  when omitted or when it names a profile that no longer exists. */
-        retirementProfileId: z.number().int().optional(),
-        // --- Phase-based budget selection (independent profile+column per phase) ---
-        accumulationBudgetProfileId: z.number().int().optional(),
-        accumulationBudgetColumn: z.number().int().min(0).optional(),
-        /** Manual annual expense override for accumulation (bypasses budget profile). */
-        accumulationExpenseOverride: z.number().min(0).optional(),
-        decumulationBudgetProfileId: z.number().int().optional(),
-        decumulationBudgetColumn: z.number().int().min(0).optional(),
-        /** Manual annual expense override for decumulation (bypasses budget profile). */
-        decumulationExpenseOverride: z.number().min(0).optional(),
+        selection: profileSelectionSchema.optional(),
         /** When true, skip the heavy projection calculation and return only metadata (settings, expenses, budget profiles). */
         metadataOnly: z.boolean().default(false),
         /** Optional snapshot ID — use a historical portfolio snapshot instead of the latest. */
@@ -120,21 +106,14 @@ export const scenariosRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      const profiles = engineProfileOptions(input.selection);
       const data = await fetchRetirementData(ctx.db, {
         snapshotId: input.snapshotId,
-        contributionProfileId: input.contributionProfileId,
-        salaryProfileId: input.salaryProfileId,
+        contributionProfileId: profiles.contributionProfileId,
+        salaryProfileId: profiles.salaryProfileId,
       });
       const payload = await buildEnginePayload(ctx.db, data, {
-        contributionProfileId: input.contributionProfileId,
-        salaryProfileId: input.salaryProfileId,
-        accumulationBudgetProfileId: input.accumulationBudgetProfileId,
-        accumulationBudgetColumn: input.accumulationBudgetColumn,
-        accumulationExpenseOverride: input.accumulationExpenseOverride,
-        decumulationBudgetProfileId: input.decumulationBudgetProfileId,
-        decumulationBudgetColumn: input.decumulationBudgetColumn,
-        decumulationExpenseOverride: input.decumulationExpenseOverride,
-        retirementProfileId: input.retirementProfileId,
+        ...profiles,
       });
       if (!payload) return { result: null };
       // No return rate: a state, not an engine throw. Metadata (settings,

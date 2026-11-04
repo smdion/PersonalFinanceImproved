@@ -43,6 +43,7 @@ import { sumBy, safeDivide } from "@/lib/utils/math";
 import { SkeletonTable } from "@/components/ui/skeleton";
 import { useEffectiveSalaryProfileId } from "@/lib/hooks/use-effective-salary-profile-id";
 import { SK_ACTIVE_CONTRIB_PROFILE_ID } from "@/lib/constants/settings-keys";
+import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 import { useBrokerageLumpSums } from "./use-brokerage-lump-sums";
 
 export function BrokerageContent() {
@@ -119,21 +120,18 @@ export function BrokerageContent() {
     }
     return Array.from(byYear.values()).sort((a, b) => a.year - b.year);
   }, [accumOverridesFromLumpSums, savedAccumQuery.data]);
-  const engineInput = {
-    ...(mergedAccumOverrides
-      ? { accumulationOverrides: mergedAccumOverrides }
-      : {}),
-    ...(activeProfileId != null
-      ? { contributionProfileId: activeProfileId }
-      : {}),
-    ...salaryProfileInput,
-  };
   const contribInput = {
     ...(activeProfileId != null
       ? { contributionProfileId: activeProfileId }
       : {}),
     ...salaryProfileInput,
-  } as Parameters<typeof trpc.contribution.computeSummary.useQuery>[0];
+  };
+  const engineInput = {
+    ...(mergedAccumOverrides
+      ? { accumulationOverrides: mergedAccumOverrides }
+      : {}),
+    selection: profileSelectionFrom(contribInput),
+  };
 
   // With lump sums, wait for the saved rows they're merged into.
   const engineReady =

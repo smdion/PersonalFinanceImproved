@@ -64,6 +64,10 @@ import {
   generateSeed,
   clearProjectionCache,
 } from "@/server/helpers/projection-cache";
+import {
+  profileSelectionSchema,
+  engineProfileOptions,
+} from "@/lib/pure/household/profile-selection";
 
 export const monteCarloRouter = createTRPCRouter({
   /**
@@ -78,7 +82,7 @@ export const monteCarloRouter = createTRPCRouter({
   computeMonteCarloProjection: protectedProcedure
     .use(expensiveRateLimitMiddleware)
     .input(
-      z.object({
+      z.strictObject({
         numTrials: z
           .number()
           .int()
@@ -94,20 +98,7 @@ export const monteCarloRouter = createTRPCRouter({
         taxMode: z
           .enum(["simple", "advanced"])
           .default(DEFAULT_SIMULATION.taxMode),
-        // --- Optional contribution profile (overrides contribution accounts + salary) ---
-        contributionProfileId: z.number().int().optional(),
-        /** Optional Salary Profile — the independent "what if I earned X" axis. */
-        salaryProfileId: z.number().int().optional(),
-        /** View a non-active Retirement Profile (phase 4 assumptions band) —
-         *  same "view without activating" contract as the two profile ids
-         *  above. Falls back to the household's globally-active profile
-         *  when omitted — `getProjection`/
-         *  `computeStrategyComparison` already accepted this; the Monte
-         *  Carlo query (this endpoint) never did, so the AssumptionsBand's
-         *  "view a non-active profile" never reached the chart/table it
-         *  sits directly above — silently kept showing the globally-active
-         *  profile's numbers regardless of what the band was viewing. */
-        retirementProfileId: z.number().int().optional(),
+        selection: profileSelectionSchema.optional(),
         /** Optional per-asset-class return/volatility overrides from the UI. */
         assetClassOverrides: z
           .array(
@@ -129,15 +120,6 @@ export const monteCarloRouter = createTRPCRouter({
         // --- Decumulation overrides (mirrors getProjection) ---
         decumulationOverrides: decumulationOverrideSchema,
 
-        // --- Phase-based budget selection (independent profile+column per phase) ---
-        accumulationBudgetProfileId: z.number().int().optional(),
-        accumulationBudgetColumn: z.number().int().min(0).optional(),
-        /** Manual annual expense override for accumulation (bypasses budget profile). */
-        accumulationExpenseOverride: z.number().min(0).optional(),
-        decumulationBudgetProfileId: z.number().int().optional(),
-        decumulationBudgetColumn: z.number().int().min(0).optional(),
-        /** Manual annual expense override for decumulation (bypasses budget profile). */
-        decumulationExpenseOverride: z.number().min(0).optional(),
         /** Optional inflation risk: the spread of each year's inflation
          *  around the plan's own rates. */
         inflationRisk: z
@@ -164,6 +146,7 @@ export const monteCarloRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      const profiles = engineProfileOptions(input.selection);
       // Fetch shared data + MC-specific tables + saved overrides in parallel
       const [
         data,
@@ -176,8 +159,8 @@ export const monteCarloRouter = createTRPCRouter({
       ] = await Promise.all([
         fetchRetirementData(ctx.db, {
           snapshotId: input.snapshotId,
-          contributionProfileId: input.contributionProfileId,
-          salaryProfileId: input.salaryProfileId,
+          contributionProfileId: profiles.contributionProfileId,
+          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db),
         ctx.db
@@ -195,15 +178,7 @@ export const monteCarloRouter = createTRPCRouter({
       }[];
 
       const payload = await buildEnginePayload(ctx.db, data, {
-        contributionProfileId: input.contributionProfileId,
-        salaryProfileId: input.salaryProfileId,
-        accumulationBudgetProfileId: input.accumulationBudgetProfileId,
-        accumulationBudgetColumn: input.accumulationBudgetColumn,
-        accumulationExpenseOverride: input.accumulationExpenseOverride,
-        decumulationBudgetProfileId: input.decumulationBudgetProfileId,
-        decumulationBudgetColumn: input.decumulationBudgetColumn,
-        decumulationExpenseOverride: input.decumulationExpenseOverride,
-        retirementProfileId: input.retirementProfileId,
+        ...profiles,
       });
       // No return rate: the projection card says so.
       if (!payload || payload.notConfigured)
@@ -470,8 +445,8 @@ export const monteCarloRouter = createTRPCRouter({
           inflationRisk: effectiveInflationRisk,
           withdrawalRate: toNumber(settings.withdrawalRate),
           withdrawalStrategy: settings.withdrawalStrategy ?? "fixed",
-          decumulationExpenseOverride: input.decumulationExpenseOverride,
-          accumulationExpenseOverride: input.accumulationExpenseOverride,
+          decumulationExpenseOverride: profiles.decumulationExpenseOverride,
+          accumulationExpenseOverride: profiles.accumulationExpenseOverride,
           taxMode: input.taxMode,
           hasAssetClassOverrides:
             savedAssetOverrides.length > 0 ||

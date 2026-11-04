@@ -222,7 +222,7 @@ describe("projection router — computeProjection cache", () => {
         decumulationOverrides: [],
       });
       await caller.projection.computeProjection({
-        accumulationExpenseOverride: 50000,
+        selection: { accumulationBudget: { annualExpenses: 50000 } },
         accumulationOverrides: [],
         decumulationOverrides: [],
       });
@@ -479,9 +479,11 @@ describe("projection router — computeProjection edge cases (continued)", () =>
 
       const base = await balances(caller);
       const response = await caller.projection.computeProjection({
+        selection: {
+          accumulationBudget: { annualExpenses: 50000 },
+          decumulationBudget: { annualExpenses: 40000 },
+        },
         ...NO_OVERRIDES,
-        accumulationExpenseOverride: 50000,
-        decumulationExpenseOverride: 40000,
       });
 
       expect(response.result).not.toBeNull();
@@ -861,11 +863,13 @@ describe("projection router — computeMonteCarloProjection", () => {
       seedGlidePath(db);
 
       const response = await caller.projection.computeMonteCarloProjection({
+        selection: {
+          accumulationBudget: { annualExpenses: 50000 },
+          decumulationBudget: { annualExpenses: 40000 },
+        },
         numTrials: 100,
         preset: "custom",
         seed: 42,
-        accumulationExpenseOverride: 50000,
-        decumulationExpenseOverride: 40000,
       });
 
       expect(response.result).not.toBeNull();
@@ -1590,9 +1594,9 @@ describe("projection router — computeProjection edge cases", () => {
       });
 
       const response = await caller.projection.computeProjection({
+        selection: { contribution: profileId },
         accumulationOverrides: [],
         decumulationOverrides: [],
-        contributionProfileId: profileId,
       });
 
       expect(response.result).not.toBeNull();

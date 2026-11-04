@@ -27,7 +27,10 @@ vi.mock("@/lib/context/user-context", () => ({
 }));
 vi.mock("@/lib/hooks/use-plan-engine-input", () => ({
   usePlanEngineInput: () => ({
-    input: { decumulationDefaults: { withdrawalTaxPreference: {} } },
+    input: {
+      selection: {},
+      decumulationDefaults: { withdrawalTaxPreference: {} },
+    },
     ready: true,
     ids: {
       contributionProfileId: null,

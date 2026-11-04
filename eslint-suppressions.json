@@ -19,7 +19,7 @@
   },
   "src/app/(dashboard)/brokerage/brokerage-content.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
+      "count": 3
     },
     "max-lines-per-function": {
       "count": 2
@@ -560,7 +560,7 @@
   },
   "src/components/budget/budget-retirement-note.tsx": {
     "@typescript-eslint/consistent-type-assertions": {
-      "count": 4
+      "count": 3
     }
   },
   "src/components/budget/budget-summary-bar.tsx": {
@@ -6007,7 +6007,7 @@
       "count": 1
     },
     "ratchet/max-comment-lines": {
-      "count": 9
+      "count": 8
     },
     "ratchet/no-history-comment": {
       "count": 1

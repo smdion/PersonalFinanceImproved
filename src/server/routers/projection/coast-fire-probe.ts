@@ -50,6 +50,10 @@ import {
   readProjectionCache,
   writeProjectionCache,
 } from "@/server/helpers/projection-cache";
+import {
+  profileSelectionSchema,
+  engineProfileOptions,
+} from "@/lib/pure/household/profile-selection";
 
 /**
  * Deliberately NOT `CoastFireMcResult` (computeCoastFireMC's shape).
@@ -86,22 +90,11 @@ export const coastFireProbeRouter = createTRPCRouter({
   computeCoastFireProbe: protectedProcedure
     .use(expensiveRateLimitMiddleware)
     .input(
-      z.object({
+      z.strictObject({
         decumulationDefaults: decumulationDefaultsInputSchema,
         accumulationOverrides: accumulationOverrideSchema,
         decumulationOverrides: decumulationOverrideSchema,
-        contributionProfileId: z.number().int().optional(),
-        salaryProfileId: z.number().int().optional(),
-        /** View a non-active Retirement Profile — see
-         *  computeMonteCarloProjection's matching field docblock
-         *  (monte-carlo.ts) for the full context. */
-        retirementProfileId: z.number().int().optional(),
-        accumulationBudgetProfileId: z.number().int().optional(),
-        accumulationBudgetColumn: z.number().int().min(0).optional(),
-        accumulationExpenseOverride: z.number().min(0).optional(),
-        decumulationBudgetProfileId: z.number().int().optional(),
-        decumulationBudgetColumn: z.number().int().min(0).optional(),
-        decumulationExpenseOverride: z.number().min(0).optional(),
+        selection: profileSelectionSchema.optional(),
         snapshotId: z.number().int().optional(),
         /** The age to probe. Validated server-side below against the
          *  RESOLVED engine input's own currentAge/retirementAge — client
@@ -113,26 +106,19 @@ export const coastFireProbeRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      const profiles = engineProfileOptions(input.selection);
       // Coast FIRE's Simulation runs on the default preset.
       const [data, mc] = await Promise.all([
         fetchRetirementData(ctx.db, {
           snapshotId: input.snapshotId,
-          contributionProfileId: input.contributionProfileId,
-          salaryProfileId: input.salaryProfileId,
+          contributionProfileId: profiles.contributionProfileId,
+          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db, DEFAULT_SIMULATION.preset),
       ]);
 
       const payload = await buildEnginePayload(ctx.db, data, {
-        contributionProfileId: input.contributionProfileId,
-        salaryProfileId: input.salaryProfileId,
-        accumulationBudgetProfileId: input.accumulationBudgetProfileId,
-        accumulationBudgetColumn: input.accumulationBudgetColumn,
-        accumulationExpenseOverride: input.accumulationExpenseOverride,
-        decumulationBudgetProfileId: input.decumulationBudgetProfileId,
-        decumulationBudgetColumn: input.decumulationBudgetColumn,
-        decumulationExpenseOverride: input.decumulationExpenseOverride,
-        retirementProfileId: input.retirementProfileId,
+        ...profiles,
       });
       if (!payload || payload.notConfigured)
         return { result: null, computedAt: null };

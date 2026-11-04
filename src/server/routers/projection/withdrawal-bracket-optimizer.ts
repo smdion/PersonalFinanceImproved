@@ -33,6 +33,10 @@ import {
   resolveProjectionOverrides,
 } from "./_shared";
 import { decumulationDefaultsInputSchema } from "@/lib/pure/engine";
+import {
+  profileSelectionSchema,
+  engineProfileOptions,
+} from "@/lib/pure/household/profile-selection";
 
 export const withdrawalBracketOptimizerRouter = createTRPCRouter({
   /**
@@ -52,40 +56,24 @@ export const withdrawalBracketOptimizerRouter = createTRPCRouter({
    */
   computeWithdrawalBracketOptimizer: protectedProcedure
     .input(
-      z.object({
+      z.strictObject({
         // Mirrors computeCoastFire's input subset that affects the engine.
         decumulationDefaults: decumulationDefaultsInputSchema,
         accumulationOverrides: accumulationOverrideSchema,
         decumulationOverrides: decumulationOverrideSchema,
-        contributionProfileId: z.number().int().optional(),
-        /** Optional Salary Profile — the independent "what if I earned X" axis. */
-        salaryProfileId: z.number().int().optional(),
-        accumulationBudgetProfileId: z.number().int().optional(),
-        accumulationBudgetColumn: z.number().int().min(0).optional(),
-        accumulationExpenseOverride: z.number().min(0).optional(),
-        decumulationBudgetProfileId: z.number().int().optional(),
-        decumulationBudgetColumn: z.number().int().min(0).optional(),
-        decumulationExpenseOverride: z.number().min(0).optional(),
-        retirementProfileId: z.number().int().optional(),
+        selection: profileSelectionSchema.optional(),
         snapshotId: z.number().int().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
+      const profiles = engineProfileOptions(input.selection);
       const data = await fetchRetirementData(ctx.db, {
         snapshotId: input.snapshotId,
-        contributionProfileId: input.contributionProfileId,
-        salaryProfileId: input.salaryProfileId,
+        contributionProfileId: profiles.contributionProfileId,
+        salaryProfileId: profiles.salaryProfileId,
       });
       const payload = await buildEnginePayload(ctx.db, data, {
-        contributionProfileId: input.contributionProfileId,
-        salaryProfileId: input.salaryProfileId,
-        accumulationBudgetProfileId: input.accumulationBudgetProfileId,
-        accumulationBudgetColumn: input.accumulationBudgetColumn,
-        accumulationExpenseOverride: input.accumulationExpenseOverride,
-        decumulationBudgetProfileId: input.decumulationBudgetProfileId,
-        decumulationBudgetColumn: input.decumulationBudgetColumn,
-        decumulationExpenseOverride: input.decumulationExpenseOverride,
-        retirementProfileId: input.retirementProfileId,
+        ...profiles,
       });
       if (!payload) return { result: null };
       if (payload.notConfigured)

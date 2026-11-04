@@ -48,6 +48,10 @@ import {
   readProjectionCache,
   writeProjectionCache,
 } from "@/server/helpers/projection-cache";
+import {
+  profileSelectionSchema,
+  engineProfileOptions,
+} from "@/lib/pure/household/profile-selection";
 
 /** Shape of `computeCoastFireMC`'s cacheable result — every branch of the
  *  search. A not-configured state (no preset, classes or glide path)
@@ -96,43 +100,24 @@ export const coastFireRouter = createTRPCRouter({
    */
   computeCoastFire: protectedProcedure
     .input(
-      z.object({
+      z.strictObject({
         // Mirrors the computeProjection input subset that affects the engine.
         decumulationDefaults: decumulationDefaultsInputSchema,
         accumulationOverrides: accumulationOverrideSchema,
         decumulationOverrides: decumulationOverrideSchema,
-        contributionProfileId: z.number().int().optional(),
-        /** Optional Salary Profile — the independent "what if I earned X" axis. */
-        salaryProfileId: z.number().int().optional(),
-        /** View a non-active Retirement Profile — see
-         *  computeMonteCarloProjection's matching field docblock
-         *  (monte-carlo.ts) for the full context. */
-        retirementProfileId: z.number().int().optional(),
-        accumulationBudgetProfileId: z.number().int().optional(),
-        accumulationBudgetColumn: z.number().int().min(0).optional(),
-        accumulationExpenseOverride: z.number().min(0).optional(),
-        decumulationBudgetProfileId: z.number().int().optional(),
-        decumulationBudgetColumn: z.number().int().min(0).optional(),
-        decumulationExpenseOverride: z.number().min(0).optional(),
+        selection: profileSelectionSchema.optional(),
         snapshotId: z.number().int().optional(),
       }),
     )
     .query(async ({ ctx, input }) => {
+      const profiles = engineProfileOptions(input.selection);
       const data = await fetchRetirementData(ctx.db, {
         snapshotId: input.snapshotId,
-        contributionProfileId: input.contributionProfileId,
-        salaryProfileId: input.salaryProfileId,
+        contributionProfileId: profiles.contributionProfileId,
+        salaryProfileId: profiles.salaryProfileId,
       });
       const payload = await buildEnginePayload(ctx.db, data, {
-        contributionProfileId: input.contributionProfileId,
-        salaryProfileId: input.salaryProfileId,
-        accumulationBudgetProfileId: input.accumulationBudgetProfileId,
-        accumulationBudgetColumn: input.accumulationBudgetColumn,
-        accumulationExpenseOverride: input.accumulationExpenseOverride,
-        decumulationBudgetProfileId: input.decumulationBudgetProfileId,
-        decumulationBudgetColumn: input.decumulationBudgetColumn,
-        decumulationExpenseOverride: input.decumulationExpenseOverride,
-        retirementProfileId: input.retirementProfileId,
+        ...profiles,
       });
       if (!payload) return { result: null };
       if (payload.notConfigured)
@@ -209,23 +194,11 @@ export const coastFireRouter = createTRPCRouter({
   computeCoastFireMC: protectedProcedure
     .use(expensiveRateLimitMiddleware)
     .input(
-      z.object({
+      z.strictObject({
         decumulationDefaults: decumulationDefaultsInputSchema,
         accumulationOverrides: accumulationOverrideSchema,
         decumulationOverrides: decumulationOverrideSchema,
-        contributionProfileId: z.number().int().optional(),
-        /** Optional Salary Profile — the independent "what if I earned X" axis. */
-        salaryProfileId: z.number().int().optional(),
-        /** View a non-active Retirement Profile — see
-         *  computeMonteCarloProjection's matching field docblock
-         *  (monte-carlo.ts) for the full context. */
-        retirementProfileId: z.number().int().optional(),
-        accumulationBudgetProfileId: z.number().int().optional(),
-        accumulationBudgetColumn: z.number().int().min(0).optional(),
-        accumulationExpenseOverride: z.number().min(0).optional(),
-        decumulationBudgetProfileId: z.number().int().optional(),
-        decumulationBudgetColumn: z.number().int().min(0).optional(),
-        decumulationExpenseOverride: z.number().min(0).optional(),
+        selection: profileSelectionSchema.optional(),
         snapshotId: z.number().int().optional(),
         /** Bypass the projection cache and force a fresh search — the explicit "Re-run" action, not the default query path. */
         forceRefresh: z.boolean().optional(),
@@ -242,6 +215,7 @@ export const coastFireRouter = createTRPCRouter({
       }),
     )
     .query(async ({ ctx, input }) => {
+      const profiles = engineProfileOptions(input.selection);
       // Fetch the engine payload + MC-specific tables in parallel. Mirrors
       // computeMonteCarloProjection for the "default" preset only — no
       // user-adjustable preset, no asset class overrides, no inflation
@@ -250,22 +224,14 @@ export const coastFireRouter = createTRPCRouter({
       const [data, mc] = await Promise.all([
         fetchRetirementData(ctx.db, {
           snapshotId: input.snapshotId,
-          contributionProfileId: input.contributionProfileId,
-          salaryProfileId: input.salaryProfileId,
+          contributionProfileId: profiles.contributionProfileId,
+          salaryProfileId: profiles.salaryProfileId,
         }),
         buildMcInputs(ctx.db, DEFAULT_SIMULATION.preset),
       ]);
 
       const payload = await buildEnginePayload(ctx.db, data, {
-        contributionProfileId: input.contributionProfileId,
-        salaryProfileId: input.salaryProfileId,
-        accumulationBudgetProfileId: input.accumulationBudgetProfileId,
-        accumulationBudgetColumn: input.accumulationBudgetColumn,
-        accumulationExpenseOverride: input.accumulationExpenseOverride,
-        decumulationBudgetProfileId: input.decumulationBudgetProfileId,
-        decumulationBudgetColumn: input.decumulationBudgetColumn,
-        decumulationExpenseOverride: input.decumulationExpenseOverride,
-        retirementProfileId: input.retirementProfileId,
+        ...profiles,
       });
       // No return rate: the projection card says so; nothing to search.
       if (!payload || payload.notConfigured)

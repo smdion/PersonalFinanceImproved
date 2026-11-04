@@ -151,9 +151,9 @@ export const PROCEDURES: BaselineProcedure[] = [
   ),
   { path: "retirement.retirementProfiles.list" },
   { path: "retirement.returnRates.list" },
-  { path: "projection.computeProjection", input: active },
-  { path: "projection.computeCoastFire", input: active },
-  { path: "projection.computeCoastFireMC", input: active },
+  { path: "projection.computeProjection", input: activeSelection },
+  { path: "projection.computeCoastFire", input: activeSelection },
+  { path: "projection.computeCoastFireMC", input: activeSelection },
   {
     path: "projection.computeCoastFireProbe",
     // Five years from now, or the last working year if sooner; a
@@ -164,12 +164,12 @@ export const PROCEDURES: BaselineProcedure[] = [
       const age = 2026 - Number(person.dateOfBirth.slice(0, 4));
       const retirementAge = ctx.household.retirement[key]!.retirementAge;
       const probeAge = Math.min(age + 5, retirementAge - 1);
-      return probeAge >= age ? { ...active(ctx), probeAge } : null;
+      return probeAge >= age ? { ...activeSelection(ctx), probeAge } : null;
     },
   },
   {
     path: "projection.computeMonteCarloProjection",
-    input: (ctx) => ({ ...active(ctx), numTrials: 100, seed: 31 }),
+    input: (ctx) => ({ ...activeSelection(ctx), numTrials: 100, seed: 31 }),
   },
   { path: "projection.computeStrategyComparison", input: activeSelection },
   { path: "projection.analyzeStrategy", input: activeSelection },
@@ -218,7 +218,10 @@ export const PROCEDURES: BaselineProcedure[] = [
       conversionTargets: [{ year: 2027, targetRate: 0.22 }],
     }),
   },
-  { path: "projection.computeWithdrawalBracketOptimizer", input: active },
+  {
+    path: "projection.computeWithdrawalBracketOptimizer",
+    input: activeSelection,
+  },
   {
     path: "projection.sweepSocialSecurityClaimingAges",
     input: (ctx) => {

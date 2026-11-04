@@ -7,8 +7,7 @@ vi.mock("@/components/ui/help-tip", () => ({ HelpTip: () => null }));
 vi.mock("@/lib/hooks/use-plan-engine-input", () => ({
   usePlanEngineInput: () => ({
     input: {
-      contributionProfileId: 20,
-      salaryProfileId: 10,
+      selection: { contribution: 20, salary: 10 },
       decumulationDefaults: {},
     },
     ready: true,
@@ -100,10 +99,12 @@ describe("ComparePlans", () => {
     expect(queryCalls(PROJECTION)).toContainEqual(
       expect.objectContaining({
         decumulationDefaults: {},
-        contributionProfileId: 2,
-        salaryProfileId: 1,
-        retirementProfileId: 4,
-        accumulationBudgetProfileId: 3,
+        selection: {
+          contribution: 2,
+          salary: 1,
+          retirement: 4,
+          accumulationBudget: { profileId: 3 },
+        },
       }),
     );
     expect(screen.getByText("Max 401k")).toBeInTheDocument();
@@ -122,8 +123,7 @@ describe("ComparePlans", () => {
     });
     render(<ComparePlans />);
     expect(queryCalls(PROJECTION)).toContainEqual({
-      contributionProfileId: 20,
-      salaryProfileId: 10,
+      selection: { contribution: 20, salary: 10 },
       decumulationDefaults: {},
     });
   });

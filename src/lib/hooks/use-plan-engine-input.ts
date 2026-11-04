@@ -26,18 +26,17 @@ import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-pr
 import { useEffectiveProfileId } from "@/lib/hooks/use-effective-profile-id";
 import { defaultDecumulationConfig } from "@/lib/config/account-types";
 import {
+  profileSelectionFrom,
+  type ProfileSelection,
+} from "@/lib/pure/household/profile-selection";
+import {
   SK_RETIREMENT_DEC_BUDGET_COL,
   SK_RETIREMENT_DEC_BUDGET_PROFILE_ID,
   SK_RETIREMENT_DEC_EXPENSE_OVERRIDE,
 } from "@/lib/constants/settings-keys";
 
 type PlanEngineInput = {
-  contributionProfileId?: number;
-  salaryProfileId?: number;
-  retirementProfileId?: number;
-  decumulationBudgetProfileId?: number;
-  decumulationBudgetColumn?: number;
-  decumulationExpenseOverride?: number;
+  selection: ProfileSelection;
   snapshotId?: number;
   decumulationDefaults: {
     withdrawalTaxPreference: ReturnType<
@@ -112,18 +111,16 @@ export function usePlanEngineInput(): {
 
   const input = useMemo(
     (): PlanEngineInput => ({
-      ...(contributionProfileId != null ? { contributionProfileId } : {}),
-      ...(salaryProfileId != null ? { salaryProfileId } : {}),
-      ...(retirementProfileId != null ? { retirementProfileId } : {}),
-      ...(decBudgetProfileId != null
-        ? { decumulationBudgetProfileId: decBudgetProfileId }
-        : {}),
-      ...(decBudgetCol != null
-        ? { decumulationBudgetColumn: decBudgetCol }
-        : {}),
-      ...(decExpenseOverride
-        ? { decumulationExpenseOverride: parseFloat(decExpenseOverride) }
-        : {}),
+      selection: profileSelectionFrom({
+        contributionProfileId,
+        salaryProfileId,
+        retirementProfileId,
+        decumulationBudgetProfileId: decBudgetProfileId,
+        decumulationBudgetColumn: decBudgetCol,
+        decumulationExpenseOverride: decExpenseOverride
+          ? parseFloat(decExpenseOverride)
+          : null,
+      }),
       ...(snapshotId != null ? { snapshotId } : {}),
       decumulationDefaults: {
         withdrawalTaxPreference:

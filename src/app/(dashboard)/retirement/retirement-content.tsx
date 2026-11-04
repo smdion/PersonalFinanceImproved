@@ -38,7 +38,6 @@ const WithdrawalComparisonCard = dynamic(
 import { CardBoundary } from "@/components/cards/dashboard/utils";
 import { PlanHealthCard } from "@/components/cards/plan-health";
 import { SK_RETIREMENT_COMPARISON_EXPANDED } from "@/lib/constants/settings-keys";
-import { profileSelectionFrom } from "@/lib/pure/household/profile-selection";
 
 export function RetirementContent() {
   const user = useUser();
@@ -72,7 +71,7 @@ export function RetirementContent() {
     salaryProfileId: effectiveSalaryProfileId,
     snapshotId,
   } = plan.ids;
-  const dec = plan.input;
+  const decBudget = plan.input.selection.decumulationBudget;
   const [, setSnapshotId] = usePersistedSetting<number | null>(
     "retirement_snapshot_id",
     null,
@@ -107,11 +106,7 @@ export function RetirementContent() {
   // The same preset the page's Simulation uses.
   const [simulationPreset] = useSimulationPreset();
   const comparisonInput = useMemo(
-    () => ({
-      snapshotId: baseInput.snapshotId,
-      selection: profileSelectionFrom(baseInput),
-      preset: simulationPreset,
-    }),
+    () => ({ ...baseInput, preset: simulationPreset }),
     [baseInput, simulationPreset],
   );
   const { data: comparisonData, isLoading: comparisonLoading } =
@@ -328,9 +323,9 @@ export function RetirementContent() {
             <ProjectionCard
               people={peopleLookup}
               withdrawalRate={parseFloat(settings.withdrawalRate) * 100}
-              decumulationBudgetProfileId={dec.decumulationBudgetProfileId}
-              decumulationBudgetColumn={dec.decumulationBudgetColumn}
-              decumulationExpenseOverride={dec.decumulationExpenseOverride}
+              decumulationBudgetProfileId={decBudget?.profileId}
+              decumulationBudgetColumn={decBudget?.column}
+              decumulationExpenseOverride={decBudget?.annualExpenses}
               parentCategoryFilter="Retirement"
               contributionProfileId={effectiveContribProfileId ?? undefined}
               salaryProfileId={effectiveSalaryProfileId ?? undefined}
