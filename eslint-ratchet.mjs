@@ -13,7 +13,6 @@ const HELPER_FIELDS = [
   "isOverflowTarget",
   "irsLimitGroup",
   "employerMatchSubType",
-  "ruleOf55Eligible",
   "earlyAccessRule",
   "qcdEligible",
   "nonMedicalPenaltyRate",

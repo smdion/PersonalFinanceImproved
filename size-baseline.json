@@ -109,7 +109,7 @@
     "src/lib/calculators/relocation.ts": 490,
     "src/lib/calculators/types/engine-config.ts": 803,
     "src/lib/calculators/types/engine-projection.ts": 725,
-    "src/lib/config/account-types.ts": 891,
+    "src/lib/config/account-types.ts": 886,
     "src/lib/config/milestones.ts": 691,
     "src/lib/config/withdrawal-strategies.ts": 779,
     "src/lib/constants.ts": 382,

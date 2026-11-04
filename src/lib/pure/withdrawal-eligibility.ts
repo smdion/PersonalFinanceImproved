@@ -286,13 +286,13 @@ export function computeWithdrawalEligibility(input: {
               ownerRetirementYear: ia.ownerRetirementYear,
             })
           : null;
-      const ruleOf55Eligible = projected?.eligible ?? false;
+      const ruleOf55Met = projected?.eligible ?? false;
       const slices = earlyAccessSlices(rule, {
         balance,
         currentAge,
         currentYear: year,
         isRoth,
-        ruleOf55Eligible,
+        ruleOf55Met,
         contributionBasis,
         conversionBasis,
         latestConversionYear,
@@ -322,7 +322,7 @@ export function computeWithdrawalEligibility(input: {
           reason = `Locked until age 59½ (currently ${currentAge})`;
         }
       } else if (rule === "employer_plan") {
-        if (ruleOf55Eligible) {
+        if (ruleOf55Met) {
           reason =
             projected?.separationYear != null
               ? `Eligible — Rule of 55 met (separated ${projected.separationYear})`

@@ -296,13 +296,13 @@ export function earlyAccessSlices(
     currentYear: number;
     isRoth: boolean;
     /** This account's Rule of 55 result for the year (employer plans). */
-    ruleOf55Eligible: boolean;
+    ruleOf55Met: boolean;
     contributionBasis: number;
     conversionBasis: number;
     latestConversionYear: number | null;
   },
 ): EarlyAccessSlice[] | null {
-  const { balance, currentAge, isRoth, ruleOf55Eligible } = account;
+  const { balance, currentAge, isRoth, ruleOf55Met } = account;
   switch (rule) {
     case "ira_59_half":
       return isRoth
@@ -313,14 +313,10 @@ export function earlyAccessSlices(
         ? computeEmployerPlanRothAccess(
             balance,
             currentAge,
-            ruleOf55Eligible,
+            ruleOf55Met,
             account.contributionBasis + account.conversionBasis,
           )
-        : computeEmployerPlanPreTaxAccess(
-            balance,
-            currentAge,
-            ruleOf55Eligible,
-          );
+        : computeEmployerPlanPreTaxAccess(balance, currentAge, ruleOf55Met);
     case "hsa_non_medical":
       return computeHsaAccess(balance, currentAge);
     case "none":

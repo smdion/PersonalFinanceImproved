@@ -66,7 +66,6 @@ export const ACCOUNT_TYPE_CONFIG = {
     taxBucketKey: "preTax",
     supportedTaxTreatments: ["pre_tax", "tax_free"],
     rothOrderingRules: "pro_rata",
-    ruleOf55Eligible: true,
     earlyAccessRule: "employer_plan",
     qcdEligible: false,
     nonMedicalPenaltyRate: null,
@@ -121,7 +120,6 @@ export const ACCOUNT_TYPE_CONFIG = {
     taxBucketKey: "preTax",
     supportedTaxTreatments: ["pre_tax", "tax_free"],
     rothOrderingRules: "pro_rata",
-    ruleOf55Eligible: true,
     earlyAccessRule: "employer_plan",
     qcdEligible: false,
     nonMedicalPenaltyRate: null,
@@ -176,7 +174,6 @@ export const ACCOUNT_TYPE_CONFIG = {
     taxBucketKey: "preTax",
     supportedTaxTreatments: ["pre_tax", "tax_free"],
     rothOrderingRules: "basis_first",
-    ruleOf55Eligible: false,
     earlyAccessRule: "ira_59_half",
     qcdEligible: true,
     nonMedicalPenaltyRate: null,
@@ -228,7 +225,6 @@ export const ACCOUNT_TYPE_CONFIG = {
     taxBucketKey: "hsa",
     supportedTaxTreatments: ["hsa"],
     rothOrderingRules: null,
-    ruleOf55Eligible: false,
     earlyAccessRule: "hsa_non_medical",
     qcdEligible: false,
     nonMedicalPenaltyRate: HSA_NON_MEDICAL_PENALTY_RATE,
@@ -288,7 +284,6 @@ export const ACCOUNT_TYPE_CONFIG = {
     taxBucketKey: "afterTax",
     supportedTaxTreatments: ["after_tax"],
     rothOrderingRules: null,
-    ruleOf55Eligible: false,
     earlyAccessRule: "none",
     qcdEligible: false,
     nonMedicalPenaltyRate: null,
@@ -578,11 +573,11 @@ export function isIraCategory(category: string): boolean {
   return category === "ira";
 }
 
-/** Rule of 55 applies (IRC §72(t)(2)(A)(v)): `ruleOf55Eligible`, a legal
- *  fact distinct from the Roth ordering rules. */
+/** Rule of 55 can apply (IRC §72(t)(2)(A)(v)): the employer-plan
+ *  early-access rule. False for a category not in the config. */
 export function isRuleOf55EligibleCategory(category: string): boolean {
   const cfg = ACCOUNT_TYPE_CONFIG[category as AccountCategory];
-  return cfg?.ruleOf55Eligible ?? false;
+  return cfg?.earlyAccessRule === "employer_plan";
 }
 
 /** The early-access rule a category's withdrawals follow (`earlyAccessRule`). */

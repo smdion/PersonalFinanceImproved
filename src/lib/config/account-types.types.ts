@@ -64,15 +64,9 @@ export type AccountTypeConfig = {
    *  between basis and earnings, IRS Notice 2009-68). null where the
    *  category has no Roth concept at all (hsa, brokerage). */
   rothOrderingRules: "basis_first" | "pro_rata" | null;
-  /** Whether separating from the employer funding this account type at/after
-   *  age 55 grants penalty-free access to the whole plan (Rule of 55, IRC
-   *  §72(t)(2)(A)(v)) — true only for employer plans (401k/403b). IRAs have
-   *  no Rule-of-55 equivalent (only SEPP/72(t)); brokerage/HSA have no early-
-   *  withdrawal penalty concept this flag applies to. */
-  ruleOf55Eligible: boolean;
   /** The early-access rule a withdrawal follows: an IRA's 59½ and Roth
-   *  ordering, an employer plan's 59½ or Rule of 55, an HSA's age for
-   *  non-medical use, or none. */
+   *  ordering, an employer plan's 59½ or Rule of 55 (IRC §72(t)(2)(A)(v)),
+   *  an HSA's age for non-medical use, or none. */
   earlyAccessRule: EarlyAccessRule;
   /** A Qualified Charitable Distribution can come from it (IRC 408(d)(8)). */
   qcdEligible: boolean;
