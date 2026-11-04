@@ -114,14 +114,12 @@ export function buildSpecToAccountMapping(
   indKey: IndKeyFn,
   indParentCat: Map<string, string>,
 ): { specToAccount: Map<string, string>; accountsWithSpecs: Set<string> } {
-  const taxTreatmentToTaxType = TAX_TREATMENT_TO_TAX_TYPE;
   const specToAccount = new Map<string, string>();
   // The projection-only retirement brokerage has no contributions of its own.
   const accts = indAccts.filter((ia) => !ia.projectedOnly);
 
   for (const spec of contributionSpecs) {
-    const specTaxType =
-      taxTreatmentToTaxType[spec.taxTreatment] ?? spec.taxTreatment;
+    const specTaxType = TAX_TREATMENT_TO_TAX_TYPE[spec.taxTreatment];
     const parentCatMatch = (ia: {
       name: string;
       category: string;

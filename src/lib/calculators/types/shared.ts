@@ -9,17 +9,17 @@ import type {
   RuleOf55Status,
   RothBasisMeta,
 } from "@/lib/pure/tax-bucket-analysis";
+import type { TaxTreatment } from "@/lib/config/enum-values";
 
 export type ViewMode = "projected" | "blended" | "ytd";
 
 export type PayPeriodType = "weekly" | "biweekly" | "semimonthly" | "monthly";
-type TaxTreatmentType = "pre_tax" | "tax_free" | "after_tax" | "hsa";
 export type FilingStatusType = "MFJ" | "Single" | "HOH";
 
 export type DeductionLine = {
   name: string;
   amount: number;
-  taxTreatment: TaxTreatmentType;
+  taxTreatment: TaxTreatment;
   ficaExempt: boolean;
 };
 
@@ -63,7 +63,7 @@ export type ContributionAccountInput = {
    *  percent_of_salary accounts — used to scale contributions against bonus
    *  gross rather than reusing the regular per-period dollar amount. */
   rateOfGross: number | null;
-  taxTreatment: TaxTreatmentType;
+  taxTreatment: TaxTreatment;
   isPayrollDeducted: boolean;
   /** Also taken from bonus checks (bonusCheckContribution). */
   fromBonus: boolean;
@@ -77,7 +77,7 @@ export type ContributionAccountInput = {
   /** The share of pay that gets the full employer match (the match cap);
    *  null/absent when the match doesn't depend on the rate. */
   fullMatchShareOfPay?: number | null;
-  employerMatchTaxTreatment: TaxTreatmentType;
+  employerMatchTaxTreatment: TaxTreatment;
   /** Yearly cap on this account's payroll contributions that aren't FICA
    *  wages (payrollFicaExemptCap); null = they are FICA wages; Infinity =
    *  exempt in full (cap can't be sized). */
