@@ -86,7 +86,7 @@ beforeEach(() => {
     { id: 8, name: "Priya Promotion" },
   ]);
   setQuery("retirement.retirementProfiles.list", [
-    { id: 9, name: "Retire at 60", isActive: true },
+    { id: 9, name: "Retire at 60" },
   ]);
 });
 

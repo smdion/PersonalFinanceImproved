@@ -16,6 +16,7 @@ import { describe, it, expect, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { useBudgetDerivedData } from "@/app/(dashboard)/budget/use-budget-derived-data";
 import type { RawItem } from "@/components/budget";
+import { setQuery } from "../components/trpc-mock";
 
 // Two "brokerage"-keyword contribution accounts on one person: id 12 (real
 // account behind the "R Brokerage" budget item, which will be marked
@@ -54,16 +55,8 @@ const paycheckPeople = [
   },
 ];
 
-let mockPaycheckData: { people: unknown[] } | undefined = undefined;
-
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    paycheck: {
-      computeSummary: {
-        useQuery: () => ({ data: mockPaycheckData }),
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("../components/trpc-mock")).trpc,
 }));
 
 const rawItem: RawItem = {
@@ -111,7 +104,7 @@ function setup(editMode: boolean, rawItems: RawItem[] = [rawItem]) {
 
 describe("useBudgetDerivedData — getCatTotals editMode consistency", () => {
   it("a contribution-linked item's total is the same with editMode on or off when no draft exists", () => {
-    mockPaycheckData = undefined;
+    setQuery("paycheck.computeSummary", undefined);
     const { result: readOnly } = setup(false);
     const { result: editing } = setup(true);
 
@@ -168,7 +161,7 @@ describe("useBudgetDerivedData — fuzzy contribution pool excludes linked accou
   } as RawItem;
 
   it("matchContrib only sees the unlinked account's amount, not the linked account's too", () => {
-    mockPaycheckData = { people: paycheckPeople };
+    setQuery("paycheck.computeSummary", { people: paycheckPeople });
     const { result } = setup(false, [linkedRBrokerage, unlinkedLtBrokerage]);
 
     // Only account id 3 (the unlinked one, $950) should be in the pool —
@@ -177,7 +170,7 @@ describe("useBudgetDerivedData — fuzzy contribution pool excludes linked accou
   });
 
   it("getCatTotals never includes the fuzzy match — the linked item's own $0 wins, not the pool's $950", () => {
-    mockPaycheckData = { people: paycheckPeople };
+    setQuery("paycheck.computeSummary", { people: paycheckPeople });
     const { result } = setup(false, [linkedRBrokerage, unlinkedLtBrokerage]);
 
     const [rTotal] = result.current.getCatTotals([linkedRBrokerage]);
@@ -185,7 +178,7 @@ describe("useBudgetDerivedData — fuzzy contribution pool excludes linked accou
   });
 
   it("an unlinked item next to a linked item in the same category is not double-counted in the category total", () => {
-    mockPaycheckData = { people: paycheckPeople };
+    setQuery("paycheck.computeSummary", { people: paycheckPeople });
     const { result } = setup(false, [linkedRBrokerage, unlinkedLtBrokerage]);
 
     const catTotal = result.current.getCatTotals([
@@ -213,7 +206,7 @@ describe("useBudgetDerivedData — fuzzy contribution pool excludes linked accou
  */
 describe("useBudgetDerivedData — non-payroll pool follows isPayrollDeducted, not jobId alone", () => {
   it("includes a job-tied account explicitly marked isPayrollDeducted: false", () => {
-    mockPaycheckData = {
+    setQuery("paycheck.computeSummary", {
       people: [
         {
           paycheck: {
@@ -240,14 +233,14 @@ describe("useBudgetDerivedData — non-payroll pool follows isPayrollDeducted, n
           ],
         },
       ],
-    };
+    });
     const { result } = setup(false, []);
 
     expect(result.current.matchContrib("Brokerage")).toBeCloseTo(300, 2);
   });
 
   it("still excludes a job-tied account with no explicit isPayrollDeducted override (falls back to jobId presence)", () => {
-    mockPaycheckData = {
+    setQuery("paycheck.computeSummary", {
       people: [
         {
           paycheck: {
@@ -274,7 +267,7 @@ describe("useBudgetDerivedData — non-payroll pool follows isPayrollDeducted, n
           ],
         },
       ],
-    };
+    });
     const { result } = setup(false, []);
 
     expect(result.current.matchContrib("Brokerage")).toBeNull();

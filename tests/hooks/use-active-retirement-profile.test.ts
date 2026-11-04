@@ -10,66 +10,27 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 import { useActiveRetirementProfile } from "@/lib/hooks/use-active-retirement-profile";
+import {
+  mutationCalls,
+  resetTrpcMock,
+  setQuery,
+  utilsCalls,
+} from "../components/trpc-mock";
 
-const listQuery = vi.fn();
-const profileListQuery = vi.fn();
-const upsertMutateAsync = vi.fn();
-// usePersistedSetting internally constructs its OWN default
-// appSettings.upsert mutation too (unused here since writeVia bypasses
-// it, but still a real useMutation() call) -- both share this mock, so
-// capture every onSuccess in creation order rather than a single
-// variable. The hook under test creates its custom broad-invalidation
-// mutation FIRST, before calling usePersistedSetting, so index 0 is ours.
-const upsertOnSuccessCalls: (() => void)[] = [];
-const invalidate = {
-  appSettingsList: vi.fn(),
-  retirement: vi.fn(),
-  projection: vi.fn(),
-  brokerage: vi.fn(),
-  budget: vi.fn(),
-  savings: vi.fn(),
-};
-
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({
-      settings: {
-        appSettings: { list: { invalidate: invalidate.appSettingsList } },
-      },
-      retirement: { invalidate: invalidate.retirement },
-      projection: { invalidate: invalidate.projection },
-      brokerage: { invalidate: invalidate.brokerage },
-      budget: { invalidate: invalidate.budget },
-      savings: { invalidate: invalidate.savings },
-    }),
-    settings: {
-      appSettings: {
-        list: { useQuery: () => listQuery() },
-        upsert: {
-          useMutation: (opts?: { onSuccess?: () => void }) => {
-            if (opts?.onSuccess) upsertOnSuccessCalls.push(opts.onSuccess);
-            return { mutateAsync: upsertMutateAsync };
-          },
-        },
-      },
-    },
-    retirement: {
-      retirementProfiles: {
-        list: { useQuery: () => profileListQuery() },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("../components/trpc-mock")).trpc,
 }));
+
+const UPSERT = "settings.appSettings.upsert";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  upsertOnSuccessCalls.length = 0;
   localStorage.clear();
-  listQuery.mockReturnValue({
-    data: [{ key: "active_retirement_profile_id", value: 1 }],
-  });
-  profileListQuery.mockReturnValue({ data: [{ id: 1 }, { id: 2 }] });
-  upsertMutateAsync.mockResolvedValue(undefined);
+  resetTrpcMock();
+  setQuery("settings.appSettings.list", [
+    { key: "active_retirement_profile_id", value: 1 },
+  ]);
+  setQuery("retirement.retirementProfiles.list", [{ id: 1 }, { id: 2 }]);
 });
 
 describe("useActiveRetirementProfile", () => {
@@ -81,24 +42,28 @@ describe("useActiveRetirementProfile", () => {
       await Promise.resolve();
     });
 
-    expect(upsertMutateAsync).toHaveBeenCalledWith({
+    expect(mutationCalls(UPSERT)).toContainEqual({
       key: "active_retirement_profile_id",
       value: 2,
     });
   });
 
   it("invalidates every downstream query on a successful activation, not just the settings pointer", () => {
-    renderHook(() => useActiveRetirementProfile());
+    const { result } = renderHook(() => useActiveRetirementProfile());
 
+    // The activation succeeds: its own mutation's onSuccess runs.
     act(() => {
-      upsertOnSuccessCalls[0]?.();
+      result.current[1](2);
     });
 
-    expect(invalidate.appSettingsList).toHaveBeenCalled();
-    expect(invalidate.retirement).toHaveBeenCalled();
-    expect(invalidate.projection).toHaveBeenCalled();
-    expect(invalidate.brokerage).toHaveBeenCalled();
-    expect(invalidate.budget).toHaveBeenCalled();
-    expect(invalidate.savings).toHaveBeenCalled();
+    for (const path of [
+      "settings.appSettings.list.invalidate",
+      "retirement.invalidate",
+      "projection.invalidate",
+      "brokerage.invalidate",
+      "budget.invalidate",
+      "savings.invalidate",
+    ])
+      expect(utilsCalls(path), path).not.toHaveLength(0);
   });
 });

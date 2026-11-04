@@ -4,22 +4,22 @@ import { StrictMode, createElement, type ReactNode } from "react";
 import { renderHook, act } from "@testing-library/react";
 import type { LumpSumEvent } from "@/components/cards/projection/types";
 
-const save = vi.fn();
-const clear = vi.fn();
-let saved: LumpSumEvent[] | undefined;
+import {
+  holdMutation,
+  mutationCalls,
+  resetTrpcMock,
+  setQuery,
+} from "../components/trpc-mock";
 
-vi.mock("@/lib/trpc", () => ({
-  trpc: {
-    useUtils: () => ({ brokerage: { invalidate: vi.fn() } }),
-    retirement: {
-      projectionOverrides: {
-        get: { useQuery: () => ({ data: saved }) },
-        save: { useMutation: () => ({ mutate: save }) },
-        clear: { useMutation: () => ({ mutate: clear }) },
-      },
-    },
-  },
+vi.mock("@/lib/trpc", async () => ({
+  trpc: (await import("../components/trpc-mock")).trpc,
 }));
+
+const SAVE = "retirement.projectionOverrides.save";
+const CLEAR = "retirement.projectionOverrides.clear";
+const saves = () => mutationCalls(SAVE) as { overrides: LumpSumEvent[] }[];
+const saved = (events: LumpSumEvent[]) =>
+  setQuery("retirement.projectionOverrides.get", events);
 
 import { useBrokerageLumpSums } from "@/app/(dashboard)/brokerage/use-brokerage-lump-sums";
 
@@ -36,18 +36,18 @@ const wrapper = ({ children }: { children: ReactNode }) =>
 
 describe("useBrokerageLumpSums", () => {
   beforeEach(() => {
-    save.mockReset();
-    clear.mockReset();
-    saved = [ev("a"), ev("b")];
+    resetTrpcMock();
+    // Neither settles: these tests read the calls, not what follows them.
+    holdMutation(SAVE);
+    holdMutation(CLEAR);
+    saved([ev("a"), ev("b")]);
   });
 
   it("keeps the saved events when the first edit adds one", () => {
     const { result } = renderHook(() => useBrokerageLumpSums(), { wrapper });
     act(() => result.current.setBrokerageLumpSums((p) => [...p, ev("c")]));
-    expect(save).toHaveBeenCalledTimes(1);
-    expect(
-      save.mock.calls[0]![0].overrides.map((o: LumpSumEvent) => o.id),
-    ).toEqual(["a", "b", "c"]);
+    expect(saves()).toHaveLength(1);
+    expect(saves()[0]!.overrides.map((o) => o.id)).toEqual(["a", "b", "c"]);
     expect(result.current.brokerageLumpSums.map((e) => e.id)).toEqual([
       "a",
       "b",
@@ -60,20 +60,18 @@ describe("useBrokerageLumpSums", () => {
     act(() =>
       result.current.setBrokerageLumpSums((p) => p.filter((x) => x.id !== "a")),
     );
-    expect(clear).not.toHaveBeenCalled();
-    expect(save).toHaveBeenCalledTimes(1);
-    expect(
-      save.mock.calls[0]![0].overrides.map((o: LumpSumEvent) => o.id),
-    ).toEqual(["b"]);
+    expect(mutationCalls(CLEAR)).toHaveLength(0);
+    expect(saves()).toHaveLength(1);
+    expect(saves()[0]!.overrides.map((o) => o.id)).toEqual(["b"]);
   });
 
   it("clears only when the last event is deleted, and mutates once", () => {
-    saved = [ev("a")];
+    saved([ev("a")]);
     const { result } = renderHook(() => useBrokerageLumpSums(), { wrapper });
     act(() =>
       result.current.setBrokerageLumpSums((p) => p.filter((x) => x.id !== "a")),
     );
-    expect(clear).toHaveBeenCalledTimes(1);
-    expect(save).not.toHaveBeenCalled();
+    expect(mutationCalls(CLEAR)).toHaveLength(1);
+    expect(saves()).toHaveLength(0);
   });
 });
