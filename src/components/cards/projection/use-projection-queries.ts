@@ -19,7 +19,7 @@ import type {
   MonteCarloResult,
 } from "@/lib/calculators/types";
 import { SIMULATION_NOT_CONFIGURED_MESSAGE } from "@/lib/calculators/monte-carlo";
-import { simulationDollars } from "@/lib/pure/simulation-dollars";
+import { simulationDollars } from "@/lib/pure/simulation/dollars";
 import type { ProjectionFormState } from "./use-projection-form-state";
 import type { UseProjectionStateProps } from "./use-projection-state";
 import { filterYearByParentCategory } from "./utils";

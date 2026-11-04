@@ -9,6 +9,7 @@ import {
   type SetStateAction,
 } from "react";
 import type { AccountCategory } from "@/lib/calculators/types";
+import type { DollarBasis } from "@/lib/config/enum-values";
 import { trpc } from "@/lib/trpc";
 import { type AssetClassOverride } from "@/components/cards/mc-simulation-assumptions";
 import {
@@ -179,7 +180,7 @@ export function useProjectionFormState() {
   const [mcAssetClassOverrides, setMcAssetClassOverrides] = useState<
     AssetClassOverride[]
   >([]);
-  const [dollarMode, setDollarMode] = useState<"nominal" | "real">("real");
+  const [dollarMode, setDollarMode] = useState<DollarBasis>("real");
   const [balanceView, setBalanceView] = useState<"taxType" | "account">(
     "taxType",
   );

@@ -2,7 +2,7 @@
 
 import { planAgeLabel, yearOfPlanAge } from "@/lib/pure/household-timeline";
 import { useHighIncomeLine } from "@/lib/hooks/use-high-income-line";
-import { simulationDollars } from "@/lib/pure/simulation-dollars";
+import { simulationDollars } from "@/lib/pure/simulation/dollars";
 import { FocusLink } from "@/components/ui/focus-link";
 import { focusHref } from "@/lib/config/focus-topics";
 import {

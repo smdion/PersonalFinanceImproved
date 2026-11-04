@@ -888,7 +888,7 @@
       "count": 17
     },
     "ratchet/no-history-comment": {
-      "count": 5
+      "count": 4
     },
     "ratchet/no-jsx-iife": {
       "count": 3
@@ -4844,7 +4844,7 @@
       "count": 1
     }
   },
-  "src/lib/pure/simulation-dollars.ts": {
+  "src/lib/pure/simulation/dollars.ts": {
     "ratchet/max-comment-lines": {
       "count": 1
     }

@@ -20,7 +20,7 @@ import {
   type WithdrawalStrategyType,
 } from "@/lib/config/withdrawal-strategies";
 import { MC_STRATEGY_STABILITY_GAP_ALERT_THRESHOLD } from "@/lib/constants";
-import { simulationDollars } from "@/lib/pure/simulation-dollars";
+import { simulationDollars } from "@/lib/pure/simulation/dollars";
 
 // ---------------------------------------------------------------------------
 // Unified card chrome — matches projection-mc-results.tsx summary bar

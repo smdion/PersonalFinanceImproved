@@ -8,6 +8,7 @@ import { NotConfiguredNotice } from "@/components/ui/not-configured-notice";
 import { useSimulationPreset } from "@/lib/hooks/use-simulation-preset";
 import { useFocusedState } from "@/lib/hooks/use-focus";
 import { useState, useMemo } from "react";
+import type { DollarBasis } from "@/lib/config/enum-values";
 import dynamic from "next/dynamic";
 import { Skeleton, SkeletonChart } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/trpc";
@@ -44,7 +45,7 @@ export function RetirementContent() {
   const utils = trpc.useUtils();
   // Links to Plan Health or a projection year open their tab.
   const [pageTab, setPageTab] = useFocusedState("retirementTab", "projection");
-  const [dollarMode, setDollarMode] = useState<"nominal" | "real">("real");
+  const [dollarMode, setDollarMode] = useState<DollarBasis>("real");
   // Retirement Profile axis (the assumptions band) — the active profile;
   // the band's picker changes it, same as the header.
   const [activeRetirementId, setActiveRetirementId] =

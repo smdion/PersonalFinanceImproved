@@ -16,7 +16,7 @@ import {
   ZoneSecondaryRow,
 } from "./pill-btn";
 import { ValidationContent } from "@/components/validation-content";
-// formatCurrency import removed — no longer used inline
+import type { DollarBasis } from "@/lib/config/enum-values";
 import { formatPercent } from "@/lib/utils/format";
 import { safeDivide } from "@/lib/utils/math";
 import { SimulationAssumptions } from "@/components/cards/mc-simulation-assumptions";
@@ -65,7 +65,7 @@ const DecumulationMethodologyContent = dynamic(() =>
 );
 import { McResultsSection } from "./projection-mc-results";
 import { ProjectionLoader } from "./projection-loader";
-import { simulationDollars } from "@/lib/pure/simulation-dollars";
+import { simulationDollars } from "@/lib/pure/simulation/dollars";
 import {
   useProjectionState,
   type EngineContribRate,
@@ -97,8 +97,8 @@ export function ProjectionCard(props: {
   retirementProfileId?: number | null;
   snapshotId?: number;
   /** When provided, overrides the internal dollarMode state (for shared page-level toggle). */
-  dollarMode?: "nominal" | "real";
-  onDollarModeChange?: (mode: "nominal" | "real") => void;
+  dollarMode?: DollarBasis;
+  onDollarModeChange?: (mode: DollarBasis) => void;
 }) {
   const state = useProjectionState({
     people: props.people,

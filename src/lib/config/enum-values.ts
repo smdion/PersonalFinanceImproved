@@ -344,3 +344,7 @@ export const DEBT_KIND_VALUES = [
 ] as const;
 export type DebtKind = (typeof DEBT_KIND_VALUES)[number];
 export const debtKindSchema = z.enum(DEBT_KIND_VALUES);
+
+/** A view's dollars: as projected, or today's ("real"). */
+export const DOLLAR_BASIS_VALUES = ["nominal", "real"] as const;
+export type DollarBasis = (typeof DOLLAR_BASIS_VALUES)[number];

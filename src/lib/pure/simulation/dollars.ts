@@ -10,15 +10,14 @@ import type {
   MonteCarloPercentileBand,
   MonteCarloResult,
 } from "@/lib/calculators/types";
-
-export type DollarMode = "nominal" | "real";
+import type { DollarBasis } from "@/lib/config/enum-values";
 
 export function simulationDollars(
   result: Pick<
     MonteCarloResult,
     "percentileBands" | "distributions" | "medianEndBalance" | "worstCase"
   > & { today: MonteCarloResult["today"] },
-  mode: DollarMode,
+  mode: DollarBasis,
 ): {
   percentileBands: MonteCarloPercentileBand[];
   terminalBalance: DistributionSummary;
